@@ -22,7 +22,7 @@
     "test:account": "node test/account_sync.js",
     "test:account-store": "node test/account_store.js",
     "test:plan": "node test/plan_protocol.js",
-    "test:workspace": "node test/workspace_lifecycle.js"
+    "test:workspace": "node test/account_identity.js && node test/workspace_lifecycle.js"
   },
   "dependencies": {
     "@capacitor/core": "8.0.0",

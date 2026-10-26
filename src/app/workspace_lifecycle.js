@@ -120,7 +120,12 @@ const LemmaWorkspace = (() => {
         recover().catch(() => {});
       }
     }
-    function init() { account.onChange(authChanged); }
+    function init() {
+      // Identity changes must scrub the Model synchronously, including A→B→A
+      // inside one event loop turn. Network/cache refresh remains deferred.
+      const subscribe = account.onIdentityChange || account.onChange;
+      subscribe.call(account, authChanged);
+    }
     return { init, activate, deactivate, authChanged, recover,
       get activeId() { return activeId; },
       get blocked() { return suspended; },

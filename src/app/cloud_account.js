@@ -3,9 +3,20 @@ const LemmaAccount = (() => {
   let client = null;
   let user = null;
   const subscribers = new Set();
+  const identitySubscribers = new Set();
   let authGeneration = 0;
   // Subscribers may query Supabase; run outside the auth client's locked callback.
-  const notify = () => setTimeout(() => subscribers.forEach(fn => fn(user)), 0);
+  const notify = () => {
+    const identity = user;
+    setTimeout(() => subscribers.forEach(fn => fn(identity)), 0);
+  };
+  function setUser(next) {
+    user = next;
+    // Invalidate visible account data before the auth callback returns. These
+    // observers are local guards only; Supabase queries stay in deferred notify.
+    for (const fn of identitySubscribers) fn(user);
+    notify();
+  }
   function init() {
     if (client) return true;
     const cfg = window.LEMMA_CONFIG || {};
@@ -15,15 +26,13 @@ const LemmaAccount = (() => {
       authGeneration++;
       const incoming = session ? session.user : null;
       if ((incoming && incoming.id) !== (user && user.id)) {
-        user = incoming;
-        notify();
+        setUser(incoming);
       }
     });
     const generation = authGeneration;
     client.auth.getUser().then(({ data, error }) => {
       if (generation === authGeneration && !error && data && data.user && (!user || user.id !== data.user.id)) {
-        user = data.user;
-        notify();
+        setUser(data.user);
       }
     }).catch(() => {});
     return true;
@@ -41,6 +50,7 @@ const LemmaAccount = (() => {
     if (error) throw error;
   }
   return { init, signIn, signOut, get client() { return client; }, get user() { return user; },
+    onIdentityChange(fn) { identitySubscribers.add(fn); return () => identitySubscribers.delete(fn); },
     onChange(fn) { subscribers.add(fn); return () => subscribers.delete(fn); } };
 })();
 
