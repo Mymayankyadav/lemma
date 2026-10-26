@@ -144,6 +144,15 @@ class Session {
     try {
       const eventId = crypto.randomUUID();
       const dur = Math.min(Math.max(0, durationMs || 0), 120000);
+      const schedulingProvenance = {
+        version: 1, algorithm: 'fsrs-6', weights: Model.settings.w.slice(),
+        day_index: Model.dayIndex(now), rollover_hour: Model.settings.rollover,
+        timezone_offset_minutes: new Date(now).getTimezoneOffset(),
+        retention: Model.settings.retention, max_interval_days: Model.settings.maxIvl,
+        learn_steps: Model.settings.learnSteps, relearn_steps: Model.settings.relearnSteps,
+        fuzz: !!Model.settings.fuzz, load_balance: !!Model.settings.loadBalance,
+        preview_at_ms: cur.previewAt || now, card_before: clone(prev)
+      };
       const events = [];
       this.stats.count++;
       this.stats.time += dur;
@@ -152,7 +161,7 @@ class Session {
       if (prev.st === 2) { this.stats.reviews++; if (g > 1) this.stats.reviewPass++; }
 
       if (this.cram) {
-        note.log.push([now, +ord, g, prev.st, Math.round(dur), 1, eventId]);
+        note.log.push([now, +ord, g, prev.st, Math.round(dur), 1, eventId, schedulingProvenance]);
         if (g === 1) this.cramQ.splice(Math.min(3, this.cramQ.length), 0, r.key);
       } else {
         // intervals shown on the buttons are applied as-is unless the card sat unanswered for a long time
@@ -160,7 +169,7 @@ class Session {
         const nc = Object.assign({}, pv[g].card);
         if (prev.flag) nc.flag = prev.flag;
         note.cards[ord] = nc;
-        note.log.push([now, +ord, g, prev.st, Math.round(dur), 0, eventId]);
+        note.log.push([now, +ord, g, prev.st, Math.round(dur), 0, eventId, schedulingProvenance]);
         // leech handling
         const thr = Model.settings.leechThreshold;
         if (prev.st === 2 && g === 1 && thr > 0 && nc.lapses >= thr && (nc.lapses - thr) % Math.max(1, Math.ceil(thr / 2)) === 0) {
