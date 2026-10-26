@@ -1,0 +1,95 @@
+// Two independent browser caches and a deterministic, fault-injected RPC server.
+// This tests the account adapter, not production Supabase login or active UI sync.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { chromium } = require('playwright');
+const userId = '00000000-0000-4000-8000-000000000001';
+const source = ['outbox_core','sync_browser'].map(f=>fs.readFileSync(`src/app/${f}.js`,'utf8')).join('\n');
+(async () => {
+  const server = new Map(), receipts = new Map(), requests = [];
+  let loseNextResponse = false;
+  const send = async ({ payload:p, authorization }) => {
+    assert.equal(authorization, 'Bearer token-a');
+    requests.push(p.p_request_id);
+    if (receipts.has(p.p_request_id)) return { data:receipts.get(p.p_request_id) };
+    const previous = server.get(p.p_note_id);
+    if ((previous?.revision || 0) !== p.p_expected_revision) return { error:{message:'stale_note_revision'} };
+    const revision = (previous?.revision || 0) + 1;
+    server.set(p.p_note_id, { id:p.p_note_id, data:p.p_data || previous?.data, revision, deleted_at:p.p_delete ? '2026-10-26' : null });
+    receipts.set(p.p_request_id, revision);
+    if (loseNextResponse) { loseNextResponse = false; return { error:{message:'network response lost'} }; }
+    return { data:revision };
+  };
+  const browser = await chromium.launch();
+  try {
+    const contexts = [];
+    for (let device = 0; device < 2; device++) {
+      const ctx = await browser.newContext(); contexts.push(ctx);
+      await ctx.route('https://lemma-sync.test/**', r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Sync adapter test</title>'}));
+      await ctx.exposeFunction('sendRPC', send);
+      await ctx.addInitScript({ content: source + `\nwindow.sync = LemmaCloud;` });
+    }
+    async function open(ctx) {
+      const page = await ctx.newPage();
+      await page.goto('https://lemma-sync.test/');
+      await start(page);
+      return page;
+    }
+    async function start(page) {
+      await page.evaluate(async userId => {
+        let current = {user:{id:userId},access_token:'token-a'};
+        const listeners = new Set();
+        const client = {
+          auth:{ getSession:async()=>({data:{session:current}}), onAuthStateChange:fn=>{
+            listeners.add(fn); return {data:{subscription:{unsubscribe:()=>listeners.delete(fn)}}};
+          } },
+          rpc:(_name,payload)=>({setHeader:(_key,authorization)=>window.sendRPC({payload,authorization})})
+        };
+        window.account = await window.sync.startAccount(client,userId);
+        window.switchUser = () => { current={user:{id:'00000000-0000-4000-8000-000000000002'},access_token:'token-b'}; for(const fn of listeners)fn('SIGNED_IN',current); };
+      }, userId);
+    }
+    const a = await open(contexts[0]), b = await open(contexts[1]);
+    const stage = (page,id,front,deleted=false)=>page.evaluate(({id,front,deleted})=>account.storage.stageNote({id,front,back:'',log:[],cards:{}},undefined,deleted),{id,front,deleted});
+    const flush = page=>page.evaluate(()=>account.outbox.flush());
+    await stage(a,'same','device A'); await stage(b,'same','device B');
+    await flush(a); await flush(b);
+    assert.equal(server.get('same').data.front,'device A');
+    assert.equal(await b.evaluate(async()=>(await account.storage.list())[0].state),'conflict');
+    assert.equal(await b.evaluate(async()=>(await account.storage.notes())[0].data.front),'device B');
+
+    // Browser restart preserves retry IDs even when the server committed already.
+    await stage(b,'retry','keep'); loseNextResponse = true;
+    await flush(b);
+    const originalId = await b.evaluate(async()=>(await account.storage.list()).find(o=>o.entityId==='retry').requestId);
+    await b.reload(); await start(b); await flush(b);
+    assert.equal(server.get('retry').revision,1);
+    assert.equal(requests.filter(id=>id===originalId).length,2);
+    assert.equal(await b.evaluate(async()=>(await account.storage.list()).some(o=>o.entityId==='retry')),false);
+
+    // Two tabs share IDB and actual Web Locks; simultaneous flush must not race.
+    const tab = await open(contexts[0]);
+    await stage(a,'same','tab one'); await stage(tab,'same','tab two');
+    await Promise.all([flush(a),flush(tab)]);
+    assert.equal(server.get('same').revision,3);
+    assert.equal(server.get('same').data.front,'tab two');
+    assert.equal(await a.evaluate(async()=>(await account.storage.list()).length),0);
+    await a.evaluate(()=>{ account.outbox.online=false; });
+    await stage(a,'offline','durable offline'); await flush(a);
+    assert.equal(server.has('offline'),false);
+    await a.evaluate(()=>{ account.outbox.online=true; }); await flush(a);
+    assert.equal(server.get('offline').data.front,'durable offline');
+    await stage(a,'offline','',true); await flush(a);
+    assert.ok(server.get('offline').deleted_at);
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('offline'));
+    assert.equal(await b.evaluate(async()=>(await account.storage.notes()).find(n=>n.id==='offline').deleted),true);
+
+    // A stale account handle is stopped when another user signs in.
+    await stage(tab,'must-not-send','private A');
+    await tab.evaluate(()=>window.switchUser());
+    assert.equal((await flush(tab)).stopped,true);
+    assert.equal(server.has('must-not-send'),false);
+    for(const ctx of contexts) await ctx.close();
+    console.log('ok: two-browser conflicts, lost-response restart, two-tab Web Locks, offline reconnect, tombstone propagation and account stop');
+  } finally { await browser.close(); }
+})().catch(error=>{console.error(error);process.exitCode=1;});

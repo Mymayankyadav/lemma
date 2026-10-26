@@ -16,3 +16,7 @@ android/app/.cxx/
 *.jks
 .env.*
 !.env.example
+
+
+# Local Supabase CLI metadata
+supabase/.temp/

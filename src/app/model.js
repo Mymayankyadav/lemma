@@ -156,7 +156,7 @@ const Model = (() => {
     bump();
     Store.saveNote(n);
   }
-  function saveScheduling(n) { bump(); Store.saveNote(n); }
+  function saveScheduling(n, reviewEntry = null) { bump(); return reviewEntry ? Store.saveReview(n, reviewEntry) : Store.saveNote(n); }
   function deleteNote(id) {
     notes.delete(id);
     for (const other of notes.values()) {
@@ -474,3 +474,4 @@ const Model = (() => {
     today, counts, knowledge, loadMap, previewFor, recomputeMemory, histories, reviewCount, ordsFor,
   };
 })();
+

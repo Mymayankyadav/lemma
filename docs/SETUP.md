@@ -8,13 +8,13 @@
 - Initial tables: `study_plans`, `learning_sessions`, `learning_events`, `tutor_handoffs`. These are private via owner RLS.
 
 ## GitHub Pages
-Go to GitHub repository Settings → Pages → Build and deployment → GitHub Actions. The build workflow will be added when Phase 1 sources are imported.
+The existing `.github/workflows/pages.yml` deploys main to GitHub Pages. `.github/workflows/test.yml` runs full regression checks on development branches and PRs.
 
 ## Authentication
 Configure Supabase Auth URL settings for your final GitHub Pages URL and Android callback before activating sign-in. Do not place secret/service-role keys in the web or Android app. A publishable key is safe with proper RLS.
 
 ## Next phase
-Import the prepared Phase 1 source ZIP into this repository, complete the remaining schemas for cards and sources, then implement auth, offline mutation queue, idempotent review events, realtime invalidation and full cross-device tests.
+Continue from the existing source. Follow A4/A5 in `docs/SYNC_AUDIT_2026-10-26.md`; do not re-import a source ZIP or recreate the backend.
 
 
 ## Optional email login (account sign-in is NOT cloud card sync)
@@ -26,4 +26,5 @@ Set GitHub Actions repository variables (Settings → Secrets and variables → 
 
 GitHub Actions injects these **public** values at build time into the static app. After setting them, rerun Deploy Lemma web through the Actions tab. In Supabase Authentication → URL Configuration, add `https://mymayankyadav.github.io/lemma/` to allowed redirects and set its Site URL appropriately before email magic-link use. Android auth requires a separate deep-link implementation and redirect allowlisting.
 
-The Settings account section only signs users in/out. Current card data stays in original local storage, and must not be automatically migrated. Cloud sync activation remains a subsequent checkpoint requiring tested revision handling, atomic review events, and explicit import safeguards.
+The Settings account section supports sign-in/out and explicit copy-missing transfers. Current card data stays in original local storage, and must not be automatically migrated. Cloud sync activation remains a subsequent checkpoint requiring tested revision handling, atomic review events, and explicit import safeguards.
+

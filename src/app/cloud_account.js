@@ -3,20 +3,25 @@ const LemmaAccount = (() => {
   let client = null;
   let user = null;
   const subscribers = new Set();
-  const notify = () => subscribers.forEach(fn => fn(user));
+  let authGeneration = 0;
+  // Subscribers may query Supabase; run outside the auth client's locked callback.
+  const notify = () => setTimeout(() => subscribers.forEach(fn => fn(user)), 0);
   function init() {
+    if (client) return true;
     const cfg = window.LEMMA_CONFIG || {};
     if (!cfg.url || !cfg.publishableKey || !window.LemmaSupabase) return false;
     client = window.LemmaSupabase.createClient(cfg.url, cfg.publishableKey);
     client.auth.onAuthStateChange((event, session) => {
+      authGeneration++;
       const incoming = session ? session.user : null;
       if ((incoming && incoming.id) !== (user && user.id)) {
         user = incoming;
         notify();
       }
     });
+    const generation = authGeneration;
     client.auth.getUser().then(({ data, error }) => {
-      if (!error && data && data.user && (!user || user.id !== data.user.id)) {
+      if (generation === authGeneration && !error && data && data.user && (!user || user.id !== data.user.id)) {
         user = data.user;
         notify();
       }
@@ -38,3 +43,4 @@ const LemmaAccount = (() => {
   return { init, signIn, signOut, get client() { return client; }, get user() { return user; },
     onChange(fn) { subscribers.add(fn); return () => subscribers.delete(fn); } };
 })();
+

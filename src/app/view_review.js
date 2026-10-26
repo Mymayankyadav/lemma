@@ -372,26 +372,41 @@ const ReviewView = (() => {
     }, 200));
   }
 
-  function grade(g, dir) {
+  async function grade(g, dir) {
     if (!state || state.phase !== 'back' || busy) return;
     const dur = (state.answerAt || Date.now()) - state.shownAt;
-    const events = S.answer(g, dur) || [];
+    const mine = S;
+    busy = true;
+    let events;
+    try { events = await mine.answer(g, dur) || []; }
+    catch (error) {
+      busy = false;
+      toast('Review was not saved. Please try again.', { kind: 'error' });
+      return;
+    }
+    if (S !== mine) { busy = false; return; }
+    busy = false;
     for (const ev of events) {
       if (ev.type === 'leech') toast(ev.suspended ? 'Leech · suspended' : 'Leech · tagged', { ms: 4000 });
       if (ev.type === 'prereqs') toast(`+${ev.count} prerequisite${ev.count === 1 ? '' : 's'}`);
     }
     state = null;
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* ignore */ }
-    const mine = S;
     leave(dir != null ? dir : g === 1 ? -1 : 1).then(() => { if (S === mine) advance(); });
   }
 
-  function undo() {
+  async function undo() {
     if (busy) return;
-    const item = S.undo();
-    if (!item) return;
-    show(item);
-    toast('Undone');
+    const mine = S;
+    busy = true;
+    try {
+      const item = await mine.undo();
+      if (!item || S !== mine) return;
+      show(item);
+      toast('Undone');
+    } catch (error) {
+      toast(error.message || 'Undo could not be saved.', { kind: 'error' });
+    } finally { busy = false; }
   }
 
   function stat(ic, value, label) {
@@ -757,3 +772,4 @@ const Scratch = (() => {
     hasInk, toBlob,
   };
 })();
+

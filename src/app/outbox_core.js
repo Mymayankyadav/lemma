@@ -4,11 +4,16 @@
  * Operations are durable before flush() is called, and never discarded on error.
  */
 const LemmaOutboxCore = (() => {
+  // New IndexedDB operations have a transaction-allocated monotonic sequence.
+  // Timestamp/UUID ordering is only a compatibility fallback for old queues.
+  const compare = (a, b) => Number.isSafeInteger(a.sequence) && Number.isSafeInteger(b.sequence)
+    ? a.sequence - b.sequence
+    : (a.enqueuedAt - b.enqueuedAt) || a.id.localeCompare(b.id);
   function isStale(error) {
-    return /stale_note_revision|stale_plan_revision/i.test(String(error?.message || error || ''));
+    return /stale_note_revision|stale_plan_revision|stale_profile_revision/i.test(String(error?.message || error || ''));
   }
   function validateOp(op) {
-    if (!op || typeof op.id !== 'string' || !op.id || !['note','review','plan'].includes(op.kind)) {
+    if (!op || typeof op.id !== 'string' || !op.id || !['note','review','retraction','profile','plan'].includes(op.kind)) {
       throw new Error('Invalid Lemma outbox operation');
     }
     if (!op.requestId || typeof op.requestId !== 'string') throw new Error('Outbox requires a stable request ID');
@@ -20,6 +25,7 @@ const LemmaOutboxCore = (() => {
       this.notify = notify;
       this.busy = false;
       this.online = true;
+      this.stopped = false;
     }
     async enqueue(operation) {
       const op = { state: 'pending', attempts: 0, enqueuedAt: Date.now(), ...operation };
@@ -40,13 +46,13 @@ const LemmaOutboxCore = (() => {
       }
     }
     async flush() {
+      if (this.stopped) return { stopped: true };
       if (this.busy) return { busy: true };
       this.busy = true;
       let sent = 0;
       try {
         // Preserve enqueue order: a review must not be sent before its note exists.
-        const queue = (await this.storage.list()).sort((a, b) =>
-          (a.enqueuedAt - b.enqueuedAt) || ((a.kind === 'note' ? 0 : 1) - (b.kind === 'note' ? 0 : 1)) || a.id.localeCompare(b.id));
+        const queue = (await this.storage.list()).sort(compare);
         const blocked = new Set();
         for (const queued of queue) {
           // A preceding note commit may have durably rebased this item.
@@ -56,8 +62,15 @@ const LemmaOutboxCore = (() => {
           const key = op.kind === 'plan' ? 'plan:' + op.entityId : 'note:' + op.entityId;
           if (op.state === 'conflict') { blocked.add(key); continue; }
           if (op.state !== 'pending' || blocked.has(key)) continue;
-          if (!this.online) break;
+          if (!this.online || this.stopped) break;
           try {
+            // Persist before the request: a timeout does not prove the server
+            // rejected it, so Undo must never simply remove this operation.
+            if (typeof this.storage.markAttempt === 'function') {
+              await this.storage.markAttempt(op.id);
+              op.attempted = true;
+            }
+            if (this.stopped) break;
             const result = await this.transport.send(op);
             // The server accepted the operation. A delete failure must not cause
             // a duplicate effect: retrying uses the SAME requestId.
@@ -85,6 +98,7 @@ const LemmaOutboxCore = (() => {
       } finally { this.busy = false; }
     }
   }
-  return { Processor, isStale, validateOp };
+  return { Processor, isStale, validateOp, compare };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = LemmaOutboxCore;
+

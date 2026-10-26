@@ -160,7 +160,7 @@ const SettingsView = (() => {
         catch (err) { message.textContent = 'Sign-out error: ' + err.message; }
         finally { logout.disabled = false; }
       };
-      const upload = h('button', { class: 'btn btn-sm', type: 'button', text: 'Copy missing local cards to cloud' });
+      const upload = h('button', { class: 'btn btn-sm', type: 'button', text: 'Queue missing cards to account' });
       const download = h('button', { class: 'btn btn-sm', type: 'button', text: 'Copy missing cloud cards to this device' });
       const transfer = async (button, fn) => {
         button.disabled = true;
@@ -171,11 +171,65 @@ const SettingsView = (() => {
         } catch (err) { message.textContent = 'Transfer error: ' + err.message; }
         finally { button.disabled = false; }
       };
-      upload.onclick = () => transfer(upload, () => LemmaCloudBridge.uploadMissing());
+      upload.onclick = async () => {
+        const ok = await confirmDialog({
+          title: 'Copy local cards into your account?',
+          message: 'This copies missing card snapshots into your private account outbox. The original local cards remain untouched. Older review logs are copied as history, not independently reconstructed as cloud events. Conflicting card IDs are never overwritten. Export a backup first.',
+          confirmLabel: 'Queue missing cards'
+        });
+        if (!ok) return;
+        upload.disabled = true;
+        try {
+          const result = await LemmaSync.enrollMissingLocal();
+          message.textContent = result.queued + ' card snapshots durably queued; ' +
+            result.skipped + ' skipped. The account cache will attempt cloud delivery. ' +
+            'Future edits to your local deck do NOT yet sync automatically.';
+          showCache();
+        } catch (err) {
+          message.textContent = 'Account enrollment: ' + err.message;
+        } finally { upload.disabled = false; }
+      };
       download.onclick = () => transfer(download, () => LemmaCloudBridge.importMissing());
+      const cacheState = h('p', { class: 'muted small', role: 'status' });
+      const showCache = () => {
+        const s = LemmaSync.status;
+        cacheState.textContent = 'Private account cache: ' + s.phase +
+          (s.pending ? ' · ' + s.pending + ' pending operations' : '') +
+          (s.error ? ' · ' + s.error : '') +
+          '. This is separate from the cards displayed by Lemma.';
+      };
+      const refreshCache = h('button', { class: 'btn btn-sm', type: 'button', text: 'Refresh account cache' });
+      refreshCache.onclick = async () => {
+        refreshCache.disabled = true;
+        try { await LemmaSync.refresh(); showCache(); }
+        catch (err) { message.textContent = 'Cache refresh: ' + err.message; showCache(); }
+        finally { refreshCache.disabled = false; }
+      };
+      const comparison = h('p', { class: 'muted small', role: 'status' });
+      const compare = h('button', { class: 'btn btn-sm', type: 'button',
+        text: 'Compare local and account cards' });
+      compare.onclick = async () => {
+        compare.disabled = true;
+        try {
+          const r = await LemmaSync.compareLocal();
+          comparison.textContent =
+            r.identical + ' identical · ' + r.localOnly + ' only on device · ' +
+            r.accountOnly + ' only in account · ' + r.divergent +
+            ' same-ID conflicts · ' + r.cloudTombstone + ' account deletions · ' +
+            r.dirtyAccount + ' pending account snapshots.' +
+            (r.fresh ? '' : ' Account cache may be stale; refresh while online.');
+          if (r.divergent || r.cloudTombstone) {
+            comparison.textContent += ' Nothing was overwritten or merged.';
+          }
+        } catch (err) { comparison.textContent = 'Comparison unavailable: ' + err.message; }
+        finally { compare.disabled = false; }
+      };
+      showCache();
       page.append(section('set-cloud-account', 'Lemma account', 'Copy missing cards explicitly. Live cloud sync is not enabled yet. Export a backup before transferring.',
         accountState, h('div', { class: 'btn-row' }, email, send, logout),
-        h('div', { class: 'btn-row' }, upload, download), message));
+        h('div', { class: 'btn-row' }, upload, download),
+        cacheState, h('div', { class: 'btn-row' }, refreshCache, compare),
+        comparison, message));
     }
 
     // data

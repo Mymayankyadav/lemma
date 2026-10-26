@@ -13,6 +13,11 @@ const Store = (() => {
   let pendingCount = 0;
   let offline = false;
   let profileTimer = null, profilePending = null, profileBusy = false;
+  const localWrites = new Set();
+  const localErrors = new Map();
+  const localGenerations = new Map();
+  // Explicit future account-workspace mode. Not selected by ordinary sign-in.
+  let accountHandle = null;
 
   // ----- IndexedDB -----
   function idbOpen() {
@@ -48,7 +53,8 @@ const Store = (() => {
   const idbClear = (store) => idbTx(store, 'readwrite', (st) => st.clear());
 
   function status() {
-    return { mode, reason, pending: pendingCount, offline };
+    return { mode, reason, pending: pendingCount + localWrites.size + (profilePending || profileBusy ? 1 : 0),
+      failed: localErrors.size, offline };
   }
   const emitStatus = () => handlers.status(status());
 
@@ -165,8 +171,68 @@ const Store = (() => {
     const next = waiting.shift();
     if (next) next(); else active--;
   }
-  function saveNote(note) { enqueue(note.id, clone(note)); }
-  function deleteNote(id) { enqueue(id, null); }
+  // Begin the IndexedDB transaction immediately, without an in-memory queue or
+  // debounce. Resolve only on transaction completion (request success is not enough).
+  function durableLocal(key, write) {
+    const generation = (localGenerations.get(key) || 0) + 1;
+    localGenerations.set(key, generation);
+    const promise = write();
+    localWrites.add(promise);
+    emitStatus();
+    promise.then(() => {
+      if (localGenerations.get(key) === generation) localErrors.delete(key);
+    }, err => {
+      if (localGenerations.get(key) === generation) localErrors.set(key, err);
+      toast('Could not save to this browser’s storage. Keep this page open and export a backup.', { kind: 'error' });
+    }).finally(() => {
+      localWrites.delete(promise);
+      emitStatus();
+    });
+    return promise;
+  }
+  function accountWrite(key, writer) {
+    const handle = accountHandle;
+    if (!handle || mode !== 'account')
+      return Promise.reject(new Error('No active account workspace'));
+    return durableLocal('account:' + handle.userId + ':' + key, async () => {
+      if (accountHandle !== handle || LemmaAccount.user?.id !== handle.userId)
+        throw new Error('Account changed before local write');
+      const result = await writer(handle.storage);
+      if (accountHandle === handle && typeof LemmaSync !== 'undefined') LemmaSync.kick();
+      return result;
+    });
+  }
+  function saveNote(note) {
+    const data = clone(note);
+    if (mode === 'account')
+      return accountWrite('note:' + note.id, storage => storage.stageNote(data));
+    if (mode === 'local') return durableLocal('note:' + note.id, () => idbPut('notes', data));
+    return enqueue(note.id, data);
+  }
+  function saveReview(note, entry) {
+    if (mode === 'account') {
+      const snapshot = clone(note);
+      return accountWrite('review:' + note.id, storage => storage.stageReview(snapshot, clone(entry)));
+    }
+    return saveNote(note);
+  }
+  function undoReview(restored, eventId) {
+    if (mode === 'account') {
+      const snapshot = clone(restored);
+      return accountWrite('undo:' + restored.id, storage => storage.stageUndo(snapshot, eventId));
+    }
+    return saveNote(restored);
+  }
+  function deleteNote(id) {
+    if (mode === 'account')
+      return accountWrite('note:' + id, storage => storage.stageNote({ id }, undefined, true));
+    if (mode === 'local') return durableLocal('note:' + id, () => idbDel('notes', id));
+    return enqueue(id, null);
+  }
+  async function whenSaved() {
+    await Promise.all([...localWrites]);
+    if (localErrors.size) throw new Error('Some local changes have not been saved');
+  }
   function enqueue(id, data) {
     if (mode === 'memory' || mode === 'loading') return;
     deferred.delete(id);
@@ -248,6 +314,12 @@ const Store = (() => {
   }
 
   function saveProfile(profile) {
+    // Account profile CAS + conflict UI must ship before any active profile editing.
+    if (mode === 'account') return accountWrite('profile', storage => storage.stageProfile(clone(profile)));
+    if (mode === 'local') {
+      const data = clone(profile);
+      return durableLocal('profile', () => idbPut('meta', data, 'profile'));
+    }
     profilePending = clone(profile);
     clearTimeout(profileTimer);
     profileTimer = setTimeout(flushProfile, 500);
@@ -281,10 +353,34 @@ const Store = (() => {
     try { idb = idb || await idbOpen(); await idbClear('notes'); await idbDel('meta', 'profile'); } catch (e) { /* ignore */ }
   }
 
+  async function activateAccount(handle) {
+    if (mode !== 'local' || accountHandle) throw new Error('Account workspace requires local mode');
+    if (!handle?.userId || !handle.storage) throw new Error('Invalid account workspace');
+    if (LemmaAccount.user?.id !== handle.userId) throw new Error('Account identity changed');
+    await whenSaved();
+    const [rows, accountProfile] = await Promise.all([handle.storage.notes(), handle.storage.profile()]);
+    if (LemmaAccount.user?.id !== handle.userId) throw new Error('Account identity changed');
+    const notes = new Map();
+    for (const row of rows) {
+      if (!row.deleted && row.data) notes.set(row.id, clone(row.data));
+    }
+    accountHandle = handle;
+    mode = 'account';
+    emitStatus();
+    return { notes, profile: accountProfile?.data || null, mode: 'account' };
+  }
+  async function deactivateAccount() {
+    if (mode !== 'account') throw new Error('No active account workspace');
+    await whenSaved();
+    accountHandle = null;
+    return startLocal(); // original browser-local data were never deleted
+  }
   return {
-    init, saveNote, deleteNote, saveProfile, localLeftovers, clearLocal, status,
+    init, saveNote, saveReview, undoReview, deleteNote, saveProfile,
+    activateAccount, deactivateAccount, localLeftovers, clearLocal, status, whenSaved,
     get mode() { return mode; },
     setHandler(name, fn) { handlers[name] = fn; },
     flushProfile,
   };
 })();
+
