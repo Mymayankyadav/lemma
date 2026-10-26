@@ -1,9 +1,21 @@
 /* ---------- import, export, generate ---------- */
 const ImportSheet = (() => {
+  function recoveryKey() {
+    return Store.mode === 'account' ? 'lemma.import.account.' + LemmaAccount.user.id : 'lemma.import.v1';
+  }
+  const saveRecovery = (key,data) => localStorage.setItem(key,JSON.stringify(data));
   function open() {
     const generation = App.workspaceRevision;
+    const mode = Store.mode, owner = LemmaAccount.user?.id;
+    const key = recoveryKey();
     let closed = false;
-    const valid = () => !closed && !App.workspaceBlocked && App.workspaceRevision === generation;
+    let saving = false, committed = false;
+    const current = () => !App.workspaceBlocked && App.workspaceRevision === generation && Store.mode === mode &&
+      (mode !== 'account' || LemmaAccount.user?.id === owner);
+    const valid = () => !closed && current();
+    let recovered = null;
+    try { recovered = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { /* keep malformed recovery untouched */ }
+    let job = recovered?.job || null;
     let parsed = null;
     const fileIn = h('input', { id: 'imp-file', type: 'file', accept: '.md,.markdown,.txt,.tsv,.csv,.json,text/plain,application/json', class: 'file-input' });
     const ta = h('textarea', { id: 'imp-text', class: 'input code-input', rows: 8, spellcheck: 'false', placeholder: 'Paste cards here. For example:\n\nQ: State Rolle’s theorem.\nA: If $f$ is continuous on $[a,b]$, differentiable on $(a,b)$ and $f(a)=f(b)$, then $f\'(c)=0$ for some $c\\in(a,b)$.\n\nThe Gaussian integral is $\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = {{c1::\\sqrt{\\pi}}}$.' });
@@ -11,16 +23,37 @@ const ImportSheet = (() => {
     const decks = h('datalist', { id: 'imp-decks' }, Model.deckNames().map((d) => h('option', { value: d })));
     const tagIn = h('input', { id: 'imp-tag', class: 'input', placeholder: 'optional', autocomplete: 'off' });
     const restore = h('input', { id: 'imp-restore', type: 'checkbox', class: 'switch' });
+    ta.value = recovered?.source || '';
+    deckIn.value = recovered?.deck || 'Imported';
+    tagIn.value = recovered?.tag || '';
+    restore.checked = !!recovered?.restore;
     const restoreRow = h('div', { class: 'setting', hidden: true }, h('label', { for: 'imp-restore', class: 'setting-label', text: 'Also restore settings from the backup' }), restore);
     const summary = h('div', { class: 'imp-summary', 'aria-live': 'polite' });
     const go = h('button', { class: 'btn btn-primary', type: 'button', text: 'Import', disabled: true });
+    const persist = () => saveRecovery(key,{v:1,source:ta.value,deck:deckIn.value,
+      tag:tagIn.value,restore:restore.checked,job});
+    function controls() {
+      for (const input of [fileIn,deckIn,tagIn,restore]) input.disabled = saving || !!job;
+      ta.readOnly = saving || !!job;
+      go.disabled = saving || !parsed?.notes.length;
+      restart.disabled = saving;
+      restart.hidden = !job;
+      if (saving) go.textContent = 'Importing…';
+    }
+    const restart = h('button', {type:'button',class:'link-btn',text:'Start a new import',hidden:!job,onclick:() => {
+      if (!valid() || saving) return;
+      job = null;
+      persist();
+      controls();
+    }});
     const analyse = debounce(() => {
-      if (!valid()) return;
+      if (!valid() || saving) return;
       parsed = IO.parse(ta.value, { deck: deckIn.value.trim() || 'Imported' });
       restoreRow.hidden = parsed.format !== 'backup';
       const n = parsed.notes.length;
       go.disabled = !n;
       go.textContent = parsed.format === 'backup' ? `Restore ${plural(n, 'note')}` : `Import ${plural(n, 'card')}`;
+      controls();
       fill(summary);
       if (!ta.value.trim()) return;
       if (parsed.warnings.length) summary.append(h('p', { class: 'ai-error small', text: parsed.warnings.join(' ') }));
@@ -50,20 +83,43 @@ const ImportSheet = (() => {
       reader.onerror = () => toast('That file couldn’t be read.', { kind: 'error' });
       reader.readAsText(file);
     });
-    go.addEventListener('click', () => {
-      if (!valid() || !parsed || !parsed.notes.length) return;
-      const extraTags = tagIn.value.split(/[\s,]+/).filter(Boolean);
-      const res = IO.commit(parsed, { restoreSettings: restore.checked, extraTags });
-      if (parsed.format !== 'backup') Model.addDeck(deckIn.value.trim() || 'Imported');
-      s.close();
-      toast(parsed.format === 'backup'
-        ? `Restored ${plural(res.added, 'note')}${res.updated ? `, updated ${res.updated}` : ''}${res.skipped ? `, kept ${res.skipped} existing` : ''}.`
-        : `Imported ${plural(res.added, 'card')}${res.skipped ? ` (${res.skipped} duplicates skipped)` : ''}.`);
-      App.refresh();
+    go.addEventListener('click', async () => {
+      if (!valid() || saving) return;
+      parsed = IO.parse(ta.value,{deck:deckIn.value.trim() || 'Imported'});
+      if (!parsed.notes.length) return;
+      saving = true;
+      try {
+        job ||= IO.prepare(parsed,{restoreSettings:restore.checked,
+          extraTags:tagIn.value.split(/[\s,]+/).filter(Boolean)});
+        persist(); // Persist stable IDs and source before any collection write.
+        controls();
+        const res = await IO.commit(parsed,{job,isCurrent:current,checkpoint:persist});
+        if (!valid()) return;
+        localStorage.removeItem(key);
+        committed = true;
+        s.close();
+        toast(parsed.format === 'backup'
+          ? `Restored ${plural(res.added, 'note')}${res.updated ? `, updated ${res.updated}` : ''}${res.skipped ? `, kept ${res.skipped} existing` : ''}.`
+          : `Imported ${plural(res.added, 'card')}${res.skipped ? ` (${res.skipped} duplicates skipped)` : ''}.`);
+        App.refresh();
+      } catch (error) {
+        if (valid()) fill(summary,h('p',{class:'ai-error small',text:
+          'Import stopped. Some cards may already be saved. Retry to continue, or copy the source before leaving. ' + (error?.message || '')}));
+      } finally {
+        saving = false;
+        if (valid()) { controls(); go.textContent = 'Retry import'; }
+      }
     });
     const s = Sheets.open({
-      title: 'Import cards', wide: true, onClose: () => { closed = true; },
+      title: 'Import cards', wide: true, onClose: () => {
+        if (!committed && (ta.value || job)) {
+          try { persist(); } catch (e) { if (current()) toast('Import recovery could not be saved. Copy the source before closing.',{kind:'error'}); }
+        }
+        closed = true;
+      },
       body: h('div', { class: 'imp' },
+        recovered ? h('p',{class:'muted small',text:'Import recovery restored.'}) : null,
+        restart,
         h('p', { class: 'muted small', text: 'Accepts Lemma exports and backups, Anki “Notes in plain text” files, tab-separated rows (front, back, tags), Q:/A: blocks, “front :: back” lines, and paragraphs with {{c1::cloze}} deletions. Anki’s \\( \\) and \\[ \\] math works as is.' }),
         h('div', { class: 'field' }, h('label', { for: 'imp-file', class: 'field-label', text: 'Choose a file' }), fileIn),
         h('div', { class: 'field' }, h('label', { for: 'imp-text', class: 'field-label', text: 'or paste text' }), ta),
@@ -73,8 +129,10 @@ const ImportSheet = (() => {
         restoreRow, summary),
       actions: [h('span', { class: 'spacer' }), go],
     });
+    controls();
+    if (ta.value) analyse();
   }
-  return { open };
+  return { open, recoveryKey, saveRecovery };
 })();
 
 const ExportSheet = (() => {
@@ -145,6 +203,7 @@ const GenerateSheet = (() => {
     const valid = () => !closed && !App.workspaceBlocked && App.workspaceRevision === generation;
     let image = null;
     let results = [];
+    let importJob = null, importing = false;
     let ctl = null;
     const ta = h('textarea', { id: 'gen-text', class: 'input code-input', rows: 9, spellcheck: 'false', placeholder: 'Paste lecture notes, a theorem with its proof, or a section of a textbook (LaTeX is fine).' });
     ta.value = preset.text || '';
@@ -165,6 +224,8 @@ const GenerateSheet = (() => {
       if (!valid()) return;
       if (!ta.value.trim() && !image) { toast('Paste some material or add a photo first.'); return; }
       ctl = new AbortController();
+      importJob = null;
+      deckIn.disabled = false;
       genBtn.disabled = true; stopBtn.hidden = false; addBtn.hidden = true;
       fill(status, h('p', { class: 'thinking', text: 'Claude is reading your material and writing cards…' }));
       fill(list);
@@ -216,16 +277,35 @@ const GenerateSheet = (() => {
       addBtn.textContent = `Add ${plural(n, 'card')}`;
       list.querySelectorAll('.gen-item').forEach((el, i) => el.classList.toggle('off', !results[i].keep));
     }
-    addBtn.addEventListener('click', () => {
-      if (!valid()) return;
+    addBtn.addEventListener('click', async () => {
+      if (!valid() || importing) return;
       const deck = deckIn.value.trim() || 'Generated';
       const keep = results.filter((r) => r.keep);
-      const res = IO.commit({ format: 'json', notes: keep.map((r) => ({ deck, type: r.type, title: r.title, front: r.front, back: r.back, tags: r.tags, requiresTitles: r.requires })) }, {});
-      Model.addDeck(deck);
-      Model.setMeta({ lastDeck: deck });
-      s.close();
-      toast(`Added ${plural(res.added, 'card')} to ${deck.split('::').pop()}${res.skipped ? ` (${res.skipped} duplicates skipped)` : ''}.`);
-      App.refresh();
+      const source = JSON.stringify(keep.map(r => ({...r,deck,requires:r.requires})));
+      const parsed = IO.parse(source,{deck});
+      const key = ImportSheet.recoveryKey();
+      const checkpoint = () => ImportSheet.saveRecovery(key,{v:1,source,deck,tag:'',restore:false,job:importJob});
+      importing = true;
+      addBtn.disabled = true; genBtn.disabled = true;
+      try {
+        importJob ||= IO.prepare(parsed);
+        deckIn.disabled = true;
+        list.querySelectorAll('input,textarea,button').forEach(input => { input.disabled = true; });
+        checkpoint();
+        const res = await IO.commit(parsed,{job:importJob,isCurrent:valid,checkpoint});
+        if (!valid()) return;
+        localStorage.removeItem(key);
+        Model.addDeck(deck);
+        Model.setMeta({ lastDeck: deck });
+        s.close();
+        toast(`Added ${plural(res.added, 'card')} to ${deck.split('::').pop()}${res.skipped ? ` (${res.skipped} duplicates skipped)` : ''}.`);
+        App.refresh();
+      } catch (error) {
+        if (valid()) fill(status,h('p',{class:'ai-error',text:'Cards were not fully saved. Retry, or open Import cards to recover the source. ' + (error?.message || '')}));
+      } finally {
+        importing = false;
+        if (valid()) { addBtn.disabled = false; genBtn.disabled = false; }
+      }
     });
     const s = Sheets.open({
       title: 'Generate cards with Claude', wide: true,

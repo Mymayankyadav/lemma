@@ -567,6 +567,8 @@ function syntheticHistory() {
     await ctx.close();
   }
 
+  await require('./import_browser.js')({ browser, newPage, ok });
+
   await require('./workspace_browser.js')({ browser, newPage, ok });
 
   await browser.close();

@@ -94,6 +94,13 @@ const Model = (() => {
   function profile() {
     return { v: 1, settings, decks: extraDecks, examplesHidden: profileMeta.examplesHidden, lastDeck: profileMeta.lastDeck, updated: Date.now() };
   }
+  function profileForSettings(patch) {
+    return { ...clone(profile()), settings:normalizeSettings({ ...settings, ...patch }) };
+  }
+  async function commitImportedProfile(candidate, isCurrent) {
+    await Store.saveProfile(candidate,{durable:true});
+    if (isCurrent()) loadProfile(candidate);
+  }
   function setSettings(patch) {
     const before = settings;
     settings = normalizeSettings(Object.assign({}, settings, patch));
@@ -482,7 +489,7 @@ const Model = (() => {
     get notes() { return notes; }, get settings() { return settings; }, get version() { return version; },
     get clock() { return clock; }, get meta() { return profileMeta; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
-    bump, loadProfile, profile, setSettings, setMeta, schedCfg,
+    bump, loadProfile, profile, profileForSettings, commitImportedProfile, setSettings, setMeta, schedCfg,
     newCardState, syncCards, sanitizeNote, createNote, updateNote, commitEditorNote, saveScheduling, deleteNote, replaceAll, applyRemote,
     cardRefs, ref, sides, dayIndex, dayStart, endOfToday, isSuspended, isBuried, isLearning, recallNow,
     inDeck, deckNames, addDeck, renameDeck, removeDeckEntry,

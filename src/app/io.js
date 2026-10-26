@@ -173,50 +173,96 @@ const IO = (() => {
     return { format: 'text', notes, warnings };
   }
 
-  /** Add parsed notes to the collection. Returns {added, skipped, updated}. */
-  function commit(parsed, opts = {}) {
-    let added = 0, skipped = 0, updated = 0;
+  const canonical = value => value && typeof value === 'object'
+    ? Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']'
+      : '{' + Object.keys(value).sort().map(k => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}'
+    : JSON.stringify(value);
+  const content = n => ({ id:n.id, deck:n.deck, type:n.type, title:n.title, front:n.front,
+    back:n.back, tags:n.tags, requires:n.requires, media:n.media || {}, modified:n.modified });
+  const profileContent = p => ({ settings:p.settings, decks:p.decks,
+    examplesHidden:p.examplesHidden, lastDeck:p.lastDeck });
+
+  // Prepare once, before the first write. Persist this job with the import
+  // source so IDs and prerequisites survive partial failure and browser reload.
+  function prepare(parsed, opts = {}) {
+    const job = { v:1, format:parsed.format, items:[], skipped:0, profile:null };
     if (parsed.format === 'backup') {
       for (const raw of parsed.notes) {
         if (!raw || !raw.id) continue;
         const existing = Model.notes.get(raw.id);
-        if (existing) {
-          if ((raw.modified || 0) > (existing.modified || 0) || (raw.log || []).length > (existing.log || []).length) {
-            Model.notes.set(raw.id, Model.sanitizeNote(clone(raw)));
-            Store.saveNote(Model.notes.get(raw.id));
-            updated++;
-          } else skipped++;
-        } else {
-          const n = Model.sanitizeNote(clone(raw));
-          Model.notes.set(n.id, n);
-          Store.saveNote(n);
-          added++;
-        }
+        if (existing && !((raw.modified || 0) > (existing.modified || 0) ||
+            (raw.log || []).length > (existing.log || []).length)) { job.skipped++; continue; }
+        job.items.push({ note:Model.sanitizeNote(clone(raw)), base:existing ? clone(existing) : null, done:false });
       }
-      if (opts.restoreSettings && parsed.backup.profile && parsed.backup.profile.settings) Model.setSettings(parsed.backup.profile.settings);
-      Model.bump();
-      return { added, skipped, updated };
+      if (opts.restoreSettings && parsed.backup?.profile?.settings) {
+        job.profile = { before:clone(Model.profile()),
+          after:Model.profileForSettings(parsed.backup.profile.settings), done:false };
+      }
+      return job;
     }
-    const existingFronts = new Set([...Model.notes.values()].map((n) => n.deck + '\u0000' + n.front.trim()));
+    const fronts = new Set([...Model.notes.values()].map(n => n.deck + '\u0000' + n.front.trim()));
+    const titles = new Map();
+    for (const n of Model.notes.values()) if (n.title) titles.set(n.title.toLowerCase(),n.id);
     const created = [];
     for (const f of parsed.notes) {
       const key = f.deck + '\u0000' + f.front.trim();
-      if (existingFronts.has(key)) { skipped++; continue; }
-      existingFronts.add(key);
-      const n = Model.createNote({ deck: f.deck, type: f.type, title: f.title, front: f.front, back: f.back, tags: (f.tags || []).concat(opts.extraTags || []) }, { silent: true });
-      created.push([n, f.requiresTitles || []]);
-      added++;
+      if (fronts.has(key)) { job.skipped++; continue; }
+      fronts.add(key);
+      const note = Model.sanitizeNote({ id:uid(), cards:{}, log:[], deck:f.deck,
+        type:f.type, title:f.title, front:f.front, back:f.back,
+        tags:(f.tags || []).concat(opts.extraTags || []) });
+      job.items.push({ note, base:null, done:false });
+      created.push([note,f.requiresTitles || []]);
+      if (note.title) titles.set(note.title.toLowerCase(),note.id);
     }
-    // resolve prerequisite titles once everything exists
-    Model.bump();
-    for (const [n, titles] of created) {
-      if (!titles.length) continue;
-      const ids = titles.map((t) => Model.resolveTarget(t)).filter(Boolean).map((p) => p.id).filter((id) => id !== n.id);
-      if (ids.length) { n.requires = [...new Set([...(n.requires || []), ...ids])]; Store.saveNote(n); }
+    for (const [note,requirements] of created) {
+      note.requires = [...new Set(requirements.map(t => titles.get(t.toLowerCase()) ||
+        (Model.notes.has(t) ? t : null)).filter(id => id && id !== note.id))];
     }
-    Model.bump();
-    return { added, skipped, updated, created: created.map(([n]) => n) };
+    return job;
   }
 
-  return { exportMarkdown, exportJSON, parse, commit };
+  /** Resolve only after each write commits; failed jobs remain safe to retry. */
+  async function commit(parsed, opts = {}) {
+    const job = opts.job || prepare(parsed,opts);
+    const current = opts.isCurrent || (() => true);
+    const checkpoint = () => opts.checkpoint?.(job);
+    const requireCurrent = () => { if (!current()) throw new Error('Workspace changed during import'); };
+    checkpoint();
+    for (const item of job.items) {
+      requireCurrent();
+      if (item.done) continue;
+      const existing = await Store.readNote(item.note.id);
+      requireCurrent();
+      if (existing && canonical(content(existing)) === canonical(content(item.note))) {
+        // Receipt was lost after commit; preserve any subsequent reviews.
+        const visible = Model.notes.get(item.note.id);
+        if (!visible || canonical(visible) === canonical(item.base))
+          Model.applyRemote([{id:item.note.id,note:clone(existing)}]);
+        item.done = true; checkpoint(); continue;
+      }
+      if (item.base ? canonical(existing) !== canonical(item.base) : !!existing)
+        throw new Error('A card changed since this import was prepared. Compare it with the retained source before retrying.');
+      await Store.saveNote(item.note,{durable:true,createOnly:!item.base});
+      item.done = true;
+      if (current()) Model.applyRemote([{id:item.note.id,note:clone(item.note)}]);
+      checkpoint(); // origin-scoped checkpoint remains useful after sign-out
+      requireCurrent();
+    }
+    if (job.profile && !job.profile.done) {
+      requireCurrent();
+      const now = profileContent(Model.profile());
+      if (canonical(now) !== canonical(profileContent(job.profile.after))) {
+        if (canonical(now) !== canonical(profileContent(job.profile.before)))
+          throw new Error('Settings changed during import. The source is retained for comparison.');
+        await Model.commitImportedProfile(job.profile.after,current);
+      }
+      job.profile.done = true; checkpoint(); requireCurrent();
+    }
+    return { added:job.items.filter(x => !x.base).length,
+      updated:job.items.filter(x => x.base).length, skipped:job.skipped,
+      created:job.items.filter(x => !x.base).map(x => Model.notes.get(x.note.id)).filter(Boolean) };
+  }
+
+  return { exportMarkdown, exportJSON, parse, prepare, commit };
 })();

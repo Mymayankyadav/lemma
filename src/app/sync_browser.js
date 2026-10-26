@@ -65,6 +65,7 @@ const LemmaCloud = (() => {
   };
   class AccountStorage {
     constructor(db, userId) { this.db = db; this.userId = userId; }
+    async note(id) { return request(this.db.transaction('notes').objectStore('notes').get(id)); }
     async list() { return request(this.db.transaction('outbox').objectStore('outbox').getAll()); }
     async get(id) { return request(this.db.transaction('outbox').objectStore('outbox').get(id)); }
     async put(op) {
