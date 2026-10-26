@@ -403,6 +403,31 @@ function syntheticHistory() {
     ok((await page.evaluate(() => localStorage.getItem('lemma.draft.v1'))) === null,
       'successfully committed card clears only its draft');
 
+    await page.click('.tb[data-go="browse"]');
+    await page.waitForSelector('.note-row');
+    await page.click('.note-row');
+    await page.waitForSelector('.detail-actions');
+    await page.click('.detail-actions >> text=Edit');
+    await page.waitForSelector('#ed-front');
+    const editBase = await page.inputValue('#ed-front');
+    await page.fill('#ed-front', 'Draft: proof of the Bolzano–Weierstrass theorem');
+    await page.click('.sheet-head .icon-btn[aria-label="Close"]');
+    await page.waitForTimeout(600);
+    const edits = await page.evaluate(() => Object.keys(localStorage)
+      .filter(k => k.startsWith('lemma.draft.edit.')));
+    ok(edits.length === 1, 'unsaved edit saved under a note-specific local key');
+    await page.reload();
+    await page.waitForSelector('.today');
+    await page.click('.tb[data-go="browse"]');
+    await page.waitForSelector('.note-row');
+    await page.click('.note-row');
+    await page.waitForSelector('.detail-actions');
+    await page.click('.detail-actions >> text=Edit');
+    await page.waitForSelector('#ed-front');
+    ok(await page.inputValue('#ed-front') === 'Draft: proof of the Bolzano–Weierstrass theorem',
+      'unfinished existing-note edit restored after browser reload');
+    await page.click('.sheet-head .icon-btn[aria-label="Close"]');
+
     // A queued file-read completion cannot overwrite the next import sheet.
     await page.click('.head-actions [aria-label="Import"]');
     await page.waitForSelector('#imp-file');
