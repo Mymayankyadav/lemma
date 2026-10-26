@@ -2,7 +2,7 @@
 
 > **FIRST READ FOR EVERY ASSISTANT.** If the user says **"follow the plan.md"**, read this file from GitHub `main`, inspect the live repository and recent CI, then **perform the next safe implementation task**. Do not spend the turn writing another plan unless it is materially out of date. When finished, **update this file in the same repository** for the next assistant. Chat history is *not* required.
 >
-> **Protocol v1 — 26 October 2026.** Applies to ChatGPT, Astra, Claude, Codex, or any other coding agent. Work is **sequential, ordinarily directly on `main`**. If a previous agent left work incomplete, adopt or repair it—never restart the project.
+> **Protocol v1.1 — 26 October 2026.** Applies to ChatGPT, Astra, Claude, Codex, or any other coding agent. Work is **sequential, ordinarily directly on `main`**. If a previous agent left work incomplete, adopt or repair it—never restart the project.
 
 ## 0. Operator instructions — the 60-second orientation
 
@@ -17,7 +17,9 @@ The user's phrase **"follow the plan.md" is authorization to continue implementa
 
 ## 1. CURRENT HANDOFF — update at the end of EVERY coding session
 
-**Last verified handoff:** 2026-10-26, initial protocol creation. **Working branch:** `main`; no active chatbot work is presumed after a response ends. **Session state:** `READY_FOR_NEXT_AGENT`.
+**Last verified handoff:** 2026-10-26, first canonical-handoff implementation complete. **Working branch:** `main`; no active chatbot work is presumed after a response ends. **Session state:** `READY_FOR_NEXT_AGENT`.
+
+**This session implemented:** root `plan.md`, `AGENTS.md`, `test/plan_protocol.js`, updated `README.md` and `package.json` (runs `test:plan` during `npm test`), retired obsolete `PROMPT.md`, and clarified precedence in `docs/DEVELOPMENT_ROADMAP.md` and `docs/SETUP.md`. **No app/Supabase behavior was changed this session.**
 
 | Field | Last verified fact |
 | --- | --- |
@@ -28,12 +30,14 @@ The user's phrase **"follow the plan.md" is authorization to continue implementa
 | Pages deployment at baseline | [run 40351875125](https://github.com/Mymayankyadav/lemma/actions/runs/40351875125) — **success** |
 | Web | https://mymayankyadav.github.io/lemma/ |
 | Backend | **Lemma only**, Supabase ref `yemqnhnztlbyxmjxidis`, Mumbai `ap-south-1` |
+| Last independently tested HEAD for handoff protocol | `104707fc4a44bd6c88fe8e83ec43dd16c5aa2843` — [regression 40353975777](https://github.com/Mymayankyadav/lemma/actions/runs/40353975777) **SUCCESS** (`npm test` includes the plan contract) |
+| Last web deployment since handoff files | [Pages run 40353778265](https://github.com/Mymayankyadav/lemma/actions/runs/40353778265) **SUCCESS**; docs-only follow-up does not change built app |
 | Last source-controlled migration | `supabase/migrations/20261026203000_revision_safe_profiles.sql` — deployed successfully |
 | Backend security check | Supabase security advisor: **zero reported findings** after profile CAS migration; this is not a complete penetration test |
 | Current application safety | Existing flashcard app works with its original Store. Supabase account cache/outbox is implemented, but **active account Store activation remains gated**, not triggered by login. |
 | Cloud confidence | **Not proven end-to-end** with real authenticated devices, simultaneous offline reviews, or Android |
 | Android | Capacitor dependencies/config exist; no verified production APK, native deep-link/sync lifecycle, or device test |
-| Last verified `main` tip after this handoff | **MUST RECHECK** — commits that create or edit this plan will move HEAD |
+| Current source head / last handoff commit | **RE-FETCH GITHUB LIVE HEAD**: the final commit editing this very file cannot include its own unknown SHA. Record the previous *tested* SHA above; the new agent must inspect current HEAD and newer CI. |
 
 **Next action, in one sentence:** **SYNC-01** — inspect the gated account-switch lifecycle across `Store.activateAccount`, `LemmaSync.attach/stop`, `Model.replaceAll`, and `Session`; add an identity-safe, no-loss account-switch orchestration with crash/unsaved-review tests, but leave the public activation control disabled until SYNC-02 and SYNC-03 gates pass.
 
@@ -87,7 +91,7 @@ Statuses: `DONE` = committed + checked against stated gate; `IN_PROGRESS` = demo
 
 Before ending a **coding** session, commit an update to this file containing:
 
-1. **Actual new `main` HEAD** (or explain uncommitted/failed work), commits and files touched.
+1. **Latest independently tested `main` SHA** (or explain uncommitted/failed work), commits and files touched. The handoff file **cannot contain the SHA of its own not-yet-created commit**; the next agent obtains the final tip from GitHub.
 2. **Evidence:** exact CI/workflow links and their success/failure/pending status, deployment evidence, Supabase migration/security check if touched.
 3. **What changed** vs **what is still unimplemented**; distinguish test/mock from production/live data.
 4. **Task queue update** with current ID and state; do not change IDs casually.
@@ -131,7 +135,7 @@ Update the handoff **after** implementing code, not as a replacement for code. I
 | 2026-10-26 | Existing app imported, web build deployed, local durable review and Undo path, Supabase auth skeleton and explicit transfer controls | Main history, source tests |
 | 2026-10-26 | Astra durability and account-sync scaffolding merged to main; local review provenance, retractions, CAS notes, owner-scoped cache and comparison; **automatic active account sync remains gated** | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), merge `051f117b3708`, [regression](https://github.com/Mymayankyadav/lemma/actions/runs/40351875233) success, [Pages](https://github.com/Mymayankyadav/lemma/actions/runs/40351875125) success |
 | 2026-10-26 | Deployed revision-safe profile RPC and removed direct authenticated profile writes; added profile outbox staging and tests | `20261026203000_revision_safe_profiles.sql`, Supabase security advisor **zero findings** |
-| 2026-10-26 | Introduced canonical, platform-independent sequential-chatbot handoff protocol | `plan.md` + `AGENTS.md` + CI handoff contract test (verify commit before marking released) |
+| 2026-10-26 | Introduced canonical sequential-chatbot handoff, updated README and retired old PROMPT; root plan structural guard runs in regression suite | [main regression 40353975777](https://github.com/Mymayankyadav/lemma/actions/runs/40353975777) **success** at `104707fc4a44`; plan contract uses `npm run test:plan` |
 
 ## 6. Five-line end-of-session report template
 
@@ -143,6 +147,6 @@ Update the handoff **after** implementing code, not as a replacement for code. I
 
 **Next task:** `TASK-ID` — exact file or function, required test, smallest safe next step.
 
-**Handoff:** updated `plan.md` on `main`; latest SHA; any blocker that the next chatbot must read.
+**Handoff:** updated `plan.md` on `main`; previous tested SHA (live HEAD is authoritative after this document commit); any blocker that the next chatbot must read.
 
 **Do not leave `plan.md` stale. The next chatbot will have only: "follow the plan.md".**
