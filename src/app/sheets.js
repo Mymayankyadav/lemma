@@ -1,6 +1,9 @@
 /* ---------- import, export, generate ---------- */
 const ImportSheet = (() => {
   function open() {
+    const generation = App.workspaceRevision;
+    let closed = false;
+    const valid = () => !closed && !App.workspaceBlocked && App.workspaceRevision === generation;
     let parsed = null;
     const fileIn = h('input', { id: 'imp-file', type: 'file', accept: '.md,.markdown,.txt,.tsv,.csv,.json,text/plain,application/json', class: 'file-input' });
     const ta = h('textarea', { id: 'imp-text', class: 'input code-input', rows: 8, spellcheck: 'false', placeholder: 'Paste cards here. For example:\n\nQ: State Rolle’s theorem.\nA: If $f$ is continuous on $[a,b]$, differentiable on $(a,b)$ and $f(a)=f(b)$, then $f\'(c)=0$ for some $c\\in(a,b)$.\n\nThe Gaussian integral is $\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = {{c1::\\sqrt{\\pi}}}$.' });
@@ -12,6 +15,7 @@ const ImportSheet = (() => {
     const summary = h('div', { class: 'imp-summary', 'aria-live': 'polite' });
     const go = h('button', { class: 'btn btn-primary', type: 'button', text: 'Import', disabled: true });
     const analyse = debounce(() => {
+      if (!valid()) return;
       parsed = IO.parse(ta.value, { deck: deckIn.value.trim() || 'Imported' });
       restoreRow.hidden = parsed.format !== 'backup';
       const n = parsed.notes.length;
@@ -42,12 +46,12 @@ const ImportSheet = (() => {
       const file = fileIn.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => { ta.value = String(reader.result || ''); analyse(); };
+      reader.onload = () => { if (!valid()) return; ta.value = String(reader.result || ''); analyse(); };
       reader.onerror = () => toast('That file couldn’t be read.', { kind: 'error' });
       reader.readAsText(file);
     });
     go.addEventListener('click', () => {
-      if (!parsed || !parsed.notes.length) return;
+      if (!valid() || !parsed || !parsed.notes.length) return;
       const extraTags = tagIn.value.split(/[\s,]+/).filter(Boolean);
       const res = IO.commit(parsed, { restoreSettings: restore.checked, extraTags });
       if (parsed.format !== 'backup') Model.addDeck(deckIn.value.trim() || 'Imported');
@@ -58,7 +62,7 @@ const ImportSheet = (() => {
       App.refresh();
     });
     const s = Sheets.open({
-      title: 'Import cards', wide: true,
+      title: 'Import cards', wide: true, onClose: () => { closed = true; },
       body: h('div', { class: 'imp' },
         h('p', { class: 'muted small', text: 'Accepts Lemma exports and backups, Anki “Notes in plain text” files, tab-separated rows (front, back, tags), Q:/A: blocks, “front :: back” lines, and paragraphs with {{c1::cloze}} deletions. Anki’s \\( \\) and \\[ \\] math works as is.' }),
         h('div', { class: 'field' }, h('label', { for: 'imp-file', class: 'field-label', text: 'Choose a file' }), fileIn),
@@ -136,6 +140,9 @@ const ExportSheet = (() => {
 
 const GenerateSheet = (() => {
   function open(preset = {}) {
+    const generation = App.workspaceRevision;
+    let closed = false;
+    const valid = () => !closed && !App.workspaceBlocked && App.workspaceRevision === generation;
     let image = null;
     let results = [];
     let ctl = null;
@@ -155,6 +162,7 @@ const GenerateSheet = (() => {
     const addBtn = h('button', { class: 'btn btn-primary', type: 'button', text: 'Add cards', hidden: true });
     const stopBtn = h('button', { class: 'btn', type: 'button', text: 'Stop', hidden: true, onclick: () => ctl && ctl.abort() });
     genBtn.addEventListener('click', async () => {
+      if (!valid()) return;
       if (!ta.value.trim() && !image) { toast('Paste some material or add a photo first.'); return; }
       ctl = new AbortController();
       genBtn.disabled = true; stopBtn.hidden = false; addBtn.hidden = true;
@@ -162,13 +170,15 @@ const GenerateSheet = (() => {
       fill(list);
       try {
         results = await AI.generate({ material: ta.value, count: +count.value, style: style.value, image, signal: ctl.signal });
+        if (!valid()) return;
         results.forEach((r) => { r.keep = true; });
         fill(status, h('p', { class: 'small' }, h('b', { text: plural(results.length, 'card') }), ' ready. Review them, untick any you don’t want, and edit freely.'));
         drawList();
       } catch (e) {
+        if (!valid()) return;
         fill(status, e && e.code === 'cancelled' ? h('p', { class: 'muted small', text: 'Stopped.' }) : h('p', { class: 'ai-error', text: AI.errorMessage(e) }));
       }
-      genBtn.disabled = false; stopBtn.hidden = true;
+      if (valid()) { genBtn.disabled = false; stopBtn.hidden = true; }
     });
     function drawList() {
       fill(list, ...results.map((r, i) => {
@@ -207,6 +217,7 @@ const GenerateSheet = (() => {
       list.querySelectorAll('.gen-item').forEach((el, i) => el.classList.toggle('off', !results[i].keep));
     }
     addBtn.addEventListener('click', () => {
+      if (!valid()) return;
       const deck = deckIn.value.trim() || 'Generated';
       const keep = results.filter((r) => r.keep);
       const res = IO.commit({ format: 'json', notes: keep.map((r) => ({ deck, type: r.type, title: r.title, front: r.front, back: r.back, tags: r.tags, requiresTitles: r.requires })) }, {});
@@ -228,7 +239,7 @@ const GenerateSheet = (() => {
         h('p', { class: 'muted small', text: 'Uses your Claude account. Cards are only added after you review them.' }),
         status, list),
       actions: [stopBtn, h('span', { class: 'spacer' }), genBtn, addBtn],
-      onClose: () => { if (ctl) ctl.abort(); },
+      onClose: () => { closed = true; if (ctl) ctl.abort(); },
     });
   }
   return { open };
