@@ -173,9 +173,26 @@ const SettingsView = (() => {
       };
       upload.onclick = () => transfer(upload, () => LemmaCloudBridge.uploadMissing());
       download.onclick = () => transfer(download, () => LemmaCloudBridge.importMissing());
+      const cacheState = h('p', { class: 'muted small', role: 'status' });
+      const showCache = () => {
+        const s = LemmaSync.status;
+        cacheState.textContent = 'Private account cache: ' + s.phase +
+          (s.pending ? ' · ' + s.pending + ' pending operations' : '') +
+          (s.error ? ' · ' + s.error : '') +
+          '. This is separate from the cards displayed by Lemma.';
+      };
+      const refreshCache = h('button', { class: 'btn btn-sm', type: 'button', text: 'Refresh account cache' });
+      refreshCache.onclick = async () => {
+        refreshCache.disabled = true;
+        try { await LemmaSync.refresh(); showCache(); }
+        catch (err) { message.textContent = 'Cache refresh: ' + err.message; showCache(); }
+        finally { refreshCache.disabled = false; }
+      };
+      showCache();
       page.append(section('set-cloud-account', 'Lemma account', 'Copy missing cards explicitly. Live cloud sync is not enabled yet. Export a backup before transferring.',
         accountState, h('div', { class: 'btn-row' }, email, send, logout),
-        h('div', { class: 'btn-row' }, upload, download), message));
+        h('div', { class: 'btn-row' }, upload, download),
+        cacheState, refreshCache, message));
     }
 
     // data
