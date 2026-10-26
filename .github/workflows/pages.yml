@@ -2,9 +2,12 @@ name: Deploy Lemma web
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - lemma-phase2-source.zip
-      - '**/*.md'
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'build.js'
+      - 'src/app/**'
   workflow_dispatch:
 permissions:
   contents: read
