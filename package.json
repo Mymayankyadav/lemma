@@ -10,7 +10,7 @@
     "test:optimizer": "node test/optimizer_synthetic.js",
     "test:render": "node test/render_test.js",
     "test:e2e": "node build.js && node test/e2e.js",
-    "test": "npm run test:merge && npm run test:outbox && npm run test:storage && npm run test:fsrs && npm run test:render && npm run test:e2e && npm run test:browser-sync",
+    "test": "npm run test:merge && npm run test:outbox && npm run test:storage && npm run test:fsrs && npm run test:render && npm run test:e2e && npm run test:browser-sync && npm run test:account",
     "android:add": "npm run build && npx cap add android",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
@@ -18,7 +18,8 @@
     "test:merge": "node test/sync_merge.js",
     "test:outbox": "node test/outbox_core.js",
     "test:storage": "node test/sync_storage.js && node test/local_persistence.js",
-    "test:browser-sync": "node test/browser_sync.js"
+    "test:browser-sync": "node test/browser_sync.js",
+    "test:account": "node test/account_sync.js"
   },
   "dependencies": {
     "@capacitor/core": "8.0.0",
