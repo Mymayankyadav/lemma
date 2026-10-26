@@ -103,3 +103,7 @@ Detailed findings, implementation sequence and acceptance gates: [Sync audit](SY
 **Delivery status:** Development branch `astra/sync-durability` contains the browser changes. Backend note-write hardening is deployed independently. The branch is not a claim that the Pages application has those browser changes or that cloud synchronization is complete. Draft [PR #1](https://github.com/Mymayankyadav/lemma/pull/1) tracks delivery. Full [CI run 40323246207](https://github.com/Mymayankyadav/lemma/actions/runs/40323246207) passed for commit `d30cd21`; follow-up commits must pass the same suite.
 
 **Model assignment:** Strong reasoning for concurrency/replay/security contracts; capable implementation model for UI and deterministic tests. The learning model remains user-selected.
+
+### A4a progress (26 October 2026)
+- Deployed append-only `review_retractions` with owner RLS, immutable rows, one retraction per target, and optional scheduling provenance on `review_events`.
+- Added `ReviewLedger.activeEvents` for deterministic active-event filtering and tests. This is **not** an FSRS replay engine and does not activate cloud Undo. Next gate is atomic account-cache staging and crash-safe review/retraction dispatch, followed by scheduling provenance and deterministic replay.
