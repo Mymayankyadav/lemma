@@ -452,16 +452,18 @@ function syntheticHistory() {
     await page.fill('#ed-back', 'Keep this proof attempt');
     await page.evaluate(() => {
       const put = IDBObjectStore.prototype.put;
-      window.__restorePut = () => { IDBObjectStore.prototype.put = put; };
-      IDBObjectStore.prototype.put = function (value, ...args) {
-        const request = put.call(this, value, ...args);
+      const add = IDBObjectStore.prototype.add;
+      const abortMatching = (method) => function (value, ...args) {
+        const request = method.call(this, value, ...args);
         if (value.front === 'Aborted editor transaction')
           request.addEventListener('success', () => this.transaction.abort());
         return request;
       };
+      IDBObjectStore.prototype.put = abortMatching(put);
+      IDBObjectStore.prototype.add = abortMatching(add);
     });
     await page.click('.sheet-foot .btn-primary');
-    await page.waitForFunction(() => document.querySelector('.ed-warn').textContent.includes('Could not save'));
+    await page.waitForFunction(() => document.querySelector('.ed-warn')?.textContent.includes('Could not save'));
     ok(await page.inputValue('#ed-back') === 'Keep this proof attempt', 'aborted editor write retains editable input');
     ok(await page.evaluate(() => __editor.Model.notes.size === 0), 'aborted editor creation is absent from the Model');
     ok(await page.evaluate(() => JSON.parse(localStorage.getItem('lemma.draft.v1')).back === 'Keep this proof attempt'),
