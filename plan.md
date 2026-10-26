@@ -1,6 +1,6 @@
 # Lemma — canonical execution plan and chatbot handoff
 
-**Protocol v2 · 26 October 2026.** This is the only engineering roadmap and task queue. It replaces all previous roadmaps and amendments; Git history retains them. This revision changes documentation only. A later **"follow the plan.md"** means implement the next bounded task; a request only to plan/review does not authorize implementation.
+**Protocol v2 · 26 October 2026.** This is the only engineering roadmap and task queue. It replaces all previous roadmaps and amendments; Git history retains them. The roadmap consolidation was documentation-only; §1 records subsequent implementation. A later **"follow the plan.md"** means implement the next bounded task; a request only to plan/review does not authorize implementation.
 
 ## 0. Operator instructions
 
@@ -17,19 +17,19 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-26; documentation review of `main@480117d1633b5780dc32f3474a3edcf1a64af843`. **State: READY_FOR_NEXT_AGENT.** No new implementation tasks executed.
+**Last verified handoff:** 2026-10-26; SYNC-01 durable editor-save slice based on `main@bcd0eb98f8930d68f4369ccaa4d86e8a97828572`. **State: READY_FOR_NEXT_AGENT.** Runtime changes on `astra/sync-01-durable-editor`; SYNC-01 remains partial. Automatic approval review rejected direct `main` publication, so this handoff is on the review branch pending approval/merge.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | `4a77ab14e4fc2f3263c062e8b1a68b915d55e0f6`; [regression 40359377678](https://github.com/Mymayankyadav/lemma/actions/runs/40359377678) succeeded. This predates later editor fixes. |
-| Latest inspected regression | [40362238502](https://github.com/Mymayankyadav/lemma/actions/runs/40362238502) at `480117d`: FAILED solely at the plan guard's first missing field, "Known-good main baseline"; preceding browser/account tests passed, subsequent workspace suite was not reached. The previously pending [40361061256](https://github.com/Mymayankyadav/lemma/actions/runs/40361061256) was CANCELLED. |
-| Documentation validation | SUCCESS: existing `npm run test:plan` guard passed locally; required headings/fields restored. Inspect CI at the current tip for this documentation revision's result; do not treat the older failure as a new app defect. |
-| Web deployment | [Pages 40361012660](https://github.com/Mymayankyadav/lemma/actions/runs/40361012660) succeeded at `44a044dd35cc7a7071df4726116bae1372e79315`. Documentation-only changes do not trigger Pages. |
-| Cloud confidence | Auth, account cache/outbox, revision RPCs, review/retraction adapters and lifecycle guards exist. Account editing remains internally gated. Live two-device convergence is NOT verified. |
-| Backend security check | NOT RUN in this documentation review. Nine migration files exist, latest `20261026203000_revision_safe_profiles.sql`; verify live migration state before backend work. |
-| Current blocker / unfinished work | No documentation blocker. SYNC-01 remains partial: editor Save clears drafts and reports success before awaiting persistence; crash/failure and browser identity-isolation gates remain. |
+| Known-good main baseline | `bcd0eb98f8930d68f4369ccaa4d86e8a97828572`; [regression 40373316156](https://github.com/Mymayankyadav/lemma/actions/runs/40373316156) SUCCESS. |
+| Latest inspected regression | This delivery: PENDING remote CI. Local `npm ci`, syntax, merge/outbox/storage (including new editor tests), FSRS, account/account-store/workspace, plan and build SUCCESS. Local `npm test` stopped at render: Chromium unavailable; browser download returned invalid archives. Browser render/E2E/sync and screenshots NOT RUN locally. |
+| Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
+| Web deployment | Previous [Pages 40361012660](https://github.com/Mymayankyadav/lemma/actions/runs/40361012660) SUCCESS at `44a044dd`. This runtime delivery: NOT DEPLOYED; review branch only. Pages runs after merge to `main`. |
+| Cloud confidence | Editor now awaits local/account commit or a legacy per-write receipt. Detached candidates preserve original notes/schedules on failure; workspace leases suppress late projections/callbacks. Account workspace remains gated; live two-device convergence NOT verified. |
+| Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
+| Current blocker / unfinished work | Main publication requires approval; review branch/PR preserves this slice. New-card retries reuse an ID within an open editor. Crash after commit but before receipt/draft cleanup still needs reconciliation across reload; browser sign-out-during-write and A→B→A gates remain. Imports/deletes still acknowledge optimistically and are outside this slice. |
 
-**Next action, in one sentence:** verify current regression, then finish **SYNC-01** by inspecting `EditorSheet.save` in `src/app/view_editor.js` and existing Model/Store promises, testing an aborted save and reload before changing the save/close/draft behavior.
+**Next action, in one sentence:** inspect this review branch's CI and obtain approval to merge, then extend `EditorSheet.open/save` and `test/e2e.js` to reconcile a new-card draft after crash between commit and acknowledgment, proving reload/retry cannot create a duplicate or overwrite later review history.
 
 The record above describes inspected evidence, not today's mutable HEAD. Update it after each task; do not append another competing handoff.
 
@@ -42,7 +42,7 @@ Keep stable IDs. **DONE** requires its gate; **NEXT** is exactly one task; **IN_
 | **HANDOFF-01** | **DONE** | — | Canonical plan, short entry points and existing `test:plan` guard. Maintain them with every change. |
 | **FOUNDATION-01** | **DONE** | — | Imported app, web build, local cards, original FSRS/rendering and baseline tests exist. Preserve them. |
 | **SYNC-00** | **DONE** | — | Account/outbox/RPC/ledger infrastructure exists in source. This is not completed live sync. |
-| **SYNC-01** | **NEXT** | SYNC-00 | Finish durable editor saves and account lifecycle. Retain draft/recoverable input on failed storage; report success/close only after commit. Reuse workspace leases for delayed callbacks. Gate: browser crash/reload, aborted write, sign-out during save/import, A→B→A with isolated drafts/cache and intact anonymous data; existing tests stay green. |
+| **SYNC-01** | **NEXT** | SYNC-00 | Editor commit/failure slice implemented; finish crash acknowledgment recovery and account lifecycle. Retain recoverable input on failed storage; report success/close only after commit. Reuse workspace leases for delayed callbacks. Gate: browser crash/reload, aborted write, sign-out during save/import, A→B→A with isolated drafts/cache and intact anonymous data; existing tests stay green. |
 | **SYNC-02** | **BLOCKED** | SYNC-01 | Finish note/profile/tombstone conflict repair with local, remote and base revision visible. Choosing/merging a version creates a new revision; never drop queued edits or silently revive deletes. Gate: two offline editors, edit/delete race, profile conflict and lost acknowledgment recover without data loss; retry retains request ID. |
 | **SYNC-03** | **BLOCKED** | SYNC-02 | Converge review/Undo using existing `FSRS.preview/replay` and `ReviewLedger.fsrsInput`. Specify deterministic ordering, parameter/time provenance, legacy baseline handling and resets. Never choose the latest card snapshot as truth or fabricate legacy history. Gate: concurrent offline reviews/Undo, equal timestamps, timezone/rollover, fuzz and parameter changes produce the same due state on both devices; unsupported histories remain preserved and explicitly blocked. |
 | **SYNC-04** | **BLOCKED** | SYNC-03 | Enable account workspace only after explicit enrollment/backup. Route every mutation through durable staging; automatically push after local commit, retry on reconnect/foreground and refresh on remote invalidation. Distinguish device-saved, queued, cloud-confirmed, conflict and failure. Gate: authenticated two-browser/two-identity tests, offline restart, auth expiry, network loss after commit, deletes and RLS isolation. Routine use needs no manual Sync button. |
@@ -99,7 +99,8 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | --- | --- |
 | Original source and sync groundwork retained | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), existing source/migrations; no replacement implementation. |
 | Guarded drafts, imports and editor fix | `44a044dd`, `eb0be14c`; browser coverage passed in run 40362238502. Save durability still open. |
-| Roadmap consolidation | This documentation revision replaces old queues, adds product/UI boundaries and restores the existing plan guard's required fields. No runtime/backend change. |
+| Roadmap consolidation | `bcd0eb98`; canonical queue and scope boundaries, guard restored; regression 40373316156 SUCCESS. |
+| Durable editor-save slice | `view_editor.js`, `Model.commitEditorNote`, `Store.saveNote` receipts; `test/editor_persistence.js` covers abort/retry/leases, `test/e2e.js` adds browser recovery/pending/Add & next cases. No backend change; CI pending. |
 
 ## 6. Five-line end-of-session report template
 
