@@ -162,6 +162,17 @@ const clear = async db => new Promise((resolve, reject) => {
   assert.equal((await storage.profile()).data.settings.retention,0.92);
   await storage.ingestRemoteProfile(null);
   assert.equal(await storage.profile(),undefined,'deleted account profile must not linger');
+  const firstProfile = await storage.stageProfile({settings:{retention:0.91}});
+  const nextProfile = await storage.stageProfile({settings:{retention:0.95}});
+  assert.equal((await storage.profile()).dirty,true);
+  assert.equal(firstProfile.expectedRevision,0);
+  await storage.ack(firstProfile,{revision:1});
+  assert.equal((await storage.get(nextProfile.id)).expectedRevision,1);
+  assert.equal((await storage.profile()).dirty,true);
+  await storage.ack(await storage.get(nextProfile.id),{revision:2});
+  assert.equal((await storage.profile()).dirty,false);
+  assert.equal((await storage.profile()).revision,2);
+
   await clear(db);
 
   // Failure AFTER server commit: persisted attempted marker and request ID survive reopen.
