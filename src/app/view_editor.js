@@ -47,13 +47,13 @@ const QUICK_INSERTS = [
 const EditorSheet = (() => {
   // Legacy anonymous draft stays at its original key. Account drafts are
   // segregated by authenticated ID, never exposed in another workspace.
-  function draftKey() {
+  function draftKey(noteId) {
     if (Store.mode === 'account') {
       const id = LemmaAccount.user?.id;
       if (!id) throw new Error('Account identity unavailable for draft');
-      return 'lemma.draft.account.' + id;
+      return 'lemma.draft.account.' + id + (noteId ? '.edit.' + noteId : '');
     }
-    return 'lemma.draft.v1';
+    return noteId ? 'lemma.draft.edit.' + noteId : 'lemma.draft.v1';
   }
   const readDraft = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } };
   const writeDraft = (key,d) => { try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) { /* ignore */ } };
@@ -62,17 +62,24 @@ const EditorSheet = (() => {
   function open(noteId, onSaved, preset = {}) {
     const originRevision = App.workspaceRevision;
     const originMode = Store.mode;
-    const key = draftKey();
+    const key = draftKey(noteId);
     let closed = false;
     let committed = false;
     const valid = () => !closed && !App.workspaceBlocked &&
       App.workspaceRevision === originRevision && Store.mode === originMode &&
-      (originMode !== 'account' || key === 'lemma.draft.account.' + LemmaAccount.user?.id);
+      (originMode !== 'account' || key === 'lemma.draft.account.' + LemmaAccount.user?.id + (noteId ? '.edit.' + noteId : ''));
     const editing = noteId ? Model.notes.get(noteId) : null;
     let draftRestored = false;
+    let staleDraft = false;
     let f;
     if (editing) {
       f = { type: editing.type, deck: editing.deck, title: editing.title, front: editing.front, back: editing.back, tags: editing.tags.join(' '), requires: editing.requires.slice(), media: clone(editing.media || {}) };
+      const d = readDraft(key);
+      if (d && d.baseModified === editing.modified) {
+        f = { ...f, type:d.type, deck:d.deck, title:d.title,
+          front:d.front, back:d.back, tags:d.tags, requires:d.requires || f.requires };
+        draftRestored = true;
+      } else if (d) staleDraft = true; // do not overwrite a newer version
     } else {
       const d = !preset.front && !preset.title && readDraft(key);
       if (d && (d.front || d.back)) { f = Object.assign({ media: {} }, d); draftRestored = true; }
@@ -97,6 +104,9 @@ const EditorSheet = (() => {
     const frontLabel = h('label', { for: 'ed-front', class: 'field-label' });
     const backLabel = h('label', { for: 'ed-back', class: 'field-label' });
     const warn = h('div', { class: 'ed-warn', role: 'status' });
+    if (staleDraft) warn.textContent =
+      'An older unsaved edit is kept on this device, but the card changed. ' +
+      'The older draft was not applied. Make a backup before resolving.';
     const suggest = h('div', { class: 'ed-suggest', hidden: true, role: 'listbox', 'aria-label': 'LaTeX suggestions' });
 
     // prerequisites picker
@@ -181,10 +191,22 @@ const EditorSheet = (() => {
       saveNewBtn.disabled = saveBtn.disabled;
     };
     const schedulePreview = debounce(drawPreview, 140);
-    const saveDraft = debounce(() => {
-      if (editing || !valid()) return;
+    const draftFields = () => {
       const c = currentFields();
-      if (c.front || c.back) writeDraft(key, { type: c.type, deck: c.deck, title: c.title, front: c.front, back: c.back, tags: tagsIn.value, requires: c.requires });
+      return { type:c.type,deck:c.deck,title:c.title,front:c.front,
+        back:c.back,tags:tagsIn.value,requires:c.requires,
+        ...(editing ? {baseModified:editing.modified} : {}) };
+    };
+    const draftChanged = d => editing
+      ? d.type !== editing.type || d.deck !== editing.deck ||
+        d.title !== editing.title || d.front !== editing.front ||
+        d.back !== editing.back || d.tags !== editing.tags.join(' ') ||
+        JSON.stringify(d.requires) !== JSON.stringify(editing.requires)
+      : !!(d.front || d.back);
+    const saveDraft = debounce(() => {
+      if (!valid()) return;
+      const d = draftFields();
+      if (draftChanged(d)) writeDraft(key,d);
     }, 500);
 
     function setType(v) {
@@ -339,7 +361,7 @@ const EditorSheet = (() => {
       Model.addDeck(c.deck);
       Model.setMeta({ lastDeck: c.deck });
       let note;
-      if (editing) { Model.updateNote(editing, fields); note = editing; toast('Saved'); }
+      if (editing) { Model.updateNote(editing, fields); note = editing; clearDraft(key); committed = true; toast('Saved'); }
       else { note = Model.createNote(fields); toast(`Added to ${c.deck.split('::').pop()}`); clearDraft(key); committed = true; }
       if (again) {
         committed = false;
@@ -360,7 +382,16 @@ const EditorSheet = (() => {
       } })));
     const body = h('div', { class: 'editor' }, mTabs,
       h('div', { class: 'ed-form' },
-        draftRestored ? h('div', { class: 'ed-restored' }, h('span', { text: 'Draft restored' }), h('button', { class: 'link-btn', type: 'button', text: 'Discard', onclick: () => { if (!valid()) return; clearDraft(key); frontTa.value = ''; backTa.value = ''; titleIn.value = ''; drawPreview(); } })) : null,
+        draftRestored ? h('div', { class: 'ed-restored' }, h('span', { text: 'Draft restored' }), h('button', { class: 'link-btn', type: 'button', text: 'Discard', onclick: () => {
+          if (!valid()) return;
+          clearDraft(key);
+          if (editing) {
+            frontTa.value = editing.front; backTa.value = editing.back;
+            titleIn.value = editing.title; deckIn.value = editing.deck;
+            tagsIn.value = editing.tags.join(' '); f.requires = editing.requires.slice();
+          } else { frontTa.value = ''; backTa.value = ''; titleIn.value = ''; }
+          drawReq(); drawPreview();
+        } })) : null,
         seg,
         h('div', { class: 'field-row' },
           h('div', { class: 'field' }, h('label', { for: 'ed-deck', class: 'field-label', text: 'Deck' }), deckIn, deckList),
@@ -380,12 +411,9 @@ const EditorSheet = (() => {
       onClose: () => {
         // Preserve unsaved new-card text on forced account change. Do not
         // write a stale draft under whichever workspace happens to be active.
-        if (!editing && !closed && !committed) {
-          const fields = currentFields();
-          if (fields.front || fields.back) writeDraft(key, {
-            type:fields.type,deck:fields.deck,title:fields.title,front:fields.front,
-            back:fields.back,tags:tagsIn.value,requires:fields.requires
-          });
+        if (!closed && !committed) {
+          const draft = draftFields();
+          if (draftChanged(draft)) writeDraft(key,draft);
         }
         closed = true;
       },
