@@ -161,33 +161,64 @@ const LemmaCloud = (() => {
       // Snapshot, event, both outbound operations and sequence commit together.
       return this.stageNote(note, expectedRevision, false, event);
     }
-    async stageRetraction(targetEventId, reason = 'undo') {
+    // Undo is a single durable transaction: restore the note snapshot and
+    // append a retraction. The original review remains permanently recorded.
+    // Standalone retractions (without a note snapshot) are also supported.
+    async stageRetraction(targetEventId, reason = 'undo', restoredNote = null, expectedRevision) {
       if (!/^[0-9a-f-]{36}$/i.test(targetEventId) ||
           !['undo','correction','reset'].includes(reason)) throw new Error('Invalid retraction');
+      if (restoredNote && typeof restoredNote.id !== 'string')
+        throw new Error('Undo requires the original note ID');
+      const snapshot = restoredNote ? structuredClone(restoredNote) : null;
       const row = { retraction_id: uuid(), target_event_id: targetEventId, reason };
       const op = { id: uuid(), requestId: row.retraction_id, kind: 'retraction',
         entityId: targetEventId, data: row, state: 'pending', attempts: 0, enqueuedAt: Date.now() };
-      await tx(this.db, ['reviews','retractions','outbox','meta'], 'readwrite', t => {
+      const noteOp = snapshot ? { id: uuid(), requestId: uuid(), kind: 'note',
+        entityId: snapshot.id, data: snapshot, deleted: false, state: 'pending',
+        attempts: 0, enqueuedAt: op.enqueuedAt } : null;
+      await tx(this.db, ['notes','reviews','retractions','outbox','meta'], 'readwrite', t => {
         const target = t.objectStore('reviews').get(targetEventId);
         target.onsuccess = () => {
-          if (!target.result) { t.abort(); return; }
+          if (!target.result || (snapshot && target.result.note_id !== snapshot.id)) { t.abort(); return; }
           const existing = t.objectStore('retractions').getAll();
           existing.onsuccess = () => {
             if (existing.result.some(x => x.target_event_id === targetEventId)) { t.abort(); return; }
-            const count = t.objectStore('meta').get('sequence');
-            count.onsuccess = () => {
-              const next = (count.result ?? 0) + 1;
-              if (!Number.isSafeInteger(next)) { t.abort(); return; }
-              t.objectStore('meta').put(next, 'sequence');
+            const counter = t.objectStore('meta').get('sequence');
+            counter.onsuccess = () => {
+              const previous = counter.result ?? 0;
+              const needed = noteOp ? 2 : 1;
+              if (!Number.isSafeInteger(previous) || previous < 0 ||
+                  previous > Number.MAX_SAFE_INTEGER - needed) { t.abort(); return; }
+              t.objectStore('meta').put(previous + needed, 'sequence');
               op.entityId = target.result.note_id;
-              op.sequence = next;
-              t.objectStore('retractions').add(row);
-              t.objectStore('outbox').add(op);
+              op.sequence = previous + needed;
+              const finish = () => {
+                t.objectStore('retractions').add(row);
+                t.objectStore('outbox').add(op);
+              };
+              if (!noteOp) { finish(); return; }
+              const notes = t.objectStore('notes');
+              const current = notes.get(snapshot.id);
+              current.onsuccess = () => {
+                if (!current.result || current.result.deleted) { t.abort(); return; }
+                noteOp.expectedRevision = expectedRevision ?? current.result.revision;
+                if (!Number.isSafeInteger(noteOp.expectedRevision) || noteOp.expectedRevision < 0) {
+                  t.abort(); return;
+                }
+                noteOp.sequence = previous + 1;
+                notes.put({ id: snapshot.id, data: snapshot, deleted: false,
+                  revision: noteOp.expectedRevision, dirty: true });
+                t.objectStore('outbox').add(noteOp);
+                finish();
+              };
             };
           };
         };
       });
-      return op;
+      return { retraction: op, note: noteOp };
+    }
+    async stageUndo(restoredNote, targetEventId, expectedRevision) {
+      return this.stageRetraction(targetEventId, 'undo', restoredNote, expectedRevision);
     }
     async retractions() { return request(this.db.transaction('retractions').objectStore('retractions').getAll()); }
     async ingestRetraction(row) {
