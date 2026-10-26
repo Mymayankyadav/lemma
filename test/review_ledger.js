@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { activeEvents, replayMemory } = require('../src/app/review_ledger.js');
+const { activeEvents, fsrsInput } = require('../src/app/review_ledger.js');
 const event = (id, ms=100) => ({ event_id:id, occurred_at_ms:ms, grade:3 });
 const undo = (id,target) => ({ retraction_id:id,target_event_id:target,reason:'undo' });
 assert.deepEqual(activeEvents([event('b'),event('a',10)],[]).map(e=>e.event_id),['a','b']);
@@ -14,11 +14,20 @@ const FSRS = require('../src/fsrs.js');
 const provenance = day => ({version:1,algorithm:'fsrs-6',weights:FSRS.DEFAULT_W.slice(),day_index:day});
 const a={...event('a'),kind:0,scheduling_provenance:provenance(20000)};
 const b={...event('b',200),kind:0,scheduling_provenance:provenance(20001)};
-const r1=replayMemory([b,a],[],{engine:FSRS});
-const r2=replayMemory([a,b],[],{engine:FSRS});
-assert.deepEqual(r1,r2);
-assert.equal(r1.active,2);
-assert.deepEqual(replayMemory([b,a],[undo('u','b')],{engine:FSRS}).memory,FSRS.step(FSRS.DEFAULT_W,null,0,3));
-assert.throws(()=>replayMemory([event('old')],[],{engine:FSRS}),/provenance/);
-assert.throws(()=>replayMemory([b,a],[],{engine:FSRS,baseline:{before_ms:150,day_index:20000,memory:{s:2,d:5}}}),/predates baseline/);
-console.log('ok: FSRS memory replay refuses missing provenance and preserves deterministic order');
+const input1=fsrsInput([b,a],[]);
+const input2=fsrsInput([a,b],[]);
+assert.deepEqual(input1.reviews,input2.reviews);
+assert.deepEqual(FSRS.replay(input1.weights,input1.reviews,input1.clock),
+                 FSRS.replay(input2.weights,input2.reviews,input2.clock));
+const afterUndo=fsrsInput([b,a],[undo('u','b')]);
+assert.deepEqual(FSRS.replay(afterUndo.weights,afterUndo.reviews,afterUndo.clock).mem,
+                 FSRS.step(FSRS.DEFAULT_W,null,0,3));
+assert.throws(()=>fsrsInput([event('old')],[]),/provenance/);
+const changed = {...b,scheduling_provenance:{...provenance(20001),weights:FSRS.DEFAULT_W.map((w,i)=>i===0?w+0.01:w)}};
+assert.throws(()=>fsrsInput([a,changed],[]),/parameters changed/);
+const reversed = {...b,scheduling_provenance:provenance(19999)};
+assert.throws(()=>fsrsInput([a,reversed],[]),/Nonmonotonic/);
+const ambiguous = {...b,occurred_at_ms:100,scheduling_provenance:provenance(20001)};
+assert.throws(()=>fsrsInput([a,ambiguous],[]),/Ambiguous/);
+assert.equal(fsrsInput([],[]).reviews.length,0);
+console.log('ok: review ledger adapter delegates to the original FSRS.replay engine');
