@@ -160,7 +160,7 @@ const SettingsView = (() => {
         catch (err) { message.textContent = 'Sign-out error: ' + err.message; }
         finally { logout.disabled = false; }
       };
-      const upload = h('button', { class: 'btn btn-sm', type: 'button', text: 'Copy missing local cards to cloud' });
+      const upload = h('button', { class: 'btn btn-sm', type: 'button', text: 'Queue missing cards to account' });
       const download = h('button', { class: 'btn btn-sm', type: 'button', text: 'Copy missing cloud cards to this device' });
       const transfer = async (button, fn) => {
         button.disabled = true;
@@ -171,7 +171,24 @@ const SettingsView = (() => {
         } catch (err) { message.textContent = 'Transfer error: ' + err.message; }
         finally { button.disabled = false; }
       };
-      upload.onclick = () => transfer(upload, () => LemmaCloudBridge.uploadMissing());
+      upload.onclick = async () => {
+        const ok = await confirmDialog({
+          title: 'Copy local cards into your account?',
+          message: 'This copies missing card snapshots into your private account outbox. The original local cards remain untouched. Older review logs are copied as history, not independently reconstructed as cloud events. Conflicting card IDs are never overwritten. Export a backup first.',
+          confirmLabel: 'Queue missing cards'
+        });
+        if (!ok) return;
+        upload.disabled = true;
+        try {
+          const result = await LemmaSync.enrollMissingLocal();
+          message.textContent = result.queued + ' card snapshots durably queued; ' +
+            result.skipped + ' skipped. The account cache will attempt cloud delivery. ' +
+            'Future edits to your local deck do NOT yet sync automatically.';
+          showCache();
+        } catch (err) {
+          message.textContent = 'Account enrollment: ' + err.message;
+        } finally { upload.disabled = false; }
+      };
       download.onclick = () => transfer(download, () => LemmaCloudBridge.importMissing());
       const cacheState = h('p', { class: 'muted small', role: 'status' });
       const showCache = () => {
