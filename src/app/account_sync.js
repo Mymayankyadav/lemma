@@ -81,6 +81,41 @@ const LemmaSync = (() => {
       if (epoch === generation) emit({ phase: 'error', error: String(err.message || err) });
     }
   }
+  /* Explicit enrollment only. The existing anonymous notes are retained as
+   * a backup. Legacy logs travel as a snapshot baseline; no review IDs are
+   * fabricated, and no conflicting cloud notes are overwritten. */
+  async function enrollMissingLocal() {
+    if (Store.mode !== 'local') throw new Error('Only browser-local decks can be enrolled');
+    if (!account || state.phase !== 'ready' || !navigator.onLine)
+      throw new Error('Refresh your signed-in account cache online before enrolling');
+    const handle = account, generation = epoch;
+    const userId = handle.userId;
+    if (LemmaAccount.user?.id !== userId) throw new Error('Account changed');
+    await Store.whenSaved();
+    const notes = [...Model.notes.values()].map(n => structuredClone(n));
+    const cached = await handle.storage.notes();
+    if (account !== handle || epoch !== generation || LemmaAccount.user?.id !== userId)
+      throw new Error('Account changed during enrollment');
+    // Tombstoned cloud IDs are deliberately treated as existing, not resurrected.
+    const known = new Set(cached.map(n => n.id));
+    let queued = 0, skipped = 0;
+    for (const note of notes) {
+      if (account !== handle || epoch !== generation || LemmaAccount.user?.id !== userId)
+        throw new Error('Account changed during enrollment (previous queued writes are retained)');
+      if (known.has(note.id)) { skipped++; continue; }
+      if (!note.id || typeof note.front !== 'string' || typeof note.back !== 'string' ||
+          !Array.isArray(note.log)) {
+        throw new Error('Malformed source note; stopped after queuing ' + queued);
+      }
+      await handle.storage.stageNote(note, 0);
+      known.add(note.id);
+      queued++;
+    }
+    emit({ pending: (await handle.outbox.pending()).length });
+    schedule();
+    return { queued, skipped, total: notes.length,
+      message: 'Queue saved locally. Server confirmation and conflicts are tracked separately.' };
+  }
   function init() {
     LemmaAccount.onChange(user => { attach(user).catch(() => {}); });
     window.addEventListener('online', schedule);
@@ -91,6 +126,6 @@ const LemmaSync = (() => {
     setInterval(() => { if (!document.hidden) schedule(); }, 120000);
     attach(LemmaAccount.user).catch(() => {});
   }
-  return { init, attach, stop, refresh, get status() { return { ...state }; },
+  return { init, attach, stop, refresh, enrollMissingLocal, get status() { return { ...state }; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
 })();
