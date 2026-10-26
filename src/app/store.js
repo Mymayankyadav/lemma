@@ -315,7 +315,7 @@ const Store = (() => {
 
   function saveProfile(profile) {
     // Account profile CAS + conflict UI must ship before any active profile editing.
-    if (mode === 'account') throw new Error('Account profile editing not yet enabled');
+    if (mode === 'account') return accountWrite('profile', storage => storage.stageProfile(clone(profile)));
     if (mode === 'local') {
       const data = clone(profile);
       return durableLocal('profile', () => idbPut('meta', data, 'profile'));
