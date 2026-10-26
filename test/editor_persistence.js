@@ -67,7 +67,8 @@ const Store = local.testStore, Model = local.testModel;
   const writes = [];
   const notes = { onSnapshot(fn) { fn({ docs: [], empty: false, metadata: { fromCache: false } }); },
     doc(id) { return { set(data) { const gate = deferred(); writes.push({ id, data, gate }); return gate.promise; } }; } };
-  const profile = { onSnapshot(fn) { fn({ exists: false }); }, collection() { return notes; } };
+  const profile = { onSnapshot(fn) { fn({ exists: false }); }, collection() { return notes; },
+    set(data) { const gate=deferred(); writes.push({id:'profile',data,gate}); return gate.promise; } };
   const cloud = vm.createContext({ window: { claude: { async use(name) {
     return name === 'user' ? { id: async () => 'legacy' } : { doc: () => profile };
   } } }, clone: structuredClone, console, toast() {}, clearTimeout,
@@ -89,6 +90,14 @@ const Store = local.testStore, Model = local.testModel;
   assert.equal(secondDone, false, 'one receipt cannot acknowledge a later queued write');
   writes[1].gate.resolve();
   await second;
+  let profileDone=false;
+  const profileReceipt=host.saveProfile({settings:{retention:0.94}},{durable:true}).then(()=>{profileDone=true;});
+  const profileFlush=host.flushProfile();
+  await new Promise(setImmediate);
+  assert.equal(profileDone,false,'backup settings wait for the host write receipt');
+  writes.at(-1).gate.resolve();
+  await profileFlush;
+  await profileReceipt;
   const failed = host.saveNote({ id: 'failure', front: 'too big' }, { durable: true });
   await new Promise(setImmediate);
   const rejected = assert.rejects(failed, error => error.code === 'quota_exceeded');
@@ -100,5 +109,6 @@ const Store = local.testStore, Model = local.testModel;
   load(memory, 'store', 'Store');
   await memory.testStore.init({ status() {} });
   await assert.rejects(memory.testStore.saveNote({ id: 'unsaved' }, { durable: true }), /Persistent storage/);
+  await assert.rejects(memory.testStore.saveProfile({}, {durable:true}), /Persistent storage/);
   console.log('ok: editor aborted writes, unchanged schedules, retry IDs, stale leases, legacy receipts and unavailable storage');
 })().catch(error => { console.error(error); process.exitCode = 1; });

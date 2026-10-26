@@ -13,6 +13,7 @@ const Store = (() => {
   let pendingCount = 0;
   let offline = false;
   let profileTimer = null, profilePending = null, profileBusy = false;
+  let profileReceipts = [];
   const localWrites = new Set();
   const localErrors = new Map();
   const localGenerations = new Map();
@@ -213,6 +214,21 @@ const Store = (() => {
       return Promise.reject(new Error('Persistent storage is unavailable'));
     return enqueue(note.id, data, opts.durable);
   }
+  async function readNote(id) {
+    const originMode = mode, handle = accountHandle;
+    let note;
+    if (originMode === 'account') {
+      const row = await handle.storage.note(id);
+      note = row?.deleted ? {id,deleted:true} : row?.data;
+    } else if (originMode === 'local') note = await idbGet('notes',id);
+    else if (originMode === 'cloud') {
+      const snap = await notesCol.doc(id).get();
+      note = snap.exists ? snap.data() : null;
+    } else throw new Error('Persistent storage is unavailable');
+    if (mode !== originMode || (handle && (accountHandle !== handle || LemmaAccount.user?.id !== handle.userId)))
+      throw new Error('Workspace changed during import');
+    return note ? clone(note) : null;
+  }
   function saveReview(note, entry) {
     if (mode === 'account') {
       const snapshot = clone(note);
@@ -324,26 +340,34 @@ const Store = (() => {
     }
   }
 
-  function saveProfile(profile) {
+  function saveProfile(profile, opts = {}) {
     // Account profile CAS + conflict UI must ship before any active profile editing.
     if (mode === 'account') return accountWrite('profile', storage => storage.stageProfile(clone(profile)));
     if (mode === 'local') {
       const data = clone(profile);
       return durableLocal('profile', () => idbPut('meta', data, 'profile'));
     }
+    if (opts.durable && mode !== 'cloud')
+      return Promise.reject(new Error('Persistent storage is unavailable'));
     profilePending = clone(profile);
+    const receipt = opts.durable ? new Promise((resolve,reject) => profileReceipts.push({resolve,reject})) : undefined;
     clearTimeout(profileTimer);
     profileTimer = setTimeout(flushProfile, 500);
+    return receipt;
   }
   async function flushProfile() {
     if (profileBusy || !profilePending) return;
     profileBusy = true;
     const data = profilePending;
+    const receipts = profileReceipts;
+    profileReceipts = [];
     profilePending = null;
     try {
       if (mode === 'cloud') await profileRef.set(data);
       else if (mode === 'local') await idbPut('meta', data, 'profile');
+      for (const receipt of receipts) receipt.resolve();
     } catch (err) {
+      for (const receipt of receipts) receipt.reject(err);
       const code = err && err.code;
       if (code === 'invalid_argument' || code === 'revoked') { await switchToLocal('read-only'); await idbPut('meta', data, 'profile').catch(() => {}); }
       else if (!profilePending) profilePending = data;
@@ -411,7 +435,7 @@ const Store = (() => {
     return startLocal();
   }
   return {
-    init, saveNote, saveReview, undoReview, deleteNote, saveProfile,
+    init, saveNote, readNote, saveReview, undoReview, deleteNote, saveProfile,
     activateAccount, deactivateAccount, emergencyExitAccount, localSnapshot,
     localLeftovers, clearLocal, status, whenSaved,
     get mode() { return mode; },

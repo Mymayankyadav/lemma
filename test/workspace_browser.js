@@ -159,7 +159,46 @@ module.exports = async ({ browser, newPage, ok }) => {
     ok(await page.inputValue('#imp-text') === '' && await page.evaluate(() =>
       __editor.Model.notes.size === 1 && [...__editor.Model.notes.values()][0].front === 'Private B'),
       'stale import callback cannot reveal or import A text into B');
+    // Now change identity during the actual durable import write phase.
+    const importSource=JSON.stringify([{front:'B import first',back:'one'},{front:'B import second',back:'two'}]);
+    await page.fill('#imp-text',importSource);
+    await page.waitForFunction(()=>!document.querySelector('.sheet-foot .btn-primary').disabled);
+    await page.evaluate(()=>{
+      const storage=__editor.LemmaSync.accountHandle().storage;
+      const stage=storage.stageNote.bind(storage);
+      let release;
+      const gate=new Promise(resolve=>{release=resolve;});
+      __identity.importCommitted=false;
+      __identity.releaseImport=release;
+      storage.stageNote=async (...args)=>{
+        const result=await stage(...args);
+        __identity.importCommitted=true;
+        await gate;
+        return result;
+      };
+    });
+    await page.click('.sheet-foot .btn-primary');
+    await page.waitForFunction(()=>__identity.importCommitted);
+    const duringImport=await change(A);
+    ok(duringImport.blocked && duringImport.notes===0 && duringImport.sheets===0,
+      'identity change hides an import while its durable write receipt is pending');
+    await page.evaluate(()=>__identity.releaseImport());
+    await activate(A);
+    await page.evaluate(()=>__editor.ImportSheet.open());
+    ok(await page.inputValue('#imp-text')==='' && await page.evaluate(()=>
+      ![...__editor.Model.notes.values()].some(n=>n.front.startsWith('B import'))),
+      'late B import cannot write remaining cards or reveal its recovery source in A');
     await closeSheet('#imp-text');
+    await change(B);
+    await activate(B);
+    await page.evaluate(()=>__editor.ImportSheet.open());
+    await page.waitForFunction(()=>!document.querySelector('.sheet-foot .btn-primary').disabled);
+    ok(await page.inputValue('#imp-text')===importSource,'returning to B restores its interrupted import source');
+    await page.click('.sheet-foot .btn-primary');
+    await page.waitForSelector('#imp-text',{state:'hidden'});
+    ok(await page.evaluate(()=>__editor.Model.notes.size===3 &&
+      [...__editor.Model.notes.values()].filter(n=>n.front.startsWith('B import')).length===2),
+      'interrupted account import resumes without duplicate cards');
     await page.evaluate(() => __editor.App.workspaceController.deactivate());
     await page.reload();
     await page.waitForSelector('.today');
