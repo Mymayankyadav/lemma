@@ -141,57 +141,57 @@ class Session {
     const queues = { reviewQ: this.reviewQ.slice(), newQ: this.newQ.slice(), extra: clone(this.extra), cramQ: this.cramQ.slice(), sinceNew: this.sinceNew, stats: clone(this.stats) };
     const prev = note.cards[ord];
     this.saving = true;
-    const eventId = crypto.randomUUID();
     try {
-    const dur = Math.min(Math.max(0, durationMs || 0), 120000);
-    const events = [];
-    this.stats.count++;
-    this.stats.time += dur;
-    if (g === 1) this.stats.again++;
-    if (prev.st === 0) this.stats.newSeen++;
-    if (prev.st === 2) { this.stats.reviews++; if (g > 1) this.stats.reviewPass++; }
+      const eventId = crypto.randomUUID();
+      const dur = Math.min(Math.max(0, durationMs || 0), 120000);
+      const events = [];
+      this.stats.count++;
+      this.stats.time += dur;
+      if (g === 1) this.stats.again++;
+      if (prev.st === 0) this.stats.newSeen++;
+      if (prev.st === 2) { this.stats.reviews++; if (g > 1) this.stats.reviewPass++; }
 
-    if (this.cram) {
-      note.log.push([now, +ord, g, prev.st, Math.round(dur), 1, eventId]);
-      if (g === 1) this.cramQ.splice(Math.min(3, this.cramQ.length), 0, r.key);
-      await Model.saveScheduling(note);
-    } else {
-      // intervals shown on the buttons are applied as-is unless the card sat unanswered for a long time
-      const pv = cur.preview && now - (cur.previewAt || now) < 15 * 60000 ? cur.preview : Model.previewFor(r, now);
-      const nc = Object.assign({}, pv[g].card);
-      if (prev.flag) nc.flag = prev.flag;
-      note.cards[ord] = nc;
-      note.log.push([now, +ord, g, prev.st, Math.round(dur), 0, eventId]);
-      // leech handling
-      const thr = Model.settings.leechThreshold;
-      if (prev.st === 2 && g === 1 && thr > 0 && nc.lapses >= thr && (nc.lapses - thr) % Math.max(1, Math.ceil(thr / 2)) === 0) {
-        if (!note.tags.includes('leech')) note.tags.push('leech');
-        if (Model.settings.leechAction === 'suspend') nc.susp = true;
-        events.push({ type: 'leech', suspended: Model.settings.leechAction === 'suspend' });
-      }
-      // siblings wait until tomorrow
-      if (Model.settings.burySiblings) {
-        const eod = Model.endOfToday(now);
-        for (const o of Object.keys(note.cards)) {
-          if (o === ord) continue;
-          const sc = note.cards[o];
-          if (sc.st === 0 || (sc.st === 2 && sc.due < eod)) sc.bury = eod;
+      if (this.cram) {
+        note.log.push([now, +ord, g, prev.st, Math.round(dur), 1, eventId]);
+        if (g === 1) this.cramQ.splice(Math.min(3, this.cramQ.length), 0, r.key);
+      } else {
+        // intervals shown on the buttons are applied as-is unless the card sat unanswered for a long time
+        const pv = cur.preview && now - (cur.previewAt || now) < 15 * 60000 ? cur.preview : Model.previewFor(r, now);
+        const nc = Object.assign({}, pv[g].card);
+        if (prev.flag) nc.flag = prev.flag;
+        note.cards[ord] = nc;
+        note.log.push([now, +ord, g, prev.st, Math.round(dur), 0, eventId]);
+        // leech handling
+        const thr = Model.settings.leechThreshold;
+        if (prev.st === 2 && g === 1 && thr > 0 && nc.lapses >= thr && (nc.lapses - thr) % Math.max(1, Math.ceil(thr / 2)) === 0) {
+          if (!note.tags.includes('leech')) note.tags.push('leech');
+          if (Model.settings.leechAction === 'suspend') nc.susp = true;
+          events.push({ type: 'leech', suspended: Model.settings.leechAction === 'suspend' });
         }
-        const k = (x) => x.split(':')[0] !== note.id;
-        this.reviewQ = this.reviewQ.filter(k);
-        this.newQ = this.newQ.filter(k);
+        // siblings wait until tomorrow
+        if (Model.settings.burySiblings) {
+          const eod = Model.endOfToday(now);
+          for (const o of Object.keys(note.cards)) {
+            if (o === ord) continue;
+            const sc = note.cards[o];
+            if (sc.st === 0 || (sc.st === 2 && sc.due < eod)) sc.bury = eod;
+          }
+          const k = (x) => x.split(':')[0] !== note.id;
+          this.reviewQ = this.reviewQ.filter(k);
+          this.newQ = this.newQ.filter(k);
+        }
+        // a lapse pulls shaky prerequisites into the session
+        if (g === 1 && Model.settings.refreshPrereqs) {
+          const added = this.queuePrereqs(note, now);
+          if (added) events.push({ type: 'prereqs', count: added });
+        }
       }
       await Model.saveScheduling(note);
-      // a lapse pulls shaky prerequisites into the session
-      if (g === 1 && Model.settings.refreshPrereqs) {
-        const added = this.queuePrereqs(note, now);
-        if (added) events.push({ type: 'prereqs', count: added });
-      }
-    }
-    this.history.push({ noteId: note.id, before, afterCards: clone(note.cards), eventId, queues, key: r.key, kind: cur.kind });
-    if (this.history.length > 30) this.history.shift();
-    this.current = null;
-    return events;
+      this.history.push({ noteId: note.id, before, afterCards: clone(note.cards), eventId,
+        leechAdded: !before.tags.includes('leech') && note.tags.includes('leech'), queues, key: r.key, kind: cur.kind });
+      if (this.history.length > 30) this.history.shift();
+      this.current = null;
+      return events;
     } catch (error) {
       Object.assign(note, before);
       this.reviewQ = queues.reviewQ; this.newQ = queues.newQ;
@@ -240,7 +240,7 @@ class Session {
     }
     // Preserve text edits made after answering. Only review-owned state rolls back.
     const restored = Model.sanitizeNote({ ...clone(current), cards: clone(last.before.cards), log: clone(last.before.log),
-      tags: last.before.tags.includes('leech') ? current.tags : current.tags.filter(t => t !== 'leech') });
+      tags: last.leechAdded ? current.tags.filter(t => t !== 'leech') : current.tags });
     this.saving = true;
     try {
       await Store.saveNote(restored);
@@ -258,7 +258,6 @@ class Session {
       return r ? { ref: r, kind: last.kind } : null;
     } finally { this.saving = false; }
   }
-
 }
 
 function shuffle(arr) {

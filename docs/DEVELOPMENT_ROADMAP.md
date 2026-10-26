@@ -100,6 +100,6 @@ Detailed findings, implementation sequence and acceptance gates: [Sync audit](SY
 
 **Priority:** A4 review retractions and deterministic scheduling provenance, then A5 active account-store integration. Follow the concrete sequence in [the sync audit](SYNC_AUDIT_2026-10-26.md). Do not activate automatic sync merely by wiring the current snapshot transport into `Store`: that would commit undone reviews and inconsistent FSRS state.
 
-**Delivery status:** Development branch `astra/sync-durability` contains the browser changes. Backend note-write hardening is deployed independently. The branch is not a claim that the Pages application has those browser changes or that cloud synchronization is complete. CI run/PR links are recorded with the handoff when available.
+**Delivery status:** Development branch `astra/sync-durability` contains the browser changes. Backend note-write hardening is deployed independently. The branch is not a claim that the Pages application has those browser changes or that cloud synchronization is complete. Draft [PR #1](https://github.com/Mymayankyadav/lemma/pull/1) tracks delivery. Full [CI run 40323246207](https://github.com/Mymayankyadav/lemma/actions/runs/40323246207) passed for commit `d30cd21`; follow-up commits must pass the same suite.
 
 **Model assignment:** Strong reasoning for concurrency/replay/security contracts; capable implementation model for UI and deterministic tests. The learning model remains user-selected.
