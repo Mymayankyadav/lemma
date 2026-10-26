@@ -429,6 +429,8 @@ function syntheticHistory() {
     await page.click('.sheet-head .icon-btn[aria-label="Close"]');
 
     // A queued file-read completion cannot overwrite the next import sheet.
+    await page.click('.tb[data-go="home"]');
+    await page.waitForSelector('.today');
     await page.click('.head-actions [aria-label="Import"]');
     await page.waitForSelector('#imp-file');
     await page.setInputFiles('#imp-file', { name:'delayed.txt', mimeType:'text/plain',
