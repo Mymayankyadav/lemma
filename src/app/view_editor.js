@@ -65,9 +65,13 @@ const EditorSheet = (() => {
     const key = draftKey(noteId);
     let closed = false;
     let committed = false;
-    const valid = () => !closed && !App.workspaceBlocked &&
+    let saving = false;
+    let saveError = '';
+    let saveBase = null; // Retain the same ID across failed new-card attempts.
+    const currentWorkspace = () => !App.workspaceBlocked &&
       App.workspaceRevision === originRevision && Store.mode === originMode &&
       (originMode !== 'account' || key === 'lemma.draft.account.' + LemmaAccount.user?.id + (noteId ? '.edit.' + noteId : ''));
+    const valid = () => !closed && currentWorkspace();
     const editing = noteId ? Model.notes.get(noteId) : null;
     let draftRestored = false;
     let staleDraft = false;
@@ -77,7 +81,7 @@ const EditorSheet = (() => {
       const d = readDraft(key);
       if (d && d.baseModified === editing.modified) {
         f = { ...f, type:d.type, deck:d.deck, title:d.title,
-          front:d.front, back:d.back, tags:d.tags, requires:d.requires || f.requires };
+          front:d.front, back:d.back, tags:d.tags, requires:d.requires || f.requires, media:d.media || f.media };
         draftRestored = true;
       } else if (d) staleDraft = true; // do not overwrite a newer version
     } else {
@@ -186,15 +190,15 @@ const EditorSheet = (() => {
       const errs = pvCard.querySelectorAll('.katex-error').length;
       if (errs) msgs.push(`${plural(errs, 'formula')} ${errs === 1 ? 'has' : 'have'} a LaTeX error (shown in red).`);
       if (c.title && Model.titleIndex().get(c.title.toLowerCase()) && (!editing || Model.titleIndex().get(c.title.toLowerCase()) !== editing.id)) msgs.push('Another card already uses this title; links will go to that one.');
-      warn.textContent = msgs.filter(Boolean).join(' ');
-      saveBtn.disabled = !c.front.trim() || (c.type === 'cloze' && !ords.length);
+      warn.textContent = saveError || msgs.filter(Boolean).join(' ');
+      saveBtn.disabled = saving || !c.front.trim() || (c.type === 'cloze' && !ords.length);
       if (saveNewBtn) saveNewBtn.disabled = saveBtn.disabled;
     };
     const schedulePreview = debounce(drawPreview, 140);
     const draftFields = () => {
       const c = currentFields();
       return { type:c.type,deck:c.deck,title:c.title,front:c.front,
-        back:c.back,tags:tagsIn.value,requires:c.requires,
+        back:c.back,tags:tagsIn.value,requires:c.requires,media:clone(c.media),
         ...(editing ? {baseModified:editing.modified} : {}) };
     };
     const draftChanged = d => editing
@@ -339,17 +343,17 @@ const EditorSheet = (() => {
     const saveBtn = h('button', { class: 'btn btn-primary', type: 'button', text: editing ? 'Save' : 'Add card', onclick: () => save(false) });
     const saveNewBtn = editing ? null : h('button', { class: 'btn', type: 'button', text: 'Add & next', title: 'Add this card and start another in the same deck', onclick: () => save(true) });
     const delBtn = editing ? h('button', { class: 'btn btn-ghost-danger', type: 'button', html: icon('trash', 16) + '<span>Delete</span>', onclick: async () => {
-      if (!valid()) return;
+      if (!valid() || saving) return;
       if (!(await confirmDialog({ title: 'Delete this card?', message: `This deletes the note, its ${plural(Object.keys(editing.cards).length, 'card')} and review history.`, confirmLabel: 'Delete', danger: true }))) return;
-      if (!valid()) return;
+      if (!valid() || saving) return;
       Model.deleteNote(editing.id);
       sheet.close();
       toast('Card deleted');
       if (onSaved) onSaved(null);
     } }) : null;
 
-    function save(again) {
-      if (!valid()) return;
+    async function save(again) {
+      if (!valid() || saving) return;
       const c = currentFields();
       if (!c.front.trim()) return;
       if (c.type === 'cloze' && !Render.clozeOrds(c.front).length) return;
@@ -358,13 +362,44 @@ const EditorSheet = (() => {
       const media = {};
       for (const k of Object.keys(c.media)) if (keep.has(k)) media[k] = c.media[k];
       const fields = { type: c.type, deck: c.deck, title: c.title, front: c.front, back: c.back, tags: c.tags, requires: c.requires, media };
+      saving = true;
+      saveError = '';
+      // Flush before awaiting storage, including saves within the debounce window.
+      writeDraft(key, draftFields());
+      const inputs = [...body.querySelectorAll('input, textarea, button')];
+      const disabled = inputs.map(el => el.disabled);
+      inputs.forEach(el => { el.disabled = true; });
+      if (delBtn) delBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+      drawPreview();
+      let note;
+      try {
+        saveBase ||= editing ? clone(editing) : { id: uid(), cards: {}, log: [] };
+        note = await Model.commitEditorNote(saveBase, fields, currentWorkspace);
+      } catch (error) {
+        if (valid()) {
+          saveError = 'Could not save. Your input is kept here; retry Save or copy it before leaving.';
+          toast(saveError, { kind: 'error' });
+        }
+        return;
+      } finally {
+        saving = false;
+        if (valid()) {
+          inputs.forEach((el, i) => { el.disabled = disabled[i]; });
+          if (delBtn) delBtn.disabled = false;
+          saveBtn.textContent = editing ? 'Save' : 'Add card';
+          drawPreview();
+        }
+      }
+      if (!valid()) return;
       Model.addDeck(c.deck);
       Model.setMeta({ lastDeck: c.deck });
-      let note;
-      if (editing) { Model.updateNote(editing, fields); note = editing; clearDraft(key); committed = true; toast('Saved'); }
-      else { note = Model.createNote(fields); toast(`Added to ${c.deck.split('::').pop()}`); clearDraft(key); committed = true; }
+      clearDraft(key);
+      committed = true;
+      toast(editing ? 'Saved' : `Added to ${c.deck.split('::').pop()}`);
       if (again) {
         committed = false;
+        saveBase = null;
         titleIn.value = ''; frontTa.value = ''; backTa.value = ''; f.requires = []; f.media = {};
         drawReq(); drawPreview(); frontTa.focus();
         return;

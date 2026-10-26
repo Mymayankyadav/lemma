@@ -18,11 +18,11 @@ const problems = [];
 let failures = 0;
 const ok = (cond, msg) => { console.log((cond ? 'ok   ' : 'FAIL ') + msg); if (!cond) failures++; };
 
-async function newPage(browser, { seedDocs, mock = true, viewport = { width: 1280, height: 860 }, dark = false, label }) {
+async function newPage(browser, { seedDocs, mock = true, viewport = { width: 1280, height: 860 }, dark = false, label, editorHooks = false }) {
   const ctx = await browser.newContext({ serviceWorkers: 'block', viewport, colorScheme: dark ? 'dark' : 'light', timezoneId: 'Asia/Kolkata' });
   await ctx.route('**/*', async (route) => {
     const url = route.request().url();
-    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: HTML });
+    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: editorHooks ? HTML.replace('/* ===== main.js ===== */', 'window.__editor = { Store, Model, EditorSheet, get App() { return App; } };\n/* ===== main.js ===== */') : HTML });
     for (const [name, file] of Object.entries(LIBS)) if (url.endsWith(name)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(file, 'utf8') });
     if (url.includes('fonts.googleapis.com')) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (url.startsWith('blob:') || url.startsWith('data:')) return route.continue();
@@ -439,6 +439,100 @@ function syntheticHistory() {
     await page.waitForTimeout(150);
     ok(!(await page.evaluate(() => document.body.textContent)).includes('Stale editor import'),
       'file reader callback does not write into a discarded import sheet');
+    await ctx.close();
+  }
+
+  // ---------- D: editor durability with real browser IndexedDB ----------
+  {
+    const { ctx, page } = await newPage(browser, { mock: false, label: 'D', editorHooks: true });
+    await page.waitForSelector('.onboard');
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+    await page.fill('#ed-front', 'Aborted editor transaction');
+    await page.fill('#ed-back', 'Keep this proof attempt');
+    await page.evaluate(() => {
+      const put = IDBObjectStore.prototype.put;
+      window.__restorePut = () => { IDBObjectStore.prototype.put = put; };
+      IDBObjectStore.prototype.put = function (value, ...args) {
+        const request = put.call(this, value, ...args);
+        if (value.front === 'Aborted editor transaction')
+          request.addEventListener('success', () => this.transaction.abort());
+        return request;
+      };
+    });
+    await page.click('.sheet-foot .btn-primary');
+    await page.waitForFunction(() => document.querySelector('.ed-warn').textContent.includes('Could not save'));
+    ok(await page.inputValue('#ed-back') === 'Keep this proof attempt', 'aborted editor write retains editable input');
+    ok(await page.evaluate(() => __editor.Model.notes.size === 0), 'aborted editor creation is absent from the Model');
+    ok(await page.evaluate(() => JSON.parse(localStorage.getItem('lemma.draft.v1')).back === 'Keep this proof attempt'),
+      'Save flushes recovery draft before awaiting the write');
+    await page.screenshot({ path: SHOTS + '/D1-editor-storage-error.png' });
+    await page.reload();
+    await page.waitForSelector('.onboard');
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+    ok(await page.inputValue('#ed-front') === 'Aborted editor transaction', 'failed save draft survives a browser reload');
+
+    // Delay the receipt after an actual transaction commits, including Ctrl+Enter.
+    const holdReceipt = () => page.evaluate(() => {
+      const original = __editor.Store.saveNote;
+      window.__editorCalls = 0;
+      let release;
+      const gate = new Promise(resolve => { release = resolve; });
+      window.__releaseEditor = () => { __editor.Store.saveNote = original; release(); };
+      __editor.Store.saveNote = async (...args) => {
+        window.__editorCalls++;
+        await original(...args);
+        await gate;
+      };
+    });
+    await holdReceipt();
+    await page.click('.sheet-foot .btn-primary');
+    await page.waitForFunction(() => document.querySelector('.sheet-foot .btn-primary').textContent === 'Saving…');
+    await page.keyboard.press('Control+Enter');
+    ok(await page.evaluate(() => __editorCalls === 1 && __editor.Model.notes.size === 0),
+      'pending save is single-flight and not yet projected');
+    ok(await page.evaluate(() => !!localStorage.getItem('lemma.draft.v1')), 'pending receipt does not clear the draft');
+    await page.evaluate(() => __releaseEditor());
+    await page.waitForSelector('#ed-front', { state: 'hidden' });
+    ok(await page.evaluate(() => __editor.Model.notes.size === 1 && localStorage.getItem('lemma.draft.v1') === null),
+      'successful commit projects exactly one note and clears its draft');
+
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+    await page.fill('#ed-front', 'Add and next waits');
+    await holdReceipt();
+    await page.getByRole('button', { name: 'Add & next', exact: true }).click();
+    ok(await page.inputValue('#ed-front') === 'Add and next waits', 'Add & next retains content while saving');
+    await page.evaluate(() => __releaseEditor());
+    await page.waitForFunction(() => document.querySelector('#ed-front').value === '' && !document.querySelector('#ed-front').disabled);
+    ok(await page.evaluate(() => __editor.Model.notes.size === 2), 'Add & next resets only after the committed creation');
+
+    await page.fill('#ed-front', 'Closed editor pending receipt');
+    await holdReceipt();
+    await page.click('.sheet-foot .btn-primary');
+    await page.click('.sheet-head .icon-btn[aria-label="Close"]');
+    await page.evaluate(() => __releaseEditor());
+    await page.waitForFunction(() => __editor.Model.notes.size === 3);
+    ok(true, 'closing a pending editor still projects a committed card in the same workspace');
+    await page.waitForSelector('#ed-front', { state: 'hidden' });
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+
+    await page.fill('#ed-front', 'Old workspace pending receipt');
+    await holdReceipt();
+    await page.click('.sheet-foot .btn-primary');
+    await page.waitForFunction(() => __editorCalls === 1);
+    await page.evaluate(() => {
+      __editor.App.lockWorkspace(true); // actual forced-close/epoch path
+      __editor.Model.replaceAll(new Map());
+      __editor.App.lockWorkspace(false);
+      __releaseEditor();
+    });
+    await page.waitForSelector('#ed-front', { state: 'hidden' });
+    ok(await page.evaluate(() => __editor.Model.notes.size === 0), 'late save cannot repopulate a replacement workspace');
+    ok(await page.evaluate(() => JSON.parse(localStorage.getItem('lemma.draft.v1')).front === 'Old workspace pending receipt'),
+      'forced-close draft remains under its origin key after a late save');
     await ctx.close();
   }
 

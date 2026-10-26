@@ -202,12 +202,14 @@ const Store = (() => {
       return result;
     });
   }
-  function saveNote(note) {
+  function saveNote(note, opts = {}) {
     const data = clone(note);
     if (mode === 'account')
       return accountWrite('note:' + note.id, storage => storage.stageNote(data));
     if (mode === 'local') return durableLocal('note:' + note.id, () => idbPut('notes', data));
-    return enqueue(note.id, data);
+    if (opts.durable && mode !== 'cloud')
+      return Promise.reject(new Error('Persistent storage is unavailable'));
+    return enqueue(note.id, data, opts.durable);
   }
   function saveReview(note, entry) {
     if (mode === 'account') {
@@ -233,26 +235,33 @@ const Store = (() => {
     await Promise.all([...localWrites]);
     if (localErrors.size) throw new Error('Some local changes have not been saved');
   }
-  function enqueue(id, data) {
+  function enqueue(id, data, acknowledge = false) {
     if (mode === 'memory' || mode === 'loading') return;
     deferred.delete(id);
     let e = queue.get(id);
-    if (!e) { e = { busy: false, next: undefined }; queue.set(id, e); pendingCount++; emitStatus(); }
+    if (!e) { e = { busy: false, next: undefined, receipts: [] }; queue.set(id, e); pendingCount++; emitStatus(); }
     e.next = data;
+    const receipt = acknowledge ? new Promise((resolve, reject) => e.receipts.push({ resolve, reject })) : undefined;
     if (!e.busy) pump(id, e);
+    return receipt;
   }
   async function pump(id, e) {
     e.busy = true;
     while (e.next !== undefined) {
       const data = e.next;
       e.next = undefined;
+      const receipts = e.receipts.splice(0);
       await acquire();
       try {
         await writeOne(id, data);
+        for (const receipt of receipts) receipt.resolve();
         e.tries = 0;
         if (offline) { offline = false; emitStatus(); }
       }
-      catch (err) { await onWriteError(err, id, data, e); }
+      catch (err) {
+        for (const receipt of receipts) receipt.reject(err);
+        await onWriteError(err, id, data, e);
+      }
       finally { release(); }
     }
     e.busy = false;

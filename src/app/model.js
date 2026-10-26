@@ -156,6 +156,19 @@ const Model = (() => {
     bump();
     Store.saveNote(n);
   }
+  // Editor writes use a detached candidate: a failed transaction must not
+  // change the visible note, its schedule or the draft's base revision.
+  async function commitEditorNote(base, fields, isCurrent) {
+    const candidate = sanitizeNote(Object.assign(clone(base), clone(fields), { modified: Date.now() }));
+    await Store.saveNote(candidate, { durable: true });
+    // Auth recovery may have replaced the entire Model while storage awaited.
+    if (!isCurrent()) return candidate;
+    const existing = notes.get(candidate.id);
+    if (existing) Object.assign(existing, candidate);
+    else notes.set(candidate.id, candidate);
+    bump();
+    return existing || candidate;
+  }
   function saveScheduling(n, reviewEntry = null) { bump(); return reviewEntry ? Store.saveReview(n, reviewEntry) : Store.saveNote(n); }
   function deleteNote(id) {
     notes.delete(id);
@@ -467,7 +480,7 @@ const Model = (() => {
     get clock() { return clock; }, get meta() { return profileMeta; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     bump, loadProfile, profile, setSettings, setMeta, schedCfg,
-    newCardState, syncCards, sanitizeNote, createNote, updateNote, saveScheduling, deleteNote, replaceAll, applyRemote,
+    newCardState, syncCards, sanitizeNote, createNote, updateNote, commitEditorNote, saveScheduling, deleteNote, replaceAll, applyRemote,
     cardRefs, ref, sides, dayIndex, dayStart, endOfToday, isSuspended, isBuried, isLearning, recallNow,
     inDeck, deckNames, addDeck, renameDeck, removeDeckEntry,
     titleIndex, resolveTarget, linkTargets, prereqIds, dependents, reaches, introduced, blockers,
