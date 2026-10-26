@@ -40,9 +40,11 @@ const LemmaOutboxCore = (() => {
       let sent = 0;
       try {
         const queue = (await this.storage.list()).sort((a, b) =>
-          (a.enqueuedAt - b.enqueuedAt) || a.id.localeCompare(b.id));
+          (a.enqueuedAt - b.enqueuedAt) || ((a.kind === 'note' ? 0 : 1) - (b.kind === 'note' ? 0 : 1)) || a.id.localeCompare(b.id));
         const blocked = new Set();
-        for (const op of queue) {
+        for (const queued of queue) {
+          const op = await this.storage.get(queued.id);
+          if (!op) continue;
           validateOp(op);
           const key = op.kind === 'plan' ? 'plan:' + op.entityId : 'note:' + op.entityId;
           if (op.state === 'conflict') { blocked.add(key); continue; }
@@ -50,7 +52,8 @@ const LemmaOutboxCore = (() => {
           if (!this.online) break;
           try {
             const result = await this.transport.send(op);
-            await this.storage.delete(op.id);
+            if (typeof this.storage.ack === 'function') await this.storage.ack(op, result);
+            else await this.storage.delete(op.id);
             sent++;
             this.notify({ type: 'ack', id: op.id, result });
           } catch (err) {
