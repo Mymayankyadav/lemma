@@ -126,6 +126,30 @@ const clear = async db => new Promise((resolve, reject) => {
   assert.equal((await storage.notes())[0].dirty, false);
   await clear(db);
 
+  // Read-only workspace comparison distinguishes absence, tombstones, divergent
+  // review snapshots and account-only cards without modifying either source.
+  await storage.ingestRemoteNote({
+    id:'same', data:{...note('same'),id:'same'},revision:1 });
+  await storage.ingestRemoteNote({
+    id:'diff', data:{...note('cloud'),id:'diff',log:[[10,1,3,0,100,0]]},revision:1 });
+  await storage.ingestRemoteNote({
+    id:'deleted',data:null,deleted_at:'2026-10-26',revision:2 });
+  await storage.ingestRemoteNote({
+    id:'account-only',data:{...note('account'),id:'account-only'},revision:1 });
+  const beforeCompare = await storage.notes();
+  const report = await storage.inspectAgainst([
+    { ...note('same'),id:'same' },
+    { ...note('anonymous'),id:'diff' },
+    { ...note('local'),id:'local-only' },
+    { ...note('resurrect'),id:'deleted' }
+  ]);
+  assert.deepEqual(report,{
+    localOnly:1,accountOnly:1,identical:1,divergent:1,
+    cloudTombstone:1,dirtyAccount:0,legacyHistory:1
+  });
+  assert.deepEqual(await storage.notes(),beforeCompare,'comparison must never mutate the account');
+  await clear(db);
+
   // Failure AFTER server commit: persisted attempted marker and request ID survive reopen.
   const operation = await storage.stageNote(note('retry'));
   const committed = new Map();
