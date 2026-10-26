@@ -12,7 +12,7 @@ katexCss = katexCss.replace(/src:url\(fonts\/([\w-]+)\.woff2\) format\("woff2"\)
   (m, name) => `src:url(data:font/woff2;base64,${fs.readFileSync(path.join(katexDir, 'fonts', name + '.woff2')).toString('base64')}) format("woff2")`);
 if (/url\(fonts\//.test(katexCss)) throw new Error('unreplaced KaTeX font url');
 
-const appFiles = ['util.js', 'cloud_account.js', 'sync_merge.js', 'outbox_core.js', 'sync_browser.js', 'store.js', 'model.js', 'session.js', 'charts.js', 'io.js', 'ai.js', 'jobs.js',
+const appFiles = ['util.js', 'cloud_account.js', 'cloud_bridge.js', 'sync_merge.js', 'outbox_core.js', 'sync_browser.js', 'store.js', 'model.js', 'session.js', 'charts.js', 'io.js', 'ai.js', 'jobs.js',
   'view_review.js', 'view_editor.js', 'view_browse.js', 'view_home.js', 'view_stats.js', 'view_settings.js', 'sheets.js', 'main.js'];
 const app = "(() => {\n'use strict';\n" + appFiles.map((f) => `/* ===== ${f} ===== */\n` + read('src/app/' + f)).join('\n') + '\n})();';
 
