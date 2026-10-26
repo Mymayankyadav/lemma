@@ -203,7 +203,7 @@ class Session {
       // Preserve what the existing FSRS.preview actually chose, including
       // any subsequent leech/sibling adjustments. No scheduling math is copied.
       if (schedulingProvenance) schedulingProvenance.card_after = clone(note.cards[ord]);
-      await Model.saveScheduling(note);
+      await Model.saveScheduling(note, note.log[note.log.length - 1]);
       this.history.push({ noteId: note.id, before, afterCards: clone(note.cards), eventId,
         leechAdded: !before.tags.includes('leech') && note.tags.includes('leech'), queues, key: r.key, kind: cur.kind });
       if (this.history.length > 30) this.history.shift();
@@ -260,7 +260,7 @@ class Session {
       tags: last.leechAdded ? current.tags.filter(t => t !== 'leech') : current.tags });
     this.saving = true;
     try {
-      await Store.saveNote(restored);
+      await Store.undoReview(restored, last.eventId);
       this.history.pop();
       Model.notes.set(last.noteId, restored);
       Model.bump();
