@@ -1,155 +1,110 @@
 # Lemma — canonical execution plan and chatbot handoff
 
-> **FIRST READ FOR EVERY ASSISTANT.** If the user says **"follow the plan.md"**, read this file from GitHub `main`, inspect the live repository and recent CI, then **perform the next safe implementation task**. Do not spend the turn writing another plan unless it is materially out of date. When finished, **update this file in the same repository** for the next assistant. Chat history is *not* required.
->
-> **Protocol v1.1 — 26 October 2026.** Applies to ChatGPT, Astra, Claude, Codex, or any other coding agent. Work is **sequential, ordinarily directly on `main`**. If a previous agent left work incomplete, adopt or repair it—never restart the project.
+**Protocol v2 · 26 October 2026.** This is the only engineering roadmap and task queue. It replaces all previous roadmaps and amendments; Git history retains them. This revision changes documentation only. A later **"follow the plan.md"** means implement the next bounded task; a request only to plan/review does not authorize implementation.
 
-## 0. Operator instructions — the 60-second orientation
+## 0. Operator instructions
 
-1. Fetch this **exact** file at `Mymayankyadav/lemma:main/plan.md` (not a remembered, uploaded, or cached copy), then read **§1 Current handoff**, **§2 Task queue**, and **§3 Protocol**.
-2. Verify `main` HEAD, recent commits, the latest **regression** and **Pages deployment** runs. For backend work, inspect the dedicated Lemma Supabase project, migrations, and relevant policies. If evidence conflicts with this file, **observed source/CI/schema wins**; correct the handoff before proceeding.
-3. Work on the **first actionable unblocked task**, using its acceptance criteria. Inspect existing implementations before writing code. Do not duplicate FSRS, rendering, persistence, or planning functionality already in the codebase.
-4. Commit small, coherent, tested changes **to `main`**. Avoid branches/PRs unless the user requests them or policy explicitly prevents a direct commit. Never force-push, reset, or discard someone else's changes.
-5. Finish by updating **§1 handoff**, **§2 task states**, and **§5 completed/evidence ledger** with real commit hashes, test results, blockers, and the **one precise next action**. This is mandatory even after partial progress. A CI run still pending must be reported as **pending**, not passed.
-6. Reply briefly with implementation, commit/deployment evidence, and next unresolved item. A successful CI build is not proof of real cross-device sync.
+Read current `main` → this plan → relevant source/tests → one task → verify → commit → update handoff. Agents work **consecutively, never simultaneously**. No old chat, local workspace or particular model is required.
 
-The user's phrase **"follow the plan.md" is authorization to continue implementation**, not merely summarize this document. Prefer concrete, bounded progress to questions already answered in this file.
+**Product goal:** a private, persistent mathematics learning workspace for a PhD student. Curate shared knowledge, approve a thoughtful study plan, attempt proofs with interchangeable tutors, retain evidence and misconceptions, and review useful cards. Switching Claude/ChatGPT or devices should not require restarting the lesson. Supabase is the authenticated source of truth; durable local storage supports immediate interaction and offline work.
 
-## 1. CURRENT HANDOFF — update at the end of EVERY coding session
+**Scope boundaries**
+- Preserve the imported app, original FSRS-6, mathematical rendering, prerequisite links, review/Undo, import/export and user data. Extend existing modules; no framework rewrite or parallel scheduler/store.
+- **No new image-upload features:** no camera, OCR, scanning, image-based tutoring, gallery or media-management project. Preserve compatibility with existing card media without expanding it.
+- Exception: private file attachments may support a study project's shared knowledge. Start with curated text, Markdown and source references; accept PDFs/documents only when needed, with citations and bounded retrieval. This is not a general upload product.
+- "Shared" means the same owner's knowledge available to successive tutors, not public sharing or multi-user collaboration.
+- Optimize for understanding and continuity, not chat volume, decorative dashboards, streak pressure or speculative AI infrastructure.
 
-**Last verified handoff:** 2026-10-26, SYNC-01 hardening and corrected browser regressions. **Working branch:** `main`. **Session state:** `READY_FOR_NEXT_AGENT`. Work happens consecutively, not simultaneously.
+## 1. CURRENT HANDOFF
 
-**This session implemented (direct commits to main):**
-- `src/app/view_editor.js`: workspace-generation/identity guards on save, delayed deletion confirmation, async image compression, draft autosave and sheet close. New-card drafts use the original anonymous key or an account-specific key; existing-note unsaved drafts use note-specific keys and restore only against matching `modified` baselines (older drafts are retained, not overwritten). The original Model/FSRS remains unchanged.
-- `src/app/sheets.js`: workspace-lease guards for delayed FileReader import, AI-generated card lists, and click-to-commit actions after sheet close or identity transition.
-- `src/app/view_settings.js` and `src/app/view_home.js`: reject late optimizer/simulation callbacks or destructive delete confirmations from a prior workspace; workload/optimizer result caches cannot be shown or applied to another account.
-- `test/e2e.js`: browser restart tests for unsaved new-card and existing-card drafts and discarded import callbacks.
+**Last verified handoff:** 2026-10-26; documentation review of `main@480117d1633b5780dc32f3474a3edcf1a64af843`. **State: READY_FOR_NEXT_AGENT.** No new implementation tasks executed.
 
-| Field | Last verified fact |
+| Field | Evidence / limit |
 | --- | --- |
-| Repo and branch | [`Mymayankyadav/lemma`](https://github.com/Mymayankyadav/lemma), **`main`** |
-| Last independently proven full code regression | [run 40359377678](https://github.com/Mymayankyadav/lemma/actions/runs/40359377678) **SUCCESS** at `4a77ab14e4fc` (includes new-card browser draft/reload tests). |
-| New E2E regression and fix | [run 40360307092](https://github.com/Mymayankyadav/lemma/actions/runs/40360307092) **FAILED**: old editor dereferenced a nonexistent Add-next button; new test requested Import from Browse. Fixed by commits `44a044dd` and `eb0be14c`. |
-| Latest code commit awaiting regression | `eb0be14cacb120686e6fe60b678a71893028400f`; [run 40361061256](https://github.com/Mymayankyadav/lemma/actions/runs/40361061256) **PENDING at handoff**; verify FIRST. |
-| Deployment | [Pages 40361012660](https://github.com/Mymayankyadav/lemma/actions/runs/40361012660) **SUCCESS** at `44a044dd` including the fixed existing-card editor; later `eb0be14c` changes tests only. |
-| Backend | Lemma Supabase `yemqnhnztlbyxmjxidis` (Mumbai); **Carrel must remain untouched**. No SQL/schema changes this session. |
-| Last deployed migration | `supabase/migrations/20261026203000_revision_safe_profiles.sql`. Previous security advisor: zero findings; not rerun. |
-| Web | https://mymayankyadav.github.io/lemma/ |
-| Activation | **Still internally gated**; signing in never automatically replaces anonymous cards or enables live sync. |
-| Latest `main` HEAD | **Refetch current HEAD**. This handoff cannot contain its own commit SHA. |
+| Known-good main baseline | `4a77ab14e4fc2f3263c062e8b1a68b915d55e0f6`; [regression 40359377678](https://github.com/Mymayankyadav/lemma/actions/runs/40359377678) succeeded. This predates later editor fixes. |
+| Latest inspected regression | [40362238502](https://github.com/Mymayankyadav/lemma/actions/runs/40362238502) at `480117d`: FAILED solely at the plan guard's first missing field, "Known-good main baseline"; preceding browser/account tests passed, subsequent workspace suite was not reached. The previously pending [40361061256](https://github.com/Mymayankyadav/lemma/actions/runs/40361061256) was CANCELLED. |
+| Documentation validation | SUCCESS: existing `npm run test:plan` guard passed locally; required headings/fields restored. Inspect CI at the current tip for this documentation revision's result; do not treat the older failure as a new app defect. |
+| Web deployment | [Pages 40361012660](https://github.com/Mymayankyadav/lemma/actions/runs/40361012660) succeeded at `44a044dd35cc7a7071df4726116bae1372e79315`. Documentation-only changes do not trigger Pages. |
+| Cloud confidence | Auth, account cache/outbox, revision RPCs, review/retraction adapters and lifecycle guards exist. Account editing remains internally gated. Live two-device convergence is NOT verified. |
+| Backend security check | NOT RUN in this documentation review. Nine migration files exist, latest `20261026203000_revision_safe_profiles.sql`; verify live migration state before backend work. |
+| Current blocker / unfinished work | No documentation blocker. SYNC-01 remains partial: editor Save clears drafts and reports success before awaiting persistence; crash/failure and browser identity-isolation gates remain. |
 
-**Next action in one sentence:** **SYNC-01** — check [CI run 40361061256](https://github.com/Mymayankyadav/lemma/actions/runs/40361061256), resolve any remaining E2E failures, then add real browser crash/reload and A → B → A identity-isolation scenarios for `LemmaWorkspace` and in-flight edit/import using the existing mock browser harness; assess the existing editor save's durability before treating SYNC-01 as complete.
+**Next action, in one sentence:** verify current regression, then finish **SYNC-01** by inspecting `EditorSheet.save` in `src/app/view_editor.js` and existing Model/Store promises, testing an aborted save and reload before changing the save/close/draft behavior.
 
-**What is verified vs not:** Existing Playwright smoke tests cover anonymous IndexedDB review/Undo and new-card drafts across reload. Unit tests cover forced sign-out and A/B/A workspace restores. New existing-note draft checks passed up to the final browser fixture in the first failed run; both defects were patched, but the newest CI run still needs verification. Live authenticated two-device sync, concurrent FSRS scheduling convergence, account activation UI, Android native lifecycle and profile conflicts are not complete.
+The record above describes inspected evidence, not today's mutable HEAD. Update it after each task; do not append another competing handoff.
 
-**Recovery:** If the latest regression fails, use the exact failed job logs, correct source/tests on `main`, rerun. If source is newer than the handoff, verify it and update this section rather than overwriting it. A successful web deployment does **not** imply automatic sync is ready.
+## 2. Task queue
 
-## 2. Task queue — stable IDs, priority and exit criteria
+Keep stable IDs. **DONE** requires its gate; **NEXT** is exactly one task; **IN_PROGRESS** records partial work; **BLOCKED/LATER** are unfinished. Read top-to-bottom and choose the first task whose dependencies are satisfied. Break large rows into one testable slice per session; keep the remaining criteria here.
 
-Statuses: `DONE` = committed + checked against stated gate; `IN_PROGRESS` = demonstrable partial work; `NEXT` = immediate; `BLOCKED` = missing prerequisite; `LATER` = waiting on earlier phase. **Do not mark DONE for design-only, untested UI, or CI passing without a required live test.**
+| ID | State | Depends on | Requirement and completion gate |
+| --- | --- | --- | --- |
+| **HANDOFF-01** | **DONE** | — | Canonical plan, short entry points and existing `test:plan` guard. Maintain them with every change. |
+| **FOUNDATION-01** | **DONE** | — | Imported app, web build, local cards, original FSRS/rendering and baseline tests exist. Preserve them. |
+| **SYNC-00** | **DONE** | — | Account/outbox/RPC/ledger infrastructure exists in source. This is not completed live sync. |
+| **SYNC-01** | **NEXT** | SYNC-00 | Finish durable editor saves and account lifecycle. Retain draft/recoverable input on failed storage; report success/close only after commit. Reuse workspace leases for delayed callbacks. Gate: browser crash/reload, aborted write, sign-out during save/import, A→B→A with isolated drafts/cache and intact anonymous data; existing tests stay green. |
+| **SYNC-02** | **BLOCKED** | SYNC-01 | Finish note/profile/tombstone conflict repair with local, remote and base revision visible. Choosing/merging a version creates a new revision; never drop queued edits or silently revive deletes. Gate: two offline editors, edit/delete race, profile conflict and lost acknowledgment recover without data loss; retry retains request ID. |
+| **SYNC-03** | **BLOCKED** | SYNC-02 | Converge review/Undo using existing `FSRS.preview/replay` and `ReviewLedger.fsrsInput`. Specify deterministic ordering, parameter/time provenance, legacy baseline handling and resets. Never choose the latest card snapshot as truth or fabricate legacy history. Gate: concurrent offline reviews/Undo, equal timestamps, timezone/rollover, fuzz and parameter changes produce the same due state on both devices; unsupported histories remain preserved and explicitly blocked. |
+| **SYNC-04** | **BLOCKED** | SYNC-03 | Enable account workspace only after explicit enrollment/backup. Route every mutation through durable staging; automatically push after local commit, retry on reconnect/foreground and refresh on remote invalidation. Distinguish device-saved, queued, cloud-confirmed, conflict and failure. Gate: authenticated two-browser/two-identity tests, offline restart, auth expiry, network loss after commit, deletes and RLS isolation. Routine use needs no manual Sync button. |
+| **UI-01** | **LATER** | SYNC-01 | Apply the UI contract below to existing screens incrementally. Keep working routes and controls while Study is built later. Gate: mobile/desktop light/dark screenshots, keyboard navigation, 200% text, long mathematical expressions, empty/loading/error/offline states and existing review flows. |
+| **KNOWLEDGE-01** | **LATER** | SYNC-04, UI-01 | Reuse context/source/section tables for private project knowledge: goals, background, notation, references, verified skills and editable summary. Scope context, plans and evidence to stable project/context IDs. Version changes; distinguish learner-authored facts from tutor proposals. Optional documents need private access, size/type limits, extraction status, stable source/version/page IDs and removal controls; no OCR. Gate: two tutors retrieve the same accepted revision and cited excerpt without loading the entire collection; another owner cannot read it. |
+| **PLAN-01** | **LATER** | KNOWLEDGE-01 | Build context→draft→review→approved plan and a checkpoint screen for objective, attempt, hints, feedback, evidence and next action. Strong-model planning is user-selected and occasional. Reuse existing schema/RPC, first verifying event append-only enforcement, context revision safety, publication metadata/idempotency and approval permissions. Amendments need a diff and acceptance; preserve unaffected checkpoint IDs/evidence. Gate: 12-checkpoint plan, two demonstrated checkpoints, mid-proof resume, accepted prerequisite amendment and rejected stale revision; failed/retried writes never duplicate evidence. |
+| **TUTOR-01** | **LATER** | PLAN-01 | Deliver bounded Markdown/JSON handoff export/import first; add authenticated owner-scoped context/source/event/card/plan-proposal tools when supported. Validate imported schema, IDs and expected revisions. Tutors may propose cards/amendments; student approves. Persist attempts and hints; never mark mastery just because content was displayed. Gate: Claude→ChatGPT→Claude resumes the exact unfinished proof and hint level, stale writes fail, approved cards retain provenance and use existing FSRS. Core study works without a host-specific AI API or paid model call. |
+| **ANDROID-01** | **LATER** | SYNC-04, UI-01 | Generate reproducible Capacitor Android project/builds from existing source. Verify safe areas, keyboard, Back, auth redirects, foreground recovery and offline launch. Optional due-review notifications: opt-in, quiet by default, configurable time, no stale duplicates, tap opens relevant review. Gate: physical-device install, permission denied/granted, offline edits/restart/reconnect and notification checks. Document APK update delivery; Pages deployment does not update bundled native assets. |
+| **RELEASE-01** | **LATER** | All above | Verify backup/restore of cards, schedules, context, plan versions, events and source references; safe migrations, deliberate account erasure, scoped connector access and recovery. Test PWA service-worker offline/update separately (current UI suite disables it). Gate: restore round trip, no lost/duplicated events, cross-owner isolation, both tutor handoff directions and web/Android smoke checks. |
 
-| ID | State | Work and non-negotiable exit condition |
-| --- | --- | --- |
-| **HANDOFF-01** | **DONE** | Root `plan.md` is authoritative; future agents update it; entry points point here; handoff validator runs in CI. |
-| **FOUNDATION-01** | **DONE** | Source imported, existing math flashcards and original FSRS-6 preserved, web deployed, npm tests + Chromium E2E successful on main at baseline. |
-| **SYNC-00** | **DONE (infrastructure only)** | Owner-scoped RLS, revision-safe note/profile/plan RPCs; durable per-account outbox; immutable review ledger and Undo retractions; read-only account comparison; local persistence regression tests. **Does not mean sync is live.** |
-| **SYNC-01** | **NEXT** | **Partial; browser regression fixed and final suite verification pending.** Safe account workspace lifecycle: explicit identity-scoped switch boundaries; no open review/editor during switching; await all local commits; safely load/restore Model, profile, account cache; prevent cross-account stale async callbacks; robust sign-out/account-switch recovery. Tests for A → B → A, sign-out in flight, aborted storage, recover after reload. No automatic switch on login. |
-| **SYNC-02** | **BLOCKED: SYNC-01** | Conflict UI/repair path for note content, tombstones, per-note queue and profile CAS. Preserve both versions and ancestor, never silently resume a stale write. Test two offline devices, simultaneous edits/deletes and lost acknowledgments. |
-| **SYNC-03** | **BLOCKED: SYNC-01/02** | Review convergence using **existing `src/fsrs.js`** only: reconcile stable review IDs, immutable retractions, scheduling provenance and legacy baselines; verify due states for concurrent reviews, undo, resets, fuzz/learning steps. No alternate FSRS implementation or last-writer-wins schedule. |
-| **SYNC-04** | **BLOCKED: SYNC-01/02/03** | Expose **explicit** account activation after backup/preflight; stage all normal mutations atomically; correct local/pending/confirmed/error UI; real authenticated two-identity/two-browser offline/reconnect test plus RLS test. Only then claim automatic sync. |
-| **PLAN-01** | **LATER** | Curated/versioned mathematical context editor and plan revision approval UI following `docs/STUDY_PLANNING_PROTOCOL.md`. No silent re-planning; stable checkpoint IDs. |
-| **TUTOR-01** | **LATER** | Least-privilege Claude/ChatGPT learning-context tools; portable checkpoint/attempt/hints/handoff with expected revisions and authenticated owner checks. |
-| **ANDROID-01** | **LATER** | Reproducible Capacitor Android builds; auth redirects, app lifecycle sync, notifications, device smoke tests. PWA deployment ≠ APK update. |
-| **RELEASE-01** | **LATER** | Source-linked backups/restore, account deletion, security threat model, monitoring, performance, end-to-end fault matrix and release gates. |
+**UI contract:** retain Lemma's mathematical notebook character, restrained indigo accent, serif math and clear system UI text. Use consistent spacing, typography, borders and icons; quiet surfaces and generous reading space. Avoid new decorative illustrations, dense widget grids and excessive shadows.
 
-**Task-selection rule:** work on `SYNC-01` first unless the verified repository reveals an urgent build, data-loss or security regression; fix that first, document the deviation, then resume. For a large task, complete one independently testable substep and leave the next exact code location and acceptance test in §1. Do not switch to speculative UI work just because the primary task is hard.
+Target navigation is **Today / Study / Cards / Settings**, with visible labels on mobile; introduce Study only when usable. Today foregrounds "Continue study" and due reviews; Cards retains decks, search, editor and prerequisites. Stats/graphs and advanced FSRS controls remain accessible deeper in the relevant screens. One primary action per screen; progressive disclosure for advanced controls. During proofs/review, keep content central and controls reachable, with no surprise full solution. Provide readable equations (local overflow for oversized math), ≥44px tap targets, visible focus, adequate contrast, reduced motion and safe keyboard/inset behavior. Sync detail belongs in a compact status/control, not engineering jargon in the main flow.
 
-## 3. Sequential chatbot protocol — start → implement → hand off
+**Effort:** high reasoning for sync/replay/security and plan contracts; medium for established UI patterns, docs and routine tests. Model choice is advisory, never a blocker or automatic paid upgrade.
 
-### 3A. Start / adopt
+## 3. Sequential chatbot protocol
 
-- **Never trust remembered chat state.** Start from `main` HEAD and `plan.md`. Inspect changed files and recent commits since the verified handoff, CI results, and Supabase migration history if relevant.
-- One writer at a time is expected. **If `main` unexpectedly changes during a session, stop writing, refetch the current HEAD and affected file blobs, reconcile, then continue.** Do not overwrite newer code or force-update refs. Connector content writes should use a freshly fetched blob SHA (optimistic concurrency).
-- If the last assistant stopped mid-task, trust durable commits and failed-test output, not its prose. A missing final handoff means **reconstruct state from GitHub and update §1**.
-- Check for unfinished GitHub Actions runs and potentially breaking migrations. Do not recreate the repository, re-import a ZIP or rerun old one-time migrations.
-- Respect the active task's acceptance tests and the existing source; read affected modules *before* coding. Prefer the existing test/adapter/API rather than a parallel abstraction.
+**Start**
+1. Read `AGENTS.md` and this file from current remote `main`; record starting SHA. Inspect only task-relevant code and recent changes/CI. Read deeper contracts on demand; do not reread the whole repo every turn.
+2. Reconcile unfinished commits, failed checks and migration state with §1. Source/observed evidence establishes reality; this plan establishes desired behavior. Adopt existing work, including an interrupted session.
+3. Select one slice of the single NEXT task and its gate. If blocked, record the exact prerequisite and choose the next eligible row without relaxing a release gate. Current user instructions override the queue.
 
-### 3B. Implementation discipline
+**Work**
+4. Work directly on `main` unless user/repository policy requires a branch. No lock service, agent branches or concurrent delegation are needed. Preserve unrelated local changes.
+5. Before publishing, refetch HEAD. Use a normal fast-forward push or connector commit based on that tree with expected-head checking. If HEAD changed, inspect/reconcile and revalidate; never force-push or overwrite a newer handoff. Publish related code and status coherently.
+6. Reuse existing code. Never re-import a ZIP or regenerate FSRS. No anonymous-to-account merge merely on sign-in; no clearing dirty caches, attempts or receipts to fix a test.
+7. For backend changes, compare tracked/applied migrations, add a new migration, test owner access and record **written vs applied vs verified** separately. Only Lemma may be changed; no secrets in clients, repo or context packets.
 
-- **Main-first, consecutive changes.** Direct commits to `main` are allowed by the user. Keep each commit coherent and undoable. Do not use draft PRs by default, unless organizational rules require review.
-- Database migrations: use a **new ordered SQL file** in `supabase/migrations/`, review RLS/grants/rollback risk, apply only to **Lemma**, verify via SQL/security advisor, then record deployed status. Never confuse writing SQL to GitHub with applying it to Supabase.
-- Web deploy: changing code on main should trigger GitHub Actions; confirm **Deploy Lemma web** separately from **Lemma regression tests**. A workflow not yet complete is `PENDING`.
-- **Data safety:** never automatically merge anonymous/Claude data into a logged-in account; never drop dirty IndexedDB rows, review logs, pending requests, user-authored proofs or old migrations. Do not enable account switching when review due-state convergence is unverified.
-- Preserve `src/fsrs.js` and `src/render.js` implementations; only change with a demonstrated bug and golden-test coverage. Reuse `FSRS.replay`/`FSRS.preview` rather than recreating scheduling logic.
-- Tests: normally run `npm ci`, `npm run test:syntax`, `npm test`, `npm run build`. If local dependencies or browsers are unavailable, rely on the **actual GitHub CI logs** and disclose the limitation. Add regression tests for changed behavior.
-- Security: no secret/service-role key in browser, Android, repo or prompt; public Supabase publishable key only with owner RLS. No edits to Carrel database or repository.
-- Do not equate "schema exists" with "feature works," "cache updated" with "server acknowledged," or "test passed" with "real two-device verification passed."
-- For uncertain destructive migration, irreversible data change, payment or production secret requirement: pause that action, document a safe blocker and proceed with other safe work.
-
-### 3C. End / handoff (MANDATORY)
-
-Before ending a **coding** session, commit an update to this file containing:
-
-1. **Latest independently tested `main` SHA** (or explain uncommitted/failed work), commits and files touched. The handoff file **cannot contain the SHA of its own not-yet-created commit**; the next agent obtains the final tip from GitHub.
-2. **Evidence:** exact CI/workflow links and their success/failure/pending status, deployment evidence, Supabase migration/security check if touched.
-3. **What changed** vs **what is still unimplemented**; distinguish test/mock from production/live data.
-4. **Task queue update** with current ID and state; do not change IDs casually.
-5. **One precise next action**, its module paths, intended change and acceptance test; mention blockers and recovery steps.
-6. **No secrets, local-only artifact paths, hidden conversation links, or assumptions** needed by the next chatbot.
-
-Update the handoff **after** implementing code, not as a replacement for code. If a session must stop before CI finishes, record links with `PENDING` and instruct the next agent to inspect results first. The handoff update is the **final content commit** when possible; its own CI may still be pending.
-
-### 3D. Interrupted/failed session
-
-- Detect failure by checking main's newest commits, latest workflow logs, and any unapplied/deployed migrations. Never blindly rerun a migration that succeeded but whose SQL commit was interrupted.
-- Preserve failed outbox mutations and their request IDs. If profile/note retries returned an uncertain result, use the existing idempotency keys instead of creating new ones.
-- Repair a failed gate on main with a small regression commit. If a deployed change is dangerous, use an explicit reversible fix/rollback with tests; **do not reset main**.
-- Update §1 to show `BLOCKED`, failing SHA/workflow, exact error, and the next recovery command/task.
+**Verify and hand off**
+8. Docs-only: `npm run test:plan`, links and documentation consistency. Code: `npm ci`, `npm run test:syntax`, relevant regression tests, `npm test`, `npm run build`; browser tests require Chromium. UI changes also need screenshots. Record unavailable checks honestly; mock tests do not prove live sync.
+9. Update §1, task state and one exact next action in the same delivery. Include files/functions, tested SHA, test/run URLs, deployment/migration status and blockers. Use SUCCESS/FAILED/PENDING/NOT RUN accurately; pending CI is the next agent's first check.
+10. Commit/push before ending. If access fails, report the unpublished patch/branch and precise recovery action; never claim remote completion. Do not invent the handoff commit's own SHA.
+11. Keep one current handoff and at most five milestone rows; Git history is the long log. Keep this plan near 2,400 words or less. Put reusable technical detail in existing reference docs, never a second roadmap. Do not weaken `test/plan_protocol.js` to conceal missing fields.
 
 ## 4. Ownership, architecture, and reference precedence
 
-**Resources:** repo `Mymayankyadav/lemma` · project `yemqnhnztlbyxmjxidis` only · web https://mymayankyadav.github.io/lemma/ · Supabase https://supabase.com/dashboard/project/yemqnhnztlbyxmjxidis . **Carrel is separate: never modify it.**
+Repo: [Mymayankyadav/lemma](https://github.com/Mymayankyadav/lemma), branch `main`. Web: https://mymayankyadav.github.io/lemma/. Backend: **`yemqnhnztlbyxmjxidis`**, Mumbai. **Carrel is a separate app/database; never modify it.**
 
-**Precedence for conflicts:**
-1. Current explicit user instruction and observed runtime/database facts.
-2. This `plan.md` for **engineering task order, status, handoff and safety**.
-3. Actual `main` source, migrations, tests and CI for **what was implemented**.
-4. `docs/STUDY_PLANNING_PROTOCOL.md` for product semantics; `docs/PHASE2_SYNC_CONTRACT.md` and `docs/SYNC_AUDIT_2026-10-26.md` for engineering constraints; `docs/ROADMAP_AMENDMENTS.md` for adopted product changes.
-5. `docs/DEVELOPMENT_ROADMAP.md`, `PROMPT.md`, and older README history are background only if they disagree with current facts.
-
-| Area | Existing source to reuse |
+| Responsibility | Existing code / reference |
 | --- | --- |
-| FSRS-6 and scheduling | `src/fsrs.js`, `src/app/model.js`, `src/app/session.js`; `test/compare_tsfsrs.mts` |
-| UI, rendering, interaction | `src/app/main.js`, views, `src/render.js`, `src/app.css` |
-| Original local/Claude persistence | `src/app/store.js`; `test/local_persistence.js` |
-| Account auth and lifecycle | `src/app/cloud_account.js`, `src/app/account_sync.js` |
-| Durable per-user storage / transport | `src/app/sync_browser.js`, `src/app/outbox_core.js`, `src/app/review_ledger.js`, `src/app/sync_merge.js` |
-| Live DB contracts | `supabase/migrations/` and authenticated RLS; `commit_note`, `commit_profile`, `publish_study_plan` RPCs |
-| Tests and delivery | `test/`, `.github/workflows/test.yml`, `.github/workflows/pages.yml`, `package.json` |
+| Scheduling, domain, review | `src/fsrs.js`, `src/app/model.js`, `session.js`, `review_ledger.js` |
+| Durability, identity, transport | `src/app/store.js`, `workspace_lifecycle.js`, `account_sync.js`, `sync_browser.js`, `outbox_core.js`, `sync_merge.js` |
+| Shell, screens, rendering | `src/app/main.js`, `view_*.js`, `sheets.js`, `src/app.css`, `src/render.js` |
+| AI portability | `src/app/ai.js` currently requires `window.claude`; Settings' ArtifactData instructions are host-specific, not a working general connector. |
+| Data / product contracts | `supabase/migrations/`; [study protocol](docs/STUDY_PLANNING_PROTOCOL.md); [sync reference](docs/PHASE2_SYNC_CONTRACT.md) |
+| Delivery / verification | `package.json`, `build.js`, `test/`, `.github/workflows/`, `capacitor.config.json`; native `android/` does not yet exist at this review. |
 
-## 5. Completed evidence ledger — append only significant milestones
+Precedence: current user instruction → this plan for scope/order → supporting contracts. Source, tests and observed backend determine implementation status; correct stale prose rather than assuming it works. Historical audits are evidence only. Engineering `plan.md` is distinct from the student's versioned study plans.
 
-| Date | Change | Commit/verification |
-| --- | --- | --- |
-| 2026-10-26 | Existing app imported, web build deployed, local durable review and Undo path, Supabase auth skeleton and explicit transfer controls | Main history, source tests |
-| 2026-10-26 | Astra durability and account-sync scaffolding merged to main; local review provenance, retractions, CAS notes, owner-scoped cache and comparison; **automatic active account sync remains gated** | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), merge `051f117b3708`, [regression](https://github.com/Mymayankyadav/lemma/actions/runs/40351875233) success, [Pages](https://github.com/Mymayankyadav/lemma/actions/runs/40351875125) success |
-| 2026-10-26 | Deployed revision-safe profile RPC and removed direct authenticated profile writes; added profile outbox staging and tests | `20261026203000_revision_safe_profiles.sql`, Supabase security advisor **zero findings** |
-| 2026-10-26 | Introduced canonical sequential-chatbot handoff, updated README and retired old PROMPT; root plan structural guard runs in regression suite | [main regression 40353975777](https://github.com/Mymayankyadav/lemma/actions/runs/40353975777) **success** at `104707fc4a44`; plan contract uses `npm run test:plan` |
+## 5. Completed evidence ledger
 
-| 2026-10-26 | SYNC-01 partial: internal account lifecycle locks UI, scrubs stale account cards on identity change, restores anonymous Store, handles in-flight activation, rejected save, and late Undo without changing FSRS or enabling live switch | `eee4a7b`, `404cf96`, `c694066`, `5391620`; [main regression 40357462478](https://github.com/Mymayankyadav/lemma/actions/runs/40357462478) **SUCCESS**; [Pages 40357379572](https://github.com/Mymayankyadav/lemma/actions/runs/40357379572) **SUCCESS** |
-
-| 2026-10-26 | SYNC-01 guarded drafts, imports, optimizer and destructive confirmations; editor bug fixed | [40359377678](https://github.com/Mymayankyadav/lemma/actions/runs/40359377678) SUCCESS; [40360307092](https://github.com/Mymayankyadav/lemma/actions/runs/40360307092) FAILED and diagnosed; fixed by `44a044dd` and `eb0be14c`; [40361061256](https://github.com/Mymayankyadav/lemma/actions/runs/40361061256) PENDING. |
+| Milestone | Evidence / limit |
+| --- | --- |
+| Original source and sync groundwork retained | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), existing source/migrations; no replacement implementation. |
+| Guarded drafts, imports and editor fix | `44a044dd`, `eb0be14c`; browser coverage passed in run 40362238502. Save durability still open. |
+| Roadmap consolidation | This documentation revision replaces old queues, adds product/UI boundaries and restores the existing plan guard's required fields. No runtime/backend change. |
 
 ## 6. Five-line end-of-session report template
 
-**Implemented:** precise user-visible and backend changes, with files and commits.
-
-**Verified:** named tests / GitHub Actions links / deployed migrations, each marked SUCCESS, FAILED, NOT RUN or PENDING.
-
-**Still gated:** important behavior not proven or not exposed to end users.
-
-**Next task:** `TASK-ID` — exact file or function, required test, smallest safe next step.
-
-**Handoff:** updated `plan.md` on `main`; previous tested SHA (live HEAD is authoritative after this document commit); any blocker that the next chatbot must read.
-
-**Do not leave `plan.md` stale. The next chatbot will have only: "follow the plan.md".**
+**Changed:** task ID, outcome, relevant files and commit.
+**Verified:** tested SHA, exact checks/run links and result.
+**Still gated:** unfinished behavior, deployment/migration limits.
+**Next:** one task slice, function/path and acceptance check.
+**Handoff:** updated on remote `main`, or exact unpublished-work recovery.

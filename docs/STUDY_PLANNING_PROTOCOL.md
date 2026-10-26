@@ -1,6 +1,8 @@
 # Lemma — Strong-model planning and checkpoint protocol
 
-**Status:** Adopted product requirement, 2026-10-26. This is a design specification, not a claim that the full workflow is implemented.
+**Status:** Supporting product contract, 2026-10-26; not a claim of completed implementation. [../plan.md](../plan.md) is the sole engineering roadmap and overrides scope/order here. Read this document only for KNOWLEDGE-01, PLAN-01 or TUTOR-01.
+
+Shared knowledge is private to one owner across successive tutors. Curated text and source references come first; optional knowledge documents must have bounded retrieval and citations. New image upload, camera, OCR and image-tutoring features are out of scope. Engineering-agent handoff and the student's tutor handoff are different protocols.
 
 ## Core workflow
 
@@ -98,12 +100,12 @@ Use small checkpoints that can be resumed mid-proof. The plan must cover source 
 ## Implementation mapping
 
 - Existing `study_plans`: latest published plan and monotonic revision.
-- New `study_context_files`: current curated context text and revision.
-- New `study_plan_versions`: immutable snapshot of each accepted plan version.
-- New `study_checkpoints`: stable per-checkpoint progress and evidence references.
+- Existing `study_context_files`: current curated context text and revision; full revision governance/history still needs verification.
+- Existing `study_plan_versions`: accepted plan snapshots; reuse publication RPC and verify permissions.
+- Existing `study_checkpoints`: stable per-checkpoint progress and evidence references.
 - Existing `learning_events`: append-only student attempts, feedback, hints and mastery evidence.
-- Future `plan_change_proposals` and atomic revision-commit API enforce approval and optimistic concurrency.
+- Existing `publish_study_plan` provides revision-aware publication. Verify context locking, complete idempotency metadata and approval authorization before exposing it. Amendment proposal persistence is still planned; do not recreate the publication mechanism.
 - The app needs UI to edit context, run planning, inspect checkpoint progress, compare plan versions, and accept/reject amendments.
 - The connector needs `get_planning_context`, `propose_plan`, `get_active_checkpoint`, `propose_plan_amendment`, `accept_plan_revision`, plus existing event/handoff/card tools.
 
-**Priority:** This is part of the critical product workflow in Phase 3 and must be integrated into Phase 4 model handoffs. A basic usable planning/checkpoint UI should ship before advanced adaptive tutors, not be deferred as optional polish.
+**Execution order and acceptance gates:** use only `plan.md`. API names above describe the intended product contract; their presence here does not mean those tools already exist.

@@ -1,27 +1,29 @@
 # Lemma
 
-A persistent mathematical learning environment: existing FSRS-6 flashcards, proof practice, offline review, and planned model-independent study sessions and Claude ↔ ChatGPT handoffs.
+A persistent mathematics learning workspace built on existing FSRS-6 flashcards, proof practice and offline review. Planned additions make study context, approved plans and unfinished proof attempts portable between tutors.
 
-**Live web app:** https://mymayankyadav.github.io/lemma/  
-**GitHub:** https://github.com/Mymayankyadav/lemma  
-**Backend:** dedicated Supabase Lemma project `yemqnhnztlbyxmjxidis` (Mumbai; **not** Carrel).
+**Web:** https://mymayankyadav.github.io/lemma/  
+**Repository:** https://github.com/Mymayankyadav/lemma  
+**Backend:** dedicated Supabase Lemma project `yemqnhnztlbyxmjxidis` (Mumbai); Carrel is separate.
 
-## For every chatbot or coding agent: start here
+## Start here
 
-**[Follow `plan.md`](plan.md).** It is the canonical execution plan and durable cross-chatbot handoff: current implementation state, precisely one next task, safety requirements, testing gates, the completed ledger and a required end-of-session update. [`AGENTS.md`](AGENTS.md) makes this entry point explicit to coding tools.
+[plan.md](plan.md) is the **only roadmap and current chatbot handoff**. [AGENTS.md](AGENTS.md) supplies short operating rules. Different chatbots work consecutively on `main`; the user can say **"follow the plan.md"** without supplying earlier chats.
 
-The owner usually asks a succession of different chatbots to **"follow the plan.md"**. Continue from live `main` and update the same plan before ending; never require an old chat transcript to resume.
+The plan defines exact task gates, a minimal mathematics-focused UI and private shared study knowledge. New image-upload/OCR/media features are excluded; narrowly scoped knowledge documents may be supported.
 
-## Accurate implementation status
+## What currently exists
 
-- The existing JavaScript/math flashcard app is imported, built and deployed to GitHub Pages; the original `src/fsrs.js` remains the scheduling engine. IndexedDB preserves anonymous/local cards.
-- GitHub Actions runs syntax checks, FSRS-6 comparison, storage/outbox tests, rendering, Chromium E2E, browser sync emulation and account Store adapter tests.
-- Supabase has authenticated owner-scoped records, revision-safe RPCs for notes/profiles/plans, an immutable review/retraction ledger, and account-scoped offline cache/outbox primitives. See `supabase/migrations/`.
-- Optional email authentication, manual copy-missing enrollment and a read-only account comparison are present.
-- **Full automatic cloud synchronization is NOT activated** in the visible Store: the account workspace is internally gated until review/profile conflicts and two-device scheduling convergence are verified. Account sign-in does not silently migrate anonymous cards.
-- Android Capacitor dependencies/config are present but **native releases are not yet verified**.
+- Vanilla JavaScript app, mathematical Markdown/KaTeX, original FSRS-6, proof steps, prerequisites, search/graph, statistics, local import/export and IndexedDB persistence.
+- Optional account login, explicit transfer/comparison and substantial per-account outbox, revision RPC, review/retraction and workspace-isolation infrastructure.
+- **Account editing/automatic sync is still gated.** Signing in does not silently migrate local cards. Cross-device scheduling remains a release gate.
+- AI helpers depend on Claude host capabilities; they are not general ChatGPT/Claude connectivity on the deployed website.
+- Study-context/plan/checkpoint schema exists; the complete learning UI and portable tutor workflow remain planned.
+- Capacitor dependencies/config exist; a native Android project/release has not yet been verified.
 
-## Developer commands
+See the plan for dated CI/deployment evidence; source and observed results take precedence over historical prose.
+
+## Development
 
 ```sh
 npm ci
@@ -30,15 +32,14 @@ npm test
 npm run build
 ```
 
-Run `npm run test:plan` when editing operational handoff. All app changes should also pass GitHub Actions. Browser E2E needs Playwright Chromium.
+Browser tests need Playwright Chromium. For documentation-only changes, run `npm run test:plan` and check links. Pages deployment and regression CI are separate; documentation-only pushes do not deploy web assets.
 
-## More reference material
+## References — read as needed
 
-- [Canonical handoff and task queue](plan.md)
-- [Detailed product planning/tutor contract](docs/STUDY_PLANNING_PROTOCOL.md)
-- [Sync audit and release gates](docs/SYNC_AUDIT_2026-10-26.md)
-- [Offline sync contract](docs/PHASE2_SYNC_CONTRACT.md)
-- [Historical engineering roadmap](docs/DEVELOPMENT_ROADMAP.md)
-- [Setup and deployment](docs/SETUP.md)
+- [Study planning and tutor contract](docs/STUDY_PLANNING_PROTOCOL.md)
+- [Sync architecture reference](docs/PHASE2_SYNC_CONTRACT.md)
+- [Data model reference](docs/DATA_MODEL.md)
+- [Setup](docs/SETUP.md)
+- [Historical sync audit](docs/SYNC_AUDIT_2026-10-26.md)
 
-Historical milestones in those documents may use past-tense branch/ZIP instructions; **`plan.md` and the verified current repository take precedence**.
+These support the canonical plan; they do not define competing execution queues.

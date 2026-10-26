@@ -1,5 +1,7 @@
 # Data model and store interface
 
+Supporting reference; [../plan.md](../plan.md) owns scope and task order. Read current source/migrations for exact runtime contracts. Existing media below is compatibility data, not authorization for new image features.
+
 ## Note (one document / one row)
 ```jsonc
 {
@@ -20,6 +22,8 @@
   "log": [ [ts, ord, grade, stateBefore, durationMs, kind] ]  // kind: 0 review, 1 practice, 2 reset
 }
 ```
+Newer review log entries may append a stable event ID and scheduling provenance; preserve those fields and older entries without inventing missing history. See `src/app/session.js` and `review_ledger.js`.
+
 `st`: 0 new, 1 learning, 2 review, 3 relearning. `s` stability (days), `d` difficulty (1–10).
 Minimal notes (deck/type/front/back) are accepted; `Model.sanitizeNote` fills the rest.
 
@@ -34,10 +38,15 @@ Store.init(handlers) -> Promise<{ notes: Map<id, note>, profile|null, mode }>
    handlers.profile(profile)             remote profile change
    handlers.status(status)               sync indicator changed
    handlers.snapshotAll() -> { notes[], profile }
-Store.saveNote(note)        fire-and-forget; queued, one write in flight per note
-Store.deleteNote(id)
-Store.saveProfile(profile)  debounced
-Store.status() -> { mode: 'cloud'|'local'|'memory'|'loading', reason, pending, offline }
+Store.saveNote(note)        local/account commit promise; legacy host uses its queue
+Store.deleteNote(id)        local/account commit promise
+Store.saveProfile(profile)  local/account commit promise; legacy host is debounced
+Store.saveReview(note, entry)
+Store.undoReview(restored, eventId)
+Store.whenSaved()           awaits tracked local writes; rejects recorded failures
+Store.status() -> { mode: 'cloud'|'account'|'local'|'memory'|'loading', reason, pending, failed, offline }
 Store.localLeftovers(), Store.clearLocal()
 ```
-The UI never talks to the backend directly; swapping the backend only touches store.js.
+Local/account promise resolution means local durability, not server acknowledgment. Callers must retain recoverable drafts on failure. Existing Model wrappers and legacy host paths have different return behavior: inspect them before assuming an awaited UI operation is durable.
+
+Keep domain writes behind Store and the existing account adapters. Safe account switching also involves `workspace_lifecycle.js`, Model/Session and async UI guards; it is not a one-file backend swap. Internal `activateAccount`/`deactivateAccount` are gated and must not be exposed before the canonical plan's sync acceptance checks.

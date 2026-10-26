@@ -1,4 +1,6 @@
-# Automatic flashcard sync audit — 26 October 2026
+# Historical automatic flashcard sync audit — 26 October 2026
+
+> **Historical evidence, not an execution plan.** The sole current roadmap is [../plan.md](../plan.md). Branch state, policies, findings and suggested A4/A5/A6 sequence below describe the audit at that time; later commits/migrations supersede several findings. Do not execute its old next steps without checking the current task and source. Preserve this record for investigation, not startup reading.
 
 Scope: `Mymayankyadav/lemma`, Supabase `yemqnhnztlbyxmjxidis` only. Baseline repository commit `39dfffd772ba269ae49ff667e225635c7ecec51e`. Latest pre-audit Pages deployment: `6b07dfb66124207003f2b7ab1af1d7cef75f7c2f`, Actions run `40317373162`, successful. The newer tip was documentation. No Carrel resources were changed.
 
@@ -40,9 +42,9 @@ These primitives remain disconnected from the active Store until A4/A5 below. No
 - Transactional SQL checks with two synthetic authenticated identities passed for creation, retry deduplication, reused-key rejection, stale revisions, tombstones, forbidden direct writes, review immutability and cross-account isolation. All fixtures rolled back. These are database-role tests, not a claim of two real browser login sessions.
 - Security advisor returned zero findings after deployment. Realtime publication contains notes, profiles and review events, but the app still has no subscriber.
 
-## Remaining implementation sequence and release gates
+## Historical proposed sequence and gates — superseded by plan.md
 
-### A4 — review ledger semantics (next critical checkpoint)
+### A4 — review ledger semantics (priority at audit time)
 
 1. Define append-only review retractions keyed by event ID, with owner-scoped foreign keys and idempotent append RPC. Undo must append a retraction even when the original upload timed out; never delete historical cloud events.
 2. Atomically commit reviews/retractions and sufficient scheduling provenance: algorithm/version, parameter set, learning steps, retention, scheduling timestamp (including preview time), rollover/timezone, deterministic seed and load-balancing policy. Current `review_events` lacks these fields.

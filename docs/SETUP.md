@@ -1,33 +1,34 @@
-# Lemma Setup
+# Lemma setup reference
 
-> **Operational precedence (October 2026):** This is supporting historical/detail documentation, not the live agent task queue. For the current merged `main` implementation, next task, and mandatory chatbot handoff, start with [`../plan.md`](../plan.md). Old branch names, dated milestones, and ZIP import instructions below are historical; verify live source/CI/backend before relying on them.
+For work selection and handoff, read [../plan.md](../plan.md). These are setup facts, not a second task queue. Continue the existing repository; do not re-import a ZIP or recreate the backend.
 
+## Resources
 
-## Backend
-- Supabase project: `yemqnhnztlbyxmjxidis`
+- Repository: https://github.com/Mymayankyadav/lemma
+- Web: https://mymayankyadav.github.io/lemma/
+- Supabase: `yemqnhnztlbyxmjxidis`, region `ap-south-1` (Mumbai).
 - Dashboard: https://supabase.com/dashboard/project/yemqnhnztlbyxmjxidis
-- Region: `ap-south-1` (Mumbai)
-- Organization: existing Carrel org, but a separate project and database.
-- Initial tables: `study_plans`, `learning_sessions`, `learning_events`, `tutor_handoffs`. These are private via owner RLS.
+- Carrel is a separate project; never change its database or repository.
 
-## GitHub Pages
-The existing `.github/workflows/pages.yml` deploys main to GitHub Pages. `.github/workflows/test.yml` runs full regression checks on development branches and PRs.
+## Build and test
 
-## Authentication
-Configure Supabase Auth URL settings for your final GitHub Pages URL and Android callback before activating sign-in. Do not place secret/service-role keys in the web or Android app. A publishable key is safe with proper RLS.
+Use the pinned dependencies/lockfile and commands in `package.json`. Current CI uses Node 22, `npm ci`, syntax checks, Chromium installation and `npm test`. `npm run build` bundles the app and essential libraries into `dist/`.
 
-## Next phase
-Continue from the existing source. Follow A4/A5 in `docs/SYNC_AUDIT_2026-10-26.md`; do not re-import a source ZIP or recreate the backend.
+`.github/workflows/test.yml` runs regression checks on `main`, `astra/**` and pull requests. `.github/workflows/pages.yml` separately deploys matching source/build changes on `main`; documentation-only changes do not redeploy Pages.
 
+## Account configuration
 
-## Optional email login (account sign-in is NOT cloud card sync)
-
-Set GitHub Actions repository variables (Settings → Secrets and variables → Actions → Variables):
+GitHub Actions repository variables:
 
 - `SUPABASE_URL`: `https://yemqnhnztlbyxmjxidis.supabase.co`
-- `SUPABASE_PUBLISHABLE_KEY`: the public `sb_publishable_...` key from the Lemma Supabase project API keys screen; **never** a secret or service-role key.
+- `SUPABASE_PUBLISHABLE_KEY`: the project's public publishable key, never a secret/service-role key.
 
-GitHub Actions injects these **public** values at build time into the static app. After setting them, rerun Deploy Lemma web through the Actions tab. In Supabase Authentication → URL Configuration, add `https://mymayankyadav.github.io/lemma/` to allowed redirects and set its Site URL appropriately before email magic-link use. Android auth requires a separate deep-link implementation and redirect allowlisting.
+The build injects these public values. In Supabase Auth, the Site URL and redirect allowlist must support `https://mymayankyadav.github.io/lemma/`; verify current configuration before changing it. Android callbacks need their own tested deep-link setup.
 
-The Settings account section supports sign-in/out and explicit copy-missing transfers. Current card data stays in original local storage, and must not be automatically migrated. Cloud sync activation remains a subsequent checkpoint requiring tested revision handling, atomic review events, and explicit import safeguards.
+Settings supports optional login and explicit transfer/comparison. Sign-in does not automatically migrate anonymous cards or activate account editing. Follow the sync gates in the canonical plan.
 
+## Backend / native changes
+
+Inspect tracked and applied migrations before changing schema; a checked-in SQL file is not evidence of deployment. Do not run `supabase/legacy_schema_draft.sql` as a bootstrap.
+
+Capacitor dependencies and `capacitor.config.json` exist. Native Android scaffolding and device verification are future work. A web deployment does not update an installed bundled APK.
