@@ -143,7 +143,7 @@ const LemmaSync = (() => {
     setInterval(() => { if (!document.hidden) schedule(); }, 120000);
     attach(LemmaAccount.user).catch(() => {});
   }
-  return { init, attach, stop, refresh, enrollMissingLocal, compareLocal,
+  return { init, attach, stop, refresh, kick: schedule, enrollMissingLocal, compareLocal,
     get status() { return { ...state }; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
 })();
