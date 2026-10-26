@@ -1,5 +1,8 @@
 # Lemma Setup
 
+> **Operational precedence (October 2026):** This is supporting historical/detail documentation, not the live agent task queue. For the current merged `main` implementation, next task, and mandatory chatbot handoff, start with [`../plan.md`](../plan.md). Old branch names, dated milestones, and ZIP import instructions below are historical; verify live source/CI/backend before relying on them.
+
+
 ## Backend
 - Supabase project: `yemqnhnztlbyxmjxidis`
 - Dashboard: https://supabase.com/dashboard/project/yemqnhnztlbyxmjxidis
