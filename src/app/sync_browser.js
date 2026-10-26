@@ -215,7 +215,7 @@ const LemmaCloud = (() => {
           };
         };
       });
-      return { retraction: op, note: noteOp };
+      return op;
     }
     async stageUndo(restoredNote, targetEventId, expectedRevision) {
       return this.stageRetraction(targetEventId, 'undo', restoredNote, expectedRevision);
