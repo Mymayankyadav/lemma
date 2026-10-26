@@ -61,7 +61,7 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   assert.equal(staged.length,1);
   assert.equal(staged[0].note.front,'new');
   assert.equal(staged[0].revision,0);
-  assert.equal(localSaved,1,'must wait for anonymous data durability');
+  assert.equal(localSaved,2,'comparison and enrollment each require durable source data');
   assert.equal(model.size,2,'source notes must be retained');
   const secondPass = await ctx.sync.enrollMissingLocal();
   assert.equal(secondPass.queued,0,'repeated enrollment cannot duplicate queued writes');
