@@ -452,16 +452,18 @@ function syntheticHistory() {
     await page.fill('#ed-back', 'Keep this proof attempt');
     await page.evaluate(() => {
       const put = IDBObjectStore.prototype.put;
-      window.__restorePut = () => { IDBObjectStore.prototype.put = put; };
-      IDBObjectStore.prototype.put = function (value, ...args) {
-        const request = put.call(this, value, ...args);
+      const add = IDBObjectStore.prototype.add;
+      const abortMatching = (method) => function (value, ...args) {
+        const request = method.call(this, value, ...args);
         if (value.front === 'Aborted editor transaction')
           request.addEventListener('success', () => this.transaction.abort());
         return request;
       };
+      IDBObjectStore.prototype.put = abortMatching(put);
+      IDBObjectStore.prototype.add = abortMatching(add);
     });
     await page.click('.sheet-foot .btn-primary');
-    await page.waitForFunction(() => document.querySelector('.ed-warn').textContent.includes('Could not save'));
+    await page.waitForFunction(() => document.querySelector('.ed-warn')?.textContent.includes('Could not save'));
     ok(await page.inputValue('#ed-back') === 'Keep this proof attempt', 'aborted editor write retains editable input');
     ok(await page.evaluate(() => __editor.Model.notes.size === 0), 'aborted editor creation is absent from the Model');
     ok(await page.evaluate(() => JSON.parse(localStorage.getItem('lemma.draft.v1')).back === 'Keep this proof attempt'),
@@ -477,12 +479,14 @@ function syntheticHistory() {
     const holdReceipt = () => page.evaluate(() => {
       const original = __editor.Store.saveNote;
       window.__editorCalls = 0;
+      window.__editorStored = false;
       let release;
       const gate = new Promise(resolve => { release = resolve; });
       window.__releaseEditor = () => { __editor.Store.saveNote = original; release(); };
       __editor.Store.saveNote = async (...args) => {
         window.__editorCalls++;
         await original(...args);
+        window.__editorStored = true;
         await gate;
       };
     });
@@ -498,22 +502,49 @@ function syntheticHistory() {
     ok(await page.evaluate(() => __editor.Model.notes.size === 1 && localStorage.getItem('lemma.draft.v1') === null),
       'successful commit projects exactly one note and clears its draft');
 
+    // Commit finished in IndexedDB, but the browser dies before receiving the
+    // receipt. Reopening must recognize the ID without writing over reviews.
     await page.keyboard.press('n');
     await page.waitForSelector('#ed-front');
+    await page.fill('#ed-front', 'Committed before receipt crash');
+    await holdReceipt();
+    await page.click('.sheet-foot .btn-primary');
+    await page.waitForFunction(() => __editorStored);
+    const recoveredId = await page.evaluate(() => JSON.parse(localStorage.getItem('lemma.draft.v1')).pendingSave.id);
+    await page.reload();
+    await page.waitForSelector('.today');
+    await page.evaluate(async id => {
+      const note = __editor.Model.notes.get(id);
+      note.cards['1'].reps = 9;
+      note.log.push([Date.now(),1,3,0,200,0]);
+      await __editor.Store.saveNote(note);
+    }, recoveredId);
+    await page.reload();
+    await page.waitForSelector('.today');
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+    ok(await page.inputValue('#ed-front') === '' && await page.isVisible('.ed-restored'),
+      'reload reconciles the committed draft as a saved card');
+    ok(await page.evaluate(id => __editor.Model.notes.size === 2 &&
+        __editor.Model.notes.get(id).cards['1'].reps === 9 &&
+        __editor.Model.notes.get(id).log.length === 1 &&
+        localStorage.getItem('lemma.draft.v1') === null, recoveredId),
+      'recovery does not duplicate a card or overwrite later review history');
+
     await page.fill('#ed-front', 'Add and next waits');
     await holdReceipt();
     await page.getByRole('button', { name: 'Add & next', exact: true }).click();
     ok(await page.inputValue('#ed-front') === 'Add and next waits', 'Add & next retains content while saving');
     await page.evaluate(() => __releaseEditor());
     await page.waitForFunction(() => document.querySelector('#ed-front').value === '' && !document.querySelector('#ed-front').disabled);
-    ok(await page.evaluate(() => __editor.Model.notes.size === 2), 'Add & next resets only after the committed creation');
+    ok(await page.evaluate(() => __editor.Model.notes.size === 3), 'Add & next resets only after the committed creation');
 
     await page.fill('#ed-front', 'Closed editor pending receipt');
     await holdReceipt();
     await page.click('.sheet-foot .btn-primary');
     await page.click('.sheet-head .icon-btn[aria-label="Close"]');
     await page.evaluate(() => __releaseEditor());
-    await page.waitForFunction(() => __editor.Model.notes.size === 3);
+    await page.waitForFunction(() => __editor.Model.notes.size === 4);
     ok(true, 'closing a pending editor still projects a committed card in the same workspace');
     await page.waitForSelector('#ed-front', { state: 'hidden' });
     await page.keyboard.press('n');

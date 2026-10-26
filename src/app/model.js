@@ -158,12 +158,15 @@ const Model = (() => {
   }
   // Editor writes use a detached candidate: a failed transaction must not
   // change the visible note, its schedule or the draft's base revision.
-  async function commitEditorNote(base, fields, isCurrent) {
+  async function commitEditorNote(base, fields, isCurrent, opts = {}) {
+    if (opts.createOnly && notes.has(base.id))
+      throw new Error('Card was already created; open the existing card before editing');
     const candidate = sanitizeNote(Object.assign(clone(base), clone(fields), { modified: Date.now() }));
-    await Store.saveNote(candidate, { durable: true });
+    await Store.saveNote(candidate, { durable: true, createOnly: !!opts.createOnly });
     // Auth recovery may have replaced the entire Model while storage awaited.
     if (!isCurrent()) return candidate;
     const existing = notes.get(candidate.id);
+    if (opts.createOnly && existing) return existing;
     if (existing) Object.assign(existing, candidate);
     else notes.set(candidate.id, candidate);
     bump();

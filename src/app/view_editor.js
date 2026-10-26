@@ -58,6 +58,20 @@ const EditorSheet = (() => {
   const readDraft = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } };
   const writeDraft = (key,d) => { try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) { /* ignore */ } };
   const clearDraft = key => { try { localStorage.removeItem(key); } catch (e) { /* ignore */ } };
+  const content = n => ({ type:n.type, deck:n.deck, title:n.title, front:n.front,
+    back:n.back, tags:n.tags, requires:n.requires, media:n.media || {} });
+  const canonical = x => x && typeof x === 'object'
+    ? Array.isArray(x) ? '[' + x.map(canonical).join(',') + ']'
+      : '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + canonical(x[k])).join(',') + '}'
+    : JSON.stringify(x);
+  const sameContent = (a,b) => canonical(content(a)) === canonical(content(b));
+  function draftContent(d) {
+    const used = new Set(((d.front || '') + '\n' + (d.back || '')).match(/media:([\w-]+)/g)?.map(x => x.slice(6)) || []);
+    const media = Object.fromEntries(Object.entries(d.media || {}).filter(([id]) => used.has(id)));
+    return Model.sanitizeNote({ id:'draft', cards:{}, log:[], ...d,
+      tags: typeof d.tags === 'string' ? d.tags.split(/[\s,]+/).filter(Boolean) : d.tags,
+      media });
+  }
 
   function open(noteId, onSaved, preset = {}) {
     const originRevision = App.workspaceRevision;
@@ -68,6 +82,7 @@ const EditorSheet = (() => {
     let saving = false;
     let saveError = '';
     let saveBase = null; // Retain the same ID across failed new-card attempts.
+    let recoveredSave = false;
     const currentWorkspace = () => !App.workspaceBlocked &&
       App.workspaceRevision === originRevision && Store.mode === originMode &&
       (originMode !== 'account' || key === 'lemma.draft.account.' + LemmaAccount.user?.id + (noteId ? '.edit.' + noteId : ''));
@@ -86,7 +101,21 @@ const EditorSheet = (() => {
       } else if (d) staleDraft = true; // do not overwrite a newer version
     } else {
       const d = !preset.front && !preset.title && readDraft(key);
-      if (d && (d.front || d.back)) { f = Object.assign({ media: {} }, d); draftRestored = true; }
+      const pending = d?.pendingSave;
+      const existing = pending?.id && Model.notes.get(pending.id);
+      if (pending?.id && typeof pending.id === 'string')
+        saveBase = { id:pending.id, cards:{}, log:[] };
+      if (existing && pending.fields && sameContent(existing, pending.fields) &&
+          sameContent(draftContent(d), pending.fields)) {
+        // The transaction committed, but the browser closed before its receipt.
+        // Existing review history remains authoritative: never resave the draft.
+        clearDraft(key);
+        recoveredSave = true;
+        saveBase = null;
+      } else if (existing) {
+        saveError = 'This card changed since the interrupted save. Your draft is kept; compare it with the saved card before creating another.';
+      }
+      if (d && !recoveredSave && (d.front || d.back)) { f = Object.assign({ media: {} }, d); draftRestored = true; }
       else f = { type: preset.type || 'basic', deck: preset.deck || Model.meta.lastDeck || Model.deckNames()[0] || 'Default', title: preset.title || '', front: preset.front || '', back: preset.back || '', tags: '', requires: preset.requires || [], media: {} };
     }
     let lastTa = null;
@@ -208,9 +237,12 @@ const EditorSheet = (() => {
         JSON.stringify(d.requires) !== JSON.stringify(editing.requires)
       : !!(d.front || d.back);
     const saveDraft = debounce(() => {
-      if (!valid()) return;
+      if (!valid() || saving) return;
       const d = draftFields();
-      if (draftChanged(d)) writeDraft(key,d);
+      if (draftChanged(d)) {
+        if (!editing) d.pendingSave = readDraft(key)?.pendingSave;
+        writeDraft(key,d);
+      }
     }, 500);
 
     function setType(v) {
@@ -362,10 +394,13 @@ const EditorSheet = (() => {
       const media = {};
       for (const k of Object.keys(c.media)) if (keep.has(k)) media[k] = c.media[k];
       const fields = { type: c.type, deck: c.deck, title: c.title, front: c.front, back: c.back, tags: c.tags, requires: c.requires, media };
+      if (!editing && saveBase && Model.notes.has(saveBase.id)) {
+        saveError = 'This card was already saved. Open it from Cards before making changes.';
+        drawPreview();
+        return;
+      }
       saving = true;
       saveError = '';
-      // Flush before awaiting storage, including saves within the debounce window.
-      writeDraft(key, draftFields());
       const inputs = [...body.querySelectorAll('input, textarea, button')];
       const disabled = inputs.map(el => el.disabled);
       inputs.forEach(el => { el.disabled = true; });
@@ -375,7 +410,12 @@ const EditorSheet = (() => {
       let note;
       try {
         saveBase ||= editing ? clone(editing) : { id: uid(), cards: {}, log: [] };
-        note = await Model.commitEditorNote(saveBase, fields, currentWorkspace);
+        // Record the exact attempted content and ID before starting the write.
+        // Reload can distinguish a committed card from an interrupted attempt.
+        const draft = draftFields();
+        if (!editing) draft.pendingSave = { id:saveBase.id, fields:content(draftContent(fields)) };
+        writeDraft(key, draft);
+        note = await Model.commitEditorNote(saveBase, fields, currentWorkspace, { createOnly: !editing });
       } catch (error) {
         if (valid()) {
           saveError = 'Could not save. Your input is kept here; retry Save or copy it before leaving.';
@@ -417,9 +457,12 @@ const EditorSheet = (() => {
       } })));
     const body = h('div', { class: 'editor' }, mTabs,
       h('div', { class: 'ed-form' },
+        recoveredSave ? h('div', { class: 'ed-restored', text: 'Your previous card was saved.' }) : null,
         draftRestored ? h('div', { class: 'ed-restored' }, h('span', { text: 'Draft restored' }), h('button', { class: 'link-btn', type: 'button', text: 'Discard', onclick: () => {
           if (!valid()) return;
           clearDraft(key);
+          saveBase = null;
+          saveError = '';
           if (editing) {
             frontTa.value = editing.front; backTa.value = editing.back;
             titleIn.value = editing.title; deckIn.value = editing.deck;
@@ -448,7 +491,10 @@ const EditorSheet = (() => {
         // write a stale draft under whichever workspace happens to be active.
         if (!closed && !committed) {
           const draft = draftFields();
-          if (draftChanged(draft)) writeDraft(key,draft);
+          if (draftChanged(draft)) {
+            if (!editing) draft.pendingSave = readDraft(key)?.pendingSave;
+            writeDraft(key,draft);
+          }
         }
         closed = true;
       },
