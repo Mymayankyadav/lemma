@@ -167,7 +167,10 @@ class Session {
         if (g === 1) this.cramQ.splice(Math.min(3, this.cramQ.length), 0, r.key);
       } else {
         // intervals shown on the buttons are applied as-is unless the card sat unanswered for a long time
-        const pv = cur.preview && now - (cur.previewAt || now) < 15 * 60000 ? cur.preview : Model.previewFor(r, now);
+        const previewReused = Boolean(cur.preview && now - (cur.previewAt || now) < 15 * 60000);
+        const pv = previewReused ? cur.preview : Model.previewFor(r, now);
+        if (schedulingProvenance) schedulingProvenance.preview_at_ms =
+          previewReused ? (cur.previewAt || now) : now;
         const nc = Object.assign({}, pv[g].card);
         if (prev.flag) nc.flag = prev.flag;
         note.cards[ord] = nc;
@@ -197,6 +200,9 @@ class Session {
           if (added) events.push({ type: 'prereqs', count: added });
         }
       }
+      // Preserve what the existing FSRS.preview actually chose, including
+      // any subsequent leech/sibling adjustments. No scheduling math is copied.
+      if (schedulingProvenance) schedulingProvenance.card_after = clone(note.cards[ord]);
       await Model.saveScheduling(note);
       this.history.push({ noteId: note.id, before, afterCards: clone(note.cards), eventId,
         leechAdded: !before.tags.includes('leech') && note.tags.includes('leech'), queues, key: r.key, kind: cur.kind });
