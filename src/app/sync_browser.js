@@ -151,7 +151,8 @@ const LemmaCloud = (() => {
           !note.log?.some(x => x[6] === entry[6])) throw new Error('A snapshot and stable review ID are required');
       const event = { event_id: entry[6], note_id: note.id, ordinal: Number(entry[1]),
         occurred_at_ms: Number(entry[0]), grade: Number(entry[2]), state_before: Number(entry[3]),
-        duration_ms: Number(entry[4]), kind: Number(entry[5]) };
+        duration_ms: Number(entry[4]), kind: Number(entry[5]),
+        scheduling_provenance: entry[7] && typeof entry[7] === 'object' ? structuredClone(entry[7]) : null };
       if (!['ordinal','occurred_at_ms','grade','state_before','duration_ms','kind'].every(k => Number.isSafeInteger(event[k])) ||
           event.ordinal < 0 || event.occurred_at_ms <= 0 || event.grade < 1 || event.grade > 4 ||
           event.state_before < 0 || event.state_before > 3 || event.duration_ms < 0 || ![0,1].includes(event.kind)) {
