@@ -82,6 +82,22 @@ const clear = async db => new Promise((resolve, reject) => {
   assert.equal((await storage.list()).length, 4);
   await clear(db);
 
+  // Immutable inbound events may contain JSONB keys in another order,
+  // but an event ID must never be overwritten with contradictory history.
+  const remoteReview = { event_id:crypto.randomUUID(), note_id:'n',
+    ordinal:1, occurred_at_ms:345, grade:3, state_before:0,
+    duration_ms:300, kind:0, scheduling_provenance:{version:1,weights:[1,2]} };
+  await storage.ingestReview(remoteReview);
+  await storage.ingestReview({ ...remoteReview,
+    scheduling_provenance:{weights:[1,2],version:1} });
+  await assert.rejects(storage.ingestReview({...remoteReview,grade:1}));
+  assert.equal((await storage.reviews())[0].grade,3);
+  const remoteUndo = { retraction_id:crypto.randomUUID(), target_event_id:remoteReview.event_id, reason:'undo' };
+  await storage.ingestRetraction(remoteUndo);
+  await assert.rejects(storage.ingestRetraction({...remoteUndo,reason:'correction'}));
+  assert.equal((await storage.retractions())[0].reason,'undo');
+  await clear(db);
+
   await storage.ingestRemoteNote({ id:'n', data:note('new'), revision:5 });
   await storage.ingestRemoteNote({ id:'n', data:note('old'), revision:3 });
   assert.equal((await storage.notes())[0].data.front, 'new', 'late pull must not regress revision');
