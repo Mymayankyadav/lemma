@@ -22,14 +22,14 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 | Field | Evidence / limit |
 | --- | --- |
 | Known-good main baseline | `bcd0eb98f8930d68f4369ccaa4d86e8a97828572`; [regression 40373316156](https://github.com/Mymayankyadav/lemma/actions/runs/40373316156) SUCCESS. |
-| Latest inspected regression | This delivery: PENDING remote CI. Local `npm ci`, syntax, merge/outbox/storage (including new editor tests), FSRS, account/account-store/workspace, plan and build SUCCESS. Local `npm test` stopped at render: Chromium unavailable; browser download returned invalid archives. Browser render/E2E/sync and screenshots NOT RUN locally. |
+| Latest inspected regression | SUCCESS: [regression 40376607728](https://github.com/Mymayankyadav/lemma/actions/runs/40376607728) at `5ab54b960a8894ea0e466cf53da75fb941579acf`: syntax and full `npm test`, including render/E2E/browser-sync and new editor cases. Local install, non-browser checks, plan and build SUCCESS; local `npm test` stopped at render because Chromium's download returned invalid archives. CI generated E2E screenshots; no local visual review. |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
 | Web deployment | Previous [Pages 40361012660](https://github.com/Mymayankyadav/lemma/actions/runs/40361012660) SUCCESS at `44a044dd`. This runtime delivery: NOT DEPLOYED; review branch only. Pages runs after merge to `main`. |
 | Cloud confidence | Editor now awaits local/account commit or a legacy per-write receipt. Detached candidates preserve original notes/schedules on failure; workspace leases suppress late projections/callbacks. Account workspace remains gated; live two-device convergence NOT verified. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
 | Current blocker / unfinished work | Main publication requires approval; review branch/PR preserves this slice. New-card retries reuse an ID within an open editor. Crash after commit but before receipt/draft cleanup still needs reconciliation across reload; browser sign-out-during-write and A→B→A gates remain. Imports/deletes still acknowledge optimistically and are outside this slice. |
 
-**Next action, in one sentence:** inspect this review branch's CI and obtain approval to merge, then extend `EditorSheet.open/save` and `test/e2e.js` to reconcile a new-card draft after crash between commit and acknowledgment, proving reload/retry cannot create a duplicate or overwrite later review history.
+**Next action, in one sentence:** obtain approval to merge [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) (runtime CI SUCCESS), then extend `EditorSheet.open/save` and `test/e2e.js` to reconcile a new-card draft after crash between commit and acknowledgment, proving reload/retry cannot create a duplicate or overwrite later review history.
 
 The record above describes inspected evidence, not today's mutable HEAD. Update it after each task; do not append another competing handoff.
 
@@ -100,7 +100,7 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Original source and sync groundwork retained | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), existing source/migrations; no replacement implementation. |
 | Guarded drafts, imports and editor fix | `44a044dd`, `eb0be14c`; browser coverage passed in run 40362238502. Save durability still open. |
 | Roadmap consolidation | `bcd0eb98`; canonical queue and scope boundaries, guard restored; regression 40373316156 SUCCESS. |
-| Durable editor-save slice | `view_editor.js`, `Model.commitEditorNote`, `Store.saveNote` receipts; `test/editor_persistence.js` covers abort/retry/leases, `test/e2e.js` adds browser recovery/pending/Add & next cases. No backend change; CI pending. |
+| Durable editor-save slice | `view_editor.js`, `Model.commitEditorNote`, `Store.saveNote` receipts; `test/editor_persistence.js` covers abort/retry/leases, `test/e2e.js` adds browser recovery/pending/Add & next/close cases. No backend change; full regression 40376607728 SUCCESS at `5ab54b9`. |
 
 ## 6. Five-line end-of-session report template
 
