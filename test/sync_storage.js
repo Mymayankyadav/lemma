@@ -6,8 +6,8 @@ const userA = '00000000-0000-4000-8000-000000000001';
 const userB = '00000000-0000-4000-8000-000000000002';
 const note = (front = 'first') => ({ id: 'n', front, back: '', log: [], cards: {} });
 const clear = async db => new Promise((resolve, reject) => {
-  const t = db.transaction(['notes','reviews','outbox','meta'], 'readwrite');
-  for (const name of ['notes','reviews','outbox','meta']) t.objectStore(name).clear();
+  const t = db.transaction(['notes','reviews','retractions','outbox','meta'], 'readwrite');
+  for (const name of ['notes','reviews','retractions','outbox','meta']) t.objectStore(name).clear();
   t.oncomplete = resolve; t.onerror = () => reject(t.error);
 });
 (async () => {
@@ -45,6 +45,14 @@ const clear = async db => new Promise((resolve, reject) => {
   await storage.stageReview(reviewed, entry);
   assert.equal((await storage.list()).length, 2);
   assert.equal((await storage.reviews()).length, 1);
+  const undo = await storage.stageRetraction(entry[6]);
+  assert.equal(undo.kind, 'retraction');
+  assert.equal((await storage.retractions()).length, 1);
+  assert.equal((await storage.list()).length, 3);
+  await assert.rejects(storage.stageRetraction(entry[6]));
+  await storage.ack(undo, { retractionId: undo.data.retraction_id });
+  assert.equal((await storage.retractions()).length, 1, 'accepted undo stays in ledger');
+  assert.equal((await storage.reviews()).length, 1, 'original remains immutable');
   await assert.rejects(storage.stageReview({ ...reviewed, front: 'must roll back' }, entry));
   assert.equal((await storage.notes())[0].data.front, 'reviewed');
   assert.equal((await storage.list()).length, 2);
