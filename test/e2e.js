@@ -405,7 +405,7 @@ function syntheticHistory() {
 
     await page.click('.tb[data-go="browse"]');
     await page.waitForSelector('.note-row');
-    await page.click('.note-row');
+    await page.locator('.note-row').first().click();
     await page.waitForSelector('.detail-actions');
     await page.click('.detail-actions >> text=Edit');
     await page.waitForSelector('#ed-front');
@@ -420,7 +420,7 @@ function syntheticHistory() {
     await page.waitForSelector('.today');
     await page.click('.tb[data-go="browse"]');
     await page.waitForSelector('.note-row');
-    await page.click('.note-row');
+    await page.locator('.note-row').first().click();
     await page.waitForSelector('.detail-actions');
     await page.click('.detail-actions >> text=Edit');
     await page.waitForSelector('#ed-front');
