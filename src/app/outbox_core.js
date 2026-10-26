@@ -13,7 +13,7 @@ const LemmaOutboxCore = (() => {
     return /stale_note_revision|stale_plan_revision/i.test(String(error?.message || error || ''));
   }
   function validateOp(op) {
-    if (!op || typeof op.id !== 'string' || !op.id || !['note','review','plan'].includes(op.kind)) {
+    if (!op || typeof op.id !== 'string' || !op.id || !['note','review','retraction','plan'].includes(op.kind)) {
       throw new Error('Invalid Lemma outbox operation');
     }
     if (!op.requestId || typeof op.requestId !== 'string') throw new Error('Outbox requires a stable request ID');
