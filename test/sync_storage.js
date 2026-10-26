@@ -40,11 +40,15 @@ const clear = async db => new Promise((resolve, reject) => {
   await clear(db);
 
   // Duplicate event insertion must abort snapshot + both queue entries + sequence.
-  const entry = [100,1,3,0,2000,0,crypto.randomUUID()];
+  const entry = [100,1,3,0,2000,0,crypto.randomUUID(),
+    { version:1,algorithm:'fsrs-6',day_index:20000,
+      weights:require('../src/fsrs.js').DEFAULT_W.slice() }];
   const reviewed = { ...note('reviewed'), log: [entry] };
   await storage.stageReview(reviewed, entry);
   assert.equal((await storage.list()).length, 2);
   assert.equal((await storage.reviews()).length, 1);
+  assert.equal((await storage.reviews())[0].scheduling_provenance.day_index,20000);
+  assert.equal((await storage.list()).find(x => x.kind === 'review').data.scheduling_provenance.weights.length,21);
   const undo = await storage.stageRetraction(entry[6]);
   assert.equal(undo.kind, 'retraction');
   assert.equal((await storage.retractions()).length, 1);
