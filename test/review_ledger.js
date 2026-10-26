@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { activeEvents } = require('../src/app/review_ledger.js');
+const { activeEvents, replayMemory } = require('../src/app/review_ledger.js');
 const event = (id, ms=100) => ({ event_id:id, occurred_at_ms:ms, grade:3 });
 const undo = (id,target) => ({ retraction_id:id,target_event_id:target,reason:'undo' });
 assert.deepEqual(activeEvents([event('b'),event('a',10)],[]).map(e=>e.event_id),['a','b']);
@@ -9,3 +9,16 @@ assert.throws(()=>activeEvents([event('a'),event('a',90)],[]),/Conflicting/);
 assert.throws(()=>activeEvents([event('a')],[undo('u','missing')]),/not fetched/);
 assert.throws(()=>activeEvents([event('a')],[undo('u','a'),undo('v','a')]),/Conflicting/);
 console.log('ok: review ledger, immutable retractions and stable order');
+
+const FSRS = require('../src/fsrs.js');
+const provenance = day => ({version:1,algorithm:'fsrs-6',weights:FSRS.DEFAULT_W.slice(),day_index:day});
+const a={...event('a'),kind:0,scheduling_provenance:provenance(20000)};
+const b={...event('b',200),kind:0,scheduling_provenance:provenance(20001)};
+const r1=replayMemory([b,a],[],{engine:FSRS});
+const r2=replayMemory([a,b],[],{engine:FSRS});
+assert.deepEqual(r1,r2);
+assert.equal(r1.active,2);
+assert.deepEqual(replayMemory([b,a],[undo('u','b')],{engine:FSRS}).memory,FSRS.step(FSRS.DEFAULT_W,null,0,3));
+assert.throws(()=>replayMemory([event('old')],[],{engine:FSRS}),/provenance/);
+assert.throws(()=>replayMemory([b,a],[],{engine:FSRS,baseline:{before_ms:150,day_index:20000,memory:{s:2,d:5}}}),/predates baseline/);
+console.log('ok: FSRS memory replay refuses missing provenance and preserves deterministic order');
