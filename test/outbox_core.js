@@ -49,5 +49,20 @@ const op = (id, entityId='note-a') => ({ id, requestId: 'uuid-' + id,
   await p.flush(); await p.flush();
   assert.deepEqual(seen, ['uuid-5','uuid-5']);
   assert.equal((await p.pending()).length, 0);
-  console.log('ok: outbox ordering, conflict isolation, offline durability and retry');
+  s = memory();
+  s.ack = async (operation, result) => {
+    await s.delete(operation.id);
+    const next = (await s.list()).find(x => x.kind === 'note' && x.entityId === operation.entityId);
+    if (next) await s.put({ ...next, expectedRevision: result.revision });
+  };
+  const expected = [];
+  p = new Processor(s, { send: async o => {
+    expected.push(o.expectedRevision);
+    if (o.expectedRevision !== expected.length - 1) throw new Error('stale_note_revision');
+    return { revision: expected.length };
+  }});
+  await p.enqueue(op('1')); await p.enqueue(op('2')); await p.enqueue(op('3'));
+  assert.deepEqual(await p.flush(), { sent: 3, remaining: 0 });
+  assert.deepEqual(expected, [0,1,2]);
+  console.log('ok: outbox ordering, conflict isolation, offline durability, idempotent retry, sequential rebase');
 })().catch(e => { console.error(e); process.exitCode = 1; });
