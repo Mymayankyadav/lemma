@@ -353,8 +353,18 @@ const Store = (() => {
     try { idb = idb || await idbOpen(); await idbClear('notes'); await idbDel('meta', 'profile'); } catch (e) { /* ignore */ }
   }
 
+  let accountTransition = false;
+  async function localSnapshot() {
+    idb = idb || await idbOpen();
+    const [notes, profile] = await Promise.all([idbAll('notes'), idbGet('meta', 'profile')]);
+    return { notes: new Map((notes || []).map(n => [n.id, clone(n)])),
+      profile: profile || null, mode: 'local' };
+  }
   async function activateAccount(handle) {
-    if (mode !== 'local' || accountHandle) throw new Error('Account workspace requires local mode');
+    if (mode !== 'local' || accountHandle || accountTransition)
+      throw new Error('Account workspace requires idle local mode');
+    accountTransition = true;
+    try {
     if (!handle?.userId || !handle.storage) throw new Error('Invalid account workspace');
     if (LemmaAccount.user?.id !== handle.userId) throw new Error('Account identity changed');
     await whenSaved();
@@ -368,16 +378,31 @@ const Store = (() => {
     mode = 'account';
     emitStatus();
     return { notes, profile: accountProfile?.data || null, mode: 'account' };
+    } finally { accountTransition = false; }
   }
   async function deactivateAccount() {
     if (mode !== 'account') throw new Error('No active account workspace');
     await whenSaved();
     accountHandle = null;
+    mode = 'loading'; // reject account writes while anonymous data is restored
+    emitStatus();
     return startLocal(); // original browser-local data were never deleted
+  }
+  // Auth expiry/sign-out is not an ordinary switch: never keep the previous
+  // account on screen merely because a cache write failed during identity change.
+  async function emergencyExitAccount() {
+    if (mode !== 'account') return mode === 'local' ? localSnapshot() : startLocal();
+    accountHandle = null;
+    mode = 'loading';
+    emitStatus();
+    const results = await Promise.allSettled([...localWrites]);
+    if (results.some(x => x.status === 'rejected')) reason = 'account-save-interrupted';
+    return startLocal();
   }
   return {
     init, saveNote, saveReview, undoReview, deleteNote, saveProfile,
-    activateAccount, deactivateAccount, localLeftovers, clearLocal, status, whenSaved,
+    activateAccount, deactivateAccount, emergencyExitAccount, localSnapshot,
+    localLeftovers, clearLocal, status, whenSaved,
     get mode() { return mode; },
     setHandler(name, fn) { handlers[name] = fn; },
     flushProfile,
