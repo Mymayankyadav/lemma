@@ -115,8 +115,11 @@ const LemmaCloud = (() => {
           nr.onsuccess = () => {
             if (!nr.result) return;
             // Avoid marking clean when a later local snapshot was staged.
-            const clean = !q.result.some(x => x.entityId === op.entityId) && JSON.stringify(nr.result.data) === JSON.stringify(op.data)
-              && Boolean(nr.result.deleted) === Boolean(op.deleted);
+            // The immutable review/retraction ledger has its own pending state.
+            // Only unacknowledged NOTE snapshots make the note projection dirty.
+            const clean = !q.result.some(x => x.entityId === op.entityId && x.kind === 'note') &&
+              JSON.stringify(nr.result.data) === JSON.stringify(op.data) &&
+              Boolean(nr.result.deleted) === Boolean(op.deleted);
             notes.put({ ...nr.result, revision: Math.max(nr.result.revision, result.revision), dirty: !clean });
           };
         };
