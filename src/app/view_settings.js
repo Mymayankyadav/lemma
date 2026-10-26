@@ -10,6 +10,7 @@ const AGENT_HELP = [
 
 const SettingsView = (() => {
   let optResult = null;
+  let optResultGeneration = -1;
   let sweep = null;
 
   function numField(id, label, key, opts = {}) {
@@ -76,15 +77,20 @@ const SettingsView = (() => {
     }
     const drawSweepMarker = debounce(drawSweep, 60);
     async function runSweep() {
+      const generation = App.workspaceRevision;
       sweepBtn.disabled = true;
       fill(sweepHost, h('p', { class: 'muted small thinking', text: 'Simulating a year of reviews at each retention…' }));
       try {
         const probs = ratingProbs();
         const deckSize = clampN(Math.max(Model.cardRefs().length, (Model.settings.newPerDay || 20) * 120), 300, 4000);
         sweep = await Jobs.exec('sweep', { w: Model.settings.w, opts: { from: 0.7, to: 0.97, stepSize: 0.01, days: 365, newPerDay: Model.settings.newPerDay || 20, deckSize, maxIvl: Model.settings.maxIvl, firstProbs: probs.first, recallProbs: probs.recall } });
+        if (generation !== App.workspaceRevision || App.workspaceBlocked) return;
         drawSweep();
-      } catch (e) { fill(sweepHost, h('p', { class: 'ai-error', text: 'The simulation failed: ' + e.message })); }
-      sweepBtn.disabled = false;
+      } catch (e) {
+        if (generation === App.workspaceRevision && !App.workspaceBlocked)
+          fill(sweepHost, h('p', { class: 'ai-error', text: 'The simulation failed: ' + e.message }));
+      }
+      if (generation === App.workspaceRevision) sweepBtn.disabled = false;
     }
     page.append(section('set-fsrs', 'Memory model', 'FSRS-6 shows each card again when its recall falls to your target.',
       h('div', { class: 'setting setting-col' },
@@ -280,6 +286,7 @@ const SettingsView = (() => {
     const out = h('div', { class: 'opt-out', 'aria-live': 'polite' });
     const bar = h('div', { class: 'opt-progress', hidden: true }, h('span'));
     const btn = h('button', { class: 'btn btn-primary btn-sm', type: 'button', disabled: !enough, html: icon('sigma', 16) + '<span>Optimize from my reviews</span>', onclick: async () => {
+      const generation = App.workspaceRevision;
       btn.disabled = true;
       bar.hidden = false;
       fill(out, h('p', { class: 'muted small thinking', text: 'Fitting the 21 parameters to your review history…' }));
@@ -288,17 +295,22 @@ const SettingsView = (() => {
           histories: hist, rollover: s.rollover, current: s.w,
           numRelearnSteps: (FSRS.parseSteps(s.relearnSteps) || []).length || 1,
         }, (p) => { bar.firstChild.style.width = (p * 100).toFixed(0) + '%'; });
+        if (generation !== App.workspaceRevision || App.workspaceBlocked) return;
         optResult = res;
+        optResultGeneration = generation;
         showResult();
       } catch (e) {
-        fill(out, h('p', { class: 'ai-error', text: 'Optimization failed: ' + e.message }));
+        if (generation === App.workspaceRevision && !App.workspaceBlocked)
+          fill(out, h('p', { class: 'ai-error', text: 'Optimization failed: ' + e.message }));
       }
-      bar.hidden = true;
-      btn.disabled = !enough;
+      if (generation === App.workspaceRevision) {
+        bar.hidden = true;
+        btn.disabled = !enough;
+      }
     } });
     function showResult() {
       const r = optResult;
-      if (!r) return;
+      if (!r || optResultGeneration !== App.workspaceRevision || App.workspaceBlocked) return;
       if (r.skipped) { fill(out, h('p', { class: 'muted small', text: 'Not enough history yet. Keep reviewing and try again.' })); return; }
       const better = r.after.logLoss < r.before.logLoss - 1e-4;
       const row = (label, ev) => h('tr', null, h('td', { text: label }), h('td', { text: ev.logLoss.toFixed(4) }), h('td', { text: fmtPct(ev.rmse, 2) }));
@@ -311,6 +323,7 @@ const SettingsView = (() => {
           : better ? 'The optimized parameters predict your reviews better. Lower is better for both numbers.' : 'Your current parameters already fit about as well, so there is no need to change them.' }),
         h('div', { class: 'btn-row' },
           h('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Use optimized parameters', onclick: () => {
+            if (optResultGeneration !== App.workspaceRevision || App.workspaceBlocked) return;
             Model.setSettings({ w: r.w, wSource: 'optimized', wInfo: { at: Date.now(), items: r.items, logLoss: r.after.logLoss, rmse: r.after.rmse } });
             const n = Model.recomputeMemory();
             optResult = null;
@@ -352,8 +365,9 @@ const SettingsView = (() => {
   async function deleteAll() {
     const n = Model.notes.size;
     if (!n) return;
+    const generation = App.workspaceRevision;
     const ok = await confirmDialog({ title: `Delete all ${plural(n, 'note')}?`, message: 'Every card and its review history will be removed. Export a backup first if you might want them back. This can’t be undone.', confirmLabel: 'Delete everything', danger: true });
-    if (!ok) return;
+    if (!ok || App.workspaceBlocked || generation !== App.workspaceRevision) return;
     for (const id of [...Model.notes.keys()]) Model.deleteNote(id);
     toast('All cards deleted');
     App.go('home');
