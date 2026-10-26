@@ -81,6 +81,20 @@ const LemmaSync = (() => {
       if (epoch === generation) emit({ phase: 'error', error: String(err.message || err) });
     }
   }
+  async function compareLocal() {
+    if (Store.mode !== 'local') throw new Error('Browser-local deck required');
+    const handle = account, generation = epoch;
+    const id = handle?.userId;
+    if (!handle || id !== LemmaAccount.user?.id)
+      throw new Error('Sign in to compare account and local cards');
+    await Store.whenSaved();
+    const local = [...Model.notes.values()].map(n => structuredClone(n));
+    const counts = await handle.storage.inspectAgainst(local);
+    if (account !== handle || epoch !== generation || id !== LemmaAccount.user?.id)
+      throw new Error('Account changed during comparison');
+    return { ...counts, localTotal: local.length, accountUserId: id,
+      fresh: state.phase === 'ready' };
+  }
   /* Explicit enrollment only. The existing anonymous notes are retained as
    * a backup. Legacy logs travel as a snapshot baseline; no review IDs are
    * fabricated, and no conflicting cloud notes are overwritten. */
@@ -111,7 +125,10 @@ const LemmaSync = (() => {
       known.add(note.id);
       queued++;
     }
-    emit({ pending: (await handle.outbox.pending()).length });
+    const pending = (await handle.outbox.pending()).length;
+    if (account !== handle || epoch !== generation || LemmaAccount.user?.id !== userId)
+      throw new Error('Account changed after enrollment (queued writes remain durable)');
+    emit({ pending });
     schedule();
     return { queued, skipped, total: notes.length,
       message: 'Queue saved locally. Server confirmation and conflicts are tracked separately.' };
@@ -126,6 +143,7 @@ const LemmaSync = (() => {
     setInterval(() => { if (!document.hidden) schedule(); }, 120000);
     attach(LemmaAccount.user).catch(() => {});
   }
-  return { init, attach, stop, refresh, enrollMissingLocal, get status() { return { ...state }; },
+  return { init, attach, stop, refresh, enrollMissingLocal, compareLocal,
+    get status() { return { ...state }; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
 })();
