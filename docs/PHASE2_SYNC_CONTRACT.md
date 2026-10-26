@@ -34,3 +34,7 @@ These are SECURITY INVOKER entry points delegating to constrained implementation
 ## Testing so far
 
 `node test/outbox_core.js` passes queue-ordering, isolation, offline retry and idempotency tests. `node test/sync_merge.js` passes old note merge regression checks. Supabase migration and schema inspection succeeded, security advisor reports zero findings. Full end-to-end sync and browser/Android tests are **not yet passing or claimed**.
+
+
+## October 26 — explicit snapshot transfer milestone
+The repository now contains `src/app/cloud_bridge.js` with owner-authenticated paginated cloud reads and manual copy-missing operations. Settings exposes two buttons. They intentionally do NOT automatically reconcile concurrent review logs, update existing notes, copy profiles or enroll cards in continuous sync. Before using, export a backup. Card uploads use `commit_note` revision-zero inserts, skipping server-present IDs. Download copies only IDs absent locally. Live sync remains blocked until review-event reconciliation, conflict UX, atomic local writes and auth isolation tests pass.
