@@ -22,7 +22,7 @@ async function newPage(browser, { seedDocs, mock = true, viewport = { width: 128
   const ctx = await browser.newContext({ serviceWorkers: 'block', viewport, colorScheme: dark ? 'dark' : 'light', timezoneId: 'Asia/Kolkata' });
   await ctx.route('**/*', async (route) => {
     const url = route.request().url();
-    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: editorHooks ? HTML.replace('/* ===== main.js ===== */', 'window.__editor = { Store, Model, EditorSheet, get App() { return App; } };\n/* ===== main.js ===== */') : HTML });
+    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: editorHooks ? HTML.replace('/* ===== main.js ===== */', 'window.__editor = { Store, Model, EditorSheet, ImportSheet, Sheets, LemmaAccount, LemmaSync, LemmaCloud, LemmaOutboxCore, get App() { return App; } };\n/* ===== main.js ===== */') : HTML });
     for (const [name, file] of Object.entries(LIBS)) if (url.endsWith(name)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(file, 'utf8') });
     if (url.includes('fonts.googleapis.com')) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (url.startsWith('blob:') || url.startsWith('data:')) return route.continue();
@@ -566,6 +566,8 @@ function syntheticHistory() {
       'forced-close draft remains under its origin key after a late save');
     await ctx.close();
   }
+
+  await require('./workspace_browser.js')({ browser, newPage, ok });
 
   await browser.close();
   console.log('\n' + (problems.length ? problems.join('\n') : 'no console errors'));

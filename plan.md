@@ -17,19 +17,19 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-01 crash-recovery slice based on merged `main@08b5af8759f48f506b91a9f5baa9c8132b2eb5a9`. **State: READY_FOR_NEXT_AGENT.** This bounded change is on `astra/sync-01-crash-recovery` for review; SYNC-01 remains partial.
+**Last verified handoff:** 2026-10-27; SYNC-01 identity-guard slice based on merged `main@58eebf90b9dd67e2fa4fe8a23bad644308901dd2`. **State: READY_FOR_NEXT_AGENT.** This bounded change is on `astra/sync-01-identity-guards` for review; SYNC-01 remains partial.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) merged as `08b5af8`; [main regression 40378487715](https://github.com/Mymayankyadav/lemma/actions/runs/40378487715) SUCCESS. |
-| Latest inspected regression | SUCCESS: [regression 40379498567](https://github.com/Mymayankyadav/lemma/actions/runs/40379498567) at `231e7c05b40c9e6087f98b08f2bf12c246594b58`: syntax and full `npm test`, including browser reload, pending receipt and later review preservation. Local syntax, storage, account-store, plan and build SUCCESS; browser tests NOT RUN locally (Chromium unavailable). |
+| Known-good main baseline | [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged as `58eebf9`; [main regression 40381695953](https://github.com/Mymayankyadav/lemma/actions/runs/40381695953) SUCCESS. |
+| Latest inspected regression | Identity-guard delivery: PENDING CI. Local syntax, storage, account/account-store, identity/workspace, plan and build SUCCESS. Browser account integration NOT RUN locally (Chromium unavailable); review branch CI is required. |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
-| Web deployment | [Pages 40378487955](https://github.com/Mymayankyadav/lemma/actions/runs/40378487955) SUCCESS at merged `08b5af8`. This review-branch change is NOT DEPLOYED. |
-| Cloud confidence | A pending new-card draft records its ID and attempted content before storage. On reload, an already committed card with matching content is recognized without rewriting later reviews; local and account-cache create-only transactions reject a replay if the ID already exists. The legacy host queue has no atomic create-only API; live multi-device convergence remains unverified. |
+| Web deployment | [Pages 40381695797](https://github.com/Mymayankyadav/lemma/actions/runs/40381695797) SUCCESS at merged `58eebf9`. This review-branch change is NOT DEPLOYED. |
+| Cloud confidence | Workspace invalidation now runs synchronously on identity changes; API-capable observers remain deferred and retain each identity snapshot. Browser tests use the real app, local/account IndexedDB and outbox, with mocked auth/remote receipts: rapid A→B→A, isolated drafts, sign-out during Save, late import file reads and anonymous reload preservation. No live login/RLS/convergence claim. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
-| Current blocker / unfinished work | No crash-recovery test blocker. Sign-out during save/import and A→B→A browser identity/cache tests remain. Imports/deletes still acknowledge optimistically, outside this editor slice. |
+| Current blocker / unfinished work | Browser CI pending. Import file reads have lease guards, but `IO.commit`/ImportSheet still acknowledge before durable write completion. Import partial failures and sign-out during the actual write phase remain; deletes also acknowledge optimistically. |
 
-**Next action, in one sentence:** merge [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) after review, then finish SYNC-01 identity and lifecycle gates by exercising sign-out during save/import and A→B→A with isolated drafts/cache and intact anonymous data in browser tests.
+**Next action, in one sentence:** verify the identity-guard PR's browser CI, then make `IO.commit` and `ImportSheet` await durable writes while retaining recoverable source and stable retry IDs on failure or sign-out during an import commit.
 
 The record above describes inspected evidence, not today's mutable HEAD. Update it after each task; do not append another competing handoff.
 
@@ -42,7 +42,7 @@ Keep stable IDs. **DONE** requires its gate; **NEXT** is exactly one task; **IN_
 | **HANDOFF-01** | **DONE** | — | Canonical plan, short entry points and existing `test:plan` guard. Maintain them with every change. |
 | **FOUNDATION-01** | **DONE** | — | Imported app, web build, local cards, original FSRS/rendering and baseline tests exist. Preserve them. |
 | **SYNC-00** | **DONE** | — | Account/outbox/RPC/ledger infrastructure exists in source. This is not completed live sync. |
-| **SYNC-01** | **NEXT** | SYNC-00 | Editor durability and new-card crash recovery implemented; finish account lifecycle and browser identity gates. Retain recoverable input on failed storage; report success/close only after commit. Reuse workspace leases for delayed callbacks. Gate: browser crash/reload, aborted write, sign-out during save/import, A→B→A with isolated drafts/cache and intact anonymous data; existing tests stay green. |
+| **SYNC-01** | **NEXT** | SYNC-00 | Editor durability/crash recovery and account invalidation implemented; finish durable import acknowledgments and remaining lifecycle gates. Retain recoverable input on failed storage; report success/close only after commit. Reuse workspace leases for delayed callbacks. Gate: browser crash/reload, aborted write, sign-out during save/import, A→B→A with isolated drafts/cache and intact anonymous data; existing tests stay green. |
 | **SYNC-02** | **BLOCKED** | SYNC-01 | Finish note/profile/tombstone conflict repair with local, remote and base revision visible. Choosing/merging a version creates a new revision; never drop queued edits or silently revive deletes. Gate: two offline editors, edit/delete race, profile conflict and lost acknowledgment recover without data loss; retry retains request ID. |
 | **SYNC-03** | **BLOCKED** | SYNC-02 | Converge review/Undo using existing `FSRS.preview/replay` and `ReviewLedger.fsrsInput`. Specify deterministic ordering, parameter/time provenance, legacy baseline handling and resets. Never choose the latest card snapshot as truth or fabricate legacy history. Gate: concurrent offline reviews/Undo, equal timestamps, timezone/rollover, fuzz and parameter changes produce the same due state on both devices; unsupported histories remain preserved and explicitly blocked. |
 | **SYNC-04** | **BLOCKED** | SYNC-03 | Enable account workspace only after explicit enrollment/backup. Route every mutation through durable staging; automatically push after local commit, retry on reconnect/foreground and refresh on remote invalidation. Distinguish device-saved, queued, cloud-confirmed, conflict and failure. Gate: authenticated two-browser/two-identity tests, offline restart, auth expiry, network loss after commit, deletes and RLS isolation. Routine use needs no manual Sync button. |
@@ -98,10 +98,10 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Milestone | Evidence / limit |
 | --- | --- |
 | Original source and sync groundwork retained | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), existing source/migrations; no replacement implementation. |
-| Guarded drafts, imports and editor fix | `44a044dd`, `eb0be14c`; browser coverage passed in run 40362238502. Save durability still open. |
 | Roadmap consolidation | `bcd0eb98`; canonical queue and scope boundaries, guard restored; regression 40373316156 SUCCESS. |
 | Durable editor-save slice | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) merged; main regression 40378487715 and Pages 40378487955 SUCCESS. |
-| Crash acknowledgment recovery | Pending new-note ID/content in editor draft; create-only local/account cache writes and browser reload/review preservation checks. Regression 40379498567 SUCCESS; no backend change. |
+| Crash acknowledgment recovery | [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; regression 40381695953 and Pages 40381695797 SUCCESS. |
+| Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; browser CI pending. |
 
 ## 6. Five-line end-of-session report template
 
