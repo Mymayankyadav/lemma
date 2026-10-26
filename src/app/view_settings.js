@@ -64,7 +64,7 @@ const SettingsView = (() => {
     const sweepBtn = h('button', { class: 'btn btn-sm', type: 'button', html: icon('chart', 16) + '<span>Estimate workload</span>', onclick: runSweep });
     function drawSweep() {
       fill(sweepHost);
-      if (!sweep) return;
+      if (!sweep || sweepGeneration !== App.workspaceRevision || App.workspaceBlocked) return;
       const cur = +retIn.value;
       const at = sweep.find((x) => Math.abs(x.retention - cur) < 0.005) || sweep[0];
       const best = sweep.reduce((a, b) => (b.memorized / (b.reviewsPerDay * 365 + b.learned) > a.memorized / (a.reviewsPerDay * 365 + a.learned) ? b : a));
