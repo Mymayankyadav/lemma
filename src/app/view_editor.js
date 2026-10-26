@@ -188,7 +188,7 @@ const EditorSheet = (() => {
       if (c.title && Model.titleIndex().get(c.title.toLowerCase()) && (!editing || Model.titleIndex().get(c.title.toLowerCase()) !== editing.id)) msgs.push('Another card already uses this title; links will go to that one.');
       warn.textContent = msgs.filter(Boolean).join(' ');
       saveBtn.disabled = !c.front.trim() || (c.type === 'cloze' && !ords.length);
-      saveNewBtn.disabled = saveBtn.disabled;
+      if (saveNewBtn) saveNewBtn.disabled = saveBtn.disabled;
     };
     const schedulePreview = debounce(drawPreview, 140);
     const draftFields = () => {
