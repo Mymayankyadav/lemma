@@ -1,24 +1,44 @@
 # Lemma
 
-A mathematics learning environment: flashcards, proof practice, offline-first study, and model-independent tutor handoffs between Claude and ChatGPT.
+A persistent mathematical learning environment: existing FSRS-6 flashcards, proof practice, offline review, and planned model-independent study sessions and Claude ↔ ChatGPT handoffs.
 
-## Status
+**Live web app:** https://mymayankyadav.github.io/lemma/  
+**GitHub:** https://github.com/Mymayankyadav/lemma  
+**Backend:** dedicated Supabase Lemma project `yemqnhnztlbyxmjxidis` (Mumbai; **not** Carrel).
 
-- GitHub repository initialized.
-- Supabase project: `yemqnhnztlbyxmjxidis` (Mumbai, separate from Carrel).
-- Initial learning-state tables and owner-scoped RLS deployed.
-- Next: import the prepared Phase 1 application source, then add Supabase authentication, notes, review events and robust sync.
+## For every chatbot or coding agent: start here
 
-## Deployment
+**[Follow `plan.md`](plan.md).** It is the canonical execution plan and durable cross-chatbot handoff: current implementation state, precisely one next task, safety requirements, testing gates, the completed ledger and a required end-of-session update. [`AGENTS.md`](AGENTS.md) makes this entry point explicit to coding tools.
 
-Target: GitHub Pages for web and Capacitor for Android. No private service-role key should be included in the client.
+The owner usually asks a succession of different chatbots to **"follow the plan.md"**. Continue from live `main` and update the same plan before ending; never require an old chat transcript to resume.
 
-See `docs/SETUP.md` for configuration.
+## Accurate implementation status
 
-## Current implementation checkpoint (26 October 2026)
+- The existing JavaScript/math flashcard app is imported, built and deployed to GitHub Pages; the original `src/fsrs.js` remains the scheduling engine. IndexedDB preserves anonymous/local cards.
+- GitHub Actions runs syntax checks, FSRS-6 comparison, storage/outbox tests, rendering, Chromium E2E, browser sync emulation and account Store adapter tests.
+- Supabase has authenticated owner-scoped records, revision-safe RPCs for notes/profiles/plans, an immutable review/retraction ledger, and account-scoped offline cache/outbox primitives. See `supabase/migrations/`.
+- Optional email authentication, manual copy-missing enrollment and a read-only account comparison are present.
+- **Full automatic cloud synchronization is NOT activated** in the visible Store: the account workspace is internally gated until review/profile conflicts and two-device scheduling convergence are verified. Account sign-in does not silently migrate anonymous cards.
+- Android Capacitor dependencies/config are present but **native releases are not yet verified**.
 
-**Supabase backend deployed** in the separate Lemma project `yemqnhnztlbyxmjxidis`, with 14 owner-protected tables, an append-only review ledger, revision-safe note and plan publishing, and zero findings from the last security-advisor scan.
+## Developer commands
 
-**Source import is the next gate.** Download the conversation attachment `lemma-phase2-source.zip`, then in GitHub select **Add file → Upload files**, upload that exact ZIP to the root of this repository, and commit it to `main`. The `Import Lemma source archive` GitHub Action validates and extracts it, installs dependencies, commits the real sources and tries to deploy the web app. If GitHub Pages isn't enabled, set Settings → Pages → Build and deployment to **GitHub Actions** and rerun the deploy workflow.
+```sh
+npm ci
+npm run test:syntax
+npm test
+npm run build
+```
 
-The imported app's existing flashcard storage remains active. The new offline/Supabase components are staged but **not connected to the active store yet**; don't rely on them to synchronize data until the auth, cross-device and review-replay milestones pass. See [Phase 2 sync contract](docs/PHASE2_SYNC_CONTRACT.md) and [Development roadmap](docs/DEVELOPMENT_ROADMAP.md).
+Run `npm run test:plan` when editing operational handoff. All app changes should also pass GitHub Actions. Browser E2E needs Playwright Chromium.
+
+## More reference material
+
+- [Canonical handoff and task queue](plan.md)
+- [Detailed product planning/tutor contract](docs/STUDY_PLANNING_PROTOCOL.md)
+- [Sync audit and release gates](docs/SYNC_AUDIT_2026-10-26.md)
+- [Offline sync contract](docs/PHASE2_SYNC_CONTRACT.md)
+- [Historical engineering roadmap](docs/DEVELOPMENT_ROADMAP.md)
+- [Setup and deployment](docs/SETUP.md)
+
+Historical milestones in those documents may use past-tense branch/ZIP instructions; **`plan.md` and the verified current repository take precedence**.
