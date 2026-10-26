@@ -381,6 +381,37 @@ function syntheticHistory() {
     await page.reload();
     await page.waitForSelector('.today');
     ok((await page.textContent('.hero-num')).trim() === '1', 'Undo scheduling survives reload');
+
+    // An interrupted editor session keeps its unsaved draft across browser
+    // reload; the anonymous draft key must not be rewritten by stale callbacks.
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+    await page.fill('#ed-front', 'Unfinished topology proof draft');
+    await page.fill('#ed-back', 'Attempt: use compact Hausdorff separation.');
+    await page.click('.sheet-head .icon-btn[aria-label="Close"]');
+    await page.waitForTimeout(650);
+    const draft = await page.evaluate(() => JSON.parse(localStorage.getItem('lemma.draft.v1') || 'null'));
+    ok(draft?.front === 'Unfinished topology proof draft', 'unsaved local draft retained when editor closes');
+    await page.reload();
+    await page.waitForSelector('.today');
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+    ok((await page.inputValue('#ed-front')) === 'Unfinished topology proof draft', 'unsaved draft restored after browser restart');
+    await page.fill('#ed-front', 'Complete topology statement');
+    await page.click('.sheet-foot .btn-primary');
+    await page.waitForTimeout(250);
+    ok((await page.evaluate(() => localStorage.getItem('lemma.draft.v1'))) === null,
+      'successfully committed card clears only its draft');
+
+    // A queued file-read completion cannot overwrite the next import sheet.
+    await page.click('.head-actions [aria-label="Import"]');
+    await page.waitForSelector('#imp-file');
+    await page.setInputFiles('#imp-file', { name:'delayed.txt', mimeType:'text/plain',
+      buffer:Buffer.from('Q: Stale editor import\\nA: Do not import') });
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(150);
+    ok(!(await page.evaluate(() => document.body.textContent)).includes('Stale editor import'),
+      'file reader callback does not write into a discarded import sheet');
     await ctx.close();
   }
 
