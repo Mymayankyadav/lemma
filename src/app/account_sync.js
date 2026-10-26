@@ -67,7 +67,7 @@ const LemmaSync = (() => {
       account = opened;
       const client = LemmaAccount.client;
       channel = client.channel('lemma-cache-' + id);
-      for (const table of ['notes', 'review_events', 'review_retractions']) {
+      for (const table of ['notes', 'profiles', 'review_events', 'review_retractions']) {
         channel.on('postgres_changes',
           { event: '*', schema: 'public', table, filter: 'user_id=eq.' + id },
           () => { if (epoch === generation) schedule(); });
