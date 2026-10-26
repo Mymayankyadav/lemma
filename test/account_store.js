@@ -10,6 +10,7 @@ const storage = {
   async notes() { return [{id:'account-card',data:{id:'account-card',front:'cloud',back:'',log:[],cards:{}},
     revision:4,dirty:false,deleted:false}]; },
   async profile() { return {data:{settings:{retention:0.93}},revision:2}; },
+  async stageProfile(data) { calls.push({kind:'profile',data}); },
   async stageNote(note, rev, deleted) { calls.push({kind:'note',note,deleted:Boolean(deleted)}); },
   async stageReview(note, event) { calls.push({kind:'review',note,event}); },
   async stageUndo(note, eventId) { calls.push({kind:'undo',note,eventId}); }
@@ -47,7 +48,9 @@ const Store = context.testStore;
   assert.equal(calls[1].event[6],review[6]);
   assert.equal(calls[2].eventId,review[6]);
   assert.equal(wake.length,4);
-  assert.throws(()=>Store.saveProfile({settings:{retention:0.8}}),/not yet enabled/);
+  await Store.saveProfile({settings:{retention:0.8}});
+  assert.equal(calls.at(-1).kind,'profile');
+  assert.equal(calls.at(-1).data.settings.retention,0.8);
   const restored = await Store.deactivateAccount();
   assert.equal(Store.mode,'local');
   assert.equal(restored.notes.get('anonymous').front,'device');
