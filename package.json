@@ -1,0 +1,36 @@
+{
+  "name": "lemma-flashcards",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Math flashcards with Markdown, LaTeX and FSRS-6 scheduling. Web (GitHub Pages) + Android (Capacitor).",
+  "license": "MIT",
+  "scripts": {
+    "build": "node build.js",
+    "test:fsrs": "tsx test/compare_tsfsrs.mts",
+    "test:optimizer": "node test/optimizer_synthetic.js",
+    "test:render": "node test/render_test.js",
+    "test:e2e": "node build.js && node test/e2e.js",
+    "test": "npm run test:merge && npm run test:outbox && npm run test:fsrs && npm run test:render && npm run test:e2e",
+    "android:add": "npm run build && npx cap add android",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:open": "npx cap open android",
+    "test:syntax": "node --check build.js && node --check src/app/store.js && node --check src/app/main.js",
+    "test:merge": "node test/sync_merge.js",
+    "test:outbox": "node test/outbox_core.js"
+  },
+  "dependencies": {
+    "dompurify": "3.1.6",
+    "katex": "0.16.11",
+    "marked": "18.0.10",
+    "@capacitor/core": "8.0.0",
+    "@supabase/supabase-js": "2.102.0"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "ts-fsrs": "5.4.1",
+    "tsx": "4.19.2",
+    "@capacitor/android": "8.0.0",
+    "@capacitor/cli": "8.0.0",
+    "esbuild": "0.25.12"
+  }
+}

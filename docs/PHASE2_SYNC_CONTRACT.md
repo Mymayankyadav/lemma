@@ -1,53 +1,36 @@
-# Phase 2 — Synced-learning backend contract
+# Phase 2 Sync Contract (implementation in progress)
 
-**Backend:** Supabase project `yemqnhnztlbyxmjxidis` (Mumbai; separate from Carrel). **Status:** DB migrations deployed; application connection in progress.
+## Backend deployed (2026-10-26)
 
-## Tables now present
+Supabase project `yemqnhnztlbyxmjxidis`, Mumbai. Tables: `notes`, `profiles`, `review_events`, `learning_sources`, `learning_sections`, `learning_card_links`, `client_mutation_receipts`, `study_plans`, `study_context_files`, `study_plan_versions`, `study_checkpoints`, `learning_sessions`, `learning_events`, `tutor_handoffs`. RLS enabled on all.
 
-- User's flashcards and profile: `notes`, `profiles`.
-- Append-only review ledger: `review_events`.
-- Private math library: `learning_sources`, `learning_sections`, `learning_card_links`.
-- Safe retry receipts: `client_mutation_receipts`.
-- Strong-model plan system: `study_plans`, `study_context_files`, `study_plan_versions`, `study_checkpoints`.
-- Tutoring history/handoff: `learning_sessions`, `learning_events`, `tutor_handoffs`.
+Public authenticated RPC surface:
 
-All 14 exposed tables have RLS enabled. An October 26 security-advisor check returned zero security findings.
+- `commit_note(p_note_id text, p_expected_revision bigint, p_request_id uuid, p_data jsonb, p_delete boolean default false) -> bigint`
+- `publish_study_plan(p_plan_id uuid, p_expected_revision bigint, p_request_id uuid, p_title text, p_objective text, p_snapshot jsonb, p_change_summary text, p_context_id uuid default null, p_expected_context_revision bigint default null, p_author_model text default null) -> bigint`
 
-## Authenticated RPCs
+These are SECURITY INVOKER entry points delegating to constrained implementations in a non-exposed schema. Anonymous users cannot invoke them. Each validates `auth.uid()` and scopes all data operations to it. Revision 0 means create, else match the current revision. On mismatch the server raises `stale_note_revision` / `stale_plan_revision`. Reusing a successful `p_request_id` with the same payload returns the existing revision and performs no duplicate mutation. Do not create a new request ID when retrying a transport timeout.
 
-**`commit_note(note_id, expected_revision, request_id, data, delete=false)`**
-- An expected revision of zero creates a note; a later revision must match exactly.
-- Conflicting writes return `stale_note_revision` rather than overwriting newer work.
-- Stable UUID request IDs permit idempotent retries after transport timeout.
-- Deletions are tombstones; offline clients can discover them.
+`review_events` supports owner-scoped SELECT and INSERT, never UPDATE or DELETE. Review IDs are UUIDs and are unique per account, enabling `ON CONFLICT DO NOTHING` replays. The old `note.log` field remains in the materialized note representation until deterministic FSRS replay and migration are implemented. **Never infer definitive FSRS state solely from the last note revision across two devices.**
 
-**`publish_study_plan(plan_id, expected_revision, request_id, title, objective, snapshot, change_summary, context_id?, expected_context_revision?, author_model?)`**
-- Publishes accepted plans atomically and creates an immutable version record.
-- Conflicting writes return `stale_plan_revision`.
-- Supports the dedicated high-effort planning session and explicit amendment workflow.
+## Current browser code
 
-Public RPC wrappers use SECURITY INVOKER. Privileged implementations live in an unexposed schema, require authentication, and scope data to `auth.uid()`.
+- `src/app/outbox_core.js`: pure, tested processor for ordered, durable operations, conflict isolation and safe retry.
+- `src/app/sync_browser.js`: account-isolated IndexedDB outbox, atomic local snapshot/event staging and Supabase transport. **Not wired to the existing main Store or UI yet.**
+- Existing `src/app/store.js` remains the active local/Claude-capability store. The prepared app still runs offline without a cloud account.
 
-The `review_events` table permits authenticated owners to insert and select their own events. Updating or deleting review events is denied.
+## Remaining integration tasks, in order
 
-## Source code status
+1. Sign-in UI (email OTP) and auth redirect settings for GitHub Pages; keep anonymous local cards intact until explicit migration. No service-role key in clients.
+2. Connect `LemmaCloud.startAccount` to existing `Store` behind a feature switch; inject signed-in user ID from `supabase.auth.getUser()` and use a per-user database.
+3. Update the review session to assign a stable `event_id` at answer time and persist **both** review event and card snapshot in a single transaction before confirming completion. Add an import path for old 6-field log entries without destroying duplicates.
+4. After a successful note commit, atomically update the last server revision and rebase **later local operations on that same note** before acknowledging the queue. If a remote writer raced, preserve local data and surface a reviewable conflict.
+5. Reconstruct card scheduling from all immutable review events in deterministic chronological order with FSRS parameter version, time zone, and device clock drift handling; never silently discard historical review data.
+6. Implement pull on login/reconnect/resume and Realtime subscriptions as invalidation. Cursor-based incremental pull must be gap-free across concurrent transactions; use a properly designed durable change ledger, not a naive `updated_at` cursor.
+7. Surface unambiguous sync states: `saved on device`, `pending upload`, `conflict`, `confirmed on cloud`. Never claim cloud confirmation from a local write alone.
+8. Test same-card reviews offline on two devices, concurrent edits, account switching, sign-out during upload, rate limits, network drop after server commit and recovery from corrupted metadata.
+9. Hook into plan/checkpoint UI and authenticated cross-model connector; verify that a tutor cannot publish over a newer plan revision.
 
-The latest prepared application archive is `lemma-phase2-source.zip` in the conversation. It includes:
-- All existing cards, FSRS-6, proof-step, editor, browse and statistics code.
-- `src/app/outbox_core.js`: tested ordering, retries, idempotency IDs and conflict isolation.
-- `src/app/sync_browser.js`: per-account IndexedDB staging and Supabase transport.
-- `test/outbox_core.js`: passing unit tests.
-- `docs/PHASE2_SYNC_CONTRACT.md`: integration contract and remaining acceptance tests.
+## Testing so far
 
-**IMPORTANT:** GitHub repository currently contains the planning documents and migrations only. The large source archive is not imported; the connected GitHub interface cannot directly upload a ZIP from the working container. The new sync modules are NOT yet activated by the app's active `Store`. Do not mark cloud synchronization as complete.
-
-## Next execution checklist
-
-1. Import the unzipped `lemma-phase2-source.zip` **contents** to repository root; do not overwrite the newer GitHub planning documents or migration history.
-2. Install dependencies, commit package-lock, and run CI/browser builds.
-3. Add explicit Supabase sign-in and activate the new outbox only after tests.
-4. Generate stable review UUIDs, atomically stage review + note, reconcile cross-device FSRS histories.
-5. Cross-device, offline, auth isolation, GitHub Pages, and Android smoke tests.
-6. Implement authenticated Claude/ChatGPT learning-state connectors.
-
-Never embed a service_role key in GitHub Pages or the Capacitor app.
+`node test/outbox_core.js` passes queue-ordering, isolation, offline retry and idempotency tests. `node test/sync_merge.js` passes old note merge regression checks. Supabase migration and schema inspection succeeded, security advisor reports zero findings. Full end-to-end sync and browser/Android tests are **not yet passing or claimed**.

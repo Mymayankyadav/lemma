@@ -1,0 +1,18 @@
+{
+  "name": "Lemma — Mathematical Memory",
+  "short_name": "Lemma",
+  "description": "Offline mathematical flashcards and proof practice",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f7f3",
+  "theme_color": "#f8f7f3",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
