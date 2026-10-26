@@ -10,7 +10,7 @@ const LemmaOutboxCore = (() => {
     ? a.sequence - b.sequence
     : (a.enqueuedAt - b.enqueuedAt) || a.id.localeCompare(b.id);
   function isStale(error) {
-    return /stale_note_revision|stale_plan_revision/i.test(String(error?.message || error || ''));
+    return /stale_note_revision|stale_plan_revision|stale_profile_revision/i.test(String(error?.message || error || ''));
   }
   function validateOp(op) {
     if (!op || typeof op.id !== 'string' || !op.id || !['note','review','retraction','profile','plan'].includes(op.kind)) {
