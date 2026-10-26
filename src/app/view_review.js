@@ -662,7 +662,13 @@ const ReviewView = (() => {
     else if (k === 'Escape') finish(true);
   }
 
-  return { start, render, onKey, get active() { return !!S; }, refreshTools: () => { if (state) renderTools(); } };
+  function discardForWorkspaceChange() {
+    clearInterval(waitTimer);
+    Scratch.close();
+    S = null; state = null; busy = false;
+  }
+  return { start, render, onKey, discardForWorkspaceChange,
+    get active() { return !!S; }, refreshTools: () => { if (state) renderTools(); } };
 })();
 
 /* ---------- scratchpad: draw your working before revealing ---------- */
