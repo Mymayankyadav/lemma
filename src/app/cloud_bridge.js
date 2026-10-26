@@ -7,5 +7,21 @@ const LemmaCloudBridge = (() => {
     if (response.error || !response.data?.user) throw new Error('Sign in first');
     return { client, userId: response.data.user.id };
   }
-  return { authorize };
+  async function listRemote() {
+    const { client, userId } = await authorize();
+    const rows = [];
+    for (let offset = 0;; offset += 500) {
+      const response = await client.from('notes').select('id,data,revision,deleted_at')
+        .eq('user_id', userId).order('id').range(offset, offset + 499);
+      if (response.error) throw response.error;
+      rows.push(...response.data);
+      if (response.data.length < 500) break;
+    }
+    return rows;
+  }
+  async function inspect() {
+    const rows = await listRemote();
+    return { local: Model.notes.size, remote: rows.filter(r => !r.deleted_at).length };
+  }
+  return { authorize, listRemote, inspect };
 })();
