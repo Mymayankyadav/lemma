@@ -15,6 +15,12 @@ const LemmaAccount = (() => {
         notify();
       }
     });
+    client.auth.getUser().then(({ data, error }) => {
+      if (!error && data && data.user && (!user || user.id !== data.user.id)) {
+        user = data.user;
+        notify();
+      }
+    }).catch(() => {});
     return true;
   }
   async function signIn(email) {
