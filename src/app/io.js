@@ -213,7 +213,7 @@ const IO = (() => {
         tags:(f.tags || []).concat(opts.extraTags || []) });
       job.items.push({ note, base:null, done:false });
       created.push([note,f.requiresTitles || []]);
-      if (note.title && !titles.has(note.title.toLowerCase())) titles.set(note.title.toLowerCase(),note.id);
+      if (note.title) titles.set(note.title.toLowerCase(),note.id);
     }
     for (const [note,requirements] of created) {
       note.requires = [...new Set(requirements.map(t => titles.get(t.toLowerCase()) ||
