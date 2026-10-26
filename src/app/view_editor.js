@@ -68,9 +68,10 @@ const EditorSheet = (() => {
     let saving = false;
     let saveError = '';
     let saveBase = null; // Retain the same ID across failed new-card attempts.
-    const valid = () => !closed && !App.workspaceBlocked &&
+    const currentWorkspace = () => !App.workspaceBlocked &&
       App.workspaceRevision === originRevision && Store.mode === originMode &&
       (originMode !== 'account' || key === 'lemma.draft.account.' + LemmaAccount.user?.id + (noteId ? '.edit.' + noteId : ''));
+    const valid = () => !closed && currentWorkspace();
     const editing = noteId ? Model.notes.get(noteId) : null;
     let draftRestored = false;
     let staleDraft = false;
@@ -374,7 +375,7 @@ const EditorSheet = (() => {
       let note;
       try {
         saveBase ||= editing ? clone(editing) : { id: uid(), cards: {}, log: [] };
-        note = await Model.commitEditorNote(saveBase, fields, valid);
+        note = await Model.commitEditorNote(saveBase, fields, currentWorkspace);
       } catch (error) {
         if (valid()) {
           saveError = 'Could not save. Your input is kept here; retry Save or copy it before leaving.';
