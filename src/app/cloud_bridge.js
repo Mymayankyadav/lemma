@@ -44,5 +44,21 @@ const LemmaCloudBridge = (() => {
     }
     return { copied, skipped };
   }
-  return { authorize, listRemote, inspect, uploadMissing };
+  async function importMissing() {
+    if (Store.mode !== 'local') throw new Error('Browser local storage required');
+    const rows = await listRemote();
+    let copied = 0, skipped = 0;
+    for (const row of rows) {
+      const n = row.data;
+      if (row.deleted_at || Model.notes.has(row.id) || !n ||
+          n.id !== row.id || typeof n.front !== 'string' ||
+          typeof n.back !== 'string' || !Array.isArray(n.log)) {
+        skipped++; continue;
+      }
+      Model.createNote(JSON.parse(JSON.stringify(n)));
+      copied++;
+    }
+    return { copied, skipped };
+  }
+  return { authorize, listRemote, inspect, uploadMissing, importMissing };
 })();
