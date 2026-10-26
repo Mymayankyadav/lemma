@@ -23,5 +23,26 @@ const LemmaCloudBridge = (() => {
     const rows = await listRemote();
     return { local: Model.notes.size, remote: rows.filter(r => !r.deleted_at).length };
   }
-  return { authorize, listRemote, inspect };
+  async function uploadMissing() {
+    const { client } = await authorize();
+    const known = new Set((await listRemote()).map(r => r.id));
+    let copied = 0, skipped = 0;
+    for (const note of Model.notes.values()) {
+      if (known.has(note.id)) { skipped++; continue; }
+      const result = await client.rpc('commit_note', {
+        p_note_id: note.id, p_expected_revision: 0,
+        p_request_id: crypto.randomUUID(),
+        p_data: JSON.parse(JSON.stringify(note)), p_delete: false
+      });
+      if (result.error) {
+        if ((result.error.message || '').includes('stale_note_revision')) {
+          skipped++; continue;
+        }
+        throw new Error('Stopped after ' + copied + ' copies: ' + result.error.message);
+      }
+      copied++;
+    }
+    return { copied, skipped };
+  }
+  return { authorize, listRemote, inspect, uploadMissing };
 })();
