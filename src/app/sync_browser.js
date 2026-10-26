@@ -99,9 +99,28 @@ const LemmaCloud = (() => {
       // Clear the acknowledged mutation and rebase the next local operation
       // atomically; the current user-visible note remains dirty until all
       // changes for it are committed. Concurrent remote changes still 409.
-      return tx(this.db, ['outbox','notes'], 'readwrite', t => {
+      return tx(this.db, ['outbox','notes','meta'], 'readwrite', t => {
         const outbox = t.objectStore('outbox');
         outbox.delete(op.id);
+        if (op.kind === 'profile') {
+          if (!Number.isSafeInteger(result?.revision) || result.revision < 1) { t.abort(); return; }
+          const queue = outbox.getAll();
+          queue.onsuccess = () => {
+            const next = queue.result.filter(x => x.kind === 'profile' && x.state === 'pending')
+              .sort(core.compare)[0];
+            if (next) outbox.put({ ...next, expectedRevision:result.revision });
+            const meta = t.objectStore('meta');
+            const current = meta.get('accountProfile');
+            current.onsuccess = () => {
+              if (current.result) meta.put({ ...current.result,
+                revision:Math.max(current.result.revision,result.revision),
+                dirty:queue.result.some(x => x.kind === 'profile') ||
+                  canonical(current.result.data) !== canonical(op.data)
+              },'accountProfile');
+            };
+          };
+          return;
+        }
         if (op.kind !== 'note' || !Number.isSafeInteger(result?.revision)) return;
         const q = outbox.getAll();
         q.onsuccess = () => {
@@ -274,6 +293,31 @@ const LemmaCloud = (() => {
       return result;
     }
     async profile() { return request(this.db.transaction('meta').objectStore('meta').get('accountProfile')); }
+    async stageProfile(data) {
+      const snapshot = structuredClone(data);
+      if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot))
+        throw new Error('Invalid account profile');
+      const op = { id: uuid(), requestId: uuid(), kind: 'profile', entityId: 'profile',
+        data: snapshot, state: 'pending', attempts: 0, enqueuedAt: Date.now() };
+      await tx(this.db, ['meta','outbox'], 'readwrite', t => {
+        const meta = t.objectStore('meta');
+        const old = meta.get('accountProfile');
+        old.onsuccess = () => {
+          const prior = old.result || { revision: 0 };
+          const seq = meta.get('sequence');
+          seq.onsuccess = () => {
+            const n = (seq.result ?? 0) + 1;
+            if (!Number.isSafeInteger(n)) { t.abort(); return; }
+            op.sequence = n;
+            op.expectedRevision = prior.revision;
+            meta.put(n,'sequence');
+            meta.put({ data:snapshot, revision:prior.revision, dirty:true },'accountProfile');
+            t.objectStore('outbox').add(op);
+          };
+        };
+      });
+      return op;
+    }
     async ingestRemoteProfile(row) {
       if (row && (row.user_id !== this.userId || !Number.isSafeInteger(row.revision) ||
           row.revision < 1 || !row.data || typeof row.data !== 'object' ||
@@ -323,6 +367,13 @@ const LemmaCloud = (() => {
     constructor(supabase, userId, active = () => true) { this.supabase = supabase; this.userId = userId; this.active = active; }
     async send(op) {
       const token = await accountToken(this.supabase, this.userId, this.active);
+      if (op.kind === 'profile') {
+        const {data,error} = await this.supabase.rpc('commit_profile',{
+          p_expected_revision:op.expectedRevision,p_request_id:op.requestId,p_data:op.data
+        }).setHeader('Authorization','Bearer '+token);
+        if (error) throw error;
+        return {revision:Number(data)};
+      }
       if (op.kind === 'note') {
         const { data, error } = await this.supabase.rpc('commit_note', {
           p_note_id: op.entityId, p_expected_revision: op.expectedRevision,
