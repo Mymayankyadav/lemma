@@ -156,6 +156,8 @@ const App = (() => {
     }
     Model.loadProfile(data.profile);
     Model.replaceAll(data.notes);
+    // Warm only the signed-in account cache; never merge it into the anonymous Model.
+    LemmaSync.init();
     App.loading = false;
     Model.onChange(() => refresh());
     if (data.mode === 'cloud') {
