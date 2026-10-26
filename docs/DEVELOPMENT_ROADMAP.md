@@ -107,3 +107,9 @@ Detailed findings, implementation sequence and acceptance gates: [Sync audit](SY
 ### A4a progress (26 October 2026)
 - Deployed append-only `review_retractions` with owner RLS, immutable rows, one retraction per target, and optional scheduling provenance on `review_events`.
 - Added `ReviewLedger.activeEvents` for deterministic active-event filtering and tests. The account-scoped adapter now stages a retraction transactionally alongside durable outbox metadata, retains the original review, sends retries idempotently, and pulls remote retractions. This is **not** an FSRS replay engine and does not activate UI/cloud Undo. Next gate is atomic account-cache staging and crash-safe review/retraction dispatch, followed by scheduling provenance and deterministic replay.
+
+### A4b progress — provenance-gated memory replay
+- New local review log entries retain scheduling provenance in optional field 8, including FSRS-6 weights, scheduling day, rollover, timezone offset, retention, interval ceiling, learning steps, fuzz and load balancing settings, preview time, and pre-review card state. Earlier seven- and six-field logs stay readable.
+- Account review staging forwards this provenance to the `review_events.scheduling_provenance` JSON column.
+- `ReviewLedger.replayMemory` deterministically reconstructs **stability and difficulty only** from active non-cram reviews when all accepted reviews have verified provenance; it rejects missing provenance, out-of-order scheduler days and invalid replay baselines instead of silently guessing.
+- **Not a complete scheduler replay**: due timestamps, state transitions, fuzz/load-balancing snapshots, resets, legacy history, retraction compensation and concurrency semantics require additional work. No automatic cloud sync or cloud Undo UI has been enabled.
