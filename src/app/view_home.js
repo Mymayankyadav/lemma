@@ -142,9 +142,10 @@ const HomeView = (() => {
       actions: [h('button', { class: 'btn btn-primary', type: 'button', text: 'Rename', onclick: go })] });
   }
   async function deleteDeck(name) {
+    const generation = App.workspaceRevision;
     const notes = [...Model.notes.values()].filter((n) => Model.inDeck(n, name));
     const ok = await confirmDialog({ title: `Delete “${name.split('::').pop()}”?`, message: notes.length ? `${plural(notes.length, 'note')} and their history will be deleted.` : 'The deck is empty.', confirmLabel: 'Delete', danger: true });
-    if (!ok) return;
+    if (!ok || App.workspaceBlocked || generation !== App.workspaceRevision) return;
     for (const n of notes) Model.deleteNote(n.id);
     Model.removeDeckEntry(name);
     toast('Deck deleted');
@@ -169,7 +170,9 @@ const HomeView = (() => {
     if (examples.length && !Model.meta.examplesHidden) {
       out.push(banner('info', 'Example cards', [
         h('button', { class: 'btn btn-sm', type: 'button', html: icon('trash', 15) + '<span>Remove</span>', onclick: async () => {
+          const generation = App.workspaceRevision;
           if (!(await confirmDialog({ title: 'Remove example cards?', message: `${plural(examples.length, 'example note')} and their history will be deleted.`, confirmLabel: 'Remove', danger: true }))) return;
+          if (generation !== App.workspaceRevision || App.workspaceBlocked) return;
           for (const n of examples) Model.deleteNote(n.id);
           Model.removeDeckEntry('Examples');
           toast('Examples removed');
