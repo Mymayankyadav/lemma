@@ -248,6 +248,31 @@ const LemmaCloud = (() => {
         };
       });
     }
+    async inspectAgainst(localNotes) {
+      // Read-only account/local comparison. Never merge distinct card histories.
+      const rows = await this.notes();
+      const account = new Map(rows.map(row => [row.id, row]));
+      const local = new Map(localNotes.map(note => [note.id, note]));
+      const result = { localOnly: 0, accountOnly: 0, identical: 0,
+        divergent: 0, cloudTombstone: 0, dirtyAccount: 0,
+        legacyHistory: 0 };
+      for (const row of rows) {
+        if (row.dirty) result.dirtyAccount++;
+        if (!row.deleted && Array.isArray(row.data?.log) && row.data.log.length)
+          result.legacyHistory++;
+      }
+      for (const [id, note] of local) {
+        const remote = account.get(id);
+        if (!remote) { result.localOnly++; continue; }
+        if (remote.deleted) { result.cloudTombstone++; continue; }
+        if (canonical(note) === canonical(remote.data)) result.identical++;
+        else result.divergent++;
+      }
+      for (const row of rows) {
+        if (!local.has(row.id) && !row.deleted) result.accountOnly++;
+      }
+      return result;
+    }
     async notes() { return request(this.db.transaction('notes').objectStore('notes').getAll()); }
     async reviews() { return request(this.db.transaction('reviews').objectStore('reviews').getAll()); }
     async ingestRemoteNote(row) {
