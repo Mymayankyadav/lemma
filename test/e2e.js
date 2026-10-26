@@ -19,7 +19,7 @@ let failures = 0;
 const ok = (cond, msg) => { console.log((cond ? 'ok   ' : 'FAIL ') + msg); if (!cond) failures++; };
 
 async function newPage(browser, { seedDocs, mock = true, viewport = { width: 1280, height: 860 }, dark = false, label }) {
-  const ctx = await browser.newContext({ viewport, colorScheme: dark ? 'dark' : 'light', timezoneId: 'Asia/Kolkata' });
+  const ctx = await browser.newContext({ serviceWorkers: 'block', viewport, colorScheme: dark ? 'dark' : 'light', timezoneId: 'Asia/Kolkata' });
   await ctx.route('**/*', async (route) => {
     const url = route.request().url();
     if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: HTML });
@@ -29,7 +29,7 @@ async function newPage(browser, { seedDocs, mock = true, viewport = { width: 128
     return route.abort();
   });
   const page = await ctx.newPage();
-  page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') problems.push(`[${label}] console.${m.type()}: ${m.text()}`); });
+  page.on('console', (m) => { if ((m.type() === 'error' || m.type() === 'warning') && m.text() !== 'Service Worker registration blocked by Playwright') problems.push(`[${label}] console.${m.type()}: ${m.text()}`); });
   page.on('pageerror', (e) => problems.push(`[${label}] pageerror: ${e.message}\n${(e.stack || '').split('\n').slice(0, 4).join('\n')}`));
   if (mock) {
     await page.addInitScript(({ docs, mockSrc }) => { window.__SEED__ = docs; (0, eval)(mockSrc); }, { docs: seedDocs || {}, mockSrc: MOCK });
@@ -326,6 +326,7 @@ function syntheticHistory() {
       await page.mouse.up();
       await page.screenshot({ path: SHOTS + '/B5-scratch.png' });
       await page.click('.scratch .btn-primary');
+      await page.waitForSelector('.scratch', { state: 'hidden' });
       await overflow('mobile review');
     }
     await page.keyboard.press('Escape');
@@ -358,10 +359,34 @@ function syntheticHistory() {
     await page.reload();
     await page.waitForSelector('.today', { timeout: 15000 });
     ok((await page.textContent('.hero-num')).trim() === '1', 'card persisted in IndexedDB across reload');
+    await page.click('.today .btn-primary');
+    await page.click('.btn-reveal');
+    await page.click('.grade-good');
+    const persistedReviews = async expected => page.waitForFunction(async count => {
+      const db = await new Promise((resolve,reject) => {
+        const r=indexedDB.open('lemma-flashcards'); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+      });
+      const notes = await new Promise((resolve,reject) => {
+        const r=db.transaction('notes').objectStore('notes').getAll(); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+      });
+      db.close();
+      return notes.length === 1 && notes[0].log.length === count && (count === 0 || /^[0-9a-f-]{36}$/i.test(notes[0].log[0][6]));
+    }, expected);
+    await persistedReviews(1);
+    ok(true, 'review snapshot and stable event ID committed to IndexedDB');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('u');
+    await persistedReviews(0);
+    ok(true, 'Undo durably removes the local review');
+    await page.reload();
+    await page.waitForSelector('.today');
+    ok((await page.textContent('.hero-num')).trim() === '1', 'Undo scheduling survives reload');
     await ctx.close();
   }
 
   await browser.close();
   console.log('\n' + (problems.length ? problems.join('\n') : 'no console errors'));
   console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');
+  if (failures || problems.length) process.exitCode = 1;
 })().catch((e) => { console.error('E2E crashed:', e); console.log(problems.join('\n')); process.exit(1); });
+

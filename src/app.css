@@ -469,6 +469,7 @@ textarea.input { resize: vertical; line-height: 1.5; }
 .ai-missing { margin: 6px 0 0; padding-left: 1.2em; font-size: 13.5px; color: var(--ink-2); }
 /* scratchpad */
 .scratch { position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; background: color-mix(in srgb, var(--sheet) 96%, transparent); }
+.scratch[hidden] { display: none; }
 .scratch-bar { display: flex; gap: 4px; align-items: center; padding: calc(8px + env(safe-area-inset-top, 0px)) var(--gutter-r) 8px var(--gutter-l); border-bottom: 1px solid var(--rule); background: var(--sheet); overflow-x: auto; }
 .scratch-area { flex: 1 1 auto; position: relative; background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 22px 22px; }
 .scratch-done { border-radius: 12px; }
@@ -790,3 +791,4 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
   .card-rule { margin: 14px -2px; }
   .card-fsrs { margin-top: 12px; padding-top: 10px; font-size: 12px; }
 }
+

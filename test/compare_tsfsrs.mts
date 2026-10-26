@@ -2,7 +2,7 @@
 process.env.TZ = 'UTC';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const FSRS = require(require('path').resolve(__dirname, '../src/') + '/fsrs.js');
+const FSRS = require('../src/fsrs.js');
 import {
   fsrs, createEmptyCard, Rating, FSRSAlgorithm, default_w, generatorParameters,
 } from 'ts-fsrs';
@@ -10,6 +10,10 @@ import {
 let failures = 0;
 const check = (cond: boolean, msg: string) => { if (!cond) { failures++; if (failures < 25) console.log('FAIL', msg); } };
 const rel = (a: number, b: number) => Math.abs(a - b) / Math.max(1e-9, Math.abs(b));
+// ts-fsrs rounds intermediate memory values to 8 decimal places. Over 14
+// transitions, a relative-only bound exaggerates that error for tiny stability.
+// Keep the 1ppm relative bound plus 1e-7 days (8.64ms) absolute rounding allowance.
+const closeStability = (a: number, b: number) => Math.abs(a-b) <= 1e-7 + 1e-6 * Math.abs(b);
 
 const w = [...default_w];
 const alg = new FSRSAlgorithm(generatorParameters({ w, enable_short_term: true, enable_fuzz: false }));
@@ -75,7 +79,7 @@ for (let walk = 0; walk < 400; walk++) {
       const a = pv[g].card, b = rf[g].card;
       const learningHardLater = (mine.st === 1 || mine.st === 3) && g === 2 && mine.step > 0;
       compared++;
-      check(Math.abs(a.s - b.stability) / b.stability < 1e-6, `walk ${walk} k ${k} g ${g} S ${a.s} vs ${b.stability} st=${mine.st}`);
+      check(closeStability(a.s, b.stability), `walk ${walk} k ${k} g ${g} S ${a.s} vs ${b.stability} st=${mine.st}`);
       check(Math.abs(a.d - b.difficulty) < 1e-6, `walk ${walk} k ${k} g ${g} D ${a.d} vs ${b.difficulty}`);
       check(a.st === b.state, `walk ${walk} k ${k} g ${g} state ${a.st} vs ${b.state} (from ${mine.st} step ${mine.step})`);
       if (learningHardLater) { skippedHard++; continue; }
@@ -98,3 +102,4 @@ for (let walk = 0; walk < 400; walk++) {
 console.log(`memory transitions: ${n2}, scheduler comparisons: ${compared} over ${walks} walks (skipped ${skippedHard} later-step Hard delays, which follow Anki)`);
 console.log(failures ? `FAILURES: ${failures}` : 'ALL MATCH');
 process.exit(failures ? 1 : 0);
+

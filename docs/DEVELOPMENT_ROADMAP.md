@@ -22,7 +22,7 @@
 
 **Gate:** A written baseline of what can be reused and what is still missing.
 
-## Phase 1 — Deployable app foundation [SOURCE PREPARED; NOT MERGED]
+## Phase 1 — Deployable app foundation [WEB DEPLOYED; ANDROID NOT VERIFIED]
 **Tasks**
 1. Import and review Phase-1 source ZIP into GitHub.
 2. Install pinned dependencies and commit lockfile.
@@ -32,22 +32,26 @@
 
 **Gate:** App is reachable through GitHub Pages, review functionality works offline, Android app opens, previous card data can be imported. Tests pass in browser and Android. **No cloud-sync claim yet.**
 
-## Phase 2 — Authenticated Supabase data and safe sync [FOUNDATION IN PROGRESS]
-**Done**
-- Separate Lemma Supabase project: `yemqnhnztlbyxmjxidis`, Mumbai, separate from Carrel.
-- Initial private tables `study_plans`, `learning_sessions`, `learning_events`, `tutor_handoffs`.
-- Versioned study-planning tables `study_context_files`, `study_plan_versions`, `study_checkpoints`.
-- Owner-scoped RLS enabled; security advisor returned no findings. Two deployed migrations are tracked in `supabase/migrations/`.
+## Phase 2 — Authenticated Supabase data and safe sync [DURABILITY CHECKPOINT IMPLEMENTED; AUTO SYNC NOT ENABLED]
 
-**Not done**
-1. Design and deploy complete flashcard, card-content and immutable review-event schema.
-2. Implement authentication and per-account IndexedDB namespaces.
-3. Implement an atomic offline outbox; show saved locally / uploading / cloud confirmed accurately.
-4. Implement idempotent writes, server change cursors, realtime invalidation and reconnect delta pull.
-5. Use revision checks for shared text and keep all review events before recomputing FSRS state.
-6. Test cross-device simultaneous edits, offline deletes, logout/relogin and cross-user isolation.
+Detailed findings, implementation sequence and acceptance gates: [Sync audit](SYNC_AUDIT_2026-10-26.md).
 
-**Gate:** No lost reviews or notes in fault-injection tests; correct due counts across two devices; RLS isolation verified by two real identities.
+**Completed**
+- Existing web source imported; Pages build/deployment verified at the baseline. Optional magic-link login and explicit copy-missing transfer exist.
+- Fourteen owner-scoped tables and revision-aware note/plan RPCs deployed. All seven applied migrations are now tracked, including four recovered missing files.
+- Deployed note-write permission hardening; transactional two-identity database checks and post-change security advisor passed. No existing user rows changed.
+- Active local saves are awaitable and accurately report pending/failed/saved states. Review completion and Undo await persistence, with stable review UUIDs and backup preservation.
+- Prepared account adapter now has transaction-ordered sequences, atomic review staging, retry markers, monotonic remote ingestion, account-bound requests and cross-tab flush locking.
+- Added IndexedDB/Store/Session tests, browser review/Undo reload coverage, and two-browser adapter tests with a fault-injected mock server; expanded CI to run the full regression suite on development branches and PRs.
+
+**Not completed / release blockers**
+1. Append-only review retractions for cloud Undo and full scheduling provenance.
+2. Deterministic FSRS replay, legacy history baseline/import semantics, resets and simultaneous offline reviews.
+3. Active account Store binding, profile sync, explicit anonymous enrollment and account-switch UI isolation.
+4. Automatic upload/retry/pull/Realtime orchestration and reviewable content conflicts.
+5. Two-device live authenticated verification, offline/reconnect fault matrix, Android lifecycle integration.
+
+**Gate:** No lost notes/reviews under fault injection, convergent due states across devices, and no cross-account data leakage. Unit or CI success alone does not satisfy this gate.
 
 ## Phase 3 — Planning-first mathematics study [SCHEMA ONLY]
 1. Versioned context-file editor: mathematical background, desired level, goals, preferences, source locators, prior verified learning.
@@ -93,6 +97,9 @@
 **Gate:** 0 lost event records in concurrency/failure tests, no cross-user leakage, source-linked plans restore cleanly, both cross-model handoff directions pass.
 
 ## Next implementation checkpoint
-**Priority:** Commit prepared Phase-1 app source and validate GitHub Pages build. In parallel, design the immutable review-event ledger and safe plan-publish transaction. The initial planning tables do **not** yet enforce optimistic revision commits; this must be implemented before making live editing available.
 
-**Model assignment for development:** Opus High (architecture, concurrency review, math tutoring spec); Sonnet High (implementation, complex testing); Sonnet Medium (routine components, docs); inexpensive model for mechanical work. The study-planning model itself remains user-selected.
+**Priority:** A4 review retractions and deterministic scheduling provenance, then A5 active account-store integration. Follow the concrete sequence in [the sync audit](SYNC_AUDIT_2026-10-26.md). Do not activate automatic sync merely by wiring the current snapshot transport into `Store`: that would commit undone reviews and inconsistent FSRS state.
+
+**Delivery status:** Development branch `astra/sync-durability` contains the browser changes. Backend note-write hardening is deployed independently. The branch is not a claim that the Pages application has those browser changes or that cloud synchronization is complete. CI run/PR links are recorded with the handoff when available.
+
+**Model assignment:** Strong reasoning for concurrency/replay/security contracts; capable implementation model for UI and deterministic tests. The learning model remains user-selected.

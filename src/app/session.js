@@ -130,7 +130,8 @@ class Session {
     return { new: nw, learn: ln, review: rv };
   }
 
-  answer(g, durationMs, now = Date.now()) {
+  async answer(g, durationMs, now = Date.now()) {
+    if (this.saving) return null;
     const cur = this.current;
     if (!cur) return null;
     const r = cur.ref;
@@ -139,6 +140,9 @@ class Session {
     const before = clone(note);
     const queues = { reviewQ: this.reviewQ.slice(), newQ: this.newQ.slice(), extra: clone(this.extra), cramQ: this.cramQ.slice(), sinceNew: this.sinceNew, stats: clone(this.stats) };
     const prev = note.cards[ord];
+    this.saving = true;
+    const eventId = crypto.randomUUID();
+    try {
     const dur = Math.min(Math.max(0, durationMs || 0), 120000);
     const events = [];
     this.stats.count++;
@@ -148,16 +152,16 @@ class Session {
     if (prev.st === 2) { this.stats.reviews++; if (g > 1) this.stats.reviewPass++; }
 
     if (this.cram) {
-      note.log.push([now, +ord, g, prev.st, Math.round(dur), 1]);
+      note.log.push([now, +ord, g, prev.st, Math.round(dur), 1, eventId]);
       if (g === 1) this.cramQ.splice(Math.min(3, this.cramQ.length), 0, r.key);
-      Model.saveScheduling(note);
+      await Model.saveScheduling(note);
     } else {
       // intervals shown on the buttons are applied as-is unless the card sat unanswered for a long time
       const pv = cur.preview && now - (cur.previewAt || now) < 15 * 60000 ? cur.preview : Model.previewFor(r, now);
       const nc = Object.assign({}, pv[g].card);
       if (prev.flag) nc.flag = prev.flag;
       note.cards[ord] = nc;
-      note.log.push([now, +ord, g, prev.st, Math.round(dur), 0]);
+      note.log.push([now, +ord, g, prev.st, Math.round(dur), 0, eventId]);
       // leech handling
       const thr = Model.settings.leechThreshold;
       if (prev.st === 2 && g === 1 && thr > 0 && nc.lapses >= thr && (nc.lapses - thr) % Math.max(1, Math.ceil(thr / 2)) === 0) {
@@ -177,17 +181,26 @@ class Session {
         this.reviewQ = this.reviewQ.filter(k);
         this.newQ = this.newQ.filter(k);
       }
-      Model.saveScheduling(note);
+      await Model.saveScheduling(note);
       // a lapse pulls shaky prerequisites into the session
       if (g === 1 && Model.settings.refreshPrereqs) {
         const added = this.queuePrereqs(note, now);
         if (added) events.push({ type: 'prereqs', count: added });
       }
     }
-    this.history.push({ noteId: note.id, before, queues, key: r.key, kind: cur.kind });
+    this.history.push({ noteId: note.id, before, afterCards: clone(note.cards), eventId, queues, key: r.key, kind: cur.kind });
     if (this.history.length > 30) this.history.shift();
     this.current = null;
     return events;
+    } catch (error) {
+      Object.assign(note, before);
+      this.reviewQ = queues.reviewQ; this.newQ = queues.newQ;
+      this.extra = queues.extra; this.cramQ = queues.cramQ;
+      this.sinceNew = queues.sinceNew; this.stats = queues.stats;
+      cur.ref.c = note.cards[ord];
+      Model.bump();
+      throw error;
+    } finally { this.saving = false; }
   }
 
   queuePrereqs(note, now) {
@@ -213,22 +226,39 @@ class Session {
     return added;
   }
 
-  undo() {
-    const last = this.history.pop();
+  async undo() {
+    if (this.saving) return null;
+    const last = this.history[this.history.length - 1];
     if (!last) return null;
-    const restored = Model.sanitizeNote(last.before);
-    Model.notes.set(last.noteId, restored);
-    Model.saveScheduling(restored);
-    this.reviewQ = last.queues.reviewQ;
-    this.newQ = last.queues.newQ;
-    this.extra = last.queues.extra;
-    this.cramQ = last.queues.cramQ;
-    this.sinceNew = last.queues.sinceNew;
-    this.stats = last.queues.stats;
-    const [nid, ord] = last.key.split(':');
-    const r = Model.ref(nid, ord);
-    return r ? { ref: r, kind: last.kind } : null;
+    const current = Model.notes.get(last.noteId);
+    if (!current || current.type !== last.before.type ||
+        JSON.stringify(current.cards) !== JSON.stringify(last.afterCards) ||
+        current.log.length !== last.before.log.length + 1 ||
+        current.log[current.log.length - 1]?.[6] !== last.eventId ||
+        JSON.stringify(current.log.slice(0,-1)) !== JSON.stringify(last.before.log)) {
+      throw new Error('This card changed after the review; Undo needs reconciliation.');
+    }
+    // Preserve text edits made after answering. Only review-owned state rolls back.
+    const restored = Model.sanitizeNote({ ...clone(current), cards: clone(last.before.cards), log: clone(last.before.log),
+      tags: last.before.tags.includes('leech') ? current.tags : current.tags.filter(t => t !== 'leech') });
+    this.saving = true;
+    try {
+      await Store.saveNote(restored);
+      this.history.pop();
+      Model.notes.set(last.noteId, restored);
+      Model.bump();
+      this.reviewQ = last.queues.reviewQ;
+      this.newQ = last.queues.newQ;
+      this.extra = last.queues.extra;
+      this.cramQ = last.queues.cramQ;
+      this.sinceNew = last.queues.sinceNew;
+      this.stats = last.queues.stats;
+      const [nid, ord] = last.key.split(':');
+      const r = Model.ref(nid, ord);
+      return r ? { ref: r, kind: last.kind } : null;
+    } finally { this.saving = false; }
   }
+
 }
 
 function shuffle(arr) {
@@ -281,3 +311,4 @@ function prerequisitePath(noteId) {
   visit(noteId, 0);
   return order;
 }
+

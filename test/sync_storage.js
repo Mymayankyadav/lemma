@@ -1,0 +1,126 @@
+const assert = require('node:assert/strict');
+require('fake-indexeddb/auto');
+const { AccountStorage, openAccountDB, SupabaseTransport, pullAll } = require('../src/app/sync_browser');
+const { Processor } = require('../src/app/outbox_core');
+const userA = '00000000-0000-4000-8000-000000000001';
+const userB = '00000000-0000-4000-8000-000000000002';
+const note = (front = 'first') => ({ id: 'n', front, back: '', log: [], cards: {} });
+const clear = async db => new Promise((resolve, reject) => {
+  const t = db.transaction(['notes','reviews','outbox','meta'], 'readwrite');
+  for (const name of ['notes','reviews','outbox','meta']) t.objectStore(name).clear();
+  t.oncomplete = resolve; t.onerror = () => reject(t.error);
+});
+(async () => {
+  const db = await openAccountDB(userA);
+  const storage = new AccountStorage(db, userA);
+  // Independent adapters/connections emulate two tabs writing one account cache.
+  const db2 = await openAccountDB(userA);
+  const tab2 = new AccountStorage(db2, userA);
+  const realNow = Date.now;
+  Date.now = () => 7;
+  await Promise.all([storage.stageNote(note('one')), tab2.stageNote(note('two')), storage.stageNote(note('three'))]);
+  Date.now = () => 1;
+  await storage.stageNote(note('four'));
+  Date.now = realNow;
+  const ordered = (await storage.list()).sort((a,b) => a.sequence-b.sequence);
+  assert.deepEqual(ordered.map(o => o.data.front), ['one','two','three','four']);
+  assert.deepEqual(ordered.map(o => o.sequence), [1,2,3,4]);
+  const sent = [];
+  let revision = 0;
+  const processor = new Processor(storage, { send: async op => {
+    assert.equal(op.expectedRevision, revision);
+    sent.push(op.data.front);
+    return { revision: ++revision };
+  }});
+  assert.equal((await processor.flush()).remaining, 0);
+  assert.deepEqual(sent, ['one','two','three','four']);
+  assert.equal((await storage.notes())[0].dirty, false);
+  await storage.stageNote(note('fifth'));
+  assert.equal((await storage.list())[0].expectedRevision, 4, 'derive base revision from committed metadata');
+  await clear(db);
+
+  // Duplicate event insertion must abort snapshot + both queue entries + sequence.
+  const entry = [100,1,3,0,2000,0,crypto.randomUUID()];
+  const reviewed = { ...note('reviewed'), log: [entry] };
+  await storage.stageReview(reviewed, entry);
+  assert.equal((await storage.list()).length, 2);
+  assert.equal((await storage.reviews()).length, 1);
+  await assert.rejects(storage.stageReview({ ...reviewed, front: 'must roll back' }, entry));
+  assert.equal((await storage.notes())[0].data.front, 'reviewed');
+  assert.equal((await storage.list()).length, 2);
+  await assert.rejects(storage.stageReview('n', entry), /snapshot/);
+  assert.equal((await storage.notes())[0].dirty, true);
+  await storage.ingestRemoteNote({ id:'n', data: note('remote'), revision:99 });
+  assert.equal((await storage.notes())[0].data.front, 'reviewed', 'dirty snapshot survives remote pull');
+  await clear(db);
+
+  await storage.ingestRemoteNote({ id:'n', data:note('new'), revision:5 });
+  await storage.ingestRemoteNote({ id:'n', data:note('old'), revision:3 });
+  assert.equal((await storage.notes())[0].data.front, 'new', 'late pull must not regress revision');
+  await storage.stageNote(note(), undefined, true);
+  const deletion = (await storage.list())[0];
+  assert.equal(deletion.expectedRevision, 5);
+  await storage.ack(deletion, { revision:6 });
+  assert.equal((await storage.notes())[0].deleted, true);
+  assert.equal((await storage.notes())[0].dirty, false);
+  await clear(db);
+
+  // Failure AFTER server commit: persisted attempted marker and request ID survive reopen.
+  const operation = await storage.stageNote(note('retry'));
+  const committed = new Map();
+  let fail = true;
+  const network = { send: async op => {
+    if (!committed.has(op.requestId)) committed.set(op.requestId, { revision:1 });
+    if (fail) { fail = false; throw new Error('response lost'); }
+    return committed.get(op.requestId);
+  }};
+  await new Processor(storage, network).flush();
+  assert.equal((await storage.get(operation.id)).attempted, true);
+  db.close(); db2.close();
+  const reopened = await openAccountDB(userA);
+  const recovered = new AccountStorage(reopened, userA);
+  await new Processor(recovered, network).flush();
+  assert.equal(committed.size, 1);
+  assert.equal((await recovered.list()).length, 0);
+  assert.equal((await recovered.notes())[0].dirty, false);
+
+  // Account caches and pinned authorization cannot mix across auth races.
+  const otherDB = await openAccountDB(userB);
+  const other = new AccountStorage(otherDB, userB);
+  assert.equal((await other.notes()).length, 0);
+  let session = { user:{ id:userA }, access_token:'token-a' };
+  let header, calls = 0;
+  const client = {
+    auth: { getSession: async () => ({ data: { session }, error:null }) },
+    rpc: () => {
+      calls++;
+      session = { user:{ id:userB }, access_token:'token-b' };
+      return { setHeader: (key, value) => { header = [key,value]; return Promise.resolve({ data:2 }); } };
+    }
+  };
+  const transport = new SupabaseTransport(client, userA);
+  await transport.send(operation);
+  assert.deepEqual(header, ['Authorization','Bearer token-a']);
+  await assert.rejects(transport.send(operation), /account changed/);
+  assert.equal(calls, 1);
+  const stopped = new Processor(recovered, network);
+  await recovered.stageNote(note('stay local'));
+  stopped.stopped = true;
+  assert.deepEqual(await stopped.flush(), { stopped:true });
+  assert.equal((await recovered.list()).length, 1);
+
+  // Explicit conflicts block only that note; other device changes remain recoverable.
+  await clear(reopened);
+  await recovered.stageNote(note('local'));
+  await recovered.stageNote({ ...note('unrelated'), id:'other' });
+  const conflicted = new Processor(recovered, { send: async op => {
+    if (op.entityId === 'n') throw new Error('stale_note_revision');
+    return { revision:1 };
+  }});
+  await conflicted.flush();
+  assert.equal((await recovered.list())[0].state, 'conflict');
+  assert.equal((await recovered.notes()).find(n => n.id === 'n').data.front, 'local');
+  assert.equal((await recovered.notes()).find(n => n.id === 'other').dirty, false);
+  reopened.close(); otherDB.close();
+  console.log('ok: IndexedDB ordering, atomic review rollback, crash recovery, tombstones, conflicts, account isolation and pinned JWT');
+})().catch(error => { console.error(error); process.exitCode = 1; });

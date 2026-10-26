@@ -17,3 +17,8 @@ The plan must be editable when course pacing, evidence, priorities or sources ch
 See [Study planning protocol](STUDY_PLANNING_PROTOCOL.md) for data contract, safety rules and acceptance tests.
 
 **Current infrastructure:** GitHub `Mymayankyadav/lemma`; Supabase project `yemqnhnztlbyxmjxidis` in Mumbai. Four initial learning-state tables were deployed with per-user RLS. Phase 1 app source is prepared locally but not yet imported into GitHub; authentication and sync are not implemented.
+
+
+## Astra audit amendment — 26 October 2026
+
+The earlier infrastructure paragraph is historical: source and web deployment now exist. Restore missing migration history and establish local durability before enabling automatic sync. Active review/Undo now wait for local commit; account primitives are hardened but not wired into the UI. Cloud Undo requires append-only retractions and deterministic FSRS replay; snapshot restore cannot substitute for either. See `SYNC_AUDIT_2026-10-26.md` for evidence and ordered release gates. Backend note writes now require the revision RPC.

@@ -33,7 +33,12 @@ const App = (() => {
       if (st.offline) { ic = 'cloud'; text = 'Offline · will retry'; cls = 'warn'; }
       else if (st.pending) { ic = 'cloud'; text = 'Saving'; cls = 'pending'; }
       else { ic = 'cloud'; text = 'Saved to your account'; }
-    } else if (st.mode === 'local') { ic = 'device'; text = 'Saved in this browser'; }
+    } else if (st.mode === 'local') {
+      ic = 'device';
+      if (st.failed) { text = 'Not saved · export a backup'; cls = 'warn'; }
+      else if (st.pending) { text = 'Saving on device'; cls = 'pending'; }
+      else text = 'Saved on device · cloud sync not enabled';
+    }
     else if (st.mode === 'memory') { ic = 'device'; text = 'Not saved'; cls = 'warn'; }
     else { ic = 'clock'; text = 'Loading'; cls = 'pending'; }
     const key = ic + text + cls;
@@ -93,8 +98,9 @@ const App = (() => {
       n++;
     }
     Model.bump();
-    await Store.clearLocal();
-    toast(`Moved ${plural(n, 'card')}`);
+    // Keep the source copy: the legacy cloud queue does not provide durable
+    // per-note acknowledgements, so deleting it here could lose the only copy.
+    toast(`Copied ${plural(n, 'card')} · local backup retained`);
     render();
   }
 
@@ -159,7 +165,7 @@ const App = (() => {
     go(VIEWS[hash] && hash !== 'review' ? hash : 'home');
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { Model.bump(); } });
     setInterval(() => { if (view === 'home' && !document.hidden && !Sheets.count) render(); }, 60000);
-    window.addEventListener('beforeunload', (e) => { if (Store.status().pending) { e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('beforeunload', (e) => { if (Store.status().pending || Store.status().failed) { e.preventDefault(); e.returnValue = ''; } });
   }
 
   return {
@@ -171,3 +177,4 @@ const App = (() => {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => App.boot());
 else App.boot();
+

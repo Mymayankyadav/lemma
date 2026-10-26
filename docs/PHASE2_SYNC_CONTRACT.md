@@ -38,3 +38,10 @@ These are SECURITY INVOKER entry points delegating to constrained implementation
 
 ## October 26 — explicit snapshot transfer milestone
 The repository now contains `src/app/cloud_bridge.js` with owner-authenticated paginated cloud reads and manual copy-missing operations. Settings exposes two buttons. They intentionally do NOT automatically reconcile concurrent review logs, update existing notes, copy profiles or enroll cards in continuous sync. Before using, export a backup. Card uploads use `commit_note` revision-zero inserts, skipping server-present IDs. Download copies only IDs absent locally. Live sync remains blocked until review-event reconciliation, conflict UX, atomic local writes and auth isolation tests pass.
+
+
+## Astra durability checkpoint — 26 October 2026
+
+See [audit and next gates](SYNC_AUDIT_2026-10-26.md). Account DB version 2 allocates queue sequence in the transaction; UUID/timestamp order is not authoritative for new writes. `stageReview` now takes the complete note snapshot, seven-field log entry (stable UUID), and optional expected revision, and commits snapshot/event/outbox together. Local review and Undo await transaction completion. Account RPC/pull requests explicitly pin the checked JWT. Direct client note-table writes are revoked in deployed migration `20261026121817`; use `commit_note`.
+
+**Still gated:** the main Store has not switched to Supabase account mode. Review retractions, scheduling provenance/replay, account enrollment, conflict UI and automatic orchestration remain required. An attempted operation is potentially committed remotely; never discard it to implement Undo. Keyset full scans avoid offset shifting but do not promise a consistent snapshot or a commit-safe incremental cursor.

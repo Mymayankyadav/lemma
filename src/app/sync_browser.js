@@ -4,7 +4,8 @@
  * No service-role key or elevated database access is used here.
  */
 const LemmaCloud = (() => {
-  const dbVersion = 1;
+  const core = typeof module !== 'undefined' && module.exports ? require('./outbox_core.js') : LemmaOutboxCore;
+  const dbVersion = 2;
   function request(req) {
     return new Promise((resolve, reject) => {
       req.onsuccess = () => resolve(req.result);
@@ -20,8 +21,19 @@ const LemmaCloud = (() => {
       if (!d.objectStoreNames.contains('reviews')) d.createObjectStore('reviews', { keyPath: 'event_id' });
       if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'id' });
       if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta');
+      // Preserve v1 pending work and its previous ordering; sequence future
+      // writes transactionally so wall-clock rollback and UUID order cannot reorder them.
+      const outbox = req.transaction.objectStore('outbox');
+      const rows = outbox.getAll();
+      rows.onsuccess = () => {
+        let sequence = 0;
+        for (const op of rows.result.sort(core.compare)) outbox.put({ ...op, sequence: ++sequence });
+        req.transaction.objectStore('meta').put(sequence, 'sequence');
+      };
     };
-    return request(req);
+    const db = await request(req);
+    db.onversionchange = () => db.close();
+    return db;
   }
   function tx(db, stores, mode, callback) {
     return new Promise((resolve, reject) => {
@@ -41,9 +53,35 @@ const LemmaCloud = (() => {
     constructor(db, userId) { this.db = db; this.userId = userId; }
     async list() { return request(this.db.transaction('outbox').objectStore('outbox').getAll()); }
     async get(id) { return request(this.db.transaction('outbox').objectStore('outbox').get(id)); }
-    async put(op) { return tx(this.db, ['outbox'], 'readwrite', t => t.objectStore('outbox').put(op)); }
+    async put(op) {
+      return tx(this.db, ['outbox','meta'], 'readwrite', t => {
+        const outbox = t.objectStore('outbox');
+        const existing = outbox.get(op.id);
+        existing.onsuccess = () => {
+          if (existing.result) { outbox.put({ ...op, sequence: existing.result.sequence }); return; }
+          const meta = t.objectStore('meta');
+          const count = meta.get('sequence');
+          count.onsuccess = () => {
+            const sequence = (count.result ?? 0) + 1;
+            if (!Number.isSafeInteger(sequence) || sequence < 1) { t.abort(); return; }
+            meta.put(sequence, 'sequence');
+            outbox.add({ ...op, sequence });
+          };
+        };
+      });
+    }
     async delete(id) { return tx(this.db, ['outbox'], 'readwrite', t => t.objectStore('outbox').delete(id)); }
+    async markAttempt(id) {
+      return tx(this.db, ['outbox'], 'readwrite', t => {
+        const store = t.objectStore('outbox');
+        const r = store.get(id);
+        r.onsuccess = () => { if (r.result) store.put({ ...r.result, attempted: true }); };
+      });
+    }
     async ack(op, result) {
+      if (op.kind === 'note' && (!Number.isSafeInteger(result?.revision) || result.revision < 1)) {
+        throw new Error('Invalid note acknowledgement');
+      }
       // Clear the acknowledged mutation and rebase the next local operation
       // atomically; the current user-visible note remains dirty until all
       // changes for it are committed. Concurrent remote changes still 409.
@@ -54,7 +92,7 @@ const LemmaCloud = (() => {
         const q = outbox.getAll();
         q.onsuccess = () => {
           const next = q.result.filter(x => x.entityId === op.entityId && x.kind === 'note' && x.state === 'pending')
-            .sort((a,b) => (a.enqueuedAt-b.enqueuedAt) || a.id.localeCompare(b.id))[0];
+            .sort(core.compare)[0];
           if (next) {
             outbox.put({ ...next, expectedRevision: result.revision });
           }
@@ -63,38 +101,63 @@ const LemmaCloud = (() => {
           nr.onsuccess = () => {
             if (!nr.result) return;
             // Avoid marking clean when a later local snapshot was staged.
-            const clean = !next && JSON.stringify(nr.result.data) === JSON.stringify(op.data)
+            const clean = !q.result.some(x => x.entityId === op.entityId) && JSON.stringify(nr.result.data) === JSON.stringify(op.data)
               && Boolean(nr.result.deleted) === Boolean(op.deleted);
-            notes.put({ ...nr.result, revision: result.revision, dirty: !clean });
+            notes.put({ ...nr.result, revision: Math.max(nr.result.revision, result.revision), dirty: !clean });
           };
         };
       });
     }
-    async stageNote(note, expectedRevision = 0, deleted = false) {
+    async stageNote(note, expectedRevision, deleted = false, review = null) {
       if (!note || !note.id) throw new Error('Note ID required');
+      const snapshot = deleted ? null : structuredClone(note);
       const op = { id: uuid(), requestId: uuid(), kind: 'note', entityId: note.id,
-        expectedRevision, data: deleted ? null : structuredClone(note), deleted,
-        state: 'pending', attempts: 0, enqueuedAt: Date.now() };
-      // Local view + durable outbound change commit as ONE IndexedDB transaction.
-      await tx(this.db, ['notes','outbox'], 'readwrite', t => {
-        t.objectStore('notes').put({ id: note.id, data: op.data, deleted, revision: expectedRevision, dirty: true });
-        t.objectStore('outbox').put(op);
+        data: snapshot, deleted, state: 'pending', attempts: 0, enqueuedAt: Date.now() };
+      const reviewOp = review ? { id: uuid(), requestId: review.event_id, kind: 'review',
+        entityId: note.id, data: structuredClone(review), enqueuedAt: op.enqueuedAt,
+        state: 'pending', attempts: 0 } : null;
+      if (review) op.reviewEventId = review.event_id;
+      await tx(this.db, ['notes','reviews','outbox','meta'], 'readwrite', t => {
+        const meta = t.objectStore('meta');
+        const count = meta.get('sequence');
+        count.onsuccess = () => {
+          const previous = count.result ?? 0;
+          if (!Number.isSafeInteger(previous) || previous < 0 || previous > Number.MAX_SAFE_INTEGER - 2) {
+            t.abort(); return;
+          }
+          op.sequence = previous + 1;
+          if (reviewOp) reviewOp.sequence = previous + 2;
+          meta.put(previous + (reviewOp ? 2 : 1), 'sequence');
+          const notes = t.objectStore('notes');
+          const existing = notes.get(note.id);
+          existing.onsuccess = () => {
+            op.expectedRevision = expectedRevision ?? existing.result?.revision ?? 0;
+            if (!Number.isSafeInteger(op.expectedRevision) || op.expectedRevision < 0) { t.abort(); return; }
+            notes.put({ id: note.id, data: snapshot, deleted, revision: op.expectedRevision, dirty: true });
+            t.objectStore('outbox').add(op);
+            if (reviewOp) {
+              t.objectStore('reviews').add(review);
+              t.objectStore('outbox').add(reviewOp);
+            }
+          };
+        };
       });
       return op;
     }
-    async stageReview(noteId, entry) {
-      if (!noteId || !Array.isArray(entry) || entry.length < 6) throw new Error('Invalid review event');
-      const event = { event_id: (entry[6] && /^[0-9a-f-]{36}$/i.test(entry[6])) ? entry[6] : uuid(),
-        note_id: noteId, ordinal: Number(entry[1]), occurred_at_ms: Number(entry[0]),
-        grade: Number(entry[2]), state_before: Number(entry[3]),
-        duration_ms: Number(entry[4]), kind: Number(entry[5]) || 0 };
-      const op = { id: uuid(), requestId: event.event_id, kind: 'review',
-        entityId: noteId, data: event, enqueuedAt: Date.now(), state: 'pending', attempts: 0 };
-      await tx(this.db, ['reviews','outbox'], 'readwrite', t => {
-        t.objectStore('reviews').put(event);
-        t.objectStore('outbox').put(op);
-      });
-      return op;
+    async stageReview(note, entry, expectedRevision) {
+      if (!note?.id || !Array.isArray(entry) || entry.length < 7 ||
+          !/^[0-9a-f-]{36}$/i.test(entry[6]) ||
+          !note.log?.some(x => x[6] === entry[6])) throw new Error('A snapshot and stable review ID are required');
+      const event = { event_id: entry[6], note_id: note.id, ordinal: Number(entry[1]),
+        occurred_at_ms: Number(entry[0]), grade: Number(entry[2]), state_before: Number(entry[3]),
+        duration_ms: Number(entry[4]), kind: Number(entry[5]) };
+      if (!['ordinal','occurred_at_ms','grade','state_before','duration_ms','kind'].every(k => Number.isSafeInteger(event[k])) ||
+          event.ordinal < 0 || event.occurred_at_ms <= 0 || event.grade < 1 || event.grade > 4 ||
+          event.state_before < 0 || event.state_before > 3 || event.duration_ms < 0 || ![0,1].includes(event.kind)) {
+        throw new Error('Invalid review event');
+      }
+      // Snapshot, event, both outbound operations and sequence commit together.
+      return this.stageNote(note, expectedRevision, false, event);
     }
     async notes() { return request(this.db.transaction('notes').objectStore('notes').getAll()); }
     async reviews() { return request(this.db.transaction('reviews').objectStore('reviews').getAll()); }
@@ -104,7 +167,7 @@ const LemmaCloud = (() => {
         const r = s.get(row.id);
         r.onsuccess = () => {
           const local = r.result;
-          if (!local || !local.dirty) s.put({ id: row.id, data: row.data, deleted: Boolean(row.deleted_at), revision: row.revision, dirty: false });
+          if (!local || (!local.dirty && row.revision > local.revision)) s.put({ id: row.id, data: row.data, deleted: Boolean(row.deleted_at), revision: row.revision, dirty: false });
           // Dirty data is NEVER overwritten by a remote snapshot.
         };
       });
@@ -112,63 +175,86 @@ const LemmaCloud = (() => {
     async ingestReview(row) { return tx(this.db, ['reviews'], 'readwrite', t => t.objectStore('reviews').put(row)); }
   }
   class SupabaseTransport {
-    constructor(supabase, userId) { this.supabase = supabase; this.userId = userId; }
+    constructor(supabase, userId, active = () => true) { this.supabase = supabase; this.userId = userId; this.active = active; }
     async send(op) {
+      const token = await accountToken(this.supabase, this.userId, this.active);
       if (op.kind === 'note') {
         const { data, error } = await this.supabase.rpc('commit_note', {
           p_note_id: op.entityId, p_expected_revision: op.expectedRevision,
           p_request_id: op.requestId, p_data: op.data, p_delete: Boolean(op.deleted)
-        });
+        }).setHeader('Authorization', 'Bearer ' + token);
         if (error) throw error;
         return { revision: Number(data) };
       }
       if (op.kind === 'review') {
         const { error } = await this.supabase.from('review_events')
-          .upsert({ ...op.data, user_id: this.userId }, { onConflict: 'user_id,event_id', ignoreDuplicates: true });
+          .upsert({ ...op.data, user_id: this.userId }, { onConflict: 'user_id,event_id', ignoreDuplicates: true }).setHeader('Authorization', 'Bearer ' + token);
         if (error) throw error;
         return { eventId: op.data.event_id };
       }
       if (op.kind === 'plan') {
-        const { data, error } = await this.supabase.rpc('publish_study_plan', op.data);
+        const { data, error } = await this.supabase.rpc('publish_study_plan', op.data).setHeader('Authorization', 'Bearer ' + token);
         if (error) throw error;
         return { revision: Number(data) };
       }
       throw new Error('Unsupported operation: ' + op.kind);
     }
   }
-  async function pullAll(supabase, userId, storage) {
-    // First version uses bounded pages, not an unsafe timestamp cursor. Realtime
-    // notifications are only refresh triggers; this also runs on reconnect.
-    let offset = 0;
-    for (;;) {
-      const { data, error } = await supabase.from('notes')
-        .select('id,data,revision,deleted_at').eq('user_id', userId)
-        .order('id', { ascending: true }).range(offset, offset + 499);
-      if (error) throw error;
-      for (const row of data || []) await storage.ingestRemoteNote(row);
-      if (!data || data.length < 500) break;
-      offset += 500;
+  async function accountToken(supabase, userId, active = () => true) {
+    if (!active()) throw new Error('not_authenticated: account closed');
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !active() || data?.session?.user?.id !== userId || !data.session.access_token) {
+      throw new Error('not_authenticated: account changed');
     }
-    offset = 0;
-    for (;;) {
-      const { data, error } = await supabase.from('review_events')
-        .select('event_id,note_id,ordinal,occurred_at_ms,grade,state_before,duration_ms,kind')
-        .eq('user_id', userId).order('event_id', { ascending: true }).range(offset, offset + 499);
-      if (error) throw error;
-      for (const row of data || []) await storage.ingestReview(row);
-      if (!data || data.length < 500) break;
-      offset += 500;
+    // Bind this request to this JWT. The shared Supabase client may change users
+    // while its async fetch obtains an access token; an explicit header survives that race.
+    return data.session.access_token;
+  }
+  async function pullAll(supabase, userId, storage, active = () => true) {
+    for (const [table, key, columns, ingest] of [
+      ['notes','id','id,data,revision,deleted_at', row => storage.ingestRemoteNote(row)],
+      ['review_events','event_id','event_id,note_id,ordinal,occurred_at_ms,grade,state_before,duration_ms,kind', row => storage.ingestReview(row)]
+    ]) {
+      let cursor = null;
+      for (;;) {
+        const token = await accountToken(supabase, userId, active);
+        let query = supabase.from(table).select(columns).eq('user_id', userId)
+          .order(key, { ascending: true }).limit(500);
+        if (cursor !== null) query = query.gt(key, cursor);
+        const { data, error } = await query.setHeader('Authorization', 'Bearer ' + token);
+        if (error) throw error;
+        if (!active()) throw new Error('not_authenticated: account closed');
+        for (const row of data || []) {
+          if (!active()) throw new Error('not_authenticated: account closed');
+          await ingest(row);
+        }
+        if (!data || data.length < 500) break;
+        cursor = data[data.length - 1][key];
+      }
     }
+    // Full scans must repeat on invalidation/resume. Inserts behind this cursor
+    // are seen on the next scan; this is NOT a durable incremental change cursor.
   }
   async function startAccount(supabase, userId, notify = () => {}) {
+    if (!globalThis.navigator?.locks) throw new Error('Safe sync requires Web Locks');
+    await accountToken(supabase, userId);
     const db = await openAccountDB(userId);
+    let active = true;
     const storage = new AccountStorage(db, userId);
-    const outbox = new LemmaOutboxCore.Processor(storage, new SupabaseTransport(supabase, userId), notify);
-    return { storage, outbox, pull: () => pullAll(supabase, userId, storage),
-      close: () => db.close(),
-      // Caller controls auth; never silently transfer anonymous data into an account.
-      userId };
+    const outbox = new core.Processor(storage, new SupabaseTransport(supabase, userId, () => active), notify);
+    const flush = outbox.flush.bind(outbox);
+    outbox.flush = () => navigator.locks.request('lemma-sync-' + userId, () => flush());
+    let subscription;
+    const close = () => {
+      active = false; outbox.stopped = true; db.close(); subscription?.unsubscribe();
+    };
+    subscription = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.id !== userId) close();
+    }).data.subscription;
+    try { await accountToken(supabase, userId, () => active); }
+    catch (error) { close(); throw error; }
+    return { storage, outbox, pull: () => pullAll(supabase, userId, storage, () => active), close, userId };
   }
-  return { openAccountDB, AccountStorage, SupabaseTransport, pullAll, startAccount };
+  return { openAccountDB, AccountStorage, SupabaseTransport, accountToken, pullAll, startAccount };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = LemmaCloud;
