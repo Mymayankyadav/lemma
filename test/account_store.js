@@ -56,6 +56,21 @@ const Store = context.testStore;
   assert.equal(restored.notes.get('anonymous').front,'device');
   assert.equal(restored.notes.has('account-card'),false);
   assert.equal((await Store.localLeftovers()).length,1);
+  // A failed in-flight account write cannot delete or expose anonymous data.
+  await Store.activateAccount(handle);
+  let rejectPending;
+  storage.stageNote = () => new Promise((_resolve,reject)=>{ rejectPending=reject; });
+  const unsafe = Store.saveNote({id:'account-card',front:'in-flight',back:'',log:[],cards:{}});
+  current = null;
+  const restoring = Store.emergencyExitAccount();
+  rejectPending(new Error('account cache closed after sign-out'));
+  await assert.rejects(unsafe,/cache closed/);
+  const emergency = await restoring;
+  assert.equal(Store.mode,'local');
+  assert.equal(emergency.notes.get('anonymous').front,'device');
+  assert.equal(emergency.notes.has('account-card'),false);
+  assert.equal(Store.status().failed,1,
+    'interrupted account write must stay visible as an error');
   current = {id:'00000000-0000-4000-8000-000000000002'};
   await assert.rejects(Store.activateAccount(handle),/identity changed/);
   console.log('ok: gated Store account adapter, review/Undo delegation, anonymous backup and account identity');
