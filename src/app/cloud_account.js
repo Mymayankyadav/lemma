@@ -17,6 +17,18 @@ const LemmaAccount = (() => {
     });
     return true;
   }
-  return { init, get client() { return client; }, get user() { return user; },
+  async function signIn(email) {
+    if (!client) throw new Error('Cloud is not configured');
+    const { error } = await client.auth.signInWithOtp({
+      email, options: { emailRedirectTo: new URL('./', location.href).href }
+    });
+    if (error) throw error;
+  }
+  async function signOut() {
+    if (!client) return;
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+  }
+  return { init, signIn, signOut, get client() { return client; }, get user() { return user; },
     onChange(fn) { subscribers.add(fn); return () => subscribers.delete(fn); } };
 })();
