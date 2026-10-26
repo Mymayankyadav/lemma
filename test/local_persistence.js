@@ -88,5 +88,27 @@ const Store = context.store;
   sessionContext.crypto = { randomUUID() { throw new Error('UUID unavailable'); } };
   await assert.rejects(session.answer(3,500,100), /UUID unavailable/);
   assert.equal(session.saving, false, 'UUID failure must release the review guard');
-  console.log('ok: local transaction completion, aborted save reporting, profiles, deletes, review persistence and durable Undo');
+
+  // The original account's delayed Undo may finish after a forced identity
+  // switch; its stale Session must NOT reinsert an old card into the Model.
+  sessionContext.crypto = crypto;
+  current.front = 'account-before-switch';
+  session.current = { ref:Model.ref(n.id,'1'), kind:'new', previewAt:100,
+    preview:{ 3:{ card:{ st:1, reps:1, due:200 } } } };
+  await session.answer(3,500,100);
+  let releaseUndo;
+  const undoGate = new Promise(resolve => {releaseUndo=resolve;});
+  const originalUndo = Store.undoReview;
+  Store.undoReview = (note,id) => undoGate.then(() => originalUndo(note,id));
+  sessionContext.App = { workspaceRevision:0 };
+  const oldUndo = session.undo();
+  Model.notes.clear(); // controller scrubs old account data synchronously
+  sessionContext.App.workspaceRevision = 1;
+  releaseUndo();
+  await oldUndo;
+  assert.equal(Model.notes.size,0,'late Undo must not reveal old account data');
+  assert.equal(session.history.length,1,'aborted UI session remains untouched');
+  Store.undoReview = originalUndo;
+
+  console.log('ok: local transaction completion, aborted save reporting, profiles, deletes, review persistence, durable Undo and sign-out race');
 })().catch(error => { console.error(error); process.exitCode=1; });
