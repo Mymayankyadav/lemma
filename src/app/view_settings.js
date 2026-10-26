@@ -140,6 +140,30 @@ const SettingsView = (() => {
         selectField('s-tier', 'Model for Claude features', 'aiTier', [['quick', 'Fast'], ['default', 'Balanced'], ['complex', 'Most capable (slower)']])));
     }
 
+    // Cloud account is optional. Existing local cards are never migrated automatically.
+    if (LemmaAccount.client) {
+      const accountState = h('p', { class: 'muted small', role: 'status',
+        text: LemmaAccount.user ? 'Signed in: ' + LemmaAccount.user.email + '. Cloud card sync is not active yet; existing cards remain local.' : 'Not signed in. Cards remain on this device.' });
+      const email = h('input', { type: 'email', class: 'input', placeholder: 'Email for sign-in link', autocomplete: 'email' });
+      const send = h('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Send sign-in link' });
+      const logout = h('button', { class: 'btn btn-sm', type: 'button', text: 'Sign out' });
+      const message = h('p', { class: 'muted small', role: 'status' });
+      send.onclick = async () => {
+        send.disabled = true;
+        try { await LemmaAccount.signIn(email.value.trim()); message.textContent = 'Check your email for a sign-in link.'; }
+        catch (err) { message.textContent = 'Sign-in error: ' + err.message; }
+        finally { send.disabled = false; }
+      };
+      logout.onclick = async () => {
+        logout.disabled = true;
+        try { await LemmaAccount.signOut(); accountState.textContent = 'Signed out. Cards remain on this device.'; }
+        catch (err) { message.textContent = 'Sign-out error: ' + err.message; }
+        finally { logout.disabled = false; }
+      };
+      page.append(section('set-cloud-account', 'Lemma account', 'Sign-in is optional; cloud card synchronization is not enabled yet.',
+        accountState, h('div', { class: 'btn-row' }, email, send, logout), message));
+    }
+
     // data
     const st = Store.status();
     const where = st.mode === 'cloud' ? 'Synced to your Claude account.' : st.mode === 'local' ? 'This browser only.' : 'Not saved here.';
