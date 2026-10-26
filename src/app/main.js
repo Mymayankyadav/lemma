@@ -5,6 +5,8 @@ const App = (() => {
   let view = 'home';
   let params = {};
   let lastSync = '';
+  let workspaceBlocked = false;
+  let workspaceController = null;
 
   function buildShell() {
     const nav = [['home', 'Decks', 'decks'], ['browse', 'Browse', 'list'], ['stats', 'Stats', 'chart'], ['settings', 'Settings', 'sliders']];
@@ -60,6 +62,7 @@ const App = (() => {
   }
 
   function go(v, p = {}) {
+    if (workspaceBlocked) return;
     if (!VIEWS[v]) v = 'home';
     if (view === 'review' && v !== 'review') Scratch.close();
     view = v;
@@ -72,6 +75,11 @@ const App = (() => {
   function render() {
     const main = $('#main');
     if (!main) return;
+    if (workspaceBlocked) {
+      fill(main, h('div', { class: 'empty-state', role: 'status',
+        text: 'Securing workspace · account data is hidden while local cards are restored.' }));
+      return;
+    }
     const y = window.scrollY;
     document.body.classList.toggle('in-review', view === 'review');
     const node = VIEWS[view].render(params);
@@ -90,10 +98,26 @@ const App = (() => {
   }, 120);
 
   function startSession(session) {
-    ReviewView.start(session);
+    if (!workspaceBlocked) ReviewView.start(session);
   }
   function newCard(preset) {
-    EditorSheet.open(null, () => refresh(), preset || {});
+    if (!workspaceBlocked) EditorSheet.open(null, () => refresh(), preset || {});
+  }
+  function workspaceIdle() {
+    return !workspaceBlocked && view !== 'review' && !ReviewView.active &&
+      !Sheets.count && !Scratch.isOpen();
+  }
+  function lockWorkspace(blocked) {
+    workspaceBlocked = !!blocked;
+    if (blocked) {
+      ReviewView.discardForWorkspaceChange();
+      Scratch.close();
+      while (Sheets.count) Sheets.closeTop();
+    } else {
+      view = 'home';
+      params = {};
+    }
+    render();
   }
   async function migrateLeftovers() {
     const list = App.leftovers;
@@ -114,6 +138,7 @@ const App = (() => {
   }
 
   function onKey(e) {
+    if (workspaceBlocked) { e.preventDefault(); return; }
     if (e.key === 'Escape' && Sheets.count) { Sheets.closeTop(); e.preventDefault(); return; }
     if (view === 'review') { ReviewView.onKey(e); return; }
     const tag = (e.target && e.target.tagName) || '';
@@ -167,6 +192,8 @@ const App = (() => {
     Model.replaceAll(data.notes);
     // Warm only the signed-in account cache; never merge it into the anonymous Model.
     LemmaSync.init();
+    workspaceController = LemmaWorkspace.fromApp();
+    workspaceController.init();
     App.loading = false;
     Model.onChange(() => refresh());
     if (data.mode === 'cloud') {
@@ -182,6 +209,9 @@ const App = (() => {
   return {
     boot, go, render, refresh, startSession, newCard, migrateLeftovers,
     loading: true, leftovers: [],
+    workspaceIdle, lockWorkspace,
+    get workspaceController() { return workspaceController; },
+    get workspaceBlocked() { return workspaceBlocked; },
     get view() { return view; },
   };
 })();
