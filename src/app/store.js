@@ -16,6 +16,8 @@ const Store = (() => {
   const localWrites = new Set();
   const localErrors = new Map();
   const localGenerations = new Map();
+  // Explicit future account-workspace mode. Not selected by ordinary sign-in.
+  let accountHandle = null;
 
   // ----- IndexedDB -----
   function idbOpen() {
@@ -188,12 +190,42 @@ const Store = (() => {
     });
     return promise;
   }
+  function accountWrite(key, writer) {
+    const handle = accountHandle;
+    if (!handle || mode !== 'account')
+      return Promise.reject(new Error('No active account workspace'));
+    return durableLocal('account:' + handle.userId + ':' + key, async () => {
+      if (accountHandle !== handle || LemmaAccount.user?.id !== handle.userId)
+        throw new Error('Account changed before local write');
+      const result = await writer(handle.storage);
+      if (accountHandle === handle && typeof LemmaSync !== 'undefined') LemmaSync.kick();
+      return result;
+    });
+  }
   function saveNote(note) {
     const data = clone(note);
+    if (mode === 'account')
+      return accountWrite('note:' + note.id, storage => storage.stageNote(data));
     if (mode === 'local') return durableLocal('note:' + note.id, () => idbPut('notes', data));
     return enqueue(note.id, data);
   }
+  function saveReview(note, entry) {
+    if (mode === 'account') {
+      const snapshot = clone(note);
+      return accountWrite('review:' + note.id, storage => storage.stageReview(snapshot, clone(entry)));
+    }
+    return saveNote(note);
+  }
+  function undoReview(restored, eventId) {
+    if (mode === 'account') {
+      const snapshot = clone(restored);
+      return accountWrite('undo:' + restored.id, storage => storage.stageUndo(snapshot, eventId));
+    }
+    return saveNote(restored);
+  }
   function deleteNote(id) {
+    if (mode === 'account')
+      return accountWrite('note:' + id, storage => storage.stageNote({ id }, undefined, true));
     if (mode === 'local') return durableLocal('note:' + id, () => idbDel('notes', id));
     return enqueue(id, null);
   }
@@ -282,6 +314,8 @@ const Store = (() => {
   }
 
   function saveProfile(profile) {
+    // Account profile CAS + conflict UI must ship before any active profile editing.
+    if (mode === 'account') throw new Error('Account profile editing not yet enabled');
     if (mode === 'local') {
       const data = clone(profile);
       return durableLocal('profile', () => idbPut('meta', data, 'profile'));
@@ -319,8 +353,31 @@ const Store = (() => {
     try { idb = idb || await idbOpen(); await idbClear('notes'); await idbDel('meta', 'profile'); } catch (e) { /* ignore */ }
   }
 
+  async function activateAccount(handle) {
+    if (mode !== 'local' || accountHandle) throw new Error('Account workspace requires local mode');
+    if (!handle?.userId || !handle.storage) throw new Error('Invalid account workspace');
+    if (LemmaAccount.user?.id !== handle.userId) throw new Error('Account identity changed');
+    await whenSaved();
+    const [rows, accountProfile] = await Promise.all([handle.storage.notes(), handle.storage.profile()]);
+    if (LemmaAccount.user?.id !== handle.userId) throw new Error('Account identity changed');
+    const notes = new Map();
+    for (const row of rows) {
+      if (!row.deleted && row.data) notes.set(row.id, clone(row.data));
+    }
+    accountHandle = handle;
+    mode = 'account';
+    emitStatus();
+    return { notes, profile: accountProfile?.data || null, mode: 'account' };
+  }
+  async function deactivateAccount() {
+    if (mode !== 'account') throw new Error('No active account workspace');
+    await whenSaved();
+    accountHandle = null;
+    return startLocal(); // original browser-local data were never deleted
+  }
   return {
-    init, saveNote, deleteNote, saveProfile, localLeftovers, clearLocal, status, whenSaved,
+    init, saveNote, saveReview, undoReview, deleteNote, saveProfile,
+    activateAccount, deactivateAccount, localLeftovers, clearLocal, status, whenSaved,
     get mode() { return mode; },
     setHandler(name, fn) { handlers[name] = fn; },
     flushProfile,
