@@ -143,7 +143,11 @@ const LemmaSync = (() => {
     setInterval(() => { if (!document.hidden) schedule(); }, 120000);
     attach(LemmaAccount.user).catch(() => {});
   }
+  // Internal workspace transition only; never expose activation via login UI.
+  function accountHandle() {
+    return account && account.userId === LemmaAccount.user?.id ? account : null;
+  }
   return { init, attach, stop, refresh, kick: schedule, enrollMissingLocal, compareLocal,
-    get status() { return { ...state }; },
+    accountHandle, get status() { return { ...state }; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
 })();
