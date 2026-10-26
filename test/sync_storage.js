@@ -188,6 +188,45 @@ const clear = async db => new Promise((resolve, reject) => {
   const other = new AccountStorage(otherDB, userB);
   assert.equal((await other.notes()).length, 0);
   assert.equal(await other.profile(),undefined,'account B must not inherit account A profile');
+
+  // Test the real pull adapter against an owner-filtered Supabase query stub.
+  // It must preserve pinned bearer authorization for all four existing tables.
+  const reviewId = crypto.randomUUID();
+  const mockRows = {
+    notes:[{ id:'cloud-b',data:{...note('B-only'),id:'cloud-b'},
+      revision:1,deleted_at:null }],
+    review_events:[{ event_id:reviewId,note_id:'cloud-b',ordinal:1,
+      occurred_at_ms:123,grade:3,state_before:0,duration_ms:500,kind:0,
+      scheduling_provenance:null }],
+    review_retractions:[{ retraction_id:crypto.randomUUID(),
+      target_event_id:reviewId,reason:'undo',recorded_at:'2026-10-26' }],
+    profiles:[{ user_id:userB,data:{settings:{retention:0.94}},revision:1,
+      updated_at:'2026-10-26' }]
+  };
+  const tablesRead = [];
+  const reader = { auth:{getSession:async()=>({data:{session:{
+    user:{id:userB},access_token:'token-b'}}})},
+    from(table) {
+      tablesRead.push(table);
+      const query = {
+        select(){return this;}, eq(col,value) {
+          assert.equal(col,'user_id'); assert.equal(value,userB);return this;
+        },
+        order(){return this;}, limit(){return this;}, gt(){return this;},
+        setHeader(name,value) {
+          assert.deepEqual([name,value],['Authorization','Bearer token-b']);
+          return Promise.resolve({data:mockRows[table],error:null});
+        }
+      };
+      return query;
+    }
+  };
+  await pullAll(reader,userB,other);
+  assert.deepEqual(tablesRead,['notes','review_events','review_retractions','profiles']);
+  assert.equal((await other.notes())[0].data.front,'B-only');
+  assert.equal((await other.reviews())[0].event_id,reviewId);
+  assert.equal((await other.retractions())[0].target_event_id,reviewId);
+  assert.equal((await other.profile()).data.settings.retention,0.94);
   let session = { user:{ id:userA }, access_token:'token-a' };
   let header, calls = 0;
   const client = {
