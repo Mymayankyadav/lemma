@@ -508,6 +508,17 @@ function syntheticHistory() {
     await page.waitForFunction(() => document.querySelector('#ed-front').value === '' && !document.querySelector('#ed-front').disabled);
     ok(await page.evaluate(() => __editor.Model.notes.size === 2), 'Add & next resets only after the committed creation');
 
+    await page.fill('#ed-front', 'Closed editor pending receipt');
+    await holdReceipt();
+    await page.click('.sheet-foot .btn-primary');
+    await page.click('.sheet-head .icon-btn[aria-label="Close"]');
+    await page.evaluate(() => __releaseEditor());
+    await page.waitForFunction(() => __editor.Model.notes.size === 3);
+    ok(true, 'closing a pending editor still projects a committed card in the same workspace');
+    await page.waitForSelector('#ed-front', { state: 'hidden' });
+    await page.keyboard.press('n');
+    await page.waitForSelector('#ed-front');
+
     await page.fill('#ed-front', 'Old workspace pending receipt');
     await holdReceipt();
     await page.click('.sheet-foot .btn-primary');
