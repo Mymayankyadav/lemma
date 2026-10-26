@@ -27,6 +27,7 @@ const LemmaWorkspace = (() => {
       model.replaceAll(new Map());
       const previousTransition = transition;
       recovery = (async () => {
+        let restored = false;
         try {
           if (previousTransition) await previousTransition.catch(() => {});
           const snapshot = store.mode === 'account'
@@ -34,6 +35,7 @@ const LemmaWorkspace = (() => {
           restore(snapshot);
           activeId = null;
           inFlightId = null;
+          restored = true;
           return snapshot;
         } catch (err) {
           // Keep account data erased. Do not reactivate or guess data if the
@@ -42,7 +44,7 @@ const LemmaWorkspace = (() => {
           throw err;
         } finally {
           // If recovery failed, keep interaction locked until restart/repair.
-          if (store.mode === 'local') publish(false);
+          if (restored && store.mode === 'local') publish(false);
           recovery = null;
         }
       })();
