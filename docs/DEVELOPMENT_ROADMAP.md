@@ -1,5 +1,8 @@
 # Lemma delivery roadmap (living plan)
 
+> **Operational precedence (October 2026):** This is supporting historical/detail documentation, not the live agent task queue. For the current merged `main` implementation, next task, and mandatory chatbot handoff, start with [`../plan.md`](../plan.md). Old branch names, dated milestones, and ZIP import instructions below are historical; verify live source/CI/backend before relying on them.
+
+
 **Purpose:** One portable mathematics learning environment for web (GitHub Pages) and Android (Capacitor), Supabase-backed and usable with Claude, ChatGPT or another model. The user can study, prove, forget, review and continue without losing intellectual state when a model quota runs out.
 
 **Plan governance:** This engineering roadmap is a versioned artifact. Product behavior for strong-model planning sessions is defined in [STUDY_PLANNING_PROTOCOL.md](STUDY_PLANNING_PROTOCOL.md); [ROADMAP_AMENDMENTS.md](ROADMAP_AMENDMENTS.md) records decisions that supersede earlier text. Update this document as phases actually ship, rather than claiming completion based on a design or a successful SQL migration.
