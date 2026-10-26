@@ -17,14 +17,14 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-01 identity-guard slice based on merged `main@58eebf90b9dd67e2fa4fe8a23bad644308901dd2`. **State: READY_FOR_NEXT_AGENT.** This delivery finishes the bounded identity-guard slice; SYNC-01 remains partial. Read current remote HEAD for publication/deployment status.
+**Last verified handoff:** 2026-10-27; SYNC-01 identity-guard slice verified at `main@5ab496da194ece59614e8ac5e51e94920b4dab26`. **State: READY_FOR_NEXT_AGENT.** This delivery finishes the bounded identity-guard slice; SYNC-01 remains partial. Read current remote HEAD for publication/deployment status.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged as `58eebf9`; [main regression 40381695953](https://github.com/Mymayankyadav/lemma/actions/runs/40381695953) SUCCESS. |
-| Latest inspected regression | SUCCESS: [regression 40382708965](https://github.com/Mymayankyadav/lemma/actions/runs/40382708965) at `54c718eea76431776d760479f864c884587a4bc2`: syntax and full `npm test`, including active browser account/cache identity tests. Local syntax, storage, account/account-store, identity/workspace, plan and build SUCCESS; browser tests NOT RUN locally (Chromium unavailable). |
+| Known-good main baseline | [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged as `5ab496d`; [main regression 40383331439](https://github.com/Mymayankyadav/lemma/actions/runs/40383331439) SUCCESS. |
+| Latest inspected regression | SUCCESS: [main regression 40383331439](https://github.com/Mymayankyadav/lemma/actions/runs/40383331439) at `5ab496da194ece59614e8ac5e51e94920b4dab26`: syntax and full `npm test`, including active browser account/cache identity tests. Local syntax, storage, account/account-store, identity/workspace, plan and build SUCCESS; browser tests NOT RUN locally (Chromium unavailable). |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
-| Web deployment | [Pages 40381695797](https://github.com/Mymayankyadav/lemma/actions/runs/40381695797) SUCCESS at merged `58eebf9`. Identity-guard delivery: PENDING Pages after merge; inspect current main workflow. |
+| Web deployment | [Pages 40383331522](https://github.com/Mymayankyadav/lemma/actions/runs/40383331522) SUCCESS at merged `5ab496d`. The final handoff-only update does not change runtime assets. |
 | Cloud confidence | Workspace invalidation now runs synchronously on identity changes; API-capable observers remain deferred and retain each identity snapshot. Browser tests use the real app, local/account IndexedDB and outbox, with mocked auth/remote receipts: rapid A→B→A, isolated drafts, sign-out during Save, late import file reads and anonymous reload preservation. No live login/RLS/convergence claim. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
 | Current blocker / unfinished work | No identity regression blocker. Import file reads have lease guards, but `IO.commit`/ImportSheet still acknowledge before durable write completion. Import partial failures and sign-out during the actual write phase remain; deletes also acknowledge optimistically. |
@@ -101,7 +101,7 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Roadmap consolidation | `bcd0eb98`; canonical queue and scope boundaries, guard restored; regression 40373316156 SUCCESS. |
 | Durable editor-save slice | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) merged; main regression 40378487715 and Pages 40378487955 SUCCESS. |
 | Crash acknowledgment recovery | [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; regression 40381695953 and Pages 40381695797 SUCCESS. |
-| Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; full browser regression 40382708965 SUCCESS. |
+| Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
 
 ## 6. Five-line end-of-session report template
 
