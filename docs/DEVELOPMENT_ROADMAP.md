@@ -106,4 +106,4 @@ Detailed findings, implementation sequence and acceptance gates: [Sync audit](SY
 
 ### A4a progress (26 October 2026)
 - Deployed append-only `review_retractions` with owner RLS, immutable rows, one retraction per target, and optional scheduling provenance on `review_events`.
-- Added `ReviewLedger.activeEvents` for deterministic active-event filtering and tests. This is **not** an FSRS replay engine and does not activate cloud Undo. Next gate is atomic account-cache staging and crash-safe review/retraction dispatch, followed by scheduling provenance and deterministic replay.
+- Added `ReviewLedger.activeEvents` for deterministic active-event filtering and tests. The account-scoped adapter now stages a retraction transactionally alongside durable outbox metadata, retains the original review, sends retries idempotently, and pulls remote retractions. This is **not** an FSRS replay engine and does not activate UI/cloud Undo. Next gate is atomic account-cache staging and crash-safe review/retraction dispatch, followed by scheduling provenance and deterministic replay.
