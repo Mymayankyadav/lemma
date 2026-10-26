@@ -273,6 +273,27 @@ const LemmaCloud = (() => {
       }
       return result;
     }
+    async profile() { return request(this.db.transaction('meta').objectStore('meta').get('accountProfile')); }
+    async ingestRemoteProfile(row) {
+      if (row && (row.user_id !== this.userId || !Number.isSafeInteger(row.revision) ||
+          row.revision < 1 || !row.data || typeof row.data !== 'object' ||
+          Array.isArray(row.data))) throw new Error('Invalid account profile');
+      return tx(this.db, ['meta'], 'readwrite', t => {
+        const meta = t.objectStore('meta');
+        const existing = meta.get('accountProfile');
+        existing.onsuccess = () => {
+          const old = existing.result;
+          if (old?.dirty) return;
+          if (!row) { meta.delete('accountProfile'); return; }
+          if (old && old.revision > row.revision) return;
+          if (old && old.revision === row.revision && canonical(old.data) !== canonical(row.data)) {
+            t.abort(); return;
+          }
+          meta.put({ data: row.data, revision: row.revision,
+            updatedAt: row.updated_at, dirty: false }, 'accountProfile');
+        };
+      });
+    }
     async notes() { return request(this.db.transaction('notes').objectStore('notes').getAll()); }
     async reviews() { return request(this.db.transaction('reviews').objectStore('reviews').getAll()); }
     async ingestRemoteNote(row) {
@@ -365,6 +386,16 @@ const LemmaCloud = (() => {
         cursor = data[data.length - 1][key];
       }
     }
+    // Profiles have a single owner-scoped row and are read into the account
+    // namespace only; versioned profile writes are not activated yet.
+    const profileToken = await accountToken(supabase, userId, active);
+    const { data: profiles, error: profileError } = await supabase.from('profiles')
+      .select('user_id,data,revision,updated_at').eq('user_id', userId)
+      .limit(1).setHeader('Authorization', 'Bearer ' + profileToken);
+    if (profileError) throw profileError;
+    if (!active()) throw new Error('not_authenticated: account closed');
+    await storage.ingestRemoteProfile(profiles?.[0] || null);
+    if (!active()) throw new Error('not_authenticated: account closed');
     // Full scans must repeat on invalidation/resume. Inserts behind this cursor
     // are seen on the next scan; this is NOT a durable incremental change cursor.
   }
