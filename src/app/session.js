@@ -258,9 +258,15 @@ class Session {
     // Preserve text edits made after answering. Only review-owned state rolls back.
     const restored = Model.sanitizeNote({ ...clone(current), cards: clone(last.before.cards), log: clone(last.before.log),
       tags: last.leechAdded ? current.tags.filter(t => t !== 'leech') : current.tags });
+    const workspaceRevision = typeof App !== 'undefined' &&
+      Number.isSafeInteger(App.workspaceRevision) ? App.workspaceRevision : null;
     this.saving = true;
     try {
       await Store.undoReview(restored, last.eventId);
+      // Saving can outlive a sign-out/account change. The durable outbox keeps
+      // the operation, but this old Session must not mutate the new workspace.
+      if (workspaceRevision !== null && App.workspaceRevision !== workspaceRevision)
+        return null;
       this.history.pop();
       Model.notes.set(last.noteId, restored);
       Model.bump();
