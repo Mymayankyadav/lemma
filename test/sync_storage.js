@@ -39,6 +39,16 @@ const clear = async db => new Promise((resolve, reject) => {
   assert.equal((await storage.list())[0].expectedRevision, 4, 'derive base revision from committed metadata');
   await clear(db);
 
+  // Crash replay of a create must not overwrite reviewed data or enqueue a
+  // second operation, even when the in-memory Model did not see the first.
+  const created = { ...note('saved'), log: [[100,1,3]], cards:{1:{reps:7}} };
+  await storage.stageNote(created, undefined, false, null, true);
+  const countBeforeReplay = (await storage.list()).length;
+  await assert.rejects(storage.stageNote(note('replayed'), undefined, false, null, true));
+  assert.equal((await storage.notes())[0].data.cards[1].reps, 7);
+  assert.equal((await storage.list()).length, countBeforeReplay);
+  await clear(db);
+
   // Duplicate event insertion must abort snapshot + both queue entries + sequence.
   const entry = [100,1,3,0,2000,0,crypto.randomUUID(),
     { version:1,algorithm:'fsrs-6',day_index:20000,

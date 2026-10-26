@@ -144,7 +144,7 @@ const LemmaCloud = (() => {
         };
       });
     }
-    async stageNote(note, expectedRevision, deleted = false, review = null) {
+    async stageNote(note, expectedRevision, deleted = false, review = null, createOnly = false) {
       if (!note || !note.id) throw new Error('Note ID required');
       const snapshot = deleted ? null : structuredClone(note);
       const op = { id: uuid(), requestId: uuid(), kind: 'note', entityId: note.id,
@@ -167,6 +167,9 @@ const LemmaCloud = (() => {
           const notes = t.objectStore('notes');
           const existing = notes.get(note.id);
           existing.onsuccess = () => {
+            // A recovered new-card draft must never replace a committed card
+            // whose reviews or text may have changed since the first attempt.
+            if (createOnly && existing.result) { t.abort(); return; }
             op.expectedRevision = expectedRevision ?? existing.result?.revision ?? 0;
             if (!Number.isSafeInteger(op.expectedRevision) || op.expectedRevision < 0) { t.abort(); return; }
             notes.put({ id: note.id, data: snapshot, deleted, revision: op.expectedRevision, dirty: true });

@@ -49,6 +49,7 @@ const Store = (() => {
   const idbAll = (store) => idbTx(store, 'readonly', (st) => st.getAll());
   const idbGet = (store, key) => idbTx(store, 'readonly', (st) => st.get(key));
   const idbPut = (store, value, key) => idbTx(store, 'readwrite', (st) => (key === undefined ? st.put(value) : st.put(value, key)));
+  const idbAdd = (store, value) => idbTx(store, 'readwrite', (st) => st.add(value));
   const idbDel = (store, key) => idbTx(store, 'readwrite', (st) => st.delete(key));
   const idbClear = (store) => idbTx(store, 'readwrite', (st) => st.clear());
 
@@ -205,8 +206,9 @@ const Store = (() => {
   function saveNote(note, opts = {}) {
     const data = clone(note);
     if (mode === 'account')
-      return accountWrite('note:' + note.id, storage => storage.stageNote(data));
-    if (mode === 'local') return durableLocal('note:' + note.id, () => idbPut('notes', data));
+      return accountWrite('note:' + note.id, storage => storage.stageNote(data, undefined, false, null, !!opts.createOnly));
+    if (mode === 'local') return durableLocal('note:' + note.id,
+      () => opts.createOnly ? idbAdd('notes', data) : idbPut('notes', data));
     if (opts.durable && mode !== 'cloud')
       return Promise.reject(new Error('Persistent storage is unavailable'));
     return enqueue(note.id, data, opts.durable);

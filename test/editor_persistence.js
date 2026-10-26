@@ -39,6 +39,12 @@ const Store = local.testStore, Model = local.testModel;
   const saved = await Model.commitEditorNote(newBase, { front: 'retry' }, () => true);
   assert.equal(saved.id, newBase.id);
   assert.equal((await Store.localSnapshot()).notes.size, 2, 'retry retains the same new-note ID');
+  Model.notes.delete(newBase.id); // Simulate a stale in-memory view after a crash.
+  await assert.rejects(Model.commitEditorNote(newBase, { front:'must not overwrite' },
+    () => true, { createOnly:true }));
+  assert.equal((await Store.localSnapshot()).notes.get(newBase.id).front, 'retry',
+    'replayed creation cannot overwrite a note already committed in IndexedDB');
+  Model.notes.set(newBase.id, saved);
   await Model.commitEditorNote(base, { front: 'committed' }, () => true);
   assert.equal(base.front, 'committed', 'successful edit preserves the existing object reference');
   assert.equal(base.cards[1].reps, 7);
