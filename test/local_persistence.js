@@ -39,7 +39,8 @@ const Store = context.store;
   // Exercise the actual review Session against the actual durable local Store.
   let current = clone(n);
   const Model = {
-    notes: new Map([[n.id,current]]), settings:{ leechThreshold:0, burySiblings:false, refreshPrereqs:false },
+    notes: new Map([[n.id,current]]), settings:{ leechThreshold:0, burySiblings:false, refreshPrereqs:false, w:require('../src/fsrs.js').DEFAULT_W.slice(), rollover:4, retention:0.9, maxIvl:36500 },
+    dayIndex: () => 20000,
     bump() {}, sanitizeNote: n => n,
     saveScheduling: n => Store.saveNote(n),
     ref: (id,ord) => { const note = Model.notes.get(id); return { note,ord,c:note.cards[ord],key:id+':'+ord }; }
@@ -57,6 +58,11 @@ const Store = context.store;
   assert.equal(session.history.length, 1);
   const stored = (await Store.localLeftovers())[0];
   assert.match(stored.log[0][6], /^[0-9a-f-]{36}$/);
+  assert.equal(stored.log[0][7].algorithm,'fsrs-6');
+  assert.equal(stored.log[0][7].weights.length,21);
+  assert.equal(stored.log[0][7].day_index,20000);
+  assert.equal(stored.log[0][7].preview_at_ms,100);
+  assert.equal(stored.log[0][7].card_after.reps,1);
   assert.equal(stored.cards[1].reps,1);
   current.front = 'edited after review';
   current.tags.push('leech');
