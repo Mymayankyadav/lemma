@@ -148,6 +148,20 @@ const clear = async db => new Promise((resolve, reject) => {
     cloudTombstone:1,dirtyAccount:0,legacyHistory:1
   });
   assert.deepEqual(await storage.notes(),beforeCompare,'comparison must never mutate the account');
+  const p1 = { user_id:userA,data:{settings:{retention:0.90}},
+    revision:1,updated_at:'2026-10-26T00:00:00Z' };
+  const p2 = { ...p1,data:{settings:{retention:0.92}},revision:2 };
+  await storage.ingestRemoteProfile(p1);
+  assert.equal((await storage.profile()).data.settings.retention,0.90);
+  await storage.ingestRemoteProfile(p2);
+  await storage.ingestRemoteProfile(p1);
+  assert.equal((await storage.profile()).revision,2,'late profile pull cannot regress');
+  await assert.rejects(storage.ingestRemoteProfile({
+    ...p2, data:{settings:{retention:0.80}} }), /abort/i);
+  await assert.rejects(storage.ingestRemoteProfile({...p2,user_id:userB}),/Invalid account profile/);
+  assert.equal((await storage.profile()).data.settings.retention,0.92);
+  await storage.ingestRemoteProfile(null);
+  assert.equal(await storage.profile(),undefined,'deleted account profile must not linger');
   await clear(db);
 
   // Failure AFTER server commit: persisted attempted marker and request ID survive reopen.
@@ -173,6 +187,7 @@ const clear = async db => new Promise((resolve, reject) => {
   const otherDB = await openAccountDB(userB);
   const other = new AccountStorage(otherDB, userB);
   assert.equal((await other.notes()).length, 0);
+  assert.equal(await other.profile(),undefined,'account B must not inherit account A profile');
   let session = { user:{ id:userA }, access_token:'token-a' };
   let header, calls = 0;
   const client = {
