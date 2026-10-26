@@ -160,8 +160,22 @@ const SettingsView = (() => {
         catch (err) { message.textContent = 'Sign-out error: ' + err.message; }
         finally { logout.disabled = false; }
       };
-      page.append(section('set-cloud-account', 'Lemma account', 'Sign-in is optional; cloud card synchronization is not enabled yet.',
-        accountState, h('div', { class: 'btn-row' }, email, send, logout), message));
+      const upload = h('button', { class: 'btn btn-sm', type: 'button', text: 'Copy missing local cards to cloud' });
+      const download = h('button', { class: 'btn btn-sm', type: 'button', text: 'Copy missing cloud cards to this device' });
+      const transfer = async (button, fn) => {
+        button.disabled = true;
+        try {
+          const result = await fn();
+          message.textContent = result.copied + ' cards copied; ' + result.skipped + ' skipped. This is a one-time copy, not continuous synchronization.';
+          App.refresh();
+        } catch (err) { message.textContent = 'Transfer error: ' + err.message; }
+        finally { button.disabled = false; }
+      };
+      upload.onclick = () => transfer(upload, () => LemmaCloudBridge.uploadMissing());
+      download.onclick = () => transfer(download, () => LemmaCloudBridge.importMissing());
+      page.append(section('set-cloud-account', 'Lemma account', 'Copy missing cards explicitly. Live cloud sync is not enabled yet. Export a backup before transferring.',
+        accountState, h('div', { class: 'btn-row' }, email, send, logout),
+        h('div', { class: 'btn-row' }, upload, download), message));
     }
 
     // data
