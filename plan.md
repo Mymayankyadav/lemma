@@ -17,14 +17,14 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-01 durable-import slice based on `main@5a3be53cd4e8505150b916703fe1cbfa6715eb4a`. **State: READY_FOR_NEXT_AGENT.** The listed SYNC-01 gates passed; SYNC-02 is the single NEXT task.
+**Last verified handoff:** 2026-10-27; SYNC-01 durable-import slice verified at `main@bf2bb54123c7b32e742608574bfb3486580ffa21`. **State: READY_FOR_NEXT_AGENT.** The listed SYNC-01 gates passed; SYNC-02 is the single NEXT task.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | `5a3be53`; [regression 40383585241](https://github.com/Mymayankyadav/lemma/actions/runs/40383585241) SUCCESS. |
-| Latest inspected regression | SUCCESS: [regression 40419737189](https://github.com/Mymayankyadav/lemma/actions/runs/40419737189) at `0189fda6f015954992ba8a247db3f26a73720cd1`: syntax and full `npm test`, including partial import failure/reload and account switching during an import write. Local syntax, storage/import, account/account-store, identity/workspace, plan and build SUCCESS; browser tests NOT RUN locally (Chromium unavailable). |
+| Known-good main baseline | [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged as `bf2bb54`; [main regression 40420169362](https://github.com/Mymayankyadav/lemma/actions/runs/40420169362) SUCCESS. |
+| Latest inspected regression | SUCCESS: [main regression 40420169362](https://github.com/Mymayankyadav/lemma/actions/runs/40420169362) at `bf2bb54123c7b32e742608574bfb3486580ffa21`: syntax and full `npm test`, including partial import failure/reload and account switching during an import write. Local syntax, storage/import, account/account-store, identity/workspace, plan and build SUCCESS; browser tests NOT RUN locally (Chromium unavailable). |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
-| Web deployment | [Pages 40383331522](https://github.com/Mymayankyadav/lemma/actions/runs/40383331522) SUCCESS at `5ab496d`. Durable-import delivery is not yet deployed. |
+| Web deployment | [Pages 40420169191](https://github.com/Mymayankyadav/lemma/actions/runs/40420169191) SUCCESS at merged `bf2bb54`. The final handoff-only update does not change runtime assets. |
 | Cloud confidence | `IO.prepare/commit` saves complete prerequisite links once, awaits each storage receipt, reads durable state on retry and keeps stable IDs. Import recovery stores source/job under the origin account key; subsequent writes and UI callbacks stop on identity change. Backup settings and generated-card imports await persistence too. Browser tests use real app/IndexedDB/outbox with mocked auth/remote receipts; no live login/RLS/convergence claim. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
 | Current blocker / unfinished work | No SYNC-01 gate blocker. Batch writes are sequential: already committed cards remain saved if a later card fails. Changed backup targets block retry with retained source; conflict repair remains SYNC-02. Deletes still acknowledge optimistically and require later mutation audit. |
@@ -101,7 +101,7 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Durable editor-save slice | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) merged; main regression 40378487715 and Pages 40378487955 SUCCESS. |
 | Crash acknowledgment recovery | [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; regression 40381695953 and Pages 40381695797 SUCCESS. |
 | Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
-| Durable imports | `IO.prepare/commit`, ImportSheet recovery, Store note/profile receipts; local import tests and full browser regression 40419737189 SUCCESS. |
+| Durable imports | `IO.prepare/commit`, ImportSheet recovery, Store note/profile receipts; local import tests and [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged; full main regression 40420169362 and Pages 40420169191 SUCCESS. |
 
 ## 6. Five-line end-of-session report template
 
