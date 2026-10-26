@@ -5,7 +5,7 @@
  */
 const LemmaCloud = (() => {
   const core = typeof module !== 'undefined' && module.exports ? require('./outbox_core.js') : LemmaOutboxCore;
-  const dbVersion = 2;
+  const dbVersion = 3;
   function request(req) {
     return new Promise((resolve, reject) => {
       req.onsuccess = () => resolve(req.result);
@@ -19,6 +19,7 @@ const LemmaCloud = (() => {
       const d = req.result;
       if (!d.objectStoreNames.contains('notes')) d.createObjectStore('notes', { keyPath: 'id' });
       if (!d.objectStoreNames.contains('reviews')) d.createObjectStore('reviews', { keyPath: 'event_id' });
+      if (!d.objectStoreNames.contains('retractions')) d.createObjectStore('retractions', { keyPath: 'retraction_id' });
       if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'id' });
       if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta');
       // Preserve v1 pending work and its previous ordering; sequence future
@@ -159,6 +160,45 @@ const LemmaCloud = (() => {
       // Snapshot, event, both outbound operations and sequence commit together.
       return this.stageNote(note, expectedRevision, false, event);
     }
+    async stageRetraction(targetEventId, reason = 'undo') {
+      if (!/^[0-9a-f-]{36}$/i.test(targetEventId) ||
+          !['undo','correction','reset'].includes(reason)) throw new Error('Invalid retraction');
+      const row = { retraction_id: uuid(), target_event_id: targetEventId, reason };
+      const op = { id: uuid(), requestId: row.retraction_id, kind: 'retraction',
+        entityId: targetEventId, data: row, state: 'pending', attempts: 0, enqueuedAt: Date.now() };
+      await tx(this.db, ['reviews','retractions','outbox','meta'], 'readwrite', t => {
+        const target = t.objectStore('reviews').get(targetEventId);
+        target.onsuccess = () => {
+          if (!target.result) { t.abort(); return; }
+          const existing = t.objectStore('retractions').getAll();
+          existing.onsuccess = () => {
+            if (existing.result.some(x => x.target_event_id === targetEventId)) { t.abort(); return; }
+            const count = t.objectStore('meta').get('sequence');
+            count.onsuccess = () => {
+              const next = (count.result ?? 0) + 1;
+              if (!Number.isSafeInteger(next)) { t.abort(); return; }
+              t.objectStore('meta').put(next, 'sequence');
+              op.entityId = target.result.note_id;
+              op.sequence = next;
+              t.objectStore('retractions').add(row);
+              t.objectStore('outbox').add(op);
+            };
+          };
+        };
+      });
+      return op;
+    }
+    async retractions() { return request(this.db.transaction('retractions').objectStore('retractions').getAll()); }
+    async ingestRetraction(row) {
+      return tx(this.db, ['retractions'], 'readwrite', t => {
+        const store = t.objectStore('retractions');
+        const req = store.get(row.retraction_id);
+        req.onsuccess = () => {
+          if (!req.result) store.add(row);
+          else if (req.result.target_event_id !== row.target_event_id) t.abort();
+        };
+      });
+    }
     async notes() { return request(this.db.transaction('notes').objectStore('notes').getAll()); }
     async reviews() { return request(this.db.transaction('reviews').objectStore('reviews').getAll()); }
     async ingestRemoteNote(row) {
@@ -192,6 +232,14 @@ const LemmaCloud = (() => {
         if (error) throw error;
         return { eventId: op.data.event_id };
       }
+      if (op.kind === 'retraction') {
+        const { error } = await this.supabase.from('review_retractions')
+          .upsert({ ...op.data, user_id: this.userId },
+            { onConflict: 'user_id,retraction_id', ignoreDuplicates: true })
+          .setHeader('Authorization', 'Bearer ' + token);
+        if (error) throw error;
+        return { retractionId: op.data.retraction_id };
+      }
       if (op.kind === 'plan') {
         const { data, error } = await this.supabase.rpc('publish_study_plan', op.data).setHeader('Authorization', 'Bearer ' + token);
         if (error) throw error;
@@ -213,7 +261,8 @@ const LemmaCloud = (() => {
   async function pullAll(supabase, userId, storage, active = () => true) {
     for (const [table, key, columns, ingest] of [
       ['notes','id','id,data,revision,deleted_at', row => storage.ingestRemoteNote(row)],
-      ['review_events','event_id','event_id,note_id,ordinal,occurred_at_ms,grade,state_before,duration_ms,kind', row => storage.ingestReview(row)]
+      ['review_events','event_id','event_id,note_id,ordinal,occurred_at_ms,grade,state_before,duration_ms,kind,scheduling_provenance', row => storage.ingestReview(row)],
+      ['review_retractions','retraction_id','retraction_id,target_event_id,reason,recorded_at', row => storage.ingestRetraction(row)]
     ]) {
       let cursor = null;
       for (;;) {
