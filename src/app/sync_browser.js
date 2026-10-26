@@ -46,6 +46,19 @@ const LemmaCloud = (() => {
       try { value = callback(t); } catch (err) { t.abort(); reject(err); }
     });
   }
+  // JSONB reorders object keys on the server; compare immutable payloads
+  // structurally instead of relying on insertion-order JSON.stringify().
+  function canonical(value) {
+    if (value === null || typeof value !== 'object') return JSON.stringify(value);
+    if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
+    return '{' + Object.keys(value).sort().filter(k => value[k] !== undefined)
+      .map(k => JSON.stringify(k) + ':' + canonical(value[k])).join(',') + '}';
+  }
+  const eventFields = ['event_id','note_id','ordinal','occurred_at_ms',
+    'grade','state_before','duration_ms','kind','scheduling_provenance'];
+  function sameFields(a, b, fields) {
+    return fields.every(k => canonical(a[k] ?? null) === canonical(b[k] ?? null));
+  }
   const uuid = () => {
     if (!globalThis.crypto || !globalThis.crypto.randomUUID) throw new Error('Secure random UUID unavailable');
     return globalThis.crypto.randomUUID();
@@ -227,7 +240,8 @@ const LemmaCloud = (() => {
         const req = store.get(row.retraction_id);
         req.onsuccess = () => {
           if (!req.result) store.add(row);
-          else if (req.result.target_event_id !== row.target_event_id) t.abort();
+          else if (!sameFields(req.result, row,
+              ['retraction_id','target_event_id','reason'])) t.abort();
         };
       });
     }
@@ -244,7 +258,17 @@ const LemmaCloud = (() => {
         };
       });
     }
-    async ingestReview(row) { return tx(this.db, ['reviews'], 'readwrite', t => t.objectStore('reviews').put(row)); }
+    async ingestReview(row) {
+      if (!row || !row.event_id) throw new Error('Remote review ID missing');
+      return tx(this.db, ['reviews'], 'readwrite', t => {
+        const s = t.objectStore('reviews');
+        const r = s.get(row.event_id);
+        r.onsuccess = () => {
+          if (!r.result) s.add(row);
+          else if (!sameFields(r.result, row, eventFields)) t.abort();
+        };
+      });
+    }
   }
   class SupabaseTransport {
     constructor(supabase, userId, active = () => true) { this.supabase = supabase; this.userId = userId; this.active = active; }
