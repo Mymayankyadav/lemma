@@ -22,14 +22,14 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 | Field | Evidence / limit |
 | --- | --- |
 | Known-good main baseline | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) merged as `08b5af8`; [main regression 40378487715](https://github.com/Mymayankyadav/lemma/actions/runs/40378487715) SUCCESS. |
-| Latest inspected regression | This crash-recovery delivery: PENDING CI. Local syntax, storage, account-store, plan, build and E2E syntax SUCCESS; full browser suite NOT RUN locally (Chromium unavailable). Review branch CI is the next gate. |
+| Latest inspected regression | SUCCESS: [regression 40379498567](https://github.com/Mymayankyadav/lemma/actions/runs/40379498567) at `231e7c05b40c9e6087f98b08f2bf12c246594b58`: syntax and full `npm test`, including browser reload, pending receipt and later review preservation. Local syntax, storage, account-store, plan and build SUCCESS; browser tests NOT RUN locally (Chromium unavailable). |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
 | Web deployment | [Pages 40378487955](https://github.com/Mymayankyadav/lemma/actions/runs/40378487955) SUCCESS at merged `08b5af8`. This review-branch change is NOT DEPLOYED. |
 | Cloud confidence | A pending new-card draft records its ID and attempted content before storage. On reload, an already committed card with matching content is recognized without rewriting later reviews; local and account-cache create-only transactions reject a replay if the ID already exists. The legacy host queue has no atomic create-only API; live multi-device convergence remains unverified. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
-| Current blocker / unfinished work | Browser CI pending. Sign-out during save/import and A→B→A browser identity/cache tests remain. Imports/deletes still acknowledge optimistically, outside this editor slice. |
+| Current blocker / unfinished work | No crash-recovery test blocker. Sign-out during save/import and A→B→A browser identity/cache tests remain. Imports/deletes still acknowledge optimistically, outside this editor slice. |
 
-**Next action, in one sentence:** verify the crash-recovery PR's CI, then finish SYNC-01 identity and lifecycle gates by exercising sign-out during save/import and A→B→A with isolated drafts/cache and intact anonymous data in browser tests.
+**Next action, in one sentence:** merge [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) after review, then finish SYNC-01 identity and lifecycle gates by exercising sign-out during save/import and A→B→A with isolated drafts/cache and intact anonymous data in browser tests.
 
 The record above describes inspected evidence, not today's mutable HEAD. Update it after each task; do not append another competing handoff.
 
@@ -101,7 +101,7 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Guarded drafts, imports and editor fix | `44a044dd`, `eb0be14c`; browser coverage passed in run 40362238502. Save durability still open. |
 | Roadmap consolidation | `bcd0eb98`; canonical queue and scope boundaries, guard restored; regression 40373316156 SUCCESS. |
 | Durable editor-save slice | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) merged; main regression 40378487715 and Pages 40378487955 SUCCESS. |
-| Crash acknowledgment recovery | Pending new-note ID/content in editor draft; create-only local/account cache writes and browser reload/review preservation checks. CI pending; no backend change. |
+| Crash acknowledgment recovery | Pending new-note ID/content in editor draft; create-only local/account cache writes and browser reload/review preservation checks. Regression 40379498567 SUCCESS; no backend change. |
 
 ## 6. Five-line end-of-session report template
 
