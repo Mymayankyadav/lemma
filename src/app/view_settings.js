@@ -12,6 +12,7 @@ const SettingsView = (() => {
   let optResult = null;
   let optResultGeneration = -1;
   let sweep = null;
+  let sweepGeneration = -1;
 
   function numField(id, label, key, opts = {}) {
     const input = h('input', { id, class: 'input input-num', type: 'number', inputmode: 'numeric', min: opts.min, max: opts.max, step: opts.step || 1, value: Model.settings[key] });
@@ -83,8 +84,10 @@ const SettingsView = (() => {
       try {
         const probs = ratingProbs();
         const deckSize = clampN(Math.max(Model.cardRefs().length, (Model.settings.newPerDay || 20) * 120), 300, 4000);
-        sweep = await Jobs.exec('sweep', { w: Model.settings.w, opts: { from: 0.7, to: 0.97, stepSize: 0.01, days: 365, newPerDay: Model.settings.newPerDay || 20, deckSize, maxIvl: Model.settings.maxIvl, firstProbs: probs.first, recallProbs: probs.recall } });
+        const result = await Jobs.exec('sweep', { w: Model.settings.w, opts: { from: 0.7, to: 0.97, stepSize: 0.01, days: 365, newPerDay: Model.settings.newPerDay || 20, deckSize, maxIvl: Model.settings.maxIvl, firstProbs: probs.first, recallProbs: probs.recall } });
         if (generation !== App.workspaceRevision || App.workspaceBlocked) return;
+        sweep = result;
+        sweepGeneration = generation;
         drawSweep();
       } catch (e) {
         if (generation === App.workspaceRevision && !App.workspaceBlocked)
@@ -103,7 +106,7 @@ const SettingsView = (() => {
       numField('s-max', 'Maximum interval (days)', 'maxIvl', { min: 1, max: 36500 }),
       toggleField('s-fuzz', 'Spread out intervals', 'fuzz', 'Small random spread'),
       toggleField('s-lb', 'Balance daily load', 'loadBalance', 'Prefer lighter days')));
-    if (sweep) setTimeout(drawSweep, 0);
+    if (sweep && sweepGeneration === App.workspaceRevision && !App.workspaceBlocked) setTimeout(drawSweep, 0);
 
     page.append(optimizerSection());
 
