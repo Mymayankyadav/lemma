@@ -62,6 +62,26 @@ const clear = async db => new Promise((resolve, reject) => {
   assert.equal((await storage.notes())[0].data.front, 'reviewed', 'dirty snapshot survives remote pull');
   await clear(db);
 
+  // An Undo must atomically preserve the original review, restore the note,
+  // and enqueue the retraction AFTER the review and restored snapshot.
+  const restoredEvent = [200,1,4,0,1000,0,crypto.randomUUID()];
+  await storage.stageReview({ ...note('answered'), log:[restoredEvent] }, restoredEvent);
+  const oldSequence = (await storage.list()).map(x => x.sequence);
+  await assert.rejects(storage.stageUndo({ ...note('wrong'), id:'other' }, restoredEvent[6]));
+  assert.deepEqual((await storage.list()).map(x => x.sequence), oldSequence);
+  await storage.stageUndo(note('restored'), restoredEvent[6]);
+  const undoQueue = (await storage.list()).sort((a,b)=>a.sequence-b.sequence);
+  assert.deepEqual(undoQueue.map(x=>x.kind), ['note','review','note','retraction']);
+  assert.equal(undoQueue[2].data.front, 'restored');
+  assert.equal(undoQueue[3].data.target_event_id, restoredEvent[6]);
+  assert.equal((await storage.notes())[0].data.front, 'restored');
+  assert.equal((await storage.reviews()).length, 1);
+  assert.equal((await storage.retractions()).length, 1);
+  await assert.rejects(storage.stageUndo(note('again'), restoredEvent[6]));
+  assert.equal((await storage.notes())[0].data.front, 'restored');
+  assert.equal((await storage.list()).length, 4);
+  await clear(db);
+
   await storage.ingestRemoteNote({ id:'n', data:note('new'), revision:5 });
   await storage.ingestRemoteNote({ id:'n', data:note('old'), revision:3 });
   assert.equal((await storage.notes())[0].data.front, 'new', 'late pull must not regress revision');
