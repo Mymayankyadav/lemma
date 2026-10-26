@@ -17,34 +17,31 @@ The user's phrase **"follow the plan.md" is authorization to continue implementa
 
 ## 1. CURRENT HANDOFF — update at the end of EVERY coding session
 
-**Last verified handoff:** 2026-10-26, SYNC-01 account-workspace lifecycle hardening. **Working branch:** `main`; no active chatbot work is presumed after this response. **Session state:** `READY_FOR_NEXT_AGENT`.
+**Last verified handoff:** 2026-10-26, SYNC-01 delayed-editor/import/bulk-operation hardening. **Working branch:** `main`. **Session state:** `READY_FOR_NEXT_AGENT`. Work happens consecutively, not simultaneously.
 
-**This session implemented:** guarded `Store.activateAccount` transitions and emergency local restoration in `src/app/store.js`; `src/app/workspace_lifecycle.js` which uses existing Store/Model/LemmaSync objects and erases account data synchronously on sign-out or user change; UI shielding and closed-editor/review checks in `src/app/main.js`, session discard in `src/app/view_review.js`, account-handle access in `src/app/account_sync.js`, and workspace-generation guards on async Undo in `src/app/session.js`. Added `test/workspace_lifecycle.js`, extended `test/account_store.js` and `test/local_persistence.js`, added `npm run test:workspace`. The existing FSRS engine, persistence format and Supabase schema were not changed.
+**This session implemented (direct commits to main):**
+- `src/app/view_editor.js`: workspace-generation/identity guards on save, delayed deletion confirmation, async image compression, draft autosave and sheet close. New-card drafts use the original anonymous key or an account-specific key; existing-note unsaved drafts use note-specific keys and restore only against matching `modified` baselines (older drafts are retained, not overwritten). The original Model/FSRS remains unchanged.
+- `src/app/sheets.js`: workspace-lease guards for delayed FileReader import, AI-generated card lists, and click-to-commit actions after sheet close or identity transition.
+- `src/app/view_settings.js` and `src/app/view_home.js`: reject late optimizer/simulation callbacks or destructive delete confirmations from a prior workspace; workload/optimizer result caches cannot be shown or applied to another account.
+- `test/e2e.js`: browser restart tests for unsaved new-card and existing-card drafts and discarded import callbacks.
 
 | Field | Last verified fact |
 | --- | --- |
-| Repository | https://github.com/Mymayankyadav/lemma |
-| Canonical branch | `main` (never force-push or clobber another agent's commit) |
-| Known-good main baseline before protocol | `051f117b3708ddc55d8303fd3c6bda1148f7f4cf` (PR #1 merged) |
-| Latest independently tested main code SHA | `5391620a6f609036bc47c60cc8d6d7060035a44a` — [full regression 40357462478](https://github.com/Mymayankyadav/lemma/actions/runs/40357462478) **SUCCESS** (includes workspace lifecycle, real Store and late Undo) |
-| Prior main reference | [full regression 40354412307](https://github.com/Mymayankyadav/lemma/actions/runs/40354412307) — success for earlier handoff |
-| Web deployment | [Pages 40356675409](https://github.com/Mymayankyadav/lemma/actions/runs/40356675409) **SUCCESS** at `6d71eda97f76`; [newer Pages 40357379572](https://github.com/Mymayankyadav/lemma/actions/runs/40357379572) **SUCCESS** at `639f876ce5eb` (includes lifecycle generation guard; later changes were test/handoff only) |
+| Repo and branch | [`Mymayankyadav/lemma`](https://github.com/Mymayankyadav/lemma), **`main`** |
+| Last independently proven full code regression | [run 40359377678](https://github.com/Mymayankyadav/lemma/actions/runs/40359377678) **SUCCESS** at `4a77ab14e4fc` (includes new-card browser draft/reload tests). |
+| Latest code commit awaiting full regression | `2c5432a55f43b0a1d36375cbb703f729efe1f96c` — [run 40360307092](https://github.com/Mymayankyadav/lemma/actions/runs/40360307092) **PENDING at handoff**; check it FIRST and fix any failed Chromium test. |
+| Deployment | [Pages 40359136202](https://github.com/Mymayankyadav/lemma/actions/runs/40359136202) **SUCCESS** for earlier sheet guard revision `f7d9208f3cba`. Newer code deployment may have been cancelled/requeued by rapid commits; verify GitHub Pages separately. |
+| Backend | Lemma Supabase `yemqnhnztlbyxmjxidis` (Mumbai); **Carrel must remain untouched**. No SQL/schema changes this session. |
+| Last deployed migration | `supabase/migrations/20261026203000_revision_safe_profiles.sql`. Previous security advisor: zero findings; not rerun. |
 | Web | https://mymayankyadav.github.io/lemma/ |
-| Backend | **Lemma only**, Supabase ref `yemqnhnztlbyxmjxidis` in Mumbai. Do not modify Carrel. |
-| Last source-controlled migration | `supabase/migrations/20261026203000_revision_safe_profiles.sql` — deployed in previous session; **no new migration in this session** |
-| Backend security check | Previously reported zero Supabase security-advisor findings after profile CAS migration; **not rerun this session** |
-| Current application safety | Account workspace activation remains **internal and not exposed in UI or triggered by login**. Original anonymous Store/FSRS remain primary. Identity-change scrubbing is active only if internal account mode had been activated. |
-| Cloud confidence | **Not verified end-to-end** with live authenticated devices, concurrent reviews or Android |
-| Android | Capacitor dependencies/config exist; no verified APK/device release |
-| After this handoff commit | Fetch **current HEAD and latest CI** directly; this file cannot predict its own commit SHA |
+| Activation | **Still internally gated**; signing in never automatically replaces anonymous cards or enables live sync. |
+| Latest `main` HEAD | **Refetch current HEAD**. This handoff cannot contain its own commit SHA. |
 
-**Next action, in one sentence:** **SYNC-01** — harden in-flight editor/import/bulk callbacks against stale account identity and test real browser reload/crash restoration in `src/app/main.js`, `src/app/view_editor.js`, `src/app/io.js`, `src/app/workspace_lifecycle.js`, and `test/e2e.js` / `test/browser_sync.js`, using a versioned workspace identity guard; do not expose account activation yet.
+**Next action in one sentence:** **SYNC-01** — check [CI run 40360307092](https://github.com/Mymayankyadav/lemma/actions/runs/40360307092), resolve any new E2E failures, then add real browser crash/reload and A → B → A identity-isolation scenarios for `LemmaWorkspace` and in-flight edit/import using the existing mock browser harness; assess the existing editor save's durability before treating SYNC-01 as complete.
 
-**What passed:** local and mocked A→B→A identity transitions, immediate stale-data hiding, in-flight activation, failed anonymous IndexedDB recovery remaining locked, Store restoration after rejected in-flight account save, and late Undo guard. The entire current regression suite passed at `5391620a6f60`.
+**What is verified vs not:** Existing Playwright smoke tests cover anonymous IndexedDB review/Undo and new-card drafts across reload. Unit tests cover forced sign-out and A/B/A workspace restores. New existing-note draft and async callback checks are committed but their **latest run remains unverified until CI completes**. Live authenticated two-device sync, concurrent FSRS scheduling convergence, account activation UI, Android native lifecycle and profile conflicts are not complete.
 
-**Still missing:** a live authenticated browser/device transition test; browser reload and pending editor/import/bulk-operation checks; explicit conflict-resolution UI; scheduling convergence and legacy review-history baseline; all automatic account activation. A rejected account write remains visibly flagged and may require reconciliation; do not claim lossless cloud sync based only on these tests.
-
-**When you end a session, update this section, the task queue and the evidence ledger using observed GitHub commits/CI results.** Preserve stable task IDs. The final handoff commit's own CI may still be pending.
+**Recovery:** If the latest regression fails, use the exact failed job logs, correct source/tests on `main`, rerun. If source is newer than the handoff, verify it and update this section rather than overwriting it. A successful web deployment does **not** imply automatic sync is ready.
 
 ## 2. Task queue — stable IDs, priority and exit criteria
 
@@ -55,7 +52,7 @@ Statuses: `DONE` = committed + checked against stated gate; `IN_PROGRESS` = demo
 | **HANDOFF-01** | **DONE** | Root `plan.md` is authoritative; future agents update it; entry points point here; handoff validator runs in CI. |
 | **FOUNDATION-01** | **DONE** | Source imported, existing math flashcards and original FSRS-6 preserved, web deployed, npm tests + Chromium E2E successful on main at baseline. |
 | **SYNC-00** | **DONE (infrastructure only)** | Owner-scoped RLS, revision-safe note/profile/plan RPCs; durable per-account outbox; immutable review ledger and Undo retractions; read-only account comparison; local persistence regression tests. **Does not mean sync is live.** |
-| **SYNC-01** | **NEXT** | **Partially implemented and unit-tested (2026-10-26), not yet accepted.** Safe account workspace lifecycle: explicit identity-scoped switch boundaries; no open review/editor during switching; await all local commits; safely load/restore Model, profile, account cache; prevent cross-account stale async callbacks; robust sign-out/account-switch recovery. Tests for A → B → A, sign-out in flight, aborted storage, recover after reload. No automatic switch on login. |
+| **SYNC-01** | **NEXT** | **Partial: lifecycle + delayed editor/import/optimizer protections committed; current E2E verification pending.** Safe account workspace lifecycle: explicit identity-scoped switch boundaries; no open review/editor during switching; await all local commits; safely load/restore Model, profile, account cache; prevent cross-account stale async callbacks; robust sign-out/account-switch recovery. Tests for A → B → A, sign-out in flight, aborted storage, recover after reload. No automatic switch on login. |
 | **SYNC-02** | **BLOCKED: SYNC-01** | Conflict UI/repair path for note content, tombstones, per-note queue and profile CAS. Preserve both versions and ancestor, never silently resume a stale write. Test two offline devices, simultaneous edits/deletes and lost acknowledgments. |
 | **SYNC-03** | **BLOCKED: SYNC-01/02** | Review convergence using **existing `src/fsrs.js`** only: reconcile stable review IDs, immutable retractions, scheduling provenance and legacy baselines; verify due states for concurrent reviews, undo, resets, fuzz/learning steps. No alternate FSRS implementation or last-writer-wins schedule. |
 | **SYNC-04** | **BLOCKED: SYNC-01/02/03** | Expose **explicit** account activation after backup/preflight; stage all normal mutations atomically; correct local/pending/confirmed/error UI; real authenticated two-identity/two-browser offline/reconnect test plus RLS test. Only then claim automatic sync. |
@@ -139,6 +136,8 @@ Update the handoff **after** implementing code, not as a replacement for code. I
 | 2026-10-26 | Introduced canonical sequential-chatbot handoff, updated README and retired old PROMPT; root plan structural guard runs in regression suite | [main regression 40353975777](https://github.com/Mymayankyadav/lemma/actions/runs/40353975777) **success** at `104707fc4a44`; plan contract uses `npm run test:plan` |
 
 | 2026-10-26 | SYNC-01 partial: internal account lifecycle locks UI, scrubs stale account cards on identity change, restores anonymous Store, handles in-flight activation, rejected save, and late Undo without changing FSRS or enabling live switch | `eee4a7b`, `404cf96`, `c694066`, `5391620`; [main regression 40357462478](https://github.com/Mymayankyadav/lemma/actions/runs/40357462478) **SUCCESS**; [Pages 40357379572](https://github.com/Mymayankyadav/lemma/actions/runs/40357379572) **SUCCESS** |
+
+| 2026-10-26 | SYNC-01 follow-up: workspace-scoped drafts (including existing note edits), guarded delayed file imports and AI generation, late Settings and deck deletions; browser reload tests | Commits `d878b7a`, `f7d9208`, `d6d84fa`, `86dff13`, `43eb1fd`, `410930c`, `2c5432a`; [test run 40360307092](https://github.com/Mymayankyadav/lemma/actions/runs/40360307092) **PENDING at handoff**. Earlier [40359377678](https://github.com/Mymayankyadav/lemma/actions/runs/40359377678) **SUCCESS**. |
 
 ## 6. Five-line end-of-session report template
 
