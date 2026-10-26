@@ -15,3 +15,15 @@ Configure Supabase Auth URL settings for your final GitHub Pages URL and Android
 
 ## Next phase
 Import the prepared Phase 1 source ZIP into this repository, complete the remaining schemas for cards and sources, then implement auth, offline mutation queue, idempotent review events, realtime invalidation and full cross-device tests.
+
+
+## Optional email login (account sign-in is NOT cloud card sync)
+
+Set GitHub Actions repository variables (Settings → Secrets and variables → Actions → Variables):
+
+- `SUPABASE_URL`: `https://yemqnhnztlbyxmjxidis.supabase.co`
+- `SUPABASE_PUBLISHABLE_KEY`: the public `sb_publishable_...` key from the Lemma Supabase project API keys screen; **never** a secret or service-role key.
+
+GitHub Actions injects these **public** values at build time into the static app. After setting them, rerun Deploy Lemma web through the Actions tab. In Supabase Authentication → URL Configuration, add `https://mymayankyadav.github.io/lemma/` to allowed redirects and set its Site URL appropriately before email magic-link use. Android auth requires a separate deep-link implementation and redirect allowlisting.
+
+The Settings account section only signs users in/out. Current card data stays in original local storage, and must not be automatically migrated. Cloud sync activation remains a subsequent checkpoint requiring tested revision handling, atomic review events, and explicit import safeguards.
