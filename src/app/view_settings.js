@@ -205,11 +205,31 @@ const SettingsView = (() => {
         catch (err) { message.textContent = 'Cache refresh: ' + err.message; showCache(); }
         finally { refreshCache.disabled = false; }
       };
+      const comparison = h('p', { class: 'muted small', role: 'status' });
+      const compare = h('button', { class: 'btn btn-sm', type: 'button',
+        text: 'Compare local and account cards' });
+      compare.onclick = async () => {
+        compare.disabled = true;
+        try {
+          const r = await LemmaSync.compareLocal();
+          comparison.textContent =
+            r.identical + ' identical · ' + r.localOnly + ' only on device · ' +
+            r.accountOnly + ' only in account · ' + r.divergent +
+            ' same-ID conflicts · ' + r.cloudTombstone + ' account deletions · ' +
+            r.dirtyAccount + ' pending account snapshots.' +
+            (r.fresh ? '' : ' Account cache may be stale; refresh while online.');
+          if (r.divergent || r.cloudTombstone) {
+            comparison.textContent += ' Nothing was overwritten or merged.';
+          }
+        } catch (err) { comparison.textContent = 'Comparison unavailable: ' + err.message; }
+        finally { compare.disabled = false; }
+      };
       showCache();
       page.append(section('set-cloud-account', 'Lemma account', 'Copy missing cards explicitly. Live cloud sync is not enabled yet. Export a backup before transferring.',
         accountState, h('div', { class: 'btn-row' }, email, send, logout),
         h('div', { class: 'btn-row' }, upload, download),
-        cacheState, refreshCache, message));
+        cacheState, h('div', { class: 'btn-row' }, refreshCache, compare),
+        comparison, message));
     }
 
     // data
