@@ -45,19 +45,36 @@ const QUICK_INSERTS = [
 ];
 
 const EditorSheet = (() => {
-  const DRAFT_KEY = 'lemma.draft.v1';
-  const readDraft = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return null; } };
-  const writeDraft = (d) => { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (e) { /* ignore */ } };
-  const clearDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ } };
+  // Legacy anonymous draft stays at its original key. Account drafts are
+  // segregated by authenticated ID, never exposed in another workspace.
+  function draftKey() {
+    if (Store.mode === 'account') {
+      const id = LemmaAccount.user?.id;
+      if (!id) throw new Error('Account identity unavailable for draft');
+      return 'lemma.draft.account.' + id;
+    }
+    return 'lemma.draft.v1';
+  }
+  const readDraft = key => { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } };
+  const writeDraft = (key,d) => { try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) { /* ignore */ } };
+  const clearDraft = key => { try { localStorage.removeItem(key); } catch (e) { /* ignore */ } };
 
   function open(noteId, onSaved, preset = {}) {
+    const originRevision = App.workspaceRevision;
+    const originMode = Store.mode;
+    const key = draftKey();
+    let closed = false;
+    let committed = false;
+    const valid = () => !closed && !App.workspaceBlocked &&
+      App.workspaceRevision === originRevision && Store.mode === originMode &&
+      (originMode !== 'account' || key === 'lemma.draft.account.' + LemmaAccount.user?.id);
     const editing = noteId ? Model.notes.get(noteId) : null;
     let draftRestored = false;
     let f;
     if (editing) {
       f = { type: editing.type, deck: editing.deck, title: editing.title, front: editing.front, back: editing.back, tags: editing.tags.join(' '), requires: editing.requires.slice(), media: clone(editing.media || {}) };
     } else {
-      const d = !preset.front && !preset.title && readDraft();
+      const d = !preset.front && !preset.title && readDraft(key);
       if (d && (d.front || d.back)) { f = Object.assign({ media: {} }, d); draftRestored = true; }
       else f = { type: preset.type || 'basic', deck: preset.deck || Model.meta.lastDeck || Model.deckNames()[0] || 'Default', title: preset.title || '', front: preset.front || '', back: preset.back || '', tags: '', requires: preset.requires || [], media: {} };
     }
@@ -165,9 +182,9 @@ const EditorSheet = (() => {
     };
     const schedulePreview = debounce(drawPreview, 140);
     const saveDraft = debounce(() => {
-      if (editing) return;
+      if (editing || !valid()) return;
       const c = currentFields();
-      if (c.front || c.back) writeDraft({ type: c.type, deck: c.deck, title: c.title, front: c.front, back: c.back, tags: tagsIn.value, requires: c.requires });
+      if (c.front || c.back) writeDraft(key, { type: c.type, deck: c.deck, title: c.title, front: c.front, back: c.back, tags: tagsIn.value, requires: c.requires });
     }, 500);
 
     function setType(v) {
@@ -288,6 +305,7 @@ const EditorSheet = (() => {
     async function addImage(file) {
       try {
         const dataUrl = await compressImage(file, 1100, 0.82);
+        if (!valid()) return;
         const id = 'img' + Math.random().toString(36).slice(2, 7);
         f.media[id] = dataUrl;
         ed().insert(`![](media:${id})`);
@@ -299,7 +317,9 @@ const EditorSheet = (() => {
     const saveBtn = h('button', { class: 'btn btn-primary', type: 'button', text: editing ? 'Save' : 'Add card', onclick: () => save(false) });
     const saveNewBtn = editing ? null : h('button', { class: 'btn', type: 'button', text: 'Add & next', title: 'Add this card and start another in the same deck', onclick: () => save(true) });
     const delBtn = editing ? h('button', { class: 'btn btn-ghost-danger', type: 'button', html: icon('trash', 16) + '<span>Delete</span>', onclick: async () => {
+      if (!valid()) return;
       if (!(await confirmDialog({ title: 'Delete this card?', message: `This deletes the note, its ${plural(Object.keys(editing.cards).length, 'card')} and review history.`, confirmLabel: 'Delete', danger: true }))) return;
+      if (!valid()) return;
       Model.deleteNote(editing.id);
       sheet.close();
       toast('Card deleted');
@@ -307,6 +327,7 @@ const EditorSheet = (() => {
     } }) : null;
 
     function save(again) {
+      if (!valid()) return;
       const c = currentFields();
       if (!c.front.trim()) return;
       if (c.type === 'cloze' && !Render.clozeOrds(c.front).length) return;
@@ -319,8 +340,9 @@ const EditorSheet = (() => {
       Model.setMeta({ lastDeck: c.deck });
       let note;
       if (editing) { Model.updateNote(editing, fields); note = editing; toast('Saved'); }
-      else { note = Model.createNote(fields); toast(`Added to ${c.deck.split('::').pop()}`); clearDraft(); }
+      else { note = Model.createNote(fields); toast(`Added to ${c.deck.split('::').pop()}`); clearDraft(key); committed = true; }
       if (again) {
+        committed = false;
         titleIn.value = ''; frontTa.value = ''; backTa.value = ''; f.requires = []; f.media = {};
         drawReq(); drawPreview(); frontTa.focus();
         return;
@@ -338,7 +360,7 @@ const EditorSheet = (() => {
       } })));
     const body = h('div', { class: 'editor' }, mTabs,
       h('div', { class: 'ed-form' },
-        draftRestored ? h('div', { class: 'ed-restored' }, h('span', { text: 'Draft restored' }), h('button', { class: 'link-btn', type: 'button', text: 'Discard', onclick: () => { clearDraft(); frontTa.value = ''; backTa.value = ''; titleIn.value = ''; drawPreview(); } })) : null,
+        draftRestored ? h('div', { class: 'ed-restored' }, h('span', { text: 'Draft restored' }), h('button', { class: 'link-btn', type: 'button', text: 'Discard', onclick: () => { if (!valid()) return; clearDraft(key); frontTa.value = ''; backTa.value = ''; titleIn.value = ''; drawPreview(); } })) : null,
         seg,
         h('div', { class: 'field-row' },
           h('div', { class: 'field' }, h('label', { for: 'ed-deck', class: 'field-label', text: 'Deck' }), deckIn, deckList),
@@ -355,6 +377,18 @@ const EditorSheet = (() => {
     const sheet = Sheets.open({
       title: editing ? 'Edit card' : 'New card', wide: true, className: 'sheet-editor', body,
       actions: [delBtn, h('span', { class: 'spacer' }), saveNewBtn, saveBtn],
+      onClose: () => {
+        // Preserve unsaved new-card text on forced account change. Do not
+        // write a stale draft under whichever workspace happens to be active.
+        if (!editing && !closed && !committed) {
+          const fields = currentFields();
+          if (fields.front || fields.back) writeDraft(key, {
+            type:fields.type,deck:fields.deck,title:fields.title,front:fields.front,
+            back:fields.back,tags:tagsIn.value,requires:fields.requires
+          });
+        }
+        closed = true;
+      },
     });
     setType(f.type);
     autoGrow(frontTa);
