@@ -32,53 +32,43 @@ const ReviewLedger = (() => {
       .sort((a,b) => (a.occurred_at_ms-b.occurred_at_ms) ||
         String(a.event_id).localeCompare(String(b.event_id)));
   }
-  /* Replay stability/difficulty, not due dates: due scheduling also depends on
-   * prior edits, learning-step state, load balancing and timezone transitions.
-   * Missing or malformed provenance is an error, never a guessed default. */
-  function replayMemory(events, retractions, opts = {}) {
-    const engine = opts.engine || (typeof FSRS !== 'undefined' ? FSRS :
-      (typeof require === 'function' ? require('../fsrs.js') : null));
-    if (!engine || typeof engine.step !== 'function') throw new Error('FSRS engine unavailable');
-    const ordered = activeEvents(events, retractions);
-    const baseline = opts.baseline;
-    let mem = null, previousDay = null;
-    const trace = [];
-    if (baseline) {
-      if (!Number.isSafeInteger(baseline.day_index) ||
-          !baseline.memory || !Number.isFinite(baseline.memory.s) ||
-          !Number.isFinite(baseline.memory.d) ||
-          !Number.isSafeInteger(baseline.before_ms)) throw new Error('Invalid replay baseline');
-      mem = { s: baseline.memory.s, d: baseline.memory.d };
-      previousDay = baseline.day_index;
-      for (const row of ordered) {
-        if (row.occurred_at_ms <= baseline.before_ms)
-          throw new Error('Review predates baseline; cannot replay');
-      }
-    }
-    let lastEventId = null;
-    for (const event of ordered) {
-      if (event.kind === 1) continue; // practice/cram never changes scheduling
-      if (event.kind !== 0 || !Number.isInteger(event.grade) ||
-          event.grade < 1 || event.grade > 4) throw new Error('Invalid scheduling review');
-      const p = event.scheduling_provenance;
+  /* Adapt the immutable ledger to the EXISTING FSRS.replay() API.
+   * Do not implement memory mathematics here. Reject parameter changes, missing
+   * provenance and ambiguous timestamps until a versioned replay policy exists. */
+  function fsrsInput(events, retractions) {
+    const active = activeEvents(events, retractions).filter(x => x.kind === 0);
+    if (!active.length) return { weights: null, reviews: [], clock: null };
+    let weights = null;
+    const days = new Map();
+    const reviews = [];
+    let previousDay = -Infinity;
+    for (const row of active) {
+      const p = row.scheduling_provenance;
       if (!p || p.version !== 1 || p.algorithm !== 'fsrs-6' ||
           !Array.isArray(p.weights) || p.weights.length !== 21 ||
           !p.weights.every(Number.isFinite) ||
           !Number.isSafeInteger(p.day_index) ||
-          !Number.isSafeInteger(event.occurred_at_ms))
-        throw new Error('Replay requires verified FSRS provenance for ' + event.event_id);
-      if (previousDay !== null && p.day_index < previousDay)
+          !Number.isSafeInteger(row.occurred_at_ms) ||
+          !Number.isInteger(row.grade) || row.grade < 1 || row.grade > 4)
+        throw new Error('Missing or invalid FSRS provenance: ' + row.event_id);
+      if (weights && JSON.stringify(weights) !== JSON.stringify(p.weights))
+        throw new Error('FSRS parameters changed; replay requires a verified baseline');
+      if (p.day_index < previousDay)
         throw new Error('Nonmonotonic scheduling days');
-      const elapsed = previousDay === null ? 0 : Math.max(0, p.day_index - previousDay);
-      mem = engine.step(p.weights, mem, elapsed, event.grade);
+      const existingDay = days.get(row.occurred_at_ms);
+      if (existingDay !== undefined && existingDay !== p.day_index)
+        throw new Error('Ambiguous scheduling timezone for identical timestamps');
+      days.set(row.occurred_at_ms, p.day_index);
+      weights = p.weights;
       previousDay = p.day_index;
-      lastEventId = event.event_id;
-      trace.push({ event_id: event.event_id, day_index: previousDay, elapsed,
-        s: mem.s, d: mem.d });
+      reviews.push([row.occurred_at_ms, row.grade, 0]);
     }
-    return { memory: mem, lastDay: previousDay, lastEventId, trace,
-      active: ordered.filter(x => x.kind === 0).length };
+    return { weights, reviews,
+      clock: { dayIndex(ts) {
+        if (!days.has(ts)) throw new Error('Unknown review timestamp');
+        return days.get(ts);
+      } } };
   }
-  return { activeEvents, validateRetraction, replayMemory };
+  return { activeEvents, validateRetraction, fsrsInput };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = ReviewLedger;
