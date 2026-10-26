@@ -66,6 +66,19 @@ const clear = async db => new Promise((resolve, reject) => {
   assert.equal((await storage.notes())[0].data.front, 'reviewed', 'dirty snapshot survives remote pull');
   await clear(db);
 
+  // Snapshot acknowledgements must not remain dirty while the review event is queued.
+  const independentEvent = [150,1,3,0,500,0,crypto.randomUUID()];
+  await storage.stageReview({ ...note('acknowledged'), log:[independentEvent] }, independentEvent);
+  const staged = (await storage.list()).sort((a,b)=>a.sequence-b.sequence);
+  assert.deepEqual(staged.map(x=>x.kind), ['note','review']);
+  await storage.ack(staged[0], { revision:1 });
+  assert.equal((await storage.notes())[0].dirty, false);
+  assert.equal((await storage.list()).length,1);
+  assert.equal((await storage.list())[0].kind,'review');
+  await storage.ack(staged[1], { eventId: independentEvent[6] });
+  assert.equal((await storage.notes())[0].dirty, false);
+  await clear(db);
+
   // An Undo must atomically preserve the original review, restore the note,
   // and enqueue the retraction AFTER the review and restored snapshot.
   const restoredEvent = [200,1,4,0,1000,0,crypto.randomUUID()];
