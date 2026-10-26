@@ -6,6 +6,7 @@ const App = (() => {
   let params = {};
   let lastSync = '';
   let workspaceBlocked = false;
+  let workspaceRevision = 0;
   let workspaceController = null;
 
   function buildShell() {
@@ -110,6 +111,7 @@ const App = (() => {
   function lockWorkspace(blocked) {
     workspaceBlocked = !!blocked;
     if (blocked) {
+      workspaceRevision++;
       ReviewView.discardForWorkspaceChange();
       Scratch.close();
       while (Sheets.count) Sheets.closeTop();
@@ -212,6 +214,7 @@ const App = (() => {
     workspaceIdle, lockWorkspace,
     get workspaceController() { return workspaceController; },
     get workspaceBlocked() { return workspaceBlocked; },
+    get workspaceRevision() { return workspaceRevision; },
     get view() { return view; },
   };
 })();
