@@ -33,6 +33,15 @@ const App = (() => {
       if (st.offline) { ic = 'cloud'; text = 'Offline · will retry'; cls = 'warn'; }
       else if (st.pending) { ic = 'cloud'; text = 'Saving'; cls = 'pending'; }
       else { ic = 'cloud'; text = 'Saved to your account'; }
+    } else if (st.mode === 'account') {
+      const accountStatus = LemmaSync.status;
+      ic = 'cloud';
+      if (st.failed) { text = 'Account data not saved locally'; cls = 'warn'; }
+      else if (st.pending) { text = 'Saving to private account cache'; cls = 'pending'; }
+      else if (accountStatus.phase === 'conflict') { text = 'Account conflict · needs review'; cls = 'warn'; }
+      else if (accountStatus.phase === 'ready' && !accountStatus.pending) {
+        text = 'Account queue confirmed · profile editing limited';
+      } else { text = 'Saved locally · cloud confirmation pending'; cls = 'pending'; }
     } else if (st.mode === 'local') {
       ic = 'device';
       if (st.failed) { text = 'Not saved · export a backup'; cls = 'warn'; }
