@@ -133,6 +133,7 @@ const App = (() => {
     document.addEventListener('keydown', (e) => { if (e.target && e.target.classList && e.target.classList.contains('ref')) onRefClick(e); }, true);
     AI.onChange(() => { refresh(); ReviewView.refreshTools(); });
     AI.init();
+    LemmaAccount.init();
     let data;
     try {
       data = await Store.init({
