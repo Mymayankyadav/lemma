@@ -20,6 +20,7 @@ const account = id => {
   const item = { userId:id, close(){this.closed=true;},
     storage:{
       notes:async()=>cached,
+      inspectAgainst:async(local)=>({ localInputCount:local.length, cachedInputCount:cached.length }),
       stageNote:async(note,revision)=>{
         staged.push({userId:id,note,revision});
         cached.push({id:note.id,deleted:false});
@@ -49,6 +50,11 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   assert.deepEqual(flushed,[current.id]);
   assert.deepEqual(channels[0].filters.map(f=>f.table),
     ['notes','review_events','review_retractions']);
+  const comparison = await ctx.sync.compareLocal();
+  assert.equal(comparison.localInputCount,2);
+  assert.equal(comparison.cachedInputCount,1);
+  assert.equal(comparison.fresh,true);
+  assert.equal(comparison.accountUserId,current.id);
   const enrollment = await ctx.sync.enrollMissingLocal();
   assert.equal(enrollment.queued,1);
   assert.equal(enrollment.skipped,1,'tombstones cannot be resurrected');
@@ -70,6 +76,7 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   await ctx.sync.attach(null);
   assert.equal(active[1].closed,true);
   await assert.rejects(ctx.sync.enrollMissingLocal(),/Refresh your signed-in/);
+  await assert.rejects(ctx.sync.compareLocal(),/Sign in/);
   assert.deepEqual(staged.map(x=>x.userId),[first.userId],
     'account B and signed-out users receive no implicit local data');
   assert.equal(ctx.sync.status.phase,'signed-out');
