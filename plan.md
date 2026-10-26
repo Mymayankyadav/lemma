@@ -28,7 +28,7 @@ The user's phrase **"follow the plan.md" is authorization to continue implementa
 | Known-good main baseline before protocol | `051f117b3708ddc55d8303fd3c6bda1148f7f4cf` (PR #1 merged) |
 | Latest independently tested main code SHA | `5391620a6f609036bc47c60cc8d6d7060035a44a` — [full regression 40357462478](https://github.com/Mymayankyadav/lemma/actions/runs/40357462478) **SUCCESS** (includes workspace lifecycle, real Store and late Undo) |
 | Prior main reference | [full regression 40354412307](https://github.com/Mymayankyadav/lemma/actions/runs/40354412307) — success for earlier handoff |
-| Web deployment | [Pages 40356675409](https://github.com/Mymayankyadav/lemma/actions/runs/40356675409) **SUCCESS** at `6d71eda97f76`; [newer Pages 40357379572](https://github.com/Mymayankyadav/lemma/actions/runs/40357379572) **PENDING at last check**, verify result before claiming latest web release |
+| Web deployment | [Pages 40356675409](https://github.com/Mymayankyadav/lemma/actions/runs/40356675409) **SUCCESS** at `6d71eda97f76`; [newer Pages 40357379572](https://github.com/Mymayankyadav/lemma/actions/runs/40357379572) **SUCCESS** at `639f876ce5eb` (includes lifecycle generation guard; later changes were test/handoff only) |
 | Web | https://mymayankyadav.github.io/lemma/ |
 | Backend | **Lemma only**, Supabase ref `yemqnhnztlbyxmjxidis` in Mumbai. Do not modify Carrel. |
 | Last source-controlled migration | `supabase/migrations/20261026203000_revision_safe_profiles.sql` — deployed in previous session; **no new migration in this session** |
@@ -138,7 +138,7 @@ Update the handoff **after** implementing code, not as a replacement for code. I
 | 2026-10-26 | Deployed revision-safe profile RPC and removed direct authenticated profile writes; added profile outbox staging and tests | `20261026203000_revision_safe_profiles.sql`, Supabase security advisor **zero findings** |
 | 2026-10-26 | Introduced canonical sequential-chatbot handoff, updated README and retired old PROMPT; root plan structural guard runs in regression suite | [main regression 40353975777](https://github.com/Mymayankyadav/lemma/actions/runs/40353975777) **success** at `104707fc4a44`; plan contract uses `npm run test:plan` |
 
-| 2026-10-26 | SYNC-01 partial: internal account lifecycle locks UI, scrubs stale account cards on identity change, restores anonymous Store, handles in-flight activation, rejected save, and late Undo without changing FSRS or enabling live switch | `eee4a7b`, `404cf96`, `c694066`, `5391620`; [main regression 40357462478](https://github.com/Mymayankyadav/lemma/actions/runs/40357462478) **SUCCESS**; newer Pages run 40357379572 **PENDING at handoff** |
+| 2026-10-26 | SYNC-01 partial: internal account lifecycle locks UI, scrubs stale account cards on identity change, restores anonymous Store, handles in-flight activation, rejected save, and late Undo without changing FSRS or enabling live switch | `eee4a7b`, `404cf96`, `c694066`, `5391620`; [main regression 40357462478](https://github.com/Mymayankyadav/lemma/actions/runs/40357462478) **SUCCESS**; [Pages 40357379572](https://github.com/Mymayankyadav/lemma/actions/runs/40357379572) **SUCCESS** |
 
 ## 6. Five-line end-of-session report template
 
