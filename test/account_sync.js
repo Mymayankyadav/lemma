@@ -49,7 +49,7 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   assert.deepEqual(pulled,[current.id]);
   assert.deepEqual(flushed,[current.id]);
   assert.deepEqual(channels[0].filters.map(f=>f.table),
-    ['notes','review_events','review_retractions']);
+    ['notes','profiles','review_events','review_retractions']);
   const comparison = await ctx.sync.compareLocal();
   assert.equal(comparison.localInputCount,2);
   assert.equal(comparison.cachedInputCount,1);
