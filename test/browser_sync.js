@@ -62,6 +62,8 @@ const source = ['outbox_core','sync_browser'].map(f=>fs.readFileSync(`src/app/${
     await stage(b,'retry','keep'); loseNextResponse = true;
     await flush(b);
     const originalId = await b.evaluate(async()=>(await account.storage.list()).find(o=>o.entityId==='retry').requestId);
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('retry'));
+    assert.equal(await b.evaluate(async()=>(await account.storage.list()).find(o=>o.entityId==='retry').state),'pending');
     await b.reload(); await start(b); await flush(b);
     assert.equal(server.get('retry').revision,1);
     assert.equal(requests.filter(id=>id===originalId).length,2);
@@ -83,6 +85,26 @@ const source = ['outbox_core','sync_browser'].map(f=>fs.readFileSync(`src/app/${
     assert.ok(server.get('offline').deleted_at);
     await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('offline'));
     assert.equal(await b.evaluate(async()=>(await account.storage.notes()).find(n=>n.id==='offline').deleted),true);
+
+    // Offline edit/delete conflict keeps all three versions and later queued
+    // edits across a real browser reload. A tombstone never silently wins.
+    await stage(a,'race','common base'); await flush(a);
+    const baseRow = server.get('race');
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),baseRow);
+    const edit = await stage(b,'race','offline edit');
+    const laterEdit = await stage(b,'race','later local edit');
+    await stage(a,'race','',true); await flush(a); await flush(b);
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('race'));
+    const conflict = await b.evaluate(id=>account.storage.get(id),edit.id);
+    assert.deepEqual(conflict.conflict.base,{revision:1,known:true,data:baseRow.data,deleted:false});
+    assert.equal(conflict.conflict.local.data.front,'offline edit');
+    assert.deepEqual(conflict.conflict.remote,{revision:2,known:true,data:baseRow.data,deleted:true});
+    await b.reload(); await start(b);
+    assert.deepEqual(await b.evaluate(id=>account.storage.get(id),edit.id),conflict);
+    assert.equal(await b.evaluate(async id=>(await account.storage.get(id)).requestId,laterEdit.id),laterEdit.requestId);
+    assert.equal(await b.evaluate(async()=>(await account.storage.note('race')).data.front),'later local edit');
+    await flush(b);
+    assert.equal(server.get('race').revision,2,'unresolved local edits cannot revive the deleted card');
 
     // A stale account handle is stopped when another user signs in.
     await stage(tab,'must-not-send','private A');

@@ -32,3 +32,31 @@ Learning-event immutability, context revision history and plan-publication appro
 Realtime is an invalidation signal, not proof that every change arrived. Recovery must pull again on reconnect/resume. Any incremental cursor must be commit-safe; a naive timestamp watermark may miss records.
 
 Current tests include fault-injected browser/account adapters. They do not establish live authenticated convergence or physical Android behavior. The release gates in `plan.md` define the remaining evidence.
+
+## Durable conflict evidence
+
+Account note/profile operations retain `base: {revision, known, data, deleted}`
+when staged; `known:false` explicitly represents missing historical content in
+older dirty caches or a caller-supplied revision that the cache cannot supply.
+Revision zero with known null data means no existing server row. Acknowledgment
+rebases the next queued operation's expected revision and base atomically without
+changing its payload or request ID. Note deletion receipts retain the preceding
+server content because `commit_note` preserves it in the tombstone.
+
+Dirty cache rows keep their latest local projection plus the most recent pulled
+`remote` snapshot. Stale RPC responses call `AccountStorage.markConflict` to
+persist an operation's `conflict: {version:1, base, local, remote}`. The local side
+is that operation's immutable intent (`expectedRevision`, `data`, `deleted`), not
+a later edit; later edits remain separate queued operations. Remote is null until
+observed. Pulls update cache and conflict evidence in one transaction, reject
+contradictory same-revision content and ignore older snapshots. Legacy conflicts
+are populated on pull without inventing missing bases. Fields are additive in
+existing IndexedDB stores; no schema upgrade or destructive cache migration.
+
+A pull alone does not mark a pending operation conflicted: its server commit may
+have succeeded before an acknowledgment was lost. Retry still uses its original
+request ID. No evidence capture path invokes `SyncMerge.mergeNotes`, chooses a
+winner, clears queued edits or resumes a blocked conflict. Resolution remains a
+separate operation with explicit intent and a new revision/request ID; its UI and
+transactional contract are unfinished. The existing snapshot-merging helper is
+not a review convergence algorithm.

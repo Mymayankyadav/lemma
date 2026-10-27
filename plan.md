@@ -17,19 +17,19 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-01 durable-import slice verified at `main@bf2bb54123c7b32e742608574bfb3486580ffa21`. **State: READY_FOR_NEXT_AGENT.** The listed SYNC-01 gates passed; SYNC-02 is the single NEXT task.
+**Last verified handoff:** 2026-10-27; SYNC-02 conflict-evidence slice prepared from `main@161965b04aee0265e86c165ca05baa1889b23565`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 remains the single NEXT task; resolution is unfinished.
 
 | Field | Evidence / limit |
 | --- | --- |
 | Known-good main baseline | [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged as `bf2bb54`; [main regression 40420169362](https://github.com/Mymayankyadav/lemma/actions/runs/40420169362) SUCCESS. |
-| Latest inspected regression | SUCCESS: [main regression 40420169362](https://github.com/Mymayankyadav/lemma/actions/runs/40420169362) at `bf2bb54123c7b32e742608574bfb3486580ffa21`: syntax and full `npm test`, including partial import failure/reload and account switching during an import write. Local syntax, storage/import, account/account-store, identity/workspace, plan and build SUCCESS; browser tests NOT RUN locally (Chromium unavailable). |
+| Latest inspected regression | Local syntax, storage/conflict, account/account-store, identity/workspace and build SUCCESS. `npm test` passed merge/outbox/storage/FSRS, then stopped because local Chromium is unavailable; browser gates NOT RUN locally. Full branch/main CI PENDING publication. |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
-| Web deployment | [Pages 40420169191](https://github.com/Mymayankyadav/lemma/actions/runs/40420169191) SUCCESS at merged `bf2bb54`. The final handoff-only update does not change runtime assets. |
-| Cloud confidence | `IO.prepare/commit` saves complete prerequisite links once, awaits each storage receipt, reads durable state on retry and keeps stable IDs. Import recovery stores source/job under the origin account key; subsequent writes and UI callbacks stop on identity change. Backup settings and generated-card imports await persistence too. Browser tests use real app/IndexedDB/outbox with mocked auth/remote receipts; no live login/RLS/convergence claim. |
+| Web deployment | Existing [Pages 40420169191](https://github.com/Mymayankyadav/lemma/actions/runs/40420169191) SUCCESS at `bf2bb54`; conflict-evidence deployment PENDING. |
+| Cloud confidence | Account staging retains known or explicitly unknown bases. Stale responses persist base/local/remote evidence; pulls atomically retain remote snapshots beside dirty local data, including tombstones. Acknowledgment rebases the next base without changing request IDs. Fault-injected IndexedDB tests cover edits/deletes/profiles, rollback, legacy queues and lost receipts. No live login/RLS/convergence claim. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
-| Current blocker / unfinished work | No SYNC-01 gate blocker. Batch writes are sequential: already committed cards remain saved if a later card fails. Changed backup targets block retry with retained source; conflict repair remains SYNC-02. Deletes still acknowledge optimistically and require later mutation audit. |
+| Current blocker / unfinished work | Conflict evidence only: no resolution controls or new resolution revision yet. Older dirty caches may have unknown bases. Review replay remains SYNC-03; public account activation SYNC-04. Sequential imports retain earlier commits on failure; optimistic deletes still require later mutation audit. |
 
-**Next action, in one sentence:** start SYNC-02 by inspecting `sync_merge.js`, `AccountStorage.ingestRemoteNote/stageProfile` and outbox conflict records, then preserve base/local/remote note and profile revisions before adding resolution controls.
+**Next action, in one sentence:** finish SYNC-02 with an explicit transactional conflict-resolution API in `AccountStorage`, preserving superseded queued intents and immutable review events while staging a new request/revision; test stale resolution and edit/delete races before wiring comparison/choice controls.
 
 The record above describes inspected evidence, not today's mutable HEAD. Update it after each task; do not append another competing handoff.
 
@@ -43,7 +43,7 @@ Keep stable IDs. **DONE** requires its gate; **NEXT** is exactly one task; **IN_
 | **FOUNDATION-01** | **DONE** | — | Imported app, web build, local cards, original FSRS/rendering and baseline tests exist. Preserve them. |
 | **SYNC-00** | **DONE** | — | Account/outbox/RPC/ledger infrastructure exists in source. This is not completed live sync. |
 | **SYNC-01** | **DONE** | SYNC-00 | Editor durability/crash recovery, account invalidation and durable import recovery implemented; browser gates passed in regression 40419737189. Retain recoverable input on failed storage; report success/close only after commit. Reuse workspace leases for delayed callbacks. Gate: browser crash/reload, aborted write, sign-out during save/import, A→B→A with isolated drafts/cache and intact anonymous data; existing tests stay green. |
-| **SYNC-02** | **NEXT** | SYNC-01 | Finish note/profile/tombstone conflict repair with local, remote and base revision visible. Choosing/merging a version creates a new revision; never drop queued edits or silently revive deletes. Gate: two offline editors, edit/delete race, profile conflict and lost acknowledgment recover without data loss; retry retains request ID. |
+| **SYNC-02** | **NEXT** | SYNC-01 | Base/local/remote conflict evidence retained; finish note/profile/tombstone resolution and comparison controls. Choosing/merging a version creates a new revision; never drop queued edits or silently revive deletes. Gate: two offline editors, edit/delete race, profile conflict and lost acknowledgment recover without data loss; retry retains request ID. |
 | **SYNC-03** | **BLOCKED** | SYNC-02 | Converge review/Undo using existing `FSRS.preview/replay` and `ReviewLedger.fsrsInput`. Specify deterministic ordering, parameter/time provenance, legacy baseline handling and resets. Never choose the latest card snapshot as truth or fabricate legacy history. Gate: concurrent offline reviews/Undo, equal timestamps, timezone/rollover, fuzz and parameter changes produce the same due state on both devices; unsupported histories remain preserved and explicitly blocked. |
 | **SYNC-04** | **BLOCKED** | SYNC-03 | Enable account workspace only after explicit enrollment/backup. Route every mutation through durable staging; automatically push after local commit, retry on reconnect/foreground and refresh on remote invalidation. Distinguish device-saved, queued, cloud-confirmed, conflict and failure. Gate: authenticated two-browser/two-identity tests, offline restart, auth expiry, network loss after commit, deletes and RLS isolation. Routine use needs no manual Sync button. |
 | **UI-01** | **LATER** | SYNC-01 | Apply the UI contract below to existing screens incrementally. Keep working routes and controls while Study is built later. Gate: mobile/desktop light/dark screenshots, keyboard navigation, 200% text, long mathematical expressions, empty/loading/error/offline states and existing review flows. |
@@ -98,10 +98,10 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Milestone | Evidence / limit |
 | --- | --- |
 | Original source and sync groundwork retained | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), existing source/migrations; no replacement implementation. |
-| Durable editor-save slice | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) merged; main regression 40378487715 and Pages 40378487955 SUCCESS. |
-| Crash acknowledgment recovery | [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; regression 40381695953 and Pages 40381695797 SUCCESS. |
+| Durable editor and crash recovery | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) and [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; main regression/Pages 40378487715/40378487955 and 40381695953/40381695797 SUCCESS. |
 | Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
 | Durable imports | `IO.prepare/commit`, ImportSheet recovery, Store note/profile receipts; local import tests and [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged; full main regression 40420169362 and Pages 40420169191 SUCCESS. |
+| Durable conflict evidence | `sync_browser.js`, `outbox_core.js`, `test/conflict_storage.js`, `test/browser_sync.js`; local storage gates SUCCESS, full browser CI PENDING. |
 
 ## 6. Five-line end-of-session report template
 
