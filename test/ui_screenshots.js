@@ -88,7 +88,16 @@ async function shot(page, name, size, scheme) {
         await page.fill('#ed-back', longMath);
         await page.locator('.ed-mtabs [role="tab"]').nth(1).click();
         await page.locator('.pv-tabs [role="tab"]').nth(1).click();
-        await page.waitForSelector('.ed-preview .katex-display');
+        await page.waitForTimeout(250);
+        if (await page.locator('.ed-preview .katex-display').count() === 0) {
+          const diag = await page.evaluate(() => ({
+            editor: document.querySelector('.editor')?.className,
+            tabs: [...document.querySelectorAll('.pv-tabs button')].map(b => [b.textContent, b.className]),
+            preview: document.querySelector('.ed-preview')?.innerHTML.slice(-350),
+            warning: document.querySelector('.ed-warn')?.textContent,
+          }));
+          throw new Error('Oversized math preview missing: ' + JSON.stringify(diag));
+        }
         const mathLayout = await page.locator('.ed-preview .katex-display').first().evaluate(el => ({
           overflow: getComputedStyle(el).overflowX,
           pageWidth: document.documentElement.scrollWidth,
