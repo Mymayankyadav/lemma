@@ -1,6 +1,6 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L6 PR #29 — confirm latest-head regression, Android and local-stack checks are green, then squash-merge; next L7 creates `test/sync_local_e2e.js` with two isolated Playwright browser contexts and offline/expiry/lost-response gates.
+Next action: SYNC-04 L7 — verify actual persistent-browser email-PKCE and create/update/delete convergence in CI, then extend the real-UI harness with offline restart, expiry/refresh, lost-response idempotency, and exact receipts; do not mark L7 or SYNC-04 DONE prematurely.
 
 | Field | Value |
 | --- | --- |
@@ -12,6 +12,13 @@ Next action: SYNC-04 L6 PR #29 — confirm latest-head regression, Android and l
 | L5 verification | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
 | Remaining gate | L5 CI green followed by L6 two local auth identities; L7 real local UI devices/faults; L8 read-only production security parity, before SYNC-04 DONE. |
+
+## SYNC-04 L7 — independent real browser contexts (initial test, incomplete gate)
+
+- Added `test/sync_local_e2e.js` and local-stack CI setup for Chromium. Three isolated persistent browser profiles use the real app and local email-link/PKCE fallback through Mailpit (two independent devices for one identity; third for cross-owner isolation), with no mock Supabase HTTP.
+- Initial gate targets automatic create/update/delete propagation without manual refresh and a no-resurrection reload; confirms three exact note revisions/receipts in local PostgreSQL.
+- **NOT YET VERIFIED:** first test run pending. The remaining mandated L7 faults — backend-offline restart/reconnect, 60-second JWT expiry/refresh, response lost after committed RPC — are not yet implemented. These must be added before L7 can be marked DONE or its PR merged; do not treat the first convergence test as the complete gate.
+- All endpoints use local loopback; no production credentials or owner learning records are used.
 
 ## SYNC-04 L6 — two real local HTTP identities (pending CI)
 
