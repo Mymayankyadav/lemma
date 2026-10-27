@@ -1,13 +1,13 @@
 # Lane A — sync, auth and backend
 
-Next action: verify post-integration CI on draft PR #23 (`lane-a/sync-04-l1-live-write`), then continue SYNC-04 L2 within the outstanding live gates. The prior `main` was integrated without rebasing; this PR remains unmerged. Obtain action-time owner confirmation before deleting only the synthetic note `SYNC-04 live verification 2026-10-27 A` in deck `Verification`; then verify automatic tombstone delivery and no resurrection after reload. L1 create/update/reload passed. Independent-device/offline/fault/second-identity gates remain; preserve all learning data.
+Next action: SYNC-04 L2 — verify client-side tombstone pull/removal and absence after browser reload using an independently authenticated application session. Server-side deletion of the one owner-approved synthetic fixture passed; do not claim UI propagation or offline recovery from SQL evidence. Continue independent-device and two-real-identity HTTP RLS gates before marking SYNC-04 DONE.
 
 | Field | Value |
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
-| Current task | SYNC-04 L1 live create/update/reload complete; L2 deletion awaiting confirmation |
+| Current task | SYNC-04 L2 owner-approved server tombstone verified; client propagation/reload still unverified |
 | Delivery | [Draft PR #23](https://github.com/Mymayankyadav/lemma/pull/23), `lane-a/sync-04-l1-live-write`. Lane A reassigned and branch adopted. Latest `main` integrated without rebasing; PR remains draft and unmerged. AUTH-01 PR #17 merged as `e13582d`. |
-| Baseline | L1 tested on `main@2c1f554`: [regression 40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724), Android 40478252732 and Pages 40478252681 SUCCESS. Latest `main@1125388` [regression 40484074497](https://github.com/Mymayankyadav/lemma/actions/runs/40484074497) and [Android 40484074547](https://github.com/Mymayankyadav/lemma/actions/runs/40484074547) SUCCESS; post-integration PR CI awaiting verification. L1 live checks ran against the earlier deployed AUTH-01 build; they do not certify lane B's later navigation change. |
+| Baseline | L1 tested on `main@2c1f554`: [regression 40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724), Android 40478252732 and Pages 40478252681 SUCCESS. Latest `main@1125388` [regression 40484074497](https://github.com/Mymayankyadav/lemma/actions/runs/40484074497) and [Android 40484074547](https://github.com/Mymayankyadav/lemma/actions/runs/40484074547) SUCCESS; post-integration PR CI regression 40502775044 and Android 40502775101 SUCCESS. L1 live checks ran against the earlier deployed AUTH-01 build; they do not certify lane B's later navigation change. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
 
 ## AUTH-01 S2 — live web gate COMPLETE, 27 October 2026
@@ -50,3 +50,12 @@ The browser's Google session enables the next owner-scoped tests in this convers
 Lane B request: in `src/app/sheets.js`, `ExportSheet.open/getDownloads`, provide a working plain-web backup download fallback (or hide unavailable Download reliably) and verify Copy readback/failure reporting without `window.claude`. In the live cloud browser, Download appeared but did nothing; Copy reported success with empty clipboard readback. The visible JSON textarea fallback allowed this empty-workspace test; do not weaken the activation backup acknowledgment. Lane A has not edited lane B files.
 
 PR #14 (`dbfb961`) consumed the owner's one-time workflow-only exception; ownership rules are unchanged. Future cross-lane changes use the normal request protocol.
+
+## SYNC-04 L2 — owner-approved server tombstone, 27 October 2026
+
+- Owner explicitly authorized deletion of the uniquely named synthetic note `SYNC-04 live verification 2026-10-27 A`; authorization was limited to that note.
+- On Lemma project `yemqnhnztlbyxmjxidis`, preflight matched exactly one live `Verification` note at revision 2, two mutation receipts, zero review events, and the exact expected updated front.
+- Within a transaction, checked the target, deck, front, revision, receipts, and review-event count; invoked the existing `public.commit_note` RPC under the `authenticated` role with the matching owner JWT claim and `p_delete=true`, expected revision 2, fresh request UUID, and null payload. This uses the same database function as normal app deletion but was **not initiated in the app UI**.
+- Independent read-only verification after commit: the one fixture is **tombstoned, revision 3, three mutation receipts, zero reviews**. No row hard-deleted; no unrelated content was targeted, and no credentials/IDs are published.
+- **Still unverified:** client outbox acknowledgment/propagation, live remote invalidation, UI disappearance, reload and offline no-resurrection. These cannot be inferred from the server RPC. An existing open client could retain a stale local copy until it pulls the tombstone. Do not mark deletion end-to-end complete.
+- PR #23 was updated from prior `main` without rebase; regression [40502775044](https://github.com/Mymayankyadav/lemma/actions/runs/40502775044), Android [40502775101](https://github.com/Mymayankyadav/lemma/actions/runs/40502775101), screenshot publication SUCCESS. SYNC-04 remains NEXT, PR remains unmerged until this update re-passes CI.
