@@ -1,15 +1,15 @@
 # Lane C — Android
 
-Next action: ANDROID-01 S2 — after PR #9 is merged, implement the native Back/resume shell (`src/app/native_shell.js`) without web UI, auth or sync changes.
+Next action: ANDROID-01 S2 — implement native hardware Back and resume handling in `src/app/native_shell.js`, append it after `util.js` in `build.js`, and add the pre-approved matching Capacitor App dependency. Keep the web behaviour unchanged.
 
 | Field | Value |
 | --- | --- |
-| Status | ANDROID-01 S1 CODE COMPLETE, PR #9 CI GREEN — merge pending |
-| Current task | ANDROID-01 (S1 verified in CI; S2 next after merge) |
-| Open branch / PR | [PR #9](https://github.com/Mymayankyadav/lemma/pull/9) on `lane-c/android-01-s1-scaffold-ci` |
-| Last merged work | none yet in this lane; merging PR #9 is the remaining action |
-| Evidence | [Regression run 40465035763](https://github.com/Mymayankyadav/lemma/actions/runs/40465035763): **SUCCESS**, full `npm test`; [Android run 40465035356](https://github.com/Mymayankyadav/lemma/actions/runs/40465035356): **SUCCESS**, including `npm ci`, syntax, `test:plan`, `node test/lane_guard.js C`, `android:sync`, Gradle assembleDebug and the 5.6 MB `lemma-android-debug` artifact. |
-| Verification outstanding | No physical Android device test yet (ANDROID-02 gate). Google deep link, native Back/resume, notification testing and release signing are not implemented. |
+| Status | READY — ANDROID-01 S1 merged and CI green; S2 is next |
+| Current task | ANDROID-01 S2 (native Back/resume) |
+| Open branch / PR | none for S2 |
+| Last merged work | [PR #9](https://github.com/Mymayankyadav/lemma/pull/9) — ANDROID-01 S1 scaffold, build CI, documentation; squash commit `6af3fc82994baa75f46a9a49fa566633c68f6415` |
+| Evidence | [Regression run 40465326237](https://github.com/Mymayankyadav/lemma/actions/runs/40465326237) **SUCCESS** (full `npm test`); [Android run 40465326264](https://github.com/Mymayankyadav/lemma/actions/runs/40465326264) **SUCCESS** (`npm ci`, syntax, plan, lane guard, Android sync, Gradle debug APK artifact). |
+| Verification outstanding | Native-device launch, deep-link auth, Back/resume, notifications, update/signing and offline lifecycle tests remain pending; ANDROID-02 still depends on UI-01 and SYNC-04. |
 | Not yours | Web UI/CSS (lane B), sign-in and sync code (lane A). Ask for changes via "Requests from other lanes" below. |
 
 **Requests from other lanes:** none.
