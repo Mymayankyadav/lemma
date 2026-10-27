@@ -228,7 +228,7 @@ const App = (() => {
     LemmaSync.init();
     workspaceController = LemmaWorkspace.fromApp();
     workspaceController.init();
-    LemmaSync.onChange(() => { activateRemembered().catch(() => {}); });
+    LemmaSync.onChange(() => { drawSync(); activateRemembered().catch(() => {}); });
     App.loading = false;
     Model.onChange(() => refresh());
     if (data.mode === 'cloud') {
