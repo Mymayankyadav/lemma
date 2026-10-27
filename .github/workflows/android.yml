@@ -33,37 +33,11 @@ jobs:
       - name: Check syntax and lane ownership
         env:
           PR_HEAD_REF: ${{ github.head_ref }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           npm run test:syntax
           npm run test:plan
           case "$PR_HEAD_REF" in
-            lane-a/*)
-              # Owner's 27 Oct 2026 explicit approval applies ONLY to the
-              # two byte-identical migration renames in Lemma PR #31.
-              # Reject extra deletions/renames; do not weaken other lanes.
-              if [ "$PR_NUMBER" = "31" ] &&
-                 [ "$PR_HEAD_REF" = "lane-a/sync-04-l8-security-parity" ]; then
-                expected=$(printf 'R100\t%s\t%s\nR100\t%s\t%s\n' \
-                  supabase/migrations/20261026135000_review_retractions.sql \
-                  supabase/migrations/20261026130428_review_retractions.sql \
-                  supabase/migrations/20261026203000_revision_safe_profiles.sql \
-                  supabase/migrations/20261026153542_revision_safe_profiles.sql | LC_ALL=C sort)
-                actual=$(git diff --find-renames=100% --name-status origin/main...HEAD |
-                  awk -F '\t' '$1 ~ /^(R|D)/ {print}' | LC_ALL=C sort)
-                if [ "$actual" != "$expected" ]; then
-                  echo "::error::Unapproved rename/deletion in PR #31"
-                  exit 1
-                fi
-                cmp <(git show origin/main:supabase/migrations/20261026135000_review_retractions.sql) \
-                  supabase/migrations/20261026130428_review_retractions.sql
-                cmp <(git show origin/main:supabase/migrations/20261026203000_revision_safe_profiles.sql) \
-                  supabase/migrations/20261026153542_revision_safe_profiles.sql
-                node test/lane_guard.js A --allow-delete
-              else
-                node test/lane_guard.js A
-              fi
-              ;;
+            lane-a/*) node test/lane_guard.js A ;;
             lane-b/*) node test/lane_guard.js B ;;
             lane-c/*) node test/lane_guard.js C ;;
             integration/*) node test/lane_guard.js integration ;;
