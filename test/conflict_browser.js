@@ -93,10 +93,10 @@ module.exports = async ({browser, newPage, ok}) => {
     await page.waitForFunction(()=>document.querySelector('.conflict-controls [role=status]')?.textContent.includes('Conflict changed'));
     const stale = await page.evaluate(async () => {
       const s=__editor.LemmaSync.accountHandle().storage;
-      return {front:(await s.note('stale')).data.front,archive:(await s.list()).some(op=>op.resolves)};
+      return {front:(await s.note('stale')).data.front,archive:(await s.list()).some(op=>op.entityId === 'stale' && op.resolves)};
     });
-    ok(stale.front==='newer local' && stale.archive,'stale choice does not overwrite a newer draft');
-    // The first successful resolution remains queued, but no second resolution was staged.
+    ok(stale.front==='newer local' && !stale.archive,'stale choice does not overwrite a newer draft');
+    // The first successful resolution remains queued; no stale choice was committed.
     ok((await page.locator('.conflict-controls button:disabled').count())===0,
       'stale choice leaves the panel editable for recovery');
 
