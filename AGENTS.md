@@ -1,14 +1,16 @@
 # Lemma agent instructions
 
-Read current remote [plan.md](plan.md) first. It is the **only** engineering roadmap, task queue and current handoff. Up to three agents may run at once, **one per lane** (A sync/auth/backend, B UI, C Android). The owner says "follow the plan.md, lane X"; if no lane is named, ask which lane.
+Read current remote [plan.md](plan.md) first. It is the **only** engineering roadmap and task queue. Protocol v5 grants standing authority to minimize human intervention within approved scope; tool permissions and explicit user limits still apply.
 
-- A request to follow/continue the plan means execute one bounded slice of your lane's NEXT task. A request only to plan or review means documentation only. The user's current scope overrides the queue.
-- Start from current `main`, verify relevant source/CI, and adopt unfinished work. Read deeper docs only for the selected task. Never require previous chat history.
-- Preserve existing code and data. Reuse `src/fsrs.js`; do not reconstruct the scheduler, renderer, store or imported project.
-- No new image-upload, camera, OCR or image-tutoring features. Private study-knowledge documents are the limited exception described in the plan; preserve existing media compatibility.
-- Edit only your lane's files (`lanes.json`); `node test/lane_guard.js <X>` must pass. Work on a `lane-x/` branch and merge through a PR (plan §3). Never push to `main` directly, force-push, delete files, or touch another lane's branch, PR or status file. Cross-lane changes go as requests in your own `docs/lanes/<X>.md`.
-- Verify the task's gate and update your lane file `docs/lanes/<X>.md` (handoff and next action) and your task rows in the same PR. Distinguish local/mock/CI/live results and pending checks. Keep the plan compact; use Git history for chronology.
-- Documentation-only changes must pass `npm run test:plan`; preserve its required section names/fields. Code changes use the checks and gates in the plan.
-- The only backend is Lemma Supabase `yemqnhnztlbyxmjxidis`. Never modify Carrel. No implicit account enrollment, secret keys in clients or loss of dirty data.
+- Implement/follow/continue means select, implement, verify, merge and advance through ready slices without repeated “continue” prompts. Planning/review-only requests remain documentation only.
+- Respect an explicit lane. Otherwise choose automatically by plan §0; never ask merely because no lane was named. Up to three implementation agents, one per lane; one agent may work sequentially across roles.
+- Inspect current `main`, open PRs/CI and all lane handoffs. Claim/resume via the draft-PR heartbeat protocol in §3; preserve active work and recover stale claims only with the specified evidence.
+- One bounded slice per PR; after green merge/main checks, advance to the next eligible slice. If blocked, record the exact gate and work on independent tasks. At runtime limits push a recoverable checkpoint.
+- Preserve the imported code/data and original `src/fsrs.js`; no scheduler/store rewrite or new image-upload/camera/OCR/image-tutoring project. Private study knowledge has only the narrow exception in the plan.
+- Use `lanes.json`, lane branches and `node test/lane_guard.js <X>`. Cross-lane requests are read directly from handoffs, never relayed through the owner. Automatic `integration/` PRs may reconcile ownership/queue/CI under §3; no fresh owner request is required. Never override another active claim.
+- No direct main pushes, force-pushes, protection bypasses, weakened tests or deletion of dirty data/history. Preserve tracked files; necessary reversible source changes use the plan's integration review and existing guard.
+- Documentation-only changes: `npm run test:plan`, applicable lane guard, links and diff review. Code: task tests and gates. Merge only the current reviewed/tested head; report local/mock/CI/live evidence honestly.
+- Only backend: Lemma Supabase `yemqnhnztlbyxmjxidis`; never modify Carrel. New migrations follow the plan's local verification, merge and production rules. No implicit enrollment or secrets in clients/logs.
+- Decide routine details from existing patterns and record rationale. Ask only for the narrow owner actions in §3 after preparing a concrete result; bundle requests, preserve approval history, and continue unrelated work. Student approvals inside the product remain explicit.
 
-Retired roadmaps and old prompts do not create extra tasks.
+Update your lane's next action and task evidence in the same PR. Retired plans/prompts are historical, not competing queues. No prior chat is needed.

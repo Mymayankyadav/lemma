@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of file ownership for parallel lanes. Every path matches at most one lane. Edit only in an owner-requested integration session (see plan.md section 3).",
+  "_comment": "Single source of file ownership for parallel lanes. Every path matches at most one lane. Edit only through an integration PR under standing authorization (see plan.md section 3).",
   "lanes": {
     "A": {
       "name": "sync, auth and backend",
@@ -10,7 +10,7 @@
         "src/app/conflict_ui.js", "src/app/io.js", "src/app/model.js", "src/app/outbox_core.js",
         "src/app/review_ledger.js", "src/app/review_replay.js", "src/app/session.js",
         "src/app/store.js", "src/app/sync_browser.js", "src/app/sync_merge.js",
-        "src/app/workspace_lifecycle.js", "src/app/view_settings.js", "src/config.js",
+        "src/app/workspace_lifecycle.js", "src/config.js",
         "supabase/**",
         "docs/PHASE2_SYNC_CONTRACT.md", "docs/DATA_MODEL.md", "docs/SYNC_AUDIT_*.md", "docs/lanes/A.md",
         "test/account_*.js", "test/auth_*.js", "test/sync_*.js", "test/browser_sync.js",
@@ -26,7 +26,7 @@
       "owns": [
         "src/app.css", "src/index.html", "src/render.js", "src/icons/**", "src/manifest.webmanifest",
         "src/app/main.js", "src/app/view_home.js", "src/app/view_browse.js", "src/app/view_editor.js",
-        "src/app/view_review.js", "src/app/view_stats.js", "src/app/sheets.js", "src/app/charts.js",
+        "src/app/view_review.js", "src/app/view_stats.js", "src/app/view_settings.js", "src/app/sheets.js", "src/app/charts.js",
         "docs/lanes/B.md", "docs/UI_*.md",
         "test/e2e.js", "test/render_test.js", "test/seed.js", "test/mock_claude.js", "test/ui_*.js"
       ]
