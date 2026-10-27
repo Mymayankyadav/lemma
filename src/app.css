@@ -131,7 +131,7 @@ kbd {
   .topbar-inner { height: 50px; }
   .brand-mark { font-size: 23px; }
   .tabbar {
-    display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center;
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
     padding: 6px max(10px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
     background: color-mix(in srgb, var(--sheet) 90%, transparent);
