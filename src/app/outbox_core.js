@@ -59,7 +59,7 @@ const LemmaOutboxCore = (() => {
           const op = await this.storage.get(queued.id);
           if (!op) continue;
           validateOp(op);
-          const key = op.kind === 'plan' ? 'plan:' + op.entityId : 'note:' + op.entityId;
+          const key = (op.kind === 'plan' ? 'plan:' : op.kind === 'profile' ? 'profile:' : 'note:') + op.entityId;
           if (op.state === 'conflict') { blocked.add(key); continue; }
           if (op.state !== 'pending' || blocked.has(key)) continue;
           if (!this.online || this.stopped) break;
@@ -80,7 +80,8 @@ const LemmaOutboxCore = (() => {
             this.notify({ type: 'ack', id: op.id, result });
           } catch (err) {
             if (isStale(err)) {
-              await this.storage.put({ ...op, state: 'conflict', lastError: String(err.message || err), attempts: op.attempts + 1 });
+              if (typeof this.storage.markConflict === 'function') await this.storage.markConflict(op.id, err);
+              else await this.storage.put({ ...op, state: 'conflict', lastError: String(err.message || err), attempts: op.attempts + 1 });
               blocked.add(key);
               this.notify({ type: 'conflict', id: op.id, entityId: op.entityId });
               continue; // Other unrelated notes may still sync.

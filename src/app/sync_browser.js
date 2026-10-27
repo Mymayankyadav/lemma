@@ -63,6 +63,45 @@ const LemmaCloud = (() => {
     if (!globalThis.crypto || !globalThis.crypto.randomUUID) throw new Error('Secure random UUID unavailable');
     return globalThis.crypto.randomUUID();
   };
+  const version = (revision, data, deleted = false) =>
+    ({ revision, known: true, data: structuredClone(data ?? null), deleted: Boolean(deleted) });
+  function baseVersion(row, revision) {
+    if (row?.base?.revision === revision) return structuredClone(row.base);
+    if (row && !row.dirty && row.revision === revision && !(row.deleted && row.data == null))
+      return version(revision, row.data, row.deleted);
+    if (!row && revision === 0) return version(0, null);
+    // Old dirty caches never retained the base content. Do not invent it from
+    // the local edit or a newer pull; expose that limit to the future resolver.
+    return { revision, known: false };
+  }
+  function acknowledgedVersion(op, revision) {
+    // commit_note retains the previous server content when deleting. The
+    // outbound delete payload is null, not the tombstone's retained content.
+    if (op.deleted && !op.base?.known) return { revision, known: false, deleted: true };
+    return version(revision, op.deleted ? op.base.data : op.data, op.deleted);
+  }
+  function conflictRecord(op, row) {
+    return { version: 1, base: op.base || baseVersion(row, op.expectedRevision),
+      local: { expectedRevision: op.expectedRevision, data: op.data, deleted: Boolean(op.deleted) },
+      remote: row?.remote || null };
+  }
+  function retainRemote(t, row, incoming) {
+    const previous = row?.remote || (row && baseVersion(row, row.revision));
+    if (previous && incoming.revision < previous.revision) return false;
+    if (previous?.known && incoming.revision === previous.revision &&
+        canonical(previous) !== canonical(incoming)) { t.abort(); return false; }
+    return true;
+  }
+  function refreshConflicts(t, kind, entityId, remote) {
+    const store = t.objectStore('outbox');
+    const queue = store.getAll();
+    queue.onsuccess = () => {
+      for (const op of queue.result) {
+        if (op.kind === kind && op.entityId === entityId && op.state === 'conflict')
+          store.put({ ...op, conflict: { ...conflictRecord(op, null), ...op.conflict, remote } });
+      }
+    };
+  }
   class AccountStorage {
     constructor(db, userId) { this.db = db; this.userId = userId; }
     async note(id) { return request(this.db.transaction('notes').objectStore('notes').get(id)); }
@@ -93,6 +132,23 @@ const LemmaCloud = (() => {
         r.onsuccess = () => { if (r.result) store.put({ ...r.result, attempted: true }); };
       });
     }
+    async markConflict(id, error) {
+      return tx(this.db, ['outbox','notes','meta'], 'readwrite', t => {
+        const store = t.objectStore('outbox');
+        const current = store.get(id);
+        current.onsuccess = () => {
+          const op = current.result;
+          if (!op) return;
+          const save = row => store.put({ ...op, state: 'conflict',
+            attempts: op.attempts + 1, lastError: String(error.message || error),
+            ...(['note','profile'].includes(op.kind) ? { conflict: conflictRecord(op, row) } : {}) });
+          if (!['note','profile'].includes(op.kind)) { save(null); return; }
+          const row = op.kind === 'note' ? t.objectStore('notes').get(op.entityId) :
+            t.objectStore('meta').get('accountProfile');
+          row.onsuccess = () => save(row.result);
+        };
+      });
+    }
     async ack(op, result) {
       if (op.kind === 'note' && (!Number.isSafeInteger(result?.revision) || result.revision < 1)) {
         throw new Error('Invalid note acknowledgement');
@@ -109,11 +165,13 @@ const LemmaCloud = (() => {
           queue.onsuccess = () => {
             const next = queue.result.filter(x => x.kind === 'profile' && x.state === 'pending')
               .sort(core.compare)[0];
-            if (next) outbox.put({ ...next, expectedRevision:result.revision });
+            const base = version(result.revision, op.data);
+            if (next) outbox.put({ ...next, expectedRevision:result.revision, base });
             const meta = t.objectStore('meta');
             const current = meta.get('accountProfile');
             current.onsuccess = () => {
-              if (current.result) meta.put({ ...current.result,
+              if (current.result) meta.put({ ...current.result, base,
+                remote: current.result.remote?.revision > result.revision ? current.result.remote : null,
                 revision:Math.max(current.result.revision,result.revision),
                 dirty:queue.result.some(x => x.kind === 'profile') ||
                   canonical(current.result.data) !== canonical(op.data)
@@ -128,7 +186,8 @@ const LemmaCloud = (() => {
           const next = q.result.filter(x => x.entityId === op.entityId && x.kind === 'note' && x.state === 'pending')
             .sort(core.compare)[0];
           if (next) {
-            outbox.put({ ...next, expectedRevision: result.revision });
+            outbox.put({ ...next, expectedRevision: result.revision,
+              base: acknowledgedVersion(op, result.revision) });
           }
           const notes = t.objectStore('notes');
           const nr = notes.get(op.entityId);
@@ -140,7 +199,9 @@ const LemmaCloud = (() => {
             const clean = !q.result.some(x => x.entityId === op.entityId && x.kind === 'note') &&
               JSON.stringify(nr.result.data) === JSON.stringify(op.data) &&
               Boolean(nr.result.deleted) === Boolean(op.deleted);
-            notes.put({ ...nr.result, revision: Math.max(nr.result.revision, result.revision), dirty: !clean });
+            notes.put({ ...nr.result, revision: Math.max(nr.result.revision, result.revision), dirty: !clean,
+              base: acknowledgedVersion(op, result.revision),
+              remote: nr.result.remote?.revision > result.revision ? nr.result.remote : null });
           };
         };
       });
@@ -173,7 +234,9 @@ const LemmaCloud = (() => {
             if (createOnly && existing.result) { t.abort(); return; }
             op.expectedRevision = expectedRevision ?? existing.result?.revision ?? 0;
             if (!Number.isSafeInteger(op.expectedRevision) || op.expectedRevision < 0) { t.abort(); return; }
-            notes.put({ id: note.id, data: snapshot, deleted, revision: op.expectedRevision, dirty: true });
+            op.base = baseVersion(existing.result, op.expectedRevision);
+            notes.put({ ...existing.result, id: note.id, data: snapshot, deleted,
+              revision: op.expectedRevision, base: op.base, dirty: true });
             t.objectStore('outbox').add(op);
             if (reviewOp) {
               t.objectStore('reviews').add(review);
@@ -245,8 +308,9 @@ const LemmaCloud = (() => {
                   t.abort(); return;
                 }
                 noteOp.sequence = previous + 1;
-                notes.put({ id: snapshot.id, data: snapshot, deleted: false,
-                  revision: noteOp.expectedRevision, dirty: true });
+                noteOp.base = baseVersion(current.result, noteOp.expectedRevision);
+                notes.put({ ...current.result, id: snapshot.id, data: snapshot, deleted: false,
+                  revision: noteOp.expectedRevision, base: noteOp.base, dirty: true });
                 t.objectStore('outbox').add(noteOp);
                 finish();
               };
@@ -314,8 +378,9 @@ const LemmaCloud = (() => {
             if (!Number.isSafeInteger(n)) { t.abort(); return; }
             op.sequence = n;
             op.expectedRevision = prior.revision;
+            op.base = baseVersion(old.result, op.expectedRevision);
             meta.put(n,'sequence');
-            meta.put({ data:snapshot, revision:prior.revision, dirty:true },'accountProfile');
+            meta.put({ ...prior, data:snapshot, revision:prior.revision, base:op.base, dirty:true },'accountProfile');
             t.objectStore('outbox').add(op);
           };
         };
@@ -326,12 +391,18 @@ const LemmaCloud = (() => {
       if (row && (row.user_id !== this.userId || !Number.isSafeInteger(row.revision) ||
           row.revision < 1 || !row.data || typeof row.data !== 'object' ||
           Array.isArray(row.data))) throw new Error('Invalid account profile');
-      return tx(this.db, ['meta'], 'readwrite', t => {
+      return tx(this.db, ['meta','outbox'], 'readwrite', t => {
         const meta = t.objectStore('meta');
         const existing = meta.get('accountProfile');
         existing.onsuccess = () => {
           const old = existing.result;
-          if (old?.dirty) return;
+          const remote = row ? version(row.revision, row.data) : version(0, null);
+          if (old?.dirty) {
+            if (!retainRemote(t, old, remote)) return;
+            meta.put({ ...old, remote }, 'accountProfile');
+            refreshConflicts(t, 'profile', 'profile', remote);
+            return;
+          }
           if (!row) { meta.delete('accountProfile'); return; }
           if (old && old.revision > row.revision) return;
           if (old && old.revision === row.revision && canonical(old.data) !== canonical(row.data)) {
@@ -345,13 +416,23 @@ const LemmaCloud = (() => {
     async notes() { return request(this.db.transaction('notes').objectStore('notes').getAll()); }
     async reviews() { return request(this.db.transaction('reviews').objectStore('reviews').getAll()); }
     async ingestRemoteNote(row) {
-      return tx(this.db, ['notes'], 'readwrite', t => {
+      if (!row?.id || !Number.isSafeInteger(row.revision) || row.revision < 1 ||
+          (!row.deleted_at && (!row.data || typeof row.data !== 'object' || Array.isArray(row.data))))
+        throw new Error('Invalid remote note');
+      return tx(this.db, ['notes','outbox'], 'readwrite', t => {
         const s = t.objectStore('notes');
         const r = s.get(row.id);
         r.onsuccess = () => {
           const local = r.result;
-          if (!local || (!local.dirty && row.revision > local.revision)) s.put({ id: row.id, data: row.data, deleted: Boolean(row.deleted_at), revision: row.revision, dirty: false });
-          // Dirty data is NEVER overwritten by a remote snapshot.
+          const remote = version(row.revision, row.data, Boolean(row.deleted_at));
+          if (!retainRemote(t, local, remote)) return;
+          if (local?.dirty) {
+            s.put({ ...local, remote });
+            refreshConflicts(t, 'note', row.id, remote);
+          } else s.put({ id: row.id, data: row.data, deleted: remote.deleted,
+            revision: row.revision, dirty: false });
+          // Pulling never rejects a pending request: it may have committed with
+          // a lost acknowledgement. Retry its original ID before declaring conflict.
         };
       });
     }
