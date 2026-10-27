@@ -1,12 +1,12 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L2 — obtain action-time owner confirmation before deleting only the synthetic note `SYNC-04 live verification 2026-10-27 A` in deck `Verification`; then verify automatic tombstone delivery and no resurrection after reload. L1 create/update/reload passed. Independent-device/offline/fault/second-identity gates remain; preserve all learning data.
+Next action: next assigned lane A agent adopts draft PR #23 (`lane-a/sync-04-l1-live-write`), merges current `main` without rebasing, and checks full CI before continuing SYNC-04 L2. Obtain action-time owner confirmation before deleting only the synthetic note `SYNC-04 live verification 2026-10-27 A` in deck `Verification`; then verify automatic tombstone delivery and no resurrection after reload. L1 create/update/reload passed. Independent-device/offline/fault/second-identity gates remain; preserve all learning data.
 
 | Field | Value |
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
 | Current task | SYNC-04 L1 live create/update/reload complete; L2 deletion awaiting confirmation |
-| Delivery | `lane-a/sync-04-l1-live-write`; L1 evidence PR being prepared. AUTH-01 [PR #17](https://github.com/Mymayankyadav/lemma/pull/17) merged as `e13582d`. |
+| Delivery | [Draft PR #23](https://github.com/Mymayankyadav/lemma/pull/23), `lane-a/sync-04-l1-live-write`. Owner terminated this agent's work for reassignment; next agent owns continuation. AUTH-01 PR #17 merged as `e13582d`. |
 | Baseline | Current `main@2c1f554`: [regression 40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724), Android 40478252732 and Pages 40478252681 SUCCESS. L1 live checks ran against the earlier deployed AUTH-01 build; they do not certify lane B's later navigation change. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
 
@@ -31,7 +31,7 @@ Next action: SYNC-04 L2 — obtain action-time owner confirmation before deletin
 - Opened a second tab in the **same browser profile**, then changed the front through the original editor to **SYNC-04 updated automatically. Temporary verification card.** and clicked **Save**. The peer view displayed the update automatically without manual refresh/sync. Database verification found **1 live note, revision 2, 2 mutation receipts**, matching the updated front.
 - This proves automatic create/update delivery, reload recovery and same-profile cross-tab invalidation for this fixture. Shared cookies/storage mean it does **not** prove independent-device convergence, remote-only Model invalidation or another identity's isolation.
 - Deletion was **NOT RUN**: inspected **Delete this note? / Its cards and review history will be removed.**, then cancelled. No normal UI recovery flow was shown, so action-time owner confirmation is required before the final Delete. The one labelled synthetic note remains live at revision 2; all existing learning data and receipts are preserved.
-- This PR is evidence/documentation only. Local plan/lane checks must pass; full regression/Android results belong to the PR checks and must be green before merge.
+- This PR is evidence/documentation only. Local `npm run test:plan`, `node test/lane_guard.js A` and `git diff --check` SUCCESS. Full PR CI PENDING at handoff. Main advanced after this branch was prepared; the next agent must merge current main and resolve any conflicts while preserving all lane changes before considering merge. No deletion or further live mutation is authorized by this handoff alone.
 
 ## Prior evidence and limits
 
