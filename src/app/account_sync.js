@@ -47,9 +47,14 @@ const LemmaSync = (() => {
         updates.push({id:row.id,note:structuredClone(row.data)});
     }
     if (updates.length) Model.applyRemote(updates);
-    if (profile?.data && !profile.dirty &&
-        JSON.stringify(Model.profile().settings) !== JSON.stringify(profile.data.settings))
-      Model.loadProfile(structuredClone(profile.data));
+    if (profile?.data && !profile.dirty) {
+      const shown = Model.profile(), incoming = profile.data;
+      if (JSON.stringify({settings:shown.settings,decks:shown.decks,
+        examplesHidden:shown.examplesHidden,lastDeck:shown.lastDeck}) !==
+          JSON.stringify({settings:incoming.settings,decks:incoming.decks,
+            examplesHidden:incoming.examplesHidden,lastDeck:incoming.lastDeck}))
+        Model.loadProfile(structuredClone(incoming));
+    }
   }
   async function refresh() {
     if (!account) return;
