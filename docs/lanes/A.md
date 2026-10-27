@@ -1,6 +1,6 @@
 # Lane A — sync, auth and backend
 
-Next action: KNOWLEDGE-01 (lead A) becomes ready automatically when UI-01 is DONE. Until then inspect existing context/source/revision contracts and handle incoming A requests; do not repeat SYNC-04. Settings presentation now belongs to B. Use plan v5 automatic integration for new file ownership; no owner coordination request is needed.
+Next action: independent KNOWLEDGE-01 K1 schema/permissions preflight claimed on `lane-a/knowledge-01-schema-preflight`, documentation only until UI-01 becomes DONE. Audit existing context/source/section metadata and revision/security contracts, identify exact follow-on implementation and local RLS tests; do not change production data or promote KNOWLEDGE-01 before the UI gate.
 
 | Field | Value |
 | --- | --- |
