@@ -238,7 +238,7 @@ const SettingsView = (() => {
         accountState, h('div', { class: 'btn-row' }, email, send, logout),
         h('div', { class: 'btn-row' }, upload, download),
         cacheState, h('div', { class: 'btn-row' }, refreshCache, compare),
-        comparison, message));
+        comparison, LemmaConflicts.mount(), message));
     }
 
     // data
