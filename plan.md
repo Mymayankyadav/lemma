@@ -26,19 +26,19 @@ Read current `main` → this plan → the files named in your slice → do one s
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; at baseline `main@68678073454fdfa0bb459747b34ada73386d73ab`, SYNC-03 S1 was started: diagnostics bundled, code-unit ordering and new Node tests wired. **State: READY_FOR_NEXT_AGENT, verification pending.** SYNC-03 remains NEXT until S1 gates are observed; do not start S2 before closing S1.
+**Last verified handoff:** 2026-10-27; SYNC-03 S1–S3 and two-browser replay regression plus early SYNC-04 account activation/remote projection are committed on `main` (last inspected `7cc30292b81e`). **State: READY_FOR_NEXT_AGENT, verification pending.** SYNC-03 remains the single NEXT task until its full test/Chromium gate is observed. SYNC-04 remains BLOCKED as a release gate, although implementation has begun.
 
 | Field | Evidence / limit |
 | --- | --- |
 | Known-good main baseline | `main@4bfe3ab`; [regression 40444108939](https://github.com/Mymayankyadav/lemma/actions/runs/40444108939) SUCCESS. Previous conflict-controls baseline `92a67c8` ([40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123)). |
-| Latest inspected regression | **SUCCESS** 40444108939 at `4bfe3ab` (CI `npm ci`, `test:syntax`, Chromium, full `npm test`). Run 40444075423 at `4ffe1db` was CANCELLED (superseded). Local full suite NOT RUN by the plan editor. |
-| Documentation validation | `test/plan_protocol.js` **PASS in isolated JavaScript harness** using current repo text. The actual `npm run test:plan` command is **NOT RUN** (no local checkout); await CI. |
-| Web deployment | [Pages 40444108945](https://github.com/Mymayankyadav/lemma/actions/runs/40444108945) SUCCESS at `4bfe3ab`. `review_replay.js` is not in the bundle, so deployed behaviour is unchanged from SYNC-02. |
-| Cloud confidence | SYNC-02 conflict comparison/choice is verified with fault-injected IndexedDB and real Chromium on **mock transport only**. Divergent schedules are still blocked by `review_replay_required` in `src/app/sync_browser.js` (resolution validator, ~line 163). |
-| Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations; verify applied state before any backend work. |
-| Current blocker / unfinished work | S1 code is published: `review_replay.js` is bundled and `test:replay` is in `npm test`. New tests and `test/plan_protocol.js` **PASS in isolated JavaScript source harness**, including a repaired scheduled-review fixture; this is **not** Node/Chromium CI. `npm ci`, replay/syntax/build/plan commands and full CI are **NOT RUN/NOT CONFIRMED**. Await S1 gates before ticking it. S2–S4 and live Supabase validation remain absent. |
+| Latest inspected regression | Last documented SUCCESS is 40444108939 on old `4bfe3ab`. No newer full GitHub Actions run was available through the connector; recent work is **NOT CI-verified**. |
+| Documentation validation | `test/plan_protocol.js` passed in an isolated JavaScript source harness earlier. Full `npm run test:plan` is **NOT RUN** on latest main; CI gate pending. |
+| Web deployment | Prior Pages 40444108945 SUCCESS on `4bfe3ab`. Current commits' Pages deployment is **NOT CONFIRMED**. |
+| Cloud confidence | Source harness: replay/ledger/conflict UI and account-sync/workspace-lifecycle checks PASS. Two-browser replay and conflict-resolution tests were added but **Node/Chromium not run**. Pure tests are not evidence of live convergence. |
+| Backend security check | Live read-only Lemma Supabase SQL: all four sync tables have RLS enabled and are in `supabase_realtime`; owner-scoped policies inspected; security advisors returned no lints. Nine migrations listed as applied. No schema changes; authenticated two-user RLS probe **NOT RUN**. |
+| Current blocker / unfinished work | Verify current main with `npm ci`, `test:syntax`, `test:replay`, `npm test`, `build`, `test:plan`; fix discovered failures. SYNC-03 S4 still lacks actual app-panel two-page due-date smoke. SYNC-04 opt-in activation, remembered choice, status and clean remote Model projection are implemented but lack full live integration/RLS/identity/recovery verification. |
 
-**Next action, in one sentence:** verify S1 on the current GitHub Actions regression (`test:replay`, `test:syntax`, `build`, `test:plan`); when green tick S1 and proceed to S2 deterministic schedule projection, otherwise repair the specific failing gate.
+**Next action, in one sentence:** run complete CI/Chromium verification of SYNC-03 S1–S4 (including the existing `test/browser_sync.js` due-date regression and missing conflict-panel UI smoke), repair failures, then finish SYNC-04's authenticated two-account offline/reconnect and RLS gates before setting either milestone DONE.
 
 The record above describes inspected evidence, not today's mutable HEAD. Overwrite it after each slice; do not append a second handoff.
 
@@ -54,7 +54,7 @@ States: **DONE** (gate passed, with evidence), **NEXT** (exactly one task), **IN
 | **SYNC-01** | **DONE** | SYNC-00 | Editor durability/crash recovery, account invalidation and durable import recovery; browser gates passed in regression 40419737189. |
 | **SYNC-02** | **DONE** | SYNC-01 | Conflict evidence, transactional note/profile/tombstone resolution, three-version comparison and explicit choice controls. Gate passed in main regression 40441775123 (mocked transport, not live sync). |
 | **SYNC-03** | **NEXT** | SYNC-02 | Converge review/Undo schedules deterministically from the immutable ledger using existing `FSRS.preview` and `ReviewLedger`. Never take the latest card snapshot as truth; never fabricate legacy history. Gate: concurrent offline reviews/Undo, equal timestamps, timezone/rollover, fuzz and parameter changes produce the same card state on both devices; unsupported histories stay preserved and explicitly blocked. Follow slices S1–S4 below. |
-| **SYNC-04** | **BLOCKED** | SYNC-03 | Enable account workspace only after explicit enrollment/backup. Route every mutation through durable staging; automatically push after local commit, retry on reconnect/foreground and refresh on remote invalidation. Distinguish device-saved, queued, cloud-confirmed, conflict and failure. Gate: authenticated two-browser/two-identity tests, offline restart, auth expiry, network loss after commit, deletes and RLS isolation. Routine use needs no manual Sync button. |
+| **SYNC-04** | **BLOCKED** | SYNC-03 | Initial implementation committed: explicit backup acknowledgement/activation, remembered opt-in per identity, durable outbox writes, remote invalidation into clean idle Model rows, offline cache entry, status distinctions. Still require verified authenticated two-browser/two-identity, offline restart, auth expiry, network loss after commit, deletes and RLS isolation before marking DONE. No routine manual Sync button after activation. |
 | **UI-01** | **LATER** | SYNC-01 | Apply the UI contract below to existing screens incrementally. Keep working routes and controls while Study is built later. Gate: mobile/desktop light/dark screenshots, keyboard navigation, 200% text, long mathematical expressions, empty/loading/error/offline states and existing review flows. |
 | **KNOWLEDGE-01** | **LATER** | SYNC-04, UI-01 | Reuse context/source/section tables for private project knowledge: goals, background, notation, references, verified skills and editable summary. Scope context, plans and evidence to stable project/context IDs. Version changes; distinguish learner-authored facts from tutor proposals. Optional documents need private access, size/type limits, extraction status, stable source/version/page IDs and removal controls; no OCR. Gate: two tutors retrieve the same accepted revision and cited excerpt without loading the entire collection; another owner cannot read it. |
 | **PLAN-01** | **LATER** | KNOWLEDGE-01 | Build context→draft→review→approved plan and a checkpoint screen for objective, attempt, hints, feedback, evidence and next action. Strong-model planning is user-selected and occasional. Reuse existing schema/RPC, first verifying event append-only enforcement, context revision safety, publication metadata/idempotency and approval permissions. Amendments need a diff and acceptance; preserve unaffected checkpoint IDs/evidence. Gate: 12-checkpoint plan, two demonstrated checkpoints, mid-proof resume, accepted prerequisite amendment and rejected stale revision; failed/retried writes never duplicate evidence. |
@@ -82,26 +82,26 @@ Tick a box (`[x]`) in the same commit that completes the slice. When S4 is ticke
 - D7 Resets (`reason:'reset'`) and any missing provenance field stay **blocked** (`reset_policy_required` / `replay_unsupported`). This is an accepted SYNC-03 limitation.
 - D8 Replay is used **only** to resolve divergent schedules (where `review_replay_required` is thrown today). Never rewrite a non-conflicting card's schedule on load.
 
-**[ ] S1 — wire and test the existing diagnostics (implementation pushed; test gate pending).**
+**[ ] S1 — diagnostics wired, tests added; full command/CI gate pending.**
 1. In `build.js`, add `'review_replay.js'` to `appFiles` immediately after `'review_ledger.js'`.
 2. In `src/app/review_ledger.js` `activeEvents`, replace `localeCompare` with the D1 comparison.
 3. Create `test/review_replay.js` (Node, `node:assert/strict`, same style as `test/review_ledger.js`) covering `LemmaReviewReplay.inspect`: missing note → `missing_note`; legacy log entry without event ID → `legacy_history`; dangling retraction → `incomplete_ledger`; first event with non-new `card_before` → `legacy_baseline_required`; reset retraction → `reset_policy_required`; two valid events → `status 'memory-only'` with identical result when the input arrays are reversed; an Undo removes one event from `activeReviews`.
 4. In `package.json` add `"test:replay": "node test/review_ledger.js && node test/review_replay.js"` and insert `npm run test:replay` into `"test"` right after `npm run test:outbox`.
 5. Verify: `npm run test:replay`, `npm run test:syntax`, `npm run build`, `npm run test:plan`; full `npm test` if Chromium works, else rely on CI.
 
-**[ ] S2 — deterministic schedule projection (pure function, no UI/storage).**
+**[ ] S2 — deterministic schedule projection implemented and source-harness tested; Node/CI gate pending.**
 1. In `src/app/review_replay.js` add `project(row, allEvents, allRetractions, outbox = [])`. First call `inspect`; if it returns `blocked`, return it unchanged.
 2. For each ordinal, fold active scheduled events per D1–D6 starting from the first event's `card_before`. Add helper `fixedClock(provenance)` (D4) and `cfgFrom(provenance)` that mirrors `schedCfg()` with `FSRS.parseSteps(...) || []` and `loadBalance:false`. Any missing/invalid provenance field → `blocked('replay_unsupported')`.
 3. Return `{status:'projected', noteId, cards:{[ord]: scheduleFields}, eventIds:[...active scheduled ids in order]}`. Export `project` alongside `inspect`.
 4. Tests in `test/review_replay.js`: shuffled input order gives deep-equal output; two events with equal `occurred_at_ms` order by `event_id`; Undo of the middle event equals a history that never had it; weights changed between events still projects; a review just before and just after the rollover hour lands on different `day_index` values; a mismatching `day_index` blocks with `clock_mismatch`.
 5. Add `TZ=America/Los_Angeles node test/review_replay.js` to the `test:replay` script so the same assertions run in a second timezone (results must not depend on the machine's timezone).
 
-**[ ] S3 — use projection in conflict resolution.**
+**[ ] S3 — atomic ledger-backed resolution, panel diagnostics and account-storage regression added; Node/CI gate pending.**
 1. In `src/app/sync_browser.js`, at the check that throws `review_replay_required`: load the note's review events and retractions from account storage (find the stores used by `ingestReview`/retraction ingestion in the same file), call `LemmaReviewReplay.project`.
 2. If projected: resolved `data` = the user's chosen content snapshot with `cards[ord]` schedule fields replaced by the projection, and `log` = union of all versions' log entries keyed by `event_id` (entry index 6), excluding retracted IDs, sorted by D1. Keep cram entries. If blocked: keep throwing `review_replay_required` and surface the block `code` in the conflict panel text.
 3. Tests in `test/conflict_resolution.js`: two devices review the same card offline (different grades) → both resolve to deep-equal `cards` and `log`; one device reviews and the other reviews then Undoes → identical result; legacy history stays blocked with every snapshot and receipt preserved.
 
-**[ ] S4 — browser gate and close-out.**
+**[ ] S4 — independent Chromium-cache replay/Undo/reload test added in `test/browser_sync.js`; test execution and `test/conflict_browser.js` app-panel smoke pending.**
 1. Extend the two-browser Chromium test used for SYNC-02 (`test/conflict_browser.js`) with: concurrent offline reviews on both pages, one Undo, resolve, reload both pages → same due date shown for the card.
 2. Run full `npm test` (locally or CI). Update §1, set SYNC-03 **DONE** (note "mock transport, not live"), SYNC-04 **NEXT**, and add a §5 row (merge the two oldest rows to stay at five).
 
