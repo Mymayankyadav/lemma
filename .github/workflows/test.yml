@@ -29,3 +29,55 @@ jobs:
           path: test-output/ui/*.png
           if-no-files-found: ignore
           retention-days: 14
+  # Agents cannot download Actions artifacts (blob storage is blocked in their sandbox), so the
+  # PNGs are also pushed to the never-merged `ci-screenshots` branch, readable through the
+  # GitHub contents API. This job runs no repository code; only it has write access.
+  publish-screenshots:
+    needs: regression
+    if: always() && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: lemma-ci-screenshots
+      cancel-in-progress: false
+    env:
+      FOLDER: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'main' }}
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      REPO: ${{ github.repository }}
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/download-artifact@v4
+        id: shots
+        continue-on-error: true
+        with:
+          name: lemma-ui-screenshots
+          path: shots
+      - name: Push screenshots to ci-screenshots branch
+        if: steps.shots.outcome == 'success'
+        run: |
+          set -eu
+          ls shots/*.png >/dev/null
+          git config --global user.name "lemma-ci"
+          git config --global user.email "lemma-ci@users.noreply.github.com"
+          url="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          for attempt in 1 2 3 4 5; do
+            rm -rf pub && mkdir pub && cd pub && git init -q && git remote add origin "$url"
+            if git fetch -q --depth 1 origin ci-screenshots; then git checkout -q -b ci-screenshots FETCH_HEAD
+            else git checkout -q --orphan ci-screenshots; fi
+            rm -rf "$FOLDER" && mkdir -p "$FOLDER" && cp ../shots/*.png "$FOLDER"/
+            {
+              echo "# $FOLDER screenshots"
+              echo
+              echo "Source commit: $SOURCE_SHA · run ${GITHUB_RUN_ID} · $(date -u +%Y-%m-%dT%H:%MZ)"
+              echo
+              for f in "$FOLDER"/*.png; do n=$(basename "$f"); echo "- [$n]($n)"; done
+            } > "$FOLDER/README.md"
+            printf '# CI UI screenshots\n\nWritten by the regression workflow. Never merge this branch. `main/` is the latest main; `pr-N/` is the latest run of PR N. Each folder README names its source commit.\n' > README.md
+            git add -A
+            if git diff --cached --quiet; then echo "no change"; exit 0; fi
+            git commit -q -m "screenshots: $FOLDER at ${SOURCE_SHA:0:7}"
+            if git push -q origin ci-screenshots; then echo "published $FOLDER"; exit 0; fi
+            cd .. && sleep $((attempt * 5))
+          done
+          echo "could not publish after 5 attempts"; exit 1
