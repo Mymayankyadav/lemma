@@ -1,6 +1,6 @@
 # Lane B — UI
 
-Next action: finish UI-01 acceptance from main@07ce087 (PR #36 is merged; open a fresh claim). Verify true browser 200% text zoom, keyboard and wider transport/error/offline-state evidence with available browser/CI tools. CSS zoom stress is not true text zoom. Keep unverified criteria open; after the full gate passes, automatically promote KNOWLEDGE-01 (A) and ANDROID-02 (C). Settings presentation is now B-owned; preserve account APIs and the original core-screen gate.
+Next action: UI-01 v5 acceptance slice claimed on `lane-b/ui-01-status-state-gates`: add deterministic visible state tests (account sync errors/offline/recovery, key navigation) using isolated local/mock browser fixtures; keep true browser-chrome 200% zoom and real-device evidence OPEN unless independently verified. Do not change sync/account logic. Baseline main@2efffb5, no other open PR at pickup.
 
 | Field | Value |
 | --- | --- |
