@@ -1,6 +1,6 @@
 'use strict';
-// UI-01 S1: capture existing screens for before/after review. No assertions on look;
-// it fails only if a screen cannot be reached or the page logs errors.
+// UI-01: screenshot and browser-state acceptance harness. It checks accessible
+// status/keyboard paths without modifying saved user data or production transport.
 // Output: test-output/ui/<screen>-<size>-<scheme>.png (git-ignored; never commit PNGs).
 process.env.TZ = process.env.TZ || 'Asia/Kolkata';
 const fs = require('fs');
@@ -19,7 +19,7 @@ const HTML = fs.readFileSync(distHtml, 'utf8');
 const MARKER = '/* ===== main.js ===== */';
 if (!HTML.includes(MARKER)) throw new Error('UI test app marker missing');
 const TEST_HTML = HTML.replace(MARKER,
-  'window.__uiAcceptance = { get App() { return App; } };\n' + MARKER);
+  'window.__uiAcceptance = { get App() { return App; }, get Store() { return Store; }, get Sync() { return LemmaSync; } };\n' + MARKER);
 const MOCK = fs.readFileSync(path.join(__dirname, 'mock_claude.js'), 'utf8');
 const LIBS = {
   'katex.min.js': path.join(ROOT, 'node_modules/katex/dist/katex.min.js'),
@@ -219,6 +219,56 @@ async function shot(page, name, size, scheme) {
           return !!el;
         });
         if (!loading) throw new Error('Home loading state is missing its accessible status');
+
+        // Read-only rendering audit: force representative account transport
+        // status *projections*, not server calls. Real transport/fault suites
+        // remain separately covered by SYNC-04's disposable local stack.
+        const statuses = await page.evaluate(() => {
+          const { App, Store, Sync } = window.__uiAcceptance;
+          const oldStatus = Store.status;
+          const oldSync = Object.getOwnPropertyDescriptor(Sync, 'status');
+          if (!oldSync?.configurable) throw new Error('Sync status cannot be stubbed for UI acceptance');
+          const cases = [
+            { phase: 'offline', pending: 0, failed: 0, expected: 'Offline · changes queued on device', cls: 'pending' },
+            { phase: 'error', pending: 0, failed: 0, expected: 'Sync failed · local changes retained', cls: 'warn' },
+            { phase: 'conflict', pending: 0, failed: 0, expected: 'Account conflict · review needed', cls: 'warn' },
+            { phase: 'ready', pending: 1, failed: 0, expected: 'Saved on device · queued for cloud', cls: 'pending' },
+            { phase: 'ready', pending: 0, failed: 0, expected: 'Saved to cloud', cls: '' },
+            { phase: 'ready', pending: 0, failed: 1, expected: 'Could not save to device · export a backup', cls: 'warn' },
+          ];
+          const results = [];
+          try {
+            for (const scenario of cases) {
+              Store.status = () => ({ mode: 'account', pending: 0, failed: scenario.failed, offline: false });
+              Object.defineProperty(Sync, 'status', { configurable: true, get: () => ({ phase: scenario.phase, pending: scenario.pending }) });
+              App.render();
+              const element = document.querySelector('#sync');
+              const label = element?.querySelector('.sr-only')?.textContent;
+              results.push({
+                scenario: scenario.phase, expected: scenario.expected, observed: label,
+                role: element?.getAttribute('role'), title: element?.title,
+                classOk: scenario.cls ? element?.classList.contains(scenario.cls) : !element?.classList.contains('warn') && !element?.classList.contains('pending'),
+              });
+            }
+          } finally {
+            Store.status = oldStatus;
+            Object.defineProperty(Sync, 'status', oldSync);
+            App.render();
+          }
+          return results;
+        });
+        for (const s of statuses)
+          if (s.role !== 'status' || s.observed !== s.expected || s.title !== s.expected || !s.classOk)
+            throw new Error('Account status accessibility/recovery regression: ' + JSON.stringify(s));
+
+        // Both shortcut-driven and focus/Enter routes must work without a mouse.
+        await goTo(page, 'home');
+        await page.keyboard.press('/');
+        await page.waitForSelector('#browse-q:focus');
+        await page.locator('.tabbar [data-go="settings"]:visible').focus();
+        await page.keyboard.press('Enter');
+        await page.waitForSelector('[data-go="settings"][aria-current="page"]');
+        await goTo(page, 'home');
       }
       if (size === 'mobile' && scheme === 'dark') {
         // Existing seeded cards remain browsable when the browser is offline.
