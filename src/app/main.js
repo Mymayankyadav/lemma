@@ -37,7 +37,7 @@ const App = (() => {
   }
 
   function buildShell() {
-    const nav = [['home', 'Today', 'decks'], ['browse', 'Cards', 'list'], ['stats', 'Stats', 'chart'], ['settings', 'Settings', 'sliders']];
+    const nav = [['home', 'Today', 'decks'], ['browse', 'Cards', 'list'], ['settings', 'Settings', 'sliders']];
     const top = h('header', { class: 'topbar' },
       h('div', { class: 'topbar-inner' },
         h('button', { class: 'brand', type: 'button', onclick: () => go('home'), 'aria-label': 'Lemma, home' }, h('span', { class: 'brand-mark', text: 'Lemma' })),

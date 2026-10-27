@@ -71,7 +71,8 @@ async function shot(page, name, size, scheme) {
       await goTo(page, 'browse');
       await page.waitForSelector('#browse-q');
       await shot(page, 'cards', size, scheme);
-      await goTo(page, 'stats');
+      await goTo(page, 'home');
+      await page.locator('.stats-link').click();
       await page.waitForTimeout(500);
       await shot(page, 'stats', size, scheme);
       await goTo(page, 'home');
