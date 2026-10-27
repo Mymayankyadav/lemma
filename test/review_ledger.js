@@ -4,6 +4,8 @@ const event = (id, ms=100) => ({ event_id:id, occurred_at_ms:ms, grade:3 });
 const undo = (id,target) => ({ retraction_id:id,target_event_id:target,reason:'undo' });
 assert.deepEqual(activeEvents([event('b'),event('a',10)],[]).map(e=>e.event_id),['a','b']);
 assert.deepEqual(activeEvents([event('a'),event('b')],[undo('u','a')]).map(e=>e.event_id),['b']);
+// Equal-time IDs follow code-unit order, not host-dependent locale collation.
+assert.deepEqual(activeEvents([event('a'),event('B')],[]).map(e=>e.event_id),['B','a']);
 assert.deepEqual(activeEvents([event('a'),event('a')],[]).length,1);
 assert.throws(()=>activeEvents([event('a'),event('a',90)],[]),/Conflicting/);
 assert.throws(()=>activeEvents([event('a')],[undo('u','missing')]),/not fetched/);
