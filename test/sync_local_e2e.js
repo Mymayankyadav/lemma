@@ -128,14 +128,18 @@ async function browse(page){
 function row(page,title){
   return page.locator('.note-row').filter({hasText:title});
 }
-async function create(page,title,front){
+async function create(page,title,front,{ waitCloud = true } = {}){
   await page.locator('.btn-new').click();
   await page.locator('#ed-title').fill(title);
   await page.locator('#ed-deck').fill('SYNC-04');
   await page.locator('#ed-front').fill(front);
   await page.locator('#ed-back').fill('Disposable local sync fixture');
   await page.locator('.sheet-foot .btn-primary').click();
-  await page.waitForFunction(()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),null,{timeout:T});
+  // The local IndexedDB transaction must commit before simulating a crash.
+  await page.locator('.sheet-editor').waitFor({state:'hidden',timeout:T});
+  if(waitCloud) await page.waitForFunction(
+    ()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),
+    null,{timeout:T});
 }
 async function edit(page,title,front,remove=false){
   await browse(page);
@@ -156,7 +160,7 @@ function dbNote(title){
   const parts=rows.split('\n');
   assert.equal(parts.length,1,'fixture title must be unique');
   const [id,revision,deleted]=parts[0].split('|');
-  return {id,revision:Number(revision),deleted:deleted==='t'};
+  return {id,revision:Number(revision),deleted:deleted==='true' || deleted==='t'};
 }
 async function debugOutbox(page,uid,entityId) {
   // Diagnostic only. Read operation metadata, never log auth tokens or note text.
@@ -265,7 +269,79 @@ async function run(){
     assert.deepEqual(dbNote(label),{id:created.id,revision:3,deleted:true},
       'delete cannot resurrect a note or erase its server tombstone');
     assert.equal(receiptCount(created.id),3,'exactly three successful note mutations');
-    console.log('ok: two independent persistent browser contexts — real email PKCE login, create/update/delete convergence and tombstone reload; third owner isolated');
+    console.log('ok: live local create/update/delete, peer convergence, tombstone after reload, isolated other owner');
+
+    // OFFLINE — stage a real editor write into local IndexedDB without the
+    // API, terminate Chromium entirely, then reopen exactly the same profile.
+    // The pending operation must survive and upload once after reconnection.
+    const offlineTitle='SYNC-04 L7 offline '+randomUUID();
+    await contexts[0].setOffline(true);
+    await create(pages[0],offlineTitle,'Offline proof survived Chromium exit',{waitCloud:false});
+    assert.equal(dbNote(offlineTitle),null,'offline note must not reach Postgres prematurely');
+    await contexts[0].close();
+    const resumed=await newProfile(path.join(prefix,'a'));
+    contexts[0]=resumed;
+    pages[0]=await resumed.newPage();
+    let refreshCalls=0;
+    pages[0].on('request', request=>{
+      const url=new URL(request.url());
+      if (url.origin===AUTH && url.pathname==='/auth/v1/token' &&
+          url.searchParams.get('grant_type')==='refresh_token') refreshCalls++;
+    });
+    await pages[0].goto(APP);
+    const reopenedUid=await eventual('restored login after browser relaunch',
+      ()=>browserUserId(pages[0]),T);
+    assert.equal(reopenedUid,owners[0],'browser relaunch must not switch identity');
+    const offlineRow=await eventual('offline write uploaded after relaunch',
+      ()=>dbNote(offlineTitle)?.revision===1 ? dbNote(offlineTitle) : null,90000);
+    await eventual('offline write receipt cleared',async()=>{
+      const local=await debugOutbox(pages[0],owners[0],offlineRow.id);
+      return local.ops.length===0 && local.note?.dirty===false;
+    },90000);
+    assert.equal(receiptCount(offlineRow.id),1,'offline relaunch delivered exactly once');
+    console.log('ok: offline editor write kept in IndexedDB across browser process exit and synced once');
+
+    // EXPIRY — Auth uses 60-second access tokens on the disposable stack.
+    // After a real refresh_token grant, a new authenticated editor commit
+    // must reach Postgres without manual sign-in or a second receipt.
+    await eventual('local JWT renewal on persistent browser',()=>refreshCalls>0,90000);
+    const refreshedTitle='SYNC-04 L7 refreshed '+randomUUID();
+    await create(pages[0],refreshedTitle,'Sent after real refresh-token grant');
+    const refreshed=await eventual('fresh-session commit',()=>dbNote(refreshedTitle));
+    assert.equal(refreshed.revision,1);
+    assert.equal(receiptCount(refreshed.id),1);
+    console.log('ok: real short-JWT renewal and authenticated write without duplicate');
+
+    // LOST ACK — let PostgREST perform the write, then abort only its
+    // response. The real outbox retries the SAME request ID (receipt key).
+    // A duplicate revision or duplicate receipt is a regression.
+    const lostTitle='SYNC-04 L7 lost-response '+randomUUID();
+    let aborted=false;
+    const rpcUrl=AUTH+'/rest/v1/rpc/commit_note';
+    await pages[0].route(rpcUrl,async route=>{
+      if(aborted) { await route.continue(); return; }
+      const result=await route.fetch();
+      if(result.ok()){
+        aborted=true;
+        await route.abort('failed');
+      } else await route.fulfill({response:result});
+    });
+    await create(pages[0],lostTitle,'Commit survived a lost HTTP response',{waitCloud:false});
+    const lost=await eventual('committed write before aborted response',
+      ()=>dbNote(lostTitle)?.revision===1?dbNote(lostTitle):null);
+    assert.ok(aborted,'the route must actually abort a successful RPC response');
+    await eventual('retry receipt reconciliation',async()=>{
+      const local=await debugOutbox(pages[0],owners[0],lost.id);
+      return local.note?.dirty===false && local.ops.length===0;
+    },90000);
+    await pages[0].unroute(rpcUrl);
+    assert.equal(dbNote(lostTitle)?.revision,1,'lost response retry must not increment revision');
+    assert.equal(receiptCount(lost.id),1,'lost response retry must reuse idempotency receipt');
+    console.log('ok: successful RPC response lost, retry acknowledged exactly one revision and receipt');
+
+    await browse(pages[2]);
+    assert.equal(await row(pages[2],offlineTitle).count(),0,'other user cannot observe offline note');
+    assert.equal(await row(pages[2],lostTitle).count(),0,'other user cannot observe retried note');
   } finally {
     for(const ctx of contexts.reverse()) await ctx.close().catch(()=>{});
     await new Promise(resolve=>server.close(resolve));
