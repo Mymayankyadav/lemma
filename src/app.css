@@ -816,3 +816,11 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
 .conflict-warning { margin:0; padding:10px 12px; border-inline-start:3px solid var(--ink-2); background:var(--sheet-2); font-size:13px; }
 .conflict-merge-wrap[hidden], .conflict-confirm[hidden] { display:none; }
 @media (max-width:780px) { .conflict-versions { grid-template-columns:1fr; } }
+
+/* UI-01 S3: touch targets of at least 44px on coarse pointers (Cards, editor, sheets). Desktop density unchanged. */
+@media (pointer: coarse) {
+  .btn, .btn-sm { min-height: 44px; }
+  .icon-btn, .icon-btn.boxed { width: 44px; height: 44px; }
+  .seg button, .seg-sm button { min-height: 44px; }
+  .chip-x button { min-width: 44px; min-height: 44px; }
+}
