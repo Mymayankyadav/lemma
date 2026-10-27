@@ -1,6 +1,6 @@
 # Lane A — sync, auth and backend
 
-**Agent assignment: UNASSIGNED — previous Lane A agent retired at the owner's request on 27 October 2026.** No further implementation, merge, or verification by that agent. The Lane A task itself is not complete; a successor may adopt the existing open PR. **Successor adopted PR #26 on 27 October 2026** and fixed its Android/plan CI failure (the `Next action: ` line had been reworded, failing `npm run test:plan`); no code or live changes.
+**Agent assignment: UNASSIGNED — previous Lane A agent retired at the owner's request on 27 October 2026.** No further implementation, merge, or verification by that agent. The Lane A task itself is not complete; a successor may adopt the existing open PR. **Successor adopted PR #26 on 27 October 2026** and fixed its Android/plan CI failure (the `Next action: SYNC-04 L5 — add `supabase/config.toml`, `.github/workflows/sync-local.yml` and a smoke that a disposable local Supabase stack applies every migration with RLS on the four sync tables (plan §2 "SYNC-04 slices"). PR #26 is merged (`5cf1d42`). SYNC-04 remains NEXT, not DONE.
 
 Next action: adopt and verify open [PR #26](https://github.com/Mymayankyadav/lemma/pull/26) on `lane-a/sync-04-l4-http-rls-harness`, check latest `main` and all latest-head CI, and merge only when the protocol gates pass. Then complete live owner-authenticated UI tombstone/reload, independent device, offline/expiry/lost-response, and two-real-identity HTTP RLS checks. SYNC-04 remains NEXT, not DONE.
 
@@ -8,7 +8,7 @@ Next action: adopt and verify open [PR #26](https://github.com/Mymayankyadav/lem
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
 | Assigned agent | None. Previous agent RETIRED / signed off at owner request; all remaining work is for a successor. |
-| Current task | SYNC-04 L3 owner-authenticated device checks still pending; L4 opt-in two-identity HTTP RLS acceptance harness added (self-test only until tokens are available) |
+| Current task | SYNC-04 L5–L8 (local-stack verification, re-planned 2026-10-27). L4 harness merged in PR #26; its `--live` mode is optional, not a gate. |
 | Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) merged as `6550475`; L3 checklist [PR #24](https://github.com/Mymayankyadav/lemma/pull/24) merged as `f15f4d2`. L3 deferred projection [PR #25](https://github.com/Mymayankyadav/lemma/pull/25) merged as `80c385c`. Current HTTP acceptance harness branch: `lane-a/sync-04-l4-http-rls-harness`. AUTH-01 PR #17 merged as `e13582d`. |
 | Baseline | `main@80c385c` regression, Android, screenshot publication and Pages deployment all SUCCESS after PR #25; previous live L1 tests do not certify later builds. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
@@ -71,7 +71,9 @@ PR #14 (`dbfb961`) consumed the owner's one-time workflow-only exception; owners
 - This is mocked transport, not a real owner-authenticated web UI, a real-device HTTP test, or proof of no resurrection after a browser's offline restart. We lack access to the previous agent's signed-in browser session. Do not infer those gates from CI.
 - The only live record changed by this L2 handoff was the explicitly approved synthetic server tombstone described above. No schema migration or additional production note writes.
 
-## SYNC-04 L3 — explicit live acceptance checklist (pending)
+## SYNC-04 L3 — explicit live acceptance checklist (SUPERSEDED 2026-10-27)
+
+> Superseded by plan §2 "SYNC-04 slices" (L5–L8). Steps 1–3 needed an agent-held owner browser and step 5 a second real Google identity; both are infeasible. Steps 3–5 now run on a local Supabase stack in CI (L6–L7), linked to production by the L8 parity diff. Production two-device confirmation moves to ANDROID-02/RELEASE-01 owner smoke checks. Kept as history.
 
 The previous agent's authenticated browser profile is not accessible through the GitHub/Supabase connectors used in this continuation. Do not assume it remains signed in or reuse tokens from documentation. L3 is **blocked on a real authenticated app session**; the production tombstone alone cannot prove the client UI removed its local copy.
 

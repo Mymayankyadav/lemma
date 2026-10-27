@@ -15,7 +15,8 @@
         "docs/PHASE2_SYNC_CONTRACT.md", "docs/DATA_MODEL.md", "docs/SYNC_AUDIT_*.md", "docs/lanes/A.md",
         "test/account_*.js", "test/auth_*.js", "test/sync_*.js", "test/browser_sync.js",
         "test/conflict_*.js", "test/editor_persistence.js", "test/import_*.js",
-        "test/local_persistence.js", "test/outbox_core.js", "test/review_*.js", "test/workspace_*.js"
+        "test/local_persistence.js", "test/outbox_core.js", "test/review_*.js", "test/workspace_*.js",
+        ".github/workflows/sync-local.yml"
       ]
     },
     "B": {
