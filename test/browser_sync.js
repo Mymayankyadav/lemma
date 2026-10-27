@@ -4,7 +4,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { chromium } = require('playwright');
 const userId = '00000000-0000-4000-8000-000000000001';
-const source = ['outbox_core','sync_browser'].map(f=>fs.readFileSync(`src/app/${f}.js`,'utf8')).join('\n');
+const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
+  ['review_ledger','review_replay','outbox_core','sync_browser']
+    .map(f=>fs.readFileSync(`src/app/${f}.js`,'utf8')).join('\n');
 (async () => {
   const server = new Map(), receipts = new Map(), requests = [];
   let loseNextResponse = false;
