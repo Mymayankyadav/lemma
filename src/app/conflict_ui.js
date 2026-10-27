@@ -4,13 +4,16 @@
  */
 const LemmaConflicts = (() => {
   const json = x => JSON.stringify(x, null, 2);
-  const schedule = data => JSON.stringify({
-    cards: data?.cards || {}, log: data?.log || []
-  });
+  // JSONB can change object insertion order without changing the schedule.
+  const canonical = x => x == null || typeof x !== 'object' ? JSON.stringify(x) :
+    Array.isArray(x) ? '[' + x.map(canonical).join(',') + ']' :
+    '{' + Object.keys(x).sort().filter(k => x[k] !== undefined)
+      .map(k => JSON.stringify(k) + ':' + canonical(x[k])).join(',') + '}';
+  const schedule = data => canonical({cards: data?.cards || {}, log: data?.log || []});
   function blockedReason(view) {
     if (!view) return 'Conflict no longer exists. Reload the list.';
     if (!view.remote?.known || !Number.isSafeInteger(view.remote.revision) ||
-        view.remote.revision <= view.queued[0]?.expectedRevision)
+        view.remote.revision <= view.queued.find(op => op.kind === view.kind)?.expectedRevision)
       return 'A fresh server version is needed. Refresh the account cache.';
     if (view.queued.some(op => op.state === 'pending' && op.attempted && op.kind === view.kind))
       return 'An earlier request may have reached the server. Refresh to retry its receipt first.';
