@@ -265,19 +265,37 @@ async function run(){
       });
     await eventual('peer remote delete',async()=>await (await row(pages[1],label)).count()===0);
     await pages[1].reload();
-    await eventual('peer reload after delete',async()=>await (await row(pages[1],label)).count()===0);
+    await pages[1].waitForFunction(
+      ()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),
+      null,{timeout:T});
+    await browse(pages[1]);
+    await eventual('peer reload after delete',async()=>await row(pages[1],label).count()===0);
     assert.deepEqual(dbNote(label),{id:created.id,revision:3,deleted:true},
       'delete cannot resurrect a note or erase its server tombstone');
     assert.equal(receiptCount(created.id),3,'exactly three successful note mutations');
     console.log('ok: live local create/update/delete, peer convergence, tombstone after reload, isolated other owner');
 
-    // OFFLINE — stage a real editor write into local IndexedDB without the
-    // API, terminate Chromium entirely, then reopen exactly the same profile.
-    // The pending operation must survive and upload once after reconnection.
+    // OFFLINE EDIT — first create an acknowledged server note, then modify
+    // its text while offline, close the entire Chromium process and reopen
+    // the SAME persistent profile. Only the second revision may be sent.
     const offlineTitle='SYNC-04 L7 offline '+randomUUID();
+    await create(pages[0],offlineTitle,'Base text acknowledged while online');
+    const onlineBase=await eventual('online base for offline edit',
+      ()=>dbNote(offlineTitle)?.revision===1 ? dbNote(offlineTitle) : null);
+    await eventual('base editor operation acknowledged',async()=>{
+      const local=await debugOutbox(pages[0],owners[0],onlineBase.id);
+      return local.note?.dirty===false && local.ops.length===0;
+    });
+    assert.equal(receiptCount(onlineBase.id),1);
     await contexts[0].setOffline(true);
-    await create(pages[0],offlineTitle,'Offline proof survived Chromium exit',{waitCloud:false});
-    assert.equal(dbNote(offlineTitle),null,'offline note must not reach Postgres prematurely');
+    await edit(pages[0],offlineTitle,'Edited offline, then Chromium was closed');
+    await pages[0].locator('.sheet-editor').waitFor({state:'hidden',timeout:T});
+    await eventual('offline edit durably queued in IndexedDB',async()=>{
+      const local=await debugOutbox(pages[0],owners[0],onlineBase.id);
+      return local.note?.dirty===true && local.ops.some(op=>
+        op.kind==='note' && op.state==='pending' && op.expectedRevision===1);
+    });
+    assert.equal(dbNote(offlineTitle)?.revision,1,'offline edit cannot change server revision');
     await contexts[0].close();
     const resumed=await newProfile(path.join(prefix,'a'));
     contexts[0]=resumed;
@@ -292,14 +310,15 @@ async function run(){
     const reopenedUid=await eventual('restored login after browser relaunch',
       ()=>browserUserId(pages[0]),T);
     assert.equal(reopenedUid,owners[0],'browser relaunch must not switch identity');
-    const offlineRow=await eventual('offline write uploaded after relaunch',
-      ()=>dbNote(offlineTitle)?.revision===1 ? dbNote(offlineTitle) : null,90000);
-    await eventual('offline write receipt cleared',async()=>{
+    const offlineRow=await eventual('offline edit delivered after relaunch',
+      ()=>dbNote(offlineTitle)?.revision===2 ? dbNote(offlineTitle) : null,90000);
+    assert.equal(offlineRow.id,onlineBase.id,'offline edit must not create another note');
+    await eventual('offline edit receipt cleared',async()=>{
       const local=await debugOutbox(pages[0],owners[0],offlineRow.id);
       return local.ops.length===0 && local.note?.dirty===false;
     },90000);
-    assert.equal(receiptCount(offlineRow.id),1,'offline relaunch delivered exactly once');
-    console.log('ok: offline editor write kept in IndexedDB across browser process exit and synced once');
+    assert.equal(receiptCount(offlineRow.id),2,'offline edit adds exactly one receipt');
+    console.log('ok: offline EDIT survived full Chromium restart and synced one revision');
 
     // EXPIRY — Auth uses 60-second access tokens on the disposable stack.
     // After a real refresh_token grant, a new authenticated editor commit
