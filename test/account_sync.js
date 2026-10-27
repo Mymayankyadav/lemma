@@ -21,6 +21,7 @@ const account = id => {
   const item = { userId:id, close(){this.closed=true;},
     storage:{
       notes:async()=>cached,
+      profile:async()=>null,
       inspectAgainst:async(local)=>({ localInputCount:local.length, cachedInputCount:cached.length }),
       stageNote:async(note,revision)=>{
         staged.push({userId:id,note,revision});
