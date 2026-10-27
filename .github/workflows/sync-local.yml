@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: lemma-sync-local-${{ github.ref }}
@@ -40,6 +41,12 @@ jobs:
       - uses: supabase/setup-cli@v3
         with:
           version: 2.84.2
+      - name: Authenticate image pulls on shared GitHub runners
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GHCR_TOKEN" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
       - name: Enforce disposable-only database
         run: |
           test ! -e supabase/.temp/project-ref
@@ -50,7 +57,9 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
-            if supabase start; then
+            # Keep GoTrue, PostgREST, Realtime and Mailpit for L6/L7.
+            # Do not download unrelated storage/analytics/function/UI images.
+            if supabase start --exclude storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then
