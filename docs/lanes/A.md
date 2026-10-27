@@ -1,8 +1,8 @@
 # Lane A — sync, auth and backend
 
-**Agent assignment: UNASSIGNED — previous Lane A agent retired at the owner's request on 27 October 2026.** No further implementation, merge, or verification by that agent. The Lane A task itself is not complete; a successor may adopt the existing open PR.
+**Agent assignment: UNASSIGNED — previous Lane A agent retired at the owner's request on 27 October 2026.** No further implementation, merge, or verification by that agent. The Lane A task itself is not complete; a successor may adopt the existing open PR. **Successor adopted PR #26 on 27 October 2026** and fixed its Android/plan CI failure (the `Next action: ` line had been reworded, failing `npm run test:plan`); no code or live changes.
 
-Next action (new Lane A agent): adopt and verify open [PR #26](https://github.com/Mymayankyadav/lemma/pull/26) on `lane-a/sync-04-l4-http-rls-harness`, check latest `main` and all latest-head CI, and merge only when the protocol gates pass. Then complete live owner-authenticated UI tombstone/reload, independent device, offline/expiry/lost-response, and two-real-identity HTTP RLS checks. SYNC-04 remains NEXT, not DONE.
+Next action: adopt and verify open [PR #26](https://github.com/Mymayankyadav/lemma/pull/26) on `lane-a/sync-04-l4-http-rls-harness`, check latest `main` and all latest-head CI, and merge only when the protocol gates pass. Then complete live owner-authenticated UI tombstone/reload, independent device, offline/expiry/lost-response, and two-real-identity HTTP RLS checks. SYNC-04 remains NEXT, not DONE.
 
 | Field | Value |
 | --- | --- |
