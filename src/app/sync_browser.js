@@ -102,6 +102,68 @@ const LemmaCloud = (() => {
       }
     };
   }
+  const resolutionKey = id => 'conflict-resolution:' + id;
+  const isActive = op => op.state === 'pending' || op.state === 'conflict';
+  function readConflict(t, userId, id, done) {
+    const request = t.objectStore('outbox').getAll();
+    request.onsuccess = () => {
+      const operation = request.result.find(op => op.id === id);
+      if (!operation || operation.state !== 'conflict' || !['note','profile'].includes(operation.kind)) {
+        done(null); return;
+      }
+      const { kind, entityId } = operation;
+      const queued = request.result.filter(op => isActive(op) && op.entityId === entityId &&
+        (kind === 'profile' ? op.kind === 'profile' : ['note','review','retraction'].includes(op.kind)))
+        .sort(core.compare);
+      const row = kind === 'note' ? t.objectStore('notes').get(entityId) :
+        t.objectStore('meta').get('accountProfile');
+      row.onsuccess = () => {
+        if (!row.result) { done(null); return; }
+        const view = { version: 1, userId, id, kind, entityId,
+          base: operation.conflict?.base || operation.base || baseVersion(row.result, operation.expectedRevision),
+          local: { data: row.result.data, deleted: Boolean(row.result.deleted),
+            expectedRevision: row.result.revision },
+          remote: row.result.remote || operation.conflict?.remote || null, queued };
+        // An equality token, not an authorization credential. Include every
+        // reviewed intent so a later edit, pull or acknowledgment invalidates it.
+        done({ ...view, token: canonical(view) });
+      };
+    };
+  }
+  function resolutionSnapshot(view, decision) {
+    const remote = view.remote;
+    const snapshots = view.queued.filter(op => op.kind === view.kind);
+    if (snapshots[0]?.id !== view.id) throw new Error('Resolve the first conflicting mutation');
+    if (!remote?.known || !Number.isSafeInteger(remote.revision) ||
+        remote.revision <= snapshots[0].expectedRevision) throw new Error('Fresh remote version required');
+    // A timeout may hide a committed request. Only a definite stale rejection
+    // can be superseded; never discard another attempted, uncertain mutation.
+    if (snapshots.some(op => op.state === 'pending' && op.attempted))
+      throw new Error('Retry uncertain mutations before resolving');
+    let selected;
+    if (decision.choice === 'local') selected = view.local;
+    else if (decision.choice === 'remote') selected = remote;
+    else if (decision.choice === 'merge') {
+      if (!view.base?.known) throw new Error('Cannot merge an unknown base');
+      selected = { data: decision.data, deleted: decision.deleted === true };
+    } else throw new Error('Invalid conflict choice');
+    const deleted = Boolean(selected.deleted);
+    if (deleted && (view.kind !== 'note' || decision.confirmDelete !== true))
+      throw new Error('Explicit deletion confirmation required');
+    if (!deleted && (remote.deleted || snapshots.some(op => op.deleted)) && decision.confirmRestore !== true)
+      throw new Error('Explicit restoration confirmation required');
+    if (!deleted && (!selected.data || typeof selected.data !== 'object' || Array.isArray(selected.data) ||
+        (view.kind === 'note' && selected.data.id !== view.entityId))) throw new Error('Invalid resolution data');
+    if (view.kind === 'note') {
+      // Content resolution is not schedule convergence. Preserve all ledger
+      // entries and block divergent snapshots until SYNC-03 can replay them.
+      const versions = [view.base?.known && view.base.data, view.local.data, remote.data,
+        ...snapshots.map(op => op.data), selected.data].filter(Boolean);
+      const schedules = versions.map(data => canonical({ cards: data.cards || {}, log: data.log || [] }));
+      if (schedules.some(value => value !== schedules[0])) throw new Error('review_replay_required');
+    }
+    return { data: deleted ? null : structuredClone(selected.data), deleted, snapshots };
+  }
   class AccountStorage {
     constructor(db, userId) { this.db = db; this.userId = userId; }
     async note(id) { return request(this.db.transaction('notes').objectStore('notes').get(id)); }
@@ -132,6 +194,76 @@ const LemmaCloud = (() => {
         r.onsuccess = () => { if (r.result) store.put({ ...r.result, attempted: true }); };
       });
     }
+    async resumeConflict(id) {
+      // Do not let a delayed read/put resurrect an already archived conflict.
+      return tx(this.db, ['outbox'], 'readwrite', t => {
+        const store = t.objectStore('outbox'), r = store.get(id);
+        r.onsuccess = () => { if (r.result?.state === 'conflict') store.put({ ...r.result, state: 'pending' }); };
+      });
+    }
+    async inspectConflict(id) {
+      let view;
+      await tx(this.db, ['outbox','notes','meta'], 'readonly', t => readConflict(t, this.userId, id, value => { view = value; }));
+      return view;
+    }
+    async resolution(id) {
+      return request(this.db.transaction('meta').objectStore('meta').get(resolutionKey(id)));
+    }
+    async resolveConflict(id, expectedToken, decision) {
+      if (typeof expectedToken !== 'string' || !expectedToken || !decision || typeof decision !== 'object')
+        throw new Error('Reviewed conflict and explicit choice required');
+      const choice = structuredClone(decision);
+      const fingerprint = canonical({ expectedToken, decision: choice });
+      let result, failure;
+      try {
+        await tx(this.db, ['outbox','notes','meta'], 'readwrite', t => {
+          const fail = error => { failure = error; t.abort(); };
+          const meta = t.objectStore('meta');
+          const previous = meta.get(resolutionKey(id));
+          previous.onsuccess = () => {
+            if (previous.result) {
+              if (previous.result.fingerprint !== fingerprint) { fail(new Error('Resolution already recorded')); return; }
+              result = previous.result.operation; return; // Lost local receipt: same operation, no second write.
+            }
+            readConflict(t, this.userId, id, view => {
+              if (!view || view.token !== expectedToken) { fail(new Error('Conflict changed; inspect it again')); return; }
+              let selected;
+              try { selected = resolutionSnapshot(view, choice); } catch (error) { fail(error); return; }
+              const counter = meta.get('sequence');
+              counter.onsuccess = () => {
+                const sequence = (counter.result ?? 0) + 1;
+                if (!Number.isSafeInteger(sequence) || sequence < 1) { fail(new Error('Invalid outbox sequence')); return; }
+                const operation = { id: uuid(), requestId: uuid(), kind: view.kind, entityId: view.entityId,
+                  data: selected.data, expectedRevision: view.remote.revision, base: view.remote,
+                  state: 'pending', attempts: 0, enqueuedAt: Date.now(), sequence, resolves: id,
+                  ...(view.kind === 'note' ? { deleted: selected.deleted } : {}) };
+                // Archive before removing any queued snapshots, in the SAME
+                // transaction as the new intent and projection. Events stay queued.
+                meta.add({ version: 1, fingerprint, decision: choice, reviewed: view, operation }, resolutionKey(id));
+                const outbox = t.objectStore('outbox');
+                for (const old of selected.snapshots) {
+                  outbox.delete(old.id);
+                  if (old.resolves) {
+                    const archive = meta.get(resolutionKey(old.resolves));
+                    archive.onsuccess = () => {
+                      if (archive.result) meta.put({ ...archive.result, supersededBy: operation.id }, resolutionKey(old.resolves));
+                    };
+                  }
+                }
+                outbox.add(operation);
+                meta.put(sequence, 'sequence');
+                const row = { data: selected.data, deleted: selected.deleted,
+                  revision: view.remote.revision, base: view.remote, remote: view.remote, dirty: true };
+                if (view.kind === 'note') t.objectStore('notes').put({ ...row, id: view.entityId });
+                else meta.put(row, 'accountProfile');
+                result = operation;
+              };
+            });
+          };
+        });
+      } catch (error) { throw failure || error; }
+      return result;
+    }
     async markConflict(id, error) {
       return tx(this.db, ['outbox','notes','meta'], 'readwrite', t => {
         const store = t.objectStore('outbox');
@@ -159,6 +291,13 @@ const LemmaCloud = (() => {
       return tx(this.db, ['outbox','notes','meta'], 'readwrite', t => {
         const outbox = t.objectStore('outbox');
         outbox.delete(op.id);
+        if (op.resolves) {
+          const meta = t.objectStore('meta'), archive = meta.get(resolutionKey(op.resolves));
+          archive.onsuccess = () => {
+            if (archive.result?.operation.id === op.id)
+              meta.put({ ...archive.result, acknowledgment: { revision: result.revision } }, resolutionKey(op.resolves));
+          };
+        }
         if (op.kind === 'profile') {
           if (!Number.isSafeInteger(result?.revision) || result.revision < 1) { t.abort(); return; }
           const queue = outbox.getAll();
