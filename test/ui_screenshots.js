@@ -14,6 +14,12 @@ fs.mkdirSync(OUT, { recursive: true });
 const distHtml = path.join(ROOT, 'dist', 'test.html');
 if (!fs.existsSync(distHtml)) { console.error('dist/test.html missing; run "npm run build" first'); process.exit(1); }
 const HTML = fs.readFileSync(distHtml, 'utf8');
+// Install a test-only read/write hook in the same inline script lexical scope as
+// App. Top-level const declarations are not window globals in Chromium.
+const MARKER = '/* ===== main.js ===== */';
+if (!HTML.includes(MARKER)) throw new Error('UI test app marker missing');
+const TEST_HTML = HTML.replace(MARKER,
+  'window.__uiAcceptance = { get App() { return App; } };\n' + MARKER);
 const MOCK = fs.readFileSync(path.join(__dirname, 'mock_claude.js'), 'utf8');
 const LIBS = {
   'katex.min.js': path.join(ROOT, 'node_modules/katex/dist/katex.min.js'),
@@ -31,7 +37,7 @@ async function open(browser, size, scheme) {
     colorScheme: scheme, timezoneId: 'Asia/Kolkata', reducedMotion: 'reduce', hasTouch: size === 'mobile' });
   await ctx.route('**/*', async route => {
     const url = route.request().url();
-    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: HTML });
+    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: TEST_HTML });
     for (const [name, file] of Object.entries(LIBS))
       if (url.endsWith(name)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(file, 'utf8') });
     if (url.includes('fonts.googleapis.com')) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
@@ -163,6 +169,56 @@ async function shot(page, name, size, scheme) {
           if (widths[0] > widths[1] + 1)
             throw new Error(`200%-equivalent ${route} reflow overflows horizontally: ${widths.join(' > ')}`);
         }
+      }
+      if (size === 'desktop' && scheme === 'light') {
+        // Stress text/layout scaling at 200% using Chromium's CSS zoom.
+        // This exercises the actual rendering with doubled text, not just a
+        // narrower viewport; browser chrome zoom still needs a manual check.
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.evaluate(() => { document.body.style.zoom = '200%'; });
+        for (const route of ['home', 'browse', 'stats']) {
+          if (route === 'stats') {
+            await goTo(page, 'home');
+            await page.locator('.stats-link').click();
+          } else await goTo(page, route);
+          const state = await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            viewport: window.innerWidth,
+            zoom: getComputedStyle(document.body).zoom,
+          }));
+          if (state.scrollWidth > state.viewport + 1)
+            throw new Error('200% zoom horizontal page overflow on ' + route + ': ' + JSON.stringify(state));
+          if (route === 'home')
+            await page.screenshot({ path: path.join(OUT, 'home-zoom200-desktop-light.png') });
+        }
+        await page.evaluate(() => { document.body.style.zoom = ''; });
+      }
+      if (size === 'mobile' && scheme === 'light') {
+        // The empty-filter state should be useful and keyboard-focusable.
+        await goTo(page, 'browse');
+        await page.fill('#browse-q', '__UI01_UNMATCHABLE_CARD_FILTER__');
+        await page.waitForSelector('.empty-title');
+        const emptyTitle = await page.locator('.empty-title').innerText();
+        if (emptyTitle.trim() !== 'No cards match')
+          throw new Error('Incorrect filtered Cards empty state: ' + emptyTitle);
+        const hint = await page.locator('.empty').innerText();
+        if (!hint.includes('clear filters'))
+          throw new Error('Filtered Cards state lacks recovery guidance');
+        await page.screenshot({ path: path.join(OUT, 'cards-empty-mobile-light.png') });
+        await page.fill('#browse-q', '');
+        await page.waitForSelector('.note-row');
+        // Render the actual Home loading skeleton without altering cached data.
+        const loading = await page.evaluate(() => {
+          const app = window.__uiAcceptance && window.__uiAcceptance.App;
+          if (!app) return false;
+          app.loading = true;
+          app.go('home');
+          const el = document.querySelector('.loading-card[role="status"][aria-label="Loading"]');
+          app.loading = false;
+          app.go('home');
+          return !!el;
+        });
+        if (!loading) throw new Error('Home loading state is missing its accessible status');
       }
       if (size === 'mobile' && scheme === 'dark') {
         // Existing seeded cards remain browsable when the browser is offline.
