@@ -29,7 +29,7 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
       const ctx = await browser.newContext(); contexts.push(ctx);
       await ctx.route('https://lemma-sync.test/**', r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Sync adapter test</title>'}));
       await ctx.exposeFunction('sendRPC', send);
-      await ctx.addInitScript({ content: source + `\nwindow.sync = LemmaCloud;` });
+      await ctx.addInitScript({ content: source + `\nwindow.sync = LemmaCloud; window.fsrsTest = FSRS;` });
     }
     async function open(ctx) {
       const page = await ctx.newPage();
@@ -165,14 +165,14 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
         const s=account.storage, note=(await s.note('replay-browser')).data;
         const at=Date.UTC(2026,9,27,8+hour);
         const offset=-330*60000+4*3600000;
-        const prov={version:1,algorithm:'fsrs-6',weights:FSRS.DEFAULT_W.slice(),
+        const prov={version:1,algorithm:'fsrs-6',weights:window.fsrsTest.DEFAULT_W.slice(),
           day_index:Math.floor((at-offset)/86400000),
           rollover_hour:4,timezone_offset_minutes:-330,
           retention:.9,max_interval_days:36500,learn_steps:'1m 10m',relearn_steps:'10m',
           fuzz:true,load_balance:false,preview_at_ms:at,
           card_before:structuredClone(note.cards[1])};
         const entry=[at,1,grade,0,500,0,id,prov];
-        const card=FSRS.preview(note.cards[1],at,{
+        const card=window.fsrsTest.preview(note.cards[1],at,{
           w:prov.weights,retention:.9,maxIvl:36500,learn:[1,10],relearn:[10],
           fuzz:true,loadBalance:false
         },{
