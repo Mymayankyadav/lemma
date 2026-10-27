@@ -827,7 +827,8 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
 
 /* Stats: stats link on Today; progressive disclosure for advanced panels */
 .stats-link-row { margin: 4px 0 0; }
-.disclosure > summary { cursor: pointer; list-style: none; }
+.stats-link { display: inline-flex; align-items: center; min-height: 44px; }
+.disclosure > summary { cursor: pointer; list-style: none; display: flex; align-items: center; min-height: 44px; }
 .disclosure > summary::-webkit-details-marker { display: none; }
 .disclosure > summary::before { content: "▸"; display: inline-block; margin-right: 8px; color: var(--ink-3); }
 .disclosure[open] > summary::before { content: "▾"; }
