@@ -21,11 +21,11 @@ Next action: finish AUTH-01 S2: verify one live Pages sign-out/re-login and the 
 
 ## Regression coverage
 
-`test/workspace_browser.js` now exercises the real Settings buttons with mocked auth: Google is primary; attempting account activation without backup acknowledgment preserves the device workspace; Sign out calls the auth client once and retains device cards and draft. Browser result PENDING CI; this is not a live logout test.
+`test/workspace_browser.js` now exercises the real Settings buttons with mocked auth: Google is primary; attempting account activation without backup acknowledgment preserves the device workspace; Sign out calls the auth client once and retains device cards and draft. Browser coverage SUCCESS at `aa168a16afe38675a1302558aa5dd26778b8855f` in [full regression 40469993220](https://github.com/Mymayankyadav/lemma/actions/runs/40469993220); this is not a live logout test.
 
 SYNC-04 M1 is already mock-verified by [regression 40463998686](https://github.com/Mymayankyadav/lemma/actions/runs/40463998686): `test/browser_sync.js` covers offline IndexedDB restart, expired JWT/session recovery, lost responses after server commit, tombstones and explicit edit/delete conflict recovery. Storage/account/workspace tests cover durable receipts, identity invalidation and no implicit enrollment.
 
-Local checks: `npm ci`, syntax, `test:workspace`, build, `test:plan`, lane A guard and diff checks SUCCESS. Full local `npm test` is blocked by unavailable Chromium; the prior browser-download attempts returned a 195-byte Site Unavailable page. Full PR regression must pass.
+Local checks: `npm ci`, syntax, `test:workspace`, build, `test:plan`, lane A guard and diff checks SUCCESS. Full local `npm test` is blocked by unavailable Chromium; the prior browser-download attempts returned a 195-byte Site Unavailable page. Full PR regression 40469993220 SUCCESS. [Android CI 40469993250](https://github.com/Mymayankyadav/lemma/actions/runs/40469993250) FAILED because its hardcoded lane C guard rejects `docs/lanes/A.md` and `test/workspace_browser.js`; APK compilation was skipped. PR #13 stays open until the workflow is corrected and all checks pass.
 
 ## Remaining gates
 
