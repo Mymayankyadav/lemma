@@ -1,37 +1,38 @@
 # Lane A — sync, auth and backend
 
-Next action: AUTH-01 S2 is BLOCKED_OWNER (owner must enable Google in Supabase and sign in once on Pages); after owner setup, verify Google sign-in/out, earlier email account `user.id` continuity and explicit workspace activation on Pages. SYNC-04 M1 is complete (mock gates only); no further pre-auth slice is queued.
+Next action: finish AUTH-01 S2: verify one live Pages sign-out/re-login and the backup acknowledgment control. Google setup and first login are VERIFIED; do not ask the owner to repeat setup. Resolve the lane C workflow request below before merging this PR. SYNC-04 live gates stay pending until AUTH-01 passes.
 
 | Field | Value |
 | --- | --- |
-| Status | BLOCKED_OWNER (AUTH-01 S2); SYNC-04 M1 DONE (mock transport) |
-| Current task | AUTH-01 S2 (owner-assisted), then SYNC-04 |
-| Delivery | Owner-blocker documentation: [PR #10](https://github.com/Mymayankyadav/lemma/pull/10), `lane-a/auth-01-owner-prerequisites`; check its merge status before continuing. Previous [PR #8](https://github.com/Mymayankyadav/lemma/pull/8) merged as `5efdf3e`; [main CI 40464430522](https://github.com/Mymayankyadav/lemma/actions/runs/40464430522) SUCCESS. |
-| Last merged work | AUTH-01 S1 at `b1ea568`, [CI 40450843938](https://github.com/Mymayankyadav/lemma/actions/runs/40450843938) SUCCESS (mocked OAuth). SYNC-03 DONE at `6fb7005`. |
-| Backend | Only this lane may use Supabase (`yemqnhnztlbyxmjxidis`). Nine applied migrations, RLS on all four sync tables, advisors clean. Two-identity RLS probe NOT RUN. |
-| Live confidence | Google provider DISABLED: live public `/auth/v1/settings` returned `external.google=false`, `external.email=true` on 2026-10-27 (read-only). Sign-in and live sync remain NOT RUN; sync/recovery evidence is mock transport. |
+| Status | IN_PROGRESS (AUTH-01 S2; live sign-out pending) |
+| Current task | AUTH-01 S2 verification, then SYNC-04 live gates |
+| Open branch / PR | `lane-a/auth-01-live-verification`; PR pending |
+| Baseline | `main@310ef6a`, regression 40466003325 and Android 40466003236 SUCCESS. SYNC-04 M1 merged in PR #8 at `5efdf3e`. |
+| Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. No migrations or persistent backend writes in this slice. |
 
-**SYNC-04 M1 gate inventory (mock transport only):**
+## Live evidence — 27 October 2026
 
-| Gate item | Coverage / result |
-| --- | --- |
-| Offline restart | Added to `test/browser_sync.js`: commit offline, reload the real IndexedDB cache with sending disabled, compare the complete pending operation, reconnect and confirm one revision with the original request ID. SUCCESS in full PR CI 40463998686. This does not test PWA offline asset loading. |
-| Auth/session expiry | Added to `test/browser_sync.js`: expired JWT stops the batch with pending dirty data, same-owner token refresh retries the same ID; missing session makes no RPC, SIGNED_OUT stops the handle, same-owner re-entry recovers the pending edit. SUCCESS in full PR CI 40463998686. Existing `test/account_identity.js`, `test/workspace_lifecycle.js` and `test/workspace_browser.js` cover identity invalidation and workspace scrubbing. |
-| Network loss after local commit | Existing `test/browser_sync.js`: server commits but response is lost; reload retries the original ID without a second revision. `test/local_persistence.js` and `test/editor_persistence.js` cover transaction/receipt durability. Node tests SUCCESS locally; browser SUCCESS in full PR CI 40463998686. |
-| Deletes | Existing `test/browser_sync.js`: tombstone propagation and offline edit/delete conflict across reload; explicit deletion resolution retains archives. `test/conflict_storage.js`, `test/conflict_resolution.js`, `test/account_store.js` cover durable deletes and no silent resurrection. Node tests SUCCESS locally; browser SUCCESS in full PR CI 40463998686. |
+- **Google enabled and login SUCCESS:** public auth settings report `external.google=true`; unified auth logs show Google signup at 07:45:27 UTC and Google login at 07:45:36 UTC, successful callback redirects and token exchange (HTTP 200). The deployed Pages app points to this project. The owner reports completing setup/sign-in.
+- **Account identity:** before OAuth the project had zero accounts; afterward it has one account and one Google identity. There is no earlier email-link account to match in this installation. Pre-existing-email identity linking remains untested live; no accounts or rows were migrated.
+- **Account cache reads SUCCESS:** gateway logs show HTTP 200 for owner note, profile, review-event and review-retraction reads. This does not prove writes, device convergence or owner workspace activation.
+- **Live sign-out NOT VERIFIED:** the inspected 07:40 UTC onward window contains no logout request/event. Auth audit events are in unified `auth_audit_logs`; `auth.audit_log_entries` is empty. Never interpret that empty SQL table as absence of login.
+- **Database role probe SUCCESS:** existing `supabase/tests/note_write_contract.sql` ran against Lemma and rolled back every fixture. It verified revisions, idempotency, write grants, tombstones, immutable reviews and cross-owner isolation under the `authenticated` role with two synthetic UID claims. This is a database policy test, not two real HTTP-authenticated users. Post-check: one account/Google identity remains and zero fixture notes remain.
+- **RLS enabled** on notes, profiles, review_events and review_retractions. Security advisor reports one password-auth setting: [leaked-password protection disabled](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection); no table/RPC finding. Configuration left unchanged.
 
-**Validation:** Full PR [regression 40463998686](https://github.com/Mymayankyadav/lemma/actions/runs/40463998686) SUCCESS at `5ec40bd8d8cca88817bc3fdbfb9ed513c6d23de5`: Chromium installation, syntax and complete `npm test`, including browser sync and full app workspace tests.  `npm ci`, syntax, lane A guard, merge/outbox/replay/storage/account/account-store/workspace/FSRS tests, plan guard and build SUCCESS locally. Local Chromium unavailable: Playwright CDN returns a 195-byte "Site Unavailable" page, so local `test:browser-sync` and full `npm test` were BLOCKED_ENV; PR CI supplies the browser result. No production code or database change in this slice.
+## Regression coverage
 
-**Still gated:** Google provider DISABLED (live settings checked 2026-10-27); AUTH-01 S2 sign-in/out and existing email-account `user.id` continuity, authenticated two-browser sync, two-identity RLS, live network/expiry/deletion recovery and PWA offline/update behavior NOT RUN. SYNC-04 remains BLOCKED.
+`test/workspace_browser.js` now exercises the real Settings buttons with mocked auth: Google is primary; attempting account activation without backup acknowledgment preserves the device workspace; Sign out calls the auth client once and retains device cards and draft. Browser result PENDING CI; this is not a live logout test.
 
-**Owner unblock steps (AUTH-01 S2; plan reserves these for the owner):**
-1. Google Cloud Console: create a Web application OAuth client with authorized redirect URI `https://yemqnhnztlbyxmjxidis.supabase.co/auth/v1/callback`.
-2. [Lemma Supabase Auth providers](https://supabase.com/dashboard/project/yemqnhnztlbyxmjxidis/auth/providers): enable Google and enter that client ID/secret in the dashboard.
-3. Auth URL configuration: Site URL `https://mymayankyadav.github.io/lemma/`; allow that URL, `http://localhost:*/**`, and `io.lemma.study://auth-callback`.
-4. [Open Lemma](https://mymayankyadav.github.io/lemma/), Settings → Continue with Google, using the email of the earlier email-link account. Report sign-in outcome; the next lane A session checks identity continuity, sign-out and explicit backup acknowledgment before workspace activation. A different `user.id` blocks progress; never migrate rows to make it pass.
+SYNC-04 M1 is already mock-verified by [regression 40463998686](https://github.com/Mymayankyadav/lemma/actions/runs/40463998686): `test/browser_sync.js` covers offline IndexedDB restart, expired JWT/session recovery, lost responses after server commit, tombstones and explicit edit/delete conflict recovery. Storage/account/workspace tests cover durable receipts, identity invalidation and no implicit enrollment.
 
-Documentation follow-up: `npm run test:plan`, `node test/lane_guard.js A` and `git diff --check` SUCCESS locally; see PR #10 for full CI evidence.
+Local checks: `npm ci`, syntax, `test:workspace`, build, `test:plan`, lane A guard and diff checks SUCCESS. Full local `npm test` is blocked by unavailable Chromium; the prior browser-download attempts returned a 195-byte Site Unavailable page. Full PR regression must pass.
 
-No provider configuration or backend data was changed during the read-only check. Public provider settings confirm enablement only; they do not prove client credentials, redirect configuration or a successful OAuth round trip.
+## Remaining gates
 
-**Requests from other lanes:** none.
+AUTH-01 S2 stays unfinished until a live Pages logout/re-login is observed and the acknowledgment control is verified. Then mark AUTH-01 DONE and SYNC-04 NEXT in the same PR. Android OAuth S3 belongs to ANDROID-02.
+
+SYNC-04 still needs real authenticated two-browser/two-identity convergence, offline restart, auth expiry, network loss after commit, deletes and HTTP RLS isolation. PWA offline asset loading/update remains separately unverified. Do not treat successful cache reads, SQL role simulation or mock transport as those live gates.
+
+## Requests from other lanes
+
+- **Lane C:** `.github/workflows/android.yml`, step `Check syntax and lane ownership`, currently runs `node test/lane_guard.js C` on every PR. This rejects legitimate A/B changes. Select the guard using the PR head's `lane-a/`, `lane-b/` or `lane-c/` prefix; on main pushes run ownership-config validation (`npm run test:plan`) without forcing C. Keep syntax/plan checks. After C merges the correction, merge current main into this A branch and rerun CI. Do not bypass or weaken ownership tests from lane A.
