@@ -1,15 +1,16 @@
 # Lane C — Android
 
-Next action: ANDROID-01 S2 — implement native hardware Back and resume handling in `src/app/native_shell.js`, append it after `util.js` in `build.js`, and add the pre-approved matching Capacitor App dependency. Keep the web behaviour unchanged.
+Next action: ANDROID-02 — BLOCKED until both SYNC-04 and UI-01 are DONE; physical device verification of the Android shell is also still needed. Do not begin authentication, UI/CSS or notification work ahead of those gates.
 
 | Field | Value |
 | --- | --- |
-| Status | READY — ANDROID-01 S1 merged and CI green; S2 is next |
-| Current task | ANDROID-01 S2 (native Back/resume) |
-| Open branch / PR | none for S2 |
-| Last merged work | [PR #9](https://github.com/Mymayankyadav/lemma/pull/9) — ANDROID-01 S1 scaffold, build CI, documentation; squash commit `6af3fc82994baa75f46a9a49fa566633c68f6415` |
-| Evidence | [Regression run 40465326237](https://github.com/Mymayankyadav/lemma/actions/runs/40465326237) **SUCCESS** (full `npm test`); [Android run 40465326264](https://github.com/Mymayankyadav/lemma/actions/runs/40465326264) **SUCCESS** (`npm ci`, syntax, plan, lane guard, Android sync, Gradle debug APK artifact). |
-| Verification outstanding | Native-device launch, deep-link auth, Back/resume, notifications, update/signing and offline lifecycle tests remain pending; ANDROID-02 still depends on UI-01 and SYNC-04. |
-| Not yours | Web UI/CSS (lane B), sign-in and sync code (lane A). Ask for changes via "Requests from other lanes" below. |
+| Status | ANDROID-01 S1 and S2 CI-verified; ANDROID-02 dependency-blocked |
+| Current task | ANDROID-02 (not ready: requires SYNC-04 and UI-01) |
+| Lane C delivery | [PR #12](https://github.com/Mymayankyadav/lemma/pull/12) — S2 native Back and resume shell, exact `@capacitor/app@8.0.0`, native registration and tests |
+| Last earlier merged work | [PR #9](https://github.com/Mymayankyadav/lemma/pull/9) S1, [PR #11](https://github.com/Mymayankyadav/lemma/pull/11) handoff |
+| Verification evidence | [Regression 40469725905](https://github.com/Mymayankyadav/lemma/actions/runs/40469725905) **SUCCESS** (full `npm test` including `test:android`). [Android 40469725939](https://github.com/Mymayankyadav/lemma/actions/runs/40469725939) **SUCCESS** (native Gradle APK, syntax, `test:plan`, `node test/lane_guard.js C`, upload 5.6 MB APK). |
+| Scope | Hardware Back: sheet → Home → history.back (if available) → native exit at root. Resume emits diagnostic log; web path no-op. No auth/sync/UI changes. |
+| Outstanding | Physical Android device Back gesture, background/foreground, offline and updates NOT TESTED. Google sign-in, notifications and release signing are future gates. |
+| Not yours | Web UI/CSS (lane B); sync/account/backend (lane A). |
 
 **Requests from other lanes:** none.
