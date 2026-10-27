@@ -17,7 +17,7 @@
     "test:syntax": "node test/check_syntax.js",
     "test:merge": "node test/sync_merge.js",
     "test:outbox": "node test/outbox_core.js",
-    "test:storage": "node test/sync_storage.js && node test/conflict_storage.js && node test/conflict_resolution.js && node test/local_persistence.js && node test/editor_persistence.js && node test/import_persistence.js",
+    "test:storage": "node test/sync_storage.js && node test/conflict_storage.js && node test/conflict_resolution.js && node test/conflict_ui.js && node test/local_persistence.js && node test/editor_persistence.js && node test/import_persistence.js",
     "test:browser-sync": "node test/browser_sync.js",
     "test:account": "node test/account_sync.js",
     "test:account-store": "node test/account_store.js",
