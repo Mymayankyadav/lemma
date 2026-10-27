@@ -571,6 +571,8 @@ function syntheticHistory() {
 
   await require('./workspace_browser.js')({ browser, newPage, ok });
 
+  await require('./conflict_browser.js')({ browser, newPage, ok });
+
   await browser.close();
   console.log('\n' + (problems.length ? problems.join('\n') : 'no console errors'));
   console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');
