@@ -9,7 +9,12 @@ const LemmaConflicts = (() => {
     Array.isArray(x) ? '[' + x.map(canonical).join(',') + ']' :
     '{' + Object.keys(x).sort().filter(k => x[k] !== undefined)
       .map(k => JSON.stringify(k) + ':' + canonical(x[k])).join(',') + '}';
-  const schedule = data => canonical({cards: data?.cards || {}, log: data?.log || []});
+  const scheduleKeys = ['st','due','s','d','last','step','reps','lapses'];
+  const schedule = data => canonical({
+    cards: Object.fromEntries(Object.entries(data?.cards || {}).map(([ord, card]) =>
+      [ord, Object.fromEntries(scheduleKeys.map(key => [key, card?.[key] ?? null]))])),
+    log: data?.log || []
+  });
   function blockedReason(view) {
     if (!view) return 'Conflict no longer exists. Reload the list.';
     if (!view.remote?.known || !Number.isSafeInteger(view.remote.revision) ||
@@ -20,10 +25,15 @@ const LemmaConflicts = (() => {
     if (view.kind === 'note') {
       const versions = [view.base?.known && view.base.data, view.local.data,
         view.remote.data, ...view.queued.filter(op => op.kind === 'note').map(op => op.data)].filter(Boolean);
-      if (versions.some(data => schedule(data) !== schedule(versions[0])))
-        return 'Review schedules differ. The original histories are preserved; resolution requires SYNC-03 replay.';
-      if (view.queued.some(op => op.kind === 'review' || op.kind === 'retraction'))
-        return 'Queued reviews or Undo require SYNC-03 replay before resolving this card.';
+      if (versions.some(data => schedule(data) !== schedule(versions[0]))) {
+        const result = LemmaReviewReplay.project({
+          id:view.entityId, data:view.local.data || view.remote.data,
+          base:view.base, remote:view.remote, deleted:false
+        }, view.ledger?.events || [], view.ledger?.retractions || [], view.queued);
+        if (result.status !== 'projected')
+          return 'Review replay blocked (' + (result.code || result.status) +
+            '). All histories are preserved. ' + (result.message || '');
+      }
     }
     return '';
   }
