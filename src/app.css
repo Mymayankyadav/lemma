@@ -121,7 +121,7 @@ kbd {
 .sync { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); flex: none; }
 .sync.warn { color: var(--hard); }
 /* Show abnormal account states without relying on a hover-only title. */
-.sync.has-label { width: auto; min-width: 34px; padding: 0 9px; gap: 5px; border: 1px solid var(--rule); background: var(--sheet); border-radius: 10px; }
+.sync.has-label { display: flex; align-items: center; justify-content: center; width: auto; min-width: 34px; padding: 0 9px; gap: 5px; border: 1px solid var(--rule); background: var(--sheet); border-radius: 10px; }
 .sync.has-label.warn { color: var(--hard); background: var(--hard-soft); }
 .sync.has-label.pending { color: var(--accent); background: var(--accent-soft); }
 .sync-label { font-size: 12px; line-height: 1; font-weight: 600; white-space: nowrap; }
