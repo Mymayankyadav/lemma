@@ -17,6 +17,7 @@ Next action: SYNC-04 L8 — check CI exact read-only security metadata parity (R
 
 - Production Lemma (`yemqnhnztlbyxmjxidis`) queried with SELECT-only metadata introspection: **5 protected tables, 13 RLS policies, 6 RPC bodies/grants and 9 ordered migrations**. No production rows, secrets or changes.
 - `supabase/tests/security_snapshot.sql` reads identical catalog data from loopback CI Postgres only; `test/sync_security_parity.js` compares it to `security_snapshot.expected.json` recorded from production.
+- Initial L8 CI found two **version-only** migration mismatches: `review_retractions` (production 20261026130428 vs repo 20261026135000) and `revision_safe_profiles` (production 20261026153542 vs repo 20261026203000). Reconciled repository migration filenames to **existing production history versions** while preserving exact SQL blob SHA hashes, without changing live schema. Re-run CI to prove full parity.
 - This branch is not complete until local parity actually passes and all latest-head checks are green. SYNC-04 remains NEXT.
 
 ## SYNC-04 L7 — independent real browser contexts (initial test, incomplete gate)
