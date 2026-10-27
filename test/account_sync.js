@@ -7,6 +7,7 @@ const model = new Map([[local.id,local],
   ['already-present', { id:'already-present',front:'old',back:'old',log:[],cards:{} }]]);
 let accountMode = false, workspaceId = null, workspaceIdle = true;
 let localSaved = 0;
+let localPending = 0;
 let current = { id:'00000000-0000-4000-8000-000000000001' };
 const client = {
   channel(name) {
@@ -37,7 +38,7 @@ const source=fs.readFileSync('src/app/account_sync.js','utf8');
 const ctx=vm.createContext({
   window:{addEventListener(){}}, document:{hidden:false,addEventListener(){}},
   navigator:{onLine:true}, structuredClone,
-  Store:{get mode(){return accountMode?'account':'local';},status:()=>({pending:0,failed:0}),whenSaved:async()=>{localSaved++;}},
+  Store:{get mode(){return accountMode?'account':'local';},status:()=>({pending:localPending,failed:0}),whenSaved:async()=>{localSaved++;}},
   App:{get workspaceController(){return {activeId:workspaceId};},workspaceIdle:()=>workspaceIdle},
   Model:{notes:model,applyRemote(changes){for(const {id,note} of changes) note===null?model.delete(id):model.set(id,note);},
     profile:()=>({settings:{retention:0.9},decks:[]}),loadProfile(){}},
@@ -85,7 +86,12 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   const dirty = {id:'dirty-b',data:{id:'dirty-b',front:'local draft',back:'',log:[],cards:{}},
     dirty:true,deleted:false,revision:1};
   const rowsB = await bCache.notes();
-  rowsB.push(remote,dirty);
+  const tombstone = {id:'deleted-b',data:{id:'deleted-b',front:'old remote card',back:'',log:[],cards:{}},
+    deleted:false,dirty:false,revision:2};
+  // Simulate an account client that still displays an otherwise clean note
+  // when an independent device has already deleted it on the server.
+  model.set(tombstone.id,structuredClone(tombstone.data));
+  rowsB.push(remote,dirty,tombstone);
   accountMode=true;workspaceId=idB;workspaceIdle=false;
   await ctx.sync.refresh();
   assert.equal(model.has('remote-b'),false,'open editor must not be overwritten');
@@ -93,6 +99,28 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   await ctx.sync.refresh();
   assert.equal(model.get('remote-b').front,'account only');
   assert.equal(model.has('dirty-b'),false,'dirty notes stay in account cache until conflict resolution');
+  // Tombstone pull must not mutate the visible Model while editing or while
+  // Store has a pending local write; it must then remove the clean remote note.
+  tombstone.deleted=true; tombstone.revision=3;
+  workspaceIdle=false;
+  await ctx.sync.refresh();
+  assert.equal(model.has('deleted-b'),true,'an open editor blocks remote deletion');
+  workspaceIdle=true; localPending=1;
+  await ctx.sync.refresh();
+  assert.equal(model.has('deleted-b'),true,'pending local writes block remote deletion');
+  localPending=0;
+  await ctx.sync.refresh();
+  assert.equal(model.has('deleted-b'),false,'a clean tombstone removes the visible note');
+  assert.equal(model.get('remote-b').front,'account only','unrelated notes survive the tombstone');
+  assert.equal(staged.length,1,'remote deletion must not queue a new local mutation');
+  // A stale view projected during client restoration must be invalidated on
+  // the next owner-scoped refresh rather than resurrect the tombstoned note.
+  model.set('deleted-b',structuredClone(tombstone.data));
+  await ctx.sync.refresh();
+  assert.equal(model.has('deleted-b'),false,'stale restoration cannot resurrect a tombstone');
+  model.set('dirty-b',structuredClone(dirty.data));
+  await ctx.sync.refresh();
+  assert.equal(model.get('dirty-b').front,'local draft','dirty rows are never clobbered');
   current=null;accountMode=false;workspaceId=null;
   await ctx.sync.attach(null);
   assert.equal(active[1].closed,true);
@@ -102,5 +130,5 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
     'account B and signed-out users receive no implicit local data');
   assert.equal(ctx.sync.status.phase,'signed-out');
   assert.equal(ctx.sync.status.userId,null);
-  console.log('ok: account cache uses existing sync adapter, handles lifecycle and account isolation');
+  console.log('ok: account cache lifecycle, scoped tombstone invalidation and dirty write isolation');
 })().catch(e=>{console.error(e);process.exitCode=1;});
