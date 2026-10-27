@@ -3,6 +3,7 @@
  * This panel never enrolls a device or activates a workspace.
  */
 const LemmaConflicts = (() => {
+  const replay = typeof module !== 'undefined' && module.exports ? require('./review_replay.js') : LemmaReviewReplay;
   const json = x => JSON.stringify(x, null, 2);
   // JSONB can change object insertion order without changing the schedule.
   const canonical = x => x == null || typeof x !== 'object' ? JSON.stringify(x) :
@@ -26,13 +27,20 @@ const LemmaConflicts = (() => {
       const versions = [view.base?.known && view.base.data, view.local.data,
         view.remote.data, ...view.queued.filter(op => op.kind === 'note').map(op => op.data)].filter(Boolean);
       if (versions.some(data => schedule(data) !== schedule(versions[0]))) {
-        const result = LemmaReviewReplay.project({
+        const result = replay.project({
           id:view.entityId, data:view.local.data || view.remote.data,
           base:view.base, remote:view.remote, deleted:false
         }, view.ledger?.events || [], view.ledger?.retractions || [], view.queued);
         if (result.status !== 'projected')
           return 'Review replay blocked (' + (result.code || result.status) +
             '). All histories are preserved. ' + (result.message || '');
+        for (const ord of new Set(versions.flatMap(v => Object.keys(v.cards || {})))) {
+          if (Object.prototype.hasOwnProperty.call(result.cards, ord)) continue;
+          const states = versions.map(v => canonical(Object.fromEntries(scheduleKeys.map(key =>
+            [key, v.cards?.[ord]?.[key] ?? null]))));
+          if (states.some(state => state !== states[0]))
+            return 'Review replay blocked (unexplained_schedule). Review history is preserved.';
+        }
       }
     }
     return '';
