@@ -1,10 +1,13 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L3 — verify the already-tombstoned synthetic fixture disappears from the owner-signed-in account UI, stays absent after reload, and is not resurrected across an independently authenticated browser/device. The server tombstone and mocked client regression passed, but live client propagation is NOT VERIFIED. Then run offline restart, expiry, lost-response, and two-real-identity HTTP RLS gates; do not mark SYNC-04 DONE.
+**Agent assignment: UNASSIGNED — previous Lane A agent retired at the owner's request on 27 October 2026.** No further implementation, merge, or verification by that agent. The Lane A task itself is not complete; a successor may adopt the existing open PR.
+
+Next action (new Lane A agent): adopt and verify open [PR #26](https://github.com/Mymayankyadav/lemma/pull/26) on `lane-a/sync-04-l4-http-rls-harness`, check latest `main` and all latest-head CI, and merge only when the protocol gates pass. Then complete live owner-authenticated UI tombstone/reload, independent device, offline/expiry/lost-response, and two-real-identity HTTP RLS checks. SYNC-04 remains NEXT, not DONE.
 
 | Field | Value |
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
+| Assigned agent | None. Previous agent RETIRED / signed off at owner request; all remaining work is for a successor. |
 | Current task | SYNC-04 L3 owner-authenticated device checks still pending; L4 opt-in two-identity HTTP RLS acceptance harness added (self-test only until tokens are available) |
 | Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) merged as `6550475`; L3 checklist [PR #24](https://github.com/Mymayankyadav/lemma/pull/24) merged as `f15f4d2`. L3 deferred projection [PR #25](https://github.com/Mymayankyadav/lemma/pull/25) merged as `80c385c`. Current HTTP acceptance harness branch: `lane-a/sync-04-l4-http-rls-harness`. AUTH-01 PR #17 merged as `e13582d`. |
 | Baseline | `main@80c385c` regression, Android, screenshot publication and Pages deployment all SUCCESS after PR #25; previous live L1 tests do not certify later builds. |
