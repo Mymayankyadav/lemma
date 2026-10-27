@@ -220,6 +220,29 @@ async function conflict(storage, id, {deleted=false, remoteDeleted=false, profil
   assert.equal(undoneSchedule.log[0][6],'00000000-0000-4000-8000-000000000102');
   assert.equal(undoneSchedule.cards['1'].reps,1);
 
+  // A newly observed retraction invalidates a version comparison even if no
+  // note text changed; the user must reconsider the projected due date.
+  const tokenDevice = await device();
+  const tokenStorage = tokenDevice.storage, tokenId = 'token-review';
+  const tokenBase = {...note(tokenId,'common'),cards:{1:newCard()}};
+  const tokenReview = reviewFixture(tokenId,
+    '00000000-0000-4000-8000-000000000103',0,3);
+  await tokenStorage.ingestRemoteNote({id:tokenId,data:tokenBase,revision:1});
+  const tokenOp = await tokenStorage.stageReview({
+    ...tokenBase,cards:{1:tokenReview.card},log:[tokenReview.entry]
+  },tokenReview.entry);
+  await tokenStorage.markAttempt(tokenOp.id);
+  await tokenStorage.markConflict(tokenOp.id,new Error('stale_note_revision'));
+  await tokenStorage.ingestRemoteNote({id:tokenId,data:tokenBase,revision:2});
+  const tokenView = await tokenStorage.inspectConflict(tokenOp.id);
+  await tokenStorage.ingestRetraction({retraction_id:'00000000-0000-4000-8000-000000000104',
+    target_event_id:tokenReview.event.event_id,reason:'undo'});
+  await assert.rejects(tokenStorage.resolveConflict(tokenOp.id,tokenView.token,{choice:'remote'}),
+    /Conflict changed/);
+  assert.equal((await tokenStorage.note(tokenId)).dirty,true);
+  assert.equal((await tokenStorage.list()).some(op=>op.id===tokenOp.id),true);
+  tokenDevice.db.close();
+
   // Compatible pending ledger operations are not superseded with note snapshots.
   const ledgerEntry = [200,1,3,0,500,0,crypto.randomUUID()];
   const ledgerBase = {...note('ledger','base'),log:[ledgerEntry],cards:{1:{reps:1}}};
