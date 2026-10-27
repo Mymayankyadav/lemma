@@ -25,6 +25,8 @@ GitHub Actions repository variables:
 
 The build injects these public values. In Supabase Auth, the Site URL and redirect allowlist must support `https://mymayankyadav.github.io/lemma/`; verify current configuration before changing it. Android callbacks need their own tested deep-link setup.
 
+Google is the primary sign-in provider (plan task AUTH-01). The owner configures it outside the repo: a Google Cloud OAuth web client with redirect URI `https://yemqnhnztlbyxmjxidis.supabase.co/auth/v1/callback`, the Google provider enabled in Supabase Auth with that client ID/secret, and redirect allowlist entries for Pages, `http://localhost:*/**` and `io.lemma.study://auth-callback`. The Google client secret lives only in the Supabase dashboard, never in this repository or client code.
+
 Settings supports optional login and explicit transfer/comparison. Sign-in does not automatically migrate anonymous cards or activate account editing. Follow the sync gates in the canonical plan.
 
 ## Backend / native changes
