@@ -1,17 +1,26 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L6 PR #29 — confirm latest-head regression, Android and local-stack checks are green, then squash-merge; next L7 creates `test/sync_local_e2e.js` with two isolated Playwright browser contexts and offline/expiry/lost-response gates.
+Next action: SYNC-04 L7 — verify latest PR #30 head with exact offline EDIT/relaunch, short-JWT refresh, lost-response retry and tombstone reload; only then merge. Following that, implement L8 read-only production/local security parity.
 
 | Field | Value |
 | --- | --- |
-| Status | SYNC-04 NEXT; L5 merged in PR #28; L6 real local two-user HTTP RLS gate SUCCESS on first PR head, final PR merge/checks pending |
-| Current task | SYNC-04 L5 — reproducible local Postgres 17/Supabase stack |
-| Branch | [PR #28](https://github.com/Mymayankyadav/lemma/pull/28), `lane-a/sync-04-l5-local-stack` from `main@18c5750` |
+| Status | SYNC-04 NEXT; L5 merged PR #28, L6 merged PR #29; L7 draft PR #30, expanded CI green on prior head, exact offline-edit strengthening pending final CI |
+| Current task | SYNC-04 L7 — real app / independently authenticated persistent-browser device + fault gates |
+| Branch | [PR #30](https://github.com/Mymayankyadav/lemma/pull/30), `lane-a/sync-04-l7-independent-devices` from `main@20e2fcd` |
 | Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
 | L5 implementation | `supabase/config.toml` (auth redirect loopback, 60s JWT, Mailpit), `.github/workflows/sync-local.yml` (isolated `supabase start`, `supabase db reset --local --no-seed`), `test/sync_local_smoke.js` (compare all migration versions and RLS flags) |
 | L5 verification | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
-| Remaining gate | L5 CI green followed by L6 two local auth identities; L7 real local UI devices/faults; L8 read-only production security parity, before SYNC-04 DONE. |
+| Remaining gate | L7 latest-head green and merge; L8 production/local read-only security parity; SYNC-04 overall stays NEXT until both complete. |
+
+## SYNC-04 L7 — independent real browser contexts (initial test, incomplete gate)
+
+- Added `test/sync_local_e2e.js` and local-stack CI setup for Chromium. Three isolated persistent browser profiles use the real app and local email-link/PKCE fallback through Mailpit (two independent devices for one identity; third for cross-owner isolation), with no mock Supabase HTTP.
+- Initial gate targets automatic create/update/delete propagation without manual refresh and a no-resurrection reload; confirms three exact note revisions/receipts in local PostgreSQL.
+- **Successful expanded CI:** [40543083389](https://github.com/Mymayankyadav/lemma/actions/runs/40543083389) verified independent real-account create/update/delete with tombstone and browser reload, offline *new editor write* durably replayed after a full browser-process exit, real token refresh, lost HTTP response after server commit and exactly one receipt/revision, and unrelated user isolation. Regression and Android green. The current head strengthens the offline scenario from a new write to editing a revision-1 note and waits for account restoration before the reload assertion. This stricter case is **PENDING latest-head CI**; PR remains draft.
+- **Production L8 preparation (read-only):** Lemma project `yemqnhnztlbyxmjxidis` has nine migration versions; RLS on five sync/receipt tables; authenticated SELECT limited by owner policies, notes/profiles writable only via RPC, append-only reviews/retractions. Public RPC wrappers are invoker; private implementations are definer and unavailable to anon. The exact local-vs-production snapshot comparison has NOT yet been performed, so L8 remains unchecked.
+- **Initial CI finding:** [40530820901](https://github.com/Mymayankyadav/lemma/actions/runs/40530820901) failed at automatic independent-device create (server revision 1 existed but peer row absent after 40s). Now the test asserts matching auth identities and adds status-only diagnostics; Lane A's `account_sync.js` reconciles a signed-in foreground account every 15 seconds as a Realtime-loss fallback, instead of every 120 seconds. CI rerun required. **NOT YET VERIFIED:** subsequent UI convergence. The remaining mandated L7 faults — backend-offline restart/reconnect, 60-second JWT expiry/refresh, response lost after committed RPC — are not yet implemented. These must be added before L7 can be marked DONE or its PR merged; do not treat the first convergence test as the complete gate.
+- All endpoints use local loopback; no production credentials or owner learning records are used.
 
 ## SYNC-04 L6 — two real local HTTP identities (pending CI)
 
