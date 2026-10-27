@@ -8,6 +8,33 @@ const App = (() => {
   let workspaceBlocked = false;
   let workspaceRevision = 0;
   let workspaceController = null;
+  const workspacePref = 'lemma-account-workspace-v1';
+  let activatingRemembered = false;
+  function savedWorkspaceId() {
+    try { return window.localStorage.getItem(workspacePref); }
+    catch (_) { return null; }
+  }
+  function rememberAccountWorkspace(id) {
+    try {
+      if (id) window.localStorage.setItem(workspacePref, id);
+      else window.localStorage.removeItem(workspacePref);
+    } catch (_) { /* persistence unavailable: explicit switch still works */ }
+  }
+  async function activateRemembered() {
+    if (activatingRemembered || !workspaceController || Store.mode !== 'local' ||
+        !workspaceIdle() || !LemmaAccount.user?.id ||
+        savedWorkspaceId() !== LemmaAccount.user.id) return;
+    const status = LemmaSync.status;
+    if (status.userId !== LemmaAccount.user.id ||
+        !(status.phase === 'offline' || (status.phase === 'ready' && !status.pending))) return;
+    activatingRemembered = true;
+    try {
+      await workspaceController.activate();
+      go('home');
+    } catch (_) {
+      // Keep the opt-in but never replace or enroll anonymous data on failure.
+    } finally { activatingRemembered = false; }
+  }
 
   function buildShell() {
     const nav = [['home', 'Decks', 'decks'], ['browse', 'Browse', 'list'], ['stats', 'Stats', 'chart'], ['settings', 'Settings', 'sliders']];
@@ -201,6 +228,7 @@ const App = (() => {
     LemmaSync.init();
     workspaceController = LemmaWorkspace.fromApp();
     workspaceController.init();
+    LemmaSync.onChange(() => { activateRemembered().catch(() => {}); });
     App.loading = false;
     Model.onChange(() => refresh());
     if (data.mode === 'cloud') {
@@ -216,7 +244,7 @@ const App = (() => {
   return {
     boot, go, render, refresh, startSession, newCard, migrateLeftovers,
     loading: true, leftovers: [],
-    workspaceIdle, lockWorkspace,
+    workspaceIdle, lockWorkspace, rememberAccountWorkspace,
     get workspaceController() { return workspaceController; },
     get workspaceBlocked() { return workspaceBlocked; },
     get workspaceRevision() { return workspaceRevision; },
