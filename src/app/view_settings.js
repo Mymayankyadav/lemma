@@ -153,10 +153,19 @@ const SettingsView = (() => {
     if (LemmaAccount.client) {
       const accountState = h('p', { class: 'muted small', role: 'status',
         text: LemmaAccount.user ? 'Signed in: ' + LemmaAccount.user.email + (Store.mode === 'account' ? '. Account workspace is active; edits save to this device and sync automatically.' : '. Your device workspace remains separate until you explicitly switch.') : 'Not signed in. Cards remain on this device.' });
+      const google = h('button', { class: 'btn btn-primary btn-sm', type: 'button',
+        text: 'Continue with Google' });
       const email = h('input', { type: 'email', class: 'input', placeholder: 'Email for sign-in link', autocomplete: 'email' });
-      const send = h('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Send sign-in link' });
+      const send = h('button', { class: 'btn btn-sm', type: 'button', text: 'Send sign-in link' });
       const logout = h('button', { class: 'btn btn-sm', type: 'button', text: 'Sign out' });
-      const message = h('p', { class: 'muted small', role: 'status' });
+      const message = h('p', { class: 'muted small', role: 'status',
+        text: LemmaAccount.lastAuthError || '' });
+      google.onclick = async () => {
+        google.disabled = true;
+        try { await LemmaAccount.signInWithGoogle(); }
+        catch (err) { message.textContent = 'Google sign-in: ' + (err.message || err); }
+        finally { google.disabled = false; }
+      };
       send.onclick = async () => {
         send.disabled = true;
         try { await LemmaAccount.signIn(email.value.trim()); message.textContent = 'Check your email for a sign-in link.'; }
@@ -272,7 +281,8 @@ const SettingsView = (() => {
       };
       showCache();
       page.append(section('set-cloud-account', 'Lemma account', 'Private account data syncs automatically after you explicitly enter the account workspace. Device cards are never enrolled by signing in.',
-        accountState, h('div', { class: 'btn-row' }, email, send, logout),
+        accountState, h('div', { class: 'btn-row' }, google),
+        h('div', { class: 'btn-row' }, email, send, logout),
         h('div', { class: 'btn-row' }, upload, download),
         cacheState, h('div', { class: 'btn-row' }, refreshCache, compare),
         comparison, backupLabel, h('div', {class:'btn-row'}, useAccount, useDevice),
