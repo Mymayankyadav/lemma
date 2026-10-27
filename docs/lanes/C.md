@@ -1,6 +1,6 @@
 # Lane C — Android
 
-Next action: ANDROID-02 becomes ready automatically when UI-01 is DONE (SYNC-04 already DONE). Until then prepare the native smoke checklist/test design and inspect incoming C requests without enabling dependent auth/UI/notification behavior. On readiness claim a lane-c PR; coordinate A auth APIs and B safe-area UI directly. Prepare a tested APK and consolidate physical-device/production checks before asking the owner.
+Next action: prepare the ANDROID-02 physical-device evidence checklist in an independent docs-only slice; UI-01 remains an unmet prerequisite, so do not enable native auth or notifications yet. Claim: `lane-c/android-02-device-evidence-checklist`.
 
 | Field | Value |
 | --- | --- |
