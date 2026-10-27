@@ -114,11 +114,12 @@ async function browserUserId(page) {
   });
 }
 async function browse(page){
+  // Navigate once. Repeated navigation inside an eventual() poll resets the
+  // list before its deferred draw() runs, producing a false non-convergence.
   await page.locator('.tabs button[data-go="browse"]').click();
-  await page.locator('#main').waitFor();
+  await page.locator('.browse .note-list').waitFor();
 }
-async function row(page,title){
-  await browse(page);
+function row(page,title){
   return page.locator('.note-row').filter({hasText:title});
 }
 async function create(page,title,front){
@@ -131,7 +132,8 @@ async function create(page,title,front){
   await page.waitForFunction(()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),null,{timeout:T});
 }
 async function edit(page,title,front,remove=false){
-  (await row(page,title)).first().click();
+  await browse(page);
+  await row(page,title).first().click();
   await page.getByRole('button',{name:'Edit',exact:true}).click();
   if(remove) {
     await page.locator('.sheet-foot .btn-ghost-danger').click();
@@ -193,21 +195,28 @@ async function run(){
     assert.equal(owners[0],owners[1],'two devices must use exactly the same auth.uid()');
     assert.notEqual(owners[0],owners[2],'third browser must be a different auth.uid()');
 
+    // Keep peers on a stable rendered list while Realtime/poll refreshes it.
+    await browse(pages[1]);
+    await browse(pages[2]);
     await create(pages[0],label,'Initial independent-device proof');
     const created=await eventual('server create',()=>dbNote(label));
     assert.equal(created.revision,1);
-    await eventual('peer remote create',async()=>await (await row(pages[1],label)).count()===1)
+    await eventual('peer remote create',async()=>await row(pages[1],label).count()===1)
       .catch(async err => {
         const status=await pages[1].locator('#sync').textContent().catch(()=>'(unavailable)');
-        console.error('peer convergence diagnostic (no credentials):',status);
+        const cards=await pages[1].locator('.note-row').count().catch(()=>-1);
+        const list=await pages[1].locator('.note-list').textContent().catch(()=>'(unavailable)');
+        console.error('peer convergence diagnostic (no credentials):',JSON.stringify({
+          status,cards,list:list.slice(0,160)
+        }));
         throw err;
       });
-    assert.equal(await (await row(pages[2],label)).count(),0,'other owner cannot see private note');
+    assert.equal(await row(pages[2],label).count(),0,'other owner cannot see private note');
 
     await edit(pages[0],label,'Updated remotely without manual sync');
     await eventual('server update',()=>dbNote(label)?.revision===2);
     await eventual('peer remote update',async()=>{
-      const r=await row(pages[1],label);
+      const r=row(pages[1],label);
       return (await r.count())===1 && (await r.textContent()).includes('Updated remotely');
     });
 
