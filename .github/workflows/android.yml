@@ -2,11 +2,11 @@ name: Lemma Android debug APK
 
 on:
   push:
-    branches: [main, lane-c/android-01-s2-native-back-resume]
+    branches: [main]
   pull_request:
 
 permissions:
-  contents: write # temporary lane-only dependency bootstrap; restore to read before PR
+  contents: read
 
 concurrency:
   group: lemma-android-${{ github.ref }}
@@ -30,17 +30,6 @@ jobs:
           java-version: '21'
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
-      - name: Bootstrap approved Capacitor App 8.0.0 dependency on Lane C only
-        if: github.event_name == 'push' && github.ref == 'refs/heads/lane-c/android-01-s2-native-back-resume'
-        run: |
-          if ! node -e "process.exit(require('./package.json').dependencies['@capacitor/app']==='8.0.0' ? 0 : 1)"; then
-            npm install @capacitor/app@8.0.0 --save-exact --no-audit --no-fund
-            npm run android:sync
-            git add package.json package-lock.json android/
-            node test/lane_guard.js C
-            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat(android-01): pin Capacitor App 8.0.0 and sync native plugin'
-            git push origin HEAD:lane-c/android-01-s2-native-back-resume
-          fi
       - name: Check syntax and lane ownership
         run: |
           npm run test:syntax

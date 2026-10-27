@@ -41,7 +41,15 @@ For an APK downloaded from CI, replace the path with the extracted `app-debug.ap
 
 ## Current scope and verification
 
-- This slice adds the native Android project and reproducible **debug APK** CI. It does not add hardware Back handling, resume recovery, native Google OAuth callbacks, notifications, or Android lifecycle changes (these are later slices).
+- S1 added the native Android project and reproducible **debug APK** CI. S2 adds native Back handling and resume logging. Native Google OAuth callbacks, notifications, and further device lifecycle changes are later slices.
 - A successful Gradle build is **not** proof of launch, live Supabase auth/sync, or installation on a physical phone. The physical device gates remain outstanding.
 - Deploying GitHub Pages does **not** update bundled assets of an installed APK. Each new bundled release requires building and installing a correctly signed updated APK.
 - Use a separate test device or export first when evaluating debug builds with important local flashcards; never clear storage or uninstall as a troubleshooting shortcut.
+
+## Android Back and resume (ANDROID-01 S2)
+
+The pinned `@capacitor/app@8.0.0` matches Capacitor core. `npm run android:sync` links the native Android App plugin. The inline app code uses `window.Capacitor.registerPlugin('App')` only when running on the native platform and when the plugin is available; it registers nothing in ordinary browsers.
+
+On the Android Back gesture or hardware button, Lemma closes an open sheet first, then returns secondary app screens to Home using the existing router (which does not push browser history). At Home, it calls `history.back()` if the native event reports prior history, otherwise `App.exitApp()`. The `resume` event is logged for diagnosis, but does not force sync or mutate data; existing foreground logic remains responsible.
+
+`npm run test:android` checks these decisions with mocked bridge events. Physical-device Back, resume and offline-data verification are still pending. Never uninstall an app with unsaved local data as a workaround.
