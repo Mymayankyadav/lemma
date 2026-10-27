@@ -31,10 +31,18 @@ jobs:
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
       - name: Check syntax and lane ownership
+        env:
+          PR_HEAD_REF: ${{ github.head_ref }}
         run: |
           npm run test:syntax
           npm run test:plan
-          node test/lane_guard.js C
+          case "$PR_HEAD_REF" in
+            lane-a/*) node test/lane_guard.js A ;;
+            lane-b/*) node test/lane_guard.js B ;;
+            lane-c/*) node test/lane_guard.js C ;;
+            '') node test/lane_guard.js ;;
+            *) echo "Unknown PR lane: $PR_HEAD_REF"; exit 1 ;;
+          esac
       - name: Sync bundled web application
         run: npm run android:sync
         env:
