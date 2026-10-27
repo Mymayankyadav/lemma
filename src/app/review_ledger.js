@@ -30,7 +30,7 @@ const ReviewLedger = (() => {
     }
     return [...seen.values()].filter(row => !retracted.has(row.event_id))
       .sort((a,b) => (a.occurred_at_ms-b.occurred_at_ms) ||
-        String(a.event_id).localeCompare(String(b.event_id)));
+        (String(a.event_id) < String(b.event_id) ? -1 : String(a.event_id) > String(b.event_id) ? 1 : 0));
   }
   /* Adapt the immutable ledger to the EXISTING FSRS.replay() API.
    * Do not implement memory mathematics here. Reject parameter changes, missing
