@@ -152,7 +152,7 @@ const SettingsView = (() => {
     // Cloud account is optional. Existing local cards are never migrated automatically.
     if (LemmaAccount.client) {
       const accountState = h('p', { class: 'muted small', role: 'status',
-        text: LemmaAccount.user ? 'Signed in: ' + LemmaAccount.user.email + '. Cloud card sync is not active yet; existing cards remain local.' : 'Not signed in. Cards remain on this device.' });
+        text: LemmaAccount.user ? 'Signed in: ' + LemmaAccount.user.email + (Store.mode === 'account' ? '. Account workspace is active; edits save to this device and sync automatically.' : '. Your device workspace remains separate until you explicitly switch.') : 'Not signed in. Cards remain on this device.' });
       const email = h('input', { type: 'email', class: 'input', placeholder: 'Email for sign-in link', autocomplete: 'email' });
       const send = h('button', { class: 'btn btn-primary btn-sm', type: 'button', text: 'Send sign-in link' });
       const logout = h('button', { class: 'btn btn-sm', type: 'button', text: 'Sign out' });
@@ -165,7 +165,7 @@ const SettingsView = (() => {
       };
       logout.onclick = async () => {
         logout.disabled = true;
-        try { await LemmaAccount.signOut(); accountState.textContent = 'Signed out. Cards remain on this device.'; }
+        try { await Store.whenSaved(); await LemmaAccount.signOut(); accountState.textContent = 'Signed out. Device cards remain available.'; }
         catch (err) { message.textContent = 'Sign-out error: ' + err.message; }
         finally { logout.disabled = false; }
       };
@@ -192,7 +192,7 @@ const SettingsView = (() => {
           const result = await LemmaSync.enrollMissingLocal();
           message.textContent = result.queued + ' card snapshots durably queued; ' +
             result.skipped + ' skipped. The account cache will attempt cloud delivery. ' +
-            'Future edits to your local deck do NOT yet sync automatically.';
+            'Switch to the account workspace below for automatic sync of future edits.';
           showCache();
         } catch (err) {
           message.textContent = 'Account enrollment: ' + err.message;
@@ -205,7 +205,7 @@ const SettingsView = (() => {
         cacheState.textContent = 'Private account cache: ' + s.phase +
           (s.pending ? ' · ' + s.pending + ' pending operations' : '') +
           (s.error ? ' · ' + s.error : '') +
-          '. This is separate from the cards displayed by Lemma.';
+          (Store.mode === 'account' ? '. Active account workspace.' : '. Separate from the device cards displayed by Lemma.');
       };
       const refreshCache = h('button', { class: 'btn btn-sm', type: 'button', text: 'Refresh account cache' });
       refreshCache.onclick = async () => {
@@ -233,12 +233,49 @@ const SettingsView = (() => {
         } catch (err) { comparison.textContent = 'Comparison unavailable: ' + err.message; }
         finally { compare.disabled = false; }
       };
+      const backupCheck = h('input', {type:'checkbox'});
+      const backupLabel = h('label', {class:'conflict-confirm'}, backupCheck,
+        h('span', {text:'I have exported a backup of my device cards and reviewed the account comparison.'}));
+      const useAccount = h('button', {class:'btn btn-primary btn-sm', type:'button',
+        text:'Use account workspace'});
+      const useDevice = h('button', {class:'btn btn-sm', type:'button',
+        text:'Return to device workspace'});
+      backupLabel.hidden = Store.mode === 'account';
+      useAccount.hidden = Store.mode === 'account';
+      useDevice.hidden = Store.mode !== 'account';
+      useAccount.onclick = async () => {
+        if (!backupCheck.checked) {
+          message.textContent = 'Export a backup and check the acknowledgment before switching.';
+          return;
+        }
+        const confirmed = await confirmDialog({
+          title:'Switch to account workspace?',
+          message:'Your device cards stay in their original storage. Account cards form a separate workspace; only changes made after switching sync automatically. Verify any missing cards are enrolled and cloud-confirmed first.',
+          confirmLabel:'Use account workspace'
+        });
+        if (!confirmed) return;
+        useAccount.disabled = true;
+        try {
+          if (navigator.onLine) await LemmaSync.refresh();
+          await App.workspaceController.activate();
+          App.go('home');
+        } catch (err) {
+          message.textContent = 'Cannot switch: ' + err.message;
+          useAccount.disabled = false;
+        }
+      };
+      useDevice.onclick = async () => {
+        useDevice.disabled = true;
+        try { await App.workspaceController.deactivate(); App.go('home'); }
+        catch (err) { message.textContent = 'Cannot switch: ' + err.message; useDevice.disabled = false; }
+      };
       showCache();
-      page.append(section('set-cloud-account', 'Lemma account', 'Copy missing cards explicitly. Live cloud sync is not enabled yet. Export a backup before transferring.',
+      page.append(section('set-cloud-account', 'Lemma account', 'Private account data syncs automatically after you explicitly enter the account workspace. Device cards are never enrolled by signing in.',
         accountState, h('div', { class: 'btn-row' }, email, send, logout),
         h('div', { class: 'btn-row' }, upload, download),
         cacheState, h('div', { class: 'btn-row' }, refreshCache, compare),
-        comparison, LemmaConflicts.mount(), message));
+        comparison, backupLabel, h('div', {class:'btn-row'}, useAccount, useDevice),
+        LemmaConflicts.mount(), message));
     }
 
     // data
