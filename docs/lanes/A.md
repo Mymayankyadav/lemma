@@ -1,13 +1,13 @@
 # Lane A — sync, auth and backend
 
-Next action: finish AUTH-01 S2: verify one live Pages sign-out/re-login and the backup acknowledgment control. Google setup and first login are VERIFIED; do not ask the owner to repeat setup. Resolve the lane C workflow request below before merging this PR. SYNC-04 live gates stay pending until AUTH-01 passes.
+Next action: finish AUTH-01 S2: verify one live Pages sign-out/re-login and the backup acknowledgment control. Google setup and first login are VERIFIED; do not ask the owner to repeat setup. The CI blocker is resolved by PR #14 under the owner's one-time workflow-only exception; ongoing lane ownership is unchanged. SYNC-04 live gates stay pending until AUTH-01 passes.
 
 | Field | Value |
 | --- | --- |
 | Status | IN_PROGRESS (AUTH-01 S2; live sign-out pending) |
 | Current task | AUTH-01 S2 verification, then SYNC-04 live gates |
-| Open branch / PR | [PR #13](https://github.com/Mymayankyadav/lemma/pull/13), `lane-a/auth-01-live-verification`; adopt this branch while open |
-| Baseline | `main@310ef6a`, regression 40466003325 and Android 40466003236 SUCCESS. SYNC-04 M1 merged in PR #8 at `5efdf3e`. |
+| Delivery | [PR #13](https://github.com/Mymayankyadav/lemma/pull/13), `lane-a/auth-01-live-verification`; verify its merge status before continuing |
+| Baseline | Main merged through `dbfb961` (PR #14). Workflow fix tested at `9976fd1`: regression 40471757323 and Android build/artifact 40471757279 SUCCESS. SYNC-04 M1 merged in PR #8 at `5efdf3e`. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. No migrations or persistent backend writes in this slice. |
 
 ## Live evidence — 27 October 2026
@@ -25,7 +25,7 @@ Next action: finish AUTH-01 S2: verify one live Pages sign-out/re-login and the 
 
 SYNC-04 M1 is already mock-verified by [regression 40463998686](https://github.com/Mymayankyadav/lemma/actions/runs/40463998686): `test/browser_sync.js` covers offline IndexedDB restart, expired JWT/session recovery, lost responses after server commit, tombstones and explicit edit/delete conflict recovery. Storage/account/workspace tests cover durable receipts, identity invalidation and no implicit enrollment.
 
-Local checks: `npm ci`, syntax, `test:workspace`, build, `test:plan`, lane A guard and diff checks SUCCESS. Full local `npm test` is blocked by unavailable Chromium; the prior browser-download attempts returned a 195-byte Site Unavailable page. Full PR regression 40469993220 SUCCESS. [Android CI 40469993250](https://github.com/Mymayankyadav/lemma/actions/runs/40469993250) FAILED because its hardcoded lane C guard rejects `docs/lanes/A.md` and `test/workspace_browser.js`; APK compilation was skipped. PR #13 stays open until the workflow is corrected and all checks pass.
+Local checks: `npm ci`, syntax, `test:workspace`, build, `test:plan`, lane A guard and diff checks SUCCESS. Full local `npm test` is blocked by unavailable Chromium; the prior browser-download attempts returned a 195-byte Site Unavailable page. Full PR regression 40469993220 SUCCESS. The earlier [Android CI 40469993250](https://github.com/Mymayankyadav/lemma/actions/runs/40469993250) failure was a hardcoded lane C guard. [PR #14](https://github.com/Mymayankyadav/lemma/pull/14) corrected only `.github/workflows/android.yml`, passed regression and APK build, and merged as `dbfb961`. Its ownership guards are unchanged. PR #13 includes current main and must pass fresh regression and Android checks before merging.
 
 ## Remaining gates
 
@@ -35,4 +35,4 @@ SYNC-04 still needs real authenticated two-browser/two-identity convergence, off
 
 ## Requests from other lanes
 
-- **Lane C:** `.github/workflows/android.yml`, step `Check syntax and lane ownership`, currently runs `node test/lane_guard.js C` on every PR. This rejects legitimate A/B changes. Select the guard using the PR head's `lane-a/`, `lane-b/` or `lane-c/` prefix; on main pushes run ownership-config validation (`npm run test:plan`) without forcing C. Keep syntax/plan checks. After C merges the correction, merge current main into this A branch and rerun CI. Do not bypass or weaken ownership tests from lane A.
+None outstanding. The owner explicitly allowed the workflow-only correction once; PR #14 consumed that exception. Future cross-lane changes still use the normal request/ownership protocol.
