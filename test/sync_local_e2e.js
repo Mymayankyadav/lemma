@@ -158,6 +158,28 @@ function dbNote(title){
   const [id,revision,deleted]=parts[0].split('|');
   return {id,revision:Number(revision),deleted:deleted==='t'};
 }
+async function debugOutbox(page,uid,entityId) {
+  // Diagnostic only. Read operation metadata, never log auth tokens or note text.
+  return page.evaluate(({uid,entityId})=>new Promise((resolve,reject)=>{
+    const req=indexedDB.open('lemma-user-'+uid,3);
+    req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{
+      const db=req.result;
+      const tx=db.transaction(['notes','outbox'],'readonly');
+      const notes=tx.objectStore('notes').get(entityId);
+      const queue=tx.objectStore('outbox').getAll();
+      tx.oncomplete=()=>{
+        const n=notes.result;
+        const ops=(queue.result||[]).filter(op=>op.entityId===entityId)
+          .map(op=>({kind:op.kind,deleted:op.deleted,expectedRevision:op.expectedRevision,
+            state:op.state,attempts:op.attempts,error:String(op.lastError||'').slice(0,180)}));
+        db.close();
+        resolve({note:n?{revision:n.revision,dirty:n.dirty,deleted:n.deleted}:null,ops});
+      };
+      tx.onerror=()=>{db.close();reject(tx.error);};
+    };
+  }),{uid,entityId});
+}
 function receiptCount(id) {
   return Number(psql('select count(*) from public.client_mutation_receipts where entity_type='+
     sqlQuote('note')+' and entity_id='+sqlQuote(id)));
@@ -227,7 +249,16 @@ async function run(){
     });
 
     await edit(pages[0],label,'',true);
-    await eventual('server tombstone',()=>dbNote(label)?.deleted===true);
+    await eventual('server tombstone',()=>dbNote(label)?.deleted===true)
+      .catch(async error=>{
+        const info={
+          database:dbNote(label),receipts:receiptCount(created.id),
+          browserStatus:await pages[0].locator('#sync').textContent().catch(()=>'(unavailable)'),
+          local:await debugOutbox(pages[0],owners[0],created.id).catch(e=>({error:e.message}))
+        };
+        console.error('delete diagnostic, no credentials:',JSON.stringify(info));
+        throw error;
+      });
     await eventual('peer remote delete',async()=>await (await row(pages[1],label)).count()===0);
     await pages[1].reload();
     await eventual('peer reload after delete',async()=>await (await row(pages[1],label)).count()===0);
