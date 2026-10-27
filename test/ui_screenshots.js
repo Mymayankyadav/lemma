@@ -19,7 +19,7 @@ const HTML = fs.readFileSync(distHtml, 'utf8');
 const MARKER = '/* ===== main.js ===== */';
 if (!HTML.includes(MARKER)) throw new Error('UI test app marker missing');
 const TEST_HTML = HTML.replace(MARKER,
-  'window.__uiAcceptance = { get App() { return App; } };\\n' + MARKER);
+  'window.__uiAcceptance = { get App() { return App; } };\n' + MARKER);
 const MOCK = fs.readFileSync(path.join(__dirname, 'mock_claude.js'), 'utf8');
 const LIBS = {
   'katex.min.js': path.join(ROOT, 'node_modules/katex/dist/katex.min.js'),
