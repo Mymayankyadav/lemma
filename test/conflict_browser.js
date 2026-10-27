@@ -119,7 +119,19 @@ module.exports = async ({browser, newPage, ok}) => {
       'delete choice requires explicit confirmation');
     await page.locator('.conflict-confirm input[type=checkbox]').first().check();
     await page.getByRole('button',{name:'Save resolution to device'}).click();
-    await page.waitForFunction(()=>document.querySelector('.conflict-center')?.textContent.includes('blocked operation'));
+    try {
+      await page.waitForFunction(()=>document.querySelector('.conflict-center')?.textContent.includes('blocked operation'),null,{timeout:12000});
+    } catch (error) {
+      const detail = await page.evaluate(async () => ({
+        panel: document.querySelector('.conflict-center')?.textContent,
+        alert: document.querySelector('.conflict-controls [role=status]')?.textContent,
+        note: await __editor.LemmaSync.accountHandle().storage.note('deleted'),
+        outbox: (await __editor.LemmaSync.accountHandle().storage.list()).map(o=>({
+          id:o.id,kind:o.kind,entityId:o.entityId,state:o.state,resolves:o.resolves
+        }))
+      }));
+      throw new Error('Delete-resolution UI did not reload: '+JSON.stringify(detail)+'; '+error.message);
+    }
     ok(await page.evaluate(async()=> (await __editor.LemmaSync.accountHandle().storage.note('deleted')).deleted),
       'confirmed delete is durably staged as a tombstone');
 
