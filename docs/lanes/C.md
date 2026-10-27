@@ -1,6 +1,6 @@
 # Lane C — Android
 
-Next action: prepare the ANDROID-02 physical-device evidence checklist in an independent docs-only slice; UI-01 remains an unmet prerequisite, so do not enable native auth or notifications yet. Claim: `lane-c/android-02-device-evidence-checklist`.
+Next action: review and merge [PR #39](https://github.com/Mymayankyadav/lemma/pull/39) when docs/lane guard and CI pass. It prepares a no-code D1–D6 device+Pages acceptance sheet; physical tests are NOT RUN. ANDROID-02 stays BLOCKED by UI-01; afterward claim N1 native OAuth only when UI-01 is DONE.
 
 | Field | Value |
 | --- | --- |
@@ -17,3 +17,5 @@ Next action: prepare the ANDROID-02 physical-device evidence checklist in an ind
 **Shared physical-device checklist (prepare before asking; reuse at RELEASE-01):** sideload the latest `lemma-android-debug` artifact from a green `main` Android run (see `docs/ANDROID.md`) and note whether Back from a sheet, Back at Home (exit) and background/foreground behave. Record results here in the next lane C session.
 
 **Requests from other lanes:** none open at v5 inspection. Read all lane handoffs directly. Record requests to A/B with contract and acceptance criteria; do not ask the owner to relay them.
+
+**N4 preparation (PR #39, CI pending):** [docs/ANDROID.md](../ANDROID.md#shared-android-02--release-01-device-acceptance-protocol-preparation-only) now holds D1–D6 preconditions, safe local-data backup/upgrade handling, native Back, OAuth cancel/deep-link, opt-in account convergence/deletion, offline restart, future consent-based notifications, and APK/Pages update checks. Each check requires physical PASS/FAIL/BLOCKED/NOT RUN with environment, SHA and evidence; nothing in this checklist is evidence of a run. Reuse passing unchanged checks at release. This is independent preparation only, not authorization to start blocked ANDROID-02 behavior.
