@@ -144,6 +144,12 @@ const LemmaCloud = (() => {
       };
     };
   }
+  const scheduleFields = ['st','due','s','d','last','step','reps','lapses'];
+  const scheduleSignature = data => canonical({
+    cards: Object.fromEntries(Object.entries(data.cards || {}).map(([ord, card]) =>
+      [ord, Object.fromEntries(scheduleFields.map(key => [key, card?.[key] ?? null]))])),
+    log: data.log || []
+  });
   function resolutionSnapshot(view, decision) {
     const remote = view.remote;
     const snapshots = view.queued.filter(op => op.kind === view.kind);
@@ -171,7 +177,7 @@ const LemmaCloud = (() => {
     if (view.kind === 'note') {
       const versions = [view.base?.known && view.base.data, view.local.data, remote.data,
         ...snapshots.map(op => op.data), selected.data].filter(Boolean);
-      const schedules = versions.map(data => canonical({ cards: data.cards || {}, log: data.log || [] }));
+      const schedules = versions.map(scheduleSignature);
       if (schedules.some(value => value !== schedules[0])) {
         // Do not pick a schedule by snapshot revision. Reconstruct it only
         // from complete immutable evidence, using the reviewed ledger snapshot.
@@ -187,7 +193,8 @@ const LemmaCloud = (() => {
         const projectedOrds = new Set(Object.keys(result.cards));
         for (const ord of new Set(versions.flatMap(v => Object.keys(v.cards || {})))) {
           if (projectedOrds.has(ord)) continue;
-          const unchanged = versions.map(v => canonical(v.cards?.[ord] || null));
+          const unchanged = versions.map(v => canonical(Object.fromEntries(
+            scheduleFields.map(key => [key, v.cards?.[ord]?.[key] ?? null]))));
           if (unchanged.some(value => value !== unchanged[0]))
             throw new Error('review_replay_required: unexplained_schedule');
         }
