@@ -74,6 +74,9 @@ const App = (() => {
     window.scrollTo(0, 0);
     const main = $('#main');
     if (main && v !== 'review') try { main.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+    // Apply any cloud invalidation held while reviewing or editing as soon
+    // as the workspace becomes safe to reconcile.
+    if (Store.mode === 'account' && workspaceIdle()) LemmaSync.kick();
   }
   function render() {
     const main = $('#main');
