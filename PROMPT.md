@@ -1,7 +1,7 @@
 # Agent entry point
 
-Read [plan.md](plan.md) from the current GitHub `main` branch and follow [AGENTS.md](AGENTS.md).
+Read current GitHub `main` [plan.md](plan.md) and [AGENTS.md](AGENTS.md).
 
-That plan is the only roadmap and handoff. Continue your lane's next task (ask which lane if none was named) only when implementation is requested; planning/review requests remain within their stated scope.
+For implementation/continuation, select a ready unclaimed lane automatically unless one is specified. Claim or recover its PR, implement one bounded slice, verify and merge, then advance through eligible work without waiting for another “continue”. Coordinate lanes and routine integration directly through GitHub. Escalate only the concrete owner actions defined in plan §3; checkpoint at execution limits.
 
-Older prompts and plans are preserved in Git history, not executable instructions. No prior conversation is needed.
+Planning/review requests remain within their stated scope. The plan is the only roadmap; old prompts and prior chats do not create tasks or prerequisites.

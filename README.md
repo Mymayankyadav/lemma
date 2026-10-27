@@ -8,7 +8,7 @@ A persistent mathematics learning workspace built on existing FSRS-6 flashcards,
 
 ## Start here
 
-[plan.md](plan.md) is the **only roadmap and current chatbot handoff**. [AGENTS.md](AGENTS.md) supplies short operating rules. Up to three chatbots can work in parallel, one per lane, each on its own branch and pull request; the user can say **"follow the plan.md, lane A/B/C"** without supplying earlier chats.
+[plan.md](plan.md) is the **only roadmap and current chatbot handoff**. [AGENTS.md](AGENTS.md) supplies short operating rules. Say **"continue the plan"** for automatic task/lane selection, or **"follow the plan.md, lane A/B/C"** to constrain work. Agents claim work, test, merge qualifying PRs, coordinate dependencies and advance without routine approval prompts. Up to three implementation agents can work concurrently, one per lane; a single agent can work sequentially. Plan §3 defines recovery and the few owner-only actions. No earlier chats are needed.
 
 The plan defines exact task gates, a minimal mathematics-focused UI and private shared study knowledge. New image-upload/OCR/media features are excluded; narrowly scoped knowledge documents may be supported.
 
@@ -16,7 +16,7 @@ The plan defines exact task gates, a minimal mathematics-focused UI and private 
 
 - Vanilla JavaScript app, mathematical Markdown/KaTeX, original FSRS-6, proof steps, prerequisites, search/graph, statistics, local import/export and IndexedDB persistence.
 - Optional account login (Google first, email link fallback; live web sign-in verified), explicit transfer/comparison and substantial per-account outbox, revision RPC, review/retraction and workspace-isolation infrastructure.
-- **Account editing/automatic sync is still gated.** Signing in does not silently migrate local cards. Cross-device scheduling remains a release gate.
+- **SYNC-04 is complete:** automatic account sync passed independent-browser/offline/expiry/lost-response gates on the real local stack with production security parity. Production phone/Pages smoke remains an Android/release gate. Signing in does not silently migrate local cards.
 - AI helpers depend on Claude host capabilities; they are not general ChatGPT/Claude connectivity on the deployed website.
 - Study-context/plan/checkpoint schema exists; the complete learning UI and portable tutor workflow remain planned.
 - Native Android (Capacitor) project with a CI-built debug APK and native Back/resume shell; not yet verified on a physical device, no release build.

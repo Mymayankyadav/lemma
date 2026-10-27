@@ -1,17 +1,21 @@
 # Lane A — sync, auth and backend
 
-Next action: Lane A SYNC-04 is DONE (main CI green at 24f9c16). No new lane A task is assigned; request owner-coordinated integration to transfer src/app/view_settings.js ownership to lane B when UI-01 Settings work is scheduled. Physical production Android/device checks remain ANDROID-02 and RELEASE-01.
+Next action: KNOWLEDGE-01 (lead A) becomes ready automatically when UI-01 is DONE. Until then inspect existing context/source/revision contracts and handle incoming A requests; do not repeat SYNC-04. Settings presentation now belongs to B. Use plan v5 automatic integration for new file ownership; no owner coordination request is needed.
 
 | Field | Value |
 | --- | --- |
 | Status | SYNC-04 DONE; L5 PR #28, L6 PR #29, L7 PR #30, L8 PR #31 merged; integration guard PR #32 merged; post-merge main CI all SUCCESS |
-| Current task | No NEXT task in Lane A; SYNC-04 completed and verified |
-| Branch | `lane-a/sync-04-closeout` from `main@24f9c16` (documentation-only) |
+| Current task | KNOWLEDGE-01 dependency-blocked by UI-01; SYNC-04 completed and verified |
+| Branch | No active lane A PR at v5 inspection (`main@07ce087`); claim fresh work under plan §3 |
 | Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
 | L5 implementation | `supabase/config.toml` (auth redirect loopback, 60s JWT, Mailpit), `.github/workflows/sync-local.yml` (isolated `supabase start`, `supabase db reset --local --no-seed`), `test/sync_local_smoke.js` (compare all migration versions and RLS flags) |
-| L5 verification | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
+| Historical L5 verification (superseded by final main gate below) | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
-| Remaining gate | None for SYNC-04. Future native physical-device and release smoke remain tracked under ANDROID-02 / RELEASE-01; cross-lane Settings transfer awaits integration. |
+| Remaining gate | None for SYNC-04. Future native physical-device and release smoke remain tracked under ANDROID-02 / RELEASE-01; Settings presentation transferred to B by v5 integration. |
+
+**Requests from other lanes:** none open at v5 inspection. Read all lane handoffs on pickup and service requests addressed to A directly. Future task support: data/contracts for KNOWLEDGE-01, PLAN-01, TUTOR-01 and native auth.
+
+**Evidence precedence:** the summary above and plan v5 are current. Sections below retain historical verification detail; their old PENDING/NOT RUN statements and owner-routing instructions are superseded where later evidence closes the same gate. Do not restart completed slices.
 
 ## SYNC-04 L8 — exact read-only production/local security parity (DONE)
 
@@ -22,7 +26,7 @@ Next action: Lane A SYNC-04 is DONE (main CI green at 24f9c16). No new lane A ta
 - Owner approved exactly the two unchanged-content migration renames on 27 October 2026. Integration [PR #32](https://github.com/Mymayankyadav/lemma/pull/32) merged at `bc4d3a5`, adding a PR #31-only byte-verifying exception inside the integration-owned lane guard. Do not weaken or modify Lane C workflow.
 - **Full latest implementation head `1ac17f3` SUCCESS:** [local-stack 40554180723](https://github.com/Mymayankyadav/lemma/actions/runs/40554180723) including local metadata diff, two-user HTTP RLS and independent-device/refresh/offline edit/lost-response; [Android + lane guard 40554180618](https://github.com/Mymayankyadav/lemma/actions/runs/40554180618); [regression + screenshots 40554180657](https://github.com/Mymayankyadav/lemma/actions/runs/40554180657) (regression retry passed after known unrelated intermittent UI preview test). The app UI-mode readiness check replaced an invalid assumption about bundle-private global symbols.
 - **Main-branch gate DONE** on merge `24f9c16`, 27 October 2026: [local Supabase + L5–L8 40555709587](https://github.com/Mymayankyadav/lemma/actions/runs/40555709587) SUCCESS, [full regression and screenshot publisher 40555709552](https://github.com/Mymayankyadav/lemma/actions/runs/40555709552) SUCCESS, and [Android/owner-approved lane guard 40555709588](https://github.com/Mymayankyadav/lemma/actions/runs/40555709588) SUCCESS. No production writes, no service-role keys in client, and no Carrel access.
-- **Scope boundary:** physical phone/Pages two-device smoke remains ANDROID-02 / RELEASE-01; separately schedule an owner-requested integration to transfer Settings ownership to lane B. These are not unmet L8 gates.
+- **Scope boundary:** physical phone/Pages two-device smoke remains ANDROID-02 / RELEASE-01; Settings presentation ownership is now transferred to B by v5 integration. These are not unmet L8 gates.
 
 ## SYNC-04 L7 — independent persistent-browser and fault gates (DONE, PR #30)
 

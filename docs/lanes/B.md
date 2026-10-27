@@ -1,16 +1,18 @@
 # Lane B — UI
 
-Next action: UI-01 final acceptance gate, after S4 merged via PR #35 (`main@c3c22ce`). On branch `lane-b/ui-01-final-acceptance`, verify 200% rendering stress, filtered Cards empty/recovery state, Home loading status, keyboard and offline behavior via CI and new screenshots. Real browser-chrome 200% text zoom and wider transport/error-state acceptance remain unverified; do not mark UI-01 DONE until evidenced. Settings file ownership changes only in a separate integration session.
+Next action: finish UI-01 acceptance from main@07ce087 (PR #36 is merged; open a fresh claim). Verify true browser 200% text zoom, keyboard and wider transport/error/offline-state evidence with available browser/CI tools. CSS zoom stress is not true text zoom. Keep unverified criteria open; after the full gate passes, automatically promote KNOWLEDGE-01 (A) and ANDROID-02 (C). Settings presentation is now B-owned; preserve account APIs and the original core-screen gate.
 
 | Field | Value |
 | --- | --- |
-| Status | S4 MERGED (`c3c22ce`, PR #35); UI-01 acceptance slice passed regression, Android and 22-screenshot CI on `bbd0b7b` (PR #36). Full UI-01 acceptance remains IN_PROGRESS. |
+| Status | S4 MERGED (`c3c22ce`, PR #35); UI-01 acceptance slice passed regression, Android and 22-screenshot CI on `bbd0b7b` (PR #36). PR #36 merged at `07ce087`; main regression 40570358999 and Android 40570359096 SUCCESS. Full UI-01 acceptance remains open. |
 | Current task | UI-01 (S4 implemented; final accessibility and screenshot gate review left) |
-| Open branch / PR | `lane-b/ui-01-final-acceptance` / [PR #36](https://github.com/Mymayankyadav/lemma/pull/36) |
+| Open branch / PR | None at v5 inspection; [PR #36](https://github.com/Mymayankyadav/lemma/pull/36) is merged, not a live claim |
 | Last merged work | UI-01 S4 navigation/Stats, [PR #35](https://github.com/Mymayankyadav/lemma/pull/35), squash `c3c22ce`; [regression + screenshots 40566950449](https://github.com/Mymayankyadav/lemma/actions/runs/40566950449) and [Android 40566950668](https://github.com/Mymayankyadav/lemma/actions/runs/40566950668) SUCCESS. |
-| Not yours | `src/app/view_settings.js` until an integration session reassigns it. Sync/account behaviour. Supabase. |
+| Ownership | Settings presentation transferred to B. Sync/account behavior and Supabase stay A-owned; request API changes through handoffs. |
 
-**Requests from other lanes:** none.
+**Requests from other lanes:** none open at v5 inspection. Read all lane handoffs directly; no owner relay. After UI-01, support KNOWLEDGE-01 UI and lead PLAN-01 per plan §2.
+
+**Evidence precedence:** the summary above is current. Historical notes below describe earlier heads and pending checks subsequently superseded by the cited successful runs; they are not instructions to reopen merged PRs. Settings ownership statements below are superseded by v5.
 
 **S4 decision:** Stats is no longer a top-level tab (nav: Today / Cards / Settings); Today has a "Statistics" link (`.stats-link`, `data-go="stats"`), route/hash unchanged. On Stats, True retention and FSRS accuracy are collapsed `<details>` panels. Reduced motion was already covered by the global `prefers-reduced-motion` block in `app.css`; review keyboard shortcuts untouched. `npm test` (including e2e and 20 UI screenshots) and `node test/lane_guard.js B` pass locally; CI not yet run.
 
