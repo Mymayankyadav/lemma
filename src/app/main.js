@@ -82,13 +82,26 @@ const App = (() => {
     }
     else if (st.mode === 'memory') { ic = 'device'; text = 'Not saved'; cls = 'warn'; }
     else { ic = 'clock'; text = 'Loading'; cls = 'pending'; }
+    // Persistent problems need a visible cue: an icon/title alone is not
+    // discoverable on touch devices. Keep the full explanation in role=status.
+    const visibleLabel = ({
+      'Offline · will retry': 'Offline',
+      'Offline · changes queued on device': 'Offline',
+      'Sync failed · local changes retained': 'Sync failed',
+      'Account conflict · review needed': 'Conflict',
+      'Could not save to device · export a backup': 'Save failed',
+      'Not saved · export a backup': 'Save failed',
+      'Not saved': 'Not saved',
+      'Saved on device · queued for cloud': 'Queued',
+    })[text] || '';
     const key = ic + text + cls;
     if (key === lastSync) return;
     lastSync = key;
-    el.className = 'sync ' + cls;
+    el.className = 'sync ' + cls + (visibleLabel ? ' has-label' : '');
     el.title = text;
-    el.innerHTML = icon(ic, 18) + '<span class="sr-only"></span>';
-    el.lastChild.textContent = text;
+    el.innerHTML = icon(ic, 18) + (visibleLabel ? '<span class="sync-label" aria-hidden="true"></span>' : '') + '<span class="sr-only"></span>';
+    if (visibleLabel) el.querySelector('.sync-label').textContent = visibleLabel;
+    el.querySelector('.sr-only').textContent = text;
   }
 
   function go(v, p = {}) {
