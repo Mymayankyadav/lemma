@@ -5,6 +5,7 @@
  */
 const LemmaCloud = (() => {
   const core = typeof module !== 'undefined' && module.exports ? require('./outbox_core.js') : LemmaOutboxCore;
+  const replay = typeof module !== 'undefined' && module.exports ? require('./review_replay.js') : LemmaReviewReplay;
   const dbVersion = 3;
   function request(req) {
     return new Promise((resolve, reject) => {
@@ -126,7 +127,20 @@ const LemmaCloud = (() => {
           remote: row.result.remote || operation.conflict?.remote || null, queued };
         // An equality token, not an authorization credential. Include every
         // reviewed intent so a later edit, pull or acknowledgment invalidates it.
-        done({ ...view, token: canonical(view) });
+        if (kind === 'profile') { done({ ...view, token: canonical(view) }); return; }
+        // Inspect the entire immutable account ledger in this same IndexedDB
+        // transaction. Include it in the CAS token: another tab's review or
+        // Undo must invalidate an old conflict decision.
+        const reviews = t.objectStore('reviews').getAll();
+        reviews.onsuccess = () => {
+          const retractions = t.objectStore('retractions').getAll();
+          retractions.onsuccess = () => {
+            const snapshot = { ...view, ledger: {
+              events: reviews.result, retractions: retractions.result
+            }};
+            done({ ...snapshot, token: canonical(snapshot) });
+          };
+        };
       };
     };
   }
@@ -155,12 +169,51 @@ const LemmaCloud = (() => {
     if (!deleted && (!selected.data || typeof selected.data !== 'object' || Array.isArray(selected.data) ||
         (view.kind === 'note' && selected.data.id !== view.entityId))) throw new Error('Invalid resolution data');
     if (view.kind === 'note') {
-      // Content resolution is not schedule convergence. Preserve all ledger
-      // entries and block divergent snapshots until SYNC-03 can replay them.
       const versions = [view.base?.known && view.base.data, view.local.data, remote.data,
         ...snapshots.map(op => op.data), selected.data].filter(Boolean);
       const schedules = versions.map(data => canonical({ cards: data.cards || {}, log: data.log || [] }));
-      if (schedules.some(value => value !== schedules[0])) throw new Error('review_replay_required');
+      if (schedules.some(value => value !== schedules[0])) {
+        // Do not pick a schedule by snapshot revision. Reconstruct it only
+        // from complete immutable evidence, using the reviewed ledger snapshot.
+        const result = replay.project({
+          id:view.entityId, data:view.local.data || selected.data, base:view.base, remote,
+          deleted:false
+        }, view.ledger?.events || [], view.ledger?.retractions || [], view.queued);
+        if (result.status !== 'projected')
+          throw new Error('review_replay_required: ' + (result.code || result.status));
+        if (deleted)
+          throw new Error('review_replay_required: schedule_while_deleting');
+        const data = structuredClone(selected.data);
+        const projectedOrds = new Set(Object.keys(result.cards));
+        for (const ord of new Set(versions.flatMap(v => Object.keys(v.cards || {})))) {
+          if (projectedOrds.has(ord)) continue;
+          const unchanged = versions.map(v => canonical(v.cards?.[ord] || null));
+          if (unchanged.some(value => value !== unchanged[0]))
+            throw new Error('review_replay_required: unexplained_schedule');
+        }
+        data.cards = data.cards || {};
+        for (const [ord, fields] of Object.entries(result.cards))
+          data.cards[ord] = { ...(data.cards[ord] || {}), ...fields };
+
+        // Immutable IDs disambiguate equal timestamps. Keep cram entries,
+        // but never invent a scheduled event absent from all snapshots.
+        const union = new Map();
+        for (const v of versions) for (const entry of v.log || []) {
+          const id = entry[6] || (entry[5] === 1 ? 'legacy-cram:' + canonical(entry) : null);
+          if (!id) throw new Error('review_replay_required: legacy_history');
+          const previous = union.get(id);
+          if (previous && canonical(previous) !== canonical(entry))
+            throw new Error('review_replay_required: inconsistent_log');
+          union.set(id, entry);
+        }
+        for (const id of result.eventIds)
+          if (!union.has(id)) throw new Error('review_replay_required: missing_log_event');
+        const removed = new Set((view.ledger?.retractions || []).map(r => r.target_event_id));
+        data.log = [...union.values()].filter(entry => !removed.has(entry[6]))
+          .sort((a,b) => a[0] - b[0] ||
+            ((a[6] || '') < (b[6] || '') ? -1 : (a[6] || '') > (b[6] || '') ? 1 : 0));
+        return { data, deleted:false, snapshots };
+      }
     }
     return { data: deleted ? null : structuredClone(selected.data), deleted, snapshots };
   }
@@ -203,7 +256,7 @@ const LemmaCloud = (() => {
     }
     async inspectConflict(id) {
       let view;
-      await tx(this.db, ['outbox','notes','meta'], 'readonly', t => readConflict(t, this.userId, id, value => { view = value; }));
+      await tx(this.db, ['outbox','notes','meta','reviews','retractions'], 'readonly', t => readConflict(t, this.userId, id, value => { view = value; }));
       return view;
     }
     async resolution(id) {
@@ -216,7 +269,7 @@ const LemmaCloud = (() => {
       const fingerprint = canonical({ expectedToken, decision: choice });
       let result, failure;
       try {
-        await tx(this.db, ['outbox','notes','meta'], 'readwrite', t => {
+        await tx(this.db, ['outbox','notes','meta','reviews','retractions'], 'readwrite', t => {
           const fail = error => { failure = error; t.abort(); };
           const meta = t.objectStore('meta');
           const previous = meta.get(resolutionKey(id));
