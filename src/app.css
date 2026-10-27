@@ -792,3 +792,27 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
   .card-fsrs { margin-top: 12px; padding-top: 10px; font-size: 12px; }
 }
 
+
+/* SYNC-02: quiet, readable three-version conflict comparison. */
+.conflict-center { display:flex; flex-direction:column; gap:10px; margin-top:16px; border-top:1px solid var(--rule); padding-top:14px; min-width:0; }
+.conflict-items { display:flex; flex-direction:column; gap:12px; }
+.conflict-item { border:1px solid var(--rule); border-radius:12px; padding:12px; min-width:0; }
+.conflict-item-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; overflow-wrap:anywhere; }
+.conflict-item-head p { margin:4px 0 0; }
+.conflict-review { display:flex; flex-direction:column; gap:14px; padding-top:14px; }
+.conflict-versions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.conflict-version { background:var(--sheet-2); border:1px solid var(--rule); border-radius:10px; padding:12px; min-width:0; }
+.conflict-version h4 { margin:0 0 5px; font-size:14px; }
+.conflict-version p { margin:0 0 8px; }
+.conflict-preview, .conflict-json { margin:5px 0; padding:10px; white-space:pre-wrap; overflow-wrap:anywhere; background:var(--sheet); border:1px solid var(--rule); border-radius:8px; font:12px/1.5 var(--font-data); max-height:220px; overflow:auto; }
+.conflict-history { border-top:1px solid var(--rule); padding:10px 0; }
+.conflict-history-row { border-top:1px solid var(--rule); padding:9px 0; overflow-wrap:anywhere; }
+.conflict-controls { display:flex; flex-direction:column; gap:10px; }
+.conflict-controls .select { width:100%; max-width:420px; }
+.conflict-merge-wrap { display:flex; flex-direction:column; gap:6px; }
+.conflict-merge { width:100%; font:13px/1.6 var(--font-data); resize:vertical; }
+.conflict-confirm { display:flex; gap:10px; align-items:flex-start; font-size:14px; }
+.conflict-confirm input { accent-color:var(--accent); margin-top:3px; }
+.conflict-warning { margin:0; padding:10px 12px; border-inline-start:3px solid var(--ink-2); background:var(--sheet-2); font-size:13px; }
+.conflict-merge-wrap[hidden], .conflict-confirm[hidden] { display:none; }
+@media (max-width:780px) { .conflict-versions { grid-template-columns:1fr; } }
