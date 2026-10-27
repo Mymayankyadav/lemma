@@ -1,10 +1,17 @@
 # Lemma — canonical execution plan and chatbot handoff
 
-**Protocol v2 · 26 October 2026.** This is the only engineering roadmap and task queue. It replaces all previous roadmaps and amendments; Git history retains them. The roadmap consolidation was documentation-only; §1 records subsequent implementation. A later **"follow the plan.md"** means implement the next bounded task; a request only to plan/review does not authorize implementation.
+**Protocol v3 · 27 October 2026.** This is the only engineering roadmap and task queue. Git history retains older roadmaps. It is written so that any model (including smaller ones) can execute it literally: every decision needed for the NEXT task is already made below. If something you need is **not** decided here, stop and ask the owner instead of inventing policy. A later **"follow the plan.md"** means implement the next bounded slice; a request only to plan/review does not authorize code changes.
 
 ## 0. Operator instructions
 
-Read current `main` → this plan → relevant source/tests → one task → verify → commit → update handoff. Agents work **consecutively, never simultaneously**. No old chat, local workspace or particular model is required.
+Read current `main` → this plan → the files named in your slice → do one slice → verify → commit → update §1. Agents work **consecutively, never simultaneously**. No old chat, local workspace or particular model is required.
+
+**Quick start (run literally):**
+1. `git clone https://github.com/Mymayankyadav/lemma && cd lemma && git log -5 --oneline` — record the HEAD SHA.
+2. If HEAD is newer than the SHA in §1, read `git log <§1 SHA>..HEAD` and adopt that work first (update §1 to describe it).
+3. `gh run list -L 5` (or open the Actions tab). If the latest run on `main` FAILED, fixing it is your task before anything else.
+4. `npm ci && npm run test:syntax && npm run test:plan`. Browser tests need Chromium: `npx playwright install chromium`; if that fails, say so in §1 and rely on CI.
+5. Find the first unchecked slice in §2 "Current task: execution slices". Do only that slice.
 
 **Product goal:** a private, persistent mathematics learning workspace for a PhD student. Curate shared knowledge, approve a thoughtful study plan, attempt proofs with interchangeable tutors, retain evidence and misconceptions, and review useful cards. Switching Claude/ChatGPT or devices should not require restarting the lesson. Supabase is the authenticated source of truth; durable local storage supports immediate interaction and offline work.
 
@@ -15,36 +22,38 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 - "Shared" means the same owner's knowledge available to successive tutors, not public sharing or multi-user collaboration.
 - Optimize for understanding and continuity, not chat volume, decorative dashboards, streak pressure or speculative AI infrastructure.
 
+**Hard "never" list (violating any of these is a failed session):** force-push; modify Carrel; put secret keys in client code, repo or plans; delete/clear dirty caches, receipts, outbox entries or review history to make a test pass; weaken an assertion or `test/plan_protocol.js` to make it pass; re-import the original ZIP or rewrite `src/fsrs.js` maths; mark a task DONE without its gate; claim a check passed that you did not see pass.
+
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-02 comparison/choice controls verified at `main@92a67c835f370a99ab3c882b00efe71bf5ce8680`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 is DONE against fault-injected local/mock-browser gates; SYNC-03 is the single NEXT task.
+**Last verified handoff:** 2026-10-27; SYNC-03 slice 0 (read-only diagnostics module) found on `main@4bfe3ab64fe645c63b8619b4bf57ba0a2ef26f18`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 is DONE; SYNC-03 is the single NEXT task; its first open slice is **S1**.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | Conflict controls on `main@92a67c8`; [regression 40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123) SUCCESS. Earlier transactional foundation [PR #7](https://github.com/Mymayankyadav/lemma/pull/7) merged. |
-| Latest inspected regression | **SUCCESS** [main 40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123) at `92a67c8`: CI `npm ci`, `test:syntax`, Chromium installation, full `npm test` (including `test/conflict_ui.js`, browser conflict compare/stale/delete/account switch, existing two-browser lost-ack/profile/reload gates). CI `npm test` builds dist through e2e. Local full suite NOT RUN (Chromium/dependencies unavailable in working environment). |
-| Documentation validation | `npm run test:plan` passed as part of successful CI `npm test` on the tested SHA; rerun for this handoff-only edit. |
-| Web deployment | [Pages 40441762109](https://github.com/Mymayankyadav/lemma/actions/runs/40441762109) **SUCCESS** at runtime commit `9442965`. Subsequent changes in this delivery only affect tests and this handoff. Browser screenshot generated as `test-output/SYNC02-conflict-compare.png` during CI; no independent visual review of screenshot. |
-| Cloud confidence | `AccountStorage.inspectConflict/resolveConflict/resolution` archives reviewed intents and stages one versioned request atomically. New `LemmaConflicts` Settings panel compares base/latest-local/remote, exposes queued history, validates deletion/restoration and blocks uncertain, stale and divergent schedules. Account lease/epoch guards prevent stale projection; committed choices update active account Model only when identity and workspace revision still match. Retry IDs remain stable. These are fault-injected IndexedDB and real Chromium tests with mock transport, **not** live login/RLS/convergence tests. |
-| Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
-| Current blocker / unfinished work | SYNC-03 review/Undo replay and schedule convergence remain unimplemented. Different schedules stay blocked with full histories preserved. Resolution archives are local to each account cache without cloud backup; public cloud activation is still SYNC-04. No live Supabase validation of these UI choices. |
+| Known-good main baseline | `main@4bfe3ab`; [regression 40444108939](https://github.com/Mymayankyadav/lemma/actions/runs/40444108939) SUCCESS. Previous conflict-controls baseline `92a67c8` ([40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123)). |
+| Latest inspected regression | **SUCCESS** 40444108939 at `4bfe3ab` (CI `npm ci`, `test:syntax`, Chromium, full `npm test`). Run 40444075423 at `4ffe1db` was CANCELLED (superseded). Local full suite NOT RUN by the plan editor. |
+| Documentation validation | `npm run test:plan` must pass after this edit (docs-only change). |
+| Web deployment | [Pages 40444108945](https://github.com/Mymayankyadav/lemma/actions/runs/40444108945) SUCCESS at `4bfe3ab`. `review_replay.js` is not in the bundle, so deployed behaviour is unchanged from SYNC-02. |
+| Cloud confidence | SYNC-02 conflict comparison/choice is verified with fault-injected IndexedDB and real Chromium on **mock transport only**. Divergent schedules are still blocked by `review_replay_required` in `src/app/sync_browser.js` (resolution validator, ~line 163). |
+| Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations; verify applied state before any backend work. |
+| Current blocker / unfinished work | `src/app/review_replay.js` (`LemmaReviewReplay.inspect`) exists but is **not** in `build.js` `appFiles`, has **no test**, and only replays memory (S/D), not due dates. `test/review_ledger.js` exists but is **not** run by `npm test`. Schedule convergence (S2–S4) is unimplemented. No live Supabase validation. |
 
-**Next action, in one sentence:** implement the first bounded SYNC-03 deterministic FSRS replay slice using `ReviewLedger.fsrsInput` and existing `FSRS.preview/replay`, starting with concurrent offline review/Undo provenance and blocking unsupported legacy histories without altering snapshots or removing receipts.
+**Next action, in one sentence:** do SYNC-03 slice S1 — wire `review_replay.js` into `build.js` after `review_ledger.js`, add `test/review_replay.js`, and add a `test:replay` script (running `test/review_ledger.js` and `test/review_replay.js`) to `npm test`.
 
-The record above describes inspected evidence, not today's mutable HEAD. Update it after each task; do not append another competing handoff.
+The record above describes inspected evidence, not today's mutable HEAD. Overwrite it after each slice; do not append a second handoff.
 
 ## 2. Task queue
 
-Keep stable IDs. **DONE** requires its gate; **NEXT** is exactly one task; **IN_PROGRESS** records partial work; **BLOCKED/LATER** are unfinished. Read top-to-bottom and choose the first task whose dependencies are satisfied. Break large rows into one testable slice per session; keep the remaining criteria here.
+States: **DONE** (gate passed, with evidence), **NEXT** (exactly one task), **IN_PROGRESS**, **BLOCKED** (dependency unfinished), **LATER**. Choose the first row whose dependencies are DONE. Large rows are split into slices; one slice per session is normal. Keep remaining criteria in the row.
 
 | ID | State | Depends on | Requirement and completion gate |
 | --- | --- | --- | --- |
 | **HANDOFF-01** | **DONE** | — | Canonical plan, short entry points and existing `test:plan` guard. Maintain them with every change. |
 | **FOUNDATION-01** | **DONE** | — | Imported app, web build, local cards, original FSRS/rendering and baseline tests exist. Preserve them. |
 | **SYNC-00** | **DONE** | — | Account/outbox/RPC/ledger infrastructure exists in source. This is not completed live sync. |
-| **SYNC-01** | **DONE** | SYNC-00 | Editor durability/crash recovery, account invalidation and durable import recovery implemented; browser gates passed in regression 40419737189. Retain recoverable input on failed storage; report success/close only after commit. Reuse workspace leases for delayed callbacks. Gate: browser crash/reload, aborted write, sign-out during save/import, A→B→A with isolated drafts/cache and intact anonymous data; existing tests stay green. |
-| **SYNC-02** | **DONE** | SYNC-01 | Conflict evidence, transactional note/profile/tombstone resolution, three-version comparison and explicit choice controls completed. Gate: two-browser edit/delete race and lost acknowledgement, profile conflict, stale UI choice, deletion confirmation, archived queued edits and account-switch isolation passed in main regression 40441775123. This is mocked-transport evidence, not live sync. |
-| **SYNC-03** | **NEXT** | SYNC-02 | Converge review/Undo using existing `FSRS.preview/replay` and `ReviewLedger.fsrsInput`. Specify deterministic ordering, parameter/time provenance, legacy baseline handling and resets. Never choose the latest card snapshot as truth or fabricate legacy history. Gate: concurrent offline reviews/Undo, equal timestamps, timezone/rollover, fuzz and parameter changes produce the same due state on both devices; unsupported histories remain preserved and explicitly blocked. |
+| **SYNC-01** | **DONE** | SYNC-00 | Editor durability/crash recovery, account invalidation and durable import recovery; browser gates passed in regression 40419737189. |
+| **SYNC-02** | **DONE** | SYNC-01 | Conflict evidence, transactional note/profile/tombstone resolution, three-version comparison and explicit choice controls. Gate passed in main regression 40441775123 (mocked transport, not live sync). |
+| **SYNC-03** | **NEXT** | SYNC-02 | Converge review/Undo schedules deterministically from the immutable ledger using existing `FSRS.preview` and `ReviewLedger`. Never take the latest card snapshot as truth; never fabricate legacy history. Gate: concurrent offline reviews/Undo, equal timestamps, timezone/rollover, fuzz and parameter changes produce the same card state on both devices; unsupported histories stay preserved and explicitly blocked. Follow slices S1–S4 below. |
 | **SYNC-04** | **BLOCKED** | SYNC-03 | Enable account workspace only after explicit enrollment/backup. Route every mutation through durable staging; automatically push after local commit, retry on reconnect/foreground and refresh on remote invalidation. Distinguish device-saved, queued, cloud-confirmed, conflict and failure. Gate: authenticated two-browser/two-identity tests, offline restart, auth expiry, network loss after commit, deletes and RLS isolation. Routine use needs no manual Sync button. |
 | **UI-01** | **LATER** | SYNC-01 | Apply the UI contract below to existing screens incrementally. Keep working routes and controls while Study is built later. Gate: mobile/desktop light/dark screenshots, keyboard navigation, 200% text, long mathematical expressions, empty/loading/error/offline states and existing review flows. |
 | **KNOWLEDGE-01** | **LATER** | SYNC-04, UI-01 | Reuse context/source/section tables for private project knowledge: goals, background, notation, references, verified skills and editable summary. Scope context, plans and evidence to stable project/context IDs. Version changes; distinguish learner-authored facts from tutor proposals. Optional documents need private access, size/type limits, extraction status, stable source/version/page IDs and removal controls; no OCR. Gate: two tutors retrieve the same accepted revision and cited excerpt without loading the entire collection; another owner cannot read it. |
@@ -52,6 +61,49 @@ Keep stable IDs. **DONE** requires its gate; **NEXT** is exactly one task; **IN_
 | **TUTOR-01** | **LATER** | PLAN-01 | Deliver bounded Markdown/JSON handoff export/import first; add authenticated owner-scoped context/source/event/card/plan-proposal tools when supported. Validate imported schema, IDs and expected revisions. Tutors may propose cards/amendments; student approves. Persist attempts and hints; never mark mastery just because content was displayed. Gate: Claude→ChatGPT→Claude resumes the exact unfinished proof and hint level, stale writes fail, approved cards retain provenance and use existing FSRS. Core study works without a host-specific AI API or paid model call. |
 | **ANDROID-01** | **LATER** | SYNC-04, UI-01 | Generate reproducible Capacitor Android project/builds from existing source. Verify safe areas, keyboard, Back, auth redirects, foreground recovery and offline launch. Optional due-review notifications: opt-in, quiet by default, configurable time, no stale duplicates, tap opens relevant review. Gate: physical-device install, permission denied/granted, offline edits/restart/reconnect and notification checks. Document APK update delivery; Pages deployment does not update bundled native assets. |
 | **RELEASE-01** | **LATER** | All above | Verify backup/restore of cards, schedules, context, plan versions, events and source references; safe migrations, deliberate account erasure, scoped connector access and recovery. Test PWA service-worker offline/update separately (current UI suite disables it). Gate: restore round trip, no lost/duplicated events, cross-owner isolation, both tutor handoff directions and web/Android smoke checks. |
+
+### Current task: SYNC-03 execution slices
+
+Tick a box (`[x]`) in the same commit that completes the slice. When S4 is ticked and its gate passes, set SYNC-03 DONE and SYNC-04 NEXT.
+
+**Background you need (verified in source, `main@4bfe3ab`):**
+- A scheduled review appends a log entry `[occurred_at_ms, ord, grade, state_before, duration_ms, kind, event_id, scheduling_provenance]` in `Session.answer` (`src/app/session.js`). `kind` 0 = scheduled, 1 = cram (does not change the schedule).
+- `scheduling_provenance` (version 1) contains: `weights` (21 numbers), `day_index`, `rollover_hour`, `timezone_offset_minutes` (`Date#getTimezoneOffset`, e.g. −330 for IST), `retention`, `max_interval_days`, `learn_steps`, `relearn_steps` (strings like `"1m 10m"`), `fuzz`, `load_balance`, `preview_at_ms`, `card_before`.
+- Undo writes an immutable retraction `{retraction_id, target_event_id, reason:'undo'|'correction'|'reset'}`; `ReviewLedger.activeEvents(events, retractions)` removes retracted events.
+- `FSRS.preview(card, now, cfg, env)` returns results for grades 1–4; `cfg` is built by `schedCfg()` in `src/app/model.js`; `env = {clock, key: noteId + ':' + ord, loadAt}`. Fuzz is seeded from `key` and `card.reps`, so it is deterministic. **`loadAt` (load balancing) depends on each device's local card load and is NOT deterministic.** `FSRS.makeClock` uses the device's local timezone, so it is NOT deterministic across devices either.
+
+**Decisions (replay policy v1 — do not change without asking the owner):**
+- D1 Order: active scheduled events per ordinal, sorted by `occurred_at_ms`, then `event_id` by plain code-unit comparison (`a < b ? -1 : a > b ? 1 : 0`). Never use `localeCompare` (it is locale-dependent).
+- D2 Baseline: the first event's `card_before` must be a new card (`st === 0 && reps === 0`); otherwise block with `legacy_baseline_required` (already done in `inspect`).
+- D3 Per-event parameters: each step uses **that event's** provenance (weights, retention, steps, maxIvl, fuzz). Parameter changes between events are therefore allowed in the schedule fold.
+- D4 Clock: build a fixed-offset clock from each event's provenance: `dayIndex(ts) = Math.floor((ts − tz·60000 − rollover·3600000) / 86400000)`, `dayStart(i) = i·86400000 + rollover·3600000 + tz·60000`, where `tz = timezone_offset_minutes`, `rollover = rollover_hour`. If `clock.dayIndex(occurred_at_ms) !== provenance.day_index`, block with `clock_mismatch`.
+- D5 Load balancing is **ignored** in replay (`loadAt: undefined`, `cfg.loadBalance = false`). Fuzz stays as recorded.
+- D6 Step: `card = FSRS.preview(card, p.preview_at_ms, cfg, {clock, key}) [grade].card`. Only schedule fields `st, due, s, d, last, step, reps, lapses` come from replay; `flag`, `susp` and all other fields come from the chosen snapshot. Do not re-run leech logic.
+- D7 Resets (`reason:'reset'`) and any missing provenance field stay **blocked** (`reset_policy_required` / `replay_unsupported`). This is an accepted SYNC-03 limitation.
+- D8 Replay is used **only** to resolve divergent schedules (where `review_replay_required` is thrown today). Never rewrite a non-conflicting card's schedule on load.
+
+**[ ] S1 — wire and test the existing diagnostics (no behaviour change).**
+1. In `build.js`, add `'review_replay.js'` to `appFiles` immediately after `'review_ledger.js'`.
+2. In `src/app/review_ledger.js` `activeEvents`, replace `localeCompare` with the D1 comparison.
+3. Create `test/review_replay.js` (Node, `node:assert/strict`, same style as `test/review_ledger.js`) covering `LemmaReviewReplay.inspect`: missing note → `missing_note`; legacy log entry without event ID → `legacy_history`; dangling retraction → `incomplete_ledger`; first event with non-new `card_before` → `legacy_baseline_required`; reset retraction → `reset_policy_required`; two valid events → `status 'memory-only'` with identical result when the input arrays are reversed; an Undo removes one event from `activeReviews`.
+4. In `package.json` add `"test:replay": "node test/review_ledger.js && node test/review_replay.js"` and insert `npm run test:replay` into `"test"` right after `npm run test:outbox`.
+5. Verify: `npm run test:replay`, `npm run test:syntax`, `npm run build`, `npm run test:plan`; full `npm test` if Chromium works, else rely on CI.
+
+**[ ] S2 — deterministic schedule projection (pure function, no UI/storage).**
+1. In `src/app/review_replay.js` add `project(row, allEvents, allRetractions, outbox = [])`. First call `inspect`; if it returns `blocked`, return it unchanged.
+2. For each ordinal, fold active scheduled events per D1–D6 starting from the first event's `card_before`. Add helper `fixedClock(provenance)` (D4) and `cfgFrom(provenance)` that mirrors `schedCfg()` with `FSRS.parseSteps(...) || []` and `loadBalance:false`. Any missing/invalid provenance field → `blocked('replay_unsupported')`.
+3. Return `{status:'projected', noteId, cards:{[ord]: scheduleFields}, eventIds:[...active scheduled ids in order]}`. Export `project` alongside `inspect`.
+4. Tests in `test/review_replay.js`: shuffled input order gives deep-equal output; two events with equal `occurred_at_ms` order by `event_id`; Undo of the middle event equals a history that never had it; weights changed between events still projects; a review just before and just after the rollover hour lands on different `day_index` values; a mismatching `day_index` blocks with `clock_mismatch`.
+5. Add `TZ=America/Los_Angeles node test/review_replay.js` to the `test:replay` script so the same assertions run in a second timezone (results must not depend on the machine's timezone).
+
+**[ ] S3 — use projection in conflict resolution.**
+1. In `src/app/sync_browser.js`, at the check that throws `review_replay_required`: load the note's review events and retractions from account storage (find the stores used by `ingestReview`/retraction ingestion in the same file), call `LemmaReviewReplay.project`.
+2. If projected: resolved `data` = the user's chosen content snapshot with `cards[ord]` schedule fields replaced by the projection, and `log` = union of all versions' log entries keyed by `event_id` (entry index 6), excluding retracted IDs, sorted by D1. Keep cram entries. If blocked: keep throwing `review_replay_required` and surface the block `code` in the conflict panel text.
+3. Tests in `test/conflict_resolution.js`: two devices review the same card offline (different grades) → both resolve to deep-equal `cards` and `log`; one device reviews and the other reviews then Undoes → identical result; legacy history stays blocked with every snapshot and receipt preserved.
+
+**[ ] S4 — browser gate and close-out.**
+1. Extend the two-browser Chromium test used for SYNC-02 (`test/conflict_browser.js`) with: concurrent offline reviews on both pages, one Undo, resolve, reload both pages → same due date shown for the card.
+2. Run full `npm test` (locally or CI). Update §1, set SYNC-03 **DONE** (note "mock transport, not live"), SYNC-04 **NEXT**, and add a §5 row (merge the two oldest rows to stay at five).
 
 **UI contract:** retain Lemma's mathematical notebook character, restrained indigo accent, serif math and clear system UI text. Use consistent spacing, typography, borders and icons; quiet surfaces and generous reading space. Avoid new decorative illustrations, dense widget grids and excessive shadows.
 
@@ -62,21 +114,24 @@ Target navigation is **Today / Study / Cards / Settings**, with visible labels o
 ## 3. Sequential chatbot protocol
 
 **Start**
-1. Read `AGENTS.md` and this file from current remote `main`; record starting SHA. Inspect only task-relevant code and recent changes/CI. Read deeper contracts on demand; do not reread the whole repo every turn.
-2. Reconcile unfinished commits, failed checks and migration state with §1. Source/observed evidence establishes reality; this plan establishes desired behavior. Adopt existing work, including an interrupted session.
-3. Select one slice of the single NEXT task and its gate. If blocked, record the exact prerequisite and choose the next eligible row without relaxing a release gate. Current user instructions override the queue.
+1. Do the §0 quick start. Inspect only files named in your slice plus anything they call. Do not reread the whole repo.
+2. Reconcile §1 with reality: commits after the §1 SHA, failed CI, migration state. Source and observed CI are the truth; this plan is the desired behaviour. Adopt interrupted work rather than redoing it.
+3. Pick exactly one slice. If it is blocked, write the exact prerequisite into §1 and stop or take the next eligible row; never relax a gate. The user's current instruction overrides the queue.
 
 **Work**
-4. Work directly on `main` unless user/repository policy requires a branch. No lock service, agent branches or concurrent delegation are needed. Preserve unrelated local changes.
-5. Before publishing, refetch HEAD. Use a normal fast-forward push or connector commit based on that tree with expected-head checking. If HEAD changed, inspect/reconcile and revalidate; never force-push or overwrite a newer handoff. Publish related code and status coherently.
-6. Reuse existing code. Never re-import a ZIP or regenerate FSRS. No anonymous-to-account merge merely on sign-in; no clearing dirty caches, attempts or receipts to fix a test.
-7. For backend changes, compare tracked/applied migrations, add a new migration, test owner access and record **written vs applied vs verified** separately. Only Lemma may be changed; no secrets in clients, repo or context packets.
+4. Work directly on `main` unless the user asks for a branch/PR. Preserve unrelated local changes.
+5. Keep changes small: extend existing functions/modules; follow the existing code style (IIFE modules with `module.exports` fallback, 2-space indent, no new dependencies without owner approval).
+6. Never re-import a ZIP or regenerate FSRS. No anonymous-to-account merge on sign-in. No clearing dirty caches, attempts or receipts to fix a test.
+7. Backend changes: compare tracked vs applied migrations, add a **new** migration file (never edit an applied one), test owner access, and record **written vs applied vs verified** separately. Only Lemma (`yemqnhnztlbyxmjxidis`) may be changed.
+
+**Stop and ask the owner (do not guess) when:** a decision in §2 seems wrong or missing; a test can only pass by deleting data or weakening an assertion; a migration or live Supabase change is needed and not described; CI fails for reasons unrelated to your slice and you cannot fix it in under ~30 minutes of work.
 
 **Verify and hand off**
-8. Docs-only: `npm run test:plan`, links and documentation consistency. Code: `npm ci`, `npm run test:syntax`, relevant regression tests, `npm test`, `npm run build`; browser tests require Chromium. UI changes also need screenshots. Record unavailable checks honestly; mock tests do not prove live sync.
-9. Update §1, task state and one exact next action in the same delivery. Include files/functions, tested SHA, test/run URLs, deployment/migration status and blockers. Use SUCCESS/FAILED/PENDING/NOT RUN accurately; pending CI is the next agent's first check.
-10. Commit/push before ending. If access fails, report the unpublished patch/branch and precise recovery action; never claim remote completion. Do not invent the handoff commit's own SHA.
-11. Keep one current handoff and at most five milestone rows; Git history is the long log. Keep this plan near 2,400 words or less. Put reusable technical detail in existing reference docs, never a second roadmap. Do not weaken `test/plan_protocol.js` to conceal missing fields.
+8. Docs-only: `npm run test:plan`. Code: `npm ci`, `npm run test:syntax`, the slice's tests, `npm test`, `npm run build`. UI changes also need screenshots. Write SUCCESS/FAILED/PENDING/NOT RUN exactly as observed; mock tests never prove live sync.
+9. Commit message format: `type(task-id): summary`, e.g. `feat(sync-03): add deterministic schedule projection`, `test(sync-03): ...`, `docs: ...`. Code and the §1/§2 update go in the same push.
+10. Before pushing: `git fetch origin main`; if HEAD moved, rebase (never force-push), rerun affected tests, reconcile §1. If push access fails, report the unpublished patch and exact recovery steps; never claim remote completion. Do not invent your own commit's SHA in §1 — cite the last SHA with a known CI result.
+11. Update §1 (overwrite, do not append), slice checkboxes, task states and the one-sentence next action. Keep at most five §5 rows. Keep this plan under ~3,800 words; move reusable technical detail to existing docs (e.g. `docs/PHASE2_SYNC_CONTRACT.md`), never a second roadmap. Do not weaken `test/plan_protocol.js`.
+12. End your reply with the §6 report.
 
 ## 4. Ownership, architecture, and reference precedence
 
@@ -84,12 +139,12 @@ Repo: [Mymayankyadav/lemma](https://github.com/Mymayankyadav/lemma), branch `mai
 
 | Responsibility | Existing code / reference |
 | --- | --- |
-| Scheduling, domain, review | `src/fsrs.js`, `src/app/model.js`, `session.js`, `review_ledger.js` |
+| Scheduling, domain, review | `src/fsrs.js` (`preview`, `replay`, `makeClock`, `parseSteps`), `src/app/model.js` (`schedCfg`, `previewFor`), `session.js` (`answer`, `undo`), `review_ledger.js`, `review_replay.js` |
 | Durability, identity, transport | `src/app/store.js`, `workspace_lifecycle.js`, `account_sync.js`, `sync_browser.js`, `outbox_core.js`, `sync_merge.js` |
-| Shell, screens, rendering | `src/app/main.js`, `view_*.js`, `sheets.js`, `src/app.css`, `src/render.js` |
+| Shell, screens, rendering | `src/app/main.js`, `view_*.js`, `sheets.js`, `conflict_ui.js`, `src/app.css`, `src/render.js` |
 | AI portability | `src/app/ai.js` currently requires `window.claude`; Settings' ArtifactData instructions are host-specific, not a working general connector. |
 | Data / product contracts | `supabase/migrations/`; [study protocol](docs/STUDY_PLANNING_PROTOCOL.md); [sync reference](docs/PHASE2_SYNC_CONTRACT.md) |
-| Delivery / verification | `package.json`, `build.js`, `test/`, `.github/workflows/`, `capacitor.config.json`; native `android/` does not yet exist at this review. |
+| Delivery / verification | `package.json`, `build.js` (`appFiles` order = load order), `test/`, `.github/workflows/`, `capacitor.config.json`; native `android/` does not yet exist. |
 
 Precedence: current user instruction → this plan for scope/order → supporting contracts. Source, tests and observed backend determine implementation status; correct stale prose rather than assuming it works. Historical audits are evidence only. Engineering `plan.md` is distinct from the student's versioned study plans.
 
@@ -100,12 +155,12 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Original source and sync groundwork retained | [merged PR #1](https://github.com/Mymayankyadav/lemma/pull/1), existing source/migrations; no replacement implementation. |
 | Durable editor and crash recovery | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) and [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; main regression/Pages 40378487715/40378487955 and 40381695953/40381695797 SUCCESS. |
 | Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
-| Durable imports | `IO.prepare/commit`, ImportSheet recovery, Store note/profile receipts; local import tests and [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged; full main regression 40420169362 and Pages 40420169191 SUCCESS. |
-| Conflict evidence, transactions and UI | [PR #6](https://github.com/Mymayankyadav/lemma/pull/6) and [PR #7](https://github.com/Mymayankyadav/lemma/pull/7) merged; [main regression 40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123) SUCCESS on conflict controls in Settings and account guard tests; [Pages 40441762109](https://github.com/Mymayankyadav/lemma/actions/runs/40441762109) SUCCESS. Review replay and live activation remain gated. |
+| Durable imports | `IO.prepare/commit`, ImportSheet recovery, Store note/profile receipts; [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged; full main regression 40420169362 and Pages 40420169191 SUCCESS. |
+| Conflict evidence, transactions and UI | [PR #6](https://github.com/Mymayankyadav/lemma/pull/6) and [PR #7](https://github.com/Mymayankyadav/lemma/pull/7) merged; [main regression 40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123) SUCCESS; [Pages 40441762109](https://github.com/Mymayankyadav/lemma/actions/runs/40441762109) SUCCESS. Review replay and live activation remain gated. |
 
 ## 6. Five-line end-of-session report template
 
-**Changed:** task ID, outcome, relevant files and commit.
+**Changed:** task ID + slice, outcome, relevant files and commit.
 **Verified:** tested SHA, exact checks/run links and result.
 **Still gated:** unfinished behavior, deployment/migration limits.
 **Next:** one task slice, function/path and acceptance check.
