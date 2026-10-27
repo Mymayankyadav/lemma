@@ -1,0 +1,81 @@
+name: Lemma local Supabase sync gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - '.github/workflows/sync-local.yml'
+      - 'supabase/**'
+      - 'docs/lanes/A.md'
+      - 'test/sync_*.js'
+      - 'test/auth_*.js'
+      - 'test/account_*.js'
+      - 'test/browser_sync.js'
+      - 'src/app/account_sync.js'
+      - 'src/app/cloud_*.js'
+      - 'src/app/store.js'
+      - 'src/app/sync_*.js'
+      - 'src/app/outbox_core.js'
+      - 'src/app/workspace_lifecycle.js'
+      - 'src/app/view_settings.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: lemma-sync-local-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.122.0
+      - name: Authenticate image pulls on shared GitHub runners
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GHCR_TOKEN" | docker login ghcr.io --username "${{ github.actor }}" --password-stdin
+      - name: Enforce disposable-only database
+        run: |
+          test ! -e supabase/.temp/project-ref
+          test -f supabase/config.toml
+          supabase --version
+      - name: Start isolated local Supabase services (registry fallbacks)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # CLI >= 2.122 supports ECR -> GHCR -> Docker Hub image fallbacks.
+          # setup-cli can set GHCR as an explicit override; that DISABLES
+          # fallback, so unset it for this single local-only command.
+          # Retain Auth, PostgREST, Realtime and Mailpit for L6/L7.
+          # Exclude other services to minimize container image pulls.
+          for attempt in 1 2 3; do
+            if env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start --exclude storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Local Supabase failed after three startup attempts"
+              exit 1
+            fi
+            supabase stop --no-backup || true
+            sleep "$((attempt * 30))"
+          done
+      - name: Rebuild only the local database from migrations
+        run: supabase db reset --local --no-seed
+      - name: Verify exact migrations and sync-table RLS
+        run: node test/sync_local_smoke.js
+      - name: Stop disposable Supabase stack
+        if: always()
+        run: supabase stop --no-backup

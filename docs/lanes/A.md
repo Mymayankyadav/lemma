@@ -1,17 +1,24 @@
 # Lane A — sync, auth and backend
 
-**Agent assignment: UNASSIGNED — previous Lane A agent retired at the owner's request on 27 October 2026.** No further implementation, merge, or verification by that agent. The Lane A task itself is not complete; a successor may adopt the existing open PR. **Successor adopted PR #26 on 27 October 2026** and fixed its Android/plan CI failure (the `Next action: SYNC-04 L5 — add `supabase/config.toml`, `.github/workflows/sync-local.yml` and a smoke that a disposable local Supabase stack applies every migration with RLS on the four sync tables (plan §2 "SYNC-04 slices"). PR #26 is merged (`5cf1d42`). SYNC-04 remains NEXT, not DONE.
-
-Next action: adopt and verify open [PR #26](https://github.com/Mymayankyadav/lemma/pull/26) on `lane-a/sync-04-l4-http-rls-harness`, check latest `main` and all latest-head CI, and merge only when the protocol gates pass. Then complete live owner-authenticated UI tombstone/reload, independent device, offline/expiry/lost-response, and two-real-identity HTTP RLS checks. SYNC-04 remains NEXT, not DONE.
+Next action: SYNC-04 L5 PR #28 remains OPEN — rerun the latest local-stack workflow when GitHub Container Registry throttling subsides, confirm all latest-head tests green, then squash-merge; afterward implement L6 in `test/auth_http_rls.js --local`.
 
 | Field | Value |
 | --- | --- |
-| Status | AUTH-01 DONE (web); SYNC-04 NEXT |
-| Assigned agent | None. Previous agent RETIRED / signed off at owner request; all remaining work is for a successor. |
-| Current task | SYNC-04 L5–L8 (local-stack verification, re-planned 2026-10-27). L4 harness merged in PR #26; its `--live` mode is optional, not a gate. |
-| Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) merged as `6550475`; L3 checklist [PR #24](https://github.com/Mymayankyadav/lemma/pull/24) merged as `f15f4d2`. L3 deferred projection [PR #25](https://github.com/Mymayankyadav/lemma/pull/25) merged as `80c385c`. Current HTTP acceptance harness branch: `lane-a/sync-04-l4-http-rls-harness`. AUTH-01 PR #17 merged as `e13582d`. |
-| Baseline | `main@80c385c` regression, Android, screenshot publication and Pages deployment all SUCCESS after PR #25; previous live L1 tests do not certify later builds. |
-| Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
+| Status | SYNC-04 NEXT; L5 smoke passed on initial head, but PR #28 BLOCKED on latest-head GHCR image-pull rate limiting (not a SQL/assertion failure) |
+| Current task | SYNC-04 L5 — reproducible local Postgres 17/Supabase stack |
+| Branch | [PR #28](https://github.com/Mymayankyadav/lemma/pull/28), `lane-a/sync-04-l5-local-stack` from `main@18c5750` |
+| Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
+| L5 implementation | `supabase/config.toml` (auth redirect loopback, 60s JWT, Mailpit), `.github/workflows/sync-local.yml` (isolated `supabase start`, `supabase db reset --local --no-seed`), `test/sync_local_smoke.js` (compare all migration versions and RLS flags) |
+| L5 verification | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
+| Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
+| Remaining gate | L5 CI green followed by L6 two local auth identities; L7 real local UI devices/faults; L8 read-only production security parity, before SYNC-04 DONE. |
+
+## SYNC-04 L5 — local-stack implementation
+
+- Added a distinct `lemma-sync-local` configuration with local-only ports and the production PostgreSQL **major version 17**. Signups and the email-link delivery test will use only disposable users from the local GoTrue/Mailpit stack.
+- The dedicated workflow checks out the branch, installs a pinned Supabase CLI, launches local Docker services, **explicitly resets only `--local`**, and checks local Postgres for exactly the repository's ordered migration versions and RLS enabled on `notes`, `profiles`, `review_events`, and `review_retractions`.
+- Production Supabase is not modified and is never an input. The existing `npm test` suite remains separate; future L6–L8 steps extend this workflow.
+- **Evidence:** pull requests running the Docker stack initially encountered intermittent container-registry throttling. The latest iteration authenticates GHCR pulls using the Actions-scoped token with read-only packages permission, excludes unrelated services, and retains bounded retries; it does not expose any credential to client code. New latest-head CI must pass. A subsequent documentation-only head briefly failed to download images because the registry returned `toomanyrequests` (retry also rate-limited); `supabase start` now has up to three bounded attempts with disposable local cleanup. This infrastructure-only failure does not invalidate the successful migration/RLS smoke but must be resolved by a green latest-head run. First PR head `ab5a02d` passed real disposable Docker/Supabase CI [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) and Android/lane guard CI [40522126536](https://github.com/Mymayankyadav/lemma/actions/runs/40522126536). Regression was pending while this handoff edit was prepared. L5's local integration gate is observed; SYNC-04 overall is NOT DONE. Verify all latest-head checks again before merging.
 
 ## AUTH-01 S2 — live web gate COMPLETE, 27 October 2026
 
