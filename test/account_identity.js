@@ -62,5 +62,6 @@ vm.runInContext(fs.readFileSync('src/app/cloud_account.js','utf8') + '\nglobalTh
   unsubscribe();
   authEvent('SIGNED_IN', { user:{id:'B'} });
   assert.equal(identities.length, 4);
+  await require('./auth_http_rls').selfTest();
   console.log('ok: Google OAuth PKCE, callback errors, email fallback, account invalidation and stale identity guards');
 })().catch(error => { console.error(error); process.exitCode = 1; });
