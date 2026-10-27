@@ -10,7 +10,7 @@
     "test:optimizer": "node test/optimizer_synthetic.js",
     "test:render": "node test/render_test.js",
     "test:e2e": "node build.js && node test/e2e.js",
-    "test": "npm run test:merge && npm run test:outbox && npm run test:storage && npm run test:fsrs && npm run test:render && npm run test:e2e && npm run test:browser-sync && npm run test:account && npm run test:account-store && npm run test:plan && npm run test:workspace",
+    "test": "npm run test:merge && npm run test:outbox && npm run test:replay && npm run test:storage && npm run test:fsrs && npm run test:render && npm run test:e2e && npm run test:browser-sync && npm run test:account && npm run test:account-store && npm run test:plan && npm run test:workspace",
     "android:add": "npm run build && npx cap add android",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
@@ -22,7 +22,8 @@
     "test:account": "node test/account_sync.js",
     "test:account-store": "node test/account_store.js",
     "test:plan": "node test/plan_protocol.js",
-    "test:workspace": "node test/account_identity.js && node test/workspace_lifecycle.js"
+    "test:workspace": "node test/account_identity.js && node test/workspace_lifecycle.js",
+    "test:replay": "node test/review_ledger.js && node test/review_replay.js"
   },
   "dependencies": {
     "@capacitor/core": "8.0.0",
