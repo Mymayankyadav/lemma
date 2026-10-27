@@ -17,15 +17,15 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-02 resolution-transaction slice prepared from `main@5bfd340f98aead4d2d84448877be26fcfc4debe9`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 remains the single NEXT task; comparison controls are unfinished.
+**Last verified handoff:** 2026-10-27; SYNC-02 resolution-transaction slice verified at `main@609ccff22fa9374233138639d1fd6af23a49c945`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 remains the single NEXT task; comparison controls are unfinished.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | [PR #6](https://github.com/Mymayankyadav/lemma/pull/6) merged as `affc980`; [main regression 40427935341](https://github.com/Mymayankyadav/lemma/actions/runs/40427935341) SUCCESS. |
-| Latest inspected regression | Local syntax, storage/resolution, outbox, account/account-store, identity/workspace and build SUCCESS. Full browser CI PENDING publication; Chromium is unavailable locally. |
+| Known-good main baseline | [PR #7](https://github.com/Mymayankyadav/lemma/pull/7) merged as `609ccff`; [main regression 40434940278](https://github.com/Mymayankyadav/lemma/actions/runs/40434940278) SUCCESS. |
+| Latest inspected regression | SUCCESS: [main regression 40434940278](https://github.com/Mymayankyadav/lemma/actions/runs/40434940278) at `609ccff22fa9374233138639d1fd6af23a49c945`: syntax and full `npm test`, including browser resolution/reload/stale-choice gates. Local syntax, storage/resolution, outbox, FSRS, account/account-store, workspace, plan and build SUCCESS. Local full suite stopped at unavailable Chromium; browser checks ran in CI. |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
-| Web deployment | Existing [Pages 40427935271](https://github.com/Mymayankyadav/lemma/actions/runs/40427935271) SUCCESS at `affc980`; resolution-transaction deployment PENDING. |
-| Cloud confidence | `AccountStorage.inspectConflict/resolveConflict/resolution` preserves reviewed intents in a durable local archive and stages one new versioned request. Stale choices, uncertain receipts and unconfirmed deletion/restoration are rejected. Identical local retries reuse the operation; server retries retain its request ID. Differing review snapshots stay blocked for SYNC-03. Tests use fault-injected IndexedDB/mock RPC; no live login/RLS/convergence claim. |
+| Web deployment | [Pages 40434940242](https://github.com/Mymayankyadav/lemma/actions/runs/40434940242) SUCCESS at merged `609ccff`. Final handoff-only update does not change runtime assets. |
+| Cloud confidence | `AccountStorage.inspectConflict/resolveConflict/resolution` preserves reviewed intents in a durable local archive and stages one new versioned request. Stale choices, uncertain receipts and unconfirmed deletion/restoration are rejected. Identical local retries reuse the operation; server retries retain its request ID. Differing review snapshots stay blocked for SYNC-03. Tests use fault-injected IndexedDB and real Chromium with mock RPC; no live login/RLS/convergence claim. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
 | Current blocker / unfinished work | No comparison/choice UI or Model projection wiring yet. Resolution archives remain account-local with no cloud backup. Unknown bases prohibit merging; differing schedules require replay. Public activation remains SYNC-04. Sequential imports retain earlier commits on failure; optimistic deletes require later mutation audit. |
 
@@ -101,7 +101,7 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Durable editor and crash recovery | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) and [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; main regression/Pages 40378487715/40378487955 and 40381695953/40381695797 SUCCESS. |
 | Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
 | Durable imports | `IO.prepare/commit`, ImportSheet recovery, Store note/profile receipts; local import tests and [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged; full main regression 40420169362 and Pages 40420169191 SUCCESS. |
-| Conflict evidence and resolution transactions | [PR #6](https://github.com/Mymayankyadav/lemma/pull/6) evidence deployed; `sync_browser.js`, `outbox_core.js`, `test/conflict_resolution.js`, `test/browser_sync.js` add archived choices and guarded new revisions. Local gates SUCCESS; full browser CI PENDING. |
+| Conflict evidence and resolution transactions | [PR #6](https://github.com/Mymayankyadav/lemma/pull/6) evidence and [PR #7](https://github.com/Mymayankyadav/lemma/pull/7) archived choices deployed; full main regression 40434940278 and Pages 40434940242 SUCCESS. Comparison controls and review replay remain gated. |
 
 ## 6. Five-line end-of-session report template
 
