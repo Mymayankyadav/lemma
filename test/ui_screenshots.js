@@ -229,12 +229,12 @@ async function shot(page, name, size, scheme) {
           const oldSync = Object.getOwnPropertyDescriptor(Sync, 'status');
           if (!oldSync?.configurable) throw new Error('Sync status cannot be stubbed for UI acceptance');
           const cases = [
-            { phase: 'offline', pending: 0, failed: 0, expected: 'Offline · changes queued on device', cls: 'pending' },
-            { phase: 'error', pending: 0, failed: 0, expected: 'Sync failed · local changes retained', cls: 'warn' },
-            { phase: 'conflict', pending: 0, failed: 0, expected: 'Account conflict · review needed', cls: 'warn' },
-            { phase: 'ready', pending: 1, failed: 0, expected: 'Saved on device · queued for cloud', cls: 'pending' },
-            { phase: 'ready', pending: 0, failed: 0, expected: 'Saved to cloud', cls: '' },
-            { phase: 'ready', pending: 0, failed: 1, expected: 'Could not save to device · export a backup', cls: 'warn' },
+            { phase: 'offline', pending: 0, failed: 0, expected: 'Offline · changes queued on device', cls: 'pending', visible: 'Offline' },
+            { phase: 'error', pending: 0, failed: 0, expected: 'Sync failed · local changes retained', cls: 'warn', visible: 'Sync failed' },
+            { phase: 'conflict', pending: 0, failed: 0, expected: 'Account conflict · review needed', cls: 'warn', visible: 'Conflict' },
+            { phase: 'ready', pending: 1, failed: 0, expected: 'Saved on device · queued for cloud', cls: 'pending', visible: 'Queued' },
+            { phase: 'ready', pending: 0, failed: 0, expected: 'Saved to cloud', cls: '', visible: '' },
+            { phase: 'ready', pending: 0, failed: 1, expected: 'Could not save to device · export a backup', cls: 'warn', visible: 'Save failed' },
           ];
           const results = [];
           try {
@@ -246,6 +246,7 @@ async function shot(page, name, size, scheme) {
               const label = element?.querySelector('.sr-only')?.textContent;
               results.push({
                 scenario: scenario.phase, expected: scenario.expected, observed: label,
+                visibleExpected: scenario.visible, visibleObserved: element?.querySelector('.sync-label')?.textContent || '',
                 role: element?.getAttribute('role'), title: element?.title,
                 classOk: scenario.cls ? element?.classList.contains(scenario.cls) : !element?.classList.contains('warn') && !element?.classList.contains('pending'),
               });
@@ -258,7 +259,7 @@ async function shot(page, name, size, scheme) {
           return results;
         });
         for (const s of statuses)
-          if (s.role !== 'status' || s.observed !== s.expected || s.title !== s.expected || !s.classOk)
+          if (s.role !== 'status' || s.observed !== s.expected || s.title !== s.expected || !s.classOk || s.visibleObserved !== s.visibleExpected)
             throw new Error('Account status accessibility/recovery regression: ' + JSON.stringify(s));
 
         // Both shortcut-driven and focus/Enter routes must work without a mouse.
@@ -278,6 +279,55 @@ async function shot(page, name, size, scheme) {
         if (await page.locator('.note-row').count() === 0)
           throw new Error('Offline Cards view lost the device-local notes');
         await ctx.setOffline(false);
+      }
+      // The sync indicator previously conveyed critical problems only via a
+      // hover title. Capture visible chips across both sizes and color schemes.
+      // These are isolated presentation projections, not live transport evidence.
+      await goTo(page, 'home');
+      for (const scenario of [
+        { name: 'offline', phase: 'offline', visible: 'Offline', full: 'Offline · changes queued on device', cls: 'pending' },
+        { name: 'error', phase: 'error', visible: 'Sync failed', full: 'Sync failed · local changes retained', cls: 'warn' },
+        { name: 'conflict', phase: 'conflict', visible: 'Conflict', full: 'Account conflict · review needed', cls: 'warn' },
+      ]) {
+        await page.evaluate(({ phase }) => {
+          const { App, Store, Sync } = window.__uiAcceptance;
+          const descriptor = Object.getOwnPropertyDescriptor(Sync, 'status');
+          if (!descriptor?.configurable || window.__uiStatusRestore)
+            throw new Error('Cannot isolate status screenshot projection');
+          window.__uiStatusRestore = { status: Store.status, descriptor };
+          Store.status = () => ({ mode: 'account', pending: 0, failed: 0, offline: false });
+          Object.defineProperty(Sync, 'status', { configurable: true, get: () => ({ phase, pending: 0 }) });
+          App.render();
+        }, { phase: scenario.phase });
+        try {
+          const state = await page.locator('#sync').evaluate(el => {
+            const label = el.querySelector('.sync-label');
+            const rect = label?.getBoundingClientRect();
+            return {
+              visible: label?.textContent, hiddenFromAT: label?.getAttribute('aria-hidden'),
+              full: el.querySelector('.sr-only')?.textContent,
+              role: el.getAttribute('role'), className: el.className,
+              fits: !!rect && rect.width > 0 && rect.height > 0 && rect.right <= innerWidth - 4,
+              pageWidth: document.documentElement.scrollWidth, viewport: innerWidth,
+            };
+          });
+          if (state.visible !== scenario.visible || state.hiddenFromAT !== 'true' ||
+              state.full !== scenario.full || state.role !== 'status' ||
+              !state.className.includes(scenario.cls) || !state.fits ||
+              state.pageWidth > state.viewport + 1)
+            throw new Error('Visible sync status regression: ' + JSON.stringify({ scenario, state }));
+          await shot(page, 'status-' + scenario.name, size, scheme);
+        } finally {
+          await page.evaluate(() => {
+            const saved = window.__uiStatusRestore;
+            if (!saved) return;
+            const { App, Store, Sync } = window.__uiAcceptance;
+            Store.status = saved.status;
+            Object.defineProperty(Sync, 'status', saved.descriptor);
+            delete window.__uiStatusRestore;
+            App.render();
+          });
+        }
       }
     } catch (e) {
       problems.push(`[${size}-${scheme}] could not capture: ${e.stack || e.message}`);
