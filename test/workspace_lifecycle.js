@@ -80,6 +80,14 @@ async function run() {
   await switcher.deactivate();
   assert.equal(model.notes.has('private-local'),true);
   assert.equal(model.notes.has(A),false);
+  // A verified identity may explicitly use its already-cached private notes
+  // while offline; pending cloud receipts remain tracked rather than erased.
+  sync.status.phase='offline';sync.status.pending=2;
+  await switcher.activate();
+  assert.equal(model.notes.has(A),true);
+  assert.equal(switcher.activeId,A);
+  await switcher.deactivate();
+  sync.status.phase='ready';sync.status.pending=0;
 
   // Account changes during slow cache loads cannot reintroduce stale cards.
   activationGate=defer();
