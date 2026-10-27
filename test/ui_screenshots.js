@@ -81,6 +81,22 @@ async function shot(page, name, size, scheme) {
       await page.waitForSelector('#ed-front');
       await page.fill('#ed-front', 'State the Mean Value Theorem: $f\'(c)=\\frac{f(b)-f(a)}{b-a}$.');
       await shot(page, 'editor', size, scheme);
+      if (size === 'mobile') {
+        // A deliberately oversized mathematical display scrolls *inside* the
+        // formula, without forcing the editor or whole page to pan sideways.
+        const longMath = '$' + Array.from({ length: 70 }, (_, i) => 'x_{' + i + '}').join('+') + '$';
+        await page.fill('#ed-back', longMath);
+        await page.locator('.ed-mtabs [role="tab"]').nth(1).click();
+        await page.locator('.pv-tabs [role="tab"]').nth(1).click();
+        await page.waitForSelector('.ed-preview .katex-display');
+        const mathLayout = await page.locator('.ed-preview .katex-display').first().evaluate(el => ({
+          overflow: getComputedStyle(el).overflowX,
+          pageWidth: document.documentElement.scrollWidth,
+          viewport: window.innerWidth,
+        }));
+        if (mathLayout.overflow !== 'auto' || mathLayout.pageWidth > mathLayout.viewport + 1)
+          throw new Error('Oversized math did not remain locally scrollable: ' + JSON.stringify(mathLayout));
+      }
       await page.keyboard.press('Escape');
       await page.waitForSelector('.today');
       await page.click('.today .btn-primary');
