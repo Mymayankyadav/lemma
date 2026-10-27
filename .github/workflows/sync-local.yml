@@ -45,8 +45,24 @@ jobs:
           test ! -e supabase/.temp/project-ref
           test -f supabase/config.toml
           supabase --version
-      - name: Start isolated local Supabase services
-        run: supabase start
+      - name: Start isolated local Supabase services (retry registry throttling)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if supabase start; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Local Supabase failed after three startup attempts"
+              exit 1
+            fi
+            # GitHub-hosted runners share container-registry rate limits.
+            # A failed partial start is disposable; never use --linked.
+            supabase stop --no-backup || true
+            echo "Retrying local image pulls after registry backoff"
+            sleep "$((attempt * 30))"
+          done
       - name: Rebuild only the local database from migrations
         run: supabase db reset --local --no-seed
       - name: Verify exact migrations and sync-table RLS
