@@ -6,7 +6,7 @@ Next action: UI-01 final acceptance gate, after S4 merged via PR #35 (`main@c3c2
 | --- | --- |
 | Status | S4 MERGED (`c3c22ce`, PR #35); UI-01 final acceptance IN_PROGRESS on separate branch; CI PENDING. |
 | Current task | UI-01 (S4 implemented; final accessibility and screenshot gate review left) |
-| Open branch / PR | `lane-b/ui-01-final-acceptance` / PR pending |
+| Open branch / PR | `lane-b/ui-01-final-acceptance` / [PR #36](https://github.com/Mymayankyadav/lemma/pull/36) |
 | Last merged work | UI-01 S4 navigation/Stats, [PR #35](https://github.com/Mymayankyadav/lemma/pull/35), squash `c3c22ce`; [regression + screenshots 40566950449](https://github.com/Mymayankyadav/lemma/actions/runs/40566950449) and [Android 40566950668](https://github.com/Mymayankyadav/lemma/actions/runs/40566950668) SUCCESS. |
 | Not yours | `src/app/view_settings.js` until an integration session reassigns it. Sync/account behaviour. Supabase. |
 
