@@ -42,7 +42,7 @@ Up to **three agents may run at the same time, one per lane** (A sync/auth/backe
 | Lane | Scope (files in `lanes.json`) | NEXT task | Branch prefix | Status file |
 | --- | --- | --- | --- | --- |
 | A | sync, auth, Supabase, account Settings | SYNC-04 L5 (local Supabase stack in CI) | `lane-a/` | [A.md](docs/lanes/A.md) |
-| B | screens, CSS, navigation, rendering | UI-01 S3 (Cards screens) | `lane-b/` | [B.md](docs/lanes/B.md) |
+| B | screens, CSS, navigation, rendering | UI-01 gate review (S1–S4 done) | `lane-b/` | [B.md](docs/lanes/B.md) |
 | C | native Android shell and build | none — ANDROID-02 waits for SYNC-04 and UI-01; do not start work | `lane-c/` | [C.md](docs/lanes/C.md) |
 
 **Next action, in one sentence:** lanes A and B do the "Next action:" line at the top of their `docs/lanes/<X>.md` (lane A: SYNC-04 L5); lane C stays idle until SYNC-04 and UI-01 are DONE.
@@ -78,7 +78,7 @@ Each slice is one PR. Every PR attaches the S1 screenshots (before/after) in its
 **[x] S1 — screenshot harness, no visual change (PR #15).** Create `test/ui_screenshots.js`: build is already done by `npm test`'s e2e step, so serve/launch `dist/` exactly the way `test/e2e.js` does (copy its server and Playwright launch code), seed data with `test/seed.js`, and capture Home, Cards list, Editor, Review and Stats at 390×844 and 1280×800 in `colorScheme` light and dark into `test-output/ui/<screen>-<size>-<scheme>.png` (already git-ignored; never commit PNGs). Add `"test:ui": "node test/ui_screenshots.js"` and append `&& npm run test:ui` to the end of `"test"`.
 **[x] S2 — navigation and Today (Stats tab kept until S4).** In `main.js`, label navigation **Today / Cards / Settings** (Study stays hidden until PLAN-01); keep every existing route/hash working. In `view_home.js`, make due reviews the single primary action. Gate: e2e green, screenshots, keyboard-only navigation works.
 **[x] S3 — Cards (`view_browse.js`, `view_editor.js`, `sheets.js`).** ≥44px tap targets, visible focus, long equations scroll locally (`overflow-x:auto` on display math), empty/loading/error states. Do not change editor save/durability logic (it calls lane A's Store).
-**[ ] S4 — Review and Stats (`view_review.js`, `view_stats.js`, `charts.js`).** Reduced motion, existing keyboard shortcuts unchanged, advanced FSRS/stat controls behind progressive disclosure. Gate: full UI-01 gate in the row above except Settings.
+**[x] S4 — Review and Stats (local `npm test` green; CI pending) (`view_review.js`, `view_stats.js`, `charts.js`).** Reduced motion, existing keyboard shortcuts unchanged, advanced FSRS/stat controls behind progressive disclosure. Gate: full UI-01 gate in the row above except Settings.
 
 ### SYNC-04 slices (lane A) — feasible verification
 

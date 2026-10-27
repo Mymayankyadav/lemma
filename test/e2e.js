@@ -254,7 +254,8 @@ function syntheticHistory() {
     await page.screenshot({ path: SHOTS + '/A7-graph.png', fullPage: true });
 
     // stats + settings
-    await page.click('.tab[data-go="stats"]');
+    await page.click('.tab[data-go="home"]');
+    await page.click('.stats-link');
     await page.waitForSelector('.tiles');
     await page.waitForTimeout(300);
     await page.screenshot({ path: SHOTS + '/A8-stats.png', fullPage: true });
@@ -277,7 +278,8 @@ function syntheticHistory() {
     const { ctx, page } = await newPage(browser, { seedDocs: seedDocs(notes), viewport: { width: 390, height: 844 }, dark: true, label: 'B' });
     await page.waitForSelector('.today', { timeout: 15000 });
     await page.screenshot({ path: SHOTS + '/B1-home-mobile-dark.png', fullPage: true });
-    await page.click('.tb[data-go="stats"]');
+    await page.click('.tb[data-go="home"]');
+    await page.click('.stats-link');
     await page.waitForSelector('.tiles');
     await page.waitForTimeout(400);
     ok(await page.isVisible('text=FSRS accuracy'), 'calibration section rendered');
@@ -336,7 +338,8 @@ function syntheticHistory() {
     await page.click('.tb[data-go="settings"]');
     await page.waitForSelector('#s-ret');
     await overflow('mobile settings');
-    await page.click('.tb[data-go="stats"]');
+    await page.click('.tb[data-go="home"]');
+    await page.click('.stats-link');
     await page.waitForSelector('.tiles');
     await overflow('mobile stats');
     await ctx.close();

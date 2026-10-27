@@ -126,7 +126,7 @@ const StatsView = (() => {
     page.append(grid);
 
     // retention table
-    page.append(h('section', { class: 'panel' }, h('h2', { class: 'section-title', text: 'True retention' }),
+    page.append(h('details', { class: 'panel disclosure' }, h('summary', { class: 'section-title', text: 'True retention' }),
       h('p', { class: 'muted small', text: 'Reviews answered Hard, Good or Easy.' }),
       h('div', { class: 'table-scroll' }, h('table', { class: 'data-table' },
         h('thead', null, h('tr', null, ['Period', 'Reviews', 'Retention'].map((t) => h('th', { scope: 'col', text: t })))),
@@ -134,7 +134,7 @@ const StatsView = (() => {
           h('tr', null, h('td', { text: l }), h('td', { text: fmtInt(a[0]) }), h('td', { text: pct(a) }))))))));
 
     // calibration
-    const cal = h('section', { class: 'panel' });
+    const cal = h('details', { class: 'panel disclosure' });
     page.append(cal);
     drawCalibration(cal);
     return page;
@@ -143,7 +143,7 @@ const StatsView = (() => {
   function drawCalibration(host) {
     const hist = Model.histories(deck || null);
     const ds = FSRS.buildDataset(hist, Model.clock);
-    host.append(h('h2', { class: 'section-title', text: 'FSRS accuracy' }));
+    host.append(h('summary', { class: 'section-title', text: 'FSRS accuracy' }));
     if (ds.items < 30) {
       host.append(h('p', { class: 'muted small', text: `Appears after 30 spaced reviews · ${ds.items} so far` }));
       return;

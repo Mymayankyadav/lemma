@@ -28,7 +28,7 @@ let shots = 0;
 
 async function open(browser, size, scheme) {
   const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: SIZES[size],
-    colorScheme: scheme, timezoneId: 'Asia/Kolkata', reducedMotion: 'reduce' });
+    colorScheme: scheme, timezoneId: 'Asia/Kolkata', reducedMotion: 'reduce', hasTouch: size === 'mobile' });
   await ctx.route('**/*', async route => {
     const url = route.request().url();
     if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: HTML });
@@ -71,7 +71,8 @@ async function shot(page, name, size, scheme) {
       await goTo(page, 'browse');
       await page.waitForSelector('#browse-q');
       await shot(page, 'cards', size, scheme);
-      await goTo(page, 'stats');
+      await goTo(page, 'home');
+      await page.locator('.stats-link').click();
       await page.waitForTimeout(500);
       await shot(page, 'stats', size, scheme);
       await goTo(page, 'home');
@@ -80,13 +81,100 @@ async function shot(page, name, size, scheme) {
       await page.waitForSelector('#ed-front');
       await page.fill('#ed-front', 'State the Mean Value Theorem: $f\'(c)=\\frac{f(b)-f(a)}{b-a}$.');
       await shot(page, 'editor', size, scheme);
+      if (size === 'mobile') {
+        // A deliberately oversized mathematical display scrolls *inside* the
+        // formula, without forcing the editor or whole page to pan sideways.
+        const displayFence = String.fromCharCode(36, 36);
+        const longMath = displayFence + Array.from({ length: 70 }, (_, i) => 'x_{' + i + '}').join('+') + displayFence;
+        await page.fill('#ed-back', longMath);
+        await page.locator('.ed-mtabs [role="tab"]').nth(1).click();
+        await page.locator('.pv-tabs [role="tab"]').nth(1).click();
+        await page.waitForTimeout(250);
+        if (await page.locator('.ed-preview .katex-display').count() === 0) {
+          const diag = await page.evaluate(() => ({
+            editor: document.querySelector('.editor')?.className,
+            tabs: [...document.querySelectorAll('.pv-tabs button')].map(b => [b.textContent, b.className]),
+            preview: document.querySelector('.ed-preview')?.innerHTML.slice(-350),
+            warning: document.querySelector('.ed-warn')?.textContent,
+          }));
+          throw new Error('Oversized math preview missing: ' + JSON.stringify(diag));
+        }
+        const mathLayout = await page.locator('.ed-preview .katex-display').first().evaluate(el => ({
+          overflow: getComputedStyle(el).overflowX,
+          pageWidth: document.documentElement.scrollWidth,
+          viewport: window.innerWidth,
+        }));
+        if (mathLayout.overflow !== 'auto' || mathLayout.pageWidth > mathLayout.viewport + 1)
+          throw new Error('Oversized math did not remain locally scrollable: ' + JSON.stringify(mathLayout));
+      }
       await page.keyboard.press('Escape');
       await page.waitForSelector('.today');
       await page.click('.today .btn-primary');
       await page.waitForSelector('.btn-reveal, .grades, .done');
       await shot(page, 'review', size, scheme);
+
+      // UI-01 gate: native keyboard activation of the advanced statistics panels.
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('.today');
+      if (size === 'mobile' && (await page.locator('.stats-link').boundingBox()).height < 44)
+        throw new Error('Statistics mobile touch target is under 44px');
+      await page.locator('.stats-link').focus();
+      await page.keyboard.press('Enter');
+      await page.waitForSelector('.tiles');
+      const panels = page.locator('details.disclosure');
+      if (await panels.count() !== 2 || await panels.first().evaluate(el => el.open))
+        throw new Error('Statistics advanced sections must initially be collapsed');
+      if (size === 'mobile' && (await panels.first().locator('summary').boundingBox()).height < 44)
+        throw new Error('Advanced statistics mobile touch target is under 44px');
+      await panels.first().locator('summary').focus();
+      await page.keyboard.press('Enter');
+      if (!await panels.first().evaluate(el => el.open))
+        throw new Error('Statistics disclosure must open with the keyboard');
+
+      if (size === 'mobile') {
+        // Mobile navigation labels are part of the UI contract, not tooltips.
+        const labels = await page.locator('.tabbar .tb-label:visible').allTextContents();
+        if (labels.join('|') !== 'Today|Cards|New|Settings')
+          throw new Error('Mobile navigation labels missing or out of order: ' + labels.join(', '));
+        const targets = await page.locator('.tabbar .tb').evaluateAll(items => items.map(el => {
+          const r = el.getBoundingClientRect(); return { width: r.width, height: r.height };
+        }));
+        if (targets.some(r => r.width < 44 || r.height < 44))
+          throw new Error('Mobile navigation has an action smaller than 44×44px');
+        // Prevent an unused grid track when a top-level nav item is removed.
+        const gaps = await page.locator('.tabbar').evaluate(bar => {
+          const items = [...bar.querySelectorAll('.tb')];
+          if (items.length !== 4) return null;
+          const centres = items.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
+          return centres.slice(1).map((x, i) => x - centres[i]);
+        });
+        if (!gaps || Math.max(...gaps) - Math.min(...gaps) > 5)
+          throw new Error('Mobile bottom navigation should distribute all four actions evenly');
+      }
+      if (size === 'desktop' && scheme === 'light') {
+        // 640 CSS pixels = the available layout width at 200% zoom on a 1280px desktop.
+        await page.setViewportSize({ width: 640, height: 800 });
+        for (const route of ['home', 'browse', 'stats']) {
+          if (route === 'stats') {
+            await goTo(page, 'home');
+            await page.locator('.stats-link').click();
+          } else await goTo(page, route);
+          const widths = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
+          if (widths[0] > widths[1] + 1)
+            throw new Error(`200%-equivalent ${route} reflow overflows horizontally: ${widths.join(' > ')}`);
+        }
+      }
+      if (size === 'mobile' && scheme === 'dark') {
+        // Existing seeded cards remain browsable when the browser is offline.
+        await ctx.setOffline(true);
+        await goTo(page, 'browse');
+        await page.waitForSelector('.note-row');
+        if (await page.locator('.note-row').count() === 0)
+          throw new Error('Offline Cards view lost the device-local notes');
+        await ctx.setOffline(false);
+      }
     } catch (e) {
-      problems.push(`[${size}-${scheme}] could not capture: ${e.message.split('\n')[0]}`);
+      problems.push(`[${size}-${scheme}] could not capture: ${e.stack || e.message}`);
     }
     await ctx.close();
   }

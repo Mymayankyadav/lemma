@@ -62,6 +62,7 @@ const HomeView = (() => {
       h('button', { class: 'btn btn-primary study-btn', type: 'button', disabled: !due, title: due ? 'Study now (Space)' : nextDueText(now),
         onclick: () => App.startSession(new Session({ deck: null })), html: icon(due ? 'play' : 'check', 18) + `<span>${due ? 'Study' : 'Done'}</span>` }));
     page.append(hero);
+    page.append(h('p', { class: 'stats-link-row' }, h('button', { class: 'link-btn stats-link', type: 'button', dataset: { go: 'stats' }, text: 'Statistics', onclick: () => App.go('stats') })));
 
     const list = h('div', { class: 'deck-list', role: 'list' });
     const names = Model.deckNames();
