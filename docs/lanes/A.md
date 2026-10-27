@@ -1,6 +1,6 @@
 # Lane A — sync, auth and backend
 
-Next action: KNOWLEDGE-01 (lead A) becomes ready automatically when UI-01 is DONE. Until then inspect existing context/source/revision contracts and handle incoming A requests; do not repeat SYNC-04. Settings presentation now belongs to B. Use plan v5 automatic integration for new file ownership; no owner coordination request is needed.
+Next action: independent KNOWLEDGE-01 K1 schema/permissions preflight claimed on `lane-a/knowledge-01-schema-preflight`, documentation only until UI-01 becomes DONE. Audit existing context/source/section metadata and revision/security contracts, identify exact follow-on implementation and local RLS tests; do not change production data or promote KNOWLEDGE-01 before the UI gate.
 
 | Field | Value |
 | --- | --- |
@@ -16,6 +16,24 @@ Next action: KNOWLEDGE-01 (lead A) becomes ready automatically when UI-01 is DON
 **Requests from other lanes:** none open at v5 inspection. Read all lane handoffs on pickup and service requests addressed to A directly. Future task support: data/contracts for KNOWLEDGE-01, PLAN-01, TUTOR-01 and native auth.
 
 **Evidence precedence:** the summary above and plan v5 are current. Sections below retain historical verification detail; their old PENDING/NOT RUN statements and owner-routing instructions are superseded where later evidence closes the same gate. Do not restart completed slices.
+
+## KNOWLEDGE-01 K1 — preflight schema/RLS inventory (docs only; implementation BLOCKED)
+
+Source inspected: checked-in applied-migration copies `20261026085028_initial_learning_state.sql`, `20261026090019_versioned_study_planning.sql`, `20261026090746_cards_reviews_sources.sql`, `20261026090844_atomic_plan_publication.sql`, plus `docs/STUDY_PLANNING_PROTOCOL.md`. This is source inspection **not** a fresh live catalog query, migration, runtime test, or release gate.
+
+| Existing relation / function | Present contract | Required K1 verification or gap |
+| --- | --- | --- |
+| `study_context_files` | Owner-keyed `(user_id,id)`, title, `context_markdown`, JSON `source_refs`, integer `revision`. Owner RLS; authenticated direct SELECT/INSERT/UPDATE/DELETE. | No source-level compare-and-swap or immutable context revision history is established. A direct update may overwrite a concurrent tutor/phone edit. K1 must add bounded, revision-checked context changes and retain accepted prior versions before enabling editing. |
+| `learning_sources` | Owner-keyed source ID, title/type, `citation`, `storage_path`, `metadata`. Owner RLS and authenticated CRUD. | No guaranteed stable source-version key, bounded excerpt policy or private storage bucket/access rule is established by these columns. Start with text/manual references; do not treat a storage path as upload authorization. |
+| `learning_sections` | Owner-keyed stable section ID, `source_id` composite FK, locator/title/`text_content`, metadata. Owner RLS; `(user_id,source_id,locator)` index. | Locator is indexed but not unique/versioned; full `text_content` is not length bounded in schema. K1 must define source revision, stable citation locator/page and bounded retrieval; edits must not silently invalidate previously accepted citations. |
+| `study_plan_versions` and `publish_study_plan` | Plan snapshots with CAS, idempotent request key and optional context revision comparison; publication RPC is owner-scoped. | Reuse, do not reconstruct. The existence of an authenticated publication RPC does **not** prove student approval or editor authorization; PLAN-01 P1 must verify approval/revision rules before UI exposure. |
+| `learning_events`, `study_checkpoints` | Events have stable `event_id`, FK to session; checkpoint points to evidence event. | Append-only enforcement and no-fake-mastery permissions remain PLAN-01 verification. The review-events immutability trigger is **not** evidence that learning-events are immutable. |
+
+**Minimum K1 follow-on after UI-01:** define versioned structured context fields as a validated JSON contract attached to the existing context record (and Markdown projection), with an additive immutable revision ledger and authenticated owner-scoped compare-and-swap write/read path. Define source `(id,revision,section_id,locator)` citation identity and capped excerpt selection, avoiding loading entire documents. Prefer existing `learning_sources`/`learning_sections` and only additive migrations. Disallow implicit tutor acceptance, duplicate retry writes, cross-owner references and arbitrary external URL/storage access. Defer optional binary source uploads until independent private storage permissions, limits, extraction status and removal lifecycle are designed and tested; no OCR.
+
+**Disposable-local acceptance matrix before any production migration:** (K1a) two users create distinct contexts/sources/sections via authenticated HTTP; reciprocal reads and writes are denied even when IDs are known; (K1b) two clients race edits against context revision N, exactly one advances and the loser receives a stale-revision error, preserving both recoverable drafts; (K1c) lost response/retry with the same operation ID is idempotent; (K1d) edit a cited section and verify old accepted source revision/excerpt stays addressable; (K1e) two independently initiated tutor reads of the same accepted context revision and bounded cited excerpt agree, while unaccepted proposals remain distinct; (K1f) local migration/permissions compare against production metadata before safe application, then record written/merged/applied/verified separately. No production fault injection or second production identity.
+
+**Next boundary:** UI-01 is still NEXT; KNOWLEDGE-01 is BLOCKED. This inspection contributes planning evidence only, not a DONE task. After UI-01 is green, implement the narrow first K1 migration/API slice in lane A with security and idempotency tests, then coordinate B context UI through the lane handoff. No SQL or live data has been changed by this preflight PR.
 
 ## SYNC-04 L8 — exact read-only production/local security parity (DONE)
 
