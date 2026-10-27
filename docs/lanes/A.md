@@ -6,7 +6,7 @@ Next action: AUTH-01 S2 is BLOCKED_OWNER (owner must enable Google in Supabase a
 | --- | --- |
 | Status | BLOCKED_OWNER (AUTH-01 S2); SYNC-04 M1 DONE (mock transport) |
 | Current task | AUTH-01 S2 (owner-assisted), then SYNC-04 |
-| Delivery | Owner-blocker documentation on `lane-a/auth-01-owner-prerequisites` (PR pending). Previous [PR #8](https://github.com/Mymayankyadav/lemma/pull/8) merged as `5efdf3e`; [main CI 40464430522](https://github.com/Mymayankyadav/lemma/actions/runs/40464430522) SUCCESS. |
+| Delivery | Owner-blocker documentation: [PR #10](https://github.com/Mymayankyadav/lemma/pull/10), `lane-a/auth-01-owner-prerequisites`; check its merge status before continuing. Previous [PR #8](https://github.com/Mymayankyadav/lemma/pull/8) merged as `5efdf3e`; [main CI 40464430522](https://github.com/Mymayankyadav/lemma/actions/runs/40464430522) SUCCESS. |
 | Last merged work | AUTH-01 S1 at `b1ea568`, [CI 40450843938](https://github.com/Mymayankyadav/lemma/actions/runs/40450843938) SUCCESS (mocked OAuth). SYNC-03 DONE at `6fb7005`. |
 | Backend | Only this lane may use Supabase (`yemqnhnztlbyxmjxidis`). Nine applied migrations, RLS on all four sync tables, advisors clean. Two-identity RLS probe NOT RUN. |
 | Live confidence | Google provider DISABLED: live public `/auth/v1/settings` returned `external.google=false`, `external.email=true` on 2026-10-27 (read-only). Sign-in and live sync remain NOT RUN; sync/recovery evidence is mock transport. |
@@ -29,6 +29,8 @@ Next action: AUTH-01 S2 is BLOCKED_OWNER (owner must enable Google in Supabase a
 2. [Lemma Supabase Auth providers](https://supabase.com/dashboard/project/yemqnhnztlbyxmjxidis/auth/providers): enable Google and enter that client ID/secret in the dashboard.
 3. Auth URL configuration: Site URL `https://mymayankyadav.github.io/lemma/`; allow that URL, `http://localhost:*/**`, and `io.lemma.study://auth-callback`.
 4. [Open Lemma](https://mymayankyadav.github.io/lemma/), Settings → Continue with Google, using the email of the earlier email-link account. Report sign-in outcome; the next lane A session checks identity continuity, sign-out and explicit backup acknowledgment before workspace activation. A different `user.id` blocks progress; never migrate rows to make it pass.
+
+Documentation follow-up: `npm run test:plan`, `node test/lane_guard.js A` and `git diff --check` SUCCESS locally; see PR #10 for full CI evidence.
 
 No provider configuration or backend data was changed during the read-only check. Public provider settings confirm enablement only; they do not prove client credentials, redirect configuration or a successful OAuth round trip.
 
