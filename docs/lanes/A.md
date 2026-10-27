@@ -5,9 +5,9 @@ Next action: SYNC-04 L3 — verify the already-tombstoned synthetic fixture disa
 | Field | Value |
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
-| Current task | SYNC-04 L3 pending live account-device gates; implementing deferred Model invalidation after editor/dirty writes |
-| Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) merged as `6550475`; L3 checklist [PR #24](https://github.com/Mymayankyadav/lemma/pull/24) merged as `f15f4d2`. Current bounded L3 reliability branch: `lane-a/sync-04-l3-deferred-invalidation`. AUTH-01 PR #17 merged as `e13582d`. |
-| Baseline | `main@f15f4d2` [regression 40507523955](https://github.com/Mymayankyadav/lemma/actions/runs/40507523955), [Android 40507523994](https://github.com/Mymayankyadav/lemma/actions/runs/40507523994) SUCCESS. Earlier live L1 tests ran against the previous deployed AUTH-01 build; they do not certify later navigation changes. |
+| Current task | SYNC-04 L3 owner-authenticated device checks still pending; L4 opt-in two-identity HTTP RLS acceptance harness added (self-test only until tokens are available) |
+| Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) merged as `6550475`; L3 checklist [PR #24](https://github.com/Mymayankyadav/lemma/pull/24) merged as `f15f4d2`. L3 deferred projection [PR #25](https://github.com/Mymayankyadav/lemma/pull/25) merged as `80c385c`. Current HTTP acceptance harness branch: `lane-a/sync-04-l4-http-rls-harness`. AUTH-01 PR #17 merged as `e13582d`. |
+| Baseline | `main@80c385c` regression, Android, screenshot publication and Pages deployment all SUCCESS after PR #25; previous live L1 tests do not certify later builds. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
 
 ## AUTH-01 S2 — live web gate COMPLETE, 27 October 2026
@@ -88,3 +88,13 @@ SYNC-04 remains **NEXT**, not DONE. Until independent live testing is possible, 
 - New `test/account_sync.js` regressions cover idle-after-editor-close, pending-write-drain, preservation of dirty and unrelated notes, no automatic local mutation, and cancellation of a delayed cache read after sign-out. Existing `test/browser_sync.js` tests still cover independent IndexedDB tombstone durability under mocked transport.
 - **Gate status:** New changes require green PR CI before merging. These are mock/VM checks; they do **not** certify authenticated real-browser tombstone propagation, independent-device convergence, offline app restart, expired HTTP session, lost response after server commit or two-real-identity HTTP RLS.
 - Never perform another production delete or replace an existing learning note to simulate these gates. The previously authorized synthetic note remains tombstoned. No database migration is part of this slice.
+
+## SYNC-04 L4 — reproducible HTTP RLS probe (implementation, NOT live evidence)
+
+- `test/auth_http_rls.js` is a safety-guarded **opt-in** integration probe against **only the Lemma project**. The script's default behavior and `--self-test` use fake HTTP and no credentials; `test/account_identity.js` includes the self-test in the existing CI.
+- The explicit `--live` mode requires two **different real** owner-authorized signed-in Supabase access tokens, the project's public/publishable API key, and two distinct test note IDs. Both fixtures must have a title starting `SYNC-04`; the script will reject ordinary mathematical notes. The existing owner-owned tombstoned fixture can serve as account A if its session is available; account B still needs its own *separate synthetic fixture*.
+- Tokens are passed by **private local environment variables**, never pasted into PRs, committed, put in CI logs, or sent in chat. Run in a trusted local terminal only, with the owner controlling both independent logins. Read actual scripts before use; do not collect third-party users' credentials.
+- Secure operator environment keys: `LEMMA_RLS_PUBLIC_KEY`, `LEMMA_RLS_TOKEN_A`, `LEMMA_RLS_TOKEN_B`, `LEMMA_RLS_NOTE_A`, `LEMMA_RLS_NOTE_B` and `LEMMA_RLS_ACK=SYNC-04-SYNTHETIC-HTTP-TEST`. Invocation: `node test/auth_http_rls.js --live`. The project URL is hardcoded, with redirect following disabled.
+- It checks `/auth/v1/user` for two distinct user IDs, confirms each owner can read its **own** labelled note, probes foreign-owner reads from `notes`, `profiles`, `review_events`, and `review_retractions`, then probes RPC `commit_note` in both directions with an **expected nonzero victim revision**. The wrong owner must receive `stale_note_revision`. It re-reads owner data afterward to verify no change. The read-only preflight must pass before either RPC; no legitimate notes are targeted and no rows are deliberately created.
+- **NOT YET RUN LIVE:** absence of the two real test sessions/second synthetic fixture prevents claiming HTTP authorization gate success. A passing mocked self-test does not prove deployed RLS behavior. This harness must not be used with a service-role key or embedded in the client.
+- Remaining independent-device UI tombstone, offline restart/reconnect, expired authenticated session and lost-response end-to-end gates remain open. Keep SYNC-04 **NEXT**, not DONE.
