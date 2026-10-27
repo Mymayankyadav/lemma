@@ -121,8 +121,59 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   model.set('dirty-b',structuredClone(dirty.data));
   await ctx.sync.refresh();
   assert.equal(model.get('dirty-b').front,'local draft','dirty rows are never clobbered');
+  // A remote tombstone pulled while editing must be projected automatically
+  // when the sheet closes. No manual Sync/refresh or second server pull is
+  // required; the previously fetched owner-scoped cache remains authoritative.
+  const deferred = {id:'deferred-b',data:{id:'deferred-b',front:'cached before remote deletion',
+    back:'',log:[],cards:{}},deleted:true,dirty:false,revision:3};
+  rowsB.push(deferred);
+  model.set(deferred.id,structuredClone(deferred.data));
+  workspaceIdle=false;
+  await ctx.sync.refresh();
+  assert.equal(model.has(deferred.id),true,'open sheet must keep visible Model stable');
+  workspaceIdle=true;
+  const until = Date.now() + 3000;
+  while (model.has(deferred.id) && Date.now() < until)
+    await new Promise(resolve=>setTimeout(resolve,50));
+  assert.equal(model.has(deferred.id),false,'closing sheet must apply deferred tombstone');
+  assert.equal(model.get('remote-b').front,'account only','deferred invalidation must preserve other notes');
+  assert.equal(model.get('dirty-b').front,'local draft','deferred invalidation must preserve dirty rows');
+  // Staged local writes also defer projection without making a new server
+  // mutation; draining them must eventually reconcile the cached deletion.
+  const deferredPending = {id:'pending-delete-b',data:{id:'pending-delete-b',front:'before deletion',
+    back:'',log:[],cards:{}},deleted:true,dirty:false,revision:4};
+  rowsB.push(deferredPending);
+  model.set(deferredPending.id,structuredClone(deferredPending.data));
+  localPending=1;
+  await ctx.sync.refresh();
+  assert.equal(model.has(deferredPending.id),true,'pending local work blocks remote projection');
+  localPending=0;
+  const untilPending = Date.now() + 3000;
+  while (model.has(deferredPending.id) && Date.now() < untilPending)
+    await new Promise(resolve=>setTimeout(resolve,50));
+  assert.equal(model.has(deferredPending.id),false,'draining writes must apply cached tombstones');
+  assert.equal(staged.length,1,'deferred remote invalidation cannot enqueue new writes');
+  // A pull that started for account B must never project its late result
+  // after B signs out, even if its IndexedDB read completes afterward.
+  const late = {id:'late-b',data:{id:'late-b',front:'stale account B card',back:'',log:[],cards:{}},
+    deleted:true,dirty:false,revision:5};
+  rowsB.push(late);
+  model.set(late.id,structuredClone(late.data));
+  let releaseRead;
+  let reading;
+  const readStarted = new Promise(resolve=>{reading=resolve;});
+  bCache.notes = ()=>new Promise(resolve=>{
+    releaseRead=()=>resolve(rowsB);
+    reading();
+  });
+  const lateRefresh=ctx.sync.refresh();
+  await readStarted;
   current=null;accountMode=false;workspaceId=null;
   await ctx.sync.attach(null);
+  releaseRead();
+  await lateRefresh;
+  assert.equal(model.has(late.id),true,
+    'an in-flight previous-owner read must not alter Model after account exit');
   assert.equal(active[1].closed,true);
   await assert.rejects(ctx.sync.enrollMissingLocal(),/Refresh your signed-in/);
   await assert.rejects(ctx.sync.compareLocal(),/Sign in/);

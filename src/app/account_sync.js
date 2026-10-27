@@ -2,6 +2,7 @@
  * Anonymous cards remain in the original browser database. */
 const LemmaSync = (() => {
   let account = null, channel = null, epoch = 0, task = null, wake = null;
+  let projectionWake = null, projectionVersion = 0;
   let state = { phase: 'signed-out', userId: null, pending: 0, error: '' };
   const listeners = new Set();
   const emit = patch => {
@@ -10,7 +11,9 @@ const LemmaSync = (() => {
   };
   function stop() {
     ++epoch;
+    ++projectionVersion;
     if (wake) { clearTimeout(wake); wake = null; }
+    if (projectionWake) { clearTimeout(projectionWake); projectionWake = null; }
     const old = account;
     account = null;
     if (old) old.close();
@@ -24,19 +27,41 @@ const LemmaSync = (() => {
     if (!account || wake) return;
     wake = setTimeout(() => { wake = null; refresh().catch(() => {}); }, 200);
   }
-  // Reconcile the visible account Model only when there are no open edits or
-  // locally uncommitted writes. A remote pull never overwrites dirty rows;
-  // conflicts continue to require an explicit decision.
+  // Remote cache pulls can finish while the editor, review, or a local write
+  // is active. Keep the fetched tombstone in IndexedDB, then project it as
+  // soon as the visible account workspace becomes safe; never force a write
+  // or repeatedly fetch from the server just to wait for a sheet to close.
+  function scheduleProjection(handle, generation) {
+    if (projectionWake || account !== handle || epoch !== generation) return;
+    projectionWake = setTimeout(() => {
+      projectionWake = null;
+      if (account !== handle || epoch !== generation) return;
+      publishActive(handle, generation).catch(err => {
+        if (account === handle && epoch === generation)
+          emit({ phase: 'error', error: String(err.message || err) });
+      });
+    }, 500);
+  }
   async function publishActive(handle, generation) {
-    const current = () => account === handle && epoch === generation &&
+    const ticket = ++projectionVersion;
+    const active = () => account === handle && epoch === generation &&
       LemmaAccount.user?.id === handle.userId &&
-      Store.mode === 'account' && App.workspaceController?.activeId === handle.userId &&
-      App.workspaceIdle() && !Store.status().pending && !Store.status().failed;
-    if (!current()) return;
+      Store.mode === 'account' && App.workspaceController?.activeId === handle.userId;
+    const safe = () => active() && App.workspaceIdle() &&
+      !Store.status().pending && !Store.status().failed;
+    const check = () => {
+      // A more recent projection, a different identity, or a workspace switch
+      // invalidates this asynchronous cache read before it can touch Model.
+      if (ticket !== projectionVersion || !active()) return false;
+      if (safe()) return true;
+      if (!Store.status().failed) scheduleProjection(handle, generation);
+      return false;
+    };
+    if (!check()) return;
     await Store.whenSaved();
-    if (!current()) return;
+    if (!check()) return;
     const [rows, profile] = await Promise.all([handle.storage.notes(), handle.storage.profile()]);
-    if (!current()) return;
+    if (!check()) return;
     const updates = [];
     for (const row of rows) {
       if (row.dirty) continue;
