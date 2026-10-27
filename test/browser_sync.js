@@ -103,6 +103,21 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
     assert.ok(server.get('offline').deleted_at);
     await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('offline'));
     assert.equal(await b.evaluate(async()=>(await account.storage.notes()).find(n=>n.id==='offline').deleted),true);
+    // Server tombstones are durable in the independent client's IndexedDB,
+    // including a full restart: no write should resurrect the old content.
+    const preRestartTombstone = await b.evaluate(async()=> {
+      const row = await account.storage.note('offline');
+      return {deleted:row.deleted,revision:row.revision,dirty:row.dirty};
+    });
+    assert.deepEqual(preRestartTombstone,{deleted:true,revision:2,dirty:false});
+    await b.reload(); await start(b);
+    const postRestartTombstone = await b.evaluate(async()=> {
+      const row = await account.storage.note('offline');
+      return {deleted:row.deleted,revision:row.revision,dirty:row.dirty};
+    });
+    assert.deepEqual(postRestartTombstone,preRestartTombstone,
+      'an independent device reload must retain the remote tombstone');
+    assert.equal(server.get('offline').revision,2,'remote reload must not resurrect deleted data');
 
     // Offline edit/delete conflict keeps all three versions and later queued
     // edits across a real browser reload. A tombstone never silently wins.
