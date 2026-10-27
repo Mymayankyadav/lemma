@@ -1,12 +1,12 @@
 # Lane B — UI
 
-Next action: UI-01 gate review. S1–S4 are implemented. Once CI is green on the S4 PR, review the `ci-screenshots` `pr-<n>/` images (mobile/desktop, light/dark), check 200% text and the offline state, then mark UI-01 DONE. `view_settings.js` moves to lane B only via an integration session now that SYNC-04 is DONE.
+Next action: UI-01 gate review. S1–S4 are implemented. Once CI is green on PR #35, review the `ci-screenshots` `pr-<n>/` images (mobile/desktop, light/dark), check 200% text and the offline state, then mark UI-01 DONE. `view_settings.js` moves to lane B only via an integration session now that SYNC-04 is DONE.
 
 | Field | Value |
 | --- | --- |
 | Status | S4 pushed, CI PENDING |
 | Current task | UI-01 (S4 done, gate review left) |
-| Open branch / PR | `ccr-ab20dc78-f2vlrf` (no PR opened yet) |
+| Open branch / PR | `lane-b/ui-01-s4-stats` / PR #35 |
 | Last merged work | UI-01 S3 Cards (PR #21); S1 #15; S2 #18 |
 | Not yours | `src/app/view_settings.js` until an integration session reassigns it. Sync/account behaviour. Supabase. |
 
