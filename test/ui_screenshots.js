@@ -84,7 +84,8 @@ async function shot(page, name, size, scheme) {
       if (size === 'mobile') {
         // A deliberately oversized mathematical display scrolls *inside* the
         // formula, without forcing the editor or whole page to pan sideways.
-        const longMath = '$' + Array.from({ length: 70 }, (_, i) => 'x_{' + i + '}').join('+') + '$';
+        const displayFence = String.fromCharCode(36, 36);
+        const longMath = displayFence + Array.from({ length: 70 }, (_, i) => 'x_{' + i + '}').join('+') + displayFence;
         await page.fill('#ed-back', longMath);
         await page.locator('.ed-mtabs [role="tab"]').nth(1).click();
         await page.locator('.pv-tabs [role="tab"]').nth(1).click();
