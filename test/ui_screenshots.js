@@ -86,6 +86,54 @@ async function shot(page, name, size, scheme) {
       await page.click('.today .btn-primary');
       await page.waitForSelector('.btn-reveal, .grades, .done');
       await shot(page, 'review', size, scheme);
+
+      // UI-01 gate: native keyboard activation of the advanced statistics panels.
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('.today');
+      await page.locator('.stats-link').focus();
+      await page.keyboard.press('Enter');
+      await page.waitForSelector('.tiles');
+      const panels = page.locator('details.disclosure');
+      if (await panels.count() !== 2 || await panels.first().evaluate(el => el.open))
+        throw new Error('Statistics advanced sections must initially be collapsed');
+      await panels.first().locator('summary').focus();
+      await page.keyboard.press('Enter');
+      if (!await panels.first().evaluate(el => el.open))
+        throw new Error('Statistics disclosure must open with the keyboard');
+
+      if (size === 'mobile') {
+        // Prevent an unused grid track when a top-level nav item is removed.
+        const gaps = await page.locator('.tabbar').evaluate(bar => {
+          const items = [...bar.querySelectorAll('.tb')];
+          if (items.length !== 4) return null;
+          const centres = items.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
+          return centres.slice(1).map((x, i) => x - centres[i]);
+        });
+        if (!gaps || Math.max(...gaps) - Math.min(...gaps) > 5)
+          throw new Error('Mobile bottom navigation should distribute all four actions evenly');
+      }
+      if (size === 'desktop' && scheme === 'light') {
+        // 640 CSS pixels = the available layout width at 200% zoom on a 1280px desktop.
+        await page.setViewportSize({ width: 640, height: 800 });
+        for (const route of ['home', 'browse', 'stats']) {
+          if (route === 'stats') {
+            await goTo(page, 'home');
+            await page.locator('.stats-link').click();
+          } else await goTo(page, route);
+          const widths = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
+          if (widths[0] > widths[1] + 1)
+            throw new Error(`200%-equivalent ${route} reflow overflows horizontally: ${widths.join(' > ')}`);
+        }
+      }
+      if (size === 'mobile' && scheme === 'dark') {
+        // Existing seeded cards remain browsable when the browser is offline.
+        await ctx.setOffline(true);
+        await goTo(page, 'browse');
+        await page.waitForSelector('.note-row');
+        if (await page.locator('.note-row').count() === 0)
+          throw new Error('Offline Cards view lost the device-local notes');
+        await ctx.setOffline(false);
+      }
     } catch (e) {
       problems.push(`[${size}-${scheme}] could not capture: ${e.message.split('\n')[0]}`);
     }
