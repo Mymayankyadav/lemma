@@ -158,6 +158,68 @@ async function conflict(storage, id, {deleted=false, remoteDeleted=false, profil
   assert.deepEqual(await s.list(),reviewQueue);
   assert.deepEqual(await s.reviews(),events);
   assert.deepEqual(await s.retractions(),retractions);
+  // Concurrent offline schedules are projected from immutable provenance,
+  // not whichever device happens to win the remote note revision.
+  const FSRS = require('../src/fsrs.js');
+  const newCard = () => ({st:0,due:0,s:0,d:0,last:0,step:0,reps:0,lapses:0});
+  const stamp = Date.UTC(2026,9,27,8,0,0);
+  const clockOffset = -330 * 60000 + 4 * 3600000;
+  const clock = {
+    dayIndex: ts => Math.floor((ts-clockOffset)/86400000),
+    dayStart: i => i*86400000 + clockOffset
+  };
+  function reviewFixture(id, eventId, offset, grade) {
+    const now = stamp + offset;
+    const prov = {version:1,algorithm:'fsrs-6',weights:FSRS.DEFAULT_W.slice(),
+      day_index:clock.dayIndex(now),rollover_hour:4,timezone_offset_minutes:-330,
+      retention:.9,max_interval_days:36500,learn_steps:'1m 10m',relearn_steps:'10m',
+      fuzz:true,load_balance:false,preview_at_ms:now,card_before:newCard()};
+    const entry = [now,1,grade,0,500,0,eventId,prov];
+    const event = {event_id:eventId,note_id:id,ordinal:1,occurred_at_ms:now,grade,
+      state_before:0,duration_ms:500,kind:0,scheduling_provenance:prov};
+    const card = FSRS.preview(newCard(),now,{
+      w:prov.weights,retention:.9,maxIvl:36500,learn:[1,10],relearn:[10],
+      fuzz:true,loadBalance:false
+    },{clock,key:id+':1'})[grade].card;
+    return {entry,event,card};
+  }
+  async function divergent(reverse = false, undoLocal = false) {
+    const deviceInstance = await device();
+    const st = deviceInstance.storage, id = 'concurrent';
+    const baseline = {...note(id,'base'),cards:{1:newCard()}};
+    const one = reviewFixture(id,'00000000-0000-4000-8000-000000000101',0,3);
+    const two = reviewFixture(id,'00000000-0000-4000-8000-000000000102',3600000,1);
+    const local = reverse ? two : one, remote = reverse ? one : two;
+    await st.ingestRemoteNote({id,data:baseline,revision:1});
+    const op = await st.stageReview({...baseline,cards:{1:local.card},log:[local.entry]},local.entry);
+    if (undoLocal)
+      await st.stageUndo({...baseline,cards:{1:newCard()},log:[]},local.event.event_id);
+    await st.markAttempt(op.id);
+    await st.markConflict(op.id,new Error('stale_note_revision'));
+    await st.ingestReview(remote.event);
+    await st.ingestRemoteNote({id,
+      data:{...baseline,cards:{1:remote.card},log:[remote.entry]},revision:2});
+    const view = await st.inspectConflict(op.id);
+    const ledgerBefore = await st.reviews(), undoBefore = await st.retractions();
+    const chosen = await st.resolveConflict(op.id,view.token,{choice:'remote'});
+    assert.equal(chosen.data.cards['1'].reps,undoLocal ? 1 : 2);
+    assert.deepEqual((await st.reviews()),ledgerBefore);
+    assert.deepEqual((await st.retractions()),undoBefore);
+    assert.equal((await st.list()).some(x => x.id === op.id),false);
+    assert.equal((await st.list()).some(x => x.kind === 'review'),true,
+      'review ledger write must not be superseded by note resolution');
+    if (undoLocal) assert.equal((await st.list()).some(x => x.kind === 'retraction'),true);
+    deviceInstance.db.close();
+    return {cards:chosen.data.cards,log:chosen.data.log};
+  }
+  const scheduleA = await divergent(false), scheduleB = await divergent(true);
+  assert.deepEqual(scheduleA,scheduleB,'two devices must converge independently');
+  assert.equal(scheduleA.log.length,2);
+  const undoneSchedule = await divergent(false,true);
+  assert.equal(undoneSchedule.log.length,1);
+  assert.equal(undoneSchedule.log[0][6],'00000000-0000-4000-8000-000000000102');
+  assert.equal(undoneSchedule.cards['1'].reps,1);
+
   // Compatible pending ledger operations are not superseded with note snapshots.
   const ledgerEntry = [200,1,3,0,500,0,crypto.randomUUID()];
   const ledgerBase = {...note('ledger','base'),log:[ledgerEntry],cards:{1:{reps:1}}};
