@@ -258,6 +258,7 @@ const SettingsView = (() => {
         try {
           if (navigator.onLine) await LemmaSync.refresh();
           await App.workspaceController.activate();
+          App.rememberAccountWorkspace(LemmaAccount.user.id);
           App.go('home');
         } catch (err) {
           message.textContent = 'Cannot switch: ' + err.message;
@@ -266,7 +267,7 @@ const SettingsView = (() => {
       };
       useDevice.onclick = async () => {
         useDevice.disabled = true;
-        try { await App.workspaceController.deactivate(); App.go('home'); }
+        try { await App.workspaceController.deactivate(); App.rememberAccountWorkspace(null); App.go('home'); }
         catch (err) { message.textContent = 'Cannot switch: ' + err.message; useDevice.disabled = false; }
       };
       showCache();
