@@ -1,17 +1,23 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L7 — verify latest PR #30 head with exact offline EDIT/relaunch, short-JWT refresh, lost-response retry and tombstone reload; only then merge. Following that, implement L8 read-only production/local security parity.
+Next action: SYNC-04 L8 — check CI exact read-only security metadata parity (RLS, policies, RPC hashes/grants, migrations), then merge latest-head green and mark SYNC-04 DONE. Coordinate view_settings.js ownership transfer in integration.
 
 | Field | Value |
 | --- | --- |
-| Status | SYNC-04 NEXT; L5 merged PR #28, L6 merged PR #29; L7 draft PR #30, expanded CI green on prior head, exact offline-edit strengthening pending final CI |
-| Current task | SYNC-04 L7 — real app / independently authenticated persistent-browser device + fault gates |
-| Branch | [PR #30](https://github.com/Mymayankyadav/lemma/pull/30), `lane-a/sync-04-l7-independent-devices` from `main@20e2fcd` |
+| Status | SYNC-04 NEXT; L5 #28, L6 #29, L7 #30 merged; L8 metadata diff pending CI |
+| Current task | SYNC-04 L8 — production/local security and migration parity |
+| Branch | `lane-a/sync-04-l8-security-parity` from `main@f8b3f2c` |
 | Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
 | L5 implementation | `supabase/config.toml` (auth redirect loopback, 60s JWT, Mailpit), `.github/workflows/sync-local.yml` (isolated `supabase start`, `supabase db reset --local --no-seed`), `test/sync_local_smoke.js` (compare all migration versions and RLS flags) |
 | L5 verification | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
 | Remaining gate | L7 latest-head green and merge; L8 production/local read-only security parity; SYNC-04 overall stays NEXT until both complete. |
+
+## SYNC-04 L8 — read-only snapshot (CI pending)
+
+- Production Lemma (`yemqnhnztlbyxmjxidis`) queried with SELECT-only metadata introspection: **5 protected tables, 13 RLS policies, 6 RPC bodies/grants and 9 ordered migrations**. No production rows, secrets or changes.
+- `supabase/tests/security_snapshot.sql` reads identical catalog data from loopback CI Postgres only; `test/sync_security_parity.js` compares it to `security_snapshot.expected.json` recorded from production.
+- This branch is not complete until local parity actually passes and all latest-head checks are green. SYNC-04 remains NEXT.
 
 ## SYNC-04 L7 — independent real browser contexts (initial test, incomplete gate)
 
