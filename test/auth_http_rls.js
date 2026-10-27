@@ -15,6 +15,8 @@ const ACK = 'SYNC-04-SYNTHETIC-HTTP-TEST';
 function validateInputs({ key, aToken, bToken, aNote, bNote, ack }) {
   if (ack !== ACK) throw new Error('Explicit SYNC-04 synthetic-fixture acknowledgment required');
   if (!key || !aToken || !bToken) throw new Error('Two independent access tokens and a publishable key are required');
+  if (!key.startsWith('sb_publishable_'))
+    throw new Error('Only a public sb_publishable_ key is accepted; never supply secret or service-role keys');
   if (aToken === bToken) throw new Error('Access tokens must be different');
   if (!NOTE_ID.test(aNote || '') || !NOTE_ID.test(bNote || '') || aNote === bNote)
     throw new Error('Provide distinct short synthetic note IDs (letters, digits, underscore, hyphen)');
@@ -146,6 +148,7 @@ async function selfTest() {
   await assert.rejects(runProbe({...input,aNote:'nonexistent-note'},wrongFixture.fake),/Synthetic note not visible/);
   assert.equal(wrongFixture.postCount(),0,'missing fixture cannot trigger a write');
   assert.throws(()=>validateInputs({...input,ack:'wrong'}),/acknowledgment/);
+  assert.throws(()=>validateInputs({...input,key:'sb_secret_do_not_use'}),/sb_publishable_/);
   assert.throws(()=>validateInputs({...input,aNote:input.bNote}),/distinct short synthetic/);
   console.log('ok: two-user HTTP RLS probe guards, reciprocal read/write denial and safe preflight (mock transport only)');
 }
