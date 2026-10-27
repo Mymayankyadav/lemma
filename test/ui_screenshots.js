@@ -14,6 +14,12 @@ fs.mkdirSync(OUT, { recursive: true });
 const distHtml = path.join(ROOT, 'dist', 'test.html');
 if (!fs.existsSync(distHtml)) { console.error('dist/test.html missing; run "npm run build" first'); process.exit(1); }
 const HTML = fs.readFileSync(distHtml, 'utf8');
+// Install a test-only read/write hook in the same inline script lexical scope as
+// App. Top-level const declarations are not window globals in Chromium.
+const MARKER = '/* ===== main.js ===== */';
+if (!HTML.includes(MARKER)) throw new Error('UI test app marker missing');
+const TEST_HTML = HTML.replace(MARKER,
+  'window.__uiAcceptance = { get App() { return App; } };\\n' + MARKER);
 const MOCK = fs.readFileSync(path.join(__dirname, 'mock_claude.js'), 'utf8');
 const LIBS = {
   'katex.min.js': path.join(ROOT, 'node_modules/katex/dist/katex.min.js'),
@@ -31,7 +37,7 @@ async function open(browser, size, scheme) {
     colorScheme: scheme, timezoneId: 'Asia/Kolkata', reducedMotion: 'reduce', hasTouch: size === 'mobile' });
   await ctx.route('**/*', async route => {
     const url = route.request().url();
-    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: HTML });
+    if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: TEST_HTML });
     for (const [name, file] of Object.entries(LIBS))
       if (url.endsWith(name)) return route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(file, 'utf8') });
     if (url.includes('fonts.googleapis.com')) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
@@ -203,11 +209,13 @@ async function shot(page, name, size, scheme) {
         await page.waitForSelector('.note-row');
         // Render the actual Home loading skeleton without altering cached data.
         const loading = await page.evaluate(() => {
-          App.loading = true;
-          App.go('home');
+          const app = window.__uiAcceptance && window.__uiAcceptance.App;
+          if (!app) return false;
+          app.loading = true;
+          app.go('home');
           const el = document.querySelector('.loading-card[role="status"][aria-label="Loading"]');
-          App.loading = false;
-          App.go('home');
+          app.loading = false;
+          app.go('home');
           return !!el;
         });
         if (!loading) throw new Error('Home loading state is missing its accessible status');
