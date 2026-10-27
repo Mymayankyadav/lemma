@@ -1,15 +1,15 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L6 — implement `test/auth_http_rls.js --local` against local GoTrue/PostgREST with two synthetic authenticated users, owner-created notes and reciprocal cross-owner denials (plan §2); L5 local CI has passed but PR #28 must first pass the remaining regression check and merge.
+Next action: SYNC-04 L5 PR #28 remains OPEN — rerun the latest local-stack workflow when GitHub Container Registry throttling subsides, confirm all latest-head tests green, then squash-merge; afterward implement L6 in `test/auth_http_rls.js --local`.
 
 | Field | Value |
 | --- | --- |
-| Status | SYNC-04 NEXT; L5 local-stack integration smoke SUCCESS; PR #28 final merge PENDING regression CI |
+| Status | SYNC-04 NEXT; L5 smoke passed on initial head, but PR #28 BLOCKED on latest-head GHCR image-pull rate limiting (not a SQL/assertion failure) |
 | Current task | SYNC-04 L5 — reproducible local Postgres 17/Supabase stack |
 | Branch | [PR #28](https://github.com/Mymayankyadav/lemma/pull/28), `lane-a/sync-04-l5-local-stack` from `main@18c5750` |
 | Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
 | L5 implementation | `supabase/config.toml` (auth redirect loopback, 60s JWT, Mailpit), `.github/workflows/sync-local.yml` (isolated `supabase start`, `supabase db reset --local --no-seed`), `test/sync_local_smoke.js` (compare all migration versions and RLS flags) |
-| L5 verification | Local-stack Actions run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) **SUCCESS**: Supabase start, local DB reset, exact migration and four-table RLS smoke. Android/lane guard [40522126536](https://github.com/Mymayankyadav/lemma/actions/runs/40522126536) SUCCESS. Regression [40522126327](https://github.com/Mymayankyadav/lemma/actions/runs/40522126327) PENDING at handoff edit. |
+| L5 verification | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
 | Remaining gate | L5 CI green followed by L6 two local auth identities; L7 real local UI devices/faults; L8 read-only production security parity, before SYNC-04 DONE. |
 
