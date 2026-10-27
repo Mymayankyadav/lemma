@@ -164,6 +164,54 @@ async function shot(page, name, size, scheme) {
             throw new Error(`200%-equivalent ${route} reflow overflows horizontally: ${widths.join(' > ')}`);
         }
       }
+      if (size === 'desktop' && scheme === 'light') {
+        // Stress text/layout scaling at 200% using Chromium's CSS zoom.
+        // This exercises the actual rendering with doubled text, not just a
+        // narrower viewport; browser chrome zoom still needs a manual check.
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.evaluate(() => { document.body.style.zoom = '200%'; });
+        for (const route of ['home', 'browse', 'stats']) {
+          if (route === 'stats') {
+            await goTo(page, 'home');
+            await page.locator('.stats-link').click();
+          } else await goTo(page, route);
+          const state = await page.evaluate(() => ({
+            scrollWidth: document.documentElement.scrollWidth,
+            viewport: window.innerWidth,
+            zoom: getComputedStyle(document.body).zoom,
+          }));
+          if (state.scrollWidth > state.viewport + 1)
+            throw new Error('200% zoom horizontal page overflow on ' + route + ': ' + JSON.stringify(state));
+          if (route === 'home')
+            await page.screenshot({ path: path.join(OUT, 'home-zoom200-desktop-light.png') });
+        }
+        await page.evaluate(() => { document.body.style.zoom = ''; });
+      }
+      if (size === 'mobile' && scheme === 'light') {
+        // The empty-filter state should be useful and keyboard-focusable.
+        await goTo(page, 'browse');
+        await page.fill('#browse-q', '__UI01_UNMATCHABLE_CARD_FILTER__');
+        await page.waitForSelector('.empty-title');
+        const emptyTitle = await page.locator('.empty-title').innerText();
+        if (emptyTitle.trim() !== 'No cards match')
+          throw new Error('Incorrect filtered Cards empty state: ' + emptyTitle);
+        const hint = await page.locator('.empty').innerText();
+        if (!hint.includes('clear filters'))
+          throw new Error('Filtered Cards state lacks recovery guidance');
+        await page.screenshot({ path: path.join(OUT, 'cards-empty-mobile-light.png') });
+        await page.fill('#browse-q', '');
+        await page.waitForSelector('.note-row');
+        // Render the actual Home loading skeleton without altering cached data.
+        const loading = await page.evaluate(() => {
+          App.loading = true;
+          App.go('home');
+          const el = document.querySelector('.loading-card[role="status"][aria-label="Loading"]');
+          App.loading = false;
+          App.go('home');
+          return !!el;
+        });
+        if (!loading) throw new Error('Home loading state is missing its accessible status');
+      }
       if (size === 'mobile' && scheme === 'dark') {
         // Existing seeded cards remain browsable when the browser is offline.
         await ctx.setOffline(true);
