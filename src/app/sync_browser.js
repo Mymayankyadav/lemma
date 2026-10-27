@@ -199,8 +199,11 @@ const LemmaCloud = (() => {
             throw new Error('review_replay_required: unexplained_schedule');
         }
         data.cards = data.cards || {};
-        for (const [ord, fields] of Object.entries(result.cards))
-          data.cards[ord] = { ...(data.cards[ord] || {}), ...fields };
+        for (const [ord, fields] of Object.entries(result.cards)) {
+          if (!Object.prototype.hasOwnProperty.call(data.cards, ord))
+            throw new Error('review_replay_required: missing_selected_card');
+          data.cards[ord] = { ...data.cards[ord], ...fields };
+        }
 
         // Immutable IDs disambiguate equal timestamps. Keep cram entries,
         // but never invent a scheduled event absent from all snapshots.
