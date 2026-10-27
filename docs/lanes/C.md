@@ -1,15 +1,15 @@
 # Lane C — Android
 
-Next action: ANDROID-01 S1 — confirm the full pull-request regression and Android workflow gates, then merge this slice; after merging, start S2 native Back/resume.
+Next action: ANDROID-01 S2 — after PR #9 is merged, implement the native Back/resume shell (`src/app/native_shell.js`) without web UI, auth or sync changes.
 
 | Field | Value |
 | --- | --- |
-| Status | IN_PROGRESS — S1 scaffold and initial APK CI passed; latest CI exposed missing wrapper execute bit (fix under test) |
-| Current task | ANDROID-01 S1 (project and CI) |
+| Status | ANDROID-01 S1 CODE COMPLETE, PR #9 CI GREEN — merge pending |
+| Current task | ANDROID-01 (S1 verified in CI; S2 next after merge) |
 | Open branch / PR | [PR #9](https://github.com/Mymayankyadav/lemma/pull/9) on `lane-c/android-01-s1-scaffold-ci` |
-| Last merged work | none yet in this lane |
-| Evidence | GitHub Actions [run 40464146795](https://github.com/Mymayankyadav/lemma/actions/runs/40464146795): **SUCCESS** on branch; `lemma-android-debug` artifact (5.6 MB). Native scaffold contains 53 tracked files, including Gradle wrapper. |
-| Verification outstanding | PR full `npm test`, re-run read-only Android workflow after wrapper permission fix, `node test/lane_guard.js C`, physical-device install (later gate). |
+| Last merged work | none yet in this lane; merging PR #9 is the remaining action |
+| Evidence | [Regression run 40465035763](https://github.com/Mymayankyadav/lemma/actions/runs/40465035763): **SUCCESS**, full `npm test`; [Android run 40465035356](https://github.com/Mymayankyadav/lemma/actions/runs/40465035356): **SUCCESS**, including `npm ci`, syntax, `test:plan`, `node test/lane_guard.js C`, `android:sync`, Gradle assembleDebug and the 5.6 MB `lemma-android-debug` artifact. |
+| Verification outstanding | No physical Android device test yet (ANDROID-02 gate). Google deep link, native Back/resume, notification testing and release signing are not implemented. |
 | Not yours | Web UI/CSS (lane B), sign-in and sync code (lane A). Ask for changes via "Requests from other lanes" below. |
 
 **Requests from other lanes:** none.
