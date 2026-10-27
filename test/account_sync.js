@@ -5,6 +5,7 @@ const active = [], channels = [], pulled = [], flushed = [], staged = [];
 const local = { id:'new-note', front:'new', back:'answer', log:[], cards:{} };
 const model = new Map([[local.id,local],
   ['already-present', { id:'already-present',front:'old',back:'old',log:[],cards:{} }]]);
+let accountMode = false, workspaceId = null, workspaceIdle = true;
 let localSaved = 0;
 let current = { id:'00000000-0000-4000-8000-000000000001' };
 const client = {
@@ -35,8 +36,10 @@ const source=fs.readFileSync('src/app/account_sync.js','utf8');
 const ctx=vm.createContext({
   window:{addEventListener(){}}, document:{hidden:false,addEventListener(){}},
   navigator:{onLine:true}, structuredClone,
-  Store:{mode:'local',whenSaved:async()=>{localSaved++;}},
-  Model:{notes:model},
+  Store:{get mode(){return accountMode?'account':'local';},status:()=>({pending:0,failed:0}),whenSaved:async()=>{localSaved++;}},
+  App:{get workspaceController(){return {activeId:workspaceId};},workspaceIdle:()=>workspaceIdle},
+  Model:{notes:model,applyRemote(changes){for(const {id,note} of changes) note===null?model.delete(id):model.set(id,note);},
+    profile:()=>({settings:{retention:0.9},decks:[]}),loadProfile(){}},
   setTimeout,clearTimeout,setInterval(){},
   LemmaAccount:{client,get user(){return current;},onChange(fn){this.notify=fn;}},
   LemmaCloud:{startAccount:async (_client,id)=>account(id)}
@@ -73,6 +76,23 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   assert.equal(channels[0].closed,true,'switch must remove previous Realtime channel');
   await ctx.sync.refresh();
   assert.deepEqual(pulled,[first.userId,idB]);
+  // In an explicitly active account workspace, pulls refresh only clean
+  // owner-scoped cache rows and never replace open edits or dirty drafts.
+  const bCache = active[1].storage;
+  const remote = {id:'remote-b',data:{id:'remote-b',front:'account only',back:'',log:[],cards:{}},
+    deleted:false,dirty:false,revision:2};
+  const dirty = {id:'dirty-b',data:{id:'dirty-b',front:'local draft',back:'',log:[],cards:{}},
+    dirty:true,deleted:false,revision:1};
+  const rowsB = await bCache.notes();
+  rowsB.push(remote,dirty);
+  accountMode=true;workspaceId=idB;workspaceIdle=false;
+  await ctx.sync.refresh();
+  assert.equal(model.has('remote-b'),false,'open editor must not be overwritten');
+  workspaceIdle=true;
+  await ctx.sync.refresh();
+  assert.equal(model.get('remote-b').front,'account only');
+  assert.equal(model.has('dirty-b'),false,'dirty notes stay in account cache until conflict resolution');
+  current=null;accountMode=false;workspaceId=null;
   await ctx.sync.attach(null);
   assert.equal(active[1].closed,true);
   await assert.rejects(ctx.sync.enrollMissingLocal(),/Refresh your signed-in/);
