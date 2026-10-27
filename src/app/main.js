@@ -44,10 +44,10 @@ const App = (() => {
         h('nav', { class: 'tabs', 'aria-label': 'Sections' }, nav.map(([v, l]) => h('button', { type: 'button', class: 'tab', dataset: { go: v }, text: l, onclick: () => go(v) }))),
         h('div', { class: 'sync', id: 'sync', role: 'status' }),
         h('button', { class: 'icon-btn icon-accent btn-new', type: 'button', 'aria-label': 'New card', title: 'New card (N)', html: icon('plus', 20), onclick: () => newCard() })));
-    const tabBtn = ([v, l, ic]) => h('button', { type: 'button', class: 'tb', dataset: { go: v }, 'aria-label': l, title: l, html: `<span class="tb-ico">${icon(ic, 22)}</span>`, onclick: () => go(v) });
+    const tabBtn = ([v, l, ic]) => h('button', { type: 'button', class: 'tb', dataset: { go: v }, 'aria-label': l, title: l, html: `<span class="tb-ico">${icon(ic, 22)}</span><span class="tb-label">${l}</span>`, onclick: () => go(v) });
     const bottom = h('nav', { class: 'tabbar', 'aria-label': 'Sections' },
       nav.slice(0, 2).map(tabBtn),
-      h('button', { type: 'button', class: 'tb tb-add', 'aria-label': 'New card', title: 'New card', html: icon('plus', 24), onclick: () => newCard() }),
+      h('button', { type: 'button', class: 'tb tb-add', 'aria-label': 'New card', title: 'New card', html: `<span class="tb-ico">${icon('plus', 24)}</span><span class="tb-label">New</span>`, onclick: () => newCard() }),
       nav.slice(2).map(tabBtn));
     const app = $('#app');
     fill(app, top, h('main', { id: 'main', class: 'main', tabindex: '-1' }), bottom);
