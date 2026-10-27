@@ -24,7 +24,7 @@ assert.deepEqual(FSRS.replay(input1.weights,input1.reviews,input1.clock),
 const afterUndo=fsrsInput([b,a],[undo('u','b')]);
 assert.deepEqual(FSRS.replay(afterUndo.weights,afterUndo.reviews,afterUndo.clock).mem,
                  FSRS.step(FSRS.DEFAULT_W,null,0,3));
-assert.throws(()=>fsrsInput([event('old')],[]),/provenance/);
+assert.throws(()=>fsrsInput([{...event('old'),kind:0}],[]),/provenance/);
 const changed = {...b,scheduling_provenance:{...provenance(20001),weights:FSRS.DEFAULT_W.map((w,i)=>i===0?w+0.01:w)}};
 assert.throws(()=>fsrsInput([a,changed],[]),/parameters changed/);
 const reversed = {...b,scheduling_provenance:provenance(19999)};
