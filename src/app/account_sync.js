@@ -24,6 +24,33 @@ const LemmaSync = (() => {
     if (!account || wake) return;
     wake = setTimeout(() => { wake = null; refresh().catch(() => {}); }, 200);
   }
+  // Reconcile the visible account Model only when there are no open edits or
+  // locally uncommitted writes. A remote pull never overwrites dirty rows;
+  // conflicts continue to require an explicit decision.
+  async function publishActive(handle, generation) {
+    const current = () => account === handle && epoch === generation &&
+      LemmaAccount.user?.id === handle.userId &&
+      Store.mode === 'account' && App.workspaceController?.activeId === handle.userId &&
+      App.workspaceIdle() && !Store.status().pending && !Store.status().failed;
+    if (!current()) return;
+    await Store.whenSaved();
+    if (!current()) return;
+    const [rows, profile] = await Promise.all([handle.storage.notes(), handle.storage.profile()]);
+    if (!current()) return;
+    const updates = [];
+    for (const row of rows) {
+      if (row.dirty) continue;
+      const existing = Model.notes.get(row.id);
+      if (row.deleted) {
+        if (existing) updates.push({id:row.id,note:null});
+      } else if (row.data && JSON.stringify(existing || null) !== JSON.stringify(row.data))
+        updates.push({id:row.id,note:structuredClone(row.data)});
+    }
+    if (updates.length) Model.applyRemote(updates);
+    if (profile?.data && !profile.dirty &&
+        JSON.stringify(Model.profile().settings) !== JSON.stringify(profile.data.settings))
+      Model.loadProfile(structuredClone(profile.data));
+  }
   async function refresh() {
     if (!account) return;
     if (task) { schedule(); return task; }
@@ -42,6 +69,7 @@ const LemmaSync = (() => {
       if (epoch !== generation || account !== running) return;
       emit({ phase: pending.some(x => x.state === 'conflict') ? 'conflict' : 'ready',
         pending: pending.length, error: '' });
+      await publishActive(running, generation);
     })();
     try { await task; }
     catch (err) {
