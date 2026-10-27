@@ -1,0 +1,53 @@
+name: Lemma Android debug APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lemma-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check syntax and lane ownership
+        run: |
+          npm run test:syntax
+          npm run test:plan
+          node test/lane_guard.js C
+      - name: Sync bundled web application
+        run: npm run android:sync
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: lemma-android-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
