@@ -55,8 +55,13 @@ const LemmaWorkspace = (() => {
         throw new Error('Workspace is not idle');
       if (!idle()) throw new Error('Close the review, editor and open sheets before switching');
       const userId = identity();
-      if (!userId || sync.status.userId !== userId || sync.status.phase !== 'ready' ||
-          sync.status.pending) throw new Error('Refresh the authenticated account before switching');
+      // Offline activation is an explicit choice of this signed-in user's
+      // existing private IndexedDB cache. Never enable an account from a
+      // different identity or from an unauthenticated local namespace.
+      const ready = sync.status.phase === 'ready' && !sync.status.pending;
+      const cachedOffline = sync.status.phase === 'offline';
+      if (!userId || sync.status.userId !== userId || (!ready && !cachedOffline))
+        throw new Error('Refresh the authenticated account before switching');
       const handle = sync.accountHandle();
       if (!handle || handle.userId !== userId)
         throw new Error('Account cache does not match signed-in identity');
