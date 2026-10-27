@@ -106,6 +106,17 @@ async function login(page,email){
   await page.locator('.sheet-foot .btn-primary').click();
   await page.waitForFunction(()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),null,{timeout:T});
 }
+async function waitForAccountWorkspace(page, expectedUserId, timeout = T) {
+  // Auth session/refresh can be ready before account workspace activation.
+  // A note created then goes into the anonymous device store and never
+  // appears in the private account outbox; that is not a sync success.
+  await page.waitForFunction(uid =>
+    typeof Store !== 'undefined' && Store.mode === 'account' &&
+    App.workspaceController?.activeId === uid &&
+    LemmaAccount.user?.id === uid &&
+    !App.workspaceBlocked,
+    expectedUserId, {timeout});
+}
 async function browserUserId(page) {
   return page.evaluate(() => {
     for(let i=0;i<localStorage.length;i++){
@@ -339,6 +350,9 @@ async function run(){
     const reopenedUid=await eventual('restored login after browser relaunch',
       ()=>browserUserId(pages[0]),T);
     assert.equal(reopenedUid,owners[0],'browser relaunch must not switch identity');
+    // Do not open editor just because a token exists. The remembered private
+    // workspace may still be hydrating its IndexedDB model after relaunch.
+    await waitForAccountWorkspace(pages[0],owners[0],90000);
     const offlineRow=await eventual('offline edit delivered after relaunch',
       ()=>dbNote(offlineTitle)?.revision===2 ? dbNote(offlineTitle) : null,90000);
     assert.equal(offlineRow.id,onlineBase.id,'offline edit must not create another note');
@@ -354,6 +368,7 @@ async function run(){
     // must reach Postgres without manual sign-in or a second receipt.
     await eventual('local JWT renewal on persistent browser',()=>refreshCalls>0,90000);
     await eventual('successful refresh-token HTTP grant',()=>refreshStatuses.includes(200),90000);
+    await waitForAccountWorkspace(pages[0],owners[0],90000);
     const refreshedTitle='SYNC-04 L7 refreshed '+randomUUID();
     await create(pages[0],refreshedTitle,'Sent after real refresh-token grant');
     const refreshed=await eventual('fresh-session commit',()=>dbNote(refreshedTitle))
