@@ -1,15 +1,15 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L5 — verify the local-stack workflow on PR CI, then merge only after every required check is green. Following that, L6 adds disposable two-user GoTrue/HTTP RLS coverage in `test/auth_http_rls.js --local` (plan §2).
+Next action: SYNC-04 L6 — implement `test/auth_http_rls.js --local` against local GoTrue/PostgREST with two synthetic authenticated users, owner-created notes and reciprocal cross-owner denials (plan §2); L5 local CI has passed but PR #28 must first pass the remaining regression check and merge.
 
 | Field | Value |
 | --- | --- |
-| Status | SYNC-04 NEXT; L5 implemented on branch, local Docker/psql execution PENDING CI |
+| Status | SYNC-04 NEXT; L5 local-stack integration smoke SUCCESS; PR #28 final merge PENDING regression CI |
 | Current task | SYNC-04 L5 — reproducible local Postgres 17/Supabase stack |
-| Branch | `lane-a/sync-04-l5-local-stack` from `main@18c5750` |
+| Branch | [PR #28](https://github.com/Mymayankyadav/lemma/pull/28), `lane-a/sync-04-l5-local-stack` from `main@18c5750` |
 | Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
 | L5 implementation | `supabase/config.toml` (auth redirect loopback, 60s JWT, Mailpit), `.github/workflows/sync-local.yml` (isolated `supabase start`, `supabase db reset --local --no-seed`), `test/sync_local_smoke.js` (compare all migration versions and RLS flags) |
-| L5 verification | Config reviewed against CLI docs; hosted Lemma PG 17 read-only metadata confirmed. GitHub Actions and Docker-backed test NOT RUN at creation; CI results required before completion claim. |
+| L5 verification | Local-stack Actions run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) **SUCCESS**: Supabase start, local DB reset, exact migration and four-table RLS smoke. Android/lane guard [40522126536](https://github.com/Mymayankyadav/lemma/actions/runs/40522126536) SUCCESS. Regression [40522126327](https://github.com/Mymayankyadav/lemma/actions/runs/40522126327) PENDING at handoff edit. |
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
 | Remaining gate | L5 CI green followed by L6 two local auth identities; L7 real local UI devices/faults; L8 read-only production security parity, before SYNC-04 DONE. |
 
@@ -18,7 +18,7 @@ Next action: SYNC-04 L5 — verify the local-stack workflow on PR CI, then merge
 - Added a distinct `lemma-sync-local` configuration with local-only ports and the production PostgreSQL **major version 17**. Signups and the email-link delivery test will use only disposable users from the local GoTrue/Mailpit stack.
 - The dedicated workflow checks out the branch, installs a pinned Supabase CLI, launches local Docker services, **explicitly resets only `--local`**, and checks local Postgres for exactly the repository's ordered migration versions and RLS enabled on `notes`, `profiles`, `review_events`, and `review_retractions`.
 - Production Supabase is not modified and is never an input. The existing `npm test` suite remains separate; future L6–L8 steps extend this workflow.
-- **Evidence state at initial commit:** implementation written; neither Supabase Docker smoke nor full PR CI has yet been observed. Do not treat syntax/source inspection as a passed integration gate.
+- **Evidence:** first PR head `ab5a02d` passed real disposable Docker/Supabase CI [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) and Android/lane guard CI [40522126536](https://github.com/Mymayankyadav/lemma/actions/runs/40522126536). Regression was pending while this handoff edit was prepared. L5's local integration gate is observed; SYNC-04 overall is NOT DONE. Verify all latest-head checks again before merging.
 
 ## AUTH-01 S2 — live web gate COMPLETE, 27 October 2026
 
