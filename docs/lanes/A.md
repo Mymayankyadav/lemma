@@ -6,7 +6,7 @@ Next action: SYNC-04 L3 — verify the already-tombstoned synthetic fixture disa
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
 | Current task | SYNC-04 L2 server tombstone and mock client regression verified; independent live client propagation pending |
-| Delivery | [PR #23](https://github.com/Mymayankyadav/lemma/pull/23), `lane-a/sync-04-l1-live-write`. Lane A reassigned and branch adopted. Latest `main` integrated without rebasing; PR is ready for review and remains unmerged. AUTH-01 PR #17 merged as `e13582d`. |
+| Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) **MERGED** to `main` as `6550475` after green CI. Current L3 handoff branch: `lane-a/sync-04-l3-handoff`. AUTH-01 PR #17 merged as `e13582d`. |
 | Baseline | L1 tested on `main@2c1f554`: [regression 40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724), Android 40478252732 and Pages 40478252681 SUCCESS. Latest `main@1125388` [regression 40484074497](https://github.com/Mymayankyadav/lemma/actions/runs/40484074497) and [Android 40484074547](https://github.com/Mymayankyadav/lemma/actions/runs/40484074547) SUCCESS; post-integration PR CI regression 40502775044 and Android 40502775101 SUCCESS. L1 live checks ran against the earlier deployed AUTH-01 build; they do not certify lane B's later navigation change. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
 
@@ -67,3 +67,15 @@ PR #14 (`dbfb961`) consumed the owner's one-time workflow-only exception; owners
 - Automated [regression run 40506123997](https://github.com/Mymayankyadav/lemma/actions/runs/40506123997), [Android run 40506123832](https://github.com/Mymayankyadav/lemma/actions/runs/40506123832), and screenshot publication all **SUCCESS** for test commit `52f34ae`.
 - This is mocked transport, not a real owner-authenticated web UI, a real-device HTTP test, or proof of no resurrection after a browser's offline restart. We lack access to the previous agent's signed-in browser session. Do not infer those gates from CI.
 - The only live record changed by this L2 handoff was the explicitly approved synthetic server tombstone described above. No schema migration or additional production note writes.
+
+## SYNC-04 L3 — explicit live acceptance checklist (pending)
+
+The previous agent's authenticated browser profile is not accessible through the GitHub/Supabase connectors used in this continuation. Do not assume it remains signed in or reuse tokens from documentation. L3 is **blocked on a real authenticated app session**; the production tombstone alone cannot prove the client UI removed its local copy.
+
+1. In a clean, separately authenticated browser profile, open deployed Pages, sign in securely as the owner, confirm **account workspace** is active, and wait for status **Saved to cloud** or a resolved/explicitly reported conflict. Never switch a device workspace without its validated backup and acknowledgment.
+2. Search Cards for the uniquely labelled `SYNC-04 live verification 2026-10-27 A` and confirm it is absent; reload the page and verify remembered account workspace and continued absence. Confirm from read-only Lemma DB that only this fixture has `deleted_at IS NOT NULL`, revision 3 and three receipts, with zero reviews. Check for unexpected extra receipts and do not touch other learning notes.
+3. In a second genuinely independent browser profile or device signed into the **same owner account**, confirm the tombstone is not resurrected. Same-profile tabs and raw SQL/IndexedDB mock tests do not meet this gate. If an old offline cache has pending or conflicting edits, retain it and test conflict resolution explicitly; do not wipe storage to get green results.
+4. Separately exercise offline stop/restart/reconnect, expired session, and lost response after server commit using controlled tests. Inspect pending IDs, receipts, and UI status at each step; preserve all outbox and review history. Avoid making production network faults against real learning data.
+5. For HTTP RLS isolation, use two independently authenticated real identities provided by the owner, with distinct test fixtures, and verify read/write denial across each identity. Existing rollback SQL simulated roles are insufficient. Never create shadow users, reveal tokens, or change authorization policy for a test.
+
+SYNC-04 remains **NEXT**, not DONE. Until independent live testing is possible, rely only on previously scoped L1 live UI observations, the approved L2 server RPC, and green mocked regression tests. The next agent must verify current `main` and the status of this handoff PR before any further branch work.
