@@ -1,0 +1,54 @@
+{
+  "_comment": "Single source of file ownership for parallel lanes. Every path matches at most one lane. Edit only in an owner-requested integration session (see plan.md section 3).",
+  "lanes": {
+    "A": {
+      "name": "sync, auth and backend",
+      "status": "docs/lanes/A.md",
+      "branch_prefix": "lane-a/",
+      "owns": [
+        "src/app/account_sync.js", "src/app/cloud_account.js", "src/app/cloud_bridge.js",
+        "src/app/conflict_ui.js", "src/app/io.js", "src/app/model.js", "src/app/outbox_core.js",
+        "src/app/review_ledger.js", "src/app/review_replay.js", "src/app/session.js",
+        "src/app/store.js", "src/app/sync_browser.js", "src/app/sync_merge.js",
+        "src/app/workspace_lifecycle.js", "src/app/view_settings.js", "src/config.js",
+        "supabase/**",
+        "docs/PHASE2_SYNC_CONTRACT.md", "docs/DATA_MODEL.md", "docs/SYNC_AUDIT_*.md", "docs/lanes/A.md",
+        "test/account_*.js", "test/auth_*.js", "test/sync_*.js", "test/browser_sync.js",
+        "test/conflict_*.js", "test/editor_persistence.js", "test/import_*.js",
+        "test/local_persistence.js", "test/outbox_core.js", "test/review_*.js", "test/workspace_*.js"
+      ]
+    },
+    "B": {
+      "name": "UI",
+      "status": "docs/lanes/B.md",
+      "branch_prefix": "lane-b/",
+      "owns": [
+        "src/app.css", "src/index.html", "src/render.js", "src/icons/**", "src/manifest.webmanifest",
+        "src/app/main.js", "src/app/view_home.js", "src/app/view_browse.js", "src/app/view_editor.js",
+        "src/app/view_review.js", "src/app/view_stats.js", "src/app/sheets.js", "src/app/charts.js",
+        "docs/lanes/B.md", "docs/UI_*.md",
+        "test/e2e.js", "test/render_test.js", "test/seed.js", "test/mock_claude.js", "test/ui_*.js"
+      ]
+    },
+    "C": {
+      "name": "Android",
+      "status": "docs/lanes/C.md",
+      "branch_prefix": "lane-c/",
+      "owns": [
+        "android/**", "capacitor.config.json", "src/app/native_*.js",
+        ".github/workflows/android.yml", "docs/ANDROID.md", "docs/lanes/C.md", "test/android_*.js"
+      ]
+    }
+  },
+  "shared_append_only": [
+    "plan.md", "package.json", "package-lock.json", "build.js", "docs/SETUP.md", "src/app/util.js", ".gitignore"
+  ],
+  "integration_only": [
+    "lanes.json", "AGENTS.md", "PROMPT.md", "README.md",
+    ".github/workflows/test.yml", ".github/workflows/pages.yml", ".github/workflows/import-source.yml",
+    "test/plan_protocol.js", "test/lane_guard.js", "test/check_syntax.js"
+  ],
+  "frozen": [
+    "src/fsrs.js", "test/compare_tsfsrs.mts", "test/optimizer_synthetic.js"
+  ]
+}

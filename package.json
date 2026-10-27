@@ -21,7 +21,7 @@
     "test:browser-sync": "node test/browser_sync.js",
     "test:account": "node test/account_sync.js",
     "test:account-store": "node test/account_store.js",
-    "test:plan": "node test/plan_protocol.js",
+    "test:plan": "node test/plan_protocol.js && node test/lane_guard.js",
     "test:workspace": "node test/account_identity.js && node test/workspace_lifecycle.js",
     "test:replay": "node test/review_ledger.js && node test/review_replay.js && TZ=America/Los_Angeles node test/review_replay.js"
   },

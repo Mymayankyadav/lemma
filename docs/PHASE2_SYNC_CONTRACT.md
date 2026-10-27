@@ -99,3 +99,22 @@ implemented. Resume is transactional so an old retry cannot resurrect archived
 work. No store/version/backend migration is required. Future UI callers must
 retain workspace leases, await the transaction before projecting into Model or
 reporting success, and explain blocked review histories without dropping them.
+
+
+## Review replay policy v1 (SYNC-03, moved from plan.md)
+
+**Background you need (verified in source, `main@4bfe3ab`):**
+- A scheduled review appends a log entry `[occurred_at_ms, ord, grade, state_before, duration_ms, kind, event_id, scheduling_provenance]` in `Session.answer` (`src/app/session.js`). `kind` 0 = scheduled, 1 = cram (does not change the schedule).
+- `scheduling_provenance` (version 1) contains: `weights` (21 numbers), `day_index`, `rollover_hour`, `timezone_offset_minutes` (`Date#getTimezoneOffset`, e.g. −330 for IST), `retention`, `max_interval_days`, `learn_steps`, `relearn_steps` (strings like `"1m 10m"`), `fuzz`, `load_balance`, `preview_at_ms`, `card_before`.
+- Undo writes an immutable retraction `{retraction_id, target_event_id, reason:'undo'|'correction'|'reset'}`; `ReviewLedger.activeEvents(events, retractions)` removes retracted events.
+- `FSRS.preview(card, now, cfg, env)` returns results for grades 1–4; `cfg` is built by `schedCfg()` in `src/app/model.js`; `env = {clock, key: noteId + ':' + ord, loadAt}`. Fuzz is seeded from `key` and `card.reps`, so it is deterministic. **`loadAt` (load balancing) depends on each device's local card load and is NOT deterministic.** `FSRS.makeClock` uses the device's local timezone, so it is NOT deterministic across devices either.
+
+**Decisions (do not change without asking the owner):**
+- D1 Order: active scheduled events per ordinal, sorted by `occurred_at_ms`, then `event_id` by plain code-unit comparison (`a < b ? -1 : a > b ? 1 : 0`). Never use `localeCompare` (it is locale-dependent).
+- D2 Baseline: the first event's `card_before` must be a new card (`st === 0 && reps === 0`); otherwise block with `legacy_baseline_required` (already done in `inspect`).
+- D3 Per-event parameters: each step uses **that event's** provenance (weights, retention, steps, maxIvl, fuzz). Parameter changes between events are therefore allowed in the schedule fold.
+- D4 Clock: build a fixed-offset clock from each event's provenance: `dayIndex(ts) = Math.floor((ts − tz·60000 − rollover·3600000) / 86400000)`, `dayStart(i) = i·86400000 + rollover·3600000 + tz·60000`, where `tz = timezone_offset_minutes`, `rollover = rollover_hour`. If `clock.dayIndex(occurred_at_ms) !== provenance.day_index`, block with `clock_mismatch`.
+- D5 Load balancing is **ignored** in replay (`loadAt: undefined`, `cfg.loadBalance = false`). Fuzz stays as recorded.
+- D6 Step: `card = FSRS.preview(card, p.preview_at_ms, cfg, {clock, key}) [grade].card`. Only schedule fields `st, due, s, d, last, step, reps, lapses` come from replay; `flag`, `susp` and all other fields come from the chosen snapshot. Do not re-run leech logic.
+- D7 Resets (`reason:'reset'`) and any missing provenance field stay **blocked** (`reset_policy_required` / `replay_unsupported`). This is an accepted SYNC-03 limitation.
+- D8 Replay is used **only** to resolve divergent schedules (where `review_replay_required` is thrown today). Never rewrite a non-conflicting card's schedule on load.

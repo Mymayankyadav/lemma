@@ -12,7 +12,7 @@ const sections = [
   '## 0. Operator instructions',
   '## 1. CURRENT HANDOFF',
   '## 2. Task queue',
-  '## 3. Sequential chatbot protocol',
+  '## 3. Parallel lane protocol',
   '## 4. Ownership, architecture, and reference precedence',
   '## 5. Completed evidence ledger',
   '## 6. Five-line end-of-session report template'
@@ -23,13 +23,25 @@ const fields = ['Last verified handoff', 'Known-good main baseline', 'Next actio
   'Cloud confidence', 'Backend security check', 'READY_FOR_NEXT_AGENT'];
 for (const field of fields)
   assert.ok(plan.includes(field), 'Missing critical handoff datum: ' + field);
-const tasks = [...plan.matchAll(/^\|\s*\*\*([A-Z]+-\d+)\*\*\s*\|\s*\*\*(NEXT|DONE|IN_PROGRESS|BLOCKED|LATER)/gm)];
-assert.ok(tasks.length >= 8, 'Too few stable task IDs');
+const lanes = JSON.parse(fs.readFileSync('lanes.json', 'utf8')).lanes;
+const tasks = [...plan.matchAll(/^\|\s*\*\*([A-Z]+-\d+)\*\*\s*\|\s*\*\*(NEXT|DONE|IN_PROGRESS|BLOCKED|LATER)\*\*\s*\|\s*([A-Z]|—)\s*\|/gm)];
+assert.ok(tasks.length >= 8, 'Too few stable task IDs (rows need | **ID** | **STATE** | Lane | ...)');
 assert.equal(new Set(tasks.map(m => m[1])).size, tasks.length, 'Duplicate task IDs');
-assert.equal(tasks.filter(m => m[2] === 'NEXT').length, 1, 'Exactly one immediate NEXT task required');
+const next = tasks.filter(m => m[2] === 'NEXT');
+assert.ok(next.length >= 1, 'At least one NEXT task required');
+for (const m of next) {
+  assert.ok(lanes[m[3]], 'NEXT task ' + m[1] + ' must name a lane from lanes.json');
+  assert.equal(next.filter(x => x[3] === m[3]).length, 1, 'Lane ' + m[3] + ' has more than one NEXT task');
+}
+for (const m of tasks.filter(x => x[2] === 'IN_PROGRESS'))
+  assert.ok(lanes[m[3]], 'IN_PROGRESS task ' + m[1] + ' must name a lane');
+for (const [id, lane] of Object.entries(lanes)) {
+  const status = fs.readFileSync(lane.status, 'utf8');
+  assert.match(status, /^Next action: /m, 'Lane ' + id + ' status file needs a "Next action:" line');
+}
 assert.ok(plan.includes('yemqnhnztlbyxmjxidis'), 'Backend project must be explicit');
 assert.ok(plan.includes('Carrel'), 'Explicitly isolate other project');
 assert.ok(plan.includes('src/fsrs.js'), 'State original FSRS must be reused');
 assert.match(agents, /plan\.md/);
 assert.match(readme, /plan\.md/);
-console.log('ok: canonical plan, single NEXT task, ownership and chatbot handoff contract');
+console.log('ok: canonical plan, one NEXT per lane, ownership and chatbot handoff contract');

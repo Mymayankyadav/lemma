@@ -8,7 +8,7 @@ A persistent mathematics learning workspace built on existing FSRS-6 flashcards,
 
 ## Start here
 
-[plan.md](plan.md) is the **only roadmap and current chatbot handoff**. [AGENTS.md](AGENTS.md) supplies short operating rules. Different chatbots work consecutively on `main`; the user can say **"follow the plan.md"** without supplying earlier chats.
+[plan.md](plan.md) is the **only roadmap and current chatbot handoff**. [AGENTS.md](AGENTS.md) supplies short operating rules. Up to three chatbots can work in parallel, one per lane, each on its own branch and pull request; the user can say **"follow the plan.md, lane A/B/C"** without supplying earlier chats.
 
 The plan defines exact task gates, a minimal mathematics-focused UI and private shared study knowledge. New image-upload/OCR/media features are excluded; narrowly scoped knowledge documents may be supported.
 
