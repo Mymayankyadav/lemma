@@ -32,11 +32,11 @@ Read current `main` → this plan → the files named in your slice → do one s
 | --- | --- |
 | Known-good main baseline | `main@4bfe3ab`; [regression 40444108939](https://github.com/Mymayankyadav/lemma/actions/runs/40444108939) SUCCESS. Previous conflict-controls baseline `92a67c8` ([40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123)). |
 | Latest inspected regression | **SUCCESS** 40444108939 at `4bfe3ab` (CI `npm ci`, `test:syntax`, Chromium, full `npm test`). Run 40444075423 at `4ffe1db` was CANCELLED (superseded). Local full suite NOT RUN by the plan editor. |
-| Documentation validation | Updated plan text; `npm run test:plan` is **NOT RUN locally** (GitHub connector environment lacks an installed repo). Await CI. |
+| Documentation validation | `test/plan_protocol.js` **PASS in isolated JavaScript harness** using current repo text. The actual `npm run test:plan` command is **NOT RUN** (no local checkout); await CI. |
 | Web deployment | [Pages 40444108945](https://github.com/Mymayankyadav/lemma/actions/runs/40444108945) SUCCESS at `4bfe3ab`. `review_replay.js` is not in the bundle, so deployed behaviour is unchanged from SYNC-02. |
 | Cloud confidence | SYNC-02 conflict comparison/choice is verified with fault-injected IndexedDB and real Chromium on **mock transport only**. Divergent schedules are still blocked by `review_replay_required` in `src/app/sync_browser.js` (resolution validator, ~line 163). |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations; verify applied state before any backend work. |
-| Current blocker / unfinished work | S1 changes are committed but **not locally executed**: `review_replay.js` is now in the bundle; `test/review_replay.js` and ledger tests are in `test:replay` and `npm test`. Await a passing replay/syntax/build/plan gate (prefer full CI) before checking S1. The diagnostics still only replay memory; schedule convergence (S2–S4) and live Supabase verification remain absent. |
+| Current blocker / unfinished work | S1 code is published: `review_replay.js` is bundled and `test:replay` is in `npm test`. New tests and `test/plan_protocol.js` **PASS in isolated JavaScript source harness**, including a repaired scheduled-review fixture; this is **not** Node/Chromium CI. `npm ci`, replay/syntax/build/plan commands and full CI are **NOT RUN/NOT CONFIRMED**. Await S1 gates before ticking it. S2–S4 and live Supabase validation remain absent. |
 
 **Next action, in one sentence:** verify S1 on the current GitHub Actions regression (`test:replay`, `test:syntax`, `build`, `test:plan`); when green tick S1 and proceed to S2 deterministic schedule projection, otherwise repair the specific failing gate.
 
