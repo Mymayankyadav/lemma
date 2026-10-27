@@ -6,10 +6,10 @@ Next action: AUTH-01 S2 is BLOCKED_OWNER (owner must enable Google in Supabase a
 | --- | --- |
 | Status | BLOCKED_OWNER (AUTH-01 S2); SYNC-04 M1 DONE (mock transport) |
 | Current task | AUTH-01 S2 (owner-assisted), then SYNC-04 |
-| Delivery | [PR #8](https://github.com/Mymayankyadav/lemma/pull/8), `lane-a/sync-04-m1-recovery`; verify merged status before starting another slice. Test code at `5ec40bd`. |
+| Delivery | Owner-blocker documentation: [PR #10](https://github.com/Mymayankyadav/lemma/pull/10), `lane-a/auth-01-owner-prerequisites`; check its merge status before continuing. Previous [PR #8](https://github.com/Mymayankyadav/lemma/pull/8) merged as `5efdf3e`; [main CI 40464430522](https://github.com/Mymayankyadav/lemma/actions/runs/40464430522) SUCCESS. |
 | Last merged work | AUTH-01 S1 at `b1ea568`, [CI 40450843938](https://github.com/Mymayankyadav/lemma/actions/runs/40450843938) SUCCESS (mocked OAuth). SYNC-03 DONE at `6fb7005`. |
 | Backend | Only this lane may use Supabase (`yemqnhnztlbyxmjxidis`). Nine applied migrations, RLS on all four sync tables, advisors clean. Two-identity RLS probe NOT RUN. |
-| Live confidence | Google provider config UNVERIFIED (owner). All sync evidence is mock transport. |
+| Live confidence | Google provider DISABLED: live public `/auth/v1/settings` returned `external.google=false`, `external.email=true` on 2026-10-27 (read-only). Sign-in and live sync remain NOT RUN; sync/recovery evidence is mock transport. |
 
 **SYNC-04 M1 gate inventory (mock transport only):**
 
@@ -22,6 +22,16 @@ Next action: AUTH-01 S2 is BLOCKED_OWNER (owner must enable Google in Supabase a
 
 **Validation:** Full PR [regression 40463998686](https://github.com/Mymayankyadav/lemma/actions/runs/40463998686) SUCCESS at `5ec40bd8d8cca88817bc3fdbfb9ed513c6d23de5`: Chromium installation, syntax and complete `npm test`, including browser sync and full app workspace tests.  `npm ci`, syntax, lane A guard, merge/outbox/replay/storage/account/account-store/workspace/FSRS tests, plan guard and build SUCCESS locally. Local Chromium unavailable: Playwright CDN returns a 195-byte "Site Unavailable" page, so local `test:browser-sync` and full `npm test` were BLOCKED_ENV; PR CI supplies the browser result. No production code or database change in this slice.
 
-**Still gated:** Google provider config UNVERIFIED (owner); AUTH-01 S2 sign-in/out and existing email-account `user.id` continuity, authenticated two-browser sync, two-identity RLS, live network/expiry/deletion recovery and PWA offline/update behavior NOT RUN. SYNC-04 remains BLOCKED.
+**Still gated:** Google provider DISABLED (live settings checked 2026-10-27); AUTH-01 S2 sign-in/out and existing email-account `user.id` continuity, authenticated two-browser sync, two-identity RLS, live network/expiry/deletion recovery and PWA offline/update behavior NOT RUN. SYNC-04 remains BLOCKED.
+
+**Owner unblock steps (AUTH-01 S2; plan reserves these for the owner):**
+1. Google Cloud Console: create a Web application OAuth client with authorized redirect URI `https://yemqnhnztlbyxmjxidis.supabase.co/auth/v1/callback`.
+2. [Lemma Supabase Auth providers](https://supabase.com/dashboard/project/yemqnhnztlbyxmjxidis/auth/providers): enable Google and enter that client ID/secret in the dashboard.
+3. Auth URL configuration: Site URL `https://mymayankyadav.github.io/lemma/`; allow that URL, `http://localhost:*/**`, and `io.lemma.study://auth-callback`.
+4. [Open Lemma](https://mymayankyadav.github.io/lemma/), Settings → Continue with Google, using the email of the earlier email-link account. Report sign-in outcome; the next lane A session checks identity continuity, sign-out and explicit backup acknowledgment before workspace activation. A different `user.id` blocks progress; never migrate rows to make it pass.
+
+Documentation follow-up: `npm run test:plan`, `node test/lane_guard.js A` and `git diff --check` SUCCESS locally; see PR #10 for full CI evidence.
+
+No provider configuration or backend data was changed during the read-only check. Public provider settings confirm enablement only; they do not prove client credentials, redirect configuration or a successful OAuth round trip.
 
 **Requests from other lanes:** none.
