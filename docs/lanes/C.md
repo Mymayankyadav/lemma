@@ -12,5 +12,8 @@ Next action: ANDROID-02 — BLOCKED until both SYNC-04 and UI-01 are DONE; physi
 | Scope | Hardware Back: sheet → Home → history.back (if available) → native exit at root. Resume emits diagnostic log; web path no-op. No auth/sync/UI changes. |
 | Outstanding | Physical Android device Back gesture, background/foreground, offline and updates NOT TESTED. Google sign-in, notifications and release signing are future gates. |
 | Not yours | Web UI/CSS (lane B); sync/account/backend (lane A). |
+| CI routing (27 Oct, owner-requested) | `android.yml` lane selection now also maps `integration/*` PR branches to `node test/lane_guard.js integration`, so owner-requested integration sessions are no longer rejected as "Unknown PR lane". Other prefixes still fail. No build steps changed. |
+
+**Idle-time owner check (optional, not a gate yet):** sideload the latest `lemma-android-debug` artifact from a green `main` Android run (see `docs/ANDROID.md`) and note whether Back from a sheet, Back at Home (exit) and background/foreground behave. Record results here in the next lane C session.
 
 **Requests from other lanes:** none.
