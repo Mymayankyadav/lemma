@@ -29,22 +29,23 @@ Up to **three agents may run at the same time, one per lane** (A sync/auth/backe
 
 **Per-lane handoffs live in `docs/lanes/A.md`, `B.md`, `C.md`; each lane updates only its own file.** This section is a shared snapshot changed only in owner-requested integration sessions, so lanes never conflict over it.
 
-**Last verified handoff:** 2026-10-27; integration snapshot at `main@add11fa` (switch to parallel lanes). SYNC-03 DONE (mock transport); AUTH-01 S1 DONE ([CI 40450843938](https://github.com/Mymayankyadav/lemma/actions/runs/40450843938) SUCCESS, mocked OAuth). **State: READY_FOR_NEXT_AGENT** in all three lanes.
+**Last verified handoff:** 2026-10-27; integration snapshot at `main@2c1f554` (after PRs #17 and #18; no lane PR open). AUTH-01 DONE (live web gate, PR #17); UI-01 S1–S2 DONE (PRs #15, #18); ANDROID-01 DONE (CI APK; physical device untested). **State: READY_FOR_NEXT_AGENT** in lanes A and B; lane C dependency-blocked.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | The latest SUCCESS run of "Lemma regression tests" on `main` (`gh run list --branch main --workflow test.yml -L 1`) is authoritative. At this snapshot: `add11fa` SUCCESS. |
-| Cloud confidence | Sync, replay and Google PKCE verified with mock transport only. Google provider setup, live OAuth, same-owner `user.id` mapping and two-user RLS NOT VERIFIED. |
-| Backend security check | Lane A only. RLS on all four sync tables, nine applied migrations, advisors clean; authenticated two-identity RLS probe NOT RUN. |
-| Owner action needed | Configure Google OAuth (AUTH-01 prerequisites) and sign in once on Pages so lane A can finish AUTH-01 S2. |
+| Known-good main baseline | The latest SUCCESS run of "Lemma regression tests" on `main` (`gh run list --branch main --workflow test.yml -L 1`) is authoritative. At this snapshot: `2c1f554` regression [40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724) and Android [40478252732](https://github.com/Mymayankyadav/lemma/actions/runs/40478252732) SUCCESS. |
+| Cloud confidence | Live Pages Google PKCE sign-in, sign-out (HTTP 204), re-login to the same `user.id` and the backup-acknowledgement block verified. Automatic writes, two-device convergence and two-real-identity HTTP RLS NOT VERIFIED (SYNC-04). |
+| Backend security check | Lane A only. RLS on all four sync tables, nine applied migrations; rollback-only SQL two-role probe passed. Authenticated two-identity HTTP probe NOT RUN. |
+| Owner action needed | SYNC-04 live gates: keep an owner-signed-in browser available to lane A, and provide a second real test Google identity for the RLS isolation gate. Optional: sideload the `main` debug APK and report Back/resume behaviour in `docs/lanes/C.md`. |
+| CI screenshots | Artifact downloads are blocked in agent sandboxes. Regression CI therefore also pushes the `test:ui` PNGs to the never-merged `ci-screenshots` branch: `main/` = latest `main` (the "before"), `pr-<n>/` = latest run of PR n (the "after"); each folder's README names its source commit. View: `gh api -H "Accept: application/vnd.github.raw" "repos/Mymayankyadav/lemma/contents/pr-<n>/<file>.png?ref=ci-screenshots" > x.png`, then open the image. Never merge or edit that branch. UI-01 S3 (PR #21) merged before this existed: lane B must review its `main/` screenshots before starting S4. Integration PRs use branch prefix `integration/`. |
 
 | Lane | Scope (files in `lanes.json`) | NEXT task | Branch prefix | Status file |
 | --- | --- | --- | --- | --- |
-| A | sync, auth, Supabase, account Settings | AUTH-01 (S2 owner-blocked → SYNC-04 M1 meanwhile) | `lane-a/` | [A.md](docs/lanes/A.md) |
-| B | screens, CSS, navigation, rendering | UI-01 S1 | `lane-b/` | [B.md](docs/lanes/B.md) |
-| C | native Android shell and build | ANDROID-01 S1 | `lane-c/` | [C.md](docs/lanes/C.md) |
+| A | sync, auth, Supabase, account Settings | SYNC-04 L1 (live automatic write + reload recovery) | `lane-a/` | [A.md](docs/lanes/A.md) |
+| B | screens, CSS, navigation, rendering | UI-01 S3 (Cards screens) | `lane-b/` | [B.md](docs/lanes/B.md) |
+| C | native Android shell and build | none — ANDROID-02 waits for SYNC-04 and UI-01; do not start work | `lane-c/` | [C.md](docs/lanes/C.md) |
 
-**Next action, in one sentence:** each lane does the "Next action:" line at the top of its `docs/lanes/<X>.md`; the owner completes Google provider setup for AUTH-01 S2.
+**Next action, in one sentence:** lanes A and B do the "Next action:" line at the top of their `docs/lanes/<X>.md`; lane C stays idle until SYNC-04 and UI-01 are DONE.
 
 ## 2. Task queue
 
@@ -76,7 +77,7 @@ Each slice is one PR. Every PR attaches the S1 screenshots (before/after) in its
 
 **[x] S1 — screenshot harness, no visual change (PR #15).** Create `test/ui_screenshots.js`: build is already done by `npm test`'s e2e step, so serve/launch `dist/` exactly the way `test/e2e.js` does (copy its server and Playwright launch code), seed data with `test/seed.js`, and capture Home, Cards list, Editor, Review and Stats at 390×844 and 1280×800 in `colorScheme` light and dark into `test-output/ui/<screen>-<size>-<scheme>.png` (already git-ignored; never commit PNGs). Add `"test:ui": "node test/ui_screenshots.js"` and append `&& npm run test:ui` to the end of `"test"`.
 **[x] S2 — navigation and Today (Stats tab kept until S4).** In `main.js`, label navigation **Today / Cards / Settings** (Study stays hidden until PLAN-01); keep every existing route/hash working. In `view_home.js`, make due reviews the single primary action. Gate: e2e green, screenshots, keyboard-only navigation works.
-**[ ] S3 — Cards (`view_browse.js`, `view_editor.js`, `sheets.js`).** ≥44px tap targets, visible focus, long equations scroll locally (`overflow-x:auto` on display math), empty/loading/error states. Do not change editor save/durability logic (it calls lane A's Store).
+**[x] S3 — Cards (`view_browse.js`, `view_editor.js`, `sheets.js`).** ≥44px tap targets, visible focus, long equations scroll locally (`overflow-x:auto` on display math), empty/loading/error states. Do not change editor save/durability logic (it calls lane A's Store).
 **[ ] S4 — Review and Stats (`view_review.js`, `view_stats.js`, `charts.js`).** Reduced motion, existing keyboard shortcuts unchanged, advanced FSRS/stat controls behind progressive disclosure. Gate: full UI-01 gate in the row above except Settings.
 
 ### ANDROID-01 slices (lane C)
@@ -123,7 +124,7 @@ Target navigation is **Today / Study / Cards / Settings**, with visible labels o
 10. If `main` CI is red: the lane whose merge caused it (see the failing commit) fixes it first, in a PR; other lanes keep working on their branches but do not merge until `main` is green again. If you cannot tell whose it is, record it in your lane file and ask the owner.
 
 **Verify, merge and hand off**
-11. Checks: `npm ci`, `npm run test:syntax`, your slice's tests, `npm test`, `npm run build`, `npm run test:plan`. UI changes: attach screenshots to the PR. Write SUCCESS/FAILED/PENDING/NOT RUN exactly as observed; mock tests never prove live sync.
+11. Checks: `npm ci`, `npm run test:syntax`, your slice's tests, `npm test`, `npm run build`, `npm run test:plan`. UI changes: look at your PR's `ci-screenshots` images against `main/` (§1 "CI screenshots") and state in the PR what changed; do not merge a UI PR whose screenshots you have not viewed. Write SUCCESS/FAILED/PENDING/NOT RUN exactly as observed; mock tests never prove live sync.
 12. Commit message `type(task-id): summary`. Push the branch normally and open a PR titled `[lane X] TASK-ID Sn: summary`. Update your lane file (status, next action, PR link, evidence) **in the same PR**.
 13. Merge yourself only when all hold: lane guard ok; the PR branch contains current `main` (`git fetch && git merge-base --is-ancestor origin/main HEAD`, otherwise merge `origin/main` in, push, and wait for CI again); PR CI is green; no unresolved conflicts. Squash-merge and delete your branch (§3 "GitHub commands"). If GitHub requires a review, leave it for the owner and say so.
 14. Merge conflicts in shared files: keep **both** sides (your lines and theirs), never drop another lane's text; rerun tests. Conflicts in another lane's owned file mean you broke rule 5: undo your change to that file.
@@ -138,7 +139,7 @@ Target navigation is **Today / Study / Cards / Settings**, with visible labels o
 
 **Stop and ask the owner (do not guess) when:** a decision here seems wrong or missing; the work needs a file your lane does not own and the request route is too slow to proceed; a test can only pass by deleting data or weakening an assertion; a migration or live Supabase change is needed and not described; `main` CI is red and it is unclear whose change caused it.
 
-**Integration sessions** happen only when the owner asks (for example "re-plan lanes"). They alone may edit `lanes.json`, protocol sections, §1, workflows other than `android.yml`, `AGENTS.md`, `README.md`, `PROMPT.md`, `test/plan_protocol.js` and `test/lane_guard.js` (`node test/lane_guard.js integration`). They assign "—" rows to lanes when dependencies are DONE and move file ownership when a lane's work finishes (e.g. `view_settings.js` to lane B after SYNC-04). Run them when no lane PR is open. Keep this plan under ~4,500 words; put reusable detail in existing docs.
+**Integration sessions** happen only when the owner asks (for example "re-plan lanes"), on a branch `integration/<date>-<slug>` merged by PR like any lane. They alone may edit `lanes.json`, protocol sections, §1, workflows other than `android.yml`, `AGENTS.md`, `README.md`, `PROMPT.md`, `test/plan_protocol.js` and `test/lane_guard.js` (`node test/lane_guard.js integration`). They assign "—" rows to lanes when dependencies are DONE and move file ownership when a lane's work finishes (e.g. `view_settings.js` to lane B after SYNC-04). Run them when no lane PR is open. Keep this plan under ~4,500 words; put reusable detail in existing docs.
 
 ## 4. Ownership, architecture, and reference precedence
 
@@ -152,7 +153,7 @@ Repo: [Mymayankyadav/lemma](https://github.com/Mymayankyadav/lemma), branch `mai
 | AI portability | `src/app/ai.js` currently requires `window.claude`; Settings' ArtifactData instructions are host-specific, not a working general connector. |
 | Data / product contracts | `supabase/migrations/`; [study protocol](docs/STUDY_PLANNING_PROTOCOL.md); [sync reference](docs/PHASE2_SYNC_CONTRACT.md) |
 | Lanes and ownership | `lanes.json` (who owns which file), `test/lane_guard.js`, `docs/lanes/*.md` (per-lane handoff) |
-| Delivery / verification | `package.json`, `build.js` (`appFiles` order = load order), `test/`, `.github/workflows/`, `capacitor.config.json`; native `android/` does not yet exist. |
+| Delivery / verification | `package.json`, `build.js` (`appFiles` order = load order), `test/`, `.github/workflows/`, `capacitor.config.json`, native `android/` (debug APK built by `android.yml`). |
 
 Precedence: current user instruction → this plan for scope/order → supporting contracts. Source, tests and observed backend determine implementation status; correct stale prose rather than assuming it works. Historical audits are evidence only. Engineering `plan.md` is distinct from the student's versioned study plans.
 
@@ -160,6 +161,8 @@ Precedence: current user instruction → this plan for scope/order → supportin
 
 | Milestone | Evidence / limit |
 | --- | --- |
+| Google sign-in, live web (AUTH-01) | [PR #17](https://github.com/Mymayankyadav/lemma/pull/17): live Pages PKCE sign-in, logout HTTP 204, re-login to the same `user.id`, expired-callback error with device data intact, backup acknowledgement enforced. Android OAuth deferred to ANDROID-02. |
+| Android shell and CI APK (ANDROID-01) | [PR #9](https://github.com/Mymayankyadav/lemma/pull/9), [PR #12](https://github.com/Mymayankyadav/lemma/pull/12); [Android 40469725939](https://github.com/Mymayankyadav/lemma/actions/runs/40469725939) SUCCESS. Physical device NOT TESTED. |
 | Deterministic review convergence (SYNC-03) | `review_replay.project`, transactional conflict resolution, undo/retraction gates, both-timezone replay test and two-page app due-date smoke; [regression 40449924808](https://github.com/Mymayankyadav/lemma/actions/runs/40449924808) SUCCESS. MOCK transport only. |
 | Durable editor and crash recovery | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) and [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; main regression/Pages 40378487715/40378487955 and 40381695953/40381695797 SUCCESS. |
 | Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
