@@ -51,6 +51,11 @@ async function open(browser, size, scheme) {
   return { ctx, page };
 }
 
+// Desktop shows `.tab` buttons; mobile hides them and shows the bottom `.tb` bar. Click whichever is visible.
+async function goTo(page, route) {
+  await page.locator(`[data-go="${route}"]:visible`).first().click();
+}
+
 async function shot(page, name, size, scheme) {
   await page.waitForTimeout(350);
   await page.screenshot({ path: path.join(OUT, `${name}-${size}-${scheme}.png`), fullPage: name !== 'review' });
@@ -63,13 +68,13 @@ async function shot(page, name, size, scheme) {
     const { ctx, page } = await open(browser, size, scheme);
     try {
       await shot(page, 'home', size, scheme);
-      await page.click('.tab[data-go="browse"]');
+      await goTo(page, 'browse');
       await page.waitForSelector('#browse-q');
       await shot(page, 'cards', size, scheme);
-      await page.click('.tab[data-go="stats"]');
+      await goTo(page, 'stats');
       await page.waitForTimeout(500);
       await shot(page, 'stats', size, scheme);
-      await page.click('.tab[data-go="home"]');
+      await goTo(page, 'home');
       await page.waitForSelector('.today');
       await page.keyboard.press('n');
       await page.waitForSelector('#ed-front');
