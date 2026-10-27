@@ -110,12 +110,29 @@ async function waitForAccountWorkspace(page, expectedUserId, timeout = T) {
   // Auth session/refresh can be ready before account workspace activation.
   // A note created then goes into the anonymous device store and never
   // appears in the private account outbox; that is not a sync success.
-  await page.waitForFunction(uid =>
-    typeof Store !== 'undefined' && Store.mode === 'account' &&
-    App.workspaceController?.activeId === uid &&
-    LemmaAccount.user?.id === uid &&
-    !App.workspaceBlocked,
-    expectedUserId, {timeout});
+  try {
+    await page.waitForFunction(uid =>
+      typeof Store !== 'undefined' && Store.mode === 'account' &&
+      App.workspaceController?.activeId === uid &&
+      LemmaAccount.user?.id === uid &&
+      !App.workspaceBlocked,
+      expectedUserId, {timeout});
+  } catch (error) {
+    // No identities, JWTs, email addresses or card content in CI logs.
+    const state = await page.evaluate(uid => ({
+      mode:Store.mode, syncPhase:LemmaSync.status.phase,
+      pending:LemmaSync.status.pending, hasSyncError:Boolean(LemmaSync.status.error),
+      syncErrorCode:String(LemmaSync.status.error||'').slice(0,120),
+      loggedIn:!!LemmaAccount.user, sameAuth:LemmaAccount.user?.id===uid,
+      sameSync:LemmaSync.status.userId===uid,
+      remembered:localStorage.getItem('lemma-account-workspace-v1')===uid,
+      active:App.workspaceController?.activeId===uid,
+      blocked:App.workspaceBlocked, idle:App.workspaceIdle(),
+      loading:App.loading, view:App.view
+    }), expectedUserId).catch(e=>({diagnosticError:e.message}));
+    console.error('account restore diagnostic (no credentials):',JSON.stringify(state));
+    throw error;
+  }
 }
 async function browserUserId(page) {
   return page.evaluate(() => {
