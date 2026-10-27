@@ -66,7 +66,7 @@ const LemmaReviewReplay = (() => {
     for (const data of snapshots) {
       for (const [ord,card] of Object.entries(data.cards)) {
         const total = byOrd.get(ord)?.length || 0;
-        if (Number.isFinite(card?.reps) && card.reps > total)
+        if (Number.isFinite(card?.reps) && (card.reps > total || (total === 0 && card.st !== 0)))
           return blocked(noteId,'legacy_baseline_required','Card '+ord+' has reviews not represented in the ledger.');
       }
     }
@@ -82,8 +82,8 @@ const LemmaReviewReplay = (() => {
         return blocked(noteId,'replay_unsupported',String(e.message || e));
       }
       ordinals[ord] = {activeReviews:entries.length, totalReviews:byOrd.get(ord).length,
-        memory:result.mem, trace:result.trace.map(t => ({
-          eventId:entries.find(e => e.occurred_at_ms === t.ts)?.event_id || null,
+        memory:result.mem, trace:result.trace.map((t,i) => ({
+          eventId:entries[i]?.event_id || null,
           timestamp:t.ts, dayElapsed:t.t, stability:t.s, difficulty:t.d
         }))};
     }
