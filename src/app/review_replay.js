@@ -79,7 +79,12 @@ const LemmaReviewReplay = (() => {
         result = input.reviews.length ? fsrs.replay(input.weights,input.reviews,input.clock) :
           {mem:null,trace:[]};
       } catch (e) {
-        return blocked(noteId,'replay_unsupported',String(e.message || e));
+        // The historical single-parameter memory diagnostic cannot replay a
+        // per-event parameter change. The schedule projection below can.
+        // Still reject malformed history, rather than certifying it as safe.
+        if (!/parameters changed|Nonmonotonic scheduling days|Ambiguous scheduling timezone/.test(String(e.message || e)))
+          return blocked(noteId,'replay_unsupported',String(e.message || e));
+        result = {mem:null,trace:[]};
       }
       ordinals[ord] = {activeReviews:entries.length, totalReviews:byOrd.get(ord).length,
         memory:result.mem, trace:result.trace.map((t,i) => ({
@@ -92,6 +97,97 @@ const LemmaReviewReplay = (() => {
       retractions:retractions.length,ordinals,scheduleReady:false,
       message:'Only FSRS memory was replayed. Due dates, steps, fuzz, legacy baselines and concurrent scheduling are not reconstructed.'};
   }
-  return {inspect};
+  const scheduleKeys = ['st','due','s','d','last','step','reps','lapses'];
+  const dayMs = 86400000;
+  function fixedClock(p) {
+    const offset = p.timezone_offset_minutes * 60000 + p.rollover_hour * 3600000;
+    return {
+      dayIndex(ts) { return Math.floor((ts - offset) / dayMs); },
+      dayStart(day) { return day * dayMs + offset; }
+    };
+  }
+  function cfgFrom(p) {
+    return {
+      w: p.weights, retention: p.retention, maxIvl: p.max_interval_days,
+      learn: fsrs.parseSteps(p.learn_steps) || [],
+      relearn: fsrs.parseSteps(p.relearn_steps) || [],
+      fuzz: p.fuzz, loadBalance: false
+    };
+  }
+  function validProvenance(event) {
+    const p = event.scheduling_provenance;
+    if (!p || p.version !== 1 || p.algorithm !== 'fsrs-6' ||
+        !Array.isArray(p.weights) || p.weights.length !== 21 ||
+        !p.weights.every(Number.isFinite) ||
+        !Number.isSafeInteger(p.day_index) ||
+        !Number.isInteger(p.rollover_hour) || p.rollover_hour < 0 || p.rollover_hour > 23 ||
+        !Number.isInteger(p.timezone_offset_minutes) ||
+        Math.abs(p.timezone_offset_minutes) > 840 ||
+        !(p.retention > 0 && p.retention < 1) ||
+        !Number.isSafeInteger(p.max_interval_days) || p.max_interval_days < 1 ||
+        typeof p.learn_steps !== 'string' || typeof p.relearn_steps !== 'string' ||
+        (p.learn_steps.trim() && !fsrs.parseSteps(p.learn_steps)) ||
+        (p.relearn_steps.trim() && !fsrs.parseSteps(p.relearn_steps)) ||
+        typeof p.fuzz !== 'boolean' || typeof p.load_balance !== 'boolean' ||
+        !Number.isSafeInteger(p.preview_at_ms) || p.preview_at_ms <= 0 ||
+        p.preview_at_ms > event.occurred_at_ms ||
+        !Number.isInteger(event.grade) || event.grade < 1 || event.grade > 4)
+      return false;
+    return true;
+  }
+  /* Pure schedule fold. Only call this when divergent schedules must be
+   * resolved, never to overwrite a clean cache on pull or login. */
+  function project(row, allEvents, allRetractions, outbox = []) {
+    const diagnostic = inspect(row, allEvents, allRetractions, outbox);
+    if (diagnostic.status === 'blocked') return diagnostic;
+    const noteId = row.id;
+    let active;
+    try {
+      active = ledger.activeEvents(allEvents.filter(e => e.note_id === noteId),
+        allRetractions.filter(r => allEvents.some(e =>
+          e.note_id === noteId && e.event_id === r.target_event_id)));
+    } catch (e) {
+      return blocked(noteId, 'invalid_ledger', String(e.message || e));
+    }
+    const events = allEvents.filter(e => e.note_id === noteId && e.kind === 0).sort(compare);
+    const byOrd = new Map();
+    for (const event of events) {
+      if (!validProvenance(event))
+        return blocked(noteId, 'replay_unsupported', 'Invalid scheduling provenance: ' + event.event_id);
+      const clock = fixedClock(event.scheduling_provenance);
+      if (clock.dayIndex(event.occurred_at_ms) !== event.scheduling_provenance.day_index)
+        return blocked(noteId, 'clock_mismatch', 'Recorded scheduling day does not match fixed-offset clock: ' + event.event_id);
+      const ord = String(event.ordinal);
+      if (!byOrd.has(ord)) byOrd.set(ord, []);
+      byOrd.get(ord).push(event);
+    }
+    const activeIds = new Set(active.map(e => e.event_id));
+    const cards = {}, eventIds = [];
+    for (const ord of [...byOrd.keys()].sort((a,b) => Number(a) - Number(b))) {
+      const history = byOrd.get(ord);
+      const baseline = history[0].scheduling_provenance.card_before;
+      if (!baseline || baseline.st !== 0 || baseline.reps !== 0 ||
+          !scheduleKeys.every(key => typeof baseline[key] === 'number' && Number.isFinite(baseline[key])))
+        return blocked(noteId, 'legacy_baseline_required', 'No complete new-card baseline for card ' + ord);
+      let card = Object.fromEntries(scheduleKeys.map(key => [key, baseline[key]]));
+      try {
+        for (const event of history) {
+          if (!activeIds.has(event.event_id)) continue;
+          const p = event.scheduling_provenance;
+          const projected = fsrs.preview(card, p.preview_at_ms, cfgFrom(p),
+            {clock:fixedClock(p), key:noteId + ':' + ord});
+          card = Object.fromEntries(scheduleKeys.map(key => [key, projected[event.grade].card[key]]));
+          if (!scheduleKeys.every(key => Number.isFinite(card[key])))
+            throw new Error('Invalid projected schedule');
+          eventIds.push(event.event_id);
+        }
+      } catch (error) {
+        return blocked(noteId, 'replay_unsupported', String(error.message || error));
+      }
+      cards[ord] = card;
+    }
+    return {status:'projected',noteId,cards,eventIds};
+  }
+  return {inspect, project};
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = LemmaReviewReplay;
