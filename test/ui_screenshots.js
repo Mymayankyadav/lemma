@@ -6,6 +6,7 @@ process.env.TZ = process.env.TZ || 'Asia/Kolkata';
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
+const checkBrowserZoom = require('./ui_browser_zoom.js');
 const seed = require('./seed.js');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -335,6 +336,15 @@ async function shot(page, name, size, scheme) {
     await ctx.close();
   }
   await browser.close();
+  // True tab-level Chromium zoom (via a disposable MV3 extension), separate
+  // from the earlier CSS-zoom and narrow-viewport approximations.
+  try {
+    shots += await checkBrowserZoom({
+      out: OUT, html: TEST_HTML, mock: MOCK, libs: LIBS, docs,
+    });
+  } catch (e) {
+    problems.push('[native Chromium zoom] ' + (e.stack || e.message));
+  }
   if (problems.length) { console.error('FAIL\n' + problems.join('\n')); process.exit(1); }
   console.log(`ok: ${shots} UI screenshots written to ${path.relative(ROOT, OUT)}`);
 })();
