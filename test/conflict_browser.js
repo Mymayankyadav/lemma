@@ -153,4 +153,148 @@ module.exports = async ({browser, newPage, ok}) => {
     ok(after.account===B && after.state==='local' && before>0,
       'switching accounts prevents a stale panel from resolving into the next account');
   } finally {await ctx.close();}
+
+  // Full application smoke: independent Chromium contexts, concurrent offline
+  // grades, an Undo, explicit conflict-panel resolution and browser reload.
+  // Transport and auth are mocked. This is not evidence of live cloud sync.
+  const userId = '00000000-0000-4000-8000-000000000093';
+  const noteId = 'review-ui';
+  const baseline = {st:0,due:0,s:0,d:0,last:0,step:0,reps:0,lapses:0};
+  const baseNote = {id:noteId,title:'Replay due-date smoke',front:'Prove this lemma',
+    back:'Proof',type:'basic',deck:'Algebra',cards:{'1':baseline},log:[]};
+  const pages = [];
+  async function setup(page) {
+    await page.waitForSelector('.onboard');
+    await page.evaluate(async id => {
+      const {LemmaCloud,LemmaAccount} = window.__editor;
+      const callbacks = new Set();
+      const client = {
+        auth:{
+          onAuthStateChange(fn) { callbacks.add(fn); return {data:{subscription:{unsubscribe:()=>callbacks.delete(fn)}}}; },
+          getUser:async()=>({data:{user:null},error:null})
+        },
+        channel(){return {on(){return this;},subscribe(fn){fn('SUBSCRIBED');return this;}};},
+        removeChannel:async()=>{}
+      };
+      LemmaCloud.startAccount = async (_client, accountId) => {
+        const db = await LemmaCloud.openAccountDB(accountId);
+        const storage = new LemmaCloud.AccountStorage(db,accountId);
+        const outbox = {pending:()=>storage.list(),flush:async()=>({}),stopped:false};
+        return {storage,outbox,pull:async()=>{},close:()=>{outbox.stopped=true;db.close();},
+          userId:accountId};
+      };
+      window.LEMMA_CONFIG={url:'https://mock-replay.invalid',publishableKey:'mock'};
+      window.LemmaSupabase={createClient:()=>client};
+      LemmaAccount.init();
+      for (const fn of callbacks) fn('SIGNED_IN',{user:{id,email:'test@example.invalid'}});
+    }, userId);
+    await page.waitForFunction(id => __editor.LemmaSync.status.userId === id &&
+      __editor.LemmaSync.status.phase === 'ready', userId);
+  }
+  async function activate(page) {
+    await page.evaluate(async()=> {
+      const app=__editor.App, handle=__editor.LemmaSync.accountHandle();
+      if (!(await handle.storage.note('review-ui'))) throw new Error('Missing replay note');
+      await app.workspaceController.activate();
+    });
+    await page.waitForFunction(()=>__editor.Store.mode==='account');
+  }
+  try {
+    for (let i=0;i<2;i++) {
+      const bundle=await newPage(browser,{mock:false,label:'replay-ui-'+i,editorHooks:true});
+      pages.push(bundle);
+      await setup(bundle.page);
+      await bundle.page.evaluate(row => __editor.LemmaSync.accountHandle().storage.ingestRemoteNote(row),
+        {id:noteId,data:baseNote,revision:1});
+      await activate(bundle.page);
+    }
+    async function grade(page,number,ident,hours) {
+      return page.evaluate(async ({number,ident,hours}) => {
+        const {FSRS,LemmaSync} = __editor;
+        const storage=LemmaSync.accountHandle().storage;
+        const note=(await storage.note('review-ui')).data;
+        const timestamp=Date.UTC(2026,9,27,8+hours);
+        const tz=-330,rollover=4,delta=tz*60000+rollover*3600000;
+        const p={version:1,algorithm:'fsrs-6',weights:FSRS.DEFAULT_W.slice(),
+          day_index:Math.floor((timestamp-delta)/86400000),rollover_hour:rollover,
+          timezone_offset_minutes:tz,retention:.9,max_interval_days:36500,
+          learn_steps:'1m 10m',relearn_steps:'10m',fuzz:true,load_balance:false,
+          preview_at_ms:timestamp,card_before:structuredClone(note.cards[1])};
+        const entry=[timestamp,1,number,0,500,0,ident,p];
+        const config={w:p.weights,retention:p.retention,maxIvl:p.max_interval_days,
+          learn:[1,10],relearn:[10],fuzz:true,loadBalance:false};
+        const clock={dayIndex:ts=>Math.floor((ts-delta)/86400000),
+          dayStart:day=>day*86400000+delta};
+        const card=FSRS.preview(note.cards[1],timestamp,config,{clock,key:note.id+':1'})[number].card;
+        const snapshot={...note,cards:{'1':card},log:[entry]};
+        const op=await storage.stageReview(snapshot,entry);
+        await storage.markAttempt(op.id);
+        await storage.markConflict(op.id,new Error('stale_note_revision'));
+        return {opId:op.id,snapshot,event:{
+          event_id:ident,note_id:note.id,ordinal:1,occurred_at_ms:timestamp,
+          grade:number,state_before:0,duration_ms:500,kind:0,scheduling_provenance:p
+        }};
+      },{number,ident,hours});
+    }
+    const reviewA=await grade(pages[0].page,3,'00000000-0000-4000-8000-000000000301',0);
+    const reviewB=await grade(pages[1].page,1,'00000000-0000-4000-8000-000000000302',1);
+    await pages[0].page.evaluate(x=>__editor.LemmaSync.accountHandle().storage.ingestReview(x),reviewB.event);
+    await pages[1].page.evaluate(x=>__editor.LemmaSync.accountHandle().storage.ingestReview(x),reviewA.event);
+    for (const [bundle,remote] of [[pages[0],reviewB],[pages[1],reviewA]])
+      await bundle.page.evaluate(data => __editor.LemmaSync.accountHandle().storage.ingestRemoteNote(
+        {id:'review-ui',data,revision:2}),remote.snapshot);
+    await pages[1].page.evaluate(async ({id,note}) => {
+      await __editor.LemmaSync.accountHandle().storage.stageUndo(note,id);
+    },{id:reviewB.event.event_id,note:baseNote});
+    const retract=await pages[1].page.evaluate(async()=>(
+      await __editor.LemmaSync.accountHandle().storage.retractions())[0]);
+    await pages[0].page.evaluate(x=>__editor.LemmaSync.accountHandle().storage.ingestRetraction(x),retract);
+
+    for (const bundle of pages) {
+      const p=bundle.page;
+      await p.click('.tab[data-go="settings"]');
+      await p.getByRole('button',{name:'Review account conflicts'}).click();
+      await p.getByRole('button',{name:'Compare versions'}).first().click();
+      await p.waitForSelector('.conflict-review');
+      ok((await p.locator('.conflict-warning').count())===0,
+        'replay-backed conflict is eligible for an explicit choice');
+      await p.selectOption('.conflict-controls select','remote');
+      await p.getByRole('button',{name:'Save resolution to device'}).click();
+      await p.waitForFunction(()=>document.querySelector('.conflict-center')?.textContent.includes('No unresolved conflicts'));
+      // Mock confirmed delivery after a successful explicit choice, preserving
+      // immutable local review/retraction history for the upcoming reload.
+      await p.evaluate(async()=> {
+        const storage=__editor.LemmaSync.accountHandle().storage;
+        for (const op of await storage.list())
+          if (op.state==='pending') await storage.ack(op,
+            op.kind==='note'||op.kind==='profile'
+              ? {revision:op.expectedRevision+1} : {});
+      });
+    }
+    async function shownDue(page) {
+      await page.click('.tab[data-go="browse"]');
+      await page.locator('.note-row').first().click();
+      await page.waitForSelector('.detail .facts');
+      return page.evaluate(()=>({
+        text:document.querySelector('.detail .facts dd:nth-of-type(2)')?.textContent ||
+          document.querySelectorAll('.detail .facts dd')[1]?.textContent,
+        raw:__editor.Model.notes.get('review-ui')?.cards?.['1']?.due
+      }));
+    }
+    const initialDue=await Promise.all(pages.map(bundle=>shownDue(bundle.page)));
+    ok(initialDue[0].raw===initialDue[1].raw && initialDue[0].text===initialDue[1].text &&
+       !!initialDue[0].raw,'both active app views show the same projected due date');
+    for (const bundle of pages) {
+      await bundle.page.reload();
+      await setup(bundle.page);
+      await activate(bundle.page);
+    }
+    const afterReload=await Promise.all(pages.map(bundle=>shownDue(bundle.page)));
+    ok(afterReload[0].raw===afterReload[1].raw &&
+       afterReload[0].text===afterReload[1].text &&
+       afterReload[0].raw===initialDue[0].raw,
+      'reloaded app views retain matching due dates after offline review and Undo');
+  } finally {
+    for (const bundle of pages) await bundle.ctx.close();
+  }
 };
