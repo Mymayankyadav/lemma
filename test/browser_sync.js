@@ -148,6 +148,79 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
     assert.equal(server.get('same').revision,5);
     assert.equal((await b.evaluate(id=>account.storage.resolution(id),firstId)).supersededBy,finalChoice.id);
 
+    // SYNC-03: two independent Chromium IndexedDB caches, concurrent
+    // offline reviews, one Undo, explicit choices and reload converge to
+    // the same due date without trusting either remote card snapshot.
+    const replayId = 'replay-browser';
+    const blank = {st:0,due:0,s:0,d:0,last:0,step:0,reps:0,lapses:0};
+    const baseReplay = {id:replayId,front:'Prove the lemma',back:'',cards:{1:blank},log:[]};
+    await a.evaluate(row=>account.storage.ingestRemoteNote(row),{
+      id:replayId,data:baseReplay,revision:1
+    });
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),{
+      id:replayId,data:baseReplay,revision:1
+    });
+    async function offlineReview(page, grade, id, hour) {
+      return page.evaluate(async ({grade,id,hour}) => {
+        const s=account.storage, note=(await s.note('replay-browser')).data;
+        const at=Date.UTC(2026,9,27,8+hour);
+        const offset=-330*60000+4*3600000;
+        const prov={version:1,algorithm:'fsrs-6',weights:FSRS.DEFAULT_W.slice(),
+          day_index:Math.floor((at-offset)/86400000),
+          rollover_hour:4,timezone_offset_minutes:-330,
+          retention:.9,max_interval_days:36500,learn_steps:'1m 10m',relearn_steps:'10m',
+          fuzz:true,load_balance:false,preview_at_ms:at,
+          card_before:structuredClone(note.cards[1])};
+        const entry=[at,1,grade,0,500,0,id,prov];
+        const card=FSRS.preview(note.cards[1],at,{
+          w:prov.weights,retention:.9,maxIvl:36500,learn:[1,10],relearn:[10],
+          fuzz:true,loadBalance:false
+        },{
+          clock:{dayIndex:ts=>Math.floor((ts-offset)/86400000),
+            dayStart:i=>i*86400000+offset},key:note.id+':1'
+        })[grade].card;
+        const snapshot={...note,cards:{1:card},log:[entry]};
+        const op=await s.stageReview(snapshot,entry);
+        await s.markAttempt(op.id);
+        await s.markConflict(op.id,new Error('stale_note_revision'));
+        return {opId:op.id,snapshot,event:{
+          event_id:id,note_id:note.id,ordinal:1,occurred_at_ms:at,
+          grade,state_before:0,duration_ms:500,kind:0,scheduling_provenance:prov
+        }};
+      },{grade,id,hour});
+    }
+    const reviewA=await offlineReview(a,3,'00000000-0000-4000-8000-000000000201',0);
+    const reviewB=await offlineReview(b,1,'00000000-0000-4000-8000-000000000202',1);
+    // Propagate only signed-in owner's remote immutable records and snapshots.
+    await a.evaluate(x=>account.storage.ingestReview(x),reviewB.event);
+    await b.evaluate(x=>account.storage.ingestReview(x),reviewA.event);
+    await a.evaluate(row=>account.storage.ingestRemoteNote(row),
+      {id:replayId,data:reviewB.snapshot,revision:2});
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),
+      {id:replayId,data:reviewA.snapshot,revision:2});
+    await b.evaluate(async id => {
+      const note={id:'replay-browser',front:'Prove the lemma',back:'',
+        cards:{1:{st:0,due:0,s:0,d:0,last:0,step:0,reps:0,lapses:0}},log:[]};
+      await account.storage.stageUndo(note,id);
+    },reviewB.event.event_id);
+    const undoRow=await b.evaluate(async()=> (await account.storage.retractions())[0]);
+    await a.evaluate(row=>account.storage.ingestRetraction(row),undoRow);
+    for (const [page,opId] of [[a,reviewA.opId],[b,reviewB.opId]]) {
+      await page.evaluate(async id => {
+        const s=account.storage, view=await s.inspectConflict(id);
+        await s.resolveConflict(id,view.token,{choice:'remote'});
+      },opId);
+    }
+    const dueState=page=>page.evaluate(async()=> {
+      const card=(await account.storage.note('replay-browser')).data;
+      return {due:card.cards[1].due,reps:card.cards[1].reps,
+        ids:card.log.map(x=>x[6])};
+    });
+    assert.deepEqual(await dueState(a),await dueState(b));
+    assert.deepEqual((await dueState(a)).ids,[reviewA.event.event_id]);
+    await a.reload();await b.reload();await start(a);await start(b);
+    assert.deepEqual(await dueState(a),await dueState(b),'restart cannot change the projected due date');
+
     // A stale account handle is stopped when another user signs in.
     await stage(tab,'must-not-send','private A');
     await tab.evaluate(()=>window.switchUser());
