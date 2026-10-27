@@ -40,7 +40,7 @@ jobs:
           node-version: '22'
       - uses: supabase/setup-cli@v3
         with:
-          version: 2.84.2
+          version: 2.122.0
       - name: Authenticate image pulls on shared GitHub runners
         shell: bash
         env:
@@ -52,24 +52,24 @@ jobs:
           test ! -e supabase/.temp/project-ref
           test -f supabase/config.toml
           supabase --version
-      - name: Start isolated local Supabase services (retry registry throttling)
+      - name: Start isolated local Supabase services (registry fallbacks)
         shell: bash
         run: |
           set -euo pipefail
+          # CLI >= 2.122 supports ECR -> GHCR -> Docker Hub image fallbacks.
+          # setup-cli can set GHCR as an explicit override; that DISABLES
+          # fallback, so unset it for this single local-only command.
+          # On-demand setup pulls Postgres immediately and starts Auth/REST/
+          # Realtime/Mailpit when the upcoming L6/L7 checks first use them.
           for attempt in 1 2 3; do
-            # Keep GoTrue, PostgREST, Realtime and Mailpit for L6/L7.
-            # Do not download unrelated storage/analytics/function/UI images.
-            if supabase start --exclude storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor; then
+            if env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start --preparation on-demand; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then
               echo "::error::Local Supabase failed after three startup attempts"
               exit 1
             fi
-            # GitHub-hosted runners share container-registry rate limits.
-            # A failed partial start is disposable; never use --linked.
             supabase stop --no-backup || true
-            echo "Retrying local image pulls after registry backoff"
             sleep "$((attempt * 30))"
           done
       - name: Rebuild only the local database from migrations
