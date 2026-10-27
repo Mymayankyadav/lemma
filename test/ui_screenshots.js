@@ -106,6 +106,15 @@ async function shot(page, name, size, scheme) {
         throw new Error('Statistics disclosure must open with the keyboard');
 
       if (size === 'mobile') {
+        // Mobile navigation labels are part of the UI contract, not tooltips.
+        const labels = await page.locator('.tabbar .tb-label:visible').allTextContents();
+        if (labels.join('|') !== 'Today|Cards|New|Settings')
+          throw new Error('Mobile navigation labels missing or out of order: ' + labels.join(', '));
+        const targets = await page.locator('.tabbar .tb').evaluateAll(items => items.map(el => {
+          const r = el.getBoundingClientRect(); return { width: r.width, height: r.height };
+        }));
+        if (targets.some(r => r.width < 44 || r.height < 44))
+          throw new Error('Mobile navigation has an action smaller than 44×44px');
         // Prevent an unused grid track when a top-level nav item is removed.
         const gaps = await page.locator('.tabbar').evaluate(bar => {
           const items = [...bar.querySelectorAll('.tb')];
