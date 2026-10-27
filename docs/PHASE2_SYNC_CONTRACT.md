@@ -57,6 +57,45 @@ A pull alone does not mark a pending operation conflicted: its server commit may
 have succeeded before an acknowledgment was lost. Retry still uses its original
 request ID. No evidence capture path invokes `SyncMerge.mergeNotes`, chooses a
 winner, clears queued edits or resumes a blocked conflict. Resolution remains a
-separate operation with explicit intent and a new revision/request ID; its UI and
-transactional contract are unfinished. The existing snapshot-merging helper is
+separate operation with explicit intent and a new revision/request ID; its UI is
+unfinished. The transaction contract follows below. The existing snapshot-merging helper is
 not a review convergence algorithm.
+
+
+## Conflict-resolution transaction
+
+`AccountStorage.inspectConflict(id)` returns one consistent view: original base,
+latest local projection, latest observed remote version, all related queued
+intents and an equality token. The token is account-scoped data, not an auth
+credential. `resolveConflict(id, token, decision)` rechecks it inside a write
+transaction; newer edits, pulls, acknowledgments or resumed requests require a
+fresh comparison. Only the first conflicting snapshot for that entity can be
+resolved, with a known remote revision newer than its expected revision. Pending
+requests with uncertain receipts cannot be superseded.
+
+`decision.choice` is `local` (latest local projection, including later queued
+edits), `remote`, or `merge` (explicit `data`, optional `deleted:true`). Merging
+requires a known base. Deletion requires `confirmDelete:true`; keeping live data
+across a local or remote tombstone requires `confirmRestore:true`. These flags
+represent explicit choices in the future UI. Any different note `cards`/`log`
+snapshot, including queued intermediate versions or supplied merge data, blocks
+with `review_replay_required`; this API does not implement schedule convergence.
+
+One IndexedDB transaction archives the entire reviewed queue and choice under
+`meta['conflict-resolution:' + id]`, removes only superseded note/profile
+snapshots from the active outbox, and stages a new snapshot/request ID against
+the observed remote revision. Review/retraction operations and immutable ledgers
+remain untouched. The new projection stays dirty until acknowledged. A second
+identical call returns the original operation even after acknowledgment; another
+choice for that same conflict is rejected. Persist the token/decision before
+calling if a UI needs crash recovery. Server retries use the new operation's
+unchanged request ID. A newer server edit still rejects the resolution by CAS.
+
+`resolution(id)` reads the durable archive, including original payloads/request
+IDs, the new operation, its acknowledgment revision when received, and a
+`supersededBy` link if that operation later conflicts and is resolved again.
+Archives are local to the account cache; no automatic pruning or cloud backup is
+implemented. Resume is transactional so an old retry cannot resurrect archived
+work. No store/version/backend migration is required. Future UI callers must
+retain workspace leases, await the transaction before projecting into Model or
+reporting success, and explain blocked review histories without dropping them.

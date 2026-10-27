@@ -106,12 +106,52 @@ const source = ['outbox_core','sync_browser'].map(f=>fs.readFileSync(`src/app/${
     await flush(b);
     assert.equal(server.get('race').revision,2,'unresolved local edits cannot revive the deleted card');
 
+    // Resolve explicitly to the tombstone. Both original edits remain archived,
+    // and a lost receipt/reload retries only the new resolution request.
+    const review = await b.evaluate(id=>account.storage.inspectConflict(id),edit.id);
+    const resolution = await b.evaluate(({id,token})=>account.storage.resolveConflict(id,token,
+      {choice:'remote',confirmDelete:true}),review);
+    loseNextResponse = true; await flush(b);
+    assert.equal(server.get('race').revision,3);
+    await b.reload(); await start(b);
+    const repeated = await b.evaluate(({id,token})=>account.storage.resolveConflict(id,token,
+      {choice:'remote',confirmDelete:true}),review);
+    assert.equal(repeated.requestId,resolution.requestId);
+    await flush(b);
+    assert.equal(requests.filter(id=>id===resolution.requestId).length,2);
+    assert.equal(server.get('race').revision,3);
+    assert.ok(server.get('race').deleted_at);
+    const archive = await b.evaluate(id=>account.storage.resolution(id),edit.id);
+    assert.deepEqual(archive.reviewed.queued.map(op=>op.requestId),[edit.requestId,laterEdit.requestId]);
+    assert.equal(archive.acknowledgment.revision,3);
+    assert.equal(await b.evaluate(async()=>(await account.storage.note('race')).dirty),false);
+
+    // A local edit invalidates an open comparison. A newer server edit after
+    // a valid choice causes another conflict rather than overwriting that edit.
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('same'));
+    const firstId = await b.evaluate(async()=>(await account.storage.list()).find(op=>op.entityId==='same').id);
+    const staleView = await b.evaluate(id=>account.storage.inspectConflict(id),firstId);
+    await stage(b,'same','newest local');
+    await assert.rejects(b.evaluate(({id,token})=>account.storage.resolveConflict(id,token,{choice:'local'}),staleView),/Conflict changed/);
+    const currentView = await b.evaluate(id=>account.storage.inspectConflict(id),firstId);
+    const firstChoice = await b.evaluate(({id,token})=>account.storage.resolveConflict(id,token,{choice:'local'}),currentView);
+    await stage(a,'same','new remote'); await flush(a); await flush(b);
+    assert.equal(server.get('same').data.front,'new remote');
+    assert.equal(await b.evaluate(async id=>(await account.storage.get(id)).state,firstChoice.id),'conflict');
+    await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('same'));
+    const freshView = await b.evaluate(id=>account.storage.inspectConflict(id),firstChoice.id);
+    const finalChoice = await b.evaluate(({id,token})=>account.storage.resolveConflict(id,token,{choice:'local'}),freshView);
+    await flush(b);
+    assert.equal(server.get('same').data.front,'newest local');
+    assert.equal(server.get('same').revision,5);
+    assert.equal((await b.evaluate(id=>account.storage.resolution(id),firstId)).supersededBy,finalChoice.id);
+
     // A stale account handle is stopped when another user signs in.
     await stage(tab,'must-not-send','private A');
     await tab.evaluate(()=>window.switchUser());
     assert.equal((await flush(tab)).stopped,true);
     assert.equal(server.has('must-not-send'),false);
     for(const ctx of contexts) await ctx.close();
-    console.log('ok: two-browser conflicts, lost-response restart, two-tab Web Locks, offline reconnect, tombstone propagation and account stop');
+    console.log('ok: two-browser conflict resolution, archives, lost-response restart, stale choices, Web Locks, tombstones and account stop');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

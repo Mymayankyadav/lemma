@@ -39,6 +39,7 @@ const LemmaOutboxCore = (() => {
       return (await this.storage.list()).filter(x => x.state === 'pending' || x.state === 'conflict');
     }
     async resume(opId) {
+      if (typeof this.storage.resumeConflict === 'function') return this.storage.resumeConflict(opId);
       const op = await this.storage.get(opId);
       if (op && op.state === 'conflict') {
         op.state = 'pending';
