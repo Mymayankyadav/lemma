@@ -53,3 +53,30 @@ The pinned `@capacitor/app@8.0.0` matches Capacitor core. `npm run android:sync`
 On the Android Back gesture or hardware button, Lemma closes an open sheet first, then returns secondary app screens to Home using the existing router (which does not push browser history). At Home, it calls `history.back()` if the native event reports prior history, otherwise `App.exitApp()`. The `resume` event is logged for diagnosis, but does not force sync or mutate data; existing foreground logic remains responsible.
 
 `npm run test:android` checks these decisions with mocked bridge events. Physical-device Back, resume and offline-data verification are still pending. Never uninstall an app with unsaved local data as a workaround.
+
+
+## Shared ANDROID-02 / RELEASE-01 device acceptance protocol (PREPARATION ONLY)
+
+**Status:** test design, not device evidence. Do not run this sheet until the relevant N1–N3 features are merged with green checks. UI-01 must be complete before ANDROID-02 implementation begins. A debug APK alone never satisfies these checks. Reuse unchanged phone/Pages results for RELEASE-01 rather than asking the owner to repeat them.
+
+### Preconditions and safe setup
+
+1. Record tested git SHA, successful Android build run/artifact ID, installed Android/OS version, installed Lemma version and the Pages deployment SHA. Never confuse `main` with a stale downloaded APK. If any artifact changes, identify exactly which checks are invalidated.
+2. Before replacing an installation, back up any device-only cards/review history with the existing export feature and verify the exported file is accessible. Do **not** uninstall, clear app storage, force a workspace transfer or discard an outstanding write to fix a test. An APK may be signed with an incompatible debug key; stop the upgrade check rather than risking local data.
+3. Use a small labeled fixture such as `ANDROID-02 own-device smoke` in the tester's **own opted-in** account workspace. Verify the selected workspace first; never auto-enroll anonymous cards. Avoid real private study content in screenshots/logs. No service-role key, extra production identity or destructive fault injection is required.
+4. Test a phone and an independent browser on Pages belonging to the **same owner**, plus temporary offline mode on the phone. Record local time, connectivity, visible status and whether data was actually committed remotely. Label all simulated/emulator/CI evidence separately from physical-device results.
+
+### Consolidated execution matrix
+
+| ID | Action (only after prerequisite feature exists) | Pass condition | Evidence to retain |
+| --- | --- | --- | --- |
+| D1 | Sideload matching green APK; launch, open card sheet, Back gesture, secondary screen Back, Home Back, background → foreground | Launch without crash, sheet closes first, secondary screen returns Home, no unintended data mutation or loss | Build run/SHA, phone version, observed Back and resume result |
+| D2 | Cancel Google sign-in, then complete system-browser sign-in/deep link; optionally try the existing email-link fallback | Cancel preserves anonymous local workspace; successful callback returns to Lemma signed in to expected identity, without silently transferring local cards | Redacted screen/status and callback outcome; do not collect tokens |
+| D3 | Explicitly choose account workspace; create/update the labeled fixture on phone; observe it on Pages without manual Sync; delete fixture on phone and reload both | Automatic create/update converges; deletion stays deleted without resurrection; dirty local cards are not discarded | Time of each edit, phone/Pages observed revision or UI values |
+| D4 | With a confirmed account fixture, go offline, edit on phone, fully close/reopen offline, then reconnect | Local edit survives restart; sync resumes without manual intervention, one logical update and no duplicate/reversion; offline banner becomes ready | Offline/reconnect timestamps, edit and final values, visible queue/success/error state |
+| D5 | Deny notification permission, then (only after N3 ships) explicitly opt in and grant permission; review due notification and tap action | Default quiet; denial does not break app; one relevant reminder at configured time with no stale duplicates; tap reaches review | Consent state, configured schedule, permission outcome, redacted notification |
+| D6 | Upgrade from an APK with the same trusted signing identity; check notes/reviews and repeat launch/reconnect. Independently publish a Pages update | Existing user data survives compatible update; newer Pages assets **do not** imply native APK code updated; incompatible debug-signing upgrade is explicitly BLOCKED, not worked around by uninstall | Old/new build SHAs, signing identity compatibility, persisted note count |
+
+**Acceptance recording:** for each ID write `PASS`, `FAIL`, `BLOCKED` or `NOT RUN`, test environment, exact build/Pages refs, reproduction detail and an evidence link in `docs/lanes/C.md`. Do not mark ANDROID-02 DONE until every applicable device requirement (including OAuth, offline and permission flows) has physical evidence. If a defect appears, open a lane-specific corrective PR rather than mutating production data. Reuse passing unchanged cases during RELEASE-01, rerunning invalidated behavior only.
+
+**Owner interaction boundary:** prepare the tested APK and this complete checklist first; then request a single focused physical-phone session for only the gates that automation/CI cannot genuinely exercise. Do not ask for passwords, raw access tokens, a second account or signing secrets in chat.
