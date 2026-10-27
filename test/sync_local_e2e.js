@@ -184,6 +184,29 @@ async function debugOutbox(page,uid,entityId) {
     };
   }),{uid,entityId});
 }
+async function debugQueue(page,uid,title) {
+  return page.evaluate(({uid,title})=>new Promise((resolve,reject)=>{
+    const opening=indexedDB.open('lemma-user-'+uid,3);
+    opening.onerror=()=>reject(opening.error);
+    opening.onsuccess=()=>{
+      const db=opening.result,tx=db.transaction(['notes','outbox'],'readonly');
+      const notes=tx.objectStore('notes').getAll(),outbox=tx.objectStore('outbox').getAll();
+      tx.oncomplete=()=>{
+        const n=(notes.result||[]).find(row=>row.data?.title===title);
+        resolve({
+          note:n?{present:true,revision:n.revision,dirty:n.dirty,deleted:n.deleted}:null,
+          operations:(outbox.result||[]).slice(0,15).map(op=>({
+            kind:op.kind,state:op.state,deleted:op.deleted,attempts:op.attempts,
+            expectedRevision:op.expectedRevision,error:String(op.lastError||'').slice(0,180),
+            matchesNote:Boolean(n&&op.entityId===n.id)
+          }))
+        });
+        db.close();
+      };
+      tx.onerror=()=>{db.close();reject(tx.error);};
+    };
+  }),{uid,title});
+}
 function receiptCount(id) {
   return Number(psql('select count(*) from public.client_mutation_receipts where entity_type='+
     sqlQuote('note')+' and entity_id='+sqlQuote(id)));
@@ -301,6 +324,12 @@ async function run(){
     contexts[0]=resumed;
     pages[0]=await resumed.newPage();
     let refreshCalls=0;
+    const refreshStatuses=[];
+    pages[0].on('response',response=>{
+      const url=new URL(response.url());
+      if(url.origin===AUTH && url.pathname==='/auth/v1/token' &&
+          url.searchParams.get('grant_type')==='refresh_token') refreshStatuses.push(response.status());
+    });
     pages[0].on('request', request=>{
       const url=new URL(request.url());
       if (url.origin===AUTH && url.pathname==='/auth/v1/token' &&
@@ -324,9 +353,19 @@ async function run(){
     // After a real refresh_token grant, a new authenticated editor commit
     // must reach Postgres without manual sign-in or a second receipt.
     await eventual('local JWT renewal on persistent browser',()=>refreshCalls>0,90000);
+    await eventual('successful refresh-token HTTP grant',()=>refreshStatuses.includes(200),90000);
     const refreshedTitle='SYNC-04 L7 refreshed '+randomUUID();
     await create(pages[0],refreshedTitle,'Sent after real refresh-token grant');
-    const refreshed=await eventual('fresh-session commit',()=>dbNote(refreshedTitle));
+    const refreshed=await eventual('fresh-session commit',()=>dbNote(refreshedTitle))
+      .catch(async err=>{
+        const info={
+          status:await pages[0].locator('#sync').textContent().catch(()=>'(unavailable)'),
+          refreshStatuses,server:dbNote(refreshedTitle),
+          local:await debugQueue(pages[0],owners[0],refreshedTitle).catch(e=>({error:e.message}))
+        };
+        console.error('post-refresh delivery diagnostic (no secrets):',JSON.stringify(info));
+        throw err;
+      });
     assert.equal(refreshed.revision,1);
     assert.equal(receiptCount(refreshed.id),1);
     console.log('ok: real short-JWT renewal and authenticated write without duplicate');
