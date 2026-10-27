@@ -1,0 +1,260 @@
+{
+  "tables": [
+    {
+      "rls": true,
+      "name": "client_mutation_receipts",
+      "force_rls": false,
+      "anon_select": false,
+      "auth_delete": false,
+      "auth_insert": false,
+      "auth_select": true,
+      "auth_update": false
+    },
+    {
+      "rls": true,
+      "name": "notes",
+      "force_rls": false,
+      "anon_select": false,
+      "auth_delete": false,
+      "auth_insert": false,
+      "auth_select": true,
+      "auth_update": false
+    },
+    {
+      "rls": true,
+      "name": "profiles",
+      "force_rls": false,
+      "anon_select": false,
+      "auth_delete": false,
+      "auth_insert": false,
+      "auth_select": true,
+      "auth_update": false
+    },
+    {
+      "rls": true,
+      "name": "review_events",
+      "force_rls": false,
+      "anon_select": false,
+      "auth_delete": false,
+      "auth_insert": true,
+      "auth_select": true,
+      "auth_update": false
+    },
+    {
+      "rls": true,
+      "name": "review_retractions",
+      "force_rls": false,
+      "anon_select": false,
+      "auth_delete": false,
+      "auth_insert": true,
+      "auth_select": true,
+      "auth_update": false
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "name": "receipt_owner_read",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": null,
+      "roles": "{authenticated}",
+      "table": "client_mutation_receipts"
+    },
+    {
+      "cmd": "DELETE",
+      "name": "owner_delete",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": null,
+      "roles": "{authenticated}",
+      "table": "notes"
+    },
+    {
+      "cmd": "INSERT",
+      "name": "owner_insert",
+      "qual": null,
+      "check": "(user_id = ( SELECT auth.uid() AS uid))",
+      "roles": "{authenticated}",
+      "table": "notes"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "owner_select",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": null,
+      "roles": "{authenticated}",
+      "table": "notes"
+    },
+    {
+      "cmd": "UPDATE",
+      "name": "owner_update",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": "(user_id = ( SELECT auth.uid() AS uid))",
+      "roles": "{authenticated}",
+      "table": "notes"
+    },
+    {
+      "cmd": "DELETE",
+      "name": "owner_delete",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": null,
+      "roles": "{authenticated}",
+      "table": "profiles"
+    },
+    {
+      "cmd": "INSERT",
+      "name": "owner_insert",
+      "qual": null,
+      "check": "(user_id = ( SELECT auth.uid() AS uid))",
+      "roles": "{authenticated}",
+      "table": "profiles"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "owner_select",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": null,
+      "roles": "{authenticated}",
+      "table": "profiles"
+    },
+    {
+      "cmd": "UPDATE",
+      "name": "owner_update",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": "(user_id = ( SELECT auth.uid() AS uid))",
+      "roles": "{authenticated}",
+      "table": "profiles"
+    },
+    {
+      "cmd": "INSERT",
+      "name": "reviews_append",
+      "qual": null,
+      "check": "(user_id = ( SELECT auth.uid() AS uid))",
+      "roles": "{authenticated}",
+      "table": "review_events"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "reviews_read",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": null,
+      "roles": "{authenticated}",
+      "table": "review_events"
+    },
+    {
+      "cmd": "INSERT",
+      "name": "retractions_append",
+      "qual": null,
+      "check": "(user_id = ( SELECT auth.uid() AS uid))",
+      "roles": "{authenticated}",
+      "table": "review_retractions"
+    },
+    {
+      "cmd": "SELECT",
+      "name": "retractions_select",
+      "qual": "(user_id = ( SELECT auth.uid() AS uid))",
+      "check": null,
+      "roles": "{authenticated}",
+      "table": "review_retractions"
+    }
+  ],
+  "functions": [
+    {
+      "args": "p_note_id text, p_expected_revision bigint, p_request_id uuid, p_data jsonb, p_delete boolean",
+      "name": "commit_note",
+      "schema": "lemma_private",
+      "definer": true,
+      "body_md5": "8ee7d53d225992fd8eb2425f6ef026f8",
+      "anon_exec": false,
+      "auth_exec": true,
+      "public_exec": false
+    },
+    {
+      "args": "p_expected_revision bigint, p_request_id uuid, p_data jsonb",
+      "name": "commit_profile",
+      "schema": "lemma_private",
+      "definer": true,
+      "body_md5": "c2b987deb0cabba1aaafa225894cbafc",
+      "anon_exec": false,
+      "auth_exec": true,
+      "public_exec": false
+    },
+    {
+      "args": "p_plan_id uuid, p_expected_revision bigint, p_request_id uuid, p_title text, p_objective text, p_snapshot jsonb, p_change_summary text, p_context_id uuid, p_expected_context_revision bigint, p_author_model text",
+      "name": "publish_study_plan",
+      "schema": "lemma_private",
+      "definer": true,
+      "body_md5": "128451763c3334816044e6833eeded88",
+      "anon_exec": false,
+      "auth_exec": true,
+      "public_exec": false
+    },
+    {
+      "args": "p_note_id text, p_expected_revision bigint, p_request_id uuid, p_data jsonb, p_delete boolean",
+      "name": "commit_note",
+      "schema": "public",
+      "definer": false,
+      "body_md5": "6a026783fb23e6c3135b3b296b884824",
+      "anon_exec": false,
+      "auth_exec": true,
+      "public_exec": false
+    },
+    {
+      "args": "p_expected_revision bigint, p_request_id uuid, p_data jsonb",
+      "name": "commit_profile",
+      "schema": "public",
+      "definer": false,
+      "body_md5": "003ea944ff09b096faea72ab93c9263c",
+      "anon_exec": false,
+      "auth_exec": true,
+      "public_exec": false
+    },
+    {
+      "args": "p_plan_id uuid, p_expected_revision bigint, p_request_id uuid, p_title text, p_objective text, p_snapshot jsonb, p_change_summary text, p_context_id uuid, p_expected_context_revision bigint, p_author_model text",
+      "name": "publish_study_plan",
+      "schema": "public",
+      "definer": false,
+      "body_md5": "6ba0824f81d92d521458b9e83694de47",
+      "anon_exec": false,
+      "auth_exec": true,
+      "public_exec": false
+    }
+  ],
+  "migrations": [
+    {
+      "name": "initial_learning_state",
+      "version": "20261026085028"
+    },
+    {
+      "name": "versioned_study_planning",
+      "version": "20261026090019"
+    },
+    {
+      "name": "cards_reviews_sources",
+      "version": "20261026090746"
+    },
+    {
+      "name": "atomic_plan_publication",
+      "version": "20261026090844"
+    },
+    {
+      "name": "revision_safe_note_writes",
+      "version": "20261026090959"
+    },
+    {
+      "name": "harden_rpc_implementations",
+      "version": "20261026091125"
+    },
+    {
+      "name": "enforce_note_rpc_writes",
+      "version": "20261026121817"
+    },
+    {
+      "name": "review_retractions",
+      "version": "20261026130428"
+    },
+    {
+      "name": "revision_safe_profiles",
+      "version": "20261026153542"
+    }
+  ]
+}

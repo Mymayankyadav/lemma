@@ -106,6 +106,31 @@ async function login(page,email){
   await page.locator('.sheet-foot .btn-primary').click();
   await page.waitForFunction(()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),null,{timeout:T});
 }
+async function waitForAccountWorkspace(page, expectedUserId, timeout = T) {
+  // build.js bundles internal Store/App into a closed scope; they are NOT
+  // browser globals. Verify the real user-facing mode using Settings, where
+  // "Return to device workspace" is visible only when Store.mode=account.
+  const until=Date.now()+timeout;
+  while(Date.now()<until){
+    const user=await browserUserId(page);
+    if (user !== expectedUserId) throw new Error('Persisted auth identity changed during account restoration');
+    if (!await page.locator('#set-cloud-account').count()) {
+      await page.locator('.tabs button[data-go="settings"]').click();
+    }
+    const active=await page.getByRole('button',{name:'Return to device workspace',exact:true})
+      .isVisible().catch(()=>false);
+    if(active) return;
+    await sleep(500);
+  }
+  const evidence={
+    remembered:await page.evaluate(id=>localStorage.getItem('lemma-account-workspace-v1')===id,expectedUserId),
+    syncStatus:await page.locator('#sync').textContent().catch(()=>'(missing)'),
+    accountSwitchVisible:await page.getByRole('button',{name:'Use account workspace',exact:true}).isVisible().catch(()=>false),
+    deviceSwitchVisible:await page.getByRole('button',{name:'Return to device workspace',exact:true}).isVisible().catch(()=>false)
+  };
+  console.error('UI account-restore diagnostic (no credentials):',JSON.stringify(evidence));
+  throw new Error('Account workspace did not become visibly active after browser relaunch');
+}
 async function browserUserId(page) {
   return page.evaluate(() => {
     for(let i=0;i<localStorage.length;i++){
@@ -339,6 +364,9 @@ async function run(){
     const reopenedUid=await eventual('restored login after browser relaunch',
       ()=>browserUserId(pages[0]),T);
     assert.equal(reopenedUid,owners[0],'browser relaunch must not switch identity');
+    // Do not open editor just because a token exists. The remembered private
+    // workspace may still be hydrating its IndexedDB model after relaunch.
+    await waitForAccountWorkspace(pages[0],owners[0],90000);
     const offlineRow=await eventual('offline edit delivered after relaunch',
       ()=>dbNote(offlineTitle)?.revision===2 ? dbNote(offlineTitle) : null,90000);
     assert.equal(offlineRow.id,onlineBase.id,'offline edit must not create another note');
@@ -354,6 +382,7 @@ async function run(){
     // must reach Postgres without manual sign-in or a second receipt.
     await eventual('local JWT renewal on persistent browser',()=>refreshCalls>0,90000);
     await eventual('successful refresh-token HTTP grant',()=>refreshStatuses.includes(200),90000);
+    await waitForAccountWorkspace(pages[0],owners[0],90000);
     const refreshedTitle='SYNC-04 L7 refreshed '+randomUUID();
     await create(pages[0],refreshedTitle,'Sent after real refresh-token grant');
     const refreshed=await eventual('fresh-session commit',()=>dbNote(refreshedTitle))
