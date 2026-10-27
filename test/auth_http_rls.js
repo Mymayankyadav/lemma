@@ -93,7 +93,8 @@ async function runProbe(input, fetchImpl = fetch) {
       ownedNote(ownerToken,victimId),
       select(attackerToken,'notes',{id:'eq.' + victimId},'id')
     ]);
-    assert.deepEqual(after,before,'Owner fixture changed during denial probe');
+    if (JSON.stringify(after) !== JSON.stringify(before))
+      throw new Error('Owner fixture changed during denial probe');
     if (wrongOwner.length) throw new Error('Cross-owner denial probe created a note');
   }
   return { accounts:2, tables:TABLES.length, deniedWrites:2 };
