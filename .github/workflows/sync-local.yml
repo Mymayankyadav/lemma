@@ -59,10 +59,10 @@ jobs:
           # CLI >= 2.122 supports ECR -> GHCR -> Docker Hub image fallbacks.
           # setup-cli can set GHCR as an explicit override; that DISABLES
           # fallback, so unset it for this single local-only command.
-          # On-demand setup pulls Postgres immediately and starts Auth/REST/
-          # Realtime/Mailpit when the upcoming L6/L7 checks first use them.
+          # Retain Auth, PostgREST, Realtime and Mailpit for L6/L7.
+          # Exclude other services to minimize container image pulls.
           for attempt in 1 2 3; do
-            if env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start --preparation on-demand; then
+            if env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start --exclude storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then
