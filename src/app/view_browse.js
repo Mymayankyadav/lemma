@@ -90,7 +90,7 @@ const BrowseView = (() => {
     listEl = h('div', { class: 'note-list' });
     graphHost = h('div', { class: 'graph-host' });
     const page = h('div', { class: 'page browse' },
-      h('div', { class: 'page-head' }, h('h1', { class: 'page-title', text: 'Browse' }), countEl),
+      h('div', { class: 'page-head' }, h('h1', { class: 'page-title', text: 'Cards' }), countEl),
       h('div', { class: 'browse-bar' }, h('div', { class: 'search-wrap', html: icon('search', 18) }, search), sortBtn, viewBtn),
       chips,
       st.mode === 'graph' ? graphHost : listEl);
