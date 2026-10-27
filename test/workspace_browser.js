@@ -18,7 +18,13 @@ module.exports = async ({ browser, newPage, ok }) => {
       const client = {
         auth: {
           onAuthStateChange(fn) { callbacks.add(fn); return { data:{subscription:{unsubscribe:() => callbacks.delete(fn)}} }; },
-          getUser:async () => ({data:{user:null},error:null})
+          getUser:async () => ({data:{user:null},error:null}),
+          async signOut() {
+            __identity.signOutCalls++;
+            session = null;
+            for (const fn of callbacks) fn('SIGNED_OUT', session);
+            return {error:null};
+          }
         },
         channel() { return { on() { return this; }, subscribe(fn) { fn('SUBSCRIBED'); return this; } }; },
         removeChannel:async () => {}
@@ -47,6 +53,7 @@ module.exports = async ({ browser, newPage, ok }) => {
       window.LemmaSupabase = {createClient:() => client};
       LemmaAccount.init();
       window.__identity = {
+        signOutCalls:0,
         emit(id) {
           session = id ? {user:{id},access_token:'mock-token'} : null;
           for (const fn of callbacks) fn(id ? 'SIGNED_IN' : 'SIGNED_OUT', session);
@@ -74,6 +81,28 @@ module.exports = async ({ browser, newPage, ok }) => {
       await page.click('.sheet-head .icon-btn[aria-label="Close"]');
       await page.waitForSelector(selector, {state:'hidden'});
     };
+    // Exercise the Settings controls rather than bypassing their safeguards
+    // through the internal controller. Only the auth service is mocked here.
+    await page.waitForFunction(id => __editor.LemmaSync.status.userId === id &&
+      __editor.LemmaSync.status.phase === 'ready', A);
+    await page.evaluate(() => __editor.App.go('settings'));
+    await page.waitForSelector('#set-cloud-account');
+    ok(await page.locator('#set-cloud-account button.btn-primary').first().textContent() === 'Continue with Google',
+      'Settings presents Google as the primary sign-in action');
+    await page.getByRole('button', {name:'Use account workspace',exact:true}).click();
+    ok(await page.evaluate(id => __editor.Store.mode === 'local' &&
+      __editor.Model.notes.has(id) && __editor.App.workspaceController.activeId === null, anonymousId) &&
+      await page.getByText('Export a backup and check the acknowledgment before switching.', {exact:true}).isVisible(),
+      'workspace activation without backup acknowledgment preserves the device workspace');
+    await page.getByRole('button', {name:'Sign out',exact:true}).click();
+    await page.waitForFunction(() => __editor.LemmaAccount.user === null &&
+      __editor.LemmaSync.status.phase === 'signed-out');
+    ok(await page.evaluate(id => __identity.signOutCalls === 1 && __editor.Store.mode === 'local' &&
+      __editor.Model.notes.has(id) &&
+      JSON.parse(localStorage.getItem('lemma.draft.v1')).front === 'Anonymous draft', anonymousId),
+      'Settings Sign out calls the auth client once and retains device cards and draft');
+    await change(A);
+    await page.evaluate(() => __editor.App.go('home'));
     await activate(A);
     ok(await page.evaluate(id => !__editor.Model.notes.has(id) && __editor.Model.notes.size === 1, anonymousId),
       'explicit account activation leaves anonymous cards in their original database');
