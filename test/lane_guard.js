@@ -67,7 +67,7 @@ function approvedL8MigrationPaths() {
       'supabase/migrations/20261026153542_revision_safe_profiles.sql']
   ];
   const expected = pairs.map(([oldPath,newPath]) =>
-    'R100\\t' + oldPath + '\\t' + newPath).sort();
+    'R100\t' + oldPath + '\t' + newPath).sort();
   // Detect all deletion and rename operations, not just these two paths.
   const actual = git(['diff','--find-renames=100%','--name-status',base+'...HEAD'])
     .filter(line => /^[DR]/.test(line)).sort();
