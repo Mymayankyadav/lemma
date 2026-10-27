@@ -6,7 +6,7 @@ Next action: finish AUTH-01 S2: verify one live Pages sign-out/re-login and the 
 | --- | --- |
 | Status | IN_PROGRESS (AUTH-01 S2; live sign-out pending) |
 | Current task | AUTH-01 S2 verification, then SYNC-04 live gates |
-| Open branch / PR | `lane-a/auth-01-live-verification`; PR pending |
+| Open branch / PR | [PR #13](https://github.com/Mymayankyadav/lemma/pull/13), `lane-a/auth-01-live-verification`; adopt this branch while open |
 | Baseline | `main@310ef6a`, regression 40466003325 and Android 40466003236 SUCCESS. SYNC-04 M1 merged in PR #8 at `5efdf3e`. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. No migrations or persistent backend writes in this slice. |
 
