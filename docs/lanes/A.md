@@ -1,12 +1,12 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L2 — verify client-side tombstone pull/removal and absence after browser reload using an independently authenticated application session. Server-side deletion of the one owner-approved synthetic fixture passed; do not claim UI propagation or offline recovery from SQL evidence. Continue independent-device and two-real-identity HTTP RLS gates before marking SYNC-04 DONE.
+Next action: SYNC-04 L3 — verify the already-tombstoned synthetic fixture disappears from the owner-signed-in account UI, stays absent after reload, and is not resurrected across an independently authenticated browser/device. The server tombstone and mocked client regression passed, but live client propagation is NOT VERIFIED. Then run offline restart, expiry, lost-response, and two-real-identity HTTP RLS gates; do not mark SYNC-04 DONE.
 
 | Field | Value |
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
-| Current task | SYNC-04 L2 owner-approved server tombstone verified; client propagation/reload still unverified |
-| Delivery | [Draft PR #23](https://github.com/Mymayankyadav/lemma/pull/23), `lane-a/sync-04-l1-live-write`. Lane A reassigned and branch adopted. Latest `main` integrated without rebasing; PR remains draft and unmerged. AUTH-01 PR #17 merged as `e13582d`. |
+| Current task | SYNC-04 L2 server tombstone and mock client regression verified; independent live client propagation pending |
+| Delivery | [PR #23](https://github.com/Mymayankyadav/lemma/pull/23), `lane-a/sync-04-l1-live-write`. Lane A reassigned and branch adopted. Latest `main` integrated without rebasing; PR is ready for review and remains unmerged. AUTH-01 PR #17 merged as `e13582d`. |
 | Baseline | L1 tested on `main@2c1f554`: [regression 40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724), Android 40478252732 and Pages 40478252681 SUCCESS. Latest `main@1125388` [regression 40484074497](https://github.com/Mymayankyadav/lemma/actions/runs/40484074497) and [Android 40484074547](https://github.com/Mymayankyadav/lemma/actions/runs/40484074547) SUCCESS; post-integration PR CI regression 40502775044 and Android 40502775101 SUCCESS. L1 live checks ran against the earlier deployed AUTH-01 build; they do not certify lane B's later navigation change. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
 
@@ -30,7 +30,7 @@ Next action: SYNC-04 L2 — verify client-side tombstone pull/removal and absenc
 - Reloading restored the remembered account workspace and the same note. An asynchronous startup briefly showed the empty device view before account restoration; the eventual rendered account view was verified.
 - Opened a second tab in the **same browser profile**, then changed the front through the original editor to **SYNC-04 updated automatically. Temporary verification card.** and clicked **Save**. The peer view displayed the update automatically without manual refresh/sync. Database verification found **1 live note, revision 2, 2 mutation receipts**, matching the updated front.
 - This proves automatic create/update delivery, reload recovery and same-profile cross-tab invalidation for this fixture. Shared cookies/storage mean it does **not** prove independent-device convergence, remote-only Model invalidation or another identity's isolation.
-- Deletion was **NOT RUN**: inspected **Delete this note? / Its cards and review history will be removed.**, then cancelled. No normal UI recovery flow was shown, so action-time owner confirmation is required before the final Delete. The one labelled synthetic note remains live at revision 2; all existing learning data and receipts are preserved.
+- Deletion was **NOT RUN**: inspected **Delete this note? / Its cards and review history will be removed.**, then cancelled. No normal UI recovery flow was shown, so action-time owner confirmation is required before the final Delete. At the L1 handoff the synthetic note was live at revision 2; the owner subsequently approved its L2 server-side tombstone at revision 3. All existing learning data and receipts were preserved.
 - This PR is evidence/documentation only. Local `npm run test:plan`, `node test/lane_guard.js A` and `git diff --check` SUCCESS. Full PR CI PENDING at handoff. The successor incorporated `main@1125388` as an additional parent in a no-rebase merge, preserving concurrent lane changes; post-integration PR CI must pass before any PR merge. No deletion or further live mutation is authorized by this handoff alone.
 
 ## Prior evidence and limits
@@ -59,3 +59,11 @@ PR #14 (`dbfb961`) consumed the owner's one-time workflow-only exception; owners
 - Independent read-only verification after commit: the one fixture is **tombstoned, revision 3, three mutation receipts, zero reviews**. No row hard-deleted; no unrelated content was targeted, and no credentials/IDs are published.
 - **Still unverified:** client outbox acknowledgment/propagation, live remote invalidation, UI disappearance, reload and offline no-resurrection. These cannot be inferred from the server RPC. An existing open client could retain a stale local copy until it pulls the tombstone. Do not mark deletion end-to-end complete.
 - PR #23 was updated from prior `main` without rebase; regression [40502775044](https://github.com/Mymayankyadav/lemma/actions/runs/40502775044), Android [40502775101](https://github.com/Mymayankyadav/lemma/actions/runs/40502775101), screenshot publication SUCCESS. SYNC-04 remains NEXT, PR remains unmerged until this update re-passes CI.
+
+## SYNC-04 L2 follow-up — mocked client deletion coverage, 27 October 2026
+
+- Added [account Model tombstone invalidation regression](https://github.com/Mymayankyadav/lemma/commit/8ad6942b1201248780c4d1b497e68689e6d5d62b) in `test/account_sync.js`: pending local writes and open edits block projection; idle clean Model deletes the remote note; a stale restored projection disappears on refresh; dirty drafts and unrelated notes survive. No client write is queued to replay the tombstoned note.
+- Added [independent-cache restart regression](https://github.com/Mymayankyadav/lemma/commit/52f34ae966d6423ac0112a6d2fe13063ec680d0e) in `test/browser_sync.js`: a second Chromium context ingests the tombstone and keeps its revision-2 deletion marker across reload, with no server resurrection.
+- Automated [regression run 40506123997](https://github.com/Mymayankyadav/lemma/actions/runs/40506123997), [Android run 40506123832](https://github.com/Mymayankyadav/lemma/actions/runs/40506123832), and screenshot publication all **SUCCESS** for test commit `52f34ae`.
+- This is mocked transport, not a real owner-authenticated web UI, a real-device HTTP test, or proof of no resurrection after a browser's offline restart. We lack access to the previous agent's signed-in browser session. Do not infer those gates from CI.
+- The only live record changed by this L2 handoff was the explicitly approved synthetic server tombstone described above. No schema migration or additional production note writes.
