@@ -5,9 +5,9 @@ Next action: SYNC-04 L3 — verify the already-tombstoned synthetic fixture disa
 | Field | Value |
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
-| Current task | SYNC-04 L2 server tombstone and mock client regression verified; independent live client propagation pending |
-| Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) **MERGED** to `main` as `6550475` after green CI. Current L3 handoff branch: `lane-a/sync-04-l3-handoff`. AUTH-01 PR #17 merged as `e13582d`. |
-| Baseline | L1 tested on `main@2c1f554`: [regression 40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724), Android 40478252732 and Pages 40478252681 SUCCESS. Latest `main@1125388` [regression 40484074497](https://github.com/Mymayankyadav/lemma/actions/runs/40484074497) and [Android 40484074547](https://github.com/Mymayankyadav/lemma/actions/runs/40484074547) SUCCESS; post-integration PR CI regression 40502775044 and Android 40502775101 SUCCESS. L1 live checks ran against the earlier deployed AUTH-01 build; they do not certify lane B's later navigation change. |
+| Current task | SYNC-04 L3 pending live account-device gates; implementing deferred Model invalidation after editor/dirty writes |
+| Delivery | SYNC-04 L1/L2 [PR #23](https://github.com/Mymayankyadav/lemma/pull/23) merged as `6550475`; L3 checklist [PR #24](https://github.com/Mymayankyadav/lemma/pull/24) merged as `f15f4d2`. Current bounded L3 reliability branch: `lane-a/sync-04-l3-deferred-invalidation`. AUTH-01 PR #17 merged as `e13582d`. |
+| Baseline | `main@f15f4d2` [regression 40507523955](https://github.com/Mymayankyadav/lemma/actions/runs/40507523955), [Android 40507523994](https://github.com/Mymayankyadav/lemma/actions/runs/40507523994) SUCCESS. Earlier live L1 tests ran against the previous deployed AUTH-01 build; they do not certify later navigation changes. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. L1 created/updated one synthetic note through the app; no migration, credential configuration or existing learning-data changes. |
 
 ## AUTH-01 S2 — live web gate COMPLETE, 27 October 2026
@@ -79,3 +79,12 @@ The previous agent's authenticated browser profile is not accessible through the
 5. For HTTP RLS isolation, use two independently authenticated real identities provided by the owner, with distinct test fixtures, and verify read/write denial across each identity. Existing rollback SQL simulated roles are insufficient. Never create shadow users, reveal tokens, or change authorization policy for a test.
 
 SYNC-04 remains **NEXT**, not DONE. Until independent live testing is possible, rely only on previously scoped L1 live UI observations, the approved L2 server RPC, and green mocked regression tests. The next agent must verify current `main` and the status of this handoff PR before any further branch work.
+
+## SYNC-04 L3 — deferred account Model invalidation reliability
+
+- In `src/app/account_sync.js`, after the remote owner-scoped cache is updated, projection into the visible Model can be blocked by a sheet, active review, pending local write, or workspace transition. Previously a blocked projection just returned: without a further focus/navigation event it could leave the deleted note visible until a periodic fetch. This is a **source-level reliability gap**, not an observed live-device failure.
+- The bounded fix schedules a 500 ms **local-cache-only** retry while the same owner account workspace remains active. Once idle and with no pending/failed Store writes, it projects the already-fetched tombstone; it does **not** repeatedly call Supabase or discard outbox entries. A failed Store write continues to block projection until explicitly resolved.
+- A generation/ticket check guards every async boundary. Leaving the account cancels the retry timer and invalidates in-flight cache reads so a previous identity cannot update the new visible Model.
+- New `test/account_sync.js` regressions cover idle-after-editor-close, pending-write-drain, preservation of dirty and unrelated notes, no automatic local mutation, and cancellation of a delayed cache read after sign-out. Existing `test/browser_sync.js` tests still cover independent IndexedDB tombstone durability under mocked transport.
+- **Gate status:** New changes require green PR CI before merging. These are mock/VM checks; they do **not** certify authenticated real-browser tombstone propagation, independent-device convergence, offline app restart, expired HTTP session, lost response after server commit or two-real-identity HTTP RLS.
+- Never perform another production delete or replace an existing learning note to simulate these gates. The previously authorized synthetic note remains tombstoned. No database migration is part of this slice.
