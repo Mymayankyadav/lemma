@@ -15,11 +15,11 @@ The plan defines exact task gates, a minimal mathematics-focused UI and private 
 ## What currently exists
 
 - Vanilla JavaScript app, mathematical Markdown/KaTeX, original FSRS-6, proof steps, prerequisites, search/graph, statistics, local import/export and IndexedDB persistence.
-- Optional account login, explicit transfer/comparison and substantial per-account outbox, revision RPC, review/retraction and workspace-isolation infrastructure.
+- Optional account login (Google first, email link fallback; live web sign-in verified), explicit transfer/comparison and substantial per-account outbox, revision RPC, review/retraction and workspace-isolation infrastructure.
 - **Account editing/automatic sync is still gated.** Signing in does not silently migrate local cards. Cross-device scheduling remains a release gate.
 - AI helpers depend on Claude host capabilities; they are not general ChatGPT/Claude connectivity on the deployed website.
 - Study-context/plan/checkpoint schema exists; the complete learning UI and portable tutor workflow remain planned.
-- Capacitor dependencies/config exist; a native Android project/release has not yet been verified.
+- Native Android (Capacitor) project with a CI-built debug APK and native Back/resume shell; not yet verified on a physical device, no release build.
 
 See the plan for dated CI/deployment evidence; source and observed results take precedence over historical prose.
 
