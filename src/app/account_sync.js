@@ -198,7 +198,13 @@ const LemmaSync = (() => {
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) schedule();
     });
-    setInterval(() => { if (!document.hidden) schedule(); }, 120000);
+    // Realtime is preferred, but missing/disconnected websocket events must
+    // not strand a clean remote edit for two minutes. Reconcile periodically
+    // only for a signed-in, online, foreground workspace. schedule() coalesces
+    // with an in-progress pull and never forces dirty-cache overwrites.
+    setInterval(() => {
+      if (account && navigator.onLine && !document.hidden) schedule();
+    }, 15000);
     attach(LemmaAccount.user).catch(() => {});
   }
   // Internal workspace transition only; never expose activation via login UI.

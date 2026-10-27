@@ -100,6 +100,19 @@ async function login(page,email){
   await page.locator('.sheet-foot .btn-primary').click();
   await page.waitForFunction(()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),null,{timeout:T});
 }
+async function browserUserId(page) {
+  return page.evaluate(() => {
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if (!key || !key.endsWith('-auth-token')) continue;
+      try {
+        const data=JSON.parse(localStorage.getItem(key));
+        if(data?.access_token && data?.user?.id) return data.user.id;
+      } catch { /* not a session entry */ }
+    }
+    return null;
+  });
+}
 async function browse(page){
   await page.locator('.tabs button[data-go="browse"]').click();
   await page.locator('#main').waitFor();
@@ -175,11 +188,20 @@ async function run(){
     await sleep(1100); // GoTrue local OTP email minimum frequency.
     await login(pages[1],email);
     await login(pages[2],stranger);
+    const owners=await Promise.all(pages.map(browserUserId));
+    assert.ok(owners.every(Boolean),'each persistent browser must have a real local auth session');
+    assert.equal(owners[0],owners[1],'two devices must use exactly the same auth.uid()');
+    assert.notEqual(owners[0],owners[2],'third browser must be a different auth.uid()');
 
     await create(pages[0],label,'Initial independent-device proof');
     const created=await eventual('server create',()=>dbNote(label));
     assert.equal(created.revision,1);
-    await eventual('peer remote create',async()=>await (await row(pages[1],label)).count()===1);
+    await eventual('peer remote create',async()=>await (await row(pages[1],label)).count()===1)
+      .catch(async err => {
+        const status=await pages[1].locator('#sync').textContent().catch(()=>'(unavailable)');
+        console.error('peer convergence diagnostic (no credentials):',status);
+        throw err;
+      });
     assert.equal(await (await row(pages[2],label)).count(),0,'other owner cannot see private note');
 
     await edit(pages[0],label,'Updated remotely without manual sync');
