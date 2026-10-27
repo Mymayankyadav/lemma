@@ -117,7 +117,9 @@ module.exports = async ({browser, newPage, ok}) => {
     await page.getByRole('button',{name:'Save resolution to device'}).click();
     ok((await page.locator('.conflict-controls [role=status]').textContent()).includes('Confirm deletion'),
       'delete choice requires explicit confirmation');
-    await page.locator('.conflict-confirm input[type=checkbox]').first().check();
+    const deleteConsent = page.getByLabel('I understand this will delete the card in my account.');
+    await deleteConsent.check();
+    ok(await deleteConsent.isChecked(), 'deletion consent is checked before saving');
     await page.getByRole('button',{name:'Save resolution to device'}).click();
     try {
       await page.waitForFunction(()=>document.querySelector('.conflict-center')?.textContent.includes('blocked operation'),null,{timeout:12000});
@@ -125,6 +127,8 @@ module.exports = async ({browser, newPage, ok}) => {
       const detail = await page.evaluate(async () => ({
         panel: document.querySelector('.conflict-center')?.textContent,
         alert: document.querySelector('.conflict-controls [role=status]')?.textContent,
+        consent: [...document.querySelectorAll('.conflict-review .conflict-confirm input')].map(x=>({checked:x.checked,hidden:x.closest('label')?.hidden})),
+        saveDisabled: document.querySelector('.conflict-controls .btn-primary')?.disabled,
         note: await __editor.LemmaSync.accountHandle().storage.note('deleted'),
         outbox: (await __editor.LemmaSync.accountHandle().storage.list()).map(o=>({
           id:o.id,kind:o.kind,entityId:o.entityId,state:o.state,resolves:o.resolves
