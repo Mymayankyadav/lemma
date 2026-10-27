@@ -1,26 +1,27 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L8 — check CI exact read-only security metadata parity (RLS, policies, RPC hashes/grants, migrations), then merge latest-head green and mark SYNC-04 DONE. Coordinate view_settings.js ownership transfer in integration.
+Next action: Merge PR #31 after its final documentation head passes all CI, verify the local Supabase L5–L8 gate is green on main, then mark SYNC-04 DONE in a scoped lane A follow-up PR. Coordinate view_settings.js ownership transfer separately in integration.
 
 | Field | Value |
 | --- | --- |
-| Status | SYNC-04 NEXT; L5 #28, L6 #29, L7 #30 merged; L8 catalog parity PASSED, final full browser/Android CI still pending |
+| Status | SYNC-04 NEXT pending post-merge main gate; L5 #28, L6 #29, L7 #30 merged; L8 PR #31 complete on PR latest head, all four checks SUCCESS |
 | Current task | SYNC-04 L8 — production/local security and migration parity |
 | Branch | `lane-a/sync-04-l8-security-parity` from `main@f8b3f2c` |
 | Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
 | L5 implementation | `supabase/config.toml` (auth redirect loopback, 60s JWT, Mailpit), `.github/workflows/sync-local.yml` (isolated `supabase start`, `supabase db reset --local --no-seed`), `test/sync_local_smoke.js` (compare all migration versions and RLS flags) |
 | L5 verification | Initial Docker run [40522126776](https://github.com/Mymayankyadav/lemma/actions/runs/40522126776) SUCCESS: PostgreSQL 17, 9 exact migrations, 4 RLS flags. Latest head `a1b5d8f` regression [40524383895](https://github.com/Mymayankyadav/lemma/actions/runs/40524383895) and Android [40524383890](https://github.com/Mymayankyadav/lemma/actions/runs/40524383890) SUCCESS; local-stack [40524384026](https://github.com/Mymayankyadav/lemma/actions/runs/40524384026) FAILED pulling GHCR Docker images (`toomanyrequests`, allowed 44000/min), before database tests. Authentication and retries did not overcome shared-runner throttling. |
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
-| Remaining gate | L8 current-head regression, approved-rename Android lane guard, and local browser fault checks must all pass before merging; SYNC-04 remains NEXT. |
+| Remaining gate | PR #31 final documentation-head CI, squash merge and post-merge main local-stack CI. Mark SYNC-04 DONE only after main CI succeeds. |
 
-## SYNC-04 L8 — read-only snapshot (CI pending)
+## SYNC-04 L8 — read-only snapshot (PR-head CI complete)
 
 - Production Lemma (`yemqnhnztlbyxmjxidis`) queried with SELECT-only metadata introspection: **5 protected tables, 13 RLS policies, 6 RPC bodies/grants and 9 ordered migrations**. No production rows, secrets or changes.
 - `supabase/tests/security_snapshot.sql` reads identical catalog data from loopback CI Postgres only; `test/sync_security_parity.js` compares it to `security_snapshot.expected.json` recorded from production.
 - Initial L8 CI found two **version-only** migration mismatches: `review_retractions` (production 20261026130428 vs repo 20261026135000) and `revision_safe_profiles` (production 20261026153542 vs repo 20261026203000). Reconciled repository migration filenames to **existing production history versions** while preserving exact SQL blob SHA hashes, without changing live schema. Re-run CI to prove full parity.
 - **Real CI local/production parity passed** [40550044392](https://github.com/Mymayankyadav/lemma/actions/runs/40550044392), exact five tables, 13 policies, six RPC definitions/grants and nine migrations. A later L7 browser test intermittently failed; the previous check erroneously referenced bundled private JavaScript symbols inaccessible as globals. New UI-only assertion waits for Settings' visible "Return to device workspace" before subsequent edits.
 - Owner approved exactly the two unchanged-content migration renames on 27 October 2026. Integration [PR #32](https://github.com/Mymayankyadav/lemma/pull/32) merged at `bc4d3a5`, adding a PR #31-only byte-verifying exception inside the integration-owned lane guard. Do not weaken or modify Lane C workflow.
-- This branch is not complete until latest-head all gates are green. SYNC-04 remains NEXT.
+- **Full latest implementation head `1ac17f3` SUCCESS:** [local-stack 40554180723](https://github.com/Mymayankyadav/lemma/actions/runs/40554180723) including local metadata diff, two-user HTTP RLS and independent-device/refresh/offline edit/lost-response; [Android + lane guard 40554180618](https://github.com/Mymayankyadav/lemma/actions/runs/40554180618); [regression + screenshots 40554180657](https://github.com/Mymayankyadav/lemma/actions/runs/40554180657) (regression retry passed after known unrelated intermittent UI preview test). The app UI-mode readiness check replaced an invalid assumption about bundle-private global symbols.
+- **Post-merge main-branch integration smoke is still required** before marking SYNC-04 DONE; update the canonical task row only once observed.
 
 ## SYNC-04 L7 — independent real browser contexts (initial test, incomplete gate)
 
