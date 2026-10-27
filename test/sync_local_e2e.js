@@ -82,6 +82,12 @@ async function knownMessages() {
 }
 async function login(page,email){
   await page.goto(APP);
+  // App.boot() builds a shell immediately and finishes loading IndexedDB
+  // asynchronously; clicking Settings before boot finishes is overwritten by
+  // its final App.go('home'), which detaches the sign-in input mid-fill.
+  await page.waitForFunction(
+    () => document.querySelector('#sync')?.textContent?.includes('Saved on device'),
+    null,{timeout:T});
   await page.locator('.tabs button[data-go="settings"]').click();
   await page.locator('#set-cloud-account input[type=email]').fill(email);
   const before=await knownMessages();
