@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const FSRS = require('../src/fsrs.js');
-const { inspect } = require('../src/app/review_replay.js');
+const { inspect, project } = require('../src/app/review_replay.js');
 
 const noteId = 'note-1';
 const dayMs = 86400000;
@@ -67,3 +67,56 @@ assert.equal(undone.ordinals['1'].totalReviews, 2);
 assert.deepEqual(undone.ordinals['1'].trace.map(t => t.eventId), ['a']);
 
 console.log('ok: read-only FSRS replay diagnostics fail closed and ignore undone reviews');
+
+// Schedule projection is independent of ledger arrival order and host timezone.
+const projection = project(snapshot, reviews, []);
+assert.equal(projection.status, 'projected');
+assert.deepEqual(projection.eventIds, ['a', 'b']);
+assert.deepEqual(project(snapshot, [...reviews].reverse(), []), projection);
+assert.deepEqual(Object.keys(projection.cards['1']).sort(),
+  ['st','due','s','d','last','step','reps','lapses'].sort());
+assert.equal(projection.cards['1'].reps, 2);
+
+const sameTime = event('A', 20000);
+const sameTime2 = event('z', 20000, {grade: 1});
+const equalTimeSnapshot = row([sameTime, sameTime2]);
+const tie = project(equalTimeSnapshot, [sameTime2, sameTime], []);
+assert.deepEqual(tie.eventIds, ['A', 'z']);
+assert.deepEqual(project(equalTimeSnapshot, [sameTime, sameTime2], []), tie);
+
+const c = event('c', 20002);
+const three = [a,b,c];
+const threeSnapshot = row(three, {st: 2, reps: 3});
+const middleRetracted = project(threeSnapshot, three, [undo('middle','b')]);
+const withoutMiddle = project(row([a,c]), [a,c], []);
+assert.equal(middleRetracted.status, 'projected');
+assert.deepEqual(middleRetracted.cards, withoutMiddle.cards);
+assert.deepEqual(middleRetracted.eventIds, ['a','c']);
+
+const adjusted = event('b', 20001, {
+  scheduling_provenance: {
+    ...provenance(20001),
+    weights: FSRS.DEFAULT_W.map((w,i) => i === 0 ? w + 0.01 : w)
+  }
+});
+const change = project(row([a,adjusted]), [adjusted,a], []);
+assert.equal(change.status, 'projected');
+assert.equal(change.cards['1'].reps, 2);
+
+const rolloverOffset = -330 * 60000 + 4 * 3600000;
+const edge = 20000 * dayMs + rolloverOffset;
+const justBefore = event('before', 19999, { occurred_at_ms: edge - 1000,
+  scheduling_provenance: {...provenance(19999),preview_at_ms:edge - 1000} });
+const justAfter = event('after', 20000, { occurred_at_ms: edge + 1000,
+  scheduling_provenance: {...provenance(20000),preview_at_ms:edge + 1000} });
+assert.equal(project(row([justBefore,justAfter]), [justAfter,justBefore], []).status, 'projected');
+const wrongDay = {...justAfter, scheduling_provenance: {
+  ...justAfter.scheduling_provenance, day_index:19999
+}};
+assert.equal(project(row([justBefore,wrongDay]), [justBefore,wrongDay], []).code, 'clock_mismatch');
+const missingFuzz = {...b, scheduling_provenance:{...b.scheduling_provenance}};
+delete missingFuzz.scheduling_provenance.fuzz;
+assert.equal(project(row([a,missingFuzz]), [a,missingFuzz], []).code, 'replay_unsupported');
+
+console.log('ok: deterministic FSRS schedule projection, Undo, parameter and clock gates');
+
