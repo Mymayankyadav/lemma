@@ -107,32 +107,29 @@ async function login(page,email){
   await page.waitForFunction(()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),null,{timeout:T});
 }
 async function waitForAccountWorkspace(page, expectedUserId, timeout = T) {
-  // Auth session/refresh can be ready before account workspace activation.
-  // A note created then goes into the anonymous device store and never
-  // appears in the private account outbox; that is not a sync success.
-  try {
-    await page.waitForFunction(uid =>
-      typeof Store !== 'undefined' && Store.mode === 'account' &&
-      App.workspaceController?.activeId === uid &&
-      LemmaAccount.user?.id === uid &&
-      !App.workspaceBlocked,
-      expectedUserId, {timeout});
-  } catch (error) {
-    // No identities, JWTs, email addresses or card content in CI logs.
-    const state = await page.evaluate(uid => ({
-      mode:Store.mode, syncPhase:LemmaSync.status.phase,
-      pending:LemmaSync.status.pending, hasSyncError:Boolean(LemmaSync.status.error),
-      syncErrorCode:String(LemmaSync.status.error||'').slice(0,120),
-      loggedIn:!!LemmaAccount.user, sameAuth:LemmaAccount.user?.id===uid,
-      sameSync:LemmaSync.status.userId===uid,
-      remembered:localStorage.getItem('lemma-account-workspace-v1')===uid,
-      active:App.workspaceController?.activeId===uid,
-      blocked:App.workspaceBlocked, idle:App.workspaceIdle(),
-      loading:App.loading, view:App.view
-    }), expectedUserId).catch(e=>({diagnosticError:e.message}));
-    console.error('account restore diagnostic (no credentials):',JSON.stringify(state));
-    throw error;
+  // build.js bundles internal Store/App into a closed scope; they are NOT
+  // browser globals. Verify the real user-facing mode using Settings, where
+  // "Return to device workspace" is visible only when Store.mode=account.
+  const until=Date.now()+timeout;
+  while(Date.now()<until){
+    const user=await browserUserId(page);
+    if (user !== expectedUserId) throw new Error('Persisted auth identity changed during account restoration');
+    if (!await page.locator('#set-cloud-account').count()) {
+      await page.locator('.tabs button[data-go="settings"]').click();
+    }
+    const active=await page.getByRole('button',{name:'Return to device workspace',exact:true})
+      .isVisible().catch(()=>false);
+    if(active) return;
+    await sleep(500);
   }
+  const evidence={
+    remembered:await page.evaluate(id=>localStorage.getItem('lemma-account-workspace-v1')===id,expectedUserId),
+    syncStatus:await page.locator('#sync').textContent().catch(()=>'(missing)'),
+    accountSwitchVisible:await page.getByRole('button',{name:'Use account workspace',exact:true}).isVisible().catch(()=>false),
+    deviceSwitchVisible:await page.getByRole('button',{name:'Return to device workspace',exact:true}).isVisible().catch(()=>false)
+  };
+  console.error('UI account-restore diagnostic (no credentials):',JSON.stringify(evidence));
+  throw new Error('Account workspace did not become visibly active after browser relaunch');
 }
 async function browserUserId(page) {
   return page.evaluate(() => {

@@ -50,10 +50,43 @@ for (const line of git(['status', '--porcelain', '--untracked-files=all'])) {
   const status = line.slice(0, 2).trim()[0] || 'M';
   for (const p of line.slice(3).split(' -> ')) changes.set(p, status === '?' ? 'A' : status);
 }
+// 27 Oct 2026 owner approval: ONLY two byte-identical migration renames in
+// PR #31. This is intentionally NOT a general --allow-delete exemption.
+// The GitHub PR identity, exact R100 rename set and source bytes must all
+// match. Other lanes, local commands and all other PRs retain the guard.
+function approvedL8MigrationPaths() {
+  if (lane !== 'A' ||
+      process.env.GITHUB_EVENT_NAME !== 'pull_request' ||
+      process.env.GITHUB_REF !== 'refs/pull/31/merge' ||
+      process.env.GITHUB_HEAD_REF !== 'lane-a/sync-04-l8-security-parity')
+    return new Set();
+  const pairs = [
+    ['supabase/migrations/20261026135000_review_retractions.sql',
+      'supabase/migrations/20261026130428_review_retractions.sql'],
+    ['supabase/migrations/20261026203000_revision_safe_profiles.sql',
+      'supabase/migrations/20261026153542_revision_safe_profiles.sql']
+  ];
+  const expected = pairs.map(([oldPath,newPath]) =>
+    'R100\t' + oldPath + '\t' + newPath).sort();
+  // Detect all deletion and rename operations, not just these two paths.
+  const actual = git(['diff','--find-renames=100%','--name-status',base+'...HEAD'])
+    .filter(line => /^[DR]/.test(line)).sort();
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) return new Set();
+  try {
+    for (const [oldPath,newPath] of pairs) {
+      const before = execFileSync('git',['show',base+':'+oldPath]);
+      const after = fs.readFileSync(newPath);
+      if (!before.equals(after)) return new Set();
+    }
+  } catch { return new Set(); }
+  return new Set(pairs.flat());
+}
+const l8Approved = approvedL8MigrationPaths();
+if (l8Approved.size) console.log('owner-approved: precisely two byte-identical L8 migration renames in PR #31');
 const errors = [], notes = [];
 for (const [path, status] of changes) {
   const o = owners(path);
-  if ((status === 'D' || status === 'R') && !args.includes('--allow-delete'))
+  if ((status === 'D' || status === 'R') && !args.includes('--allow-delete') && !l8Approved.has(path))
     errors.push(path + ': deleting/renaming tracked files needs owner approval (--allow-delete)');
   else if (o.some(g => g.id === 'frozen')) errors.push(path + ': frozen, never edit');
   else if (o.some(g => g.id === 'shared_append_only'))
