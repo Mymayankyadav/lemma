@@ -1,6 +1,6 @@
 # Lane B — UI
 
-Next action: UI-01 isolated visual acceptance claim on draft PR #40 (branch `lane-b/ui-01-status-visuals`): display compact offline/error/conflict/queued/save-failure labels in the existing header and verify screenshot-backed status projections across mobile/desktop light/dark; run exact-head regression/Android CI, inspect images, merge only when current-main gates are green. Actual browser-chrome 200% text zoom and live fault-state visual acceptance remain OPEN.
+Next action: UI-01 native Chromium browser-zoom verification (independent claim `lane-b/ui-01-real-browser-zoom`). PR #40 is merged at main@17eecc95; its status UI evidence does NOT prove the remaining true 200% zoom gate. Develop a test-only Manifest V3 extension to invoke genuine `chrome.tabs.setZoom(2)` on an isolated browser context, assert tab zoom and mathematical reflow/keyboard flows, capture screenshot, run CI. Keep live network/error evidence separate.
 
 | Field | Value |
 | --- | --- |
