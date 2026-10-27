@@ -6,31 +6,47 @@
  */
 const assert = require('node:assert/strict');
 const { randomUUID } = require('node:crypto');
+const { execFileSync } = require('node:child_process');
 const ORIGIN = 'https://yemqnhnztlbyxmjxidis.supabase.co';
+const LOCAL_ORIGIN = 'http://127.0.0.1:54321';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NOTE_ID = /^[a-zA-Z0-9][a-zA-Z0-9_-]{5,79}$/;
 const TABLES = ['notes','profiles','review_events','review_retractions'];
 const ACK = 'SYNC-04-SYNTHETIC-HTTP-TEST';
 
-function validateInputs({ key, aToken, bToken, aNote, bNote, ack }) {
+function isLocalAnonKey(key) {
+  if (key.startsWith('sb_publishable_')) return true;
+  // Local CLI versions also expose a legacy JWT anon key. Decode its
+  // UNTRUSTED payload only to reject service_role; this is not JWT auth.
+  try {
+    const parts = key.split('.');
+    if (parts.length !== 3) return false;
+    const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    return claims.role === 'anon';
+  } catch { return false; }
+}
+
+function validateInputs({ key, aToken, bToken, aNote, bNote, ack }, { local = false } = {}) {
   if (ack !== ACK) throw new Error('Explicit SYNC-04 synthetic-fixture acknowledgment required');
   if (!key || !aToken || !bToken) throw new Error('Two independent access tokens and a publishable key are required');
-  if (!key.startsWith('sb_publishable_'))
-    throw new Error('Only a public sb_publishable_ key is accepted; never supply secret or service-role keys');
+  if (local ? !isLocalAnonKey(key) : !key.startsWith('sb_publishable_'))
+    throw new Error(local ? 'Only a local anon/public API key is accepted' :
+      'Only a public sb_publishable_ key is accepted; never supply secret or service-role keys');
   if (aToken === bToken) throw new Error('Access tokens must be different');
   if (!NOTE_ID.test(aNote || '') || !NOTE_ID.test(bNote || '') || aNote === bNote)
     throw new Error('Provide distinct short synthetic note IDs (letters, digits, underscore, hyphen)');
   return { key, aToken, bToken, aNote, bNote };
 }
 
-async function runProbe(input, fetchImpl = fetch) {
-  const { key, aToken, bToken, aNote, bNote } = validateInputs(input);
+async function runProbe(input, fetchImpl = fetch, { local = false } = {}) {
+  const origin = local ? LOCAL_ORIGIN : ORIGIN;
+  const { key, aToken, bToken, aNote, bNote } = validateInputs(input, { local });
   async function call(path, token, method = 'GET', payload) {
     // Constant project origin: malicious environment variables cannot
     // redirect access tokens to an unexpected server.
     const headers = { apikey:key, Authorization:'Bearer ' + token, Accept:'application/json' };
     if (payload !== undefined) headers['Content-Type'] = 'application/json';
-    const response = await fetchImpl(ORIGIN + path, {
+    const response = await fetchImpl(origin + path, {
       method, headers, cache:'no-store', redirect:'error',
       ...(payload !== undefined ? {body:JSON.stringify(payload)} : {})
     });
@@ -100,6 +116,111 @@ async function runProbe(input, fetchImpl = fetch) {
   return { accounts:2, tables:TABLES.length, deniedWrites:2 };
 }
 
+// --local cannot be redirected by an environment variable or status output.
+// It reads only the disposable stack CLI output and rejects a mismatched origin.
+function localCredentials() {
+  const raw = execFileSync('supabase', ['status', '--output', 'env'], {
+    encoding: 'utf8', timeout: 30000, stdio: ['ignore', 'pipe', 'pipe']
+  });
+  const vars = {};
+  for (const line of raw.split(/\r?\n/)) {
+    const match = line.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
+    if (!match) continue;
+    let value = match[2];
+    if (value.startsWith('"') && value.endsWith('"')) {
+      try { value = JSON.parse(value); } catch { value = value.slice(1,-1); }
+    }
+    vars[match[1]] = value;
+  }
+  const url = vars.API_URL || vars.SUPABASE_URL;
+  if (url !== LOCAL_ORIGIN) throw new Error('Refusing non-loopback or unexpected Supabase status origin');
+  const key = vars.ANON_KEY || vars.PUBLISHABLE_KEY;
+  if (!key || !isLocalAnonKey(key)) throw new Error('Local CLI did not supply a safe public anon key');
+  return { key };
+}
+
+async function runLocal(fetchImpl = fetch, credentials = localCredentials()) {
+  const key = credentials.key;
+  if (!isLocalAnonKey(key)) throw new Error('Refusing non-anon API key for local RLS test');
+
+  async function localCall(path, token, method = 'GET', data) {
+    if (!path.startsWith('/')) throw new Error('Invalid local endpoint');
+    const headers = {
+      apikey: key, Authorization: 'Bearer ' + token,
+      Accept: 'application/json'
+    };
+    if (data !== undefined) headers['Content-Type'] = 'application/json';
+    const response = await fetchImpl(LOCAL_ORIGIN + path, {
+      method, headers, redirect:'error', cache:'no-store',
+      ...(data === undefined ? {} : { body:JSON.stringify(data) })
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) throw new Error('Local fixture setup failed at ' + path +
+      ' (HTTP ' + response.status + ', ' + String(body?.message || body?.error || '') + ')');
+    return body;
+  }
+  // New disposable users are created directly through real GoTrue signup.
+  // Passwords and tokens stay in memory and are never printed or persisted.
+  async function signup() {
+    const email = 'sync04-' + randomUUID() + '@example.test';
+    const body = await localCall('/auth/v1/signup', key, 'POST', {
+      email, password:'LemMA-Sync04-' + randomUUID() + 'A9!'
+    });
+    if (!UUID.test(body?.user?.id || '') || !body?.access_token)
+      throw new Error('Local GoTrue did not return an authenticated signup session; check confirmations');
+    return { token:body.access_token, uid:body.user.id };
+  }
+  const [a,b] = await Promise.all([signup(),signup()]);
+  if (a.uid === b.uid || a.token === b.token) throw new Error('Disposable users are not distinct');
+  const noteA = 'sync04-local-' + randomUUID();
+  const noteB = 'sync04-local-' + randomUUID();
+
+  async function seed(user,noteId,label) {
+    const revision = await localCall('/rest/v1/rpc/commit_note',user.token,'POST',{
+      p_note_id:noteId,p_expected_revision:0,p_request_id:randomUUID(),
+      p_data:{title:'SYNC-04 local ' + label, deck:'Verification',
+        front:'Disposable local RLS fixture', back:'This is not learning data.'},p_delete:false
+    });
+    if (revision !== 1) throw new Error('Local commit_note did not create revision 1');
+
+    const profileRevision = await localCall('/rest/v1/rpc/commit_profile',user.token,'POST',{
+      p_expected_revision:0,p_request_id:randomUUID(),
+      p_data:{sync04:'disposable-' + label}
+    });
+    if (profileRevision !== 1) throw new Error('Local commit_profile did not create revision 1');
+
+    const eventId = randomUUID();
+    await localCall('/rest/v1/review_events',user.token,'POST',{
+      event_id:eventId, note_id:noteId, ordinal:0,
+      occurred_at_ms:Date.now(),grade:3,state_before:0,duration_ms:1,kind:0
+    });
+    await localCall('/rest/v1/review_retractions',user.token,'POST',{
+      retraction_id:randomUUID(),target_event_id:eventId,reason:'undo'
+    });
+  }
+  await seed(a,noteA,'A');
+  await seed(b,noteB,'B');
+
+  // Prove each table has positive owner-visible evidence. Foreign-owner
+  // negative reads would be meaningless against empty review tables.
+  for (const [user,label] of [[a,'A'],[b,'B']]) {
+    for (const table of TABLES) {
+      const params = new URLSearchParams({select:'user_id',
+        user_id:'eq.' + user.uid,limit:'2'});
+      const data = await localCall('/rest/v1/' + table + '?' + params,user.token);
+      if (!Array.isArray(data) || data.length !== 1 || data[0].user_id !== user.uid)
+        throw new Error('Missing positive owner fixture for ' + table + ' user ' + label);
+    }
+  }
+  const result = await runProbe({
+    key, aToken:a.token, bToken:b.token, aNote:noteA, bNote:noteB, ack:ACK
+  }, fetchImpl, {local:true});
+  console.log('PASS: local GoTrue/PostgREST RLS:',result.accounts,
+    'distinct accounts,',result.tables,'populated isolated tables,',
+    result.deniedWrites,'denied foreign writes');
+  return result;
+}
+
 async function selfTest() {
   const A = '00000000-0000-4000-8000-000000000001';
   const B = '00000000-0000-4000-8000-000000000002';
@@ -151,11 +272,20 @@ async function selfTest() {
   assert.throws(()=>validateInputs({...input,ack:'wrong'}),/acknowledgment/);
   assert.throws(()=>validateInputs({...input,key:'sb_secret_do_not_use'}),/sb_publishable_/);
   assert.throws(()=>validateInputs({...input,aNote:input.bNote}),/distinct short synthetic/);
+  const anonJwt = 'e30.' + Buffer.from(JSON.stringify({role:'anon'})).toString('base64url') + '.sig';
+  const serviceJwt = 'e30.' + Buffer.from(JSON.stringify({role:'service_role'})).toString('base64url') + '.sig';
+  assert.equal(isLocalAnonKey(anonJwt),true);
+  assert.equal(isLocalAnonKey(serviceJwt),false);
+  assert.equal(isLocalAnonKey('sb_secret_forbidden'),false);
+  assert.throws(()=>validateInputs({...input,key:serviceJwt},{local:true}),/local anon/);
+  assert.deepEqual(validateInputs({...input,key:anonJwt},{local:true}).aNote,input.aNote);
   console.log('ok: two-user HTTP RLS probe guards, reciprocal read/write denial and safe preflight (mock transport only)');
 }
 
 if (require.main === module) {
-  if (process.argv.includes('--live')) {
+  if (process.argv.includes('--local')) {
+    runLocal().catch(err=>{console.error('FAIL local RLS: ' + err.message);process.exitCode=1;});
+  } else if (process.argv.includes('--live')) {
     runProbe({
       key:process.env.LEMMA_RLS_PUBLIC_KEY,
       aToken:process.env.LEMMA_RLS_TOKEN_A,bToken:process.env.LEMMA_RLS_TOKEN_B,
@@ -166,6 +296,6 @@ if (require.main === module) {
       .catch(err=>{ console.error('FAIL: '+err.message);process.exitCode=1; });
   } else if (process.argv.length === 2 || process.argv.includes('--self-test')) {
     selfTest().catch(err=>{console.error(err);process.exitCode=1;});
-  } else { console.error('Use --self-test or --live'); process.exitCode=2; }
+  } else { console.error('Use --self-test, --local or --live'); process.exitCode=2; }
 }
-module.exports = { runProbe, selfTest, validateInputs };
+module.exports = { runProbe, selfTest, validateInputs, isLocalAnonKey, runLocal, localCredentials };

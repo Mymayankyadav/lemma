@@ -76,6 +76,8 @@ jobs:
         run: supabase db reset --local --no-seed
       - name: Verify exact migrations and sync-table RLS
         run: node test/sync_local_smoke.js
+      - name: Verify two real local GoTrue accounts and HTTP RLS
+        run: node test/auth_http_rls.js --local
       - name: Stop disposable Supabase stack
         if: always()
         run: supabase stop --no-backup
