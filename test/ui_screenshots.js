@@ -28,7 +28,7 @@ let shots = 0;
 
 async function open(browser, size, scheme) {
   const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: SIZES[size],
-    colorScheme: scheme, timezoneId: 'Asia/Kolkata', reducedMotion: 'reduce' });
+    colorScheme: scheme, timezoneId: 'Asia/Kolkata', reducedMotion: 'reduce', hasTouch: size === 'mobile' });
   await ctx.route('**/*', async route => {
     const url = route.request().url();
     if (url.startsWith('https://lemma.test/')) return route.fulfill({ status: 200, contentType: 'text/html', body: HTML });
@@ -90,12 +90,16 @@ async function shot(page, name, size, scheme) {
       // UI-01 gate: native keyboard activation of the advanced statistics panels.
       await page.keyboard.press('Escape');
       await page.waitForSelector('.today');
+      if (size === 'mobile' && (await page.locator('.stats-link').boundingBox()).height < 44)
+        throw new Error('Statistics mobile touch target is under 44px');
       await page.locator('.stats-link').focus();
       await page.keyboard.press('Enter');
       await page.waitForSelector('.tiles');
       const panels = page.locator('details.disclosure');
       if (await panels.count() !== 2 || await panels.first().evaluate(el => el.open))
         throw new Error('Statistics advanced sections must initially be collapsed');
+      if (size === 'mobile' && (await panels.first().locator('summary').boundingBox()).height < 44)
+        throw new Error('Advanced statistics mobile touch target is under 44px');
       await panels.first().locator('summary').focus();
       await page.keyboard.press('Enter');
       if (!await panels.first().evaluate(el => el.open))
