@@ -173,7 +173,7 @@ async function shot(page, name, size, scheme) {
         await ctx.setOffline(false);
       }
     } catch (e) {
-      problems.push(`[${size}-${scheme}] could not capture: ${e.message.split('\n')[0]}`);
+      problems.push(`[${size}-${scheme}] could not capture: ${e.stack || e.message}`);
     }
     await ctx.close();
   }
