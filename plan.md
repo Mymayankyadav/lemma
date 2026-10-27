@@ -26,19 +26,19 @@ Read current `main` → this plan → the files named in your slice → do one s
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-03 slice 0 (read-only diagnostics module) found on `main@4bfe3ab64fe645c63b8619b4bf57ba0a2ef26f18`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 is DONE; SYNC-03 is the single NEXT task; its first open slice is **S1**.
+**Last verified handoff:** 2026-10-27; at baseline `main@68678073454fdfa0bb459747b34ada73386d73ab`, SYNC-03 S1 was started: diagnostics bundled, code-unit ordering and new Node tests wired. **State: READY_FOR_NEXT_AGENT, verification pending.** SYNC-03 remains NEXT until S1 gates are observed; do not start S2 before closing S1.
 
 | Field | Evidence / limit |
 | --- | --- |
 | Known-good main baseline | `main@4bfe3ab`; [regression 40444108939](https://github.com/Mymayankyadav/lemma/actions/runs/40444108939) SUCCESS. Previous conflict-controls baseline `92a67c8` ([40441775123](https://github.com/Mymayankyadav/lemma/actions/runs/40441775123)). |
 | Latest inspected regression | **SUCCESS** 40444108939 at `4bfe3ab` (CI `npm ci`, `test:syntax`, Chromium, full `npm test`). Run 40444075423 at `4ffe1db` was CANCELLED (superseded). Local full suite NOT RUN by the plan editor. |
-| Documentation validation | `npm run test:plan` must pass after this edit (docs-only change). |
+| Documentation validation | Updated plan text; `npm run test:plan` is **NOT RUN locally** (GitHub connector environment lacks an installed repo). Await CI. |
 | Web deployment | [Pages 40444108945](https://github.com/Mymayankyadav/lemma/actions/runs/40444108945) SUCCESS at `4bfe3ab`. `review_replay.js` is not in the bundle, so deployed behaviour is unchanged from SYNC-02. |
 | Cloud confidence | SYNC-02 conflict comparison/choice is verified with fault-injected IndexedDB and real Chromium on **mock transport only**. Divergent schedules are still blocked by `review_replay_required` in `src/app/sync_browser.js` (resolution validator, ~line 163). |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations; verify applied state before any backend work. |
-| Current blocker / unfinished work | `src/app/review_replay.js` (`LemmaReviewReplay.inspect`) exists but is **not** in `build.js` `appFiles`, has **no test**, and only replays memory (S/D), not due dates. `test/review_ledger.js` exists but is **not** run by `npm test`. Schedule convergence (S2–S4) is unimplemented. No live Supabase validation. |
+| Current blocker / unfinished work | S1 changes are committed but **not locally executed**: `review_replay.js` is now in the bundle; `test/review_replay.js` and ledger tests are in `test:replay` and `npm test`. Await a passing replay/syntax/build/plan gate (prefer full CI) before checking S1. The diagnostics still only replay memory; schedule convergence (S2–S4) and live Supabase verification remain absent. |
 
-**Next action, in one sentence:** do SYNC-03 slice S1 — wire `review_replay.js` into `build.js` after `review_ledger.js`, add `test/review_replay.js`, and add a `test:replay` script (running `test/review_ledger.js` and `test/review_replay.js`) to `npm test`.
+**Next action, in one sentence:** verify S1 on the current GitHub Actions regression (`test:replay`, `test:syntax`, `build`, `test:plan`); when green tick S1 and proceed to S2 deterministic schedule projection, otherwise repair the specific failing gate.
 
 The record above describes inspected evidence, not today's mutable HEAD. Overwrite it after each slice; do not append a second handoff.
 
@@ -82,7 +82,7 @@ Tick a box (`[x]`) in the same commit that completes the slice. When S4 is ticke
 - D7 Resets (`reason:'reset'`) and any missing provenance field stay **blocked** (`reset_policy_required` / `replay_unsupported`). This is an accepted SYNC-03 limitation.
 - D8 Replay is used **only** to resolve divergent schedules (where `review_replay_required` is thrown today). Never rewrite a non-conflicting card's schedule on load.
 
-**[ ] S1 — wire and test the existing diagnostics (no behaviour change).**
+**[ ] S1 — wire and test the existing diagnostics (implementation pushed; test gate pending).**
 1. In `build.js`, add `'review_replay.js'` to `appFiles` immediately after `'review_ledger.js'`.
 2. In `src/app/review_ledger.js` `activeEvents`, replace `localeCompare` with the D1 comparison.
 3. Create `test/review_replay.js` (Node, `node:assert/strict`, same style as `test/review_ledger.js`) covering `LemmaReviewReplay.inspect`: missing note → `missing_note`; legacy log entry without event ID → `legacy_history`; dangling retraction → `incomplete_ledger`; first event with non-new `card_before` → `legacy_baseline_required`; reset retraction → `reset_policy_required`; two valid events → `status 'memory-only'` with identical result when the input arrays are reversed; an Undo removes one event from `activeReviews`.
