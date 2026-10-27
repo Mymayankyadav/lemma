@@ -153,8 +153,27 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
     await new Promise(resolve=>setTimeout(resolve,50));
   assert.equal(model.has(deferredPending.id),false,'draining writes must apply cached tombstones');
   assert.equal(staged.length,1,'deferred remote invalidation cannot enqueue new writes');
+  // A pull that started for account B must never project its late result
+  // after B signs out, even if its IndexedDB read completes afterward.
+  const late = {id:'late-b',data:{id:'late-b',front:'stale account B card',back:'',log:[],cards:{}},
+    deleted:true,dirty:false,revision:5};
+  rowsB.push(late);
+  model.set(late.id,structuredClone(late.data));
+  let releaseRead;
+  let reading;
+  const readStarted = new Promise(resolve=>{reading=resolve;});
+  bCache.notes = ()=>new Promise(resolve=>{
+    releaseRead=()=>resolve(rowsB);
+    reading();
+  });
+  const lateRefresh=ctx.sync.refresh();
+  await readStarted;
   current=null;accountMode=false;workspaceId=null;
   await ctx.sync.attach(null);
+  releaseRead();
+  await lateRefresh;
+  assert.equal(model.has(late.id),true,
+    'an in-flight previous-owner read must not alter Model after account exit');
   assert.equal(active[1].closed,true);
   await assert.rejects(ctx.sync.enrollMissingLocal(),/Refresh your signed-in/);
   await assert.rejects(ctx.sync.compareLocal(),/Sign in/);
