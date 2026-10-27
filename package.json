@@ -26,6 +26,7 @@
     "test:replay": "node test/review_ledger.js && node test/review_replay.js && TZ=America/Los_Angeles node test/review_replay.js"
   },
   "dependencies": {
+    "@capacitor/app": "8.0.0",
     "@capacitor/core": "8.0.0",
     "@supabase/supabase-js": "2.102.0",
     "dompurify": "3.1.6",
