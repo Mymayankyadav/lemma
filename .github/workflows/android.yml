@@ -2,19 +2,24 @@ name: Lemma Android debug APK
 
 on:
   push:
-    branches:
-      - main
-      - lane-c/android-01-s1-scaffold-ci
+    branches: [main]
   pull_request:
 
 permissions:
-  contents: write # Temporary bootstrap permission; reduced to read before PR.
+  contents: read
+
+concurrency:
+  group: lemma-android-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   android:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -25,23 +30,21 @@ jobs:
           java-version: '21'
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
-      - name: Bootstrap Capacitor 8 scaffold on the lane C branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/lane-c/android-01-s1-scaffold-ci'
+      - name: Check syntax and lane ownership
         run: |
-          if [ ! -f android/gradlew ]; then
-            npm run android:add
-            git add android/
-            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat(android-01): generate pinned Capacitor 8 Android project'
-            git push origin HEAD:lane-c/android-01-s1-scaffold-ci
-          fi
+          npm run test:syntax
+          npm run test:plan
+          node test/lane_guard.js C
       - name: Sync bundled web application
         run: npm run android:sync
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
       - name: Build debug APK
         working-directory: android
-        run: |
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
-      - uses: actions/upload-artifact@v4
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
         with:
           name: lemma-android-debug
           path: android/app/build/outputs/apk/debug/*.apk
