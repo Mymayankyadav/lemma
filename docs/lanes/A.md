@@ -6,7 +6,7 @@ Next action: SYNC-04 L1 — using an owner-authenticated browser, export the dev
 | --- | --- |
 | Status | AUTH-01 DONE (web); SYNC-04 NEXT |
 | Current task | SYNC-04 live automatic-write/recovery checks |
-| Delivery | `lane-a/auth-01-s2-live-complete`; PR pending |
+| Delivery | [PR #17](https://github.com/Mymayankyadav/lemma/pull/17), `lane-a/auth-01-s2-live-complete`; verify merged status before proceeding |
 | Baseline | `449b473`: regression 40475690079 and Android 40475690031 SUCCESS. PR #13 merged as `639a8df`; its mocked Settings guards passed. |
 | Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. No migration, credential configuration or learning-data writes in AUTH-01 S2 verification. |
 
