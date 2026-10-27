@@ -17,15 +17,15 @@ Read current `main` → this plan → relevant source/tests → one task → ver
 
 ## 1. CURRENT HANDOFF
 
-**Last verified handoff:** 2026-10-27; SYNC-02 conflict-evidence slice prepared from `main@161965b04aee0265e86c165ca05baa1889b23565`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 remains the single NEXT task; resolution is unfinished.
+**Last verified handoff:** 2026-10-27; SYNC-02 conflict-evidence slice verified at `main@affc98024659eaa764a5b420836873717686ed29`. **State: READY_FOR_NEXT_AGENT.** SYNC-02 remains the single NEXT task; resolution is unfinished.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged as `bf2bb54`; [main regression 40420169362](https://github.com/Mymayankyadav/lemma/actions/runs/40420169362) SUCCESS. |
-| Latest inspected regression | Local syntax, storage/conflict, account/account-store, identity/workspace and build SUCCESS. `npm test` passed merge/outbox/storage/FSRS, then stopped because local Chromium is unavailable; browser gates NOT RUN locally. Full branch/main CI PENDING publication. |
+| Known-good main baseline | [PR #6](https://github.com/Mymayankyadav/lemma/pull/6) merged as `affc980`; [main regression 40427935341](https://github.com/Mymayankyadav/lemma/actions/runs/40427935341) SUCCESS. |
+| Latest inspected regression | SUCCESS: [main regression 40427935341](https://github.com/Mymayankyadav/lemma/actions/runs/40427935341) at `affc98024659eaa764a5b420836873717686ed29`: syntax and full `npm test`, including browser conflict/reload/tombstone gates. Local syntax, storage/conflict, FSRS, account/account-store, identity/workspace, plan and build SUCCESS; local full suite stopped at unavailable Chromium. Browser gates ran in CI. |
 | Documentation validation | SUCCESS: `npm run test:plan`; preserve this guard. |
-| Web deployment | Existing [Pages 40420169191](https://github.com/Mymayankyadav/lemma/actions/runs/40420169191) SUCCESS at `bf2bb54`; conflict-evidence deployment PENDING. |
-| Cloud confidence | Account staging retains known or explicitly unknown bases. Stale responses persist base/local/remote evidence; pulls atomically retain remote snapshots beside dirty local data, including tombstones. Acknowledgment rebases the next base without changing request IDs. Fault-injected IndexedDB tests cover edits/deletes/profiles, rollback, legacy queues and lost receipts. No live login/RLS/convergence claim. |
+| Web deployment | [Pages 40427935271](https://github.com/Mymayankyadav/lemma/actions/runs/40427935271) SUCCESS at merged `affc980`. Final handoff-only update does not change runtime assets. |
+| Cloud confidence | Account staging retains known or explicitly unknown bases. Stale responses persist base/local/remote evidence; pulls atomically retain remote snapshots beside dirty local data, including tombstones. Acknowledgment rebases the next base without changing request IDs. Fault-injected IndexedDB tests cover edits/deletes/profiles, rollback, legacy queues and lost receipts; two-browser tests verify conflict evidence across reload with a mock RPC server. No live login/RLS/convergence claim. |
 | Backend security check | NOT RUN; no backend/schema change. Nine tracked migrations remain; verify applied state before backend work. |
 | Current blocker / unfinished work | Conflict evidence only: no resolution controls or new resolution revision yet. Older dirty caches may have unknown bases. Review replay remains SYNC-03; public account activation SYNC-04. Sequential imports retain earlier commits on failure; optimistic deletes still require later mutation audit. |
 
@@ -101,7 +101,7 @@ Precedence: current user instruction → this plan for scope/order → supportin
 | Durable editor and crash recovery | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) and [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; main regression/Pages 40378487715/40378487955 and 40381695953/40381695797 SUCCESS. |
 | Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
 | Durable imports | `IO.prepare/commit`, ImportSheet recovery, Store note/profile receipts; local import tests and [PR #5](https://github.com/Mymayankyadav/lemma/pull/5) merged; full main regression 40420169362 and Pages 40420169191 SUCCESS. |
-| Durable conflict evidence | `sync_browser.js`, `outbox_core.js`, `test/conflict_storage.js`, `test/browser_sync.js`; local storage gates SUCCESS, full browser CI PENDING. |
+| Durable conflict evidence | `sync_browser.js`, `outbox_core.js`, `test/conflict_storage.js`, `test/browser_sync.js`; [PR #6](https://github.com/Mymayankyadav/lemma/pull/6) merged; full main regression 40427935341 and Pages 40427935271 SUCCESS. Resolution remains unfinished. |
 
 ## 6. Five-line end-of-session report template
 
