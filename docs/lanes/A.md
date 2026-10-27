@@ -1,38 +1,38 @@
 # Lane A — sync, auth and backend
 
-Next action: finish AUTH-01 S2: verify one live Pages sign-out/re-login and the backup acknowledgment control. Google setup and first login are VERIFIED; do not ask the owner to repeat setup. The CI blocker is resolved by PR #14 under the owner's one-time workflow-only exception; ongoing lane ownership is unchanged. SYNC-04 live gates stay pending until AUTH-01 passes.
+Next action: SYNC-04 L1 — using an owner-authenticated browser, export the device backup, compare device/account data, explicitly activate the account workspace, create one clearly identified sync-verification note, and verify automatic cloud commit plus reload recovery. Preserve all existing device/account data. Extend to independent devices and another real test identity before marking SYNC-04 DONE.
 
 | Field | Value |
 | --- | --- |
-| Status | IN_PROGRESS (AUTH-01 S2; live sign-out pending) |
-| Current task | AUTH-01 S2 verification, then SYNC-04 live gates |
-| Delivery | [PR #13](https://github.com/Mymayankyadav/lemma/pull/13), `lane-a/auth-01-live-verification`; verify its merge status before continuing |
-| Baseline | Main merged through `dbfb961` (PR #14). Workflow fix tested at `9976fd1`: regression 40471757323 and Android build/artifact 40471757279 SUCCESS. SYNC-04 M1 merged in PR #8 at `5efdf3e`. |
-| Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. No migrations or persistent backend writes in this slice. |
+| Status | AUTH-01 DONE (web); SYNC-04 NEXT |
+| Current task | SYNC-04 live automatic-write/recovery checks |
+| Delivery | `lane-a/auth-01-s2-live-complete`; PR pending |
+| Baseline | `449b473`: regression 40475690079 and Android 40475690031 SUCCESS. PR #13 merged as `639a8df`; its mocked Settings guards passed. |
+| Backend | Only Lemma `yemqnhnztlbyxmjxidis`; nine applied migrations. No migration, credential configuration or learning-data writes in AUTH-01 S2 verification. |
 
-## Live evidence — 27 October 2026
+## AUTH-01 S2 — live web gate COMPLETE, 27 October 2026
 
-- **Google enabled and login SUCCESS:** public auth settings report `external.google=true`; unified auth logs show Google signup at 07:45:27 UTC and Google login at 07:45:36 UTC, successful callback redirects and token exchange (HTTP 200). The deployed Pages app points to this project. The owner reports completing setup/sign-in.
-- **Account identity:** before OAuth the project had zero accounts; afterward it has one account and one Google identity. There is no earlier email-link account to match in this installation. Pre-existing-email identity linking remains untested live; no accounts or rows were migrated.
-- **Account cache reads SUCCESS:** gateway logs show HTTP 200 for owner note, profile, review-event and review-retraction reads. This does not prove writes, device convergence or owner workspace activation.
-- **Live sign-out NOT VERIFIED:** the inspected 07:40 UTC onward window contains no logout request/event. Auth audit events are in unified `auth_audit_logs`; `auth.audit_log_entries` is empty. Never interpret that empty SQL table as absence of login.
-- **Database role probe SUCCESS:** existing `supabase/tests/note_write_contract.sql` ran against Lemma and rolled back every fixture. It verified revisions, idempotency, write grants, tombstones, immutable reviews and cross-owner isolation under the `authenticated` role with two synthetic UID claims. This is a database policy test, not two real HTTP-authenticated users. Post-check: one account/Google identity remains and zero fixture notes remain.
-- **RLS enabled** on notes, profiles, review_events and review_retractions. Security advisor reports one password-auth setting: [leaked-password protection disabled](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection); no table/RPC finding. Configuration left unchanged.
+- Owner completed secure Google authentication in the test browser. The first, delayed OAuth state expired; Lemma displayed **OAuth state has expired**, kept the device workspace intact (0 notes/cards/reviews), and a fresh Google request succeeded. No secrets were inspected, copied or committed.
+- The deployed Pages Settings showed **Signed in** for the owner and **Private account cache: ready**, while device/account workspaces stayed separate.
+- With the backup checkbox unchecked, clicking **Use account workspace** displayed **Export a backup and check the acknowledgment before switching.** The device workspace stayed active. This was verified in the live deployed UI while signed in.
+- Clicking **Sign out** returned success; after a page reload, Settings showed **Not signed in** and account cache **signed-out**. Gateway logs confirm `POST /auth/v1/logout` HTTP 204.
+- Clicking **Continue with Google** again completed PKCE exchange; Settings returned to **Signed in** and cache **ready**. Gateway logs confirm token exchange HTTP 200. Comparing the owner's database identity before and after logout/re-login confirmed the **same `user.id`**. Only the equality result is retained here; no account identifiers or credentials are published.
+- There was no earlier email-link account in this installation: zero auth users before initial Google signup, then one owner/Google identity. That earlier-email linking case is N/A for this run, not claimed as a separate live test. No accounts/rows were migrated. The pre-existing-email regression remains mock-only.
+- Explicit device/account comparison after re-login reported **0 cards, 0 conflicts, 0 deletions and 0 pending snapshots**. This verifies comparison, not synchronization of writes.
+- Android OAuth S3 is still part of ANDROID-02. AUTH-01 DONE refers to the web gate only.
 
-## Regression coverage
+## Prior evidence and limits
 
-`test/workspace_browser.js` now exercises the real Settings buttons with mocked auth: Google is primary; attempting account activation without backup acknowledgment preserves the device workspace; Sign out calls the auth client once and retains device cards and draft. Browser coverage SUCCESS at `aa168a16afe38675a1302558aa5dd26778b8855f` in [full regression 40469993220](https://github.com/Mymayankyadav/lemma/actions/runs/40469993220); this is not a live logout test.
+SYNC-04 M1 passed [regression 40463998686](https://github.com/Mymayankyadav/lemma/actions/runs/40463998686): offline IndexedDB restart, expired JWT/session recovery, lost server responses, tombstones and explicit conflict recovery with mocked transport. [PR #13 regression, attempt 2](https://github.com/Mymayankyadav/lemma/actions/runs/40472195378/attempts/2) passed full app/Settings tests; [its APK build](https://github.com/Mymayankyadav/lemma/actions/runs/40472195531) passed. An initial unrelated editor-preview assertion failed before the unchanged rerun passed.
 
-SYNC-04 M1 is already mock-verified by [regression 40463998686](https://github.com/Mymayankyadav/lemma/actions/runs/40463998686): `test/browser_sync.js` covers offline IndexedDB restart, expired JWT/session recovery, lost responses after server commit, tombstones and explicit edit/delete conflict recovery. Storage/account/workspace tests cover durable receipts, identity invalidation and no implicit enrollment.
+The existing rollback-only `supabase/tests/note_write_contract.sql` passed on Lemma: revisions, idempotency, write grants, tombstones, immutable reviews and isolation under two authenticated-role UID claims. All fixtures rolled back; the real owner remained intact. This is a SQL role probe, not two HTTP-authenticated users. RLS is enabled on notes, profiles, review_events and review_retractions. Advisor's password-only [leaked-password protection warning](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection) was left unchanged.
 
-Local checks: `npm ci`, syntax, `test:workspace`, build, `test:plan`, lane A guard and diff checks SUCCESS. Full local `npm test` is blocked by unavailable Chromium; the prior browser-download attempts returned a 195-byte Site Unavailable page. Full PR regression 40469993220 SUCCESS. The earlier [Android CI 40469993250](https://github.com/Mymayankyadav/lemma/actions/runs/40469993250) failure was a hardcoded lane C guard. [PR #14](https://github.com/Mymayankyadav/lemma/pull/14) corrected only `.github/workflows/android.yml`, passed regression and APK build, and merged as `dbfb961`. Its ownership guards are unchanged. PR #13 includes current main and must pass fresh regression and Android checks before merging.
+## SYNC-04 remaining live gates
 
-## Remaining gates
+Automatic writes and clean Model invalidation, independent two-browser/device convergence, offline restart, auth expiry, lost response after commit, deletes and two-real-identity HTTP RLS isolation still require live verification. No routine manual Sync button after activation. Do not equate successful reads, same-profile tabs, SQL role simulation or mock tests with these gates. PWA offline asset loading/update remains a separate release check.
 
-AUTH-01 S2 stays unfinished until a live Pages logout/re-login is observed and the acknowledgment control is verified. Then mark AUTH-01 DONE and SYNC-04 NEXT in the same PR. Android OAuth S3 belongs to ANDROID-02.
-
-SYNC-04 still needs real authenticated two-browser/two-identity convergence, offline restart, auth expiry, network loss after commit, deletes and HTTP RLS isolation. PWA offline asset loading/update remains separately unverified. Do not treat successful cache reads, SQL role simulation or mock transport as those live gates.
+The browser's Google session enables the next owner-scoped tests in this conversation; another environment may need its own secure login. Never extract session tokens or infer that a user's phone login authenticates the agent browser. Synthetic test notes must be clearly identified; never alter existing learning cards to satisfy a test.
 
 ## Requests from other lanes
 
-None outstanding. The owner explicitly allowed the workflow-only correction once; PR #14 consumed that exception. Future cross-lane changes still use the normal request/ownership protocol.
+None. PR #14 (`dbfb961`) consumed the owner's one-time workflow-only exception; ownership rules are unchanged. Future cross-lane changes use the normal request protocol.
