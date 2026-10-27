@@ -1,10 +1,10 @@
 # Lane A — sync, auth and backend
 
-Next action: SYNC-04 L6 — verify PR CI for the new local GoTrue/PostgREST two-user HTTP RLS gate, merge only after all latest-head checks pass; then implement L7 independent-browser fault gates.
+Next action: SYNC-04 L6 PR #29 — confirm latest-head regression, Android and local-stack checks are green, then squash-merge; next L7 creates `test/sync_local_e2e.js` with two isolated Playwright browser contexts and offline/expiry/lost-response gates.
 
 | Field | Value |
 | --- | --- |
-| Status | SYNC-04 NEXT; L5 MERGED in PR #28 (`afbe29d`, local-stack/regression/Android CI SUCCESS); L6 implemented on branch pending CI |
+| Status | SYNC-04 NEXT; L5 merged in PR #28; L6 real local two-user HTTP RLS gate SUCCESS on first PR head, final PR merge/checks pending |
 | Current task | SYNC-04 L5 — reproducible local Postgres 17/Supabase stack |
 | Branch | [PR #28](https://github.com/Mymayankyadav/lemma/pull/28), `lane-a/sync-04-l5-local-stack` from `main@18c5750` |
 | Earlier delivery | AUTH-01 web DONE; SYNC-04 L1/L2 PR #23, L3 PR #25, L4 PR #26 merged; integration re-plan PR #27 merged |
@@ -18,7 +18,7 @@ Next action: SYNC-04 L6 — verify PR CI for the new local GoTrue/PostgREST two-
 - Builds on merged L5 local stack from [PR #28](https://github.com/Mymayankyadav/lemma/pull/28), commit `afbe29d`. On L5's tested head [40526743531](https://github.com/Mymayankyadav/lemma/actions/runs/40526743531), PostgreSQL 17, nine migrations and four RLS flags passed. Regression [40526743421](https://github.com/Mymayankyadav/lemma/actions/runs/40526743421) and Android [40526743286](https://github.com/Mymayankyadav/lemma/actions/runs/40526743286) passed.
 - New `node test/auth_http_rls.js --local` uses only CLI-confirmed `http://127.0.0.1:54321` and a public anon key. It signs up two throwaway email/password accounts using local GoTrue; creates a revision-1 synthetic note and profile via authenticated RPC per user, plus one review and retraction per user. It first establishes owner-visible rows on all four sync tables, then runs the existing reciprocal cross-owner negative reads and stale-revision write denials, with owner fixture unchanged. Tokens, emails, passwords and IDs are not printed.
 - `--live` remains restricted to the constant production Lemma origin, two owner-supplied independent real sessions, explicit acknowledgment and `SYNC-04` labelled notes. It is **not** used by CI and not required for SYNC-04.
-- Verification state: source implementation prepared; real HTTP/CI status **PENDING**, not yet claimed. L6 is NOT complete until local-stack Actions actually passes and PR is merged. No migrations or production data changes.
+- Verification state: first head `0ce492e` **real local GoTrue/PostgREST HTTP SUCCESS** in [40528408878](https://github.com/Mymayankyadav/lemma/actions/runs/40528408878): two distinct users, four populated isolated sync tables, two denied cross-owner writes. Android CI [40528408809](https://github.com/Mymayankyadav/lemma/actions/runs/40528408809) SUCCESS. Regression [40528408902](https://github.com/Mymayankyadav/lemma/actions/runs/40528408902) PENDING at this handoff edit. Latest-head CI and merge remain required; SYNC-04 overall remains NEXT. No migrations or production data changes.
 
 ## SYNC-04 L5 — local-stack implementation
 
