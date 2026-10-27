@@ -138,12 +138,14 @@ kbd {
     -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
     border-top: 1px solid var(--rule);
   }
-  .tb { border: 0; background: none; display: grid; place-items: center; color: var(--ink-3); min-height: 48px; }
+  .tb { border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--ink-3); min-height: 58px; min-width: 0; }
   .tb-ico { width: 54px; height: 32px; border-radius: 999px; display: grid; place-items: center; transition: background 0.15s, color 0.15s; }
+  .tb-label { font-size: 11px; line-height: 14px; font-weight: 600; white-space: nowrap; }
   .tb.on { color: var(--accent); }
   .tb.on .tb-ico { background: var(--accent-soft); }
-  .tb-add { justify-self: center; width: 46px; height: 46px; min-height: 0; border-radius: 15px; background: var(--ink); color: var(--bg); box-shadow: var(--shadow); }
-  .main { padding-block: 14px calc(92px + env(safe-area-inset-bottom, 0px)); }
+  .tb-add { justify-self: stretch; width: auto; color: var(--ink-2); }
+  .tb-add .tb-ico { width: 46px; border-radius: 12px; background: var(--ink); color: var(--bg); box-shadow: var(--shadow); }
+  .main { padding-block: 14px calc(106px + env(safe-area-inset-bottom, 0px)); }
 }
 body.in-review .topbar, body.in-review .tabbar { display: none; }
 body.in-review .main { max-width: none; padding: 0; }
