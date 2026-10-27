@@ -267,7 +267,7 @@ async function shot(page, name, size, scheme) {
         await page.waitForSelector('#browse-q:focus');
         await page.locator('.tabbar [data-go="settings"]:visible').focus();
         await page.keyboard.press('Enter');
-        await page.waitForSelector('[data-go="settings"][aria-current="page"]');
+        await page.waitForSelector('.tabbar [data-go="settings"][aria-current="page"]:visible');
         await goTo(page, 'home');
       }
       if (size === 'mobile' && scheme === 'dark') {
