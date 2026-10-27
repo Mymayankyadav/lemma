@@ -29,22 +29,23 @@ Up to **three agents may run at the same time, one per lane** (A sync/auth/backe
 
 **Per-lane handoffs live in `docs/lanes/A.md`, `B.md`, `C.md`; each lane updates only its own file.** This section is a shared snapshot changed only in owner-requested integration sessions, so lanes never conflict over it.
 
-**Last verified handoff:** 2026-10-27; integration snapshot at `main@add11fa` (switch to parallel lanes). SYNC-03 DONE (mock transport); AUTH-01 S1 DONE ([CI 40450843938](https://github.com/Mymayankyadav/lemma/actions/runs/40450843938) SUCCESS, mocked OAuth). **State: READY_FOR_NEXT_AGENT** in all three lanes.
+**Last verified handoff:** 2026-10-27; integration snapshot at `main@2c1f554` (after PRs #17 and #18; no lane PR open). AUTH-01 DONE (live web gate, PR #17); UI-01 S1–S2 DONE (PRs #15, #18); ANDROID-01 DONE (CI APK; physical device untested). **State: READY_FOR_NEXT_AGENT** in lanes A and B; lane C dependency-blocked.
 
 | Field | Evidence / limit |
 | --- | --- |
-| Known-good main baseline | The latest SUCCESS run of "Lemma regression tests" on `main` (`gh run list --branch main --workflow test.yml -L 1`) is authoritative. At this snapshot: `add11fa` SUCCESS. |
-| Cloud confidence | Sync, replay and Google PKCE verified with mock transport only. Google provider setup, live OAuth, same-owner `user.id` mapping and two-user RLS NOT VERIFIED. |
-| Backend security check | Lane A only. RLS on all four sync tables, nine applied migrations, advisors clean; authenticated two-identity RLS probe NOT RUN. |
-| Owner action needed | Configure Google OAuth (AUTH-01 prerequisites) and sign in once on Pages so lane A can finish AUTH-01 S2. |
+| Known-good main baseline | The latest SUCCESS run of "Lemma regression tests" on `main` (`gh run list --branch main --workflow test.yml -L 1`) is authoritative. At this snapshot: `2c1f554` regression [40478252724](https://github.com/Mymayankyadav/lemma/actions/runs/40478252724) and Android [40478252732](https://github.com/Mymayankyadav/lemma/actions/runs/40478252732) SUCCESS. |
+| Cloud confidence | Live Pages Google PKCE sign-in, sign-out (HTTP 204), re-login to the same `user.id` and the backup-acknowledgement block verified. Automatic writes, two-device convergence and two-real-identity HTTP RLS NOT VERIFIED (SYNC-04). |
+| Backend security check | Lane A only. RLS on all four sync tables, nine applied migrations; rollback-only SQL two-role probe passed. Authenticated two-identity HTTP probe NOT RUN. |
+| Owner action needed | SYNC-04 live gates: keep an owner-signed-in browser available to lane A, and provide a second real test Google identity for the RLS isolation gate. Optional: sideload the `main` debug APK and report Back/resume behaviour in `docs/lanes/C.md`. |
+| CI artifacts | Regression CI uploads `lemma-ui-screenshots` (the `test:ui` PNGs) for PR descriptions (lane B request). Integration PRs use branch prefix `integration/`. |
 
 | Lane | Scope (files in `lanes.json`) | NEXT task | Branch prefix | Status file |
 | --- | --- | --- | --- | --- |
-| A | sync, auth, Supabase, account Settings | AUTH-01 (S2 owner-blocked → SYNC-04 M1 meanwhile) | `lane-a/` | [A.md](docs/lanes/A.md) |
-| B | screens, CSS, navigation, rendering | UI-01 S1 | `lane-b/` | [B.md](docs/lanes/B.md) |
-| C | native Android shell and build | ANDROID-01 S1 | `lane-c/` | [C.md](docs/lanes/C.md) |
+| A | sync, auth, Supabase, account Settings | SYNC-04 L1 (live automatic write + reload recovery) | `lane-a/` | [A.md](docs/lanes/A.md) |
+| B | screens, CSS, navigation, rendering | UI-01 S3 (Cards screens) | `lane-b/` | [B.md](docs/lanes/B.md) |
+| C | native Android shell and build | none — ANDROID-02 waits for SYNC-04 and UI-01; do not start work | `lane-c/` | [C.md](docs/lanes/C.md) |
 
-**Next action, in one sentence:** each lane does the "Next action:" line at the top of its `docs/lanes/<X>.md`; the owner completes Google provider setup for AUTH-01 S2.
+**Next action, in one sentence:** lanes A and B do the "Next action:" line at the top of their `docs/lanes/<X>.md`; lane C stays idle until SYNC-04 and UI-01 are DONE.
 
 ## 2. Task queue
 
@@ -138,7 +139,7 @@ Target navigation is **Today / Study / Cards / Settings**, with visible labels o
 
 **Stop and ask the owner (do not guess) when:** a decision here seems wrong or missing; the work needs a file your lane does not own and the request route is too slow to proceed; a test can only pass by deleting data or weakening an assertion; a migration or live Supabase change is needed and not described; `main` CI is red and it is unclear whose change caused it.
 
-**Integration sessions** happen only when the owner asks (for example "re-plan lanes"). They alone may edit `lanes.json`, protocol sections, §1, workflows other than `android.yml`, `AGENTS.md`, `README.md`, `PROMPT.md`, `test/plan_protocol.js` and `test/lane_guard.js` (`node test/lane_guard.js integration`). They assign "—" rows to lanes when dependencies are DONE and move file ownership when a lane's work finishes (e.g. `view_settings.js` to lane B after SYNC-04). Run them when no lane PR is open. Keep this plan under ~4,500 words; put reusable detail in existing docs.
+**Integration sessions** happen only when the owner asks (for example "re-plan lanes"), on a branch `integration/<date>-<slug>` merged by PR like any lane. They alone may edit `lanes.json`, protocol sections, §1, workflows other than `android.yml`, `AGENTS.md`, `README.md`, `PROMPT.md`, `test/plan_protocol.js` and `test/lane_guard.js` (`node test/lane_guard.js integration`). They assign "—" rows to lanes when dependencies are DONE and move file ownership when a lane's work finishes (e.g. `view_settings.js` to lane B after SYNC-04). Run them when no lane PR is open. Keep this plan under ~4,500 words; put reusable detail in existing docs.
 
 ## 4. Ownership, architecture, and reference precedence
 
@@ -152,7 +153,7 @@ Repo: [Mymayankyadav/lemma](https://github.com/Mymayankyadav/lemma), branch `mai
 | AI portability | `src/app/ai.js` currently requires `window.claude`; Settings' ArtifactData instructions are host-specific, not a working general connector. |
 | Data / product contracts | `supabase/migrations/`; [study protocol](docs/STUDY_PLANNING_PROTOCOL.md); [sync reference](docs/PHASE2_SYNC_CONTRACT.md) |
 | Lanes and ownership | `lanes.json` (who owns which file), `test/lane_guard.js`, `docs/lanes/*.md` (per-lane handoff) |
-| Delivery / verification | `package.json`, `build.js` (`appFiles` order = load order), `test/`, `.github/workflows/`, `capacitor.config.json`; native `android/` does not yet exist. |
+| Delivery / verification | `package.json`, `build.js` (`appFiles` order = load order), `test/`, `.github/workflows/`, `capacitor.config.json`, native `android/` (debug APK built by `android.yml`). |
 
 Precedence: current user instruction → this plan for scope/order → supporting contracts. Source, tests and observed backend determine implementation status; correct stale prose rather than assuming it works. Historical audits are evidence only. Engineering `plan.md` is distinct from the student's versioned study plans.
 
@@ -160,6 +161,8 @@ Precedence: current user instruction → this plan for scope/order → supportin
 
 | Milestone | Evidence / limit |
 | --- | --- |
+| Google sign-in, live web (AUTH-01) | [PR #17](https://github.com/Mymayankyadav/lemma/pull/17): live Pages PKCE sign-in, logout HTTP 204, re-login to the same `user.id`, expired-callback error with device data intact, backup acknowledgement enforced. Android OAuth deferred to ANDROID-02. |
+| Android shell and CI APK (ANDROID-01) | [PR #9](https://github.com/Mymayankyadav/lemma/pull/9), [PR #12](https://github.com/Mymayankyadav/lemma/pull/12); [Android 40469725939](https://github.com/Mymayankyadav/lemma/actions/runs/40469725939) SUCCESS. Physical device NOT TESTED. |
 | Deterministic review convergence (SYNC-03) | `review_replay.project`, transactional conflict resolution, undo/retraction gates, both-timezone replay test and two-page app due-date smoke; [regression 40449924808](https://github.com/Mymayankyadav/lemma/actions/runs/40449924808) SUCCESS. MOCK transport only. |
 | Durable editor and crash recovery | [PR #2](https://github.com/Mymayankyadav/lemma/pull/2) and [PR #3](https://github.com/Mymayankyadav/lemma/pull/3) merged; main regression/Pages 40378487715/40378487955 and 40381695953/40381695797 SUCCESS. |
 | Synchronous identity guards | `cloud_account.js`, `workspace_lifecycle.js`, `test/account_identity.js`, `test/workspace_browser.js`; [PR #4](https://github.com/Mymayankyadav/lemma/pull/4) merged; full main regression 40383331439 and Pages 40383331522 SUCCESS. |
