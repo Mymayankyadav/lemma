@@ -1,4 +1,4 @@
-// Two independent browser caches and a deterministic, fault-injected RPC server.
+// Independent browser caches and a deterministic, fault-injected RPC server.
 // This tests the account adapter, not production Supabase login or active UI sync.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -8,10 +8,12 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
   ['review_ledger','review_replay','outbox_core','sync_browser']
     .map(f=>fs.readFileSync(`src/app/${f}.js`,'utf8')).join('\n');
 (async () => {
-  const server = new Map(), receipts = new Map(), requests = [];
+  const server = new Map(), receipts = new Map(), requests = [], authRequests = [];
   let loseNextResponse = false;
   const send = async ({ payload:p, authorization }) => {
-    assert.equal(authorization, 'Bearer token-a');
+    authRequests.push({id:p.p_request_id,authorization});
+    if (authorization === 'Bearer token-expired') return {error:{message:'JWT expired',code:'PGRST303'}};
+    assert.ok(['Bearer token-a','Bearer token-a-refreshed'].includes(authorization));
     requests.push(p.p_request_id);
     if (receipts.has(p.p_request_id)) return { data:receipts.get(p.p_request_id) };
     const previous = server.get(p.p_note_id);
@@ -25,7 +27,7 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
   const browser = await chromium.launch();
   try {
     const contexts = [];
-    for (let device = 0; device < 2; device++) {
+    for (let device = 0; device < 3; device++) {
       const ctx = await browser.newContext(); contexts.push(ctx);
       await ctx.route('https://lemma-sync.test/**', r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Sync adapter test</title>'}));
       await ctx.exposeFunction('sendRPC', send);
@@ -37,8 +39,8 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
       await start(page);
       return page;
     }
-    async function start(page) {
-      await page.evaluate(async userId => {
+    async function start(page, online = true) {
+      await page.evaluate(async ({userId,online}) => {
         let current = {user:{id:userId},access_token:'token-a'};
         const listeners = new Set();
         const client = {
@@ -47,9 +49,15 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
           } },
           rpc:(_name,payload)=>({setHeader:(_key,authorization)=>window.sendRPC({payload,authorization})})
         };
-        window.account = await window.sync.startAccount(client,userId);
+        window.syncEvents = [];
+        window.account = await window.sync.startAccount(client,userId,event=>syncEvents.push(event));
+        account.outbox.online = online;
+        window.setSession = (next,event) => {
+          current=next;
+          if (event) for(const fn of listeners) fn(event,current);
+        };
         window.switchUser = () => { current={user:{id:'00000000-0000-4000-8000-000000000002'},access_token:'token-b'}; for(const fn of listeners)fn('SIGNED_IN',current); };
-      }, userId);
+      }, {userId,online});
     }
     const a = await open(contexts[0]), b = await open(contexts[1]);
     const stage = (page,id,front,deleted=false)=>page.evaluate(({id,front,deleted})=>account.storage.stageNote({id,front,back:'',log:[],cards:{}},undefined,deleted),{id,front,deleted});
@@ -79,10 +87,18 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
     assert.equal(server.get('same').data.front,'tab two');
     assert.equal(await a.evaluate(async()=>(await account.storage.list()).length),0);
     await a.evaluate(()=>{ account.outbox.online=false; });
-    await stage(a,'offline','durable offline'); await flush(a);
+    const offlineOp = await stage(a,'offline','durable offline'); await flush(a);
     assert.equal(server.has('offline'),false);
+    const offlinePending = await a.evaluate(id=>account.storage.get(id),offlineOp.id);
+    await a.reload(); await start(a,false); await flush(a);
+    assert.deepEqual(await a.evaluate(id=>account.storage.get(id),offlineOp.id),offlinePending,
+      'offline restart preserves the complete pending operation and its retry ID');
+    assert.equal(await a.evaluate(async()=>(await account.storage.note('offline')).data.front),'durable offline');
+    assert.equal(server.has('offline'),false,'restarting offline cannot send a locally committed edit');
     await a.evaluate(()=>{ account.outbox.online=true; }); await flush(a);
     assert.equal(server.get('offline').data.front,'durable offline');
+    assert.equal(server.get('offline').revision,1);
+    assert.equal(requests.filter(id=>id===offlineOp.requestId).length,1);
     await stage(a,'offline','',true); await flush(a);
     assert.ok(server.get('offline').deleted_at);
     await b.evaluate(row=>account.storage.ingestRemoteNote(row),server.get('offline'));
@@ -221,12 +237,57 @@ const source = fs.readFileSync('src/fsrs.js','utf8') + '\n' +
     await a.reload();await b.reload();await start(a);await start(b);
     assert.deepEqual(await dueState(a),await dueState(b),'restart cannot change the projected due date');
 
+    const c = await open(contexts[2]);
+    // An expired access token is a recoverable auth failure, not an ack or a
+    // content conflict. Keep both this write and the following write durable.
+    const expiredOp = await stage(c,'expired-token','saved before token expired');
+    const followingOp = await stage(c,'after-expiry','queued after first edit');
+    await c.evaluate(userId=>setSession({user:{id:userId},access_token:'token-expired'},'TOKEN_REFRESHED'),userId);
+    assert.equal((await flush(c)).sent,0);
+    const expiredPending = await c.evaluate(id=>account.storage.get(id),expiredOp.id);
+    assert.equal(expiredPending.state,'pending');
+    assert.equal(expiredPending.requestId,expiredOp.requestId);
+    assert.equal(expiredPending.attempted,true);
+    assert.equal(await c.evaluate(async()=>(await account.storage.note('expired-token')).dirty),true);
+    assert.equal(await c.evaluate(id=>syncEvents.some(e=>e.type==='auth-required' && e.id===id),expiredOp.id),true);
+    assert.equal(server.has('expired-token'),false);
+    assert.equal(authRequests.some(x=>x.id===followingOp.requestId),false,
+      'auth failure stops the batch before another queued operation is sent');
+    await c.evaluate(userId=>setSession({user:{id:userId},access_token:'token-a-refreshed'},'TOKEN_REFRESHED'),userId);
+    assert.equal((await flush(c)).sent,2);
+    assert.equal(server.get('expired-token').revision,1);
+    assert.equal(server.get('after-expiry').revision,1);
+    assert.equal(await c.evaluate(id=>account.storage.get(id),expiredOp.id),undefined);
+    assert.equal(await c.evaluate(async()=>(await account.storage.note('expired-token')).dirty),false);
+    assert.deepEqual(authRequests.filter(x=>x.id===expiredOp.requestId).map(x=>x.authorization),
+      ['Bearer token-expired','Bearer token-a-refreshed'],
+      'the same request ID retries with the renewed token');
+
+    // A missing session blocks transport even before SIGNED_OUT is delivered.
+    // A terminal refresh failure then closes the handle, preserving the private
+    // cache for a later sign-in as the same owner.
+    const signedOutOp = await stage(c,'expired-session','private unsent edit');
+    await c.evaluate(()=>setSession(null));
+    assert.equal((await flush(c)).sent,0);
+    const signedOutPending = await c.evaluate(id=>account.storage.get(id),signedOutOp.id);
+    assert.equal(signedOutPending.state,'pending');
+    assert.equal(authRequests.some(x=>x.id===signedOutOp.requestId),false);
+    await c.evaluate(()=>setSession(null,'SIGNED_OUT'));
+    assert.equal((await flush(c)).stopped,true);
+    await c.reload(); await start(c,false);
+    assert.deepEqual(await c.evaluate(id=>account.storage.get(id),signedOutOp.id),signedOutPending);
+    assert.equal(await c.evaluate(async()=>(await account.storage.note('expired-session')).data.front),'private unsent edit');
+    assert.equal(server.has('expired-session'),false);
+    await c.evaluate(()=>{account.outbox.online=true;}); await flush(c);
+    assert.equal(server.get('expired-session').revision,1);
+    assert.equal(requests.filter(id=>id===signedOutOp.requestId).length,1);
+
     // A stale account handle is stopped when another user signs in.
     await stage(tab,'must-not-send','private A');
     await tab.evaluate(()=>window.switchUser());
     assert.equal((await flush(tab)).stopped,true);
     assert.equal(server.has('must-not-send'),false);
     for(const ctx of contexts) await ctx.close();
-    console.log('ok: two-browser conflict resolution, archives, lost-response restart, stale choices, Web Locks, tombstones and account stop');
+    console.log('ok: two-browser conflicts, offline restart, expired JWT/session recovery, stable retries, Web Locks, tombstones and account stop');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
