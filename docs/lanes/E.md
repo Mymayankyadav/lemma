@@ -1,6 +1,6 @@
 # Lane E — tutor handoff (TUTOR-01)
 
-Next action: TUTOR-01 T3c1 — add a bounded owner-private, append-only tutor handoff receipt RPC with exact-idempotent retries, local HTTP two-owner security tests, then integrate it in a separate client slice. Do not deploy production outside Lane A. T4 real cross-model gate and ready flag remain open.
+Next action: TUTOR-01 T3c2a in PR #133 — guard the owner-scoped immutable receipt RPC client and verify exact-ID retries, identity changes and failures; then T3c2b makes selected study-action+audit recovery atomic/durable in a separate E-owned slice. T3c1 backend #119 is merged but production migration is still reserved to Lane A. Keep handoff hidden pending T4. T4 real cross-model gate and ready flag remain open.
 
 | Field | Value |
 | --- | --- |
