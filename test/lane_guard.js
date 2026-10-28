@@ -15,8 +15,13 @@ for (const [id, lane] of Object.entries(cfg.lanes)) groups.push({ id: 'lane ' + 
 groups.push({ id: 'shared_append_only', globs: cfg.shared_append_only });
 groups.push({ id: 'integration_only', globs: cfg.integration_only });
 groups.push({ id: 'frozen', globs: cfg.frozen });
-for (const g of groups) g.res = g.globs.map(toRegex);
-const owners = path => groups.filter(g => g.res.some(re => re.test(path)));
+// A glob starting with "!" excludes matching paths from that group (e.g. lane A owns
+// supabase/** except lane D's *_plan01_* migrations).
+for (const g of groups) {
+  g.res = g.globs.filter(x => !x.startsWith('!')).map(toRegex);
+  g.not = g.globs.filter(x => x.startsWith('!')).map(x => toRegex(x.slice(1)));
+}
+const owners = path => groups.filter(g => g.res.some(re => re.test(path)) && !g.not.some(re => re.test(path)));
 const git = args => execFileSync('git', args, { encoding: 'utf8' }).split('\n').filter(Boolean);
 
 const args = process.argv.slice(2);
@@ -26,7 +31,7 @@ if (!target) {
   const problems = [];
   let tracked = [];
   try { tracked = git(['ls-files']); } catch { /* not a git checkout; check globs only */ }
-  const literals = groups.flatMap(g => g.globs.filter(x => !x.includes('*')));
+  const literals = groups.flatMap(g => g.globs.filter(x => !x.includes('*') && !x.startsWith('!')));
   for (const path of new Set([...tracked, ...literals])) {
     const o = owners(path);
     if (o.length > 1) problems.push(path + ' -> ' + o.map(g => g.id).join(', '));

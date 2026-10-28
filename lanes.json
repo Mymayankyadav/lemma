@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of file ownership for parallel lanes. Every path matches at most one lane. Edit only through an integration PR under standing authorization (see plan.md section 3).",
+  "_comment": "Single source of file ownership for parallel lanes. Every path matches at most one lane; a leading '!' excludes paths from that lane. Edit only through an integration PR (plan.md section 3).",
   "lanes": {
     "A": {
       "name": "sync, auth and backend",
@@ -8,15 +8,15 @@
       "owns": [
         "src/app/account_sync.js", "src/app/cloud_account.js", "src/app/cloud_bridge.js",
         "src/app/conflict_ui.js", "src/app/io.js", "src/app/model.js", "src/app/outbox_core.js",
-        "src/app/review_ledger.js", "src/app/review_replay.js", "src/app/session.js",
-        "src/app/store.js", "src/app/sync_browser.js", "src/app/sync_merge.js",
-        "src/app/workspace_lifecycle.js", "src/config.js",
-        "supabase/**",
-        "docs/PHASE2_SYNC_CONTRACT.md", "docs/DATA_MODEL.md", "docs/SYNC_AUDIT_*.md", "docs/lanes/A.md",
-        "test/account_*.js", "test/auth_*.js", "test/sync_*.js", "test/browser_sync.js",
-        "test/conflict_*.js", "test/editor_persistence.js", "test/import_*.js",
+        "src/app/review_ledger.js", "src/app/review_replay.js", "src/app/session.js", "src/app/store.js",
+        "src/app/sync_browser.js", "src/app/sync_merge.js", "src/app/workspace_lifecycle.js",
+        "src/config.js", "supabase/**", "docs/PHASE2_SYNC_CONTRACT.md", "docs/DATA_MODEL.md",
+        "docs/SYNC_AUDIT_*.md", "docs/lanes/A.md", "test/account_*.js", "test/auth_*.js", "test/sync_*.js",
+        "test/browser_sync.js", "test/conflict_*.js", "test/editor_persistence.js", "test/import_*.js",
         "test/local_persistence.js", "test/outbox_core.js", "test/review_*.js", "test/workspace_*.js",
-        ".github/workflows/sync-local.yml"
+        "test/stack_knowledge_*.js", "!supabase/migrations/*_plan01_*.sql",
+        "!supabase/migrations/*_tutor01_*.sql", "!supabase/tests/plan01_*.sql",
+        "!supabase/tests/tutor01_*.sql"
       ]
     },
     "B": {
@@ -26,9 +26,9 @@
       "owns": [
         "src/app.css", "src/index.html", "src/render.js", "src/icons/**", "src/manifest.webmanifest",
         "src/app/main.js", "src/app/view_home.js", "src/app/view_browse.js", "src/app/view_editor.js",
-        "src/app/view_review.js", "src/app/view_stats.js", "src/app/view_settings.js", "src/app/sheets.js", "src/app/charts.js",
-        "docs/lanes/B.md", "docs/UI_*.md",
-        "test/e2e.js", "test/render_test.js", "test/seed.js", "test/mock_claude.js", "test/ui_*.js"
+        "src/app/view_review.js", "src/app/view_stats.js", "src/app/view_settings.js", "src/app/sheets.js",
+        "src/app/charts.js", "docs/lanes/B.md", "docs/UI_*.md", "test/e2e.js", "test/render_test.js",
+        "test/seed.js", "test/mock_claude.js", "test/ui_*.js"
       ]
     },
     "C": {
@@ -36,18 +36,49 @@
       "status": "docs/lanes/C.md",
       "branch_prefix": "lane-c/",
       "owns": [
-        "android/**", "capacitor.config.json", "src/app/native_*.js",
-        ".github/workflows/android.yml", "docs/ANDROID.md", "docs/lanes/C.md", "test/android_*.js"
+        "android/**", "capacitor.config.json", "src/app/native_*.js", "docs/ANDROID.md", "docs/lanes/C.md",
+        "test/android_*.js"
+      ]
+    },
+    "D": {
+      "name": "study plan and checkpoints (PLAN-01)",
+      "status": "docs/lanes/D.md",
+      "branch_prefix": "lane-d/",
+      "owns": [
+        "src/app/study_plan.js", "src/app/view_study.js", "src/styles/study.css",
+        "docs/STUDY_PLANNING_PROTOCOL.md", "docs/lanes/D.md", "test/study_*.js", "test/stack_study_*.js",
+        "supabase/migrations/*_plan01_*.sql", "supabase/tests/plan01_*.sql"
+      ]
+    },
+    "E": {
+      "name": "tutor handoff (TUTOR-01)",
+      "status": "docs/lanes/E.md",
+      "branch_prefix": "lane-e/",
+      "owns": [
+        "src/app/tutor_handoff.js", "src/styles/handoff.css", "docs/TUTOR_HANDOFF.md", "docs/lanes/E.md",
+        "test/tutor_*.js", "test/stack_tutor_*.js", "supabase/migrations/*_tutor01_*.sql",
+        "supabase/tests/tutor01_*.sql"
+      ]
+    },
+    "F": {
+      "name": "release and ship (RELEASE-01)",
+      "status": "docs/lanes/F.md",
+      "branch_prefix": "lane-f/",
+      "owns": [
+        "src/service-worker.js", "docs/RELEASE.md", "docs/lanes/F.md", "test/release_*.js",
+        ".github/workflows/release.yml"
       ]
     }
   },
   "shared_append_only": [
-    "plan.md", "package.json", "package-lock.json", "build.js", "docs/SETUP.md", "src/app/util.js", ".gitignore"
+    "plan.md", "package.json", "package-lock.json", "build.js", "docs/SETUP.md", "src/app/util.js",
+    ".gitignore"
   ],
   "integration_only": [
-    "lanes.json", "AGENTS.md", "PROMPT.md", "README.md",
-    ".github/workflows/test.yml", ".github/workflows/pages.yml", ".github/workflows/import-source.yml",
-    "test/plan_protocol.js", "test/lane_guard.js", "test/check_syntax.js"
+    "lanes.json", "AGENTS.md", "PROMPT.md", "README.md", ".github/workflows/test.yml",
+    ".github/workflows/pages.yml", ".github/workflows/import-source.yml", "test/plan_protocol.js",
+    "test/lane_guard.js", "test/check_syntax.js", ".github/workflows/android.yml",
+    ".github/workflows/sync-local.yml", "test/run_prefix.js", "docs/SHIP_PLAN.md"
   ],
   "frozen": [
     "src/fsrs.js", "test/compare_tsfsrs.mts", "test/optimizer_synthetic.js"

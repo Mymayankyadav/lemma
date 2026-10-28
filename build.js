@@ -13,7 +13,10 @@ katexCss = katexCss.replace(/src:url\(fonts\/([\w-]+)\.woff2\) format\("woff2"\)
 if (/url\(fonts\//.test(katexCss)) throw new Error('unreplaced KaTeX font url');
 
 const appFiles = ['util.js', 'native_shell.js', 'cloud_account.js', 'cloud_bridge.js', 'sync_merge.js', 'review_ledger.js', 'review_replay.js', 'outbox_core.js', 'sync_browser.js', 'account_sync.js', 'store.js', 'model.js', 'session.js', 'charts.js', 'io.js', 'ai.js', 'jobs.js',
-  'view_review.js', 'view_editor.js', 'view_browse.js', 'view_home.js', 'view_stats.js', 'conflict_ui.js', 'view_settings.js', 'sheets.js', 'workspace_lifecycle.js', 'main.js'];
+  'view_review.js', 'view_editor.js', 'view_browse.js', 'view_home.js', 'view_stats.js', 'conflict_ui.js', 'view_settings.js', 'sheets.js', 'workspace_lifecycle.js',
+  // Optional lane D/E modules: included (in this order, before main.js) once the lane creates them.
+  ...['study_plan.js', 'tutor_handoff.js', 'view_study.js'].filter((f) => fs.existsSync(path.join(root, 'src/app', f))),
+  'main.js'];
 const app = "(() => {\n'use strict';\n" + appFiles.map((f) => `/* ===== ${f} ===== */\n` + read('src/app/' + f)).join('\n') + '\n})();';
 
 // All runtime libraries are embedded, including Supabase, for an offline-capable Android WebView.
@@ -43,7 +46,10 @@ const webBoot = `if ('serviceWorker' in navigator && location.protocol === 'http
 }`;
 let html = read('src/index.html');
 const parts = {
-  '/*@@APP_CSS@@*/': read('src/app.css'),
+  // Lane stylesheets in src/styles/*.css (e.g. study.css, handoff.css) follow app.css.
+  '/*@@APP_CSS@@*/': [read('src/app.css'), ...(fs.existsSync(path.join(root, 'src/styles'))
+    ? fs.readdirSync(path.join(root, 'src/styles')).filter((f) => f.endsWith('.css')).sort()
+      .map((f) => read('src/styles/' + f)) : [])].join('\n'),
   '/*@@KATEX_CSS@@*/': katexCss,
   '/*@@KATEX_JS@@*/': vendor('node_modules/katex/dist/katex.min.js'),
   '/*@@MARKED_JS@@*/': vendor('node_modules/marked/lib/marked.umd.js'),

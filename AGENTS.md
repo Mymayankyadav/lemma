@@ -3,7 +3,7 @@
 Read current remote [plan.md](plan.md) first. It is the **only** engineering roadmap and task queue. Protocol v5 grants standing authority to minimize human intervention within approved scope; tool permissions and explicit user limits still apply.
 
 - Implement/follow/continue means select, implement, verify, merge and advance through ready slices without repeated “continue” prompts. Planning/review-only requests remain documentation only.
-- Respect an explicit lane. Otherwise choose automatically by plan §0; never ask merely because no lane was named. Up to three implementation agents, one per lane; one agent may work sequentially across roles.
+- Respect an explicit lane. Otherwise choose automatically by plan §0; never ask merely because no lane was named. Up to six implementation agents, one per lane (A–F; see `lanes.json`); during the 28 Oct ship-today push read `docs/SHIP_PLAN.md` right after `plan.md`; one agent may work sequentially across roles.
 - Inspect current `main`, open PRs/CI and all lane handoffs. Claim/resume via the draft-PR heartbeat protocol in §3; preserve active work and recover stale claims only with the specified evidence.
 - One bounded slice per PR; after green merge/main checks, advance to the next eligible slice. If blocked, record the exact gate and work on independent tasks. At runtime limits push a recoverable checkpoint.
 - Preserve the imported code/data and original `src/fsrs.js`; no scheduler/store rewrite or new image-upload/camera/OCR/image-tutoring project. Private study knowledge has only the narrow exception in the plan.

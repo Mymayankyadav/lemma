@@ -37,9 +37,7 @@ jobs:
           npm run test:syntax
           npm run test:plan
           case "$PR_HEAD_REF" in
-            lane-a/*) node test/lane_guard.js A ;;
-            lane-b/*) node test/lane_guard.js B ;;
-            lane-c/*) node test/lane_guard.js C ;;
+            lane-[a-z]/*) node test/lane_guard.js "$(printf '%s' "$PR_HEAD_REF" | cut -c6 | tr a-z A-Z)" ;;
             integration/*) node test/lane_guard.js integration ;;
             '') node test/lane_guard.js ;;
             *) echo "Unknown PR lane: $PR_HEAD_REF"; exit 1 ;;
