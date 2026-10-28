@@ -273,6 +273,42 @@ const B = '00000000-0000-4000-8000-000000000002';
     JSON.parse(JSON.stringify(before)),'server snapshot must not write to IndexedDB');
   console.log('PASS RELEASE R2f: explicit server snapshot, all 19 tables, owner/duplicate/size guards, no client writes, post-transport account switch');
 
+  // R2i: restore client rejects consent/owner/checksum/switch failures before
+  // sending a write, and retains the caller's request ID across retries.
+  serverOwner=A;serverHandle={userId:A,storage:storageA};
+  const requestId='44444444-4444-4444-8444-444444444444';
+  let writes=0,waitRestore=null;
+  const originalRpc=serverClient.rpc;
+  serverClient.rpc=(name,args)=>{
+    assert.equal(name,'restore_account_workspace');
+    assert.equal(args.p_request_id,requestId);
+    assert.equal(args.p_confirm,true);
+    assert.equal(args.p_archive.ownerId,A);
+    return {setHeader:async()=>{
+      writes++;
+      if(waitRestore)await waitRestore();
+      return {data:{status:args.p_dry_run?'validated':'restored',ownerId:A,
+        requestId,rows:1,tables:19}};
+    }};
+  };
+  await assert.rejects(remote.restoreServerWorkspaceArchive(archive),/Explicit restore/);
+  const options={requestId,studentConfirmed:true,dryRun:false};
+  const broken=structuredClone(archive);broken.tables.study_plans[0].id='damage';
+  await assert.rejects(remote.restoreServerWorkspaceArchive(broken,options),/checksum/);
+  await assert.rejects(remote.verifyServerWorkspaceArchive(archive,B),/Invalid/);
+  assert.equal(writes,0);
+  assert.equal((await remote.restoreServerWorkspaceArchive(archive,{...options,dryRun:true})).status,'validated');
+  assert.equal((await remote.restoreServerWorkspaceArchive(archive,options)).status,'restored');
+  assert.equal((await remote.restoreServerWorkspaceArchive(archive,options)).status,'restored');
+  let restoreEntered,releaseRestore;
+  const restoreStarted=new Promise(resolve=>restoreEntered=resolve);
+  waitRestore=()=>{restoreEntered();return new Promise(resolve=>releaseRestore=resolve);};
+  const pendingRestore=remote.restoreServerWorkspaceArchive(archive,options);
+  await restoreStarted;serverOwner=B;serverHandle={userId:B,storage:storageB};
+  releaseRestore();await assert.rejects(pendingRestore,/Account changed/);
+  serverClient.rpc=originalRpc;
+  console.log('PASS RELEASE R2i client: explicit confirmation, stable retry key, offline integrity/owner checks and late account-switch denial');
+
   dbA.close();dbB.close();
   console.log('PASS RELEASE R2d: explicit local snapshot envelope, SHA-256, owner/size/shape guards, no mutation, post-hash identity');
 })().catch(error=>{console.error('FAIL R2d: '+error.stack);process.exitCode=1;});

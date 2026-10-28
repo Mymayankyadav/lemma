@@ -12,6 +12,7 @@ const knowledgeMigrations=[
  {version:'20261028051500',name:'structured_context_v1'}
 ];
 const ownerSnapshotMigration={version:'20261028163000',name:'release01_owner_snapshot_v1'};
+const ownerRestoreMigration={version:'20261028174411',name:'release01_owner_restore_v1'};
 function assertAllowedMigrationHistory(migrations,legacy){
  assert.equal(legacy.length,9,'original production migration baseline changed');
  assert.ok(Array.isArray(migrations),'migration history must be an array');
@@ -28,7 +29,10 @@ function assertAllowedMigrationHistory(migrations,legacy){
      m.name===ownerSnapshotMigration.name;
    if(m.name===ownerSnapshotMigration.name)
      assert.ok(isPinnedSnapshot,'R2e snapshot migration version changed');
-   if(!isPinnedSnapshot)
+   const isPinnedRestore=m.version===ownerRestoreMigration.version && m.name===ownerRestoreMigration.name;
+   if(m.name===ownerRestoreMigration.name)
+     assert.ok(isPinnedRestore,'restore migration version changed');
+   if(!isPinnedSnapshot && !isPinnedRestore)
      assert.match(m.name,/^(?:[a-z0-9]+_)*?(?:plan01|tutor01)_[a-z0-9_]+$/,
        'only named plan01/tutor01 or pinned R2e migration may extend baseline');
    assert.ok(m.version>previous,'additional migrations must be timestamp-ordered');
@@ -53,5 +57,5 @@ function compare(){
  assert.deepStrictEqual(legacyActual,legacyExpected,'L8 production sync table/policy/function drift');
  console.log('ok: L8 nine legacy and three knowledge migrations exact, only named plan/tutor or exact R2e snapshot extension allowed; full sync security snapshot matches');
 }
-module.exports={compare,assertAllowedMigrationHistory,knowledgeMigrations,ownerSnapshotMigration};
+module.exports={compare,assertAllowedMigrationHistory,knowledgeMigrations,ownerSnapshotMigration,ownerRestoreMigration};
 if(require.main===module)try{compare();}catch(e){console.error('FAIL L8 security parity: '+e.message);process.exitCode=1;}
