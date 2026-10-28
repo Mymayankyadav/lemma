@@ -31,11 +31,11 @@ self.addEventListener('fetch', (event) => {
     // versioned document caches. An outgoing worker must never recreate its
     // retired cache while a replacement worker is claiming clients.
     event.respondWith(fetch(request).catch(() =>
-      caches.match(request).then((cached) => cached || Response.error())));
+      caches.match(request, { cacheName: CACHE }).then((cached) => cached || Response.error())));
   } else {
     // Static, public shell assets remain cache-first. Only install may write
     // a versioned cache: late requests from the outgoing worker must not
     // recreate an obsolete cache after activation has removed it.
-    event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
+    event.respondWith(caches.match(request, { cacheName: CACHE }).then((cached) => cached || fetch(request)));
   }
 });
