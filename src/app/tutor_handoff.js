@@ -263,6 +263,74 @@ const TutorHandoff = (() => {
       createdAt:receipt.createdAt};
   }
 
+  // T3c2c: a student's selected event and its immutable handoff audit are
+  // persisted in ONE server transaction, never as two fallible client writes.
+  // The tutor-supplied source is deliberately ignored by the RPC.
+  async function recordEventWithAudit({planId,checkpointId:cpId,
+    expectedPlanRevision,type,payload,eventId} = {}) {
+    if (!validId(planId) || !validId(eventId) || !checkpointId(cpId) ||
+        !revision(expectedPlanRevision) || !types.has(type) || !plain(payload))
+      throw new Error('Invalid tutor study event');
+    const safePayload = dataCopy(payload);
+    if (bytes(JSON.stringify(safePayload)) > 12000)
+      throw new Error('Tutor study event exceeds payload limit');
+    if (typeof LemmaAccount === 'undefined' ||
+        typeof LemmaCloud === 'undefined' ||
+        !LemmaAccount.client || !validId(LemmaAccount.user?.id))
+      throw new Error('Sign in before recording tutor evidence');
+    const client = LemmaAccount.client, owner = LemmaAccount.user.id;
+    const epoch = identityEpoch;
+    const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
+    const check = () => {
+      if (identityEpoch !== epoch || LemmaAccount.client !== client ||
+          LemmaAccount.user?.id?.toLowerCase() !== owner.toLowerCase() ||
+          (typeof App !== 'undefined' &&
+           (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
+        throw new Error('Study account or workspace changed; reopen the handoff');
+    };
+    check();
+    if (typeof navigator !== 'undefined' && navigator.onLine === false)
+      throw new Error('Tutor evidence offline; retry with the same event ID');
+    const args = {p_plan_id:planId,p_checkpoint_id:cpId,
+      p_expected_plan_revision:expectedPlanRevision,p_event_type:type,
+      p_payload:safePayload,p_event_id:eventId};
+    let token;
+    try { token = await LemmaCloud.accountToken(client,owner); }
+    catch (_) {
+      check();
+      throw new Error('Tutor evidence unavailable; retry with the same event ID');
+    }
+    check();
+    let result;
+    try {
+      result = await client.rpc('record_tutor_evidence_with_receipt',args)
+        .setHeader('Authorization','Bearer '+token);
+    } catch (_) {
+      check();
+      throw new Error('Tutor evidence unavailable; retry with the same event ID');
+    }
+    check();
+    if (result?.error) {
+      const reason = String(result.error.message || '');
+      if (['stale_plan_revision','checkpoint_not_in_approved_plan',
+           'idempotency_key_reused','invalid_study_event','invalid_handoff_receipt'].includes(reason))
+        throw new Error(reason);
+      throw new Error('Tutor evidence unavailable; retry with the same event ID');
+    }
+    const ev = result?.data?.event, audit = result?.data?.audit;
+    if (!ev || !audit || !validId(ev.eventId) ||
+        ev.eventId.toLowerCase() !== eventId.toLowerCase() ||
+        !validId(ev.sessionId) || !Number.isSafeInteger(ev.seq) || ev.seq < 1 ||
+        ev.planRevision !== expectedPlanRevision ||
+        !validId(audit.receiptId) ||
+        audit.receiptId.toLowerCase() !== eventId.toLowerCase() ||
+        audit.planRevision !== expectedPlanRevision ||
+        typeof audit.createdAt !== 'string' ||
+        !Number.isFinite(Date.parse(audit.createdAt)))
+      throw new Error('Invalid atomic tutor receipt; retry with the same event ID');
+    return {event:ev,audit};
+  }
+
   // T3a: only explicitly selected events may be saved. Cards and plan
   // amendments remain proposals until separate student-driven approval flows.
   async function open({ planId, checkpointId } = {}) {
@@ -490,8 +558,8 @@ const TutorHandoff = (() => {
       saveBtn.disabled = parseBtn.disabled = input.disabled = true;
       let recorded = 0;
       try {
-        if (typeof StudyPlan.recordEvent !== 'function')
-          throw new Error('Study-event storage is not available');
+        if (typeof LemmaAccount === 'undefined' || !LemmaAccount.client)
+          throw new Error('Sign in before recording tutor evidence');
         for (const item of pending) {
           if (input.value !== reviewedText)
             throw new Error('Reply changed; review it again');
@@ -506,11 +574,7 @@ const TutorHandoff = (() => {
             throw new Error('stale_plan_revision: reopen the handoff');
           // Use the original proposal UUID and unchanged JSON payload on every
           // retry. The owner-scoped RPC enforces revision CAS and idempotency.
-          await StudyPlan.recordEvent({
-            // The tutor's source field is untrusted metadata, never an actor identity.
-            // Record this as tutor-handoff evidence regardless of claimed author.
-            ...item.value,source:'tutor_handoff.v1'
-          });
+          await recordEventWithAudit(item.value);
           savedIds.add(item.value.eventId);
           item.checkbox.checked = false;
           item.checkbox.disabled = true;
@@ -537,5 +601,5 @@ const TutorHandoff = (() => {
     return Sheets.open({title:'Continue with another tutor',wide:true,
       className:'tutor-handoff-sheet',body});
   }
-  return { ready:false, exportPacket, parseReply, recordReceipt, open };
+  return { ready:false, exportPacket, parseReply, recordReceipt, recordEventWithAudit, open };
 })();
