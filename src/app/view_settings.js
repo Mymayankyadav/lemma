@@ -631,8 +631,10 @@ const SettingsView = (() => {
         LemmaConflicts.mount(), message));
     }
 
-    if (LemmaAccount.user && Store.mode === 'account' && !App.workspaceBlocked)
+    if (LemmaAccount.user && Store.mode === 'account' && !App.workspaceBlocked) {
       page.append(knowledgeDraftSection());
+      page.append(acceptedRevisionSection());
+    }
 
     // data
     const st = Store.status();
@@ -656,6 +658,205 @@ const SettingsView = (() => {
 
     if (params.anchor) setTimeout(() => { const el = document.getElementById(params.anchor); if (el) el.scrollIntoView({ block: 'start' }); }, 30);
     return page;
+  }
+
+  /* K3c: an explicitly requested read-only, account-scoped accepted revision
+     and six-at-a-time pinned source reader. No approval or write path. */
+  function acceptedRevisionSection() {
+    const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+    const contextInput = h('input', { id: 's-accepted-id', class: 'input',
+      type: 'text', spellcheck: 'false', autocomplete: 'off',
+      placeholder: 'Accepted context UUID', 'aria-label': 'Accepted context ID' });
+    const revisionInput = h('input', { id: 's-accepted-revision', class: 'input',
+      type: 'number', min: 1, step: 1, inputmode: 'numeric',
+      placeholder: 'Latest', 'aria-label': 'Accepted revision, optional' });
+    const read = h('button', { id: 's-accepted-read', class: 'btn btn-primary btn-sm',
+      type: 'button', text: 'Read accepted revision' });
+    const status = h('p', { id: 's-accepted-status', class: 'muted small',
+      role: 'status', 'aria-live': 'polite',
+      text: 'No server read has been made. Enter a context ID and choose Read.' });
+    const result = h('div', { id: 's-accepted-result',
+      class: 'accepted-reader-result', hidden: true });
+    let request = 0;
+    let selected = null;
+    function identity() {
+      const id = LemmaAccount.user?.id, client = LemmaAccount.client;
+      const handle = LemmaSync.accountHandle();
+      if (Store.mode !== 'account' || App.workspaceBlocked ||
+          !id || !client || !handle || handle.userId !== id)
+        throw new Error('Use the signed-in account workspace to read accepted context');
+      return { id, client, handle, generation: App.workspaceRevision };
+    }
+    function still(owner) {
+      return result.isConnected && !App.workspaceBlocked &&
+        App.workspaceRevision === owner.generation && Store.mode === 'account' &&
+        LemmaAccount.user?.id === owner.id &&
+        LemmaAccount.client === owner.client &&
+        LemmaSync.accountHandle() === owner.handle;
+    }
+    function failure(err) {
+      const message = String(err?.message || '');
+      if (navigator.onLine === false || /offline/i.test(message))
+        return 'Offline: accepted revisions and citations require a connection. No changes were made.';
+      if (/knowledge_context_not_found/i.test(message))
+        return 'No accepted revision was found for that context. Local drafts were not changed.';
+      if (/invalid_knowledge_read|invalid_context_read|invalid_structured_context/i.test(message))
+        return 'The accepted knowledge response could not be verified. Nothing was changed.';
+      return 'Accepted knowledge could not be read. The knowledge RPC may not yet be deployed on this Lemma server; reconnect or try again later. Nothing was changed.';
+    }
+    function clear() {
+      request++;
+      selected = null;
+      fill(result);
+      result.hidden = true;
+      read.disabled = false;
+    }
+    for (const input of [contextInput, revisionInput]) {
+      input.addEventListener('input', () => {
+        clear();
+        status.textContent = 'Reference changed. Choose Read to fetch that accepted revision.';
+      });
+    }
+    function sourceRow(ref, contextId, contextRevision, owner, current) {
+      const sourceId = ref.source_id.toLowerCase();
+      const row = h('section', { class: 'accepted-reader-source' },
+        h('h4', { text: typeof ref.title === 'string' && ref.title.trim()
+          ? ref.title.trim().slice(0, 160) : 'Cited source' }),
+        h('p', { class: 'muted small', text: 'Source ' + sourceId +
+          ' · pinned source revision ' + ref.revision }));
+      const excerpts = h('div', { class: 'accepted-reader-excerpts' });
+      const message = h('p', { class: 'muted small', role: 'status',
+        'aria-live': 'polite', text: 'Excerpts are fetched only on request.' });
+      const next = h('button', { class: 'btn btn-sm accepted-reader-next',
+        type: 'button', text: 'Read first 6 excerpts' });
+      let cursor = null, busy = false, displayed = 0;
+      const seen = new Set();
+      next.onclick = async () => {
+        if (busy || !still(owner) || selected !== current) return;
+        busy = true;
+        next.disabled = true;
+        message.textContent = 'Reading pinned source excerpts…';
+        const generation = request;
+        try {
+          const packet = await LemmaCloudBridge.readPinnedAcceptedCitation(
+            contextId, sourceId, contextRevision, cursor, 6);
+          if (!still(owner) || selected !== current || request !== generation || !row.isConnected)
+            return;
+          const page = packet?.source;
+          if (!packet?.context || packet.context.revision !== contextRevision ||
+              !page || page.source_id?.toLowerCase() !== sourceId ||
+              page.source_revision !== ref.revision ||
+              !Array.isArray(page.excerpts) || page.excerpts.length > 6 ||
+              typeof page.has_more !== 'boolean' ||
+              (page.has_more && page.excerpts.length === 0) ||
+              page.excerpts.some(item => !uuid.test(item?.section_id || '') ||
+                seen.has(item.section_id.toLowerCase()) ||
+                typeof item.locator !== 'string' ||
+                typeof item.title !== 'string' || typeof item.text !== 'string' ||
+                !/^[0-9a-f]{64}$/i.test(item.sha256 || '')))
+            throw new Error('Cited source page differs from its accepted revision');
+          for (const item of page.excerpts) {
+            seen.add(item.section_id.toLowerCase());
+            excerpts.append(h('article', { class: 'accepted-reader-excerpt' },
+              h('h5', { text: item.title || 'Untitled section' }),
+              h('p', { class: 'muted small', text: item.locator }),
+              h('pre', { class: 'knowledge-context-preview', text: item.text }),
+              h('p', { class: 'muted small', text: 'SHA-256 ' + item.sha256 })));
+          }
+          if (page.excerpts.length)
+            cursor = page.excerpts[page.excerpts.length - 1].section_id;
+          displayed += page.excerpts.length;
+          next.hidden = !page.has_more;
+          next.textContent = 'Read next 6 excerpts';
+          message.textContent = displayed + ' pinned excerpts displayed · source revision ' +
+            ref.revision + (page.has_more ? ' · more available' : ' · end of source');
+        } catch (err) {
+          if (still(owner) && selected === current && request === generation)
+            message.textContent = failure(err);
+        } finally {
+          if (still(owner) && selected === current && request === generation) {
+            busy = false;
+            next.disabled = false;
+          }
+        }
+      };
+      row.append(excerpts, message, next);
+      return row;
+    }
+    read.onclick = async () => {
+      clear();
+      const contextId = contextInput.value.trim().toLowerCase();
+      const rawRevision = revisionInput.value.trim();
+      const chosen = rawRevision === '' ? null : Number(rawRevision);
+      if (!uuid.test(contextId) ||
+          (chosen !== null && (!/^[1-9]\d*$/.test(rawRevision) ||
+            !Number.isSafeInteger(chosen)))) {
+        status.textContent = 'Enter a valid context UUID and a positive integer revision, or leave revision blank for latest.';
+        return;
+      }
+      let owner;
+      try { owner = identity(); }
+      catch (err) { status.textContent = err.message; return; }
+      const generation = request;
+      read.disabled = true;
+      status.textContent = 'Fetching the requested accepted revision…';
+      try {
+        const context = await LemmaCloudBridge.readAcceptedContext(contextId, chosen);
+        if (!still(owner) || request !== generation ||
+            contextInput.value.trim().toLowerCase() !== contextId ||
+            revisionInput.value.trim() !== rawRevision) return;
+        if (!context || typeof context !== 'object' ||
+            context.context_id?.toLowerCase() !== contextId ||
+            !Number.isSafeInteger(context.revision) || context.revision < 1 ||
+            (chosen !== null && context.revision !== chosen))
+          throw new Error('Unverified accepted revision response');
+        const current = { contextId, revision: context.revision };
+        selected = current;
+        const content = h('div', { class: 'accepted-reader-context' },
+          h('h3', { text: typeof context.title === 'string' && context.title.trim()
+            ? context.title : 'Accepted study context' }),
+          h('p', { class: 'muted small', text: 'Accepted revision ' +
+            context.revision + ' · read-only server snapshot' }),
+          h('pre', { class: 'knowledge-context-preview',
+            text: typeof context.context_markdown === 'string'
+              ? context.context_markdown : '(No context Markdown)' }));
+        const sources = h('div', { class: 'accepted-reader-sources' });
+        const refs = context.accepted_json?.source_refs;
+        if (context.format !== 'structured_v1' || !Array.isArray(refs)) {
+          sources.append(h('p', { class: 'muted small',
+            text: 'This accepted revision has no structured source citations.' }));
+        } else if (refs.length > 16 || refs.some(ref =>
+          !uuid.test(ref?.source_id || '') || !Number.isSafeInteger(ref.revision) ||
+          ref.revision < 1)) {
+          throw new Error('Unverified accepted source references');
+        } else if (!refs.length) {
+          sources.append(h('p', { class: 'muted small',
+            text: 'No cited sources are attached to this accepted revision.' }));
+        } else {
+          for (const ref of refs)
+            sources.append(sourceRow(ref, contextId, context.revision, owner, current));
+        }
+        fill(result, content, sources);
+        result.hidden = false;
+        status.textContent = 'Accepted revision loaded read-only. Source excerpts remain unfetched until selected.';
+      } catch (err) {
+        if (still(owner) && request === generation) {
+          selected = null;
+          fill(result);
+          result.hidden = true;
+          status.textContent = failure(err);
+        }
+      } finally {
+        if (still(owner) && request === generation) read.disabled = false;
+      }
+    };
+    return section('set-accepted-reader', 'Accepted study revisions and citations',
+      'Explicit owner-scoped reads only. Review a published revision and fetch at most six pinned source excerpts per request; nothing is approved, saved or published here.',
+      h('label', { class: 'setting-label', for: 's-accepted-id', text: 'Accepted context ID' }),
+      contextInput,
+      h('label', { class: 'setting-label', for: 's-accepted-revision',
+        text: 'Accepted revision (optional)' }),
+      revisionInput, h('div', { class: 'btn-row' }, read), status, result);
   }
 
   function knowledgeDraftSection() {
