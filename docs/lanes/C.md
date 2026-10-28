@@ -1,3 +1,13 @@
+## ANDROID-02 N4a — APK artifact identity and bundled-content preflight (active claim)
+
+- **Claim:** `hourly-20261028-c-n4a-apk-preflight`; heartbeat UTC 2026-10-28T06:39:25.926Z; base `main@233251d349f2a9d82550924c5b62cda49b9a57c0`; branch `lane-c/android-02-n4-apk-preflight`. Lane C free at pickup; independent lane A KNOWLEDGE-01 K2f PR #70 is active and untouched.
+- **Scope:** before distributing a CI debug APK for D1–D6, fail the Android job if the assembled APK has the wrong package/launch activity, an invalid signature, or stale/missing bundled Lemma web assets. Publish APK SHA-256 and debug signing certificate SHA-256 alongside the artifact to help distinguish incompatible in-place upgrades. No new dependency, secrets, production/Carrel data, device consent, A/B code or user data.
+- **Intended files:** `test/android_apk_artifact.js`, `.github/workflows/android.yml`, `docs/ANDROID.md`, `docs/lanes/C.md` (C-owned). Existing `test:android` and Android CI checks stay intact.
+- **Gate:** verify deterministic APK metadata and exact `dist/index.html`/`dist/lemma.html` payloads using Android SDK tools; exact-head regression and Android APK CI, lane C guard, post-merge main checks. Physical D1–D6 are **NOT RUN** and no debug-key compatibility is inferred from a passing build.
+- **Implementation:** `test/android_apk_artifact.js` checks Android SDK aapt package/launcher/version, apksigner verification and signing fingerprint, plus byte-for-byte `dist/` equality for four bundled web assets. Android CI runs the check after Gradle assembly and includes the metadata JSON in the APK artifact; `docs/ANDROID.md` records D6 upgrade safety. This adds no dependency or production change.
+- **Verification:** local checkout unavailable (GitHub DNS blocked); exact-head regression/Android APK and C lane guard CI **PENDING**. The APK verifier itself must run in Android CI before this claim can merge. Physical D1–D6 remain NOT RUN.
+- **Next:** inspect exact-head Android/regression CI and diff; fix genuine failures, merge only on green current main, then verify main and hand off the fingerprinted APK for a future owner phone session.
+
 ## ANDROID-02 N3c — explicit permission and safe reminder tap (active claim)
 
 - **Claim:** `hourly-20261028-c-n3c`; heartbeat UTC 2026-10-28T05:04:54.733Z; base `main@43f0517365`; branch `lane-c/android-02-n3c-notification-interaction`; lane C unclaimed at inspection. Main regression, Android, local Supabase and Pages workflows all SUCCESS on the same head (40635402317 / 40635402173 / 40635402310 / 40635402191).

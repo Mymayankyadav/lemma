@@ -39,6 +39,14 @@ adb install android/app/build/outputs/apk/debug/app-debug.apk
 
 For an APK downloaded from CI, replace the path with the extracted `app-debug.apk`. A debug APK uses a debug signing key, **not** a release key. Separate CI runners can produce debug APKs with different signing certificates, so a later APK might refuse an in-place update. Do not uninstall an existing Lemma installation without first safely exporting or synchronizing any unsaved/local-only study data. Release signing and in-place update delivery are future work, not established here.
 
+## ANDROID-02 N4a — CI APK provenance preflight
+
+Before the debug APK is uploaded, Android CI now runs `node test/android_apk_artifact.js android/app/build/outputs/apk/debug/app-debug.apk`. It checks the assembled APK's application ID `io.lemma.study`, launcher `io.lemma.study.MainActivity`, valid APK signing certificate, and **byte-for-byte equality** of the bundled `index.html`, `lemma.html`, service worker and web manifest against this build's `dist/` outputs. A stale/mismatched APK fails the workflow; no bypass or replacement of existing regression gates is introduced.
+
+The same `lemma-android-debug` Actions artifact includes `android-apk-metadata.json` with the APK SHA-256, signing certificate SHA-256, version and bundled-asset hashes. Retain this file with the APK and compare its signing certificate with the **already installed** version before an in-place upgrade (D6). A successful signature verification does **not** mean two independently built debug APKs have matching signing keys; if keys differ, stop the upgrade rather than uninstalling or clearing study data. The metadata contains no study content, account credentials or private keys.
+
+This is automated packaging provenance only. It does not establish launch, deep-link return, notification delivery, keyboard/safe areas, offline sync or update preservation on a real phone. Physical D1–D6 remain **NOT RUN** until recorded separately.
+
 ## Current scope and verification
 
 - S1 added the native Android project and reproducible **debug APK** CI. S2 adds native Back handling; ANDROID-02 N1a/N1b added a guarded OAuth callback and system-browser adapter, and N2a wakes the existing guarded sync listener on native resume. Complete native sign-in, notifications and physical device acceptance remain later gates.
