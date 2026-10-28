@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P5f guard active approved-plan reads against concurrent publication, then revisit PLAN-01 readiness only after production/security and cross-model evidence. Study hidden until full gates.
+Next action: P5g guard active study-session identity against concurrent session rotation during context reads; preserve proof/hint evidence and hidden Study until production/security and cross-model gates.
 
 | Field | Value |
 | --- | --- |
@@ -220,3 +220,11 @@ Next action: P5f guard active approved-plan reads against concurrent publication
 - `activeContext()` now re-reads `study_plans(id,revision)` for the same authenticated owner and selected plan after loading the approved version, checkpoint states and active-session events. A changed or removed approved revision fails closed with `Approved study plan changed; reload checkpoint`, rather than returning a stale proof packet. It does not mutate events or publish plans; the existing server-side CAS remains authoritative for writes.
 - `test/study_resume.js` adds deterministic simulated mid-read publication and deletion, requires the final read to reject both, checks stable-revision resume, owner-scoped reads, and zero extra writes or erased evidence. Existing twelve-checkpoint, revision-pinned hint/proof, amendment, offline and identity cases remain.
 - Implementation commits `56391d5` and `a5c92ed`; exact-head CI pending. Local Node execution unavailable (no networked checkout); do not claim local PASS. Production migration #17 and genuine T4 cross-model acceptance remain separate release blockers; `StudyPlan.ready` and `StudyView.ready` stay false.
+
+
+## P5g claim — active study-session consistency (2026-10-28)
+
+- **Claim:** `automation-20261029-d-p5g-session-race`; heartbeat 2026-10-28T22:06:35.160Z; branch `lane-d/plan-01-active-session-consistency` from `main@14403ad0f986cacd859a91f7479007a8c3aacc6f`. No open D PR at pickup; B #148 and F #149 remain independently claimed. Lane C remains paused.
+- **Scope:** D-owned `src/app/study_plan.js`, `test/study_resume.js`, this handoff only. `activeContext()` currently rechecks approved plan revision after reading events but not the selected active learning session. If another device ends/replaces the session mid-read, it may return an obsolete session ID and old proof/hint packet as current despite a stable plan revision. After dependent reads, re-query the latest active session for the same owner and plan; fail closed on session rotation/removal. Do not change immutable events, approvals, schema, readiness flags, or other lanes.
+- **Gate:** deterministic synthetic delayed-read regression for session replacement and termination while events are in flight, stable-session resume and all existing 12-checkpoint/amendment/identity tests; `node test/study_resume.js`, syntax, D ownership, exact-head full regression and disposable local Supabase CI. GitHub CI supplies actual runtime evidence if local checkout unavailable.
+- **Next:** implement bounded session consistency check and test, update this handoff with results, open/advance draft PR, and merge only after exact-head required CI passes; then check main. Release remains blocked on 17th production migration, B/F recovery, and real owner-operated cross-model acceptance.
