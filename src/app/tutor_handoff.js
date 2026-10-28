@@ -20,6 +20,11 @@ const TutorHandoff = (() => {
   const unique = xs => new Set(xs).size === xs.length;
   const permitted = (x, keys) => Object.keys(x).every(k => keys.includes(k));
   const fail = reason => { throw new Error('Invalid tutor handoff: ' + reason); };
+  function replyJSONText(input) {
+    const raw = input.trim();
+    const fence = /^```(?:json)?\s*\n([\s\S]*?)\n```$/i.exec(raw);
+    return fence ? fence[1] : raw;
+  }
 
   // Copy only JSON data, refusing unsafe property names and excessive nesting.
   function dataCopy(value, level = 0) {
@@ -117,11 +122,8 @@ const TutorHandoff = (() => {
     if (typeof input !== 'string' || bytes(input) > maxReplyBytes)
       return invalid('Reply must be JSON text no larger than 64 KB');
     // Accept one complete fenced JSON block from a general-purpose chatbot.
-    let raw = input.trim();
-    const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n```$/i.exec(raw);
-    if (fenced) raw = fenced[1];
     let obj;
-    try { obj = JSON.parse(raw); } catch (_) { return invalid('Reply is not valid JSON'); }
+    try { obj = JSON.parse(replyJSONText(input)); } catch (_) { return invalid('Reply is not valid JSON'); }
     if (!plain(obj) || obj.schema !== REPLY || obj.contract_version !== 1 ||
         !validId(obj.plan_id) || !checkpointId(obj.checkpoint_id) ||
         !revision(obj.expected_plan_revision) ||
@@ -188,6 +190,78 @@ const TutorHandoff = (() => {
     }
   }
 
-  // Later slices own the consent-driven handoff sheet and backend integration.
-  return { ready:false, exportPacket, parseReply };
+  // T2: data-only handoff sheet. Selections are not successful saving:
+  // T3 will add separately-confirmed, owner-scoped persistence operations.
+  async function open({ planId, checkpointId } = {}) {
+    if (typeof StudyPlan === 'undefined' || typeof StudyPlan.activeContext !== 'function')
+      throw new Error('Study plan is not available');
+    const ctx = await StudyPlan.activeContext();
+    if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
+      throw new Error('The active checkpoint has changed; reopen its handoff');
+    const packet = exportPacket(ctx);
+    const output = h('textarea', { class:'tutor-handoff-packet', 'aria-label':'Handoff packet',
+      readonly:true, spellcheck:false, rows:8 });
+    output.value = packet.markdown;
+    const input = h('textarea', { class:'tutor-handoff-reply', 'aria-label':'Tutor reply JSON',
+      maxlength:65536, spellcheck:false, rows:7,
+      placeholder:"Paste the tutor's reply JSON here" });
+    const status = h('p', { class:'tutor-handoff-status', role:'status',
+      text:'Paste a tutor reply to review its proposals. Nothing is saved yet.' });
+    const review = h('div', { class:'tutor-handoff-review', 'aria-live':'polite' });
+    const summary = h('p', { class:'tutor-handoff-help',
+      text:'Each event, card or amendment needs your explicit review. Saving is disabled until authenticated study-event persistence is available.' });
+    const copyBtn = h('button', { class:'btn', type:'button', text:'Copy packet',
+      onclick:()=>copyText(packet.markdown,output) });
+    const parseBtn = h('button', { class:'btn btn-primary', type:'button', text:'Review pasted reply' });
+    const items = [];
+    function reviewOne(title, value, index) {
+      const checkbox = h('input', { type:'checkbox', 'aria-label':'Select '+title });
+      const detail = h('details', { class:'tutor-handoff-item' },
+        h('summary', { text:title }),
+        h('pre',{class:'tutor-handoff-json',text:JSON.stringify(value,null,2)}),
+        h('label',{class:'tutor-handoff-select'},checkbox,' Select for later approval'));
+      items.push({ index, checkbox });
+      return detail;
+    }
+    function inspect() {
+      const parsed = parseReply(input.value);
+      review.replaceChildren();
+      items.length=0;
+      if (!parsed.ok) {
+        status.textContent='Could not read reply: '+parsed.errors.join('; ');
+        return;
+      }
+      if (parsed.events.some(e=>e.planId!==ctx.planId ||
+          e.expectedPlanRevision!==ctx.planRevision || e.checkpointId!==ctx.checkpoint.id) ||
+          parsed.cardProposals.some(c=>c.planId!==ctx.planId ||
+          c.expectedPlanRevision!==ctx.planRevision || c.checkpointId!==ctx.checkpoint.id) ||
+          (parsed.amendmentProposal && (parsed.amendmentProposal.planId!==ctx.planId ||
+          parsed.amendmentProposal.expectedRevision!==ctx.planRevision))) {
+        status.textContent='Plan or checkpoint revision differs. Obtain a fresh reply.';
+        return;
+      }
+      const matched = JSON.parse(replyJSONText(input.value));
+      if (matched.plan_id!==ctx.planId || matched.checkpoint_id!==ctx.checkpoint.id ||
+          matched.expected_plan_revision!==ctx.planRevision) {
+        status.textContent='Plan or checkpoint revision differs. Obtain a fresh reply.';
+        return;
+      }
+      parsed.events.forEach((item,i)=>review.append(reviewOne('Event '+(i+1)+' · '+item.type,item,'e'+i)));
+      parsed.cardProposals.forEach((item,i)=>review.append(reviewOne('Card proposal '+(i+1),item,'c'+i)));
+      if(parsed.amendmentProposal)
+        review.append(reviewOne('Plan amendment',parsed.amendmentProposal,'a'));
+      status.textContent=items.length ?
+        'Validated '+items.length+' proposed item(s) · not yet saved or approved.' :
+        'Valid reply with no proposals to save.';
+    }
+    parseBtn.addEventListener('click',inspect);
+    const body=h('div',{class:'tutor-handoff'},
+      h('p',{class:'tutor-handoff-help',text:'Copy this bounded, approved-context packet to your chosen tutor. Return here with its JSON reply.'}),
+      h('label',{class:'tutor-handoff-label',text:'Study context packet'}),output,copyBtn,
+      h('label',{class:'tutor-handoff-label',text:'Tutor reply'}),input,parseBtn,
+      status,review,summary);
+    return Sheets.open({title:'Continue with another tutor',wide:true,
+      className:'tutor-handoff-sheet',body});
+  }
+  return { ready:false, exportPacket, parseReply, open };
 })();
