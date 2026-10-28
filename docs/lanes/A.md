@@ -1,3 +1,12 @@
+## RELEASE-CI-01 — authenticated callback startup synchronization
+
+- **Claim / heartbeat:** `chat-20261028-release-callback-boot`, 2026-10-28T18:21Z; branch `lane-a/release-callback-boot-gate`, base main `a9a5a6f`. No open A PR at pickup; B #148 and F #149 retain their independent recovery work.
+- **Observed blocker:** main local-stack [40742592905](https://github.com/Mymayankyadav/lemma/actions/runs/40742592905), first attempt, timed out in `test/sync_local_e2e.js:102` waiting for signed-in Settings after the real PKCE callback. Regression, Pages and live smoke succeeded on this SHA. One permitted unchanged-head retry was requested after inspecting the logs.
+- **Scope:** A-owned browser acceptance synchronization in `test/sync_local_e2e.js`, focused startup-race coverage under `test/sync_*.js` if needed, and this handoff. Inspect whether asynchronous App boot replaces the callback Settings view; preserve real GoTrue/PKCE, owner, outbox, offline, lost-response and RLS assertions. No production/schema changes or readiness enablement.
+- **Implemented:** share the existing device-boot wait across initial navigation and fresh PKCE callback navigation. Add a deterministic browser negative control with the actual assembled `App.boot` and held `Store.init`: early Settings is replaced by Home, while the shared wait opens Settings only after the device store finishes. No OTP retry, session injection, identity assertion removal or increased timeout. Register this test in the existing browser-sync regression script.
+- **Local verification:** `npm ci`, JS syntax, canonical plan, A ownership, account/recovery tests, build and diff checks PASS. Chromium installation failed because the download was an invalid ZIP; browser/full regression and real local-stack acceptance must therefore be observed in GitHub CI on this implementation head. Docker is unavailable locally.
+- **Next:** inspect exact-head regression/local-stack CI and merge only green. Main failed run has one unchanged-head retry in progress. Full release remains gated on recovery UI/acceptance and production parity.
+
 ## RELEASE-01 R2j — paired local recovery restore
 
 - **Claim / heartbeat:** `chat-20261028-r2j-local-restore`, 2026-10-28T17:54Z; branch `lane-a/release-r2j-local-recovery-restore` from main `2f2a410` after PR #144. No competing A claim. Files: `src/app/{sync_browser,account_sync,cloud_bridge}.js`, account recovery tests and this handoff.

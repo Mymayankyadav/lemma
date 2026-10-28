@@ -11,6 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { localCredentials } = require('./auth_http_rls');
+const { waitForDeviceBoot } = require('./sync_callback_startup');
 
 const ROOT = path.resolve(__dirname, '..');
 const APP = 'http://127.0.0.1:4173/';
@@ -85,9 +86,7 @@ async function login(page,email){
   // App.boot() builds a shell immediately and finishes loading IndexedDB
   // asynchronously; clicking Settings before boot finishes is overwritten by
   // its final App.go('home'), which detaches the sign-in input mid-fill.
-  await page.waitForFunction(
-    () => document.querySelector('#sync')?.textContent?.includes('Saved on device'),
-    null,{timeout:T});
+  await waitForDeviceBoot(page, T);
   await page.locator('.tabs button[data-go="settings"]').click();
   await page.locator('#set-cloud-account input[type=email]').fill(email);
   const before=await knownMessages();
@@ -97,6 +96,10 @@ async function login(page,email){
   // Same browser where OTP was requested: its PKCE verifier is isolated.
   await page.goto(link,{waitUntil:'domcontentloaded',timeout:T});
   await page.waitForURL(url=>url.origin===new URL(APP).origin,{timeout:T});
+  // The PKCE redirect creates a fresh App.boot(), with the same asynchronous
+  // IndexedDB load as the initial visit. Its final go('home') must finish
+  // before opening Settings or it can replace the signed-in account panel.
+  await waitForDeviceBoot(page, T);
   await page.locator('.tabs button[data-go="settings"]').click();
   await page.locator('#set-cloud-account').getByText('Signed in:',{exact:false})
     .waitFor({timeout:T});
