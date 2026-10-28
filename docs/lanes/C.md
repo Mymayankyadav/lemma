@@ -1,3 +1,8 @@
+## Current C handoff — 28 October 2026 (integration)
+
+- **Verified progress:** ANDROID-01 and automated ANDROID-02 N1–N4 work (native system-browser/deep-link auth scaffolding, resume, optional reminder consent/bridge and APK asset verification) merged. Latest N4b PR #74 compared all dist/ assets byte-for-byte with the built APK. CI package provenance is not a phone test.
+- **Next action:** reuse the documented D1–D6 physical test checklist and verified APK metadata for one bundled owner device session (Google redirect, safe area/keyboard, offline restart/reconnect, permission denied/granted and opt-in notification tap, updates without local data loss). No physical checks are marked passed. Web Pages deploy does not update bundled native assets.
+
 ## ANDROID-02 N4b — complete bundled web-asset provenance (implementation checkpoint)
 
 - **Claim:** `hourly-20261028-c-n4b-complete-assets`; heartbeat UTC 2026-10-28T07:46:39.709Z; base `main@ca1195dc9b6cfc3fe9ea938d3e7e8a80b5f3c872`; branch `lane-c/android-02-n4b-complete-assets`. Lane C was free; active A #72 and B #73 are untouched.
