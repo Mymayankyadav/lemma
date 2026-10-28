@@ -31,6 +31,157 @@ const StudyView = (() => {
         h('span', {class:'study-detail-label',text:label}),
         h('p', {text:value || 'Nothing recorded yet'}));
     }
+    function amendmentSection(context) {
+      const section = h('section', {class:'study-amendment', 'aria-label':'Plan amendment'});
+      const status = h('p', {class:'study-amendment-status',role:'status',
+        text:'Checking for a local amendment…'});
+      const details = h('div', {class:'study-amendment-details'});
+      const buttons = h('div', {class:'study-amendment-actions'});
+      const reviewButton = h('button', {type:'button',class:'btn',
+        text:'Review pending amendment'});
+      let preview = null, busy = false;
+      const changeLine = (label,items) => h('p', {
+        text:label + ': ' + (items?.length ? items.join(', ') : 'None')
+      });
+      function drawDiff(review) {
+        const d = review.diff;
+        fill(details,
+          h('p', {text:'Draft proposed against approved revision ' +
+            review.expectedRevision + ' · local draft revision ' +
+            review.expectedLocalRevision}),
+          h('p', {text:'Reason: ' + (review.changeSummary || 'Not supplied')}),
+          changeLine('Added checkpoint IDs',d.added),
+          changeLine('Removed checkpoint IDs',d.removed),
+          changeLine('Unchanged checkpoint IDs',d.unchanged),
+          changeLine('Top-level plan fields changed',d.planFieldsChanged),
+          h('p', {text:d.reordered ? 'Unchanged checkpoints were reordered.' :
+            'Relative order of unchanged checkpoints is preserved.'}),
+          ...d.modified.map(item => h('p', {text:item.checkpointId +
+            ' — fields: ' + (item.fields.join(', ') || 'none') +
+            '; added prerequisites: ' + (item.addedPrerequisites.join(', ') || 'none') +
+            '; removed prerequisites: ' + (item.removedPrerequisites.join(', ') || 'none')})),
+          h('p', {class:'study-amendment-warning',
+            text:d.requiresReassessment.length ?
+              'Requires explicit reassessment: ' + d.requiresReassessment.join(', ') +
+              '. Previous evidence is preserved; mastery is not carried over automatically.' :
+              'No mastery criteria changed. Existing evidence remains preserved.'}));
+      }
+      function approvedControls() {
+        const submit = h('button', {type:'button',class:'btn btn-primary',
+          text:'Submit previously approved amendment'});
+        submit.addEventListener('click',async () => {
+          if (!valid() || busy) return;
+          busy=true;submit.disabled=true;
+          status.textContent='Submitting the unchanged, student-approved revision…';
+          try {
+            const receipt=await StudyPlan.submitApprovedPlanDraft(context.planId);
+            if (!valid()) return;
+            if (receipt.status==='confirmed') {
+              status.textContent='Approved plan revision ' + receipt.revision +
+                ' confirmed. Return to Today to reload the published checkpoint.';
+              fill(details);fill(buttons);
+            } else if (receipt.status==='queued') {
+              status.textContent='Approved intent remains on this device. ' +
+                'Retry explicitly when online; no revision is confirmed yet.';
+            } else if (receipt.status==='conflict') {
+              status.textContent='The published revision or context changed. ' +
+                'This amendment needs a new student review; it was not applied.';
+              fill(buttons);
+            } else throw new Error('Unexpected amendment receipt');
+          } catch (error) {
+            if (valid()) status.textContent='Publication not confirmed: ' +
+              (error?.message || 'request failed') +
+              '. Retry this same approved intent without changing its request ID.';
+          } finally {busy=false;submit.disabled=false;}
+        });
+        fill(buttons,submit);
+      }
+      reviewButton.addEventListener('click',async () => {
+        if (!valid() || busy) return;
+        busy=true;reviewButton.disabled=true;preview=null;
+        fill(details);fill(buttons);
+        status.textContent='Reading the exact published plan revision for comparison…';
+        try {
+          const reviewed=await StudyPlan.reviewPendingAmendment(context.planId);
+          if (!valid()) return;
+          if (!reviewed) {
+            status.textContent='No pending unapproved amendment exists.';
+          } else if (reviewed.status!=='review') {
+            status.textContent=reviewed.status==='stale' ?
+              'The published plan changed since this draft. Review and restart required; nothing was approved.' :
+              'The accepted context changed. Review and restart required; nothing was approved.';
+          } else {
+            preview=reviewed;
+            drawDiff(reviewed);
+            status.textContent='Inspect the differences before deciding. ' +
+              'Nothing has been approved or submitted.';
+            const approve=h('button', {type:'button',class:'btn btn-primary',
+              text:'Approve these displayed changes'});
+            approve.addEventListener('click',async () => {
+              if (!valid() || busy || !preview) return;
+              busy=true;approve.disabled=true;
+              status.textContent='Rechecking the reviewed revision and unchanged draft…';
+              try {
+                const current=await StudyPlan.reviewPendingAmendment(context.planId);
+                if (!valid()) return;
+                if (!current || current.status!=='review' ||
+                    current.expectedRevision!==preview.expectedRevision ||
+                    current.expectedLocalRevision!==preview.expectedLocalRevision ||
+                    current.draftId!==preview.draftId ||
+                    JSON.stringify(current.diff)!==JSON.stringify(preview.diff)) {
+                  status.textContent='The amendment changed. Review it again before approval.';
+                  fill(buttons);
+                  preview=null;
+                  return;
+                }
+                await StudyPlan.approvePlanDraft(context.planId,
+                  preview.expectedLocalRevision,true);
+                if (!valid()) return;
+                preview=null;
+                fill(details);
+                status.textContent='Student approval saved on this device. ' +
+                  'No plan has been published yet. Submission requires another click.';
+                approvedControls();
+              } catch (error) {
+                if (valid()) status.textContent='Approval not confirmed: ' +
+                  (error?.message || 'request failed') +
+                  '. Reopen the review before deciding.';
+              } finally {busy=false;approve.disabled=false;}
+            });
+            fill(buttons,approve);
+          }
+        } catch (error) {
+          if (valid()) status.textContent='Could not review the amendment: ' +
+            (error?.message || 'try again when connected');
+        } finally {busy=false;reviewButton.disabled=false;}
+      });
+      section.append(h('h3', {text:'Plan amendments'}),
+        h('p', {class:'study-note',
+          text:'Tutors propose; only you may approve. Reviewing never writes a plan revision.'}),
+        status,details,buttons,reviewButton);
+      if (typeof StudyPlan.readPlanDraft==='function') {
+        Promise.resolve().then(() => StudyPlan.readPlanDraft(context.planId))
+          .then(row => {
+            if (!valid()) return;
+            if (row?.status==='approved_pending') {
+              reviewButton.hidden=true;
+              status.textContent='A previously student-approved amendment is waiting. ' +
+                'Submission is a separate, explicit action.';
+              approvedControls();
+            } else if (row?.status==='needs_review') {
+              reviewButton.hidden=true;
+              status.textContent='This amendment has a stale revision conflict. ' +
+                'No automatic rebase, retry or approval is allowed.';
+            } else status.textContent=row ?
+              'A local unapproved amendment is available to review.' :
+              'No pending local amendment.';
+          }).catch(error => {
+            if (valid()) status.textContent='Local amendment status unavailable: ' +
+              (error?.message || 'read failed');
+          });
+      } else status.textContent='Amendment review is unavailable in this build.';
+      return section;
+    }
     function show(context) {
       const cp = context.checkpoint;
       const detail = h('div', {class:'study-summary'},
@@ -112,7 +263,7 @@ const StudyView = (() => {
       fill(content,detail,
         h('p', {class:'study-note',text:
           'Only an explicit Save adds an event. Reading this screen never demonstrates mastery.'}),
-        forms);
+        forms,amendmentSection(context));
     }
     Promise.resolve().then(async () => {
       if (!valid()) return;
