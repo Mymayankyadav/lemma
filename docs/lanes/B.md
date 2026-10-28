@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K3b — explicit stale-context comparison/reopen UI (current claim)
+
+- **Claim:** `chat-20261028T0901-b-k3b`; heartbeat 2026-10-28T09:01:00Z; base `main@b83d92bb8fe6ddae24cc58764ad3c8f3940de2b4`; branch `lane-b/knowledge-01-k3b-reviewed-conflict-ui`. Earlier K3a1 PR #76 merged; A K2h2 backend PR #77 merged. No other B PR at claim.
+- **Cross-lane request:** KNOWLEDGE-01-K2H2-B1 from A. In Settings, only on a student's click fetch owner-scoped `inspectKnowledgeConflict(contextId)`, show local reviewed intent and current accepted revision separately, and require a second explicit confirmation to `reopenReviewedKnowledgeConflict(contextId,localRevision,requestId,acceptedRevision,true)`. New result is an unapproved local draft; no automatic submit, approval or overwrite. Original conflicting snapshot stays archived by A.
+- **Scope:** B-owned `src/app/view_settings.js`, `src/app.css`, `test/ui_knowledge_drafts.js`, `test/ui_screenshots.js`, `docs/lanes/B.md`. Owner-only preview must not display on account/workspace switch or become stale if another tab edits the draft. Screenshot/test mocks never imply production knowledge migration or physical device success.
+- **Gate:** cancel, offline/failure, stale revision, logged-out/identity change, explicit reviewed bool, archived-original preserved by backend; keyboard controls, mobile/desktop light/dark screenshots, exact-head CI and post-merge main. Production knowledge migrations remain undeployed; no Carrel work or student consent inferred.
+- **Next:** inspect current main post-#76 CI before implementation, implement & validate bounded K3b, keep PR draft until green head, then merge and advance.
+
 ## KNOWLEDGE-01 K3a1 — lock stale knowledge conflict in Settings (active claim)
 
 - **Claim:** `takeover-20261028-k3a1-conflict-lock`, UTC heartbeat 2026-10-28T08:02:10.434Z; base `main@4058f097f121ee86e80134e336e8202e94011431`; branch `lane-b/knowledge-01-k3a1-conflict-lock`. User confirmed no other active implementation agent. K3a PR #73 is merged, C N4b #74 is merged; A K2h1 #75 is independently active.
