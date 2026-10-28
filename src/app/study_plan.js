@@ -530,6 +530,69 @@ const StudyPlan = (() => {
         canonical(afterIds.filter(id=>a.byId.has(id))),
       requiresReassessment};
   }
+  // P4b1: compare only an unapproved local draft against the exact owner-private
+  // immutable published version. No student consent or publication is implied.
+  async function reviewPendingAmendment(planId) {
+    if (!isUuid(planId)) throw new Error('Invalid study plan ID');
+    const ctx = account();
+    const draft = await readPlanDraft(planId);
+    ctx.check();
+    if (!draft) return null;
+    if (draft.status !== 'draft' || !revision(draft.localRevision))
+      throw new Error('Amendment is not an unapproved draft');
+    if (!revision(draft.expectedRevision))
+      throw new Error('Initial study plan uses the separate approval flow');
+    // Read the pinned server version, never use a cache or latest draft as the
+    // accepted baseline. The account owner filter applies to every table read.
+    const plans = await list(ctx,'study_plans','id,revision',
+      q => q.eq('id',planId).limit(1));
+    ctx.check();
+    if (plans.length !== 1 || !same(plans[0].id,planId) ||
+        !revision(plans[0].revision))
+      throw new Error('Published study plan unavailable');
+    if (plans[0].revision !== draft.expectedRevision)
+      return {status:'stale',planId,currentRevision:plans[0].revision,
+        expectedRevision:draft.expectedRevision};
+    const versions = await list(ctx,'study_plan_versions',
+      'revision,context_id,context_revision,snapshot',
+      q => q.eq('plan_id',planId).eq('revision',draft.expectedRevision).limit(1));
+    ctx.check();
+    if (versions.length !== 1 || !object(versions[0].snapshot) ||
+        versions[0].revision !== draft.expectedRevision)
+      throw new Error('Accepted study plan version unavailable');
+    const published = versions[0];
+    if (!same(published.context_id ?? '',draft.contextId ?? '') ||
+        (published.context_revision ?? null) !== draft.contextRevision)
+      return {status:'stale_context',planId,
+        expectedRevision:draft.expectedRevision};
+    if (published.context_id !== null) {
+      if (typeof LemmaCloudBridge === 'undefined' ||
+          typeof LemmaCloudBridge.readAcceptedContext !== 'function')
+        throw new Error('Accepted context unavailable for amendment review');
+      const accepted = await LemmaCloudBridge.readAcceptedContext(
+        published.context_id,published.context_revision);
+      ctx.check();
+      if (!same(accepted?.context_id,published.context_id) ||
+          accepted.revision !== published.context_revision)
+        throw new Error('Accepted context revision changed');
+    }
+    const diff = diffPlanSnapshots(published.snapshot,draft.snapshot);
+    // Revalidate both sides after every async read: a newer publication or a
+    // changed draft cannot be accepted based on this stale preview.
+    const latest = await list(ctx,'study_plans','revision',
+      q => q.eq('id',planId).limit(1));
+    const currentDraft = await readPlanDraft(planId);
+    ctx.check();
+    if (latest.length !== 1 || latest[0].revision !== draft.expectedRevision ||
+        !currentDraft || currentDraft.status !== 'draft' ||
+        currentDraft.localRevision !== draft.localRevision ||
+        currentDraft.draftId !== draft.draftId ||
+        canonical(currentDraft.snapshot) !== canonical(draft.snapshot))
+      throw new Error('Amendment changed; reopen review');
+    return {status:'review',planId,expectedRevision:draft.expectedRevision,
+      expectedLocalRevision:draft.localRevision,draftId:draft.draftId,
+      changeSummary:draft.changeSummary,source:draft.source,diff};
+  }
   // Tutor proposals are staged only, even when the tutor reports approval.
   async function proposeAmendment(input) {
     const draft = await savePlanDraft(input);
@@ -537,5 +600,5 @@ const StudyPlan = (() => {
   }
   return { ready:false, activeContext,recordEvent,proposeAmendment,
     savePlanDraft,readPlanDraft,discardPlanDraft,
-    approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt,diffPlanSnapshots };
+    approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt,diffPlanSnapshots,reviewPendingAmendment };
 })();
