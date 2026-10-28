@@ -97,6 +97,66 @@ const transact = (db, callback) => new Promise((resolve,reject) => {
   await assert.rejects(pending,/Account changed/,
     'late owner A snapshot must not become visible under owner B');
   storageA.localRecoverySnapshot=original;
-  dbA.close();dbB.close();
+  // Restore the captured cache only into a fresh namespace for the SAME
+  // synthetic owner. No merge/clear/overwrite is implemented by the product.
+  dbA.close();
+  await new Promise((resolve,reject)=>{
+    const r=indexedDB.deleteDatabase('lemma-user-'+A);r.onsuccess=resolve;r.onerror=()=>reject(r.error);
+  });
+  let recoveredDB=await openAccountDB(A);
+  let recovered=new AccountStorage(recoveredDB,A);
+  const requestId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const options={requestId,sha256:'a'.repeat(64),studentConfirmed:true,dryRun:true};
+  const emptyStores=JSON.stringify((await recovered.localRecoverySnapshot()).stores);
+  await assert.rejects(recovered.restoreLocalRecoverySnapshot(capture),/Explicit local restore/);
+  await assert.rejects(storageB.restoreLocalRecoverySnapshot(capture,options),/owner/);
+  assert.equal((await recovered.restoreLocalRecoverySnapshot(capture,options)).status,'validated');
+  assert.equal(JSON.stringify((await recovered.localRecoverySnapshot()).stores),emptyStores,
+    'local preflight writes no records');
+  const damaged=structuredClone(capture);damaged.stores.notes[0].key='wrong-key';
+  await assert.rejects(recovered.restoreLocalRecoverySnapshot(damaged,options),/does not match/);
+  await assert.rejects(recovered.restoreLocalRecoverySnapshot(capture,{...options,active:()=>false}),/Account changed/);
+  // Force a late write failure after data was added. IndexedDB abort must
+  // roll back the notes, reviews, outbox AND metadata together.
+  const realTransaction=recoveredDB.transaction.bind(recoveredDB);
+  recoveredDB.transaction=(...args)=>{
+    const t=realTransaction(...args),realStore=t.objectStore.bind(t);
+    t.objectStore=name=>{
+      const store=realStore(name);
+      if(name==='meta'){
+        const originalAdd=store.add.bind(store);
+        store.add=(value,key)=>{
+          if(String(key).startsWith('recovery:restore:'))throw new Error('Synthetic quota failure');
+          return originalAdd(value,key);
+        };
+      }
+      return store;
+    };
+    return t;
+  };
+  await assert.rejects(recovered.restoreLocalRecoverySnapshot(capture,{...options,dryRun:false}),/Synthetic quota/);
+  recoveredDB.transaction=realTransaction;
+  assert.equal(JSON.stringify((await recovered.localRecoverySnapshot()).stores),emptyStores,
+    'late local failure rolls back every store');
+  const committed=await Promise.all([
+    recovered.restoreLocalRecoverySnapshot(capture,{...options,dryRun:false}),
+    recovered.restoreLocalRecoverySnapshot(capture,{...options,dryRun:false})
+  ]);
+  assert.deepEqual(committed[0],committed[1],'concurrent retries share one local receipt');
+  const restored=await recovered.localRecoverySnapshot();
+  for(const name of Object.keys(capture.stores)){
+    const actual=restored.stores[name].filter(row=>row.key!=='recovery:restore:v1:'+requestId);
+    assert.deepEqual(actual,capture.stores[name],name+' preserves exact data and queue keys');
+  }
+  await assert.rejects(recovered.restoreLocalRecoverySnapshot(capture,{...options,dryRun:false,sha256:'b'.repeat(64)}),/payload mismatch/);
+  await assert.rejects(recovered.restoreLocalRecoverySnapshot(capture,{...options,dryRun:false,requestId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}),/not empty/);
+  recoveredDB.close();recoveredDB=await openAccountDB(A);recovered=new AccountStorage(recoveredDB,A);
+  assert.deepEqual(await recovered.restoreLocalRecoverySnapshot(capture,{...options,dryRun:false}),committed[0],
+    'lost local receipt survives closing and reopening the database');
+  assert.equal((await storageB.localRecoverySnapshot()).stores.notes[0].value.data.front,'Private second owner');
+  assert.equal((await recovered.knowledgeDraft(CONTEXT)).status,'draft','restore never accepts an unapproved draft');
+  recoveredDB.close();dbB.close();
+  console.log('PASS RELEASE local restore: exact drafts/conflicts/outbox/history, empty-only atomic transaction, late-abort rollback, two-owner denial and restart-safe receipt');
+
   console.log('PASS RELEASE R2c: atomic owner-local recovery, pending/archived evidence, bounds, portability, account-switch rejection');
 })().catch(error=>{console.error('FAIL R2c local recovery: '+error.stack);process.exitCode=1;});

@@ -219,7 +219,23 @@ const LemmaSync = (() => {
   function accountHandle() {
     return account && account.userId === LemmaAccount.user?.id ? account : null;
   }
+  // Recovery runs while this tab is in the separate device workspace. Hold
+  // the same cross-tab lock as pulls/flushes, close this tab's sync handle and
+  // leave sync paused on failure. The caller explicitly resumes after success.
+  async function withRecovery(action) {
+    const userId=LemmaAccount.user?.id,client=LemmaAccount.client;
+    if(!userId||!client||!navigator.locks)throw new Error('Sign in with safe recovery support');
+    return navigator.locks.request('lemma-sync-'+userId,async()=>{
+      if(LemmaAccount.user?.id!==userId||LemmaAccount.client!==client)
+        throw new Error('Account changed before recovery');
+      stop();const generation=epoch;
+      const active=()=>epoch===generation&&LemmaAccount.user?.id===userId&&LemmaAccount.client===client;
+      const db=await LemmaCloud.openAccountDB(userId);
+      try {return await action(new LemmaCloud.AccountStorage(db,userId),active);}
+      finally {db.close();}
+    });
+  }
   return { init, attach, stop, refresh, kick: schedule, enrollMissingLocal, compareLocal,
-    accountHandle, get status() { return { ...state }; },
+    accountHandle, withRecovery, get status() { return { ...state }; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
 })();
