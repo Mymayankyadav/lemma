@@ -123,3 +123,9 @@ Next action: P4c2 hidden Study conflict-inspection and explicit restart UI; then
 - Run `chat-20261028-lane-d-p4c2-owner` · 28 October 2026; base main@f2d136553c76 after P4c1 merged [PR #118](https://github.com/Mymayankyadav/lemma/pull/118). Regression 40683335793 and local stack 40683335833 both SUCCESS at P4c1 exact head.
 - Scope `src/app/view_study.js`, `src/styles/study.css`, `test/study_amendment_ui.js`, `test/study_view_browser.js`, D handoff. No other lane files/backend writes.
 - For durable `needs_review` state show Inspect conflict; only after explicit click retrieve owner-scoped old/proposed/current checkpoint changes and conflicts. A second deliberate click must call P4c1 restart; old approval archived, new proposal unapproved, never auto-approve/publish. Add stale, identity and reload mock/browser tests, screenshot small/mobile. `StudyView.ready=false` pending P4c3 and P5.
+
+### P4c2 implementation checkpoint
+
+- `view_study.js` now displays **Inspect rejected amendment** only for durable `needs_review`; an explicit click shows original vs current revisions, added/removed/modified checkpoint IDs, overlapping edits and reassessment risks. A separate **Restart as unapproved draft** action calls P4c1 owner-scoped atomic archive/restart, never reuses approval or publishes. If stale again, inspection must be repeated; reload/preview never restarts. Identity/route guards after each awaited operation.
+- `test/study_amendment_ui.js` covers no implicit reads/writes, rejected conflict inspection vs restart, stale retry, owner switch while reviewing and no implicit publication. `test/study_view_browser.js` also produces conflict comparison desktop/mobile synthetic screenshots and checks narrow viewport and explicit restart.
+- Exact-head CI pending. Next P4c3 mid-proof reload persistence test and P5 final local-stack plan gate. `StudyView.ready=false`; no production schema writes.
