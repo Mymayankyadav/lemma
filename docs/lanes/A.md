@@ -1,3 +1,10 @@
+## RELEASE-01 R2h — explicit paired server/local recovery preflight (28 October 2026)
+
+- **Claim** `chat-20261028-lane-a-r2h-readonly-pair`, branch `lane-a/release-r2h-readonly-recovery-pair` from `main@ebde81a1b2ca596a6f26abba79e18500642b0105`. One bounded A-owned slice; files: `src/app/cloud_bridge.js`, `test/account_local_recovery_envelope.js`, `docs/lanes/A.md`. Existing PR #141 merged; no competing open A claim at pickup. The production deploy operator is separate and not called in this slice.
+- **Goal**: combine *explicitly requested* owner-scoped R2g server archive and R2d local cache envelope into a portable, manifest-checked read-only pair. The two snapshots are independently captured at different times; never claim one atomic consistent server/local transaction. Reject account/handle changes, owner mismatch and corruption. No download/UI, production writes, local restore, database migration or student approval.
+- **Gate**: account VM tests on two owners, network only for deliberately requested server read, no IndexedDB writes, damaged/mismatched pair rejection, account-switch between captures and during hashing, exact-head regression/local-stack/guard. Full recovery remains blocked pending student-consented safe restore, production migrations 14–16 and release acceptance.
+- **Status**: CLAIMED; implementation and CI pending. Next: implement bounded pair and offline verifier, run exact-head CI, merge only after green and current main checks.
+
 ## RELEASE-01 R2g — canonical 19-table server archive manifest (28 October 2026)
 
 - **Claim** `chat-20261028-lane-a-r2g-canonical-archive`, branch `lane-a/release-r2g-workspace-archive-manifest` from `main@97a63345aefe96637a12a85253cf9a33b7ff6895`. Prior R2f [PR #140](https://github.com/Mymayankyadav/lemma/pull/140) merged after exact-head green regression, local Supabase, guard and screenshots. No active competing A claim. B/F retain their files and release gates.
