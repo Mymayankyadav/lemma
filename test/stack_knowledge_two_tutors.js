@@ -130,8 +130,6 @@ async function main(){
   const newer=(await readExcerpts(tutors[1],2)).body;
   assert.deepEqual(old,e1.body,'immutable original source citation remains pinned');
   assert.notDeepEqual(newer.excerpts,old.excerpts,'new source requires explicit new version');
-  assert.equal((await readContext(intruder.first,contextId)).ok,false,
-    'another owner must not read the private context');
   const denied=await readContext(intruder.first,2);
   assert.equal(denied.body?.message,'knowledge_context_not_found');
   assert.equal((await readExcerpts(intruder.first,1)).body?.message,
