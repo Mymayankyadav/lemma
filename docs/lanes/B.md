@@ -1,3 +1,10 @@
+## Active UI-02 SHIP-B1 claim — 28 October 2026
+
+- **Claim:** `chat-20261028T0940-b-ship-b1`; heartbeat 2026-10-28T09:40:00Z; base `main@1653e4015f8a49684fb7841aa0d4732539b23480`; branch `lane-b/ui-02-ship-b1-study-nav`. No other open B PR at claim.
+- **Slice:** guarded `StudyView.ready` routing/navigation and Today's asynchronous approved-checkpoint CTA; defaults to unchanged due-card review when StudyPlan/StudyView absent, unready, offline, error or no active checkpoint. No premature study plan approval.
+- **Intended B-owned files:** `src/app/main.js`, `src/app/view_home.js`, `src/app.css` (only if required for 5-tab layout), `test/ui_study_nav.js`, `test/ui_screenshots.js`, `docs/lanes/B.md`.
+- **Verification:** claim-only commit; tests, screenshot review, exact-head CI and post-merge main pending. Tested SHA: not yet. **Next:** implement guarded route/CTA, test module absent/ready/unready and stale async context responses; review screenshots and merge on green gates, then take bounded citation viewer slice.
+
 ## Ship-today requests (integration 28 Oct, read first)
 
 - Owner wants everything shipped today; six lanes now run in parallel. Read [docs/SHIP_PLAN.md](../SHIP_PLAN.md). Your NEXT row is **UI-02**.
