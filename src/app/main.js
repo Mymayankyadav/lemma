@@ -167,6 +167,8 @@ const App = (() => {
       params = {};
     }
     render();
+    // Account/workspace transitions must not retain the prior workspace's alarm.
+    ReminderSettings.reconcile().catch(() => {});
   }
   async function migrateLeftovers() {
     const list = App.leftovers;
@@ -250,6 +252,9 @@ const App = (() => {
     window.addEventListener('online', drawSync);
     App.loading = false;
     Model.onChange(() => refresh());
+    // Native-only, device-local reminder consent is read after workspace boot.
+    // The bridge cancels stale alarms while opt-out remains the default.
+    ReminderSettings.init();
     if (data.mode === 'cloud') {
       Store.localLeftovers().then((list) => { if (list.length) { App.leftovers = list; refresh(); } });
     }
