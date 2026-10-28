@@ -93,7 +93,12 @@ const LemmaSync = (() => {
       // A retry is not a recovery: keep the last real transport failure visible
       // until BOTH the queued write and remote refresh have succeeded. Otherwise
       // automatic polling flickers from Sync failed to Queued mid-screenshot.
-      if (state.phase !== 'error') emit({ phase: 'refreshing', error: '' });
+      // Idle background pulls do not unsave a clean workspace. Check the
+      // durable outbox rather than a potentially stale last emitted count:
+      // a new local edit must still visibly enter the refreshing state.
+      const keepStatus = state.phase === 'error' ||
+        (state.phase === 'ready' && (await running.outbox.pending()).length === 0);
+      if (!keepStatus) emit({ phase: 'refreshing', error: '' });
       running.outbox.online = true;
       await running.outbox.flush();
       await running.pull();
