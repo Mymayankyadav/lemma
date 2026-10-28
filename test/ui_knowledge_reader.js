@@ -126,9 +126,12 @@ async function readAccepted(page) {
         const btnHeights=await page.locator('#set-accepted-reader button').evaluateAll(
           buttons=>buttons.filter(b=>!b.hidden).map(b=>b.getBoundingClientRect().height));
         assert(btnHeights.every(x=>x>=44),'touch targets >=44px');
+        // Playwright stitches a tall element screenshot; hide the fixed shell
+        // during capture so its sticky desktop tabs do not appear mid-article.
         await page.locator('#set-accepted-reader').screenshot({
           path:path.join(OUT,'knowledge-accepted-'+size+'-'+scheme+'.png'),
-          animations:'disabled'});
+          animations:'disabled',
+          style:'.topbar,.tabbar { visibility:hidden !important; }'});
         await page.getByRole('button',{name:'Read next 6 excerpts'}).click();
         await page.waitForFunction(()=>document.querySelectorAll('.accepted-reader-excerpt').length===8);
         assert.deepEqual(await page.evaluate(()=>window.__readerTest.sourceCalls[1]),
