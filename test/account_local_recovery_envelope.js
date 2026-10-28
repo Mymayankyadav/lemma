@@ -168,7 +168,7 @@ const B = '00000000-0000-4000-8000-000000000002';
   // by F's release contract. Only the intentional read-only RPC is called.
   const {verify:verifyWorkspaceArchive}=require('./release_workspace_archive');
   const sourceMigrations=fs.readdirSync('supabase/migrations')
-    .filter(name=>/^\\d{14}_[a-z0-9_]+\\.sql$/.test(name)).sort()
+    .filter(name=>/^\d{14}_[a-z0-9_]+\.sql$/.test(name)).sort()
     .map(name=>name.slice(0,14));
   await assert.rejects(remote.sealServerWorkspaceArchive(),/Explicit server archive/);
   serverOwner=A;
