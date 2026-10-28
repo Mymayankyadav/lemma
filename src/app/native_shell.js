@@ -13,6 +13,9 @@ const NativeShell = (() => {
   const authListeners = new Set();
   let pendingAuthUrl = null;
   let lastAuthUrl = null;
+  const reminderTapListeners = new Set();
+  let pendingReminderTap = false;
+  let lastReminderAction = null;
 
   function callbackUrl(raw) {
     if (typeof raw !== 'string' || raw.length > 4096) return null;
@@ -207,6 +210,74 @@ const NativeShell = (() => {
     }
   }
 
+  // N3c: passive native notification action listener. It never requests OS
+  // permission, schedules an alarm, or navigates while the UI is uninitialized.
+  // Only the fixed Lemma reminder's default tap may request Review navigation.
+  function deliverReminderTap() {
+    if (!reminderTapListeners.size) { pendingReminderTap = true; return; }
+    let delivered = false;
+    for (const callback of reminderTapListeners) {
+      try { callback('review'); delivered = true; }
+      catch {
+        // Never log a notification payload or a subscriber exception.
+        console.warn('[Lemma] Native reminder tap listener failed');
+      }
+    }
+    if (!delivered) pendingReminderTap = true;
+  }
+
+  function onReminderAction(action) {
+    if (!action || action === lastReminderAction ||
+        action.actionId !== 'tap' || action.notification?.id !== 24001 ||
+        action.notification?.extra?.route !== 'review') return;
+    lastReminderAction = action;
+    deliverReminderTap();
+  }
+
+  function onDueReminderTap(callback) {
+    if (typeof callback !== 'function')
+      throw new TypeError('Reminder tap callback must be a function');
+    reminderTapListeners.add(callback);
+    if (pendingReminderTap) {
+      pendingReminderTap = false;
+      deliverReminderTap();
+    }
+    return () => reminderTapListeners.delete(callback);
+  }
+
+  function permissionState(result) {
+    return result?.display === 'granted' ? 'granted' :
+      result?.display === 'denied' ? 'denied' : 'prompt';
+  }
+
+  // Settings can inspect this state without ever prompting the student.
+  async function checkDueReminderPermission() {
+    if (!cap.isPluginAvailable?.('LocalNotifications')) return 'unavailable';
+    try {
+      const notifications = cap.registerPlugin('LocalNotifications');
+      if (typeof notifications?.checkPermissions !== 'function')
+        throw new Error('missing plugin');
+      return permissionState(await notifications.checkPermissions());
+    } catch {
+      throw new Error('Could not check notification permission');
+    }
+  }
+
+  // B must call this ONLY from an explicit Settings user gesture. This API
+  // does not persist opt-in or schedule a reminder even if permission is granted.
+  async function requestDueReminderPermission() {
+    if (!cap.isPluginAvailable?.('LocalNotifications'))
+      throw new Error('Native reminders unavailable; update the Android app');
+    try {
+      const notifications = cap.registerPlugin('LocalNotifications');
+      if (typeof notifications?.requestPermissions !== 'function')
+        throw new Error('missing plugin');
+      return permissionState(await notifications.requestPermissions());
+    } catch {
+      throw new Error('Could not request notification permission');
+    }
+  }
+
   function onBack({ canGoBack } = {}) {
     if (typeof Sheets !== 'undefined' && Sheets.closeTop()) return;
     // App.go switches screens without pushing browser history.
@@ -247,6 +318,20 @@ const NativeShell = (() => {
       console.warn('[Lemma] Android listener failed: ' + event, error);
     }
   }
+  // Register passively at startup so a notification tap delivered during a
+  // cold launch can be queued until B subscribes after the app is ready.
+  if (cap.isPluginAvailable?.('LocalNotifications')) {
+    try {
+      const notifications = cap.registerPlugin('LocalNotifications');
+      if (typeof notifications?.addListener === 'function')
+        Promise.resolve(notifications.addListener('localNotificationActionPerformed',
+          onReminderAction)).catch(() => {
+          console.warn('[Lemma] Native reminder listener unavailable');
+        });
+    } catch {
+      console.warn('[Lemma] Native reminder listener unavailable');
+    }
+  }
   // Android may launch a stopped process with a deep link before listeners run.
   // Reuse the same validation/deduplication as warm appUrlOpen events.
   if (typeof nativeApp.getLaunchUrl === 'function') {
@@ -254,5 +339,7 @@ const NativeShell = (() => {
       console.warn('[Lemma] Native launch URL unavailable');
     });
   }
-  return { enabled: true, onAuthCallback, openAuthBrowser, closeAuthBrowser, planDueReminder, reconcileDueReminder };
+  return { enabled: true, onAuthCallback, openAuthBrowser, closeAuthBrowser,
+    planDueReminder, reconcileDueReminder, onDueReminderTap,
+    checkDueReminderPermission, requestDueReminderPermission };
 })();
