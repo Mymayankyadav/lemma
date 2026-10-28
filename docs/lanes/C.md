@@ -1,3 +1,8 @@
+## Ship-today requests (integration 28 Oct, read first)
+
+- **Android is paused (owner, 14:56 IST): the web app is the priority.** No lane C agent is needed today; SHIP-C1 is cancelled and ANDROID-02 is LATER. Existing evidence below stays valid. Do not start new Android work until the owner resumes it.
+- `.github/workflows/android.yml` is now integration-owned (it routes all six lanes); request changes via an integration PR note here.
+
 ## Current C handoff — 28 October 2026 (integration)
 
 - **Verified progress:** ANDROID-01 and automated ANDROID-02 N1–N4 work (native system-browser/deep-link auth scaffolding, resume, optional reminder consent/bridge and APK asset verification) merged. Latest N4b PR #74 compared all dist/ assets byte-for-byte with the built APK. CI package provenance is not a phone test.

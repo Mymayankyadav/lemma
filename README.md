@@ -8,7 +8,7 @@ A persistent mathematics learning workspace built on existing FSRS-6 flashcards,
 
 ## Start here
 
-[plan.md](plan.md) is the **only roadmap and current chatbot handoff**. [AGENTS.md](AGENTS.md) supplies short operating rules. Say **"continue the plan"** for automatic task/lane selection, or **"follow the plan.md, lane A/B/C"** to constrain work. Agents claim work, test, merge qualifying PRs, coordinate dependencies and advance without routine approval prompts. Up to three implementation agents can work concurrently, one per lane; a single agent can work sequentially. Plan §3 defines recovery and the few owner-only actions. No earlier chats are needed.
+[plan.md](plan.md) is the **only roadmap and current chatbot handoff**. [AGENTS.md](AGENTS.md) supplies short operating rules. Say **"continue the plan"** for automatic task/lane selection, or **"follow the plan.md, lane A–F"** to constrain work. Agents claim work, test, merge qualifying PRs, coordinate dependencies and advance without routine approval prompts. Up to six implementation agents can work concurrently, one per lane (sync/backend, UI, Android, study plan, tutor handoff, release); a single agent can work sequentially. Plan §3 defines recovery and the few owner-only actions. No earlier chats are needed.
 
 The plan defines exact task gates, a minimal mathematics-focused UI and private shared study knowledge. New image-upload/OCR/media features are excluded; narrowly scoped knowledge documents may be supported.
 
