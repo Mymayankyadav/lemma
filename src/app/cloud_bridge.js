@@ -253,8 +253,10 @@ const LemmaCloudBridge = (() => {
           typeof value === 'boolean' ||
           (typeof value === 'number' && Number.isFinite(value))) return;
       if (!value || typeof value !== 'object' || seen.has(value) ||
-          (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype &&
-            Object.getPrototypeOf(value) !== null))
+          // Accept plain JSON records from another JS realm (e.g. IndexedDB
+          // Node/VM boundary), while rejecting Date/class/Blob instances.
+          (!Array.isArray(value) && Object.getPrototypeOf(value) !== null &&
+            Object.getPrototypeOf(Object.getPrototypeOf(value)) !== null))
         throw new Error('Nonportable local recovery data');
       seen.add(value);
       for (const key of Object.keys(value)) {
