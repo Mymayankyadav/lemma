@@ -90,7 +90,10 @@ const LemmaSync = (() => {
       return;
     }
     task = (async () => {
-      emit({ phase: 'refreshing', error: '' });
+      // A retry is not a recovery: keep the last real transport failure visible
+      // until BOTH the queued write and remote refresh have succeeded. Otherwise
+      // automatic polling flickers from Sync failed to Queued mid-screenshot.
+      if (state.phase !== 'error') emit({ phase: 'refreshing', error: '' });
       running.outbox.online = true;
       await running.outbox.flush();
       await running.pull();
