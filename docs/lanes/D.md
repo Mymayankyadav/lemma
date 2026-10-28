@@ -1,10 +1,10 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: finish P2b explicit student consent and revision-safe publication in PR #94, then P3 Study checkpoint UI and P4 conflicts/mid-proof resume. Keep Study tab hidden through P2–P5 gates.
+Next action: P3 checkpoint study screen on `lane-d/plan-01-p3-checkpoint-screen`: render approved objectives, last proof, hint level, feedback/evidence/next action and explicit append-only study events; keep Study tab hidden until P5.
 
 | Field | Value |
 | --- | --- |
-| Status | P1 merged PR #83 (main@28d7672); local stack, regression and Android CI passed. P1 migration production application still delegated to lane A. P2a merged PR #91 (main@04b339f), exact-head regression/local stack/Android SUCCESS; P2b PR #94 active. |
+| Status | P1 merged PR #83 (main@28d7672); local stack, regression and Android CI passed. P1 migration production application still delegated to lane A. P2a merged PR #91 (main@04b339f), exact-head regression/local stack/Android SUCCESS; P2b merged PR #94 as main@87daaaa; exact-head regression 40675654109 and local Supabase 40675654119 SUCCESS. P3 claimed. |
 | Task | PLAN-01 — gate in `plan.md` §2 and `docs/SHIP_PLAN.md` |
 | Owns | see `lanes.json` lane D |
 | Existing backend | `study_plans`, `study_plan_versions` (client read-only), `study_checkpoints` (owner CRUD), `learning_sessions`, `learning_events` (owner SELECT/INSERT only; P1 RPC revision-safe), `tutor_handoffs`; RPC `publish_study_plan` (idempotent by `p_request_id`, expected revision). Accepted contexts: `get_accepted_study_context` (lane A). |
@@ -51,3 +51,11 @@ Next action: finish P2b explicit student consent and revision-safe publication i
 - Added a version-2 local `receipts` store to the owner-scoped IndexedDB namespace, preserving P2a draft rows on upgrade. `approvePlanDraft(planId, localRevision, true)` persists immutable student consent and original CAS revision/request UUID offline; tutor proposals remain draft-only.
 - `submitApprovedPlanDraft(planId)` uses existing owner-filtered `publish_study_plan` RPC only for durable `approved_pending` intents. Preserves the same request ID on unknown network results, archives confirmed receipt and deletes intent in one IDB transaction; never silently rebase stale plan/context revision, returning `needs_review` instead. `readPlanReceipt` supports exact confirmation after restart.
 - `test/study_approval.js` covers v1→v2 upgrade, no consent/no network, queued offline submission, lost response, aborted local receipt, stable retries, owner isolation, changed identity and stale approval conflicts. Exact-head CI pending. This is not full PLAN-01 acceptance; P3–P5 remain, and no production schema writes in D.
+
+## Active claim — P3 hidden checkpoint screen (owner-directed continuation)
+
+- Run: `chat-20261028-lane-d-p3-owner` · heartbeat 2026-10-28T10:58Z; base `main@87daaaa`.
+- Scope: D-owned `src/app/view_study.js`, `src/styles/study.css`, `src/app/study_plan.js` (read-only latest evidence enrichment), `test/study_view.js`, this handoff. No shared or backend files.
+- Build a checkpoint-specific view of an **approved** plan only: objective, latest unfinished attempt, hint level, feedback, evidence and next action. Only deliberate student input calls `StudyPlan.recordEvent` with stable per-attempt UUID; never implicitly claim mastery or approve a plan. Guard identity/workspace after every await and fail closed for missing/unapproved/offline contexts.
+- Tests: draft-only/unapproved not shown, loading/empty/error, stale route/identity, explicit event types, retry with same ID, no implicit writes, guard, syntax, full regression/build; screenshots after hidden view can be exercised. Keep `StudyView.ready=false` through P4/P5.
+- P2b prior owner-directed takeover fixed one IndexedDB abort matcher without weakening rollback assertions; exact-head regression [40675654109](https://github.com/Mymayankyadav/lemma/actions/runs/40675654109) and local stack [40675654119](https://github.com/Mymayankyadav/lemma/actions/runs/40675654119) SUCCESS; merged #94 as 87daaaa. Production migration application remains Lane A only.
