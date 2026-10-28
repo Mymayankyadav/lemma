@@ -1,3 +1,8 @@
+## KNOWLEDGE-01 K2a — accepted-context CAS implementation claim (2026-10-28)
+
+- **Claim:** `chat-20261028T0316Z-a-k2a`; heartbeat `2026-10-28T03:16Z`; base `main@fd819cd`; branch `lane-a/knowledge-01-k2a-context-cas`. Scope: additive migration for immutable owner-scoped accepted study-context revisions, idempotent CAS RPC and bounded accepted payload; local authenticated two-user HTTP regression, baseline L8 parity preservation; handoff. Intended files: `supabase/migrations/20261028032000_accepted_context_revisions.sql`, `supabase/tests/security_snapshot.sql`, `test/sync_knowledge_context.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`. No production mutation, user data, Carrel, UI or Android files.
+- **Next:** implement and verify on disposable local Supabase CI. This is K2a only; source revision and bounded citation retrieval, client integration, student approval and physical-device acceptance remain future gates.
+
 # Lane A — sync, auth and backend
 
 ## Active claim — KNOWLEDGE-01 K2a (owner-private context CAS)
