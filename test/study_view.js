@@ -77,8 +77,20 @@ function liveContext(){return {planId:P,planRevision:3,
  const forms=walk(root).filter(n=>n.attrs.class==='study-form');
  assert.equal(forms.length,5);
  const attempt=forms[0],box=find(attempt,n=>n.tag==='textarea');
- const button=find(attempt,n=>n.tag==='button');
+ const button=find(attempt,n=>n.tag==='button'&&n.attrs.text==='Save proof attempt');
+ const resume=find(attempt,n=>n.tag==='button'&&n.attrs.text==='Continue saved proof');
+ assert.ok(resume,'approved unfinished proof has an explicit resume action');
  const status=find(attempt,n=>n.attrs.class==='study-write-status');
+ await resume.events.click();
+ assert.equal(box.value,'Choose an open cover');
+ assert.match(status.textContent,/No new event/);
+ assert.equal(calls.length,0,'resuming a saved proof is read only');
+ box.value='Unsubmitted new argument';
+ await resume.events.click();
+ assert.equal(box.value,'Unsubmitted new argument',
+  'resume never overwrites work already typed');
+ assert.match(status.textContent,/Unsubmitted text/);
+ box.value='';
  await button.events.click();
  assert.match(status.textContent,/Enter an actual observation/);
  assert.equal(calls.length,0);
