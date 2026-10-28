@@ -93,6 +93,8 @@ jobs:
           test "$(cat supabase/.temp/project-ref)" = yemqnhnztlbyxmjxidis
           supabase migration list --linked --password "$SUPABASE_DB_PASSWORD" > "$RUNNER_TEMP/lemma-release-migrations.txt" 2>&1
           node test/release_migrations.js --check "$RUNNER_TEMP/lemma-release-migrations.txt"
+      - name: Require full account-workspace restore acceptance on exact release SHA
+        run: node test/release_recovery_gate.js --tag
       - name: Publish GitHub release, web only
         env:
           GH_TOKEN: ${{ github.token }}
