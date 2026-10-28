@@ -50,6 +50,10 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     page.on('pageerror',e=>errors.push(size+'/'+scheme+': '+e.message));
     await page.goto('https://lemma.test/');
     await page.waitForSelector('#sheets',{state:'attached',timeout:12000});
+    // Boot initializes the workspace asynchronously and may replace open sheets.
+    // Never open the synthetic tutor handoff until that initialization is done.
+    await page.waitForFunction(() => typeof App !== 'undefined' && App.loading === false &&
+      !!document.querySelector('.today'), null, {timeout:15000});
     await page.evaluate(()=>window.__tutorVisual.open());
     await page.waitForSelector('.tutor-handoff');
     const helpColor=await page.locator('.tutor-handoff-help').first().evaluate(
