@@ -267,7 +267,11 @@ const LemmaCloud = (() => {
       const row = await request(this.db.transaction('meta','readonly')
         .objectStore('meta').get(key));
       if (row && (row.userId !== this.userId || row.contextId !== contextId.toLowerCase() ||
-          row.status !== 'draft' || !Number.isSafeInteger(row.localRevision)))
+          !['draft','approved_pending'].includes(row.status) ||
+          !Number.isSafeInteger(row.localRevision) ||
+          (row.status === 'approved_pending' &&
+            (typeof row.requestId !== 'string' ||
+              !/^[0-9a-f-]{36}$/i.test(row.requestId)))))
         throw new Error('Invalid locally saved knowledge draft');
       return row ? structuredClone(row) : null;
     }
@@ -283,6 +287,10 @@ const LemmaCloud = (() => {
           const lookup = store.get(key);
           lookup.onsuccess = () => {
             const previous = lookup.result;
+            if (previous?.status === 'approved_pending' && previous.userId === this.userId) {
+              failure = new Error('Approved knowledge intent is pending; no editing allowed');
+              t.abort(); return;
+            }
             if (previous && (previous.userId !== this.userId ||
                 previous.contextId !== data.contextId || previous.status !== 'draft')) {
               failure = new Error('Invalid locally saved knowledge draft'); t.abort(); return;
@@ -301,6 +309,51 @@ const LemmaCloud = (() => {
       } catch (err) { throw failure || err; }
       // A saved local draft is NOT a cloud receipt, and this result is never
       // interpreted as approval to call commit_structured_study_context.
+      return structuredClone(result);
+    }
+    async approveKnowledgeDraft(contextId, expectedLocalRevision, studentApproved) {
+      const key = knowledgeDraftKey(contextId);
+      if (studentApproved !== true)
+        throw new Error('Explicit student approval required');
+      if (!Number.isSafeInteger(expectedLocalRevision) || expectedLocalRevision < 1)
+        throw new Error('Reviewed local draft revision required');
+      // Generate once per call; a duplicate approval of an already-staged
+      // revision reads the persisted request ID instead of replacing it.
+      const proposedRequestId = uuid();
+      let result, failure;
+      try {
+        await tx(this.db, ['meta'], 'readwrite', t => {
+          const store = t.objectStore('meta'), lookup = store.get(key);
+          lookup.onsuccess = () => {
+            const previous = lookup.result;
+            if (!previous || previous.userId !== this.userId ||
+                previous.contextId !== contextId.toLowerCase()) {
+              failure = new Error('Knowledge draft not available for this account');
+              t.abort(); return;
+            }
+            if (previous.status === 'approved_pending' &&
+                previous.approvedFromLocalRevision === expectedLocalRevision) {
+              // Local response lost: the exact snapshot and request key were
+              // already recorded, do not duplicate or rewrite the approval.
+              result = previous;
+              return;
+            }
+            if (previous.status !== 'draft' ||
+                previous.localRevision !== expectedLocalRevision) {
+              failure = new Error('Knowledge draft changed; review before approval');
+              t.abort(); return;
+            }
+            result = { ...previous, status:'approved_pending',
+              localRevision:previous.localRevision + 1,
+              approvedFromLocalRevision:previous.localRevision,
+              requestId:proposedRequestId, approvedBy:'student',
+              approvedAt:Date.now() };
+            store.put(result, key);
+          };
+        });
+      } catch (err) { throw failure || err; }
+      // The resulting intent has NOT been sent to Supabase, and may remain
+      // offline indefinitely. Later submission MUST reuse requestId exactly.
       return structuredClone(result);
     }
     async discardKnowledgeDraft(contextId, expectedLocalRevision) {
