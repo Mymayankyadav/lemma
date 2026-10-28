@@ -75,7 +75,7 @@ async function open(browser, size, scheme, native = false) {
     };
     const app = {
       async addListener() { return { remove() {} }; },
-      async getLaunchUrl() { return null; },
+      async getLaunchUrl() { return {}; },
       async exitApp() {},
     };
     window.__nativeReminderMock = {
