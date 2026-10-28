@@ -124,6 +124,8 @@ async function resolveCurrent(page, result, reject = false) {
           'unavailable backend keeps review fallback');
 
         // Older in-flight responses cannot modify a view that was replaced.
+        await ready.page.locator('[data-go="browse"]:visible').first().click();
+        await ready.page.locator('[data-go="home"]:visible').first().click();
         const staleButton = await ready.page.locator('.today .study-btn').elementHandle();
         await ready.page.locator('[data-go="browse"]:visible').first().click();
         await ready.page.locator('[data-go="home"]:visible').first().click();
