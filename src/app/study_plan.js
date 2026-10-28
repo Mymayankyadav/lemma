@@ -447,6 +447,89 @@ const StudyPlan = (() => {
     return {status:'confirmed',revision:receipt.revision,
       requestId:receipt.requestId};
   }
+  // P4a: pure diff of two reviewed JSON snapshots. It never reads cloud,
+  // edits evidence, reuses another owner's data, or approves an amendment.
+  function snapshotGraph(input) {
+    if (!object(input)) throw new Error('Invalid study plan snapshot');
+    let json;
+    try { json = JSON.stringify(input); }
+    catch (_) { throw new Error('Invalid study plan snapshot'); }
+    if (!json || json.length > 100000) throw new Error('Study plan snapshot too large');
+    let snapshot;
+    try { snapshot = JSON.parse(json); }
+    catch (_) { throw new Error('Invalid study plan snapshot'); }
+    if (!object(snapshot) || !Array.isArray(snapshot.checkpoints) ||
+        snapshot.checkpoints.length < 1 || snapshot.checkpoints.length > 120)
+      throw new Error('Invalid study plan checkpoints');
+    const byId = new Map();
+    for (const cp of snapshot.checkpoints) {
+      if (!object(cp) || (cp.checkpoint_id != null && cp.id != null &&
+            cp.checkpoint_id !== cp.id))
+        throw new Error('Invalid checkpoint identity');
+      const id = cp.checkpoint_id ?? cp.id;
+      if (typeof id !== 'string' || !id.trim() || id.length > 160 ||
+          byId.has(id)) throw new Error('Duplicate or invalid checkpoint ID');
+      const prerequisites = cp.prerequisite_checkpoint_ids ?? [];
+      if (!Array.isArray(prerequisites) || prerequisites.length > 120 ||
+          prerequisites.some(p => typeof p !== 'string' || !p.trim()) ||
+          new Set(prerequisites).size !== prerequisites.length)
+        throw new Error('Invalid checkpoint prerequisites');
+      byId.set(id,{id,cp,prerequisites});
+    }
+    for (const {prerequisites} of byId.values()) {
+      if (prerequisites.some(id => !byId.has(id)))
+        throw new Error('Dangling checkpoint prerequisite');
+    }
+    const visiting = new Set(),visited = new Set();
+    const visit = id => {
+      if (visiting.has(id)) throw new Error('Cyclic checkpoint prerequisites');
+      if (visited.has(id)) return;
+      visiting.add(id);
+      for (const p of byId.get(id).prerequisites) visit(p);
+      visiting.delete(id);visited.add(id);
+    };
+    for (const id of byId.keys()) visit(id);
+    return {snapshot,byId};
+  }
+  function canonical(value) {
+    if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
+    if (object(value)) return '{' + Object.keys(value).sort()
+      .map(key => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}';
+    return JSON.stringify(value);
+  }
+  function diffPlanSnapshots(accepted,proposed) {
+    const a=snapshotGraph(accepted),b=snapshotGraph(proposed);
+    const added=[],removed=[],modified=[],unchanged=[],requiresReassessment=[];
+    const evidenceSensitive = new Set(['mastery_criterion','assessment_prompt',
+      'learning_tasks','review_policy']);
+    const fieldsChanged = (left,right,skip) => [...new Set([
+      ...Object.keys(left),...Object.keys(right)
+    ])].filter(k => !skip.has(k) &&
+      canonical(left[k]) !== canonical(right[k])).sort();
+    for (const id of a.byId.keys()) if (!b.byId.has(id)) removed.push(id);
+    for (const [id,newCp] of b.byId) {
+      const oldCp = a.byId.get(id);
+      if (!oldCp) {added.push(id);continue;}
+      const skip=new Set(['id','checkpoint_id','prerequisite_checkpoint_ids']);
+      const fields=fieldsChanged(oldCp.cp,newCp.cp,skip);
+      const oldDeps=new Set(oldCp.prerequisites),newDeps=new Set(newCp.prerequisites);
+      const addedPrerequisites=[...newDeps].filter(x=>!oldDeps.has(x));
+      const removedPrerequisites=[...oldDeps].filter(x=>!newDeps.has(x));
+      if (fields.length || addedPrerequisites.length || removedPrerequisites.length) {
+        const reassess=fields.some(f=>evidenceSensitive.has(f));
+        if (reassess) requiresReassessment.push(id);
+        modified.push({checkpointId:id,fields,addedPrerequisites,
+          removedPrerequisites,requiresReassessment:reassess});
+      } else unchanged.push(id);
+    }
+    const planFieldsChanged=fieldsChanged(a.snapshot,b.snapshot,
+      new Set(['checkpoints']));
+    const beforeIds=[...a.byId.keys()],afterIds=[...b.byId.keys()];
+    return {added,removed,modified,unchanged,planFieldsChanged,
+      reordered:canonical(beforeIds.filter(id=>b.byId.has(id))) !==
+        canonical(afterIds.filter(id=>a.byId.has(id))),
+      requiresReassessment};
+  }
   // Tutor proposals are staged only, even when the tutor reports approval.
   async function proposeAmendment(input) {
     const draft = await savePlanDraft(input);
@@ -454,5 +537,5 @@ const StudyPlan = (() => {
   }
   return { ready:false, activeContext,recordEvent,proposeAmendment,
     savePlanDraft,readPlanDraft,discardPlanDraft,
-    approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt };
+    approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt,diffPlanSnapshots };
 })();
