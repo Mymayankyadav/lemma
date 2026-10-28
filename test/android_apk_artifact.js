@@ -30,6 +30,22 @@ function run(executable, args, maxBuffer = 32 * 1024 * 1024) {
   return execFileSync(executable, args, { encoding: 'utf8', maxBuffer, stdio: ['ignore', 'pipe', 'pipe'] });
 }
 
+// Include nested and future web assets, not just the current four named
+// entrypoints. A symlink or special file in dist must not silently escape
+// byte-level APK provenance verification.
+function listBundledFiles(directory, relative = '') {
+  const files = [];
+  for (const entry of fs.readdirSync(path.join(directory, relative), { withFileTypes: true })) {
+    if (!entry.name || /[\\\\/]/.test(entry.name) || entry.name === '.' || entry.name === '..')
+      throw new Error('Unsafe bundled web asset name');
+    const name = relative ? relative + '/' + entry.name : entry.name;
+    if (entry.isDirectory()) files.push(...listBundledFiles(directory, name));
+    else if (entry.isFile()) files.push(name);
+    else throw new Error('Unsupported bundled web asset type');
+  }
+  return files.sort();
+}
+
 function verify() {
   assert.ok(fs.statSync(apk).size > 100_000, 'APK missing or unexpectedly small');
   const badging = run(sdkTool('aapt'), ['dump', 'badging', apk]);
@@ -57,7 +73,12 @@ function verify() {
   }
 
   const files = new Set(run('unzip', ['-Z', '-1', apk]).trim().split(/\r?\n/));
-  const bundled = ['index.html', 'lemma.html', 'service-worker.js', 'manifest.webmanifest'];
+  const bundled = listBundledFiles(path.join(root, 'dist'));
+  for (const required of ['index.html', 'lemma.html', 'test.html',
+    'service-worker.js', 'manifest.webmanifest', 'icons/icon.svg']) {
+    assert.ok(bundled.includes(required), 'Build output missing required asset: ' + required);
+  }
+  assert.ok(bundled.length <= 4096, 'Unexpected number of bundled web assets');
   const assetSha256 = {};
   for (const name of bundled) {
     const entry = 'assets/public/' + name;
@@ -68,7 +89,7 @@ function verify() {
     assetSha256[name] = crypto.createHash('sha256').update(actual).digest('hex');
   }
   const metadata = {
-    schema: 1, applicationId: packageName, launchActivity, versionCode, versionName,
+    schema: 2, applicationId: packageName, launchActivity, versionCode, versionName,
     apkSha256: crypto.createHash('sha256').update(fs.readFileSync(apk)).digest('hex'),
     signerCertificateSha256: signerSha256, bundledAssetSha256: assetSha256
   };
@@ -80,11 +101,15 @@ function verify() {
   console.log('Metadata:', path.relative(root, output));
 }
 
-try { verify(); }
-catch (error) {
-  // Avoid logging tool stderr or arbitrary archive data. This is a CI-only
-  // verifier; do not leak paths or metadata from unexpected tool exceptions.
-  console.error('Android APK preflight failed:', error instanceof assert.AssertionError ?
-    error.message : 'SDK, archive, signature or bundled-asset check failed');
-  process.exitCode = 1;
+if (require.main === module) {
+  try { verify(); }
+  catch (error) {
+    // Avoid logging tool stderr or arbitrary archive data. This is a CI-only
+    // verifier; do not leak paths or metadata from unexpected tool exceptions.
+    console.error('Android APK preflight failed:', error instanceof assert.AssertionError ?
+      error.message : 'SDK, archive, signature or bundled-asset check failed');
+    process.exitCode = 1;
+  }
 }
+
+module.exports = { listBundledFiles };
