@@ -2,7 +2,8 @@
 
 - **Claim:** `hourly-20261028T0337Z-c-n2b`, UTC heartbeat 2026-10-28T03:37:27.036Z; base `main@bfcf00c`, branch `lane-c/android-02-n2b-keyboard-resize`. C-owned files: `android/app/src/main/AndroidManifest.xml`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. Main after merged N2a [PR #58](https://github.com/Mymayankyadav/lemma/pull/58) has Android/regression/local-stack/Pages SUCCESS; A's native PKCE PR #59 remains independently claimed.
 - **Contract:** explicitly request Android activity `adjustResize` when the soft keyboard appears, preserving existing deep-link intent filters and Capacitor lifecycle. Assert manifest contract in C test and document device-only keyboard/editor/sheet checks. This is a native window behavior request, not proof of actual keyboard visibility on hardware or permission to edit B UI.
-- **Next:** commit bounded native manifest/test/docs change, verify exact-head Android/regression and main CI; merge only if green. Physical keyboard/safe-area/IME test remains NOT RUN, and any B presentation defect requires a separate cross-lane request.
+- **Implementation:** MainActivity requests `adjustResize` in `AndroidManifest.xml`; `test/android_native_shell.js` asserts the exact manifest contract and no `adjustPan`; `docs/ANDROID.md` records editor/sheet/gesture-nav physical checks. No B CSS, A auth, data or OAuth route changes.
+- **Next (UTC 2026-10-28T03:38:00.697Z):** verify exact-head Android/regression CI, C guard and current main checks; merge only if green. Physical keyboard/safe-area/IME test remains NOT RUN, and any B presentation defect requires a separate cross-lane request.
 
 ## ANDROID-02 N2a — native foreground recovery signal (28 October 2026)
 
