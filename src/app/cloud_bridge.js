@@ -156,7 +156,36 @@ const LemmaCloudBridge = (() => {
       p_context_markdown: markdown, p_payload: payload
     });
   }
+  // LOCAL unaccepted drafts only. These are stored in the existing
+  // account-namespaced IndexedDB cache; no network required after attach.
+  // An in-flight save may finish under the *old* owner after logout, so
+  // recheck the active handle before revealing any old-owner draft.
+  async function withKnowledgeDraftStorage(action) {
+    const userId = LemmaAccount.user?.id;
+    const handle = typeof LemmaSync !== 'undefined' ? LemmaSync.accountHandle() : null;
+    if (!userId || !handle || handle.userId !== userId)
+      throw new Error('Sign in to an available account cache to edit knowledge drafts');
+    const result = await action(handle.storage);
+    if (LemmaAccount.user?.id !== userId || LemmaSync.accountHandle() !== handle)
+      throw new Error('Account changed; previous owner draft remains saved');
+    return result;
+  }
+  async function readKnowledgeDraft(contextId) {
+    if (!isUuid(contextId)) throw new Error('Invalid knowledge context reference');
+    return withKnowledgeDraftStorage(storage => storage.knowledgeDraft(contextId));
+  }
+  async function saveKnowledgeDraft(input) {
+    if (!input || !isUuid(input.contextId))
+      throw new Error('Invalid knowledge context reference');
+    return withKnowledgeDraftStorage(storage => storage.saveKnowledgeDraft(input));
+  }
+  async function discardKnowledgeDraft(contextId, expectedLocalRevision) {
+    if (!isUuid(contextId)) throw new Error('Invalid knowledge context reference');
+    return withKnowledgeDraftStorage(storage =>
+      storage.discardKnowledgeDraft(contextId, expectedLocalRevision));
+  }
   return { authorize, listRemote, inspect, uploadMissing, importMissing,
-    readAcceptedContext, readAcceptedExcerpts, commitAcceptedContext };
+    readAcceptedContext, readAcceptedExcerpts, commitAcceptedContext,
+    readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft };
 })();
 
