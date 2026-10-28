@@ -2,7 +2,9 @@
 
 - **Claim / heartbeat:** `chat-20261028-r2j-local-restore`, 2026-10-28T17:54Z; branch `lane-a/release-r2j-local-recovery-restore` from main `2f2a410` after PR #144. No competing A claim. Files: `src/app/{sync_browser,account_sync,cloud_bridge}.js`, account recovery tests and this handoff.
 - **Scope:** empty-only atomic five-store IndexedDB restoration, same-owner validation and durable local receipt, preserved drafts/conflicts/outbox/request IDs, explicit queued-edit consent, server-before-local coordinator with sync paused on failure. Existing server archive/restore is real-GoTrue accepted in PR #144 regression 40739426891 and local-stack 40739426802. Product UI and final F release acceptance remain separate slices.
-- **Next action:** validate exact-head browser/local-stack/account checks, merge only green and verify main. Production migration remains undeployed.
+- **Implemented:** five-store atomic empty-only import, exact key/owner/portable JSON validation, same-key durable receipt, late write-abort rollback and retry after reopening. Coordinator validates both manifests, requires device workspace plus explicit queued-edit consent, checks local destination before server restore, commits local cache only after server receipt, and resumes sync only after both succeed. Failures leave this tab paused. Pulls and flushes share the same per-owner Web Lock as recovery. Server/local commits remain two independent transactions; partial success is retryable with the same request ID.
+- **Local checks:** account, storage, workspace, syntax, build, A ownership and diff checks passed. New tests preserve all drafts/conflict archives/reviews/outbox IDs, reject foreign/dirty targets, abort all stores on a forced late quota failure, retain one receipt through concurrent retries/reopen, and keep queues paused after lost HTTP response. CI required on the final head.
+- **Next action:** run exact-head browser/local-stack checks, merge green after main is healthy, then B consent/download flow and F release acceptance. Production restore migration remains undeployed.
 
 ## RELEASE-01 R2i — transactional same-owner empty-destination restore
 

@@ -306,6 +306,44 @@ const B = '00000000-0000-4000-8000-000000000002';
   const pendingRestore=remote.restoreServerWorkspaceArchive(archive,options);
   await restoreStarted;serverOwner=B;serverHandle={userId:B,storage:storageB};
   releaseRestore();await assert.rejects(pendingRestore,/Account changed/);
+  serverOwner=A;serverHandle={userId:A,storage:storageA};
+  const targetReq=indexedDB.open('synthetic-recovery-target',1);
+  targetReq.onupgradeneeded=()=>{
+    for(const [name,keyPath] of [['notes','id'],['reviews','event_id'],['retractions','retraction_id'],['outbox','id'],['meta',null]])
+      targetReq.result.createObjectStore(name,keyPath?{keyPath}:undefined);
+  };
+  const targetDB=await new Promise((resolve,reject)=>{
+    targetReq.onsuccess=()=>resolve(targetReq.result);targetReq.onerror=()=>reject(targetReq.error);
+  });
+  const targetStorage=new AccountStorage(targetDB,A);
+  let resumes=0,recoveryCalls=0,lostResponse=true;
+  serverVM.Store.mode='local';
+  serverVM.LemmaSync.withRecovery=async action=>{
+    recoveryCalls++;serverHandle=null;
+    return action(targetStorage,()=>serverOwner===A);
+  };
+  serverVM.LemmaSync.attach=async()=>{resumes++;serverHandle={userId:A,storage:targetStorage};};
+  serverClient.rpc=(name,args)=>({setHeader:async()=>{
+    assert.equal(name,'restore_account_workspace');
+    if(!args.p_dry_run&&lostResponse){lostResponse=false;throw new Error('Synthetic lost response');}
+    return {data:{status:args.p_dry_run?'validated':'restored',ownerId:A,requestId,rows:1,tables:19}};
+  }});
+  await assert.rejects(remote.restoreRecoveryPair(paired),/Explicit recovery/);
+  assert.equal(recoveryCalls,0);
+  const recoverOptions={requestId,studentConfirmed:true,dryRun:false,resumeSync:true};
+  await assert.rejects(remote.restoreRecoveryPair(paired,recoverOptions),/Synthetic lost response/);
+  assert.equal(resumes,0,'failed partial restore must keep this tab paused');
+  assert.equal((await targetStorage.list()).length,0,'lost server response must not import local queue');
+  assert.equal((await remote.restoreRecoveryPair(paired,recoverOptions)).status,'restored');
+  assert.equal(resumes,1);
+  assert.equal((await targetStorage.list()).length,1,'original pending request is preserved, never regenerated');
+  assert.equal((await targetStorage.list())[0].requestId,before[0].requestId);
+  await remote.restoreRecoveryPair(paired,recoverOptions);
+  assert.equal((await targetStorage.list()).length,1,'retry never duplicates pending queue');
+  serverVM.Store.mode='account';
+  await assert.rejects(remote.restoreRecoveryPair(paired,recoverOptions),/device workspace/);
+  targetDB.close();
+  console.log('PASS RELEASE paired restore: explicit queued-edit consent, preflight, server-before-local order, paused failure and stable local retry');
   serverClient.rpc=originalRpc;
   console.log('PASS RELEASE R2i client: explicit confirmation, stable retry key, offline integrity/owner checks and late account-switch denial');
 

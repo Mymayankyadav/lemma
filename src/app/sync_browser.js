@@ -260,6 +260,25 @@ const LemmaCloud = (() => {
       title: data.title, markdown: data.markdown,
       payload, authorKind: data.authorKind };
   }
+  function portableRecovery(value, depth = 0, seen = new WeakSet()) {
+        if (depth > 32) throw new Error('Local recovery JSON depth exceeded');
+        if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
+        if (typeof value === 'number' && Number.isFinite(value)) return;
+        if (!value || typeof value !== 'object')
+          throw new Error('Local recovery contains non-JSON data');
+        if (seen.has(value)) throw new Error('Local recovery contains a circular value');
+        if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype &&
+            Object.getPrototypeOf(value) !== null)
+          throw new Error('Local recovery contains a non-JSON object');
+        seen.add(value);
+        for (const key of Object.keys(value)) {
+          if (['__proto__','prototype','constructor'].includes(key))
+            throw new Error('Local recovery contains an unsafe key');
+          portableRecovery(value[key], depth + 1, seen);
+        }
+        seen.delete(value);
+      }
+
   class AccountStorage {
     constructor(db, userId) { this.db = db; this.userId = userId; }
     async knowledgeDraft(contextId) {
@@ -560,24 +579,6 @@ const LemmaCloud = (() => {
       let count = 0;
       // IndexedDB can persist Dates, Blobs and cyclic structures, but silently
       // JSON-encoding those would make an archive unrecoverable. Reject them.
-      function portable(value, depth = 0, seen = new WeakSet()) {
-        if (depth > 32) throw new Error('Local recovery JSON depth exceeded');
-        if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
-        if (typeof value === 'number' && Number.isFinite(value)) return;
-        if (!value || typeof value !== 'object')
-          throw new Error('Local recovery contains non-JSON data');
-        if (seen.has(value)) throw new Error('Local recovery contains a circular value');
-        if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype &&
-            Object.getPrototypeOf(value) !== null)
-          throw new Error('Local recovery contains a non-JSON object');
-        seen.add(value);
-        for (const key of Object.keys(value)) {
-          if (['__proto__','prototype','constructor'].includes(key))
-            throw new Error('Local recovery contains an unsafe key');
-          portable(value[key], depth + 1, seen);
-        }
-        seen.delete(value);
-      }
       for (const name of names) {
         const part = entries[name];
         if (!Array.isArray(part.keys) || !Array.isArray(part.values) ||
@@ -590,7 +591,7 @@ const LemmaCloud = (() => {
           if (typeof key !== 'string' &&
               !(typeof key === 'number' && Number.isSafeInteger(key)))
             throw new Error('Unsupported local recovery record key');
-          portable(value);
+          portableRecovery(value);
           if (value && typeof value === 'object' && !Array.isArray(value) &&
               ((value.userId !== undefined && value.userId !== this.userId) ||
                (value.user_id !== undefined && value.user_id !== this.userId)))
@@ -605,6 +606,86 @@ const LemmaCloud = (() => {
       if (new TextEncoder().encode(serialized).byteLength > maxBytes)
         throw new Error('Local recovery byte limit exceeded');
       return snapshot;
+    }
+    async restoreLocalRecoverySnapshot(snapshot,{requestId,sha256,studentConfirmed=false,
+      dryRun=true,active=()=>true}={}) {
+      if(studentConfirmed!==true || !/^[0-9a-f-]{36}$/i.test(requestId||'') ||
+         !/^[0-9a-f]{64}$/.test(sha256||'') || typeof dryRun!=='boolean')
+        throw new Error('Explicit local restore confirmation and receipt required');
+      portableRecovery(snapshot);
+      const names=['notes','reviews','retractions','outbox','meta'];
+      if(snapshot?.app!=='lemma'||snapshot.version!==1 ||
+         snapshot.scope!=='account-local-recovery'||snapshot.ownerId!==this.userId ||
+         snapshot.capture!=='single-indexeddb-readonly-transaction' ||
+         JSON.stringify(Object.keys(snapshot.stores||{}))!==JSON.stringify(names) ||
+         new TextEncoder().encode(JSON.stringify(snapshot)).byteLength>64*1024*1024)
+        throw new Error('Invalid local restore snapshot or owner');
+      const receiptKey='recovery:restore:v1:'+requestId;
+      let count=0;
+      for(const name of names){
+        const seen=new Set(),rows=snapshot.stores[name];
+        if(!Array.isArray(rows))throw new Error('Invalid local restore table');
+        for(const row of rows){
+          const key=JSON.stringify(row.key);
+          if((typeof row.key!=='string' && !(typeof row.key==='number'&&Number.isSafeInteger(row.key))) ||
+             seen.has(key) || (name==='meta' && row.key===receiptKey))
+            throw new Error('Invalid or duplicate local restore key');
+          seen.add(key);
+          const field={notes:'id',reviews:'event_id',retractions:'retraction_id',outbox:'id'}[name];
+          if(field && row.value?.[field]!==row.key)
+            throw new Error('Local restore key does not match record');
+          if(row.value && ((row.value.userId!==undefined&&row.value.userId!==this.userId)||
+            (row.value.user_id!==undefined&&row.value.user_id!==this.userId)))
+            throw new Error('Foreign owner local restore row');
+        }
+        count+=rows.length;
+      }
+      if(count>200000)throw new Error('Local restore row limit');
+      let result,failure;
+      const check=()=>{if(!active())throw new Error('Account changed during local restore');};
+      try {
+        await tx(this.db,names,'readwrite',t=>{
+          const present={};let remaining=names.length;
+          const finish=()=>{
+            try {
+              check();
+              const prior=present.meta.find(r=>r.key===receiptKey)?.value;
+              if(prior){
+                if(prior.userId!==this.userId||prior.sha256!==sha256)
+                  throw new Error('Local restore request payload mismatch');
+                result=prior;return;
+              }
+              for(const name of names){
+                if(present[name].some(r=>!(name==='meta'&&r.key==='sequence'&&r.value===0)))
+                  throw new Error('Local restore destination is not empty');
+              }
+              result={status:dryRun?'validated':'restored',userId:this.userId,
+                requestId,sha256,rows:count};
+              if(dryRun)return;
+              for(const name of names){
+                const store=t.objectStore(name);
+                for(const row of snapshot.stores[name]){
+                  if(store.keyPath===null)store.put(structuredClone(row.value),row.key);
+                  else store.add(structuredClone(row.value));
+                }
+              }
+              t.objectStore('meta').add(result,receiptKey);
+            }catch(err){failure=err;t.abort();}
+          };
+          for(const name of names){
+            const store=t.objectStore(name),values=store.getAll(),keys=store.getAllKeys();
+            const part={};present[name]=[];
+            const done=()=>{
+              if(!part.values||!part.keys)return;
+              present[name]=part.keys.map((key,i)=>({key,value:part.values[i]}));
+              if(--remaining===0)finish();
+            };
+            values.onsuccess=()=>{part.values=values.result;done();};
+            keys.onsuccess=()=>{part.keys=keys.result;done();};
+          }
+        });
+      }catch(err){throw failure||err;}
+      check();return result;
     }
     async note(id) { return request(this.db.transaction('notes').objectStore('notes').get(id)); }
     async list() { return request(this.db.transaction('outbox').objectStore('outbox').getAll()); }
@@ -1132,7 +1213,7 @@ const LemmaCloud = (() => {
     }).data.subscription;
     try { await accountToken(supabase, userId, () => active); }
     catch (error) { close(); throw error; }
-    return { storage, outbox, pull: () => pullAll(supabase, userId, storage, () => active), close, userId };
+    return { storage, outbox, pull: () => navigator.locks.request('lemma-sync-' + userId, () => pullAll(supabase, userId, storage, () => active)), close, userId };
   }
   return { openAccountDB, AccountStorage, SupabaseTransport, accountToken, pullAll, startAccount };
 })();

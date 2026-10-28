@@ -681,6 +681,42 @@ const LemmaCloudBridge = (() => {
     return pair;
   }
 
+  async function restoreRecoveryPair(pair,{requestId,studentConfirmed=false,
+    dryRun=true,resumeSync=false}={}){
+    if(studentConfirmed!==true || !isUuid(requestId) || typeof dryRun!=='boolean' ||
+       (!dryRun && resumeSync!==true))
+      throw new Error('Explicit recovery confirmation and queued-edit consent required');
+    if(Store.mode!=='local')
+      throw new Error('Switch to the device workspace before account recovery');
+    const ownerId=LemmaAccount.user?.id,client=LemmaAccount.client;
+    const check=()=>{
+      if(!ownerId||LemmaAccount.user?.id!==ownerId||LemmaAccount.client!==client)
+        throw new Error('Account changed during paired restore');
+    };
+    check();
+    const snapshot=structuredClone(pair);
+    await verifyReadOnlyRecoveryPair(snapshot,ownerId);check();
+    await Store.whenSaved();check();
+    const result=await LemmaSync.withRecovery(async(storage,active)=>{
+      const guard=()=>{check();if(!active())throw new Error('Account changed during paired restore');};
+      guard();
+      const localOptions={requestId,sha256:snapshot.local.sha256,
+        studentConfirmed:true,dryRun:true,active};
+      await storage.restoreLocalRecoverySnapshot(snapshot.local.snapshot,localOptions);guard();
+      const server=await restoreServerWorkspaceArchive(snapshot.server,
+        {requestId,studentConfirmed:true,dryRun});guard();
+      const local=dryRun?null:await storage.restoreLocalRecoverySnapshot(
+        snapshot.local.snapshot,{...localOptions,dryRun:false});guard();
+      return {status:dryRun?'validated':'restored',ownerId,requestId,server,local};
+    });
+    check();
+    // Resuming queues is part of the explicit apply consent, after BOTH parts
+    // succeeded. Any failure leaves durable receipts/source data retryable and
+    // this tab's sync paused; server/local commits are not one transaction.
+    if(!dryRun){await LemmaSync.attach(LemmaAccount.user);check();}
+    return result;
+  }
+
   // LOCAL unaccepted drafts only. These are stored in the existing
   // account-namespaced IndexedDB cache; no network required after attach.
   // An in-flight save may finish under the *old* owner after logout, so
@@ -854,7 +890,7 @@ const LemmaCloudBridge = (() => {
   return { captureLocalRecovery, captureLocalRecoveryEnvelope, verifyLocalRecoveryEnvelope,
     captureServerWorkspaceSnapshot, validateServerWorkspaceSnapshot,
     sealServerWorkspaceArchive, verifyServerWorkspaceArchive, restoreServerWorkspaceArchive,
-    captureReadOnlyRecoveryPair, verifyReadOnlyRecoveryPair,
+    captureReadOnlyRecoveryPair, verifyReadOnlyRecoveryPair, restoreRecoveryPair,
     authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
     commitAcceptedContext,

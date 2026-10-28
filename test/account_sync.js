@@ -238,5 +238,25 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
     'account B and signed-out users receive no implicit local data');
   assert.equal(ctx.sync.status.phase,'signed-out');
   assert.equal(ctx.sync.status.userId,null);
+  // Recovery shares the exact per-owner cross-tab sync lock and keeps the
+  // account stopped after a failed action. A caller must explicitly resume.
+  current={id:first.userId};await ctx.sync.attach(current);
+  const recoveryHandle=ctx.sync.accountHandle();let closed=0,locked=null;
+  ctx.navigator.locks={request:async(name,action)=>{locked=name;return action();}};
+  ctx.LemmaCloud.openAccountDB=async()=>({close(){closed++;}});
+  ctx.LemmaCloud.AccountStorage=class {constructor(db,userId){this.db=db;this.userId=userId;}};
+  await assert.rejects(ctx.sync.withRecovery(async(storage,isActive)=>{
+    assert.equal(locked,'lemma-sync-'+first.userId);
+    assert.equal(recoveryHandle.closed,true);
+    assert.equal(ctx.sync.accountHandle(),null);
+    assert.equal(storage.userId,first.userId);assert.equal(isActive(),true);
+    throw new Error('Synthetic interrupted recovery');
+  }),/interrupted recovery/);
+  assert.equal(closed,1);assert.equal(ctx.sync.accountHandle(),null);
+  await ctx.sync.withRecovery(async(_storage,isActive)=>{
+    current={id:idB};assert.equal(isActive(),false,'identity change invalidates pending recovery');
+  });
+  assert.equal(closed,2);ctx.sync.stop();current=null;
+  console.log('ok: recovery holds cross-tab sync lock, closes handles and stays paused after failure');
   console.log('ok: account cache lifecycle, scoped tombstone invalidation and dirty write isolation');
 })().catch(e=>{console.error(e);process.exitCode=1;});
