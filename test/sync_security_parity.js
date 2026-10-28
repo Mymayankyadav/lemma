@@ -30,6 +30,8 @@ function assertAllowedMigrationHistory(migrations,legacy){
  }
 }
 function compare(){
+ // Exercise positive/negative extension cases in the real local-stack gate.
+ require('./sync_migration_parity.js');
  const expected=JSON.parse(fs.readFileSync(path.join(root,'supabase/tests/security_snapshot.expected.json'),'utf8'));
  const out=execFileSync('psql',['--no-psqlrc','--no-password','--quiet','--tuples-only','--no-align','--set','ON_ERROR_STOP=1','--host','127.0.0.1','--port','54322','--username','postgres','--dbname','postgres','--file',path.join(root,'supabase/tests/security_snapshot.sql')],{cwd:root,encoding:'utf8',timeout:30000,env:{...process.env,PGPASSWORD:'postgres',PGSSLMODE:'disable'}});
  const actual=JSON.parse(out.trim());
@@ -44,5 +46,5 @@ function compare(){
  assert.deepStrictEqual(legacyActual,legacyExpected,'L8 production sync table/policy/function drift');
  console.log('ok: L8 nine legacy and three knowledge migrations exact, only named plan/tutor extensions allowed; full sync security snapshot matches');
 }
-if(require.main===module)try{compare();}catch(e){console.error('FAIL L8 security parity: '+e.message);process.exitCode=1;}
 module.exports={compare,assertAllowedMigrationHistory,knowledgeMigrations};
+if(require.main===module)try{compare();}catch(e){console.error('FAIL L8 security parity: '+e.message);process.exitCode=1;}
