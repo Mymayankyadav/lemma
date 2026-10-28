@@ -1,3 +1,11 @@
+## ANDROID-02 N3a — consent-gated reminder policy (active claim)
+
+- **Claim:** `hourly-20261028T0436Z-c-n3a`; UTC heartbeat 2026-10-28T04:36:27Z; base `main@f427210`; branch `lane-c/android-02-n3a-reminder-policy`. Lane C was unclaimed at inspection; lane A's active KNOWLEDGE-01 K2c PR #62 is independent and must not be modified.
+- **Bounded scope:** native-only deterministic due-review reminder policy (explicit opt-in, granted permission, local time, earliest due, stable replacement ID, no private card content) and tests. This slice does **not** request Android permission, install the notification plugin, schedule OS notifications, enable opt-in for the student, or claim hardware verification.
+- **Intended C-owned files:** `src/app/native_shell.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. No A/B-owned app state, dependency or production changes.
+- **Gate:** test valid/invalid consent/permission/time, due timing and no web exposure; syntax, full regression, Android APK/lane guard exact-head CI; preserve Back, resume, OAuth and source data. If green, merge with expected head SHA, check main, then separately integrate the pinned local-notifications plugin and consent UI with the owning lane.
+- **Next:** implement and verify N3a; N3b OS scheduling/permission and B consent controls remain separately gated. Physical D1–D6 checks are NOT RUN. Owner action: none.
+
 ## ANDROID-02 N2b — keyboard resize contract (28 October 2026)
 
 - **Claim:** `hourly-20261028T0337Z-c-n2b`, UTC heartbeat 2026-10-28T03:37:27.036Z; base `main@bfcf00c`, branch `lane-c/android-02-n2b-keyboard-resize`. C-owned files: `android/app/src/main/AndroidManifest.xml`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. Main after merged N2a [PR #58](https://github.com/Mymayankyadav/lemma/pull/58) has Android/regression/local-stack/Pages SUCCESS; A's native PKCE PR #59 remains independently claimed.
