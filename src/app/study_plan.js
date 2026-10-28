@@ -124,6 +124,13 @@ const StudyPlan = (() => {
       (e.event_type === 'attempt' || e.event_type === 'proof_step'));
     const hint = recent.find(e => e.payload?.checkpoint_id === selected.id &&
       e.event_type === 'hint' && Number.isSafeInteger(e.payload?.data?.level));
+    // These are read-only excerpts from the immutable event ledger, never
+    // checkpoint status changes or evidence of mastery by themselves.
+    const latest = type => recent.find(e => e.payload?.checkpoint_id === selected.id &&
+      e.event_type === type);
+    const detail = type => { const e = latest(type);
+      return e && object(e.payload?.data) ? { ...e.payload.data,
+        eventId:e.event_id,createdAt:e.created_at } : null; };
     ctx.check();
     return {
       planId:plan.id,planRevision:plan.revision,
@@ -137,6 +144,8 @@ const StudyPlan = (() => {
         payload:attempt.payload.data,createdAt:attempt.created_at
       } : null,
       hintLevel:hint ? Math.max(0,hint.payload.data.level) : 0,
+      lastFeedback:detail('feedback'),lastEvidence:detail('mastery_evidence'),
+      nextAction:detail('session_note'),
       sourceRefs:selected.sourceRefs
     };
   }
