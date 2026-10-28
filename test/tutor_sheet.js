@@ -41,9 +41,11 @@ function walk(n,acc=[]){if(!n||typeof n!=='object')return acc;acc.push(n);
   '00000000-0000-4000-8000-000000000002',type:'feedback',payload:{text:'Need separation'}}],
   card_proposals:[],amendment_proposal:null});
  parse.events.click();
- assert.match(status.textContent,/not yet saved/);
+ assert.match(status.textContent,/None recorded/);
  assert.equal(review.children.length,1);
  assert.ok(walk(review).some(x=>x.tag==='input'&&x.attrs.type==='checkbox'));
+ const save=nodes.find(x=>x.attrs?.text==='Save selected study events');
+ assert.ok(save.disabled,'saving must be disabled before deliberate selection');
  assert.equal(writes,0,'preview and selection cannot write or approve');
  reply.value=reply.value.replace('"expected_plan_revision":3','"expected_plan_revision":2');
  parse.events.click();
