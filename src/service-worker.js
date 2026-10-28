@@ -6,10 +6,13 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then((keys) =>
-    Promise.all(keys.filter((key) => key.startsWith('lemma-shell-') && key !== CACHE)
-      .map((key) => caches.delete(key)))));
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((key) => key.startsWith('lemma-shell-') && key !== CACHE)
+      .map((key) => caches.delete(key)));
+    // Activation must not finish before this worker takes control of clients.
+    await self.clients.claim();
+  })());
 });
 self.addEventListener('fetch', (event) => {
   const request = event.request;
