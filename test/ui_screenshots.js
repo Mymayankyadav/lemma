@@ -330,6 +330,47 @@ async function shot(page, name, size, scheme) {
           });
         }
       }
+      if (size === 'desktop' && scheme === 'light') {
+        // Reproduce the plain Pages environment, without the host downloads
+        // bridge. A browser download must contain the *exact* visible backup.
+        await goTo(page, 'settings');
+        await page.evaluate(() => { delete window.claude; });
+        await page.getByRole('button', { name: 'Export', exact: true }).click();
+        await page.waitForSelector('#exp-text');
+        await shot(page, 'export', size, scheme);
+        const expectedBackup = await page.locator('#exp-text').inputValue();
+        const pendingDownload = page.waitForEvent('download', { timeout: 10000 });
+        await page.getByRole('button', { name: 'Download', exact: true }).click();
+        const download = await pendingDownload;
+        if (!/^lemma-all-\d{4}-\d{2}-\d{2}\.json$/.test(download.suggestedFilename()))
+          throw new Error('Unexpected backup download filename: ' + download.suggestedFilename());
+        const actualBackup = fs.readFileSync(await download.path(), 'utf8');
+        if (actualBackup !== expectedBackup || JSON.parse(actualBackup).app !== 'lemma')
+          throw new Error('Browser download does not match the visible Lemma JSON backup');
+        // An empty readback must never be described as a successful copy.
+        await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+          configurable: true, value: { writeText: async () => {}, readText: async () => '' },
+        }));
+        await page.getByRole('button', { name: 'Copy', exact: true }).click();
+        await page.waitForFunction(() => {
+          const el = document.querySelector('#exp-text');
+          return document.activeElement === el && el.selectionStart === 0 &&
+            el.selectionEnd === el.value.length;
+        });
+        if (!await page.getByText('Copy not verified. Copy the selected text manually.').count())
+          throw new Error('Clipboard mismatch was not reported');
+        // A matching readback is the only route to the success toast.
+        await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+          configurable: true, value: {
+            writeText: async text => { window.__exportCopied = text; },
+            readText: async () => window.__exportCopied,
+          },
+        }));
+        await page.getByRole('button', { name: 'Copy', exact: true }).click();
+        await page.getByText('Copied and verified', { exact: true }).waitFor();
+        if (await page.evaluate(() => window.__exportCopied) !== expectedBackup)
+          throw new Error('Clipboard copy differed from the exported backup');
+      }
     } catch (e) {
       problems.push(`[${size}-${scheme}] could not capture: ${e.stack || e.message}`);
     }
