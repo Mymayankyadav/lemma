@@ -1,6 +1,6 @@
 # Lane B — UI
 
-Next action: UI-01 export reliability [PR #44](https://github.com/Mymayankyadav/lemma/pull/44), branch `lane-b/ui-01-export-backup-fallback`, run `hourly-20261028T0021Z-b-export`, heartbeat UTC 2026-10-28T00:25:00Z. Files: `src/app/sheets.js`, `test/ui_screenshots.js`, `docs/lanes/B.md`. Plain Pages backup now uses browser Blob downloads; Copy verifies clipboard readback or selects text with a visible failure message. Exact-head CI/screenshots PENDING; local npm tests NOT RUN (network clone unavailable). After verification, review export screenshot and merge only on green exact-head CI/current-main gate. UI-01 live network/error acceptance remains open; owner action: none.
+Next action: UI-01 real-transport visual evidence cross-lane request `UI-01-LIVE-STATUS-A1`, branch `lane-b/ui-01-live-transport-evidence`, run `hourly-20261028T0035Z-b-live-evidence`, heartbeat UTC 2026-10-28T00:35:00Z. Claim-only, intended `docs/lanes/B.md`; tested SHA NOT RUN. After recording precise request and CI, lane A can add disposable local Supabase screenshots and B will review against UI-01 acceptance. PR #44 is merged at `77bba7b`, main regression/Android/Pages green and local Supabase run 40608813336 SUCCESS on attempt 2. Owner action: none.
 
 | Field | Value |
 | --- | --- |
