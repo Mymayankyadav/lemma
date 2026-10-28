@@ -267,9 +267,9 @@ const LemmaCloud = (() => {
       const row = await request(this.db.transaction('meta','readonly')
         .objectStore('meta').get(key));
       if (row && (row.userId !== this.userId || row.contextId !== contextId.toLowerCase() ||
-          !['draft','approved_pending'].includes(row.status) ||
+          !['draft','approved_pending','needs_review'].includes(row.status) ||
           !Number.isSafeInteger(row.localRevision) ||
-          (row.status === 'approved_pending' &&
+          (['approved_pending','needs_review'].includes(row.status) &&
             (typeof row.requestId !== 'string' ||
               !/^[0-9a-f-]{36}$/i.test(row.requestId)))))
         throw new Error('Invalid locally saved knowledge draft');
@@ -287,7 +287,7 @@ const LemmaCloud = (() => {
           const lookup = store.get(key);
           lookup.onsuccess = () => {
             const previous = lookup.result;
-            if (previous?.status === 'approved_pending' && previous.userId === this.userId) {
+            if (['approved_pending','needs_review'].includes(previous?.status) && previous.userId === this.userId) {
               failure = new Error('Approved knowledge intent is pending; no editing allowed');
               t.abort(); return;
             }
@@ -354,6 +354,99 @@ const LemmaCloud = (() => {
       } catch (err) { throw failure || err; }
       // The resulting intent has NOT been sent to Supabase, and may remain
       // offline indefinitely. Later submission MUST reuse requestId exactly.
+      return structuredClone(result);
+    }
+    async knowledgeIntentReceipt(contextId) {
+      const key = knowledgeDraftKey(contextId).replace(':draft:',':receipt:');
+      const receipt = await request(this.db.transaction('meta','readonly')
+        .objectStore('meta').get(key));
+      if (receipt && (receipt.userId !== this.userId ||
+          receipt.contextId !== contextId.toLowerCase() ||
+          !Number.isSafeInteger(receipt.revision) || receipt.revision < 1))
+        throw new Error('Invalid saved knowledge receipt');
+      return receipt ? structuredClone(receipt) : null;
+    }
+    async markKnowledgeIntentAttempt(contextId, requestId) {
+      const key = knowledgeDraftKey(contextId);
+      let result, failure;
+      try {
+        await tx(this.db,['meta'],'readwrite', t => {
+          const store=t.objectStore('meta'), lookup=store.get(key);
+          lookup.onsuccess=()=>{
+            const row=lookup.result;
+            if (!row || row.userId!==this.userId ||
+                row.status!=='approved_pending' || row.requestId!==requestId) {
+              failure=new Error('Approved knowledge intent no longer pending');
+              t.abort();return;
+            }
+            result={...row,attempted:true,
+              attempts:(row.attempts??0)+1};
+            store.put(result,key);
+          };
+        });
+      } catch(err){throw failure||err;}
+      return structuredClone(result);
+    }
+    async markKnowledgeIntentConflict(contextId, requestId) {
+      const key=knowledgeDraftKey(contextId);
+      let result,failure;
+      try {
+        await tx(this.db,['meta'],'readwrite', t=>{
+          const store=t.objectStore('meta'), lookup=store.get(key);
+          lookup.onsuccess=()=>{
+            const row=lookup.result;
+            if (!row || row.userId!==this.userId || row.requestId!==requestId ||
+                !['approved_pending','needs_review'].includes(row.status)) {
+              failure=new Error('Approved knowledge intent changed');
+              t.abort();return;
+            }
+            result={...row,status:'needs_review',conflict:'stale_context_revision'};
+            store.put(result,key);
+          };
+        });
+      } catch(err){throw failure||err;}
+      return structuredClone(result);
+    }
+    async acknowledgeKnowledgeIntent(contextId, requestId, acceptedRevision) {
+      const key=knowledgeDraftKey(contextId);
+      const receiptKey=key.replace(':draft:',':receipt:');
+      if (!Number.isSafeInteger(acceptedRevision) || acceptedRevision < 1)
+        throw new Error('Invalid knowledge acceptance receipt');
+      let result,failure;
+      try {
+        // A confirmed server revision and draft removal commit atomically.
+        // If the local response was lost, the stable receipt is returned
+        // without deleting any newer pending draft.
+        await tx(this.db,['meta'],'readwrite',t=>{
+          const store=t.objectStore('meta'), lookup=store.get(key);
+          lookup.onsuccess=()=>{
+            const row=lookup.result;
+            if (!row) {
+              const archived=store.get(receiptKey);
+              archived.onsuccess=()=>{
+                const r=archived.result;
+                if (!r || r.userId!==this.userId || r.requestId!==requestId ||
+                    r.revision!==acceptedRevision) {
+                  failure=new Error('Knowledge receipt no longer matches intent');
+                  t.abort();return;
+                }
+                result=r;
+              };
+              return;
+            }
+            if (row.userId!==this.userId || row.requestId!==requestId ||
+                row.status!=='approved_pending' ||
+                acceptedRevision <= row.expectedRevision) {
+              failure=new Error('Knowledge receipt no longer matches intent');
+              t.abort();return;
+            }
+            result={v:1,userId:this.userId,contextId:row.contextId,
+              requestId,revision:acceptedRevision,confirmedAt:Date.now()};
+            store.put(result,receiptKey);
+            store.delete(key);
+          };
+        });
+      } catch(err){throw failure||err;}
       return structuredClone(result);
     }
     async discardKnowledgeDraft(contextId, expectedLocalRevision) {
