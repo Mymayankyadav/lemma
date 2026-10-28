@@ -11,7 +11,8 @@ let identity=a,handle={userId:a};
 const storage={
  async knowledgeDraft(id){operations.push(['read',id]);return {status:'draft',contextId:id};},
  async saveKnowledgeDraft(item){operations.push(['save',item]);return {status:'draft',contextId:item.contextId};},
- async discardKnowledgeDraft(id,r){operations.push(['discard',id,r]);return true;}
+ async discardKnowledgeDraft(id,r){operations.push(['discard',id,r]);return true;},
+ async approveKnowledgeDraft(id,r,approved){operations.push(['approve',id,r,approved]);return {status:'approved_pending',requestId:'stable-id'};}
 };
 handle.storage=storage;
 const scope=vm.createContext({
@@ -27,17 +28,20 @@ const api=scope.bridge;
  assert.equal((await api.readKnowledgeDraft(contextId)).status,'draft');
  assert.equal((await api.saveKnowledgeDraft({contextId,expectedLocalRevision:0})).status,'draft');
  assert.equal(await api.discardKnowledgeDraft(contextId,1),true);
- assert.deepEqual(operations.map(x=>x[0]),['read','save','discard']);
+ await assert.rejects(api.approveKnowledgeDraft(contextId,1,false),/Explicit student approval/);
+ await assert.rejects(api.approveKnowledgeDraft('invalid',1,true),/Invalid knowledge context/);
+ assert.equal((await api.approveKnowledgeDraft(contextId,1,true)).status,'approved_pending');
+ assert.deepEqual(operations.map(x=>x[0]),['read','save','discard','approve']);
  await assert.rejects(api.readKnowledgeDraft('invalid'),/Invalid knowledge context/);
  await assert.rejects(api.saveKnowledgeDraft({contextId:'invalid'}),/Invalid knowledge context/);
- assert.equal(operations.length,3);
+ assert.equal(operations.length,4);
  // Sign-out before initiating any read/writes is fail-closed.
  identity=null;
  await assert.rejects(api.readKnowledgeDraft(contextId),/Sign in to an available/);
- assert.equal(operations.length,3);
+ assert.equal(operations.length,4);
  identity=b;
  await assert.rejects(api.saveKnowledgeDraft({contextId}),/Sign in to an available/);
- assert.equal(operations.length,3);
+ assert.equal(operations.length,4);
  identity=a;
  let finish;
  storage.knowledgeDraft=id=>new Promise(resolve=>{finish=()=>resolve({status:'draft',contextId:id});});
@@ -52,5 +56,17 @@ const api=scope.bridge;
  identity=null;handle=null;
  finishSave();
  await assert.rejects(pendingSave,/Account changed/);
- console.log('PASS KNOWLEDGE K2e: account-scoped unapproved draft API, no network, identity-change rejection');
-})().catch(e=>{console.error('FAIL K2e draft bridge: '+e.message);process.exitCode=1;});
+ identity=a;handle={userId:a,storage};
+ let finishApproval;
+ storage.approveKnowledgeDraft=()=>new Promise(resolve=>{
+  finishApproval=()=>resolve({status:'approved_pending',requestId:'old-owner-key'});
+ });
+ const waitingApproval=api.approveKnowledgeDraft(contextId,3,true);
+ identity=b;handle={userId:b,storage};
+ finishApproval();
+ await assert.rejects(waitingApproval,/Account changed/,
+  'an old-account accepted intent cannot display under another user');
+ assert.equal(operations.filter(x=>x[0]==='approve').length,1,
+  'a missing-consent action did not issue a local approval');
+ console.log('PASS KNOWLEDGE K2f: account-scoped explicit draft approval, no network, identity-change rejection');
+})().catch(e=>{console.error('FAIL K2f draft bridge: '+e.message);process.exitCode=1;});

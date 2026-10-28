@@ -71,13 +71,31 @@ const make=(over={})=>({contextId,expectedLocalRevision:0,expectedRevision:3,
  assert.equal(tutor.authorKind,'tutor');
  assert.equal(tutor.status,'draft','tutor revisions are never automatically approved');
  await assert.rejects(otherTab.discardKnowledgeDraft(contextId,2),/changed; reload/);
- assert.equal(await storage.discardKnowledgeDraft(contextId,3),true);
- assert.equal(await storage.knowledgeDraft(contextId),null);
- await assert.rejects(storage.discardKnowledgeDraft(contextId,3),/changed; reload/);
- // Owner B may store a different private draft at the same context ID.
+ await assert.rejects(storage.approveKnowledgeDraft(contextId,3,false),/Explicit student approval/);
+ await assert.rejects(storage.approveKnowledgeDraft(contextId,2,true),/changed; review/);
+ const approvals=await Promise.all([
+  storage.approveKnowledgeDraft(contextId,3,true),
+  otherTab.approveKnowledgeDraft(contextId,3,true)
+ ]);
+ assert.equal(approvals[0].requestId,approvals[1].requestId,
+  'competing approval and local lost-response retry preserve one immutable request ID');
+ const approved=await storage.knowledgeDraft(contextId);
+ assert.match(approved.requestId,/^[0-9a-f-]{36}$/i);
+ assert.equal(approved.status,'approved_pending','not a server acknowledgement');
+ assert.equal(approved.localRevision,4);
+ assert.equal(approved.approvedFromLocalRevision,3);
+ assert.equal(approved.authorKind,'tutor','tutor provenance survives student approval');
+ assert.equal(approved.approvedBy,'student');
+ await assert.rejects(storage.saveKnowledgeDraft(make({
+  expectedLocalRevision:4,markdown:'overwrite approved intent'
+ })),/Approved knowledge intent is pending/);
+ await assert.rejects(storage.discardKnowledgeDraft(contextId,4),/changed; reload/);
+ await assert.rejects(storage.approveKnowledgeDraft(contextId,4,true),/changed; review/);
+ assert.equal((await storage.knowledgeDraft(contextId)).requestId,approved.requestId);
+ // Owner B may store an entirely separate draft at the same stable ID.
  await otherAccount.saveKnowledgeDraft(make({markdown:'private B'}));
  assert.equal((await otherAccount.knowledgeDraft(contextId)).markdown,'private B');
- assert.equal(await storage.knowledgeDraft(contextId),null);
+ assert.equal((await storage.knowledgeDraft(contextId)).status,'approved_pending');
  // Local draft contents are durable across a close/reload and do not require
  // network, a login token, or any synchronization queue operation.
  await storage.saveKnowledgeDraft(make({contextId:secondId,markdown:'offline work'}));
@@ -85,9 +103,15 @@ const make=(over={})=>({contextId,expectedLocalRevision:0,expectedRevision:3,
  const opened=await openAccountDB(a);
  const reloaded=new AccountStorage(opened,a);
  assert.equal((await reloaded.knowledgeDraft(secondId)).markdown,'offline work');
+ assert.equal((await reloaded.knowledgeDraft(contextId)).requestId,approved.requestId,
+  'approved request ID survives cold restart without reapproval');
+ const retried=await reloaded.approveKnowledgeDraft(contextId,3,true);
+ assert.equal(retried.requestId,approved.requestId);
+ assert.equal(retried.localRevision,4);
+ assert.equal((await reloaded.knowledgeDraft(contextId)).status,'approved_pending');
  const queue=await reloaded.list();
  assert.equal(queue.length,0,'draft saving never adds a cloud accepted write');
  await reloaded.discardKnowledgeDraft(secondId,1);
  opened.close();dbB.close();
- console.log('PASS KNOWLEDGE K2e: persisted owner-local draft, CAS tab race, abort rollback, offline reload, tutor unapproved status, explicit discard');
+ console.log('PASS KNOWLEDGE K2f: owner-local drafts and explicit approved-pending intent, stable request ID, tab race, offline retry and no destructive overwrite');
 })().catch(e=>{console.error('FAIL K2e draft storage: '+e.message);process.exitCode=1;});
