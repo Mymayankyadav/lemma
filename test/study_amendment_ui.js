@@ -7,8 +7,8 @@ const {webcrypto}=require('node:crypto');
 const A='00000000-0000-4000-8000-000000000001';
 const P='00000000-0000-4000-8000-000000000002';
 let user=A,workspace=1,blocked=false,localStatus='draft',reviewStatus='review';
-let approvals=0,submissions=0,reviews=0,reads=0,writes=0;
-let onReview=()=>{};
+let approvals=0,submissions=0,reviews=0,reads=0,writes=0,conflictReads=0,restarts=0;
+let onReview=()=>{},onConflict=()=>{},restartError=false;
 const context={planId:P,planRevision:2,
  checkpoint:{id:'proof-3',title:'Proof checkpoint',
  objective:'Construct a proof',status:'in_progress'},
@@ -39,6 +39,23 @@ const plan={
  ready:false,async activeContext(){return context},
  async readPlanDraft(){reads++;return localStatus?{status:localStatus}:null},
  async reviewPendingAmendment(){reviews++;await onReview();return mockReview()},
+ async reviewConflictedAmendment(planId){
+  assert.equal(planId,P);conflictReads++;await onConflict();
+  return {status:'review_conflict',planId:P,
+   originalRequestId:'00000000-0000-4000-8000-000000000010',
+   originalRevision:1,originalLocalRevision:2,currentRevision:2,
+   changeSummary:'Add prerequisite before current proof',
+   proposedChanges:diff,serverChanges:{...diff,added:[],removed:[],modified:[]},
+   latestComparison:{...diff,requiresReassessment:['cp-4']},
+   overlapIds:['cp-4']};
+ },
+ async restartConflictedAmendment(planId,review,consent){
+  assert.equal(planId,P);assert.equal(consent,true);
+  assert.equal(review.status,'review_conflict');
+  restarts++;
+  if(restartError)throw Error('Conflict changed; reopen amendment review');
+  localStatus='draft';return {status:'draft'};
+ },
  async approvePlanDraft(planId,revision,consent){
   assert.equal(planId,P);assert.equal(revision,1);assert.equal(consent,true);
   approvals++;localStatus='approved_pending';return {status:localStatus}
@@ -105,7 +122,43 @@ async function mount() {
  assert.equal(btn(root,'Review pending amendment').hidden,true);
  assert.equal(!!btn(root,'Submit previously approved amendment'),false);
  assert.match(status(root).textContent,/No automatic rebase/);
+ assert.equal(conflictReads,0,'reloading rejected approval cannot fetch or restart automatically');
+ assert.ok(btn(root,'Inspect rejected amendment'));
+ await btn(root,'Inspect rejected amendment').events.click();
+ assert.equal(conflictReads,1);
+ assert.equal(restarts,0,'inspection cannot restart an amendment');
+ assert.equal(approvals,1);
+ assert.ok(walk(root).some(x=>x.textContent.includes('cp-4')));
+ assert.ok(walk(root).some(x=>x.textContent.includes('special care')));
+ assert.ok(btn(root,'Restart as unapproved draft'));
+ assert.match(status(root).textContent,/Nothing has been restarted/);
+ restartError=true;
+ await btn(root,'Restart as unapproved draft').events.click();
+ assert.equal(localStatus,'needs_review','failed restart leaves old approval intact');
+ assert.ok(btn(root,'Inspect rejected amendment'),'stale review can be reopened');
+ restartError=false;
+ await btn(root,'Inspect rejected amendment').events.click();
+ await btn(root,'Restart as unapproved draft').events.click();
+ assert.equal(localStatus,'draft');
+ assert.equal(restarts,2,'restart is a second explicit action');
+ assert.equal(approvals,1,'old approval never transferred');
+ assert.equal(submissions,1,'restart cannot republish');
+ assert.equal(btn(root,'Review pending amendment').hidden,false);
+ assert.match(status(root).textContent,/fresh unapproved/);
  root.isConnected=false;
+
+ // Switching identities during remote conflict inspection cannot reveal
+ // the rejected owner's comparison or leave a restart action enabled.
+ localStatus='needs_review';
+ let conflictDone;onConflict=()=>new Promise(resolve=>{conflictDone=resolve});
+ root=await mount();
+ const inspecting=btn(root,'Inspect rejected amendment').events.click();
+ await flush();
+ user='00000000-0000-4000-8000-000000000005';workspace++;
+ conflictDone();await inspecting;
+ assert.equal(!!btn(root,'Restart as unapproved draft'),false);
+ assert.equal(restarts,2);
+ root.isConnected=false;user=A;workspace++;onConflict=()=>{};
 
  localStatus='draft';reviewStatus='stale';
  root=await mount();
@@ -126,5 +179,5 @@ async function mount() {
  assert.equal(approvals,1);
  assert.equal(submissions,1);
  assert.equal(writes,0);
- console.log('PASS PLAN-01 P4b2: explicit diff before consent, separate approval/submit, pending recovery, stale and identity guards, no implicit writes');
+ console.log('PASS PLAN-01 P4b2/P4c2: explicit diff before consent, separate approval/submit, pending recovery, stale and identity guards, no implicit writes');
 })().catch(e=>{console.error('FAIL P4b2: '+e.stack);process.exitCode=1});

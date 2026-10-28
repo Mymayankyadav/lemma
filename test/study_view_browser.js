@@ -33,6 +33,7 @@ const {chromium}=require('playwright');
   window.App={workspaceRevision:1,workspaceBlocked:false,go(){}};
   window.__writes=[];
   window.__amendmentActions=[];
+  window.__draftStatus='draft';
   window.StudyPlan={
     async activeContext(){return {
       planId:'00000000-0000-4000-8000-000000000002',planRevision:3,
@@ -45,7 +46,7 @@ const {chromium}=require('playwright');
       sourceRefs:['Topology notes, §3.2']
     }},
     async recordEvent(event){window.__writes.push(event);return {eventId:event.eventId}},
-    async readPlanDraft(){return {status:'draft'}},
+    async readPlanDraft(){return {status:window.__draftStatus}},
     async reviewPendingAmendment(){
       return {status:'review',expectedRevision:3,expectedLocalRevision:1,
         draftId:'00000000-0000-4000-8000-000000000010',
@@ -54,6 +55,24 @@ const {chromium}=require('playwright');
           planFieldsChanged:[],reordered:false,requiresReassessment:[],
           modified:[{checkpointId:'proof-1',fields:['objective'],
             addedPrerequisites:['proof-extra'],removedPrerequisites:[]}]}}
+    },
+    async reviewConflictedAmendment(){
+      return {status:'review_conflict',
+        originalRequestId:'00000000-0000-4000-8000-000000000015',
+        originalRevision:2,currentRevision:3,
+        changeSummary:'Repair a missing compactness prerequisite',
+        proposedChanges:{added:['proof-extra'],removed:[],
+          modified:[{checkpointId:'proof-1'}]},
+        serverChanges:{added:[],removed:[],
+          modified:[{checkpointId:'proof-1'}]},
+        latestComparison:{added:['proof-extra'],removed:[],
+          modified:[{checkpointId:'proof-1'}],
+          requiresReassessment:['proof-1']},
+        overlapIds:['proof-1']}
+    },
+    async restartConflictedAmendment(id,review,confirmed){
+      window.__amendmentActions.push({type:'restart',id,confirmed});
+      window.__draftStatus='draft';return {status:'draft'}
     },
     async approvePlanDraft(id,revision,consent){
       window.__amendmentActions.push({type:'approve',id,revision,consent});
@@ -109,6 +128,35 @@ const {chromium}=require('playwright');
     'student approval must not automatically submit');
   await page.getByRole('button',{name:'Submit previously approved amendment'}).click();
   assert.deepEqual((await page.evaluate(()=>window.__amendmentActions)).map(x=>x.type),['approve','submit']);
+  // A new render with a stale approved intent only shows inspection.
+  await page.evaluate(() => {
+    window.__draftStatus='needs_review';
+    document.querySelector('#app').replaceChildren(
+      window._StudyView.render({
+        planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'
+      })
+    );
+  });
+  await page.getByRole('button',{name:'Inspect rejected amendment'}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'Restart as unapproved draft'}).count(),0);
+  const priorActions=await page.evaluate(()=>window.__amendmentActions.length);
+  await page.getByRole('button',{name:'Inspect rejected amendment'}).click();
+  await page.getByRole('button',{name:'Restart as unapproved draft'}).waitFor();
+  assert.equal(await page.evaluate(()=>window.__amendmentActions.length),priorActions,
+    'merely reading a rejected amendment never restarts or publishes');
+  await page.setViewportSize({width:1280,height:900});
+  await page.screenshot({path:'test-output/ui/study-p4c2-conflict-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth+1),true);
+  await page.screenshot({path:'test-output/ui/study-p4c2-conflict-mobile.png',fullPage:true});
+  await page.getByRole('button',{name:'Restart as unapproved draft'}).click();
+  await page.getByRole('button',{name:'Review pending amendment'}).waitFor();
+  const actions=await page.evaluate(()=>window.__amendmentActions);
+  assert.equal(actions.length,priorActions+1);
+  assert.equal(actions[actions.length-1].type,'restart');
+  assert.equal(actions[actions.length-1].confirmed,true);
+  assert.equal(await page.getByRole('button',{name:'Submit previously approved amendment'}).count(),0,
+    'restarted draft is not an approved publication intent');
   console.log('PASS PLAN-01 P3/P4b2 synthetic Chromium: approved checkpoint, student-reviewed diff, separate consent/submit, mobile/desktop screenshots');
   await page.close();
  } finally {await browser.close()}
