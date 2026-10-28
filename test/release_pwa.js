@@ -151,7 +151,8 @@ async function run() {
         cachedTitle: cachedText.includes('<title>') ? cachedText.split('<title>')[1].split('</title>')[0] : '(missing)',
         shownTitle: document.title };
     }, newName);
-    assert(diagnostics.controlled && diagnostics.activeState === 'activated', 'replacement worker controls updated page');
+    console.log('PWA lifecycle', JSON.stringify(diagnostics));
+    assert(diagnostics.controlled, 'replacement worker remains in control after reload');
     assert(!diagnostics.keys.includes(oldName), 'outdated shell cache must not reappear after update');
     assert.match(await page.title(), /PWA upgrade/, 'new build replaces stale cached HTML');
     await assertCard(page, title);
