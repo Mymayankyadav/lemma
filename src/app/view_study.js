@@ -1,0 +1,141 @@
+/* PLAN-01 P3: checkpoint screen for a published plan. Kept hidden through P5. */
+const StudyView = (() => {
+  const ready = false;
+  const entries = [
+    {type:'attempt', title:'Proof attempt', label:'Your unfinished proof', button:'Save proof attempt'},
+    {type:'hint', title:'Hint received', label:'A hint you actually used', button:'Record hint'},
+    {type:'feedback', title:'Feedback', label:'Feedback on your reasoning', button:'Save feedback'},
+    {type:'mastery_evidence', title:'Evidence', label:'Observable evidence, not a mastery claim', button:'Record evidence'},
+    {type:'session_note', title:'Next action', label:'Where to resume next time', button:'Save next action'}
+  ];
+  function render(params = {}) {
+    const owner = typeof LemmaAccount !== 'undefined' ? LemmaAccount.user?.id : null;
+    const workspace = App.workspaceRevision;
+    const root = h('section', {class:'page study-page', 'aria-label':'Study checkpoint'});
+    const message = h('p', {class:'study-message', role:'status',
+      text:'Loading the latest approved checkpoint…'});
+    const content = h('div', {class:'study-content'});
+    root.append(
+      h('header', {class:'study-header'},
+        h('button', {type:'button',class:'link-btn',text:'Back to Today',
+          onclick:() => App.go('home')}),
+        h('h1', {text:'Study checkpoint'})),message,content);
+    const valid = () => root.isConnected && !App.workspaceBlocked &&
+      App.workspaceRevision === workspace && !!owner && LemmaAccount.user?.id === owner;
+    function field(label,value) {
+      return h('div', {class:'study-detail'},
+        h('span', {class:'study-detail-label',text:label}),
+        h('p', {text:value || 'Nothing recorded yet'}));
+    }
+    function show(context) {
+      const cp = context.checkpoint;
+      const detail = h('div', {class:'study-summary'},
+        h('p', {class:'study-revision',text:'Published plan revision ' + context.planRevision}),
+        h('h2', {text:cp.title || cp.id}),
+        field('Objective',cp.objective),
+        field('Checkpoint status',cp.status.replaceAll('_',' ')),
+        field('Latest proof attempt',context.lastAttempt?.payload?.text || ''),
+        field('Current hint level',String(context.hintLevel || 0)),
+        field('Latest feedback',context.lastFeedback?.text || ''),
+        field('Latest evidence',context.lastEvidence?.text || ''),
+        field('Next action',context.nextAction?.text || ''),
+        h('p', {class:'study-sources',text:context.sourceRefs?.length
+          ? 'Sources: ' + context.sourceRefs.join(' · ')
+          : 'No source references attached to this checkpoint.'}));
+      const forms = h('div', {class:'study-form-list'});
+      for (const entry of entries) {
+        const input = h('textarea', {class:'input study-input',rows:3,
+          'aria-label':entry.label,placeholder:entry.label,'maxlength':4000});
+        const feedback = h('p', {class:'study-write-status',role:'status'});
+        const button = h('button', {type:'button',class:'btn btn-primary',text:entry.button});
+        let pending = null, saving = false;
+        button.addEventListener('click', async () => {
+          if (!valid() || saving) return;
+          const text = input.value.trim();
+          if (!text) { feedback.textContent='Enter an actual observation before saving.'; return; }
+          if (pending && pending.text !== text) {
+            feedback.textContent='Previous save is unconfirmed. Restore its exact text to retry; no new event was sent.';
+            return;
+          }
+          if (!pending) {
+            const payload = {text};
+            if (entry.type === 'hint') payload.level = (context.hintLevel || 0) + 1;
+            pending = {text, payload, eventId:crypto.randomUUID()};
+          }
+          const attempt = pending;
+          saving = true; button.disabled = true;input.readOnly = true;
+          feedback.textContent='Saving evidence…';
+          try {
+            const receipt = await StudyPlan.recordEvent({
+              planId:context.planId,checkpointId:cp.id,
+              expectedPlanRevision:context.planRevision,type:entry.type,
+              payload:attempt.payload,eventId:attempt.eventId,source:'student'
+            });
+            if (!valid()) return;
+            if (receipt?.eventId !== attempt.eventId) throw new Error('Receipt mismatch');
+            if (entry.type === 'hint') {
+              context.hintLevel = attempt.payload.level;
+            }
+            if (entry.type === 'attempt') context.lastAttempt={payload:attempt.payload};
+            if (entry.type === 'feedback') context.lastFeedback=attempt.payload;
+            if (entry.type === 'mastery_evidence') context.lastEvidence=attempt.payload;
+            if (entry.type === 'session_note') context.nextAction=attempt.payload;
+            pending = null;
+            input.value = '';
+            feedback.textContent='Saved as append-only study evidence. No mastery or plan approval was changed.';
+            detail.replaceWith(detail);
+            // Keep summary in sync without discarding another in-progress input.
+            const labels = {'attempt':'Latest proof attempt','hint':'Current hint level',
+              'feedback':'Latest feedback','mastery_evidence':'Latest evidence',
+              'session_note':'Next action'};
+            for (const item of detail.querySelectorAll('.study-detail')) {
+              if (item.firstChild?.textContent !== labels[entry.type]) continue;
+              item.lastChild.textContent = entry.type === 'hint' ?
+                String(context.hintLevel) : attempt.text;
+            }
+          } catch (error) {
+            if (valid()) feedback.textContent =
+              'Not confirmed: ' + (error?.message || 'Study write failed') +
+              '. Retry without changing this text to reuse the same event ID.';
+          } finally {
+            saving=false;button.disabled=false;input.readOnly=false;
+          }
+        });
+        forms.append(h('section', {class:'study-form'},
+          h('h3', {text:entry.title}),
+          h('label', {class:'study-field-label',text:entry.label}),
+          input,button,feedback));
+      }
+      fill(content,detail,
+        h('p', {class:'study-note',text:
+          'Only an explicit Save adds an event. Reading this screen never demonstrates mastery.'}),
+        forms);
+    }
+    Promise.resolve().then(async () => {
+      if (!valid()) return;
+      try {
+        if (typeof StudyPlan === 'undefined' ||
+            typeof StudyPlan.activeContext !== 'function')
+          throw new Error('Study module unavailable');
+        const context = await StudyPlan.activeContext();
+        if (!valid()) return;
+        if (!context?.checkpoint) {
+          message.textContent='No published study checkpoint is available. Drafts are not approved plans.';
+          return;
+        }
+        if ((params.planId && params.planId !== context.planId) ||
+            (params.checkpointId && params.checkpointId !== context.checkpoint.id)) {
+          message.textContent='The approved checkpoint changed. Return to Today and reopen Study.';
+          return;
+        }
+        message.textContent='This is the current approved checkpoint.';
+        show(context);
+      } catch (error) {
+        if (valid()) message.textContent='Cannot read approved study context: ' +
+          (error?.message || 'try again when connected');
+      }
+    });
+    return root;
+  }
+  return {ready,render};
+})();
