@@ -108,11 +108,9 @@ const StudyPlan = (() => {
           ? cp.prerequisite_checkpoint_ids : [],
         sourceRefs:Array.isArray(cp.source_refs) ? cp.source_refs : [] };
     }).filter(Boolean);
-    const selected = choice.find(cp => cp.status === 'in_progress') ||
-      choice.find(cp => cp.status === 'review_due') ||
-      choice.find(cp => cp.status === 'not_started') ||
-      choice.find(cp => cp.status === 'blocked');
-    if (!selected) return null;
+    // Prefer the explicitly in-progress checkpoint. Otherwise recover the
+    // latest unfinished proof from the immutable active-session event ledger:
+    // record_study_event creates a session, not a checkpoint status update.
     const sessions = await list(ctx,'learning_sessions',
       'id,state,updated_at',q => q.eq('plan_id',plan.id)
         .eq('state','active').order('updated_at',{ascending:false}).limit(1));
@@ -120,6 +118,19 @@ const StudyPlan = (() => {
     const recent = sessionId ? await list(ctx,'learning_events',
       'event_id,event_type,payload,seq,created_at',q => q.eq('session_id',sessionId)
         .order('seq',{ascending:false}).limit(50)) : [];
+    const resumable = new Set(['attempt','proof_step','hint','session_note']);
+    const incomplete = new Set(['not_started','review_due','blocked','in_progress']);
+    const latestWork = recent.find(e => resumable.has(e.event_type) &&
+      typeof e.payload?.checkpoint_id === 'string' &&
+      (e.payload.plan_revision == null || e.payload.plan_revision === plan.revision) &&
+      choice.some(cp => cp.id === e.payload.checkpoint_id &&
+        incomplete.has(cp.status)));
+    const selected = choice.find(cp => cp.status === 'in_progress') ||
+      (latestWork && choice.find(cp => cp.id === latestWork.payload.checkpoint_id)) ||
+      choice.find(cp => cp.status === 'review_due') ||
+      choice.find(cp => cp.status === 'not_started') ||
+      choice.find(cp => cp.status === 'blocked');
+    if (!selected) return null;
     const attempt = recent.find(e => e.payload?.checkpoint_id === selected.id &&
       (e.event_type === 'attempt' || e.event_type === 'proof_step'));
     const hint = recent.find(e => e.payload?.checkpoint_id === selected.id &&
