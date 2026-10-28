@@ -844,3 +844,10 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
 .settings .reminder-control .btn,
 .settings .reminder-control .reminder-time { min-height: 44px; }
 .settings .reminder-control .reminder-time { width: min(100%, 11rem); }
+
+/* KNOWLEDGE-01 K3a: account-only unaccepted context drafts. */
+.knowledge-draft-fields:not([hidden]) { display: grid; gap: 10px; margin-top: 12px; min-width: 0; }
+.knowledge-draft-fields[hidden] { display: none; }
+#set-knowledge-drafts .input { width: 100%; min-width: 0; max-width: 100%; }
+#set-knowledge-drafts .btn { min-height: 44px; }
+#set-knowledge-drafts textarea { resize: vertical; }
