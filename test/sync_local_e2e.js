@@ -118,36 +118,52 @@ async function captureLiveSyncStatus(page, stage, expected) {
     const text = document.querySelector('#sync .sr-only')?.textContent || '';
     return accepted.includes(text);
   }, { accepted: expected }, { timeout: 5000 }).catch(() => {});
-  const observed = await page.locator('#sync').evaluate(el => ({
+  const readStatus = () => page.locator('#sync').evaluate(el => ({
     full: el.querySelector('.sr-only')?.textContent || '',
     visible: el.querySelector('.sync-label')?.textContent || '',
     role: el.getAttribute('role'),
     online: navigator.onLine,
   }));
+  const accepted = observed => expected.includes(observed.full) &&
+    observed.role === 'status' &&
+    (stage === 'offline' ? ['Offline', 'Queued'].includes(observed.visible) &&
+      observed.online === false :
+      stage === 'rpc-error' ? observed.visible === 'Sync failed' &&
+      observed.online === true : observed.full === 'Saved to cloud');
   const output = path.join(ROOT, 'test-output', 'live-ui');
   fs.mkdirSync(output, { recursive: true });
+  const frames = [];
   for (const [size, viewport] of Object.entries({
     mobile: { width: 390, height: 844 }, desktop: { width: 1280, height: 800 },
   })) {
     for (const scheme of ['light', 'dark']) {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
-      await page.screenshot({ path: path.join(output, stage + '-' + size + '-' + scheme + '.png') });
+      let valid = false, last;
+      // A real background refresh may briefly replace error with "checking
+      // cloud". Never count a screenshot taken during that transition as
+      // visual acceptance; wait for a genuine observable error again.
+      for (let attempt = 0; attempt < (stage === 'rpc-error' ? 4 : 2); attempt++) {
+        await page.waitForFunction(({ accepted }) =>
+          accepted.includes(document.querySelector('#sync .sr-only')?.textContent || ''),
+          { accepted: expected }, { timeout: 8000 }).catch(() => {});
+        const before = await readStatus();
+        const file = path.join(output, stage + '-' + size + '-' + scheme + '.png');
+        await page.screenshot({ path: file });
+        await page.waitForTimeout(60);
+        const after = await readStatus();
+        last = { before, after };
+        if (accepted(before) && accepted(after)) { valid = true; break; }
+      }
+      assert.ok(valid, stage + '/' + size + '/' + scheme +
+        ': real status changed during screenshot: ' + JSON.stringify(last));
+      frames.push(size + '-' + scheme);
     }
   }
   await page.setViewportSize({ width: 1200, height: 850 });
   await page.emulateMedia({ colorScheme: 'light' });
-  assert.ok(expected.includes(observed.full),
-    stage + ': unexpected real status ' + JSON.stringify(observed));
-  assert.equal(observed.role, 'status', stage + ': missing live status accessibility role');
-  if (stage === 'offline') assert.ok(['Offline', 'Queued'].includes(observed.visible),
-    'real offline queued edit needs a visible offline/queued indicator');
-  else if (stage === 'rpc-error') {
-    assert.equal(observed.visible, 'Sync failed', 'authenticated RPC fault needs a visible warning');
-    assert.equal(observed.online, true, 'RPC failure must not masquerade as device offline');
-  } else assert.equal(observed.full, 'Saved to cloud');
-  console.log('ok: real local-stack ' + stage + ' UI status and four screenshots (' +
-    observed.full + ')');
+  console.log('ok: real local-stack ' + stage + ' UI status in ' + frames.join(', ') +
+    ' screenshots (' + expected.join(' | ') + ')');
 }
 
 async function waitForAccountWorkspace(page, expectedUserId, timeout = T) {
