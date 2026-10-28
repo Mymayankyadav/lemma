@@ -1,3 +1,13 @@
+## Active KNOWLEDGE-01 K3c claim — 28 October 2026
+
+- **Claim:** `chat-20261028T1007-b-k3c`, heartbeat 2026-10-28T10:07Z; earliest active B claim (no other B PR). Base `main@c3bc71750eab94be55895919e36b90234f632b6f`, branch `lane-b/knowledge-01-k3c-accepted-reader`.
+- **Scope:** B-only `src/app/view_settings.js`, `src/app.css`, `test/ui_knowledge_reader.js`, `docs/lanes/B.md`, additive `package.json`. Add a strictly read-only accepted context revision viewer and cursor-bounded, pinned citations via A's `LemmaCloudBridge.readAcceptedContext` and `readPinnedAcceptedCitation`, with voluntary fetches only, owner/workspace/identity invalidation, offline/undeployed-schema messaging, no whole collection scans, background approval or mutations.
+- **Gate:** exact-head syntax, browser tests for owner/identity changes, 6-at-a-time source pages, source pinning, no silent writes, failure/offline; 390px/1280px light/dark screenshots and baseline inspection; B guard, full regression, Android, post-merge main. **Tested SHA:** none yet. **Next:** implement and test, update PR/checkpoint, merge only on exact-head green gates. Production knowledge schema and physical device are separately gated.
+
+## SHIP-B1 completion (PR #84)
+
+- **Merged:** `feat(UI-02): guarded Study navigation and checkpoint resume (#84)` at `c3bc71750eab94be55895919e36b90234f632b6f` after exact-head [regression run 40668938042](https://github.com/Mymayankyadav/lemma/actions/runs/40668938042), [Android run 40668938057](https://github.com/Mymayankyadav/lemma/actions/runs/40668938057) and 8 screenshots on 390px/1280px light/dark manually inspected. Real `StudyPlan.ready === false` remains hidden until D readiness. Post-merge main checks are running at K3c pickup; no production validation inferred.
+
 ## Active UI-02 SHIP-B1 claim — 28 October 2026
 
 - **Claim:** `chat-20261028T0940-b-ship-b1`; heartbeat 2026-10-28T09:40:00Z; base `main@1653e4015f8a49684fb7841aa0d4732539b23480`; branch `lane-b/ui-02-ship-b1-study-nav`. No other open B PR at claim.
