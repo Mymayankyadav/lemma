@@ -59,7 +59,7 @@ async function open(browser, ready, size, scheme, hash = '') {
       return route.fulfill({ status: 200, contentType: 'text/html', body: testHTML });
     for (const [file, pkg] of Object.entries(LIBS))
       if (url.endsWith(file)) return route.fulfill({ status: 200, contentType: 'application/javascript',
-        body: fs.readFileSync(require.resolve(pkg), 'utf8') });
+        body: fs.readFileSync(path.join(ROOT, 'node_modules', pkg), 'utf8') });
     if (url.includes('fonts.googleapis.com'))
       return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (url.startsWith('blob:') || url.startsWith('data:')) return route.continue();
@@ -124,14 +124,14 @@ async function resolveCurrent(page, result, reject = false) {
           'unavailable backend keeps review fallback');
 
         // Older in-flight responses cannot modify a view that was replaced.
-        const staleButton = ready.page.locator('.today .study-btn');
+        const staleButton = await ready.page.locator('.today .study-btn').elementHandle();
         await ready.page.locator('[data-go="browse"]:visible').first().click();
         await ready.page.locator('[data-go="home"]:visible').first().click();
+        assert.equal(await staleButton.evaluate(el => el.isConnected), false);
         await resolveCurrent(ready.page, {
           planId: 'plan-stale', planRevision: 1, checkpoint: { id: 'stale' },
         });
         assert.equal(await ready.page.locator('.today .study-btn').textContent(), 'Study');
-        assert.equal(await staleButton.count(), 1);
         await resolveCurrent(ready.page, {
           planId: 'plan-fresh', planRevision: 4, checkpoint: { id: 'fresh' },
         });
