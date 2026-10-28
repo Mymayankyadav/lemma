@@ -1,0 +1,27 @@
+// RELEASE-01 R2: exercise the actual IO JSON backup parser and prepare path.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync('src/app/io.js', 'utf8');
+const note = {id:'release-card',deck:'Proofs',type:'basic',title:'Lemma',front:'State lemma',back:'Proof',tags:['math'],requires:[],modified:42,media:{},cards:{'release-card':{due:1700000000000,stability:4.2,difficulty:5,reps:3,lapses:1}},log:[{id:'review-1',at:1699999999999,rating:3},{id:'review-2',at:1700000000000,rating:4}]};
+const context = {Model:{notes:new Map([[note.id,note]]),profile:()=>({settings:{dailyGoal:12},decks:['Proofs']})},clone:x=>structuredClone(x),console};
+vm.createContext(context);
+vm.runInContext(source+'; globalThis.__io = IO;',context);
+const io=context.__io;
+const exported=io.exportJSON();
+const parsed=io.parse(exported);
+assert.equal(parsed.format,'backup');
+assert.equal(parsed.notes.length,1);
+assert.deepEqual(JSON.parse(JSON.stringify(parsed.notes[0])),note,'export/parser must preserve complete schedules and immutable review history');
+assert.deepEqual(JSON.parse(JSON.stringify(parsed.backup.profile)),context.Model.profile());
+const restored=JSON.parse(JSON.stringify(parsed.notes[0]));
+assert.equal(new Set(restored.log.map(x=>x.id)).size,restored.log.length,'review event IDs must not duplicate');
+const prepared=io.prepare(parsed);
+assert.equal(prepared.skipped,1,'re-import of identical backup must not duplicate cards or reviews');
+assert.equal(prepared.items.length,0);
+context.Model.notes.clear();
+const fresh=io.prepare(parsed);
+assert.equal(fresh.items.length,1);
+assert.deepEqual(JSON.parse(JSON.stringify(fresh.items[0].note.log)),note.log);
+assert.deepEqual(JSON.parse(JSON.stringify(fresh.items[0].note.cards)),note.cards);
+console.log('RELEASE-01 R2 backup payload, schedule, review history, and repeat-import guard PASS');
