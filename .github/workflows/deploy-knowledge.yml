@@ -30,7 +30,6 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.LEMMA_SUPABASE_DB_PASSWORD }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       LEMMA_PROJECT_REF: yemqnhnztlbyxmjxidis
-      LEMMA_WORKDIR: ${{ runner.temp }}/lemma-knowledge-deploy
       DEPLOY_MODE: ${{ inputs.mode }}
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$DEPLOY_MODE" = "preflight" || test "$DEPLOY_MODE" = "apply"
+          echo "LEMMA_WORKDIR=$RUNNER_TEMP/lemma-knowledge-deploy" >> "$GITHUB_ENV"
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Missing SUPABASE_ACCESS_TOKEN repository secret"; exit 1; }
           test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::Missing LEMMA_SUPABASE_DB_PASSWORD repository secret"; exit 1; }
           test ! -e supabase/.temp/project-ref || { echo "::error::Refusing pre-linked checkout"; exit 1; }
