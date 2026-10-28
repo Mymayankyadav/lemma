@@ -1,6 +1,6 @@
 # Lane B — UI
 
-Next action: UI-01 true Chromium tab-zoom acceptance in [PR #43](https://github.com/Mymayankyadav/lemma/pull/43), branch `lane-b/ui-01-real-browser-zoom`. A test-only ephemeral Manifest V3 Chromium extension uses `chrome.tabs.setZoom(2)` to verify actual browser 200% scale, overflow, keyboard editor, long KaTeX and before/after screenshots. Latest-head CI/screenshots pending; do not call this passed before evidence. Wider live network/error visual gate remains open.
+Next action: UI-01 export reliability claim in [PR #44](https://github.com/Mymayankyadav/lemma/pull/44), branch `lane-b/ui-01-export-backup-fallback`, run `hourly-20261028T0021Z-b-export`, heartbeat UTC 2026-10-28T00:22:17Z. Files: `src/app/sheets.js`, `test/ui_screenshots.js`, `docs/lanes/B.md`. Scope: address lane A's plain-web backup Download/Copy failure with browser fallback, verified clipboard and tests. Base `main@81a7df0`; tested SHA: NOT RUN; next: implement, verify exact-head CI and inspect UI output. Full UI-01 live network/error acceptance remains open. Owner action: none.
 
 | Field | Value |
 | --- | --- |
