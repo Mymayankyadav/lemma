@@ -36,7 +36,7 @@ function run(executable, args, maxBuffer = 32 * 1024 * 1024) {
 function listBundledFiles(directory, relative = '') {
   const files = [];
   for (const entry of fs.readdirSync(path.join(directory, relative), { withFileTypes: true })) {
-    if (!entry.name || /[\\\\/]/.test(entry.name) || entry.name === '.' || entry.name === '..')
+    if (!entry.name || entry.name.includes('/') || entry.name.includes('\\') || entry.name === '.' || entry.name === '..')
       throw new Error('Unsafe bundled web asset name');
     const name = relative ? relative + '/' + entry.name : entry.name;
     if (entry.isDirectory()) files.push(...listBundledFiles(directory, name));
