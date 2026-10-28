@@ -1,3 +1,11 @@
+## Active UI-02 SHIP-B1 claim — 28 October 2026
+
+- **Claim:** `chat-20261028T0940-b-ship-b1`; heartbeat 2026-10-28T09:40:00Z; base `main@1653e4015f8a49684fb7841aa0d4732539b23480`; branch `lane-b/ui-02-ship-b1-study-nav`. No other open B PR at claim.
+- **Slice:** guarded `StudyView.ready` routing/navigation and Today's asynchronous approved-checkpoint CTA; defaults to unchanged due-card review when StudyPlan/StudyView absent, unready, offline, error or no active checkpoint. No premature study plan approval.
+- **Intended B-owned files:** `src/app/main.js`, `src/app/view_home.js`, `src/app.css` (only if required for 5-tab layout), `test/ui_study_nav.js`, `test/ui_screenshots.js`, `docs/lanes/B.md`.
+- **Implementation checkpoint:** `main.js` exposes `#study` and labelled desktop/mobile Study navigation only for a ready `StudyView`, routes hidden deep links to Today, and retains the existing New-card action. Home upgrades the due-review button only after the ready StudyPlan returns a revisioned active checkpoint; absent, offline, rejected or empty reads retain reviews. Old owner/workspace responses and detached nodes are ignored; keyboard primary action follows the visible CTA. Small-screen CSS expands to five tracks only when ready, without changing the normal four-track shell. A Playwright test covers hidden/unready, ready approved context, missing/error fallback, stale responses, 390px/1280px light/dark screenshots. `package.json` appends this test to existing `test:ui` without replacing tests.
+- **Verification:** JS syntax for `main.js`, `view_home.js`, and `ui_study_nav.js` parsed successfully via connector-side JS; full local `npm ci`/Playwright unavailable because GitHub DNS is blocked in the tool container. **Exact-head CI, screenshot artifact inspection, B lane guard and post-merge main remain PENDING**, so this is NOT an accepted or merged gate yet. **Next:** inspect CI and 8 generated screenshots, fix failures, merge only after green required gates and current main inclusion; then bounded accepted-revision/citation viewer in a separate B PR.
+
 ## Ship-today requests (integration 28 Oct, read first)
 
 - Owner wants everything shipped today; six lanes now run in parallel. Read [docs/SHIP_PLAN.md](../SHIP_PLAN.md). Your NEXT row is **UI-02**.
