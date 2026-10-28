@@ -659,7 +659,7 @@ const SettingsView = (() => {
       if (!row || ['approved_pending', 'needs_review'].includes(row.status)) return false;
       return title.value !== (row.title || '') ||
         summary.value !== (row.payload?.summary || '') ||
-        goals.value !== (Array.isArray(row.payload?.goals) ? row.payload.goals.join('\\n') : '') ||
+        goals.value !== (Array.isArray(row.payload?.goals) ? row.payload.goals.join('\n') : '') ||
         markdown.value !== (row.markdown || '');
     }
     async function maySwitch() {
