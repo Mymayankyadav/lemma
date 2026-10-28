@@ -5,6 +5,8 @@
 - **Files:** `src/app/cloud_bridge.js`, `test/account_knowledge_bridge.js`, `package.json` (append own test), `docs/lanes/A.md`. No new dependencies, B/C UI/native files, migration, Carrel or production changes.
 - **Gate:** unit tests for scope, stale session, identity change during reads/writes, rejected/failed/missing approval and stable request IDs; full regression and Android CI exact SHA + post-merge main. Local DB gates already passed for K2c and remain intact.
 - **Next:** implement this bounded adapter, then B's accepted context UI contract request and a separate offline outbox/proposal state slice. Do not expose direct tutor writes or auto-approve student data.
+- **Implementation checkpoint:** `LemmaCloudBridge.readAcceptedContext(contextId, revision?)`, `readAcceptedExcerpts(contextId, sourceId, sourceRevision, cursor?, limit?)`, and `commitAcceptedContext({contextId,expectedRevision,requestId,title,markdown,payload,studentApproved:true})` use authenticated RPCs with strict identity rechecks, no private-content errors, and exact caller-supplied request IDs. Offline access explicitly rejects; no fake local receipt or implicit study-plan acceptance. `test/account_knowledge_bridge.js` covers permission, revision, offline, error-redaction and logout-race cases via the existing `test:account` script. All changes A-owned or shared owned-line append.
+- **Next validation:** exact-head regression/Android and applicable lane guard. If code CI passes, merge and verify main. This adapter does not deploy Supabase migrations nor add offline storage; a durable cache/outbox and consent UI remain independent tasks.
 
 ## KNOWLEDGE-01 K2c — structured accepted context v1 (active claim)
 
