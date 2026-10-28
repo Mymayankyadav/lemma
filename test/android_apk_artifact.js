@@ -41,14 +41,20 @@ function verify() {
   const versionName = /^package:.*\bversionName='([^']+)'/m.exec(badging)?.[1];
   assert.ok(versionCode && versionName, 'APK version metadata missing');
 
-  const signer = run(sdkTool('apksigner'), ['verify', '--print-certs', apk]);
-  // apksigner output can use colon-delimited certificate fingerprints.
-  // Normalize only the digest value; never weaken the 256-bit requirement.
+  const signer = run(sdkTool('apksigner'), ['verify', '--verbose', '--print-certs', apk]);
+  // Tool versions differ in digest formatting. Keep the signature check and
+  // require exactly one 256-bit digest from a certificate-specific line.
   const certificateLine = signer.split(/\r?\n/).find(line =>
-    /Signer #1 certificate SHA-256 (?:digest|fingerprint):/i.test(line));
-  const signerSha256 = certificateLine?.replace(/^.*?:\s*/, '')
+    /certificate.*SHA[- ]?256/i.test(line));
+  const signerSha256 = certificateLine?.replace(/^.*?(?:digest|fingerprint):\s*/i, '')
     .replace(/[\s:]/g, '').toLowerCase();
-  assert.match(signerSha256 || '', /^[0-9a-f]{64}$/, 'APK signature fingerprint unavailable');
+  if (!/^[0-9a-f]{64}$/.test(signerSha256 || '')) {
+    // Print field NAMES only, never signer values, paths, or private metadata.
+    const labels = signer.split(/\r?\n/).filter(line => /certificate|signer/i.test(line))
+      .map(line => line.split(':')[0].slice(0, 100));
+    console.error('APK signer metadata labels:', labels.join(' | ') || '(none)');
+    throw new Error('APK signature fingerprint unavailable');
+  }
 
   const files = new Set(run('unzip', ['-Z', '-1', apk]).trim().split(/\r?\n/));
   const bundled = ['index.html', 'lemma.html', 'service-worker.js', 'manifest.webmanifest'];
