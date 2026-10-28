@@ -4,13 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "Preflight only, or apply exactly the three merged KNOWLEDGE-01 migrations"
+        description: "Read-only preflight or explicitly apply exactly the selected reviewed migrations"
         type: choice
         required: true
         default: preflight
         options:
           - preflight
           - apply
+      scope:
+        description: "Exact migration target (knowledge only, or knowledge plus merged PLAN-01)"
+        type: choice
+        required: true
+        default: knowledge
+        options:
+          - knowledge
+          - knowledge_and_plan
 
 permissions:
   contents: read
@@ -32,6 +40,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       LEMMA_PROJECT_REF: yemqnhnztlbyxmjxidis
       DEPLOY_MODE: ${{ inputs.mode }}
+      DEPLOY_SCOPE: ${{ inputs.scope }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$DEPLOY_MODE" = "preflight" || test "$DEPLOY_MODE" = "apply"
+          test "$DEPLOY_SCOPE" = "knowledge" || test "$DEPLOY_SCOPE" = "knowledge_and_plan"
           echo "LEMMA_WORKDIR=$RUNNER_TEMP/lemma-knowledge-deploy" >> "$GITHUB_ENV"
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Missing SUPABASE_ACCESS_TOKEN repository secret"; exit 1; }
           test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::Missing LEMMA_SUPABASE_DB_PASSWORD repository secret"; exit 1; }
@@ -105,7 +115,7 @@ jobs:
           console.log('Current main SHA has green regression/local-stack and proven Android gate');
           NODE
 
-      - name: Stage only the twelve reviewed legacy and knowledge migrations
+      - name: Stage only exact reviewed migrations through selected target
         shell: bash
         run: |
           set -euo pipefail
@@ -127,6 +137,8 @@ jobs:
             '20261028043000_knowledge_source_revisions.sql',
             '20261028051500_structured_context_v1.sql'
           ];
+          if (process.env.DEPLOY_SCOPE === 'knowledge_and_plan')
+            expected.push('20261028094500_plan01_append_only_events.sql');
           const names=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(names.length<expected.length || expected.some((x,i)=>names[i]!==x))
             throw Error('Required exact legacy/knowledge source filenames changed');
@@ -137,7 +149,7 @@ jobs:
           }
           const destination=process.env.LEMMA_WORKDIR+'/supabase/migrations';
           for(const n of expected)fs.copyFileSync(path.join('supabase/migrations',n),path.join(destination,n));
-          console.log('Isolated exactly twelve approved SQL files; later lane D/E SQL remains undeployed');
+          console.log('Isolated '+expected.length+' approved exact-version SQL files; other lane D/E SQL remains undeployed');
           NODE
 
       - name: Link only to Lemma production (never use db reset)
@@ -172,6 +184,8 @@ jobs:
             '20261028043000_knowledge_source_revisions.sql',
             '20261028051500_structured_context_v1.sql'
           ];
+          if (process.env.DEPLOY_SCOPE === 'knowledge_and_plan')
+            expected.push('20261028094500_plan01_append_only_events.sql');
           const names=fs.readdirSync(process.env.LEMMA_WORKDIR+'/supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(JSON.stringify(names)!==JSON.stringify(expected))
             throw Error('Unexpected local migrations. Refusing to deploy new, missing or renamed SQL: '+JSON.stringify(names));
@@ -230,7 +244,7 @@ jobs:
           const names=fs.readdirSync(process.env.LEMMA_WORKDIR+'/supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(rows.length!==names.length || rows.some((row,i)=>row[0]!==names[i].slice(0,14)||row[1]!==row[0]))
             throw Error('Post-deploy migration history is not fully version-identical; investigate without repair');
-          console.log('Applied and verified all 12 exact Lemma migration versions');
+          console.log('Applied and verified all '+names.length+' exact Lemma migration versions');
           NODE
 
       - name: Publish preflight or application summary
@@ -239,7 +253,7 @@ jobs:
         run: |
           echo "### Lemma knowledge migration operator" >> "$GITHUB_STEP_SUMMARY"
           echo "Target: \`yemqnhnztlbyxmjxidis\` (Lemma only)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Mode: \`$DEPLOY_MODE\` · SHA: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Mode: \`$DEPLOY_MODE\` · scope: \`$DEPLOY_SCOPE\` · SHA: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
           echo "This workflow never repairs history, resets a database, or uses the MCP migration endpoint." >> "$GITHUB_STEP_SUMMARY"
           if [ "$DEPLOY_MODE" = preflight ]; then
             echo "Read-only preflight: **no production migrations applied**." >> "$GITHUB_STEP_SUMMARY"
