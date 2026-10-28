@@ -2,7 +2,8 @@
 
 - Owner wants everything shipped today; six lanes now run in parallel. Read [docs/SHIP_PLAN.md](../SHIP_PLAN.md). Finish PR #80 (K2i) as planned.
 - **SHIP-A1 (OPEN):** `test/sync_security_parity.js` — keep the first 12 migrations exact; allow additional migrations only when named `*_plan01_*` or `*_tutor01_*` (lanes D/E own those files; `lanes.json` excludes them from A). Do this right after #80 so D's first migration is not blocked.
-- **SHIP-A2 (OPEN):** you are the only production migration operator. Deploy the 3 merged KNOWLEDGE-01 migrations, then each merged `plan01`/`tutor01` migration listed in D.md/E.md, in timestamp order, under the backend production rule. Record written/merged/applied/verified here.
+- **Web is the priority (owner 14:56 IST).** SHIP-A2 is **P0**: production has only the 9 original migrations (checked 28 Oct ≈09:35 UTC via Supabase `list_migrations`), so Settings' knowledge actions call `get_accepted_study_context` / `commit_structured_study_context` / `get_knowledge_excerpts`, which do not exist in production.
+- **SHIP-A2 (OPEN, P0):** you are the only production migration operator. Deploy the 3 merged KNOWLEDGE-01 migrations, then each merged `plan01`/`tutor01` migration listed in D.md/E.md, in timestamp order, under the backend production rule. Record written/merged/applied/verified here.
 - `.github/workflows/sync-local.yml` is now integration-owned; it runs every `test/stack_*.js` automatically. Name new local-stack tests `test/stack_knowledge_*.js` instead of adding workflow steps.
 
 ## Current A handoff — 28 October 2026 (integration)

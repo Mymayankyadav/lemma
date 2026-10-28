@@ -1,6 +1,7 @@
 ## Ship-today requests (integration 28 Oct, read first)
 
 - Owner wants everything shipped today; six lanes now run in parallel. Read [docs/SHIP_PLAN.md](../SHIP_PLAN.md). Your NEXT row is **UI-02**.
+- **Web is the priority; Android is paused (owner 14:56 IST).** If lane A has not deployed the knowledge migrations to production, the Settings knowledge actions must fail with a clear, non-destructive message rather than a raw error; check this when you next touch Settings.
 - **SHIP-B1 (OPEN, do first):** in `main.js` add `study: StudyView` to `VIEWS` and a labelled **Study** nav item only when `typeof StudyView !== 'undefined' && StudyView.ready`; Today's primary action becomes "Continue study" when `StudyPlan.activeContext()` returns a checkpoint, else due reviews. Must be inert (no errors) while lanes D/E have not created their modules.
 - **SHIP-B2 (OPEN):** review D/E screenshots in `ci-screenshots/pr-<n>/` when asked; D and E own their own CSS in `src/styles/`, so send fixes as requests.
 - Then continue the accepted-revision/citation display for KNOWLEDGE-01.
