@@ -192,7 +192,7 @@ const StudyPlan = (() => {
         let answer;
         const request = store.get(planId);
         request.onsuccess = () => {
-          try { answer = mutate(request.result || null,store); }
+          try { ctx.check(); answer = mutate(request.result || null,store,ctx.userId); }
           catch (e) { tx.abort(); reject(e); }
         };
         request.onerror = () => reject(new Error('Could not read plan draft'));
@@ -255,8 +255,8 @@ const StudyPlan = (() => {
     const base = {...data,draftId};
     delete base.proposalId;
     delete base.expectedLocalRevision;
-    return draftTransaction(data.planId,true,(previous,store) => {
-      if (previous && previous.userId !== LemmaAccount.user?.id)
+    return draftTransaction(data.planId,true,(previous,store,ownerId) => {
+      if (previous && previous.userId !== ownerId)
         throw new Error('Plan draft account mismatch');
       if (previous?.status !== undefined && previous.status !== 'draft')
         throw new Error('Plan draft is already under approval');
@@ -269,7 +269,7 @@ const StudyPlan = (() => {
       if ((previous?.localRevision ?? 0) !== data.expectedLocalRevision)
         throw new Error('Plan draft changed; reload before editing');
       const stamp = Date.now();
-      const result = {...base,status:'draft',userId:LemmaAccount.user.id,
+      const result = {...base,status:'draft',userId:ownerId,
         localRevision:(previous?.localRevision ?? 0)+1,
         createdAt:previous?.createdAt ?? stamp,updatedAt:stamp};
       store.put(result);
