@@ -214,6 +214,23 @@ const LemmaCloudBridge = (() => {
       p_context_markdown: markdown, p_payload: payload
     });
   }
+  // Export is deliberately an explicit student action; merely attaching an
+  // account or refreshing sync never captures personal drafts or queued edits.
+  // This is an account-local companion only, NOT a transactional server backup.
+  async function captureLocalRecovery(studentRequested = false) {
+    if (studentRequested !== true)
+      throw new Error('Explicit local account recovery export required');
+    const userId = LemmaAccount.user?.id;
+    const handle = typeof LemmaSync !== 'undefined' ? LemmaSync.accountHandle() : null;
+    if (!userId || !handle || handle.userId !== userId ||
+        typeof handle.storage?.localRecoverySnapshot !== 'function')
+      throw new Error('Sign in to an available account cache before exporting recovery data');
+    const result = await handle.storage.localRecoverySnapshot();
+    if (LemmaAccount.user?.id !== userId || LemmaSync.accountHandle() !== handle ||
+        result?.ownerId !== userId || result.scope !== 'account-local-recovery')
+      throw new Error('Account changed during local recovery export');
+    return result;
+  }
   // LOCAL unaccepted drafts only. These are stored in the existing
   // account-namespaced IndexedDB cache; no network required after attach.
   // An in-flight save may finish under the *old* owner after logout, so
@@ -384,7 +401,7 @@ const LemmaCloudBridge = (() => {
     check();
     return draft;
   }
-  return { authorize, listRemote, inspect, uploadMissing, importMissing,
+  return { captureLocalRecovery, authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
     commitAcceptedContext,
     readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft,
