@@ -1,13 +1,10 @@
 name: Deploy Lemma web
 on:
+  # Every main SHA is a potential web release candidate. A docs-only or
+  # test-only final merge must still produce an exact-SHA deployed Pages build
+  # and downstream live smoke; otherwise release tagging becomes manual.
   push:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'build.js'
-      - 'src/app/**'
   workflow_dispatch:
 permissions:
   contents: read
