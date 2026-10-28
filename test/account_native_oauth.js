@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const code=fs.readFileSync('src/app/cloud_account.js','utf8');
 const callbackBase='io.lemma.study://auth-callback';
-function harness({native=true,storage=new Map(),cold=null,launchError=false}={}) {
+function harness({native=true,nativePlatform=native,storage=new Map(),cold=null,launchError=false}={}) {
   const timers=[], oauth=[], exchanged=[], opened=[],closed=[],callbacks=[];
   let onAuthStateChange, currentUser=null, callback;
   const errors=[];
@@ -49,7 +49,7 @@ function harness({native=true,storage=new Map(),cold=null,launchError=false}={})
     }
   }};
   const ctx=vm.createContext({
-    window:{LEMMA_CONFIG:{url:'https://lemma.example',publishableKey:'test'},localStorage,
+    window:{Capacitor:{isNativePlatform:()=>nativePlatform},LEMMA_CONFIG:{url:'https://lemma.example',publishableKey:'test'},localStorage,
       LemmaSupabase:{createClient:()=>client}},
     NativeShell:shell,Date,URL,
     location:{href:'https://lemma.test/lemma/'},history:{state:null,replaceState(){}},
@@ -167,5 +167,10 @@ async function settle() {
   assert.equal(web.oauth[0].options.skipBrowserRedirect,undefined);
   assert.equal(web.opened.length,0);
   assert.equal(web.storage.size,0);
-  console.log('ok: native PKCE cold/warm, retry, error, expiry, cancel, identity guards and unchanged web sign-in');
+  const noShell=harness({native:false,nativePlatform:true});
+  noShell.account.init();
+  await assert.rejects(noShell.account.signInWithGoogle(),/Native sign-in is unavailable/);
+  assert.equal(noShell.oauth.length,0,'missing native bridge cannot use WebView OAuth');
+  assert.equal(noShell.opened.length,0);
+  console.log('ok: native PKCE cold/warm, retry, error, expiry, cancel, identity guards and WebView fail-closed');
 })().catch(err=>{console.error(err);process.exitCode=1;});
