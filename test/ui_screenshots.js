@@ -552,6 +552,8 @@ async function shot(page, name, size, scheme) {
           accountHandle: Sync.accountHandle,
           read: Bridge.readKnowledgeDraft,
           save: Bridge.saveKnowledgeDraft,
+          compare: Bridge.inspectKnowledgeConflict,
+          reopen: Bridge.reopenReviewedKnowledgeConflict,
         };
         const owner = '00000000-0000-4000-8000-000000000001';
         const handle = { userId: owner };
@@ -571,7 +573,31 @@ async function shot(page, name, size, scheme) {
           rows.set(data.contextId, result);
           return result;
         };
-        window.__knowledgeMock = { rows };
+        const counters = { compares: 0, reopens: 0 };
+        Bridge.inspectKnowledgeConflict = async contextId => {
+          counters.compares++;
+          const local = rows.get(contextId);
+          if (local?.status !== 'needs_review') throw Error('No stale intent');
+          return { status: 'needs_review', contextId,
+            local: structuredClone(local),
+            accepted: { context_id: contextId, revision: 4,
+              title: 'Current accepted context', context_markdown: 'Latest accepted proof',
+              accepted_json: {schema_version:1,summary:'Accepted goal'} } };
+        };
+        Bridge.reopenReviewedKnowledgeConflict = async (contextId, localRevision,
+          requestId, acceptedRevision, studentReviewed) => {
+          counters.reopens++;
+          const row = rows.get(contextId);
+          if (studentReviewed !== true || row?.status !== 'needs_review' ||
+              row.localRevision !== localRevision || row.requestId !== requestId ||
+              acceptedRevision !== 4) throw Error('Invalid student conflict review');
+          const next = { ...row, status:'draft', localRevision:localRevision+1,
+            expectedRevision:acceptedRevision, reopenedFromRequestId:requestId };
+          delete next.requestId; delete next.approvedBy;
+          rows.set(contextId, next);
+          return next;
+        };
+        window.__knowledgeMock = { rows, counters };
         window.__knowledgeRestore = () => {
           Object.defineProperty(Store, 'mode', old.mode);
           Object.defineProperty(Account, 'user', old.user);
@@ -579,6 +605,8 @@ async function shot(page, name, size, scheme) {
           Sync.accountHandle = old.accountHandle;
           Bridge.readKnowledgeDraft = old.read;
           Bridge.saveKnowledgeDraft = old.save;
+          Bridge.inspectKnowledgeConflict = old.compare;
+          Bridge.reopenReviewedKnowledgeConflict = old.reopen;
           App.render();
         };
         App.render();
@@ -638,6 +666,36 @@ async function shot(page, name, size, scheme) {
         animations: 'disabled'
       });
       shots++;
+      // K3b: compare only after click; cancel leaves the original intent.
+      await page.locator('#s-knowledge-compare').click();
+      await page.waitForSelector('#s-knowledge-review:not([hidden])');
+      const comparison = await page.locator('#s-knowledge-review').evaluate(el => ({
+        width: el.scrollWidth, client: el.clientWidth, text: el.textContent
+      }));
+      if (comparison.width > comparison.client + 1 ||
+          !comparison.text.includes('Latest accepted proof') ||
+          !comparison.text.includes('Compact subsets of Hausdorff spaces'))
+        throw Error('K3b read-only comparison overflow/content failed: ' + JSON.stringify(comparison));
+      if (await page.evaluate(() => window.__knowledgeMock.counters.reopens) !== 0)
+        throw Error('K3b comparison reopened a draft without consent');
+      await page.locator('#s-knowledge-review').screenshot({
+        path: path.join(OUT, `knowledge-comparison-${size}-${scheme}.png`),
+        animations: 'disabled'
+      });
+      shots++;
+      await page.locator('#s-knowledge-reopen').click();
+      await page.waitForSelector('#sheets .confirm-msg');
+      await page.locator('#sheets button:text-is("Cancel")').click();
+      if (await page.evaluate(() => window.__knowledgeMock.counters.reopens) !== 0)
+        throw Error('K3b cancelling confirmation modified conflict');
+      await page.locator('#s-knowledge-reopen').click();
+      await page.waitForSelector('#sheets .confirm-msg');
+      await page.locator('#sheets button:text-is("Reopen draft")').click();
+      await page.waitForFunction(() =>
+        document.querySelector('#s-knowledge-status')?.textContent.includes('Local draft revision 2'));
+      if (await page.evaluate(() => window.__knowledgeMock.counters.reopens) !== 1 ||
+          await page.locator('#s-knowledge-title').isDisabled())
+        throw Error('K3b deliberate reopen did not restore an editable, unapproved draft');
     } catch (e) {
       problems.push('[knowledge-draft-' + size + '-' + scheme + '] ' + (e.stack || e.message));
     } finally {
