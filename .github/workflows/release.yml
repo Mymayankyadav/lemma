@@ -1,0 +1,45 @@
+name: Lemma live Pages smoke
+on:
+  workflow_run:
+    workflows: ['Deploy Lemma web']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'test/release_*.js'
+      - 'docs/lanes/F.md'
+permissions:
+  contents: read
+concurrency:
+  group: lemma-release-smoke-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  live-pages:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium for actual Pages checks
+        run: npx playwright install --with-deps chromium
+      - name: Assert intentionally broken URL fails closed
+        run: node test/release_live_smoke.js --negative-self-test
+      - name: Check published Pages anonymously
+        env:
+          LEMMA_LIVE_URL: https://mymayankyadav.github.io/lemma/
+        run: node test/release_live_smoke.js
+      - name: Upload Pages smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lemma-release-live-screenshots
+          path: test-output/release-live/*.png
+          if-no-files-found: ignore
+          retention-days: 14
