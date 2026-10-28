@@ -8,6 +8,133 @@ const AGENT_HELP = [
   'Cards:',
 ].join('\n');
 
+/* Device-local Android reminder preference. Never part of the synced profile:
+   granting Android permission does not constitute Lemma opt-in. */
+const ReminderSettings = (() => {
+  const KEY = 'lemma-due-reminder-v1';
+  const DEFAULT_TIME = '09:00';
+  const validTime = (value) => typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  let initialized = false;
+  let queue = Promise.resolve();
+  let requested = false;
+
+  function read() {
+    const fallback = { optedIn: false, localTime: DEFAULT_TIME };
+    if (!NativeShell.enabled) return fallback;
+    try {
+      const raw = JSON.parse(window.localStorage.getItem(KEY) || 'null');
+      if (!raw || raw.v !== 1) return fallback;
+      const localTime = validTime(raw.localTime) ? raw.localTime : DEFAULT_TIME;
+      return { optedIn: raw.optedIn === true && validTime(raw.localTime), localTime };
+    } catch { return fallback; }
+  }
+
+  function persist(next) {
+    if (!NativeShell.enabled || !validTime(next.localTime)) return false;
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify({
+        v: 1, optedIn: next.optedIn === true, localTime: next.localTime
+      }));
+      return true;
+    } catch { return false; }
+  }
+
+  function earliestDueAt(now = Date.now()) {
+    if (!NativeShell.enabled || App.loading || App.workspaceBlocked) return null;
+    let due = Infinity;
+    for (const { c } of Model.cardRefs()) {
+      if (!c || c.st === 0 || c.susp || Model.isBuried(c, now)) continue;
+      if (Number.isSafeInteger(c.due) && c.due > 0) due = Math.min(due, c.due);
+    }
+    return Number.isFinite(due) ? due : null;
+  }
+
+  // Serialize OS writes and re-read preferences/workspace at execution time.
+  // An in-flight enable can never reschedule after a later opt-out.
+  function reconcile() {
+    if (!NativeShell.enabled) return Promise.resolve({ scheduled: false });
+    queue = queue.catch(() => {}).then(() => {
+      const pref = read();
+      const now = Date.now();
+      const due = earliestDueAt(now);
+      return NativeShell.reconcileDueReminder({
+        optedIn: pref.optedIn && due !== null,
+        localTime: pref.localTime,
+        earliestDueAt: due,
+        now
+      });
+    });
+    return queue;
+  }
+
+  async function enable(localTime) {
+    if (!NativeShell.enabled || !validTime(localTime)) return { ok: false, reason: 'unavailable' };
+    const existing = await NativeShell.checkDueReminderPermission();
+    if (existing === 'unavailable') return { ok: false, reason: 'unavailable' };
+    // This method is called ONLY by the Settings button click handler.
+    const permission = existing === 'prompt'
+      ? await NativeShell.requestDueReminderPermission() : existing;
+    if (permission !== 'granted') return { ok: false, reason: 'denied' };
+    if (!persist({ optedIn: true, localTime })) return { ok: false, reason: 'storage' };
+    try {
+      const result = await reconcile();
+      return { ok: true, result };
+    } catch {
+      return { ok: true, error: 'Reminder scheduling unavailable; check again in Settings.' };
+    }
+  }
+
+  async function disable() {
+    const pref = read();
+    const saved = persist({ optedIn: false, localTime: pref.localTime });
+    if (!saved) {
+      // Cancel any OS alarm even when storage is unavailable. Never claim the
+      // preference will remain off after a restart if it could not be saved.
+      try { await NativeShell.reconcileDueReminder({ optedIn: false }); } catch {}
+      return false;
+    }
+    await reconcile();
+    return true;
+  }
+
+  function saveTime(localTime) {
+    if (!validTime(localTime)) return false;
+    return persist({ ...read(), localTime });
+  }
+
+  function requestReconcile() {
+    if (!NativeShell.enabled || requested) return;
+    requested = true;
+    Promise.resolve().then(() => {
+      requested = false;
+      reconcile().catch(() => { /* UI reports errors on explicit actions */ });
+    });
+  }
+
+  function onTap(route) {
+    if (route !== 'review' || !read().optedIn || App.loading ||
+        App.workspaceBlocked || !App.workspaceIdle()) return;
+    const due = Model.counts(null);
+    if (due.learn + due.review > 0) App.startSession(new Session({}));
+    else App.go('home');
+  }
+
+  function init() {
+    if (!NativeShell.enabled || initialized) return;
+    initialized = true;
+    NativeShell.onDueReminderTap(onTap);
+    Model.onChange(requestReconcile);
+    window.addEventListener('focus', requestReconcile);
+    window.addEventListener('online', requestReconcile);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) requestReconcile();
+    });
+    requestReconcile(); // Also cancel any stale alarm when default-off.
+  }
+
+  return { read, enable, disable, saveTime, reconcile, earliestDueAt, init };
+})();
+
 const SettingsView = (() => {
   let optResult = null;
   let optResultGeneration = -1;
