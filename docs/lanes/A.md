@@ -1,3 +1,9 @@
+## RELEASE-01 R2i — transactional same-owner empty-destination restore
+
+- **Claim:** `chat-20261028-r2i-restore`, heartbeat `2026-10-28T17:42:33Z`; branch `lane-a/release-r2i-transactional-workspace-restore`, base `58de7cd`. No open PR at pickup. Scope: new A-owned additive restore migration, authenticated disposable 19-table restore test, bridge/client validation and A handoff. No production data restore, no account transfer, no student approval on behalf of the owner.
+- **Goal:** explicit dry-run and same-owner empty-destination atomic restore with durable idempotent receipt, exact immutable histories, foreign-owner denial, nonempty protection and interruption/retry tests. Preserve server archive inventory; local unsynced data and product UI follow in separate bounded slices.
+- **Next action:** implement and validate locally/CI; merge only the tested head with required green checks. Full release remains blocked until all R7 acceptance and deployment requirements pass.
+
 ## RELEASE-01 R2h — explicit paired server/local recovery preflight (28 October 2026)
 
 - **Claim** `chat-20261028-lane-a-r2h-readonly-pair`, branch `lane-a/release-r2h-readonly-recovery-pair` from `main@ebde81a1b2ca596a6f26abba79e18500642b0105`. One bounded A-owned slice; files: `src/app/cloud_bridge.js`, `test/account_local_recovery_envelope.js`, `docs/lanes/A.md`. Existing PR #141 merged; no competing open A claim at pickup. The production deploy operator is separate and not called in this slice.
