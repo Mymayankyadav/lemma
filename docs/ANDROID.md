@@ -61,6 +61,12 @@ On the Android Back gesture or hardware button, Lemma closes an open sheet first
 `npm run test:android` checks these decisions with mocked bridge events. Physical-device Back, resume and offline-data verification are still pending. Never uninstall an app with unsaved local data as a workaround.
 
 
+## ANDROID-02 N2b — Android soft-keyboard resize (native contract only)
+
+The Capacitor MainActivity explicitly sets `android:windowSoftInputMode="adjustResize"` so Android is requested to shrink the WebView's available area when the soft keyboard opens, rather than panning over focused mathematical editors. This preserves the `singleTask` OAuth deep-link activity and native Back/resume handlers. `npm run test:android` checks the manifest contract and the Android CI builds a debug APK. This change does not edit CSS or alter saved data.
+
+**Physical gate still NOT RUN:** on a tested APK, open the Cards search, edit a card's title/front/back and use an editor sheet in portrait and landscape. Show/hide the IME, check that the focused input, sheet actions and bottom controls remain reachable, and verify the keyboard does not obscure unsaved content. Repeat with gesture navigation and relevant safe-area insets. `adjustResize` is a request to Android, not proof of WebView/IME behavior on every OS version or edge-to-edge configuration; record exact device/OS/build and failures for a B-owned UI correction if needed. Do not clear app data during these checks.
+
 ## ANDROID-02 N2a — native foreground recovery wake (automated bridge only)
 
 Android WebView may deliver Capacitor `App.resume` without the browser `focus` event used by `account_sync.js`. The native shell now dispatches a single synthetic `window.focus` per Capacitor resume to wake the existing debounced, identity-guarded sync scheduler. This reuses the same code path as ordinary web foreground recovery and does **not** fabricate a network-online state, bypass explicit account enrollment, replay unsaved edits outside the durable outbox or change Supabase data by itself. The native shell catches and redacts any WebView event-dispatch failure so foregrounding cannot be blocked by diagnostics.
