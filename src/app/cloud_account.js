@@ -26,6 +26,7 @@ const LemmaAccount = (() => {
   const seenNativeCodes = new Set();
   let nativeExchanging = false;
   let nativeIntentEpoch = 0;
+  const onNativePlatform = () => !!window.Capacitor?.isNativePlatform?.();
   const nativeEnabled = () => typeof NativeShell !== 'undefined' &&
     NativeShell.enabled === true &&
     typeof NativeShell.onAuthCallback === 'function' &&
@@ -145,6 +146,10 @@ const LemmaAccount = (() => {
   async function signInWithGoogle() {
     if (!client) throw new Error('Cloud is not configured');
     lastAuthError = '';
+    if (onNativePlatform() && !nativeEnabled()) {
+      lastAuthError = 'Native sign-in is unavailable; update the Android app.';
+      throw new Error(lastAuthError);
+    }
     if (nativeEnabled()) {
       if (user?.id || nativeExchanging) throw new Error('Finish the current account action first');
       const epoch = ++nativeIntentEpoch;
