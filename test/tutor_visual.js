@@ -41,7 +41,11 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     type:'basic',title:'Compact in Hausdorff',front:'How to show K is closed?',
     back:'Separate every exterior point from K using finitely many Hausdorff neighbourhoods.',
     tags:['topology'],requires:[],source_refs:['topology-notes:section-3.2']}],
- amendment_proposal:null
+ amendment_proposal:{proposal_id:'00000000-0000-4000-8000-000000000005',
+  expected_revision:3,change_summary:'Add the separation prerequisite',
+  snapshot:{title:'Topology proof plan',checkpoints:[{checkpoint_id:'compactness-open-cover-proof',
+   title:'Compactness',objective:'Prove a compact subset of a Hausdorff space is closed',
+   prerequisite_checkpoint_ids:[]}]}}
 };
 (async()=>{
  const browser=await chromium.launch();
@@ -99,7 +103,7 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     await page.locator('.tutor-handoff-reply').fill(JSON.stringify(reply));
     await page.getByRole('button',{name:'Review pasted reply'}).click();
     await page.locator('.tutor-handoff-item').first().waitFor();
-    assert.equal(await page.locator('.tutor-handoff-item').count(),2);
+    assert.equal(await page.locator('.tutor-handoff-item').count(),3);
     assert.match(await page.locator('.tutor-handoff-status').innerText(),/None recorded/);
     const save=page.getByRole('button',{name:'Save selected study events'});
     assert.equal(await save.isDisabled(),true,'requires deliberate event selection');
@@ -117,6 +121,16 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     assert.equal(await cardAction.isEnabled(),true,'student card selection enables editor review');
     await cardAction.scrollIntoViewIfNeeded();
     await page.screenshot({path:path.join(out,'tutor-card-action-'+size+'-'+scheme+'.png')});
+    const amend=page.locator('.tutor-handoff-item').nth(2);
+    await amend.locator('summary').click();
+    const amendButton=page.getByRole('button',{name:'Stage unapproved amendment draft'});
+    assert.equal(await amendButton.isDisabled(),true,'tutor proposal never stages itself');
+    await page.getByRole('checkbox',{name:'Select Plan amendment'}).check();
+    assert.equal(await amendButton.isEnabled(),true,'student opt-in enables only local staging');
+    await amendButton.scrollIntoViewIfNeeded();
+    await page.screenshot({path:path.join(out,'tutor-amendment-action-'+size+'-'+scheme+'.png')});
+    assert.match(await page.locator('.tutor-handoff-status').innerText(),/None recorded/,
+      'amendment preview or selection does not claim plan publication');
     await cardAction.click();
     await page.locator('#ed-front').waitFor();
     assert.equal(await page.inputValue('#ed-front'),'How to show K is closed?');
