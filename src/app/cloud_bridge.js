@@ -287,9 +287,49 @@ const LemmaCloudBridge = (() => {
     return { status: 'needs_review', contextId:local.contextId,
       local:latest, accepted };
   }
+  // K2h2: a deliberate student gesture may reopen a stale approved intent
+  // as an UNAPPROVED local draft. Inspect the latest owner-only server state
+  // first; never treat comparison or reopening as a cloud acceptance.
+  async function reopenReviewedKnowledgeConflict(contextId, expectedLocalRevision,
+    requestId, acceptedRevision, studentReviewed) {
+    if (!isUuid(contextId) || !isUuid(requestId) ||
+        !isRevision(expectedLocalRevision) || !isRevision(acceptedRevision) ||
+        studentReviewed !== true)
+      throw new Error('Explicit reviewed knowledge conflict choice required');
+    const userId=LemmaAccount.user?.id, client=LemmaAccount.client;
+    const handle=typeof LemmaSync !== 'undefined' ? LemmaSync.accountHandle() : null;
+    if (!userId || !client || !handle || handle.userId!==userId)
+      throw new Error('Sign in to an available account cache to review knowledge');
+    const check=()=>{
+      if (LemmaAccount.user?.id!==userId || LemmaAccount.client!==client ||
+          LemmaSync.accountHandle()!==handle)
+        throw new Error('Account changed during knowledge conflict review');
+    };
+    const previous=await handle.storage.knowledgeDraft(contextId);
+    check();
+    // Retry after a lost local response is safe and does not fetch or
+    // regenerate a different server base. Edits after reopening invalidate it.
+    if (previous?.status==='draft' &&
+        previous.reopenedFromRequestId===requestId &&
+        previous.reopenedFromLocalRevision===expectedLocalRevision &&
+        previous.localRevision===expectedLocalRevision+1 &&
+        previous.expectedRevision===acceptedRevision)
+      return previous;
+    const packet=await inspectKnowledgeConflict(contextId);
+    check();
+    if (packet.local.localRevision!==expectedLocalRevision ||
+        packet.local.requestId!==requestId ||
+        packet.accepted.revision!==acceptedRevision)
+      throw new Error('Knowledge conflict changed; compare again');
+    const draft=await handle.storage.reopenKnowledgeConflictDraft(
+      contextId,expectedLocalRevision,requestId,acceptedRevision,true);
+    check();
+    return draft;
+  }
   return { authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, commitAcceptedContext,
     readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft,
-    approveKnowledgeDraft, submitApprovedKnowledgeDraft, inspectKnowledgeConflict };
+    approveKnowledgeDraft, submitApprovedKnowledgeDraft, inspectKnowledgeConflict,
+    reopenReviewedKnowledgeConflict };
 })();
 
