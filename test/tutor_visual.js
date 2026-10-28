@@ -76,8 +76,19 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     // Never open the synthetic tutor handoff until that initialization is done.
     // Hidden Study + empty local cards intentionally renders onboarding, not
     // the Today dashboard. Require completed boot, not a particular Home state.
-    await page.waitForFunction(() => typeof App !== 'undefined' && App.loading === false &&
-      !!document.querySelector('.page.home'), null, {timeout:15000});
+    try {
+      await page.waitForFunction(() => typeof App !== 'undefined' && App.loading === false &&
+        !!document.querySelector('.page.home'), null, {timeout:15000});
+    } catch (err) {
+      const state=await page.evaluate(()=>({readyState:document.readyState,
+        appDefined:typeof App!=='undefined',
+        appLoading:typeof App!=='undefined' ? App.loading : null,
+        tutorHook:!!window.__tutorVisual,
+        hasHome:!!document.querySelector('.page.home'),
+        html:document.querySelector('#app')?.textContent.slice(0,350)}));
+      throw new Error('Tutor visual fixture did not boot: '+JSON.stringify({state,
+        errors,reason:err.message}));
+    }
     await page.evaluate(()=>window.__tutorVisual.open());
     await page.waitForSelector('.tutor-handoff');
     const helpColor=await page.locator('.tutor-handoff-help').first().evaluate(
