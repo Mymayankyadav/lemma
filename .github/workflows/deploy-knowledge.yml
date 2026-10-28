@@ -12,13 +12,14 @@ on:
           - preflight
           - apply
       scope:
-        description: "Exact migration target (knowledge only, or knowledge plus merged PLAN-01)"
+        description: "Exact target: knowledge; knowledge + PLAN-01; or plus tutor receipts"
         type: choice
         required: true
         default: knowledge
         options:
           - knowledge
           - knowledge_and_plan
+          - knowledge_plan_tutor
 
 permissions:
   contents: read
@@ -55,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$DEPLOY_MODE" = "preflight" || test "$DEPLOY_MODE" = "apply"
-          test "$DEPLOY_SCOPE" = "knowledge" || test "$DEPLOY_SCOPE" = "knowledge_and_plan"
+          test "$DEPLOY_SCOPE" = "knowledge" || test "$DEPLOY_SCOPE" = "knowledge_and_plan" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor"
           echo "LEMMA_WORKDIR=$RUNNER_TEMP/lemma-knowledge-deploy" >> "$GITHUB_ENV"
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Missing SUPABASE_ACCESS_TOKEN repository secret"; exit 1; }
           test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::Missing LEMMA_SUPABASE_DB_PASSWORD repository secret"; exit 1; }
@@ -137,8 +138,10 @@ jobs:
             '20261028043000_knowledge_source_revisions.sql',
             '20261028051500_structured_context_v1.sql'
           ];
-          if (process.env.DEPLOY_SCOPE === 'knowledge_and_plan')
+          if (process.env.DEPLOY_SCOPE !== 'knowledge')
             expected.push('20261028094500_plan01_append_only_events.sql');
+          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor')
+            expected.push('20261028120000_tutor01_handoff_receipts.sql');
           const names=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(names.length<expected.length || expected.some((x,i)=>names[i]!==x))
             throw Error('Required exact legacy/knowledge source filenames changed');
@@ -149,7 +152,7 @@ jobs:
           }
           const destination=process.env.LEMMA_WORKDIR+'/supabase/migrations';
           for(const n of expected)fs.copyFileSync(path.join('supabase/migrations',n),path.join(destination,n));
-          console.log('Isolated '+expected.length+' approved exact-version SQL files; other lane D/E SQL remains undeployed');
+          console.log('Isolated '+expected.length+' approved exact-version SQL files; no unknown migrations are staged');
           NODE
 
       - name: Link only to Lemma production (never use db reset)
@@ -184,8 +187,10 @@ jobs:
             '20261028043000_knowledge_source_revisions.sql',
             '20261028051500_structured_context_v1.sql'
           ];
-          if (process.env.DEPLOY_SCOPE === 'knowledge_and_plan')
+          if (process.env.DEPLOY_SCOPE !== 'knowledge')
             expected.push('20261028094500_plan01_append_only_events.sql');
+          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor')
+            expected.push('20261028120000_tutor01_handoff_receipts.sql');
           const names=fs.readdirSync(process.env.LEMMA_WORKDIR+'/supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(JSON.stringify(names)!==JSON.stringify(expected))
             throw Error('Unexpected local migrations. Refusing to deploy new, missing or renamed SQL: '+JSON.stringify(names));
