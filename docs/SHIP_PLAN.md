@@ -2,7 +2,7 @@
 
 - **Claim:** `chat-20261028-restore-operator`, heartbeat 2026-10-28T17:56Z; branch `integration/20261028-restore-version-operator`, base `2f2a410` after merged server restore PR #144. No competing integration PR. Scope is workflow staging and this handoff only; A local restore PR #146 and E tutor PR #145 own different files.
 - **Goal:** retain 12–16 exact scopes and add opt-in `knowledge_plan_tutor_restore` with reviewed source #17 `20261028174411_release01_owner_restore_v1.sql`. Preserve the explicit preflight/apply separation, current-main green CI, exact remote prefix/dry run, Lemma-only pin and source filenames. No automatic production data recovery or user-data mutations from this PR.
-- **Next:** implement, test source lists/negative controls and workflow syntax, then merge only green. This enables the additive restore migration deployment; it does not exercise production restore or authorize account transfer.
+- **Verified locally:** all five inline Node scripts parse; 18 fixture checks cover all six 12–17 scopes, exact agreement between staging/history targets, retained 16-version scope, missing/renamed/unknown/misordered source negatives. Plan, integration guard and diff checks pass. No production access. CI required on the final head. Next: merge green, then A runs fresh exact-main preflight and additive apply with recovery/lock/history checks; never restore production data from fixtures.
 
 ## R2g integration — preserve merged tutor atomic migration in exact-version operator
 
