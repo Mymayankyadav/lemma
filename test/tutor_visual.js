@@ -77,8 +77,9 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     // Hidden Study + empty local cards intentionally renders onboarding, not
     // the Today dashboard. Require completed boot, not a particular Home state.
     try {
-      await page.waitForFunction(() => typeof App !== 'undefined' && App.loading === false &&
-        !!document.querySelector('.page.home'), null, {timeout:15000});
+      // build.js encloses App in a private IIFE. Observe the real completed
+      // Home UI, not inaccessible internals or the initial loading skeleton.
+      await page.waitForSelector('.page.home .onboard, .page.home .today', {timeout:15000});
     } catch (err) {
       const state=await page.evaluate(()=>({readyState:document.readyState,
         appDefined:typeof App!=='undefined',
