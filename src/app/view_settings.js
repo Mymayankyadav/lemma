@@ -318,6 +318,16 @@ const SettingsView = (() => {
           reminderTime),
         h('div', { class: 'btn-row reminder-control' }, reminderButton),
         reminderStatus));
+      // Permission can be revoked in Android Settings while Lemma is paused.
+      // Refresh on return without requesting it again or retaining dead views.
+      const onReminderFocus = () => {
+        if (!page.isConnected) {
+          window.removeEventListener('focus', onReminderFocus);
+          return;
+        }
+        showReminderStatus();
+      };
+      window.addEventListener('focus', onReminderFocus);
       showReminderStatus();
     }
 
