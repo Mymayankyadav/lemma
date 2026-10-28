@@ -12,7 +12,7 @@ on:
           - preflight
           - apply
       scope:
-        description: "Exact target: knowledge; knowledge + PLAN-01; or plus tutor receipts"
+        description: "Exact target: knowledge; plus PLAN-01; plus tutor receipts; or plus workspace snapshot"
         type: choice
         required: true
         default: knowledge
@@ -20,6 +20,7 @@ on:
           - knowledge
           - knowledge_and_plan
           - knowledge_plan_tutor
+          - knowledge_plan_tutor_snapshot
 
 permissions:
   contents: read
@@ -56,7 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$DEPLOY_MODE" = "preflight" || test "$DEPLOY_MODE" = "apply"
-          test "$DEPLOY_SCOPE" = "knowledge" || test "$DEPLOY_SCOPE" = "knowledge_and_plan" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor"
+          test "$DEPLOY_SCOPE" = "knowledge" || test "$DEPLOY_SCOPE" = "knowledge_and_plan" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor_snapshot"
           echo "LEMMA_WORKDIR=$RUNNER_TEMP/lemma-knowledge-deploy" >> "$GITHUB_ENV"
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Missing SUPABASE_ACCESS_TOKEN repository secret"; exit 1; }
           test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::Missing LEMMA_SUPABASE_DB_PASSWORD repository secret"; exit 1; }
@@ -140,13 +141,17 @@ jobs:
           ];
           if (process.env.DEPLOY_SCOPE !== 'knowledge')
             expected.push('20261028094500_plan01_append_only_events.sql');
-          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor')
+          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor' ||
+              process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
             expected.push('20261028120000_tutor01_handoff_receipts.sql');
+          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
+            expected.push('20261028163000_release01_owner_snapshot_v1.sql');
           const names=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(names.length<expected.length || expected.some((x,i)=>names[i]!==x))
             throw Error('Required exact legacy/knowledge source filenames changed');
           for(const n of names.slice(expected.length)){
-            if(!/^\d{14}_(?:plan01|tutor01)_[a-z0-9_]+\.sql$/.test(n) ||
+            if(!(/^\d{14}_(?:plan01|tutor01)_[a-z0-9_]+\.sql$/.test(n) ||
+                 n === '20261028163000_release01_owner_snapshot_v1.sql') ||
                 n.slice(0,14)<=expected[expected.length-1].slice(0,14))
               throw Error('Unexpected extra migration in current main: '+n);
           }
@@ -189,8 +194,11 @@ jobs:
           ];
           if (process.env.DEPLOY_SCOPE !== 'knowledge')
             expected.push('20261028094500_plan01_append_only_events.sql');
-          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor')
+          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor' ||
+              process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
             expected.push('20261028120000_tutor01_handoff_receipts.sql');
+          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
+            expected.push('20261028163000_release01_owner_snapshot_v1.sql');
           const names=fs.readdirSync(process.env.LEMMA_WORKDIR+'/supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(JSON.stringify(names)!==JSON.stringify(expected))
             throw Error('Unexpected local migrations. Refusing to deploy new, missing or renamed SQL: '+JSON.stringify(names));
