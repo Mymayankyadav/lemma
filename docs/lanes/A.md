@@ -1,3 +1,11 @@
+## Active lane A claim — KNOWLEDGE-01 K2b accepted source revisions / bounded citations
+
+- **Run:** `chat-20261028-a-k2b-takeover`; heartbeat 2026-10-28T04:17:14.222Z; base `main@fa52e7355a`; branch `lane-a/knowledge-01-k2b-source-revisions`; draft PR claim. User confirms no other implementation agent working; latest `main` four workflows SUCCESS and no open PR at initial inspection.
+- **Scope:** owner-private accepted source/section revision snapshots, stable source/section IDs, guarded compare-and-swap RPC and strict owner-filtered bounded citation retrieval using existing learning source tables. Do not rewrite/import content, modify Carrel, publish credentials, add uploads/OCR, approve student proposals or touch production.
+- **Intended files:** `supabase/migrations/20261028043000_knowledge_source_revisions.sql`, `test/auth_knowledge_sources.js`, `.github/workflows/sync-local.yml`, `test/sync_security_parity.js`, `docs/lanes/A.md`. Avoid unrelated lanes and frozen files.
+- **Gates:** disposable local actual HTTP/GoTrue two-user RLS, CAS race/idempotent retry, immutable version pinned excerpts, bounded pagination and owner denial; legacy SYNC-04 snapshot remains identical (with exact two named additive knowledge migrations); regression, Android and lane guard CI exact head. Physical device and production migration **NOT RUN**.
+- **Next:** implement K2b code/test, verify PR exact-head CI, merge only on green, check main gates, then advance K2c structured context/client or next eligible task. No student approval is inferred from an RPC caller.
+
 ## Active lane A claim — ANDROID-02 / AUTH-01 S3 native PKCE exchange
 
 - **Claim:** `chat-20261028-a-native-pkce`, UTC heartbeat 2026-10-28T03:35:42.091Z, base `main@bfcf00cd`, branch `lane-a/android-02-auth-s3-native-pkce`; no active A PR at claim.
