@@ -8,11 +8,13 @@ const A='00000000-0000-4000-8000-000000000001';
 const B='00000000-0000-4000-8000-000000000002';
 const PLAN='00000000-0000-4000-8000-000000000003';
 const SESSION='00000000-0000-4000-8000-000000000004';
+const SESSION2='00000000-0000-4000-8000-000000000005';
 const ID1='00000000-0000-4000-8000-000000000010';
 const ID2='00000000-0000-4000-8000-000000000011';
 const ID3='00000000-0000-4000-8000-000000000012';
 let owner=A,offline=false,beforeRead=async()=>{},notify=()=>{};
 let revision=3,statusOverride=null,seq=0,planDeleted=false;
+let activeSessionId=SESSION,sessionState='active';
 const reads=[],rpc=[],events=[],ids=new Map();
 const checkpoints=Array.from({length:12},(_,i)=>({
  checkpoint_id:'cp-'+(i+1),title:'Checkpoint '+(i+1),
@@ -31,8 +33,9 @@ const records=table=>{
   status:statusOverride?.[cp.checkpoint_id]||'not_started',
   progress_details:{}
  }));
- if(table==='learning_sessions')return [{id:SESSION,plan_id:PLAN,
-  state:'active',updated_at:'2026-10-28T00:00:00Z',user_id:A}];
+ if(table==='learning_sessions')return sessionState==='active' ?
+  [{id:activeSessionId,plan_id:PLAN,state:'active',
+    updated_at:'2026-10-28T00:00:00Z',user_id:A}] : [];
  if(table==='learning_events')return events.map(e=>({...e,user_id:A,session_id:SESSION}));
  return [];
 };
@@ -236,5 +239,44 @@ function load(){
  assert.equal(rpc.length,writeCount);
  assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
   'initial and final plan reads must both remain owner scoped');
- console.log('PASS PLAN-01 P5f: twelve checkpoints, revision-pinned evidence, concurrent publication/deletion fail closed, stable resume, no extra writes');
+
+ // A different device can rotate the active learning session after the
+ // first session query but before the selected proof/hint events return.
+ // Returning the old sessionId would attach a tutor to obsolete work.
+ let rotated=false;
+ beforeRead=async()=>{
+  if(!rotated && reads.at(-1)?.table==='learning_events'){
+   rotated=true;activeSessionId=SESSION2;
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Active study session changed; reload checkpoint/,
+  'concurrent session replacement must invalidate stale proof context');
+ assert.equal(rotated,true,'test must rotate while events are in flight');
+ assert.equal(activeSessionId,SESSION2);
+ assert.equal(events.length,evidenceCount,'session rotation cannot delete proof history');
+ assert.equal(rpc.length,writeCount,'session rotation cannot append evidence');
+
+ // The same check rejects an ended session when no successor is active.
+ activeSessionId=SESSION;sessionState='active';beforeRead=async()=>{};
+ let ended=false;
+ beforeRead=async()=>{
+  if(!ended && reads.at(-1)?.table==='learning_events'){
+   ended=true;sessionState='ended';
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Active study session changed; reload checkpoint/,
+  'a completed session must not be returned as still active');
+ assert.equal(ended,true);
+ sessionState='active';beforeRead=async()=>{};
+ const stableSession=await load().activeContext();
+ assert.equal(stableSession.sessionId,SESSION,
+  'unchanged active session still resumes the exact unfinished proof');
+ assert.equal(stableSession.checkpoint.id,'cp-7');
+ assert.equal(events.length,evidenceCount);
+ assert.equal(rpc.length,writeCount);
+ assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
+  'session rechecks must also be owner scoped');
+ console.log('PASS PLAN-01 P5g: twelve checkpoints, revision and active-session races fail closed, stable proof/hint resume, no extra writes');
 })().catch(e=>{console.error('FAIL PLAN-01 P4c3: '+e.stack);process.exitCode=1});
