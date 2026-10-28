@@ -140,10 +140,15 @@ async function captureLiveSyncStatus(page, stage, expected) {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
       let valid = false, last;
-      // A real background refresh may briefly replace error with "checking
-      // cloud". Never count a screenshot taken during that transition as
-      // visual acceptance; wait for a genuine observable error again.
-      for (let attempt = 0; attempt < (stage === 'rpc-error' ? 4 : 2); attempt++) {
+      // The account may automatically retry while the blocked transport is
+      // still offline at the RPC layer. Before *each* error screenshot, prompt
+      // another real foreground sync attempt so the app observes the denied
+      // HTTP request again. This does not stub state or weaken validation:
+      // the fault route remains active and every captured frame must show the
+      // genuine warning before and after the screenshot.
+      for (let attempt = 0; attempt < (stage === 'rpc-error' ? 6 : 2); attempt++) {
+        if (stage === 'rpc-error')
+          await page.evaluate(() => window.dispatchEvent(new Event('focus')));
         await page.waitForFunction(({ accepted }) =>
           accepted.includes(document.querySelector('#sync .sr-only')?.textContent || ''),
           { accepted: expected }, { timeout: 8000 }).catch(() => {});
