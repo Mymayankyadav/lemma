@@ -1,3 +1,11 @@
+## ANDROID-02 N4b — complete bundled web-asset provenance (active claim)
+
+- **Claim:** `hourly-20261028-c-n4b-complete-assets`; heartbeat UTC 2026-10-28T07:45:40.157Z; base `main@ca1195dc9b6cfc3fe9ea938d3e7e8a80b5f3c872`; branch `lane-c/android-02-n4b-complete-assets`. Lane C unclaimed at pickup; independent lane A PR #72 and B PR #73 are active and untouched.
+- **Problem:** merged N4a APK preflight verifies only four named `dist/` files; generated `test.html` and `icons/icon.svg` (and any future web assets) could be absent or stale while CI reports success.
+- **Bounded scope:** enumerate every regular file in the current build's `dist/` recursively, reject unsafe symlinks/non-files, and require byte-for-byte identity for each corresponding `assets/public/` APK entry. Preserve package/signature/launcher checks and redacted diagnostics. Include a small deterministic fixture regression for the file walker; update `docs/ANDROID.md` and this handoff. No B/A/shared files, new dependencies, production/Carrel data or user consent.
+- **Intended files:** `test/android_apk_artifact.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md` (all C-owned). Physical D1–D6 remain NOT RUN.
+- **Next:** implement, run local JS/fixture checks if possible, obtain exact-head regression + Android APK/lane guard CI, inspect diff and merge only on green current main; then verify main. No owner action now.
+
 ## ANDROID-02 N4a — APK artifact identity and bundled-content preflight (active claim)
 
 - **Claim:** `hourly-20261028-c-n4a-apk-preflight`; heartbeat UTC 2026-10-28T06:39:25.926Z; base `main@233251d349f2a9d82550924c5b62cda49b9a57c0`; branch `lane-c/android-02-n4-apk-preflight`. Lane C free at pickup; independent lane A KNOWLEDGE-01 K2f PR #70 is active and untouched.
