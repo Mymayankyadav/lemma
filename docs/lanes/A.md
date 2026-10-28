@@ -5,6 +5,8 @@
 - **Owned paths:** `supabase/migrations/20261028051500_structured_context_v1.sql`, `test/auth_knowledge_structured.js`, `test/sync_security_parity.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`. Existing K2a/K2b migrations remain immutable.
 - **Gate:** two-owner local stack auth/RLS, CAS/race/retry, validation and cross-context source denial, accepted revision history, unchanged legacy sync parity, exact-head regression/Android/local-stack CI and post-merge main checks. Production deployment NOT RUN. K2d client and proposal path remain separate slices.
 - **Next:** implement, test and merge this bounded slice on green checks; prepare separately gated client contract and B UI request.
+- **Implementation:** migration adds nullable canonical \`accepted_json\` to current contexts and immutable revisions, strict v1 whitelist/array limits, cross-owner/context source revision checks, evidence-backed demonstration checks, locked transactional CAS, private bounded historical read, and rejects new Markdown-only writes after structured acceptance. Earlier K2a/K2b migration files unchanged. Tests use only disposable local GoTrue identities. **Deployment:** written only, NOT applied to production. No backfill: existing rows stay null-format legacy, untouched until explicit accepted editing; forward-only repair if new RPC malfunctions. Keep source/content snapshots and approval decisions intact.
+- **Verification pending:** exact-head regression, Android and local Supabase CI; inspect SQL errors and retry only when fixed. After merge, K2d A client-facing adapter and B's eventual presentation are separate slices.
 
 ## Active lane A claim — KNOWLEDGE-01 K2b accepted source revisions / bounded citations
 
