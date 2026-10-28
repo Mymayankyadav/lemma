@@ -75,10 +75,11 @@ const make=(over={})=>({
   /changed; reload/.test(r.reason.message)).length,1,
   'two tabs cannot commit the same local revision');
  assert.equal((await api.readPlanDraft(id)).localRevision,2);
- await assert.rejects(api.savePlanDraft(make({
-  proposalId:proposal,changeSummary:'changed without new key'
- })),/ID reused with changed content/);
  const before=await api.readPlanDraft(id);
+ await assert.rejects(api.savePlanDraft(make({
+  proposalId:before.draftId,expectedLocalRevision:2,
+  changeSummary:'changed without new key'
+ })),/ID reused with changed content/);
  for (const invalid of [
   make({planId:'bad'}),make({expectedRevision:-1}),make({expectedLocalRevision:-1}),
   make({snapshot:{checkpoints:[]}}),make({snapshot:{checkpoints:[{id:'p'},{id:'p'}]}}),
