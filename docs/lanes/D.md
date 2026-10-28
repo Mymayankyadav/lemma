@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P5a disposable local Supabase integration demonstrating 12 checkpoints, two proofs, exact mid-proof resume, amendment, stale rejection and no duplicates; then P5b browser/visual acceptance and readiness decision. Study hidden until full gates.
+Next action: P5f guard active approved-plan reads against concurrent publication, then revisit PLAN-01 readiness only after production/security and cross-model evidence. Study hidden until full gates.
 
 | Field | Value |
 | --- | --- |
@@ -206,3 +206,11 @@ Next action: P5a disposable local Supabase integration demonstrating 12 checkpoi
 - `recordEvent` now serializes and parses its bounded JSON payload **once before the first account-token await** and passes that private copy to the RPC. The original caller can change nested fields while token acquisition is pending without changing the recorded evidence. Invalid circular/BigInt/toJSON-primitive/toJSON-throwing payloads fail with `Invalid study event` before a network call. Existing UUID, revision, owner, offline and server receipt checks remain in place.
 - `test/study_event_snapshot.js` exercises a deliberately held account token, concurrent mutation of nested proof/hint data, stable retry ID, invalid serialization and offline no-write. It is auto-discovered by the existing `test/study_*.js` runner. Source and test are committed on PR #154; **full CI and local-stack verification pending**. No readiness flag, SQL or production action changed.
 - **Next:** inspect exact-head regression/guard/local-stack outcomes; fix actual failures without weakening assertions; merge with expected head only after green checks, otherwise retain the draft claim and actionable test logs.
+
+
+## P5f active claim — reject concurrent approved-plan revision changes (2026-10-28)
+
+- **Claim:** `automation-20261029-d-p5f-revision-race`, heartbeat 2026-10-28T20:59:31.179Z; branch `lane-d/plan-01-active-revision-consistency` from `main@bcc69237289b22937676b7dc503b67f2fd4da2f0`. No open D PR at claim; B #148 and F #149 own independent work. Main regression/local-stack/Pages/live smoke are SUCCESS (40761063643/40761063300/40761063292/40761142130). Lane C remains paused.
+- **Scope:** D-owned `src/app/study_plan.js`, `test/study_resume.js`, this handoff only. A concurrent plan publication after the initial `study_plans` read can cause `activeContext()` to return a formerly approved revision with stale checkpoint/hint context. Re-read the same owner-scoped plan revision after dependent reads; reject a changed/deleted plan with a clear reload error. Keep original immutable events and current-revision filtering intact. No new backend RPC, migrations, readiness flags, student approvals or other-lane files.
+- **Gate:** deterministic synthetic delayed-read regression simulating publication between event read and final return, plus unchanged normal resume/12-checkpoint/amendment behavior; `node test/study_resume.js`, syntax, D lane guard, full exact-head regression and local Supabase CI. No local Node checkout is available in this runtime, so CI must supply execution evidence. Draft PR is the durable ownership lock.
+- **Next:** implement and test, inspect exact-head CI; merge only when required checks pass, then inspect post-merge main. Keep Study hidden pending SHIP-A2 production/security proof and E-D-T4-01 genuine cross-model acceptance.
