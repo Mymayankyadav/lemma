@@ -70,7 +70,9 @@ const App = (() => {
       else if (st.pending) { text = 'Saving to device'; cls = 'pending'; }
       else if (accountStatus.phase === 'conflict') { text = 'Account conflict · review needed'; cls = 'warn'; }
       else if (accountStatus.phase === 'error') { text = 'Sync failed · local changes retained'; cls = 'warn'; }
-      else if (accountStatus.phase === 'offline') { text = 'Offline · changes queued on device'; cls = 'pending'; }
+      // Browser network loss can precede the async account phase transition.
+      // Do not leave a hover-only "checking cloud" status during that gap.
+      else if (accountStatus.phase === 'offline' || navigator.onLine === false) { text = 'Offline · changes queued on device'; cls = 'pending'; }
       else if (accountStatus.pending) { text = 'Saved on device · queued for cloud'; cls = 'pending'; }
       else if (accountStatus.phase === 'ready') { text = 'Saved to cloud'; }
       else { text = 'Saved on device · checking cloud'; cls = 'pending'; }
@@ -242,6 +244,10 @@ const App = (() => {
     workspaceController = LemmaWorkspace.fromApp();
     workspaceController.init();
     LemmaSync.onChange(() => { drawSync(); activateRemembered().catch(() => {}); });
+    // Network changes must update the visible indicator even when sync is
+    // still connecting and has not emitted a new account-status snapshot.
+    window.addEventListener('offline', drawSync);
+    window.addEventListener('online', drawSync);
     App.loading = false;
     Model.onChange(() => refresh());
     if (data.mode === 'cloud') {
