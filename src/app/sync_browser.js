@@ -227,8 +227,104 @@ const LemmaCloud = (() => {
     }
     return { data: deleted ? null : structuredClone(selected.data), deleted, snapshots };
   }
+  // The account's existing IndexedDB meta store hosts *unaccepted* study
+  // context drafts. Do not put these in the note/review outbox or presume
+  // a tutor proposal is an approved user write.
+  const knowledgeDraftKey = id => {
+    if (typeof id !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id))
+      throw new Error('Invalid knowledge context ID');
+    return 'knowledge:draft:v1:' + id.toLowerCase();
+  };
+  const knowledgeBytes = text => new TextEncoder().encode(text).byteLength;
+  function knowledgeDraftInput(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data) ||
+        !Number.isSafeInteger(data.expectedLocalRevision) || data.expectedLocalRevision < 0 ||
+        !Number.isSafeInteger(data.expectedRevision) || data.expectedRevision < 0 ||
+        typeof data.title !== 'string' || !data.title.trim() ||
+        knowledgeBytes(data.title) > 512 ||
+        typeof data.markdown !== 'string' || knowledgeBytes(data.markdown) > 65536 ||
+        !['student','tutor'].includes(data.authorKind) ||
+        data.payload === null || typeof data.payload !== 'object' ||
+        Array.isArray(data.payload) || data.payload.schema_version !== 1 ||
+        data.studentApproved === true || data.status === 'accepted')
+      throw new Error('Invalid unaccepted knowledge draft');
+    let payload;
+    try {
+      payload = JSON.parse(JSON.stringify(data.payload));
+    } catch (_) { throw new Error('Invalid unaccepted knowledge draft'); }
+    if (!payload || payload.schema_version !== 1 ||
+        knowledgeBytes(JSON.stringify(payload)) > 32768)
+      throw new Error('Invalid unaccepted knowledge draft');
+    return { contextId: data.contextId.toLowerCase(),
+      expectedRevision: data.expectedRevision,
+      title: data.title, markdown: data.markdown,
+      payload, authorKind: data.authorKind };
+  }
   class AccountStorage {
     constructor(db, userId) { this.db = db; this.userId = userId; }
+    async knowledgeDraft(contextId) {
+      const key = knowledgeDraftKey(contextId);
+      const row = await request(this.db.transaction('meta','readonly')
+        .objectStore('meta').get(key));
+      if (row && (row.userId !== this.userId || row.contextId !== contextId.toLowerCase() ||
+          row.status !== 'draft' || !Number.isSafeInteger(row.localRevision)))
+        throw new Error('Invalid locally saved knowledge draft');
+      return row ? structuredClone(row) : null;
+    }
+    async saveKnowledgeDraft(input) {
+      const key = knowledgeDraftKey(input?.contextId);
+      const data = knowledgeDraftInput(input);
+      let result, failure;
+      try {
+        // The conditional read and write share ONE transaction: two tabs
+        // cannot overwrite each other's unreviewed proof or context edits.
+        await tx(this.db, ['meta'], 'readwrite', t => {
+          const store = t.objectStore('meta');
+          const lookup = store.get(key);
+          lookup.onsuccess = () => {
+            const previous = lookup.result;
+            if (previous && (previous.userId !== this.userId ||
+                previous.contextId !== data.contextId || previous.status !== 'draft')) {
+              failure = new Error('Invalid locally saved knowledge draft'); t.abort(); return;
+            }
+            if ((previous?.localRevision ?? 0) !== input.expectedLocalRevision) {
+              failure = new Error('Knowledge draft changed; reload before editing'); t.abort(); return;
+            }
+            const stamp = Date.now();
+            result = {
+              v: 1, userId: this.userId, ...data, localRevision: input.expectedLocalRevision + 1,
+              status: 'draft', createdAt: previous?.createdAt ?? stamp, updatedAt: stamp
+            };
+            store.put(result, key);
+          };
+        });
+      } catch (err) { throw failure || err; }
+      // A saved local draft is NOT a cloud receipt, and this result is never
+      // interpreted as approval to call commit_structured_study_context.
+      return structuredClone(result);
+    }
+    async discardKnowledgeDraft(contextId, expectedLocalRevision) {
+      const key = knowledgeDraftKey(contextId);
+      if (!Number.isSafeInteger(expectedLocalRevision) || expectedLocalRevision < 1)
+        throw new Error('Reviewed local draft revision required');
+      let discarded = false, failure;
+      try {
+        await tx(this.db, ['meta'], 'readwrite', t => {
+          const store = t.objectStore('meta'), lookup = store.get(key);
+          lookup.onsuccess = () => {
+            if (!lookup.result || lookup.result.userId !== this.userId ||
+                lookup.result.status !== 'draft' ||
+                lookup.result.localRevision !== expectedLocalRevision) {
+              failure = new Error('Knowledge draft changed; reload before discarding');
+              t.abort(); return;
+            }
+            store.delete(key);
+            discarded = true;
+          };
+        });
+      } catch (err) { throw failure || err; }
+      return discarded;
+    }
     async note(id) { return request(this.db.transaction('notes').objectStore('notes').get(id)); }
     async list() { return request(this.db.transaction('outbox').objectStore('outbox').getAll()); }
     async get(id) { return request(this.db.transaction('outbox').objectStore('outbox').get(id)); }
