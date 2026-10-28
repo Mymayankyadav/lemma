@@ -91,6 +91,10 @@ assert.match(manifest, /<action android:name="android.intent.action.VIEW"\s*\/>/
 assert.match(manifest, /<category android:name="android.intent.category.BROWSABLE"\s*\/>/);
 assert.match(manifest, /<data android:scheme="io\.lemma\.study" android:host="auth-callback"\s*\/>/);
 assert.match(manifest, /android:launchMode="singleTask"/);
+// The IME must request a resized WebView, not pan over the editor/sheets.
+// This is a manifest/build contract, not physical keyboard evidence.
+assert.match(manifest, /android:windowSoftInputMode="adjustResize"/);
+assert.doesNotMatch(manifest, /android:windowSoftInputMode="adjustPan"/);
 assert.equal(web.onAuthCallback, undefined);
 assert.equal(web.openAuthBrowser, undefined, 'web OAuth must not use native browser API');
 const auth = run();
