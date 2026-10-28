@@ -69,14 +69,18 @@ async function nativeStudyZoom(mock,view) {
       assert.equal(bounds.ready,false,'native zoom cannot enable the Study tab');
       assert.ok(bounds.visible && bounds.doc<=bounds.viewport+1,
         label+' overflows at genuine 200% tab zoom: '+JSON.stringify(bounds));
-      // Playwright fullPage screenshots under native tab zoom crop at 640
-      // CSS pixels; screenshots immediately after a deep scroll can also be
-      // blank in headless Chromium. Capture checkpoint viewport as UI-01
-      // does, and use a bounded element screenshot for the lower review panel.
+      // Playwright full-page captures crop under native zoom; deep-scroll
+      // screenshots in headless Chromium can be blank even when DOM assertions
+      // pass. For visual evidence, temporarily place the existing review panel
+      // first in the synthetic fixture (no DOM clone or app code mutation),
+      // then photograph the actual viewport. Normal-layout overflow is checked
+      // above before this test-only presentation step.
+      if(label!=='checkpoint')await page.locator('.study-amendment').evaluate(panel=>{
+        panel.parentElement.prepend(panel);
+        window.scrollTo(0,0);
+      });
       const file='test-output/ui/study-p5c-native-zoom200-'+label+'.png';
-      const screenshot=label==='checkpoint'
-        ? await page.screenshot({path:file})
-        : await page.locator('.study-amendment').screenshot({path:file,scale:'device'});
+      const screenshot=await page.screenshot({path:file});
       assert.ok(screenshot.length>20000,label+' screenshot was blank or incomplete');
     }
     console.log('PLAN-01 P5c zoom geometry '+JSON.stringify({baseline,enlarged,zoom}));
