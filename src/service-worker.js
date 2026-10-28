@@ -34,10 +34,10 @@ self.addEventListener('fetch', (event) => {
     return response;
   };
   if (isDocument) {
-    // Network-first for the shell document: a new Pages build must replace the
-    // old HTML immediately, while an offline navigation retains the last good
-    // copy. Versioned install/activate still retire obsolete static caches.
-    event.respondWith(fetch(request).then(remember, () =>
+    // Network-first for shell HTML; the install event is the only writer of
+    // versioned document caches. An outgoing worker must never recreate its
+    // retired cache while a replacement worker is claiming clients.
+    event.respondWith(fetch(request).catch(() =>
       caches.match(request).then((cached) => cached || Response.error())));
   } else {
     // Static, public shell assets remain cache-first.
