@@ -49,7 +49,7 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     const page=await ctx.newPage();
     page.on('pageerror',e=>errors.push(size+'/'+scheme+': '+e.message));
     await page.goto('https://lemma.test/');
-    await page.waitForSelector('#sheets',{timeout:12000});
+    await page.waitForSelector('#sheets',{state:'attached',timeout:12000});
     await page.evaluate(()=>window.__tutorVisual.open());
     await page.waitForSelector('.tutor-handoff');
     await page.locator('.tutor-handoff-reply').fill(JSON.stringify(reply));
