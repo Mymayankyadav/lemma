@@ -44,7 +44,7 @@ const api=scope.bridge;
  const pending=api.readKnowledgeDraft(contextId);
  identity=b;handle={userId:b,storage};
  finish();
- await assert.rejects(pending,/Account changed/,'old owner's draft cannot be displayed');
+ await assert.rejects(pending,/Account changed/,"old owner draft cannot be displayed");
  identity=a;handle={userId:a,storage};
  let finishSave;
  storage.saveKnowledgeDraft=()=>new Promise(resolve=>{finishSave=()=>resolve({status:'draft'});});
