@@ -65,7 +65,8 @@ async function open(raw=reply()) {
  await scope.Tutor.open({planId:ID,checkpointId:CP});
  const u=ui();
  u.input.value=raw;u.parse.events.click();
- return u;
+ // Parsing creates proposal buttons dynamically; re-query the rendered UI.
+ return ui();
 }
 function selectCard(u) {u.card.checked=true;u.card.events.change();}
 (async()=>{
