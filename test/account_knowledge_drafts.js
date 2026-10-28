@@ -38,10 +38,10 @@ const api=scope.bridge;
  // Sign-out before initiating any read/writes is fail-closed.
  identity=null;
  await assert.rejects(api.readKnowledgeDraft(contextId),/Sign in to an available/);
- assert.equal(operations.length,3);
+ assert.equal(operations.length,4);
  identity=b;
  await assert.rejects(api.saveKnowledgeDraft({contextId}),/Sign in to an available/);
- assert.equal(operations.length,3);
+ assert.equal(operations.length,4);
  identity=a;
  let finish;
  storage.knowledgeDraft=id=>new Promise(resolve=>{finish=()=>resolve({status:'draft',contextId:id});});
