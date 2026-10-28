@@ -50,3 +50,7 @@ Event IDs and proposal IDs are UUIDs, unique **across the entire reply**. Retry 
 - **T4:** verify Claude→ChatGPT→Claude resumes the exact unfinished proof/hint level, and approved cards keep provenance and original FSRS. Only then enable `ready:true` and expose the UI.
 
 The T1 test `node test/tutor_packet.js` uses a **mock** StudyPlan and canned replies; it does **not** establish production, local-stack, card approval or real-tutor acceptance.
+
+## T3b1: student-reviewed card editor staging
+
+A checked card proposal enables **Review card in editor**, never an automatic insert. Lemma rechecks the current owner/workspace and the published plan revision/checkpoint and refuses source references not present in the active approved checkpoint. The existing editor opens with the proposed front/back, type, dependencies and a clearly labelled, student-visible provenance footer (plan ID/revision, checkpoint, proposal UUID and claimed source references). The tutor's references remain untrusted until the student verifies them. The student must press **Add card** in the editor to persist anything; opening, parsing, selecting and leaving the editor do not approve a card or alter FSRS. The existing editor does not accept arbitrary typed provenance metadata or prefill tag lists: add tags manually if desired. This slice does not claim durable audit receipts, duplicate-proposal suppression across separate editor saves, or T4 acceptance. Keep `TutorHandoff.ready=false`.
