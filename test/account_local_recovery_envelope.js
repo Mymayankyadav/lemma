@@ -214,6 +214,60 @@ const B = '00000000-0000-4000-8000-000000000002';
   sealRelease();
   await assert.rejects(pendingSeal,/Account changed while sealing server archive/);
   hashingGate=null;
+  // R2h paired recovery combines (but NEVER conflates) independent read-only
+  // server and IndexedDB captures. No UI, restore, or implicit download.
+  serverOwner=A;serverHandle={userId:A,storage:storageA};
+  remoteRows=ownerRows(A);
+  const callsBeforePair=rpcCalls;
+  await assert.rejects(remote.captureReadOnlyRecoveryPair(),/Explicit paired account/);
+  assert.equal(rpcCalls,callsBeforePair);
+  const paired=JSON.parse(JSON.stringify(
+    await remote.captureReadOnlyRecoveryPair(true)));
+  assert.equal(rpcCalls,callsBeforePair+1,'only one explicit server read');
+  assert.equal(paired.capture,'two-independent-readonly-snapshots');
+  assert.equal(paired.ownerId,A);
+  assert.equal(paired.server.ownerId,A);
+  assert.equal(paired.local.ownerId,A);
+  assert.equal(verifyWorkspaceArchive(paired.server).tableCount,19);
+  const checkedPair=await remote.verifyReadOnlyRecoveryPair(paired,A);
+  assert.equal(checkedPair.serverRows,1);
+  assert.ok(checkedPair.localRows>=2);
+  assert.equal(checkedPair.atomicAcrossDevices,false);
+  assert.equal(checkedPair.readOnly,true);
+  const pairCopy=()=>JSON.parse(JSON.stringify(paired));
+  const invalidPair=async(mutate,pattern)=>{
+    const invalid=pairCopy();mutate(invalid);
+    await assert.rejects(remote.verifyReadOnlyRecoveryPair(invalid,A),pattern);
+  };
+  await invalidPair(x=>{x.ownerId=B;},/Invalid recovery pair/);
+  await invalidPair(x=>{x.server.tables.study_plans[0].id='corrupted';},
+    /Paired server archive checksum mismatch/);
+  await invalidPair(x=>{x.local.snapshot.stores.outbox[0].value.data.front='corrupted';},
+    /checksum or size mismatch/);
+  await invalidPair(x=>{x.server.migrations.pop();},/Invalid paired server archive/);
+  await invalidPair(x=>{x.manifest.sha256='0'.repeat(64);},
+    /Recovery pair manifest mismatch/);
+  await assert.rejects(remote.verifyReadOnlyRecoveryPair(paired,B),
+    /Invalid recovery pair/);
+  // Force a mid-capture identity switch after remote archive is captured,
+  // while local IndexedDB is pending. Neither owner may receive the pair.
+  const localSnapshot=storageA.localRecoverySnapshot;
+  let localEntered,releaseLocal;
+  const localStarted=new Promise(resolve=>localEntered=resolve);
+  storageA.localRecoverySnapshot=async function(){
+    localEntered();
+    await new Promise(resolve=>releaseLocal=resolve);
+    return localSnapshot.call(this);
+  };
+  const pendingPair=remote.captureReadOnlyRecoveryPair(true);
+  await localStarted;
+  serverOwner=B;serverHandle={userId:B,storage:storageB};
+  releaseLocal();
+  await assert.rejects(pendingPair,/Account changed during local recovery export/);
+  storageA.localRecoverySnapshot=localSnapshot;
+  assert.deepEqual(JSON.parse(JSON.stringify(await storageA.list())),
+    JSON.parse(JSON.stringify(before)),'pair must not edit the owner cache');
+  console.log('PASS RELEASE R2h: explicit server/local pair, independently timed captures, offline checksums, tamper/owner/switch denial, zero writes');
   console.log('PASS RELEASE R2g: all 19 source tables sealed to independent canonical F validator, tamper/FK/source revision/identity negatives');
   assert.deepEqual(JSON.parse(JSON.stringify(await storageA.list())),
     JSON.parse(JSON.stringify(before)),'server snapshot must not write to IndexedDB');
