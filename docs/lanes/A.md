@@ -1,3 +1,5 @@
+# Lane A — sync, auth and backend
+
 Next action: **KNOWLEDGE-01 K1 READY** after UI-01 passed (merged PR #49 and post-merge main CI). Inspect existing private context/source/section schema and RPC; define bounded revisioned owner-scoped knowledge contract without migrating production or starting binary uploads. New lane A branch/claim required.
 
 ## 28 October 2026 — UI-01 unblocked; KNOWLEDGE-01 K1 NEXT
