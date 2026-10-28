@@ -118,33 +118,57 @@ async function captureLiveSyncStatus(page, stage, expected) {
     const text = document.querySelector('#sync .sr-only')?.textContent || '';
     return accepted.includes(text);
   }, { accepted: expected }, { timeout: 5000 }).catch(() => {});
-  const observed = await page.locator('#sync').evaluate(el => ({
+  const readStatus = () => page.locator('#sync').evaluate(el => ({
     full: el.querySelector('.sr-only')?.textContent || '',
     visible: el.querySelector('.sync-label')?.textContent || '',
     role: el.getAttribute('role'),
     online: navigator.onLine,
   }));
+  const accepted = observed => expected.includes(observed.full) &&
+    observed.role === 'status' &&
+    (stage === 'offline' ? ['Offline', 'Queued'].includes(observed.visible) &&
+      observed.online === false :
+      stage === 'rpc-error' ? observed.visible === 'Sync failed' &&
+      observed.online === true : observed.full === 'Saved to cloud');
   const output = path.join(ROOT, 'test-output', 'live-ui');
   fs.mkdirSync(output, { recursive: true });
+  const frames = [];
   for (const [size, viewport] of Object.entries({
     mobile: { width: 390, height: 844 }, desktop: { width: 1280, height: 800 },
   })) {
     for (const scheme of ['light', 'dark']) {
       await page.setViewportSize(viewport);
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
-      await page.screenshot({ path: path.join(output, stage + '-' + size + '-' + scheme + '.png') });
+      let valid = false, last;
+      // The account may automatically retry while the blocked transport is
+      // still offline at the RPC layer. Before *each* error screenshot, prompt
+      // another real foreground sync attempt so the app observes the denied
+      // HTTP request again. This does not stub state or weaken validation:
+      // the fault route remains active and every captured frame must show the
+      // genuine warning before and after the screenshot.
+      for (let attempt = 0; attempt < (stage === 'rpc-error' ? 6 : 2); attempt++) {
+        if (stage === 'rpc-error')
+          await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+        await page.waitForFunction(({ accepted }) =>
+          accepted.includes(document.querySelector('#sync .sr-only')?.textContent || ''),
+          { accepted: expected }, { timeout: 8000 }).catch(() => {});
+        const before = await readStatus();
+        const file = path.join(output, stage + '-' + size + '-' + scheme + '.png');
+        await page.screenshot({ path: file });
+        await page.waitForTimeout(60);
+        const after = await readStatus();
+        last = { before, after };
+        if (accepted(before) && accepted(after)) { valid = true; break; }
+      }
+      assert.ok(valid, stage + '/' + size + '/' + scheme +
+        ': real status changed during screenshot: ' + JSON.stringify(last));
+      frames.push(size + '-' + scheme);
     }
   }
   await page.setViewportSize({ width: 1200, height: 850 });
   await page.emulateMedia({ colorScheme: 'light' });
-  assert.ok(expected.includes(observed.full),
-    stage + ': unexpected real status ' + JSON.stringify(observed));
-  assert.equal(observed.role, 'status', stage + ': missing live status accessibility role');
-  if (stage === 'offline') assert.ok(['Offline', 'Queued'].includes(observed.visible),
-    'real offline queued edit needs a visible offline/queued indicator');
-  else assert.equal(observed.full, 'Saved to cloud');
-  console.log('ok: real local-stack ' + stage + ' UI status and four screenshots (' +
-    observed.full + ')');
+  console.log('ok: real local-stack ' + stage + ' UI status in ' + frames.join(', ') +
+    ' screenshots (' + expected.join(' | ') + ')');
 }
 
 async function waitForAccountWorkspace(page, expectedUserId, timeout = T) {
@@ -470,6 +494,50 @@ async function run(){
     assert.equal(dbNote(lostTitle)?.revision,1,'lost response retry must not increment revision');
     assert.equal(receiptCount(lost.id),1,'lost response retry must reuse idempotency receipt');
     console.log('ok: successful RPC response lost, retry acknowledged exactly one revision and receipt');
+
+    // UI-01-LIVE-STATUS-A2 — fail real authenticated PostgREST requests
+    // while the browser itself remains online. This is a disposable local
+    // transport fault, not a mocked LemmaSync status getter or production RPC.
+    // The previously committed note is edited again; its durable request ID
+    // must survive the fault and converge exactly once when transport returns.
+    const restPattern=AUTH+'/rest/v1/**';
+    let failedRpc=0,failedPull=0;
+    await pages[0].route(restPattern,async route=>{
+      const req=route.request(),url=new URL(req.url());
+      if(url.origin!==AUTH || !['GET','POST'].includes(req.method())) {
+        await route.continue(); return;
+      }
+      if(url.pathname==='/rest/v1/rpc/commit_note') failedRpc++;
+      else if(req.method()==='GET') failedPull++;
+      await route.abort('failed');
+    });
+    try {
+      await edit(pages[0],lostTitle,'Edited while authenticated PostgREST was unreachable');
+      await pages[0].evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await eventual('real RPC and read transport failures',()=>failedRpc>0 && failedPull>0,90000);
+      await pages[0].waitForFunction(
+        ()=>document.querySelector('#sync .sr-only')?.textContent===
+          'Sync failed · local changes retained',null,{timeout:90000});
+      const stalled=await debugOutbox(pages[0],owners[0],lost.id);
+      assert.equal(stalled.note?.dirty,true,'RPC error must retain dirty local note');
+      assert.ok(stalled.ops.some(op=>op.kind==='note' && op.state==='pending' &&
+        op.expectedRevision===1),'RPC error must retain original durable queued edit');
+      assert.equal(dbNote(lostTitle)?.revision,1,'failed RPC must not change server revision');
+      assert.equal(receiptCount(lost.id),1,'failed RPC must not add a receipt');
+      await captureLiveSyncStatus(pages[0],'rpc-error',
+        ['Sync failed · local changes retained']);
+    } finally {
+      await pages[0].unroute(restPattern);
+    }
+    await pages[0].evaluate(()=>window.dispatchEvent(new Event('focus')));
+    await eventual('RPC recovery revision',()=>dbNote(lostTitle)?.revision===2,90000);
+    await eventual('RPC recovery cleared outbox',async()=>{
+      const local=await debugOutbox(pages[0],owners[0],lost.id);
+      return local.note?.dirty===false && local.ops.length===0;
+    },90000);
+    assert.equal(receiptCount(lost.id),2,'recovered RPC adds exactly one receipt');
+    await captureLiveSyncStatus(pages[0],'rpc-recovered',['Saved to cloud']);
+    console.log('ok: real authenticated PostgREST fault, visible Sync failed, durable retry and one recovered receipt');
 
     await browse(pages[2]);
     assert.equal(await row(pages[2],offlineTitle).count(),0,'other user cannot observe offline note');
