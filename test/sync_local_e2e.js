@@ -106,6 +106,47 @@ async function login(page,email){
   await page.locator('.sheet-foot .btn-primary').click();
   await page.waitForFunction(()=>document.querySelector('#sync')?.textContent?.includes('Saved to cloud'),null,{timeout:T});
 }
+// UI-01-LIVE-STATUS-A1: screenshot only real authenticated local-stack state.
+// This does not inject or replace the UI status getter. All content is a
+// disposable synthetic test fixture; account Settings/email is not captured.
+async function captureLiveSyncStatus(page, stage, expected) {
+  await page.locator('.tabs button[data-go="home"]').click();
+  // Wait briefly for asynchronous status propagation, but capture the
+  // *unexpected* state too. A missing offline cue is an acceptance failure,
+  // not a reason to lose the diagnostic screenshot.
+  await page.waitForFunction(({ accepted }) => {
+    const text = document.querySelector('#sync .sr-only')?.textContent || '';
+    return accepted.includes(text);
+  }, { accepted: expected }, { timeout: 5000 }).catch(() => {});
+  const observed = await page.locator('#sync').evaluate(el => ({
+    full: el.querySelector('.sr-only')?.textContent || '',
+    visible: el.querySelector('.sync-label')?.textContent || '',
+    role: el.getAttribute('role'),
+    online: navigator.onLine,
+  }));
+  const output = path.join(ROOT, 'test-output', 'live-ui');
+  fs.mkdirSync(output, { recursive: true });
+  for (const [size, viewport] of Object.entries({
+    mobile: { width: 390, height: 844 }, desktop: { width: 1280, height: 800 },
+  })) {
+    for (const scheme of ['light', 'dark']) {
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
+      await page.screenshot({ path: path.join(output, stage + '-' + size + '-' + scheme + '.png') });
+    }
+  }
+  await page.setViewportSize({ width: 1200, height: 850 });
+  await page.emulateMedia({ colorScheme: 'light' });
+  assert.ok(expected.includes(observed.full),
+    stage + ': unexpected real status ' + JSON.stringify(observed));
+  assert.equal(observed.role, 'status', stage + ': missing live status accessibility role');
+  if (stage === 'offline') assert.ok(['Offline', 'Queued'].includes(observed.visible),
+    'real offline queued edit needs a visible offline/queued indicator');
+  else assert.equal(observed.full, 'Saved to cloud');
+  console.log('ok: real local-stack ' + stage + ' UI status and four screenshots (' +
+    observed.full + ')');
+}
+
 async function waitForAccountWorkspace(page, expectedUserId, timeout = T) {
   // build.js bundles internal Store/App into a closed scope; they are NOT
   // browser globals. Verify the real user-facing mode using Settings, where
@@ -344,6 +385,9 @@ async function run(){
         op.kind==='note' && op.state==='pending' && op.expectedRevision===1);
     });
     assert.equal(dbNote(offlineTitle)?.revision,1,'offline edit cannot change server revision');
+    await captureLiveSyncStatus(pages[0], 'offline', [
+      'Offline · changes queued on device', 'Saved on device · queued for cloud',
+    ]);
     await contexts[0].close();
     const resumed=await newProfile(path.join(prefix,'a'));
     contexts[0]=resumed;
@@ -375,6 +419,7 @@ async function run(){
       return local.ops.length===0 && local.note?.dirty===false;
     },90000);
     assert.equal(receiptCount(offlineRow.id),2,'offline edit adds exactly one receipt');
+    await captureLiveSyncStatus(pages[0], 'recovered', ['Saved to cloud']);
     console.log('ok: offline EDIT survived full Chromium restart and synced one revision');
 
     // EXPIRY — Auth uses 60-second access tokens on the disposable stack.
