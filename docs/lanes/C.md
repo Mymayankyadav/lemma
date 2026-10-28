@@ -1,3 +1,10 @@
+## ANDROID-02 N3b prerequisite — pinned Local Notifications plugin (integration claim)
+
+- **Claim:** `hourly-20261028T0446Z-integration-notifications`; UTC heartbeat 2026-10-28T04:46Z; base `main@726d676`; branch `integration/20261028-local-notifications-plugin`. No other integration PR at pickup. A's independent KNOWLEDGE-01 K2d PR #64 is not modified.
+- **Scope:** pin the official MIT `@capacitor/local-notifications@8.0.0` package (compatible with Capacitor core 8) and verified npm SHA-512 integrity, adding only package manifest/lock entries and this handoff. No automatic permission, notification, account enrollment, UI or Android behavior changes. This is a dependency gate, not N3b scheduling implementation.
+- **Verification:** exact-head `npm ci`, plan/integration guard, full regression and Android Capacitor sync/Gradle CI; inspect final lock diff and main checks. No new package outside the approved N3 optional notification feature.
+- **Next:** after green merge, lane C implements explicit permission/OS cancel-replace/tap adapter, B builds default-off consent UI, then physical D5. Owner action: none.
+
 ## ANDROID-02 N3a — consent-gated reminder policy (active claim)
 
 - **Claim:** `hourly-20261028T0436Z-c-n3a`; UTC heartbeat 2026-10-28T04:36:27Z; base `main@f427210`; branch `lane-c/android-02-n3a-reminder-policy`. Lane C was unclaimed at inspection; lane A's active KNOWLEDGE-01 K2c PR #62 is independent and must not be modified.
