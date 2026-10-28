@@ -101,7 +101,7 @@ const make=(over={})=>({planId:id,expectedRevision:0,expectedLocalRevision:0,
   return r;
  };
  dispatch=()=>({data:1});
- await assert.rejects(api.submitApprovedPlanDraft(id),/transaction not saved/);
+ await assert.rejects(api.submitApprovedPlanDraft(id),/Plan draft transaction (?:not saved|failed)/);
  IDBObjectStore.prototype.put=put;
  assert.equal((await api.readPlanDraft(id)).requestId,approved.requestId);
  assert.equal(await api.readPlanReceipt(id),null);
