@@ -90,6 +90,12 @@ const {chromium}=require('playwright');
     window._StudyView.render({planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'})
   ));
   await page.getByRole('heading',{name:'Compactness checkpoint'}).waitFor();
+  await page.getByRole('button',{name:'Continue saved proof'}).click();
+  const resumedText=await page.getByRole('textbox',{name:'Your unfinished proof'}).inputValue();
+  assert.equal(resumedText,'Choose an open cover, then reduce to finitely many sets.');
+  assert.equal(await page.evaluate(()=>window.__writes.length),0,
+    'resuming an unfinished proof cannot append evidence');
+  await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('');
   assert.equal(await page.evaluate(()=>window._StudyView.ready),false);
   assert.equal(await page.evaluate(()=>window.__writes.length),0);
   fs.mkdirSync('test-output/ui',{recursive:true});
