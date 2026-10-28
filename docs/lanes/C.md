@@ -1,3 +1,12 @@
+## ANDROID-02 N4b — complete bundled web-asset provenance (implementation checkpoint)
+
+- **Claim:** `hourly-20261028-c-n4b-complete-assets`; heartbeat UTC 2026-10-28T07:46:39.709Z; base `main@ca1195dc9b6cfc3fe9ea938d3e7e8a80b5f3c872`; branch `lane-c/android-02-n4b-complete-assets`. Lane C was free; active A #72 and B #73 are untouched.
+- **Problem corrected:** N4a only verified four named `dist/` assets. `test.html`, `icons/icon.svg` and any future nested files could have been missing or stale without failing the APK gate.
+- **Implementation:** `test/android_apk_artifact.js` enumerates all regular `dist/` files recursively, rejects symlinks/nonregular entries, requires six known generated assets and verifies every APK `assets/public/` counterpart byte-for-byte. Metadata schema 2 records all web-asset hashes; existing package, launcher and signer checks remain. `test/android_native_shell.js` exercises recursive discovery and symlink rejection; `docs/ANDROID.md` documents the expanded gate and hardware limits.
+- **Changed files:** `test/android_apk_artifact.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md` (all C-owned). No A/B/shared files, dependencies, product consent, production/Carrel data or device storage changes.
+- **Verification:** local repository clone unavailable (GitHub DNS blocked). Full exact-head regression, Android APK/lane guard, and review of final diff **PENDING**. Physical D1–D6 remain NOT RUN; successful APK checks do not prove compatible debug signing across builds.
+- **Next:** inspect exact-head CI and ownership/diff, fix failures without weakening assertions; merge only after all required checks succeed against current main, then verify post-merge main. No owner action now.
+
 ## ANDROID-02 N4a — APK artifact identity and bundled-content preflight (active claim)
 
 - **Claim:** `hourly-20261028-c-n4a-apk-preflight`; heartbeat UTC 2026-10-28T06:39:25.926Z; base `main@233251d349f2a9d82550924c5b62cda49b9a57c0`; branch `lane-c/android-02-n4-apk-preflight`. Lane C free at pickup; independent lane A KNOWLEDGE-01 K2f PR #70 is active and untouched.

@@ -2,7 +2,28 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+const os = require('node:os');
+const path = require('node:path');
+const { listBundledFiles } = require('./android_apk_artifact');
 const source = fs.readFileSync('src/app/native_shell.js', 'utf8');
+
+// N4b: verify the APK preflight automatically includes future nested files,
+// and refuses symlinked dist entries instead of silently skipping them.
+const assetFixture = fs.mkdtempSync(path.join(os.tmpdir(), 'lemma-apk-assets-'));
+try {
+  fs.mkdirSync(path.join(assetFixture, 'icons'));
+  fs.mkdirSync(path.join(assetFixture, 'nested'));
+  fs.writeFileSync(path.join(assetFixture, 'index.html'), 'test');
+  fs.writeFileSync(path.join(assetFixture, 'icons', 'icon.svg'), 'icon');
+  fs.writeFileSync(path.join(assetFixture, 'nested', 'future.js'), 'future');
+  assert.deepEqual(listBundledFiles(assetFixture),
+    ['icons/icon.svg', 'index.html', 'nested/future.js']);
+  fs.symlinkSync('index.html', path.join(assetFixture, 'alias.html'));
+  assert.throws(() => listBundledFiles(assetFixture), /Unsupported bundled web asset type/);
+} finally {
+  fs.rmSync(assetFixture, { recursive: true, force: true });
+}
+
 
 function run({ native = true, available = true, browserAvailable = true, browserReject = false, wakeReject = false, sheet = false, view = 'home', launchUrl = null, notificationsAvailable = true, notificationPermission = 'granted', notificationRequestPermission = 'granted', permissionFail = false, notificationFail = false, pendingReminders = [] } = {}) {
   const events = {}, actions = [], browserUrls = [], state = { view, sheet };
