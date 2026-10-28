@@ -6,7 +6,7 @@ const ID='00000000-0000-4000-8000-000000000001';
 const checkpointId='compactness-open-cover-proof';
 let writes=0, dialog;
 function h(tag,attrs,...kids){
- const obj={tag,attrs:attrs||{},kids,children:[],textContent:attrs?.text || '',value:'',events:{},
+ const obj={tag,attrs:attrs||{},kids,children:[],textContent:attrs?.text || '',value:'',disabled:!!attrs?.disabled,checked:!!attrs?.checked,events:{},
    addEventListener(k,fn){this.events[k]=fn},
    append(...els){this.children.push(...els)},
    replaceChildren(...els){this.children=els}};
