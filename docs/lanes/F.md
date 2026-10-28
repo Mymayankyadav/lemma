@@ -1,3 +1,9 @@
+## RELEASE-01 R2k — independent full workspace restore acceptance
+
+- **Claim:** `chat-20261028-f-full-restore`, heartbeat 2026-10-28T18:02Z; branch `lane-f/release-full-workspace-acceptance`, base main `33e9f3e` after A restore PRs #144/#146. No competing F claim. Owns `test/release_workspace_restore.js`, `test/release_recovery_gate.js`, `docs/RELEASE.md` and this handoff. Integration #147 owns real-stack routing; B #148 owns product controls.
+- **Goal:** independently compare full original/restored 19-table data, exact cards/schedules/review and Undo, revision/plan/event/source/tutor histories; negative controls for omissions, duplicates and tampering. `--local` must run actual disposable authenticated restore and independently validate returned rows. Normal regression runs contract negative controls; it is not production evidence.
+- **Next:** implement substantive acceptance, require both suites in CI routing, run exact-head regression/local-stack, inspect final main, and keep publication blocked until production parity and user-facing recovery are verified.
+
 # Lane F — release and ship (RELEASE-01)
 
 Next action: verify/merge R7 fail-closed release recovery tag guard after exact PR-head CI; maintain release block until real full account recovery and versioned tutor audit are deployed; do not tag an unverified main SHA.
