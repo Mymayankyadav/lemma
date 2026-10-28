@@ -33,6 +33,7 @@ const server = http.createServer((req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
   const key = pathname.startsWith('/lemma/') ? pathname.slice('/lemma'.length) : null;
   const asset = key && resources.get(key);
+  if (key === '/service-worker.js') console.log('PWA worker script served', next ? 'V2' : 'V1', req.url);
   if (req.method !== 'GET' || !asset) { res.writeHead(404); res.end('not found'); return; }
   const [body, type] = asset();
   res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-store',
@@ -130,6 +131,10 @@ async function run() {
     await page.waitForFunction(names => caches.keys().then(keys =>
       keys.includes(names.next) && !keys.includes(names.old)), { old: oldName, next: newName },
     { timeout: wait });
+    console.log('PWA cache state before reload:', JSON.stringify(await page.evaluate(async () => ({
+      keys: await caches.keys(), activeState:(await navigator.serviceWorker.ready).active?.state,
+      controllerState:navigator.serviceWorker.controller?.state
+    }))));
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('.today').waitFor({ timeout: wait });
     // Navigation can occur during an activation handoff. Require the final
