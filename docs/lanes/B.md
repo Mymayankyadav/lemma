@@ -1,3 +1,5 @@
+# Lane B — UI
+
 Next action: **UI-01 DONE** after final authenticated RPC failure/recovery PR #49 merged and main CI passed; B supports KNOWLEDGE-01 K3 UI once A publishes versioned context/source APIs, then leads PLAN-01. No B implementation is currently dependency-ready.
 
 ## 28 October 2026 — UI-01 final acceptance COMPLETED
