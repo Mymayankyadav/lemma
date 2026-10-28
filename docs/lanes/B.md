@@ -1,5 +1,11 @@
 ## RELEASE-01 recovery UI takeover (2026-10-28T23:20Z)
 
+
+### Recovery production feature gate (2026-10-28T23:35Z)
+
+- Fresh read-only Lemma production migration history contains **16** applied versions through `20261028163000_release01_owner_snapshot_v1`; the source seventeenth `20261028174411_release01_owner_restore_v1` remains undeployed. Publishing the recovery controls now would expose a restore path whose production RPC is absent. `SettingsView` therefore retains `ACCOUNT_RECOVERY_READY=false` in the shipped bundle; no real account sees these controls until a separately reviewed gate-enabling PR follows exact-version deployment and live security acceptance. The synthetic Chromium UI test explicitly enables the flag in its own generated test HTML and asserts the shipped default is false.
+- Additional commits `75af9d3` and `15b0eeb`; this is a **feature gate**, not evidence of production restore. The B PR can be reviewed/merged once all exact-head CI passes without exposing unaccepted functionality. Do not enable the flag on the basis of local mock success.
+
 ### Recovery UI resumed-navigation fix checkpoint
 
 - `SettingsView` now retains only a module-local owner marker while `LemmaSync.withRecovery` has paused sync; when Settings is rendered again for the same owner and the actual account handle is stopped, the explicit **Resume account sync** action remains visible with a paused-state explanation. No private backup, consent or automatic restore/resume is persisted. A completed restore or deliberate resume clears the marker; changing owner never exposes the previous owner's action.
