@@ -1,6 +1,6 @@
 # Lane A — sync, auth and backend
 
-Next action: [PR #46](https://github.com/Mymayankyadav/lemma/pull/46) serves `UI-01-LIVE-STATUS-A1` (B → A) with authenticated local-stack offline/reconnect screenshots. Claim `hourly-20261028T0042Z-a-live-offline`, branch `lane-a/ui-01-real-offline-visual`, heartbeat UTC 2026-10-28T00:43:00Z. Files: `test/sync_local_e2e.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`. Exact-head CI/screenshots PENDING, local stack NOT RUN locally. Remaining: real RPC-error/recovery visuals and B's visual acceptance; no production or physical-device claim. Owner action: none.
+Next action: [PR #46](https://github.com/Mymayankyadav/lemma/pull/46) is the active A-owned `UI-01-LIVE-STATUS-A1` real local-stack offline/reconnect screenshot slice. Owner-approved one-time claim recovery `owner-approved-a46-20261028` at UTC 2026-10-28T01:18:51Z supersedes the inactive prior run without deleting commits. Branch `lane-a/ui-01-real-offline-visual`, files `test/sync_local_e2e.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`. Current `main@c0c5cc1` includes B's offline-indicator fix; incorporate it as a normal two-parent merge and require fresh exact-head local-stack, regression and Android CI plus inspection of all eight authenticated screenshots. Local Supabase NOT RUN locally. Real RPC-error/recovery and B's final visual acceptance remain separate open gates; no production or physical-device claim. Owner action: none.
 
 | Field | Value |
 | --- | --- |
