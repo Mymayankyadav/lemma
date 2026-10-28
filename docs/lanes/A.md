@@ -1,3 +1,13 @@
+## KNOWLEDGE-01 K2c — structured accepted context v1 (active claim)
+
+- **Claim:** `chat-20261028-k2c-structured`; heartbeat 2026-10-28T04:30:39.078Z UTC; `main@f427210fe9`; branch `lane-a/knowledge-01-k2c-structured-context`. No open PRs at pickup; three latest main workflows succeeded after K2b PR #61.
+- **Scope:** additive accepted structured context JSON with immutable snapshots, CAS/idempotent owner writes, verified same-owner/context accepted source references, strict field/size limits, legacy Markdown compatibility without silent structured overwrites, real local GoTrue HTTP two-owner regression. No student proposal approval, production DB modifications, external docs/OCR, client presentation or Carrel.
+- **Owned paths:** `supabase/migrations/20261028051500_structured_context_v1.sql`, `test/auth_knowledge_structured.js`, `test/sync_security_parity.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`. Existing K2a/K2b migrations remain immutable.
+- **Gate:** two-owner local stack auth/RLS, CAS/race/retry, validation and cross-context source denial, accepted revision history, unchanged legacy sync parity, exact-head regression/Android/local-stack CI and post-merge main checks. Production deployment NOT RUN. K2d client and proposal path remain separate slices.
+- **Next:** implement, test and merge this bounded slice on green checks; prepare separately gated client contract and B UI request.
+- **Implementation:** migration adds nullable canonical \`accepted_json\` to current contexts and immutable revisions, strict v1 whitelist/array limits, cross-owner/context source revision checks, evidence-backed demonstration checks, locked transactional CAS, private bounded historical read, and rejects new Markdown-only writes after structured acceptance. Earlier K2a/K2b migration files unchanged. Tests use only disposable local GoTrue identities. **Deployment:** written only, NOT applied to production. No backfill: existing rows stay null-format legacy, untouched until explicit accepted editing; forward-only repair if new RPC malfunctions. Keep source/content snapshots and approval decisions intact.
+- **Verification pending:** exact-head regression, Android and local Supabase CI; inspect SQL errors and retry only when fixed. After merge, K2d A client-facing adapter and B's eventual presentation are separate slices.
+
 ## Active lane A claim — KNOWLEDGE-01 K2b accepted source revisions / bounded citations
 
 - **Run:** `chat-20261028-a-k2b-takeover`; heartbeat 2026-10-28T04:17:14.222Z; base `main@fa52e7355a`; branch `lane-a/knowledge-01-k2b-source-revisions`; draft PR claim. User confirms no other implementation agent working; latest `main` four workflows SUCCESS and no open PR at initial inspection.

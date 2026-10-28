@@ -84,6 +84,8 @@ jobs:
         run: node test/auth_knowledge_context.js
       - name: Verify version-pinned owner-private knowledge sources over local HTTP
         run: node test/auth_knowledge_sources.js
+      - name: Verify structured owner-private study contexts over local HTTP
+        run: node test/auth_knowledge_structured.js
       - name: Install Chromium and local UI dependencies
         run: |
           npm ci --no-audit --no-fund
