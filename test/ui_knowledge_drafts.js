@@ -31,6 +31,28 @@ const bridge = {
       status: 'draft', userId: owner };
     rows.set(input.contextId, structuredClone(next));
     return structuredClone(next);
+  },
+  async inspectKnowledgeConflict(contextId) {
+    calls.push(['compare', contextId]);
+    const local = structuredClone(rows.get(contextId));
+    if (local?.status !== 'needs_review') throw Error('No reviewed stale knowledge conflict');
+    return { status: 'needs_review', contextId, local,
+      accepted: { context_id: contextId, revision: 4, title: 'Accepted server context',
+        context_markdown: 'Latest proof', accepted_json: { schema_version:1,summary:'Current' } } };
+  },
+  async reopenReviewedKnowledgeConflict(contextId, localRevision, requestId,
+    acceptedRevision, studentReviewed) {
+    calls.push(['reopen', contextId, localRevision, requestId, acceptedRevision, studentReviewed]);
+    const row = rows.get(contextId);
+    if (!studentReviewed || row.status !== 'needs_review' || row.localRevision !== localRevision ||
+        row.requestId !== requestId || acceptedRevision !== 4)
+      throw Error('Knowledge conflict changed; compare again');
+    const result = { ...row, status: 'draft', localRevision: localRevision + 1,
+      expectedRevision: acceptedRevision, reopenedFromRequestId: requestId };
+    delete result.requestId;
+    delete result.approvedBy;
+    rows.set(contextId, structuredClone(result));
+    return structuredClone(result);
   }
 };
 const scope = vm.createContext({
@@ -83,6 +105,20 @@ const fields = { title: 'Topology', markdown: '# Open covers',
   await assert.rejects(second.save(fields), /locked after approval/);
   assert.equal(calls.length, beforeConflict, 'conflicted intent never re-saved');
   assert.equal(second.current().status, 'needs_review');
+  const countBeforeCompare = calls.filter(c => c[0] === 'save' || c[0] === 'reopen').length;
+  const packet = await second.compareConflict();
+  assert.equal(packet.local.requestId, id);
+  assert.equal(packet.accepted.revision, 4);
+  assert.equal(second.current().status, 'needs_review', 'comparison must not approve or reopen');
+  assert.equal(calls.filter(c => c[0] === 'save' || c[0] === 'reopen').length,
+    countBeforeCompare, 'read-only comparison cannot write');
+  const reopened = await second.reopenConflict(packet);
+  assert.equal(reopened.status, 'draft', 'explicitly reopened context is not approved');
+  assert.equal(reopened.expectedRevision, 4);
+  assert.equal(reopened.localRevision, 3);
+  assert.equal(reopened.reopenedFromRequestId, id);
+  assert.equal(reopened.requestId, undefined, 'new draft does not reuse original accepted request');
+  await assert.rejects(second.reopenConflict(packet), /changed; compare again/);
   rows.set(id, { ...rows.get(id), status: 'draft', authorKind: 'tutor',
     payload: { schema_version: 1, summary: '', goals: [], notation: ['\\mathbb{R}'] } });
   await second.open(id);
@@ -109,5 +145,6 @@ const fields = { title: 'Topology', markdown: '# Open covers',
   blocked = false;
   assert(!source.slice(begin, end).includes('approveKnowledgeDraft('));
   assert(!source.slice(begin, end).includes('commitAcceptedContext('));
-  console.log('PASS KNOWLEDGE K3a: local CAS, offline draft, account isolation, pending lock, tutor provenance, no auto-approval');
+  assert(!source.slice(begin, end).includes('submitApprovedKnowledgeDraft('));
+  console.log('PASS KNOWLEDGE K3b: local CAS, guarded comparison, explicit draft reopen, account isolation, no auto-approval');
 })().catch(err => { console.error(err); process.exitCode = 1; });
