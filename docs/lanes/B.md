@@ -1,5 +1,13 @@
 # Lane B — UI
 
+## ANDROID-02 N3-B1 — explicit native reminder consent/time (active claim)
+
+- **Claim:** `hourly-20261028T0531Z-b-n3b1`; heartbeat UTC 2026-10-28T05:31:18.907Z; base `main@20f624a`, branch `lane-b/android-02-n3-b1-consent-controls`. No open PRs at claim. Cross-lane request `ANDROID-02-N3-B1` from C is now unblocked by merged N3c PR #67.
+- **Scope:** B-owned Settings presentation, default-off device-local opt-in/time and permission status; explicit gesture-only permission request, opt-out cancellation, no implicit enrollment; then guarded reminder scheduling and validated tap navigation using the C-owned native bridge. No A model/store, C native, shared package, Supabase or Carrel edits.
+- **Intended files:** `src/app/view_settings.js`, `src/app/main.js`, `test/ui_screenshots.js`, `docs/lanes/B.md` (B-owned only). If due-state wiring needs A support, record a targeted cross-lane request; do not modify A files.
+- **Gate:** web remains inert; native denied/revoked/prompt/granted flows, explicit consent and opt-out; time validation, due/identity/workspace change, accessible 390px/1280px light/dark screenshots, exact-head regression, Android APK and B lane guard; post-merge main checks. Physical D5 remains NOT RUN.
+- **Next:** implement bounded B slice and tests; verify exact-head CI and visual evidence before merge. No owner action yet.
+
 Next action: **UI-01 DONE** after final authenticated RPC failure/recovery PR #49 merged and main CI passed; B supports KNOWLEDGE-01 K3 UI once A publishes versioned context/source APIs, then leads PLAN-01. No B implementation is currently dependency-ready.
 
 ## 28 October 2026 — UI-01 final acceptance COMPLETED
