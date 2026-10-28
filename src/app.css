@@ -851,6 +851,8 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
 .knowledge-draft-fields[hidden] { display: none; }
 #set-knowledge-drafts .input { width: 100%; min-width: 0; max-width: 100%; }
 #set-knowledge-drafts .btn { min-height: 44px; }
+/* Author-level .btn display must not override the draft controls' hidden state. */
+#set-knowledge-drafts button[hidden] { display: none !important; }
 #set-knowledge-drafts textarea { resize: vertical; }
 
 /* KNOWLEDGE-01 K3b: private owner-only context comparison, user initiated. */

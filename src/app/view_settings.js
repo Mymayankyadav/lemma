@@ -891,6 +891,8 @@ const SettingsView = (() => {
       h('label', { class: 'setting-label', for: 's-knowledge-goals', text: 'Learning goals' }), goals,
       h('label', { class: 'setting-label', for: 's-knowledge-markdown', text: 'Context notes (Markdown)' }), markdown,
       h('div', { class: 'btn-row' }, save));
+    const inspectAccepted = h('button', { id: 's-knowledge-inspect', class: 'btn btn-sm',
+      type: 'button', hidden: true, text: 'Open accepted revision reader' });
     const compare = h('button', { id: 's-knowledge-compare', class: 'btn btn-sm',
       type: 'button', hidden: true, text: 'Compare with accepted revision' });
     const reopen = h('button', { id: 's-knowledge-reopen', class: 'btn btn-sm',
@@ -898,6 +900,10 @@ const SettingsView = (() => {
     const review = h('div', { id: 's-knowledge-review', class: 'knowledge-context-review',
       hidden: true, 'aria-live': 'polite' });
     let compared = null;
+    // An old Settings panel must not prefill another owner's reader after a switch.
+    const mountedOwner = LemmaAccount.user?.id;
+    const mountedHandle = LemmaSync.accountHandle();
+    const mountedGeneration = App.workspaceRevision;
     function clearComparison() {
       compared = null;
       review.hidden = true;
@@ -907,6 +913,7 @@ const SettingsView = (() => {
     function show(row) {
       clearComparison();
       compare.hidden = row.status !== 'needs_review';
+      inspectAccepted.hidden = row.status === 'unsaved';
       id.value = row.contextId;
       title.value = row.title || '';
       summary.value = typeof row.payload?.summary === 'string' ? row.payload.summary : '';
@@ -965,6 +972,34 @@ const SettingsView = (() => {
         create.disabled = open.disabled = false;
       }
     };
+    inspectAccepted.onclick = () => {
+      const row = editor.current();
+      if (!row || row.status === 'unsaved' ||
+          !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(row.contextId || '') ||
+          !mountedOwner || mountedOwner !== LemmaAccount.user?.id ||
+          mountedHandle !== LemmaSync.accountHandle() ||
+          mountedGeneration !== App.workspaceRevision ||
+          Store.mode !== 'account' || App.workspaceBlocked) {
+        status.textContent = 'Account or draft changed. Reopen your saved draft before inspecting it.';
+        return;
+      }
+      const reader = document.getElementById('set-accepted-reader');
+      const acceptedId = reader?.querySelector('#s-accepted-id');
+      const acceptedRevision = reader?.querySelector('#s-accepted-revision');
+      if (!acceptedId || !acceptedRevision) {
+        status.textContent = 'Accepted reader unavailable. Reopen Settings and try again.';
+        return;
+      }
+      // Input events invalidate prior responses and in-flight citation reads.
+      // Opening the reader never makes an RPC or accepts a draft.
+      acceptedId.value = row.contextId.toLowerCase();
+      acceptedId.dispatchEvent(new Event('input', { bubbles: true }));
+      acceptedRevision.value = '';
+      acceptedRevision.dispatchEvent(new Event('input', { bubbles: true }));
+      reader.scrollIntoView({ block: 'start' });
+      acceptedId.focus({ preventScroll: true });
+      status.textContent = 'Reader prepared for this context ID. Choose Read accepted revision to fetch the latest accepted snapshot; the saved draft remains unapproved.';
+    };
     compare.onclick = async () => {
       compare.disabled = true;
       clearComparison();
@@ -1018,7 +1053,7 @@ const SettingsView = (() => {
       'Unaccepted drafts are saved only in this device’s signed-in account cache. Copy the context ID to reopen it after a reload. Saving does not approve or publish a context.',
       h('label', { class: 'setting-label', for: 's-knowledge-id', text: 'Context ID' }),
       id, h('div', { class: 'btn-row' }, create, open), status, fields,
-      h('div', { class: 'btn-row' }, compare, reopen), review);
+      h('div', { class: 'btn-row' }, inspectAccepted, compare, reopen), review);
   }
 
   function ratingProbs() {

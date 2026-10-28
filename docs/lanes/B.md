@@ -1,3 +1,11 @@
+## Active UI-02 accepted-reader navigation claim — 28 October 2026
+
+- **Claim:** `chat-20261028-lane-b-reader-nav` · heartbeat 2026-10-28T10:45:04.663Z; branch `lane-b/ui-02-accepted-reader-link`, base `main@5f033d2`.
+- **Scope:** Lane B-owned `src/app/view_settings.js`, `test/ui_knowledge_reader.js`, `docs/lanes/B.md`. Give a saved knowledge draft a deliberate route to its accepted revision reader without an automatic cloud read, auto-approval or cross-account leakage. Read remains a separate user click; unaccepted and unsaved drafts cannot imply publication.
+- **Gate:** regression and browser screenshots (390px/1280px, light/dark), no implicit citation/accepted reads, draft switching and account isolation, exact-head CI, post-merge main. Main local-stack was red before this claim (40673449340, independent-browser convergence); that failure is out of B ownership and blocks non-corrective merges until recovered.
+- **Implementation checkpoint:** PR #98 adds `Open accepted revision reader` only for saved drafts. Explicit user click checks the mounted owner/account handle/workspace revision, sets the UUID, clears the optional revision to mean latest, dispatches input invalidation to retire stale accepted/citation content, scrolls and focuses. It does not call accepted/source RPCs or imply approval. Browser gate now covers unsaved hidden action, saved prefill, no automatic network reads, stale-result clearing and owner switch; four draft-link + four accepted reader light/dark screenshots. No account/backend/FSRS files touched.
+- **Verification:** source and browser test committed on branch; `npm ci`/Playwright unavailable in this sandbox (GitHub DNS lookup fails). Exact-head CI and screenshot inspection PENDING; previous main local-stack failure independently tracked (it was cancelled after newer commit). **Next action:** inspect CI and visual captures, repair failures, then merge only with a clean main and green PR gates; revisit SHIP-B2 visual review when D/E UI screenshots are ready.
+
 ## Active KNOWLEDGE-01 K3c claim — 28 October 2026
 
 - **Claim:** `chat-20261028T1007-b-k3c`, heartbeat 2026-10-28T10:07Z; earliest active B claim (no other B PR). Base `main@c3bc71750eab94be55895919e36b90234f632b6f`, branch `lane-b/knowledge-01-k3c-accepted-reader`.

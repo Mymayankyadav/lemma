@@ -620,12 +620,21 @@ async function shot(page, name, size, scheme) {
       await page.locator('#set-knowledge-drafts button:text-is("Save draft on this device")').click();
       await page.waitForFunction(() =>
         document.querySelector('#s-knowledge-status')?.textContent.includes('Local draft revision 1'));
-      const check = await page.locator('#set-knowledge-drafts').evaluate(el => ({
-        width: el.scrollWidth, client: el.clientWidth,
-        controls: [...el.querySelectorAll('button')].map(x => x.getBoundingClientRect().height),
-        state: el.querySelector('[role=status]')?.textContent
-      }));
+      const check = await page.locator('#set-knowledge-drafts').evaluate(el => {
+        const buttons = [...el.querySelectorAll('button')];
+        return {
+          width: el.scrollWidth, client: el.clientWidth,
+          // Only visible buttons have a touch-target size. Hidden actions
+          // must actually be absent, not display:flex at zero layout size.
+          controls: buttons.filter(x => !x.hidden).map(x => x.getBoundingClientRect().height),
+          visibleHidden: buttons.filter(x => x.hidden && getComputedStyle(x).display !== 'none')
+            .map(x => x.id || x.textContent),
+          inspectHidden: el.querySelector('#s-knowledge-inspect')?.hidden,
+          state: el.querySelector('[role=status]')?.textContent
+        };
+      });
       if (check.width > check.client + 1 || check.controls.some(x => x < 44) ||
+          check.visibleHidden.length || check.inspectHidden ||
           !check.state.includes('Not accepted or sent to cloud'))
         throw Error('K3a private draft visual/consent contract failed: ' + JSON.stringify(check));
       await page.locator('#set-knowledge-drafts').screenshot({

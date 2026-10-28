@@ -56,12 +56,19 @@ async function open(browser, size, scheme) {
       title:'Topology accepted notes',
       context_markdown:'Compactness proof: a closed subspace of a compact space is compact.',
       accepted_json:{schema_version:1,source_refs:[{source_id:SRC,revision:2,title:'Stein reference notes'}]}};
-    const state={A,B,C,SRC,userId:A,contextCalls:[],sourceCalls:[],writes:0,
+    const state={A,B,C,SRC,userId:A,contextCalls:[],sourceCalls:[],draftCalls:[],writes:0,
       mode:'success',pending:[],sourceMode:'valid'};
     Object.defineProperty(Store,'mode',{configurable:true,get:()=> 'account'});
     Object.defineProperty(Account,'user',{configurable:true,get:()=>({id:state.userId})});
     Object.defineProperty(Account,'client',{configurable:true,get:()=>client});
     Sync.accountHandle=()=>handle;
+    Cloud.readKnowledgeDraft=async id=>{
+      state.draftCalls.push(id);
+      if(id!==C) return null;
+      return {contextId:C,status:'draft',localRevision:2,expectedRevision:4,
+        title:'Topology unapproved notes',markdown:'My unsent proof',
+        authorKind:'student',payload:{schema_version:1,summary:'Draft only',goals:[]}};
+    };
     Cloud.readAcceptedContext=async (id,revision)=>{
       state.contextCalls.push([id,revision]);
       if(state.mode==='hold') return new Promise(resolve=>state.pending.push(resolve));
@@ -111,6 +118,26 @@ async function readAccepted(page) {
           'no automatic accepted content projection');
         assert.deepEqual(await page.evaluate(()=>window.__readerTest.contextCalls),[],
           'mount must not fetch accepted context');
+        await page.getByRole('button',{name:'New draft'}).click();
+        assert.equal(await page.locator('#s-knowledge-inspect').isVisible(),false,
+          'unsaved drafts cannot lead to a presumed accepted revision');
+        await page.locator('#s-knowledge-id').fill(C);
+        await page.getByRole('button',{name:'Open saved draft'}).click();
+        await page.locator('#s-knowledge-inspect').waitFor({state:'visible'});
+        await page.locator('#set-knowledge-drafts').screenshot({
+          path:path.join(OUT,'knowledge-reader-link-'+size+'-'+scheme+'.png'),
+          animations:'disabled',
+          style:'.topbar,.tabbar { visibility:hidden !important; }'});
+        await page.getByRole('button',{name:'Open accepted revision reader'}).click();
+        assert.equal(await page.locator('#s-accepted-id').inputValue(),C,
+          'link must prefill exact saved draft UUID');
+        assert.equal(await page.locator('#s-accepted-revision').inputValue(),'',
+          'navigate to latest accepted, never assume draft expected revision');
+        assert.equal(await page.locator('#s-accepted-result').isVisible(),false);
+        assert.deepEqual(await page.evaluate(()=>window.__readerTest.contextCalls),[],
+          'navigation alone must never fetch accepted knowledge');
+        assert.equal(await page.locator('#s-accepted-id').evaluate(el=>document.activeElement===el),
+          true,'reader field is keyboard focused');
         await readAccepted(page);
         assert.equal(await page.locator('#s-accepted-result').isVisible(),true);
         assert.match(await page.locator('#set-accepted-reader').textContent(),/Topology accepted notes/);
@@ -141,6 +168,13 @@ async function readAccepted(page) {
         assert.equal(await page.locator('.accepted-reader-next').isVisible(),false,
           'end-of-source hides paging action');
         assert.equal(await page.evaluate(()=>window.__readerTest.writes),0,'read-only');
+        // Deliberately revisiting the reader invalidates old accepted content.
+        const callsBeforeLink=await page.evaluate(()=>window.__readerTest.contextCalls.length);
+        await page.getByRole('button',{name:'Open accepted revision reader'}).click();
+        assert.equal(await page.locator('#s-accepted-result').isVisible(),false,
+          'prefill must clear previously rendered owner-scoped content');
+        assert.equal(await page.evaluate(()=>window.__readerTest.contextCalls.length),
+          callsBeforeLink, 'revisiting cannot initiate a background read');
         // A malformed source revision fails closed without showing uncited text.
         await page.evaluate(()=>{window.__readerTest.sourceMode='wrong-revision'});
         await page.locator('#s-accepted-read').click();
@@ -171,10 +205,16 @@ async function readAccepted(page) {
         await page.waitForTimeout(50);
         assert.equal(await page.locator('#s-accepted-result').isVisible(),false,
           'account change must not reveal owner A packet');
+        await page.locator('#s-accepted-id').fill('');
+        await page.getByRole('button',{name:'Open accepted revision reader'}).click();
+        assert.equal(await page.locator('#s-accepted-id').inputValue(),'',
+          'stale draft action cannot leak previous owner UUID to new owner');
+        assert.match(await page.locator('#s-knowledge-status').textContent(),
+          /Account or draft changed/);
         assert.equal(await page.evaluate(()=>window.__readerTest.writes),0);
       } finally {await ctx.close()}
     }
     assert.deepEqual(problems,[],'no browser errors');
-    console.log('KNOWLEDGE K3c: accepted revisions, pinned six-excerpt cursors, owner/offline/schema gates and four screenshots passed');
+    console.log('UI-02: saved-draft reader link, pinned six-excerpt cursors, owner/offline/schema gates and eight screenshots passed');
   } finally {await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
