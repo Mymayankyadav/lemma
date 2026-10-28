@@ -116,34 +116,37 @@ async function run() {
     console.log('PASS offline navigation through cached shell and IndexedDB');
 
     await context.setOffline(false);
+    await page.evaluate(() => { window.__releaseOldController = navigator.serviceWorker.controller; });
     next = true; // Replace served build and worker version without clearing any data.
+    console.log('PWA versions', JSON.stringify({ oldName, newName }));
     await page.evaluate(async () => {
       const reg = await navigator.serviceWorker.ready;
       await reg.update();
     });
-    // Cache retirement may precede activation. Do not navigate while the old
-    // worker can still own fetch events and accidentally recreate its cache.
-    await page.waitForFunction(async () => {
+    // A registered old worker may still be active when update() resolves. Wait
+    // for the *replacement* worker, not just any activated controller.
+    await page.waitForFunction(async names => {
       const reg = await navigator.serviceWorker.ready;
+      const keys = await caches.keys();
       return reg.active?.state === 'activated' &&
-        navigator.serviceWorker.controller === reg.active;
-    }, null, { timeout: wait });
-    await page.waitForFunction(names => caches.keys().then(keys =>
-      keys.includes(names.next) && !keys.includes(names.old)), { old: oldName, next: newName },
-    { timeout: wait });
+        navigator.serviceWorker.controller === reg.active &&
+        reg.active !== window.__releaseOldController &&
+        keys.includes(names.next) && !keys.includes(names.old);
+    }, { old: oldName, next: newName }, { timeout: wait });
     console.log('PWA cache state before reload:', JSON.stringify(await page.evaluate(async () => ({
       keys: await caches.keys(), activeState:(await navigator.serviceWorker.ready).active?.state,
       controllerState:navigator.serviceWorker.controller?.state
     }))));
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('.today').waitFor({ timeout: wait });
-    // Navigation can occur during an activation handoff. Require the final
-    // controller to settle before asserting cache-retirement invariants.
-    await page.waitForFunction(async () => {
+    // Recheck after reload, when browser lifecycle tasks may have been queued.
+    await page.waitForFunction(async names => {
       const reg = await navigator.serviceWorker.ready;
+      const keys = await caches.keys();
       return reg.active?.state === 'activated' &&
-        navigator.serviceWorker.controller === reg.active;
-    }, null, { timeout: wait });
+        navigator.serviceWorker.controller === reg.active &&
+        keys.includes(names.next) && !keys.includes(names.old);
+    }, { old: oldName, next: newName }, { timeout: wait });
     const diagnostics = await page.evaluate(async cacheName => {
       const names = await caches.keys();
       const cache = await caches.open(cacheName);
