@@ -231,6 +231,101 @@ const LemmaCloudBridge = (() => {
       throw new Error('Account changed during local recovery export');
     return result;
   }
+  // Integrity is for accidental file damage only. This is NOT a signed,
+  // encrypted, server-consistent snapshot, and cannot authorize a restore.
+  const recoveryStores = ['notes','reviews','retractions','outbox','meta'];
+  const recoveryByteCap = 64 * 1024 * 1024;
+  const recoveryOwner = id => typeof id === 'string' &&
+    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id);
+  function validateLocalRecoverySnapshot(snapshot, expectedOwnerId) {
+    if (!recoveryOwner(expectedOwnerId) || snapshot?.app !== 'lemma' ||
+        snapshot.version !== 1 || snapshot.scope !== 'account-local-recovery' ||
+        snapshot.capture !== 'single-indexeddb-readonly-transaction' ||
+        snapshot.ownerId !== expectedOwnerId ||
+        !Number.isFinite(Date.parse(snapshot.capturedAt)) ||
+        !snapshot.stores || Array.isArray(snapshot.stores) ||
+        JSON.stringify(Object.keys(snapshot.stores)) !== JSON.stringify(recoveryStores))
+      throw new Error('Wrong owner or invalid local recovery snapshot');
+    let total = 0;
+    const safe = (value, depth = 0, seen = new WeakSet()) => {
+      if (depth > 32) throw new Error('Local recovery nesting exceeds safety bound');
+      if (value === null || typeof value === 'string' ||
+          typeof value === 'boolean' ||
+          (typeof value === 'number' && Number.isFinite(value))) return;
+      if (!value || typeof value !== 'object' || seen.has(value) ||
+          // Accept plain JSON records from another JS realm (e.g. IndexedDB
+          // Node/VM boundary), while rejecting Date/class/Blob instances.
+          (!Array.isArray(value) && Object.getPrototypeOf(value) !== null &&
+            Object.getPrototypeOf(Object.getPrototypeOf(value)) !== null))
+        throw new Error('Nonportable local recovery data');
+      seen.add(value);
+      for (const key of Object.keys(value)) {
+        if (['__proto__','prototype','constructor'].includes(key))
+          throw new Error('Unsafe local recovery field');
+        safe(value[key], depth + 1, seen);
+      }
+      seen.delete(value);
+    };
+    for (const store of recoveryStores) {
+      const entries = snapshot.stores[store], seenKeys = new Set();
+      if (!Array.isArray(entries)) throw new Error('Incomplete local recovery store');
+      total += entries.length;
+      if (total > 200000) throw new Error('Local recovery row cap exceeded');
+      for (const row of entries) {
+        if (!row || typeof row !== 'object' || Array.isArray(row) ||
+            (typeof row.key !== 'string' &&
+              !(Number.isSafeInteger(row.key))) ||
+            !Object.prototype.hasOwnProperty.call(row,'value'))
+          throw new Error('Invalid local recovery row');
+        const key = JSON.stringify(row.key);
+        if (seenKeys.has(key)) throw new Error('Duplicate local recovery key');
+        seenKeys.add(key);
+        safe(row.value);
+        if (row.value && typeof row.value === 'object' && !Array.isArray(row.value) &&
+            ((row.value.userId !== undefined && row.value.userId !== expectedOwnerId) ||
+             (row.value.user_id !== undefined && row.value.user_id !== expectedOwnerId)))
+          throw new Error('Foreign owner row in local recovery');
+      }
+    }
+    return total;
+  }
+  async function recoveryDigest(bytes) {
+    if (!globalThis.crypto?.subtle?.digest)
+      throw new Error('Secure local recovery hashing unavailable');
+    const digest = await globalThis.crypto.subtle.digest('SHA-256',bytes);
+    return [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2,'0')).join('');
+  }
+  async function captureLocalRecoveryEnvelope(studentRequested = false) {
+    if (studentRequested !== true)
+      throw new Error('Explicit local recovery file export required');
+    const userId = LemmaAccount.user?.id;
+    const handle = typeof LemmaSync !== 'undefined' ? LemmaSync.accountHandle() : null;
+    const snapshot = await captureLocalRecovery(true);
+    validateLocalRecoverySnapshot(snapshot,userId);
+    const bytes = new TextEncoder().encode(JSON.stringify(snapshot));
+    if (bytes.length > recoveryByteCap) throw new Error('Local recovery byte cap exceeded');
+    const sha256 = await recoveryDigest(bytes);
+    if (LemmaAccount.user?.id !== userId || LemmaSync.accountHandle() !== handle)
+      throw new Error('Account changed during local recovery sealing');
+    return { app:'lemma',version:1,scope:'account-local-recovery-envelope',
+      ownerId:userId,bytes:bytes.length,sha256,snapshot };
+  }
+  async function verifyLocalRecoveryEnvelope(envelope,expectedOwnerId) {
+    if (envelope?.app !== 'lemma' || envelope.version !== 1 ||
+        envelope.scope !== 'account-local-recovery-envelope' ||
+        envelope.ownerId !== expectedOwnerId ||
+        !Number.isSafeInteger(envelope.bytes) ||
+        envelope.bytes < 1 || envelope.bytes > recoveryByteCap ||
+        !/^[0-9a-f]{64}$/.test(envelope.sha256 || ''))
+      throw new Error('Invalid local recovery envelope or owner');
+    const rows = validateLocalRecoverySnapshot(envelope.snapshot,expectedOwnerId);
+    const bytes = new TextEncoder().encode(JSON.stringify(envelope.snapshot));
+    if (bytes.length !== envelope.bytes ||
+        await recoveryDigest(bytes) !== envelope.sha256)
+      throw new Error('Local recovery checksum or size mismatch');
+    return { ownerId:expectedOwnerId, rows, bytes:bytes.length,
+      sha256:envelope.sha256, readOnly:true };
+  }
   // LOCAL unaccepted drafts only. These are stored in the existing
   // account-namespaced IndexedDB cache; no network required after attach.
   // An in-flight save may finish under the *old* owner after logout, so
@@ -401,7 +496,8 @@ const LemmaCloudBridge = (() => {
     check();
     return draft;
   }
-  return { captureLocalRecovery, authorize, listRemote, inspect, uploadMissing, importMissing,
+  return { captureLocalRecovery, captureLocalRecoveryEnvelope, verifyLocalRecoveryEnvelope,
+    authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
     commitAcceptedContext,
     readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft,
