@@ -132,7 +132,7 @@ function liveContext(){return {planId:P,planRevision:3,
  const other=mount();await flush();const oform=walk(other).find(n=>n.attrs.class==='study-form');
  const obox=find(oform,n=>n.tag==='textarea');obox.value='Old account proof';
  let finish;answer=()=>new Promise(r=>{finish=r});
- const pending=find(oform,n=>n.tag==='button').events.click();
+ const pending=find(oform,n=>n.tag==='button'&&n.attrs.text==='Save proof attempt').events.click();
  await flush();user='00000000-0000-4000-8000-000000000003';rev++;
  finish({eventId:calls[calls.length-1].eventId});
  await pending;
