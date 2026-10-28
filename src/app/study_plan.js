@@ -147,6 +147,15 @@ const StudyPlan = (() => {
     const detail = type => { const e = latest(type);
       return e && object(e.payload?.data) ? { ...e.payload.data,
         eventId:e.event_id,createdAt:e.created_at } : null; };
+    // A different device may publish an amendment while the individual
+    // plan/version/checkpoint/event requests are in flight. Do not hand a tutor
+    // an old revision as the *current* approved checkpoint after that change.
+    // The write RPC still owns CAS; this final owner-scoped read guards display.
+    const stillApproved = await list(ctx,'study_plans','id,revision',
+      q => q.eq('id',plan.id).limit(1));
+    if (stillApproved.length !== 1 || !same(stillApproved[0].id,plan.id) ||
+        stillApproved[0].revision !== plan.revision)
+      throw new Error('Approved study plan changed; reload checkpoint');
     ctx.check();
     return {
       planId:plan.id,planRevision:plan.revision,
