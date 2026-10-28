@@ -204,8 +204,10 @@ const App = (() => {
     if (e.key === 'n' || e.key === 'N') { newCard(); e.preventDefault(); }
     else if (e.key === '/') { e.preventDefault(); go('browse'); setTimeout(() => { const q = $('#browse-q'); if (q) q.focus(); }, 30); }
     else if ((e.key === ' ' || e.key === 'Enter') && view === 'home' && e.target === document.body) {
-      const c = Model.counts(null);
-      if (c.new + c.learn + c.review) { e.preventDefault(); startSession(new Session({})); }
+      // Match the visible primary action: approved checkpoint when available,
+      // otherwise the original due-card review behavior.
+      const primary = $('.today .study-btn');
+      if (primary && !primary.disabled) { e.preventDefault(); primary.click(); }
     }
   }
 
