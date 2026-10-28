@@ -46,7 +46,8 @@ const StudyPlan = (() => {
     context.check();
     if (result.error) {
       const message = String(result.error.message || '');
-      const publicErrors = new Set(['stale_plan_revision','idempotency_key_reused',
+      const publicErrors = new Set(['stale_plan_revision','stale_or_missing_context',
+        'context_id_required','invalid_plan_payload','idempotency_key_reused',
         'checkpoint_not_in_approved_plan','invalid_study_event']);
       throw new Error(publicErrors.has(message) ? message :
         'Study request failed; retry with the same event ID');
@@ -168,10 +169,12 @@ const StudyPlan = (() => {
     if (typeof indexedDB === 'undefined')
       return Promise.reject(new Error('Durable plan draft storage unavailable'));
     return new Promise((resolve,reject) => {
-      const request = indexedDB.open('lemma-plan-drafts-v1-' + userId,1);
+      const request = indexedDB.open('lemma-plan-drafts-v1-' + userId,2);
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains('drafts'))
           request.result.createObjectStore('drafts',{keyPath:'planId'});
+        if (!request.result.objectStoreNames.contains('receipts'))
+          request.result.createObjectStore('receipts',{keyPath:'planId'});
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(new Error('Could not open durable plan draft storage'));
@@ -186,13 +189,13 @@ const StudyPlan = (() => {
       ctx.check();
       const result = await new Promise((resolve,reject) => {
         let tx;
-        try { tx = db.transaction('drafts',write ? 'readwrite' : 'readonly'); }
+        try { tx = db.transaction(['drafts','receipts'],write ? 'readwrite' : 'readonly'); }
         catch (_) { reject(new Error('Plan draft storage unavailable')); return; }
         const store = tx.objectStore('drafts');
         let answer;
         const request = store.get(planId);
         request.onsuccess = () => {
-          try { ctx.check(); answer = mutate(request.result || null,store,ctx.userId); }
+          try { ctx.check(); answer = mutate(request.result || null,store,ctx.userId,tx); }
           catch (e) { tx.abort(); reject(e); }
         };
         request.onerror = () => reject(new Error('Could not read plan draft'));
@@ -290,12 +293,157 @@ const StudyPlan = (() => {
       return true;
     });
   }
-  // Tutor proposals are staged only. P2b introduces the separate explicit
-  // student review/approval transition and idempotent publication receipts.
+  // P2b: student consent is a durable local transition. No RPC is called by
+  // approval itself. The immutable request key survives offline and crashes.
+  async function approvePlanDraft(planId,expectedLocalRevision,studentApproved) {
+    if (studentApproved !== true)
+      throw new Error('Explicit student approval required for a plan');
+    if (!revision(expectedLocalRevision))
+      throw new Error('Invalid plan draft revision');
+    return draftTransaction(planId,true,(row,store,ownerId) => {
+      if (!row || row.userId !== ownerId)
+        throw new Error('No plan draft pending review');
+      if (row.status === 'approved_pending' &&
+          row.approvedFromLocalRevision === expectedLocalRevision)
+        return structuredClone(row);
+      if (row.status !== 'draft' || row.localRevision !== expectedLocalRevision)
+        throw new Error('Plan draft changed; review again before approval');
+      if (!row.title.trim())
+        throw new Error('Plan needs a title before student approval');
+      const approved = {...row,status:'approved_pending',requestId:crypto.randomUUID(),
+        localRevision:row.localRevision+1,
+        approvedFromLocalRevision:row.localRevision,
+        approvedBy:'student',approvedAt:Date.now(),
+        attempted:false,attempts:0};
+      store.put(approved);
+      return structuredClone(approved);
+    });
+  }
+  async function readPlanReceipt(planId) {
+    if (!isUuid(planId)) throw new Error('Invalid study plan ID');
+    const ctx = account();
+    const db = await openDraftDB(ctx.userId);
+    try {
+      ctx.check();
+      const receipt = await new Promise((resolve,reject) => {
+        const tx = db.transaction('receipts','readonly');
+        let result = null;
+        const req = tx.objectStore('receipts').get(planId);
+        req.onsuccess = () => { try {
+          ctx.check();result = req.result || null;
+        } catch (e) { reject(e); } };
+        req.onerror = () => reject(new Error('Could not read plan receipt'));
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = () => reject(new Error('Plan receipt storage unavailable'));
+        tx.onabort = () => reject(new Error('Plan receipt read interrupted'));
+      });
+      ctx.check();
+      return receipt ? structuredClone(receipt) : null;
+    } finally { db.close(); }
+  }
+  async function markPlanAttempt(planId,requestId) {
+    return draftTransaction(planId,true,(row,store) => {
+      if (!row || row.status !== 'approved_pending' || row.requestId !== requestId)
+        throw new Error('Approved plan request changed');
+      const next = {...row,attempted:true,attempts:(row.attempts || 0)+1};
+      store.put(next);
+      return structuredClone(next);
+    });
+  }
+  async function markPlanConflict(planId,requestId) {
+    return draftTransaction(planId,true,(row,store) => {
+      if (!row || row.requestId !== requestId)
+        throw new Error('Approved plan request changed');
+      if (row.status === 'needs_review') return structuredClone(row);
+      if (row.status !== 'approved_pending')
+        throw new Error('Approved plan request changed');
+      const next = {...row,status:'needs_review',conflictAt:Date.now()};
+      store.put(next);
+      return structuredClone(next);
+    });
+  }
+  async function acknowledgePlan(planId,requestId,acceptedRevision) {
+    if (!revision(acceptedRevision))
+      throw new Error('Invalid plan publication revision');
+    try {
+      return await draftTransaction(planId,true,(row,store,userId,tx) => {
+        if (!row || row.status !== 'approved_pending' ||
+            row.requestId !== requestId ||
+            acceptedRevision <= row.expectedRevision)
+          throw new Error('Approved plan receipt no longer matches intent');
+        const receipt = {planId,userId,requestId,revision:acceptedRevision,
+          confirmedAt:Date.now()};
+        tx.objectStore('receipts').put(receipt);
+        store.delete(planId);
+        return structuredClone(receipt);
+      });
+    } catch (error) {
+      // A second tab may have already committed the same immutable receipt.
+      const existing = await readPlanReceipt(planId);
+      if (existing?.requestId === requestId && existing.revision === acceptedRevision)
+        return existing;
+      throw error;
+    }
+  }
+  async function submitApprovedPlanDraft(planId) {
+    if (!isUuid(planId)) throw new Error('Invalid study plan ID');
+    const ctx = account();
+    const draft = await readPlanDraft(planId);
+    ctx.check();
+    if (!draft) {
+      const receipt = await readPlanReceipt(planId);
+      ctx.check();
+      if (receipt) return {status:'confirmed',revision:receipt.revision,
+        requestId:receipt.requestId};
+      throw new Error('No student-approved plan intent pending');
+    }
+    if (draft.status === 'needs_review')
+      return {status:'conflict',requestId:draft.requestId};
+    if (draft.status !== 'approved_pending' ||
+        draft.approvedBy !== 'student' || !isUuid(draft.requestId))
+      throw new Error('Explicit student approval required before publication');
+    if (typeof navigator !== 'undefined' && navigator.onLine === false)
+      return {status:'queued',requestId:draft.requestId};
+    const attempt = await markPlanAttempt(planId,draft.requestId);
+    ctx.check();
+    let serverRevision;
+    try {
+      serverRevision = await authorized(ctx,client => client.rpc('publish_study_plan',{
+        p_plan_id:attempt.planId,
+        p_expected_revision:attempt.expectedRevision,
+        p_request_id:attempt.requestId,
+        p_title:attempt.title,p_objective:attempt.objective,
+        p_snapshot:attempt.snapshot,p_change_summary:attempt.changeSummary,
+        p_context_id:attempt.contextId,
+        p_expected_context_revision:attempt.contextRevision,
+        p_author_model:attempt.source
+      }));
+    } catch (error) {
+      ctx.check();
+      if (error?.message === 'stale_plan_revision' ||
+          error?.message === 'stale_or_missing_context') {
+        await markPlanConflict(planId,draft.requestId);
+        ctx.check();
+        return {status:'conflict',requestId:draft.requestId};
+      }
+      // The server might have committed before transport failed. Preserve
+      // the exact approved snapshot and requestId for retry; never reapprove.
+      throw error;
+    }
+    ctx.check();
+    if (!revision(serverRevision) || serverRevision <= draft.expectedRevision)
+      throw new Error('Invalid plan publication receipt; retry same request ID');
+    const receipt = await acknowledgePlan(planId,draft.requestId,serverRevision);
+    ctx.check();
+    return {status:'confirmed',revision:receipt.revision,
+      requestId:receipt.requestId};
+  }
+  // Tutor proposals are staged only, even when the tutor reports approval.
   async function proposeAmendment(input) {
     const draft = await savePlanDraft(input);
     return draft.draftId;
   }
   return { ready:false, activeContext,recordEvent,proposeAmendment,
-    savePlanDraft,readPlanDraft,discardPlanDraft };
+    savePlanDraft,readPlanDraft,discardPlanDraft,
+    approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt };
 })();
