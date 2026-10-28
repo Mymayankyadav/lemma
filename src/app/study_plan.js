@@ -124,7 +124,14 @@ const StudyPlan = (() => {
       (e.event_type === 'attempt' || e.event_type === 'proof_step'));
     const hint = recent.find(e => e.payload?.checkpoint_id === selected.id &&
       e.event_type === 'hint' && Number.isSafeInteger(e.payload?.data?.level));
-    // These are read-only excerpts from the immutable event ledger, never\n    // checkpoint status changes or evidence of mastery by themselves.\n    const latest = type => recent.find(e => e.payload?.checkpoint_id === selected.id &&\n      e.event_type === type);\n    const detail = type => { const e = latest(type);\n      return e && object(e.payload?.data) ? { ...e.payload.data,\n        eventId:e.event_id,createdAt:e.created_at } : null; };\n    ctx.check();
+    // These are read-only excerpts from the immutable event ledger, never
+    // checkpoint status changes or evidence of mastery by themselves.
+    const latest = type => recent.find(e => e.payload?.checkpoint_id === selected.id &&
+      e.event_type === type);
+    const detail = type => { const e = latest(type);
+      return e && object(e.payload?.data) ? { ...e.payload.data,
+        eventId:e.event_id,createdAt:e.created_at } : null; };
+    ctx.check();
     return {
       planId:plan.id,planRevision:plan.revision,
       contextId:version.context_id || null,
