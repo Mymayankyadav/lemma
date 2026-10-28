@@ -66,6 +66,9 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     await page.locator('.tutor-handoff-item').first().locator('summary').click();
     await page.getByRole('checkbox',{name:'Select Event 1 · feedback'}).check();
     assert.equal(await save.isEnabled(),true,'explicit selection enables Save');
+    // A collapsed <details> hides its checkbox from the accessibility tree.
+    // Expand only for inspection; opening a proposal must not select it.
+    await page.locator('.tutor-handoff-item').nth(1).locator('summary').click();
     assert.equal(await page.getByRole('checkbox',{name:'Select Card proposal 1'}).isChecked(),false,'card proposal never implicitly selected');
     const width=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,viewport:innerWidth}));
     assert.ok(width.doc<=width.viewport+2,'Handoff causes horizontal overflow: '+JSON.stringify(width));
