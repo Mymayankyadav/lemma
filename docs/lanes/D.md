@@ -1,10 +1,10 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: finish P2a owner-scoped durable unapproved drafts in PR #91, then P2b explicit student review/approval and revision-safe publication in a separate slice. Keep Study tab hidden through P2–P5 gates.
+Next action: finish P2b explicit student consent and revision-safe publication in PR #94, then P3 Study checkpoint UI and P4 conflicts/mid-proof resume. Keep Study tab hidden through P2–P5 gates.
 
 | Field | Value |
 | --- | --- |
-| Status | P1 merged PR #83 (main@28d7672); local stack, regression and Android CI passed. P1 migration production application still delegated to lane A. P2a draft PR #91 in progress. |
+| Status | P1 merged PR #83 (main@28d7672); local stack, regression and Android CI passed. P1 migration production application still delegated to lane A. P2a merged PR #91 (main@04b339f), exact-head regression/local stack/Android SUCCESS; P2b PR #94 active. |
 | Task | PLAN-01 — gate in `plan.md` §2 and `docs/SHIP_PLAN.md` |
 | Owns | see `lanes.json` lane D |
 | Existing backend | `study_plans`, `study_plan_versions` (client read-only), `study_checkpoints` (owner CRUD), `learning_sessions`, `learning_events` (owner SELECT/INSERT only; P1 RPC revision-safe), `tutor_handoffs`; RPC `publish_study_plan` (idempotent by `p_request_id`, expected revision). Accepted contexts: `get_accepted_study_context` (lane A). |
@@ -45,3 +45,9 @@ Next action: finish P2a owner-scoped durable unapproved drafts in PR #91, then P
 - Run: `chat-20261028-lane-d-p2b` · heartbeat 2026-10-28T10:19:26.446Z; base `main@04b339f4`.
 - Scope: `src/app/study_plan.js`, `test/study_approval.js`, `docs/lanes/D.md`. Parent P2a merged PR #91. Use existing `publish_study_plan` RPC; no production migration.
 - Next: implement explicit student-approval intent in per-owner durable storage, stable request UUID, authenticated CAS publish, server receipt, stale-conflict review, network-failure retry; add isolated fake IndexedDB tests. Leave `ready:false` and no implicit tutor approval.
+
+### P2b implementation and verification
+
+- Added a version-2 local `receipts` store to the owner-scoped IndexedDB namespace, preserving P2a draft rows on upgrade. `approvePlanDraft(planId, localRevision, true)` persists immutable student consent and original CAS revision/request UUID offline; tutor proposals remain draft-only.
+- `submitApprovedPlanDraft(planId)` uses existing owner-filtered `publish_study_plan` RPC only for durable `approved_pending` intents. Preserves the same request ID on unknown network results, archives confirmed receipt and deletes intent in one IDB transaction; never silently rebase stale plan/context revision, returning `needs_review` instead. `readPlanReceipt` supports exact confirmation after restart.
+- `test/study_approval.js` covers v1→v2 upgrade, no consent/no network, queued offline submission, lost response, aborted local receipt, stable retries, owner isolation, changed identity and stale approval conflicts. Exact-head CI pending. This is not full PLAN-01 acceptance; P3–P5 remain, and no production schema writes in D.
