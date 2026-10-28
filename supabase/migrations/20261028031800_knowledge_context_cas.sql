@@ -39,7 +39,7 @@ language plpgsql security invoker set search_path='' as $$
 begin
   raise exception 'accepted_context_revisions_are_immutable';
 end;
-$;
+$$;
 revoke all on function public.lemma_reject_context_revision_change()
   from public,anon,authenticated;
 create trigger study_context_revisions_immutable
@@ -117,7 +117,7 @@ begin
     from public.study_context_files where user_id=v_uid and id=p_context_id;
   return v_next;
 end;
-$;
+$$;
 revoke all on function lemma_private.commit_study_context(uuid,bigint,uuid,text,text)
   from public,anon;
 grant execute on function lemma_private.commit_study_context(uuid,bigint,uuid,text,text)
