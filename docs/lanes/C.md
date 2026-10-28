@@ -6,6 +6,12 @@
 
 # Lane C — Android
 
+## ANDROID-02 N1b dependency integration — pinned Browser plugin (2026-10-28)
+
+- **Integration claim:** `chat-20261028T0323Z-integration-browser`; heartbeat `2026-10-28T03:23Z`; base `main@a52f676`, branch `integration/20261028-capacitor-browser`. Owned-line additive changes to `package.json` and `package-lock.json` only, plus this C handoff, to install exactly `@capacitor/browser@8.0.0` (MIT / Capacitor core 8 compatible) required by merged C [PR #56](https://github.com/Mymayankyadav/lemma/pull/56). Exact 8.0.0 package integrity must be pinned in npm lock, `npm ci` and Android `cap sync` / debug Gradle gate must pass. No auth A code, no route/manifest changes, no production or Carrel access.
+- **Status:** claim pending implementation and CI; physical Android browser/Google sign-in still unverified and A-owned PKCE callback exchange still required. This integration is not AUTH-01 S3 DONE.
+
+
 ## ANDROID-02 N1a — native callback entry claim (28 October 2026)
 
 - **Claim:** `chat-20261028-c-n1a`; UTC heartbeat `2026-10-28T02:40Z`; base `main@7f9cd16`; branch `lane-c/android-02-n1-deeplink-entry`. Intended files: `android/app/src/main/AndroidManifest.xml`, `src/app/native_shell.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. No A auth, B Settings, package dependency, production, or user data change.
