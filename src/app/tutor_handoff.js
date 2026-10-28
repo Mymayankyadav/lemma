@@ -340,6 +340,7 @@ const TutorHandoff = (() => {
     if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
       throw new Error('The active checkpoint has changed; reopen its handoff');
     const ownerId = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.user?.id;
+    const openedIdentityEpoch = identityEpoch;
     const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
     const packet = exportPacket(ctx);
     const output = h('textarea', { class:'tutor-handoff-packet', 'aria-label':'Handoff packet',
@@ -563,7 +564,8 @@ const TutorHandoff = (() => {
         for (const item of pending) {
           if (input.value !== reviewedText)
             throw new Error('Reply changed; review it again');
-          if ((typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
+          if (identityEpoch !== openedIdentityEpoch ||
+              (typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
               (typeof App !== 'undefined' &&
                (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
             throw new Error('Study account or workspace changed; reopen the handoff');
