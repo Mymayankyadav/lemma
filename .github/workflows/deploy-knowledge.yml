@@ -30,6 +30,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.LEMMA_SUPABASE_DB_PASSWORD }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       LEMMA_PROJECT_REF: yemqnhnztlbyxmjxidis
+      LEMMA_WORKDIR: ${{ runner.temp }}/lemma-knowledge-deploy
       DEPLOY_MODE: ${{ inputs.mode }}
     steps:
       - uses: actions/checkout@v4
@@ -63,10 +64,46 @@ jobs:
           console.log('Current main SHA has all required completed green checks');
           NODE
 
+      - name: Stage only the twelve reviewed legacy and knowledge migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$LEMMA_WORKDIR/supabase/migrations"
+          cp supabase/config.toml "$LEMMA_WORKDIR/supabase/config.toml"
+          node <<'NODE'
+          const fs=require('node:fs'),path=require('node:path');
+          const expected=[
+            '20261026085028_initial_learning_state.sql',
+            '20261026090019_versioned_study_planning.sql',
+            '20261026090746_cards_reviews_sources.sql',
+            '20261026090844_atomic_plan_publication.sql',
+            '20261026090959_revision_safe_note_writes.sql',
+            '20261026091125_harden_rpc_implementations.sql',
+            '20261026121817_enforce_note_rpc_writes.sql',
+            '20261026130428_review_retractions.sql',
+            '20261026153542_revision_safe_profiles.sql',
+            '20261028031800_knowledge_context_cas.sql',
+            '20261028043000_knowledge_source_revisions.sql',
+            '20261028051500_structured_context_v1.sql'
+          ];
+          const names=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
+          if(names.length<expected.length || expected.some((x,i)=>names[i]!==x))
+            throw Error('Required exact legacy/knowledge source filenames changed');
+          for(const n of names.slice(expected.length)){
+            if(!/^\d{14}_(?:plan01|tutor01)_[a-z0-9_]+\.sql$/.test(n) ||
+                n.slice(0,14)<=expected[expected.length-1].slice(0,14))
+              throw Error('Unexpected extra migration in current main: '+n);
+          }
+          const destination=process.env.LEMMA_WORKDIR+'/supabase/migrations';
+          for(const n of expected)fs.copyFileSync(path.join('supabase/migrations',n),path.join(destination,n));
+          console.log('Isolated exactly twelve approved SQL files; later lane D/E SQL remains undeployed');
+          NODE
+
       - name: Link only to Lemma production (never use db reset)
         shell: bash
         run: |
           set -euo pipefail
+          cd "$LEMMA_WORKDIR"
           supabase --version
           supabase link --project-ref "$LEMMA_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
           test "$(cat supabase/.temp/project-ref)" = "$LEMMA_PROJECT_REF" ||
@@ -94,7 +131,7 @@ jobs:
             '20261028043000_knowledge_source_revisions.sql',
             '20261028051500_structured_context_v1.sql'
           ];
-          const names=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
+          const names=fs.readdirSync(process.env.LEMMA_WORKDIR+'/supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(JSON.stringify(names)!==JSON.stringify(expected))
             throw Error('Unexpected local migrations. Refusing to deploy new, missing or renamed SQL: '+JSON.stringify(names));
           const txt=fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-before.txt','utf8').replace(/\x1b\[[0-9;]*m/g,'');
@@ -120,6 +157,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cd "$LEMMA_WORKDIR"
           supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --dry-run > "$RUNNER_TEMP/lemma-dryrun.txt" 2>&1
           cat "$RUNNER_TEMP/lemma-dryrun.txt"
           node <<'NODE'
@@ -139,6 +177,7 @@ jobs:
           set -euo pipefail
           git fetch --no-tags --depth=1 origin main
           test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || { echo "::error::Main moved; no production write"; exit 1; }
+          cd "$LEMMA_WORKDIR"
           supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
           supabase migration list --linked --password "$SUPABASE_DB_PASSWORD" > "$RUNNER_TEMP/lemma-after.txt" 2>&1
           cat "$RUNNER_TEMP/lemma-after.txt"
@@ -147,7 +186,7 @@ jobs:
           const txt=fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-after.txt','utf8').replace(/\x1b\[[0-9;]*m/g,'');
           const lines=txt.split(/\r?\n/).filter(x=>/^\s*(?:\d{14})?\s*[│|]\s*(?:\d{14})?\s*[│|]/.test(x));
           const rows=lines.map(x=>x.split(/[│|]/).map(s=>s.trim()));
-          const names=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
+          const names=fs.readdirSync(process.env.LEMMA_WORKDIR+'/supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
           if(rows.length!==names.length || rows.some((row,i)=>row[0]!==names[i].slice(0,14)||row[1]!==row[0]))
             throw Error('Post-deploy migration history is not fully version-identical; investigate without repair');
           console.log('Applied and verified all 12 exact Lemma migration versions');
