@@ -175,6 +175,38 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
   assert.equal(ctx.sync.status.error,'');
   assert.deepEqual(observedPhases.slice(afterFailure),['ready'],
     'no transient Queued/refreshing state may mask an unresolved RPC failure');
+  // No queued write: a periodic poll must keep the confirmed cloud status,
+  // even if the HTTP request itself is delayed.
+  let markIdleStarted, finishIdle;
+  const idleStarted=new Promise(resolve=>{markIdleStarted=resolve;});
+  bHandle.outbox.flush=()=>{
+    markIdleStarted();
+    return new Promise(resolve=>{finishIdle=resolve;});
+  };
+  const idlePoll=ctx.sync.refresh();
+  await idleStarted;
+  assert.equal(ctx.sync.status.phase,'ready',
+    'a clean background poll must not temporarily show checking cloud');
+  finishIdle();
+  await idlePoll;
+  assert.equal(ctx.sync.status.phase,'ready');
+
+  // But an actual durable outbox item still needs the checking-cloud cue.
+  const previousPending=bHandle.outbox.pending;
+  bHandle.outbox.pending=async()=>[{kind:'note',state:'pending'}];
+  let markDirtyStarted, finishDirty;
+  const dirtyStarted=new Promise(resolve=>{markDirtyStarted=resolve;});
+  bHandle.outbox.flush=()=>{
+    markDirtyStarted();
+    return new Promise(resolve=>{finishDirty=resolve;});
+  };
+  const dirtyPoll=ctx.sync.refresh();
+  await dirtyStarted;
+  assert.equal(ctx.sync.status.phase,'refreshing',
+    'a new queued edit must still display a pending cloud check');
+  finishDirty();
+  await dirtyPoll;
+  bHandle.outbox.pending=previousPending;
   bHandle.outbox.flush=originalFlush;
   unsubscribe();
 
