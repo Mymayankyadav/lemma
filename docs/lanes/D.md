@@ -39,3 +39,9 @@ Next action: finish P2a owner-scoped durable unapproved drafts in PR #91, then P
 - Draft snapshots retain `expectedRevision`, `contextId/contextRevision`, `source`, `changeSummary`, stable `draftId` (tutor `proposalId` if supplied), status `draft`, and local CAS `localRevision`; independent tabs cannot silently overwrite. Same proposal ID and identical contents are safe to retry; changed contents require a new proposal ID and updated local revision.
 - `test/study_drafts.js` covers unapproved offline persistence and reload, two owners, idempotency, concurrent CAS, aborted writes, account switches, deletion and invalid proposals. CI verification at final PR head pending.
 - P2b must add an explicit student approval transition with an immutable request key and durable `approved_pending` record; only then call `publish_study_plan` using original revision/context and stable request ID, archive receipts and surface stale conflicts for review. Never auto-approve a tutor proposal or assign `ready:true` before P5.
+
+## Active claim — P2b student-approved publication
+
+- Run: `chat-20261028-lane-d-p2b` · heartbeat 2026-10-28T10:19:26.446Z; base `main@04b339f4`.
+- Scope: `src/app/study_plan.js`, `test/study_approval.js`, `docs/lanes/D.md`. Parent P2a merged PR #91. Use existing `publish_study_plan` RPC; no production migration.
+- Next: implement explicit student-approval intent in per-owner durable storage, stable request UUID, authenticated CAS publish, server receipt, stale-conflict review, network-failure retry; add isolated fake IndexedDB tests. Leave `ready:false` and no implicit tutor approval.
