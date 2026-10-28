@@ -132,6 +132,13 @@ async function run() {
     { timeout: wait });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('.today').waitFor({ timeout: wait });
+    // Navigation can occur during an activation handoff. Require the final
+    // controller to settle before asserting cache-retirement invariants.
+    await page.waitForFunction(async () => {
+      const reg = await navigator.serviceWorker.ready;
+      return reg.active?.state === 'activated' &&
+        navigator.serviceWorker.controller === reg.active;
+    }, null, { timeout: wait });
     const diagnostics = await page.evaluate(async cacheName => {
       const names = await caches.keys();
       const cache = await caches.open(cacheName);
