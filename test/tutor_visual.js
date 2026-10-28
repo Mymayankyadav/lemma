@@ -60,7 +60,12 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     await page.getByRole('button',{name:'Review pasted reply'}).click();
     await page.locator('.tutor-handoff-item').first().waitFor();
     assert.equal(await page.locator('.tutor-handoff-item').count(),2);
-    assert.match(await page.locator('.tutor-handoff-status').innerText(),/not yet saved or approved/);
+    assert.match(await page.locator('.tutor-handoff-status').innerText(),/None recorded/);
+    const save=page.getByRole('button',{name:'Save selected study events'});
+    assert.equal(await save.isDisabled(),true,'requires deliberate event selection');
+    await page.getByRole('checkbox',{name:'Select Event 1 · feedback'}).check();
+    assert.equal(await save.isEnabled(),true,'explicit selection enables Save');
+    assert.equal(await page.getByRole('checkbox',{name:'Select Card proposal 1'}).isChecked(),false,'card proposal never implicitly selected');
     const width=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,viewport:innerWidth}));
     assert.ok(width.doc<=width.viewport+2,'Handoff causes horizontal overflow: '+JSON.stringify(width));
     const boxes=await page.locator('.tutor-handoff > button').evaluateAll(nodes=>
