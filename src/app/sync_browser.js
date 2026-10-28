@@ -535,6 +535,77 @@ const LemmaCloud = (() => {
       } catch (err) { throw failure || err; }
       return discarded;
     }
+    // Read-only companion to a future *server* archive. The five stores are
+    // captured in ONE IndexedDB transaction, not five drifting async reads.
+    // This preserves pending mutations, their conflict/receipt metadata,
+    // unaccepted knowledge drafts, and the immutable local review ledger.
+    // Nothing here is an approved cloud revision or a restore instruction.
+    async localRecoverySnapshot({ maxBytes = 64 * 1024 * 1024, maxRows = 200000 } = {}) {
+      if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 64 * 1024 * 1024 ||
+          !Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 200000)
+        throw new Error('Invalid local recovery safety bounds');
+      const names = ['notes','reviews','retractions','outbox','meta'];
+      const entries = {};
+      await tx(this.db, names, 'readonly', t => {
+        for (const name of names) {
+          const store = t.objectStore(name);
+          const values = store.getAll(), keys = store.getAllKeys();
+          const part = { values: null, keys: null };
+          entries[name] = part;
+          values.onsuccess = () => { part.values = values.result; };
+          keys.onsuccess = () => { part.keys = keys.result; };
+        }
+      });
+      const stores = {};
+      let count = 0;
+      // IndexedDB can persist Dates, Blobs and cyclic structures, but silently
+      // JSON-encoding those would make an archive unrecoverable. Reject them.
+      function portable(value, depth = 0, seen = new WeakSet()) {
+        if (depth > 32) throw new Error('Local recovery JSON depth exceeded');
+        if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
+        if (typeof value === 'number' && Number.isFinite(value)) return;
+        if (!value || typeof value !== 'object')
+          throw new Error('Local recovery contains non-JSON data');
+        if (seen.has(value)) throw new Error('Local recovery contains a circular value');
+        if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype &&
+            Object.getPrototypeOf(value) !== null)
+          throw new Error('Local recovery contains a non-JSON object');
+        seen.add(value);
+        for (const key of Object.keys(value)) {
+          if (['__proto__','prototype','constructor'].includes(key))
+            throw new Error('Local recovery contains an unsafe key');
+          portable(value[key], depth + 1, seen);
+        }
+        seen.delete(value);
+      }
+      for (const name of names) {
+        const part = entries[name];
+        if (!Array.isArray(part.keys) || !Array.isArray(part.values) ||
+            part.keys.length !== part.values.length)
+          throw new Error('Incomplete local recovery transaction');
+        count += part.keys.length;
+        if (count > maxRows) throw new Error('Local recovery record limit exceeded');
+        stores[name] = part.keys.map((key, i) => {
+          const value = part.values[i];
+          if (typeof key !== 'string' &&
+              !(typeof key === 'number' && Number.isSafeInteger(key)))
+            throw new Error('Unsupported local recovery record key');
+          portable(value);
+          if (value && typeof value === 'object' && !Array.isArray(value) &&
+              ((value.userId !== undefined && value.userId !== this.userId) ||
+               (value.user_id !== undefined && value.user_id !== this.userId)))
+            throw new Error('Foreign owner row in local recovery cache');
+          return { key, value };
+        });
+      }
+      const snapshot = { app:'lemma',version:1,scope:'account-local-recovery',
+        capture:'single-indexeddb-readonly-transaction',ownerId:this.userId,
+        capturedAt:new Date().toISOString(),stores };
+      const serialized = JSON.stringify(snapshot);
+      if (new TextEncoder().encode(serialized).byteLength > maxBytes)
+        throw new Error('Local recovery byte limit exceeded');
+      return snapshot;
+    }
     async note(id) { return request(this.db.transaction('notes').objectStore('notes').get(id)); }
     async list() { return request(this.db.transaction('outbox').objectStore('outbox').getAll()); }
     async get(id) { return request(this.db.transaction('outbox').objectStore('outbox').get(id)); }
