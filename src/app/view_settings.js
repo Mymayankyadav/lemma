@@ -468,7 +468,7 @@ const SettingsView = (() => {
       };
       logout.onclick = async () => {
         logout.disabled = true;
-        try { await Store.whenSaved(); await LemmaAccount.signOut(); accountState.textContent = 'Signed out. Device cards remain available.'; }
+        try { await Store.whenSaved(); await LemmaAccount.signOut(); accountState.textContent = 'Signed out. Device cards remain available.'; App.refresh(); }
         catch (err) { message.textContent = 'Sign-out error: ' + err.message; }
         finally { logout.disabled = false; }
       };
@@ -652,11 +652,27 @@ const SettingsView = (() => {
           : 'Local draft revision ' + row.localRevision + ' saved on this device. Not accepted or sent to cloud.' +
             (row.authorKind === 'tutor' ? ' Tutor proposal: still unaccepted.' : '');
     }
-    create.onclick = () => {
+    function dirty() {
+      const row = editor.current();
+      if (!row || row.status === 'approved_pending') return false;
+      return title.value !== (row.title || '') ||
+        summary.value !== (row.payload?.summary || '') ||
+        goals.value !== (Array.isArray(row.payload?.goals) ? row.payload.goals.join('\\n') : '') ||
+        markdown.value !== (row.markdown || '');
+    }
+    async function maySwitch() {
+      if (!dirty()) return true;
+      return confirmDialog({ title: 'Leave unsaved context edits?',
+        message: 'Changes in this form have not been saved to the private account cache. Copy them before switching drafts.',
+        confirmLabel: 'Leave unsaved edits', danger: true });
+    }
+    create.onclick = async () => {
+      if (!await maySwitch()) return;
       try { show(editor.start()); }
       catch (err) { status.textContent = err.message; }
     };
     open.onclick = async () => {
+      if (!await maySwitch()) return;
       open.disabled = true;
       try { show(await editor.open(id.value)); }
       catch (err) { status.textContent = err.message; }
@@ -664,10 +680,17 @@ const SettingsView = (() => {
     };
     save.onclick = async () => {
       save.disabled = true;
+      create.disabled = open.disabled = true;
+      for (const control of [title, summary, goals, markdown]) control.disabled = true;
       try { show(await editor.save({ title: title.value, summary: summary.value,
         goals: goals.value, markdown: markdown.value })); }
       catch (err) { status.textContent = err.message; }
-      finally { save.disabled = editor.current()?.status === 'approved_pending'; }
+      finally {
+        const locked = editor.current()?.status === 'approved_pending';
+        for (const control of [title, summary, goals, markdown]) control.disabled = locked;
+        save.disabled = locked;
+        create.disabled = open.disabled = false;
+      }
     };
     return section('set-knowledge-drafts', 'Private study context drafts',
       'Unaccepted drafts are saved only in this device’s signed-in account cache. Copy the context ID to reopen it after a reload. Saving does not approve or publish a context.',
