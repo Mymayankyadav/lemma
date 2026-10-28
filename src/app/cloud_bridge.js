@@ -426,7 +426,7 @@ const LemmaCloudBridge = (() => {
     '20261026121817','20261026130428','20261026153542',
     '20261028031800','20261028043000','20261028051500',
     '20261028094500','20261028120000','20261028155500',
-    '20261028163000'
+    '20261028163000','20261028174411'
   ]);
   function archiveCanonical(value,depth=0) {
     if(depth>32) throw new Error('Workspace archive nesting exceeds limit');
@@ -553,17 +553,7 @@ const LemmaCloudBridge = (() => {
       manifest:{counts,hashes,sha256}};
   }
 
-  // R2h. Two independently timed, explicitly requested READ-ONLY captures:
-  // the server's own transaction and the local IndexedDB transaction. They
-  // are NOT one atomic server/local snapshot and grant no restore permission.
-  async function verifyReadOnlyRecoveryPair(pair,expectedOwnerId){
-    if(!recoveryOwner(expectedOwnerId)||pair?.app!=='lemma' ||
-       pair.version!==1 || pair.scope!=='account-recovery-pair' ||
-       pair.capture!=='two-independent-readonly-snapshots' ||
-       pair.ownerId!==expectedOwnerId ||
-       !pair.server || !pair.local || !pair.manifest)
-      throw new Error('Invalid recovery pair or owner');
-    const archive=pair.server;
+  async function verifyServerWorkspaceArchive(archive,expectedOwnerId){
     if(archive.app!=='lemma' || archive.version!==2 ||
        archive.scope!=='account-workspace' || archive.capture!=='transactional' ||
        archive.ownerId!==expectedOwnerId ||
@@ -593,6 +583,51 @@ const LemmaCloudBridge = (() => {
     if(archiveCanonical(archive.manifest)!==
        archiveCanonical({counts,hashes,sha256:digest}))
       throw new Error('Paired server archive checksum mismatch');
+    return {ownerId:expectedOwnerId,count:verified.count,sha256:digest,readOnly:true};
+  }
+  async function restoreServerWorkspaceArchive(archive,{requestId,studentConfirmed=false,dryRun=true}={}){
+    if(studentConfirmed!==true || !isUuid(requestId) || typeof dryRun!=='boolean')
+      throw new Error('Explicit restore confirmation and stable request ID required');
+    const ownerId=LemmaAccount.user?.id,client=LemmaAccount.client;
+    const handle=typeof LemmaSync!=='undefined' ? LemmaSync.accountHandle() : null;
+    const check=()=>{
+      if(!recoveryOwner(ownerId)||!client||LemmaAccount.user?.id!==ownerId ||
+         LemmaAccount.client!==client || LemmaSync.accountHandle()!==handle)
+        throw new Error('Account changed during workspace restore');
+    };
+    check();
+    const snapshot=structuredClone(archive);
+    await verifyServerWorkspaceArchive(snapshot,ownerId);
+    check();
+    const auth=await authorize();check();
+    if(auth.userId!==ownerId || auth.client!==client || !auth.token)
+      throw new Error('Authenticated restore owner changed');
+    const response=await client.rpc('restore_account_workspace',{
+      p_archive:snapshot,p_request_id:requestId,p_dry_run:dryRun,p_confirm:true
+    }).setHeader('Authorization','Bearer '+auth.token);
+    check();
+    if(response.error) throw new Error(response.error.message || 'Workspace restore unavailable');
+    const result=response.data;
+    if(result?.ownerId!==ownerId || result.requestId!==requestId ||
+       !['validated','restored'].includes(result.status) || result.tables!==19 ||
+       !Number.isSafeInteger(result.rows) || result.rows<0 ||
+       (!dryRun && result.status!=='restored'))
+      throw new Error('Invalid workspace restore receipt');
+    return result;
+  }
+
+  // R2h. Two independently timed, explicitly requested READ-ONLY captures:
+  // the server's own transaction and the local IndexedDB transaction. They
+  // are NOT one atomic server/local snapshot and grant no restore permission.
+  async function verifyReadOnlyRecoveryPair(pair,expectedOwnerId){
+    if(!recoveryOwner(expectedOwnerId)||pair?.app!=='lemma' ||
+       pair.version!==1 || pair.scope!=='account-recovery-pair' ||
+       pair.capture!=='two-independent-readonly-snapshots' ||
+       pair.ownerId!==expectedOwnerId ||
+       !pair.server || !pair.local || !pair.manifest)
+      throw new Error('Invalid recovery pair or owner');
+    const verified=await verifyServerWorkspaceArchive(pair.server,expectedOwnerId);
+    const archive=pair.server, digest=archive.manifest.sha256;
     const local=await verifyLocalRecoveryEnvelope(pair.local,expectedOwnerId);
     const pairInput={app:'lemma',version:1,scope:'account-recovery-pair',
       capture:'two-independent-readonly-snapshots',ownerId:expectedOwnerId,
@@ -818,7 +853,8 @@ const LemmaCloudBridge = (() => {
   }
   return { captureLocalRecovery, captureLocalRecoveryEnvelope, verifyLocalRecoveryEnvelope,
     captureServerWorkspaceSnapshot, validateServerWorkspaceSnapshot,
-    sealServerWorkspaceArchive, captureReadOnlyRecoveryPair, verifyReadOnlyRecoveryPair,
+    sealServerWorkspaceArchive, verifyServerWorkspaceArchive, restoreServerWorkspaceArchive,
+    captureReadOnlyRecoveryPair, verifyReadOnlyRecoveryPair,
     authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
     commitAcceptedContext,

@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {assertAllowedMigrationHistory,knowledgeMigrations,ownerSnapshotMigration}=require('./sync_security_parity.js');
+const {assertAllowedMigrationHistory,knowledgeMigrations,ownerSnapshotMigration,ownerRestoreMigration}=require('./sync_security_parity.js');
 const legacy=[
  {version:'20261026085028',name:'initial_learning_state'},
  {version:'20261026090019',name:'versioned_study_planning'},
@@ -31,3 +31,6 @@ assert.throws(()=>assertAllowedMigrationHistory([...base,{...plan,version:'bad'}
 assert.throws(()=>assertAllowedMigrationHistory([...legacy.slice(0,8),{...legacy[8],name:'silently_renamed'},...knowledgeMigrations],legacy),/original nine/);
 assert.throws(()=>assertAllowedMigrationHistory([...base,plan],legacy.slice(1)),/baseline changed/);
 console.log('ok: migration parity requires exact legacy/knowledge history and permits only ordered plan/tutor or exact pinned R2e addition');
+
+assert.doesNotThrow(()=>assertAllowedMigrationHistory([...base,plan,tutor,ownerSnapshotMigration,ownerRestoreMigration],legacy));
+assert.throws(()=>assertAllowedMigrationHistory([...base,ownerSnapshotMigration,{...ownerRestoreMigration,version:'20261028174412'}],legacy),/restore migration version changed/);
