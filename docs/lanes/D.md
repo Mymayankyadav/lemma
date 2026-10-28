@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P4c2 hidden Study conflict-inspection and explicit restart UI; then P4c3 proof resumption after reload and P5 local stack/visual acceptance. Remain hidden until P5.
+Next action: P4c3 mid-proof checkpoint selection and explicit proof continuation after reload; then P5 full local-stack 12-checkpoint acceptance and visual review. Keep Study hidden until gate completion.
 
 | Field | Value |
 | --- | --- |
@@ -129,3 +129,9 @@ Next action: P4c2 hidden Study conflict-inspection and explicit restart UI; then
 - `view_study.js` now displays **Inspect rejected amendment** only for durable `needs_review`; an explicit click shows original vs current revisions, added/removed/modified checkpoint IDs, overlapping edits and reassessment risks. A separate **Restart as unapproved draft** action calls P4c1 owner-scoped atomic archive/restart, never reuses approval or publishes. If stale again, inspection must be repeated; reload/preview never restarts. Identity/route guards after each awaited operation.
 - `test/study_amendment_ui.js` covers no implicit reads/writes, rejected conflict inspection vs restart, stale retry, owner switch while reviewing and no implicit publication. `test/study_view_browser.js` also produces conflict comparison desktop/mobile synthetic screenshots and checks narrow viewport and explicit restart.
 - Exact-head CI pending. Next P4c3 mid-proof reload persistence test and P5 final local-stack plan gate. `StudyView.ready=false`; no production schema writes.
+
+## Active claim — P4c3 reload-safe unfinished proof selection
+
+- Run `chat-20261028-lane-d-p4c3-owner`; 28 October 2026; base main@f3b6656c0c73 after P4c2 [PR #120](https://github.com/Mymayankyadav/lemma/pull/120) merged and regression 40684267898 SUCCESS at exact PR head.
+- Scope D-owned `src/app/study_plan.js`, `src/app/view_study.js`, `test/study_resume.js`, `test/study_view.js`, this handoff. No A/B/E/F/production edits.
+- Fix resume selection when a plan has no manually `in_progress` checkpoint: detect most recently active unfinished proof/hint/session-note from the append-only event ledger for the approved revision and prefer its checkpoint; then show an explicitly activated `Continue saved proof` action that preloads the saved proof without writing, never overwrites unsaved text. Preserve status priority, account guards, exact hint level and current revision pin; no inferred mastery. Add page-reload, two-identity, multiple checkpoints, stale/offline tests. CI and P5 pending.
