@@ -7,7 +7,12 @@ const {chromium}=require('playwright');
  const browser=await chromium.launch({headless:true});
  try {
   const page=await browser.newPage({viewport:{width:1280,height:900}});
-  await page.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div></body></html>');
+  // UUID generation is secure-context only; about:blank is not a representative
+  // GitHub Pages origin. Serve the fixture on HTTPS without external requests.
+  await page.route('https://lemma.test/**', route => route.fulfill({
+    status:200,contentType:'text/html',body:'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div></body></html>'
+  }));
+  await page.goto('https://lemma.test/');
   await page.addStyleTag({content:fs.readFileSync('src/app.css','utf8')+'\n'+fs.readFileSync('src/styles/study.css','utf8')});
   const mock=`
   function h(tag,attrs,...kids) {
@@ -57,7 +62,14 @@ const {chromium}=require('playwright');
   await page.screenshot({path:'test-output/ui/study-p3-mobile.png',fullPage:true});
   await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('Prove finite subcover for all x');
   await page.getByRole('button',{name:'Save proof attempt'}).click();
-  await page.getByText(/Saved as append-only study evidence/).waitFor();
+  await page.waitForFunction(() => {
+    const status=document.querySelector('.study-form .study-write-status');
+    return status?.textContent.includes('Saved as append-only') ||
+      status?.textContent.includes('Not confirmed');
+  });
+  const savedStatus=await page.locator('.study-form .study-write-status').first().textContent();
+  assert.match(savedStatus,/Saved as append-only study evidence/,
+    'the synthetic HTTPS test must produce a verified append-only receipt');
   const events=await page.evaluate(()=>window.__writes);
   assert.equal(events.length,1);
   assert.equal(events[0].type,'attempt');
