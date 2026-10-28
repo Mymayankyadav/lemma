@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K2g — durable authenticated approved-intent delivery (active claim)
+
+- **Claim:** `chat-20261028-k2g-submit`, UTC heartbeat 2026-10-28T06:49:56.180Z, base `main@e45115622b`, branch `lane-a/knowledge-01-k2g-submit-receipts`. K2f PR #70 merged; post-merge main regression, Android, local Supabase and Pages all SUCCESS (40645804370/40645804282/40645804339/40645804296). No active lane A PR.
+- **Scope:** explicitly submit an already-student-approved `approved_pending` study-context intent using the original durable request ID and expected server revision through K2d's authenticated CAS. Mark attempt before network, retain unknown/lost-response intents, atomically archive confirmed revision receipt, mark stale-context conflict as `needs_review` without changing content or auto-replanning. Fail closed on offline/signout/account switch. **No implicit approval, automatic retry daemon, conflict auto-merge or production DB mutation.**
+- **Files:** A-owned `src/app/sync_browser.js`, `src/app/cloud_bridge.js`, `test/sync_knowledge_drafts.js`, `test/account_knowledge_drafts.js`, `docs/lanes/A.md`; no migrations/shared dependencies.
+- **Gate:** crash before/after RPC, same-key lost-response replay, owner separation, conflict without source overwrite, local receipt atomicity, offline, double-submission and auth switch; full exact-head regression/Android/local-stack CI, then post-merge main. Production K2a/b/c deployment and K3 UI remain separately gated.
+- **Next:** implement and validate; if execution limit reached leave this draft PR with exact errors/head and no false merge claims. K2h later exposes explicit reviewed conflict resolution and automatic retry policy.
+
 ## KNOWLEDGE-01 K2f — explicitly reviewed durable acceptance intent (active claim)
 
 - **Claim:** `chat-20261028-k2f-approved-intents`; UTC heartbeat 2026-10-28T06:34:45.724Z; base `main@233251d349`; branch `lane-a/knowledge-01-k2f-approved-intents`; no active A PR at pickup. K2e PR #69 merged; main Android, Supabase and Pages passed; regression editor-preview transient failed once but targeted rerun (#40644191542 attempt 2) passed with intact assertions.
