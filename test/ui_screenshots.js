@@ -263,6 +263,54 @@ async function shot(page, name, size, scheme) {
           if (s.role !== 'status' || s.observed !== s.expected || s.title !== s.expected || !s.classOk || s.visibleObserved !== s.visibleExpected)
             throw new Error('Account status accessibility/recovery regression: ' + JSON.stringify(s));
 
+        // Real Chromium offline event, with only the account *phase* held at
+        // connecting. This reproduces the local-stack UI failure seen in
+        // PR #46: navigator.onLine=false but the phase has not caught up.
+        // Unlike the status projections above, browser network loss is real.
+        await page.evaluate(() => {
+          const { App, Store, Sync } = window.__uiAcceptance;
+          window.__offlineStatusRestore = {
+            store: Store.status, sync: Object.getOwnPropertyDescriptor(Sync, 'status'),
+          };
+          Store.status = () => ({ mode: 'account', pending: 0, failed: 0, offline: false });
+          Object.defineProperty(Sync, 'status', {
+            configurable: true, get: () => ({ phase: 'connecting', pending: 0 }),
+          });
+          App.render();
+        });
+        try {
+          if ((await page.locator('#sync .sr-only').textContent()) !== 'Saved on device · checking cloud')
+            throw new Error('Offline fallback precondition is not the connecting status');
+          await ctx.setOffline(true);
+          await page.waitForFunction(() =>
+            navigator.onLine === false &&
+            document.querySelector('#sync .sr-only')?.textContent === 'Offline · changes queued on device' &&
+            document.querySelector('#sync .sync-label')?.textContent === 'Offline');
+          const offlineState = await page.locator('#sync').evaluate(el => ({
+            role: el.getAttribute('role'), cls: el.className, label: el.querySelector('.sync-label')?.textContent,
+          }));
+          if (offlineState.role !== 'status' || !offlineState.cls.includes('pending') ||
+              offlineState.label !== 'Offline')
+            throw new Error('Connecting account lost its visible offline cue: ' + JSON.stringify(offlineState));
+          await shot(page, 'status-offline-connecting', size, scheme);
+          await ctx.setOffline(false);
+          await page.waitForFunction(() =>
+            navigator.onLine === true &&
+            document.querySelector('#sync .sr-only')?.textContent === 'Saved on device · checking cloud' &&
+            !document.querySelector('#sync .sync-label'));
+        } finally {
+          await ctx.setOffline(false);
+          await page.evaluate(() => {
+            const saved = window.__offlineStatusRestore;
+            if (!saved) return;
+            const { App, Store, Sync } = window.__uiAcceptance;
+            Store.status = saved.store;
+            Object.defineProperty(Sync, 'status', saved.sync);
+            delete window.__offlineStatusRestore;
+            App.render();
+          });
+        }
+
         // Both shortcut-driven and focus/Enter routes must work without a mouse.
         await goTo(page, 'home');
         await page.keyboard.press('/');
