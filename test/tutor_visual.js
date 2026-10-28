@@ -63,6 +63,7 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     assert.match(await page.locator('.tutor-handoff-status').innerText(),/None recorded/);
     const save=page.getByRole('button',{name:'Save selected study events'});
     assert.equal(await save.isDisabled(),true,'requires deliberate event selection');
+    await page.locator('.tutor-handoff-item').first().locator('summary').click();
     await page.getByRole('checkbox',{name:'Select Event 1 · feedback'}).check();
     assert.equal(await save.isEnabled(),true,'explicit selection enables Save');
     assert.equal(await page.getByRole('checkbox',{name:'Select Card proposal 1'}).isChecked(),false,'card proposal never implicitly selected');
