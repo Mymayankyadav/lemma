@@ -505,6 +505,15 @@ async function shot(page, name, size, scheme) {
           await page.evaluate(() => window.__nativeReminderMock.requests) !== 2)
         throw new Error('Explicit granted consent was not persisted');
       await shot(page, 'reminders-enabled', size, scheme);
+      // Revocation is observed on foreground without another permission prompt.
+      await page.evaluate(() => {
+        window.__nativeReminderMock.setPermission('denied');
+        window.dispatchEvent(new Event('focus'));
+      });
+      await page.waitForFunction(() => document.querySelector('#s-reminder-status')?.textContent.includes('Android permission denied'));
+      if (await page.evaluate(() => window.__nativeReminderMock.requests) !== 2)
+        throw new Error('Permission refresh prompted without a user gesture');
+      await shot(page, 'reminders-revoked', size, scheme);
       await time.fill('10:30');
       await time.dispatchEvent('change');
       await page.waitForFunction(() => JSON.parse(localStorage.getItem('lemma-due-reminder-v1'))?.localTime === '10:30');
