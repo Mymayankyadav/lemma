@@ -11,7 +11,8 @@ const CP='compactness-proof';
 const otherOwner='00000000-0000-4000-8000-000000000005';
 let dialog,revision=3,checkpoint=CP,contextRevision=2,failOnce=false;
 const staged=[],approvals=[],published=[],events=[];
-const account={user:{id:OWNER}};
+let notifyIdentityChange=null;
+const account={user:{id:OWNER},onIdentityChange(fn){notifyIdentityChange=fn;}};
 const app={workspaceRevision:1,workspaceBlocked:false};
 const plan={
  async activeContext(){return {planId:ID,planRevision:revision,
@@ -148,6 +149,13 @@ async function attempt(u){return u.stage.events.click();}
  app.workspaceBlocked=true;await attempt(u);
  assert.equal(staged.length,3,'blocked workspace cannot stage draft');
  app.workspaceBlocked=false;
+
+ u=await open();select(u);
+ assert.equal(typeof notifyIdentityChange,'function');
+ notifyIdentityChange();
+ await attempt(u);
+ assert.equal(staged.length,3,'same-user relogin must invalidate draft selection');
+ assert.match(u.status.textContent,/account or workspace changed/);
 
  u=await open();select(u);
  u.input.value='{}';u.input.events.input();
