@@ -10,6 +10,8 @@ const sourceId='00000000-0000-4000-8000-000000000004';
 const sectionId='00000000-0000-4000-8000-000000000005';
 const requestId='00000000-0000-4000-8000-000000000006';
 let currentUser=userA,online=true;
+const accountHandle={userId:userA};
+let activeHandle=accountHandle;
 let onSend=()=>({data:{ok:true}});
 const calls=[],headers=[];
 const client={
@@ -25,6 +27,7 @@ const client={
 const bridgeSrc=fs.readFileSync('src/app/cloud_bridge.js','utf8');
 const scope=vm.createContext({
  LemmaAccount:{client,get user(){return {id:currentUser};}},
+ LemmaSync:{accountHandle:()=>activeHandle},
  LemmaCloud:{accountToken:async(_client,id)=>{
   assert.equal(_client,client);assert.equal(id,userA);
   return 'scoped-test-token';
@@ -104,5 +107,80 @@ const bridge=scope.knowledgeBridge;
  currentUser=userA;
  onSend=()=>({data:{restored:true}});
  assert.deepEqual(await bridge.readAcceptedContext(contextId),{restored:true});
- console.log('PASS K2d account-scoped accepted knowledge RPC, student consent, stable retry, offline/account guards and error redaction');
+ // K2i: context-selected immutable source citation, bounded to one page.
+ assert.equal(typeof bridge.readPinnedAcceptedCitation,'function');
+ const contextPacket={context_id:contextId,revision:4,format:'structured_v1',
+  title:'Topology',context_markdown:'Accepted content',
+  accepted_json:{schema_version:1,source_refs:[{source_id:sourceId,revision:2}]}};
+ const sourcePacket={context_id:contextId,context_revision:1,source_id:sourceId,
+  source_revision:2,title:'Source',source_type:'manual',citation:{edition:'v1'},
+  excerpts:[{section_id:sectionId,locator:'§1',title:'Lemma',
+   text:'Accepted proof excerpt',sha256:'a'.repeat(64)}],has_more:false};
+ onSend=(name,args)=>{
+  if(name==='get_accepted_study_context')return {data:contextPacket};
+  if(name==='get_knowledge_excerpts'){
+   assert.equal(args.p_source_revision,2,'source revision must follow pinned context');
+   assert.equal(args.p_limit,2,'server page size must be bounded');
+   return {data:sourcePacket};
+  }
+  throw new Error('unexpected read-only citation RPC');
+ };
+ const first=await bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2);
+ assert.equal(first.context.revision,4);
+ assert.equal(first.source.source_revision,2);
+ assert.equal(first.source.excerpts[0].section_id,sectionId);
+ const anotherTutor=await bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2);
+ assert.equal(JSON.stringify(first),JSON.stringify(anotherTutor),
+  'independent readers requesting the accepted revision get the same cited packet');
+ let before=calls.length;
+ await assert.rejects(bridge.readPinnedAcceptedCitation(contextId,userB,4,null,2),
+  /Source is not referenced/);
+ assert.equal(calls.length,before+1,'unreferenced source cannot trigger excerpt RPC');
+ await assert.rejects(bridge.readPinnedAcceptedCitation(contextId,sourceId,4,'bad',2),
+  /Invalid knowledge citation/);
+ await assert.rejects(bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,7),
+  /Invalid knowledge citation/);
+ const pageCases=[
+  {...sourcePacket,source_revision:3},
+  {...sourcePacket,context_id:userB},
+  {...sourcePacket,context_revision:5},
+  {...sourcePacket,excerpts:Array(3).fill(sourcePacket.excerpts[0])},
+  {...sourcePacket,excerpts:[{...sourcePacket.excerpts[0],sha256:'bad'}]},
+  {...sourcePacket,has_more:'false'}
+ ];
+ for(const badPage of pageCases){
+  onSend=(name)=>({data:name==='get_accepted_study_context'?contextPacket:badPage});
+  await assert.rejects(bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2),
+   /Accepted citation packet is inconsistent/);
+ }
+ onSend=(name)=>({data:name==='get_accepted_study_context'?
+  {...contextPacket,revision:5}:sourcePacket});
+ await assert.rejects(bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2),
+  /not citation-ready/,'incorrect context revision cannot be displayed');
+ onSend=(name)=>{
+  if(name==='get_accepted_study_context'){
+   activeHandle={userId:userA};
+   return {data:contextPacket};
+  }
+  return {data:sourcePacket};
+ };
+ before=calls.length;
+ await assert.rejects(bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2),
+  /Account changed during knowledge citation read/);
+ assert.equal(calls.length,before+1,'workspace switch must stop before source RPC');
+ activeHandle=accountHandle;
+ onSend=(name)=>{
+  if(name==='get_knowledge_excerpts') currentUser=userB;
+  return {data:name==='get_accepted_study_context'?contextPacket:sourcePacket};
+ };
+ await assert.rejects(bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2),
+  /Account changed/,'sign-out between calls must not expose old-owner excerpt');
+ currentUser=userA;
+ onSend=(name)=>({data:name==='get_accepted_study_context'?contextPacket:sourcePacket});
+ assert.equal((await bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2))
+  .source.excerpts[0].text,'Accepted proof excerpt');
+ assert.equal(calls.filter(x=>x.name==='commit_structured_study_context').length,2,
+  'citation tests must be read-only; only earlier explicit acceptance tests may commit');
+
+ console.log('PASS K2d/K2i account-scoped accepted knowledge RPC, student consent, stable retry, offline/account guards and error redaction');
 })().catch(e=>{console.error('FAIL K2d knowledge bridge: '+e.message);process.exitCode=1;});
