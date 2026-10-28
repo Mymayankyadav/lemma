@@ -51,6 +51,11 @@ function liveContext(){return {planId:P,planRevision:3,
  lastEvidence:null,nextAction:{text:'Find finite refinement'}}}
 (async()=>{
  assert.equal(ui.ready,false,'P3 must remain hidden until full acceptance');
+ user=null;
+ const noAccount=mount();await flush();
+ assert.match(find(noAccount,n=>n.attrs.class==='study-message').textContent,/Sign in/);
+ assert.equal(ctxRead,0,'signed-out screen cannot fetch account data');
+ noAccount.isConnected=false;user=A;
  context=null;
  let root=mount();await flush();
  assert.match(find(root,n=>n.attrs.class==='study-message').textContent,/No published/);
