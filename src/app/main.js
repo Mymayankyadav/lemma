@@ -1,6 +1,9 @@
 /* ---------- app shell, routing, boot ---------- */
 const App = (() => {
+  // The module can be absent in older builds. Never expose an incomplete plan.
+  const studyReady = () => typeof StudyView !== 'undefined' && StudyView.ready === true;
   const VIEWS = { home: HomeView, browse: BrowseView, stats: StatsView, settings: SettingsView, review: ReviewView };
+  if (studyReady()) VIEWS.study = StudyView;
   const PASSIVE = new Set(['home', 'stats']);
   let view = 'home';
   let params = {};
@@ -37,7 +40,9 @@ const App = (() => {
   }
 
   function buildShell() {
-    const nav = [['home', 'Today', 'decks'], ['browse', 'Cards', 'list'], ['settings', 'Settings', 'sliders']];
+    const nav = [['home', 'Today', 'decks'],
+      ...(studyReady() ? [['study', 'Study', 'steps']] : []),
+      ['browse', 'Cards', 'list'], ['settings', 'Settings', 'sliders']];
     const top = h('header', { class: 'topbar' },
       h('div', { class: 'topbar-inner' },
         h('button', { class: 'brand', type: 'button', onclick: () => go('home'), 'aria-label': 'Lemma, home' }, h('span', { class: 'brand-mark', text: 'Lemma' })),
@@ -45,10 +50,10 @@ const App = (() => {
         h('div', { class: 'sync', id: 'sync', role: 'status' }),
         h('button', { class: 'icon-btn icon-accent btn-new', type: 'button', 'aria-label': 'New card', title: 'New card (N)', html: icon('plus', 20), onclick: () => newCard() })));
     const tabBtn = ([v, l, ic]) => h('button', { type: 'button', class: 'tb', dataset: { go: v }, 'aria-label': l, title: l, html: `<span class="tb-ico">${icon(ic, 22)}</span><span class="tb-label">${l}</span>`, onclick: () => go(v) });
-    const bottom = h('nav', { class: 'tabbar', 'aria-label': 'Sections' },
-      nav.slice(0, 2).map(tabBtn),
+    const bottom = h('nav', { class: 'tabbar' + (studyReady() ? ' has-study' : ''), 'aria-label': 'Sections' },
+      nav.slice(0, -1).map(tabBtn),
       h('button', { type: 'button', class: 'tb tb-add', 'aria-label': 'New card', title: 'New card', html: `<span class="tb-ico">${icon('plus', 24)}</span><span class="tb-label">New</span>`, onclick: () => newCard() }),
-      nav.slice(2).map(tabBtn));
+      nav.slice(-1).map(tabBtn));
     const app = $('#app');
     fill(app, top, h('main', { id: 'main', class: 'main', tabindex: '-1' }), bottom);
   }
@@ -108,7 +113,7 @@ const App = (() => {
 
   function go(v, p = {}) {
     if (workspaceBlocked) return;
-    if (!VIEWS[v]) v = 'home';
+    if (!VIEWS[v] || (v === 'study' && !studyReady())) v = 'home';
     if (view === 'review' && v !== 'review') Scratch.close();
     view = v;
     params = p;
@@ -128,6 +133,7 @@ const App = (() => {
         text: 'Securing workspace · account data is hidden while local cards are restored.' }));
       return;
     }
+    if (view === 'study' && !studyReady()) { view = 'home'; params = {}; }
     const y = window.scrollY;
     document.body.classList.toggle('in-review', view === 'review');
     const node = VIEWS[view].render(params);
