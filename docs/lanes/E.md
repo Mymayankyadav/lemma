@@ -1,10 +1,10 @@
 # Lane E — tutor handoff (TUTOR-01)
 
-Next action: TUTOR-01 T1 — create `src/app/tutor_handoff.js` with `TutorHandoff.exportPacket` and `parseReply` (packet `lemma.tutor_handoff.v1`, `ready:false`) exactly per `docs/SHIP_PLAN.md`, document the format in `docs/TUTOR_HANDOFF.md`, and test round trips, size bounds, schema/ID/revision validation and hostile input in `test/tutor_packet.js` against a mock `StudyPlan`.
+Next action: TUTOR-01 T2 — add an explicit-consent copy/paste handoff sheet (`TutorHandoff.open` and E-owned `src/styles/handoff.css`) after T1 PR #86 is green and merged; keep `ready:false`. Compare current `StudyPlan.activeContext()` ID/revision/checkpoint against reply before any approved action. Then T3 persistence and T4 owner model round trip.
 
 | Field | Value |
 | --- | --- |
-| Status | New lane (integration 28 Oct). T1 claimed 28 Oct 2026 09:41 UTC; in progress on `lane-e/tutor-01-t1-packet`. |
+| Status | New lane (integration 28 Oct). T1 implementation on `lane-e/tutor-01-t1-packet`, [PR #86](https://github.com/Mymayankyadav/lemma/pull/86). Head is subject to CI gate. |
 | Task | TUTOR-01 — gate in `plan.md` §2 and `docs/SHIP_PLAN.md` |
 | Owns | see `lanes.json` lane E |
 | Depends on | `StudyPlan` from lane D for real persistence; build and test against the documented contract with a mock until it merges. Packet shape source: "Cross-model handoff context packet" in `docs/STUDY_PLANNING_PROTOCOL.md` (D-owned; ask D via your lane file for changes). |
@@ -14,3 +14,5 @@ Next action: TUTOR-01 T1 — create `src/app/tutor_handoff.js` with `TutorHandof
 **Requests from other lanes:** none yet.
 
 **T1 claim:** `chat-20261028-lane-e-t1` · heartbeat 2026-10-28 09:41 UTC. Files: `src/app/tutor_handoff.js`, `test/tutor_packet.js`, `docs/TUTOR_HANDOFF.md`, this handoff. Mock StudyPlan only; no production migration or student approval. Next: implement pure bounded packet export/parse, test, and request CI.
+
+**T1 evidence (28 Oct, 09:46 UTC):** Pure `exportPacket` (≤32 KiB Markdown, up to 4 pinned cited excerpts, explicit last proof and hint level) and untrusted `parseReply` (≤64 KiB JSON, strict root/event/card/amendment schemas, UUIDs, revision checks, no side effects) implemented, with `docs/TUTOR_HANDOFF.md` and `test/tutor_packet.js`. Local `node test/tutor_packet.js`, `node --check` for both new JS files: PASS against mock; full `npm test`, `npm run build`, lane guard and local-stack/CI pending. **Do not enable ready**: PLAN-01 P1 is a draft PR #83; T2–T4/physical tutoring and backend gates incomplete. No production changes or real student approval.
