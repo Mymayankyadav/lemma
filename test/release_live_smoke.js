@@ -54,6 +54,37 @@ async function smoke(url) {
     stage = 'home';
     await capture('01-today');
 
+    // SHIP-F1: hidden-until-ready is an acceptance property of the *deployed*
+    // site, not just a unit-test assertion about a source-code boolean.
+    stage = 'feature-readiness';
+    const flags = await page.evaluate(() => ({
+      study: typeof StudyView !== 'undefined' && StudyView.ready === true,
+      tutor: typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === true
+    }));
+    const studyNav = await page.locator('nav [data-go="study"]:visible').count();
+    assert.equal(studyNav > 0, flags.study,
+      'visible Study navigation must agree with StudyView.ready');
+    if (!flags.tutor) {
+      assert.equal(await page.getByRole('button', { name: /handoff|send to tutor/i }).count(), 0,
+        'unaccepted tutor handoff must not expose an action');
+      assert.equal(await page.locator('.tutor-handoff-sheet:visible').count(), 0,
+        'unaccepted tutor handoff sheet must be hidden');
+    }
+    if (!flags.study) {
+      // A manually entered URL fragment must not bypass the Study readiness
+      // guard. Full reload is essential: the app reads the hash at boot.
+      const guarded = new URL(parsed.href);
+      guarded.hash = 'study';
+      await page.goto(guarded.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.locator('.today, .onboard').first().waitFor({ timeout });
+      assert.equal(await page.locator('.study-page:visible').count(), 0,
+        'direct #study navigation must fall back to Today while not ready');
+      await capture('01a-hidden-study-route');
+      await page.goto(parsed.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.locator('.today, .onboard').first().waitFor({ timeout });
+    }
+
     stage = 'settings-auth';
     await nav('settings', '.page.settings, .settings');
     // Render the sign-in UI, but never click a provider or enter account credentials.
