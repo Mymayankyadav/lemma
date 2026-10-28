@@ -85,3 +85,9 @@ Next action: P4b1 owner-scoped immutable accepted-version reading and amendment 
 - Run: `chat-20261028-lane-d-p4b1-owner` · heartbeat: 2026-10-28T11:21Z; base current `main@fee93bd` after P4a #110 merged with exact-head [regression 40678593209](https://github.com/Mymayankyadav/lemma/actions/runs/40678593209) / [local stack 40678593235](https://github.com/Mymayankyadav/lemma/actions/runs/40678593235) SUCCESS.
 - Files: `src/app/study_plan.js`, `test/study_amendment_read.js`, this D handoff. P4b1 is **read-only**: fetch currently published owner-scoped `study_plans` and its exact immutable `study_plan_versions` snapshot, compare it to locally unapproved amendment draft using P4a, fail closed for missing, stale or mismatched context and identity switches. Never approve or publish; P4b2 handles visible student review and P2b explicit consent.
 - Next: implement, test owner A/B, version mismatch, offline and no-write gates, run exact-head CI and merge if green. No production writes, `StudyView.ready=false`.
+
+### P4b1 implementation checkpoint
+
+- `StudyPlan.reviewPendingAmendment(planId)` reads the owner's unapproved durable draft, confirms exact published `study_plans.revision` and `study_plan_versions` snapshot and context pins, uses the P4a structural diff, then rechecks both cloud revision and local draft CAS before returning a preview. It fails closed for missing, stale, offline, identity-changed or approved/pending drafts. Does **not** approve or publish.
+- `test/study_amendment_read.js` uses fake IndexedDB + authenticated mock transport to check 12 checkpoints, prerequisite addition, owner scoping, stale published revision, changed context, offline/missing records, identity switch and no RPC calls. Exact-head CI pending.
+- Next: verify and merge P4b1, then P4b2 explicit student-reviewed diff and durable approval buttons, followed by P4c conflict restart/mid-proof continuity and P5 full acceptance. `ready:false`.
