@@ -23,6 +23,8 @@ const NativeShell = (() => {
           (url.pathname && url.pathname !== '/')) return null;
       const code = url.searchParams.get('code');
       const error = url.searchParams.get('error');
+      if (url.searchParams.getAll('code').length > 1 ||
+          url.searchParams.getAll('error').length > 1) return null;
       // PKCE returns ?code; failed provider callbacks return ?error.
       // Never accept unscoped or token-fragment URLs as sign-in evidence.
       if (Boolean(code) === Boolean(error)) return null;
@@ -90,6 +92,13 @@ const NativeShell = (() => {
     } catch (error) {
       console.warn('[Lemma] Android listener failed: ' + event, error);
     }
+  }
+  // Android may launch a stopped process with a deep link before listeners run.
+  // Reuse the same validation/deduplication as warm appUrlOpen events.
+  if (typeof nativeApp.getLaunchUrl === 'function') {
+    Promise.resolve().then(() => nativeApp.getLaunchUrl()).then(onAppUrlOpen).catch(() => {
+      console.warn('[Lemma] Native launch URL unavailable');
+    });
   }
   return { enabled: true, onAuthCallback };
 })();
