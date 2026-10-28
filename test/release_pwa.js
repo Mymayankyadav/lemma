@@ -134,7 +134,7 @@ async function run() {
       return { keys: names, controlled: !!navigator.serviceWorker.controller,
         controllerState: navigator.serviceWorker.controller?.state,
         activeState: reg.active?.state, cachedNewHtml: cachedText.includes('PWA upgrade'),
-        cachedTitle: /<title>([^<]*)<\\/title>/.exec(cachedText)?.[1] || '(missing)',
+        cachedTitle: cachedText.includes('<title>') ? cachedText.split('<title>')[1].split('</title>')[0] : '(missing)',
         shownTitle: document.title };
     }, newName);
     console.log('PWA update diagnostics', JSON.stringify(diagnostics));
