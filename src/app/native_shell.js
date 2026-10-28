@@ -120,6 +120,36 @@ const NativeShell = (() => {
     return () => authListeners.delete(callback);
   }
 
+  // N3a policy only: compute a single generic reminder intent. This never
+  // asks for permission or schedules anything on the OS. The later N3b bridge
+  // must cancel/replace the fixed ID whenever consent, account, due state or
+  // configured time changes, and cancel it when this function returns null.
+  function planDueReminder({ optedIn, permission, localTime, earliestDueAt, now } = {}) {
+    if (optedIn !== true || permission !== 'granted' ||
+        typeof localTime !== 'string' ||
+        !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(localTime) ||
+        !Number.isSafeInteger(now) || now < 0 ||
+        !Number.isSafeInteger(earliestDueAt) || earliestDueAt < 0) return null;
+    // A scheduled reminder is never placed in the past or before a card is
+    // due. Respect the student's chosen local clock time, not UTC, including
+    // across daylight-saving transitions. No card content enters the intent.
+    const threshold = Math.max(now + 60_000, earliestDueAt);
+    if (!Number.isSafeInteger(threshold)) return null;
+    const date = new Date(threshold);
+    if (!Number.isFinite(date.getTime())) return null;
+    const [hour, minute] = localTime.split(':').map(Number);
+    date.setHours(hour, minute, 0, 0);
+    if (date.getTime() < threshold) date.setDate(date.getDate() + 1);
+    const at = date.getTime();
+    // Avoid far-future stale OS alarms; later scheduling can refresh this.
+    if (!Number.isSafeInteger(at) || at < threshold ||
+        at - now > 366 * 86_400_000) return null;
+    return Object.freeze({
+      id: 24001, at, title: 'Review cards',
+      body: 'Your Lemma review is ready', route: 'review'
+    });
+  }
+
   function onBack({ canGoBack } = {}) {
     if (typeof Sheets !== 'undefined' && Sheets.closeTop()) return;
     // App.go switches screens without pushing browser history.
@@ -167,5 +197,5 @@ const NativeShell = (() => {
       console.warn('[Lemma] Native launch URL unavailable');
     });
   }
-  return { enabled: true, onAuthCallback, openAuthBrowser, closeAuthBrowser };
+  return { enabled: true, onAuthCallback, openAuthBrowser, closeAuthBrowser, planDueReminder };
 })();
