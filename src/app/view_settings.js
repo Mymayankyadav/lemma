@@ -273,6 +273,9 @@ const SettingsView = (() => {
   let optResultGeneration = -1;
   let sweep = null;
   let sweepGeneration = -1;
+  // A recovery preflight pauses this tab's account sync. Retain only the owner
+  // marker across Settings rerenders, never the private backup or consent.
+  let pausedRecoveryOwner = null;
 
   function numField(id, label, key, opts = {}) {
     const input = h('input', { id, class: 'input input-num', type: 'number', inputmode: 'numeric', min: opts.min, max: opts.max, step: opts.step || 1, value: Model.settings[key] });
@@ -325,6 +328,11 @@ const SettingsView = (() => {
       h('div',{class:'btn-row'},inspect,cancel),
       h('label',{class:'conflict-confirm'},consent,h('span',{text:'I want to restore this backup to this same account and resume its queued edits.'})),
       h('div',{class:'btn-row'},restore,resume),status);
+    const stopped=()=>typeof LemmaSync.accountHandle==='function' && !LemmaSync.accountHandle();
+    resume.hidden=pausedRecoveryOwner!==ownerId||!stopped();
+    if(!resume.hidden)status.textContent='Account sync is paused after recovery. Resume account sync or choose the backup again.';
+    const markPaused=()=>{pausedRecoveryOwner=ownerId;resume.hidden=false;};
+    const clearPaused=()=>{if(pausedRecoveryOwner===ownerId)pausedRecoveryOwner=null;resume.hidden=true;};
     const current=()=>root.isConnected&&LemmaAccount.user?.id===ownerId&&
       LemmaAccount.client===client&&App.workspaceRevision===generation&&!App.workspaceBlocked;
     const check=()=>{if(!current())throw new Error('Account or workspace changed; reopen recovery.');};
@@ -373,7 +381,7 @@ const SettingsView = (() => {
     };
     inspect.onclick=()=>run(async()=>{
       check();if(!pair)throw new Error('Choose a backup first.');
-      resume.hidden=false;
+      markPaused();
       await LemmaCloudBridge.restoreRecoveryPair(pair,{requestId,studentConfirmed:true,dryRun:true});check();
       validated=true;
       status.textContent='Backup checked. Account sync is paused. Choose Restore account backup to continue, or Resume account sync to leave recovery.';
@@ -385,9 +393,9 @@ const SettingsView = (() => {
         message:'Restore the account records and unsynced work in this file, then resume its queued edits. Existing account work will never be replaced. Your separate device cards stay intact.',
         confirmLabel:'Restore and resume edits'});
       check();if(!accepted)return;
-      resume.hidden=false;
+      markPaused();
       await LemmaCloudBridge.restoreRecoveryPair(pair,{requestId,studentConfirmed:true,dryRun:false,resumeSync:true});check();
-      validated=false;consent.checked=false;resume.hidden=true;
+      validated=false;consent.checked=false;clearPaused();
       status.textContent='Account backup restored. Queued edits can now sync. Use the account workspace above when ready.';
     });
     cancel.onclick=()=>{
@@ -396,7 +404,7 @@ const SettingsView = (() => {
       update();
     };
     resume.onclick=()=>run(async()=>{
-      await LemmaSync.attach(LemmaAccount.user);check();validated=false;consent.checked=false;resume.hidden=true;
+      await LemmaSync.attach(LemmaAccount.user);check();validated=false;consent.checked=false;clearPaused();
       status.textContent='Account sync resumed. Check restore again before restoring a backup.';
     });
     update();return root;
