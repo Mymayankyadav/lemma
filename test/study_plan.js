@@ -131,7 +131,8 @@ const api = sandbox.subject;
  current=null;identityChanged();
  await assert.rejects(api.recordEvent(input),/Sign in/);
  current=a;identityChanged();
- await assert.rejects(api.proposeAmendment({planId:plan}),/unavailable until PLAN-01 P2/);
+ await assert.rejects(api.proposeAmendment({planId:plan}),/Invalid plan draft/,
+  'P2a still rejects incomplete/unreviewed proposals before any cloud write');
  assert.ok(!rpcCalls.some(c=>c.name==='publish_study_plan'),
   'tutors cannot publish or approve a plan in P1');
  console.log('PASS PLAN-01 P1 mocked account guards, approved active context, CAS retry key, stale revision, offline failures, explicit amendment hold');
