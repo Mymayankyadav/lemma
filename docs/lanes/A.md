@@ -1,5 +1,13 @@
 # Lane A — sync, auth and backend
 
+## Active claim — KNOWLEDGE-01 K2a (owner-private context CAS)
+
+- **Run:** `chat-20261028-a-k2a-context-cas`; heartbeat 2026-10-28T03:16:49.666Z; base `main@fd819cd`; branch `lane-a/knowledge-01-k2a-context-cas`.
+- **Bounded scope:** additive migration for accepted `study_context_files` CAS + immutable revision snapshots, owner-scoped invoker RPC, explicit request-id retry/stale errors and strict request bounds; disposable local HTTP two-identity tests; CI integration, A lane handoff. No source/doc upload, tutoring acceptance, UI, Android, production migration or Carrel changes.
+- **Intended files:** `supabase/migrations/*knowledge_context*.sql`, `test/auth_knowledge_context.js`, `.github/workflows/sync-local.yml`, `test/sync_security_parity.js` (only to preserve the exact legacy sync baseline with new additive migration), `docs/lanes/A.md`. If parity needs a broader change, checkpoint rather than weaken it.
+- **Gate:** current-head local stack schema/security, two GoTrue identities, CAS race, retry/idempotency, owner-only reads/denials, regression and Android green. Post-merge main gates required. **NEXT**: implement migration and tests; K2b source citations and UI remain later.
+
+
 Next action: **KNOWLEDGE-01 K2 READY** after K1 inspection-only contract in [PR #53](https://github.com/Mymayankyadav/lemma/pull/53): implement additive private accepted-context revision/CAS and bounded source-reference operations with real two-identity local-stack tests; keep user approval explicit and production untouched until gated.
 
 
