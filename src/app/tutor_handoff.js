@@ -404,7 +404,8 @@ const TutorHandoff = (() => {
         if (typeof App === 'undefined' || typeof App.newCard !== 'function')
           throw new Error('Card editor is not available');
         const verifyOwner = () => {
-          if ((typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
+          if (identityEpoch !== openedIdentityEpoch ||
+              (typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
               App.workspaceBlocked || App.workspaceRevision !== workspaceRev)
             throw new Error('Study account or workspace changed; reopen the handoff');
           if (reviewedText === null || input.value !== reviewedText)
@@ -434,7 +435,8 @@ const TutorHandoff = (() => {
       saving = true;
       button.disabled = saveBtn.disabled = parseBtn.disabled = input.disabled = true;
       const verifyCurrent = () => {
-        if ((typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
+        if (identityEpoch !== openedIdentityEpoch ||
+            (typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
             (typeof App !== 'undefined' &&
             (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
           throw new Error('Study account or workspace changed; reopen the handoff');

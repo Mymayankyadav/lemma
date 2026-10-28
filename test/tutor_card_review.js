@@ -11,7 +11,8 @@ const CP='compactness-open-cover-proof';
 const ref='topology-notes:section-3.2';
 const captures=[],writes=[];
 let dialog,revision=3,checkpoint=CP,sources=[ref];
-const account={user:{id:OWNER}};
+let notifyIdentityChange=null;
+const account={user:{id:OWNER},onIdentityChange(fn){notifyIdentityChange=fn;}};
 const app={workspaceRevision:1,workspaceBlocked:false,
  newCard(preset){captures.push(JSON.parse(JSON.stringify(preset)));}};
 const plan={
@@ -109,6 +110,13 @@ function selectCard(u) {u.card.checked=true;u.card.events.change();}
  await u.editor.events.click();
  assert.equal(captures.length,1,'workspace switch blocks card review');
  app.workspaceRevision=1;
+
+ u=await open();selectCard(u);
+ assert.equal(typeof notifyIdentityChange,'function');
+ notifyIdentityChange(); // same user signed out and in again
+ await u.editor.events.click();
+ assert.equal(captures.length,1,'same-user relogin revokes selected card review');
+ assert.match(u.status.textContent,/account or workspace changed/);
 
  u=await open(reply(['unapproved-source']));selectCard(u);
  await u.editor.events.click();
