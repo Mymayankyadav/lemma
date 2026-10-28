@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P4c1 explicit stale-conflict inspection/restart (archive old approved intent atomically, restore only an unapproved draft with current revision pin); then P4c2 UI and mid-proof resume, then P5 full gate. Stay hidden through P5.
+Next action: P4c2 hidden Study conflict-inspection and explicit restart UI; then P4c3 proof resumption after reload and P5 local stack/visual acceptance. Remain hidden until P5.
 
 | Field | Value |
 | --- | --- |
@@ -117,3 +117,9 @@ Next action: P4c1 explicit stale-conflict inspection/restart (archive old approv
 - Added owner-scoped `reviewConflictedAmendment` to compare original immutable base, latest published revision and rejected student-approved snapshot. Exposes three structural diffs and overlapping checkpoint IDs, without RPC mutations.
 - Added explicit-only `restartConflictedAmendment(..., true)`. It rechecks the latest published revision and accepted context before one atomic IndexedDB v3 transaction: archives old `needs_review` approval (including original request UUID) and creates a new **unapproved** draft with a new draft UUID, current revision/context pin and local CAS. Old proof/event ledger untouched. Archive readable via owner-scoped `readConflictArchive`. Aborted archive transaction leaves old approved intent intact.
 - `test/study_conflict_restart.js` covers 12 checkpoints, same-checkpoint conflicting server/student edits, v2→v3 migration, stale/offline/identity guards, aborted write, explicit restart and separate new approval; CI pending. `StudyView.ready` remains false. Next P4c2 visible review/restart and mid-proof reload proof; then PLAN-01 P5 end-to-end local-stack and visual gates.
+
+## Active claim — P4c2 conflict review controls
+
+- Run `chat-20261028-lane-d-p4c2-owner` · 28 October 2026; base main@f2d136553c76 after P4c1 merged [PR #118](https://github.com/Mymayankyadav/lemma/pull/118). Regression 40683335793 and local stack 40683335833 both SUCCESS at P4c1 exact head.
+- Scope `src/app/view_study.js`, `src/styles/study.css`, `test/study_amendment_ui.js`, `test/study_view_browser.js`, D handoff. No other lane files/backend writes.
+- For durable `needs_review` state show Inspect conflict; only after explicit click retrieve owner-scoped old/proposed/current checkpoint changes and conflicts. A second deliberate click must call P4c1 restart; old approval archived, new proposal unapproved, never auto-approve/publish. Add stale, identity and reload mock/browser tests, screenshot small/mobile. `StudyView.ready=false` pending P4c3 and P5.
