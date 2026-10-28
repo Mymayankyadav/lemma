@@ -93,6 +93,9 @@ const {chromium}=require('playwright');
   await page.getByRole('button',{name:'Continue saved proof'}).click();
   const resumedText=await page.getByRole('textbox',{name:'Your unfinished proof'}).inputValue();
   assert.equal(resumedText,'Choose an open cover, then reduce to finitely many sets.');
+  assert.equal(await page.getByRole('textbox',{name:'Your unfinished proof'})
+    .evaluate(node=>document.activeElement===node),true,
+    'explicit proof continuation should focus the restored editor');
   assert.equal(await page.evaluate(()=>window.__writes.length),0,
     'resuming an unfinished proof cannot append evidence');
   await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('');
@@ -100,12 +103,37 @@ const {chromium}=require('playwright');
   assert.equal(await page.evaluate(()=>window.__writes.length),0);
   fs.mkdirSync('test-output/ui',{recursive:true});
   await page.screenshot({path:'test-output/ui/study-p3-desktop.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'dark'});
+  await page.screenshot({path:'test-output/ui/study-p5b-desktop-dark.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'light'});
+  // This is CSS zoom stress only, not proof of real browser 200% zoom.
+  await page.evaluate(()=>{document.body.style.zoom='1.5';});
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <=
+    document.documentElement.clientWidth+1),true,'CSS zoom must not overflow desktop');
+  await page.screenshot({path:'test-output/ui/study-p5b-css-zoom150.png',fullPage:true});
+  await page.evaluate(()=>{document.body.style.zoom='';});
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= document.documentElement.clientWidth+1),true,
     'the 390px checkpoint view must not scroll horizontally');
   await page.screenshot({path:'test-output/ui/study-p3-mobile.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'dark'});
+  await page.screenshot({path:'test-output/ui/study-p5b-mobile-dark.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'light'});
+  // Long unbroken mathematical symbols and source IDs must wrap in narrow view.
+  const oldSource=await page.locator('.study-sources').textContent();
+  await page.locator('.study-sources').evaluate(node=>{
+    node.textContent='Source: '+('\\\\alpha_{1234567890}'.repeat(40));
+  });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <=
+    document.documentElement.clientWidth+1),true,'long mathematical source text overflows mobile');
+  await page.screenshot({path:'test-output/ui/study-p5b-long-math-mobile.png',fullPage:true});
+  await page.locator('.study-sources').evaluate((node,text)=>{node.textContent=text;},oldSource);
   await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('Prove finite subcover for all x');
-  await page.getByRole('button',{name:'Save proof attempt'}).click();
+  const saveProof=page.getByRole('button',{name:'Save proof attempt'});
+  await saveProof.focus();
+  assert.equal(await saveProof.evaluate(node=>document.activeElement===node),true,
+    'save action must be keyboard-focusable');
+  await saveProof.press('Enter');
   await page.waitForFunction(() => {
     const status=document.querySelector('.study-form .study-write-status');
     return status?.textContent.includes('Saved as append-only') ||
@@ -128,6 +156,9 @@ const {chromium}=require('playwright');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth+1),true,
     'the amendment review must fit a narrow phone');
   await page.screenshot({path:'test-output/ui/study-p4b2-amendment-mobile.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'dark'});
+  await page.screenshot({path:'test-output/ui/study-p5b-amendment-mobile-dark.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'light'});
   await page.getByRole('button',{name:'Approve these displayed changes'}).click();
   await page.getByRole('button',{name:'Submit previously approved amendment'}).waitFor();
   assert.deepEqual((await page.evaluate(()=>window.__amendmentActions)).map(x=>x.type),['approve'],
@@ -155,6 +186,9 @@ const {chromium}=require('playwright');
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth+1),true);
   await page.screenshot({path:'test-output/ui/study-p4c2-conflict-mobile.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'dark'});
+  await page.screenshot({path:'test-output/ui/study-p5b-conflict-mobile-dark.png',fullPage:true});
+  await page.emulateMedia({colorScheme:'light'});
   await page.getByRole('button',{name:'Restart as unapproved draft'}).click();
   await page.getByRole('button',{name:'Review pending amendment'}).waitFor();
   const actions=await page.evaluate(()=>window.__amendmentActions);
@@ -163,7 +197,7 @@ const {chromium}=require('playwright');
   assert.equal(actions[actions.length-1].confirmed,true);
   assert.equal(await page.getByRole('button',{name:'Submit previously approved amendment'}).count(),0,
     'restarted draft is not an approved publication intent');
-  console.log('PASS PLAN-01 P3/P4b2 synthetic Chromium: approved checkpoint, student-reviewed diff, separate consent/submit, mobile/desktop screenshots');
+  console.log('PASS PLAN-01 P5b synthetic Chromium: proof-resume focus, keyboard save, responsive long math, CSS zoom stress, dark/light checkpoint/amendment/conflict screenshots (not human visual acceptance or production)');
   await page.close();
  } finally {await browser.close()}
 })().catch(err=>{console.error(err.stack);process.exitCode=1});
