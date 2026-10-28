@@ -587,8 +587,8 @@ async function shot(page, name, size, scheme) {
       await page.locator('#set-knowledge-drafts button:text-is("New draft")').click();
       await page.locator('#s-knowledge-title').fill('Topology and compactness');
       await page.locator('#s-knowledge-summary').fill('Study compactness and connectedness');
-      await page.locator('#s-knowledge-goals').fill('Prove Heine-Borel\\nUnderstand quotient maps');
-      await page.locator('#s-knowledge-markdown').fill('## Proof notes\\nCompact subsets of Hausdorff spaces are closed.');
+      await page.locator('#s-knowledge-goals').fill('Prove Heine-Borel\nUnderstand quotient maps');
+      await page.locator('#s-knowledge-markdown').fill('## Proof notes\nCompact subsets of Hausdorff spaces are closed.');
       await page.locator('#set-knowledge-drafts button:text-is("Save draft on this device")').click();
       await page.waitForFunction(() =>
         document.querySelector('#s-knowledge-status')?.textContent.includes('Local draft revision 1'));
