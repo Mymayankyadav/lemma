@@ -68,9 +68,9 @@ begin
     where user_id = v_user and plan_id = p_plan_id and revision = v_revision;
   if not found or jsonb_typeof(v_snapshot->'checkpoints') <> 'array'
      or not exists (
-       select 1 from jsonb_array_elements(v_snapshot->'checkpoints') c
-       where c->>'checkpoint_id' = p_checkpoint_id
-          or c->>'id' = p_checkpoint_id
+       select 1 from jsonb_array_elements(v_snapshot->'checkpoints') as cp(item)
+       where cp.item->>'checkpoint_id' = p_checkpoint_id
+          or cp.item->>'id' = p_checkpoint_id
      ) then
     raise exception 'checkpoint_not_in_approved_plan';
   end if;
