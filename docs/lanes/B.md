@@ -1,6 +1,8 @@
 # Lane B — UI
 
-Next action: **UI-01 live-status acceptance remains OPEN.** B's offline phase-gap fix is [PR #47](https://github.com/Mymayankyadav/lemma/pull/47), code head `9fdbe03` with regression/screenshots and Android CI SUCCESS; final evidence-only commit requires exact-head CI before merge. A's [PR #46](https://github.com/Mymayankyadav/lemma/pull/46) remains actively claimed for authenticated local-stack offline/reconnect captures; after PR #47 merges, A should incorporate current main normally and rerun local-stack CI, then B reviews live screenshots and the separate RPC-error/recovery slice. UI-01 stays NEXT. Owner action: none.
+Next action: **UI-01 is NEXT; B-owned native zoom regression stabilization claimed** on `lane-b/ui-01-zoom-stable-math` (run `chat-20261028-ui01-zoom`, UTC heartbeat 2026-10-28T01:27:28.150Z, base `main@c0c5cc1`). Draft PR claim before code; intended files: `test/ui_browser_zoom.js`, `docs/lanes/B.md`. Investigate flaky exact Chromium 200% math-preview check (A [PR #46](https://github.com/Mymayankyadav/lemma/pull/46), regression 40614343997 first attempt failed on detached preview with `overflow:""`; same head retry succeeded). Preserve strict `overflow-x:auto` and no-document-overflow gates while reading only current connected/rendered KaTeX nodes. After code, exact-head CI and screenshots required. A's PR #46 remains actively owned and untouched; no new owner action.
+
+**B current claim:** UI-01-ZOOM-STABILITY-B1; heartbeat 2026-10-28T01:27:28.150Z; original `main@c0c5cc1`. Local Git clone/npm unavailable in this execution (container has no GitHub DNS); verify syntax and full UI/Android gates in GitHub CI. Do not mark UI-01 DONE until A's real local-stack evidence and RPC-error/recovery are accepted.
 
 | Field | Value |
 | --- | --- |
