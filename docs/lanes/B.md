@@ -1,5 +1,13 @@
 ## RELEASE-01 recovery UI takeover (2026-10-28T23:20Z)
 
+### Recovery UI resumed-navigation fix checkpoint
+
+- `SettingsView` now retains only a module-local owner marker while `LemmaSync.withRecovery` has paused sync; when Settings is rendered again for the same owner and the actual account handle is stopped, the explicit **Resume account sync** action remains visible with a paused-state explanation. No private backup, consent or automatic restore/resume is persisted. A completed restore or deliberate resume clears the marker; changing owner never exposes the previous owner's action.
+- `test/ui_workspace_recovery.js` now navigates away after preflight, reopens Settings, confirms Resume survives a cleared backup selection, explicitly resumes exactly once, then re-selects and preflights before its existing ambiguous-failure/retry and identity tests. The original four 390px/1280px light/dark screenshots remain and require fresh exact-head review.
+- Commits `26c6884` and `e9d6f4e` on PR #148; exact-head regression/local-stack/guard pending. This is browser/mock recovery UI evidence, not a live production restore. No backend or production writes.
+
+
+
 - **Recovered claim:** `automation-20261029-b-r2-recovery-ui` takes over existing [PR #148](https://github.com/Mymayankyadav/lemma/pull/148) and branch `lane-b/release-account-recovery-controls` without discarding original commits. Prior heartbeat 2026-10-28T17:58Z and last PR update 18:12Z were over five hours old; two independent reads found the same head `412b72a`, no queued/running CI (regression 40742928487, local stack 40742928661 and Android guard 40742928479 all SUCCESS). No other B PR open. Lane D #157 merged separately; do not merge B over a red main.
 - **Visual review:** independently opened all four actual `ci-screenshots/pr-148/account-recovery-{mobile,desktop}-{light,dark}.png` from the tested head. Text, consent, file input, actions, 44px controls and paused-state warning are legible at 390px/1280px with no visible clipping; this is synthetic browser UI, not live production restore.
 - **Additional recovery gap:** `restoreRecoveryPair(...dryRun:true)` stops this tab's sync until explicit resume, but the B Settings recovery panel initializes `resume.hidden=true` on every render. Navigating away after preflight or ambiguous failure hides the only resume action. Fix the UI with an owner-scoped, tab-local paused-recovery indicator that survives Settings rerenders without carrying backup data, and show Resume only while the account handle is actually stopped. Clear on deliberate resume or completed restore; never resume automatically or assume a successful restore. Add a browser test for reopen/cancel/explicit resume. Keep the existing stable retry ID and consent gate.
