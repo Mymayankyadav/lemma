@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K2e — account-scoped durable offline drafts (active claim)
+
+- **Run:** `chat-20261028-k2e-drafts`; UTC heartbeat 2026-10-28T06:19:10.019Z; base `main@24889df473`; branch `lane-a/knowledge-01-k2e-durable-drafts`. No active PRs or other lane claim at pickup; all four latest main CI runs SUCCESS.
+- **Scope:** use existing owner-namespaced IndexedDB `AccountStorage.meta` to store unaccepted text/structured-context drafts durably through transaction completion, with per-context compare-and-swap, account and provenance guards, no silent overwrites or auth crossover. Expose scoped draft operations through existing A-owned account bridge. **No automatic acceptance, server mutation, offline outbox commit or history deletion.** Provenance includes student/tutor distinction but all records remain unapproved drafts.
+- **Files:** `src/app/sync_browser.js`, `src/app/cloud_bridge.js`, `test/sync_knowledge_drafts.js`, `test/account_knowledge_drafts.js`, `package.json` additive A-owned test script, and `docs/lanes/A.md`. Do not touch SYNC-04 note/review transport; preserve Carrel, production and student decisions.
+- **Gate:** fake IndexedDB transaction-abort durability, two account namespaces, independent tab local CAS race, offline reload, identity change during async write, draft provenance and rejected auto-approval. Run exact-head regression/Android/local Supabase and post-merge main checks; no production smoke claimed.
+- **Next:** implement and test, merge only on green. Subsequent K2f adds student-reviewed approval/explicit queue with stable request ID and stale-conflict recovery; K3 B UI remains a separate lane request.
+
 ## KNOWLEDGE-01 K2d — account-bound client API (active claim)
 
 - **Claim:** `chat-20261028-k2d-client`, UTC heartbeat 2026-10-28T04:41:27.788Z, base `main@ff9ac6f3e4`; branch `lane-a/knowledge-01-k2d-account-client`. No other active lane A PR. Post-K2c main regression/Android/local Supabase all SUCCESS (40633364217/40633364254/40633364159).
