@@ -26,11 +26,11 @@ function assertAllowedMigrationHistory(migrations,legacy){
    assert.match(m.version,/^\d{14}$/,'invalid additional migration version');
    const isPinnedSnapshot=m.version===ownerSnapshotMigration.version &&
      m.name===ownerSnapshotMigration.name;
+   if(m.name===ownerSnapshotMigration.name)
+     assert.ok(isPinnedSnapshot,'R2e snapshot migration version changed');
    if(!isPinnedSnapshot)
      assert.match(m.name,/^(?:[a-z0-9]+_)*?(?:plan01|tutor01)_[a-z0-9_]+$/,
        'only named plan01/tutor01 or pinned R2e migration may extend baseline');
-   if(m.name===ownerSnapshotMigration.name)
-     assert.ok(isPinnedSnapshot,'R2e snapshot migration version changed');
    assert.ok(m.version>previous,'additional migrations must be timestamp-ordered');
    assert.ok(!seen.has(m.version),'duplicate migration version');
    seen.add(m.version); previous=m.version;
