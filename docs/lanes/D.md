@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P4b2 hidden Study UI for a reviewed amendment diff and two explicit student actions (approve then submit), with durable pending retry; then P4c rejected-stale conflict restart and mid-proof resume. Keep Study tab hidden through P5.
+Next action: P4c1 explicit stale-conflict inspection/restart (archive old approved intent atomically, restore only an unapproved draft with current revision pin); then P4c2 UI and mid-proof resume, then P5 full gate. Stay hidden through P5.
 
 | Field | Value |
 | --- | --- |
@@ -104,3 +104,16 @@ Next action: P4b2 hidden Study UI for a reviewed amendment diff and two explicit
 - `view_study.js` now includes a deliberately triggered **Review pending amendment** action that displays P4b1's exact accepted-vs-draft diff, affected prerequisite IDs and reassessment requirements. It requires a second explicit click to store student approval, then a third explicit click to submit via P2b's durable `submitApprovedPlanDraft` method; review, render and reload never perform publication. The existing `approved_pending` intent can be manually retried, while `needs_review` fails closed pending P4c. Account and route guards protect async completion.
 - `test/study_amendment_ui.js` checks no implicit writes, visible review/approval/submit separation, pending intent after reload, stale state, identity switch. `test/study_view_browser.js` adds synthetic Chromium desktop/mobile diff screenshots plus distinct approval vs submission checks. Final-head CI not yet verified.
 - Remaining: P4c explicit stale conflict restart and persistent mid-proof continuation; P5 complete local-stack acceptance, visual review and `ready` gates. Never approve a student plan or amendment on their behalf, and no production writes.
+
+## Active claim — P4c1 explicit stale amendment restart
+
+- Run: `chat-20261028-lane-d-p4c1-owner`, heartbeat 2026-10-28 (~11:49 UTC), base `main@9c7c5b636fda`. User requested continue; same Lane D owner from completed #94/#105/#110/#112/#115.
+- D-owned scope: `src/app/study_plan.js`, `test/study_conflict_restart.js`, `docs/lanes/D.md`, optional `docs/STUDY_PLANNING_PROTOCOL.md`. No new migrations, production DB action, cross-lane edits or student action on the user's behalf.
+- Goal: read-only compare the old student-approved conflict against the latest accepted plan/context and identify clobber/criterion changes; require separately explicit restart to store a *new unapproved draft* pinned to the latest revision. Transactionally archive the original approved intent including immutable request ID and prior snapshot, do not silently retry/rebase or delete proof/event history. Revalidate remote/current revision and same original conflict before local CAS, reject stale/concurrent switches, and keep StudyView hidden.
+- Gate: synthetic owner A/B, reload, graph diff, stale version, offline, conflict archive, transactional abort, intentional double click and no network writes; exact-head regression/local stack and lane guard, merge only if clean. P4c2 UI and proof resume P5 remain open.
+
+### P4c1 implementation checkpoint (28 October 2026)
+
+- Added owner-scoped `reviewConflictedAmendment` to compare original immutable base, latest published revision and rejected student-approved snapshot. Exposes three structural diffs and overlapping checkpoint IDs, without RPC mutations.
+- Added explicit-only `restartConflictedAmendment(..., true)`. It rechecks the latest published revision and accepted context before one atomic IndexedDB v3 transaction: archives old `needs_review` approval (including original request UUID) and creates a new **unapproved** draft with a new draft UUID, current revision/context pin and local CAS. Old proof/event ledger untouched. Archive readable via owner-scoped `readConflictArchive`. Aborted archive transaction leaves old approved intent intact.
+- `test/study_conflict_restart.js` covers 12 checkpoints, same-checkpoint conflicting server/student edits, v2→v3 migration, stale/offline/identity guards, aborted write, explicit restart and separate new approval; CI pending. `StudyView.ready` remains false. Next P4c2 visible review/restart and mid-proof reload proof; then PLAN-01 P5 end-to-end local-stack and visual gates.

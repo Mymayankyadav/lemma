@@ -178,12 +178,14 @@ const StudyPlan = (() => {
     if (typeof indexedDB === 'undefined')
       return Promise.reject(new Error('Durable plan draft storage unavailable'));
     return new Promise((resolve,reject) => {
-      const request = indexedDB.open('lemma-plan-drafts-v1-' + userId,2);
+      const request = indexedDB.open('lemma-plan-drafts-v1-' + userId,3);
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains('drafts'))
           request.result.createObjectStore('drafts',{keyPath:'planId'});
         if (!request.result.objectStoreNames.contains('receipts'))
           request.result.createObjectStore('receipts',{keyPath:'planId'});
+        if (!request.result.objectStoreNames.contains('conflict_archive'))
+          request.result.createObjectStore('conflict_archive',{keyPath:'requestId'});
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(new Error('Could not open durable plan draft storage'));
@@ -198,7 +200,7 @@ const StudyPlan = (() => {
       ctx.check();
       const result = await new Promise((resolve,reject) => {
         let tx;
-        try { tx = db.transaction(['drafts','receipts'],write ? 'readwrite' : 'readonly'); }
+        try { tx = db.transaction(['drafts','receipts','conflict_archive'],write ? 'readwrite' : 'readonly'); }
         catch (_) { reject(new Error('Plan draft storage unavailable')); return; }
         const store = tx.objectStore('drafts');
         let answer;
@@ -593,6 +595,143 @@ const StudyPlan = (() => {
       expectedLocalRevision:draft.localRevision,draftId:draft.draftId,
       changeSummary:draft.changeSummary,source:draft.source,diff};
   }
+  // P4c1: inspect a rejected student-approved intent. The original approval
+  // is NOT transferable to another published revision; restart is separate.
+  async function reviewConflictedAmendment(planId) {
+    if (!isUuid(planId)) throw new Error('Invalid study plan ID');
+    const ctx = account();
+    const draft = await readPlanDraft(planId);
+    ctx.check();
+    if (!draft || draft.status !== 'needs_review' ||
+        draft.approvedBy !== 'student' || !isUuid(draft.requestId) ||
+        !revision(draft.expectedRevision) || !revision(draft.localRevision))
+      throw new Error('No rejected student-approved amendment to review');
+    const plans = await list(ctx,'study_plans','id,revision',
+      q => q.eq('id',planId).limit(1));
+    if (plans.length !== 1 || !same(plans[0].id,planId) ||
+        !revision(plans[0].revision))
+      throw new Error('Latest published study plan unavailable');
+    const currentRevision = plans[0].revision;
+    const version = async rev => {
+      const rows = await list(ctx,'study_plan_versions',
+        'revision,context_id,context_revision,snapshot',
+        q => q.eq('plan_id',planId).eq('revision',rev).limit(1));
+      if (rows.length !== 1 || rows[0].revision !== rev ||
+          !object(rows[0].snapshot))
+        throw new Error('Immutable study plan version unavailable');
+      return rows[0];
+    };
+    const base = await version(draft.expectedRevision);
+    const current = currentRevision === draft.expectedRevision ?
+      base : await version(currentRevision);
+    if (current.context_id !== null && current.context_id !== undefined) {
+      if (!isUuid(current.context_id) || !revision(current.context_revision) ||
+          typeof LemmaCloudBridge === 'undefined' ||
+          typeof LemmaCloudBridge.readAcceptedContext !== 'function')
+        throw new Error('Accepted context unavailable for conflict restart');
+      const accepted = await LemmaCloudBridge.readAcceptedContext(
+        current.context_id,current.context_revision);
+      ctx.check();
+      if (!same(accepted?.context_id,current.context_id) ||
+          accepted.revision !== current.context_revision)
+        throw new Error('Accepted context revision changed');
+    }
+    const proposedChanges = diffPlanSnapshots(base.snapshot,draft.snapshot);
+    const serverChanges = diffPlanSnapshots(base.snapshot,current.snapshot);
+    const latestComparison = diffPlanSnapshots(current.snapshot,draft.snapshot);
+    const touched = diff => new Set([...diff.added,...diff.removed,
+      ...diff.modified.map(item => item.checkpointId)]);
+    const changedServer = touched(serverChanges);
+    const overlaps = [...touched(proposedChanges)].filter(id => changedServer.has(id));
+    const recheck = await list(ctx,'study_plans','id,revision',
+      q => q.eq('id',planId).limit(1));
+    const unchangedDraft = await readPlanDraft(planId);
+    ctx.check();
+    if (recheck.length !== 1 || recheck[0].revision !== currentRevision ||
+        !unchangedDraft || unchangedDraft.status !== 'needs_review' ||
+        unchangedDraft.localRevision !== draft.localRevision ||
+        unchangedDraft.requestId !== draft.requestId ||
+        canonical(unchangedDraft.snapshot) !== canonical(draft.snapshot))
+      throw new Error('Conflict changed; reopen amendment review');
+    return {status:'review_conflict',planId,
+      originalRequestId:draft.requestId,
+      originalRevision:draft.expectedRevision,
+      originalLocalRevision:draft.localRevision,
+      currentRevision,
+      currentContextId:current.context_id ?? null,
+      currentContextRevision:current.context_revision ?? null,
+      changeSummary:draft.changeSummary,
+      proposedChanges,serverChanges,latestComparison,overlapIds:overlaps};
+  }
+  // Caller must show the conflict diff and receive explicit student consent.
+  // A fresh remote read and a single local CAS archive+replace transaction
+  // retain the rejected intent even if storage fails partway through.
+  async function restartConflictedAmendment(planId,review,studentConfirmed) {
+    if (studentConfirmed !== true)
+      throw new Error('Explicit student conflict restart required');
+    if (!isUuid(planId) || !object(review) ||
+        review.status !== 'review_conflict' || review.planId !== planId ||
+        !isUuid(review.originalRequestId) ||
+        !revision(review.originalRevision) ||
+        !revision(review.originalLocalRevision) ||
+        !revision(review.currentRevision))
+      throw new Error('Invalid conflict review');
+    const ctx = account();
+    const current = await reviewConflictedAmendment(planId);
+    ctx.check();
+    if (canonical(current) !== canonical(review))
+      throw new Error('Conflict changed; reopen amendment review');
+    return draftTransaction(planId,true,(row,store,ownerId,tx) => {
+      if (!row || row.userId !== ownerId ||
+          row.status !== 'needs_review' ||
+          row.localRevision !== current.originalLocalRevision ||
+          row.requestId !== current.originalRequestId ||
+          row.expectedRevision !== current.originalRevision)
+        throw new Error('Conflict changed; reopen amendment review');
+      const stamp = Date.now();
+      const {requestId,approvedBy,approvedAt,approvedFromLocalRevision,
+        attempted,attempts,conflictAt,...unapproved} = row;
+      const next = {...unapproved,status:'draft',
+        draftId:crypto.randomUUID(),requestId:undefined,
+        expectedRevision:current.currentRevision,
+        contextId:current.currentContextId,
+        contextRevision:current.currentContextRevision,
+        localRevision:row.localRevision+1,createdAt:stamp,updatedAt:stamp};
+      delete next.requestId;
+      tx.objectStore('conflict_archive').put({
+        ...structuredClone(row),archivedAt:stamp,
+        restartedAsDraftId:next.draftId,
+        restartExpectedRevision:current.currentRevision
+      });
+      store.put(next);
+      return structuredClone(next);
+    });
+  }
+  async function readConflictArchive(planId,requestId) {
+    if (!isUuid(planId) || !isUuid(requestId))
+      throw new Error('Invalid conflict archive key');
+    const ctx=account();
+    const db=await openDraftDB(ctx.userId);
+    try {
+      ctx.check();
+      const record=await new Promise((resolve,reject) => {
+        const tx=db.transaction('conflict_archive','readonly');
+        let found=null;
+        const req=tx.objectStore('conflict_archive').get(requestId);
+        req.onsuccess=()=>{ try {
+          ctx.check();found=req.result||null;
+        } catch (error) {reject(error);} };
+        req.onerror=()=>reject(new Error('Conflict archive read failed'));
+        tx.oncomplete=()=>resolve(found);
+        tx.onabort=()=>reject(new Error('Conflict archive unavailable'));
+      });
+      ctx.check();
+      if (!record) return null;
+      if (record.planId!==planId || record.userId!==ctx.userId)
+        throw new Error('Conflict archive owner or plan mismatch');
+      return structuredClone(record);
+    } finally {db.close();}
+  }
   // Tutor proposals are staged only, even when the tutor reports approval.
   async function proposeAmendment(input) {
     const draft = await savePlanDraft(input);
@@ -600,5 +739,6 @@ const StudyPlan = (() => {
   }
   return { ready:false, activeContext,recordEvent,proposeAmendment,
     savePlanDraft,readPlanDraft,discardPlanDraft,
-    approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt,diffPlanSnapshots,reviewPendingAmendment };
+    approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt,diffPlanSnapshots,reviewPendingAmendment,
+    reviewConflictedAmendment,restartConflictedAmendment,readConflictArchive };
 })();
