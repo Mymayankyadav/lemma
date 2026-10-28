@@ -1,3 +1,10 @@
+## Integration claim — SHIP-A2-CI-01 operator check parity (28 October 2026)
+
+- **Run:** `chat-20261028-integration-a-deploy-gate`; scope is only the production operator's GitHub check predicate in `.github/workflows/deploy-knowledge.yml` and this Lane A handoff; base `main@1be4bd7174422cd5ad9a245667f422a03b3a3ef0`. No other open integration claim on inspection. Lane A PR #99 already merged, all local guards green.
+- **Problem:** the operator requires green `android` on the exact current main SHA even though `.github/workflows/android.yml` explicitly runs only when native paths change. This makes every recent web/docs-only main deployment preflight impossible.
+- **Contract:** still require exact SHA current-main `regression` and `local-stack` SUCCESS; for Android accept a green exact-SHA `android` result, OR the most recent successful main Android run only if its head is a proven ancestor of the current SHA and there are **zero changed paths** matching the Android workflow's native trigger path set. No matching successful run, no ancestor, unexpected native change, API failure or incomplete checks must fail closed. Never bypass SQL history/prefix/dry-run, change production, or modify any other role's implementation.
+- **Gate/next:** claim PR first, make bounded operator predicate change, run integration guard and exact-head CI, then merge only green; current production remains 9 migrations pending authenticated workflow dispatch, with Lemma-only credentials and no MCP version aliasing.
+
 ## Active Lane A claim — KNOWLEDGE-01 K4: independent two-tutor local gate (28 Oct 2026)
 
 - **Run:** `chat-20261028-a-independent-tutors`; branch `lane-a/knowledge-01-two-tutor-gate`; base `main@5f033d2529bd816c7605864ee7be98d52c8f93b6`; draft PR claim. No open A implementation PR at pickup; other D/E/F claims untouched.
