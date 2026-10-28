@@ -8,6 +8,7 @@ const a='00000000-0000-4000-8000-000000000001';
 const b='00000000-0000-4000-8000-000000000002';
 const contextId='00000000-0000-4000-8000-000000000003';
 const secondId='00000000-0000-4000-8000-000000000004';
+const thirdId='00000000-0000-4000-8000-000000000005';
 const make=(over={})=>({contextId,expectedLocalRevision:0,expectedRevision:3,
   title:'Compactness',markdown:'A proof draft',payload:{schema_version:1,
     goals:['Prove compact subsets are closed']},authorKind:'student',...over});
@@ -112,6 +113,55 @@ const make=(over={})=>({contextId,expectedLocalRevision:0,expectedRevision:3,
  const queue=await reloaded.list();
  assert.equal(queue.length,0,'draft saving never adds a cloud accepted write');
  await reloaded.discardKnowledgeDraft(secondId,1);
+ // Explicit approved intent: persisted attempted marker, local transaction
+ // rollback on a receipt failure, exactly-once confirmation and archive.
+ await reloaded.saveKnowledgeDraft(make({contextId:secondId,markdown:'Send me'}));
+ const toSend=await reloaded.approveKnowledgeDraft(secondId,1,true);
+ assert.equal(toSend.status,'approved_pending');
+ await assert.rejects(reloaded.markKnowledgeIntentAttempt(secondId,'wrong-request'),
+  /no longer pending/);
+ const attempted=await reloaded.markKnowledgeIntentAttempt(secondId,toSend.requestId);
+ assert.equal(attempted.attempted,true);
+ assert.equal(attempted.attempts,1);
+ const putReceipt=IDBObjectStore.prototype.put;
+ IDBObjectStore.prototype.put=function(value,...args){
+  const r=putReceipt.call(this,value,...args);
+  if(value?.confirmedAt) r.addEventListener('success',()=>this.transaction.abort());
+  return r;
+ };
+ await assert.rejects(reloaded.acknowledgeKnowledgeIntent(secondId,toSend.requestId,4));
+ IDBObjectStore.prototype.put=putReceipt;
+ assert.equal((await reloaded.knowledgeDraft(secondId)).status,'approved_pending',
+  'failed transaction cannot lose the reviewed draft or approved request key');
+ assert.equal(await reloaded.knowledgeIntentReceipt(secondId),null,
+  'failed acknowledgement must not leave an orphan receipt');
+ await assert.rejects(reloaded.acknowledgeKnowledgeIntent(secondId,toSend.requestId,3),
+  /no longer matches intent/);
+ const receipt=await reloaded.acknowledgeKnowledgeIntent(secondId,toSend.requestId,4);
+ assert.equal(receipt.revision,4);
+ assert.equal(receipt.requestId,toSend.requestId);
+ assert.equal(await reloaded.knowledgeDraft(secondId),null);
+ assert.equal((await reloaded.knowledgeIntentReceipt(secondId)).requestId,toSend.requestId);
+ assert.deepEqual(await reloaded.acknowledgeKnowledgeIntent(secondId,toSend.requestId,4),
+  receipt,'lost-local-receipt retry returns exact previously confirmed result');
+ await assert.rejects(reloaded.acknowledgeKnowledgeIntent(secondId,'wrong',4),
+  /no longer matches intent/);
+ assert.equal(await otherAccount.knowledgeIntentReceipt(secondId),null);
+ // Stale server context does not rewrite the student-approved payload.
+ await reloaded.saveKnowledgeDraft(make({contextId:thirdId,markdown:'Needs review'}));
+ const stale=await reloaded.approveKnowledgeDraft(thirdId,1,true);
+ await reloaded.markKnowledgeIntentAttempt(thirdId,stale.requestId);
+ const conflicted=await reloaded.markKnowledgeIntentConflict(thirdId,stale.requestId);
+ assert.equal(conflicted.status,'needs_review');
+ assert.equal(conflicted.conflict,'stale_context_revision');
+ assert.equal((await reloaded.knowledgeDraft(thirdId)).markdown,'Needs review');
+ await assert.rejects(reloaded.markKnowledgeIntentAttempt(thirdId,stale.requestId),
+  /no longer pending/);
+ await assert.rejects(reloaded.saveKnowledgeDraft(make({
+  contextId:thirdId,expectedLocalRevision:2,markdown:'unreviewed rebase'
+ })),/Approved knowledge intent is pending/);
+ assert.equal((await reloaded.list()).length,0,
+  'context approval uses private meta records, not the review/note outbox');
  opened.close();dbB.close();
- console.log('PASS KNOWLEDGE K2f: owner-local drafts and explicit approved-pending intent, stable request ID, tab race, offline retry and no destructive overwrite');
+ console.log('PASS KNOWLEDGE K2g: exact-key attempted/ack/needs-review, rollback-safe immutable receipt, owner scopes and original draft recovery');
 })().catch(e=>{console.error('FAIL K2e draft storage: '+e.message);process.exitCode=1;});
