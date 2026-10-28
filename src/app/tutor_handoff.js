@@ -307,7 +307,9 @@ const TutorHandoff = (() => {
           // Use the original proposal UUID and unchanged JSON payload on every
           // retry. The owner-scoped RPC enforces revision CAS and idempotency.
           await StudyPlan.recordEvent({
-            ...item.value,source:item.value.source || 'tutor_handoff.v1'
+            // The tutor's source field is untrusted metadata, never an actor identity.
+            // Record this as tutor-handoff evidence regardless of claimed author.
+            ...item.value,source:'tutor_handoff.v1'
           });
           savedIds.add(item.value.eventId);
           item.checkbox.checked = false;
