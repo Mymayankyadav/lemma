@@ -1,5 +1,14 @@
 # Lane C — Android
 
+Next action: **ANDROID-02 N1 READY** after UI-01 passed, using system browser Google PKCE sign-in/deep-link and native return handling; claim a fresh lane C PR, preserve A auth APIs and B presentation, automate what can be tested; physical phone gate remains NOT RUN.
+
+## 28 October 2026 — ANDROID-02 unblocked (N1)
+
+- **Dependency evidence:** UI-01 DONE following [PR #49](https://github.com/Mymayankyadav/lemma/pull/49), accepted B [PR #51](https://github.com/Mymayankyadav/lemma/pull/51) evidence and `main@a108dd5` [regression 40619701452](https://github.com/Mymayankyadav/lemma/actions/runs/40619701452), [local Supabase 40619701405](https://github.com/Mymayankyadav/lemma/actions/runs/40619701405), [Android 40619701429](https://github.com/Mymayankyadav/lemma/actions/runs/40619701429), all SUCCESS. [Integration PR #52](https://github.com/Mymayankyadav/lemma/pull/52) promotes ANDROID-02 to NEXT. Prior PR #39 preparation notes below are historical (do not reopen).
+- **N1 scope:** system browser Google OAuth (`@capacitor/browser`, PKCE `skipBrowserRedirect:true`, `io.lemma.study://auth-callback`), `appUrlOpen` intent handling and exchange; coordinate required A/B-owned auth/UI changes by lane requests. Verify cancellation, invalid callback, lifecycle/duplicate callback and offline preservation in automated tests. No credentials or production tests by default; device sign-in remains an explicit hardware gate.
+- **NOT RUN:** physical-install, safe-area/keyboard, foreground recovery, offline restart and reconnect, opt-in/denied due notification and Pages/phone convergence. Prepare artifact and checklist before requesting owner physical verification; native bundle still needs a new APK for each code update.
+
+
 Next action: review and merge [PR #39](https://github.com/Mymayankyadav/lemma/pull/39) when docs/lane guard and CI pass. It prepares a no-code D1–D6 device+Pages acceptance sheet; physical tests are NOT RUN. ANDROID-02 stays BLOCKED by UI-01; afterward claim N1 native OAuth only when UI-01 is DONE.
 
 | Field | Value |
