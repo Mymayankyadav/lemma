@@ -118,12 +118,12 @@ const StudyPlan = (() => {
     const recent = sessionId ? await list(ctx,'learning_events',
       'event_id,event_type,payload,seq,created_at',q => q.eq('session_id',sessionId)
         .order('seq',{ascending:false}).limit(50)) : [];
-    // Keep historical ledger rows intact, but never present a previous
-    // approved plan's proof, hint or feedback as current-revision evidence.
-    // Legacy unversioned rows can only belong to the initial plan revision.
+    // Keep historical ledger rows intact, but do not display evidence
+    // explicitly pinned to an older approved plan as current-revision work.
+    // Legacy events without a revision remain readable for compatibility.
     const currentEvents = recent.filter(e =>
-      e.payload?.plan_revision === plan.revision ||
-      (plan.revision === 1 && e.payload?.plan_revision == null));
+      e.payload?.plan_revision == null ||
+      e.payload.plan_revision === plan.revision);
     const resumable = new Set(['attempt','proof_step','hint','session_note']);
     const incomplete = new Set(['not_started','review_due','blocked','in_progress']);
     const latestWork = currentEvents.find(e => resumable.has(e.event_type) &&
