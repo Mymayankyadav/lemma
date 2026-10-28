@@ -21,7 +21,7 @@
     "test:browser-sync": "node test/browser_sync.js",
     "test:account": "node test/account_sync.js && node test/account_native_oauth.js && node test/account_knowledge_bridge.js && node test/account_knowledge_drafts.js && node test/account_knowledge_submission.js",
     "test:account-store": "node test/account_store.js",
-    "test:ui": "node test/ui_screenshots.js && node test/ui_reminder_settings.js && node test/ui_knowledge_drafts.js",
+    "test:ui": "node test/ui_screenshots.js && node test/ui_reminder_settings.js && node test/ui_knowledge_drafts.js && node test/ui_study_nav.js",
     "test:plan": "node test/plan_protocol.js && node test/lane_guard.js",
     "test:workspace": "node test/account_identity.js && node test/workspace_lifecycle.js",
     "test:replay": "node test/review_ledger.js && node test/review_replay.js && TZ=America/Los_Angeles node test/review_replay.js",
