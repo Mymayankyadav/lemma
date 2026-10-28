@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('src/app/native_shell.js', 'utf8');
 
-function run({ native = true, available = true, browserAvailable = true, browserReject = false, wakeReject = false, sheet = false, view = 'home', launchUrl = null, notificationsAvailable = true, notificationPermission = 'granted', notificationFail = false, pendingReminders = [] } = {}) {
+function run({ native = true, available = true, browserAvailable = true, browserReject = false, wakeReject = false, sheet = false, view = 'home', launchUrl = null, notificationsAvailable = true, notificationPermission = 'granted', notificationRequestPermission = 'granted', permissionFail = false, notificationFail = false, pendingReminders = [] } = {}) {
   const events = {}, actions = [], browserUrls = [], state = { view, sheet };
   const plugin = {
     addListener(name, handler) { events[name] = handler; actions.push('listen:' + name); return Promise.resolve({ remove() {} }); },
@@ -21,6 +21,16 @@ function run({ native = true, available = true, browserAvailable = true, browser
   };
   const pendingNotifications = pendingReminders.map(n => ({ ...n }));
   const notificationPlugin = {
+    addListener(name, handler) {
+      events[name] = handler;
+      actions.push('notify.listen:' + name);
+      return Promise.resolve({ remove() {} });
+    },
+    async requestPermissions() {
+      actions.push('notify.request');
+      if (permissionFail) throw new Error('PRIVATE-PERMISSION-ERROR');
+      return { display: notificationRequestPermission };
+    },
     async getPending() {
       actions.push('notify.pending');
       if (notificationFail) throw new Error('PRIVATE-NOTIFICATION-ERROR');
@@ -33,7 +43,11 @@ function run({ native = true, available = true, browserAvailable = true, browser
           if (pendingNotifications[i].id === id) pendingNotifications.splice(i, 1);
       }
     },
-    async checkPermissions() { actions.push('notify.check'); return { display: notificationPermission }; },
+    async checkPermissions() {
+      actions.push('notify.check');
+      if (permissionFail) throw new Error('PRIVATE-PERMISSION-ERROR');
+      return { display: notificationPermission };
+    },
     async createChannel(channel) { actions.push('notify.channel'); assert.equal(channel.importance, 2); assert.equal(channel.vibration, false); },
     async schedule({ notifications }) { actions.push('notify.schedule'); pendingNotifications.push(...notifications); }
   };
@@ -61,7 +75,10 @@ function run({ native = true, available = true, browserAvailable = true, browser
     console: { warn(...x) { actions.push('warn:' + x.join(' ')); }, info(...x) { actions.push('info:' + x.join(' ')); } },
   };
   vm.runInNewContext(source + '\nthis.nativeShell = NativeShell;', ctx);
-  return { events, actions, browserUrls, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback, openAuthBrowser: ctx.nativeShell.openAuthBrowser, closeAuthBrowser: ctx.nativeShell.closeAuthBrowser, planDueReminder: ctx.nativeShell.planDueReminder, reconcileDueReminder: ctx.nativeShell.reconcileDueReminder, pendingNotifications };
+  return { events, actions, browserUrls, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback, openAuthBrowser: ctx.nativeShell.openAuthBrowser, closeAuthBrowser: ctx.nativeShell.closeAuthBrowser, planDueReminder: ctx.nativeShell.planDueReminder, reconcileDueReminder: ctx.nativeShell.reconcileDueReminder,
+    onDueReminderTap: ctx.nativeShell.onDueReminderTap,
+    checkDueReminderPermission: ctx.nativeShell.checkDueReminderPermission,
+    requestDueReminderPermission: ctx.nativeShell.requestDueReminderPermission, pendingNotifications };
 }
 
 const web = run({ native: false });
@@ -72,7 +89,7 @@ assert.equal(absent.enabled, false);
 assert.match(absent.actions[0], /unavailable/);
 const a = run({ sheet: true, view: 'review' });
 assert.equal(a.enabled, true);
-assert.deepEqual(Object.keys(a.events).sort(), ['appUrlOpen','backButton','resume']);
+assert.deepEqual(Object.keys(a.events).sort(), ['appUrlOpen','backButton','localNotificationActionPerformed','resume']);
 a.events.backButton({ canGoBack: true });
 assert.equal(a.actions.at(-1), 'closeSheet');
 assert.equal(a.state.view, 'review');
@@ -135,8 +152,8 @@ assert.equal(reminders.planDueReminder({ ...desired, now: afterTime }).at,
 const tomorrowDue = new Date(2026, 9, 29, 9, 0, 0).getTime();
 assert.equal(reminders.planDueReminder({ ...desired, earliestDueAt: tomorrowDue }).at,
   new Date(2026, 9, 30, 8, 30, 0).getTime(), 'never notify before cards are due');
-assert.equal(reminders.actions.some(x => /notification|permission|schedule/i.test(x)), false,
-  'planner has no plugin, permission, or scheduling side effects');
+assert.equal(reminders.actions.some(x => /notify\\.(check|request|schedule|cancel|channel)/.test(x)), false,
+  'planner never requests permission or schedules a notification');
 
 // Deep link registration is C-owned; only a later explicit A auth subscriber
 // can exchange a PKCE code. No cloud session or user data is changed here.
@@ -276,5 +293,67 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   await assert.rejects(failedNotifications.reconcileDueReminder(desired), /Could not update due reminders/);
   assert.equal(failedNotifications.actions.some(x => x.includes('PRIVATE-NOTIFICATION-ERROR')), false);
   assert.equal(web.actions.includes('register:LocalNotifications'), false);
-  console.log('ok: Android native Back/resume, PKCE, consent-gated reminder planning and local notification reconciliation');
+  // N3c permission is inspected without a prompt; only the explicit B-owned
+  // user action may invoke requestDueReminderPermission(). No consent is stored.
+  assert.equal(web.onDueReminderTap, undefined);
+  assert.equal(web.checkDueReminderPermission, undefined);
+  assert.equal(web.requestDueReminderPermission, undefined);
+  assert.equal(nativeReminder.actions.includes('notify.request'), false);
+  assert.equal(await nativeReminder.checkDueReminderPermission(), 'granted');
+  assert.equal(nativeReminder.actions.includes('notify.request'), false);
+  const permissionDenied = run({ notificationPermission: 'denied', notificationRequestPermission: 'denied' });
+  assert.equal(await permissionDenied.checkDueReminderPermission(), 'denied');
+  assert.equal(permissionDenied.actions.includes('notify.request'), false);
+  assert.equal(await permissionDenied.requestDueReminderPermission(), 'denied');
+  assert.equal(permissionDenied.actions.filter(x => x === 'notify.request').length, 1);
+  const permissionPrompt = run({ notificationPermission: 'prompt', notificationRequestPermission: 'granted' });
+  assert.equal(await permissionPrompt.checkDueReminderPermission(), 'prompt');
+  assert.equal(await permissionPrompt.requestDueReminderPermission(), 'granted');
+  const missingPermissionPlugin = run({ notificationsAvailable: false });
+  assert.equal(await missingPermissionPlugin.checkDueReminderPermission(), 'unavailable');
+  await assert.rejects(missingPermissionPlugin.requestDueReminderPermission(), /update the Android app/);
+  const permissionFailure = run({ permissionFail: true });
+  await assert.rejects(permissionFailure.checkDueReminderPermission(), /Could not check notification permission/);
+  await assert.rejects(permissionFailure.requestDueReminderPermission(), /Could not request notification permission/);
+  assert.equal(permissionFailure.actions.some(x => x.includes('PRIVATE-PERMISSION-ERROR')), false);
+
+  // Only the exact Lemma fixed-ID default tap and review route can reach a
+  // subscriber. Cold taps are queued until the app's UI explicitly subscribes.
+  const tapped = run();
+  assert.equal(tapped.actions.includes('notify.request'), false);
+  const validTap = { actionId: 'tap', notification: { id: 24001, extra: { route: 'review' } } };
+  tapped.events.localNotificationActionPerformed(validTap);
+  const tappedRoutes = [];
+  const unsubscribeTap = tapped.onDueReminderTap(route => tappedRoutes.push(route));
+  assert.deepEqual(tappedRoutes, ['review'], 'early tap delivered once after subscription');
+  tapped.events.localNotificationActionPerformed(validTap);
+  assert.deepEqual(tappedRoutes, ['review'], 'duplicate action object not replayed');
+  for (const invalidTap of [
+    { actionId: 'dismiss', notification: { id: 24001, extra: { route: 'review' } } },
+    { actionId: 'tap', notification: { id: 999, extra: { route: 'review' } } },
+    { actionId: 'tap', notification: { id: 24001, extra: { route: 'settings' } } },
+    { actionId: 'tap', notification: { id: 24001 } },
+    { actionId: 'tap', notification: { id: '24001', extra: { route: 'review' } } },
+    null, {}, { actionId: 'tap', notification: null }
+  ]) tapped.events.localNotificationActionPerformed(invalidTap);
+  assert.deepEqual(tappedRoutes, ['review'], 'unrelated or malformed actions ignored');
+  tapped.events.localNotificationActionPerformed({ ...validTap });
+  assert.deepEqual(tappedRoutes, ['review', 'review'], 'new valid tap is delivered');
+  unsubscribeTap();
+  tapped.events.localNotificationActionPerformed({ ...validTap });
+  assert.deepEqual(tappedRoutes, ['review', 'review'], 'unsubscribed listener is not called');
+  const laterRoutes = [];
+  tapped.onDueReminderTap(route => laterRoutes.push(route));
+  assert.deepEqual(laterRoutes, ['review'], 'one pending tap is replayed to later subscriber');
+  assert.throws(() => tapped.onDueReminderTap(null), /function/);
+  const badSubscriber = run();
+  badSubscriber.onDueReminderTap(() => { throw new Error('PRIVATE-NOTIFICATION-PAYLOAD'); });
+  const goodRoutes = [];
+  badSubscriber.onDueReminderTap(route => goodRoutes.push(route));
+  badSubscriber.events.localNotificationActionPerformed({ ...validTap });
+  assert.deepEqual(goodRoutes, ['review']);
+  assert.equal(badSubscriber.actions.some(x => x.includes('PRIVATE-NOTIFICATION-PAYLOAD')), false);
+  assert.equal(web.actions.includes('notify.listen:localNotificationActionPerformed'), false);
+  assert.equal(missingPermissionPlugin.actions.some(x => x.startsWith('notify.listen:')), false);
+  console.log('ok: Android native Back/resume, PKCE, guarded reminder permission, tap and reconciliation');
 })().catch(error => { console.error(error); process.exitCode = 1; });
