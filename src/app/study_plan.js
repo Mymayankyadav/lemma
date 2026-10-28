@@ -147,6 +147,17 @@ const StudyPlan = (() => {
     const detail = type => { const e = latest(type);
       return e && object(e.payload?.data) ? { ...e.payload.data,
         eventId:e.event_id,createdAt:e.created_at } : null; };
+    // A second device may finish this session or start a newer one while
+    // events are loading. A stable plan revision alone cannot establish that
+    // this proof/hint packet still belongs to the active learning session.
+    // Re-read only the selected session identity; never rewrite old evidence.
+    const currentSessions = await list(ctx,'learning_sessions','id',
+      q => q.eq('plan_id',plan.id).eq('state','active')
+        .order('updated_at',{ascending:false}).limit(1));
+    const currentSessionId = currentSessions.length && isUuid(currentSessions[0].id)
+      ? currentSessions[0].id : null;
+    if (currentSessionId !== sessionId)
+      throw new Error('Active study session changed; reload checkpoint');
     // A different device may publish an amendment while the individual
     // plan/version/checkpoint/event requests are in flight. Do not hand a tutor
     // an old revision as the *current* approved checkpoint after that change.
