@@ -494,7 +494,10 @@ async function shot(page, name, size, scheme) {
       if (await page.evaluate(() => window.__nativeReminderMock.requests) !== 1 ||
           await toggle.textContent() !== 'Enable reminders')
         throw new Error('Denied permission must not persist consent');
-      await page.evaluate(() => window.__nativeReminderMock.setRequestResult('granted'));
+      await page.evaluate(() => {
+        window.__nativeReminderMock.setPermission('prompt'); // OS setting changed after denial
+        window.__nativeReminderMock.setRequestResult('granted');
+      });
       await toggle.click();
       await page.waitForFunction(() => document.querySelector('#s-reminder-toggle')?.textContent === 'Turn off reminders');
       const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('lemma-due-reminder-v1')));
