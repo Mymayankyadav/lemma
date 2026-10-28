@@ -52,16 +52,33 @@ jobs:
           git fetch --no-tags --depth=1 origin main
           test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || { echo "::error::Main moved; redispatch on the new main head"; exit 1; }
           gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > "$RUNNER_TEMP/lemma-checks.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/android.yml/runs?branch=main&status=success&per_page=100" > "$RUNNER_TEMP/lemma-android-runs.json"
           node <<'NODE'
           const fs=require('node:fs');
-          // Pages CI is path-filtered, so it may correctly be absent on a docs-only main SHA.
+          const {execFileSync}=require('node:child_process');
           const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-checks.json','utf8'));
-          for(const name of ['regression','local-stack','android']){
+          for(const name of ['regression','local-stack']){
             if(!d.check_runs.some(c=>c.name===name && c.head_sha===process.env.GITHUB_SHA &&
                 c.status==='completed' && c.conclusion==='success'))
               throw Error('Required current-main check is not SUCCESS: '+name);
           }
-          console.log('Current main SHA has all required completed green checks');
+          // Android is path-filtered for web/docs-only commits. Never demand a
+          // nonexistent check; instead require a successful ancestor with no
+          // intervening native/build inputs. Fail closed on any relevant change.
+          const runs=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-android-runs.json','utf8')).workflow_runs || [];
+          const relevant = /^(?:android\/|src\/app\/native_[^/]*\.js$|test\/android_[^/]*\.js$|docs\/ANDROID\.md$|capacitor\.config\.json$|\.github\/workflows\/android\.yml$|package(?:-lock)?\.json$|build\.js$|test\/lane_guard\.js$)/;
+          let accepted=null;
+          for(const run of runs){
+            if(run.conclusion!=='success' || run.head_branch!=='main') continue;
+            const base=run.head_sha;
+            try {execFileSync('git',['merge-base','--is-ancestor',base,process.env.GITHUB_SHA]);}
+            catch (_) {continue;}
+            const diff=execFileSync('git',['diff','--name-only',base,process.env.GITHUB_SHA],{encoding:'utf8'})
+              .trim().split('\n').filter(Boolean);
+            if(!diff.some(p=>relevant.test(p))){accepted=base;break;}
+          }
+          if(!accepted) throw Error('No successful ancestor Android check with unchanged native/build inputs; rerun Android CI first');
+          console.log('Exact-head regression/local-stack SUCCESS; safe Android ancestor '+accepted);
           NODE
 
       - name: Stage only the twelve reviewed legacy and knowledge migrations
