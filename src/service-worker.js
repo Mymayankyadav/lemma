@@ -26,13 +26,6 @@ self.addEventListener('fetch', (event) => {
   const isAsset = path === base + 'manifest.webmanifest' || path === base + 'icons/icon.svg';
   if (!isDocument && !isAsset) return;
 
-  const remember = (response) => {
-    if (response.ok) {
-      const copy = response.clone();
-      event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
-    }
-    return response;
-  };
   if (isDocument) {
     // Network-first for shell HTML; the install event is the only writer of
     // versioned document caches. An outgoing worker must never recreate its
@@ -40,8 +33,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(fetch(request).catch(() =>
       caches.match(request).then((cached) => cached || Response.error())));
   } else {
-    // Static, public shell assets remain cache-first.
-    event.respondWith(caches.match(request).then((cached) => cached ||
-      fetch(request).then(remember)));
+    // Static, public shell assets remain cache-first. Only install may write
+    // a versioned cache: late requests from the outgoing worker must not
+    // recreate an obsolete cache after activation has removed it.
+    event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
   }
 });
