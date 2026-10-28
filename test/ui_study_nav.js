@@ -111,7 +111,26 @@ async function resolveCurrent(page, result, reject = false) {
         await ready.page.getByRole('button', { name: 'Continue study' }).waitFor();
         assert.equal(await ready.page.locator('.today .study-btn').isDisabled(), false);
         await ready.page.screenshot({ path: path.join(OUT, `ship-b1-ready-${size}-${scheme}.png`) });
-        await ready.page.locator('.today .study-btn').click();
+        // Model refresh can replace Today asynchronously after the screenshot.
+        // Resolve the newest context again rather than clicking a fallback review CTA.
+        if (await ready.page.locator('.today .study-btn').textContent() !== 'Continue study') {
+          await resolveCurrent(ready.page, {
+            planId: 'plan-1', planRevision: 3,
+            checkpoint: { id: 'checkpoint-2', objective: 'Induction' },
+          });
+          await ready.page.getByRole('button', { name: 'Continue study' }).waitFor();
+        }
+        await ready.page.locator('.today .study-btn').filter({ hasText: 'Continue study' }).click();
+        try {
+          await ready.page.locator('.study-fixture').waitFor({ timeout: 5000 });
+        } catch (err) {
+          const current = await ready.page.evaluate(() => ({
+            content: document.querySelector('#main')?.textContent?.slice(0, 180),
+            selected: [...document.querySelectorAll('[aria-current=page]')].map(x => x.dataset.go),
+            primary: document.querySelector('.today .study-btn')?.textContent,
+          }));
+          throw new Error('Study action did not route to StudyView: ' + JSON.stringify(current) + ' · ' + err.message);
+        }
         assert.equal(await ready.page.locator('.study-fixture').textContent(), 'Study checkpoint checkpoint-2');
         await ready.page.locator('[data-go="home"]:visible').first().click();
         await resolveCurrent(ready.page, null);
