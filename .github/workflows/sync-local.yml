@@ -86,6 +86,14 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Verify independent local browser convergence
         run: node test/sync_local_e2e.js
+      - name: Upload real local-stack UI status screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lemma-live-sync-ui-screenshots
+          path: test-output/live-ui/*.png
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Stop disposable Supabase stack
         if: always()
         run: supabase stop --no-backup
