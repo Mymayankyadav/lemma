@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K3a — account-scoped unaccepted context draft editor (active claim)
+
+- **Claim:** `hourly-20261028-k3a-b-draft-ui`; UTC heartbeat 2026-10-28T07:32:34.982Z; base `main@ca1195dc9b6cfc3fe9ea938d3e7e8a80b5f3c872`; branch `lane-b/knowledge-01-k3a-local-draft-editor`. Lane B unclaimed (no open B PR); A's [PR #72](https://github.com/Mymayankyadav/lemma/pull/72) is actively implementing K2g and remains untouched.
+- **Scope:** build the first bounded K3 UI slice on existing A-owned local account draft APIs. In Settings, allow account-workspace student to create a new UUID context draft, edit title/Markdown/summary/goals, save with exact local CAS, reopen by ID, and visibly distinguish unsaved/draft/approved-pending. Preserve tutor provenance and other structured fields. No automatic approval, online commit, new backend/API, migration, Carrel or account transfer.
+- **Intended B-owned files:** `src/app/view_settings.js`, `test/ui_knowledge_drafts.js`, `docs/lanes/B.md`; append own test to `package.json` only. No A/C edits.
+- **Gate:** identity/workspace switch rejection, concurrent local revision rejection, offline local save/reopen, tutor provenance, pending immutable state, no implicit approval/network, UI keyboard and mobile/desktop screenshot evidence, exact-head regression/Android and B guard, post-merge main. Production knowledge migrations are not deployed; accepted cloud retrieval and citation display remain later K3 slices.
+- **Next:** implement the bounded UI and tests; keep PR draft until exact-head gates pass. Physical Android and production knowledge deployment are NOT RUN. Owner action: none.
+
 # Lane B — UI
 
 ## ANDROID-02 N3-B1 — explicit native reminder consent/time (active claim)
