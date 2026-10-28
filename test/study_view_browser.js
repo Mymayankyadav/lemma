@@ -2,7 +2,120 @@
 // Synthetic browser fixture: screenshot hidden StudyView without enabling it for users.
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
 const {chromium}=require('playwright');
+
+async function nativeStudyZoom(mock,view) {
+  // Real Chromium tab zoom; keep the test extension in a temporary directory.
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'lemma-study-zoom-'));
+  const ext=path.join(dir,'extension');
+  fs.mkdirSync(ext);
+  fs.writeFileSync(path.join(ext,'manifest.json'),JSON.stringify({
+    manifest_version:3,name:'Lemma Study native zoom CI',version:'1.0',
+    permissions:['tabs'],host_permissions:['https://lemma.test/*'],
+    background:{service_worker:'background.js'}
+  }));
+  fs.writeFileSync(path.join(ext,'background.js'),
+    'chrome.runtime.onInstalled.addListener(() => {});\n');
+  let context;
+  try {
+    context=await chromium.launchPersistentContext(path.join(dir,'profile'),{
+      channel:'chromium',headless:true,
+      args:['--disable-extensions-except='+ext,'--load-extension='+ext],
+      viewport:{width:1280,height:900},colorScheme:'light',serviceWorkers:'allow',
+      reducedMotion:'reduce'
+    });
+    await context.route('https://lemma.test/**',route=>route.fulfill({
+      status:200,contentType:'text/html',
+      body:'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app"></div></body></html>'
+    }));
+    const page=await context.newPage(),errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    await page.goto('https://lemma.test/');
+    await page.addStyleTag({content:fs.readFileSync('src/app.css','utf8')+'\n'+
+      fs.readFileSync('src/styles/study.css','utf8')});
+    await page.addScriptTag({content:mock+'\n'+view+'\nwindow._StudyView=StudyView;'});
+    await page.evaluate(()=>document.querySelector('#app').append(window._StudyView.render({
+      planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'
+    })));
+    await page.getByRole('heading',{name:'Compactness checkpoint'}).waitFor();
+    const baseline=await page.evaluate(()=>({width:innerWidth,dpr:devicePixelRatio}));
+    const worker=context.serviceWorkers()[0] ||
+      await context.waitForEvent('serviceworker',{timeout:15000});
+    const zoom=await worker.evaluate(async()=>{
+      const tabs=await chrome.tabs.query({});
+      const tab=tabs.find(t=>t.url?.startsWith('https://lemma.test/'));
+      if(!tab)throw new Error('Study test tab missing from extension');
+      const before=await chrome.tabs.getZoom(tab.id);
+      await chrome.tabs.setZoom(tab.id,2.0);
+      const after=await chrome.tabs.getZoom(tab.id);
+      return {before,after};
+    });
+    assert.ok(Math.abs(zoom.before-1)<0.01 && Math.abs(zoom.after-2)<0.01,
+      'actual Chromium tab zoom must transition from 100% to 200%');
+    const enlarged=await page.evaluate(()=>({
+      width:innerWidth,dpr:devicePixelRatio,cssZoom:document.body.style.zoom,
+      visualWidth:visualViewport?.width,clientWidth:document.documentElement.clientWidth
+    }));
+    assert.equal(enlarged.cssZoom,'','do not substitute CSS zoom');
+    assert.ok(enlarged.width<baseline.width*0.75 ||
+      enlarged.dpr>baseline.dpr*1.6,'native zoom must change browser scale');
+    async function screen(label) {
+      const bounds=await page.evaluate(()=>({
+        viewport:innerWidth,doc:document.documentElement.scrollWidth,
+        ready:window._StudyView.ready,visible:!!document.querySelector('.study-page')
+      }));
+      assert.equal(bounds.ready,false,'native zoom cannot enable the Study tab');
+      assert.ok(bounds.visible && bounds.doc<=bounds.viewport+1,
+        label+' overflows at genuine 200% tab zoom: '+JSON.stringify(bounds));
+      // Playwright full-page captures crop under native zoom; deep-scroll
+      // screenshots in headless Chromium can be blank even when DOM assertions
+      // pass. For visual evidence, temporarily place the existing review panel
+      // first in the synthetic fixture (no DOM clone or app code mutation),
+      // then photograph the actual viewport. Normal-layout overflow is checked
+      // above before this test-only presentation step.
+      if(label!=='checkpoint')await page.locator('.study-amendment').evaluate(panel=>{
+        panel.parentElement.prepend(panel);
+        window.scrollTo(0,0);
+      });
+      const file='test-output/ui/study-p5c-native-zoom200-'+label+'.png';
+      const screenshot=await page.screenshot({path:file});
+      assert.ok(screenshot.length>20000,label+' screenshot was blank or incomplete');
+    }
+    console.log('PLAN-01 P5c zoom geometry '+JSON.stringify({baseline,enlarged,zoom}));
+    await screen('checkpoint');
+    await page.getByRole('button',{name:'Continue saved proof'}).focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.getByRole('textbox',{name:'Your unfinished proof'})
+      .evaluate(node=>document.activeElement===node),true,
+      'keyboard-only native zoom must restore and focus the unfinished proof');
+    assert.equal(await page.evaluate(()=>window.__writes.length),0);
+    await page.getByRole('button',{name:'Review pending amendment'}).focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('button',{name:'Approve these displayed changes'}).waitFor();
+    assert.equal(await page.evaluate(()=>window.__amendmentActions.length),0);
+    await screen('amendment');
+    await page.evaluate(()=>{
+      window.__draftStatus='needs_review';
+      document.querySelector('#app').replaceChildren(window._StudyView.render({
+        planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'
+      }));
+    });
+    await page.getByRole('button',{name:'Inspect rejected amendment'}).click();
+    await page.getByRole('button',{name:'Restart as unapproved draft'}).waitFor();
+    assert.equal(await page.evaluate(()=>window.__amendmentActions.length),0,
+      'conflict inspection at native zoom cannot restart a draft');
+    await screen('conflict');
+    assert.deepEqual(errors,[],'Study native zoom has no browser exceptions');
+    await page.close();
+    console.log('PASS PLAN-01 P5c genuine Chromium 200% native zoom: checkpoint, amendment, conflict, keyboard, no writes');
+  } finally {
+    if(context)await context.close();
+    fs.rmSync(dir,{recursive:true,force:true});
+  }
+}
+
 (async()=>{
  const browser=await chromium.launch({headless:true});
  try {
@@ -197,6 +310,7 @@ const {chromium}=require('playwright');
   assert.equal(actions[actions.length-1].confirmed,true);
   assert.equal(await page.getByRole('button',{name:'Submit previously approved amendment'}).count(),0,
     'restarted draft is not an approved publication intent');
+  await nativeStudyZoom(mock,view);
   console.log('PASS PLAN-01 P5b synthetic Chromium: proof-resume focus, keyboard save, responsive long math, CSS zoom stress, dark/light checkpoint/amendment/conflict screenshots (not human visual acceptance or production)');
   await page.close();
  } finally {await browser.close()}
