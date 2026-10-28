@@ -81,7 +81,7 @@ const bridge=scope.knowledgeBridge;
  onSend=()=>({data:null,error:{message:'stale_context_revision'}});
  await assert.rejects(bridge.commitAcceptedContext(accepted),
   /stale_context_revision/);
- onSend=()=>({data:null,error:{message:'select * from private.password'}}); 
+ onSend=()=>({data:null,error:{message:'select * from private.password'}});
  await assert.rejects(bridge.readAcceptedContext(contextId),
   /Knowledge request failed; retry when connected/);
  onSend=()=>{throw Error('Sensitive token or content');};
