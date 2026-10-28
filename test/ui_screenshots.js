@@ -342,7 +342,7 @@ async function shot(page, name, size, scheme) {
         const pendingDownload = page.waitForEvent('download', { timeout: 10000 });
         await page.getByRole('button', { name: 'Download', exact: true }).click();
         const download = await pendingDownload;
-        if (!/^lemma-all-\\d{4}-\\d{2}-\\d{2}\\.json$/.test(download.suggestedFilename()))
+        if (!/^lemma-all-\d{4}-\d{2}-\d{2}\.json$/.test(download.suggestedFilename()))
           throw new Error('Unexpected backup download filename: ' + download.suggestedFilename());
         const actualBackup = fs.readFileSync(await download.path(), 'utf8');
         if (actualBackup !== expectedBackup || JSON.parse(actualBackup).app !== 'lemma')
