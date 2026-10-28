@@ -1,3 +1,10 @@
+## ANDROID-02 N5 — read-only device upgrade preflight (claimed 28 Oct 2026)
+
+- **Run:** `chat-20261028-c-n5-device-preflight-1509`; heartbeat 2026-10-28T09:39:00Z (claim), base `main@1653e4015f8a49684fb7841aa0d4732539b23480`, branch `lane-c/android-02-n5-readonly-upgrade-preflight`. User explicitly requested lane C after the 14:56 IST Android pause; this resumes bounded engineering preparation only, **not** Android inclusion in today's web-first release.
+- **Scope:** provide a fail-closed, *read-only* ADB/APK signature+version compatibility check for D6, matching existing schema-2 CI metadata. Never install, uninstall, clear storage, read app-private data, request notification consent, or touch A/B-owned files. Intended files: `test/android_device_preflight.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, this handoff.
+- **Gate:** unit tests for artifact tampering, missing/multiple/offline devices, non-Lemma package, installed signer mismatch and unsafe downgrade; `npm run test:android`, syntax, plan/lane C, full regression, Android APK CI on the exact head. This automates *preflight*, not actual physical D1–D6.
+- **Next action:** implement and test the read-only helper; review CI and branch/main freshness, then merge only on applicable green gates. The D1–D6 session and B-owned consent controls remain explicitly pending.
+
 ## Ship-today requests (integration 28 Oct, read first)
 
 - **Android is paused (owner, 14:56 IST): the web app is the priority.** No lane C agent is needed today; SHIP-C1 is cancelled and ANDROID-02 is LATER. Existing evidence below stays valid. Do not start new Android work until the owner resumes it.
