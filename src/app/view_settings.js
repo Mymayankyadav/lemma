@@ -641,12 +641,14 @@ const SettingsView = (() => {
       summary.value = typeof row.payload?.summary === 'string' ? row.payload.summary : '';
       goals.value = Array.isArray(row.payload?.goals) ? row.payload.goals.join('\n') : '';
       markdown.value = row.markdown || '';
-      const locked = row.status === 'approved_pending';
+      const locked = row.status === 'approved_pending' || row.status === 'needs_review';
       for (const control of [title, summary, goals, markdown]) control.disabled = locked;
       save.disabled = locked;
       fields.hidden = false;
-      status.textContent = locked
-        ? 'Approved intent is pending. This snapshot is locked; it is not a confirmed cloud revision.'
+      status.textContent = row.status === 'needs_review'
+        ? 'Accepted-context revision conflict. This reviewed draft is locked and was not applied to the cloud. Keep its context ID; inspect the current accepted revision before making a new approval decision.'
+        : locked
+          ? 'Approved intent is pending. This snapshot is locked; it is not a confirmed cloud revision.'
         : row.status === 'unsaved'
           ? 'New unsaved student draft. Save it locally before leaving this page.'
           : 'Local draft revision ' + row.localRevision + ' saved on this device. Not accepted or sent to cloud.' +
@@ -654,10 +656,10 @@ const SettingsView = (() => {
     }
     function dirty() {
       const row = editor.current();
-      if (!row || row.status === 'approved_pending') return false;
+      if (!row || ['approved_pending', 'needs_review'].includes(row.status)) return false;
       return title.value !== (row.title || '') ||
         summary.value !== (row.payload?.summary || '') ||
-        goals.value !== (Array.isArray(row.payload?.goals) ? row.payload.goals.join('\\n') : '') ||
+        goals.value !== (Array.isArray(row.payload?.goals) ? row.payload.goals.join('\n') : '') ||
         markdown.value !== (row.markdown || '');
     }
     async function maySwitch() {
@@ -686,7 +688,7 @@ const SettingsView = (() => {
         goals: goals.value, markdown: markdown.value })); }
       catch (err) { status.textContent = err.message; }
       finally {
-        const locked = editor.current()?.status === 'approved_pending';
+        const locked = ['approved_pending', 'needs_review'].includes(editor.current()?.status);
         for (const control of [title, summary, goals, markdown]) control.disabled = locked;
         save.disabled = locked;
         create.disabled = open.disabled = false;

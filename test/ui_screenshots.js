@@ -610,6 +610,34 @@ async function shot(page, name, size, scheme) {
         document.querySelector('#s-knowledge-status')?.textContent.includes('Local draft revision 1'));
       if (await page.locator('#s-knowledge-title').inputValue() !== 'Topology and compactness')
         throw Error('K3a local draft did not reopen from the account cache projection');
+      // K3a1: a stale approved intent is visibly immutable and cannot be
+      // mistaken for an editable draft. This synthetic state is not a live RPC.
+      const conflictId = await page.locator('#s-knowledge-id').inputValue();
+      await page.evaluate(id => {
+        const row = window.__knowledgeMock.rows.get(id);
+        window.__knowledgeMock.rows.set(id, {
+          ...row, status: 'needs_review', approvedBy: 'student',
+          requestId: '11111111-2222-4333-8444-555555555555'
+        });
+      }, conflictId);
+      await page.locator('#set-knowledge-drafts button:text-is("Open saved draft")').click();
+      await page.waitForFunction(() =>
+        document.querySelector('#s-knowledge-status')?.textContent.includes('revision conflict'));
+      const conflict = await page.locator('#set-knowledge-drafts').evaluate(el => ({
+        width: el.scrollWidth, client: el.clientWidth,
+        locked: [...el.querySelectorAll('.knowledge-draft-fields input, .knowledge-draft-fields textarea')]
+          .every(input => input.disabled),
+        saveLocked: el.querySelector('button.btn-primary')?.disabled,
+        state: el.querySelector('[role=status]')?.textContent
+      }));
+      if (conflict.width > conflict.client + 1 || !conflict.locked || !conflict.saveLocked ||
+          !conflict.state.includes('not applied to the cloud'))
+        throw Error('K3a1 private conflict lock contract failed: ' + JSON.stringify(conflict));
+      await page.locator('#set-knowledge-drafts').screenshot({
+        path: path.join(OUT, `knowledge-conflict-${size}-${scheme}.png`),
+        animations: 'disabled'
+      });
+      shots++;
     } catch (e) {
       problems.push('[knowledge-draft-' + size + '-' + scheme + '] ' + (e.stack || e.message));
     } finally {
