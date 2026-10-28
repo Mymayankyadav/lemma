@@ -134,8 +134,8 @@ async function readAccepted(page) {
         assert.deepEqual(await page.evaluate(()=>window.__readerTest.sourceCalls[1]),
           [C,SRC,4,'00000000-0000-4000-8000-000000000006',6],
           'next request uses last accepted section cursor');
-        assert.equal(await page.getByRole('button',{name:'Read next 6 excerpts'}).count(),1);
-        assert.equal(await page.getByRole('button',{name:'Read next 6 excerpts'}).isVisible(),false,
+        assert.equal(await page.locator('.accepted-reader-next').count(),1);
+        assert.equal(await page.locator('.accepted-reader-next').isVisible(),false,
           'end-of-source hides paging action');
         assert.equal(await page.evaluate(()=>window.__readerTest.writes),0,'read-only');
         // A malformed source revision fails closed without showing uncited text.
