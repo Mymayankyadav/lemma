@@ -46,6 +46,12 @@ For an APK downloaded from CI, replace the path with the extracted `app-debug.ap
 - Deploying GitHub Pages does **not** update bundled assets of an installed APK. Each new bundled release requires building and installing a correctly signed updated APK.
 - Use a separate test device or export first when evaluating debug builds with important local flashcards; never clear storage or uninstall as a troubleshooting shortcut.
 
+## ANDROID-02 N1b — trusted system-browser launch adapter (plugin not yet installed)
+
+`NativeShell.openAuthBrowser(authorizeUrl)` is a native-only bridge to the Capacitor `Browser.open` plugin. It rejects every URL except the configured HTTPS Supabase origin's `/auth/v1/authorize` endpoint with one Google provider, the exact `io.lemma.study://auth-callback` redirect, and an S256 PKCE code challenge. Fragments, authorization codes, tokens, alternative domains, non-HTTPS URLs and duplicate required parameters fail closed. Browser/plugin errors are redacted, not logged with credentials. `NativeShell.closeAuthBrowser()` is best effort; browser lifecycle errors do not clear app data. The ordinary web build does not expose these APIs or invoke the native plugin.
+
+**Important deployment gate:** the pinned `@capacitor/browser@8.0.0` dependency is not yet in the package manifest or native Android build. Until a separate integration-owned package/lockfile PR installs and syncs that plugin, the bridge deliberately returns a clear “update the Android app” error, **not an in-WebView login**. Lane A must also wire `signInWithOAuth({skipBrowserRedirect:true})`, code exchange and pending-session/identity guards using the C-owned callback subscription. This C slice alone does **not** make Android Google sign-in functional. CI mocks the plugin interface; native device/browser interaction remains NOT RUN. No configuration changes, client tokens or production write are required for this slice.
+
 ## Android Back and resume (ANDROID-01 S2)
 
 The pinned `@capacitor/app@8.0.0` matches Capacitor core. `npm run android:sync` links the native Android App plugin. The inline app code uses `window.Capacitor.registerPlugin('App')` only when running on the native platform and when the plugin is available; it registers nothing in ordinary browsers.
