@@ -173,14 +173,49 @@ const ExportSheet = (() => {
       const stamp = new Date().toISOString().slice(0, 10);
       return `lemma-${d}-${stamp}.${format === 'json' ? 'json' : 'md'}`;
     };
-    const dlBtn = h('button', { class: 'btn btn-primary', type: 'button', html: icon('download', 16) + '<span>Download</span>', hidden: true, onclick: async () => {
-      const d = await getDownloads();
-      if (!d) return;
-      try { await d.save({ filename: fname(), data: out.value }); toast('Saved'); }
-      catch (e) { if (e && e.code !== 'declined') toast('The file couldn’t be saved here. Copy the text instead.', { kind: 'error' }); }
+    // A plain web page has no host downloads API. Use a same-origin Blob URL
+    // rather than hiding the only direct backup action in that environment.
+    const dlBtn = h('button', { class: 'btn btn-primary', type: 'button', html: icon('download', 16) + '<span>Download</span>', onclick: async () => {
+      if (window.claude && typeof window.claude.use === 'function') {
+        const host = await getDownloads();
+        if (host && typeof host.save === 'function') {
+          try { await host.save({ filename: fname(), data: out.value }); toast('Saved'); return; }
+          catch (e) { if (e && e.code === 'declined') return; }
+        }
+      }
+      let url;
+      try {
+        const type = format === 'json' ? 'application/json;charset=utf-8' : 'text/markdown;charset=utf-8';
+        url = URL.createObjectURL(new Blob([out.value], { type }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fname();
+        link.hidden = true;
+        document.body.appendChild(link);
+        try { link.click(); } finally { link.remove(); }
+        // Revoke after the browser has had time to consume the download.
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        toast('Download started. Verify the file before relying on this backup.');
+      } catch (e) {
+        if (url) URL.revokeObjectURL(url);
+        toast('Download unavailable here. Copy the text instead.', { kind: 'error' });
+      }
     } });
-    const copyBtn = h('button', { class: 'btn', type: 'button', html: icon('check', 16) + '<span>Copy</span>', onclick: () => copyText(out.value, out) });
-    getDownloads().then((d) => { dlBtn.hidden = !d; });
+    const copyBtn = h('button', { class: 'btn', type: 'button', html: icon('check', 16) + '<span>Copy</span>', onclick: async () => {
+      // A resolved writeText promise is not proof of a readable clipboard.
+      // Never report a verified backup when readback is empty or denied.
+      try {
+        if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function' ||
+            typeof navigator.clipboard.readText !== 'function') throw new Error('Clipboard unavailable');
+        await navigator.clipboard.writeText(out.value);
+        if (await navigator.clipboard.readText() !== out.value) throw new Error('Clipboard mismatch');
+        toast('Copied and verified');
+      } catch (e) {
+        out.focus();
+        out.select();
+        toast('Copy not verified. Copy the selected text manually.', { kind: 'error' });
+      }
+    } });
     Sheets.open({
       title: 'Export', wide: true,
       body: h('div', { class: 'exp' },
