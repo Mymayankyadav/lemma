@@ -52,6 +52,10 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     await page.waitForSelector('#sheets',{state:'attached',timeout:12000});
     await page.evaluate(()=>window.__tutorVisual.open());
     await page.waitForSelector('.tutor-handoff');
+    const helpColor=await page.locator('.tutor-handoff-help').first().evaluate(
+      el=>getComputedStyle(el).color);
+    assert.ok((scheme==='dark'?/173,\s*181,\s*196/:/74,\s*82,\s*99/).test(helpColor),
+      'Handoff help uses theme-adjusted readable secondary ink: '+helpColor);
     await page.locator('.tutor-handoff-reply').fill(JSON.stringify(reply));
     await page.getByRole('button',{name:'Review pasted reply'}).click();
     await page.locator('.tutor-handoff-item').first().waitFor();
