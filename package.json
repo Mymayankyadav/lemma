@@ -19,7 +19,7 @@
     "test:outbox": "node test/outbox_core.js",
     "test:storage": "node test/sync_storage.js && node test/conflict_storage.js && node test/conflict_resolution.js && node test/conflict_ui.js && node test/local_persistence.js && node test/editor_persistence.js && node test/import_persistence.js",
     "test:browser-sync": "node test/browser_sync.js",
-    "test:account": "node test/account_sync.js",
+    "test:account": "node test/account_sync.js && node test/account_native_oauth.js",
     "test:account-store": "node test/account_store.js",
     "test:ui": "node test/ui_screenshots.js",
     "test:plan": "node test/plan_protocol.js && node test/lane_guard.js",
