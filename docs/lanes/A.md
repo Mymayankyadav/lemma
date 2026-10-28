@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K2i — pinned accepted-context citation packet (current claim)
+
+- **Claim:** `chat-20261028-a-k2i-pinned-citation`; heartbeat 2026-10-28T09:16:25.062Z; base `main@45c44bbd8c333c2c3db68d2bbfc0fccdf70cddd3`; branch `lane-a/knowledge-01-k2i-pinned-citation`. No open lane A implementation PR at claim; integration PR #79 is independent and must not be overwritten.
+- **Scope:** add a bounded owner-scoped accepted context + cited source excerpt reader. Pin returned context and source revisions, validate that the source is referenced by the accepted structured context, reject malformed/mismatched packets and account/workspace switches between calls. Never fetch whole collections, auto-approve, write knowledge, or change SQL/production data.
+- **Files:** A-owned `src/app/cloud_bridge.js`, `test/account_knowledge_bridge.js`, `docs/lanes/A.md`. No shared ownership, B UI, C shell or migrations.
+- **Gate:** same accepted revisions across readers; source unreferenced/mismatched revisions, bad excerpt envelopes, stale auth/workspace and revision races fail closed; full exact-head regression, Android/local Supabase CI, lane A guard, post-merge main. Main regression 40662201354 had a prior flaky editor-preview assertion; failed-job retry requested, no result assumed.
+- **Next:** implement the wrapper and tests; verify PR CI and latest main. If the main regression remains red, hold feature merge and route corrective work. B can later build accepted revision browsing from this API. No owner action now.
+
 ## KNOWLEDGE-01 K2h2 — explicitly reviewed stale-context draft restart (claim)
 
 - **Claim:** `hourly-20261028T0833Z-a-k2h2`; UTC heartbeat 2026-10-28T08:33:25Z; base `main@e3f6610270efd63c03089fdca21219af55ad4660`; branch `lane-a/knowledge-01-k2h2-reviewed-reopen`. Lane A had no open PR; B's active PR #76 is untouched.
