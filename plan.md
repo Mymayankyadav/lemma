@@ -25,6 +25,8 @@ Up to **three implementation agents, one per lane** (A sync/auth/backend, B UI, 
 
 ## 1. CURRENT HANDOFF
 
+**Integration claim (2026-10-28 UTC):** reconcile documented task/handoff state after completed KNOWLEDGE-01 K2/K3 slices and Android N4b. Base `main@45c44bb`; implementation and CI review pending; preserve all historical evidence and hardware/production gates.
+
 **Integration record (2026-10-28 UTC):** `UI-01-PROMOTION`; [integration PR #52](https://github.com/Mymayankyadav/lemma/pull/52) reconciles task states and lane handoffs from `main@a108dd5` after verified PR #49. Validation/merge evidence is on the PR; no production or native code changed. The merged PR #49 and B audit #51 provide the acceptance evidence; later task implementation requires separate lane PRs.
 
 **Per-lane handoffs:** `docs/lanes/A.md`, `B.md`, `C.md`. These contain execution details; §2 contains authoritative task states. An automatic integration PR reconciles shared snapshots and ownership. Historical paragraphs are not fresh blockers.
