@@ -553,6 +553,99 @@ const LemmaCloudBridge = (() => {
       manifest:{counts,hashes,sha256}};
   }
 
+  // R2h. Two independently timed, explicitly requested READ-ONLY captures:
+  // the server's own transaction and the local IndexedDB transaction. They
+  // are NOT one atomic server/local snapshot and grant no restore permission.
+  async function verifyReadOnlyRecoveryPair(pair,expectedOwnerId){
+    if(!recoveryOwner(expectedOwnerId)||pair?.app!=='lemma' ||
+       pair.version!==1 || pair.scope!=='account-recovery-pair' ||
+       pair.capture!=='two-independent-readonly-snapshots' ||
+       pair.ownerId!==expectedOwnerId ||
+       !pair.server || !pair.local || !pair.manifest)
+      throw new Error('Invalid recovery pair or owner');
+    const archive=pair.server;
+    if(archive.app!=='lemma' || archive.version!==2 ||
+       archive.scope!=='account-workspace' || archive.capture!=='transactional' ||
+       archive.ownerId!==expectedOwnerId ||
+       !Number.isFinite(Date.parse(archive.exportedAt)) ||
+       !Array.isArray(archive.migrations) ||
+       archiveCanonical(archive.migrations)!==archiveCanonical(workspaceArchiveVersions) ||
+       !archive.tables || !archive.manifest)
+      throw new Error('Invalid paired server archive');
+    const verified=validateServerWorkspaceSnapshot({
+      app:'lemma',schemaVersion:1,scope:'account-workspace-raw',
+      capture:'stable-calling-statement-snapshot',
+      ownerId:expectedOwnerId,capturedAt:archive.exportedAt,tables:archive.tables
+    },expectedOwnerId);
+    verifyArchiveReferences(archive.tables);
+    const counts={},hashes={};
+    for(const name of workspaceSnapshotNames){
+      const rows=sortedArchiveRows(name,archive.tables[name]);
+      counts[name]=rows.length;
+      hashes[name]=await recoveryDigest(new TextEncoder()
+        .encode(archiveCanonical(rows)));
+    }
+    const manifestInput={app:'lemma',version:2,scope:'account-workspace',
+      capture:'transactional',ownerId:expectedOwnerId,
+      exportedAt:archive.exportedAt,migrations:archive.migrations,counts,hashes};
+    const digest=await recoveryDigest(new TextEncoder()
+      .encode(archiveCanonical(manifestInput)));
+    if(archiveCanonical(archive.manifest)!==
+       archiveCanonical({counts,hashes,sha256:digest}))
+      throw new Error('Paired server archive checksum mismatch');
+    const local=await verifyLocalRecoveryEnvelope(pair.local,expectedOwnerId);
+    const pairInput={app:'lemma',version:1,scope:'account-recovery-pair',
+      capture:'two-independent-readonly-snapshots',ownerId:expectedOwnerId,
+      serverSha256:digest,localSha256:local.sha256,
+      serverCapturedAt:archive.exportedAt,localCapturedAt:pair.local.snapshot.capturedAt};
+    const pairSha256=await recoveryDigest(new TextEncoder()
+      .encode(archiveCanonical(pairInput)));
+    if(archiveCanonical(pair.manifest)!==archiveCanonical({
+        serverSha256:digest,localSha256:local.sha256,sha256:pairSha256,
+        serverCapturedAt:archive.exportedAt,
+        localCapturedAt:pair.local.snapshot.capturedAt
+      }))
+      throw new Error('Recovery pair manifest mismatch');
+    return {ownerId:expectedOwnerId,serverRows:verified.count,
+      localRows:local.rows,readOnly:true,atomicAcrossDevices:false,
+      sha256:pairSha256};
+  }
+  async function captureReadOnlyRecoveryPair(studentRequested=false){
+    if(studentRequested!==true)
+      throw new Error('Explicit paired account recovery export required');
+    const ownerId=LemmaAccount.user?.id,client=LemmaAccount.client;
+    const handle=typeof LemmaSync!=='undefined' ? LemmaSync.accountHandle() : null;
+    if(!recoveryOwner(ownerId)||!client||!handle||handle.userId!==ownerId)
+      throw new Error('Sign in before creating a recovery pair');
+    const check=()=>{
+      if(LemmaAccount.user?.id!==ownerId||LemmaAccount.client!==client||
+         LemmaSync.accountHandle()!==handle)
+        throw new Error('Account changed during paired recovery');
+    };
+    const server=await sealServerWorkspaceArchive(true);
+    check();
+    const local=await captureLocalRecoveryEnvelope(true);
+    check();
+    if(server.ownerId!==ownerId||local.ownerId!==ownerId)
+      throw new Error('Recovery pair owner mismatch');
+    // Verify each component before yielding sensitive snapshots to the caller.
+    const pairInput={app:'lemma',version:1,scope:'account-recovery-pair',
+      capture:'two-independent-readonly-snapshots',ownerId,
+      serverSha256:server.manifest.sha256,localSha256:local.sha256,
+      serverCapturedAt:server.exportedAt,localCapturedAt:local.snapshot.capturedAt};
+    const sha256=await recoveryDigest(new TextEncoder()
+      .encode(archiveCanonical(pairInput)));
+    check();
+    const pair={app:'lemma',version:1,scope:'account-recovery-pair',
+      capture:'two-independent-readonly-snapshots',ownerId,server,local,
+      manifest:{serverSha256:server.manifest.sha256,localSha256:local.sha256,
+        sha256,serverCapturedAt:server.exportedAt,
+        localCapturedAt:local.snapshot.capturedAt}};
+    await verifyReadOnlyRecoveryPair(pair,ownerId);
+    check();
+    return pair;
+  }
+
   // LOCAL unaccepted drafts only. These are stored in the existing
   // account-namespaced IndexedDB cache; no network required after attach.
   // An in-flight save may finish under the *old* owner after logout, so
@@ -725,7 +818,7 @@ const LemmaCloudBridge = (() => {
   }
   return { captureLocalRecovery, captureLocalRecoveryEnvelope, verifyLocalRecoveryEnvelope,
     captureServerWorkspaceSnapshot, validateServerWorkspaceSnapshot,
-    sealServerWorkspaceArchive,
+    sealServerWorkspaceArchive, captureReadOnlyRecoveryPair, verifyReadOnlyRecoveryPair,
     authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
     commitAcceptedContext,
