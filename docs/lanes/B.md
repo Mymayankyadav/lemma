@@ -1,3 +1,9 @@
+## RELEASE-01 — explicit account backup and restore controls
+
+- **Claim:** `chat-20261028-b-account-recovery`, heartbeat 2026-10-28T17:58Z, branch `lane-b/release-account-recovery-controls`, base main `2f2a410`. No other B PR open. Files: `src/app/view_settings.js`, `test/ui_workspace_recovery.js`, B test registration and handoff. A PR #146 owns local restore APIs; integration #147 owns deployment scopes; neither is edited here.
+- **Goal:** signed-in private account backup download, bounded file validation, explicit preview/confirmation and queued-edit consent, retained stable retry request after failure/reload, owner/workspace switch denial. No implicit restore, no production fixture data, no changes to legacy card import/export.
+- **Next:** implement and check mobile/desktop light/dark screenshots, cancel/tamper/failure/retry/identity tests and exact-head CI. Controls stay unavailable until A's paired-restore API exists.
+
 ## B CI repair claim — pending stale Study response selection (28 Oct 2026)
 
 - Claim `chat-20261028-b-stale-response-ci`, branch `lane-b/ui-02-stable-stale-study-response`, base latest main (includes #116). No open B PR on pickup. Own only `test/ui_study_nav.js` and this B handoff; production source and student-approved state unchanged.
