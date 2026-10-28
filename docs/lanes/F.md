@@ -1,5 +1,7 @@
 # Lane F — release and ship (RELEASE-01)
 
+Next action: merge R0 live Pages smoke after exact-head CI success, then implement R1 PWA offline/update test. Keep Android deferred and record post-merge Pages evidence.
+
 R0 implementation is in [PR #87](https://github.com/Mymayankyadav/lemma/pull/87). Original R0 scope: create `.github/workflows/release.yml` + `test/release_live_smoke.js`: after each successful "Deploy Lemma web" run on `main` (`workflow_run`) and on `workflow_dispatch`, run Playwright against `https://mymayankyadav.github.io/lemma/` with the checks in `docs/SHIP_PLAN.md`, upload screenshots, and record each result in the watch log below. `test/release_live_smoke.js` must exit 0 without running when `LEMMA_LIVE_URL` is unset so `npm test` stays offline. Then RELEASE-01 R1 — add `test/release_pwa.js` that serves `dist/` over HTTPS-equivalent localhost with the service worker **enabled**, verifies offline reload of the app shell and that a new build replaces the cached one without losing IndexedDB data; fix `src/service-worker.js` only if the test exposes a defect. Meanwhile watch `main` CI and record any red run and its culprit commit here.
 
 | Field | Value |
