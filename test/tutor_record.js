@@ -13,7 +13,9 @@ const cp='compactness-open-cover-proof';
 let dialog, revision=3, activeCheckpoint=cp, failSecond=false;
 const calls=[];
 const app={workspaceRevision:1,workspaceBlocked:false};
-const account={user:{id:owner},client:null};
+let signalIdentityChange=null;
+const account={user:{id:owner},client:null,
+ onIdentityChange(fn){signalIdentityChange=fn;}};
 const client={rpc(name,args){
  calls.push({name,args:JSON.parse(JSON.stringify(args))});
  return {setHeader:async(header,auth)=>{
@@ -155,6 +157,13 @@ async function open(){
  await x.save.events.click();
  assert.equal(calls.length,4,'workspace switch must block write');
  app.workspaceRevision=1;
+
+ x=await open();select(0);
+ assert.equal(typeof signalIdentityChange,'function');
+ signalIdentityChange(); // same owner logged out and back in, old consent expires
+ await x.save.events.click();
+ assert.equal(calls.length,4,'same-owner relogin cannot reuse old sheet selection');
+ assert.match(x.status.textContent,/account or workspace changed/);
 
  // Editing the reply invalidates review/consent and cannot keep old IDs.
  x=await open();select(0);
