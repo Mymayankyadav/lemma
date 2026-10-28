@@ -74,8 +74,10 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     await page.waitForSelector('#sheets',{state:'attached',timeout:12000});
     // Boot initializes the workspace asynchronously and may replace open sheets.
     // Never open the synthetic tutor handoff until that initialization is done.
+    // Hidden Study + empty local cards intentionally renders onboarding, not
+    // the Today dashboard. Require completed boot, not a particular Home state.
     await page.waitForFunction(() => typeof App !== 'undefined' && App.loading === false &&
-      !!document.querySelector('.today'), null, {timeout:15000});
+      !!document.querySelector('.page.home'), null, {timeout:15000});
     await page.evaluate(()=>window.__tutorVisual.open());
     await page.waitForSelector('.tutor-handoff');
     const helpColor=await page.locator('.tutor-handoff-help').first().evaluate(
