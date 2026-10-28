@@ -15,6 +15,7 @@ on:
 permissions:
   contents: read
   checks: read
+  actions: read
 
 concurrency:
   group: lemma-production-migration-operator
@@ -52,16 +53,56 @@ jobs:
           git fetch --no-tags --depth=1 origin main
           test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || { echo "::error::Main moved; redispatch on the new main head"; exit 1; }
           gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > "$RUNNER_TEMP/lemma-checks.json"
+          # Android is intentionally path-filtered on web-only commits. Verify
+          # the most recent successful main Android build is still applicable.
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/android.yml/runs?branch=main&status=success&per_page=30" > "$RUNNER_TEMP/lemma-android-runs.json"
           node <<'NODE'
-          const fs=require('node:fs');
-          // Pages CI is path-filtered, so it may correctly be absent on a docs-only main SHA.
-          const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-checks.json','utf8'));
-          for(const name of ['regression','local-stack','android']){
-            if(!d.check_runs.some(c=>c.name===name && c.head_sha===process.env.GITHUB_SHA &&
-                c.status==='completed' && c.conclusion==='success'))
+          const fs=require('node:fs'),cp=require('node:child_process');
+          const temp=process.env.RUNNER_TEMP,head=process.env.GITHUB_SHA;
+          const checks=JSON.parse(fs.readFileSync(temp+'/lemma-checks.json','utf8')).check_runs;
+          const success=c=>c.head_sha===head && c.status==='completed' && c.conclusion==='success';
+          for(const name of ['regression','local-stack']){
+            if(!checks.some(c=>c.name===name && success(c)))
               throw Error('Required current-main check is not SUCCESS: '+name);
           }
-          console.log('Current main SHA has all required completed green checks');
+          const currentAndroid=checks.filter(c=>c.name==='android' && c.head_sha===head);
+          if(currentAndroid.length){
+            if(!currentAndroid.some(success))
+              throw Error('Current-main Android check exists but is not SUCCESS');
+            console.log('Android gate: verified successful current-main Android check');
+          }else{
+            const runs=JSON.parse(fs.readFileSync(temp+'/lemma-android-runs.json','utf8')).workflow_runs;
+            if(!Array.isArray(runs))throw Error('Missing Android workflow run history');
+            // Match *exactly* the path set of .github/workflows/android.yml.
+            // --no-renames ensures both old/new paths of a rename are checked.
+            const native=p=>p.startsWith('android/') || p==='capacitor.config.json' ||
+              /^src\/app\/native_[^/]*\.js$/.test(p) || /^test\/android_[^/]*\.js$/.test(p) ||
+              p==='package.json' || p==='package-lock.json' ||
+              p==='.github/workflows/android.yml';
+            let verified=false;
+            for(const run of runs){
+              if(run.conclusion!=='success' || run.head_branch!=='main' || run.event!=='push' ||
+                 !/^[a-f0-9]{40}$/.test(run.head_sha))continue;
+              const prior=run.head_sha;
+              const ancestor=cp.spawnSync('git',['merge-base','--is-ancestor',prior,head]);
+              if(ancestor.error)throw ancestor.error;
+              if(ancestor.status!==0)continue;
+              const files=cp.execFileSync('git',
+                ['diff','--name-only','--no-renames',prior,head],{encoding:'utf8'})
+                .trim().split('\n').filter(Boolean);
+              const touched=files.filter(native);
+              if(touched.length)
+                throw Error('Android CI absent on current main but native inputs changed since '+prior+
+                  ': '+touched.join(', '));
+              console.log('Android gate: inherited green main build '+prior+
+                ', zero Android-trigger paths changed');
+              verified=true;
+              break;
+            }
+            if(!verified)
+              throw Error('No ancestor green main Android run to substantiate path-filtered skip');
+          }
+          console.log('Current main SHA has green regression/local-stack and proven Android gate');
           NODE
 
       - name: Stage only the twelve reviewed legacy and knowledge migrations
