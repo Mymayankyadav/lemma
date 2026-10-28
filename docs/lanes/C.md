@@ -1,5 +1,12 @@
 # Lane C — Android
 
+## ANDROID-02 N1a — native callback entry claim (28 October 2026)
+
+- **Claim:** `chat-20261028-c-n1a`; UTC heartbeat `2026-10-28T02:40Z`; base `main@7f9cd16`; branch `lane-c/android-02-n1-deeplink-entry`. Intended files: `android/app/src/main/AndroidManifest.xml`, `src/app/native_shell.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. No A auth, B Settings, package dependency, production, or user data change.
+- **Scope:** add narrowly scoped Android HTTPS? no: custom `io.lemma.study://auth-callback` intent filter, parse and gate the exact callback in native App listener; surface a callback subscription for A's later PKCE exchange. Preserve Back/resume and web inert behavior. Include robust tests for invalid schemes/hosts, duplicate registration, callbacks with errors and no secrets logged. Do **not** claim complete Google login until A auth plus Browser plugin is integrated in a later coordinated slice.
+- **Next:** implement, inspect patch, run `npm run test:android`, `npm run test:plan`, `node test/lane_guard.js C`, syntax and exact-head CI; merge only if current main passes all required checks. Physical Android OAuth/device gates remain NOT RUN.
+
+
 Next action: **ANDROID-02 N1 READY** after UI-01 passed, using system browser Google PKCE sign-in/deep-link and native return handling; claim a fresh lane C PR, preserve A auth APIs and B presentation, automate what can be tested; physical phone gate remains NOT RUN.
 
 ## 28 October 2026 — ANDROID-02 unblocked (N1)
