@@ -55,7 +55,8 @@ async function nativeStudyZoom(mock,view) {
     assert.ok(Math.abs(zoom.before-1)<0.01 && Math.abs(zoom.after-2)<0.01,
       'actual Chromium tab zoom must transition from 100% to 200%');
     const enlarged=await page.evaluate(()=>({
-      width:innerWidth,dpr:devicePixelRatio,cssZoom:document.body.style.zoom
+      width:innerWidth,dpr:devicePixelRatio,cssZoom:document.body.style.zoom,
+      visualWidth:visualViewport?.width,clientWidth:document.documentElement.clientWidth
     }));
     assert.equal(enlarged.cssZoom,'','do not substitute CSS zoom');
     assert.ok(enlarged.width<baseline.width*0.75 ||
@@ -68,8 +69,13 @@ async function nativeStudyZoom(mock,view) {
       assert.equal(bounds.ready,false,'native zoom cannot enable the Study tab');
       assert.ok(bounds.visible && bounds.doc<=bounds.viewport+1,
         label+' overflows at genuine 200% tab zoom: '+JSON.stringify(bounds));
-      await page.screenshot({path:'test-output/ui/study-p5c-native-zoom200-'+label+'.png',fullPage:true});
+      // Native tab zoom changes devicePixelRatio. CSS-scaled Playwright PNGs
+      // can crop the right half of an otherwise correctly reflowed page.
+      // Capture device pixels for honest visual review at 200% zoom.
+      await page.screenshot({path:'test-output/ui/study-p5c-native-zoom200-'+label+'.png',
+        fullPage:true,scale:'device'});
     }
+    console.log('PLAN-01 P5c zoom geometry '+JSON.stringify({baseline,enlarged,zoom}));
     await screen('checkpoint');
     await page.getByRole('button',{name:'Continue saved proof'}).focus();
     await page.keyboard.press('Enter');
