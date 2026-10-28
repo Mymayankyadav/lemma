@@ -190,9 +190,66 @@ const LemmaCloudBridge = (() => {
     return withKnowledgeDraftStorage(storage =>
       storage.approveKnowledgeDraft(contextId, expectedLocalRevision, studentApproved));
   }
+  // The student consent was persisted by approveKnowledgeDraft. Submission
+  // MUST reuse its original immutable requestId and expected server revision.
+  // No tutor proposal can call this API before that explicit transition.
+  async function submitApprovedKnowledgeDraft(contextId) {
+    if (!isUuid(contextId)) throw new Error('Invalid knowledge context reference');
+    const userId = LemmaAccount.user?.id;
+    const handle = typeof LemmaSync !== 'undefined' ? LemmaSync.accountHandle() : null;
+    if (!userId || !handle || handle.userId !== userId)
+      throw new Error('Sign in to an available account cache to submit knowledge');
+    const check = () => {
+      if (LemmaAccount.user?.id !== userId || LemmaSync.accountHandle() !== handle)
+        throw new Error('Account changed during knowledge submission');
+    };
+    const storage = handle.storage;
+    const draft = await storage.knowledgeDraft(contextId);
+    check();
+    if (!draft) {
+      const receipt = await storage.knowledgeIntentReceipt(contextId);
+      check();
+      if (receipt) return {status:'confirmed',revision:receipt.revision,requestId:receipt.requestId};
+      throw new Error('No approved knowledge intent pending');
+    }
+    if (draft.status === 'needs_review')
+      return {status:'conflict',requestId:draft.requestId};
+    if (draft.status !== 'approved_pending' || draft.approvedBy !== 'student' ||
+        !isUuid(draft.requestId))
+      throw new Error('Explicit student approval required before submission');
+    if (typeof navigator !== 'undefined' && navigator.onLine === false)
+      return {status:'queued',requestId:draft.requestId};
+    const attempted = await storage.markKnowledgeIntentAttempt(contextId,draft.requestId);
+    check();
+    let revision;
+    try {
+      revision = await commitAcceptedContext({
+        contextId,expectedRevision:attempted.expectedRevision,
+        requestId:attempted.requestId,title:attempted.title,
+        markdown:attempted.markdown,payload:attempted.payload,
+        studentApproved:true
+      });
+    } catch (err) {
+      check();
+      if (err?.message === 'stale_context_revision') {
+        await storage.markKnowledgeIntentConflict(contextId,draft.requestId);
+        check();
+        return {status:'conflict',requestId:draft.requestId};
+      }
+      // Transport may have committed before the response was lost: keep
+      // attempted:true and retry the SAME key. Do not invent a new intent.
+      throw err;
+    }
+    check();
+    if (!Number.isSafeInteger(revision) || revision <= attempted.expectedRevision)
+      throw new Error('Invalid knowledge acceptance receipt');
+    const receipt = await storage.acknowledgeKnowledgeIntent(contextId,draft.requestId,revision);
+    check();
+    return {status:'confirmed',revision:receipt.revision,requestId:receipt.requestId};
+  }
   return { authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, commitAcceptedContext,
     readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft,
-    approveKnowledgeDraft };
+    approveKnowledgeDraft, submitApprovedKnowledgeDraft };
 })();
 
