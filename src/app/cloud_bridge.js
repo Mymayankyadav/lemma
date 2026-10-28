@@ -547,7 +547,9 @@ const LemmaCloudBridge = (() => {
     const sha256=await recoveryDigest(new TextEncoder()
       .encode(archiveCanonical(manifestInput)));
     check();
-    return {...manifestInput,tables,manifest:{counts,hashes,sha256}};
+    return {app:'lemma',version:2,scope:'account-workspace',
+      capture:'transactional',ownerId,exportedAt,migrations,tables,
+      manifest:{counts,hashes,sha256}};
   }
 
   // LOCAL unaccepted drafts only. These are stored in the existing
