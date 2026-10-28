@@ -155,5 +155,47 @@ function load(){
  assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
   'all plan/event reads are owner scoped');
  assert.equal(rpc.length,4,'only explicit event calls may write');
- console.log('PASS PLAN-01 P4c3: twelve checkpoints, two saved proofs, unchanged hint level after reload, revision-safe selection, owner isolation and zero implicit writes');
+ // An accepted amendment must retain immutable historical evidence without
+ // displaying an old proof/hint/feedback as if it belonged to revision 4.
+ const oldRevisionDetails=[
+  ['feedback',{text:'Rev 3 feedback'},'00000000-0000-4000-8000-000000000014'],
+  ['mastery_evidence',{text:'Rev 3 evidence'},'00000000-0000-4000-8000-000000000015'],
+  ['session_note',{text:'Rev 3 next action'},'00000000-0000-4000-8000-000000000016']
+ ];
+ for(const [type,payload,eventId] of oldRevisionDetails)
+  await load().recordEvent({planId:PLAN,checkpointId:'cp-3',
+   expectedPlanRevision:3,type,payload,eventId,source:'student'});
+ const historicalCount=events.length;
+ assert.equal(historicalCount,6,'all original proof and detail events remain');
+ revision=4;statusOverride={'cp-3':'in_progress'};
+ const amended=await load().activeContext();
+ assert.equal(amended.checkpoint.id,'cp-3',
+  'a checkpoint can remain explicitly in progress after amendment');
+ assert.equal(amended.lastAttempt,null,'old-revision proof must not appear as current');
+ assert.equal(amended.hintLevel,0,'old-revision hint level must not carry over');
+ assert.equal(amended.lastFeedback,null,'old-revision feedback is historical');
+ assert.equal(amended.lastEvidence,null,'old-revision evidence is historical');
+ assert.equal(amended.nextAction,null,'old-revision next action is historical');
+ assert.equal(events.length,historicalCount,'reads must not erase old evidence');
+ const amendedReadCalls=rpc.length;
+ const freshId='00000000-0000-4000-8000-000000000017';
+ await load().recordEvent({planId:PLAN,checkpointId:'cp-3',
+  expectedPlanRevision:4,type:'attempt',
+  payload:{text:'New proof following the amended prerequisite'},
+  eventId:freshId,source:'student'});
+ await load().recordEvent({planId:PLAN,checkpointId:'cp-3',
+  expectedPlanRevision:4,type:'hint',payload:{text:'Use the new lemma',level:1},
+  eventId:'00000000-0000-4000-8000-000000000018',source:'student'});
+ const current=await load().activeContext();
+ assert.equal(current.lastAttempt.eventId,freshId);
+ assert.equal(current.lastAttempt.payload.text,
+  'New proof following the amended prerequisite');
+ assert.equal(current.hintLevel,1,'only current revision hints set the level');
+ assert.equal(current.lastFeedback,null);
+ assert.equal(current.lastEvidence,null);
+ assert.equal(current.nextAction,null);
+ assert.equal(events.filter(e=>e.payload.plan_revision===3).length,historicalCount,
+  'prior accepted revision history is preserved without rewriting');
+ assert.equal(rpc.length,amendedReadCalls+2,'only two deliberate new events write');
+ console.log('PASS PLAN-01 P5d: twelve checkpoints, revision-pinned visible proof/hints/feedback/evidence/action, old immutable ledger preserved, owner isolation and explicit-only writes');
 })().catch(e=>{console.error('FAIL PLAN-01 P4c3: '+e.stack);process.exitCode=1});

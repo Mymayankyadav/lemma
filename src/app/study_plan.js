@@ -118,11 +118,16 @@ const StudyPlan = (() => {
     const recent = sessionId ? await list(ctx,'learning_events',
       'event_id,event_type,payload,seq,created_at',q => q.eq('session_id',sessionId)
         .order('seq',{ascending:false}).limit(50)) : [];
+    // Keep historical ledger rows intact, but do not display evidence
+    // explicitly pinned to an older approved plan as current-revision work.
+    // Legacy events without a revision remain readable for compatibility.
+    const currentEvents = recent.filter(e =>
+      e.payload?.plan_revision == null ||
+      e.payload.plan_revision === plan.revision);
     const resumable = new Set(['attempt','proof_step','hint','session_note']);
     const incomplete = new Set(['not_started','review_due','blocked','in_progress']);
-    const latestWork = recent.find(e => resumable.has(e.event_type) &&
+    const latestWork = currentEvents.find(e => resumable.has(e.event_type) &&
       typeof e.payload?.checkpoint_id === 'string' &&
-      (e.payload.plan_revision == null || e.payload.plan_revision === plan.revision) &&
       choice.some(cp => cp.id === e.payload.checkpoint_id &&
         incomplete.has(cp.status)));
     const selected = choice.find(cp => cp.status === 'in_progress') ||
@@ -131,13 +136,13 @@ const StudyPlan = (() => {
       choice.find(cp => cp.status === 'not_started') ||
       choice.find(cp => cp.status === 'blocked');
     if (!selected) return null;
-    const attempt = recent.find(e => e.payload?.checkpoint_id === selected.id &&
+    const attempt = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&
       (e.event_type === 'attempt' || e.event_type === 'proof_step'));
-    const hint = recent.find(e => e.payload?.checkpoint_id === selected.id &&
+    const hint = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&
       e.event_type === 'hint' && Number.isSafeInteger(e.payload?.data?.level));
     // These are read-only excerpts from the immutable event ledger, never
     // checkpoint status changes or evidence of mastery by themselves.
-    const latest = type => recent.find(e => e.payload?.checkpoint_id === selected.id &&
+    const latest = type => currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&
       e.event_type === type);
     const detail = type => { const e = latest(type);
       return e && object(e.payload?.data) ? { ...e.payload.data,
