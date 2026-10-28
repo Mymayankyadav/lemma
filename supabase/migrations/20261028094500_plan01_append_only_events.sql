@@ -75,6 +75,10 @@ begin
     raise exception 'checkpoint_not_in_approved_plan';
   end if;
 
+  -- Distinct event IDs can arrive concurrently. Serialize active-session
+  -- creation per owner/plan so the proof trail resumes in one session.
+  perform pg_advisory_xact_lock(hashtextextended(
+    v_user::text || ':plan01-session:' || p_plan_id::text, 0));
   select id into v_session from public.learning_sessions
     where user_id = v_user and plan_id = p_plan_id and state = 'active'
     order by updated_at desc, id limit 1 for update;
