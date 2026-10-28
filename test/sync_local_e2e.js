@@ -111,20 +111,19 @@ async function login(page,email){
 // disposable synthetic test fixture; account Settings/email is not captured.
 async function captureLiveSyncStatus(page, stage, expected) {
   await page.locator('.tabs button[data-go="home"]').click();
+  // Wait briefly for asynchronous status propagation, but capture the
+  // *unexpected* state too. A missing offline cue is an acceptance failure,
+  // not a reason to lose the diagnostic screenshot.
   await page.waitForFunction(({ accepted }) => {
     const text = document.querySelector('#sync .sr-only')?.textContent || '';
     return accepted.includes(text);
-  }, { accepted: expected }, { timeout: T });
+  }, { accepted: expected }, { timeout: 5000 }).catch(() => {});
   const observed = await page.locator('#sync').evaluate(el => ({
     full: el.querySelector('.sr-only')?.textContent || '',
     visible: el.querySelector('.sync-label')?.textContent || '',
     role: el.getAttribute('role'),
+    online: navigator.onLine,
   }));
-  assert.ok(expected.includes(observed.full), stage + ': unexpected real status ' + observed.full);
-  assert.equal(observed.role, 'status', stage + ': missing live status accessibility role');
-  if (stage === 'offline') assert.ok(['Offline', 'Queued'].includes(observed.visible),
-    'real offline queued edit needs a visible offline/queued indicator');
-  else assert.equal(observed.full, 'Saved to cloud');
   const output = path.join(ROOT, 'test-output', 'live-ui');
   fs.mkdirSync(output, { recursive: true });
   for (const [size, viewport] of Object.entries({
@@ -138,6 +137,12 @@ async function captureLiveSyncStatus(page, stage, expected) {
   }
   await page.setViewportSize({ width: 1200, height: 850 });
   await page.emulateMedia({ colorScheme: 'light' });
+  assert.ok(expected.includes(observed.full),
+    stage + ': unexpected real status ' + JSON.stringify(observed));
+  assert.equal(observed.role, 'status', stage + ': missing live status accessibility role');
+  if (stage === 'offline') assert.ok(['Offline', 'Queued'].includes(observed.visible),
+    'real offline queued edit needs a visible offline/queued indicator');
+  else assert.equal(observed.full, 'Saved to cloud');
   console.log('ok: real local-stack ' + stage + ' UI status and four screenshots (' +
     observed.full + ')');
 }
