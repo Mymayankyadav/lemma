@@ -125,6 +125,19 @@ async function run() {
     { timeout: wait });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('.today').waitFor({ timeout: wait });
+    const diagnostics = await page.evaluate(async cacheName => {
+      const names = await caches.keys();
+      const cache = await caches.open(cacheName);
+      const reply = await cache.match(new URL('./', location.href));
+      const cachedText = reply ? await reply.text() : '';
+      const reg = await navigator.serviceWorker.ready;
+      return { keys: names, controlled: !!navigator.serviceWorker.controller,
+        controllerState: navigator.serviceWorker.controller?.state,
+        activeState: reg.active?.state, cachedNewHtml: cachedText.includes('PWA upgrade'),
+        cachedTitle: /<title>([^<]*)<\\/title>/.exec(cachedText)?.[1] || '(missing)',
+        shownTitle: document.title };
+    }, newName);
+    console.log('PWA update diagnostics', JSON.stringify(diagnostics));
     assert.match(await page.title(), /PWA upgrade/, 'new build replaces stale cached HTML');
     await assertCard(page, title);
     assert.deepEqual(await snapshot(page, front), before, 'upgrade preserves complete IndexedDB record');
