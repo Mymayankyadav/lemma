@@ -8,6 +8,61 @@ const NativeShell = (() => {
   }
   const nativeApp = cap.registerPlugin('App');
 
+  // Native App URLs are delivered only to an explicit authentication owner.
+  // This bridge does not exchange PKCE codes or activate an account itself.
+  const authListeners = new Set();
+  let pendingAuthUrl = null;
+  let lastAuthUrl = null;
+
+  function callbackUrl(raw) {
+    if (typeof raw !== 'string' || raw.length > 4096) return null;
+    try {
+      const url = new URL(raw);
+      if (url.protocol !== 'io.lemma.study:' || url.hostname !== 'auth-callback' ||
+          url.port || url.username || url.password || url.hash ||
+          (url.pathname && url.pathname !== '/')) return null;
+      const code = url.searchParams.get('code');
+      const error = url.searchParams.get('error');
+      if (url.searchParams.getAll('code').length > 1 ||
+          url.searchParams.getAll('error').length > 1) return null;
+      // PKCE returns ?code; failed provider callbacks return ?error.
+      // Never accept unscoped or token-fragment URLs as sign-in evidence.
+      if (Boolean(code) === Boolean(error)) return null;
+      return raw;
+    } catch {
+      return null;
+    }
+  }
+
+  function deliverAuthUrl(url) {
+    for (const callback of authListeners) {
+      try { callback(url); }
+      catch {
+        // A callback may handle credentials; never log its URL or errors.
+        console.warn('[Lemma] Native auth callback listener failed');
+      }
+    }
+  }
+
+  function onAppUrlOpen({ url } = {}) {
+    const scoped = callbackUrl(url);
+    if (!scoped || scoped === lastAuthUrl) return;
+    lastAuthUrl = scoped;
+    if (!authListeners.size) { pendingAuthUrl = scoped; return; }
+    deliverAuthUrl(scoped);
+  }
+
+  function onAuthCallback(callback) {
+    if (typeof callback !== 'function') throw new TypeError('Auth callback must be a function');
+    authListeners.add(callback);
+    if (pendingAuthUrl) {
+      const pending = pendingAuthUrl;
+      pendingAuthUrl = null;
+      deliverAuthUrl(pending);
+    }
+    return () => authListeners.delete(callback);
+  }
+
   function onBack({ canGoBack } = {}) {
     if (typeof Sheets !== 'undefined' && Sheets.closeTop()) return;
     // App.go switches screens without pushing browser history.
@@ -29,7 +84,7 @@ const NativeShell = (() => {
     console.info('[Lemma] Android resumed');
   }
 
-  for (const [event, handler] of [['backButton', onBack], ['resume', onResume]]) {
+  for (const [event, handler] of [['backButton', onBack], ['resume', onResume], ['appUrlOpen', onAppUrlOpen]]) {
     try {
       Promise.resolve(nativeApp.addListener(event, handler)).catch(error => {
         console.warn('[Lemma] Android listener failed: ' + event, error);
@@ -38,5 +93,12 @@ const NativeShell = (() => {
       console.warn('[Lemma] Android listener failed: ' + event, error);
     }
   }
-  return { enabled: true };
+  // Android may launch a stopped process with a deep link before listeners run.
+  // Reuse the same validation/deduplication as warm appUrlOpen events.
+  if (typeof nativeApp.getLaunchUrl === 'function') {
+    Promise.resolve().then(() => nativeApp.getLaunchUrl()).then(onAppUrlOpen).catch(() => {
+      console.warn('[Lemma] Native launch URL unavailable');
+    });
+  }
+  return { enabled: true, onAuthCallback };
 })();
