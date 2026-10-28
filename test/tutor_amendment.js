@@ -153,7 +153,7 @@ async function attempt(u){return u.stage.events.click();}
  u.input.value='{}';u.input.events.input();
  await attempt(u);
  assert.equal(staged.length,3,'modified tutor reply revokes consent');
- assert.equal(u.stage.disabled,true);
+ assert.equal(u.review.children.length,0,'edited reply removes every reviewed proposal');
 
  assert.equal(approvals.length,0,'never invoke student approval API');
  assert.equal(published.length,0,'never publish on behalf of the student');
