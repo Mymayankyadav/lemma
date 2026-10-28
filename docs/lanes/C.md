@@ -1,3 +1,5 @@
+# Lane C — Android
+
 Next action: **ANDROID-02 N1 READY** after UI-01 passed, using system browser Google PKCE sign-in/deep-link and native return handling; claim a fresh lane C PR, preserve A auth APIs and B presentation, automate what can be tested; physical phone gate remains NOT RUN.
 
 ## 28 October 2026 — ANDROID-02 unblocked (N1)
