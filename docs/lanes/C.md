@@ -1,3 +1,11 @@
+## ANDROID-02 N3b — native reminder reconciliation bridge (active claim)
+
+- **Claim:** `hourly-20261028T0455Z-c-n3b`; UTC heartbeat 2026-10-28T04:55Z; base `main@a0f1dbe`; branch `lane-c/android-02-n3b-reminder-bridge`. C unclaimed, A's independent K2d PR #64 active; do not modify it.
+- **Scope:** C-owned native Local Notifications bridge using the now-pinned 8.0.0 plugin: read existing permission without prompting, reconcile one stable ID via pending/cancel/replace, default quiet channel and generic text, explicit opt-in and earliest-due policy from N3a, no implicit consent. This is an API, not automatic startup scheduling or UI.
+- **Intended files:** `src/app/native_shell.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. Do not touch B Settings, A store/auth, shared dependency files, Carrel or production.
+- **Gate:** mocked granted/denied/opt-out/unchanged/replace/error/plugin-absent, no web side effects, exact-head regression, Android APK and C lane guard, post-merge main. Physical D5 and tap handling NOT RUN; B consent UI is a separate request.
+- **Next:** implement, verify and merge this bounded bridge; then N3c tap and B UI coordination. Owner action: none.
+
 ## ANDROID-02 N3b prerequisite — pinned Local Notifications plugin (integration claim)
 
 - **Claim:** `hourly-20261028T0446Z-integration-notifications`; UTC heartbeat 2026-10-28T04:46Z; base `main@726d676`; branch `integration/20261028-local-notifications-plugin`. No other integration PR at pickup. A's independent KNOWLEDGE-01 K2d PR #64 is not modified.
