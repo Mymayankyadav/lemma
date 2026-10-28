@@ -3,6 +3,12 @@
 const TutorHandoff = (() => {
   const PACKET = 'lemma.tutor_handoff.v1';
   const REPLY = 'lemma.tutor_reply.v1';
+  // Reject a logout/relogin even when the returning account has the same ID.
+  let identityEpoch = 0;
+  if (typeof LemmaAccount !== 'undefined' &&
+      typeof LemmaAccount.onIdentityChange === 'function') {
+    LemmaAccount.onIdentityChange(() => { identityEpoch++; });
+  }
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const types = new Set(['objective', 'question', 'attempt', 'hint', 'feedback',
     'misconception', 'proof_step', 'mastery_evidence', 'source_read',
@@ -206,9 +212,10 @@ const TutorHandoff = (() => {
       throw new Error('Sign in before recording tutor audit');
     const client = LemmaAccount.client;
     const owner = LemmaAccount.user.id;
+    const epoch = identityEpoch;
     const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
     const check = () => {
-      if (LemmaAccount.client !== client ||
+      if (identityEpoch !== epoch || LemmaAccount.client !== client ||
           LemmaAccount.user?.id?.toLowerCase() !== owner.toLowerCase() ||
           (typeof App !== 'undefined' &&
            (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
