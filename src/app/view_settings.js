@@ -700,8 +700,8 @@ const SettingsView = (() => {
         return 'Offline: accepted revisions and citations require a connection. No changes were made.';
       if (/knowledge_context_not_found/i.test(message))
         return 'No accepted revision was found for that context. Local drafts were not changed.';
-      if (/invalid_knowledge_read|invalid_context_read|invalid_structured_context/i.test(message))
-        return 'The accepted knowledge response could not be verified. Nothing was changed.';
+      if (/invalid_knowledge_read|invalid_context_read|invalid_structured_context|Unverified|inconsistent|Cited source page differs/i.test(message))
+        return 'Accepted knowledge could not be read because the revision or citations were inconsistent. Nothing was changed.';
       return 'Accepted knowledge could not be read. The knowledge RPC may not yet be deployed on this Lemma server; reconnect or try again later. Nothing was changed.';
     }
     function clear() {
@@ -743,10 +743,13 @@ const SettingsView = (() => {
           if (!still(owner) || selected !== current || request !== generation || !row.isConnected)
             return;
           const page = packet?.source;
+          const sectionIds = Array.isArray(page?.excerpts) ?
+            page.excerpts.map(item => item?.section_id?.toLowerCase() || '') : [];
           if (!packet?.context || packet.context.revision !== contextRevision ||
               !page || page.source_id?.toLowerCase() !== sourceId ||
               page.source_revision !== ref.revision ||
               !Array.isArray(page.excerpts) || page.excerpts.length > 6 ||
+              new Set(sectionIds).size !== sectionIds.length ||
               typeof page.has_more !== 'boolean' ||
               (page.has_more && page.excerpts.length === 0) ||
               page.excerpts.some(item => !uuid.test(item?.section_id || '') ||
@@ -814,7 +817,7 @@ const SettingsView = (() => {
         selected = current;
         const content = h('div', { class: 'accepted-reader-context' },
           h('h3', { text: typeof context.title === 'string' && context.title.trim()
-            ? context.title : 'Accepted study context' }),
+            ? context.title.slice(0, 512) : 'Accepted study context' }),
           h('p', { class: 'muted small', text: 'Accepted revision ' +
             context.revision + ' · read-only server snapshot' }),
           h('pre', { class: 'knowledge-context-preview',
@@ -825,7 +828,7 @@ const SettingsView = (() => {
         if (context.format !== 'structured_v1' || !Array.isArray(refs)) {
           sources.append(h('p', { class: 'muted small',
             text: 'This accepted revision has no structured source citations.' }));
-        } else if (refs.length > 16 || refs.some(ref =>
+        } else if (refs.some(ref =>
           !uuid.test(ref?.source_id || '') || !Number.isSafeInteger(ref.revision) ||
           ref.revision < 1)) {
           throw new Error('Unverified accepted source references');
@@ -833,8 +836,12 @@ const SettingsView = (() => {
           sources.append(h('p', { class: 'muted small',
             text: 'No cited sources are attached to this accepted revision.' }));
         } else {
-          for (const ref of refs)
+          for (const ref of refs.slice(0, 16))
             sources.append(sourceRow(ref, contextId, context.revision, owner, current));
+          if (refs.length > 16)
+            sources.append(h('p', { class: 'muted small',
+              text: 'Showing the first 16 of ' + refs.length +
+                ' referenced sources; no additional source pages were fetched.' }));
         }
         fill(result, content, sources);
         result.hidden = false;
