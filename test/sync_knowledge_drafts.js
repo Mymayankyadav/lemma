@@ -168,6 +168,9 @@ const make=(over={})=>({contextId,expectedLocalRevision:0,expectedRevision:3,
   thirdId,1,stale.requestId,4,true),/changed; compare again/);
  await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
   thirdId,2,stale.requestId,3,true),/changed; compare again/);
+ await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
+  thirdId,2,'00000000-0000-4000-8000-000000000099',4,true),
+  /changed; compare again/);
  const archiveKey='knowledge:conflict:v1:'+thirdId+':'+stale.requestId;
  const readArchive=()=>new Promise((resolve,reject)=>{
   const r=opened.transaction('meta','readonly').objectStore('meta').get(archiveKey);
@@ -187,8 +190,16 @@ const make=(over={})=>({contextId,expectedLocalRevision:0,expectedRevision:3,
  assert.equal(await readArchive(),null,'failed reopen must not archive alone');
  assert.equal((await reloaded.knowledgeDraft(thirdId)).status,'needs_review',
   'failed transaction retains original approved conflict');
- const reopened=await reloaded.reopenKnowledgeConflictDraft(
-  thirdId,2,stale.requestId,4,true);
+ const otherTabDb=await openAccountDB(a);
+ const concurrentStorage=new AccountStorage(otherTabDb,a);
+ const both=await Promise.all([
+  reloaded.reopenKnowledgeConflictDraft(thirdId,2,stale.requestId,4,true),
+  concurrentStorage.reopenKnowledgeConflictDraft(thirdId,2,stale.requestId,4,true)
+ ]);
+ const reopened=both[0];
+ assert.deepEqual(both[1],reopened,
+  'two tabs converge to the same archived intent and unapproved draft');
+ otherTabDb.close();
  assert.equal(reopened.status,'draft');
  assert.equal(reopened.expectedRevision,4);
  assert.equal(reopened.localRevision,3);
