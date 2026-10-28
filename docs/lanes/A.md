@@ -1,4 +1,20 @@
+## KNOWLEDGE-01 K2a — accepted-context CAS implementation claim (2026-10-28)
+
+- **Claim:** `chat-20261028T0316Z-a-k2a`; heartbeat `2026-10-28T03:16Z`; base `main@fd819cd`; branch `lane-a/knowledge-01-k2a-context-cas`. Scope: additive migration for immutable owner-scoped accepted study-context revisions, idempotent CAS RPC and bounded accepted payload; local authenticated two-user HTTP regression, baseline L8 parity preservation; handoff. Intended files: `supabase/migrations/20261028032000_accepted_context_revisions.sql`, `supabase/tests/security_snapshot.sql`, `test/sync_knowledge_context.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`. No production mutation, user data, Carrel, UI or Android files.
+- **Next:** implement and verify on disposable local Supabase CI. This is K2a only; source revision and bounded citation retrieval, client integration, student approval and physical-device acceptance remain future gates.
+
 # Lane A — sync, auth and backend
+
+## Active claim — KNOWLEDGE-01 K2a (owner-private context CAS)
+
+- **Run:** `chat-20261028-a-k2a-context-cas`; heartbeat 2026-10-28T03:16:49.666Z; base `main@fd819cd`; branch `lane-a/knowledge-01-k2a-context-cas`.
+- **Bounded scope:** additive migration for accepted `study_context_files` CAS + immutable revision snapshots, owner-scoped invoker RPC, explicit request-id retry/stale errors and strict request bounds; disposable local HTTP two-identity tests; CI integration, A lane handoff. No source/doc upload, tutoring acceptance, UI, Android, production migration or Carrel changes.
+- **Intended files:** `supabase/migrations/*knowledge_context*.sql`, `test/auth_knowledge_context.js`, `.github/workflows/sync-local.yml`, `test/sync_security_parity.js` (only to preserve the exact legacy sync baseline with new additive migration), `docs/lanes/A.md`. If parity needs a broader change, checkpoint rather than weaken it.
+- **Gate:** current-head local stack schema/security, two GoTrue identities, CAS race, retry/idempotency, owner-only reads/denials, regression and Android green. Post-merge main gates required. **Implemented at `b1ad4115`**: migration `20261028031800_knowledge_context_cas.sql`, `commit_study_context` guarded public invoker/private definer, immutable snapshots, real HTTP/GoTrue `test/auth_knowledge_context.js`, local-stack CI gate, L8 baseline-preserving security parity. All code is A-owned. **Verification pending exact-head CI** (local Docker/Supabase unavailable in this session); not merged/deployed/approved as DONE.
+- **Recovery/deployment boundary:** K2a is one additive migration, with no backfill and no DROP. It creates history before using it; restricts direct authenticated context writes only after the RPC exists in the same transaction. Existing context rows are untouched until explicitly edited, at which time only the present value is labelled `legacy_current_baseline` and then the new accepted revision is written atomically. The read grant and plan FKs survive. Brief DDL locks and the direct-write permission reduction need impact review before production. If deployment is unsafe, do not apply; if a later runtime problem occurs, stop new context writes and repair forward-only without dropping any existing/historical data. **Production is NOT applied.**
+- **No K2b claim:** structured accepted JSON, cross-context source IDs, revision-pinned citations/bounded excerpt API, user UI, tutor-proposal acceptance, physical-device smoke are not delivered by this slice. Those need separate tests/PRs. No Carrel access.
+- **Latest heartbeat:** 2026-10-28T03:22:35.844Z. **NEXT**: monitor exact-head local-stack security/CAS tests, regression, Android and lane guard; fix failures, merge on green SHA only, then verify main and choose K2b.
+
 
 Next action: **KNOWLEDGE-01 K2 READY** after K1 inspection-only contract in [PR #53](https://github.com/Mymayankyadav/lemma/pull/53): implement additive private accepted-context revision/CAS and bounded source-reference operations with real two-identity local-stack tests; keep user approval explicit and production untouched until gated.
 
