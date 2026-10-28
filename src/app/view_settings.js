@@ -138,6 +138,88 @@ const ReminderSettings = (() => {
   return { read, enable, disable, saveTime, reconcile, earliestDueAt, init };
 })();
 
+/* KNOWLEDGE-01 K3a: local, unaccepted account-context draft coordinator.
+   This is not the cloud knowledge outbox and never approves tutor proposals. */
+const KnowledgeDraftEditor = (() => {
+  const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+  function create() {
+    let current = null;
+    let busy = false;
+    function scope() {
+      const ownerId = LemmaAccount.user?.id;
+      const handle = LemmaSync.accountHandle();
+      if (!ownerId || Store.mode !== 'account' || App.workspaceBlocked ||
+          !handle || handle.userId !== ownerId)
+        throw new Error('Use your signed-in account workspace to edit study context drafts');
+      return { ownerId, handle, generation: App.workspaceRevision };
+    }
+    function unchanged(before) {
+      const after = scope();
+      if (after.ownerId !== before.ownerId || after.handle !== before.handle ||
+          after.generation !== before.generation)
+        throw new Error('Account or workspace changed; previous draft remains private');
+    }
+    function start() {
+      scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const id = window.crypto?.randomUUID?.();
+      if (!uuid.test(id || '')) throw new Error('Secure context ID generation unavailable');
+      current = { contextId: id, localRevision: 0, expectedRevision: 0,
+        title: '', markdown: '', payload: { schema_version: 1, summary: '', goals: [] },
+        authorKind: 'student', status: 'unsaved' };
+      return current;
+    }
+    async function open(contextId) {
+      const before = scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      if (typeof contextId !== 'string' || !uuid.test(contextId.trim()))
+        throw new Error('Enter a valid context ID');
+      busy = true;
+      try {
+        const row = await LemmaCloudBridge.readKnowledgeDraft(contextId.trim().toLowerCase());
+        unchanged(before);
+        if (!row) throw new Error('No saved draft for this ID in this account cache');
+        current = row;
+        return row;
+      } finally { busy = false; }
+    }
+    async function save({ title, markdown, summary, goals }) {
+      const before = scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original = current;
+      if (!original || !['unsaved', 'draft'].includes(original.status))
+        throw new Error('This draft is unavailable or locked after approval');
+      const cleanTitle = String(title || '').trim();
+      const cleanMarkdown = String(markdown || '');
+      const cleanSummary = String(summary || '');
+      const cleanGoals = String(goals || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const bytes = text => new TextEncoder().encode(text).byteLength;
+      if (!cleanTitle || bytes(cleanTitle) > 512 ||
+          bytes(cleanMarkdown) > 65536 || bytes(cleanSummary) > 4096 ||
+          cleanGoals.length > 16 || cleanGoals.some(g => bytes(g) > 512))
+        throw new Error('Title, summary, goals or Markdown exceeds the private draft limits');
+      const payload = { ...original.payload, schema_version: 1,
+        summary: cleanSummary, goals: cleanGoals };
+      busy = true;
+      try {
+        const row = await LemmaCloudBridge.saveKnowledgeDraft({
+          contextId: original.contextId,
+          expectedLocalRevision: original.localRevision,
+          expectedRevision: original.expectedRevision,
+          title: cleanTitle, markdown: cleanMarkdown, payload,
+          authorKind: original.authorKind
+        });
+        unchanged(before);
+        if (current !== original) throw new Error('Draft selection changed during save');
+        current = row;
+        return row;
+      } finally { busy = false; }
+    }
+    return { start, open, save, current: () => current };
+  }
+  return { create };
+})();
+
 const SettingsView = (() => {
   let optResult = null;
   let optResultGeneration = -1;
@@ -386,7 +468,7 @@ const SettingsView = (() => {
       };
       logout.onclick = async () => {
         logout.disabled = true;
-        try { await Store.whenSaved(); await LemmaAccount.signOut(); accountState.textContent = 'Signed out. Device cards remain available.'; }
+        try { await Store.whenSaved(); await LemmaAccount.signOut(); accountState.textContent = 'Signed out. Device cards remain available.'; App.refresh(); }
         catch (err) { message.textContent = 'Sign-out error: ' + err.message; }
         finally { logout.disabled = false; }
       };
@@ -501,6 +583,9 @@ const SettingsView = (() => {
         LemmaConflicts.mount(), message));
     }
 
+    if (LemmaAccount.user && Store.mode === 'account' && !App.workspaceBlocked)
+      page.append(knowledgeDraftSection());
+
     // data
     const st = Store.status();
     const where = st.mode === 'cloud' ? 'Synced to your Claude account.' : st.mode === 'local' ? 'This browser only.' : 'Not saved here.';
@@ -523,6 +608,94 @@ const SettingsView = (() => {
 
     if (params.anchor) setTimeout(() => { const el = document.getElementById(params.anchor); if (el) el.scrollIntoView({ block: 'start' }); }, 30);
     return page;
+  }
+
+  function knowledgeDraftSection() {
+    const editor = KnowledgeDraftEditor.create();
+    const id = h('input', { id: 's-knowledge-id', class: 'input', type: 'text',
+      autocomplete: 'off', spellcheck: 'false', placeholder: 'Saved context UUID' });
+    const create = h('button', { class: 'btn btn-sm', type: 'button', text: 'New draft' });
+    const open = h('button', { class: 'btn btn-sm', type: 'button', text: 'Open saved draft' });
+    const title = h('input', { id: 's-knowledge-title', class: 'input', type: 'text',
+      maxlength: 512, autocomplete: 'off' });
+    const summary = h('textarea', { id: 's-knowledge-summary', class: 'input', rows: 3,
+      maxlength: 4096, spellcheck: 'true' });
+    const goals = h('textarea', { id: 's-knowledge-goals', class: 'input', rows: 3,
+      spellcheck: 'true', placeholder: 'One goal per line (up to 16)' });
+    const markdown = h('textarea', { id: 's-knowledge-markdown', class: 'input code-input',
+      rows: 8, spellcheck: 'false', placeholder: 'Context, notation and references in Markdown' });
+    const save = h('button', { class: 'btn btn-primary btn-sm', type: 'button',
+      text: 'Save draft on this device' });
+    const status = h('p', { id: 's-knowledge-status', class: 'muted small',
+      role: 'status', 'aria-live': 'polite',
+      text: 'No draft open. A saved draft is private to this account cache and is not accepted in the cloud.' });
+    const fields = h('div', { class: 'knowledge-draft-fields', hidden: true },
+      h('label', { class: 'setting-label', for: 's-knowledge-title', text: 'Context title' }), title,
+      h('label', { class: 'setting-label', for: 's-knowledge-summary', text: 'Editable summary' }), summary,
+      h('label', { class: 'setting-label', for: 's-knowledge-goals', text: 'Learning goals' }), goals,
+      h('label', { class: 'setting-label', for: 's-knowledge-markdown', text: 'Context notes (Markdown)' }), markdown,
+      h('div', { class: 'btn-row' }, save));
+    function show(row) {
+      id.value = row.contextId;
+      title.value = row.title || '';
+      summary.value = typeof row.payload?.summary === 'string' ? row.payload.summary : '';
+      goals.value = Array.isArray(row.payload?.goals) ? row.payload.goals.join('\n') : '';
+      markdown.value = row.markdown || '';
+      const locked = row.status === 'approved_pending';
+      for (const control of [title, summary, goals, markdown]) control.disabled = locked;
+      save.disabled = locked;
+      fields.hidden = false;
+      status.textContent = locked
+        ? 'Approved intent is pending. This snapshot is locked; it is not a confirmed cloud revision.'
+        : row.status === 'unsaved'
+          ? 'New unsaved student draft. Save it locally before leaving this page.'
+          : 'Local draft revision ' + row.localRevision + ' saved on this device. Not accepted or sent to cloud.' +
+            (row.authorKind === 'tutor' ? ' Tutor proposal: still unaccepted.' : '');
+    }
+    function dirty() {
+      const row = editor.current();
+      if (!row || row.status === 'approved_pending') return false;
+      return title.value !== (row.title || '') ||
+        summary.value !== (row.payload?.summary || '') ||
+        goals.value !== (Array.isArray(row.payload?.goals) ? row.payload.goals.join('\\n') : '') ||
+        markdown.value !== (row.markdown || '');
+    }
+    async function maySwitch() {
+      if (!dirty()) return true;
+      return confirmDialog({ title: 'Leave unsaved context edits?',
+        message: 'Changes in this form have not been saved to the private account cache. Copy them before switching drafts.',
+        confirmLabel: 'Leave unsaved edits', danger: true });
+    }
+    create.onclick = async () => {
+      if (!await maySwitch()) return;
+      try { show(editor.start()); }
+      catch (err) { status.textContent = err.message; }
+    };
+    open.onclick = async () => {
+      if (!await maySwitch()) return;
+      open.disabled = true;
+      try { show(await editor.open(id.value)); }
+      catch (err) { status.textContent = err.message; }
+      finally { open.disabled = false; }
+    };
+    save.onclick = async () => {
+      save.disabled = true;
+      create.disabled = open.disabled = true;
+      for (const control of [title, summary, goals, markdown]) control.disabled = true;
+      try { show(await editor.save({ title: title.value, summary: summary.value,
+        goals: goals.value, markdown: markdown.value })); }
+      catch (err) { status.textContent = err.message; }
+      finally {
+        const locked = editor.current()?.status === 'approved_pending';
+        for (const control of [title, summary, goals, markdown]) control.disabled = locked;
+        save.disabled = locked;
+        create.disabled = open.disabled = false;
+      }
+    };
+    return section('set-knowledge-drafts', 'Private study context drafts',
+      'Unaccepted drafts are saved only in this device’s signed-in account cache. Copy the context ID to reopen it after a reload. Saving does not approve or publish a context.',
+      h('label', { class: 'setting-label', for: 's-knowledge-id', text: 'Context ID' }),
+      id, h('div', { class: 'btn-row' }, create, open), status, fields);
   }
 
   function ratingProbs() {

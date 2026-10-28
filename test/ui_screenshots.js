@@ -20,7 +20,7 @@ const HTML = fs.readFileSync(distHtml, 'utf8');
 const MARKER = '/* ===== main.js ===== */';
 if (!HTML.includes(MARKER)) throw new Error('UI test app marker missing');
 const TEST_HTML = HTML.replace(MARKER,
-  'window.__uiAcceptance = { get App() { return App; }, get Store() { return Store; }, get Sync() { return LemmaSync; } };\n' + MARKER);
+  'window.__uiAcceptance = { get App() { return App; }, get Store() { return Store; }, get Sync() { return LemmaSync; }, get Account() { return LemmaAccount; }, get Bridge() { return LemmaCloudBridge; } };\n' + MARKER);
 const MOCK = fs.readFileSync(path.join(__dirname, 'mock_claude.js'), 'utf8');
 const LIBS = {
   'katex.min.js': path.join(ROOT, 'node_modules/katex/dist/katex.min.js'),
@@ -536,6 +536,86 @@ async function shot(page, name, size, scheme) {
       problems.push('[native-reminders-' + size + '-' + scheme + '] ' + (e.stack || e.message));
     }
     await ctx.close();
+  }
+  // K3a presentation-only account projection. All account/cache data here is
+  // disposable browser memory; no production sign-in, cloud RPC or approval.
+  for (const size of Object.keys(SIZES)) for (const scheme of SCHEMES) {
+    const { ctx, page } = await open(browser, size, scheme);
+    try {
+      await goTo(page, 'settings');
+      await page.evaluate(() => {
+        const { App, Store, Sync, Account, Bridge } = window.__uiAcceptance;
+        const old = {
+          mode: Object.getOwnPropertyDescriptor(Store, 'mode'),
+          user: Object.getOwnPropertyDescriptor(Account, 'user'),
+          client: Object.getOwnPropertyDescriptor(Account, 'client'),
+          accountHandle: Sync.accountHandle,
+          read: Bridge.readKnowledgeDraft,
+          save: Bridge.saveKnowledgeDraft,
+        };
+        const owner = '00000000-0000-4000-8000-000000000001';
+        const handle = { userId: owner };
+        const rows = new Map();
+        Object.defineProperty(Store, 'mode', { configurable: true, get: () => 'account' });
+        Object.defineProperty(Account, 'user', { configurable: true,
+          get: () => ({ id: owner, email: 'student@example.invalid' }) });
+        Object.defineProperty(Account, 'client', { configurable: true, get: () => ({}) });
+        Sync.accountHandle = () => handle;
+        Bridge.readKnowledgeDraft = async id => rows.get(id) || null;
+        Bridge.saveKnowledgeDraft = async data => {
+          const previous = rows.get(data.contextId);
+          if ((previous?.localRevision || 0) !== data.expectedLocalRevision)
+            throw Error('Knowledge draft changed; reload before editing');
+          const result = { ...data, status: 'draft',
+            localRevision: data.expectedLocalRevision + 1 };
+          rows.set(data.contextId, result);
+          return result;
+        };
+        window.__knowledgeMock = { rows };
+        window.__knowledgeRestore = () => {
+          Object.defineProperty(Store, 'mode', old.mode);
+          Object.defineProperty(Account, 'user', old.user);
+          Object.defineProperty(Account, 'client', old.client);
+          Sync.accountHandle = old.accountHandle;
+          Bridge.readKnowledgeDraft = old.read;
+          Bridge.saveKnowledgeDraft = old.save;
+          App.render();
+        };
+        App.render();
+      });
+      await page.waitForSelector('#set-knowledge-drafts');
+      await page.locator('#set-knowledge-drafts button:text-is("New draft")').click();
+      await page.locator('#s-knowledge-title').fill('Topology and compactness');
+      await page.locator('#s-knowledge-summary').fill('Study compactness and connectedness');
+      await page.locator('#s-knowledge-goals').fill('Prove Heine-Borel\nUnderstand quotient maps');
+      await page.locator('#s-knowledge-markdown').fill('## Proof notes\nCompact subsets of Hausdorff spaces are closed.');
+      await page.locator('#set-knowledge-drafts button:text-is("Save draft on this device")').click();
+      await page.waitForFunction(() =>
+        document.querySelector('#s-knowledge-status')?.textContent.includes('Local draft revision 1'));
+      const check = await page.locator('#set-knowledge-drafts').evaluate(el => ({
+        width: el.scrollWidth, client: el.clientWidth,
+        controls: [...el.querySelectorAll('button')].map(x => x.getBoundingClientRect().height),
+        state: el.querySelector('[role=status]')?.textContent
+      }));
+      if (check.width > check.client + 1 || check.controls.some(x => x < 44) ||
+          !check.state.includes('Not accepted or sent to cloud'))
+        throw Error('K3a private draft visual/consent contract failed: ' + JSON.stringify(check));
+      await page.locator('#set-knowledge-drafts').screenshot({
+        path: path.join(OUT, `knowledge-draft-${size}-${scheme}.png`),
+        animations: 'disabled'
+      });
+      shots++;
+      await page.locator('#set-knowledge-drafts button:text-is("Open saved draft")').click();
+      await page.waitForFunction(() =>
+        document.querySelector('#s-knowledge-status')?.textContent.includes('Local draft revision 1'));
+      if (await page.locator('#s-knowledge-title').inputValue() !== 'Topology and compactness')
+        throw Error('K3a local draft did not reopen from the account cache projection');
+    } catch (e) {
+      problems.push('[knowledge-draft-' + size + '-' + scheme + '] ' + (e.stack || e.message));
+    } finally {
+      await page.evaluate(() => { window.__knowledgeRestore?.(); }).catch(() => {});
+      await ctx.close();
+    }
   }
   await browser.close();
   // True tab-level Chromium zoom (via a disposable MV3 extension), separate
