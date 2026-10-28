@@ -96,6 +96,83 @@ const StudyView = (() => {
         });
         fill(buttons,submit);
       }
+      // A stale approval is not reusable. Inspection is read-only; restart
+      // requires a separate student click and leaves a new UNAPPROVED draft.
+      function conflictControls() {
+        const inspect=h('button',{type:'button',class:'btn',
+          text:'Inspect rejected amendment'});
+        inspect.addEventListener('click',async () => {
+          if (!valid() || busy) return;
+          busy=true;inspect.disabled=true;
+          fill(details);fill(buttons);
+          status.textContent='Comparing the rejected amendment against the latest approved plan…';
+          try {
+            const reviewed=await StudyPlan.reviewConflictedAmendment(context.planId);
+            if (!valid()) return;
+            if (!reviewed || reviewed.status!=='review_conflict')
+              throw new Error('No rejected amendment remains');
+            const changed=diff => [
+              ...diff.added.map(id=>id+' (added)'),
+              ...diff.removed.map(id=>id+' (removed)'),
+              ...diff.modified.map(x=>x.checkpointId+' (changed)')
+            ];
+            fill(details,
+              h('p',{text:'Originally approved against revision '+reviewed.originalRevision+
+                '; current published revision '+reviewed.currentRevision+'.'}),
+              h('p',{text:'Original request: '+reviewed.originalRequestId}),
+              h('p',{text:'Proposal reason: '+reviewed.changeSummary}),
+              changeLine('Changes made on server after original proposal',
+                changed(reviewed.serverChanges)),
+              changeLine('Changes requested by the rejected proposal',
+                changed(reviewed.proposedChanges)),
+              changeLine('Proposed changes compared with current published plan',
+                changed(reviewed.latestComparison)),
+              changeLine('Overlapping checkpoint edits needing special care',
+                reviewed.overlapIds),
+              changeLine('Checkpoint criteria requiring reassessment',
+                reviewed.latestComparison.requiresReassessment),
+              h('p',{class:'study-amendment-warning',
+                text:'Restart preserves the old approved request and evidence in an archive. '+
+                  'The replacement is unapproved and must be reviewed and approved again.'}));
+            status.textContent='Review server changes and overlapping checkpoints. '+
+              'Nothing has been restarted, approved or published.';
+            const restart=h('button',{type:'button',class:'btn btn-primary',
+              text:'Restart as unapproved draft'});
+            restart.addEventListener('click',async () => {
+              if (!valid() || busy) return;
+              busy=true;restart.disabled=true;
+              status.textContent='Rechecking current revision before explicitly restarting…';
+              try {
+                const row=await StudyPlan.restartConflictedAmendment(
+                  context.planId,reviewed,true);
+                if (!valid()) return;
+                if (row?.status!=='draft') throw new Error('Restart was not saved');
+                fill(details);fill(buttons);
+                reviewButton.hidden=false;
+                status.textContent='Original approved request archived. A fresh unapproved '+
+                  'draft is saved. Use Review pending amendment to inspect it again; '+
+                  'nothing has been approved or published.';
+              } catch (error) {
+                if (valid()) {
+                  fill(details);
+                  status.textContent='Restart not confirmed: '+
+                    (error?.message || 'request failed')+
+                    '. Inspect the conflict again before retrying.';
+                  conflictControls();
+                }
+              } finally {busy=false;restart.disabled=false;}
+            });
+            fill(buttons,restart);
+          } catch (error) {
+            if (valid()) {
+              status.textContent='Conflict inspection unavailable: '+
+                (error?.message || 'try again when connected');
+              fill(buttons,inspect);
+            }
+          } finally {busy=false;inspect.disabled=false;}
+        });
+        fill(buttons,inspect);
+      }
       reviewButton.addEventListener('click',async () => {
         if (!valid() || busy) return;
         busy=true;reviewButton.disabled=true;preview=null;
@@ -172,6 +249,7 @@ const StudyView = (() => {
               reviewButton.hidden=true;
               status.textContent='This amendment has a stale revision conflict. ' +
                 'No automatic rebase, retry or approval is allowed.';
+              conflictControls();
             } else status.textContent=row ?
               'A local unapproved amendment is available to review.' :
               'No pending local amendment.';
