@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P4c3 mid-proof checkpoint selection and explicit proof continuation after reload; then P5 full local-stack 12-checkpoint acceptance and visual review. Keep Study hidden until gate completion.
+Next action: P5a disposable local Supabase integration demonstrating 12 checkpoints, two proofs, exact mid-proof resume, amendment, stale rejection and no duplicates; then P5b browser/visual acceptance and readiness decision. Study hidden until full gates.
 
 | Field | Value |
 | --- | --- |
@@ -142,3 +142,16 @@ Next action: P4c3 mid-proof checkpoint selection and explicit proof continuation
 - Hidden `StudyView` includes an explicit **Continue saved proof** action that preloads the saved attempt without a cloud write. It never overwrites nonempty input or an unconfirmed event retry; saving the continued attempt still requires its own explicit event action.
 - `test/study_resume.js` recreates the StudyPlan client after saved proof/hint events for two distinct checkpoints within a 12-checkpoint plan, tests revision/owner/offline guards and no implicit writes. `test/study_view.js` and `test/study_view_browser.js` check deliberate proof restoration. Exact-head CI pending.
 - Next: P5 disposable local-stack gate for two demonstrated checkpoints, approved amendment and rejected stale writes; real browser/visual acceptance and `ready:true` only after all gates. No production writes, currently hidden.
+
+## Active claim — P5a integrated real local-stack plan gate
+
+- Run `chat-20261028-lane-d-p5a-owner` · 28 Oct 2026, base main@0bda2bb1aa73. P4c3 merged #121 at main@0bda2bb, regression 40686382580 and local stack 40686382505 both SUCCESS.
+- Scope D-owned `test/stack_study_plan_gate.js`, `docs/lanes/D.md`, optionally D protocol for verified contract. No production or non-D files and no change to ready flags in this slice.
+- Use two new real disposable local GoTrue identities, actual local PostgREST/RPC/owner RLS and the production StudyPlan module in a reloadable Node VM adaptor. Verify 12-checkpoint plan, two stored proof attempts/hints, exact checkpoint/attempt/hint resumption after re-instantiation, accepted prerequisite amendment preserving IDs/evidence, stale plan/event rejection and exact retry receipts without duplicate events, cross-owner isolation. Fail closed if local Supabase unavailable; test belongs in `test/stack_*` and is run by existing local CI automatically.
+- After P5a green, P5b perform remaining desktop/mobile visual acceptance, inspect screenshot evidence, dependency/production migrations and make an evidence-based readiness decision, not automatic enablement.
+
+### P5a implementation checkpoint
+
+- Added `test/stack_study_plan_gate.js` using fresh disposable local GoTrue users and **actual** local HTTP PostgREST `publish_study_plan`/`record_study_event` RPCs and RLS, with a minimal HTTP builder running the unmodified `StudyPlan` module in a fresh VM after each simulated page reload.
+- Covers a 12-checkpoint proof plan, distinct stored attempts/hints/feedback for checkpoints 3 and 7, resumption of the exact unfinished proof and hint level, a student-authorized test-only prerequisite amendment preserving 11 unchanged checkpoints and both old version and learning ledger, idempotent same-key publication/event retries, rejected stale writes, post-amendment proof continuation and another authenticated owner's read/write isolation.
+- This is disposable synthetic identity evidence only; no production or real student approval was performed. Exact-head CI and local-stack acceptance **pending**. Remain hidden until P5b visual review and backend production prerequisite evidence are independently established.
