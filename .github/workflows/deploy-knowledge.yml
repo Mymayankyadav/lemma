@@ -53,8 +53,9 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > "$RUNNER_TEMP/lemma-checks.json"
           node <<'NODE'
           const fs=require('node:fs');
+          // Pages CI is path-filtered, so it may correctly be absent on a docs-only main SHA.
           const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-checks.json','utf8'));
-          for(const name of ['regression','local-stack','android','build-and-deploy']){
+          for(const name of ['regression','local-stack','android']){
             if(!d.check_runs.some(c=>c.name===name && c.head_sha===process.env.GITHUB_SHA &&
                 c.status==='completed' && c.conclusion==='success'))
               throw Error('Required current-main check is not SUCCESS: '+name);
