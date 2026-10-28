@@ -2,6 +2,14 @@
 
 Owner instruction (28 Oct, 14:47 IST): ship **everything** today using parallel agents. **Update 14:56 IST: the web app is the priority; Android is paused** (no lane C work, no phone session, no APK in this release). This file is the execution detail for that push. `plan.md` §2 remains the authoritative task state; this file adds lanes D/E/F, interfaces between them, and the ship cut. Integration-owned.
 
+
+## Integration claim — SHIP-A2 tutor receipt exact-version extension (28 Oct 2026)
+
+- Claim: `chat-20261028-ship-a2-tutor14`; branch `integration/20261028-ship-a2-tutor14`, starting from `main@675a155880ff87d3fa5ddc5c002fdb14efa54c7b`. No open integration PR or concurrent active claim was found. Integration-only `.github/workflows/deploy-knowledge.yml` and this SHIP_PLAN handoff; no migration SQL, credentials or production writes in the PR.
+- Ground truth at claim: prior 13 exactly named migrations deployed in Lemma project `yemqnhnztlbyxmjxidis`, proven by connected migration list and successful [preflight](https://github.com/Mymayankyadav/lemma/actions/runs/40719662041) / [apply](https://github.com/Mymayankyadav/lemma/actions/runs/40720029685). Main now has one additional merged, undeployed `20261028120000_tutor01_handoff_receipts.sql`, owned by E. The release validator correctly rejects current 14 vs 13 parity.
+- Intended change: add **explicit** `knowledge_plan_tutor` dispatch scope for exactly the known 14 migration source filenames, preserving `knowledge` (12) and `knowledge_and_plan` (13) semantics; stage exact source files in an isolated checkout and require exact version/order/history prefix/dry-run; add no auto-apply. No source migrations edited. Both `preflight` and `apply` continue to require stable current-main green regression, local-stack and Android ancestor check plus Lemma-only secrets/target.
+- Verification: exact PR-head guard/regression CI, negative scope review, then merge; production **preflight first**, and apply only after the same version-preserving target/history/dry-run succeeds. Re-read advisor warnings and test tutor receipt RLS after apply. Existing observed security advisor warnings: intentional authenticated study-event SECURITY DEFINER RPC (review required) and Auth leaked-password protection disabled. Neither may be called automatically remediated.
+
 ## Ship cut and rules
 
 - **Ship = tag `v1.0.0` on a fully green `main`** (regression, local Supabase, Pages, plus F's live-site smoke on the deployed URL). The Android workflow keeps running only as the lane-ownership check. Lane F prepares and makes the cut.
