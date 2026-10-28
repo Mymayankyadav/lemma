@@ -18,7 +18,8 @@ const REQUIRED = Object.freeze([
   // Existing companion coverage: unsynced local drafts/outbox and exact
   // source-schema inventory validation.
   'test/account_local_recovery.js',
-  'test/release_workspace_archive.js'
+  'test/release_workspace_archive.js',
+  'test/ui_workspace_recovery.js'
 ]);
 function requireAcceptance(root) {
   const missing = REQUIRED.filter(p => !fs.existsSync(path.join(root,p)));
@@ -28,16 +29,33 @@ function requireAcceptance(root) {
   const regression = pkg.scripts?.['test:lanes'] || '';
   const local = fs.readFileSync(path.join(root,'.github/workflows/sync-local.yml'),'utf8');
   const accounts = pkg.scripts?.['test:account'] || '';
+  const ui = pkg.scripts?.['test:ui'] || '';
   if (!/run_prefix\.js\s+study_\s+tutor_\s+release_/.test(regression) ||
       !/run_prefix\.js\s+stack_/.test(local) ||
-      !/test\/account_local_recovery\.js/.test(accounts))
+      !/test\/account_local_recovery\.js/.test(accounts) ||
+      !/node test\/release_workspace_restore\.js --local/.test(local) ||
+      !/test\/ui_workspace_recovery\.js/.test(ui))
     throw Error('Full restore acceptance files are not wired into both required CI suites');
   return {required:REQUIRED.length};
+}
+function verifyExecutableAcceptance(root){
+  const suite=require(path.join(root,'test/release_workspace_restore.js'));
+  const backend=require(path.join(root,'test/stack_knowledge_workspace_restore.js'));
+  if(suite.contract!=='lemma.workspace.restore.v1' ||
+     typeof suite.assertRoundTrip!=='function' || typeof suite.selfTest!=='function' ||
+     typeof backend.main!=='function')
+    throw Error('Full restore suites are not executable acceptance implementations');
+  const result=suite.selfTest();
+  if(result?.tables!==19 || result.negativeCases<38)
+    throw Error('Full restore acceptance negative controls failed');
+  return result;
 }
 if (require.main === module) {
   if (process.argv[2] === '--tag') {
     if (process.argv.length !== 3) throw Error('Unexpected release recovery gate arguments');
-    const pass=requireAcceptance(path.resolve(__dirname,'..'));
+    const root=path.resolve(__dirname,'..');
+    const pass=requireAcceptance(root);
+    verifyExecutableAcceptance(root);
     console.log('Recovery acceptance suites present and wired: '+pass.required+
       ' (must also pass exact-SHA regression/local-stack)');
   } else if (process.argv.length === 2) {
@@ -48,11 +66,14 @@ if (require.main === module) {
       for(const p of REQUIRED)fs.writeFileSync(path.join(root,p),"'use strict';\n");
       fs.writeFileSync(path.join(root,'package.json'),JSON.stringify({scripts:{
         'test:lanes':'node test/run_prefix.js study_ tutor_ release_',
-        'test:account':'node test/account_local_recovery.js'
+        'test:account':'node test/account_local_recovery.js',
+        'test:ui':'node test/ui_workspace_recovery.js'
       }}));
       fs.writeFileSync(path.join(root,'.github/workflows/sync-local.yml'),
-        'run: node test/run_prefix.js stack_\n');
-      assert.equal(requireAcceptance(root).required,4);
+        'run: node test/run_prefix.js stack_\nrun: node test/release_workspace_restore.js --local\n');
+      assert.equal(requireAcceptance(root).required,REQUIRED.length);
+      assert.throws(()=>verifyExecutableAcceptance(root),/not executable acceptance/);
+      assert.equal(verifyExecutableAcceptance(path.resolve(__dirname,'..')).tables,19);
       for(const p of REQUIRED) {
         fs.rmSync(path.join(root,p));
         assert.throws(()=>requireAcceptance(root),/not implemented/);
@@ -65,4 +86,4 @@ if (require.main === module) {
     } finally {fs.rmSync(root,{recursive:true,force:true});}
   } else throw Error('Unknown release recovery gate arguments');
 }
-module.exports={requireAcceptance,REQUIRED};
+module.exports={requireAcceptance,verifyExecutableAcceptance,REQUIRED};
