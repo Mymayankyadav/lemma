@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('src/app/native_shell.js', 'utf8');
 
-function run({ native = true, available = true, browserAvailable = true, browserReject = false, wakeReject = false, sheet = false, view = 'home', launchUrl = null } = {}) {
+function run({ native = true, available = true, browserAvailable = true, browserReject = false, wakeReject = false, sheet = false, view = 'home', launchUrl = null, notificationsAvailable = true, notificationPermission = 'granted', notificationFail = false, pendingReminders = [] } = {}) {
   const events = {}, actions = [], browserUrls = [], state = { view, sheet };
   const plugin = {
     addListener(name, handler) { events[name] = handler; actions.push('listen:' + name); return Promise.resolve({ remove() {} }); },
@@ -19,16 +19,36 @@ function run({ native = true, available = true, browserAvailable = true, browser
     },
     async close() { actions.push('browser.close'); }
   };
+  const pendingNotifications = pendingReminders.map(n => ({ ...n }));
+  const notificationPlugin = {
+    async getPending() {
+      actions.push('notify.pending');
+      if (notificationFail) throw new Error('PRIVATE-NOTIFICATION-ERROR');
+      return { notifications: pendingNotifications.map(n => ({ ...n })) };
+    },
+    async cancel({ notifications }) {
+      actions.push('notify.cancel');
+      for (const { id } of notifications) {
+        for (let i = pendingNotifications.length - 1; i >= 0; i--)
+          if (pendingNotifications[i].id === id) pendingNotifications.splice(i, 1);
+      }
+    },
+    async checkPermissions() { actions.push('notify.check'); return { display: notificationPermission }; },
+    async createChannel(channel) { actions.push('notify.channel'); assert.equal(channel.importance, 2); assert.equal(channel.vibration, false); },
+    async schedule({ notifications }) { actions.push('notify.schedule'); pendingNotifications.push(...notifications); }
+  };
   const cap = {
     isNativePlatform: () => native,
     isPluginAvailable: name => {
       if (name === 'App') return available;
       if (name === 'Browser') return browserAvailable;
+      if (name === 'LocalNotifications') return notificationsAvailable;
       throw new Error('Unexpected Capacitor plugin');
     },
     registerPlugin: name => {
       if (name === 'App') { actions.push('register'); return plugin; }
       if (name === 'Browser') { actions.push('register:Browser'); return browser; }
+      if (name === 'LocalNotifications') { actions.push('register:LocalNotifications'); return notificationPlugin; }
       throw new Error('Unexpected Capacitor plugin');
     },
   };
@@ -41,7 +61,7 @@ function run({ native = true, available = true, browserAvailable = true, browser
     console: { warn(...x) { actions.push('warn:' + x.join(' ')); }, info(...x) { actions.push('info:' + x.join(' ')); } },
   };
   vm.runInNewContext(source + '\nthis.nativeShell = NativeShell;', ctx);
-  return { events, actions, browserUrls, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback, openAuthBrowser: ctx.nativeShell.openAuthBrowser, closeAuthBrowser: ctx.nativeShell.closeAuthBrowser, planDueReminder: ctx.nativeShell.planDueReminder };
+  return { events, actions, browserUrls, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback, openAuthBrowser: ctx.nativeShell.openAuthBrowser, closeAuthBrowser: ctx.nativeShell.closeAuthBrowser, planDueReminder: ctx.nativeShell.planDueReminder, reconcileDueReminder: ctx.nativeShell.reconcileDueReminder, pendingNotifications };
 }
 
 const web = run({ native: false });
@@ -211,5 +231,50 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   await assert.rejects(failingBrowser.openAuthBrowser(authorize), /Could not open the native sign-in browser/);
   assert.equal(failingBrowser.actions.some(x=>x.includes('PRIVATE-TOKEN')), false, 'browser error redacted');
   assert.equal(web.actions.includes('register:Browser'), false, 'ordinary web is always inert');
-  console.log('ok: Android native Back/resume foreground wake, scoped PKCE deep links, validated system-browser launch web isolation and consent-gated reminder planning');
+  // N3b must reconcile only its fixed reminder ID, never prompt, and never
+  // touch a non-Lemma notification or leak plugin error details.
+  assert.equal(web.reconcileDueReminder, undefined);
+  const nativeReminder = run();
+  const scheduled = await nativeReminder.reconcileDueReminder(desired);
+  assert.equal(scheduled.scheduled, true);
+  assert.equal(scheduled.unchanged, false);
+  assert.equal(nativeReminder.pendingNotifications.length, 1);
+  assert.equal(nativeReminder.pendingNotifications[0].id, 24001);
+  assert.equal(nativeReminder.pendingNotifications[0].schedule.at.getTime(), reminder.at);
+  assert.equal(nativeReminder.pendingNotifications[0].extra.route, 'review');
+  assert.equal(nativeReminder.pendingNotifications[0].title, 'Review cards');
+  assert.equal(nativeReminder.actions.includes('notify.channel'), true);
+  assert.equal(nativeReminder.actions.includes('notify.schedule'), true);
+  assert.equal(nativeReminder.actions.some(x => /requestPermissions/.test(x)), false);
+  const repeat = await nativeReminder.reconcileDueReminder(desired);
+  assert.equal(repeat.unchanged, true);
+  assert.equal(nativeReminder.actions.filter(x => x === 'notify.schedule').length, 1);
+  assert.equal(nativeReminder.pendingNotifications.length, 1);
+  const moved = await nativeReminder.reconcileDueReminder({ ...desired, localTime: '09:00' });
+  assert.equal(moved.unchanged, false);
+  assert.equal(nativeReminder.actions.filter(x => x === 'notify.cancel').length, 1);
+  assert.equal(nativeReminder.pendingNotifications.length, 1, 'replace without duplicate');
+  await nativeReminder.reconcileDueReminder({ ...desired, optedIn: false });
+  assert.equal(nativeReminder.pendingNotifications.length, 0, 'opt-out cancels pending reminder');
+  assert.equal(nativeReminder.actions.filter(x => x === 'notify.check').length, 3,
+    'opt-out does not check/request permission');
+  const denied = run({ notificationPermission: 'denied', pendingReminders: [{ id: 24001 }] });
+  assert.equal((await denied.reconcileDueReminder(desired)).scheduled, false);
+  assert.equal(denied.pendingNotifications.length, 0, 'permission revocation cancels stale reminder');
+  assert.equal(denied.actions.includes('notify.schedule'), false);
+  const invalid = run({ pendingReminders: [{ id: 24001 }] });
+  assert.equal((await invalid.reconcileDueReminder({ ...desired, localTime: '25:00' })).scheduled, false);
+  assert.equal(invalid.pendingNotifications.length, 0);
+  const unrelated = run({ pendingReminders: [{ id: 999, title: 'Other' }] });
+  await unrelated.reconcileDueReminder({ ...desired, optedIn: false });
+  assert.equal(unrelated.pendingNotifications.length, 1, 'never cancel other notification IDs');
+  const noPlugin = run({ notificationsAvailable: false });
+  assert.equal((await noPlugin.reconcileDueReminder({ optedIn: false })).scheduled, false);
+  await assert.rejects(noPlugin.reconcileDueReminder(desired), /update the Android app/);
+  assert.equal(noPlugin.actions.includes('register:LocalNotifications'), false);
+  const failedNotifications = run({ notificationFail: true });
+  await assert.rejects(failedNotifications.reconcileDueReminder(desired), /Could not update due reminders/);
+  assert.equal(failedNotifications.actions.some(x => x.includes('PRIVATE-NOTIFICATION-ERROR')), false);
+  assert.equal(web.actions.includes('register:LocalNotifications'), false);
+  console.log('ok: Android native Back/resume, PKCE, consent-gated reminder planning and local notification reconciliation');
 })().catch(error => { console.error(error); process.exitCode = 1; });

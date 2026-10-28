@@ -150,6 +150,63 @@ const NativeShell = (() => {
     });
   }
 
+  // N3b native-only bridge: reconcile the ONE Lemma reminder, never prompt
+  // for permission, and never schedule unless the student opted in and Android
+  // already granted notification permission. B owns the explicit consent UI.
+  async function reconcileDueReminder(settings = {}) {
+    const optedIn = settings?.optedIn === true;
+    if (!cap.isPluginAvailable?.('LocalNotifications')) {
+      if (optedIn) throw new Error('Native reminders unavailable; update the Android app');
+      return { scheduled: false };
+    }
+    try {
+      const notifications = cap.registerPlugin('LocalNotifications');
+      if (typeof notifications?.getPending !== 'function' ||
+          typeof notifications.cancel !== 'function' ||
+          typeof notifications.checkPermissions !== 'function' ||
+          typeof notifications.schedule !== 'function' ||
+          typeof notifications.createChannel !== 'function') throw new Error('missing plugin');
+      const pending = await notifications.getPending();
+      if (!Array.isArray(pending?.notifications)) throw new Error('unknown pending state');
+      const current = pending.notifications.find(n => n?.id === 24001);
+      const cancelCurrent = async () => {
+        if (current) await notifications.cancel({ notifications: [{ id: 24001 }] });
+      };
+      if (!optedIn) {
+        await cancelCurrent();
+        return { scheduled: false };
+      }
+      const permission = await notifications.checkPermissions();
+      const desired = planDueReminder({ ...settings, permission: permission?.display });
+      if (!desired) {
+        await cancelCurrent();
+        return { scheduled: false };
+      }
+      if (current && current.title === desired.title &&
+          current.body === desired.body && current.channelId === 'lemma-review-quiet' &&
+          current.extra?.route === desired.route &&
+          new Date(current.schedule?.at).getTime() === desired.at) {
+        return { scheduled: true, at: desired.at, unchanged: true };
+      }
+      await cancelCurrent();
+      // Low-importance channel without vibration. This does not ask for exact
+      // alarm access or schedule a reminder on an unconsented device.
+      await notifications.createChannel({ id: 'lemma-review-quiet',
+        name: 'Study reminders', description: 'Optional due-review reminders',
+        importance: 2, vibration: false });
+      await notifications.schedule({ notifications: [{
+        id: desired.id, title: desired.title, body: desired.body,
+        channelId: 'lemma-review-quiet', autoCancel: true,
+        schedule: { at: new Date(desired.at) }, extra: { route: desired.route }
+      }] });
+      return { scheduled: true, at: desired.at, unchanged: false };
+    } catch {
+      // Plugin failures may include device/account metadata. Fail closed and
+      // leave the durable study store unchanged; never log plugin exceptions.
+      throw new Error('Could not update due reminders');
+    }
+  }
+
   function onBack({ canGoBack } = {}) {
     if (typeof Sheets !== 'undefined' && Sheets.closeTop()) return;
     // App.go switches screens without pushing browser history.
@@ -197,5 +254,5 @@ const NativeShell = (() => {
       console.warn('[Lemma] Native launch URL unavailable');
     });
   }
-  return { enabled: true, onAuthCallback, openAuthBrowser, closeAuthBrowser, planDueReminder };
+  return { enabled: true, onAuthCallback, openAuthBrowser, closeAuthBrowser, planDueReminder, reconcileDueReminder };
 })();
