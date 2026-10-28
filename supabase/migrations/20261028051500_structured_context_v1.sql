@@ -162,7 +162,7 @@ begin
       if pg_catalog.jsonb_typeof(v_item)<>'object'
         or pg_catalog.jsonb_typeof(v_item->'statement')<>'string'
         or octet_length(v_item->>'statement') not between 1 and 1024
-        or v_item->>'evidence_status' not in ('self_reported','demonstrated') then
+        or coalesce(v_item->>'evidence_status','') not in ('self_reported','demonstrated') then
         raise exception 'invalid_structured_background';
       end if;
       for v_key in select pg_catalog.jsonb_object_keys(v_item) loop
@@ -235,7 +235,7 @@ begin
       or (v_item->>'source_id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or pg_catalog.jsonb_typeof(v_item->'revision')<>'number'
       or (v_item->>'revision') !~ '^[1-9][0-9]{0,11}$'
-      or pg_catalog.jsonb_object_length(v_item)<>2 then
+      or (select count(*) from pg_catalog.jsonb_object_keys(v_item))<>2 then
       raise exception 'invalid_structured_source_ref';
     end if;
     v_source_id := (v_item->>'source_id')::uuid;
