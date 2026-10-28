@@ -111,24 +111,24 @@ async function resolveCurrent(page, result, reject = false) {
         await ready.page.getByRole('button', { name: 'Continue study' }).waitFor();
         assert.equal(await ready.page.locator('.today .study-btn').isDisabled(), false);
         await ready.page.screenshot({ path: path.join(OUT, `ship-b1-ready-${size}-${scheme}.png`) });
-        // Model refresh can replace Today asynchronously after the screenshot.
-        // Resolve the newest context again rather than clicking a fallback review CTA.
-        if (await ready.page.locator('.today .study-btn').textContent() !== 'Continue study') {
-          await resolveCurrent(ready.page, {
-            planId: 'plan-1', planRevision: 3,
-            checkpoint: { id: 'checkpoint-2', objective: 'Induction' },
-          });
-          await ready.page.getByRole('button', { name: 'Continue study' }).waitFor();
-        }
-        // The mock account continually re-renders Today during startup. Click
-        // the currently mounted CTA atomically, rather than Playwright's
-        // stability wait on a node which may be immediately replaced.
-        await ready.page.evaluate(() => {
+        // The mock account can replace Today between the screenshot and
+        // click. Observe and click the *mounted* approved CTA atomically in
+        // the browser event loop; never click the fallback review action.
+        // If another asynchronous refresh requests the context again,
+        // resolve that same approved snapshot and retry for at most 8s.
+        await ready.page.waitForFunction((approved) => {
           const btn = document.querySelector('.today .study-btn');
-          if (!btn?.textContent.includes('Continue study') || btn.disabled)
-            throw new Error('Approved checkpoint CTA is not currently actionable');
-          btn.click();
-        });
+          if (btn && !btn.disabled && btn.textContent.includes('Continue study')) {
+            btn.click();
+            return Boolean(document.querySelector('.study-fixture'));
+          }
+          for (const pending of window.__studyResolvers.splice(0))
+            pending.resolve(approved);
+          return false;
+        }, {
+          planId: 'plan-1', planRevision: 3,
+          checkpoint: { id: 'checkpoint-2', objective: 'Induction' },
+        }, { polling: 25, timeout: 8000 });
         try {
           await ready.page.locator('.study-fixture').waitFor({ timeout: 5000 });
         } catch (err) {

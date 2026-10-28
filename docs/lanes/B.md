@@ -1,3 +1,7 @@
+## CI repair claim — UI-02 guarded Study CTA (28 Oct 2026)
+
+- Claim `chat-20261028-b-ci-recovery` on `lane-b/ui-02-stabilize-approved-study-cta`, based on main `4d841a4`; only `test/ui_study_nav.js` and this Lane B handoff. No other open Lane B implementation PR at claim. Fix repeated red regression in [main 40680140409](https://github.com/Mymayankyadav/lemma/actions/runs/40680140409) and [Lane F first-head 40679803090](https://github.com/Mymayankyadav/lemma/actions/runs/40679803090), both from `test/ui_study_nav.js:126` (`Approved checkpoint CTA is not currently actionable`). Latest F head regression 40680156355 and earlier main 40679636445 passed the same test; it is a timing-sensitive mock/refresh check. No production data or functionality change. Replace the brittle post-screenshot single-shot click with a bounded browser-event-loop atomic observe/resolve/click predicate that **only** clicks an enabled `Continue study` CTA, still requires `StudyView` routing, refuses the fallback review button, and times out instead of silently skipping assertions. CI to verify; do not weaken a failing actual application requirement.
+
 ## Active UI-02 accepted-reader navigation claim — 28 October 2026
 
 - **Claim:** `chat-20261028-lane-b-reader-nav` · heartbeat 2026-10-28T10:45:04.663Z; branch `lane-b/ui-02-accepted-reader-link`, base `main@5f033d2`.
@@ -78,7 +82,7 @@
 - **Verification:** source syntax and package JSON parsed in tool runtime; isolated native coordinator smoke passed. Exact-head regression/screenshot, Android APK, local Supabase CI and screenshot visual inspection **PENDING**; local clone unavailable (GitHub DNS blocked). Browser-native mock is NOT a physical phone test. `ANDROID-02-N3-B1` is implementation-complete only if CI/visual gates pass; Android D5 physical gate remains NOT RUN.
 - **Next:** inspect exact-head CI and new `reminders-*` screenshots, correct any failure without relaxing tests; merge with expected SHA only on green current main, then verify main. Request C physical D5 after APK is prepared. Owner action: none yet.
 
-Next action: **UI-01 DONE** after final authenticated RPC failure/recovery PR #49 merged and main CI passed; B supports KNOWLEDGE-01 K3 UI once A publishes versioned context/source APIs, then leads PLAN-01. No B implementation is currently dependency-ready.
+Next action: recover the recurring UI-02 SHIP-B1 approved-checkpoint CTA browser race (regression failures on main 06c5f549 and lane F PR #114 first head). Stabilize the UI test without clicking the fallback Review action or suppressing assertions, verify exact-head regression and post-merge main, then resume approved-context UI follow-ups.
 
 ## 28 October 2026 — UI-01 final acceptance COMPLETED
 
