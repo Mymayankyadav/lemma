@@ -31,7 +31,7 @@ async function main(){
       });
       const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));
       await page.addInitScript(mock=>{window.__SEED__={};(0,eval)(mock);},MOCK);
-      await page.goto('https://lemma.test/');await page.waitForSelector('.today');
+      await page.goto('https://lemma.test/');await page.waitForSelector('.home');await page.waitForFunction(()=>!window.__recoveryHooks.App.loading);
       await page.evaluate(()=>window.__recoveryHooks.App.go('settings'));
       assert.equal(await page.locator('#set-account-recovery').count(),0,'signed-out user has no account recovery controls');
       await page.evaluate(({owner,fixture})=>{
