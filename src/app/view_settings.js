@@ -249,6 +249,78 @@ const SettingsView = (() => {
       selectField('s-leechact', 'When a card becomes a leech', 'leechAction', [['tag', 'Tag it “leech”'], ['suspend', 'Tag and suspend it']]),
       toggleField('s-recall', 'Show recall ring', 'showRecall', 'Predicted recall under review cards')));
 
+    // Native reminders are opt-in on this installation, not a synced profile
+    // setting. Merely having due cards or OS permission never enables them.
+    if (NativeShell.enabled) {
+      const pref = ReminderSettings.read();
+      const reminderTime = h('input', { id: 's-reminder-time', type: 'time',
+        class: 'input reminder-time', value: pref.localTime });
+      const reminderButton = h('button', { id: 's-reminder-toggle',
+        type: 'button', class: 'btn btn-sm', text: pref.optedIn ? 'Turn off reminders' : 'Enable reminders' });
+      const reminderStatus = h('p', { id: 's-reminder-status', class: 'muted small',
+        role: 'status', 'aria-live': 'polite', text: 'Checking Android reminder permission…' });
+      async function showReminderStatus(notice = '') {
+        const state = ReminderSettings.read();
+        reminderButton.textContent = state.optedIn ? 'Turn off reminders' : 'Enable reminders';
+        reminderTime.value = state.localTime;
+        let permission = 'unavailable';
+        try { permission = await NativeShell.checkDueReminderPermission(); }
+        catch { permission = 'unavailable'; }
+        if (!reminderStatus.isConnected) return;
+        const permissionText = permission === 'granted' ? 'Android permission granted.' :
+          permission === 'denied' ? 'Android permission denied. Change it in Android app settings.' :
+          permission === 'prompt' ? 'Android permission not yet granted.' :
+          'Native notification permission unavailable.';
+        const due = ReminderSettings.earliestDueAt();
+        const stateText = !state.optedIn ? 'Reminders off.' :
+          permission !== 'granted' ? 'Reminders enabled in Lemma, but no alert can be delivered.' :
+          due === null ? 'Reminders enabled; no studied cards currently have a due time.' :
+          'Reminders enabled for due reviews at the selected local time.';
+        reminderStatus.textContent = (notice ? notice + ' ' : '') + stateText + ' ' + permissionText;
+      }
+      reminderButton.addEventListener('click', async () => {
+        reminderButton.disabled = true;
+        let notice = '';
+        try {
+          if (ReminderSettings.read().optedIn) {
+            const saved = await ReminderSettings.disable();
+            if (!saved) notice = 'Could not save opt-out. Android notification was cancelled; check storage settings.';
+          } else {
+            const result = await ReminderSettings.enable(reminderTime.value);
+            if (!result.ok) notice = result.reason === 'denied'
+              ? 'Permission was not granted; reminders remain off.' :
+              result.reason === 'storage' ? 'Could not save consent; reminders remain off.' :
+              'Reminders unavailable on this Android installation.';
+            else if (result.error) notice = result.error;
+          }
+        } catch { notice = 'Could not update Android reminders. Please try again.'; }
+        finally {
+          reminderButton.disabled = false;
+          await showReminderStatus(notice);
+        }
+      });
+      reminderTime.addEventListener('change', async () => {
+        const saved = ReminderSettings.saveTime(reminderTime.value);
+        if (!saved) {
+          await showReminderStatus('Enter a valid time; the previous choice was kept.');
+          return;
+        }
+        let notice = '';
+        try { await ReminderSettings.reconcile(); }
+        catch { notice = 'Could not update the scheduled reminder.'; }
+        await showReminderStatus(notice);
+      });
+      page.append(section('set-reminders', 'Android review reminders',
+        'Optional and quiet. Only this Android installation is affected; no cards or account details appear in notifications.',
+        h('div', { class: 'setting reminder-control' },
+          h('label', { for: 's-reminder-time', class: 'setting-label' }, 'Remind me at',
+            h('span', { class: 'setting-help', text: 'Local device time, when a studied card is due' })),
+          reminderTime),
+        h('div', { class: 'btn-row reminder-control' }, reminderButton),
+        reminderStatus));
+      showReminderStatus();
+    }
+
     // math
     const pre = h('textarea', { id: 's-preamble', class: 'input code-input', rows: 8, spellcheck: 'false' });
     pre.value = s.preamble;
