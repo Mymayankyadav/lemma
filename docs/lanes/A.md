@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K2h2 — explicitly reviewed stale-context draft restart (claim)
+
+- **Claim:** `hourly-20261028T0833Z-a-k2h2`; UTC heartbeat 2026-10-28T08:33:25Z; base `main@e3f6610270efd63c03089fdca21219af55ad4660`; branch `lane-a/knowledge-01-k2h2-reviewed-reopen`. Lane A had no open PR; B's active PR #76 is untouched.
+- **Scope:** after an authenticated K2h1 read-only comparison, allow an *explicitly student-reviewed* conflict to be reopened as an **unapproved** local draft pinned to the latest accepted server revision. Atomically archive the original immutable approved request and its conflict evidence; never auto-rebase, auto-approve, send a network write, or erase the old request. A fresh student approval and new request ID remain mandatory before any later submit.
+- **Intended A-owned files:** `src/app/sync_browser.js`, `src/app/cloud_bridge.js`, `test/sync_knowledge_drafts.js`, `test/account_knowledge_submission.js`, `docs/lanes/A.md`. No B/C UI, migrations, production, Carrel, or shared files.
+- **Gate:** account and client switches, two-tab stale revision/request ID, fresh remote revision, no consent, atomic rollback and duplicate retry; full exact-head regression, Android and local Supabase CI, lane guard, post-merge main. This is a backend primitive for a later B-owned explicit choice UI, not student consent by this agent.
+- **Next:** implement the bounded storage transition and authenticated bridge; test without weakening existing assertions; merge only on exact-head green CI and current main. Physical Android and production knowledge migrations remain separate gates. Owner action: none.
+
 ## KNOWLEDGE-01 K2h1 — owner-private stale-context comparison packet (active claim)
 
 - **Claim:** `takeover-20261028-a-k2h1`; UTC heartbeat 2026-10-28T07:57:01.338Z; base `main@8eeb80e0782e264cdb73633cc2798fe0d40bcd1e`; branch `lane-a/knowledge-01-k2h1-conflict-inspection`. Owner confirmed no other agent is working; previous A K2g PR #72 merged.
