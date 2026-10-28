@@ -1,3 +1,9 @@
+## Ship-today requests (integration 28 Oct, read first)
+
+- Owner wants everything shipped today and will spend about **one hour on their phone at ≈19:30 IST**. Read [docs/SHIP_PLAN.md](../SHIP_PLAN.md).
+- **SHIP-C1 (OPEN, do first):** a one-page owner checklist for D1–D6 plus the fingerprinted APK from a green `main` run, posted here by 19:00 IST. Include a Study/handoff smoke only if `StudyView.ready`/`TutorHandoff.ready` are true by then. Record results as physical-device evidence afterwards.
+- `.github/workflows/android.yml` is now integration-owned (it routes all six lanes); request changes via an integration PR note here.
+
 ## Current C handoff — 28 October 2026 (integration)
 
 - **Verified progress:** ANDROID-01 and automated ANDROID-02 N1–N4 work (native system-browser/deep-link auth scaffolding, resume, optional reminder consent/bridge and APK asset verification) merged. Latest N4b PR #74 compared all dist/ assets byte-for-byte with the built APK. CI package provenance is not a phone test.

@@ -1,3 +1,10 @@
+## Ship-today requests (integration 28 Oct, read first)
+
+- Owner wants everything shipped today; six lanes now run in parallel. Read [docs/SHIP_PLAN.md](../SHIP_PLAN.md). Finish PR #80 (K2i) as planned.
+- **SHIP-A1 (OPEN):** `test/sync_security_parity.js` — keep the first 12 migrations exact; allow additional migrations only when named `*_plan01_*` or `*_tutor01_*` (lanes D/E own those files; `lanes.json` excludes them from A). Do this right after #80 so D's first migration is not blocked.
+- **SHIP-A2 (OPEN):** you are the only production migration operator. Deploy the 3 merged KNOWLEDGE-01 migrations, then each merged `plan01`/`tutor01` migration listed in D.md/E.md, in timestamp order, under the backend production rule. Record written/merged/applied/verified here.
+- `.github/workflows/sync-local.yml` is now integration-owned; it runs every `test/stack_*.js` automatically. Name new local-stack tests `test/stack_knowledge_*.js` instead of adding workflow steps.
+
 ## Current A handoff — 28 October 2026 (integration)
 
 - **Verified progress:** KNOWLEDGE-01 K1/K2a–K2h2 code and local tests merged; latest backend PR #77 archived original stale approved intent before reopening a new **unapproved** draft. PR #78 added B's comparison and explicit restart UI. All original immutable requests and owner boundaries remain protected.

@@ -1,3 +1,10 @@
+## Ship-today requests (integration 28 Oct, read first)
+
+- Owner wants everything shipped today; six lanes now run in parallel. Read [docs/SHIP_PLAN.md](../SHIP_PLAN.md). Your NEXT row is **UI-02**.
+- **SHIP-B1 (OPEN, do first):** in `main.js` add `study: StudyView` to `VIEWS` and a labelled **Study** nav item only when `typeof StudyView !== 'undefined' && StudyView.ready`; Today's primary action becomes "Continue study" when `StudyPlan.activeContext()` returns a checkpoint, else due reviews. Must be inert (no errors) while lanes D/E have not created their modules.
+- **SHIP-B2 (OPEN):** review D/E screenshots in `ci-screenshots/pr-<n>/` when asked; D and E own their own CSS in `src/styles/`, so send fixes as requests.
+- Then continue the accepted-revision/citation display for KNOWLEDGE-01.
+
 ## Current B handoff — 28 October 2026 (integration)
 
 - **Verified progress:** KNOWLEDGE-01 K3a editor PR #73, K3a1 locked conflict PR #76 and K3b compare/cancel/explicit unapproved restart PR #78 merged. PR-head browser regression, Android and local Supabase gates passed for #78; synthetic screenshot inspection covers mobile/desktop light/dark, not live backend or phone.
