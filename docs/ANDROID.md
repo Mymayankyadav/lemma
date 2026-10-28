@@ -47,6 +47,14 @@ The same `lemma-android-debug` Actions artifact includes `android-apk-metadata.j
 
 This is automated packaging provenance only. It does not establish launch, deep-link return, notification delivery, keyboard/safe areas, offline sync or update preservation on a real phone. Physical D1–D6 remain **NOT RUN** until recorded separately.
 
+## ANDROID-02 N4b — complete web-asset provenance
+
+The N4a check compared four named files. N4b extends the same fail-closed APK gate to **every regular file** emitted under `dist/`, recursively, including `test.html`, `icons/icon.svg` and future nested assets. Each `assets/public/<relative path>` entry must exist in the assembled APK and match the exact build output byte-for-byte. A symlink or other unsupported `dist/` entry is rejected rather than skipped; the six current generated files remain required. Capacitor-generated bridge files outside `dist/` are not mistaken for missing build assets.
+
+The artifact's `android-apk-metadata.json` uses schema 2 and records a SHA-256 digest for **every** checked web asset, alongside the APK and signing-certificate fingerprints. `npm run test:android` exercises recursive enumeration and symlink rejection; Android CI remains the authoritative assembled-APK check. This prevents a stale nested icon or future app asset from passing simply because it was not in N4a's four-file list.
+
+This is still **packaging verification**, not Android hardware, OAuth, offline, notification or upgrade acceptance. D1–D6 remain NOT RUN until observed on a real device. The signing-key compatibility and local-data-preservation warnings above still apply.
+
 ## Current scope and verification
 
 - S1 added the native Android project and reproducible **debug APK** CI. S2 adds native Back handling; ANDROID-02 N1a/N1b added a guarded OAuth callback and system-browser adapter, and N2a wakes the existing guarded sync listener on native resume. Complete native sign-in, notifications and physical device acceptance remain later gates.
