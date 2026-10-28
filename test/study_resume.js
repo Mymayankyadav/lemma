@@ -273,7 +273,10 @@ function load(){
  const stableSession=await load().activeContext();
  assert.equal(stableSession.sessionId,SESSION,
   'unchanged active session still resumes the exact unfinished proof');
- assert.equal(stableSession.checkpoint.id,'cp-7');
+ assert.equal(stableSession.checkpoint.id,'cp-3',
+  'latest unfinished session note remains the resume target');
+ assert.equal(stableSession.lastAttempt.eventId,ID1);
+ assert.equal(stableSession.hintLevel,2);
  assert.equal(events.length,evidenceCount);
  assert.equal(rpc.length,writeCount);
  assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
