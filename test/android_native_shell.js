@@ -4,11 +4,12 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('src/app/native_shell.js', 'utf8');
 
-function run({ native = true, available = true, sheet = false, view = 'home' } = {}) {
+function run({ native = true, available = true, sheet = false, view = 'home', launchUrl = null } = {}) {
   const events = {}, actions = [], state = { view, sheet };
   const plugin = {
     addListener(name, handler) { events[name] = handler; actions.push('listen:' + name); return Promise.resolve({ remove() {} }); },
     exitApp() { actions.push('exit'); return Promise.resolve(); },
+    getLaunchUrl() { return Promise.resolve({ url: launchUrl }); },
   };
   const cap = {
     isNativePlatform: () => native,
@@ -70,6 +71,7 @@ const invalid = [
   'io.lemma.study://auth-callback#access_token=secret',
   'io.lemma.study://auth-callback?code=x#access_token=secret',
   'io.lemma.study://auth-callback', 'io.lemma.study://auth-callback?code=x&error=y',
+  'io.lemma.study://auth-callback?code=x&code=y', 'io.lemma.study://auth-callback?error=x&error=y',
   'io.lemma.study://name@auth-callback?code=x', 'io.lemma.study://auth-callback?code='
 ];
 for (const url of invalid) auth.events.appUrlOpen({ url });
@@ -96,4 +98,21 @@ assert.equal(success.length, 1, 'one faulty subscriber does not starve another')
 assert.equal(second.actions.some(x => x.includes('secret')), false, 'never log callback secrets');
 second.events.appUrlOpen({ url: 'io.lemma.study://auth-callback?code=' + 'x'.repeat(4096) });
 assert.equal(success.length, 1, 'oversized callback rejected');
-console.log('ok: Android native Back/resume, scoped PKCE deep links and web isolation');
+// A stopped Android app may receive the URL only via App.getLaunchUrl().
+// The same callback may also arrive via appUrlOpen; neither route duplicates it.
+const settle = () => new Promise(resolve => setImmediate(resolve));
+(async () => {
+  const cold = run({ launchUrl: 'io.lemma.study://auth-callback?code=cold' });
+  const coldSeen = [];
+  cold.onAuthCallback(url => coldSeen.push(url));
+  await settle();
+  assert.deepEqual(coldSeen, ['io.lemma.study://auth-callback?code=cold']);
+  cold.events.appUrlOpen({ url: 'io.lemma.study://auth-callback?code=cold' });
+  assert.equal(coldSeen.length, 1, 'cold and warm callback must dedupe');
+  const delayed = run({ launchUrl: 'io.lemma.study://auth-callback?error=user_cancelled' });
+  await settle();
+  const lateSeen = [];
+  delayed.onAuthCallback(url => lateSeen.push(url));
+  assert.deepEqual(lateSeen, ['io.lemma.study://auth-callback?error=user_cancelled']);
+  console.log('ok: Android native Back/resume, cold/warm scoped PKCE deep links and web isolation');
+})().catch(error => { console.error(error); process.exitCode = 1; });
