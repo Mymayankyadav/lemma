@@ -66,6 +66,13 @@ async function main() {
   assert.equal(first.body.sessionId,concurrent.body.sessionId);
   assert.equal(first.body.seq,concurrent.body.seq,'a retry must not append twice');
   assert.equal(first.body.planRevision,1);
+  // Different event IDs racing for the same plan must not fork active sessions.
+  const parallelIds=[randomUUID(),randomUUID()];
+  const concurrentDistinct=await Promise.all(parallelIds.map((id,i) =>
+    record(a,planA,'proof-3',id,{text:'parallel step '+i})));
+  assert.ok(concurrentDistinct.every(r=>r.ok));
+  assert.ok(concurrentDistinct.every(r=>r.body.sessionId===first.body.sessionId),
+    'parallel events share the already-active plan session');
   const ownUrl='/rest/v1/learning_events?select=event_id,event_type,payload,session_id,user_id&event_id=eq.'+eId;
   const owned=await must(ownUrl,a.token);
   assert.equal(owned.length,1);
