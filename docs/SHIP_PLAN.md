@@ -66,3 +66,10 @@ Until D merges `StudyPlan`, E tests against a mock that implements exactly this 
 - **RELEASE-01 (F):** backup/restore round trip of cards, schedules, reviews (and contexts/plans/events once D lands) with no lost or duplicated events; PWA offline/update test with the service worker enabled; live web smoke at the cut. Android smoke is deferred with ANDROID-02. Account erasure (A backend + B UI) is the one RELEASE item expected to miss today; it ships as `v1.0.x` and is listed in the release notes.
 
 Engineering agents never approve a study plan, amendment, card or notification opt-in on the student's behalf in production; gate demonstrations use local-stack test identities.
+
+## SHIP-A2 exact-version deployment operator — integration claim
+
+- **Claim:** `chat-20261028-a-ship-a2-deploy-operator`, heartbeat `2026-10-28T09:52:18.826Z`. This is a narrow integration-authorized workflow/ownership change; Lane A remains the only production operator. No other active integration PR on claim. The target is **only** Lemma `yemqnhnztlbyxmjxidis`; never Carrel.
+- **Planned files:** `.github/workflows/deploy-knowledge.yml` and `lanes.json` (integration-owned), `docs/SHIP_PLAN.md` and the Lane A handoff. No application or production database write as part of this PR. Workflow must pin a clean main SHA, verify green gates and exact remote/local migration versions, default to read-only preflight and allow version-preserving `supabase db push` only on an explicit apply run using GitHub Actions secrets (never chat credentials).
+- **Preflight:** live Supabase `list_migrations` shows exactly nine original migrations, three merged knowledge migrations still pending. MCP `apply_migration` is unsafe for existing source versions because it generates a different timestamp. CLI `db push` retains the committed version numbers.
+- **Verification:** integration lane guard, plan/syntax checks, workflow validation, PR CI before merge. A separate authenticated workflow run is required for production verification; absence of GitHub secrets is a blocker, not permission for manual history edits.
