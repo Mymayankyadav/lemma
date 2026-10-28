@@ -146,7 +146,13 @@ jobs:
           if(names.length<expected.length || expected.some((x,i)=>names[i]!==x))
             throw Error('Required exact legacy/knowledge source filenames changed');
           for(const n of names.slice(expected.length)){
-            if(!/^\d{14}_(?:plan01|tutor01)_[a-z0-9_]+\.sql$/.test(n) ||
+            // R2e is a later A-owned, *unstaged* source migration. The first
+            // 14 exact versions must remain deployable before R2e is approved.
+            // This exception grants no permission to apply R2e or other SQL.
+            const futureReadonlySnapshot =
+              n === '20261028163000_release01_owner_snapshot_v1.sql';
+            if(!(/^\d{14}_(?:plan01|tutor01)_[a-z0-9_]+\.sql$/.test(n) ||
+                 futureReadonlySnapshot) ||
                 n.slice(0,14)<=expected[expected.length-1].slice(0,14))
               throw Error('Unexpected extra migration in current main: '+n);
           }
