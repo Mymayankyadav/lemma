@@ -184,8 +184,15 @@ const LemmaCloudBridge = (() => {
     return withKnowledgeDraftStorage(storage =>
       storage.discardKnowledgeDraft(contextId, expectedLocalRevision));
   }
+  async function approveKnowledgeDraft(contextId, expectedLocalRevision, studentApproved) {
+    if (!isUuid(contextId)) throw new Error('Invalid knowledge context reference');
+    if (studentApproved !== true) throw new Error('Explicit student approval required');
+    return withKnowledgeDraftStorage(storage =>
+      storage.approveKnowledgeDraft(contextId, expectedLocalRevision, studentApproved));
+  }
   return { authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, commitAcceptedContext,
-    readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft };
+    readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft,
+    approveKnowledgeDraft };
 })();
 
