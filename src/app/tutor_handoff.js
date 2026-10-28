@@ -190,6 +190,72 @@ const TutorHandoff = (() => {
     }
   }
 
+  // T3c2a: caller-supplied immutable audit key; never generated in this
+  // transport because an uncertain RPC response must reuse the same ID.
+  // This API does not imply that a card was saved, or approve any tutor work.
+  async function recordReceipt({ receiptId, planId, checkpointId:cpId,
+    expectedPlanRevision, action, artifactId } = {}) {
+    const actions = new Set(['packet_exported', 'reply_reviewed',
+      'evidence_recorded', 'card_editor_opened', 'amendment_draft_staged']);
+    if (!validId(receiptId) || !validId(planId) || !checkpointId(cpId) ||
+        !revision(expectedPlanRevision) || !actions.has(action) ||
+        !validId(artifactId)) throw new Error('Invalid tutor audit receipt');
+    if (typeof LemmaAccount === 'undefined' ||
+        typeof LemmaCloud === 'undefined' ||
+        !LemmaAccount.client || !validId(LemmaAccount.user?.id))
+      throw new Error('Sign in before recording tutor audit');
+    const client = LemmaAccount.client;
+    const owner = LemmaAccount.user.id;
+    const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
+    const check = () => {
+      if (LemmaAccount.client !== client ||
+          LemmaAccount.user?.id?.toLowerCase() !== owner.toLowerCase() ||
+          (typeof App !== 'undefined' &&
+           (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
+        throw new Error('Study account or workspace changed; reopen the handoff');
+    };
+    check();
+    if (typeof navigator !== 'undefined' && navigator.onLine === false)
+      throw new Error('Tutor audit offline; retry the same receipt ID');
+    const args = {
+      p_receipt_id:receiptId, p_plan_id:planId, p_checkpoint_id:cpId,
+      p_expected_plan_revision:expectedPlanRevision, p_action:action,
+      p_artifact_id:artifactId, p_tutor_label:null
+    };
+    let token;
+    try { token = await LemmaCloud.accountToken(client,owner); }
+    catch (_) {
+      check();
+      throw new Error('Tutor audit unavailable; retry the same receipt ID');
+    }
+    check();
+    let result;
+    try {
+      result = await client.rpc('record_tutor_handoff_receipt',args)
+        .setHeader('Authorization','Bearer '+token);
+    } catch (_) {
+      check();
+      throw new Error('Tutor audit unavailable; retry the same receipt ID');
+    }
+    check();
+    if (result?.error) {
+      const reason = String(result.error.message || '');
+      if (['stale_plan_revision','checkpoint_not_in_approved_plan',
+           'idempotency_key_reused','invalid_handoff_receipt'].includes(reason))
+        throw new Error(reason);
+      throw new Error('Tutor audit unavailable; retry the same receipt ID');
+    }
+    const receipt = result?.data;
+    if (!receipt || !validId(receipt.receiptId) ||
+        receipt.receiptId.toLowerCase() !== receiptId.toLowerCase() ||
+        receipt.planRevision !== expectedPlanRevision ||
+        typeof receipt.createdAt !== 'string' ||
+        !Number.isFinite(Date.parse(receipt.createdAt)))
+      throw new Error('Invalid tutor audit response; retry the same receipt ID');
+    return {receiptId:receipt.receiptId, planRevision:receipt.planRevision,
+      createdAt:receipt.createdAt};
+  }
+
   // T3a: only explicitly selected events may be saved. Cards and plan
   // amendments remain proposals until separate student-driven approval flows.
   async function open({ planId, checkpointId } = {}) {
@@ -464,5 +530,5 @@ const TutorHandoff = (() => {
     return Sheets.open({title:'Continue with another tutor',wide:true,
       className:'tutor-handoff-sheet',body});
   }
-  return { ready:false, exportPacket, parseReply, open };
+  return { ready:false, exportPacket, parseReply, recordReceipt, open };
 })();
