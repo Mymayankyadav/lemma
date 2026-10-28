@@ -51,6 +51,7 @@ const plain = x => JSON.parse(JSON.stringify(x));
   // Simulate a new/empty local workspace; the exported bytes are retained.
   await Store.clearLocal();
   Model.replaceAll(new Map());
+  Model.loadProfile({ settings: { retention: 0.82 } }); // new workspace differs from the exported profile
   assert.equal((await Store.localSnapshot()).notes.size, 0);
   const job = IO.prepare(parsed, { restoreSettings: true });
   assert.equal(job.items.length, 2, 'both cards need restoration');
