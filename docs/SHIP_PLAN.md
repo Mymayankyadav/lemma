@@ -1,5 +1,13 @@
 # Ship-today plan — 28 October 2026
 
+## SHIP-A2 operator compatibility — defer R2e read-only snapshot source (28 October 2026)
+
+- **Claim:** integration `chat-20261028-a-operator-future-release01`, branch `integration/20261028-ship-a2-defer-release01-snapshot`, from `main@f6971624c46f4c2ebf31d013198bffa5efeecfec`. Lane A's independently active draft PR #136 owns `20261028163000_release01_owner_snapshot_v1.sql`; this integration claim does not edit that branch/SQL or take over its ownership.
+- **Observed release blocker:** the guarded 12/13/14 version deployment operator currently permits only extra future `plan01`/`tutor01` filenames. If A merges its future R2e migration before tutor receipts have been applied, **even `scope=knowledge_plan_tutor` refuses to stage the existing fourteen approved versions**, because the extra `release01` filename is unrecognized. This does not justify deploying an unapproved 15th migration or altering source history.
+- **Bounded fix:** allow exactly the known, later `20261028163000_release01_owner_snapshot_v1.sql` as a **future unstaged extra** *only when its timestamp is strictly later than the selected scope's final pinned version*. Keep the 12/13/14 pinned file lists unchanged. Reject every unexpected extra, renamed/missing migration, wrong order and early/duplicate version. Do not expose any 15-migration scope or modify preflight/apply mode, target, secrets, hashes, remote-history prefix, CI or dry-run gates. This is solely a compatibility guard until a separate reviewed operator extension and read-only 15th deployment.
+- **Verification:** test real 14-file source set, future exact R2e filename, and unknown/early/renamed extra negative fixtures against the actual staging script; validate inline Node syntax, integration lane guard, exact PR-head regression/local-stack and current-main CI before merge. Production migration 14 still requires a user-dispatched green `preflight` followed by separate explicit `apply` on current green main. No production writes or student approvals.
+
+
 Owner instruction (28 Oct, 14:47 IST): ship **everything** today using parallel agents. **Update 14:56 IST: the web app is the priority; Android is paused** (no lane C work, no phone session, no APK in this release). This file is the execution detail for that push. `plan.md` §2 remains the authoritative task state; this file adds lanes D/E/F, interfaces between them, and the ship cut. Integration-owned.
 
 ## Integration claim — exact-current-main Pages release provenance (28 October 2026)
