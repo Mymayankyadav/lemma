@@ -142,7 +142,10 @@ async function captureLiveSyncStatus(page, stage, expected) {
   assert.equal(observed.role, 'status', stage + ': missing live status accessibility role');
   if (stage === 'offline') assert.ok(['Offline', 'Queued'].includes(observed.visible),
     'real offline queued edit needs a visible offline/queued indicator');
-  else assert.equal(observed.full, 'Saved to cloud');
+  else if (stage === 'rpc-error') {
+    assert.equal(observed.visible, 'Sync failed', 'authenticated RPC fault needs a visible warning');
+    assert.equal(observed.online, true, 'RPC failure must not masquerade as device offline');
+  } else assert.equal(observed.full, 'Saved to cloud');
   console.log('ok: real local-stack ' + stage + ' UI status and four screenshots (' +
     observed.full + ')');
 }
@@ -470,6 +473,50 @@ async function run(){
     assert.equal(dbNote(lostTitle)?.revision,1,'lost response retry must not increment revision');
     assert.equal(receiptCount(lost.id),1,'lost response retry must reuse idempotency receipt');
     console.log('ok: successful RPC response lost, retry acknowledged exactly one revision and receipt');
+
+    // UI-01-LIVE-STATUS-A2 — fail real authenticated PostgREST requests
+    // while the browser itself remains online. This is a disposable local
+    // transport fault, not a mocked LemmaSync status getter or production RPC.
+    // The previously committed note is edited again; its durable request ID
+    // must survive the fault and converge exactly once when transport returns.
+    const restPattern=AUTH+'/rest/v1/**';
+    let failedRpc=0,failedPull=0;
+    await pages[0].route(restPattern,async route=>{
+      const req=route.request(),url=new URL(req.url());
+      if(url.origin!==AUTH || !['GET','POST'].includes(req.method())) {
+        await route.continue(); return;
+      }
+      if(url.pathname==='/rest/v1/rpc/commit_note') failedRpc++;
+      else if(req.method()==='GET') failedPull++;
+      await route.abort('failed');
+    });
+    try {
+      await edit(pages[0],lostTitle,'Edited while authenticated PostgREST was unreachable');
+      await pages[0].evaluate(()=>window.dispatchEvent(new Event('focus')));
+      await eventual('real RPC and read transport failures',()=>failedRpc>0 && failedPull>0,90000);
+      await pages[0].waitForFunction(
+        ()=>document.querySelector('#sync .sr-only')?.textContent===
+          'Sync failed · local changes retained',null,{timeout:90000});
+      const stalled=await debugOutbox(pages[0],owners[0],lost.id);
+      assert.equal(stalled.note?.dirty,true,'RPC error must retain dirty local note');
+      assert.ok(stalled.ops.some(op=>op.kind==='note' && op.state==='pending' &&
+        op.expectedRevision===1),'RPC error must retain original durable queued edit');
+      assert.equal(dbNote(lostTitle)?.revision,1,'failed RPC must not change server revision');
+      assert.equal(receiptCount(lost.id),1,'failed RPC must not add a receipt');
+      await captureLiveSyncStatus(pages[0],'rpc-error',
+        ['Sync failed · local changes retained']);
+    } finally {
+      await pages[0].unroute(restPattern);
+    }
+    await pages[0].evaluate(()=>window.dispatchEvent(new Event('focus')));
+    await eventual('RPC recovery revision',()=>dbNote(lostTitle)?.revision===2,90000);
+    await eventual('RPC recovery cleared outbox',async()=>{
+      const local=await debugOutbox(pages[0],owners[0],lost.id);
+      return local.note?.dirty===false && local.ops.length===0;
+    },90000);
+    assert.equal(receiptCount(lost.id),2,'recovered RPC adds exactly one receipt');
+    await captureLiveSyncStatus(pages[0],'rpc-recovered',['Saved to cloud']);
+    console.log('ok: real authenticated PostgREST fault, visible Sync failed, durable retry and one recovered receipt');
 
     await browse(pages[2]);
     assert.equal(await row(pages[2],offlineTitle).count(),0,'other user cannot observe offline note');
