@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K2f — explicitly reviewed durable acceptance intent (active claim)
+
+- **Claim:** `chat-20261028-k2f-approved-intents`; UTC heartbeat 2026-10-28T06:34:45.724Z; base `main@233251d349`; branch `lane-a/knowledge-01-k2f-approved-intents`; no active A PR at pickup. K2e PR #69 merged; main Android, Supabase and Pages passed; regression editor-preview transient failed once but targeted rerun (#40644191542 attempt 2) passed with intact assertions.
+- **Scope:** evolve account-local unaccepted context draft into an **immutable, student-approved pending intent** only with explicit consent + exact local revision, preserving one durable request ID across reloads/retries. No network dispatch in this slice: an offline-approved pending intent is not a server acknowledgment. Block draft edits and ordinary discard while pending; retries must not generate second intent or accept a changed snapshot. Preserve existing note/review queue and account boundaries.
+- **Paths:** `src/app/sync_browser.js`, `src/app/cloud_bridge.js`, `test/sync_knowledge_drafts.js`, `test/account_knowledge_drafts.js`, `docs/lanes/A.md`. Existing tests remain strict; no migration, production changes, UI, Android or Carrel.
+- **Gate:** two-tab competing approval, missing consent, changed revision, lost local receipt, restart, tutor-vs-student provenance, pending write protection, identity switch and stable request ID; full exact-head CI and post-merge main.
+- **Next:** build this narrowly scoped local approval transition. K2g separately implements online idempotent submission, status/ack and 409 conflict review. Do not treat a pending intent as an accepted context.
+
 ## KNOWLEDGE-01 K2e — account-scoped durable offline drafts (active claim)
 
 - **Run:** `chat-20261028-k2e-drafts`; UTC heartbeat 2026-10-28T06:19:10.019Z; base `main@24889df473`; branch `lane-a/knowledge-01-k2e-durable-drafts`. No active PRs or other lane claim at pickup; all four latest main CI runs SUCCESS.
