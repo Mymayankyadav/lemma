@@ -241,8 +241,29 @@ jobs:
           node <<'NODE'
           const fs=require('node:fs');
           const want=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-pending.json','utf8'));
-          const txt=fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-dryrun.txt','utf8');
-          const got=[...txt.matchAll(/Would push migration\s+(\d{14}_[a-z0-9_]+\.sql)/gi)].map(m=>m[1]);
+          const txt=fs.readFileSync(process.env.RUNNER_TEMP+'/lemma-dryrun.txt','utf8')
+            .replace(/\x1b\[[0-9;]*m/g,'');
+          // Supabase CLI 2.122 prints "Would push these migrations:" followed
+          // by one bullet per file, not "Would push migration <filename>".
+          // Fail closed if this is not an explicitly completed read-only run.
+          const lines=txt.split(/\r?\n/).map(line=>line.trim());
+          if(!lines.includes('DRY RUN: migrations will *not* be pushed to the database.'))
+            throw Error('Missing Supabase read-only dry-run confirmation');
+          const heading=lines.indexOf('Would push these migrations:');
+          const finished=lines.indexOf('Finished supabase db push.');
+          if(finished<0 || (heading>=0 && heading>=finished))
+            throw Error('Incomplete or malformed Supabase dry-run output');
+          const got=[];
+          if(heading>=0){
+            for(const line of lines.slice(heading+1,finished)){
+              const bullet=/^[•*-]\s+(\d{14}_[a-z0-9_]+\.sql)$/.exec(line);
+              if(!bullet)throw Error('Unexpected dry-run migration list row: '+line);
+              got.push(bullet[1]);
+            }
+            if(!got.length)throw Error('Empty Supabase migration-list output');
+          }else if(want.length!==0 || !lines.includes('Remote database is up to date.')){
+            throw Error('Missing Supabase pending-migrations list');
+          }
           if(JSON.stringify(got)!==JSON.stringify(want))
             throw Error('Dry-run filenames differ from expected pending list: '+JSON.stringify(got));
           console.log('Dry-run precisely matches expected source versions');
