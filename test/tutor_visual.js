@@ -4,9 +4,17 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const {chromium}=require('playwright');
+const seed=require('./seed.js');
 const ROOT=path.resolve(__dirname,'..');
 const out=path.join(ROOT,'test-output','ui');
 fs.mkdirSync(out,{recursive:true});
+const MOCK=fs.readFileSync(path.join(__dirname,'mock_claude.js'),'utf8');
+const LIBS={
+  'katex.min.js':'katex/dist/katex.min.js',
+  'marked.umd.js':'marked/lib/marked.umd.js',
+  'purify.min.js':'dompurify/dist/purify.min.js'
+};
+const docs=Object.fromEntries(seed.map(n=>['data/users/u_test/profile/notes/'+n.id,n]));
 const original=fs.readFileSync(path.join(ROOT,'dist','test.html'),'utf8');
 const anchor='/* ===== main.js ===== */';
 if(!original.includes(anchor))throw Error('Missing application entry marker');
@@ -43,13 +51,45 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     viewport:size==='mobile'?{width:390,height:844}:{width:1280,height:800},
     colorScheme:scheme,reducedMotion:'reduce'});
    try{
-    await ctx.route('**/*',route=>
-      route.request().url().startsWith('https://lemma.test/')?
-        route.fulfill({status:200,contentType:'text/html',body:HTML}):route.abort());
+    // Match the established UI fixture: third-party browser libraries and
+    // seeded data must load before the app can complete its normal boot.
+    await ctx.route('**/*',async route=>{
+      const url=route.request().url();
+      if(url.startsWith('https://lemma.test/'))
+        return route.fulfill({status:200,contentType:'text/html',body:HTML});
+      for(const [file,pkg] of Object.entries(LIBS))
+        if(url.endsWith(file))return route.fulfill({status:200,
+          contentType:'application/javascript',body:fs.readFileSync(path.join(ROOT,'node_modules',pkg),'utf8')});
+      if(url.includes('fonts.googleapis.com'))
+        return route.fulfill({status:200,contentType:'text/css',body:''});
+      if(url.startsWith('blob:')||url.startsWith('data:'))return route.continue();
+      return route.abort();
+    });
     const page=await ctx.newPage();
+    await page.addInitScript(({docs,mock})=>{
+      window.__SEED__=docs; (0,eval)(mock);
+    },{docs,mock:MOCK});
     page.on('pageerror',e=>errors.push(size+'/'+scheme+': '+e.message));
     await page.goto('https://lemma.test/');
     await page.waitForSelector('#sheets',{state:'attached',timeout:12000});
+    // Boot initializes the workspace asynchronously and may replace open sheets.
+    // Never open the synthetic tutor handoff until that initialization is done.
+    // Hidden Study + empty local cards intentionally renders onboarding, not
+    // the Today dashboard. Require completed boot, not a particular Home state.
+    try {
+      // build.js encloses App in a private IIFE. Observe the real completed
+      // Home UI, not inaccessible internals or the initial loading skeleton.
+      await page.waitForSelector('.page.home .onboard, .page.home .today', {timeout:15000});
+    } catch (err) {
+      const state=await page.evaluate(()=>({readyState:document.readyState,
+        appDefined:typeof App!=='undefined',
+        appLoading:typeof App!=='undefined' ? App.loading : null,
+        tutorHook:!!window.__tutorVisual,
+        hasHome:!!document.querySelector('.page.home'),
+        html:document.querySelector('#app')?.textContent.slice(0,350)}));
+      throw new Error('Tutor visual fixture did not boot: '+JSON.stringify({state,
+        errors,reason:err.message}));
+    }
     await page.evaluate(()=>window.__tutorVisual.open());
     await page.waitForSelector('.tutor-handoff');
     const helpColor=await page.locator('.tutor-handoff-help').first().evaluate(
@@ -60,7 +100,16 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     await page.getByRole('button',{name:'Review pasted reply'}).click();
     await page.locator('.tutor-handoff-item').first().waitFor();
     assert.equal(await page.locator('.tutor-handoff-item').count(),2);
-    assert.match(await page.locator('.tutor-handoff-status').innerText(),/not yet saved or approved/);
+    assert.match(await page.locator('.tutor-handoff-status').innerText(),/None recorded/);
+    const save=page.getByRole('button',{name:'Save selected study events'});
+    assert.equal(await save.isDisabled(),true,'requires deliberate event selection');
+    await page.locator('.tutor-handoff-item').first().locator('summary').click();
+    await page.getByRole('checkbox',{name:'Select Event 1 · feedback'}).check();
+    assert.equal(await save.isEnabled(),true,'explicit selection enables Save');
+    // A collapsed <details> hides its checkbox from the accessibility tree.
+    // Expand only for inspection; opening a proposal must not select it.
+    await page.locator('.tutor-handoff-item').nth(1).locator('summary').click();
+    assert.equal(await page.getByRole('checkbox',{name:'Select Card proposal 1'}).isChecked(),false,'card proposal never implicitly selected');
     const width=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,viewport:innerWidth}));
     assert.ok(width.doc<=width.viewport+2,'Handoff causes horizontal overflow: '+JSON.stringify(width));
     const boxes=await page.locator('.tutor-handoff > button').evaluateAll(nodes=>

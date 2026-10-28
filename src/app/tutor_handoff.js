@@ -190,14 +190,16 @@ const TutorHandoff = (() => {
     }
   }
 
-  // T2: data-only handoff sheet. Selections are not successful saving:
-  // T3 will add separately-confirmed, owner-scoped persistence operations.
+  // T3a: only explicitly selected events may be saved. Cards and plan
+  // amendments remain proposals until separate student-driven approval flows.
   async function open({ planId, checkpointId } = {}) {
     if (typeof StudyPlan === 'undefined' || typeof StudyPlan.activeContext !== 'function')
       throw new Error('Study plan is not available');
     const ctx = await StudyPlan.activeContext();
     if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
       throw new Error('The active checkpoint has changed; reopen its handoff');
+    const ownerId = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.user?.id;
+    const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
     const packet = exportPacket(ctx);
     const output = h('textarea', { class:'tutor-handoff-packet', 'aria-label':'Handoff packet',
       readonly:true, spellcheck:false, rows:8 });
@@ -209,24 +211,49 @@ const TutorHandoff = (() => {
       text:'Paste a tutor reply to review its proposals. Nothing is saved yet.' });
     const review = h('div', { class:'tutor-handoff-review', 'aria-live':'polite' });
     const summary = h('p', { class:'tutor-handoff-help',
-      text:'Each event, card or amendment needs your explicit review. Saving is disabled until authenticated study-event persistence is available.' });
+      text:'Selected study events are recorded only after you press Save. Cards and plan amendments stay unapproved and unsaved; use the separate student approval flow later.' });
     const copyBtn = h('button', { class:'btn', type:'button', text:'Copy packet',
       onclick:()=>copyText(packet.markdown,output) });
     const parseBtn = h('button', { class:'btn btn-primary', type:'button', text:'Review pasted reply' });
+    const saveBtn = h('button', { class:'btn', type:'button', text:'Save selected study events', disabled:true });
     const items = [];
+    const savedIds = new Set();
+    let reviewedText = null;
+    let saving = false;
+    const selected = () => items.filter(x => x.kind === 'e' && x.checkbox.checked &&
+      !savedIds.has(x.value.eventId));
+    function updateSave() {
+      saveBtn.disabled = saving || reviewedText === null || selected().length === 0;
+    }
+    function clearReview() {
+      if (saving) return;
+      reviewedText = null;
+      savedIds.clear();
+      review.replaceChildren();
+      items.length = 0;
+      status.textContent = 'Tutor reply changed. Review it again before saving anything.';
+      updateSave();
+    }
     function reviewOne(title, value, index) {
       const checkbox = h('input', { type:'checkbox', 'aria-label':'Select '+title });
+      const isEvent = index[0] === 'e';
       const detail = h('details', { class:'tutor-handoff-item' },
         h('summary', { text:title }),
         h('pre',{class:'tutor-handoff-json',text:JSON.stringify(value,null,2)}),
-        h('label',{class:'tutor-handoff-select'},checkbox,' Select for later approval'));
-      items.push({ index, checkbox });
+        h('label',{class:'tutor-handoff-select'},checkbox,
+          isEvent ? ' Select to record this study event' : ' Select for later approval (not saved here)'));
+      items.push({ index,kind:index[0],value,checkbox });
+      checkbox.addEventListener('change',updateSave);
       return detail;
     }
     function inspect() {
+      if (saving) return;
       const parsed = parseReply(input.value);
+      reviewedText = null;
+      savedIds.clear();
       review.replaceChildren();
-      items.length=0;
+      items.length = 0;
+      updateSave();
       if (!parsed.ok) {
         status.textContent='Could not read reply: '+parsed.errors.join('; ');
         return;
@@ -246,20 +273,67 @@ const TutorHandoff = (() => {
         status.textContent='Plan or checkpoint revision differs. Obtain a fresh reply.';
         return;
       }
+      reviewedText = input.value;
       parsed.events.forEach((item,i)=>review.append(reviewOne('Event '+(i+1)+' · '+item.type,item,'e'+i)));
       parsed.cardProposals.forEach((item,i)=>review.append(reviewOne('Card proposal '+(i+1),item,'c'+i)));
       if(parsed.amendmentProposal)
         review.append(reviewOne('Plan amendment',parsed.amendmentProposal,'a'));
       status.textContent=items.length ?
-        'Validated '+items.length+' proposed item(s) · not yet saved or approved.' :
+        'Validated '+items.length+' proposed item(s). None recorded; select each event to save.' :
         'Valid reply with no proposals to save.';
+      updateSave();
     }
+    async function saveSelected() {
+      if (saving || reviewedText === null || selected().length === 0) return;
+      const pending = selected();
+      saving = true;
+      saveBtn.disabled = parseBtn.disabled = input.disabled = true;
+      let recorded = 0;
+      try {
+        if (typeof StudyPlan.recordEvent !== 'function')
+          throw new Error('Study-event storage is not available');
+        for (const item of pending) {
+          if (input.value !== reviewedText)
+            throw new Error('Reply changed; review it again');
+          if ((typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
+              (typeof App !== 'undefined' &&
+               (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
+            throw new Error('Study account or workspace changed; reopen the handoff');
+          const now = await StudyPlan.activeContext();
+          if (!now || now.planId !== ctx.planId ||
+              now.planRevision !== ctx.planRevision ||
+              now.checkpoint?.id !== ctx.checkpoint.id)
+            throw new Error('stale_plan_revision: reopen the handoff');
+          // Use the original proposal UUID and unchanged JSON payload on every
+          // retry. The owner-scoped RPC enforces revision CAS and idempotency.
+          await StudyPlan.recordEvent({
+            // The tutor's source field is untrusted metadata, never an actor identity.
+            // Record this as tutor-handoff evidence regardless of claimed author.
+            ...item.value,source:'tutor_handoff.v1'
+          });
+          savedIds.add(item.value.eventId);
+          item.checkbox.checked = false;
+          item.checkbox.disabled = true;
+          recorded++;
+        }
+        status.textContent = 'Recorded '+recorded+' selected study event(s). Cards and amendments remain unapproved.';
+      } catch (e) {
+        status.textContent = 'Recorded '+recorded+' event(s) so far. '+String(e?.message || 'Save failed')+
+          '. Unsaved selections are retained; retry uses the same event IDs.';
+      } finally {
+        saving = false;
+        parseBtn.disabled = input.disabled = false;
+        updateSave();
+      }
+    }
+    input.addEventListener('input',clearReview);
     parseBtn.addEventListener('click',inspect);
+    saveBtn.addEventListener('click',saveSelected);
     const body=h('div',{class:'tutor-handoff'},
       h('p',{class:'tutor-handoff-help',text:'Copy this bounded, approved-context packet to your chosen tutor. Return here with its JSON reply.'}),
       h('label',{class:'tutor-handoff-label',text:'Study context packet'}),output,copyBtn,
       h('label',{class:'tutor-handoff-label',text:'Tutor reply'}),input,parseBtn,
-      status,review,summary);
+      status,review,saveBtn,summary);
     return Sheets.open({title:'Continue with another tutor',wide:true,
       className:'tutor-handoff-sheet',body});
   }

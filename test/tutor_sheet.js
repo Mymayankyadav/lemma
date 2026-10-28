@@ -6,7 +6,7 @@ const ID='00000000-0000-4000-8000-000000000001';
 const checkpointId='compactness-open-cover-proof';
 let writes=0, dialog;
 function h(tag,attrs,...kids){
- const obj={tag,attrs:attrs||{},kids,children:[],textContent:attrs?.text || '',value:'',events:{},
+ const obj={tag,attrs:attrs||{},kids,children:[],textContent:attrs?.text || '',value:'',disabled:!!attrs?.disabled,checked:!!attrs?.checked,events:{},
    addEventListener(k,fn){this.events[k]=fn},
    append(...els){this.children.push(...els)},
    replaceChildren(...els){this.children=els}};
@@ -41,9 +41,11 @@ function walk(n,acc=[]){if(!n||typeof n!=='object')return acc;acc.push(n);
   '00000000-0000-4000-8000-000000000002',type:'feedback',payload:{text:'Need separation'}}],
   card_proposals:[],amendment_proposal:null});
  parse.events.click();
- assert.match(status.textContent,/not yet saved/);
+ assert.match(status.textContent,/None recorded/);
  assert.equal(review.children.length,1);
  assert.ok(walk(review).some(x=>x.tag==='input'&&x.attrs.type==='checkbox'));
+ const save=nodes.find(x=>x.attrs?.text==='Save selected study events');
+ assert.ok(save.disabled,'saving must be disabled before deliberate selection');
  assert.equal(writes,0,'preview and selection cannot write or approve');
  reply.value=reply.value.replace('"expected_plan_revision":3','"expected_plan_revision":2');
  parse.events.click();
