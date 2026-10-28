@@ -120,6 +120,13 @@ async function run() {
       const reg = await navigator.serviceWorker.ready;
       await reg.update();
     });
+    // Cache retirement may precede activation. Do not navigate while the old
+    // worker can still own fetch events and accidentally recreate its cache.
+    await page.waitForFunction(async () => {
+      const reg = await navigator.serviceWorker.ready;
+      return reg.active?.state === 'activated' &&
+        navigator.serviceWorker.controller === reg.active;
+    }, null, { timeout: wait });
     await page.waitForFunction(names => caches.keys().then(keys =>
       keys.includes(names.next) && !keys.includes(names.old)), { old: oldName, next: newName },
     { timeout: wait });
@@ -137,7 +144,8 @@ async function run() {
         cachedTitle: cachedText.includes('<title>') ? cachedText.split('<title>')[1].split('</title>')[0] : '(missing)',
         shownTitle: document.title };
     }, newName);
-    console.log('PWA update diagnostics', JSON.stringify(diagnostics));
+    assert(diagnostics.controlled && diagnostics.activeState === 'activated', 'replacement worker controls updated page');
+    assert(!diagnostics.keys.includes(oldName), 'outdated shell cache must not reappear after update');
     assert.match(await page.title(), /PWA upgrade/, 'new build replaces stale cached HTML');
     await assertCard(page, title);
     assert.deepEqual(await snapshot(page, front), before, 'upgrade preserves complete IndexedDB record');
