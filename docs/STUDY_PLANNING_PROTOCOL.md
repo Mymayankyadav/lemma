@@ -109,3 +109,13 @@ Use small checkpoints that can be resumed mid-proof. The plan must cover source 
 - The connector needs `get_planning_context`, `propose_plan`, `get_active_checkpoint`, `propose_plan_amendment`, `accept_plan_revision`, plus existing event/handoff/card tools.
 
 **Execution order and acceptance gates:** use only `plan.md`. API names above describe the intended product contract; their presence here does not mean those tools already exist.
+
+## PLAN-01 P1 event recording (implementation contract)
+
+The owner-scoped `record_study_event` RPC accepts `p_plan_id`, `p_checkpoint_id`, `p_expected_plan_revision`, `p_event_type`, `p_payload` (a bounded object), `p_event_id` (caller-assigned UUID), and optional `p_source` (short provenance string). On a new event it atomically checks the current **published** plan revision and membership of the checkpoint in that revision's `snapshot.checkpoints`; a stale revision fails with `stale_plan_revision`. It appends to a single owner/plan active session, creating one if needed. It returns `{eventId, sessionId, seq, planRevision}`.
+
+The immutable event payload contains `{data, checkpoint_id, plan_revision, source}`; `data` is the tutor/student-visible payload, not hidden reasoning. Retrying the **same** event ID with the same input returns the original receipt, including after a plan revision advances. Reusing an ID with different contents fails with `idempotency_key_reused`. Distinct concurrent event IDs share the plan's active session; previously accepted events are never overwritten. Clients retain the same ID across ambiguous network failures and must not display a write as saved until receipt verification.
+
+Authenticated owners retain `SELECT` and `INSERT` on `learning_events` for compatibility, but `UPDATE` and `DELETE` are revoked with select/insert-only RLS policies. Direct owner inserts are **not** revision-checked, so the normal app and handoff integrations use the RPC and do not mistake a direct insert for accepted checkpoint mastery. No feature, including a tutor handoff, may approve a plan or amendment through this RPC. Local-stack tests exercise two independent users, concurrent retry, stale revision, foreign access and denied mutation.
+
+Until P2–P5 gates pass, `StudyPlan.ready` remains false; `proposeAmendment` deliberately fails rather than publishing a tutor proposal. Offline event queuing and student-approved durable amendment drafts are separate later slices, not functionality implied by P1.
