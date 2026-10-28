@@ -252,14 +252,14 @@ const App = (() => {
     window.addEventListener('online', drawSync);
     App.loading = false;
     Model.onChange(() => refresh());
-    // Native-only, device-local reminder consent is read after workspace boot.
-    // The bridge cancels stale alarms while opt-out remains the default.
-    ReminderSettings.init();
     if (data.mode === 'cloud') {
       Store.localLeftovers().then((list) => { if (list.length) { App.leftovers = list; refresh(); } });
     }
     const hash = (location.hash || '').replace('#', '');
     go(VIEWS[hash] && hash !== 'review' ? hash : 'home');
+    // Native-only, device-local reminder consent is read after workspace boot.
+    // The bridge cancels stale alarms while opt-out remains the default.
+    ReminderSettings.init();
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { Model.bump(); } });
     setInterval(() => { if (view === 'home' && !document.hidden && !Sheets.count) render(); }, 60000);
     window.addEventListener('beforeunload', (e) => { if (Store.status().pending || Store.status().failed) { e.preventDefault(); e.returnValue = ''; } });
