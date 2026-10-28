@@ -12,3 +12,11 @@ Next action: PLAN-01 P1 — add `supabase/migrations/<ts>_plan01_append_only_eve
 | Production | Never apply migrations yourself; after merge, add the file to SHIP-A2 by noting it here and A applies it. |
 
 **Requests from other lanes:** none yet. **Requests to other lanes:** SHIP-B1 (Study tab wiring) is already open on B via `docs/SHIP_PLAN.md`.
+
+## Active claim — P1
+
+- Run: `chat-20261028-lane-d-p1-1508` · heartbeat: 2026-10-28 09:38 UTC.
+- Branch: `lane-d/plan-01-p1-events-client`; base `main@1653e401`; tested SHA: none yet.
+- Scope: `supabase/migrations/*_plan01_*.sql`, `supabase/tests/plan01_*.sql`, `src/app/study_plan.js`, `test/study_plan.js`, `test/stack_study_events.js`, this handoff.
+- Next action: inspect migration/schema and cloud account patterns; implement append-only rules and StudyPlan's guarded, revision-safe client; run unit/build/lane and applicable stack gates. Keep `ready:false`; no student auto-approval or production deployment.
+- Blockers: none known. Migration application delegated to lane A after merge.
