@@ -333,10 +333,40 @@ const StudyView = (() => {
             saving=false;button.disabled=false;input.readOnly=false;
           }
         });
+        let continueButton=null;
+        if (entry.type==='attempt' &&
+            typeof context.lastAttempt?.payload?.text==='string' &&
+            context.lastAttempt.payload.text.length) {
+          continueButton=h('button',{type:'button',class:'btn',
+            text:'Continue saved proof'});
+          continueButton.addEventListener('click',() => {
+            if (!valid() || saving) return;
+            if (pending) {
+              feedback.textContent='An earlier save is unconfirmed. '+
+                'Retry that exact text before continuing a different proof.';
+              return;
+            }
+            if (input.value.trim()) {
+              feedback.textContent='Unsubmitted text is already here. '+
+                'Clear it yourself before restoring the saved proof.';
+              return;
+            }
+            const saved=context.lastAttempt.payload.text;
+            if (saved.length > 4000) {
+              feedback.textContent='Saved proof exceeds the editor limit. '+
+                'Review it above before writing a new attempt.';
+              return;
+            }
+            input.value=saved;
+            if (typeof input.focus==='function') input.focus();
+            feedback.textContent='Saved proof restored for editing. '+
+              'No new event has been recorded.';
+          });
+        }
         forms.append(h('section', {class:'study-form'},
           h('h3', {text:entry.title}),
           h('label', {class:'study-field-label',text:entry.label}),
-          input,button,feedback));
+          input,continueButton,button,feedback));
       }
       fill(content,detail,
         h('p', {class:'study-note',text:
