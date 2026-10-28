@@ -43,8 +43,8 @@ Preserve the previous successful Pages deploy SHA and prior tested `main` SHA. R
 | Local Supabase + isolation | — | Not yet recorded |
 | Pages deployment | — | Not yet recorded |
 | Live Pages smoke | — | Not yet recorded |
-| PWA offline + update | — | R1 PR #90 merged; recheck exact ship SHA |
-| Backup/restore | — | R2 PR #96 in progress; full workspace coverage pending |
+| PWA offline + update | [R1 PR #90](https://github.com/Mymayankyadav/lemma/pull/90) | R1 passed; recheck exact ship SHA |
+| Backup/restore | [R2 regression 40674426637](https://github.com/Mymayankyadav/lemma/actions/runs/40674426637) | Legacy card/profile round trip PASS, [PR #96](https://github.com/Mymayankyadav/lemma/pull/96) merged; account knowledge/plans/events still unverified |
 | Production migration parity | — | A must verify |
 | Ready state for Study / Tutor | — | D/E must verify |
 | Release tag | — | **Not created** |
