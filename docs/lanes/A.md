@@ -385,3 +385,11 @@ Next action: **SHIP-A1** land bounded parity extension and verify exact-head CI;
 - **State:** SHIP-A2 PREFLIGHT COMPLETE, production deployment BLOCKED on verified exact-version CLI route, *not* applied or production-tested. No Carrel or production data mutations in this run. If a safe version-preserving runner becomes available, repeat target/history/traffic checks then deploy without owner prompt as authorized by plan §3.
 
 Next action: **SHIP-A1** verify/merge PR #82; **SHIP-A2** deploy only through a proven exact-version route after revalidating target/locks/history and recovery plan.
+
+
+## RELEASE-01 R2c — A-owned local recovery snapshot claim (28 October 2026)
+
+- **Run:** `chat-20261028-a-r2c-local-snapshot` · claim opened 2026-10-28 UTC · base `main@97f08de` · branch `lane-a/release-r2c-local-recovery-snapshot`. No open implementation PR was found in the other lanes; Android remains paused.
+- **Bounded scope:** A-owned `src/app/sync_browser.js`, `src/app/cloud_bridge.js`, `test/account_local_recovery.js`, this handoff and append-only `package.json` test registration. Provide an explicitly requested, read-only, single IndexedDB transaction account-cache companion snapshot retaining queued/conflicted outbox operations, immutable review/retraction rows, notes and all owner-local metadata (including unaccepted knowledge drafts, conflict archives and receipts). Enforce active account/handle and size bounds; no implicit export, restore, backend SQL, credentials, server requests, or production writes.
+- **Why:** F's 18-table R2b archive contract deliberately excludes unsynced IndexedDB drafts and outbox; current account backup/recovery remains unsafe without a preserved local companion. This is **not** a server-consistent 18-table archive or a completed restore solution. Cross-lane [issue #107](https://github.com/Mymayankyadav/lemma/issues/107).
+- **Next:** add implementation and synthetic fake-IndexedDB + account-switch tests; run syntax, account/storage regression, build and CI exact-head gates; merge only with green required checks and no active competing Lane A claim. R2 remains BLOCKED on backend snapshot + safe restore and actual authenticated security acceptance.
