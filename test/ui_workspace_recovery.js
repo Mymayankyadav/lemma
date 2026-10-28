@@ -68,6 +68,8 @@ async function main(){
       await root.getByRole('status').filter({hasText:'Backup checked'}).waitFor();
       assert.equal(await root.getByRole('button',{name:'Restore account backup',exact:true}).isDisabled(),true,'preflight never authorizes restore');
       await root.locator('#account-recovery-consent').check();
+      assert.equal(await root.locator('button:visible').evaluateAll(items=>items.every(b=>b.getBoundingClientRect().height>=44)),true,'recovery buttons have 44px targets');
+      await page.evaluate(()=>{const r=document.querySelector('#set-account-recovery').getBoundingClientRect();window.scrollBy(0,r.top-64);});
       await root.screenshot({path:path.join(OUT,`account-recovery-${size}-${scheme}.png`)});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'no horizontal page overflow');
       await root.getByRole('button',{name:'Restore account backup',exact:true}).click();

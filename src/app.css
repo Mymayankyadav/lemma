@@ -896,3 +896,8 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
   .accepted-reader-context, .accepted-reader-source { padding:12px; }
   .accepted-reader-excerpt { padding:10px; }
 }
+
+/* Full account recovery: comfortable targets without changing other Settings. */
+#set-account-recovery .btn,
+#set-account-recovery input[type="file"] { min-height: 44px; }
+#set-account-recovery .conflict-confirm { min-height: 44px; align-items: center; }

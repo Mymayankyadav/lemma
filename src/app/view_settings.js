@@ -376,7 +376,7 @@ const SettingsView = (() => {
       resume.hidden=false;
       await LemmaCloudBridge.restoreRecoveryPair(pair,{requestId,studentConfirmed:true,dryRun:true});check();
       validated=true;
-      status.textContent='Backup checked. Account sync is paused. Confirm below to restore, or resume account sync to leave recovery.';
+      status.textContent='Backup checked. Account sync is paused. Choose Restore account backup to continue, or Resume account sync to leave recovery.';
     });
     consent.onchange=update;
     restore.onclick=()=>run(async()=>{
