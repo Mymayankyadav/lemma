@@ -78,7 +78,7 @@
     "lanes.json", "AGENTS.md", "PROMPT.md", "README.md", ".github/workflows/test.yml",
     ".github/workflows/pages.yml", ".github/workflows/import-source.yml", "test/plan_protocol.js",
     "test/lane_guard.js", "test/check_syntax.js", ".github/workflows/android.yml",
-    ".github/workflows/sync-local.yml", "test/run_prefix.js", "docs/SHIP_PLAN.md"
+    ".github/workflows/sync-local.yml", ".github/workflows/deploy-knowledge.yml", "test/run_prefix.js", "docs/SHIP_PLAN.md"
   ],
   "frozen": [
     "src/fsrs.js", "test/compare_tsfsrs.mts", "test/optimizer_synthetic.js"
