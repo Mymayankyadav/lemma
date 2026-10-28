@@ -8,6 +8,136 @@ const AGENT_HELP = [
   'Cards:',
 ].join('\n');
 
+/* Device-local Android reminder preference. Never part of the synced profile:
+   granting Android permission does not constitute Lemma opt-in. */
+const ReminderSettings = (() => {
+  const KEY = 'lemma-due-reminder-v1';
+  const DEFAULT_TIME = '09:00';
+  const validTime = (value) => typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  let initialized = false;
+  let queue = Promise.resolve();
+  let requested = false;
+
+  function read() {
+    const fallback = { optedIn: false, localTime: DEFAULT_TIME };
+    if (!NativeShell.enabled) return fallback;
+    try {
+      const raw = JSON.parse(window.localStorage.getItem(KEY) || 'null');
+      if (!raw || raw.v !== 1) return fallback;
+      const localTime = validTime(raw.localTime) ? raw.localTime : DEFAULT_TIME;
+      return { optedIn: raw.optedIn === true && validTime(raw.localTime), localTime };
+    } catch { return fallback; }
+  }
+
+  function persist(next) {
+    if (!NativeShell.enabled || !validTime(next.localTime)) return false;
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify({
+        v: 1, optedIn: next.optedIn === true, localTime: next.localTime
+      }));
+      return true;
+    } catch { return false; }
+  }
+
+  function earliestDueAt(now = Date.now()) {
+    if (!NativeShell.enabled || App.loading || App.workspaceBlocked) return null;
+    let due = Infinity;
+    for (const { c } of Model.cardRefs()) {
+      if (!c || c.st === 0 || c.susp) continue;
+      // A temporarily buried card becomes eligible at its unbury time;
+      // excluding it forever would miss tomorrow's due reminder.
+      const at = Model.isBuried(c, now) ? Math.max(c.due, c.bury) : c.due;
+      if (Number.isSafeInteger(at) && at > 0) due = Math.min(due, at);
+    }
+    return Number.isFinite(due) ? due : null;
+  }
+
+  // Serialize OS writes and re-read preferences/workspace at execution time.
+  // An in-flight enable can never reschedule after a later opt-out.
+  function reconcile() {
+    if (!NativeShell.enabled) return Promise.resolve({ scheduled: false });
+    queue = queue.catch(() => {}).then(() => {
+      const pref = read();
+      const now = Date.now();
+      const due = earliestDueAt(now);
+      return NativeShell.reconcileDueReminder({
+        optedIn: pref.optedIn && due !== null,
+        localTime: pref.localTime,
+        earliestDueAt: due,
+        now
+      });
+    });
+    return queue;
+  }
+
+  async function enable(localTime) {
+    if (!NativeShell.enabled || !validTime(localTime)) return { ok: false, reason: 'unavailable' };
+    const existing = await NativeShell.checkDueReminderPermission();
+    if (existing === 'unavailable') return { ok: false, reason: 'unavailable' };
+    // This method is called ONLY by the Settings button click handler.
+    const permission = existing === 'prompt'
+      ? await NativeShell.requestDueReminderPermission() : existing;
+    if (permission !== 'granted') return { ok: false, reason: 'denied' };
+    if (!persist({ optedIn: true, localTime })) return { ok: false, reason: 'storage' };
+    try {
+      const result = await reconcile();
+      return { ok: true, result };
+    } catch {
+      return { ok: true, error: 'Reminder scheduling unavailable; check again in Settings.' };
+    }
+  }
+
+  async function disable() {
+    const pref = read();
+    const saved = persist({ optedIn: false, localTime: pref.localTime });
+    if (!saved) {
+      // Cancel any OS alarm even when storage is unavailable. Never claim the
+      // preference will remain off after a restart if it could not be saved.
+      try { await NativeShell.reconcileDueReminder({ optedIn: false }); } catch {}
+      return false;
+    }
+    await reconcile();
+    return true;
+  }
+
+  function saveTime(localTime) {
+    if (!validTime(localTime)) return false;
+    return persist({ ...read(), localTime });
+  }
+
+  function requestReconcile() {
+    if (!NativeShell.enabled || requested) return;
+    requested = true;
+    Promise.resolve().then(() => {
+      requested = false;
+      reconcile().catch(() => { /* UI reports errors on explicit actions */ });
+    });
+  }
+
+  function onTap(route) {
+    if (route !== 'review' || !read().optedIn || App.loading ||
+        App.workspaceBlocked || !App.workspaceIdle()) return;
+    const due = Model.counts(null);
+    if (due.learn + due.review > 0) App.startSession(new Session({}));
+    else App.go('home');
+  }
+
+  function init() {
+    if (!NativeShell.enabled || initialized) return;
+    initialized = true;
+    NativeShell.onDueReminderTap(onTap);
+    Model.onChange(requestReconcile);
+    window.addEventListener('focus', requestReconcile);
+    window.addEventListener('online', requestReconcile);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) requestReconcile();
+    });
+    requestReconcile(); // Also cancel any stale alarm when default-off.
+  }
+
+  return { read, enable, disable, saveTime, reconcile, earliestDueAt, init };
+})();
+
 const SettingsView = (() => {
   let optResult = null;
   let optResultGeneration = -1;
@@ -121,6 +251,88 @@ const SettingsView = (() => {
       numField('s-leech', 'Leech threshold (lapses)', 'leechThreshold', { min: 0, max: 99 }),
       selectField('s-leechact', 'When a card becomes a leech', 'leechAction', [['tag', 'Tag it “leech”'], ['suspend', 'Tag and suspend it']]),
       toggleField('s-recall', 'Show recall ring', 'showRecall', 'Predicted recall under review cards')));
+
+    // Native reminders are opt-in on this installation, not a synced profile
+    // setting. Merely having due cards or OS permission never enables them.
+    if (NativeShell.enabled) {
+      const pref = ReminderSettings.read();
+      const reminderTime = h('input', { id: 's-reminder-time', type: 'time',
+        class: 'input reminder-time', value: pref.localTime });
+      const reminderButton = h('button', { id: 's-reminder-toggle',
+        type: 'button', class: 'btn btn-sm', text: pref.optedIn ? 'Turn off reminders' : 'Enable reminders' });
+      const reminderStatus = h('p', { id: 's-reminder-status', class: 'muted small',
+        role: 'status', 'aria-live': 'polite', text: 'Checking Android reminder permission…' });
+      async function showReminderStatus(notice = '') {
+        const state = ReminderSettings.read();
+        reminderButton.textContent = state.optedIn ? 'Turn off reminders' : 'Enable reminders';
+        reminderTime.value = state.localTime;
+        let permission = 'unavailable';
+        try { permission = await NativeShell.checkDueReminderPermission(); }
+        catch { permission = 'unavailable'; }
+        if (!reminderStatus.isConnected) return;
+        const permissionText = permission === 'granted' ? 'Android permission granted.' :
+          permission === 'denied' ? 'Android permission denied. Change it in Android app settings.' :
+          permission === 'prompt' ? 'Android permission not yet granted.' :
+          'Native notification permission unavailable.';
+        const due = ReminderSettings.earliestDueAt();
+        const stateText = !state.optedIn ? 'Reminders off.' :
+          permission !== 'granted' ? 'Reminders enabled in Lemma, but no alert can be delivered.' :
+          due === null ? 'Reminders enabled; no studied cards currently have a due time.' :
+          'Reminders enabled for due reviews at the selected local time.';
+        reminderStatus.textContent = (notice ? notice + ' ' : '') + stateText + ' ' + permissionText;
+      }
+      reminderButton.addEventListener('click', async () => {
+        reminderButton.disabled = true;
+        let notice = '';
+        try {
+          if (ReminderSettings.read().optedIn) {
+            const saved = await ReminderSettings.disable();
+            if (!saved) notice = 'Could not save opt-out. Android notification was cancelled; check storage settings.';
+          } else {
+            const result = await ReminderSettings.enable(reminderTime.value);
+            if (!result.ok) notice = result.reason === 'denied'
+              ? 'Permission was not granted; reminders remain off.' :
+              result.reason === 'storage' ? 'Could not save consent; reminders remain off.' :
+              'Reminders unavailable on this Android installation.';
+            else if (result.error) notice = result.error;
+          }
+        } catch { notice = 'Could not update Android reminders. Please try again.'; }
+        finally {
+          reminderButton.disabled = false;
+          await showReminderStatus(notice);
+        }
+      });
+      reminderTime.addEventListener('change', async () => {
+        const saved = ReminderSettings.saveTime(reminderTime.value);
+        if (!saved) {
+          await showReminderStatus('Enter a valid time; the previous choice was kept.');
+          return;
+        }
+        let notice = '';
+        try { await ReminderSettings.reconcile(); }
+        catch { notice = 'Could not update the scheduled reminder.'; }
+        await showReminderStatus(notice);
+      });
+      page.append(section('set-reminders', 'Android review reminders',
+        'Optional and quiet. Only this Android installation is affected; no cards or account details appear in notifications.',
+        h('div', { class: 'setting reminder-control' },
+          h('label', { for: 's-reminder-time', class: 'setting-label' }, 'Remind me at',
+            h('span', { class: 'setting-help', text: 'Local device time, when a studied card is due' })),
+          reminderTime),
+        h('div', { class: 'btn-row reminder-control' }, reminderButton),
+        reminderStatus));
+      // Permission can be revoked in Android Settings while Lemma is paused.
+      // Refresh on return without requesting it again or retaining dead views.
+      const onReminderFocus = () => {
+        if (!page.isConnected) {
+          window.removeEventListener('focus', onReminderFocus);
+          return;
+        }
+        showReminderStatus();
+      };
+      window.addEventListener('focus', onReminderFocus);
+      showReminderStatus();
+    }
 
     // math
     const pre = h('textarea', { id: 's-preamble', class: 'input code-input', rows: 8, spellcheck: 'false' });

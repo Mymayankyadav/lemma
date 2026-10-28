@@ -839,3 +839,8 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
 .disclosure > summary::-webkit-details-marker { display: none; }
 .disclosure > summary::before { content: "▸"; display: inline-block; margin-right: 8px; color: var(--ink-3); }
 .disclosure[open] > summary::before { content: "▾"; }
+
+/* ANDROID-02 N3-B1: touch-sized native reminder consent/time controls. */
+.settings .reminder-control .btn,
+.settings .reminder-control .reminder-time { min-height: 44px; }
+.settings .reminder-control .reminder-time { width: min(100%, 11rem); }

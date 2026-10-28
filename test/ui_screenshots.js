@@ -33,7 +33,7 @@ const docs = Object.fromEntries(seed.map(n => ['data/users/u_test/profile/notes/
 const problems = [];
 let shots = 0;
 
-async function open(browser, size, scheme) {
+async function open(browser, size, scheme, native = false) {
   const ctx = await browser.newContext({ serviceWorkers: 'block', viewport: SIZES[size],
     colorScheme: scheme, timezoneId: 'Asia/Kolkata', reducedMotion: 'reduce', hasTouch: size === 'mobile' });
   await ctx.route('**/*', async route => {
@@ -52,6 +52,48 @@ async function open(browser, size, scheme) {
       problems.push(`[${label}] console.${m.type()}: ${m.text()}`);
   });
   page.on('pageerror', e => problems.push(`[${label}] pageerror: ${e.message}`));
+  if (native) await page.addInitScript(() => {
+    // Test-only Capacitor shell; no physical Android permission or alarm.
+    let permission = 'prompt';
+    let requestResult = 'denied';
+    let requests = 0;
+    let pending = [];
+    const notifications = {
+      async checkPermissions() { return { display: permission }; },
+      async requestPermissions() {
+        requests++;
+        permission = requestResult;
+        return { display: permission };
+      },
+      async getPending() { return { notifications: pending }; },
+      async cancel({ notifications: items }) {
+        pending = pending.filter(item => !items.some(other => other.id === item.id));
+      },
+      async schedule({ notifications: items }) { pending.push(...items); },
+      async createChannel() {},
+      async addListener() { return { remove() {} }; },
+    };
+    const app = {
+      async addListener() { return { remove() {} }; },
+      async getLaunchUrl() { return {}; },
+      async exitApp() {},
+    };
+    window.__nativeReminderMock = {
+      setRequestResult(value) { requestResult = value; },
+      setPermission(value) { permission = value; },
+      get requests() { return requests; },
+      get pending() { return pending; },
+    };
+    window.Capacitor = {
+      isNativePlatform() { return true; },
+      isPluginAvailable(name) { return name === 'App' || name === 'LocalNotifications'; },
+      registerPlugin(name) {
+        if (name === 'App') return app;
+        if (name === 'LocalNotifications') return notifications;
+        throw new Error('Unexpected plugin');
+      },
+    };
+  });
   await page.addInitScript(({ d, mockSrc }) => { window.__SEED__ = d; (0, eval)(mockSrc); }, { d: docs, mockSrc: MOCK });
   await page.goto('https://lemma.test/');
   await page.waitForSelector('.today', { timeout: 15000 });
@@ -421,6 +463,77 @@ async function shot(page, name, size, scheme) {
       }
     } catch (e) {
       problems.push(`[${size}-${scheme}] could not capture: ${e.stack || e.message}`);
+    }
+    await ctx.close();
+  }
+  // Native-only Settings acceptance: default-off, explicit permission gesture,
+  // denial, persistence, opt-out and no horizontal clipping in both schemes.
+  for (const size of Object.keys(SIZES)) for (const scheme of SCHEMES) {
+    const { ctx, page } = await open(browser, size, scheme, true);
+    try {
+      await goTo(page, 'settings');
+      await page.waitForSelector('#set-reminders');
+      const toggle = page.locator('#s-reminder-toggle');
+      const time = page.locator('#s-reminder-time');
+      const status = page.locator('#s-reminder-status');
+      if (await toggle.textContent() !== 'Enable reminders' ||
+          await time.inputValue() !== '09:00')
+        throw new Error('Native reminders must default to off at 09:00');
+      const geometry = await page.locator('#set-reminders').evaluate(el => {
+        const controls = [...el.querySelectorAll('button,input')];
+        return { heights: controls.map(c => c.getBoundingClientRect().height),
+          pageWidth: document.documentElement.scrollWidth, viewport: innerWidth };
+      });
+      if (geometry.heights.some(h => h < 44) || geometry.pageWidth > geometry.viewport + 1)
+        throw new Error('Reminder controls are clipped or smaller than 44px: ' + JSON.stringify(geometry));
+      await shot(page, 'reminders-off', size, scheme);
+      const initialRequests = await page.evaluate(() => window.__nativeReminderMock.requests);
+      if (initialRequests !== 0) throw new Error('Native permission was requested without a gesture');
+      await toggle.click();
+      await page.waitForFunction(() => document.querySelector('#s-reminder-status')?.textContent.includes('Permission was not granted'));
+      if (await page.evaluate(() => window.__nativeReminderMock.requests) !== 1 ||
+          await toggle.textContent() !== 'Enable reminders')
+        throw new Error('Denied permission must not persist consent');
+      await page.evaluate(() => {
+        window.__nativeReminderMock.setPermission('prompt'); // OS setting changed after denial
+        window.__nativeReminderMock.setRequestResult('granted');
+      });
+      await toggle.click();
+      await page.waitForFunction(() => document.querySelector('#s-reminder-toggle')?.textContent === 'Turn off reminders');
+      const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('lemma-due-reminder-v1')));
+      if (!persisted.optedIn || persisted.localTime !== '09:00' ||
+          await page.evaluate(() => window.__nativeReminderMock.requests) !== 2)
+        throw new Error('Explicit granted consent was not persisted');
+      await shot(page, 'reminders-enabled', size, scheme);
+      // Revocation is observed on foreground without another permission prompt.
+      await page.evaluate(() => {
+        window.__nativeReminderMock.setPermission('denied');
+        window.dispatchEvent(new Event('focus'));
+      });
+      await page.waitForFunction(() => document.querySelector('#s-reminder-status')?.textContent.includes('Android permission denied'));
+      if (await page.evaluate(() => window.__nativeReminderMock.requests) !== 2)
+        throw new Error('Permission refresh prompted without a user gesture');
+      await shot(page, 'reminders-revoked', size, scheme);
+      await time.fill('10:30');
+      await time.dispatchEvent('change');
+      await page.waitForFunction(() => JSON.parse(localStorage.getItem('lemma-due-reminder-v1'))?.localTime === '10:30');
+      await toggle.click();
+      await page.waitForFunction(() => document.querySelector('#s-reminder-toggle')?.textContent === 'Enable reminders');
+      const disabled = await page.evaluate(() => ({
+        pref: JSON.parse(localStorage.getItem('lemma-due-reminder-v1')),
+        pending: window.__nativeReminderMock.pending,
+      }));
+      if (disabled.pref.optedIn || disabled.pref.localTime !== '10:30' ||
+          disabled.pending.some(n => n.id === 24001))
+        throw new Error('Opt-out did not persist and cancel the Lemma alarm');
+      await page.reload();
+      await page.waitForSelector('.today');
+      await goTo(page, 'settings');
+      if (await page.locator('#s-reminder-toggle').textContent() !== 'Enable reminders' ||
+          await page.locator('#s-reminder-time').inputValue() !== '10:30')
+        throw new Error('Opt-out/time preference did not survive a native restart');
+    } catch (e) {
+      problems.push('[native-reminders-' + size + '-' + scheme + '] ' + (e.stack || e.message));
     }
     await ctx.close();
   }

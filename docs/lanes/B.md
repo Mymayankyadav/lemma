@@ -1,5 +1,15 @@
 # Lane B — UI
 
+## ANDROID-02 N3-B1 — explicit native reminder consent/time (active claim)
+
+- **Claim:** `hourly-20261028T0531Z-b-n3b1`; heartbeat UTC 2026-10-28T05:31:18.907Z; base `main@20f624a`, branch `lane-b/android-02-n3-b1-consent-controls`. No open PRs at claim. Cross-lane request `ANDROID-02-N3-B1` from C is now unblocked by merged N3c PR #67.
+- **Scope:** B-owned Settings presentation, default-off device-local opt-in/time and permission status; explicit gesture-only permission request, opt-out cancellation, no implicit enrollment; then guarded reminder scheduling and validated tap navigation using the C-owned native bridge. No A model/store, C native, shared package, Supabase or Carrel edits.
+- **Intended files:** `src/app/view_settings.js`, `src/app/main.js`, `test/ui_screenshots.js`, `docs/lanes/B.md` (B-owned only). If due-state wiring needs A support, record a targeted cross-lane request; do not modify A files.
+- **Gate:** web remains inert; native denied/revoked/prompt/granted flows, explicit consent and opt-out; time validation, due/identity/workspace change, accessible 390px/1280px light/dark screenshots, exact-head regression, Android APK and B lane guard; post-merge main checks. Physical D5 remains NOT RUN.
+- **Implementation checkpoint (2026-10-28T05:34:30.592Z):** B-owned `ReminderSettings` in `view_settings.js` persists device-only, versioned opt-in/time (default OFF/09:00), validates time, prompts Android permission only from the explicit Enable button, exposes denial/revocation/status, cancels on opt-out and no due cards, serializes native reconcile, and routes validated taps to Review only after boot when the workspace is idle and reviews are due. `main.js` starts the listener after initial route and rechecks on workspace lock; `app.css` provides 44px controls. `test/ui_reminder_settings.js` covers persistence, denial, opt-out, due changes, tap and web inertness; `test/ui_screenshots.js` captures mocked-native 390px/1280px light/dark off/on states and permission denial. Only B-owned code and an additive `test:ui` script edit; no A/C changes, no implicit student consent, no production deployment.
+- **Verification:** source syntax and package JSON parsed in tool runtime; isolated native coordinator smoke passed. Exact-head regression/screenshot, Android APK, local Supabase CI and screenshot visual inspection **PENDING**; local clone unavailable (GitHub DNS blocked). Browser-native mock is NOT a physical phone test. `ANDROID-02-N3-B1` is implementation-complete only if CI/visual gates pass; Android D5 physical gate remains NOT RUN.
+- **Next:** inspect exact-head CI and new `reminders-*` screenshots, correct any failure without relaxing tests; merge with expected SHA only on green current main, then verify main. Request C physical D5 after APK is prepared. Owner action: none yet.
+
 Next action: **UI-01 DONE** after final authenticated RPC failure/recovery PR #49 merged and main CI passed; B supports KNOWLEDGE-01 K3 UI once A publishes versioned context/source APIs, then leads PLAN-01. No B implementation is currently dependency-ready.
 
 ## 28 October 2026 — UI-01 final acceptance COMPLETED
