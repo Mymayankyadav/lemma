@@ -100,12 +100,26 @@ module.exports = async function checkBrowserZoom({ out, html, mock, libs, docs }
       Array.from({ length: 70 }, (_, i) => 'x_{' + i + '}').join('+') + mathFence);
     await page.locator('.ed-mtabs [role="tab"]').nth(1).click();
     await page.locator('.pv-tabs [role="tab"]').nth(1).click();
-    await page.locator('.ed-preview .katex-display').first().waitFor();
-    const math = await page.locator('.ed-preview .katex-display').first().evaluate(el => ({
-      overflow: getComputedStyle(el).overflowX,
-      docWidth: document.documentElement.scrollWidth, viewport: innerWidth,
-    }));
-    if (math.overflow !== 'auto' || math.docWidth > math.viewport + 1)
+    // The editor can rerender after the preview first appears. A locator
+    // handle may become disconnected between waitFor() and evaluate(), for
+    // which Chromium returns an empty computed style. Wait for rendered KaTeX,
+    // then read a *fresh* connected element in one synchronous page task.
+    await page.waitForFunction(() => {
+      const display = document.querySelector('.ed-preview .katex-display');
+      return !!(display && display.isConnected && display.querySelector('.katex-html'));
+    }, null, { timeout: 15000 });
+    const math = await page.evaluate(() => {
+      const display = document.querySelector('.ed-preview .katex-display');
+      const connected = !!display?.isConnected;
+      return {
+        connected,
+        rendered: !!display?.querySelector('.katex-html'),
+        overflow: connected ? getComputedStyle(display).overflowX : null,
+        docWidth: document.documentElement.scrollWidth, viewport: innerWidth,
+      };
+    });
+    if (!math.connected || !math.rendered || math.overflow !== 'auto' ||
+        math.docWidth > math.viewport + 1)
       throw new Error('Native zoom mathematical preview overflow: ' + JSON.stringify(math));
     if (errors.length) throw new Error('Browser page errors: ' + errors.join(' | '));
     console.log('ok: genuine Chromium 200% tab zoom (' +
