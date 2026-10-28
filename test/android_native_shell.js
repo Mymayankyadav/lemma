@@ -152,7 +152,7 @@ assert.equal(reminders.planDueReminder({ ...desired, now: afterTime }).at,
 const tomorrowDue = new Date(2026, 9, 29, 9, 0, 0).getTime();
 assert.equal(reminders.planDueReminder({ ...desired, earliestDueAt: tomorrowDue }).at,
   new Date(2026, 9, 30, 8, 30, 0).getTime(), 'never notify before cards are due');
-assert.equal(reminders.actions.some(x => /notify\\.(check|request|schedule|cancel|channel)/.test(x)), false,
+assert.equal(reminders.actions.some(x => /notify\.(check|request|schedule|cancel|channel)/.test(x)), false,
   'planner never requests permission or schedules a notification');
 
 // Deep link registration is C-owned; only a later explicit A auth subscriber
