@@ -153,6 +153,63 @@ vm.runInContext(source+'\nglobalThis.sync=LemmaSync',ctx);
     await new Promise(resolve=>setTimeout(resolve,50));
   assert.equal(model.has(deferredPending.id),false,'draining writes must apply cached tombstones');
   assert.equal(staged.length,1,'deferred remote invalidation cannot enqueue new writes');
+
+  // A real failed write must stay visibly failed while an automatic retry is
+  // in flight. Only confirmed outbox flush + pull may clear the warning.
+  const bHandle=active[1], originalFlush=bHandle.outbox.flush;
+  const observedPhases=[];
+  const unsubscribe=ctx.sync.onChange(state=>observedPhases.push(state.phase));
+  bHandle.outbox.flush=async()=>{throw new Error('synthetic blocked HTTP write');};
+  await assert.rejects(ctx.sync.refresh(),/synthetic blocked HTTP write/);
+  assert.equal(ctx.sync.status.phase,'error','failed RPC must surface an error');
+  const afterFailure=observedPhases.length;
+  let finishRetry;
+  bHandle.outbox.flush=()=>new Promise(resolve=>{finishRetry=resolve;});
+  const retry=ctx.sync.refresh();
+  assert.equal(ctx.sync.status.phase,'error',
+    'scheduled retries must not clear the error before server acknowledgment');
+  assert.equal(typeof finishRetry,'function');
+  finishRetry();
+  await retry;
+  assert.equal(ctx.sync.status.phase,'ready','successful retry must clear the error');
+  assert.equal(ctx.sync.status.error,'');
+  assert.deepEqual(observedPhases.slice(afterFailure),['ready'],
+    'no transient Queued/refreshing state may mask an unresolved RPC failure');
+  // No queued write: a periodic poll must keep the confirmed cloud status,
+  // even if the HTTP request itself is delayed.
+  let markIdleStarted, finishIdle;
+  const idleStarted=new Promise(resolve=>{markIdleStarted=resolve;});
+  bHandle.outbox.flush=()=>{
+    markIdleStarted();
+    return new Promise(resolve=>{finishIdle=resolve;});
+  };
+  const idlePoll=ctx.sync.refresh();
+  await idleStarted;
+  assert.equal(ctx.sync.status.phase,'ready',
+    'a clean background poll must not temporarily show checking cloud');
+  finishIdle();
+  await idlePoll;
+  assert.equal(ctx.sync.status.phase,'ready');
+
+  // But an actual durable outbox item still needs the checking-cloud cue.
+  const previousPending=bHandle.outbox.pending;
+  bHandle.outbox.pending=async()=>[{kind:'note',state:'pending'}];
+  let markDirtyStarted, finishDirty;
+  const dirtyStarted=new Promise(resolve=>{markDirtyStarted=resolve;});
+  bHandle.outbox.flush=()=>{
+    markDirtyStarted();
+    return new Promise(resolve=>{finishDirty=resolve;});
+  };
+  const dirtyPoll=ctx.sync.refresh();
+  await dirtyStarted;
+  assert.equal(ctx.sync.status.phase,'refreshing',
+    'a new queued edit must still display a pending cloud check');
+  finishDirty();
+  await dirtyPoll;
+  bHandle.outbox.pending=previousPending;
+  bHandle.outbox.flush=originalFlush;
+  unsubscribe();
+
   // A pull that started for account B must never project its late result
   // after B signs out, even if its IndexedDB read completes afterward.
   const late = {id:'late-b',data:{id:'late-b',front:'stale account B card',back:'',log:[],cards:{}},

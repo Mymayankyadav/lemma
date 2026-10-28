@@ -1,6 +1,14 @@
 # Lane A — sync, auth and backend
 
-Next action: **KNOWLEDGE-01 K1 READY** after UI-01 passed (merged PR #49 and post-merge main CI). Inspect existing private context/source/section schema and RPC; define bounded revisioned owner-scoped knowledge contract without migrating production or starting binary uploads. New lane A branch/claim required.
+Next action: **KNOWLEDGE-01 K2 READY** after K1 inspection-only contract in [PR #53](https://github.com/Mymayankyadav/lemma/pull/53): implement additive private accepted-context revision/CAS and bounded source-reference operations with real two-identity local-stack tests; keep user approval explicit and production untouched until gated.
+
+
+## 28 October 2026 — KNOWLEDGE-01 K1 inspection and contract (PR #53)
+
+- **Status:** K1 schema/RPC **inspection and proposed contract completed** in [docs/DATA_MODEL.md](../DATA_MODEL.md#knowledge-01-k1-schema-preflight-claim); KNOWLEDGE-01 itself remains NEXT and **not DONE**. The branch claim `hourly-20261028T0232Z-a-k1-preflight` is [PR #53](https://github.com/Mymayankyadav/lemma/pull/53). This is a docs-only slice: no runtime code, migrations, production queries, user data, Carrel or implicit tutor/student consent.
+- **Evidence:** Inspected nine applied-migration source files on `main@a108dd5`, including owner RLS, `study_context_files`, `learning_sources`, `learning_sections`, `study_plan_versions`, `learning_sessions/events`, and the private/public `publish_study_plan` wrapper. Identified direct context/source/section writes, absent immutable revisions, nonunique locator and uncapped section text; specified accepted structured context, stable context/project scope, CAS/idempotency, source revision-pinned citations, bounded retrieval, proposal isolation and two-identity tests.
+- **Task order:** [integration PR #52](https://github.com/Mymayankyadav/lemma/pull/52) merged and promoted KNOWLEDGE-01 and ANDROID-02 after verified UI-01. K2 is the next A-owned implementation slice: additive migration/RPC with immutable owner-scoped revisions, context/source citation retrieval caps, actual HTTP isolation/CAS/idempotency tests. Design must preserve existing data and be split into bounded PRs if needed. B's K3 UI waits for verified APIs. The K1 design is not a live backend acceptance claim.
+- **Verification for PR #53:** exact-head regression/Android/plan/lane A checks required on the merged-parent head; [pre-merge regression 40621644627](https://github.com/Mymayankyadav/lemma/actions/runs/40621644627) and [Android 40621644810](https://github.com/Mymayankyadav/lemma/actions/runs/40621644810) SUCCESS on `9070773` only. A new exact-head CI run is required after incorporating current `main@7f9cd16`. Local clone/npm unavailable due DNS; do not call local checks passed. No owner action.
 
 ## 28 October 2026 — UI-01 unblocked; KNOWLEDGE-01 K1 NEXT
 
