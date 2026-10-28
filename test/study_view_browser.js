@@ -32,6 +32,7 @@ const {chromium}=require('playwright');
   window.LemmaAccount={user:{id:'00000000-0000-4000-8000-000000000001'}};
   window.App={workspaceRevision:1,workspaceBlocked:false,go(){}};
   window.__writes=[];
+  window.__amendmentActions=[];
   window.StudyPlan={
     async activeContext(){return {
       planId:'00000000-0000-4000-8000-000000000002',planRevision:3,
@@ -43,7 +44,25 @@ const {chromium}=require('playwright');
       lastEvidence:null,nextAction:{text:'Finish the finite-cover argument tomorrow'},
       sourceRefs:['Topology notes, §3.2']
     }},
-    async recordEvent(event){window.__writes.push(event);return {eventId:event.eventId}}
+    async recordEvent(event){window.__writes.push(event);return {eventId:event.eventId}},
+    async readPlanDraft(){return {status:'draft'}},
+    async reviewPendingAmendment(){
+      return {status:'review',expectedRevision:3,expectedLocalRevision:1,
+        draftId:'00000000-0000-4000-8000-000000000010',
+        changeSummary:'Insert prerequisite before proof checkpoint',
+        diff:{added:['proof-extra'],removed:[],unchanged:['proof-1'],
+          planFieldsChanged:[],reordered:false,requiresReassessment:[],
+          modified:[{checkpointId:'proof-1',fields:['objective'],
+            addedPrerequisites:['proof-extra'],removedPrerequisites:[]}]}}
+    },
+    async approvePlanDraft(id,revision,consent){
+      window.__amendmentActions.push({type:'approve',id,revision,consent});
+      return {status:'approved_pending'}
+    },
+    async submitApprovedPlanDraft(id){
+      window.__amendmentActions.push({type:'submit',id});
+      return {status:'confirmed',revision:4}
+    }
   };
   `;
   const view=fs.readFileSync('src/app/view_study.js','utf8');
@@ -74,7 +93,23 @@ const {chromium}=require('playwright');
   assert.equal(events.length,1);
   assert.equal(events[0].type,'attempt');
   assert.equal(events[0].expectedPlanRevision,3);
-  console.log('PASS PLAN-01 P3 synthetic Chromium screen: approved checkpoint, mobile/desktop screenshots, explicit-only write, no horizontal overflow');
+  await page.getByRole('button',{name:'Review pending amendment'}).click();
+  await page.getByRole('button',{name:'Approve these displayed changes'}).waitFor();
+  assert.equal(await page.evaluate(()=>window.__amendmentActions.length),0,
+    'reviewing a diff cannot approve or publish');
+  await page.setViewportSize({width:1280,height:900});
+  await page.screenshot({path:'test-output/ui/study-p4b2-amendment-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth+1),true,
+    'the amendment review must fit a narrow phone');
+  await page.screenshot({path:'test-output/ui/study-p4b2-amendment-mobile.png',fullPage:true});
+  await page.getByRole('button',{name:'Approve these displayed changes'}).click();
+  await page.getByRole('button',{name:'Submit previously approved amendment'}).waitFor();
+  assert.deepEqual((await page.evaluate(()=>window.__amendmentActions)).map(x=>x.type),['approve'],
+    'student approval must not automatically submit');
+  await page.getByRole('button',{name:'Submit previously approved amendment'}).click();
+  assert.deepEqual((await page.evaluate(()=>window.__amendmentActions)).map(x=>x.type),['approve','submit']);
+  console.log('PASS PLAN-01 P3/P4b2 synthetic Chromium: approved checkpoint, student-reviewed diff, separate consent/submit, mobile/desktop screenshots');
   await page.close();
  } finally {await browser.close()}
 })().catch(err=>{console.error(err.stack);process.exitCode=1});

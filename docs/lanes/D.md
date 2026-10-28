@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P4b1 owner-scoped immutable accepted-version reading and amendment comparison, then P4b2 explicit student review/approval UI and P4c conflict restart. Remain hidden through P5.
+Next action: P4b2 hidden Study UI for a reviewed amendment diff and two explicit student actions (approve then submit), with durable pending retry; then P4c rejected-stale conflict restart and mid-proof resume. Keep Study tab hidden through P5.
 
 | Field | Value |
 | --- | --- |
@@ -91,3 +91,16 @@ Next action: P4b1 owner-scoped immutable accepted-version reading and amendment 
 - `StudyPlan.reviewPendingAmendment(planId)` reads the owner's unapproved durable draft, confirms exact published `study_plans.revision` and `study_plan_versions` snapshot and context pins, uses the P4a structural diff, then rechecks both cloud revision and local draft CAS before returning a preview. It fails closed for missing, stale, offline, identity-changed or approved/pending drafts. Does **not** approve or publish.
 - `test/study_amendment_read.js` uses fake IndexedDB + authenticated mock transport to check 12 checkpoints, prerequisite addition, owner scoping, stale published revision, changed context, offline/missing records, identity switch and no RPC calls. Exact-head CI pending.
 - Next: verify and merge P4b1, then P4b2 explicit student-reviewed diff and durable approval buttons, followed by P4c conflict restart/mid-proof continuity and P5 full acceptance. `ready:false`.
+
+## P4b2 active claim — student-reviewed amendment UI
+
+- Run `chat-20261028-lane-d-p4b2-owner`, heartbeat 2026-10-28T11:27Z, base `main@06c5f54` (P4b1 [PR #112](https://github.com/Mymayankyadav/lemma/pull/112) merged with exact-head regression 40679488760/local Supabase 40679488701 SUCCESS).
+- Scope D-owned `src/app/view_study.js`, `src/styles/study.css`, `test/study_amendment_ui.js`, this handoff. No backend or other-lane writes. Hidden `StudyView.ready=false`.
+- Expose a deliberate **Review pending amendment** action in the approved checkpoint view; show pinned server revision, change summary, stable checkpoint/prerequisite diff and reassessment warning. Student must explicitly approve reviewed draft via `approvePlanDraft`, then separately click Submit via `submitApprovedPlanDraft`; no auto-approval, no automatic network call on read, and stable retry intent from P2b. On reload, show existing `approved_pending` or `needs_review` without silently retrying/rebasing. Guard async UI after identity/workspace switches; use escaped text nodes only.
+- Gate: synthetic VM and browser tests for review vs approval vs submit, stale, offline, pending receipt retry and identity guard; green exact-head CI, screenshots; full P5 acceptance and human visual check remain open.
+
+### P4b2 implementation checkpoint
+
+- `view_study.js` now includes a deliberately triggered **Review pending amendment** action that displays P4b1's exact accepted-vs-draft diff, affected prerequisite IDs and reassessment requirements. It requires a second explicit click to store student approval, then a third explicit click to submit via P2b's durable `submitApprovedPlanDraft` method; review, render and reload never perform publication. The existing `approved_pending` intent can be manually retried, while `needs_review` fails closed pending P4c. Account and route guards protect async completion.
+- `test/study_amendment_ui.js` checks no implicit writes, visible review/approval/submit separation, pending intent after reload, stale state, identity switch. `test/study_view_browser.js` adds synthetic Chromium desktop/mobile diff screenshots plus distinct approval vs submission checks. Final-head CI not yet verified.
+- Remaining: P4c explicit stale conflict restart and persistent mid-proof continuation; P5 complete local-stack acceptance, visual review and `ready` gates. Never approve a student plan or amendment on their behalf, and no production writes.
