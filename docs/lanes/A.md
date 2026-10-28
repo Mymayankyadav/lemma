@@ -1,6 +1,6 @@
 # Lane A — sync, auth and backend
 
-Next action: independent KNOWLEDGE-01 K1 schema/permissions preflight claimed on `lane-a/knowledge-01-schema-preflight`, documentation only until UI-01 becomes DONE. Audit existing context/source/section metadata and revision/security contracts, identify exact follow-on implementation and local RLS tests; do not change production data or promote KNOWLEDGE-01 before the UI gate.
+Next action: serve B's OPEN `UI-01-LIVE-STATUS-A1` cross-lane request with actual local-stack offline/reconnect screenshots. Claim `hourly-20261028T0042Z-a-live-offline`, branch `lane-a/ui-01-real-offline-visual`, heartbeat UTC 2026-10-28T00:42:00Z, intended files `test/sync_local_e2e.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`; tested SHA NOT RUN. First bounded slice: authenticated offline edit and post-reconnect status screenshots, with outbox/receipt evidence. Live RPC-error visuals remain separate. No production mutations, owner action none.
 
 | Field | Value |
 | --- | --- |
