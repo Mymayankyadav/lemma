@@ -1,3 +1,10 @@
+## Active UI-02 accepted-reader navigation claim — 28 October 2026
+
+- **Claim:** `chat-20261028-lane-b-reader-nav` · heartbeat 2026-10-28T10:45:04.663Z; branch `lane-b/ui-02-accepted-reader-link`, base `main@5f033d2`.
+- **Scope:** Lane B-owned `src/app/view_settings.js`, `test/ui_knowledge_reader.js`, `docs/lanes/B.md`. Give a saved knowledge draft a deliberate route to its accepted revision reader without an automatic cloud read, auto-approval or cross-account leakage. Read remains a separate user click; unaccepted and unsaved drafts cannot imply publication.
+- **Gate:** regression and browser screenshots (390px/1280px, light/dark), no implicit citation/accepted reads, draft switching and account isolation, exact-head CI, post-merge main. Main local-stack was red before this claim (40673449340, independent-browser convergence); that failure is out of B ownership and blocks non-corrective merges until recovered.
+- **Next action:** implement a strict one-click prefill/scroll/focus path using existing reader controls, append browser assertions, run CI and inspect captures; merge only once main health and PR gates permit.
+
 ## Active KNOWLEDGE-01 K3c claim — 28 October 2026
 
 - **Claim:** `chat-20261028T1007-b-k3c`, heartbeat 2026-10-28T10:07Z; earliest active B claim (no other B PR). Base `main@c3bc71750eab94be55895919e36b90234f632b6f`, branch `lane-b/knowledge-01-k3c-accepted-reader`.
