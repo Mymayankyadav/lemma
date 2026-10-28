@@ -68,6 +68,31 @@ function assertOwnerTables(ownerId, tables) {
     fail('archive exceeds 64 MiB safety limit');
   return count;
 }
+function checkUniqueConstraints(tables) {
+  const unique = {
+    learning_events: ['event_id'],
+    study_context_revisions: ['request_id'],
+    knowledge_source_versions: ['request_id'],
+    review_retractions: ['target_event_id'],
+  };
+  for (const [table, columns] of Object.entries(unique)) {
+    for (const column of columns) {
+      const seen = new Set();
+      for (const row of tables[table]) {
+        if (row[column] == null) continue;
+        const key = canonical(row[column]);
+        if (seen.has(key)) fail(table + ' duplicate unique ' + column);
+        seen.add(key);
+      }
+    }
+  }
+  for (const table of TABLES)
+    for (const row of tables[table])
+      for (const field of ['seq','revision','source_revision','context_revision'])
+        if (row[field] !== undefined && row[field] !== null &&
+            (!Number.isSafeInteger(row[field]) || row[field] < 0))
+          fail(table + ' unsafe or invalid numeric ' + field);
+}
 function checkReferences(tables) {
   const refs = [
     ['learning_sessions','plan_id','study_plans','id'],
@@ -120,6 +145,7 @@ function verify(archive) {
       archive.migrations.some((x,i) => i && x <= archive.migrations[i-1]))
     fail('invalid account archive envelope or migration history');
   const count = assertOwnerTables(archive.ownerId,archive.tables);
+  checkUniqueConstraints(archive.tables);
   checkReferences(archive.tables);
   const expected = manifestFor(archive.ownerId,archive.migrations,archive.tables,archive.exportedAt);
   if (!isObject(archive.manifest) || canonical(archive.manifest) !== canonical(expected))
@@ -130,6 +156,7 @@ function verify(archive) {
 }
 function makeArchive({ ownerId, tables, migrations, exportedAt }) {
   assertOwnerTables(ownerId,tables);
+  checkUniqueConstraints(tables);
   checkReferences(tables);
   const archive = {app:'lemma',version:2,scope:'account-workspace',
     capture:'transactional',ownerId,exportedAt,
@@ -171,6 +198,8 @@ if (require.main === module) {
   const negative = (mutate,regex) => {const bad=copy(original);mutate(bad);assert.throws(()=>verify(bad),regex);};
   negative(a => {a.tables.notes[0].user_id=foreign;},/foreign or missing owner/);
   negative(a => {a.tables.learning_events.push({...a.tables.learning_events[0]});},/duplicate primary key/);
+  negative(a => {a.tables.learning_events.push({...a.tables.learning_events[0],seq:11});},/duplicate unique event_id/);
+  negative(a => {a.tables.learning_events[0].seq=Number.MAX_SAFE_INTEGER+1;},/unsafe or invalid numeric seq/);
   negative(a => {a.tables.study_plan_versions.pop();},/checksum or count mismatch/);
   negative(a => {a.tables.knowledge_section_versions[0].source_revision=99;},/exact source revision/);
   negative(a => {a.tables.review_retractions[0].target_event_id=u(99);},/missing review_events/);
