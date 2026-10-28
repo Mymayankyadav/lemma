@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K2d — account-bound client API (active claim)
+
+- **Claim:** `chat-20261028-k2d-client`, UTC heartbeat 2026-10-28T04:41:27.788Z, base `main@ff9ac6f3e4`; branch `lane-a/knowledge-01-k2d-account-client`. No other active lane A PR. Post-K2c main regression/Android/local Supabase all SUCCESS (40633364217/40633364254/40633364159).
+- **Scope:** expose previously verified `get_accepted_study_context`, `get_knowledge_excerpts` and `commit_structured_study_context` through existing account-scoped bridge; authenticate every request, reject stale account transitions, require explicit student approval marker and stable request ID on accepted writes, preserve revision and error semantics. This is **online authenticated adapter only**, not offline durable context editing or tutor proposal approval.
+- **Files:** `src/app/cloud_bridge.js`, `test/account_knowledge_bridge.js`, `package.json` (append own test), `docs/lanes/A.md`. No new dependencies, B/C UI/native files, migration, Carrel or production changes.
+- **Gate:** unit tests for scope, stale session, identity change during reads/writes, rejected/failed/missing approval and stable request IDs; full regression and Android CI exact SHA + post-merge main. Local DB gates already passed for K2c and remain intact.
+- **Next:** implement this bounded adapter, then B's accepted context UI contract request and a separate offline outbox/proposal state slice. Do not expose direct tutor writes or auto-approve student data.
+
 ## KNOWLEDGE-01 K2c — structured accepted context v1 (active claim)
 
 - **Claim:** `chat-20261028-k2c-structured`; heartbeat 2026-10-28T04:30:39.078Z UTC; `main@f427210fe9`; branch `lane-a/knowledge-01-k2c-structured-context`. No open PRs at pickup; three latest main workflows succeeded after K2b PR #61.
