@@ -284,16 +284,73 @@ const TutorHandoff = (() => {
           input.value !== reviewedText;
       }
     }
+    // This action ONLY creates a durable, unapproved local draft. D's
+    // separate review/approve/publish APIs are never invoked by a tutor reply.
+    async function stageAmendment(amendment, checkbox, button) {
+      if (saving || reviewedText === null || !checkbox.checked ||
+          input.value !== reviewedText) return;
+      saving = true;
+      button.disabled = saveBtn.disabled = parseBtn.disabled = input.disabled = true;
+      const verifyCurrent = () => {
+        if ((typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
+            (typeof App !== 'undefined' &&
+            (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
+          throw new Error('Study account or workspace changed; reopen the handoff');
+        if (reviewedText === null || input.value !== reviewedText)
+          throw new Error('Tutor reply changed; review it again');
+      };
+      try {
+        if (typeof StudyPlan.proposeAmendment !== 'function')
+          throw new Error('Unapproved amendment draft storage is unavailable');
+        verifyCurrent();
+        const now = await StudyPlan.activeContext();
+        verifyCurrent();
+        if (!now || now.planId !== ctx.planId ||
+            now.planRevision !== ctx.planRevision ||
+            now.contextId !== ctx.contextId ||
+            now.contextRevision !== ctx.contextRevision ||
+            now.checkpoint?.id !== ctx.checkpoint.id)
+          throw new Error('stale_plan_revision: reopen the handoff');
+        const snapshot = amendment.snapshot;
+        const draftId = await StudyPlan.proposeAmendment({
+          planId:amendment.planId,expectedRevision:amendment.expectedRevision,
+          snapshot,changeSummary:amendment.changeSummary,
+          proposalId:amendment.proposalId,source:'tutor_handoff.v1',
+          contextId:ctx.contextId ?? null,
+          contextRevision:ctx.contextRevision ?? null,
+          title:typeof snapshot.title === 'string' ? snapshot.title :
+            (typeof snapshot.topic === 'string' ? snapshot.topic : ''),
+          objective:typeof snapshot.objective === 'string' ? snapshot.objective : ''
+        });
+        verifyCurrent();
+        if (draftId !== amendment.proposalId)
+          throw new Error('Amendment receipt does not match the proposal; retry the same ID');
+        checkbox.checked = false;
+        checkbox.disabled = true;
+        status.textContent = 'Saved an unapproved amendment draft on this device. No plan was approved or published. Review its diff and explicitly approve it in Study.';
+      } catch (e) {
+        status.textContent = 'Amendment NOT confirmed: ' +
+          String(e?.message || 'Draft write failed') +
+          '. Selection is kept; retry uses the same proposal ID.';
+      } finally {
+        saving = false;
+        parseBtn.disabled = input.disabled = false;
+        updateSave();
+        button.disabled = !checkbox.checked || checkbox.disabled ||
+          reviewedText === null || input.value !== reviewedText;
+      }
+    }
     function reviewOne(title, value, index) {
       const checkbox = h('input', { type:'checkbox', 'aria-label':'Select '+title });
       const isEvent = index[0] === 'e';
       const isCard = index[0] === 'c';
+      const isAmendment = index[0] === 'a';
       const detail = h('details', { class:'tutor-handoff-item' },
         h('summary', { text:title }),
         h('pre',{class:'tutor-handoff-json',text:JSON.stringify(value,null,2)}),
         h('label',{class:'tutor-handoff-select'},checkbox,
           isEvent ? ' Select to record this study event' :
-          isCard ? ' Select to inspect in the card editor' : ' Select for later amendment review (not saved here)'));
+          isCard ? ' Select to inspect in the card editor' : ' Select to stage an unapproved amendment draft'));
       items.push({ index,kind:index[0],value,checkbox });
       if (isCard) {
         const editorBtn = h('button', { class:'btn', type:'button',
@@ -304,6 +361,15 @@ const TutorHandoff = (() => {
         });
         editorBtn.addEventListener('click', () => reviewCard(value, checkbox, editorBtn));
         detail.append(editorBtn);
+      } else if (isAmendment) {
+        const draftBtn = h('button', { class:'btn', type:'button',
+          text:'Stage unapproved amendment draft',disabled:true });
+        checkbox.addEventListener('change', () => {
+          updateSave();
+          draftBtn.disabled = !checkbox.checked || reviewedText === null || saving;
+        });
+        draftBtn.addEventListener('click', () => stageAmendment(value, checkbox, draftBtn));
+        detail.append(draftBtn);
       } else checkbox.addEventListener('change',updateSave);
       return detail;
     }
