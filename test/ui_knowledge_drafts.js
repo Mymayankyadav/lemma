@@ -75,6 +75,14 @@ const fields = { title: 'Topology', markdown: '# Open covers',
   const beforeLocked = calls.length;
   await assert.rejects(second.save(fields), /locked after approval/);
   assert.equal(calls.length, beforeLocked, 'pending approved intent never re-saved');
+  // A-owned K2g marks a stale approved intent 'needs_review'; it is just
+  // as immutable as 'approved_pending', and reopening cannot unlock it.
+  rows.set(id, { ...rows.get(id), status: 'needs_review', approvedBy: 'student' });
+  await second.open(id);
+  const beforeConflict = calls.length;
+  await assert.rejects(second.save(fields), /locked after approval/);
+  assert.equal(calls.length, beforeConflict, 'conflicted intent never re-saved');
+  assert.equal(second.current().status, 'needs_review');
   rows.set(id, { ...rows.get(id), status: 'draft', authorKind: 'tutor',
     payload: { schema_version: 1, summary: '', goals: [], notation: ['\\mathbb{R}'] } });
   await second.open(id);
