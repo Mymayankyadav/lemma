@@ -69,13 +69,15 @@ async function nativeStudyZoom(mock,view) {
       assert.equal(bounds.ready,false,'native zoom cannot enable the Study tab');
       assert.ok(bounds.visible && bounds.doc<=bounds.viewport+1,
         label+' overflows at genuine 200% tab zoom: '+JSON.stringify(bounds));
-      // Playwright fullPage screenshots under native tab zoom use CSS page
-      // dimensions and crop at 640 px even when the physical viewport is
-      // 1280 px. Capture the actual viewport (as UI-01's native zoom suite
-      // does) and scroll to the requested panel first.
-      const target=label==='checkpoint' ? '.study-summary' : '.study-amendment';
-      await page.locator(target).evaluate(node=>node.scrollIntoView({block:'start'}));
-      await page.screenshot({path:'test-output/ui/study-p5c-native-zoom200-'+label+'.png'});
+      // Playwright fullPage screenshots under native tab zoom crop at 640
+      // CSS pixels; screenshots immediately after a deep scroll can also be
+      // blank in headless Chromium. Capture checkpoint viewport as UI-01
+      // does, and use a bounded element screenshot for the lower review panel.
+      const file='test-output/ui/study-p5c-native-zoom200-'+label+'.png';
+      const screenshot=label==='checkpoint'
+        ? await page.screenshot({path:file})
+        : await page.locator('.study-amendment').screenshot({path:file,scale:'device'});
+      assert.ok(screenshot.length>20000,label+' screenshot was blank or incomplete');
     }
     console.log('PLAN-01 P5c zoom geometry '+JSON.stringify({baseline,enlarged,zoom}));
     await screen('checkpoint');
