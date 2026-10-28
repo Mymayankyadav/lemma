@@ -20,6 +20,10 @@ const StudyView = (() => {
         h('button', {type:'button',class:'link-btn',text:'Back to Today',
           onclick:() => App.go('home')}),
         h('h1', {text:'Study checkpoint'})),message,content);
+    if (!owner) {
+      message.textContent='Sign in to open an approved study checkpoint.';
+      return root;
+    }
     const valid = () => root.isConnected && !App.workspaceBlocked &&
       App.workspaceRevision === workspace && !!owner && LemmaAccount.user?.id === owner;
     function field(label,value) {
