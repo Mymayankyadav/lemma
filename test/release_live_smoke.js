@@ -66,7 +66,7 @@ async function smoke(url) {
     await nav('home', '.today, .onboard');
 
     stage = 'create-card';
-    await page.locator('.btn-new').first().click();
+    await page.locator('.tb-add:visible').click();
     await page.locator('#ed-front').waitFor({ timeout });
     const front = 'Lemma release smoke: prove that 2 + 2 = 4';
     const title = 'Release smoke local round trip';
@@ -81,7 +81,10 @@ async function smoke(url) {
     await page.locator('.today').waitFor({ timeout });
     await nav('browse', '#browse-q');
     await page.locator('#browse-q').fill(title);
-    await page.locator('.note-row').filter({ hasText: title }).first().waitFor({ timeout });
+    await page.waitForFunction(value => {
+      const rows = [...document.querySelectorAll('.note-row')];
+      return rows.length === 1 && rows[0].textContent.includes(value);
+    }, title, { timeout });
     assert.strictEqual(await page.locator('.note-row').count(), 1, 'card survives reload exactly once');
     await capture('04-card-after-reload');
 
@@ -101,7 +104,10 @@ async function smoke(url) {
     await page.locator('.today').waitFor({ timeout });
     await nav('browse', '#browse-q');
     await page.locator('#browse-q').fill(title);
-    await page.locator('.note-row').filter({ hasText: title }).first().waitFor({ timeout });
+    await page.waitForFunction(value => {
+      const rows = [...document.querySelectorAll('.note-row')];
+      return rows.length === 1 && rows[0].textContent.includes(value);
+    }, title, { timeout });
     assert.strictEqual(await page.locator('.note-row').count(), 1, 'review did not duplicate card');
     assert.strictEqual(await page.locator('.note-row .sd-new').count(), 0, 'review schedule persisted after reload');
     await capture('07-reviewed-after-reload');
@@ -132,6 +138,7 @@ async function negativeSelfTest() {
     await new Promise(resolve => server.close(resolve));
   }
   assert(rejected, 'intentionally broken release URL must fail closed');
+  fs.rmSync(OUT, { recursive: true, force: true }); // negative fixture is not live evidence
   console.log('PASS negative smoke: HTTP 404 release URL is rejected');
 }
 (async () => {
