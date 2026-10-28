@@ -1,0 +1,146 @@
+// RELEASE-01 SHIP-F0: real Pages health, isolated anonymous browser, no fixtures in production.
+'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
+const http = require('node:http');
+const assert = require('node:assert/strict');
+const { chromium } = require('playwright');
+
+const OUT = path.resolve(__dirname, '../test-output/release-live');
+const DEFAULT_URL = 'https://mymayankyadav.github.io/lemma/';
+const timeout = 20000;
+
+async function smoke(url) {
+  const parsed = new URL(url);
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid release smoke URL');
+  // A fresh, ephemeral browser context must NEVER authenticate or use the owner's account.
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({
+    serviceWorkers: 'block', viewport: { width: 390, height: 844 },
+    colorScheme: 'light', reducedMotion: 'reduce'
+  });
+  const page = await ctx.newPage();
+  const errors = [];
+  let stage = 'navigation';
+  const sameOrigin = (u) => { try { return new URL(u).origin === parsed.origin; } catch { return false; } };
+  page.on('pageerror', e => errors.push('JavaScript: ' + e.message));
+  page.on('console', msg => {
+    if (msg.type() === 'error') errors.push('console: ' + msg.text());
+  });
+  page.on('requestfailed', req => {
+    if (sameOrigin(req.url())) errors.push('request failed: ' + req.url() + ' (' + req.failure()?.errorText + ')');
+  });
+  page.on('response', res => {
+    if (sameOrigin(res.url()) && res.status() >= 400) errors.push('HTTP ' + res.status() + ': ' + res.url());
+  });
+  const capture = async (name) => {
+    fs.mkdirSync(OUT, { recursive: true });
+    await page.screenshot({ path: path.join(OUT, name + '.png'), fullPage: true });
+  };
+  const nav = async (route, selector) => {
+    await page.locator('[data-go="' + route + '"]:visible').first().click();
+    await page.locator(selector).first().waitFor({ timeout });
+  };
+  const saved = async () => {
+    await page.waitForFunction(() =>
+      (document.querySelector('#sync .sr-only')?.textContent || '').includes('Saved on device'), null, { timeout });
+  };
+  try {
+    const response = await page.goto(parsed.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    assert(response && response.ok(), 'Pages entry must respond HTTP 2xx');
+    assert.strictEqual(new URL(page.url()).origin, parsed.origin, 'unexpected origin redirect');
+    await page.locator('.onboard, .today').first().waitFor({ timeout });
+    assert.match(await page.title(), /Lemma/, 'correct application loaded');
+    stage = 'home';
+    await capture('01-today');
+
+    stage = 'settings-auth';
+    await nav('settings', '.page.settings, .settings');
+    // Render the sign-in UI, but never click a provider or enter account credentials.
+    await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
+    await capture('02-settings-sign-in');
+
+    stage = 'cards';
+    await nav('browse', '#browse-q');
+    await capture('03-cards');
+    await nav('home', '.today, .onboard');
+
+    stage = 'create-card';
+    await page.locator('.btn-new').first().click();
+    await page.locator('#ed-front').waitFor({ timeout });
+    const front = 'Lemma release smoke: prove that 2 + 2 = 4';
+    const title = 'Release smoke local round trip';
+    await page.locator('#ed-deck').fill('Release smoke');
+    await page.locator('#ed-title').fill(title);
+    await page.locator('#ed-front').fill(front);
+    await page.locator('#ed-back').fill('In the natural numbers, 2 + 2 = 4.');
+    await page.locator('.sheet-foot .btn-primary').click();
+    await page.locator('#ed-front').waitFor({ state: 'detached', timeout });
+    await saved();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.today').waitFor({ timeout });
+    await nav('browse', '#browse-q');
+    await page.locator('#browse-q').fill(title);
+    await page.locator('.note-row').filter({ hasText: title }).first().waitFor({ timeout });
+    assert.strictEqual(await page.locator('.note-row').count(), 1, 'card survives reload exactly once');
+    await capture('04-card-after-reload');
+
+    stage = 'review';
+    await page.locator('.note-row').first().click();
+    await page.getByRole('button', { name: 'Study with prerequisites' }).click();
+    await page.locator('.btn-reveal').waitFor({ timeout });
+    assert((await page.locator('.card-front').innerText()).includes(front), 'created card is reviewed');
+    await capture('05-review-front');
+    await page.locator('.btn-reveal').click();
+    await page.locator('.grades .grade').first().waitFor({ timeout });
+    await capture('06-review-answer');
+    // Third grading button is "Good" in the original FSRS review UI.
+    await page.locator('.grades .grade').nth(2).click();
+    await saved();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.today').waitFor({ timeout });
+    await nav('browse', '#browse-q');
+    await page.locator('#browse-q').fill(title);
+    await page.locator('.note-row').filter({ hasText: title }).first().waitFor({ timeout });
+    assert.strictEqual(await page.locator('.note-row').count(), 1, 'review did not duplicate card');
+    assert.strictEqual(await page.locator('.note-row .sd-new').count(), 0, 'review schedule persisted after reload');
+    await capture('07-reviewed-after-reload');
+
+    // Wait for browser events to settle, then enforce zero errors from all visited screens.
+    await page.waitForTimeout(350);
+    assert.deepEqual(errors, [], 'Pages console and same-origin network must be clean');
+    console.log('PASS live Pages smoke: ' + parsed.href + ' (anonymous, create/review/reload)');
+  } catch (e) {
+    try { await capture('FAIL-' + stage.replace(/[^a-z0-9-]/gi, '_')); } catch (_) {}
+    throw new Error('Release smoke failed at ' + stage + ': ' + e.message +
+      (errors.length ? '\nBrowser errors: ' + errors.join('\n') : ''), { cause: e });
+  } finally {
+    await ctx.close();
+    await browser.close();
+  }
+}
+
+async function negativeSelfTest() {
+  const server = http.createServer((_req, res) => { res.writeHead(404); res.end('missing'); });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  let rejected = false;
+  try {
+    await smoke('http://127.0.0.1:' + server.address().port + '/broken/');
+  } catch (e) {
+    rejected = /HTTP 2xx/.test(e.message);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+  assert(rejected, 'intentionally broken release URL must fail closed');
+  console.log('PASS negative smoke: HTTP 404 release URL is rejected');
+}
+(async () => {
+  if (process.argv.includes('--negative-self-test')) return negativeSelfTest();
+  if (!process.env.LEMMA_LIVE_URL) {
+    console.log('SKIP live Pages smoke: LEMMA_LIVE_URL unset (offline npm test)');
+    return;
+  }
+  const url = process.env.LEMMA_LIVE_URL;
+  if (url === DEFAULT_URL || /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(url)) return smoke(url);
+  throw new Error('Release URL must be canonical Pages or explicit local test URL');
+})().catch(err => { console.error(err); process.exitCode = 1; });
