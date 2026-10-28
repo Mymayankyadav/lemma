@@ -306,6 +306,102 @@ const SettingsView = (() => {
   }
   const section = (id, title, intro, ...kids) => h('section', { class: 'panel settings-sec', id }, h('h2', { class: 'section-title', text: title }), intro ? h('p', { class: 'muted small sec-intro', text: intro }) : null, ...kids);
 
+  function accountRecoverySection(){
+    const ownerId=LemmaAccount.user.id,client=LemmaAccount.client;
+    const generation=App.workspaceRevision;
+    const status=h('p',{class:'muted small',role:'status','aria-live':'polite'});
+    const save=h('button',{class:'btn btn-sm',type:'button',text:'Download account backup'});
+    const file=h('input',{id:'account-recovery-file',class:'input',type:'file',accept:'.json,application/json'});
+    const inspect=h('button',{class:'btn btn-sm',type:'button',text:'Check restore'});
+    const consent=h('input',{id:'account-recovery-consent',type:'checkbox'});
+    const restore=h('button',{class:'btn btn-primary btn-sm',type:'button',text:'Restore account backup'});
+    const cancel=h('button',{class:'btn btn-sm',type:'button',text:'Clear selection'});
+    const resume=h('button',{class:'btn btn-sm',type:'button',text:'Resume account sync',hidden:true});
+    let pair=null,requestId=null,validated=false,busy=false,ticket=0;
+    const root=section('set-account-recovery','Account backup and recovery',
+      'Download a private backup of your account and unsynced work. Keep this file private. Restore uses the same account and requires its existing work to be empty; your separate device cards stay intact.',
+      h('div',{class:'btn-row'},save),
+      h('div',{class:'setting setting-col'},h('label',{for:file.id,class:'setting-label',text:'Choose an account backup'}),file),
+      h('div',{class:'btn-row'},inspect,cancel),
+      h('label',{class:'conflict-confirm'},consent,h('span',{text:'I want to restore this backup to this same account and resume its queued edits.'})),
+      h('div',{class:'btn-row'},restore,resume),status);
+    const current=()=>root.isConnected&&LemmaAccount.user?.id===ownerId&&
+      LemmaAccount.client===client&&App.workspaceRevision===generation&&!App.workspaceBlocked;
+    const check=()=>{if(!current())throw new Error('Account or workspace changed; reopen recovery.');};
+    const update=()=>{
+      save.disabled=busy;file.disabled=busy;cancel.disabled=busy;
+      inspect.disabled=busy||!pair||Store.mode!=='local';
+      consent.disabled=busy||!validated;
+      restore.disabled=busy||!validated||!consent.checked||Store.mode!=='local';
+      resume.disabled=busy;
+    };
+    const run=async action=>{
+      if(busy)return;busy=true;update();
+      try {check();await action();}
+      catch(err){if(current())status.textContent='Recovery: '+(err.message||'Unavailable. Keep your backup and retry.');}
+      finally{busy=false;if(current())update();}
+    };
+    save.onclick=()=>run(async()=>{
+      const backup=await LemmaCloudBridge.captureReadOnlyRecoveryPair(true);check();
+      const url=URL.createObjectURL(new Blob([JSON.stringify(backup)],{type:'application/json;charset=utf-8'}));
+      const link=h('a',{href:url,download:'lemma-account-backup-'+new Date().toISOString().slice(0,10)+'.json',hidden:true});
+      document.body.appendChild(link);
+      try{check();link.click();status.textContent='Backup download started. Keep the file private and check that it saved.';}
+      finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+    });
+    file.onchange=async()=>{
+      const selected=file.files?.[0],ownTicket=++ticket;
+      pair=null;requestId=null;validated=false;consent.checked=false;update();
+      if(!selected)return;
+      await run(async()=>{
+        if(selected.size>130*1024*1024)throw new Error('Backup file exceeds the recovery size limit.');
+        const parsed=JSON.parse(await selected.text());check();
+        if(ownTicket!==ticket)return;
+        const summary=await LemmaCloudBridge.verifyReadOnlyRecoveryPair(parsed,ownerId);check();
+        if(ownTicket!==ticket)return;
+        // Retain only a random retry key and digest, never private study data,
+        // in browser preferences. Selecting the SAME file after reload reuses it.
+        const key='lemma-recovery-request:'+ownerId+':'+summary.sha256;
+        const prior=localStorage.getItem(key);
+        requestId=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(prior||'')?prior:crypto.randomUUID();
+        localStorage.setItem(key,requestId);pair=parsed;
+        status.textContent=summary.serverRows+' account records and '+summary.localRows+
+          ' saved device records. Account backup: '+new Date(parsed.server.exportedAt).toLocaleString()+
+          '. Device work was captured separately.'+
+          (Store.mode==='local'?' Check restore before continuing.':' Return to the device workspace above before restoring.');
+      });
+    };
+    inspect.onclick=()=>run(async()=>{
+      check();if(!pair)throw new Error('Choose a backup first.');
+      resume.hidden=false;
+      await LemmaCloudBridge.restoreRecoveryPair(pair,{requestId,studentConfirmed:true,dryRun:true});check();
+      validated=true;
+      status.textContent='Backup checked. Account sync is paused. Confirm below to restore, or resume account sync to leave recovery.';
+    });
+    consent.onchange=update;
+    restore.onclick=()=>run(async()=>{
+      if(!pair||!validated||!consent.checked)throw new Error('Check the backup and confirm restore first.');
+      const accepted=await confirmDialog({title:'Restore this account backup?',
+        message:'Restore the account records and unsynced work in this file, then resume its queued edits. Existing account work will never be replaced. Your separate device cards stay intact.',
+        confirmLabel:'Restore and resume edits'});
+      check();if(!accepted)return;
+      resume.hidden=false;
+      await LemmaCloudBridge.restoreRecoveryPair(pair,{requestId,studentConfirmed:true,dryRun:false,resumeSync:true});check();
+      validated=false;consent.checked=false;resume.hidden=true;
+      status.textContent='Account backup restored. Queued edits can now sync. Use the account workspace above when ready.';
+    });
+    cancel.onclick=()=>{
+      ++ticket;pair=null;requestId=null;validated=false;consent.checked=false;file.value='';
+      status.textContent=resume.hidden?'Backup selection cleared.':'Selection cleared. Account sync is still paused; choose Resume account sync to leave recovery.';
+      update();
+    };
+    resume.onclick=()=>run(async()=>{
+      await LemmaSync.attach(LemmaAccount.user);check();validated=false;consent.checked=false;resume.hidden=true;
+      status.textContent='Account sync resumed. Check restore again before restoring a backup.';
+    });
+    update();return root;
+  }
+
   function render(params = {}) {
     const s = Model.settings;
     const page = h('div', { class: 'page settings' }, h('div', { class: 'page-head' }, h('h1', { class: 'page-title', text: 'Settings' })));
@@ -635,6 +731,9 @@ const SettingsView = (() => {
       page.append(knowledgeDraftSection());
       page.append(acceptedRevisionSection());
     }
+
+    if (LemmaAccount.user && typeof LemmaCloudBridge.restoreRecoveryPair==='function')
+      page.append(accountRecoverySection());
 
     // data
     const st = Store.status();

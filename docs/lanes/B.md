@@ -2,7 +2,8 @@
 
 - **Claim:** `chat-20261028-b-account-recovery`, heartbeat 2026-10-28T17:58Z, branch `lane-b/release-account-recovery-controls`, base main `2f2a410`. No other B PR open. Files: `src/app/view_settings.js`, `test/ui_workspace_recovery.js`, B test registration and handoff. A PR #146 owns local restore APIs; integration #147 owns deployment scopes; neither is edited here.
 - **Goal:** signed-in private account backup download, bounded file validation, explicit preview/confirmation and queued-edit consent, retained stable retry request after failure/reload, owner/workspace switch denial. No implicit restore, no production fixture data, no changes to legacy card import/export.
-- **Next:** implement and check mobile/desktop light/dark screenshots, cancel/tamper/failure/retry/identity tests and exact-head CI. Controls stay unavailable until A's paired-restore API exists.
+- **Implemented:** signed-in paired private JSON download; 130 MiB input bound and read-only manifest/owner checks; same-account preflight, checkbox plus final confirmation, cancel and resume-sync controls, persistent random request key keyed only by owner/digest (never backup content), guarded UI after identity/workspace changes. Existing data import/export unchanged. Controls appear only once A's paired-restore API exists.
+- **Validation:** local syntax/build/ownership/diff checks pass; Chromium unavailable locally. New real-browser suite is appended to B's existing `test:ui`: download payload, owner validation, consent/cancel, interrupted retry/reopen with original ID, stale-owner denial, mobile/desktop light/dark screenshots and overflow. Transport is synthetic; A #144 proves actual database restore. Exact-head regression/browser screenshot review and post-merge main remain required. Next: run CI, inspect screenshots, merge only green after A #146.
 
 ## B CI repair claim — pending stale Study response selection (28 Oct 2026)
 
