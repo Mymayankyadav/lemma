@@ -41,7 +41,7 @@ function run({ native = true, available = true, browserAvailable = true, browser
     console: { warn(...x) { actions.push('warn:' + x.join(' ')); }, info(...x) { actions.push('info:' + x.join(' ')); } },
   };
   vm.runInNewContext(source + '\nthis.nativeShell = NativeShell;', ctx);
-  return { events, actions, browserUrls, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback, openAuthBrowser: ctx.nativeShell.openAuthBrowser, closeAuthBrowser: ctx.nativeShell.closeAuthBrowser };
+  return { events, actions, browserUrls, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback, openAuthBrowser: ctx.nativeShell.openAuthBrowser, closeAuthBrowser: ctx.nativeShell.closeAuthBrowser, planDueReminder: ctx.nativeShell.planDueReminder };
 }
 
 const web = run({ native: false });
@@ -83,6 +83,40 @@ assert.equal(secondary.actions.includes('exit'), false);
 const root = run();
 root.events.backButton();
 assert.equal(root.actions.at(-1), 'exit');
+
+// N3a is a pure native-only policy, NOT an OS notification or a permission
+// prompt. A later bridge must replace/cancel this stable ID on every change.
+assert.equal(web.planDueReminder, undefined, 'no reminder surface in ordinary web');
+const reminders = run();
+const morning = new Date(2026, 9, 28, 7, 0, 0).getTime();
+const due = new Date(2026, 9, 28, 8, 0, 0).getTime();
+const desired = { optedIn: true, permission: 'granted', localTime: '08:30', earliestDueAt: due, now: morning };
+const reminder = reminders.planDueReminder(desired);
+assert.equal(reminder.id, 24001, 'one stable ID enables later cancel/replace');
+assert.equal(reminder.at, new Date(2026, 9, 28, 8, 30, 0).getTime());
+assert.equal(reminder.route, 'review');
+assert.deepEqual(Object.keys(reminder).sort(), ['at', 'body', 'id', 'route', 'title']);
+assert.equal(reminders.planDueReminder(desired).at, reminder.at, 'same state produces same reminder');
+assert.equal(Object.isFrozen(reminder), true);
+assert.equal(reminders.planDueReminder({ ...desired, optedIn: false }), null);
+assert.equal(reminders.planDueReminder({ ...desired, optedIn: 1 }), null);
+assert.equal(reminders.planDueReminder({ ...desired, permission: 'prompt' }), null);
+assert.equal(reminders.planDueReminder({ ...desired, permission: 'denied' }), null);
+assert.equal(reminders.planDueReminder({ ...desired, permission: undefined }), null);
+for (const localTime of ['8:30', '24:00', '23:60', '08:3', '08:30:00', '08:30Z'])
+  assert.equal(reminders.planDueReminder({ ...desired, localTime }), null);
+for (const earliestDueAt of [-1, NaN, Infinity, '0', 1.5])
+  assert.equal(reminders.planDueReminder({ ...desired, earliestDueAt }), null);
+for (const now of [-1, NaN, Infinity, '0', 1.5])
+  assert.equal(reminders.planDueReminder({ ...desired, now }), null);
+const afterTime = new Date(2026, 9, 28, 8, 31, 0).getTime();
+assert.equal(reminders.planDueReminder({ ...desired, now: afterTime }).at,
+  new Date(2026, 9, 29, 8, 30, 0).getTime(), 'past configured time rolls to tomorrow');
+const tomorrowDue = new Date(2026, 9, 29, 9, 0, 0).getTime();
+assert.equal(reminders.planDueReminder({ ...desired, earliestDueAt: tomorrowDue }).at,
+  new Date(2026, 9, 30, 8, 30, 0).getTime(), 'never notify before cards are due');
+assert.equal(reminders.actions.some(x => /notification|permission|schedule/i.test(x)), false,
+  'planner has no plugin, permission, or scheduling side effects');
 
 // Deep link registration is C-owned; only a later explicit A auth subscriber
 // can exchange a PKCE code. No cloud session or user data is changed here.
@@ -177,5 +211,5 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   await assert.rejects(failingBrowser.openAuthBrowser(authorize), /Could not open the native sign-in browser/);
   assert.equal(failingBrowser.actions.some(x=>x.includes('PRIVATE-TOKEN')), false, 'browser error redacted');
   assert.equal(web.actions.includes('register:Browser'), false, 'ordinary web is always inert');
-  console.log('ok: Android native Back/resume foreground wake, scoped PKCE deep links, validated system-browser launch and web isolation');
+  console.log('ok: Android native Back/resume foreground wake, scoped PKCE deep links, validated system-browser launch web isolation and consent-gated reminder planning');
 })().catch(error => { console.error(error); process.exitCode = 1; });
