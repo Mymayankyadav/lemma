@@ -12,7 +12,7 @@ on:
           - preflight
           - apply
       scope:
-        description: "Exact target: knowledge; plus PLAN-01; plus tutor receipts; or plus workspace snapshot"
+        description: "Exact source target: 12 knowledge, 13 plan, 14 tutor, 15 atomic tutor, 16 snapshot"
         type: choice
         required: true
         default: knowledge
@@ -20,6 +20,7 @@ on:
           - knowledge
           - knowledge_and_plan
           - knowledge_plan_tutor
+          - knowledge_plan_tutor_atomic
           - knowledge_plan_tutor_snapshot
 
 permissions:
@@ -57,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$DEPLOY_MODE" = "preflight" || test "$DEPLOY_MODE" = "apply"
-          test "$DEPLOY_SCOPE" = "knowledge" || test "$DEPLOY_SCOPE" = "knowledge_and_plan" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor_snapshot"
+          test "$DEPLOY_SCOPE" = "knowledge" || test "$DEPLOY_SCOPE" = "knowledge_and_plan" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor_atomic" || test "$DEPLOY_SCOPE" = "knowledge_plan_tutor_snapshot"
           echo "LEMMA_WORKDIR=$RUNNER_TEMP/lemma-knowledge-deploy" >> "$GITHUB_ENV"
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Missing SUPABASE_ACCESS_TOKEN repository secret"; exit 1; }
           test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::Missing LEMMA_SUPABASE_DB_PASSWORD repository secret"; exit 1; }
@@ -141,9 +142,12 @@ jobs:
           ];
           if (process.env.DEPLOY_SCOPE !== 'knowledge')
             expected.push('20261028094500_plan01_append_only_events.sql');
-          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor' ||
-              process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
+          if (['knowledge_plan_tutor','knowledge_plan_tutor_atomic',
+               'knowledge_plan_tutor_snapshot'].includes(process.env.DEPLOY_SCOPE))
             expected.push('20261028120000_tutor01_handoff_receipts.sql');
+          if (['knowledge_plan_tutor_atomic',
+               'knowledge_plan_tutor_snapshot'].includes(process.env.DEPLOY_SCOPE))
+            expected.push('20261028155500_tutor01_atomic_event_receipt.sql');
           if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
             expected.push('20261028163000_release01_owner_snapshot_v1.sql');
           const names=fs.readdirSync('supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
@@ -194,9 +198,12 @@ jobs:
           ];
           if (process.env.DEPLOY_SCOPE !== 'knowledge')
             expected.push('20261028094500_plan01_append_only_events.sql');
-          if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor' ||
-              process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
+          if (['knowledge_plan_tutor','knowledge_plan_tutor_atomic',
+               'knowledge_plan_tutor_snapshot'].includes(process.env.DEPLOY_SCOPE))
             expected.push('20261028120000_tutor01_handoff_receipts.sql');
+          if (['knowledge_plan_tutor_atomic',
+               'knowledge_plan_tutor_snapshot'].includes(process.env.DEPLOY_SCOPE))
+            expected.push('20261028155500_tutor01_atomic_event_receipt.sql');
           if (process.env.DEPLOY_SCOPE === 'knowledge_plan_tutor_snapshot')
             expected.push('20261028163000_release01_owner_snapshot_v1.sql');
           const names=fs.readdirSync(process.env.LEMMA_WORKDIR+'/supabase/migrations').filter(x=>x.endsWith('.sql')).sort();
