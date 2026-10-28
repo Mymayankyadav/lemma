@@ -12,7 +12,7 @@ const ID1='00000000-0000-4000-8000-000000000010';
 const ID2='00000000-0000-4000-8000-000000000011';
 const ID3='00000000-0000-4000-8000-000000000012';
 let owner=A,offline=false,beforeRead=async()=>{},notify=()=>{};
-let revision=3,statusOverride=null,seq=0;
+let revision=3,statusOverride=null,seq=0,planDeleted=false;
 const reads=[],rpc=[],events=[],ids=new Map();
 const checkpoints=Array.from({length:12},(_,i)=>({
  checkpoint_id:'cp-'+(i+1),title:'Checkpoint '+(i+1),
@@ -21,7 +21,7 @@ const checkpoints=Array.from({length:12},(_,i)=>({
  source_refs:['synthetic:chapter-'+(i+1)]
 }));
 const records=table=>{
- if(table==='study_plans')return [{id:PLAN,revision,
+ if(table==='study_plans')return planDeleted ? [] : [{id:PLAN,revision,
   user_id:A,title:'Topology',updated_at:'2026-10-28T00:00:00Z'}];
  if(table==='study_plan_versions')return [{plan_id:PLAN,
   revision,context_id:null,context_revision:null,
@@ -197,5 +197,44 @@ function load(){
  assert.equal(events.filter(e=>e.payload.plan_revision===3).length,historicalCount,
   'prior accepted revision history is preserved without rewriting');
  assert.equal(rpc.length,amendedReadCalls+2,'only two deliberate new events write');
- console.log('PASS PLAN-01 P5d: twelve checkpoints, revision-pinned visible proof/hints/feedback/evidence/action, old immutable ledger preserved, owner isolation and explicit-only writes');
+
+ // Another device can publish an approved amendment while this page is
+ // reading checkpoint and event state. The read must never return revision 3
+ // as the current plan once revision 4 is committed mid-request.
+ revision=3;statusOverride=null;
+ const evidenceCount=events.length,writeCount=rpc.length;
+ let published=false;
+ beforeRead=async()=>{
+  if(!published && reads.at(-1)?.table==='learning_events'){
+   published=true;revision=4;
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Approved study plan changed; reload checkpoint/,
+  'a concurrent publication must invalidate the in-flight context packet');
+ assert.equal(published,true,'test must actually publish during the event read');
+ assert.equal(revision,4);
+ assert.equal(events.length,evidenceCount,'stale read cannot mutate proof history');
+ assert.equal(rpc.length,writeCount,'stale read cannot write or approve anything');
+
+ // The same rule applies when the plan is removed from the current owner.
+ revision=3;beforeRead=async()=>{};
+ let removed=false;
+ beforeRead=async()=>{
+  if(!removed && reads.at(-1)?.table==='learning_events'){
+   removed=true;planDeleted=true;
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Approved study plan changed; reload checkpoint/,
+  'deleted plan must not produce a supposedly current checkpoint');
+ assert.equal(removed,true);
+ planDeleted=false;beforeRead=async()=>{};
+ const fresh=await load().activeContext();
+ assert.equal(fresh.planRevision,3,'a stable approved revision still resumes');
+ assert.equal(events.length,evidenceCount);
+ assert.equal(rpc.length,writeCount);
+ assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
+  'initial and final plan reads must both remain owner scoped');
+ console.log('PASS PLAN-01 P5f: twelve checkpoints, revision-pinned evidence, concurrent publication/deletion fail closed, stable resume, no extra writes');
 })().catch(e=>{console.error('FAIL PLAN-01 P4c3: '+e.stack);process.exitCode=1});
