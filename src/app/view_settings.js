@@ -215,7 +215,55 @@ const KnowledgeDraftEditor = (() => {
         return row;
       } finally { busy = false; }
     }
-    return { start, open, save, current: () => current };
+    // A comparison is requested by the student, never by render/reconnect.
+    async function compareConflict() {
+      const before = scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original = current;
+      if (!original || original.status !== 'needs_review' || !uuid.test(original.requestId || ''))
+        throw new Error('Open a conflicting approved intent before comparing');
+      busy = true;
+      try {
+        const packet = await LemmaCloudBridge.inspectKnowledgeConflict(original.contextId);
+        unchanged(before);
+        if (current !== original || packet?.local?.contextId !== original.contextId ||
+            packet.local.localRevision !== original.localRevision ||
+            packet.local.requestId !== original.requestId ||
+            !Number.isSafeInteger(packet.accepted?.revision) ||
+            packet.accepted.revision <= original.expectedRevision)
+          throw new Error('Knowledge conflict changed; compare again');
+        return packet;
+      } finally { busy = false; }
+    }
+    // Only a second explicit student gesture can reopen a compared conflict.
+    // The A-owned API archives the original and returns an UNAPPROVED local draft.
+    async function reopenConflict(packet) {
+      const before = scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original = current;
+      if (!original || original.status !== 'needs_review' ||
+          packet?.local?.contextId !== original.contextId ||
+          packet.local.localRevision !== original.localRevision ||
+          packet.local.requestId !== original.requestId ||
+          !Number.isSafeInteger(packet.accepted?.revision) ||
+          packet.accepted.revision <= original.expectedRevision)
+        throw new Error('Knowledge conflict changed; compare again');
+      busy = true;
+      try {
+        const row = await LemmaCloudBridge.reopenReviewedKnowledgeConflict(
+          original.contextId, original.localRevision, original.requestId,
+          packet.accepted.revision, true);
+        unchanged(before);
+        if (current !== original || !row || row.status !== 'draft' ||
+            row.contextId !== original.contextId || row.requestId ||
+            row.expectedRevision !== packet.accepted.revision ||
+            row.localRevision !== original.localRevision + 1)
+          throw new Error('Knowledge conflict changed; reopen saved draft by ID');
+        current = row;
+        return row;
+      } finally { busy = false; }
+    }
+    return { start, open, save, compareConflict, reopenConflict, current: () => current };
   }
   return { create };
 })();
@@ -635,7 +683,22 @@ const SettingsView = (() => {
       h('label', { class: 'setting-label', for: 's-knowledge-goals', text: 'Learning goals' }), goals,
       h('label', { class: 'setting-label', for: 's-knowledge-markdown', text: 'Context notes (Markdown)' }), markdown,
       h('div', { class: 'btn-row' }, save));
+    const compare = h('button', { id: 's-knowledge-compare', class: 'btn btn-sm',
+      type: 'button', hidden: true, text: 'Compare with accepted revision' });
+    const reopen = h('button', { id: 's-knowledge-reopen', class: 'btn btn-sm',
+      type: 'button', hidden: true, text: 'Reopen as unapproved draft' });
+    const review = h('div', { id: 's-knowledge-review', class: 'knowledge-context-review',
+      hidden: true, 'aria-live': 'polite' });
+    let compared = null;
+    function clearComparison() {
+      compared = null;
+      review.hidden = true;
+      reopen.hidden = true;
+      fill(review);
+    }
     function show(row) {
+      clearComparison();
+      compare.hidden = row.status !== 'needs_review';
       id.value = row.contextId;
       title.value = row.title || '';
       summary.value = typeof row.payload?.summary === 'string' ? row.payload.summary : '';
@@ -694,10 +757,60 @@ const SettingsView = (() => {
         create.disabled = open.disabled = false;
       }
     };
+    compare.onclick = async () => {
+      compare.disabled = true;
+      clearComparison();
+      try {
+        const packet = await editor.compareConflict();
+        compared = packet;
+        const side = (heading, label, item, payload) =>
+          h('section', { class: 'knowledge-context-side' },
+            h('h3', { text: heading }),
+            h('p', { class: 'muted small', text: label }),
+            h('p', { class: 'small', text: item.title || 'Untitled context' }),
+            h('pre', { class: 'knowledge-context-preview',
+              text: item.markdown || item.context_markdown || '(No Markdown)' }),
+            h('details', null,
+              h('summary', { text: 'Structured context fields' }),
+              h('pre', { class: 'knowledge-context-preview',
+                text: JSON.stringify(payload ?? null, null, 2) })));
+        fill(review,
+          h('p', { class: 'small',
+            text: 'Read-only comparison. Neither version is overwritten or approved by inspecting it.' }),
+          h('div', { class: 'knowledge-context-versions' },
+            side('Your reviewed attempt', 'Local revision ' + packet.local.localRevision +
+              ' · request not applied to cloud', packet.local, packet.local.payload),
+            side('Current accepted revision', 'Server revision ' + packet.accepted.revision +
+              ' · already accepted in your account', packet.accepted, packet.accepted.accepted_json)));
+        review.hidden = false;
+        reopen.hidden = false;
+        status.textContent = 'Compared revisions. Your original reviewed intent is still locked and preserved.';
+      } catch (err) {
+        clearComparison();
+        status.textContent = 'Comparison unavailable: ' + err.message;
+      } finally { compare.disabled = false; }
+    };
+    reopen.onclick = async () => {
+      if (!compared) return;
+      const packet = compared;
+      const agreed = await confirmDialog({
+        title: 'Reopen as an unapproved local draft?',
+        message: 'Your previous approved intent and conflict evidence will be archived. Your notes will reopen locally against the accepted server revision. Nothing will be published or approved; you must review and approve again before submitting.',
+        confirmLabel: 'Reopen draft'
+      });
+      if (!agreed) return;
+      reopen.disabled = true;
+      try { show(await editor.reopenConflict(packet)); }
+      catch (err) {
+        clearComparison();
+        status.textContent = 'Could not reopen safely: ' + err.message + '. Compare again.';
+      } finally { reopen.disabled = !compared; }
+    };
     return section('set-knowledge-drafts', 'Private study context drafts',
       'Unaccepted drafts are saved only in this device’s signed-in account cache. Copy the context ID to reopen it after a reload. Saving does not approve or publish a context.',
       h('label', { class: 'setting-label', for: 's-knowledge-id', text: 'Context ID' }),
-      id, h('div', { class: 'btn-row' }, create, open), status, fields);
+      id, h('div', { class: 'btn-row' }, create, open), status, fields,
+      h('div', { class: 'btn-row' }, compare, reopen), review);
   }
 
   function ratingProbs() {
