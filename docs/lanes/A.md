@@ -3,7 +3,8 @@
 - **Claim:** `chat-20261028-a-native-pkce`, UTC heartbeat 2026-10-28T03:35:42.091Z, base `main@bfcf00cd`, branch `lane-a/android-02-auth-s3-native-pkce`; no active A PR at claim.
 - **Cross-lane request:** ANDROID-02-N1-AUTH-A1 from C; implement A-owned native Google OAuth initiation and callback exchange in `src/app/cloud_account.js`, native authorization mock in `test/account_native_oauth.js`, A handoff and own package test script only. C owns NativeShell launcher/callback; B owns Settings presentation.
 - **Gate:** local mocked Android successful/failed/cancelled/expired/duplicate/wrong-account callback, web PKCE regression, full regression and Android CI, current main CI; device Google OAuth/redirect configuration remains NOT RUN. No user-data transfer, no production service change, no Carrel.
-- **Next:** open draft claim PR, implement bounded exchange and security guards; merge only with exact-head green CI.
+- **Implementation:** [draft PR #59](https://github.com/Mymayankyadav/lemma/pull/59) supplies native-only `signInWithGoogle` skip-redirect PKCE and C's `openAuthBrowser`, durable nonsecret 10-minute pending marker for cold callbacks, callback URL revalidation, one-time exchange, abort-on-sign-out/identity-change guards, redacted failure handling, unchanged web code path and no anonymous account-workspace transfer. A-owned `test/account_native_oauth.js` runs under `npm test` and covers native success, duplicate/invalid/error/expired/cancel/wrong-account/cold callbacks, web fallback. **No physical phone or production sign-in evidence is claimed.**
+- **Heartbeat:** 2026-10-28T03:37:52.295Z. **Next:** inspect exact-head regression and Android results; fix failures and merge only after all applicable CI is green. Then request C physical sign-in smoke via existing device checklist; KNOWLEDGE-01 K2b remains independently next for backend.
 
 ## KNOWLEDGE-01 K2a — accepted-context CAS implementation claim (2026-10-28)
 
