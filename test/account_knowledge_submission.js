@@ -10,6 +10,7 @@ const requestId='00000000-0000-4000-8000-000000000004';
 let identity=a,online=true,handle,send;
 const calls=[],attempts=[],confirmed=[];
 let saved=null,receipt=null;
+const conflictArchives=[];
 const pending=()=>({contextId,userId:a,status:'approved_pending',
   approvedBy:'student',requestId,expectedRevision:3,
   title:'Topology',markdown:'Student reviewed proof',
@@ -33,6 +34,18 @@ const storage={
   assert.equal(revision,4);
   receipt={requestId:key,revision};
   saved=null;confirmed.push(key);return receipt;
+ },
+ async reopenKnowledgeConflictDraft(id,localRevision,key,serverRevision,reviewed){
+  assert.equal(id,contextId);assert.equal(key,requestId);
+  assert.equal(reviewed,true);
+  assert.equal(localRevision,5);assert.equal(serverRevision,4);
+  if(saved.status!=='needs_review')throw Error('not a conflict');
+  conflictArchives.push(structuredClone(saved));
+  const {approvedBy,requestId:oldKey,attempted,attempts,conflict,...data}=saved;
+  saved={...data,status:'draft',expectedRevision:serverRevision,
+   localRevision:localRevision+1,reopenedFromRequestId:oldKey,
+   reopenedFromLocalRevision:localRevision};
+  return structuredClone(saved);
  }
 };
 handle={userId:a,storage};
@@ -164,5 +177,47 @@ const api=scope.bridge;
  identity=a;handle={userId:a,storage};
  assert.equal(saved.status,'needs_review','identity race cannot change local approval state');
  await assert.rejects(api.inspectKnowledgeConflict('invalid'),/Invalid knowledge context/);
- console.log('PASS KNOWLEDGE K2g/K2h1: exact-key authenticated submit, offline queue, network-lost retry, confirmed receipt, stale conflict and account-switch rejection');
+ // K2h2: explicit user-reviewed reopen is a local unapproved draft,
+ // never a second server commit or an implicit reapproval of stale content.
+ identity=a;handle={userId:a,storage};online=true;receipt=null;
+ saved={...pending(),status:'needs_review',localRevision:5};
+ send=()=>({data:{context_id:contextId,revision:4,
+  title:'Current accepted context',context_markdown:'Remote edit'}});
+ const beforeChoice=calls.length;
+ await assert.rejects(api.reopenReviewedKnowledgeConflict(
+  contextId,5,requestId,4,false),/Explicit reviewed/);
+ assert.equal(calls.length,beforeChoice,'no consent cannot make a remote request');
+ await assert.rejects(api.reopenReviewedKnowledgeConflict(
+  contextId,5,requestId,3,true),/changed; compare again/);
+ assert.equal(saved.status,'needs_review');
+ await assert.rejects(api.reopenReviewedKnowledgeConflict(
+  contextId,4,requestId,4,true),/changed; compare again/);
+ assert.equal(conflictArchives.length,0,'stale comparisons cannot archive intent');
+ send=()=>{identity=b;handle={userId:b,storage};
+  return {data:{context_id:contextId,revision:4}};};
+ await assert.rejects(api.reopenReviewedKnowledgeConflict(
+  contextId,5,requestId,4,true),/Account changed/);
+ assert.equal(conflictArchives.length,0);
+ identity=a;handle={userId:a,storage};
+ send=()=>({data:{context_id:contextId,revision:4}});
+ const commitCount=calls.filter(x=>x.name==='commit_structured_study_context').length;
+ const restarted=await api.reopenReviewedKnowledgeConflict(
+  contextId,5,requestId,4,true);
+ assert.equal(restarted.status,'draft');
+ assert.equal(restarted.expectedRevision,4);
+ assert.equal(restarted.localRevision,6);
+ assert.equal(restarted.approvedBy,undefined);
+ assert.equal(restarted.requestId,undefined);
+ assert.equal(restarted.reopenedFromRequestId,requestId);
+ assert.equal(conflictArchives.length,1);
+ assert.equal(conflictArchives[0].requestId,requestId);
+ const readCount=calls.length;
+ assert.equal((await api.reopenReviewedKnowledgeConflict(
+  contextId,5,requestId,4,true)).status,'draft');
+ assert.equal(calls.length,readCount,'lost local response requires no second RPC');
+ assert.equal(calls.filter(x=>x.name==='commit_structured_study_context').length,
+  commitCount,'reopening never sends a new accepted write');
+ await assert.rejects(api.submitApprovedKnowledgeDraft(contextId),
+  /Explicit student approval/);
+ console.log('PASS KNOWLEDGE K2g/K2h1/K2h2: exact-key authenticated submit, offline queue, network-lost retry, confirmed receipt, stale conflict and account-switch rejection');
 })().catch(e=>{console.error('FAIL K2g submit bridge: '+e.message);process.exitCode=1;});

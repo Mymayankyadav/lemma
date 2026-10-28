@@ -160,6 +160,71 @@ const make=(over={})=>({contextId,expectedLocalRevision:0,expectedRevision:3,
  await assert.rejects(reloaded.saveKnowledgeDraft(make({
   contextId:thirdId,expectedLocalRevision:2,markdown:'unreviewed rebase'
  })),/Approved knowledge intent is pending/);
+ // K2h2: a stale approved request is immutable until the student reviews
+ // the latest accepted revision and explicitly reopens a NEW unapproved draft.
+ await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
+  thirdId,2,stale.requestId,4,false),/Explicit student conflict review/);
+ await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
+  thirdId,1,stale.requestId,4,true),/changed; compare again/);
+ await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
+  thirdId,2,stale.requestId,3,true),/changed; compare again/);
+ await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
+  thirdId,2,'00000000-0000-4000-8000-000000000099',4,true),
+  /changed; compare again/);
+ const archiveKey='knowledge:conflict:v1:'+thirdId+':'+stale.requestId;
+ const readArchive=()=>new Promise((resolve,reject)=>{
+  const r=opened.transaction('meta','readonly').objectStore('meta').get(archiveKey);
+  r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);
+ });
+ // Failure after the archive add but before commit must roll back BOTH rows.
+ const putReopen=IDBObjectStore.prototype.put;
+ IDBObjectStore.prototype.put=function(value,...args){
+  const r=putReopen.call(this,value,...args);
+  if(value?.status==='draft' && value?.reopenedFromRequestId===stale.requestId)
+   r.addEventListener('success',()=>this.transaction.abort());
+  return r;
+ };
+ await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
+  thirdId,2,stale.requestId,4,true));
+ IDBObjectStore.prototype.put=putReopen;
+ assert.equal(await readArchive(),null,'failed reopen must not archive alone');
+ assert.equal((await reloaded.knowledgeDraft(thirdId)).status,'needs_review',
+  'failed transaction retains original approved conflict');
+ const otherTabDb=await openAccountDB(a);
+ const concurrentStorage=new AccountStorage(otherTabDb,a);
+ const both=await Promise.all([
+  reloaded.reopenKnowledgeConflictDraft(thirdId,2,stale.requestId,4,true),
+  concurrentStorage.reopenKnowledgeConflictDraft(thirdId,2,stale.requestId,4,true)
+ ]);
+ const reopened=both[0];
+ assert.deepEqual(both[1],reopened,
+  'two tabs converge to the same archived intent and unapproved draft');
+ otherTabDb.close();
+ assert.equal(reopened.status,'draft');
+ assert.equal(reopened.expectedRevision,4);
+ assert.equal(reopened.localRevision,3);
+ assert.equal(reopened.markdown,'Needs review');
+ assert.equal(reopened.approvedBy,undefined);
+ assert.equal(reopened.requestId,undefined);
+ assert.equal(reopened.reopenedFromRequestId,stale.requestId);
+ const archive=await readArchive();
+ assert.equal(archive.original.status,'needs_review');
+ assert.equal(archive.original.requestId,stale.requestId);
+ assert.equal(archive.original.markdown,'Needs review');
+ assert.equal(archive.acceptedRevision,4);
+ assert.deepEqual(await reloaded.reopenKnowledgeConflictDraft(
+  thirdId,2,stale.requestId,4,true),reopened,
+  'lost local response returns the exact reopened draft');
+ await assert.rejects(reloaded.reopenKnowledgeConflictDraft(
+  thirdId,2,stale.requestId,5,true),/changed; compare again/);
+ assert.equal(await otherAccount.knowledgeDraft(thirdId),null,
+  'conflict archive/reopen must not cross owner namespaces');
+ const freshApproval=await reloaded.approveKnowledgeDraft(thirdId,3,true);
+ assert.notEqual(freshApproval.requestId,stale.requestId,
+  'reapproval after explicit edit/review needs a fresh immutable request');
+ assert.equal(freshApproval.expectedRevision,4);
+ assert.equal((await readArchive()).original.requestId,stale.requestId,
+  'new approval cannot erase original conflicting request');
  assert.equal((await reloaded.list()).length,0,
   'context approval uses private meta records, not the review/note outbox');
  opened.close();dbB.close();
