@@ -120,7 +120,7 @@ const B = '00000000-0000-4000-8000-000000000002';
     TextEncoder,crypto,structuredClone
   });
   vm.runInContext(fs.readFileSync('src/app/cloud_bridge.js','utf8')+
-    '\\nglobalThis.serverBridge=LemmaCloudBridge',serverVM);
+    '\nglobalThis.serverBridge=LemmaCloudBridge',serverVM);
   const remote=serverVM.serverBridge;
   await assert.rejects(remote.captureServerWorkspaceSnapshot(),/Explicit server workspace/);
   assert.equal(rpcCalls,0,'no read without deliberate student request');
