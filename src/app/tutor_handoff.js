@@ -234,16 +234,77 @@ const TutorHandoff = (() => {
       status.textContent = 'Tutor reply changed. Review it again before saving anything.';
       updateSave();
     }
+    // Card acceptance is completed by the existing editor's Save button.
+    // The editor does not persist arbitrary structured preset metadata.
+    function cardPreset(card) {
+      const safe = s => JSON.stringify(s).split(String.fromCharCode(96)).join('\\u0060');
+      const sources = card.sourceRefs.length
+        ? card.sourceRefs.map(safe).join(', ') : '(none proposed)';
+      const provenance = [
+        '---',
+        '**Tutor proposal provenance — verify before saving**',
+        '- Plan: ' + ctx.planId + ' (revision ' + ctx.planRevision + ')',
+        '- Checkpoint: ' + safe(ctx.checkpoint.id),
+        '- Proposal: ' + card.proposalId,
+        '- Source references (student must verify): ' + sources
+      ].join('\n');
+      return {type:card.type,title:card.title,front:card.front,
+        back:card.back + '\n\n' + provenance,requires:card.requires};
+    }
+    async function reviewCard(card, checkbox, button) {
+      if (saving || !checkbox.checked || reviewedText === null ||
+          input.value !== reviewedText) return;
+      button.disabled = true;
+      try {
+        if (!Array.isArray(ctx.sourceRefs) ||
+            card.sourceRefs.some(ref => !ctx.sourceRefs.includes(ref)))
+          throw new Error('Card cites a source outside the approved checkpoint; review the study context first');
+        if (typeof App === 'undefined' || typeof App.newCard !== 'function')
+          throw new Error('Card editor is not available');
+        const verifyOwner = () => {
+          if ((typeof LemmaAccount !== 'undefined' && LemmaAccount.user?.id !== ownerId) ||
+              App.workspaceBlocked || App.workspaceRevision !== workspaceRev)
+            throw new Error('Study account or workspace changed; reopen the handoff');
+          if (reviewedText === null || input.value !== reviewedText)
+            throw new Error('Tutor reply changed; review it again');
+        };
+        verifyOwner();
+        const now = await StudyPlan.activeContext();
+        verifyOwner();
+        if (!now || now.planId !== ctx.planId ||
+            now.planRevision !== ctx.planRevision ||
+            now.checkpoint?.id !== ctx.checkpoint.id)
+          throw new Error('stale_plan_revision: reopen the handoff');
+        App.newCard(cardPreset(card));
+        status.textContent = 'Card proposal opened in the editor, not saved here. Review and press Add card in the editor to accept it. Add suggested tags manually if wanted.';
+      } catch (e) {
+        status.textContent = 'Card proposal not opened: ' + String(e?.message || 'Review failed');
+      } finally {
+        button.disabled = !checkbox.checked || reviewedText === null ||
+          input.value !== reviewedText;
+      }
+    }
     function reviewOne(title, value, index) {
       const checkbox = h('input', { type:'checkbox', 'aria-label':'Select '+title });
       const isEvent = index[0] === 'e';
+      const isCard = index[0] === 'c';
       const detail = h('details', { class:'tutor-handoff-item' },
         h('summary', { text:title }),
         h('pre',{class:'tutor-handoff-json',text:JSON.stringify(value,null,2)}),
         h('label',{class:'tutor-handoff-select'},checkbox,
-          isEvent ? ' Select to record this study event' : ' Select for later approval (not saved here)'));
+          isEvent ? ' Select to record this study event' :
+          isCard ? ' Select to inspect in the card editor' : ' Select for later amendment review (not saved here)'));
       items.push({ index,kind:index[0],value,checkbox });
-      checkbox.addEventListener('change',updateSave);
+      if (isCard) {
+        const editorBtn = h('button', { class:'btn', type:'button',
+          text:'Review card in editor',disabled:true });
+        checkbox.addEventListener('change', () => {
+          updateSave();
+          editorBtn.disabled = !checkbox.checked || reviewedText === null || saving;
+        });
+        editorBtn.addEventListener('click', () => reviewCard(value, checkbox, editorBtn));
+        detail.append(editorBtn);
+      } else checkbox.addEventListener('change',updateSave);
       return detail;
     }
     function inspect() {
