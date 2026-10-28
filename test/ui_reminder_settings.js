@@ -95,6 +95,10 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
     { c: { st: 1, due: now - 30000 } },
   ]);
   assert.equal(native.reminders.earliestDueAt(), now - 30000);
+  native.setCards([{ c: { st: 2, due: now - 60000, bury: now + 3600000 } }]);
+  assert.equal(native.reminders.earliestDueAt(), now + 3600000,
+    'a buried review becomes eligible after unbury rather than disappearing');
+  native.setCards([{ c: { st: 1, due: now - 30000 } }]);
   const enabled = await native.reminders.enable('09:30');
   assert.equal(enabled.ok, true);
   assert.equal(native.calls.request, 1);
