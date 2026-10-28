@@ -16,8 +16,8 @@ create table public.study_context_revisions (
   primary key (user_id,context_id,revision),
   unique (user_id,request_id),
   foreign key (user_id,context_id) references public.study_context_files(user_id,id) on delete restrict,
-  check (octet_length(title) between 1 and 512),
-  check (octet_length(context_markdown) <= 65536),
+  -- Legacy rows may exceed new write caps; never truncate or reject their
+  -- historical current snapshot. Only the CAS RPC enforces new-write limits.
   check ((origin='legacy_current_baseline' and request_id is null and payload_hash is null)
     or (origin='accepted_write' and request_id is not null and payload_hash is not null))
 );
