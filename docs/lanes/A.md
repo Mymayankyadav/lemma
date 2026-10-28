@@ -5,6 +5,9 @@
 - **Paths:** `src/app/sync_browser.js`, `src/app/cloud_bridge.js`, `test/sync_knowledge_drafts.js`, `test/account_knowledge_drafts.js`, `docs/lanes/A.md`. Existing tests remain strict; no migration, production changes, UI, Android or Carrel.
 - **Gate:** two-tab competing approval, missing consent, changed revision, lost local receipt, restart, tutor-vs-student provenance, pending write protection, identity switch and stable request ID; full exact-head CI and post-merge main.
 - **Next:** build this narrowly scoped local approval transition. K2g separately implements online idempotent submission, status/ack and 409 conflict review. Do not treat a pending intent as an accepted context.
+- **Implementation checkpoint:** a local draft moves to `status:'approved_pending'` only through `AccountStorage.approveKnowledgeDraft(contextId, expectedLocalRevision, true)`. It atomically retains the exact draft snapshot, authorKind and server expected revision and assigns one durable `requestId`; concurrent approvals and lost local receipt return the identical stored intent, not a duplicate. Ordinary draft editing and discard reject pending approved records. A-owned bridge exposes the guarded method; tests cover no-consent, stale local revision, independent-tab race, restart/idempotence, tutor provenance, and logout during approval. **No network dispatch or cloud acknowledgment occurs in K2f.**
+- **Still gated:** K2g needs a separate authenticated exact-request submit + confirmed receipt/conflict path, later automatic retry policy and student-approved UI. Production has only nine baseline migrations; exact-version deployment method is not established, and no production change is authorized by this local slice. CI status PENDING for this branch.
+
 
 ## KNOWLEDGE-01 K2e — account-scoped durable offline drafts (active claim)
 
