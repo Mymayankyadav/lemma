@@ -1,3 +1,11 @@
+## KNOWLEDGE-01 K3a1 — lock stale knowledge conflict in Settings (active claim)
+
+- **Claim:** `takeover-20261028-k3a1-conflict-lock`, UTC heartbeat 2026-10-28T08:02:10.434Z; base `main@4058f097f121ee86e80134e336e8202e94011431`; branch `lane-b/knowledge-01-k3a1-conflict-lock`. User confirmed no other active implementation agent. K3a PR #73 is merged, C N4b #74 is merged; A K2h1 #75 is independently active.
+- **Bug:** A K2g added durable `needs_review` status for accepted-context CAS conflicts. The merged B K3a editor only visually locked `approved_pending`, so a stale immutable intent was still presented as editable until the A-owned persistence guard rejected save.
+- **Scope:** make `needs_review` explicitly read-only in Settings with a clear conflict status, preserving the local draft/request/approval. Add B-owned UI tests and browser screenshot; no A/C, production, migrations or client APIs.
+- **Gate:** conflict locks all fields/save, not mislabelled accepted/draft, no implicit rebase, no unsaved-switch false positive, mobile/desktop screenshot and exact-head regression/Android/local-stack CI; merge after current main post-#74 checks. Physical phone and production knowledge migration remain not run.
+- **Next:** implementation and tests, verify then merge; accepted-revision comparison UI is later and depends on A #75.
+
 ## KNOWLEDGE-01 K3a — account-scoped unaccepted context draft editor (active claim)
 
 - **Claim:** `hourly-20261028-k3a-b-draft-ui`; UTC heartbeat 2026-10-28T07:32:34.982Z; base `main@ca1195dc9b6cfc3fe9ea938d3e7e8a80b5f3c872`; branch `lane-b/knowledge-01-k3a-local-draft-editor`. Lane B unclaimed (no open B PR); A's [PR #72](https://github.com/Mymayankyadav/lemma/pull/72) is actively implementing K2g and remains untouched.
