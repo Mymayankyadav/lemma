@@ -43,8 +43,11 @@ const ReminderSettings = (() => {
     if (!NativeShell.enabled || App.loading || App.workspaceBlocked) return null;
     let due = Infinity;
     for (const { c } of Model.cardRefs()) {
-      if (!c || c.st === 0 || c.susp || Model.isBuried(c, now)) continue;
-      if (Number.isSafeInteger(c.due) && c.due > 0) due = Math.min(due, c.due);
+      if (!c || c.st === 0 || c.susp) continue;
+      // A temporarily buried card becomes eligible at its unbury time;
+      // excluding it forever would miss tomorrow's due reminder.
+      const at = Model.isBuried(c, now) ? Math.max(c.due, c.bury) : c.due;
+      if (Number.isSafeInteger(at) && at > 0) due = Math.min(due, at);
     }
     return Number.isFinite(due) ? due : null;
   }
