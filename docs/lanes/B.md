@@ -1,6 +1,6 @@
 # Lane B — UI
 
-Next action: **UI-01-LIVE-STATUS-A1 OPEN → lane A** after this request PR merges; A implements authenticated local-stack UI-state captures under its ownership, then B reviews screenshots and completes only evidenced UI-01 gates. Claim `hourly-20261028T0035Z-b-live-evidence`, branch `lane-b/ui-01-live-transport-evidence`, heartbeat UTC 2026-10-28T00:35:00Z; tested SHA PENDING. No other B implementation claim. Owner action: none.
+Next action: **UI-01 live offline indicator fix (lane B)**: real local-stack CI for A's PR #46 exposed `Saved on device · checking cloud` with no visible chip while `navigator.onLine === false` after a durable queued edit. Claim `hourly-20261028T0049Z-b-offline-fallback`, branch `lane-b/ui-01-offline-connecting-indicator`, heartbeat UTC 2026-10-28T00:49:58Z. Change B-owned `src/app/main.js` and `test/ui_screenshots.js` to display and verify a visible Offline status even before account sync phase catches up; preserve failure/conflict priority. A's PR #46 remains actively claimed; do not edit A files. Exact-head CI and screenshots PENDING; local npm NOT RUN (network clone unavailable). Owner action: none.
 
 | Field | Value |
 | --- | --- |
