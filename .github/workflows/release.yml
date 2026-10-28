@@ -29,6 +29,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Install Chromium for actual Pages checks
         run: npx playwright install --with-deps chromium
+      - name: Build isolated PWA shell for offline checks
+        run: npm run build
+      - name: Verify service worker offline and upgrade preservation
+        run: node test/release_pwa.js
       - name: Assert intentionally broken URL fails closed
         run: node test/release_live_smoke.js --negative-self-test
       - name: Check published Pages anonymously

@@ -1,12 +1,12 @@
 # Lane F — release and ship (RELEASE-01)
 
-Next action: merge R0 live Pages smoke after exact-head CI success, then implement R1 PWA offline/update test. Keep Android deferred and record post-merge Pages evidence.
+Next action: verify exact-head regression / Android / PWA live gate for R1 PR #90, reconcile latest main and squash merge on all green; then implement R2 backup/restore round-trip and prepare release notes. Do not tag until all ship gates clear.
 
 R0 implementation is in [PR #87](https://github.com/Mymayankyadav/lemma/pull/87). Original R0 scope: create `.github/workflows/release.yml` + `test/release_live_smoke.js`: after each successful "Deploy Lemma web" run on `main` (`workflow_run`) and on `workflow_dispatch`, run Playwright against `https://mymayankyadav.github.io/lemma/` with the checks in `docs/SHIP_PLAN.md`, upload screenshots, and record each result in the watch log below. `test/release_live_smoke.js` must exit 0 without running when `LEMMA_LIVE_URL` is unset so `npm test` stays offline. Then RELEASE-01 R1 — add `test/release_pwa.js` that serves `dist/` over HTTPS-equivalent localhost with the service worker **enabled**, verifies offline reload of the app shell and that a new build replaces the cached one without losing IndexedDB data; fix `src/service-worker.js` only if the test exposes a defect. Meanwhile watch `main` CI and record any red run and its culprit commit here.
 
 | Field | Value |
 | --- | --- |
-| Status | SHIP-F0 R0 implemented in PR #87. **Live Pages test SUCCESS** at head `08ad98116f958fc4d9366d452f73267748c33913`: [run 40666883246](https://github.com/Mymayankyadav/lemma/actions/runs/40666883246), including intentionally broken URL rejection. This is live anonymous web only, not production authenticated/two-device verification. Merge gate still requires exact final head regression/Android CI. |
+| Status | **R0 merged** [PR #87](https://github.com/Mymayankyadav/lemma/pull/87) (554a8d2). **R1 targeted gate SUCCESS** on [run 40671405855](https://github.com/Mymayankyadav/lemma/actions/runs/40671405855) at 208bb6f; exact final head regression/Android and main reconciliation pending on [PR #90](https://github.com/Mymayankyadav/lemma/pull/90). Release not approved. |
 | Task | RELEASE-01 — gate in `plan.md` §2 and `docs/SHIP_PLAN.md`; owns the 22:00 IST ship cut (SHIP-F1) |
 | Owns | see `lanes.json` lane F |
 | Slices | R0 live-site smoke (SHIP-F0) · R1 PWA offline/update test · R2 backup/restore round-trip test for cards, schedules and review history using existing export/import (`test/release_backup.js`); extend to contexts/plans/events after D's `StudyPlan` merges · R3 tag `v*` creates a GitHub release with notes (no APK: Android paused) · R4 `docs/RELEASE.md` checklist and release notes; 21:00 freeze notice; 22:00 cut and tag on green `main` |
@@ -16,10 +16,18 @@ R0 implementation is in [PR #87](https://github.com/Mymayankyadav/lemma/pull/87)
 
 - 2026-10-28 09:37 · `1653e401` · [regression 40665652911](https://github.com/Mymayankyadav/lemma/actions/runs/40665652911) / [local Supabase 40665653019](https://github.com/Mymayankyadav/lemma/actions/runs/40665653019) / [Android lane guard 40665653015](https://github.com/Mymayankyadav/lemma/actions/runs/40665653015) / [Pages 40665653044](https://github.com/Mymayankyadav/lemma/actions/runs/40665653044) · SUCCESS all · integration.
 - 2026-10-28 09:46 · `ae14fe6` (PR #87) · [live smoke 40666690085](https://github.com/Mymayankyadav/lemma/actions/runs/40666690085) · FAILURE, test-only mobile hidden desktop button; owning F; fixed by `08ad981`.
-- 2026-10-28 09:48 · `08ad981` (PR #87) · [live smoke 40666883246](https://github.com/Mymayankyadav/lemma/actions/runs/40666883246) · SUCCESS, anonymous create/review/reload, Settings sign-in button, navigation, no console/same-origin failure; **not yet a post-merge main run**.
+- 2026-10-28 09:48 · `08ad981` (PR #87) · [live smoke 40666883246](https://github.com/Mymayankyadav/lemma/actions/runs/40666883246) · SUCCESS, anonymous create/review/reload, Settings sign-in button, navigation, no console/same-origin failure; later superseded by post-merge main live smoke.
 
 **Requests from other lanes:** none yet.
 
 **R0 claim:** SHIP-F0; owned paths `.github/workflows/release.yml`, `test/release_live_smoke.js`, `docs/lanes/F.md`. Start from main@1653e401; implement dispatch/workflow-run health check with fail-closed browser assertions, red-URL negative case; next run PR CI and verify green live Pages workflow before ship. No Android, production DB, or account writes.
 
 **R0 boundary:** `test/release_live_smoke.js` skips without `LEMMA_LIVE_URL` in offline npm tests. PR job tests the real deployed URL and a local 404 negative control, with screenshot artifact. Service workers are deliberately disabled for this test; R1 must test them enabled. The live success verifies current Pages deployment, not any unmerged D/E feature.
+
+**R1 claim** 2026-10-28 09:58 UTC · `chat-20261028-lane-f-r1-1523`. R1 only `test/release_pwa.js`, optional `src/service-worker.js` if proven defect, and lane F handoff; separate from R0 merged PR #87. Test real Chromium SW over secure loopback, offline reload of shell with local IndexedDB card, versioned update and retention; no production writes. Main post-R0 workflows still pending at claim, do not merge if red. Next: code, slice test, full CI.
+
+**R0 post-merge evidence:** [main deploy 40669346349](https://github.com/Mymayankyadav/lemma/actions/runs/40669346349) on c3bc717 SUCCESS, auto-triggered [live Pages 40669404877](https://github.com/Mymayankyadav/lemma/actions/runs/40669404877) SUCCESS. No authenticated production tests included.
+
+**R1 checkpoint 2026-10-28 10:22 UTC:** [release gate 40671405855](https://github.com/Mymayankyadav/lemma/actions/runs/40671405855) SUCCESS, real Chromium over trustworthy loopback: initial worker install, anonymous IndexedDB card persistence, offline app shell reload, versioned SW update, updated online and offline HTML, identical full card after update, plus live Pages/404 negative. Initial [regression 40668312767](https://github.com/Mymayankyadav/lemma/actions/runs/40668312767) exposed cache-first stale shell; fixed in src/service-worker.js with network-first HTML, install-only cache writes, and exact current-cache lookups; outgoing cache may briefly remain during activation, but cannot supply an obsolete shell. This is an isolated local web lifecycle test; no Android offline claim, auth or production DB reads/writes. Full merged-head CI required before R1 merge.
+
+**R1 owned paths:** test/release_pwa.js, src/service-worker.js, .github/workflows/release.yml, docs/lanes/F.md. Release workflow now runs the PWA gate on every dispatch, PR and successful Pages deploy. No other lane files edited. Next work R2 test/release_backup.js, with schedules/review history included; extend after plan-schema gates when stable.
