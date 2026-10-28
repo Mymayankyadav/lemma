@@ -58,7 +58,7 @@ function ui(){
 const payload=()=>JSON.stringify({
  schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:A,checkpoint_id:cp,
  expected_plan_revision:3,
- events:[{event_id:E1,type:'attempt',payload:{text:'The current proof stops here'}},
+ events:[{event_id:E1,type:'attempt',source:'student',payload:{text:'The current proof stops here'}},
          {event_id:E2,type:'hint',payload:{level:2,text:'Try a finite subcover'}}],
  card_proposals:[{proposal_id:C1,type:'basic',title:'Compactness',
    front:'What is a compact set?',back:'Every open cover has a finite subcover.',
@@ -95,7 +95,8 @@ async function open(){
  assert.equal(calls[0].eventId,E1);
  assert.equal(calls[0].expectedPlanRevision,3);
  assert.deepEqual(calls[0].payload,{text:'The current proof stops here'});
- assert.equal(calls[0].source,'tutor_handoff.v1','source provenance fallback');
+ assert.equal(calls[0].source,'tutor_handoff.v1',
+  'untrusted tutor source must not impersonate student evidence');
  assert.equal(first.disabled,true,'acknowledged event cannot be written twice');
  assert.equal(x.save.disabled,true);
  assert.equal(cardOnly.disabled,false,'no card silently approved');
