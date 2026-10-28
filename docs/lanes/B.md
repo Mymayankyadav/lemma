@@ -1,4 +1,11 @@
-# Lane B — UI
+Next action: **UI-01 DONE** after final authenticated RPC failure/recovery PR #49 merged and main CI passed; B supports KNOWLEDGE-01 K3 UI once A publishes versioned context/source APIs, then leads PLAN-01. No B implementation is currently dependency-ready.
+
+## 28 October 2026 — UI-01 final acceptance COMPLETED
+
+- **Task:** UI-01 DONE; independent visual audit [PR #51](https://github.com/Mymayankyadav/lemma/pull/51) accepted mobile/desktop light/dark, genuine 200% Chromium zoom, keyboard, math and review screens, local-stack offline and authenticated failure/recovery. A's [PR #49](https://github.com/Mymayankyadav/lemma/pull/49) is **MERGED**, not pending as stated in the earlier B3 historical paragraph below.
+- **Post-merge gate:** `main@a108dd5` [regression 40619701452](https://github.com/Mymayankyadav/lemma/actions/runs/40619701452), [local-stack 40619701405](https://github.com/Mymayankyadav/lemma/actions/runs/40619701405), [Android 40619701429](https://github.com/Mymayankyadav/lemma/actions/runs/40619701429), all SUCCESS. [Integration PR #52](https://github.com/Mymayankyadav/lemma/pull/52) promotes queue. Cross-lane UI-01-LIVE-STATUS-A1/A2 request **DONE**. Historical claims below are closed evidence, not active locks.
+- **Remaining distinct gates:** no Android phone, Pages two-device verification, native OAuth, user notification consent or general Settings redesign was asserted here. B must not build KNOWLEDGE-01 UI until A supplies its private revisioned data contract and durable APIs. No owner action now.
+
 
 Next action: **UI-01 final B acceptance audit** claimed on `lane-b/ui-01-final-acceptance-audit` from `main@2c084b5` (run `chat-20261028-b-ui01-acceptance`, heartbeat UTC 2026-10-28T01:45:55.695Z). Prepare a precise evidence matrix and record independent visual acceptance of the live authenticated PR #49 screenshot artifact. PR #49 remains **actively claimed by lane A** with exact-head green tests but is not merged; do not edit or merge its branch. UI-01 stays NEXT until PR #49 is merged, main CI passes, B gate is fully evidenced, and integration promotes dependent work. No owner action.
 
