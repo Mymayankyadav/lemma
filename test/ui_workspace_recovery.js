@@ -75,6 +75,22 @@ async function main(){
       await root.getByRole('button',{name:'Restore account backup',exact:true}).click();
       await page.getByRole('button',{name:'Cancel',exact:true}).last().click();
       assert.equal(await page.evaluate(()=>window.__recoveryState.calls.filter(c=>c.action==='restore'&&!c.options.dryRun).length),0,'cancel does not write');
+      // Dry-run stopped sync. Leaving Settings must not hide the only explicit
+      // resume action or silently approve/apply a backup on re-entry.
+      await page.evaluate(()=>{const App=window.__recoveryHooks.App;App.go('home');App.go('settings');});
+      await root.getByRole('status').filter({hasText:'Account sync is paused after recovery'}).waitFor();
+      assert.equal(await root.getByRole('button',{name:'Resume account sync'}).isVisible(),true,
+        'reopening Settings must retain explicit resume access');
+      await root.getByRole('button',{name:'Clear selection'}).click();
+      assert.equal(await root.getByRole('button',{name:'Resume account sync'}).isVisible(),true,
+        'clearing a backup cannot strand the paused sync handle');
+      await root.getByRole('button',{name:'Resume account sync'}).click();
+      await root.getByRole('status').filter({hasText:'Account sync resumed'}).waitFor();
+      assert.equal(await page.evaluate(()=>window.__recoveryState.resumes),1,
+        'only the explicit resume action reattaches sync');
+      await choose(fixture);await root.getByRole('status').filter({hasText:'27 account records'}).waitFor();
+      await root.getByRole('button',{name:'Check restore',exact:true}).click();
+      await root.locator('#account-recovery-consent').check();
       await page.evaluate(()=>{window.__recoveryState.failure=true;});
       await root.getByRole('button',{name:'Restore account backup',exact:true}).click();
       await page.getByRole('button',{name:'Restore and resume edits',exact:true}).click();
