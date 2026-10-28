@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {assertAllowedMigrationHistory,knowledgeMigrations}=require('./sync_security_parity.js');
+const {assertAllowedMigrationHistory,knowledgeMigrations,ownerSnapshotMigration}=require('./sync_security_parity.js');
 const legacy=[
  {version:'20261026085028',name:'initial_learning_state'},
  {version:'20261026090019',name:'versioned_study_planning'},
@@ -18,6 +18,9 @@ const tutor={version:'20261028101000',name:'tutor01_handoff_packets'};
 assert.doesNotThrow(()=>assertAllowedMigrationHistory(base,legacy));
 assert.doesNotThrow(()=>assertAllowedMigrationHistory([...base,plan],legacy));
 assert.doesNotThrow(()=>assertAllowedMigrationHistory([...base,plan,tutor],legacy));
+assert.doesNotThrow(()=>assertAllowedMigrationHistory([...base,plan,tutor,ownerSnapshotMigration],legacy));
+assert.throws(()=>assertAllowedMigrationHistory([...base,plan,tutor,{...ownerSnapshotMigration,version:'20261028163001'}],legacy),/R2e snapshot migration version changed/);
+assert.throws(()=>assertAllowedMigrationHistory([...base,plan,tutor,{...ownerSnapshotMigration,name:'release01_typo'}],legacy),/only named/);
 assert.throws(()=>assertAllowedMigrationHistory(base.slice(0,11),legacy),/missing required knowledge/);
 assert.throws(()=>assertAllowedMigrationHistory([...base.slice(0,9),base[10],base[9],base[11]],legacy),/knowledge migrations/);
 assert.throws(()=>assertAllowedMigrationHistory([...base,{...plan,name:'unexpected_schema_change'}],legacy),/only named/);
@@ -27,4 +30,4 @@ assert.throws(()=>assertAllowedMigrationHistory([...base,tutor,plan],legacy),/ti
 assert.throws(()=>assertAllowedMigrationHistory([...base,{...plan,version:'bad'}],legacy),/version/);
 assert.throws(()=>assertAllowedMigrationHistory([...legacy.slice(0,8),{...legacy[8],name:'silently_renamed'},...knowledgeMigrations],legacy),/original nine/);
 assert.throws(()=>assertAllowedMigrationHistory([...base,plan],legacy.slice(1)),/baseline changed/);
-console.log('ok: migration parity requires exact legacy/knowledge history and permits only ordered plan/tutor additions');
+console.log('ok: migration parity requires exact legacy/knowledge history and permits only ordered plan/tutor or exact pinned R2e addition');

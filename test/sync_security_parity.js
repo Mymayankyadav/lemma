@@ -3,13 +3,15 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 // SHIP-A1: the deployed SYNC-04 history and three KNOWLEDGE-01 migrations
-// are exact, ordered invariants. Only lane D/E may append new plan/tutor
-// migrations. An unrecognized or reordered version is never silently ignored.
+// are exact, ordered invariants. Lane D/E may append plan/tutor migrations;
+// the one reviewed R2e owner-snapshot migration is pinned byte-for-version.
+// An unrecognized or reordered version is never silently ignored.
 const knowledgeMigrations=[
  {version:'20261028031800',name:'knowledge_context_cas'},
  {version:'20261028043000',name:'knowledge_source_revisions'},
  {version:'20261028051500',name:'structured_context_v1'}
 ];
+const ownerSnapshotMigration={version:'20261028163000',name:'release01_owner_snapshot_v1'};
 function assertAllowedMigrationHistory(migrations,legacy){
  assert.equal(legacy.length,9,'original production migration baseline changed');
  assert.ok(Array.isArray(migrations),'migration history must be an array');
@@ -22,8 +24,13 @@ function assertAllowedMigrationHistory(migrations,legacy){
  for(const m of migrations.slice(12)){
    assert.ok(m && typeof m==='object','invalid additional migration');
    assert.match(m.version,/^\d{14}$/,'invalid additional migration version');
-   assert.match(m.name,/^(?:[a-z0-9]+_)*?(?:plan01|tutor01)_[a-z0-9_]+$/,
-     'only named plan01/tutor01 migrations may extend the baseline');
+   const isPinnedSnapshot=m.version===ownerSnapshotMigration.version &&
+     m.name===ownerSnapshotMigration.name;
+   if(m.name===ownerSnapshotMigration.name)
+     assert.ok(isPinnedSnapshot,'R2e snapshot migration version changed');
+   if(!isPinnedSnapshot)
+     assert.match(m.name,/^(?:[a-z0-9]+_)*?(?:plan01|tutor01)_[a-z0-9_]+$/,
+       'only named plan01/tutor01 or pinned R2e migration may extend baseline');
    assert.ok(m.version>previous,'additional migrations must be timestamp-ordered');
    assert.ok(!seen.has(m.version),'duplicate migration version');
    seen.add(m.version); previous=m.version;
@@ -44,7 +51,7 @@ function compare(){
  const {migrations:ignoredLocal,...legacyActual}=actual;
  const {migrations:ignoredBaseline,...legacyExpected}=expected;
  assert.deepStrictEqual(legacyActual,legacyExpected,'L8 production sync table/policy/function drift');
- console.log('ok: L8 nine legacy and three knowledge migrations exact, only named plan/tutor extensions allowed; full sync security snapshot matches');
+ console.log('ok: L8 nine legacy and three knowledge migrations exact, only named plan/tutor or exact R2e snapshot extension allowed; full sync security snapshot matches');
 }
-module.exports={compare,assertAllowedMigrationHistory,knowledgeMigrations};
+module.exports={compare,assertAllowedMigrationHistory,knowledgeMigrations,ownerSnapshotMigration};
 if(require.main===module)try{compare();}catch(e){console.error('FAIL L8 security parity: '+e.message);process.exitCode=1;}
