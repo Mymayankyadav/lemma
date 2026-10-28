@@ -326,6 +326,98 @@ const LemmaCloudBridge = (() => {
     return { ownerId:expectedOwnerId, rows, bytes:bytes.length,
       sha256:envelope.sha256, readOnly:true };
   }
+  // R2f: deliberately requested, read-only server capture from the R2e RPC.
+  // The server uses one STABLE invoker snapshot, but this raw response is NOT a
+  // signed/full archive, backup download, or permission to restore anything.
+  const workspaceSnapshotKeys=Object.freeze({
+    client_mutation_receipts:['request_id'],
+    knowledge_section_versions:['source_id','source_revision','section_id'],
+    knowledge_source_versions:['source_id','revision'],
+    learning_card_links:['note_id','session_id','relation'],
+    learning_events:['seq'],
+    learning_sections:['id'],
+    learning_sessions:['id'],
+    learning_sources:['id'],
+    notes:['id'],
+    profiles:['user_id'],
+    review_events:['event_id'],
+    review_retractions:['retraction_id'],
+    study_checkpoints:['plan_id','checkpoint_id'],
+    study_context_files:['id'],
+    study_context_revisions:['context_id','revision'],
+    study_plan_versions:['plan_id','revision'],
+    study_plans:['id'],
+    tutor_handoff_receipts:['receipt_id'],
+    tutor_handoffs:['session_id']
+  });
+  const workspaceSnapshotNames=Object.keys(workspaceSnapshotKeys).sort();
+  function validateServerWorkspaceSnapshot(value,ownerId) {
+    if(!recoveryOwner(ownerId) || !value || typeof value!=='object' ||
+       Array.isArray(value) || value.app!=='lemma' ||
+       value.schemaVersion!==1 || value.scope!=='account-workspace-raw' ||
+       value.capture!=='stable-calling-statement-snapshot' ||
+       value.ownerId!==ownerId ||
+       !Number.isFinite(Date.parse(value.capturedAt)) ||
+       !value.tables || typeof value.tables!=='object' ||
+       Array.isArray(value.tables) ||
+       JSON.stringify(Object.keys(value.tables).sort())!==
+         JSON.stringify(workspaceSnapshotNames))
+      throw new Error('Invalid or incomplete server workspace snapshot');
+    let count=0;
+    for(const name of workspaceSnapshotNames){
+      const rows=value.tables[name],keys=workspaceSnapshotKeys[name];
+      if(!Array.isArray(rows) || rows.length>100000)
+        throw new Error('Server workspace row limit or table mismatch');
+      count+=rows.length;
+      if(count>200000) throw new Error('Server workspace row limit exceeded');
+      const seen=new Set();
+      for(const row of rows){
+        if(!row || typeof row!=='object' || Array.isArray(row) ||
+           row.user_id!==ownerId)
+          throw new Error('Foreign owner or invalid workspace row');
+        const values=keys.map(k=>row[k]);
+        if(values.some(v=>v===null || v===undefined || v==='') ||
+           values.some(v=>typeof v==='number' && !Number.isSafeInteger(v)))
+          throw new Error('Missing or unsafe server workspace primary key');
+        const id=JSON.stringify(values);
+        if(seen.has(id)) throw new Error('Duplicate server workspace primary key');
+        seen.add(id);
+      }
+    }
+    let bytes;
+    try { bytes=new TextEncoder().encode(JSON.stringify(value)).byteLength; }
+    catch { throw new Error('Nonportable server workspace payload'); }
+    if(bytes>recoveryByteCap) throw new Error('Server workspace byte limit exceeded');
+    return {snapshot:value,ownerId,count,bytes,readOnly:true};
+  }
+  async function captureServerWorkspaceSnapshot(studentRequested=false){
+    if(studentRequested!==true)
+      throw new Error('Explicit server workspace export required');
+    const ownerId=LemmaAccount.user?.id;
+    const client=LemmaAccount.client;
+    const handle=typeof LemmaSync!=='undefined' ? LemmaSync.accountHandle() : null;
+    if(!recoveryOwner(ownerId) || !client || !handle ||
+       handle.userId!==ownerId)
+      throw new Error('Sign in to an available account workspace before export');
+    const check=()=>{
+      if(LemmaAccount.user?.id!==ownerId || LemmaAccount.client!==client ||
+         LemmaSync.accountHandle()!==handle)
+        throw new Error('Account changed during server workspace snapshot');
+    };
+    const auth=await authorize();
+    check();
+    if(auth.userId!==ownerId || auth.client!==client || !auth.token)
+      throw new Error('Authenticated workspace owner changed');
+    const response=await client.rpc('capture_account_workspace_snapshot')
+      .setHeader('Authorization','Bearer '+auth.token);
+    check();
+    if(response.error || !response.data)
+      throw new Error('Server workspace snapshot unavailable');
+    const verified=validateServerWorkspaceSnapshot(response.data,ownerId);
+    check();
+    return verified;
+  }
+
   // LOCAL unaccepted drafts only. These are stored in the existing
   // account-namespaced IndexedDB cache; no network required after attach.
   // An in-flight save may finish under the *old* owner after logout, so
@@ -497,6 +589,7 @@ const LemmaCloudBridge = (() => {
     return draft;
   }
   return { captureLocalRecovery, captureLocalRecoveryEnvelope, verifyLocalRecoveryEnvelope,
+    captureServerWorkspaceSnapshot, validateServerWorkspaceSnapshot,
     authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
     commitAcceptedContext,
