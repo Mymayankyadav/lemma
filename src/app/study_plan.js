@@ -171,16 +171,26 @@ const StudyPlan = (() => {
     if (!isUuid(planId) || !isUuid(eventId) || !revision(expectedPlanRevision) ||
         typeof checkpointId !== 'string' || !checkpointId.trim() ||
         checkpointId.length > 160 || !eventTypes.has(type) || !object(payload) ||
-        JSON.stringify(payload).length > 12000 ||
         (source !== null && (typeof source !== 'string' || source.length > 200)))
       throw new Error('Invalid study event');
+    // Freeze the JSON wire value by copying it before account-token/network awaits.
+    // Without this, caller mutations can change the evidence associated with a
+    // stable retry UUID after validation, defeating idempotent intent.
+    let wirePayload;
+    try {
+      const json = JSON.stringify(payload);
+      if (typeof json !== 'string' || json.length > 12000)
+        throw new Error('Invalid study event');
+      wirePayload = JSON.parse(json);
+      if (!object(wirePayload)) throw new Error('Invalid study event');
+    } catch (_) { throw new Error('Invalid study event'); }
     const ctx = account();
     // A retry MUST reuse the original event ID and identical payload, even
     // after a lost response. The SQL RPC enforces revision and idempotency.
     const receipt = await authorized(ctx,client => client.rpc('record_study_event',{
       p_plan_id:planId,p_checkpoint_id:checkpointId,
       p_expected_plan_revision:expectedPlanRevision,p_event_type:type,
-      p_payload:payload,p_event_id:eventId,p_source:source
+      p_payload:wirePayload,p_event_id:eventId,p_source:source
     }));
     if (!same(receipt?.eventId,eventId) || !isUuid(receipt?.sessionId) ||
         !Number.isSafeInteger(receipt?.seq) || receipt.seq < 1 ||
