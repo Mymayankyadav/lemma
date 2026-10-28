@@ -48,3 +48,16 @@ Preserve the previous successful Pages deploy SHA and prior tested `main` SHA. R
 | Production migration parity | — | A must verify |
 | Ready state for Study / Tutor | — | D/E must verify |
 | Release tag | — | **Not created** |
+
+## 28 October 2026 read-only production preflight (not an apply)
+
+The connected Supabase **Lemma** project `yemqnhnztlbyxmjxidis` reported PostgreSQL **17.11**, **nine** applied migration versions, and **zero** granted/waiting AccessExclusive locks at inspection. GitHub `main` contained **thirteen** sorted migration SQL files. The four committed-but-unapplied versions were:
+
+- `20261028031800_knowledge_context_cas.sql`
+- `20261028043000_knowledge_source_revisions.sql`
+- `20261028051500_structured_context_v1.sql`
+- `20261028094500_plan01_append_only_events.sql`
+
+A read-only `pg_proc` audit found only one matching function among `get_accepted_study_context`, `commit_structured_study_context`, `get_knowledge_excerpts`, and `publish_study_plan`. It does not establish which callable signature is available; in particular `get_accepted_study_context(uuid)` was not present. Supabase security advisors returned one Auth configuration warning: leaked-password protection disabled ([remediation](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)); no advisor errors were reported. This was **metadata only**, not an authenticated production feature test, a Supabase deployment, or a claim that release is safe.
+
+**Blocker:** the version-preserving operator `.github/workflows/deploy-knowledge.yml` is dispatched through the GitHub Actions UI with an explicit `preflight` followed by `apply`. Its existing staged set ends at the first twelve versions; after those are deployed, the merged `plan01` migration must also be applied by a reviewed exact-version, forward-only Lane A operation. The tag release workflow now rejects missing production versions automatically. Do **not** use connector migration actions that generate new version timestamps, manually edit migration history, or touch Carrel. Reinspect remote versions/locks/current SHA immediately before any production write.
