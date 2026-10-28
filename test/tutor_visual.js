@@ -110,6 +110,20 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     // Expand only for inspection; opening a proposal must not select it.
     await page.locator('.tutor-handoff-item').nth(1).locator('summary').click();
     assert.equal(await page.getByRole('checkbox',{name:'Select Card proposal 1'}).isChecked(),false,'card proposal never implicitly selected');
+    const cardAction=page.getByRole('button',{name:'Review card in editor'});
+    const cardCheck=page.getByRole('checkbox',{name:'Select Card proposal 1'});
+    assert.equal(await cardAction.isDisabled(),true,'card review cannot begin without selection');
+    await cardCheck.check();
+    assert.equal(await cardAction.isEnabled(),true,'student card selection enables editor review');
+    await cardAction.scrollIntoViewIfNeeded();
+    await page.screenshot({path:path.join(out,'tutor-card-action-'+size+'-'+scheme+'.png')});
+    await cardAction.click();
+    await page.locator('#ed-front').waitFor();
+    assert.equal(await page.inputValue('#ed-front'),'How to show K is closed?');
+    assert.match(await page.inputValue('#ed-back'),/Tutor proposal provenance/);
+    assert.match(await page.inputValue('#ed-back'),/topology-notes:section-3\.2/);
+    await page.screenshot({path:path.join(out,'tutor-card-editor-'+size+'-'+scheme+'.png')});
+
     const width=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,viewport:innerWidth}));
     assert.ok(width.doc<=width.viewport+2,'Handoff causes horizontal overflow: '+JSON.stringify(width));
     const boxes=await page.locator('.tutor-handoff > button').evaluateAll(nodes=>
