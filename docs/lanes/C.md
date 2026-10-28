@@ -1,3 +1,9 @@
+## ANDROID-02 N1b — native system-browser launch adapter (28 October 2026)
+
+- **Claim:** `chat-20261028T0320Z-c-n1b`; UTC heartbeat `2026-10-28T03:20Z`; base `main@fd819cd`; branch `lane-c/android-02-n1b-browser-launch`. Intended files: `src/app/native_shell.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. Implement strict trusted Supabase PKCE authorize URL validation and opt-in `Browser.open` / close adapter for native only. Never use an in-WebView OAuth fallback, broaden redirect hosts or log codes.
+- **Dependency:** `@capacitor/browser@8.0.0` is not yet installed in `package.json`; separate integration dependency PR required for native plugin availability and full Android sign-in. A owns callback exchange (`ANDROID-02-N1-AUTH-A1`). No physical sign-in or device gate claimed from this PR.
+- **Next:** implement C-owned adapter and tests, verify exact-head CI then merge if green; integrate pinned Browser dependency and coordinate A callback exchange separately.
+
 # Lane C — Android
 
 ## ANDROID-02 N1a — native callback entry claim (28 October 2026)

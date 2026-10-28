@@ -4,27 +4,43 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('src/app/native_shell.js', 'utf8');
 
-function run({ native = true, available = true, sheet = false, view = 'home', launchUrl = null } = {}) {
-  const events = {}, actions = [], state = { view, sheet };
+function run({ native = true, available = true, browserAvailable = true, browserReject = false, sheet = false, view = 'home', launchUrl = null } = {}) {
+  const events = {}, actions = [], browserUrls = [], state = { view, sheet };
   const plugin = {
     addListener(name, handler) { events[name] = handler; actions.push('listen:' + name); return Promise.resolve({ remove() {} }); },
     exitApp() { actions.push('exit'); return Promise.resolve(); },
     getLaunchUrl() { return Promise.resolve({ url: launchUrl }); },
   };
+  const browser = {
+    async open({ url }) {
+      browserUrls.push(url);
+      actions.push('browser.open');
+      if (browserReject) throw new Error('code=PRIVATE-TOKEN-DO-NOT-LOG');
+    },
+    async close() { actions.push('browser.close'); }
+  };
   const cap = {
     isNativePlatform: () => native,
-    isPluginAvailable: name => { assert.equal(name, 'App'); return available; },
-    registerPlugin: name => { assert.equal(name, 'App'); actions.push('register'); return plugin; },
+    isPluginAvailable: name => {
+      if (name === 'App') return available;
+      if (name === 'Browser') return browserAvailable;
+      throw new Error('Unexpected Capacitor plugin');
+    },
+    registerPlugin: name => {
+      if (name === 'App') { actions.push('register'); return plugin; }
+      if (name === 'Browser') { actions.push('register:Browser'); return browser; }
+      throw new Error('Unexpected Capacitor plugin');
+    },
   };
   const ctx = {
     URL,
-    window: { Capacitor: cap, history: { back() { actions.push('history.back'); } } },
+    window: { Capacitor: cap, LEMMA_CONFIG: { url: 'https://yemqnhnztlbyxmjxidis.supabase.co' }, history: { back() { actions.push('history.back'); } } },
     Sheets: { closeTop() { if (!state.sheet) return false; state.sheet = false; actions.push('closeSheet'); return true; } },
     App: { get view() { return state.view; }, go(v) { state.view = v; actions.push('go:' + v); } },
     console: { warn(...x) { actions.push('warn:' + x.join(' ')); }, info(...x) { actions.push('info:' + x.join(' ')); } },
   };
   vm.runInNewContext(source + '\nthis.nativeShell = NativeShell;', ctx);
-  return { events, actions, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback };
+  return { events, actions, browserUrls, state, enabled: ctx.nativeShell.enabled, onAuthCallback: ctx.nativeShell.onAuthCallback, openAuthBrowser: ctx.nativeShell.openAuthBrowser, closeAuthBrowser: ctx.nativeShell.closeAuthBrowser };
 }
 
 const web = run({ native: false });
@@ -63,6 +79,7 @@ assert.match(manifest, /<category android:name="android.intent.category.BROWSABL
 assert.match(manifest, /<data android:scheme="io\.lemma\.study" android:host="auth-callback"\s*\/>/);
 assert.match(manifest, /android:launchMode="singleTask"/);
 assert.equal(web.onAuthCallback, undefined);
+assert.equal(web.openAuthBrowser, undefined, 'web OAuth must not use native browser API');
 const auth = run();
 const received = [];
 const invalid = [
@@ -114,5 +131,34 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   const lateSeen = [];
   delayed.onAuthCallback(url => lateSeen.push(url));
   assert.deepEqual(lateSeen, ['io.lemma.study://auth-callback?error=user_cancelled']);
-  console.log('ok: Android native Back/resume, cold/warm scoped PKCE deep links and web isolation');
+  // The native launcher only accepts this exact project's Google PKCE
+  // authorize URL. Never fall back into a WebView or leak redirect/code data.
+  const authorize = 'https://yemqnhnztlbyxmjxidis.supabase.co/auth/v1/authorize?' +
+    new URLSearchParams({ provider:'google', redirect_to:'io.lemma.study://auth-callback',
+      code_challenge:'X'.repeat(43), code_challenge_method:'s256' });
+  const launch = run();
+  await launch.openAuthBrowser(authorize);
+  assert.deepEqual(launch.browserUrls, [authorize]);
+  assert.ok(launch.actions.includes('browser.open'));
+  await launch.closeAuthBrowser();
+  assert.ok(launch.actions.includes('browser.close'));
+  for (const rejected of [
+    'https://attacker.test/auth/v1/authorize?provider=google',
+    authorize.replace('https:', 'http:'),
+    authorize.replace('/auth/v1/authorize', '/auth/v1/token'),
+    authorize.replace('provider=google', 'provider=github'),
+    authorize.replace('code_challenge_method=s256', 'code_challenge_method=plain'),
+    authorize.replace('io.lemma.study%3A%2F%2Fauth-callback', 'https%3A%2F%2Fevil.test'),
+    authorize + '&provider=google', authorize + '&code=stolen',
+    authorize + '#access_token=stolen', authorize.replace('code_challenge=' + 'X'.repeat(43), 'code_challenge=short')
+  ]) await assert.rejects(launch.openAuthBrowser(rejected), /Invalid native Google sign-in request/);
+  assert.equal(launch.browserUrls.length, 1, 'untrusted URLs never reach Browser.open');
+  const unavailableBrowser = run({ browserAvailable:false });
+  await assert.rejects(unavailableBrowser.openAuthBrowser(authorize), /update the Android app/);
+  assert.equal(unavailableBrowser.actions.includes('register:Browser'), false);
+  const failingBrowser = run({ browserReject:true });
+  await assert.rejects(failingBrowser.openAuthBrowser(authorize), /Could not open the native sign-in browser/);
+  assert.equal(failingBrowser.actions.some(x=>x.includes('PRIVATE-TOKEN')), false, 'browser error redacted');
+  assert.equal(web.actions.includes('register:Browser'), false, 'ordinary web is always inert');
+  console.log('ok: Android native Back/resume, scoped PKCE deep links, validated system-browser launch and web isolation');
 })().catch(error => { console.error(error); process.exitCode = 1; });

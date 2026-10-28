@@ -34,6 +34,63 @@ const NativeShell = (() => {
     }
   }
 
+  // System-browser OAuth launch is intentionally unavailable until the native
+  // @capacitor/browser plugin is actually installed in this APK. The web app
+  // must never use this helper or fall back to OAuth inside the WebView.
+  function trustedAuthUrl(raw) {
+    if (typeof raw !== 'string' || raw.length > 4096) return null;
+    try {
+      const config = new URL(window.LEMMA_CONFIG?.url || '');
+      const target = new URL(raw);
+      if (config.protocol !== 'https:' || config.username || config.password ||
+          config.search || config.hash || config.pathname !== '/' ||
+          target.origin !== config.origin || target.pathname !== '/auth/v1/authorize' ||
+          target.username || target.password || target.hash) return null;
+      const params = target.searchParams;
+      if (params.getAll('provider').length !== 1 || params.get('provider') !== 'google' ||
+          params.getAll('redirect_to').length !== 1 ||
+          params.get('redirect_to') !== 'io.lemma.study://auth-callback' ||
+          params.getAll('code_challenge').length !== 1 ||
+          !/^[A-Za-z0-9_-]{43,128}$/.test(params.get('code_challenge') || '') ||
+          params.getAll('code_challenge_method').length !== 1 ||
+          params.get('code_challenge_method') !== 's256') return null;
+      // Authorization URL may carry provider-specific parameters, but it must
+      // not already contain login credentials, codes or bearer tokens.
+      for (const name of params.keys()) {
+        if (/^(access_token|refresh_token|id_token|token|code|client_secret)$/i.test(name))
+          return null;
+      }
+      return target.href;
+    } catch { return null; }
+  }
+
+  async function openAuthBrowser(url) {
+    const safeUrl = trustedAuthUrl(url);
+    if (!safeUrl) throw new Error('Invalid native Google sign-in request');
+    if (!cap.isPluginAvailable?.('Browser'))
+      throw new Error('Native sign-in browser unavailable; update the Android app');
+    try {
+      const browser = cap.registerPlugin('Browser');
+      if (!browser || typeof browser.open !== 'function')
+        throw new Error('missing native browser');
+      await browser.open({ url: safeUrl });
+    } catch {
+      // Plugin exceptions may include URLs and PKCE values; never relay them.
+      throw new Error('Could not open the native sign-in browser');
+    }
+  }
+
+  async function closeAuthBrowser() {
+    if (!cap.isPluginAvailable?.('Browser')) return;
+    try {
+      const browser = cap.registerPlugin('Browser');
+      if (typeof browser?.close === 'function') await browser.close();
+    } catch {
+      // Android Custom Tabs may be closed by the system rather than the API.
+      // This must never prevent callback processing or disclose an auth URL.
+    }
+  }
+
   function deliverAuthUrl(url) {
     for (const callback of authListeners) {
       try { callback(url); }
@@ -100,5 +157,5 @@ const NativeShell = (() => {
       console.warn('[Lemma] Native launch URL unavailable');
     });
   }
-  return { enabled: true, onAuthCallback };
+  return { enabled: true, onAuthCallback, openAuthBrowser, closeAuthBrowser };
 })();
