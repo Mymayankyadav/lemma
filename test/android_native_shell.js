@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('src/app/native_shell.js', 'utf8');
 
-function run({ native = true, available = true, browserAvailable = true, browserReject = false, sheet = false, view = 'home', launchUrl = null } = {}) {
+function run({ native = true, available = true, browserAvailable = true, browserReject = false, wakeReject = false, sheet = false, view = 'home', launchUrl = null } = {}) {
   const events = {}, actions = [], browserUrls = [], state = { view, sheet };
   const plugin = {
     addListener(name, handler) { events[name] = handler; actions.push('listen:' + name); return Promise.resolve({ remove() {} }); },
@@ -34,7 +34,8 @@ function run({ native = true, available = true, browserAvailable = true, browser
   };
   const ctx = {
     URL,
-    window: { Capacitor: cap, LEMMA_CONFIG: { url: 'https://yemqnhnztlbyxmjxidis.supabase.co' }, history: { back() { actions.push('history.back'); } } },
+    window: { Capacitor: cap, LEMMA_CONFIG: { url: 'https://yemqnhnztlbyxmjxidis.supabase.co' }, history: { back() { actions.push('history.back'); } }, dispatchEvent(event) { if (wakeReject) throw new Error('secret=PRIVATE-DO-NOT-LOG'); actions.push('event:' + event.type); return true; } },
+    Event: class { constructor(type) { this.type = type; } },
     Sheets: { closeTop() { if (!state.sheet) return false; state.sheet = false; actions.push('closeSheet'); return true; } },
     App: { get view() { return state.view; }, go(v) { state.view = v; actions.push('go:' + v); } },
     console: { warn(...x) { actions.push('warn:' + x.join(' ')); }, info(...x) { actions.push('info:' + x.join(' ')); } },
@@ -62,7 +63,19 @@ assert.equal(a.actions.at(-1), 'history.back');
 a.events.backButton({ canGoBack: false });
 assert.equal(a.actions.at(-1), 'exit');
 a.events.resume();
-assert.equal(a.actions.at(-1), 'info:[Lemma] Android resumed');
+assert.deepEqual(a.actions.slice(-2), ['info:[Lemma] Android resumed', 'event:focus']);
+// A-owned account_sync already listens for window focus and coalesces pulls.
+// Native resume should use that guarded path, not forge a network-online event.
+const resumed = run();
+resumed.events.resume();
+resumed.events.resume();
+assert.deepEqual(resumed.actions.filter(x => x === 'event:focus'), ['event:focus', 'event:focus']);
+assert.equal(resumed.actions.some(x => x === 'event:online'), false);
+const wakeFailure = run({ wakeReject: true });
+wakeFailure.events.resume();
+assert.equal(wakeFailure.actions.at(-1), 'warn:[Lemma] Native foreground wake unavailable');
+assert.equal(wakeFailure.actions.some(x => x.includes('PRIVATE-DO-NOT-LOG')), false);
+assert.equal(web.actions.some(x => x.startsWith('event:')), false, 'ordinary web remains inert');
 const secondary = run({ view: 'browse' });
 secondary.events.backButton({ canGoBack: false });
 assert.equal(secondary.actions.at(-1), 'go:home');
@@ -160,5 +173,5 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   await assert.rejects(failingBrowser.openAuthBrowser(authorize), /Could not open the native sign-in browser/);
   assert.equal(failingBrowser.actions.some(x=>x.includes('PRIVATE-TOKEN')), false, 'browser error redacted');
   assert.equal(web.actions.includes('register:Browser'), false, 'ordinary web is always inert');
-  console.log('ok: Android native Back/resume, scoped PKCE deep links, validated system-browser launch and web isolation');
+  console.log('ok: Android native Back/resume foreground wake, scoped PKCE deep links, validated system-browser launch and web isolation');
 })().catch(error => { console.error(error); process.exitCode = 1; });

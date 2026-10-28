@@ -137,8 +137,18 @@ const NativeShell = (() => {
   }
 
   function onResume() {
-    // Preserve the existing foreground/sync logic; this is diagnostic only.
+    // Android may resume its WebView without emitting a browser focus event.
+    // Reuse account_sync's existing guarded focus listener: it coalesces
+    // refreshes, respects the current identity and keeps offline edits queued.
+    // Do not invent an online event or force account/workspace enrollment.
     console.info('[Lemma] Android resumed');
+    try {
+      window.dispatchEvent(new Event('focus'));
+    } catch {
+      // The native shell must not prevent foregrounding if a WebView's
+      // event dispatch is unavailable. Never include account data in logs.
+      console.warn('[Lemma] Native foreground wake unavailable');
+    }
   }
 
   for (const [event, handler] of [['backButton', onBack], ['resume', onResume], ['appUrlOpen', onAppUrlOpen]]) {
