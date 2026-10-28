@@ -1,0 +1,15 @@
+/* TUTOR-01 T2: restrained, accessible student-controlled handoff sheet. */
+.tutor-handoff { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tutor-handoff-label { font-weight: 650; font-size: .9rem; margin-top: 8px; }
+.tutor-handoff-help, .tutor-handoff-status { font-size: .87rem; line-height: 1.5; color: var(--text-muted, #636779); }
+.tutor-handoff-status { margin: 4px 0; }
+.tutor-handoff-packet, .tutor-handoff-reply { display: block; width: 100%; box-sizing: border-box; min-height: 148px; max-height: 45vh; overflow: auto; resize: vertical; padding: 12px; border: 1px solid var(--border, #ccd0dc); border-radius: 9px; background: var(--surface, transparent); color: inherit; font: .82rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.tutor-handoff :is(textarea, button, input, summary):focus-visible { outline: 2px solid var(--accent, #605bb6); outline-offset: 3px; }
+.tutor-handoff > button { align-self: flex-start; min-height: 44px; }
+.tutor-handoff-review { display: flex; flex-direction: column; gap: 8px; }
+.tutor-handoff-item { border: 1px solid var(--border, #ccd0dc); border-radius: 8px; padding: 10px; }
+.tutor-handoff-item > summary { cursor: pointer; font-weight: 600; min-height: 36px; }
+.tutor-handoff-json { white-space: pre-wrap; overflow-wrap: anywhere; font: .78rem/1.45 ui-monospace, monospace; max-height: 40vh; overflow: auto; }
+.tutor-handoff-select { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: .88rem; }
+.tutor-handoff-select input { width: 19px; height: 19px; }
+@media (max-width: 600px) { .tutor-handoff-packet, .tutor-handoff-reply { font-size: .77rem; } }
