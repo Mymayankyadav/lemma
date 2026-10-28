@@ -121,13 +121,6 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     assert.equal(await cardAction.isEnabled(),true,'student card selection enables editor review');
     await cardAction.scrollIntoViewIfNeeded();
     await page.screenshot({path:path.join(out,'tutor-card-action-'+size+'-'+scheme+'.png')});
-    await cardAction.click();
-    await page.locator('#ed-front').waitFor();
-    assert.equal(await page.inputValue('#ed-front'),'How to show K is closed?');
-    assert.match(await page.inputValue('#ed-back'),/Tutor proposal provenance/);
-    assert.match(await page.inputValue('#ed-back'),/topology-notes:section-3\.2/);
-    await page.screenshot({path:path.join(out,'tutor-card-editor-'+size+'-'+scheme+'.png')});
-
     const amend=page.locator('.tutor-handoff-item').nth(2);
     await amend.locator('summary').click();
     const amendButton=page.getByRole('button',{name:'Stage unapproved amendment draft'});
@@ -138,6 +131,13 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
     await page.screenshot({path:path.join(out,'tutor-amendment-action-'+size+'-'+scheme+'.png')});
     assert.match(await page.locator('.tutor-handoff-status').innerText(),/None recorded/,
       'amendment preview or selection does not claim plan publication');
+    await cardAction.click();
+    await page.locator('#ed-front').waitFor();
+    assert.equal(await page.inputValue('#ed-front'),'How to show K is closed?');
+    assert.match(await page.inputValue('#ed-back'),/Tutor proposal provenance/);
+    assert.match(await page.inputValue('#ed-back'),/topology-notes:section-3\.2/);
+    await page.screenshot({path:path.join(out,'tutor-card-editor-'+size+'-'+scheme+'.png')});
+
     const width=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,viewport:innerWidth}));
     assert.ok(width.doc<=width.viewport+2,'Handoff causes horizontal overflow: '+JSON.stringify(width));
     const boxes=await page.locator('.tutor-handoff > button').evaluateAll(nodes=>
