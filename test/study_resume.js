@@ -7,6 +7,7 @@ const {webcrypto}=require('node:crypto');
 const A='00000000-0000-4000-8000-000000000001';
 const B='00000000-0000-4000-8000-000000000002';
 const PLAN='00000000-0000-4000-8000-000000000003';
+const NEW_PLAN='00000000-0000-4000-8000-000000000006';
 const SESSION='00000000-0000-4000-8000-000000000004';
 const SESSION2='00000000-0000-4000-8000-000000000005';
 const ID1='00000000-0000-4000-8000-000000000010';
@@ -14,7 +15,7 @@ const ID2='00000000-0000-4000-8000-000000000011';
 const ID3='00000000-0000-4000-8000-000000000012';
 let owner=A,offline=false,beforeRead=async()=>{},notify=()=>{};
 let revision=3,statusOverride=null,seq=0,planDeleted=false;
-let activeSessionId=SESSION,sessionState='active';
+let activeSessionId=SESSION,sessionState='active',newPlanPublished=false;
 const reads=[],rpc=[],events=[],ids=new Map();
 const checkpoints=Array.from({length:12},(_,i)=>({
  checkpoint_id:'cp-'+(i+1),title:'Checkpoint '+(i+1),
@@ -23,11 +24,18 @@ const checkpoints=Array.from({length:12},(_,i)=>({
  source_refs:['synthetic:chapter-'+(i+1)]
 }));
 const records=table=>{
- if(table==='study_plans')return planDeleted ? [] : [{id:PLAN,revision,
-  user_id:A,title:'Topology',updated_at:'2026-10-28T00:00:00Z'}];
- if(table==='study_plan_versions')return [{plan_id:PLAN,
-  revision,context_id:null,context_revision:null,
-  snapshot:{checkpoints},user_id:A}];
+ if(table==='study_plans')return planDeleted ? [] : [
+  {id:PLAN,revision,user_id:A,title:'Topology',
+   updated_at:'2026-10-28T00:00:00Z'},
+  ...(newPlanPublished ? [{id:NEW_PLAN,revision:1,user_id:A,
+   title:'New approved plan',updated_at:'2026-10-29T00:00:00Z'}] : [])
+ ];
+ if(table==='study_plan_versions')return [
+  {plan_id:PLAN,revision,context_id:null,context_revision:null,
+   snapshot:{checkpoints},user_id:A},
+  ...(newPlanPublished ? [{plan_id:NEW_PLAN,revision:1,
+   context_id:null,context_revision:null,snapshot:{checkpoints},user_id:A}] : [])
+ ];
  if(table==='study_checkpoints')return checkpoints.map(cp=>({
   user_id:A,plan_id:PLAN,checkpoint_id:cp.checkpoint_id,title:cp.title,
   status:statusOverride?.[cp.checkpoint_id]||'not_started',
@@ -281,5 +289,34 @@ function load(){
  assert.equal(rpc.length,writeCount);
  assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
   'session rechecks must also be owner scoped');
- console.log('PASS PLAN-01 P5g: twelve checkpoints, revision and active-session races fail closed, stable proof/hint resume, no extra writes');
+
+ // A different plan can become the latest approved plan while this tab reads
+ // the old plan's proof. Its unchanged revision is not sufficient evidence
+ // that the old packet is still the active one.
+ let switched=false;
+ beforeRead=async()=>{
+  if(!switched && reads.at(-1)?.table==='learning_events'){
+   switched=true;newPlanPublished=true;
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Approved study plan changed; reload checkpoint/,
+  'a newly approved different plan must invalidate the in-flight old packet');
+ assert.equal(switched,true,'test must publish a different plan during the read');
+ assert.equal(events.length,evidenceCount,'switching plans cannot erase history');
+ assert.equal(rpc.length,writeCount,'a read cannot approve or append events');
+ beforeRead=async()=>{};
+ const newContext=await load().activeContext();
+ assert.equal(newContext.planId,NEW_PLAN,
+  'the next fresh read must select the newer approved plan');
+ assert.equal(newContext.planRevision,1);
+ assert.equal(newContext.lastAttempt,null,
+  'a new plan must not inherit the older plan proof');
+ newPlanPublished=false;
+ const oldContext=await load().activeContext();
+ assert.equal(oldContext.planId,PLAN,'the old plan remains intact');
+ assert.equal(oldContext.lastAttempt.eventId,ID1);
+ assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
+  'latest-plan recheck must remain owner scoped');
+ console.log('PASS PLAN-01 P5h: twelve checkpoints, same-plan and cross-plan publication races fail closed, session consistency, immutable proof resume');
 })().catch(e=>{console.error('FAIL PLAN-01 P4c3: '+e.stack);process.exitCode=1});
