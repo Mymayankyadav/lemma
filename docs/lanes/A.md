@@ -1,3 +1,12 @@
+## KNOWLEDGE-01 K2h1 — owner-private stale-context comparison packet (active claim)
+
+- **Claim:** `takeover-20261028-a-k2h1`; UTC heartbeat 2026-10-28T07:57:01.338Z; base `main@8eeb80e0782e264cdb73633cc2798fe0d40bcd1e`; branch `lane-a/knowledge-01-k2h1-conflict-inspection`. Owner confirmed no other agent is working; previous A K2g PR #72 merged.
+- **Scope:** authenticated, read-only comparison of an immutable local `needs_review` intent with the latest owner-scoped server accepted context, checking account handle before/after awaits. No conflict overwrite/rebase, student consent, automatic retry or production migration.
+- **Owned paths:** `src/app/cloud_bridge.js`, `test/account_knowledge_submission.js`, `docs/lanes/A.md`. No shared scripts, B/C, Carrel or production changes.
+- **Gate:** existing local conflict preserved, correct owner-only RPC, offline/no-conflict fail closed, login-switch during local/remote read, no accept/commit RPC; exact-head regression/local Supabase/Android CI and post-merge main.
+- **Implementation:** `LemmaCloudBridge.inspectKnowledgeConflict(contextId)` reads only an existing `needs_review` student-approved local intent and the latest owner-filtered accepted revision through authenticated RPC, then re-reads local state to reject another-tab races. It rejects offline, non-conflicts, stale/missing current accepted revision and identity/client/handle switches without sending or approving any update. It returns the local and accepted snapshots only to the same active account. `test/account_knowledge_submission.js` covers read-only RPC name/args, exact request preservation, stale/nonconflict/offline guards and concurrent local/account switches.
+- **Verification:** test assertions committed; exact-head GitHub regression/local Supabase/Android CI pending. No local clone (GitHub DNS unavailable). Production knowledge migrations unchanged/unapplied. Next: inspect CI, merge only after green and current-main reconciliation; K2h2 needs explicitly reviewed resolution UI without automatic rebase.
+
 ## KNOWLEDGE-01 K2g — durable authenticated approved-intent delivery (active claim)
 
 - **Claim:** `chat-20261028-k2g-submit`, UTC heartbeat 2026-10-28T06:49:56.180Z, base `main@e45115622b`, branch `lane-a/knowledge-01-k2g-submit-receipts`. K2f PR #70 merged; post-merge main regression, Android, local Supabase and Pages all SUCCESS (40645804370/40645804282/40645804339/40645804296). No active lane A PR.

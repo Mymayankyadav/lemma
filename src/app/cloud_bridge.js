@@ -247,9 +247,49 @@ const LemmaCloudBridge = (() => {
     check();
     return {status:'confirmed',revision:receipt.revision,requestId:receipt.requestId};
   }
+  // K2h1: prepare a read-only, account-scoped comparison packet after a
+  // stale approved intent. Never rebase or approve a new revision on read.
+  async function inspectKnowledgeConflict(contextId) {
+    if (!isUuid(contextId)) throw new Error('Invalid knowledge context reference');
+    const userId = LemmaAccount.user?.id;
+    const client = LemmaAccount.client;
+    const handle = typeof LemmaSync !== 'undefined' ? LemmaSync.accountHandle() : null;
+    if (!userId || !client || !handle || handle.userId !== userId)
+      throw new Error('Sign in to an available account cache to inspect knowledge');
+    const check = () => {
+      if (LemmaAccount.user?.id !== userId || LemmaAccount.client !== client ||
+          LemmaSync.accountHandle() !== handle)
+        throw new Error('Account changed during knowledge conflict inspection');
+    };
+    const local = await handle.storage.knowledgeDraft(contextId);
+    check();
+    if (!local || local.userId !== userId || local.status !== 'needs_review' ||
+        local.approvedBy !== 'student' || !isUuid(local.requestId) ||
+        !isRevision(local.localRevision) || !isRevision(local.expectedRevision, true))
+      throw new Error('No reviewed stale knowledge conflict in this account');
+    // get_accepted_study_context is an authenticated owner-filtered RPC. Its
+    // current revision is deliberately fetched, not the stale local revision.
+    const accepted = await readAcceptedContext(contextId);
+    check();
+    if (!accepted || typeof accepted !== 'object' ||
+        typeof accepted.context_id !== 'string' ||
+        accepted.context_id.toLowerCase() !== contextId.toLowerCase() ||
+        !isRevision(accepted.revision) || accepted.revision <= local.expectedRevision)
+      throw new Error('Accepted knowledge revision unavailable for comparison');
+    // Another tab can resolve the conflict while this remote read is pending.
+    // Do not project an outdated local-vs-remote packet as current.
+    const latest = await handle.storage.knowledgeDraft(contextId);
+    check();
+    if (!latest || latest.status !== 'needs_review' ||
+        latest.localRevision !== local.localRevision ||
+        latest.requestId !== local.requestId)
+      throw new Error('Knowledge conflict changed during inspection');
+    return { status: 'needs_review', contextId:local.contextId,
+      local:latest, accepted };
+  }
   return { authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, commitAcceptedContext,
     readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft,
-    approveKnowledgeDraft, submitApprovedKnowledgeDraft };
+    approveKnowledgeDraft, submitApprovedKnowledgeDraft, inspectKnowledgeConflict };
 })();
 

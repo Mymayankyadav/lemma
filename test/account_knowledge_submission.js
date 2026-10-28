@@ -116,5 +116,53 @@ const api=scope.bridge;
  assert.equal(saved.status,'approved_pending');
  assert.equal(saved.requestId,requestId);
  assert.equal(receipt,null);
- console.log('PASS KNOWLEDGE K2g: exact-key authenticated submit, offline queue, network-lost retry, confirmed receipt, stale conflict and account-switch rejection');
+ // K2h1: inspect accepted remote and preserved local stale content only
+ // after an explicit student-approved intent hit a revision conflict.
+ identity=a;handle={userId:a,storage};online=true;
+ saved={...pending(),status:'needs_review',localRevision:5};
+ send=(name,args)=>{
+  assert.equal(name,'get_accepted_study_context');
+  assert.equal(args.p_context_id,contextId);
+  assert.equal(args.p_revision,null,'compare latest accepted, not stale historical');
+  return {data:{context_id:contextId,revision:4,title:'Accepted by another device',
+    context_markdown:'Current server content',accepted_json:{schema_version:1}}};
+ };
+ const beforeRead=calls.length;
+ const packet=await api.inspectKnowledgeConflict(contextId);
+ assert.equal(packet.status,'needs_review');
+ assert.equal(packet.local.markdown,'Student reviewed proof');
+ assert.equal(packet.accepted.revision,4);
+ assert.equal(saved.status,'needs_review');
+ assert.equal(calls.length,beforeRead+1,'only one owner-scoped context read');
+ assert.equal(calls.at(-1).name,'get_accepted_study_context');
+ const oldRequestId=saved.requestId;
+ assert.equal(packet.local.requestId,oldRequestId,
+  'inspection cannot overwrite the approved attempt or its request ID');
+ send=()=>({data:{context_id:contextId,revision:3}});
+ await assert.rejects(api.inspectKnowledgeConflict(contextId),/unavailable for comparison/);
+ online=false;
+ const disconnectedCalls=calls.length;
+ await assert.rejects(api.inspectKnowledgeConflict(contextId),/Knowledge is offline/);
+ assert.equal(calls.length,disconnectedCalls,'no remote read when offline');
+ online=true;
+ saved={...pending(),status:'approved_pending',localRevision:5};
+ const nonConflictCalls=calls.length;
+ await assert.rejects(api.inspectKnowledgeConflict(contextId),/No reviewed stale/);
+ assert.equal(calls.length,nonConflictCalls,'pending approval is not a stale conflict');
+ saved={...pending(),status:'needs_review',localRevision:5};
+ send=()=>{
+  saved={...saved,localRevision:6};
+  return {data:{context_id:contextId,revision:4}};
+ };
+ await assert.rejects(api.inspectKnowledgeConflict(contextId),/changed during inspection/);
+ saved={...pending(),status:'needs_review',localRevision:5};
+ send=()=>{
+  identity=b;handle={userId:b,storage};
+  return {data:{context_id:contextId,revision:4}};
+ };
+ await assert.rejects(api.inspectKnowledgeConflict(contextId),/Account changed/);
+ identity=a;handle={userId:a,storage};
+ assert.equal(saved.status,'needs_review','identity race cannot change local approval state');
+ await assert.rejects(api.inspectKnowledgeConflict('invalid'),/Invalid knowledge context/);
+ console.log('PASS KNOWLEDGE K2g/K2h1: exact-key authenticated submit, offline queue, network-lost retry, confirmed receipt, stale conflict and account-switch rejection');
 })().catch(e=>{console.error('FAIL K2g submit bridge: '+e.message);process.exitCode=1;});
