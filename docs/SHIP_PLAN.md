@@ -9,7 +9,7 @@ Owner instruction (28 Oct, 14:47 IST): ship **everything** today using parallel 
 - **Web P0 (before any feature work merges into a broken site):** (1) lane F's live smoke proves the deployed Pages app loads, signs-in screen renders, cards/review work and shows no console errors; (2) lane A deploys the 3 merged KNOWLEDGE-01 migrations to production (SHIP-A2) — until then the knowledge actions in Settings call functions that do not exist in production.
 - **No gate is relaxed for the deadline.** A feature whose gate has not passed at the cut ships hidden (`StudyView.ready === false`, handoff entry points absent), with the work continuing as `v1.0.x`. That is the expected fallback, not a failure.
 - **Hidden-until-ready:** Study tab and handoff controls appear only when the owning lane sets its `ready` flag in a PR that also carries the gate evidence.
-- **Six lanes, one agent each.** Small PRs (≤ ~300 changed lines where possible). Before merging, merge current `main` into your branch and wait for green CI (§3 rule 13 of the plan); with six lanes, expect to do this more than once.
+- **Six lanes, one agent each.** Small PRs (≤ ~300 changed lines where possible). **Merge as soon as your PR's own CI is green and GitHub shows no conflict** — do not re-merge `main` and rerun CI because `main` moved (plan §3 rule 12). Docs-only PRs need only the fast `guard` job. One rerun for a suspected flake, then treat it as real.
 - **Red `main`:** the lane whose merge broke it fixes it first, within 20 minutes; nobody else merges except that fix. Lane F watches `main` CI and records the culprit in `docs/lanes/F.md`.
 
 ## Lanes

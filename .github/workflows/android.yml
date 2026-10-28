@@ -1,9 +1,26 @@
 name: Lemma Android debug APK
 
+# Android is paused (owner, 28 Oct): build only when native files change. Lane ownership is checked by test.yml's guard job.
 on:
   push:
     branches: [main]
+    paths:
+      - 'android/**'
+      - 'capacitor.config.json'
+      - 'src/app/native_*.js'
+      - 'test/android_*.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android.yml'
   pull_request:
+    paths:
+      - 'android/**'
+      - 'capacitor.config.json'
+      - 'src/app/native_*.js'
+      - 'test/android_*.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android.yml'
 
 permissions:
   contents: read

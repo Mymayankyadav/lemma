@@ -9,20 +9,52 @@ concurrency:
   group: lemma-tests-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  # Fast (~20 s) check for every PR: plan structure and lane ownership. Docs-only PRs merge on this alone.
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Plan and lane ownership
+        env:
+          PR_HEAD_REF: ${{ github.head_ref }}
+        run: |
+          node test/plan_protocol.js
+          node test/lane_guard.js
+          case "$PR_HEAD_REF" in
+            lane-[a-z]/*) node test/lane_guard.js "$(printf '%s' "$PR_HEAD_REF" | cut -c6 | tr a-z A-Z)" ;;
+            integration/*) node test/lane_guard.js integration ;;
+            '') ;;
+            *) echo "Unknown PR branch prefix: $PR_HEAD_REF"; exit 1 ;;
+          esac
   regression:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Skip full suite for documentation-only PRs
+        id: scope
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ] && ! git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qvE '(\.md$|^docs/)'; then
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "Documentation-only PR: full suite skipped (guard job covers it)."
+          else echo "code=true" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.code == 'true'
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npm run test:syntax
+      - if: steps.scope.outputs.code == 'true'
+        run: npm ci --no-audit --no-fund
+      - if: steps.scope.outputs.code == 'true'
+        run: npm run test:syntax
       # Azure's Ubuntu archive mirror intermittently hangs for minutes on hosted
       # runners, cancelling otherwise green full regressions before npm test.
       # Use the canonical HTTPS archive only inside this disposable CI runner.
       - name: Prefer direct Ubuntu archive for Chromium dependencies
+        if: steps.scope.outputs.code == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -34,8 +66,16 @@ jobs:
               sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#https://archive.ubuntu.com/ubuntu#g' "$source"
             fi
           done
-      - run: npx playwright install --with-deps chromium
-      - run: npm test
+      - name: Cache Playwright Chromium
+        if: steps.scope.outputs.code == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.scope.outputs.code == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.scope.outputs.code == 'true'
+        run: npm test
       - name: Upload UI screenshots
         if: always()
         uses: actions/upload-artifact@v4
