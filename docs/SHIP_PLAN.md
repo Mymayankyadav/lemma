@@ -1,3 +1,9 @@
+## R2e integration — exact source-only snapshot migration compatibility
+
+- **28 October 2026 integration claim** `chat-20261028-integration-r2e-exact-migration`, based on `main@f697162`; separate Lane A draft [PR #136](https://github.com/Mymayankyadav/lemma/pull/136) defines `20261028163000_release01_owner_snapshot_v1.sql` and disposable owner-isolation tests. No other integration PR open at claim. Integration owns only `.github/workflows/deploy-knowledge.yml` plus this handoff, not the A-owned migration or app code.
+- **Need:** the existing guarded operator rejects any unrecognized source SQL beyond its selected 14 and cannot deploy the future R2e file. Retain its current 12/13/14 scopes; recognize exactly the new named source as a future ignored file when applying older scopes and offer a new `knowledge_plan_tutor_snapshot` scope that stages **all 15 exact reviewed filenames**. Keep full version prefix checks, precise read-only dry-run, current-main green CI, Lemma project pin and explicit apply semantics; reject everything else. This does not apply migrations or authorize production data recovery/restore. Tutor receipt remains source #14 and must precede R2e #15.
+- **Gate:** all inline Node JS syntax, 12/13/14/15 staging fixtures with expected filenames, missing/foreign/unordered SQL negative fixtures, integration guard and exact-head regression/local stack. Never dispatch apply automatically or touch Carrel. Server snapshot is read-only, not full recovery acceptance.
+
 # Ship-today plan — 28 October 2026
 
 Owner instruction (28 Oct, 14:47 IST): ship **everything** today using parallel agents. **Update 14:56 IST: the web app is the priority; Android is paused** (no lane C work, no phone session, no APK in this release). This file is the execution detail for that push. `plan.md` §2 remains the authoritative task state; this file adds lanes D/E/F, interfaces between them, and the ship cut. Integration-owned.
