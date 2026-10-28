@@ -173,7 +173,7 @@ async function run() {
     assert.match(await page.title(), /PWA upgrade/, 'updated shell remains offline-available');
     assert.deepEqual(await snapshot(page, front), before, 'updated offline shell retains card');
     assert.deepEqual(pageErrors, [], 'no page JavaScript errors in PWA lifecycle');
-    console.log('PASS SW versioned update, old cache retirement, offline upgrade and IndexedDB retention');
+    console.log('PASS versioned SW update, current-cache offline shell and IndexedDB retention');
   } finally {
     if (context) await context.close();
     if (browser) await browser.close();
