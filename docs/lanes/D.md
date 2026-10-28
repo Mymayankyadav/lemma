@@ -1,10 +1,10 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: PLAN-01 P1 — add `supabase/migrations/<ts>_plan01_append_only_events.sql` (revoke client update/delete on `learning_events`, keep owner insert/select; add tests in `test/stack_study_events.js` over two local identities incl. duplicate `event_id` retry) and create `src/app/study_plan.js` with the `StudyPlan` contract from `docs/SHIP_PLAN.md` (`ready:false`), unit-tested in `test/study_plan.js` with a mocked client.
+Next action: finish PR #83 P1 gates and merge after SHIP-A1 parity; then P2 durable, explicitly unapproved plan drafts. P1 includes `supabase/migrations/<ts>_plan01_append_only_events.sql` (revoke client update/delete on `learning_events`, keep owner insert/select; add tests in `test/stack_study_events.js` over two local identities incl. duplicate `event_id` retry) and create `src/app/study_plan.js` with the `StudyPlan` contract from `docs/SHIP_PLAN.md` (`ready:false`), unit-tested in `test/study_plan.js` with a mocked client.
 
 | Field | Value |
 | --- | --- |
-| Status | New lane (integration 28 Oct). No work started. |
+| Status | P1 implementation staged in draft PR #83; CI and migration parity dependent on lane A SHIP-A1. Not merged or production-applied. |
 | Task | PLAN-01 — gate in `plan.md` §2 and `docs/SHIP_PLAN.md` |
 | Owns | see `lanes.json` lane D |
 | Existing backend | `study_plans`, `study_plan_versions` (client read-only), `study_checkpoints` (owner CRUD), `learning_sessions`, `learning_events` (owner **all** — not yet append-only), `tutor_handoffs`; RPC `publish_study_plan` (idempotent by `p_request_id`, expected revision). Accepted contexts: `get_accepted_study_context` (lane A). |
@@ -15,8 +15,12 @@ Next action: PLAN-01 P1 — add `supabase/migrations/<ts>_plan01_append_only_eve
 
 ## Active claim — P1
 
-- Run: `chat-20261028-lane-d-p1-1508` · heartbeat: 2026-10-28 09:38 UTC.
-- Branch: `lane-d/plan-01-p1-events-client`; base `main@1653e401`; tested SHA: none yet.
+- Run: `chat-20261028-lane-d-p1-1508` · heartbeat: 2026-10-28T09:45:11.253Z UTC (agent active).
+- Branch: `lane-d/plan-01-p1-events-client`; base `main@1653e401`; tested SHA: local mock exercise only; exact-head CI pending.
 - Scope: `supabase/migrations/*_plan01_*.sql`, `supabase/tests/plan01_*.sql`, `src/app/study_plan.js`, `test/study_plan.js`, `test/stack_study_events.js`, this handoff.
 - Next action: inspect migration/schema and cloud account patterns; implement append-only rules and StudyPlan's guarded, revision-safe client; run unit/build/lane and applicable stack gates. Keep `ready:false`; no student auto-approval or production deployment.
-- Blockers: none known. Migration application delegated to lane A after merge.
+- Implementation: `20261028094500_plan01_append_only_events.sql` revokes event updates/deletes and adds a CAS + retry-safe `record_study_event` RPC; `src/app/study_plan.js` implements `activeContext` and `recordEvent`; `test/study_plan.js` and `test/stack_study_events.js` test guards and local authenticated RLS.
+- Validation: JavaScript source and tests parsed successfully; direct mocked StudyPlan invocation succeeded. Exact-head CI pending; no claim of local-stack, browser, live-production or full PLAN-01 acceptance. Study view remains hidden.
+- Cross-lane request SHIP-A1 (A): migration parity must admit new `*_plan01_*` migrations without weakening the 12-item baseline; active in A PR #82. Merge ordering: A #82 first; then run D head local-stack parity. SHIP-A2 (A): once this PR is merged, deploy migration version `20261028094500` through exact-version CLI and verify under plan production gate. No D production writes.
+- Next action: inspect actual CI at HEAD, fix failures, reconcile `main`, merge only on required green checks; then start PLAN-01 P2.
+- Blockers: SHIP-A1 dependency until PR #82 merges; production deployment separately owned by A.
