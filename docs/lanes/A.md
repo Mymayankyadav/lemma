@@ -1,3 +1,9 @@
+## Current A handoff — 28 October 2026 (integration)
+
+- **Verified progress:** KNOWLEDGE-01 K1/K2a–K2h2 code and local tests merged; latest backend PR #77 archived original stale approved intent before reopening a new **unapproved** draft. PR #78 added B's comparison and explicit restart UI. All original immutable requests and owner boundaries remain protected.
+- **Not done:** knowledge source/context additive migrations are merged in source but **not applied to production** (production has only nine legacy migration versions). No real production two-tutor acceptance or physical device evidence. Never use a connector migration action that silently changes the repository's exact migration versions.
+- **Next action:** perform read-only Lemma production migration/version/lock compatibility preflight and document a safe forward-only version-preserving deployment and recovery method; support B accepted revision/citation gate once deployed. No Carrel or student-data mutation.
+
 ## KNOWLEDGE-01 K2h2 — explicitly reviewed stale-context draft restart (claim)
 
 - **Claim:** `hourly-20261028T0833Z-a-k2h2`; UTC heartbeat 2026-10-28T08:33:25Z; base `main@e3f6610270efd63c03089fdca21219af55ad4660`; branch `lane-a/knowledge-01-k2h2-reviewed-reopen`. Lane A had no open PR; B's active PR #76 is untouched.

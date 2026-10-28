@@ -1,3 +1,9 @@
+## Current B handoff — 28 October 2026 (integration)
+
+- **Verified progress:** KNOWLEDGE-01 K3a editor PR #73, K3a1 locked conflict PR #76 and K3b compare/cancel/explicit unapproved restart PR #78 merged. PR-head browser regression, Android and local Supabase gates passed for #78; synthetic screenshot inspection covers mobile/desktop light/dark, not live backend or phone.
+- **Next action:** build a bounded accepted-revision and source-citation viewer using existing A owner-scoped RPCs. Handle not-yet-deployed production knowledge schema and offline gracefully; no whole-collection fetch, auto student approval or hidden cloud write. Later PLAN-01 awaits KNOWLEDGE-01 acceptance.
+- **Cross-lane request KNOWLEDGE-01-K2H2-B1:** B implementation merged via PR #78. Production and physical Android verification remain separately gated.
+
 ## KNOWLEDGE-01 K3b — explicit stale-context comparison/reopen UI (current claim)
 
 - **Claim:** `chat-20261028T0901-b-k3b`; heartbeat 2026-10-28T09:01:00Z; base `main@b83d92bb8fe6ddae24cc58764ad3c8f3940de2b4`; branch `lane-b/knowledge-01-k3b-reviewed-conflict-ui`. Earlier K3a1 PR #76 merged; A K2h2 backend PR #77 merged. No other B PR at claim.
