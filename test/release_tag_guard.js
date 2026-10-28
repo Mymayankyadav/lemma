@@ -6,7 +6,7 @@ const SHA = /^[0-9a-f]{40}$/;
 const REQUIRE = Object.freeze({
   'Lemma regression tests': 'push',
   'Lemma local Supabase sync gates': 'push',
-  'Deploy Lemma web': 'push',
+  'Deploy Lemma web': ['push','workflow_dispatch'],
   'Lemma live Pages smoke': 'workflow_run',
 });
 function check(tagSha, mainSha, allRuns) {
@@ -16,7 +16,7 @@ function check(tagSha, mainSha, allRuns) {
     throw Error('Invalid bounded GitHub Actions run inventory');
   const chosen = {};
   for (const [name, event] of Object.entries(REQUIRE)) {
-    const candidates = allRuns.filter(r => r && r.name === name && r.event === event &&
+    const candidates = allRuns.filter(r => r && r.name === name && (Array.isArray(event) ? event.includes(r.event) : r.event === event) &&
       r.head_branch === 'main' && r.head_sha === tagSha);
     candidates.sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at) ||
       (b.id || 0) - (a.id || 0));
@@ -43,11 +43,13 @@ if (require.main === module) {
   } else if (process.argv.length === 2) {
     const sha='a'.repeat(40), clock='2026-10-28T11:00:00Z';
     const runs=Object.entries(REQUIRE).map(([name,event],i)=>({
-      name,event,id:i+1,head_sha:sha,head_branch:'main',status:'completed',
+      name,event:Array.isArray(event) ? event[0] : event,id:i+1,head_sha:sha,head_branch:'main',status:'completed',
       conclusion:'success',created_at:new Date(Date.parse(clock)+i*60000).toISOString(),
       updated_at:new Date(Date.parse(clock)+i*60000+20000).toISOString()
     }));
     assert.equal(check(sha,sha,runs).smokeRun,4);
+    const manual = JSON.parse(JSON.stringify(runs)); manual[2].event='workflow_dispatch';
+    assert.equal(check(sha,sha,manual).deployRun,3);
     const copy = x => JSON.parse(JSON.stringify(x));
     assert.throws(()=>check('b'.repeat(40),sha,runs),/current main HEAD/);
     assert.throws(()=>check(sha,sha,runs.slice(0,3)),/live Pages smoke/i);
