@@ -31,6 +31,12 @@ const HomeView = (() => {
   const metaChip = (ic, value, label) => h('span', { class: 'tm', title: label, 'aria-label': `${label}: ${value}` },
     h('span', { html: icon(ic, 14) }), h('b', { text: value }));
 
+  function resumeStudyAvailable() {
+    return typeof StudyView !== 'undefined' && StudyView.ready === true &&
+      typeof StudyPlan !== 'undefined' && StudyPlan.ready === true &&
+      typeof StudyPlan.activeContext === 'function';
+  }
+
   function render() {
     if (App.loading) {
       return h('div', { class: 'page home' }, h('div', { class: 'loading-card', role: 'status', 'aria-label': 'Loading' },
@@ -38,7 +44,7 @@ const HomeView = (() => {
     }
     const page = h('div', { class: 'page home' });
     for (const b of banners()) page.append(b);
-    if (!Model.notes.size) { page.append(emptyState()); return page; }
+    if (!Model.notes.size && !resumeStudyAvailable()) { page.append(emptyState()); return page; }
     const now = Date.now();
     const c = Model.counts(null, now);
     const k = Model.knowledge(null, now);
@@ -47,6 +53,30 @@ const HomeView = (() => {
     const frac = t.all + due ? t.all / (t.all + due) : 0;
     const mins = Math.max(1, Math.round((avgSeconds() * (c.review + c.learn + c.new * 2.5)) / 60));
     const streak = streakDays();
+    let resumeContext = null;
+    const studyButton = h('button', { class: 'btn btn-primary study-btn', type: 'button', disabled: !due,
+      title: due ? 'Study now (Space)' : nextDueText(now),
+      onclick: () => {
+        if (resumeContext && resumeStudyAvailable())
+          App.go('study', { planId: resumeContext.planId, checkpointId: resumeContext.checkpoint.id });
+        else if (due) App.startSession(new Session({ deck: null }));
+      }, html: icon(due ? 'play' : 'check', 18) + `<span>${due ? 'Study' : 'Done'}</span>` });
+    // Approved context is an async, account-scoped read. The due-review action
+    // remains usable while it resolves; no cloud read can silently start a plan.
+    if (resumeStudyAvailable()) {
+      const workspaceRevision = App.workspaceRevision;
+      const userId = LemmaAccount.user?.id || null;
+      Promise.resolve().then(() => StudyPlan.activeContext()).then((context) => {
+        if (!studyButton.isConnected || App.workspaceBlocked ||
+            workspaceRevision !== App.workspaceRevision ||
+            userId !== (LemmaAccount.user?.id || null) || !resumeStudyAvailable()) return;
+        if (!context?.planId || !context.checkpoint?.id || context.planRevision == null) return;
+        resumeContext = context;
+        studyButton.disabled = false;
+        studyButton.title = 'Resume approved study checkpoint';
+        studyButton.innerHTML = icon('steps', 18) + '<span>Continue study</span>';
+      }).catch(() => { /* unavailable/offline: keep the existing review action */ });
+    }
     const hero = h('section', { class: 'today', 'aria-label': 'Today' },
       h('div', { class: 'today-ring', html: ringSVG(frac), title: t.all ? `${t.all} answered today` : '' },
         h('div', { class: 'ring-center' }, h('span', { class: 'hero-num', text: fmtInt(due) }), h('span', { class: 'ring-cap', text: 'due' }))),
@@ -59,9 +89,9 @@ const HomeView = (() => {
           k.studied ? metaChip('gauge', fmtPct(k.avgR), 'Average recall now') : null,
           streak ? metaChip('flame', String(streak), 'Day streak') : null,
           due ? metaChip('hourglass', '~' + mins + 'm', 'Estimated time') : null)),
-      h('button', { class: 'btn btn-primary study-btn', type: 'button', disabled: !due, title: due ? 'Study now (Space)' : nextDueText(now),
-        onclick: () => App.startSession(new Session({ deck: null })), html: icon(due ? 'play' : 'check', 18) + `<span>${due ? 'Study' : 'Done'}</span>` }));
+      studyButton);
     page.append(hero);
+    if (!Model.notes.size) { page.append(emptyState()); return page; }
     page.append(h('p', { class: 'stats-link-row' }, h('button', { class: 'link-btn stats-link', type: 'button', dataset: { go: 'stats' }, text: 'Statistics', onclick: () => App.go('stats') })));
 
     const list = h('div', { class: 'deck-list', role: 'list' });
