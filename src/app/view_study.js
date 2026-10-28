@@ -83,7 +83,6 @@ const StudyView = (() => {
             pending = null;
             input.value = '';
             feedback.textContent='Saved as append-only study evidence. No mastery or plan approval was changed.';
-            detail.replaceWith(detail);
             // Keep summary in sync without discarding another in-progress input.
             const labels = {'attempt':'Latest proof attempt','hint':'Current hint level',
               'feedback':'Latest feedback','mastery_evidence':'Latest evidence',
