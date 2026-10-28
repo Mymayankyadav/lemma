@@ -22,6 +22,7 @@ on:
       - 'src/app/study_plan.js'
       - 'src/app/tutor_handoff.js'
       - 'test/stack_*.js'
+      - 'test/release_workspace_restore.js'
       - 'test/run_prefix.js'
   workflow_dispatch:
 
@@ -98,6 +99,9 @@ jobs:
         run: node test/sync_local_e2e.js
       - name: Lane local-stack tests (test/stack_*.js, any lane)
         run: node test/run_prefix.js stack_
+      - name: Independent full workspace restore acceptance
+        if: hashFiles('test/release_workspace_restore.js') != ''
+        run: node test/release_workspace_restore.js --local
       - name: Upload real local-stack UI status screenshots
         if: always()
         uses: actions/upload-artifact@v4
