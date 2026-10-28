@@ -2,6 +2,13 @@
 
 Owner instruction (28 Oct, 14:47 IST): ship **everything** today using parallel agents. **Update 14:56 IST: the web app is the priority; Android is paused** (no lane C work, no phone session, no APK in this release). This file is the execution detail for that push. `plan.md` §2 remains the authoritative task state; this file adds lanes D/E/F, interfaces between them, and the ship cut. Integration-owned.
 
+## Integration claim — exact-current-main Pages release provenance (28 October 2026)
+
+- Claim `chat-20261028-pages-exact-main-release`, branch `integration/20261028-pages-exact-main-release` from the latest verified main after tutor deployment-operator PR #128. Integration-owned `.github/workflows/pages.yml` and this ship handoff only; no app code, migration, credentials or production data touched. No competing open integration PR was found at pickup.
+- Existing Pages `push` path filter deploys only application files, while the F R6 release tag guard correctly requires `Deploy Lemma web` and downstream `Lemma live Pages smoke` successful **on the exact last main SHA**. Docs, test and migration-operator merges therefore have no matching automatic deploy and force a manual dispatch. This is unnecessary user intervention and can cause stale release evidence.
+- Remove the main-push paths filter. Every final main commit builds/deploys exactly that SHA; the existing concurrency cancels superseded deploys, the Pages build retains syntax/merge/outbox checks, and the downstream F smoke remains the same. Release tag automation still requires main regression + local-stack success, exact-SHA deploy and smoke, migration parity and full account restore acceptance. A failed deploy never authorizes a release.
+- Gate: exact PR-head integration guard/regression CI, review CI path-trigger semantics, then merge; post-merge main must deploy automatically and trigger F smoke on that same SHA. No manual Pages workflow dispatch should be needed for final release candidates.
+
 ## Ship cut and rules
 
 - **Ship = tag `v1.0.0` on a fully green `main`** (regression, local Supabase, Pages, plus F's live-site smoke on the deployed URL). The Android workflow keeps running only as the lane-ownership check. Lane F prepares and makes the cut.
