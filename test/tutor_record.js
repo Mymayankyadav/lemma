@@ -13,19 +13,27 @@ const cp='compactness-open-cover-proof';
 let dialog, revision=3, activeCheckpoint=cp, failSecond=false;
 const calls=[];
 const app={workspaceRevision:1,workspaceBlocked:false};
-const account={user:{id:owner}};
+const account={user:{id:owner},client:null};
+const client={rpc(name,args){
+ calls.push({name,args:JSON.parse(JSON.stringify(args))});
+ return {setHeader:async(header,auth)=>{
+  assert.equal(header,'Authorization');
+  assert.equal(auth,'Bearer mock-token');
+  if(failSecond && args.p_event_id===E2) {
+   failSecond=false;
+   throw Error('Network interrupted after a possible server write');
+  }
+  return {data:{event:{eventId:args.p_event_id,sessionId:owner,
+    seq:calls.length,planRevision:3},audit:{
+    receiptId:args.p_event_id,planRevision:3,createdAt:'2026-10-28T17:00:00Z'}}};
+ }};
+}};
+account.client=client;
 const plan={
  async activeContext(){return {planId:A,planRevision:revision,contextId:null,contextRevision:null,
   checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:'in_progress'},
   hintLevel:1,sourceRefs:[],lastAttempt:{eventId:E1,text:'Partial proof'}};},
- async recordEvent(item){
-  calls.push(JSON.parse(JSON.stringify(item)));
-  if(failSecond && item.eventId===E2) {
-   failSecond=false;
-   throw Error('Network interrupted after a possible server write');
-  }
-  return {eventId:item.eventId,sessionId:owner,seq:calls.length,planRevision:3};
- }
+ async recordEvent(){throw Error('Unpaired StudyPlan.recordEvent must never be used');}
 };
 function h(tag,attrs,...kids){
  const obj={tag,attrs:attrs||{},kids,children:[],textContent:attrs?.text||'',
@@ -37,6 +45,7 @@ function h(tag,attrs,...kids){
  return obj;
 }
 const scope=vm.createContext({TextEncoder,h,App:app,LemmaAccount:account,StudyPlan:plan,
+ LemmaCloud:{accountToken:async(c,u)=>{assert.equal(c,client);assert.equal(u,owner);return 'mock-token';}},
  Sheets:{open(options){dialog=options;return {close(){}};}},copyText:async()=>true});
 vm.runInContext(fs.readFileSync('src/app/tutor_handoff.js','utf8')+
  '\nglobalThis.Handoff = TutorHandoff;',scope);
@@ -92,11 +101,12 @@ async function open(){
  assert.equal(x.save.disabled,false);
  await x.save.events.click();
  assert.equal(calls.length,1);
- assert.equal(calls[0].eventId,E1);
- assert.equal(calls[0].expectedPlanRevision,3);
- assert.deepEqual(calls[0].payload,{text:'The current proof stops here'});
- assert.equal(calls[0].source,'tutor_handoff.v1',
-  'untrusted tutor source must not impersonate student evidence');
+ assert.equal(calls[0].name,'record_tutor_evidence_with_receipt');
+ assert.equal(calls[0].args.p_event_id,E1);
+ assert.equal(calls[0].args.p_expected_plan_revision,3);
+ assert.deepEqual(calls[0].args.p_payload,{text:'The current proof stops here'});
+ assert.equal(Object.hasOwn(calls[0].args,'p_source'),false,
+  'RPC hard-codes tutor provenance; no untrusted actor/source string is sent');
  assert.equal(first.disabled,true,'acknowledged event cannot be written twice');
  assert.equal(x.save.disabled,true);
  assert.equal(cardOnly.disabled,false,'no card silently approved');
@@ -108,14 +118,14 @@ async function open(){
  failSecond=true;
  await x.save.events.click();
  assert.equal(calls.length,3);
- assert.equal(calls[1].eventId,E1);
- assert.equal(calls[2].eventId,E2);
+ assert.equal(calls[1].args.p_event_id,E1);
+ assert.equal(calls[2].args.p_event_id,E2);
  assert.match(x.status.textContent,/Recorded 1 event\(s\) so far/);
  assert.equal(x.save.disabled,false,'failed event still selectable');
  await x.save.events.click();
  assert.equal(calls.length,4);
- assert.equal(calls[3].eventId,E2,'retry original event ID, no new UUID');
- assert.deepEqual(calls[3].payload,calls[2].payload,'retry original payload');
+ assert.equal(calls[3].args.p_event_id,E2,'retry original event ID, no new UUID');
+ assert.deepEqual(calls[3].args,calls[2].args,'retry original RPC arguments');
  assert.equal(x.save.disabled,true);
  assert.match(x.status.textContent,/Recorded 1 selected/);
 
@@ -161,5 +171,5 @@ async function open(){
  assert.equal(x.review.children.length,0);
  assert.equal(x.save.disabled,true);
  assert.equal(calls.length,4);
- console.log('PASS TUTOR-01 T3a: selected-only event save, retry IDs, partial receipts, owner/revision/stale guards, no implicit cards');
+ console.log('PASS TUTOR-01 T3c2c: selected-only atomic event+audit save, retry IDs, partial receipts, owner/revision/stale guards, no implicit cards');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
