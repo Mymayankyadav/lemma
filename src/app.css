@@ -851,3 +851,14 @@ body.in-review #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); 
 #set-knowledge-drafts .input { width: 100%; min-width: 0; max-width: 100%; }
 #set-knowledge-drafts .btn { min-height: 44px; }
 #set-knowledge-drafts textarea { resize: vertical; }
+
+/* KNOWLEDGE-01 K3b: private owner-only context comparison, user initiated. */
+.knowledge-context-review:not([hidden]) { display:grid; gap:12px; margin-top:12px; min-width:0; }
+.knowledge-context-review[hidden] { display:none; }
+.knowledge-context-versions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; min-width:0; }
+.knowledge-context-side { min-width:0; padding:12px; border:1px solid var(--rule); border-radius:10px; background:var(--sheet-2); }
+.knowledge-context-side h3 { margin:0 0 6px; font-size:14px; }
+.knowledge-context-side p { overflow-wrap:anywhere; }
+.knowledge-context-preview { margin:8px 0; padding:10px; max-height:280px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.5 var(--font-data); background:var(--sheet); border:1px solid var(--rule); border-radius:8px; }
+.knowledge-context-side details > summary { cursor:pointer; min-height:44px; display:flex; align-items:center; }
+@media (max-width:780px) { .knowledge-context-versions { grid-template-columns:1fr; } }
