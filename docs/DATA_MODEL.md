@@ -50,3 +50,8 @@ Store.localLeftovers(), Store.clearLocal()
 Local/account promise resolution means local durability, not server acknowledgment. Callers must retain recoverable drafts on failure. Existing Model wrappers and legacy host paths have different return behavior: inspect them before assuming an awaited UI operation is durable.
 
 Keep domain writes behind Store and the existing account adapters. Safe account switching also involves `workspace_lifecycle.js`, Model/Session and async UI guards; it is not a one-file backend swap. Internal `activateAccount`/`deactivateAccount` are gated and must not be exposed before the canonical plan's sync acceptance checks.
+
+
+## KNOWLEDGE-01 K1 schema preflight (claim)
+
+Claim `hourly-20261028T0232Z-a-k1-preflight` (UTC heartbeat 2026-10-28T02:32:22Z). Scope: inspect existing context/source/section schema and document a bounded owner-scoped revision/citation contract in this A-owned file. This is an inspection/design slice only; no migrations, runtime writes, product approvals, or production changes. Await UI-01 promotion PR #52 before asserting K1 implementation readiness. Evidence and precise follow-on will be appended here.
