@@ -449,6 +449,70 @@ const LemmaCloud = (() => {
       } catch(err){throw failure||err;}
       return structuredClone(result);
     }
+    // K2h2: a stale, already-approved request is immutable evidence. A
+    // student may explicitly restart review against a newly inspected server
+    // revision, but this NEVER grants approval to the replacement draft.
+    // The old request and the replacement are committed in ONE transaction.
+    async reopenKnowledgeConflictDraft(contextId, expectedLocalRevision,
+      requestId, acceptedRevision, studentReviewed) {
+      const key=knowledgeDraftKey(contextId);
+      if (studentReviewed !== true)
+        throw new Error('Explicit student conflict review required');
+      if (!Number.isSafeInteger(expectedLocalRevision) || expectedLocalRevision < 1 ||
+          !Number.isSafeInteger(acceptedRevision) || acceptedRevision < 1 ||
+          typeof requestId !== 'string' ||
+          !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(requestId))
+        throw new Error('Invalid reviewed knowledge conflict');
+      const archiveKey=key.replace(':draft:',':conflict:')+':'+requestId.toLowerCase();
+      let result,failure;
+      try {
+        await tx(this.db,['meta'],'readwrite',t=>{
+          const store=t.objectStore('meta'), lookup=store.get(key);
+          lookup.onsuccess=()=>{
+            const previous=lookup.result;
+            // Lost local receipt: return the exact reopened draft, but only
+            // before another tab has edited or reapproved it.
+            if (previous?.userId===this.userId && previous.status==='draft' &&
+                previous.reopenedFromRequestId===requestId &&
+                previous.reopenedFromLocalRevision===expectedLocalRevision &&
+                previous.expectedRevision===acceptedRevision &&
+                previous.localRevision===expectedLocalRevision+1) {
+              result=previous;return;
+            }
+            if (!previous || previous.userId!==this.userId ||
+                previous.contextId!==contextId.toLowerCase() ||
+                previous.status!=='needs_review' ||
+                previous.approvedBy!=='student' ||
+                previous.requestId!==requestId ||
+                previous.localRevision!==expectedLocalRevision ||
+                acceptedRevision<=previous.expectedRevision) {
+              failure=new Error('Knowledge conflict changed; compare again');
+              t.abort();return;
+            }
+            const archive=store.get(archiveKey);
+            archive.onsuccess=()=>{
+              if (archive.result) {
+                failure=new Error('Knowledge conflict already archived');
+                t.abort();return;
+              }
+              const stamp=Date.now();
+              store.add({v:1,userId:this.userId,contextId:previous.contextId,
+                requestId,acceptedRevision,reviewedAt:stamp,
+                original:structuredClone(previous)},archiveKey);
+              result={v:1,userId:this.userId,contextId:previous.contextId,
+                expectedRevision:acceptedRevision,title:previous.title,
+                markdown:previous.markdown,payload:structuredClone(previous.payload),
+                authorKind:previous.authorKind,localRevision:previous.localRevision+1,
+                status:'draft',createdAt:previous.createdAt,updatedAt:stamp,
+                reopenedFromRequestId:requestId,
+                reopenedFromLocalRevision:previous.localRevision,reopenedAt:stamp};
+              store.put(result,key);
+            };
+          };
+        });
+      } catch(err){throw failure||err;}
+      return structuredClone(result);
+    }
     async discardKnowledgeDraft(contextId, expectedLocalRevision) {
       const key = knowledgeDraftKey(contextId);
       if (!Number.isSafeInteger(expectedLocalRevision) || expectedLocalRevision < 1)
