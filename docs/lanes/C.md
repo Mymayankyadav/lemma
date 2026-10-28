@@ -1,3 +1,11 @@
+## ANDROID-02 N3c — explicit permission and safe reminder tap (active claim)
+
+- **Claim:** `hourly-20261028-c-n3c`; heartbeat UTC 2026-10-28T05:04:54.733Z; base `main@43f0517365`; branch `lane-c/android-02-n3c-notification-interaction`; lane C unclaimed at inspection. Main regression, Android, local Supabase and Pages workflows all SUCCESS on the same head (40635402317 / 40635402173 / 40635402310 / 40635402191).
+- **Bounded scope:** expose native-only explicit notification-permission request (never called automatically) and strictly validate the fixed Lemma reminder ID, default tap action and review route before delivering an event to a subscriber. Queue at most one early tap until app/UI is ready; do not navigate before the app is initialized, leak notification payloads, or infer student consent. No B Settings or A model/store changes.
+- **Intended files:** `src/app/native_shell.js`, `test/android_native_shell.js`, `docs/ANDROID.md`, `docs/lanes/C.md`. Preserve native OAuth, Back/resume, offline data, no web exposure, and existing N3b scheduler.
+- **Gate:** mocked granted/denied/permission-error/no-plugin, no implicit prompt, valid/invalid/duplicate early taps, unsubscribe, web inertness, redacted exceptions; exact-head regression, Android debug APK and lane C guard; post-merge main checks. Physical D5 and B Settings opt-in/time control remain OPEN; `ANDROID-02-N3-B1` is unblocked for B after this contract is merged.
+- **Next:** implement C-owned adapter and tests, verify exact-head CI, then merge if current reviewed head passes; no owner action.
+
 ## ANDROID-02 N3b — native reminder reconciliation bridge (active claim)
 
 - **Claim:** `hourly-20261028T0455Z-c-n3b`; UTC heartbeat 2026-10-28T04:55Z; base `main@a0f1dbe`; branch `lane-c/android-02-n3b-reminder-bridge`. C unclaimed, A's independent K2d PR #64 active; do not modify it.
