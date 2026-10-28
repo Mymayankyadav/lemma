@@ -80,6 +80,8 @@ jobs:
         run: node test/auth_http_rls.js --local
       - name: Compare local database to read-only production security snapshot
         run: node test/sync_security_parity.js
+      - name: Verify private revisioned study contexts on two real local identities
+        run: node test/auth_knowledge_context.js
       - name: Install Chromium and local UI dependencies
         run: |
           npm ci --no-audit --no-fund
