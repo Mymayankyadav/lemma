@@ -21,7 +21,7 @@ function assertAllowedMigrationHistory(migrations,legacy){
  let previous=migrations[11].version;
  for(const m of migrations.slice(12)){
    assert.ok(m && typeof m==='object','invalid additional migration');
-   assert.match(m.version,/^\\d{14}$/,'invalid additional migration version');
+   assert.match(m.version,/^\d{14}$/,'invalid additional migration version');
    assert.match(m.name,/^(?:[a-z0-9]+_)*?(?:plan01|tutor01)_[a-z0-9_]+$/,
      'only named plan01/tutor01 migrations may extend the baseline');
    assert.ok(m.version>previous,'additional migrations must be timestamp-ordered');
