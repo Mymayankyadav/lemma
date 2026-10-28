@@ -139,6 +139,64 @@ const LemmaCloudBridge = (() => {
       p_limit: limit
     });
   }
+  // KNOWLEDGE-01 K2i: read an accepted context AND one bounded, explicitly
+  // referenced source page. The accepted structured revision selects the
+  // immutable source revision; the latest source version is never substituted.
+  // This is a read-only packet, not automatic enrollment or acceptance.
+  async function readPinnedAcceptedCitation(contextId, sourceId,
+    contextRevision = null, afterSectionId = null, limit = 6) {
+    if (!isUuid(contextId) || !isUuid(sourceId) ||
+        (contextRevision !== null && !isRevision(contextRevision)) ||
+        (afterSectionId !== null && !isUuid(afterSectionId)) ||
+        !Number.isSafeInteger(limit) || limit < 1 || limit > 6)
+      throw new Error('Invalid knowledge citation reference');
+    const client = LemmaAccount.client;
+    const userId = LemmaAccount.user?.id;
+    const handle = typeof LemmaSync === 'undefined' ? null : LemmaSync.accountHandle();
+    if (!client || !userId || !handle || handle.userId !== userId)
+      throw new Error('Sign in to an available account cache to read knowledge');
+    const check = () => {
+      if (LemmaAccount.client !== client || LemmaAccount.user?.id !== userId ||
+          LemmaSync.accountHandle() !== handle)
+        throw new Error('Account changed during knowledge citation read');
+    };
+    const context = await readAcceptedContext(contextId, contextRevision);
+    check();
+    if (!context || typeof context !== 'object' ||
+        !isUuid(context.context_id) ||
+        context.context_id.toLowerCase() !== contextId.toLowerCase() ||
+        !isRevision(context.revision) ||
+        (contextRevision !== null && context.revision !== contextRevision) ||
+        context.format !== 'structured_v1' ||
+        context.accepted_json?.schema_version !== 1 ||
+        !Array.isArray(context.accepted_json.source_refs))
+      throw new Error('Accepted knowledge revision is not citation-ready');
+    const reference = context.accepted_json.source_refs.find(ref =>
+      isUuid(ref?.source_id) && ref.source_id.toLowerCase() === sourceId.toLowerCase() &&
+      isRevision(ref.revision));
+    if (!reference)
+      throw new Error('Source is not referenced by this accepted revision');
+    const page = await readAcceptedExcerpts(contextId, sourceId, reference.revision,
+      afterSectionId, limit);
+    check();
+    // Fail closed rather than displaying sections from a different context,
+    // source revision, or improperly shaped server packet as cited evidence.
+    if (!page || typeof page !== 'object' || !isUuid(page.context_id) ||
+        page.context_id.toLowerCase() !== contextId.toLowerCase() ||
+        !isUuid(page.source_id) ||
+        page.source_id.toLowerCase() !== sourceId.toLowerCase() ||
+        page.source_revision !== reference.revision ||
+        !isRevision(page.context_revision) ||
+        page.context_revision > context.revision ||
+        !Array.isArray(page.excerpts) || page.excerpts.length > limit ||
+        typeof page.has_more !== 'boolean' ||
+        page.excerpts.some(item =>
+          !isUuid(item?.section_id) || typeof item.locator !== 'string' ||
+          typeof item.title !== 'string' || typeof item.text !== 'string' ||
+          !/^[0-9a-f]{64}$/i.test(item.sha256 || '')))
+      throw new Error('Accepted citation packet is inconsistent; reload');
+    return { context, source: page };
+  }
   async function commitAcceptedContext({ contextId, expectedRevision, requestId,
     title, markdown, payload, studentApproved } = {}) {
     if (studentApproved !== true)
@@ -327,7 +385,8 @@ const LemmaCloudBridge = (() => {
     return draft;
   }
   return { authorize, listRemote, inspect, uploadMissing, importMissing,
-    readAcceptedContext, readAcceptedExcerpts, commitAcceptedContext,
+    readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
+    commitAcceptedContext,
     readKnowledgeDraft, saveKnowledgeDraft, discardKnowledgeDraft,
     approveKnowledgeDraft, submitApprovedKnowledgeDraft, inspectKnowledgeConflict,
     reopenReviewedKnowledgeConflict };
