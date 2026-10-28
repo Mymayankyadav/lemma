@@ -82,6 +82,92 @@ const B = '00000000-0000-4000-8000-000000000002';
   hashingGate=null;
   assert.equal((await bridge.captureLocalRecoveryEnvelope(true)).ownerId,B);
   assert.equal((await storageB.list()).length,1);
+  // R2f: distinct VM exercises the authenticated server RPC, with no real
+  // network or production access and no implicit cloud writes.
+  const {TABLES}=require('./release_workspace_archive');
+  const ownerRows=id=>{
+    const tables=Object.fromEntries(TABLES.map(name=>[name,[]]));
+    tables.study_plans.push({user_id:id,id:'11111111-1111-4111-8111-111111111111'});
+    return {app:'lemma',schemaVersion:1,scope:'account-workspace-raw',
+      capture:'stable-calling-statement-snapshot',ownerId:id,
+      capturedAt:'2026-10-28T16:30:00Z',tables};
+  };
+  let serverOwner=A, serverHandle={userId:A,storage:storageA};
+  let remoteRows=ownerRows(A), rpcCalls=0, authCalls=0, allowRequest=null;
+  const serverClient={
+    auth:{getUser:async()=>{authCalls++;return {data:{user:{id:serverOwner}}};}},
+    rpc:(name,args)=>{
+      assert.equal(name,'capture_account_workspace_snapshot');
+      assert.equal(args,undefined,'RPC must never accept a caller owner override');
+      rpcCalls++;
+      return {setHeader:async (header,value)=>{
+        assert.equal(header,'Authorization');
+        assert.equal(value,'Bearer disposable-token');
+        if(allowRequest) return allowRequest();
+        return {data:remoteRows};
+      }};
+    }
+  };
+  const serverVM=vm.createContext({
+    LemmaAccount:{get user(){return {id:serverOwner};},get client(){return serverClient;}},
+    LemmaSync:{accountHandle:()=>serverHandle},
+    LemmaCloud:{accountToken:async(client,id)=>{
+      assert.equal(client,serverClient);
+      assert.equal(id,serverOwner);
+      return 'disposable-token';
+    }},
+    Model:{notes:new Map()},Store:{whenSaved:async()=>{}},
+    TextEncoder,crypto,structuredClone
+  });
+  vm.runInContext(fs.readFileSync('src/app/cloud_bridge.js','utf8')+
+    '\nglobalThis.serverBridge=LemmaCloudBridge',serverVM);
+  const remote=serverVM.serverBridge;
+  await assert.rejects(remote.captureServerWorkspaceSnapshot(),/Explicit server workspace/);
+  assert.equal(rpcCalls,0,'no read without deliberate student request');
+  const exportA=await remote.captureServerWorkspaceSnapshot(true);
+  assert.equal(exportA.ownerId,A);
+  assert.equal(exportA.readOnly,true);
+  assert.equal(exportA.count,1);
+  assert.equal(exportA.snapshot.tables.study_plans[0].user_id,A);
+  assert.equal(rpcCalls,1);
+  assert.equal(authCalls,1);
+  const verify=(mutate,pattern)=>{
+    const wrong=ownerRows(A);mutate(wrong);
+    assert.throws(()=>remote.validateServerWorkspaceSnapshot(wrong,A),pattern);
+  };
+  verify(x=>{delete x.tables.tutor_handoff_receipts;},/Invalid or incomplete/);
+  verify(x=>{x.tables.rogue=[];},/Invalid or incomplete/);
+  verify(x=>{x.ownerId=B;},/Invalid or incomplete/);
+  verify(x=>{x.tables.study_plans[0].user_id=B;},/Foreign owner/);
+  verify(x=>{x.tables.study_plans.push({...x.tables.study_plans[0]});},
+    /Duplicate server workspace primary key/);
+  verify(x=>{delete x.tables.study_plans[0].id;},
+    /Missing or unsafe server workspace primary key/);
+  verify(x=>{x.tables.notes=new Array(100001).fill(null);},/row limit/);
+  verify(x=>{x.scope='account-local-recovery';},/Invalid or incomplete/);
+
+  // In-flight remote transport can resolve after a different account mounted.
+  // The returned old-owner data must never cross the owner switch.
+  let transportStarted,releaseRemote;
+  const started=new Promise(resolve=>transportStarted=resolve);
+  allowRequest=()=>{transportStarted();return new Promise(resolve=>{
+    releaseRemote=()=>resolve({data:ownerRows(A)});
+  });};
+  const pendingRemote=remote.captureServerWorkspaceSnapshot(true);
+  await started;
+  serverOwner=B;
+  serverHandle={userId:B,storage:storageB};
+  releaseRemote();
+  await assert.rejects(pendingRemote,/Account changed during server workspace snapshot/);
+  allowRequest=null;
+  remoteRows=ownerRows(B);
+  const exportB=await remote.captureServerWorkspaceSnapshot(true);
+  assert.equal(exportB.snapshot.ownerId,B);
+  assert.equal(exportB.snapshot.tables.study_plans[0].user_id,B);
+  assert.deepEqual(JSON.parse(JSON.stringify(await storageA.list())),
+    JSON.parse(JSON.stringify(before)),'server snapshot must not write to IndexedDB');
+  console.log('PASS RELEASE R2f: explicit server snapshot, all 19 tables, owner/duplicate/size guards, no client writes, post-transport account switch');
+
   dbA.close();dbB.close();
   console.log('PASS RELEASE R2d: explicit local snapshot envelope, SHA-256, owner/size/shape guards, no mutation, post-hash identity');
 })().catch(error=>{console.error('FAIL R2d: '+error.stack);process.exitCode=1;});
