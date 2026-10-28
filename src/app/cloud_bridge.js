@@ -418,6 +418,141 @@ const LemmaCloudBridge = (() => {
     return verified;
   }
 
+  // R2g. Pin the same exact source migrations checked by F's archive guard.
+  // Future source migrations must explicitly update this inventory and tests.
+  const workspaceArchiveVersions=Object.freeze([
+    '20261026085028','20261026090019','20261026090746',
+    '20261026090844','20261026090959','20261026091125',
+    '20261026121817','20261026130428','20261026153542',
+    '20261028031800','20261028043000','20261028051500',
+    '20261028094500','20261028120000','20261028155500',
+    '20261028163000'
+  ]);
+  function archiveCanonical(value,depth=0) {
+    if(depth>32) throw new Error('Workspace archive nesting exceeds limit');
+    if(value===null || typeof value==='string' || typeof value==='boolean')
+      return JSON.stringify(value);
+    if(typeof value==='number' && Number.isFinite(value))
+      return JSON.stringify(value);
+    if(Array.isArray(value))
+      return '['+value.map(item=>archiveCanonical(item,depth+1)).join(',')+']';
+    if(!value || typeof value!=='object')
+      throw new Error('Nonportable workspace archive value');
+    const keys=Object.keys(value).sort();
+    if(keys.some(key=>['__proto__','constructor','prototype'].includes(key)))
+      throw new Error('Unsafe workspace archive key');
+    return '{'+keys.map(key=>JSON.stringify(key)+':'+
+      archiveCanonical(value[key],depth+1)).join(',')+'}';
+  }
+  const archiveRowKey=(table,row)=>workspaceSnapshotKeys[table]
+    .map(key=>archiveCanonical(row[key])).join('|');
+  function sortedArchiveRows(table,rows){
+    return [...rows].sort((a,b)=>archiveRowKey(table,a)
+      .localeCompare(archiveRowKey(table,b)));
+  }
+  function verifyArchiveReferences(tables){
+    const relationships=[
+      ['learning_sessions','plan_id','study_plans','id'],
+      ['tutor_handoffs','session_id','learning_sessions','id'],
+      ['tutor_handoff_receipts','plan_id','study_plans','id'],
+      ['learning_events','session_id','learning_sessions','id'],
+      ['study_plan_versions','plan_id','study_plans','id'],
+      ['study_plan_versions','context_id','study_context_files','id'],
+      ['study_checkpoints','plan_id','study_plans','id'],
+      ['study_checkpoints','last_evidence_event_id','learning_events','event_id'],
+      ['study_context_revisions','context_id','study_context_files','id'],
+      ['learning_sections','source_id','learning_sources','id'],
+      ['knowledge_source_versions','source_id','learning_sources','id'],
+      ['knowledge_source_versions','context_id','study_context_files','id'],
+      ['learning_card_links','note_id','notes','id'],
+      ['learning_card_links','session_id','learning_sessions','id'],
+      ['review_events','note_id','notes','id'],
+      ['review_retractions','target_event_id','review_events','event_id']
+    ];
+    for(const [from,field,to,target] of relationships){
+      const ids=new Set(tables[to].map(row=>archiveCanonical(row[target])));
+      for(const row of tables[from]){
+        if(row[field]!=null && !ids.has(archiveCanonical(row[field])))
+          throw new Error('Dangling workspace archive '+from+'.'+field);
+      }
+    }
+    const accepted=new Set(tables.knowledge_source_versions.map(row=>
+      archiveCanonical([row.source_id,row.revision])));
+    for(const row of tables.knowledge_section_versions){
+      if(!accepted.has(archiveCanonical([row.source_id,row.source_revision])))
+        throw new Error('Missing exact source revision in archive');
+    }
+    const unique={
+      learning_events:'event_id',
+      study_context_revisions:'request_id',
+      knowledge_source_versions:'request_id',
+      review_retractions:'target_event_id'
+    };
+    for(const [table,field] of Object.entries(unique)){
+      const seen=new Set();
+      for(const row of tables[table]){
+        if(row[field]==null) continue;
+        const key=archiveCanonical(row[field]);
+        if(seen.has(key))throw new Error('Duplicate archive unique '+table+'.'+field);
+        seen.add(key);
+      }
+    }
+    for(const table of workspaceSnapshotNames){
+      for(const row of tables[table]){
+        for(const field of ['seq','revision','source_revision','context_revision']){
+          if(row[field]!=null && (!Number.isSafeInteger(row[field]) ||
+             row[field]<0))
+            throw new Error('Unsafe workspace archive revision/sequence');
+        }
+      }
+    }
+  }
+  // The caller must deliberately request one authenticated read. SHA-256
+  // detects accidental corruption but does not authenticate a file or grant
+  // authority to restore. No export/download or write is performed here.
+  async function sealServerWorkspaceArchive(studentRequested=false){
+    if(studentRequested!==true)
+      throw new Error('Explicit server archive export required');
+    const ownerId=LemmaAccount.user?.id, client=LemmaAccount.client;
+    const handle=typeof LemmaSync!=='undefined' ? LemmaSync.accountHandle() : null;
+    if(!recoveryOwner(ownerId)||!client||!handle||handle.userId!==ownerId)
+      throw new Error('Sign in to an available workspace before archive');
+    const check=()=>{
+      if(LemmaAccount.user?.id!==ownerId||LemmaAccount.client!==client||
+         LemmaSync.accountHandle()!==handle)
+        throw new Error('Account changed while sealing server archive');
+    };
+    const result=await captureServerWorkspaceSnapshot(true);
+    check();
+    const raw=result.snapshot;
+    // Clone so a stale mutable response cannot change during async hashing.
+    const tables=structuredClone(raw.tables);
+    validateServerWorkspaceSnapshot({...raw,tables},ownerId);
+    verifyArchiveReferences(tables);
+    const canonicalTables=archiveCanonical(tables);
+    if(new TextEncoder().encode(canonicalTables).byteLength>recoveryByteCap)
+      throw new Error('Workspace archive canonical byte limit exceeded');
+    const counts={}, hashes={};
+    for(const table of workspaceSnapshotNames){
+      const rows=sortedArchiveRows(table,tables[table]);
+      counts[table]=rows.length;
+      hashes[table]=await recoveryDigest(new TextEncoder()
+        .encode(archiveCanonical(rows)));
+      check();
+    }
+    const migrations=[...workspaceArchiveVersions];
+    const exportedAt=raw.capturedAt;
+    const manifestInput={app:'lemma',version:2,
+      scope:'account-workspace',capture:'transactional',
+      ownerId,exportedAt,migrations,counts,hashes};
+    const sha256=await recoveryDigest(new TextEncoder()
+      .encode(archiveCanonical(manifestInput)));
+    check();
+    return {app:'lemma',version:2,scope:'account-workspace',
+      capture:'transactional',ownerId,exportedAt,migrations,tables,
+      manifest:{counts,hashes,sha256}};
+  }
+
   // LOCAL unaccepted drafts only. These are stored in the existing
   // account-namespaced IndexedDB cache; no network required after attach.
   // An in-flight save may finish under the *old* owner after logout, so
@@ -590,6 +725,7 @@ const LemmaCloudBridge = (() => {
   }
   return { captureLocalRecovery, captureLocalRecoveryEnvelope, verifyLocalRecoveryEnvelope,
     captureServerWorkspaceSnapshot, validateServerWorkspaceSnapshot,
+    sealServerWorkspaceArchive,
     authorize, listRemote, inspect, uploadMissing, importMissing,
     readAcceptedContext, readAcceptedExcerpts, readPinnedAcceptedCitation,
     commitAcceptedContext,

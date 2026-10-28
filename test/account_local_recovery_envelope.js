@@ -164,6 +164,57 @@ const B = '00000000-0000-4000-8000-000000000002';
   const exportB=await remote.captureServerWorkspaceSnapshot(true);
   assert.equal(exportB.snapshot.ownerId,B);
   assert.equal(exportB.snapshot.tables.study_plans[0].user_id,B);
+  // R2g: byte-for-byte canonical archive format is independently verified
+  // by F's release contract. Only the intentional read-only RPC is called.
+  const {verify:verifyWorkspaceArchive}=require('./release_workspace_archive');
+  const sourceMigrations=fs.readdirSync('supabase/migrations')
+    .filter(name=>/^\d{14}_[a-z0-9_]+\.sql$/.test(name)).sort()
+    .map(name=>name.slice(0,14));
+  await assert.rejects(remote.sealServerWorkspaceArchive(),/Explicit server archive/);
+  serverOwner=A;
+  serverHandle={userId:A,storage:storageA};
+  remoteRows=ownerRows(A);
+  const archive=JSON.parse(JSON.stringify(
+    await remote.sealServerWorkspaceArchive(true)));
+  assert.equal(archive.app,'lemma');
+  assert.equal(archive.version,2);
+  assert.equal(archive.capture,'transactional');
+  assert.equal(archive.ownerId,A);
+  assert.deepEqual(archive.migrations,sourceMigrations,
+    'all exact source migrations are pinned in the browser archive');
+  assert.equal(verifyWorkspaceArchive(archive).tableCount,19);
+  const altered=JSON.parse(JSON.stringify(archive));
+  altered.tables.study_plans[0].id='22222222-2222-4222-8222-222222222222';
+  assert.throws(()=>verifyWorkspaceArchive(altered),/checksum or count mismatch/);
+  const metadataTamper=JSON.parse(JSON.stringify(archive));
+  metadataTamper.manifest.hashes.study_plans='f'.repeat(64);
+  assert.throws(()=>verifyWorkspaceArchive(metadataTamper),/checksum or count mismatch/);
+  remoteRows=ownerRows(A);
+  remoteRows.tables.learning_sessions.push({
+    user_id:A,id:'33333333-3333-4333-8333-333333333333',
+    plan_id:'ffffffff-ffff-4fff-8fff-ffffffffffff'});
+  await assert.rejects(remote.sealServerWorkspaceArchive(true),
+    /Dangling workspace archive learning_sessions.plan_id/);
+  remoteRows=ownerRows(A);
+  remoteRows.tables.knowledge_section_versions.push({
+    user_id:A,source_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    source_revision:1,section_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'});
+  await assert.rejects(remote.sealServerWorkspaceArchive(true),
+    /Missing exact source revision in archive/);
+  remoteRows=ownerRows(A);
+  let sealEntered,sealRelease;
+  const sealWait=new Promise(resolve=>sealEntered=resolve);
+  hashingGate=(...args)=>{sealEntered();return new Promise(resolve=>{
+    sealRelease=()=>resolve(webcrypto.subtle.digest(...args));
+  });};
+  const pendingSeal=remote.sealServerWorkspaceArchive(true);
+  await sealWait;
+  serverOwner=B;
+  serverHandle={userId:B,storage:storageB};
+  sealRelease();
+  await assert.rejects(pendingSeal,/Account changed while sealing server archive/);
+  hashingGate=null;
+  console.log('PASS RELEASE R2g: all 19 source tables sealed to independent canonical F validator, tamper/FK/source revision/identity negatives');
   assert.deepEqual(JSON.parse(JSON.stringify(await storageA.list())),
     JSON.parse(JSON.stringify(before)),'server snapshot must not write to IndexedDB');
   console.log('PASS RELEASE R2f: explicit server snapshot, all 19 tables, owner/duplicate/size guards, no client writes, post-transport account switch');
