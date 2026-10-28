@@ -1,3 +1,10 @@
+## RELEASE-CI-01 — authenticated callback startup synchronization
+
+- **Claim / heartbeat:** `chat-20261028-release-callback-boot`, 2026-10-28T18:25Z; branch `lane-a/release-callback-boot-gate`, base main `a9a5a6f`. No open A PR at pickup; B #148 and F #149 retain their independent recovery work.
+- **Observed blocker:** main local-stack [40742592905](https://github.com/Mymayankyadav/lemma/actions/runs/40742592905), first attempt, timed out in `test/sync_local_e2e.js:102` waiting for signed-in Settings after the real PKCE callback. Regression, Pages and live smoke succeeded on this SHA. One permitted unchanged-head retry was requested after inspecting the logs.
+- **Scope:** A-owned browser acceptance synchronization in `test/sync_local_e2e.js`, focused startup-race coverage under `test/sync_*.js` if needed, and this handoff. Inspect whether asynchronous App boot replaces the callback Settings view; preserve real GoTrue/PKCE, owner, outbox, offline, lost-response and RLS assertions. No production/schema changes or readiness enablement.
+- **Next:** reproduce the callback startup ordering, implement only the evidenced correction, run syntax/ownership/regression and exact-head local-stack CI, then merge only green. Full release remains gated on recovery UI/acceptance and production parity.
+
 ## RELEASE-01 R2j — paired local recovery restore
 
 - **Claim / heartbeat:** `chat-20261028-r2j-local-restore`, 2026-10-28T17:54Z; branch `lane-a/release-r2j-local-recovery-restore` from main `2f2a410` after PR #144. No competing A claim. Files: `src/app/{sync_browser,account_sync,cloud_bridge}.js`, account recovery tests and this handoff.
