@@ -1,6 +1,6 @@
 # Lane A — sync, auth and backend
 
-Next action: serve B's OPEN `UI-01-LIVE-STATUS-A1` cross-lane request with actual local-stack offline/reconnect screenshots. Claim `hourly-20261028T0042Z-a-live-offline`, branch `lane-a/ui-01-real-offline-visual`, heartbeat UTC 2026-10-28T00:42:00Z, intended files `test/sync_local_e2e.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`; tested SHA NOT RUN. First bounded slice: authenticated offline edit and post-reconnect status screenshots, with outbox/receipt evidence. Live RPC-error visuals remain separate. No production mutations, owner action none.
+Next action: [PR #46](https://github.com/Mymayankyadav/lemma/pull/46) serves `UI-01-LIVE-STATUS-A1` (B → A) with authenticated local-stack offline/reconnect screenshots. Claim `hourly-20261028T0042Z-a-live-offline`, branch `lane-a/ui-01-real-offline-visual`, heartbeat UTC 2026-10-28T00:43:00Z. Files: `test/sync_local_e2e.js`, `.github/workflows/sync-local.yml`, `docs/lanes/A.md`. Exact-head CI/screenshots PENDING, local stack NOT RUN locally. Remaining: real RPC-error/recovery visuals and B's visual acceptance; no production or physical-device claim. Owner action: none.
 
 | Field | Value |
 | --- | --- |
@@ -13,7 +13,7 @@ Next action: serve B's OPEN `UI-01-LIVE-STATUS-A1` cross-lane request with actua
 | Cloud safety | Local workflow has no production ref, link, access token, migration deployment or secrets; untouched Lemma and Carrel databases. |
 | Remaining gate | None for SYNC-04. Future native physical-device and release smoke remain tracked under ANDROID-02 / RELEASE-01; Settings presentation transferred to B by v5 integration. |
 
-**Requests from other lanes:** none open at v5 inspection. Read all lane handoffs on pickup and service requests addressed to A directly. Future task support: data/contracts for KNOWLEDGE-01, PLAN-01, TUTOR-01 and native auth.
+**Requests from other lanes:** **UI-01-LIVE-STATUS-A1 IN_PROGRESS** from lane B ([request in B.md](B.md#current-cross-lane-request-ui-01-live-status-a1-open)); first A-owned real local-stack offline/reconnect screenshot slice in PR #46. The separate RPC-error visual and B visual acceptance remain OPEN. Future task support: data/contracts for KNOWLEDGE-01, PLAN-01, TUTOR-01 and native auth.
 
 **Evidence precedence:** the summary above and plan v5 are current. Sections below retain historical verification detail; their old PENDING/NOT RUN statements and owner-routing instructions are superseded where later evidence closes the same gate. Do not restart completed slices.
 
@@ -159,3 +159,11 @@ SYNC-04 remains **NEXT**, not DONE. Until independent live testing is possible, 
 - It checks `/auth/v1/user` for two distinct user IDs, confirms each owner can read its **own** labelled note, probes foreign-owner reads from `notes`, `profiles`, `review_events`, and `review_retractions`, then probes RPC `commit_note` in both directions with an **expected nonzero victim revision**. The wrong owner must receive `stale_note_revision`. It re-reads owner data afterward to verify no change. The read-only preflight must pass before either RPC; no legitimate notes are targeted and no rows are deliberately created.
 - **NOT YET RUN LIVE:** absence of the two real test sessions/second synthetic fixture prevents claiming HTTP authorization gate success. A passing mocked self-test does not prove deployed RLS behavior. This harness must not be used with a service-role key or embedded in the client.
 - Remaining independent-device UI tombstone, offline restart/reconnect, expired authenticated session and lost-response end-to-end gates remain open. Keep SYNC-04 **NEXT**, not DONE.
+
+## UI-01-LIVE-STATUS-A1 — real offline/reconnect visual evidence (PR #46, CI pending)
+
+- **Requester/target:** B → A; **state:** IN_PROGRESS for offline/reconnect subset. The [B handoff](B.md#current-cross-lane-request-ui-01-live-status-a1-open) owns the full acceptance request. KNOWLEDGE-01 remains BLOCKED by UI-01.
+- **Implementation:** In the existing L7 disposable local GoTrue/PostgREST/Realtime browser test, after a real account note is edited with Chromium offline and its IndexedDB pending outbox operation is asserted, inspect the actual `#sync[role=status]` and visible label, then capture mobile (390×844) and desktop (1280×800) light/dark screenshots. After full Chromium restart and server revision-2/receipt convergence, capture the actual `Saved to cloud` UI in the same four configurations. The helper does not inject or mock account status, credentials or network responses.
+- **Evidence and privacy:** `.github/workflows/sync-local.yml` uploads `lemma-live-sync-ui-screenshots` as a separate 14-day CI artifact, with synthetic fixture content only. It does not publish to the CI-owned screenshot branch or touch production data. Existing L7 revision, idempotency, isolation, offline restart, JWT refresh and lost-ack assertions remain intact. An artifact screenshot is not a physical phone or production smoke.
+- **Verification:** PR head must pass exact-head local-stack CI, regression and Android/lane guard. Download and visually inspect all eight screenshots, confirm actual status labels and no secrets. If the real offline UI fails to show Offline/Queued, keep the PR draft and request a targeted B fix rather than weakening assertions.
+- **Still open:** Real RPC-error/recovery visual state (separate bounded A slice), B's final acceptance review, and UI-01 task promotion. No owner action requested.
