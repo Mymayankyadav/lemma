@@ -1,6 +1,6 @@
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P3 checkpoint study screen on `lane-d/plan-01-p3-checkpoint-screen`: render approved objectives, last proof, hint level, feedback/evidence/next action and explicit append-only study events; keep Study tab hidden until P5.
+Next action: P4a validate and diff accepted vs proposed checkpoint snapshots (stable IDs, prerequisite graph, no implicit approval); then P4b student-reviewed amendment acceptance and stale conflict restart. Study remains hidden until P5.
 
 | Field | Value |
 | --- | --- |
@@ -66,3 +66,10 @@ Next action: P3 checkpoint study screen on `lane-d/plan-01-p3-checkpoint-screen`
 - `src/app/study_plan.js` adds bounded read-only `lastFeedback`, `lastEvidence`, `nextAction` fields selected from the existing immutable 50-event slice. Existing plan/context/version owner and accepted-revision checks remain intact.
 - `src/styles/study.css` scopes responsive checkpoint presentation. `test/study_view.js` exercises approved vs absent/stale/signed-out context, deliberate writes and stable retries/account switching; `test/study_view_browser.js` generates synthetic desktop/mobile Chromium screenshots with a hidden-only fixture (not production Pages or real accounts).
 - Branch head last edited with tests and sign-out handling; **exact-head CI pending**, no P3 gate claimed, no student data/production writes. Next: fix any regressions, obtain screenshots for the final head, merge only after green gates; then P4 amendment diff/explicit acceptance and proof-resumption safeguards.
+
+## P4a active claim — immutable amendment comparison
+
+- Run `chat-20261028-lane-d-p4a-owner` · heartbeat 2026-10-28T11:14Z · base `main@089b3f1`.
+- Scope: D-owned `src/app/study_plan.js`, `test/study_diff.js`, `docs/STUDY_PLANNING_PROTOCOL.md`, this handoff. No backend/other-lane files or production data.
+- Add a pure, bounded plan-snapshot comparison for proposed amendments: reject duplicate, dangling or cyclic checkpoint prerequisites; expose added/removed/changed/unchanged stable IDs, prerequisite edge changes and evidence-sensitive criterion edits. Do not approve or publish. Later P4b must read/version-pin accepted revision, render a student diff and call P2b approval only after consent; P4c must handle explicit stale conflict restart/mid-proof resumption.
+- P3 PR #105 merged as [089b3f1](https://github.com/Mymayankyadav/lemma/commit/089b3f1500fb9cb927d5d26223864614a2699565); exact-head [regression 40677743107](https://github.com/Mymayankyadav/lemma/actions/runs/40677743107) and [local stack 40677742947](https://github.com/Mymayankyadav/lemma/actions/runs/40677742947) SUCCESS. Synthetic screenshots exist but direct visual inspection remains for P5. P3 intentionally `ready:false`.
