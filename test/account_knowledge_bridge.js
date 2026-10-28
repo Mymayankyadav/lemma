@@ -109,6 +109,7 @@ const bridge=scope.knowledgeBridge;
  assert.deepEqual(await bridge.readAcceptedContext(contextId),{restored:true});
  // K2i: context-selected immutable source citation, bounded to one page.
  assert.equal(typeof bridge.readPinnedAcceptedCitation,'function');
+ const writesBeforeCitation=calls.filter(x=>x.name==='commit_structured_study_context').length;
  const contextPacket={context_id:contextId,revision:4,format:'structured_v1',
   title:'Topology',context_markdown:'Accepted content',
   accepted_json:{schema_version:1,source_refs:[{source_id:sourceId,revision:2}]}};
@@ -179,7 +180,7 @@ const bridge=scope.knowledgeBridge;
  onSend=(name)=>({data:name==='get_accepted_study_context'?contextPacket:sourcePacket});
  assert.equal((await bridge.readPinnedAcceptedCitation(contextId,sourceId,4,null,2))
   .source.excerpts[0].text,'Accepted proof excerpt');
- assert.equal(calls.filter(x=>x.name==='commit_structured_study_context').length,2,
+ assert.equal(calls.filter(x=>x.name==='commit_structured_study_context').length,writesBeforeCitation,
   'citation tests must be read-only; only earlier explicit acceptance tests may commit');
 
  console.log('PASS K2d/K2i account-scoped accepted knowledge RPC, student consent, stable retry, offline/account guards and error redaction');
