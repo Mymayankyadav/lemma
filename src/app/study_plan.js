@@ -158,12 +158,13 @@ const StudyPlan = (() => {
       ? currentSessions[0].id : null;
     if (currentSessionId !== sessionId)
       throw new Error('Active study session changed; reload checkpoint');
-    // A different device may publish an amendment while the individual
-    // plan/version/checkpoint/event requests are in flight. Do not hand a tutor
-    // an old revision as the *current* approved checkpoint after that change.
-    // The write RPC still owns CAS; this final owner-scoped read guards display.
-    const stillApproved = await list(ctx,'study_plans','id,revision',
-      q => q.eq('id',plan.id).limit(1));
+    // Another device may publish an amendment OR approve a different plan
+    // while checkpoint and event reads are in flight. Recheck the *same latest
+    // plan selector* used at entry, not just the original plan ID: the latter
+    // can stay unchanged after a newer plan supersedes it. The write RPC still
+    // owns CAS; this owner-scoped read guards only the displayed tutor packet.
+    const stillApproved = await list(ctx,'study_plans','id,revision,updated_at',
+      q => q.order('updated_at',{ascending:false}).limit(1));
     if (stillApproved.length !== 1 || !same(stillApproved[0].id,plan.id) ||
         stillApproved[0].revision !== plan.revision)
       throw new Error('Approved study plan changed; reload checkpoint');
