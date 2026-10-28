@@ -42,7 +42,12 @@ function verify() {
   assert.ok(versionCode && versionName, 'APK version metadata missing');
 
   const signer = run(sdkTool('apksigner'), ['verify', '--print-certs', apk]);
-  const signerSha256 = /Signer #1 certificate SHA-256 digest:\s*([0-9a-f]{64})/i.exec(signer)?.[1]?.toLowerCase();
+  // apksigner output can use colon-delimited certificate fingerprints.
+  // Normalize only the digest value; never weaken the 256-bit requirement.
+  const certificateLine = signer.split(/\r?\n/).find(line =>
+    /Signer #1 certificate SHA-256 (?:digest|fingerprint):/i.test(line));
+  const signerSha256 = certificateLine?.replace(/^.*?:\s*/, '')
+    .replace(/[\s:]/g, '').toLowerCase();
   assert.match(signerSha256 || '', /^[0-9a-f]{64}$/, 'APK signature fingerprint unavailable');
 
   const files = new Set(run('unzip', ['-Z', '-1', apk]).trim().split(/\r?\n/));
