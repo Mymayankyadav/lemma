@@ -120,7 +120,15 @@ async function resolveCurrent(page, result, reject = false) {
           });
           await ready.page.getByRole('button', { name: 'Continue study' }).waitFor();
         }
-        await ready.page.locator('.today .study-btn').filter({ hasText: 'Continue study' }).click();
+        // The mock account continually re-renders Today during startup. Click
+        // the currently mounted CTA atomically, rather than Playwright's
+        // stability wait on a node which may be immediately replaced.
+        await ready.page.evaluate(() => {
+          const btn = document.querySelector('.today .study-btn');
+          if (!btn?.textContent.includes('Continue study') || btn.disabled)
+            throw new Error('Approved checkpoint CTA is not currently actionable');
+          btn.click();
+        });
         try {
           await ready.page.locator('.study-fixture').waitFor({ timeout: 5000 });
         } catch (err) {
