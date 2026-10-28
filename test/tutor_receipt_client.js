@@ -12,7 +12,9 @@ const OTHER='00000000-0000-4000-8000-000000000005';
 const input={receiptId:RECEIPT,planId:PLAN,checkpointId:'proof-1',
  expectedPlanRevision:2,action:'evidence_recorded',artifactId:ARTIFACT};
 let error=null,tokenError=false,afterToken=null,afterRpc=null,apiCalls=[];
-const account={user:{id:OWNER},client:null};
+let identityListener=null;
+const account={user:{id:OWNER},client:null,
+ onIdentityChange(fn){identityListener=fn;}};
 const app={workspaceRevision:1,workspaceBlocked:false};
 const client={rpc(name,args){
  apiCalls.push({name,args:JSON.parse(JSON.stringify(args))});
@@ -91,6 +93,9 @@ const receipt=x=>scope.Tutor.recordReceipt(x);
  afterToken=()=>{account.user={id:OTHER};};
  await assert.rejects(receipt(input),/account or workspace changed/);
  account.user={id:OWNER};
+ afterToken=()=>{assert.ok(identityListener);identityListener();};
+ await assert.rejects(receipt(input),/account or workspace changed/,
+  'same-user relogin must invalidate in-flight audit');
  afterRpc=()=>{app.workspaceRevision=2;};
  await assert.rejects(receipt(input),/account or workspace changed/);
  app.workspaceRevision=1;
