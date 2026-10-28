@@ -162,10 +162,140 @@ const StudyPlan = (() => {
       throw new Error('Invalid study event receipt; retry the same event ID');
     return receipt;
   }
-  // P2 introduces durable, unapproved drafts; no tutor or background process
-  // may call publication directly from this P1 module.
-  async function proposeAmendment() {
-    throw new Error('Plan amendment drafts are unavailable until PLAN-01 P2');
+  // P2a: a dedicated IndexedDB namespace per authenticated owner. This is
+  // durable LOCAL staging, never a cloud write or plan acceptance.
+  function openDraftDB(userId) {
+    if (typeof indexedDB === 'undefined')
+      return Promise.reject(new Error('Durable plan draft storage unavailable'));
+    return new Promise((resolve,reject) => {
+      const request = indexedDB.open('lemma-plan-drafts-v1-' + userId,1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains('drafts'))
+          request.result.createObjectStore('drafts',{keyPath:'planId'});
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(new Error('Could not open durable plan draft storage'));
+      request.onblocked = () => reject(new Error('Plan draft storage upgrade blocked'));
+    });
   }
-  return { ready:false, activeContext,recordEvent,proposeAmendment };
+  async function draftTransaction(planId,write,mutate) {
+    if (!isUuid(planId)) throw new Error('Invalid study plan ID');
+    const ctx = account();
+    const db = await openDraftDB(ctx.userId);
+    try {
+      ctx.check();
+      const result = await new Promise((resolve,reject) => {
+        let tx;
+        try { tx = db.transaction('drafts',write ? 'readwrite' : 'readonly'); }
+        catch (_) { reject(new Error('Plan draft storage unavailable')); return; }
+        const store = tx.objectStore('drafts');
+        let answer;
+        const request = store.get(planId);
+        request.onsuccess = () => {
+          try { answer = mutate(request.result || null,store); }
+          catch (e) { tx.abort(); reject(e); }
+        };
+        request.onerror = () => reject(new Error('Could not read plan draft'));
+        tx.oncomplete = () => resolve(answer);
+        tx.onabort = () => reject(new Error('Plan draft transaction not saved'));
+        tx.onerror = () => reject(new Error('Plan draft transaction failed'));
+      });
+      ctx.check();
+      return result;
+    } finally { db.close(); }
+  }
+  function draftInput(input) {
+    if (!object(input) || ['status','approvedBy','studentApproved','requestId',
+       'approvedAt'].some(k => Object.hasOwn(input,k)) ||
+        !isUuid(input.planId) ||
+        !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0 ||
+        !Number.isSafeInteger(input.expectedLocalRevision ?? 0) ||
+        (input.expectedLocalRevision ?? 0) < 0 ||
+        !object(input.snapshot) ||
+        !Array.isArray(input.snapshot.checkpoints) ||
+        input.snapshot.checkpoints.length < 1 ||
+        input.snapshot.checkpoints.length > 120 ||
+        typeof input.changeSummary !== 'string' ||
+        !input.changeSummary.trim() || input.changeSummary.length > 4000 ||
+        typeof (input.title ?? '') !== 'string' || (input.title ?? '').length > 200 ||
+        typeof (input.objective ?? '') !== 'string' ||
+        (input.objective ?? '').length > 4000 ||
+        (input.contextId != null && !isUuid(input.contextId)) ||
+        ((input.contextId == null) !== (input.contextRevision == null)) ||
+        (input.contextRevision != null && !revision(input.contextRevision)) ||
+        (input.source != null && (typeof input.source !== 'string' ||
+          input.source.length > 200)) ||
+        (input.proposalId != null && !isUuid(input.proposalId)))
+      throw new Error('Invalid plan draft');
+    const ids = input.snapshot.checkpoints.map(cp => cp?.checkpoint_id || cp?.id);
+    if (ids.some(id => typeof id !== 'string' || !id.trim() || id.length > 160) ||
+        new Set(ids).size !== ids.length)
+      throw new Error('Invalid or duplicate plan checkpoint IDs');
+    // Snapshot before any async storage operation so a caller cannot mutate a
+    // queued input and silently change the reviewed proposal.
+    let snapshot;
+    try { snapshot = JSON.parse(JSON.stringify(input.snapshot)); }
+    catch (_) { throw new Error('Invalid plan draft snapshot'); }
+    if (JSON.stringify(snapshot).length > 100000)
+      throw new Error('Plan draft too large');
+    return {
+      planId:input.planId,expectedRevision:input.expectedRevision,
+      expectedLocalRevision:input.expectedLocalRevision ?? 0,
+      contextId:input.contextId ?? null,contextRevision:input.contextRevision ?? null,
+      title:input.title ?? '',objective:input.objective ?? '',
+      snapshot,changeSummary:input.changeSummary,source:input.source ?? null,
+      proposalId:input.proposalId ?? null
+    };
+  }
+  async function savePlanDraft(input) {
+    const data = draftInput(input);
+    // A caller's ID is stable across an ambiguous local write retry; if absent
+    // this method generates one only for a new proposal.
+    const draftId = data.proposalId || crypto.randomUUID();
+    const base = {...data,draftId};
+    delete base.proposalId;
+    delete base.expectedLocalRevision;
+    return draftTransaction(data.planId,true,(previous,store) => {
+      if (previous && previous.userId !== LemmaAccount.user?.id)
+        throw new Error('Plan draft account mismatch');
+      if (previous?.status !== undefined && previous.status !== 'draft')
+        throw new Error('Plan draft is already under approval');
+      if (previous?.draftId === draftId) {
+        const {localRevision,createdAt,updatedAt,userId,status,...oldFields} = previous;
+        if (JSON.stringify(oldFields) !== JSON.stringify(base))
+          throw new Error('Plan draft ID reused with changed content');
+        return structuredClone(previous);
+      }
+      if ((previous?.localRevision ?? 0) !== data.expectedLocalRevision)
+        throw new Error('Plan draft changed; reload before editing');
+      const stamp = Date.now();
+      const result = {...base,status:'draft',userId:LemmaAccount.user.id,
+        localRevision:(previous?.localRevision ?? 0)+1,
+        createdAt:previous?.createdAt ?? stamp,updatedAt:stamp};
+      store.put(result);
+      return structuredClone(result);
+    });
+  }
+  async function readPlanDraft(planId) {
+    return draftTransaction(planId,false,row => row ? structuredClone(row) : null);
+  }
+  async function discardPlanDraft(planId,expectedLocalRevision) {
+    if (!revision(expectedLocalRevision))
+      throw new Error('Invalid local plan draft revision');
+    return draftTransaction(planId,true,(row,store) => {
+      if (!row) return false;
+      if (row.status !== 'draft' || row.localRevision !== expectedLocalRevision)
+        throw new Error('Plan draft changed; reload before deleting');
+      store.delete(planId);
+      return true;
+    });
+  }
+  // Tutor proposals are staged only. P2b introduces the separate explicit
+  // student review/approval transition and idempotent publication receipts.
+  async function proposeAmendment(input) {
+    const draft = await savePlanDraft(input);
+    return draft.draftId;
+  }
+  return { ready:false, activeContext,recordEvent,proposeAmendment,
+    savePlanDraft,readPlanDraft,discardPlanDraft };
 })();
