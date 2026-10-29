@@ -1,3 +1,9 @@
+## RELEASE-01 — asynchronous recovery verification snapshot (29 October 2026)
+
+- **Claim:** `chat-20261029-a-recovery-verification-snapshot`; branch `lane-a/recovery-verification-snapshot`, base `5ec8ff73b713de577a9611fec65bf66ea6c0d920`. Scope A-owned recovery verification, focused account tests and this handoff. No production writes, recovery activation or student approval.
+- **Investigation:** checksum verification performs asynchronous digests while reading caller-supplied mutable objects. Check whether mutation can mix versions of a backup during validation and ensure validation binds to one snapshot; preserve restore consent and existing safety bounds.
+- **Next:** reproduce with a controlled digest pause, implement a bounded fix if confirmed, run focused tests and exact-head CI. No verification claimed yet.
+
 ## RELEASE-01 SEC-01 — public SECURITY DEFINER RPC ACL regression (2026-10-29)
 
 - **Claim:** `chat-20261029-a-rpc-acl`, heartbeat 2026-10-29T02:49:01.931Z, branch `lane-a/release01-public-rpc-security-gate`, baseline `main@d0f4d30a7300`; only B PR #163 open and independently owned. A takes only `test/stack_knowledge_rpc_acl.js` and this handoff; no migrations, production writes, student approval, readiness change, or Carrel access.
