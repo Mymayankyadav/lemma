@@ -340,6 +340,7 @@ const TutorHandoff = (() => {
     if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
       throw new Error('The active checkpoint has changed; reopen its handoff');
     const ownerId = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.user?.id;
+    const openedClient = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.client;
     const openedIdentityEpoch = identityEpoch;
     const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
     const packet = exportPacket(ctx);
@@ -398,8 +399,53 @@ const TutorHandoff = (() => {
     const review = h('div', { class:'tutor-handoff-review', 'aria-live':'polite' });
     const summary = h('p', { class:'tutor-handoff-help',
       text:'Selected study events are recorded only after you press Save. Cards and plan amendments stay unapproved and unsaved; use the separate student approval flow later.' });
+    // The sheet can remain open while another device changes the approved
+    // proof, hint or active session. Revalidate before sending the frozen
+    // packet to another tutor; write actions already require this freshness.
+    // A stale/unknown packet is cleared so the old proof cannot be manually
+    // copied from this sheet after the failed check.
+    let copying = false;
     const copyBtn = h('button', { class:'btn', type:'button', text:'Copy packet',
-      onclick:()=>copyText(packet.markdown,output) });
+      onclick:async () => {
+        if (copying || saving || !output.value) return;
+        copying = true;
+        copyBtn.disabled = true;
+        const verifyCopyOwner = () => {
+          if (identityEpoch !== openedIdentityEpoch ||
+              (typeof LemmaAccount !== 'undefined' &&
+               (LemmaAccount.user?.id !== ownerId || LemmaAccount.client !== openedClient)) ||
+              (typeof App !== 'undefined' &&
+               (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
+            throw new Error('Study account or workspace changed');
+        };
+        try {
+          verifyCopyOwner();
+          if (typeof navigator !== 'undefined' && navigator.onLine === false)
+            throw new Error('Offline: cannot verify the current study state');
+          const now = await StudyPlan.activeContext();
+          verifyCopyOwner();
+          assertReviewedContext(now);
+        } catch (e) {
+          output.value = '';
+          status.textContent = 'Packet not copied: ' +
+            String(e?.message || 'Study context unavailable') +
+            '. Reopen the handoff for a current approved proof packet.';
+          copying = false;
+          copyBtn.disabled = true;
+          return;
+        }
+        try {
+          const copied = await copyText(packet.markdown,output);
+          status.textContent = copied
+            ? 'Copied the verified current study packet. Review it before sharing with a tutor.'
+            : 'Study packet is current; clipboard unavailable. Copy the selected text manually.';
+        } catch (_) {
+          status.textContent = 'Study packet is current, but clipboard copy failed. Copy the text manually.';
+        } finally {
+          copying = false;
+          copyBtn.disabled = false;
+        }
+      } });
     const parseBtn = h('button', { class:'btn btn-primary', type:'button', text:'Review pasted reply' });
     const saveBtn = h('button', { class:'btn', type:'button', text:'Save selected study events', disabled:true });
     const items = [];
