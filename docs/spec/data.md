@@ -46,6 +46,7 @@ Primary keys are `id uuid default gen_random_uuid()` unless stated.
 | `preferred_chat` | text, `'claude'` | check in (`claude`, `chatgpt`) |
 | `connector_secret` | text not null unique | default: 48 hex chars from `extensions.gen_random_bytes(24)` |
 | `connector_last_seen_at` | timestamptz null | written by connector |
+| `time_zone` | text, `'UTC'` | IANA name; the app sets it from the browser after sign-in; the connector uses it for "today" and dates |
 | `connector_last_client` | text null | `claude` / `chatgpt` / `other` |
 | `updated_at` | timestamptz default now() | trigger keeps it current |
 
@@ -406,10 +407,10 @@ Names are fixed; fields use camelCase. Dates are ISO strings. `Glyph` is a 1–2
 
 | Type | Fields |
 | --- | --- |
-| `Settings` | desiredRetention, newPerDay, reviewsPerDay, learnSteps, relearnSteps, rolloverHour, maxIntervalDays, fuzz, loadBalance, learnAheadMinutes, fsrsWeights (number[] or null), fsrsTunedAt, macros, defaultStyle, tutorRules (string or null), mixDecks, preferredChat (`'claude' \| 'chatgpt'`), connectorUrl (computed: `<SUPABASE_URL>/functions/v1/mcp/<secret>`), connectorLastSeenAt, connectorLastClient |
+| `Settings` | desiredRetention, newPerDay, reviewsPerDay, learnSteps, relearnSteps, rolloverHour, maxIntervalDays, fuzz, loadBalance, learnAheadMinutes, fsrsWeights (number[] or null), fsrsTunedAt, macros, defaultStyle, tutorRules (string or null), mixDecks, preferredChat (`'claude' \| 'chatgpt'`), connectorUrl (computed: `<SUPABASE_URL>/functions/v1/mcp/<secret>`), connectorLastSeenAt, connectorLastClient, timeZone |
 | `Style` | key, name, icon, instructions, position |
 | `Subject` | id, name, glyph, hue, position |
-| `ProjectSummary` | id, slug, title, subject (`Subject`), status, done, total, current (`{code, title, step, stepsTotal} \| null`), lastActivityAt, cardsCount, sessionsCount, sourcesCount |
+| `ProjectSummary` | id, slug, title, subject (`Subject`), status, done, total, current (`{code, title, step, stepsTotal} \| null`), lastActivityAt, cardsCount, sessionsCount (ended sessions), sourcesCount |
 | `Project` | id, slug, title, goal, style, status, subjectId, createdAt |
 | `CheckpointView` | id, code, title, position, ui (`'proposed' \| 'revisit' \| 'done' \| 'now' \| 'next' \| 'locked'`), currentStep, stepsTotal, recheckDue, dueCards |
 | `ProjectDetail` | project (`Project`), subject (`Subject`), checkpoints (`CheckpointView[]`, includes proposed ones), done, total, sources (`Source[]`), sessions (`SessionSummary[]`), pendingProposals (number) |
@@ -431,12 +432,12 @@ Names are fixed; fields use camelCase. Dates are ISO strings. `Glyph` is a 1–2
 | `CardComment` | no, body, status, createdAt, resolvedAt, resolvedByOrigin |
 | `AtlasGraph` | subjects (`Subject[]`), concepts (`{id, slug, name, blurb, subjectId, status, pinX, pinY, checkpointRefs: {projectSlug, code}[], dueCards}[]`), links (`{fromId, toId, kind}[]`) |
 | `InsightData` | reviews (`{reviewedAt, rating, stateBefore, confidence, durationMs, projectId}[]`), sessions (`{startedAt, minutes, projectId, goalMet}[]`), checkpointEvents (`{at, kind: 'demonstrated' \| 'recheck_ok' \| 'recheck_fail', checkpointCode, projectId}[]`), projects (`{id, title, subject: Subject}[]`), misconceptions (`{label, times, conceptName}[]`) |
-| `HomeSummary` | resume (`{projectSlug, projectTitle, glyph, checkpointCode, checkpointTitle, step, stepsTotal, question, pausedAt, sessionNumber} \| null`), due, pendingProposals, projects (`ProjectSummary[]`) |
+| `HomeSummary` | resume (`{projectSlug, projectTitle, glyph, checkpointCode, checkpointTitle, step, stepsTotal, question, objective, pausedAt, sessionNumber} \| null`), due, pendingProposals, projects (`ProjectSummary[]`) |
 | `NewProjectInput` | title, slug (optional; derived from title), subjectId, goal, style |
 
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
 
-Both adapters (`src/data/live`, `src/data/demo`) implement every method with identical behavior. Errors are thrown as `LemmaError {code, message}` with codes `not_found`, `invalid`, `conflict`, `offline`, `auth`, `server`.
+Both adapters (`src/data/live`, `src/data/demo`) implement every method with identical behavior. Errors are thrown as `LemmaError {code, message}` with codes `not_found`, `invalid`, `conflict`, `offline`, `auth`, `server`, `not_implemented` (stubs only).
 
 | Method | Input | Returns | Notes |
 | --- | --- | --- | --- |
@@ -468,7 +469,7 @@ Both adapters (`src/data/live`, `src/data/demo`) implement every method with ide
 | `rejectProposal(id)` | | void | |
 | `approveAllCards()` | | number | approves every pending `card` proposal in order |
 | `getDeckTree()` | | `DeckNode[]` | due counts per §6.5 |
-| `getReviewItems(filter)` | `QueueFilter` | `ReviewItem[]` | unordered candidates; ordering in `src/lib/queue` |
+| `getReviewItems(filter)` | `QueueFilter` | `ReviewItem[]` | exactly the due set of §6.5 (limits applied) restricted by the filter; ordering in `src/lib/queue` |
 | `recordReview(input)` | `RecordReviewInput` | `{reviewId}` | RPC `record_review` |
 | `undoReview(reviewId)` | | `CardState` | RPC `undo_review` |
 | `searchCards(query, slug?)` | text | `CardRow[]` | front/back `ilike`; max 100 |
@@ -481,6 +482,7 @@ Both adapters (`src/data/live`, `src/data/demo`) implement every method with ide
 | `resolveMisconception(id)` | | void | |
 | `getAtlas()` | | `AtlasGraph` | |
 | `pinConcept(id, x, y)` | | void | |
+| `getReviewLog()` | | `{cardId, reviewedAt, rating}[]` | non-undone reviews, for the FSRS optimizer in Settings |
 | `getInsightData(days)` | 7, 30 or 90 | `InsightData` | raw rows; math in `src/lib/insights` |
 | `exportAll()` | | `Blob` | JSON of every table for this owner |
 
@@ -499,7 +501,7 @@ Generated by `scripts/make-demo-data.ts` with a fixed seed; the demo adapter loa
 - Subjects: Analysis (`∫`, amber), Topology (`τ`, violet), Linear Algebra (`λ`, cyan).
 - Projects:
   - `real-analysis` "Real Analysis", goal "Prove the main theorems of Rudin ch. 2–4. Comfortable with ε–δ, shaky on topology arguments.", style socratic, active. 12 checkpoints: CP1 Metric spaces (done), CP2 Open and closed sets (done, re-check due today, recheck prompt "What makes a set open in a metric space?"), CP3 Sequences (done), CP4 Compactness (now, step 2 of 4; steps "Set up the cover", "Separate x from K", "Use a finite subcover", "Conclude"; criterion "Writes, unaided, a proof that compact sets in a Hausdorff space are closed."; pages 36-40), CP5 Continuity (next), CP6 Limits of functions, CP7 Heine–Borel, CP8 Uniform continuity, CP9 Extreme value theorem, CP10 Connectedness, CP11 Intermediate value theorem, CP12 Capstone proofs (CP6–CP12 locked by prerequisites). Progress 3/12. 48 cards. Sessions S1–S7; S7 "Prove compact sets in a Hausdorff space are closed", Claude, 42 min, goal met, ended yesterday; plus an open session S8 on CP4 paused 2 h ago with resume question "Why is a finite subcover enough to separate x from K?". One source `rudin` "Principles of Mathematical Analysis", 342 pages, 11 outline chapters, page labels offset by 12.
-  - `linear-algebra` "Linear Algebra", 14 checkpoints, 8 done, now: CP9 Diagonalization; 30 cards; sessions S1–S12.
+  - `linear-algebra` "Linear Algebra", 14 checkpoints, 8 done, now: CP9 Diagonalization; 30 cards; sessions S1–S16 (all 26 sessions of the three projects fall within the last 30 days).
   - `topology` "Topology", 9 checkpoints, 1 done, now: CP2 Topological spaces; 12 cards; sessions S1–S2.
 - Due today: 23 (Compactness 9, Sequences 5, Linear Algebra 6, Topology 3). 18 due tomorrow.
 - Pending proposals: 6 — four `card` proposals from real-analysis S7 (the Why/Theorem/Counterexample/Cloze cards shown on the Approve board), one `card` from linear-algebra S12 (eigenvalue definition), one `plan_change` adding "CP4a Finite subcover lemma" after CP4 and making CP5 need CP4a, reason "Same gap in S6 and S7".

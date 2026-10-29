@@ -120,12 +120,12 @@ Phases run in order; tasks inside a phase run in parallel. "Done when" items are
 - Depends on: none. Owns: repo root config, `src/styles/**`, `legacy/**` moves.
 - Read: this plan §4–5; `design.md` §2–3.
 1. Delete every remote branch except `main` (`git ls-remote --heads origin`, then `git push origin --delete <name>` in batches). If your environment refuses, skip and say so in the PR; the owner will do it (§10).
-2. Move `src/app/*.js` and `test/*` to `legacy/app/` and `legacy/test/`. Move `src/fsrs.js` to `src/lib/fsrs/fsrs.js` and `src/render.js` to `src/lib/render/render.js` without changing their content. Delete `build.js`, `src/index.html`, `src/config.js`, `src/service-worker.js`, `src/manifest.webmanifest`, `src/icons/`, the old `package.json` and lockfile.
+2. Move `src/app/*.js` and `test/*` to `legacy/app/` and `legacy/test/`. Move `src/fsrs.js` to `src/lib/fsrs/fsrs.js` and `src/render.js` to `src/lib/render/render.js`; change only their last line (`if (typeof module …) module.exports = X;`) to `export default FSRS;` / `export default Render;` so they load as ES modules. Delete `build.js`, `src/index.html`, `src/config.js`, `src/service-worker.js`, `src/manifest.webmanifest`, `src/icons/`, the old `package.json` and lockfile.
 3. Create a Vite React TypeScript app at the repo root with `base: '/lemma/'` and strict TypeScript. Install the packages in §4 at their latest versions within the given majors; pin exact versions.
 4. Scripts: `dev`, `build` (`tsc -b && vite build`), `preview`, `typecheck`, `test` (`vitest run`), `e2e` (`playwright test`), `check` (typecheck, test, build), `format` (Prettier).
 5. Styles: `src/styles/tokens.css` with every token in `design.md` §2 exactly; `src/styles/base.css` (reset, `color-scheme: dark`, body font `--font-ui`, background `--obsidian`, focus ring, reduced-motion rule); `src/styles/surfaces.css` with the classes in `design.md` §3; `src/styles/app.css` that imports Tailwind and the three files and maps colours, radii and fonts with `@theme`.
 6. `index.html`: `lang="en"`, `viewport-fit=cover`, theme colour `#0D0C11`, Google Fonts links for Instrument Sans (400, 500, 600, 700, italic 400) and STIX Two Text (400, 500, 600, italic 400, 500) with `display=swap`, title "Lemma".
-7. `src/data/env.ts` reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; `.env.example` lists both; `.gitignore` covers `.env*`, `dist`, `test-results`, `playwright-report`.
+7. Commit `.env.production` with the public values `VITE_SUPABASE_URL=https://yemqnhnztlbyxmjxidis.supabase.co` and `VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_VXVRKxz662EOyIFg4UwmaA_N1nywXRA` (publishable keys are meant for browsers; RLS protects data). The `test` script is `vitest run --passWithNoTests`. `src/data/env.ts` reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; `.env.example` lists both; `.gitignore` covers `.env*`, `dist`, `test-results`, `playwright-report`.
 - Done when: `npm run check` passes; `npm run dev` shows an empty obsidian page with the lamp glow; `legacy/` holds the old files; no old build files remain.
 
 #### P0-B Contracts, shell and routes
@@ -145,12 +145,13 @@ Phases run in order; tasks inside a phase run in parallel. "Done when" items are
 - Depends on: P0-A. Owns: `.github/**`, `playwright.config.ts`, `vitest.config.ts`, `tests/e2e/routes.spec.ts`.
 - Read: `testing.md` §2, §4, §6.
 1. `ci.yml` (pull requests and pushes to `main`): Node 22, `npm ci`, `npx playwright install --with-deps chromium`, `npm run check`, `npm run e2e`; upload `playwright-report` and `test-results/screens` as artifacts.
-2. `pages.yml` (push to `main`): build with `VITE_SUPABASE_URL=${{ vars.SUPABASE_URL }}` and `VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}`; deploy `dist` with the official upload-pages-artifact and deploy-pages actions.
-3. `supabase.yml` (push to `main` touching `supabase/**`, and manual): Supabase CLI; link to `yemqnhnztlbyxmjxidis` with secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`; `supabase db push`; `supabase functions deploy mcp --no-verify-jwt`. If the secrets are missing, print a notice and succeed.
+2. `pages.yml` (push to `main`): build (Vite reads `.env.production`; no variables needed), copy `index.html` to `404.html`; deploy `dist` with the official upload-pages-artifact and deploy-pages actions.
+3. `supabase.yml` (push to `main` touching `supabase/**`, and manual): Supabase CLI; link to `yemqnhnztlbyxmjxidis` with secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` (fall back to the older name: `${{ secrets.SUPABASE_DB_PASSWORD || secrets.LEMMA_SUPABASE_DB_PASSWORD }}`); never run `supabase config push` (it would overwrite the owner's auth settings); `supabase db push`; `supabase functions deploy mcp --no-verify-jwt`. If the secrets are missing, print a notice and succeed.
 4. `mcp-smoke.yml` (manual, and on success of `supabase.yml`): `node tests/mcp/smoke.mjs` with secret `MCP_URL`; skip with a notice if missing.
 5. `keepalive.yml` (daily at 03:17 UTC): `POST ${SUPABASE_URL}/rest/v1/rpc/ping` with headers `apikey` and `Content-Type: application/json`, body `{}`.
-6. `.github/pull_request_template.md`: Task ID, what changed, verification, screenshots, gaps.
-7. Playwright and Vitest configs exactly as `testing.md` §4 and §2; `tests/e2e/routes.spec.ts` visits every route and finds its `h1`.
+6. `setup-check.yml` (manual): writes a table to the run summary saying which of `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `LEMMA_SUPABASE_DB_PASSWORD`, `MCP_URL` are present or missing, never their values. Run it once after merge and post the table on the PR.
+7. `.github/pull_request_template.md`: Task ID, what changed, verification, screenshots, gaps.
+8. Playwright and Vitest configs exactly as `testing.md` §4 and §2; `tests/e2e/routes.spec.ts` visits every route and finds its `h1`.
 - Done when: CI is green on the PR; after merge the placeholder app is live at `https://mymayankyadav.github.io/lemma/?demo=1#/`.
 
 ### Phase 1: core (eight agents in parallel; starts when Phase 0 is merged)
@@ -292,18 +293,35 @@ With many agents, start every task whose dependencies are met; the milestones ar
 
 ## 10. Owner one-time steps
 
-1. If the agents cannot delete old branches: in a terminal inside a local clone (`git clone https://github.com/Mymayankyadav/lemma && cd lemma`), run `git ls-remote --heads origin | awk '{print $2}' | sed 's#refs/heads/##' | grep -vx main | xargs -n 20 git push origin --delete`, or delete them on github.com › Branches.
-2. Confirm the database reset when DB-1 asks.
-3. GitHub › Settings › Secrets and variables › Actions: add secrets `SUPABASE_ACCESS_TOKEN` (supabase.com › Account › Access tokens) and `SUPABASE_DB_PASSWORD` (project database password); check that variables `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` exist. After the connector is live, add secret `MCP_URL` (copy from Lemma › Settings).
-4. Supabase › Authentication: keep Google enabled; Site URL `https://mymayankyadav.github.io/lemma/`; redirect URLs `https://mymayankyadav.github.io/lemma/**` and `http://localhost:5173/**`. After your first sign-in, turn off "Allow new users to sign up".
-5. Connect Claude and ChatGPT (`connector.md` §10).
-6. On the phone: open the site, Share › Add to Home Screen.
+Status on 29 Oct 2026, 21:30 IST:
+
+| Step | Status |
+| --- | --- |
+| Google sign-in in Supabase | Done; verified from the auth logs (sign-in from `https://mymayankyadav.github.io/lemma/` today). Keep `http://localhost:5173/**` in the redirect URLs for local runs. After your first sign-in on the new app, turn off "Allow new users to sign up". |
+| GitHub secrets `SUPABASE_ACCESS_TOKEN` and the DB password | Reported done by the owner; P0-C's setup check confirms. Either `SUPABASE_DB_PASSWORD` or the old `LEMMA_SUPABASE_DB_PASSWORD` works. Variables are no longer needed. |
+| Delete old branches | Pending: delete every branch except `main` (GitHub › Branches, or in a local clone `git ls-remote --heads origin \| awk '{print $2}' \| sed 's#refs/heads/##' \| grep -vx main \| xargs -n 20 git push origin --delete`). Also turn on Settings › General › "Automatically delete head branches". |
+| Confirm the database reset | Pending: approve the confirmation when DB-1 asks. |
+| `MCP_URL` secret | After MCP-1 is live: copy the address from Lemma › Settings into a repository secret. |
+| Connect Claude and ChatGPT | After MCP-1: `connector.md` §10. |
+| Install on the phone | Open the site, Share › Add to Home Screen. |
 
 ## 11. Later (not in v1)
 
 OAuth sign-in for the connector instead of the URL secret; page images so Claude can read formulas from scans (`get_page_image`); Anki import and export; daily reminder notifications; offline review with a write queue; per-subject FSRS parameters; photos of handwritten proofs; full-text search across all projects.
 
-## 12. References
+## 12. Known traps (read before coding)
+
+- `render.js` reads the globals `katex`, `marked` (namespace import, so `marked.Marked` exists) and `DOMPurify`; set them in `src/lib/render/globals.ts` and import that before `render.js`. It emits cloze spans `.cz.czq` (blank) and `.cz.cza` (answer).
+- `FSRS.preview(card, now, cfg, env)` returns `{1..4: {card, ivl, delay}}` in engine fields (`st, due, s, d, last, step, reps, lapses`, times in ms); convert to and from `CardState` in `src/lib/fsrs`. Labels come from `formatIvl(delay)`.
+- OAuth with hash routes: Supabase returns to `/lemma/?code=…`. Use `redirectTo = origin + pathname` (no hash), let supabase-js exchange the code, strip `?code` with `history.replaceState`, and restore the screen from `sessionStorage`.
+- Never invalidate `review-items` after `recordReview`; the review screen owns its queue.
+- `getReviewItems` returns exactly the due set of `data.md` §6.5 (daily limits applied); `src/lib/queue` only orders it.
+- Demo fixture times are minutes relative to load, and card due days are study-day offsets, so "23 due" holds at any hour and time zone.
+- MCP: `createMcpHandler(() => new McpServer(...))` per request, `server.registerTool(name, {description, inputSchema: z.object(...), annotations}, handler)`, `handler.fetch(req)`. The secret key bypasses RLS: filter every query by `user_id` and set `user_id` on every insert.
+- `apply_migration` records its own version; align `schema_migrations.version` with the file timestamps or the first `supabase db push` fails.
+- `EmptyState` is built by UI-2 together with the illustrations it shows.
+
+## 13. References
 
 - Specs: `docs/spec/product.md`, `data.md`, `connector.md`, `design.md`, `testing.md`.
 - Design boards: `docs/design/canvas/*.dc.html` (exported from the owner's canvas; inline styles hold the exact values; open in a browser for the visual, though interactive parts need the canvas runtime) and the owner's original reference `docs/design/reference-amber-on-obsidian.png`.
