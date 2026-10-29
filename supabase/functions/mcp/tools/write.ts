@@ -2,7 +2,7 @@ import { Context, scoped, insert, update, rpc, all } from '../db.ts';
 import { project, checkpoint, checkpoints, session, source } from '../resolve.ts';
 import { day, ladder } from '../derive.ts';
 import { settings } from '../packet.ts';
-import { slug, cut, normalizedFront, number } from '../text.ts';
+import { slug, cut, capped, normalizedFront, number } from '../text.ts';
 
 async function origin(c:Context,sess?:any):Promise<string>{
   return sess?.client||(await settings(c)).connector_last_client||'other';
@@ -157,7 +157,7 @@ export async function proposals(c:Context,a:any):Promise<string>{
     if(x.kind==='plan')return prefix+'plan '+pr?.slug+': '+b.checkpoints?.length+' checkpoints: '+cut((b.checkpoints||[]).map((z:any)=>z.code+' '+z.title).join('; '),200);
     return prefix+'change: '+cut((b.ops||[]).map((z:any)=>z.op+' '+(z.code||z.title||'')).join('; '),200);
   });
-  return cut(lines.join('\n')||'No pending proposals.',2000);
+  return capped(lines.join('\n')||'No pending proposals.',2000);
 }
 export async function decide(c:Context,a:any):Promise<string>{
   const overlap=(a.approve||[]).filter((n:number)=>(a.reject||[]).includes(n));
