@@ -310,7 +310,19 @@ const LemmaCloudBridge = (() => {
     return { app:'lemma',version:1,scope:'account-local-recovery-envelope',
       ownerId:userId,bytes:bytes.length,sha256,snapshot };
   }
+  // Verify one stable value across asynchronous digests. Do not report that a
+  // caller's current backup is verified if it changed while hashing.
+  function stableRecoveryInput(value) {
+    const snapshot = structuredClone(value);
+    const original = JSON.stringify(snapshot);
+    return { snapshot, check() {
+      if (JSON.stringify(value) !== original)
+        throw new Error('Input changed during recovery verification');
+    }};
+  }
   async function verifyLocalRecoveryEnvelope(envelope,expectedOwnerId) {
+    const stable = stableRecoveryInput(envelope);
+    envelope = stable.snapshot;
     if (envelope?.app !== 'lemma' || envelope.version !== 1 ||
         envelope.scope !== 'account-local-recovery-envelope' ||
         envelope.ownerId !== expectedOwnerId ||
@@ -323,6 +335,7 @@ const LemmaCloudBridge = (() => {
     if (bytes.length !== envelope.bytes ||
         await recoveryDigest(bytes) !== envelope.sha256)
       throw new Error('Local recovery checksum or size mismatch');
+    stable.check();
     return { ownerId:expectedOwnerId, rows, bytes:bytes.length,
       sha256:envelope.sha256, readOnly:true };
   }
@@ -554,6 +567,8 @@ const LemmaCloudBridge = (() => {
   }
 
   async function verifyServerWorkspaceArchive(archive,expectedOwnerId){
+    const stable = stableRecoveryInput(archive);
+    archive = stable.snapshot;
     if(archive.app!=='lemma' || archive.version!==2 ||
        archive.scope!=='account-workspace' || archive.capture!=='transactional' ||
        archive.ownerId!==expectedOwnerId ||
@@ -583,6 +598,7 @@ const LemmaCloudBridge = (() => {
     if(archiveCanonical(archive.manifest)!==
        archiveCanonical({counts,hashes,sha256:digest}))
       throw new Error('Paired server archive checksum mismatch');
+    stable.check();
     return {ownerId:expectedOwnerId,count:verified.count,sha256:digest,readOnly:true};
   }
   async function restoreServerWorkspaceArchive(archive,{requestId,studentConfirmed=false,dryRun=true}={}){
@@ -620,6 +636,8 @@ const LemmaCloudBridge = (() => {
   // the server's own transaction and the local IndexedDB transaction. They
   // are NOT one atomic server/local snapshot and grant no restore permission.
   async function verifyReadOnlyRecoveryPair(pair,expectedOwnerId){
+    const stable = stableRecoveryInput(pair);
+    pair = stable.snapshot;
     if(!recoveryOwner(expectedOwnerId)||pair?.app!=='lemma' ||
        pair.version!==1 || pair.scope!=='account-recovery-pair' ||
        pair.capture!=='two-independent-readonly-snapshots' ||
@@ -641,6 +659,7 @@ const LemmaCloudBridge = (() => {
         localCapturedAt:pair.local.snapshot.capturedAt
       }))
       throw new Error('Recovery pair manifest mismatch');
+    stable.check();
     return {ownerId:expectedOwnerId,serverRows:verified.count,
       localRows:local.rows,readOnly:true,atomicAcrossDevices:false,
       sha256:pairSha256};
