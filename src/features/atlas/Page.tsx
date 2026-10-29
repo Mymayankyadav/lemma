@@ -2,7 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import type {PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
-import {ArrowLeft,Check,ChevronRight,Compass,LockKeyhole,Minus,Plus,RotateCcw,Unpin,Waypoints,X} from 'lucide-react';
+import {ArrowLeft,Check,ChevronRight,Compass,LockKeyhole,Minus,Plus,RotateCcw,PinOff,Waypoints,X} from 'lucide-react';
 import {select} from 'd3-selection';
 import {zoom,zoomIdentity} from 'd3-zoom';
 import type {ZoomBehavior,ZoomTransform} from 'd3-zoom';
@@ -306,7 +306,7 @@ export default function Page(){
      <Chip tone="quiet">{selected.dueCards} due</Chip>
      {selected.pinX!==null&&selected.pinY!==null&&<Chip tone="quiet" icon={LockKeyhole}>Pinned</Chip>}
      {menuId===selected.id&&<button type="button" onClick={()=>unpinNode(selected)} disabled={pin.isPending}
-       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-[13px] text-amber"><Unpin size={16}/>Unpin</button>}
+       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-[13px] text-amber"><PinOff size={16}/>PinOff</button>}
     </div>
     <div className="mt-5 flex items-center gap-2">
      {selected.checkpointRefs[0]?<Link to={'/p/'+selected.checkpointRefs[0].projectSlug+'/cp/'+selected.checkpointRefs[0].code}
