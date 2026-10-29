@@ -102,7 +102,7 @@ function PathTimeline({slug,detail}:{slug:string;detail:ProjectDetail}){
 function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
  if(!sessions.length)return <EmptyState art="inbox" title="No sessions yet" body="Resume a checkpoint in your tutor to start an evidence trail."/>;
  return <div className="flex flex-col gap-2">{sessions.map(s=>{
-  const good=s.goalMet==='yes',partial=s.goalMet==='partly';
+  const good=s.goalMet==='yes',partial=s.goalMet==='partial';
   return <Link to={'/s/'+slug+'/'+s.number} key={s.id} className="flex min-h-[70px] items-center gap-3 rounded-slab bg-raised px-4">
    <span className={'flex size-9 shrink-0 items-center justify-center rounded-s '+(good?'bg-success-tint text-easy':partial?'bg-amber-tint text-amber':'bg-fill-2 text-ink-3')}>
     {good?<Check size={18} aria-hidden="true"/>:partial?<Pause size={16} aria-hidden="true"/>:<MessageCircle size={17} aria-hidden="true"/>}
