@@ -44,16 +44,18 @@ jobs:
             echo "::notice::No migrations yet; DB-1 supplies the new schema."
           fi
       - name: Deploy MCP
+        id: deploy_mcp
         if: steps.credentials.outputs.ready == 'true'
         run: |
           if [[ -f supabase/functions/mcp/index.ts ]]; then
             supabase functions deploy mcp --no-verify-jwt
+            echo 'deployed=true' >> "$GITHUB_OUTPUT"
           else
             echo "::notice::MCP-1 has not landed yet; no function to deploy."
           fi
       - name: Check MCP smoke credential
         id: mcp_smoke
-        if: steps.credentials.outputs.ready == 'true'
+        if: steps.deploy_mcp.outputs.deployed == 'true'
         shell: bash
         env:
           MCP_URL: ${{ secrets.MCP_URL }}
@@ -63,19 +65,26 @@ jobs:
           else
             echo "::warning::MCP_URL repository secret is not configured; deployed connector smoke was not verified. Add the existing URL without rotating its secret."
           fi
+      - name: Set up Node.js for MCP smoke
+        if: steps.mcp_smoke.outputs.configured == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Verify deployed MCP endpoint
-        if: steps.credentials.outputs.ready == 'true' && steps.mcp_smoke.outputs.configured == 'true'
+        if: steps.deploy_mcp.outputs.deployed == 'true' && steps.mcp_smoke.outputs.configured == 'true'
         shell: bash
         env:
           MCP_URL: ${{ secrets.MCP_URL }}
         run: |
           # Smoke reads the configured endpoint; never echo or print MCP_URL.
           for attempt in 1 2 3; do
-            if node tests/mcp/smoke.mjs; then
+            if timeout --signal=TERM --kill-after=5s 120s node tests/mcp/smoke.mjs; then
               echo "Deployed MCP smoke passed (attempt $attempt)."
+              echo '### MCP post-deploy smoke: PASS' >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             if [[ "$attempt" -eq 3 ]]; then
+              echo '### MCP post-deploy smoke: FAIL (3 bounded attempts)' >> "$GITHUB_STEP_SUMMARY"
               echo "::error::Deployed MCP smoke failed after 3 attempts. Inspect MCP and Supabase logs; do not disclose the connector URL."
               exit 1
             fi
