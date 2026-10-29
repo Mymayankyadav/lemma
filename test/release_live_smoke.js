@@ -39,6 +39,23 @@ function bundleReadiness(source) {
   };
 }
 
+// Anonymous Pages acceptance: account recovery contains private owner data and
+// must never mount even a hidden file picker, consent box or action while signed out.
+// This must remain true when B eventually enables the production recovery flag.
+async function assertSignedOutRecoveryHidden(page) {
+  for (const selector of ['#set-account-recovery', '#account-recovery-file',
+    '#account-recovery-consent']) {
+    assert.equal(await page.locator(selector).count(), 0,
+      'signed-out Settings must not mount private recovery node ' + selector);
+  }
+  for (const label of ['Download account backup', 'Restore account backup',
+    'Check restore', 'Resume account sync']) {
+    assert.equal(await page.locator('button').filter({
+      hasText: new RegExp('^\\s*' + label + '\\s*$')
+    }).count(), 0, 'signed-out Settings must not expose recovery action ' + label);
+  }
+}
+
 async function smoke(url) {
   const parsed = new URL(url);
   if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid release smoke URL');
@@ -154,9 +171,23 @@ async function smoke(url) {
     await nav('settings', '.page.settings, .settings');
     // Render the sign-in UI, but never click a provider or enter account credentials.
     await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
+    await assertSignedOutRecoveryHidden(page);
+    // Booting directly into Settings must not bypass the signed-out guard.
+    const settingsUrl = new URL(parsed.href);
+    settingsUrl.hash = 'settings';
+    await page.goto(settingsUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.page.settings, .settings').first().waitFor({ timeout });
+    await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
+    await assertSignedOutRecoveryHidden(page);
     await capture('02-settings-sign-in');
 
     stage = 'cards';
+    // Restore the canonical root before card/review reload assertions.
+    const normalSettingsExit = new URL(parsed.href);
+    normalSettingsExit.hash = '';
+    await page.goto(normalSettingsExit.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.today, .onboard').first().waitFor({ timeout });
     await nav('browse', '#browse-q');
     await capture('03-cards');
     await nav('home', '.today, .onboard');
@@ -256,6 +287,20 @@ function readyFixture(html) {
   return enable(plan, '/* ===== view_study.js ===== */',
     '/* ===== main.js ===== */', /const ready = (?:true|false);/g);
 }
+// Test the future B activation in a disposable signed-out build without
+// changing the real Pages bundle or granting account-recovery consent.
+function enabledRecoveryFixture(html) {
+  const start = html.indexOf('/* ===== view_settings.js ===== */');
+  const end = html.indexOf('/* ===== sheets.js ===== */', start);
+  if (start < 0 || end <= start) throw Error('Missing Settings fixture module boundary');
+  const part = html.slice(start, end);
+  const flag = /const ACCOUNT_RECOVERY_READY = (?:true|false);/g;
+  if ([...part.matchAll(flag)].length !== 1)
+    throw Error('Missing or ambiguous Settings recovery readiness flag');
+  return html.slice(0, start) +
+    part.replace(flag, 'const ACCOUNT_RECOVERY_READY = true;') + html.slice(end);
+}
+
 async function readySelfTest() {
   const original = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'), 'utf8');
   assert.throws(() => readyFixture('invalid HTML'), /module boundary/,
@@ -270,7 +315,8 @@ async function readySelfTest() {
   assert.throws(() => readyFixture(original.slice(0, viewStart) + invalidView +
     original.slice(viewEnd)), /ambiguous ready-fixture flag/,
     'missing StudyView ready declaration must fail closed');
-  const injected = readyFixture(original);
+  assert.throws(() => enabledRecoveryFixture('invalid HTML'), /module boundary/);
+  const injected = enabledRecoveryFixture(readyFixture(original));
   const browser = await chromium.launch();
   const ctx = await browser.newContext({
     serviceWorkers: 'block', viewport: { width: 390, height: 844 },
@@ -309,8 +355,28 @@ async function readySelfTest() {
     }).waitFor({ timeout });
     await page.getByRole('button', { name: 'Back to Today' }).click();
     await page.locator('.today, .onboard').first().waitFor({ timeout });
-    assert.deepEqual(errors, [], 'injected ready Study must not cause browser exceptions');
-    console.log('PASS ready-Study fixture: real StudyPlan/StudyView, anonymous navigation, deep link and return');
+    // Recovery is explicitly enabled in this synthetic bundle. Its entire
+    // Settings section must nevertheless be absent without an authenticated owner.
+    await page.goto(origin + '#settings', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.page.settings, .settings').first().waitFor({ timeout });
+    // The disposable fixture does not initialize the production OAuth entry;
+    // the Settings data panel is a stable proof that the route actually rendered.
+    await page.locator('#set-data:visible').waitFor({ timeout });
+    await assertSignedOutRecoveryHidden(page);
+    // Negative control: the same assertion must detect an accidentally mounted
+    // recovery section. This is a local DOM probe, not a real backup or restore.
+    await page.evaluate(() => {
+      const leak = document.createElement('section');
+      leak.id = 'set-account-recovery';
+      document.querySelector('.settings').append(leak);
+    });
+    await assert.rejects(assertSignedOutRecoveryHidden(page),
+      /signed-out Settings must not mount private recovery node/);
+    await page.locator('#set-account-recovery').evaluate(node => node.remove());
+    await assertSignedOutRecoveryHidden(page);
+    assert.deepEqual(errors, [], 'injected ready Study/recovery must not cause browser exceptions');
+    console.log('PASS ready-Study/recovery fixture: signed-out isolation, direct Settings link and leak negative control');
   } finally {
     await ctx.close();
     await browser.close();
