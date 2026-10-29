@@ -16,7 +16,9 @@ test("search, notes, editing and pause work for a card", async ({ page }) => {
   await expect(
     page.getByText("Too wordy. Make the hypotheses a cloze."),
   ).toBeVisible();
-  await page.getByLabel("Note for your tutor").fill("Show a shorter proof");
+  await page
+    .getByLabel("Note for your tutor", { exact: true })
+    .fill("Show a shorter proof");
   await page.getByRole("button", { name: "Save note for your tutor" }).click();
   await expect(page.getByText("Show a shorter proof")).toBeVisible();
   await expect(
