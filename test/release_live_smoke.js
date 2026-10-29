@@ -79,8 +79,8 @@ async function smoke(url) {
       assert(flags.plan, 'ready Study view requires the approved StudyPlan API to be ready');
       await nav('study', '.study-page');
       await page.getByRole('heading', { name: 'Study checkpoint' }).waitFor({ timeout });
-      await page.getByRole('status', {
-        name: 'Sign in to open an approved study checkpoint.'
+      await page.locator('.study-page .study-message').filter({
+        hasText: 'Sign in to open an approved study checkpoint.'
       }).waitFor({ timeout });
       assert.equal(await page.locator('.study-page button').filter({
         hasText: /save proof attempt|record hint|record evidence/i
@@ -93,8 +93,8 @@ async function smoke(url) {
       await page.goto(guarded.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('.study-page:visible').first().waitFor({ timeout });
-      await page.getByRole('status', {
-        name: 'Sign in to open an approved study checkpoint.'
+      await page.locator('.study-page .study-message').filter({
+        hasText: 'Sign in to open an approved study checkpoint.'
       }).waitFor({ timeout });
       await page.getByRole('button', { name: 'Back to Today' }).click();
       await page.locator('.today, .onboard').first().waitFor({ timeout });
