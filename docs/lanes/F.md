@@ -1,3 +1,10 @@
+## R23 — signed-out knowledge draft, accepted revision and approval isolation (29 October 2026)
+
+- **Claim:** `automation-20261029-f-r23-anonymous-knowledge`; heartbeat 2026-10-29T10:28:11Z; branch `lane-f/release-r23-anonymous-knowledge-isolation` from verified green `main@71f5e61ca302d4055c9934ba1e023d3fc2dd5052`. F was unclaimed; B #200 owns the separate signed-in review/publish UI, E #201 owns hint freshness, B #163 is held; Android remains paused.
+- **Gap:** anonymous deployed Settings smoke rejects recovery/backup leakage but does not reject the separate private knowledge draft, accepted-revision reader, source excerpt or pending B approval/publication controls. A regression could expose owner-only study context or consent actions to signed-out visitors without failing the release smoke.
+- **Scope:** F-owned `test/release_live_smoke.js` and this handoff only. Check signed-out Settings navigation and direct hash reload for knowledge sections and consent controls; add actual Chromium disposable-fixture negative controls. No account login, study approval, recovery activation, production write, Android, or release tag.
+- **Gate/next:** implement, verify syntax/focused Chromium when available, F lane guard, exact-head regression and live smoke CI. Merge only green and clean, then verify post-merge main. Authenticated recovery B #163 and student-operated tutor T4 remain blocked.
+
 ## R22 — signed-out account backup-only section isolation (29 October 2026)
 
 - **Claim:** `automation-20261029-f-r22-backup-isolation`; heartbeat 2026-10-29T09:04Z; branch `lane-f/release-r22-signedout-backup-isolation`, base `main@5f393c486175ceaecda7acd1497284d164941e97`. Only open B #163 is a held recovery activation candidate; F has no competing open PR. Android C remains paused.
