@@ -1,3 +1,11 @@
+## R20 — fail closed on incomplete release Actions inventory (29 October 2026)
+
+- **Claim:** `automation-20261029-f-r20-inventory`; heartbeat 2026-10-29T08:00:51.346Z; branch `lane-f/release-r20-actions-inventory-completeness`, base `main@ea4331fad727731daf44e04a687983eeb0326a1d`. Fresh main regression, disposable local Supabase, Pages and downstream smoke all SUCCESS (40838112665 / 40838112633 / 40838113005 / 40838165126). Open E #193 owns T4a; B #163 is held for real authenticated recovery; no competing F PR. Android remains paused.
+- **Defect:** tag workflow requests `head_sha=...&per_page=100`, but `test/release_tag_guard.js --check` consumes only `workflow_runs`, ignoring GitHub's `total_count`. A truncated first page can omit an older trusted run or an unobserved retry and still be certified as a complete inventory. This weakens R16/R17's claim to validate *every* trusted run.
+- **Scope:** F-owned `test/release_tag_guard.js` and this handoff only. Require an exact, safe integer `total_count` matching the bounded returned run count before attesting a tag; reject missing/invalid/partial counts. Keep direct `check(..., runs)` API and existing run-provenance, chronology, retry and deployment ordering logic. No workflow, release tag, backend, production data, readiness or student approval changes.
+- **Acceptance:** self-tests with valid complete inventory and missing/short/overreported/invalid/100+ inventory negatives, F lane guard, exact PR-head regression and applicable live Pages CI; merge only after required green checks, then recheck main. Real B recovery and E student-operated T4 remain separate gates.
+- **Next action:** implement fail-closed inventory preflight and fixtures, run available verification, review exact-head CI and merge if green.
+
 ## R19 — verify deployed PWA shell asset bytes (29 October 2026)
 
 - **Claim:** `chat-20261029-f-r19-static-parity`; heartbeat 2026-10-29T07:34:34.957Z; branch `lane-f/release-r19-shell-asset-parity`, base `main@a5e8803`. No competing F PR. R18 #189 merged and initial real Pages HTML parity PASS. B #163 held, D #190 active; Android paused.
