@@ -203,6 +203,33 @@ async function nativeStudyZoom(mock,view) {
     window._StudyView.render({planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'})
   ));
   await page.getByRole('heading',{name:'Compactness checkpoint'}).waitFor();
+  // Genuine computed-style contrast, not screenshot/color-name assumptions.
+  // A D-owned readiness gate: both themes must keep deliberate proof and
+  // amendment actions legible (disabled controls are tested separately).
+  async function assertPrimaryContrast(label) {
+    const result=await page.getByRole('button',{name:'Save proof attempt'}).evaluate(node=>{
+      const style=getComputedStyle(node);
+      const parse=value=>{
+        const parts=value.match(/[\\d.]+/g)?.slice(0,3).map(Number);
+        if(!parts||parts.length!==3)throw Error('Unparseable color: '+value);
+        return parts.map(channel=>{
+          const normalized=channel/255;
+          return normalized<=0.04045?normalized/12.92:((normalized+0.055)/1.055)**2.4;
+        });
+      };
+      const luma=value=>{
+        const [r,g,b]=parse(value);return r*0.2126+g*0.7152+b*0.0722;
+      };
+      const [a,b]=[luma(style.color),luma(style.backgroundColor)].sort((x,y)=>y-x);
+      return {ratio:(a+0.05)/(b+0.05),weight:Number(style.fontWeight),
+        ink:style.color,background:style.backgroundColor};
+    });
+    assert.ok(result.ratio>=4.5,
+      label+' Study primary action fails normal-text contrast: '+JSON.stringify(result));
+    assert.ok(result.weight>=600,
+      label+' deliberate proof action must be visually emphasized');
+  }
+  await assertPrimaryContrast('light');
   await page.getByRole('button',{name:'Continue saved proof'}).click();
   const resumedText=await page.getByRole('textbox',{name:'Your unfinished proof'}).inputValue();
   assert.equal(resumedText,'Choose an open cover, then reduce to finitely many sets.');
@@ -217,6 +244,7 @@ async function nativeStudyZoom(mock,view) {
   fs.mkdirSync('test-output/ui',{recursive:true});
   await page.screenshot({path:'test-output/ui/study-p3-desktop.png',fullPage:true});
   await page.emulateMedia({colorScheme:'dark'});
+  await assertPrimaryContrast('dark');
   await page.screenshot({path:'test-output/ui/study-p5b-desktop-dark.png',fullPage:true});
   await page.emulateMedia({colorScheme:'light'});
   // This is CSS zoom stress only, not proof of real browser 200% zoom.
