@@ -1,3 +1,11 @@
+## T3k — bind tutor freshness to immutable hint UUID (29 October 2026)
+
+- **Claim:** `automation-20261029-e-t3k-hint-uuid`; heartbeat 2026-10-29T10:23:09.302Z; branch `lane-e/tutor-t3k-hint-uuid-freshness`, base `main@71f5e61ca302d4055c9934ba1e023d3fc2dd5052`. D [PR #199](https://github.com/Mymayankyadav/lemma/pull/199) merged the `StudyPlan.activeContext().lastHint` contract with exact-head regression and local Supabase green; post-merge main checks are in progress at claim. B #200 is independent, B #163 held; no E claim, C paused.
+- **Cross-lane request D-E-HINT-01 → E · IN_PROGRESS:** `src/app/tutor_handoff.js` must compare reviewed `lastHint.eventId` with the fresh event ID, not just `hintLevel`. Permit a same-sheet attempted hint only if its original UUID is visible, and retain confirmed multi-event batch behavior. A foreign same-level hint must invalidate copy/save/card/amendment consent, with no unauthorized RPC or clipboard write.
+- **Scope:** E-owned tutor handoff source, focused tutor tests, this handoff. Preserve `TutorHandoff.ready=false`, existing packet format, per-action consent, owner/workspace guards and original retry IDs. No backend/migration/production/Android/Carrel change.
+- **Gate:** focused V8/Node tests, E guard, syntax/build, exact-head regression/local Supabase and diff review; merge only green after main CI. Real student-operated T4 and B authenticated restore remain unpassed.
+- **Next:** implement UUID comparison and tests for same-level foreign hint and own attempted hint, then verify exact head.
+
 ## T3j — reject unproven new session after uncertain tutor event (29 October 2026)
 
 - **Claim:** `automation-20261029-e-t3j-session-provenance`; heartbeat 2026-10-29T10:01:32.708Z; branch `lane-e/tutor-t3j-unconfirmed-session-provenance`, base `main@6e0d0b4b7d7b4aa8b976604c31e3979b472d6304`. Fresh main regression/local Supabase/Pages/live smoke all SUCCESS (40847516804/40847516837/40847516947/40847581423). Only B #163 is open and held; no competing E claim. Android remains paused.
