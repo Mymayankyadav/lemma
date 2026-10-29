@@ -69,7 +69,24 @@ export class LiveAdapter implements LemmaApi {
   const [key,patch]=args, db=liveClient(),uid=await owner(db)
   return styleRow(checked(await db.from('styles').update(toDb(patch)).eq('user_id',uid).eq('key',key).select('*').single()) as Row)
  }
- async getHome(..._args: Parameters<LemmaApi['getHome']>): ReturnType<LemmaApi['getHome']> { throw notImplemented('getHome') }
+ async getHome(...args: Parameters<LemmaApi['getHome']>): ReturnType<LemmaApi['getHome']> {
+  const [projects,sessions,proposals,due]=await Promise.all([
+    this.listProjects(),this.listSessions(),this.listProposals(),
+    this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false})
+  ])
+  const active=sessions.filter(s=>s.display!=='ended').sort((a,b)=>b.lastActivityAt.localeCompare(a.lastActivityAt))[0]
+  const p=active?projects.find(x=>x.slug===active.projectSlug):projects[0]
+  const detail=p?await this.getProject(p.slug):null
+  const current=detail?.checkpoints.find(x=>x.code===active?.checkpointCode)
+    ??detail?.checkpoints.find(x=>x.ui==='now')
+  const session=active?await this.getSession(active.projectSlug,active.number):null
+  return {resume:p?{projectSlug:p.slug,projectTitle:p.title,glyph:p.subject.glyph,
+      checkpointCode:current?.code??null,checkpointTitle:current?.title??null,
+      step:session?.resumeStep??current?.currentStep??0,stepsTotal:current?.stepsTotal??0,
+      question:session?.resumeQuestion??null,objective:current?((await this.getCheckpoint(p.slug,current.code)).objective):null,
+      pausedAt:active?.lastActivityAt??p.lastActivityAt,sessionNumber:active?.number??null}:null,
+    due:due.length,pendingProposals:proposals.length,projects}
+ }
  async listSubjects(...args: Parameters<LemmaApi['listSubjects']>): ReturnType<LemmaApi['listSubjects']> {
   const db=liveClient(),uid=await owner(db)
   return (await rows(db,'subjects',uid)).sort((a,b)=>a.position-b.position).map(subjectRow)
@@ -110,7 +127,40 @@ export class LiveAdapter implements LemmaApi {
       sourcesCount:sources.filter(s=>s.project_id===p.id).length} satisfies ProjectSummary
   }).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
  }
- async getProject(..._args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> { throw notImplemented('getProject') }
+ async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
+  const [slug]=args,db=liveClient(),uid=await owner(db)
+  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).single()) as Row
+  const [subjects,cps,prereqs,proposalRows,sources,sessionList]=await Promise.all([
+    rows(db,'subjects',uid),rows(db,'checkpoints',uid),rows(db,'checkpoint_prereqs',uid),
+    rows(db,'proposals',uid),rows(db,'sources',uid),this.listSessions(slug)
+  ])
+  const today=studyDay(Date.now()),forProject=cps.filter(c=>c.project_id===project.id)
+  const byId=new Map(forProject.map(c=>[c.id,c])),cached=new Map<string,CheckpointView>(),visiting=new Set<string>()
+  const view=(cp:Row): CheckpointView=>{
+    if(cached.has(cp.id))return cached.get(cp.id)!
+    if(visiting.has(cp.id)) throw new LemmaError('invalid','Checkpoint prerequisite cycle')
+    visiting.add(cp.id)
+    const parents=prereqs.filter(p=>p.checkpoint_id===cp.id).map(p=>byId.get(p.prereq_id)).filter(Boolean) as Row[]
+    const v=checkpointRow(cp,parents.map(view),today);cached.set(cp.id,v);visiting.delete(cp.id);return v
+  }
+  const views:CheckpointView[]=forProject.map(view)
+  const pending=proposalRows.filter(p=>p.project_id===project.id&&p.status==='pending')
+  for (const proposal of pending.filter(p=>p.kind==='plan_change')){
+    for(const op of (proposal.payload?.ops??[]) as Row[]){
+      if(op.op!=='add')continue
+      const previous=views.find(c=>c.code===op.after)
+      views.push({id:'proposed:'+proposal.id+':'+views.length,code:op.code??'Proposed',
+        title:op.title,position:(previous?.position??0)+0.5,ui:'proposed',
+        currentStep:0,stepsTotal:op.steps?.length??0,recheckDue:null,dueCards:0})
+    }
+  }
+  views.sort((a,b)=>a.position-b.position)
+  const progress=projectProgress(views)
+  return {project:projectRow(project),subject:subjectRow(subjects.find(s=>s.id===project.subject_id)!),
+    checkpoints:views,done:progress.done,total:progress.total,
+    sources:sources.filter(s=>s.project_id===project.id).map(sourceRow),
+    sessions:sessionList,pendingProposals:pending.length}
+ }
  async createProject(...args: Parameters<LemmaApi['createProject']>): ReturnType<LemmaApi['createProject']> {
   const [input]=args, db=liveClient(),uid=await owner(db)
   const base=slugify(input.slug||input.title)
@@ -129,13 +179,102 @@ export class LiveAdapter implements LemmaApi {
   const [id,patch]=args,db=liveClient(),uid=await owner(db)
   return projectRow(checked(await db.from('projects').update(toDb(patch)).eq('id',id).eq('user_id',uid).select('*').single()) as Row)
  }
- async getCheckpoint(..._args: Parameters<LemmaApi['getCheckpoint']>): ReturnType<LemmaApi['getCheckpoint']> { throw notImplemented('getCheckpoint') }
+ async getCheckpoint(...args: Parameters<LemmaApi['getCheckpoint']>): ReturnType<LemmaApi['getCheckpoint']> {
+  const [slug,code]=args,db=liveClient(),uid=await owner(db)
+  const project=await this.getProject(slug)
+  const row=checked(await db.from('checkpoints').select('*').eq('project_id',project.project.id).eq('code',code).eq('user_id',uid).single()) as Row
+  const [prereqs,cpConcepts,concepts,sources,events,notes,sessions]=await Promise.all([
+    rows(db,'checkpoint_prereqs',uid),rows(db,'checkpoint_concepts',uid),rows(db,'concepts',uid),
+    rows(db,'sources',uid),rows(db,'session_events',uid),rows(db,'notes',uid),this.listSessions(slug)
+  ])
+  const cpRows=await rows(db,'checkpoints',uid)
+  const linked=cpConcepts.filter(x=>x.checkpoint_id===row.id).map(x=>concepts.find(c=>c.id===x.concept_id)).filter(Boolean) as Row[]
+  const cpById=new Map(cpRows.map(c=>[c.id,c]))
+  return {view:project.checkpoints.find(x=>x.id===row.id)!,objective:row.objective,criterion:row.criterion,
+    steps:row.steps??[],pages:row.pages,sourceShort:sources.find(x=>x.id===row.source_id)?.short??null,
+    prereqs:prereqs.filter(x=>x.checkpoint_id===row.id).map(x=>cpById.get(x.prereq_id)?.code).filter(Boolean) as string[],
+    concepts:linked.map(x=>({slug:x.slug,name:x.name})),recheckPrompt:row.recheck_prompt,
+    events:events.filter(x=>x.checkpoint_id===row.id).sort((a,b)=>b.id-a.id).slice(0,20).map(x=>({
+      id:Number(x.id),kind:x.kind,body:x.body,outcome:x.outcome,hintLevel:x.hint_level,
+      checkpointCode:code,createdAt:x.created_at
+    })),cardsCount:notes.filter(x=>x.checkpoint_id===row.id&&x.status==='active').length,
+    sessions:sessions.filter(s=>s.checkpointCode===code)}
+ }
  async addSource(..._args: Parameters<LemmaApi['addSource']>): ReturnType<LemmaApi['addSource']> { throw notImplemented('addSource') }
  async deleteSource(..._args: Parameters<LemmaApi['deleteSource']>): ReturnType<LemmaApi['deleteSource']> { throw notImplemented('deleteSource') }
- async listSessions(..._args: Parameters<LemmaApi['listSessions']>): ReturnType<LemmaApi['listSessions']> { throw notImplemented('listSessions') }
- async getSession(..._args: Parameters<LemmaApi['getSession']>): ReturnType<LemmaApi['getSession']> { throw notImplemented('getSession') }
- async listProposals(..._args: Parameters<LemmaApi['listProposals']>): ReturnType<LemmaApi['listProposals']> { throw notImplemented('listProposals') }
- async getProposal(..._args: Parameters<LemmaApi['getProposal']>): ReturnType<LemmaApi['getProposal']> { throw notImplemented('getProposal') }
+ async listSessions(...args: Parameters<LemmaApi['listSessions']>): ReturnType<LemmaApi['listSessions']> {
+  const [slug]=args, db=liveClient(),uid=await owner(db)
+  const [projects,cps,sessions]=await Promise.all([rows(db,'projects',uid),rows(db,'checkpoints',uid),rows(db,'sessions',uid)])
+  const projectsById=new Map(projects.map(p=>[p.id,p]))
+  const cpById=new Map(cps.map(c=>[c.id,c]))
+  return sessions.filter(s=>projectsById.has(s.project_id)&&(!slug||projectsById.get(s.project_id)?.slug===slug))
+    .map(s=>sessionRow(s,projectsById.get(s.project_id)!.slug,cpById.get(s.checkpoint_id)?.code??null))
+    .sort((a,b)=>b.startedAt.localeCompare(a.startedAt))
+ }
+ async getSession(...args: Parameters<LemmaApi['getSession']>): ReturnType<LemmaApi['getSession']> {
+  const [slug,number]=args,db=liveClient(),uid=await owner(db)
+  const [projects,sessions,cps,styles,events,misconceptions,notes,proposals]=await Promise.all([
+    rows(db,'projects',uid),rows(db,'sessions',uid),rows(db,'checkpoints',uid),rows(db,'styles',uid),
+    rows(db,'session_events',uid),rows(db,'misconceptions',uid),rows(db,'notes',uid),rows(db,'proposals',uid)
+  ])
+  const project=projects.find(x=>x.slug===slug)
+  if(!project) throw new LemmaError('not_found','Project not found')
+  const session=sessions.find(x=>x.project_id===project.id&&x.number===number)
+  if(!session) throw new LemmaError('not_found','Session not found')
+  const cp=cps.find(x=>x.id===session.checkpoint_id)
+  const pending=proposals.filter(x=>x.session_id===session.id&&x.status==='pending')
+  const cardProposals=pending.filter(x=>x.kind==='card')
+  return {summary:sessionRow(session,slug,cp?.code??null),
+    styleName:styles.find(x=>x.key===session.style)?.name??session.style,
+    summaryText:session.summary,resumeQuestion:session.resume_question,resumeStep:session.resume_step,
+    events:events.filter(x=>x.session_id===session.id).sort((a,b)=>a.id-b.id).map(x=>({
+      id:Number(x.id),kind:x.kind,body:x.body,outcome:x.outcome,hintLevel:x.hint_level,
+      checkpointCode:cps.find(c=>c.id===x.checkpoint_id)?.code??null,createdAt:x.created_at
+    })),misconceptions:misconceptions.filter(x=>x.project_id===project.id).map(x=>({
+      id:x.id,label:x.label,times:x.times,lastSeenAt:x.last_seen_at,resolvedAt:x.resolved_at
+    })),cards:[
+      ...notes.filter(x=>x.session_id===session.id&&x.status==='active').map(x=>({noteNo:Number(x.no),front:x.front,state:'active' as const})),
+      ...cardProposals.map(x=>({noteNo:Number(x.no),front:x.payload.front,state:'pending' as const}))
+    ],pendingProposals:{cards:cardProposals.length,planChanges:pending.filter(x=>x.kind==='plan_change'||x.kind==='plan').length},
+    pages:cp?.pages??null}
+ }
+ async listProposals(...args: Parameters<LemmaApi['listProposals']>): ReturnType<LemmaApi['listProposals']> {
+  const db=liveClient(),uid=await owner(db)
+  const [proposals,projects,subjects,sessions,notes,comments]=await Promise.all([
+    rows(db,'proposals',uid),rows(db,'projects',uid),rows(db,'subjects',uid),
+    rows(db,'sessions',uid),rows(db,'notes',uid),rows(db,'card_comments',uid)
+  ])
+  const ps=new Map(projects.map(p=>[p.id,p]))
+  const ss=new Map(subjects.map(s=>[s.id,s]))
+  const ses=new Map(sessions.map(s=>[s.id,s]))
+  return proposals.filter(p=>p.status==='pending').sort((a,b)=>a.created_at.localeCompare(b.created_at))
+    .map(p=>{
+      const payload=p.payload as Row,project=ps.get(p.project_id)
+      const note=notes.find(n=>n.no===payload.note_no)
+      return {id:p.id,kind:p.kind,projectSlug:project?.slug??'',projectGlyph:ss.get(project?.subject_id)?.glyph??'∫',
+        sessionNumber:ses.get(p.session_id)?.number??null,origin:p.origin,reason:p.reason,createdAt:p.created_at,
+        card:p.kind==='card'?payload:null,cardEdit:p.kind==='card_edit'?{
+          ...payload,current:{front:note?.front??'',back:note?.back??''},
+          comments:comments.filter(c=>c.note_id===note?.id).map(c=>commentRow(c))
+        }:null,plan:p.kind==='plan'?payload:null,planChange:p.kind==='plan_change'?payload:null} as Proposal
+    })
+ }
+ async getProposal(...args: Parameters<LemmaApi['getProposal']>): ReturnType<LemmaApi['getProposal']> {
+  const [id]=args,db=liveClient(),uid=await owner(db)
+  const p=checked(await db.from('proposals').select('*').eq('id',id).eq('user_id',uid).single()) as Row
+  const [projects,subjects,sessions,notes,comments]=await Promise.all([
+    rows(db,'projects',uid),rows(db,'subjects',uid),rows(db,'sessions',uid),rows(db,'notes',uid),rows(db,'card_comments',uid)
+  ])
+  const project=projects.find(x=>x.id===p.project_id),subject=subjects.find(x=>x.id===project?.subject_id)
+  const session=sessions.find(x=>x.id===p.session_id),payload=p.payload as Row
+  const note=notes.find(x=>x.no===payload.note_no)
+  return {id:p.id,kind:p.kind,projectSlug:project?.slug??'',projectGlyph:subject?.glyph??'∫',
+    sessionNumber:session?.number??null,origin:p.origin,reason:p.reason,createdAt:p.created_at,
+    card:p.kind==='card'?payload:null,
+    cardEdit:p.kind==='card_edit'?{...payload,current:{front:note?.front??'',back:note?.back??''},
+      comments:comments.filter(c=>c.note_id===note?.id).map(c=>commentRow(c))}:null,
+    plan:p.kind==='plan'?payload:null,planChange:p.kind==='plan_change'?payload:null} as Proposal
+ }
  async approveProposal(..._args: Parameters<LemmaApi['approveProposal']>): ReturnType<LemmaApi['approveProposal']> { throw notImplemented('approveProposal') }
  async rejectProposal(..._args: Parameters<LemmaApi['rejectProposal']>): ReturnType<LemmaApi['rejectProposal']> { throw notImplemented('rejectProposal') }
  async approveAllCards(..._args: Parameters<LemmaApi['approveAllCards']>): ReturnType<LemmaApi['approveAllCards']> { throw notImplemented('approveAllCards') }
