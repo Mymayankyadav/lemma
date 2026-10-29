@@ -21,6 +21,7 @@ jobs:
           PR_HEAD_REF: ${{ github.head_ref }}
         run: |
           node test/plan_protocol.js
+          node test/deploy_knowledge_ci.js
           node test/lane_guard.js
           case "$PR_HEAD_REF" in
             lane-[a-z]/*) node test/lane_guard.js "$(printf '%s' "$PR_HEAD_REF" | cut -c6 | tr a-z A-Z)" ;;

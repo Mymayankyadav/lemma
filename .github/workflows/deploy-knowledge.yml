@@ -64,6 +64,8 @@ jobs:
           test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Missing SUPABASE_ACCESS_TOKEN repository secret"; exit 1; }
           test -n "$SUPABASE_DB_PASSWORD" || { echo "::error::Missing LEMMA_SUPABASE_DB_PASSWORD repository secret"; exit 1; }
           test ! -e supabase/.temp/project-ref || { echo "::error::Refusing pre-linked checkout"; exit 1; }
+          # Wait only for this dispatch SHA; never follow main or retry failed CI.
+          node test/deploy_knowledge_ci.js --wait
           git fetch --no-tags origin main
           test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" || { echo "::error::Main moved; redispatch on the new main head"; exit 1; }
           gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > "$RUNNER_TEMP/lemma-checks.json"
