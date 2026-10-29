@@ -35,6 +35,25 @@ jobs:
       - name: Link Lemma
         if: steps.credentials.outputs.ready == 'true'
         run: supabase link --project-ref yemqnhnztlbyxmjxidis
+      - name: Require verified Lemma MCP target
+        if: steps.credentials.outputs.ready == 'true'
+        shell: bash
+        env:
+          MCP_URL: ${{ secrets.MCP_URL }}
+        run: |
+          # Fail before deploying: an unverified endpoint must never look like a successful release.
+          if [[ -f supabase/functions/mcp/index.ts ]]; then
+            if [[ -z "$MCP_URL" ]]; then
+              echo "::error::MCP_URL secret is required to verify the deployed connector. Keep the existing URL and secret unchanged."
+              echo '### MCP post-deploy smoke: BLOCKED (MCP_URL not configured)' >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            if [[ ! "$MCP_URL" =~ ^https://yemqnhnztlbyxmjxidis\\.supabase\\.co/functions/v1/mcp/[[:xdigit:]]{48}$ ]]; then
+              echo "::error::MCP_URL must target the existing Lemma mcp function with a 48-hex-character path secret; no URL was printed."
+              echo '### MCP post-deploy smoke: BLOCKED (invalid target)' >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          fi
       - name: Apply migrations
         if: steps.credentials.outputs.ready == 'true'
         run: |
@@ -53,25 +72,13 @@ jobs:
           else
             echo "::notice::MCP-1 has not landed yet; no function to deploy."
           fi
-      - name: Check MCP smoke credential
-        id: mcp_smoke
-        if: steps.deploy_mcp.outputs.deployed == 'true'
-        shell: bash
-        env:
-          MCP_URL: ${{ secrets.MCP_URL }}
-        run: |
-          if [[ -n "$MCP_URL" ]]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::MCP_URL repository secret is not configured; deployed connector smoke was not verified. Add the existing URL without rotating its secret."
-          fi
       - name: Set up Node.js for MCP smoke
-        if: steps.mcp_smoke.outputs.configured == 'true'
+        if: steps.deploy_mcp.outputs.deployed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Verify deployed MCP endpoint
-        if: steps.deploy_mcp.outputs.deployed == 'true' && steps.mcp_smoke.outputs.configured == 'true'
+        if: steps.deploy_mcp.outputs.deployed == 'true'
         shell: bash
         env:
           MCP_URL: ${{ secrets.MCP_URL }}
