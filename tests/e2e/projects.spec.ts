@@ -69,3 +69,5 @@ test('rejects non-PDF files without creating a project',async({page})=>{
  await expect(page.getByRole('button',{name:'Create project'})).toBeDisabled()
 })
 
+
+// FIX #259 claim: invalid PDF replacement regression follows.
