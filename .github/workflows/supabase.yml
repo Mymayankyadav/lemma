@@ -51,3 +51,33 @@ jobs:
           else
             echo "::notice::MCP-1 has not landed yet; no function to deploy."
           fi
+      - name: Check MCP smoke credential
+        id: mcp_smoke
+        if: steps.credentials.outputs.ready == 'true'
+        shell: bash
+        env:
+          MCP_URL: ${{ secrets.MCP_URL }}
+        run: |
+          if [[ -n "$MCP_URL" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::MCP_URL repository secret is not configured; deployed connector smoke was not verified. Add the existing URL without rotating its secret."
+          fi
+      - name: Verify deployed MCP endpoint
+        if: steps.credentials.outputs.ready == 'true' && steps.mcp_smoke.outputs.configured == 'true'
+        shell: bash
+        env:
+          MCP_URL: ${{ secrets.MCP_URL }}
+        run: |
+          # Smoke reads the configured endpoint; never echo or print MCP_URL.
+          for attempt in 1 2 3; do
+            if node tests/mcp/smoke.mjs; then
+              echo "Deployed MCP smoke passed (attempt $attempt)."
+              exit 0
+            fi
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "::error::Deployed MCP smoke failed after 3 attempts. Inspect MCP and Supabase logs; do not disclose the connector URL."
+              exit 1
+            fi
+            sleep "$((attempt * 3))"
+          done
