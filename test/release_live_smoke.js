@@ -176,6 +176,7 @@ async function smoke(url) {
     const settingsUrl = new URL(parsed.href);
     settingsUrl.hash = 'settings';
     await page.goto(settingsUrl.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('.page.settings, .settings').first().waitFor({ timeout });
     await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
     await assertSignedOutRecoveryHidden(page);
@@ -357,6 +358,7 @@ async function readySelfTest() {
     // Recovery is explicitly enabled in this synthetic bundle. Its entire
     // Settings section must nevertheless be absent without an authenticated owner.
     await page.goto(origin + '#settings', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('.page.settings, .settings').first().waitFor({ timeout });
     await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
     await assertSignedOutRecoveryHidden(page);
