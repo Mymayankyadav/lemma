@@ -43,7 +43,8 @@ const client={rpc(name,args){
 }};
 account.client=client;
 const plan={
- async activeContext(){
+ async activeContext(selection){
+  assert.equal(selection?.planId,A);assert.equal(selection?.checkpointId,cp);
   const snapshot={planId:A,planRevision:revision,contextId,contextRevision,
    checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:checkpointStatus},
    sessionId,hintLevel,sourceRefs:[...sourceRefs],
