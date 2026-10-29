@@ -48,7 +48,7 @@ jobs:
               echo '### MCP post-deploy smoke: BLOCKED (MCP_URL not configured)' >> "$GITHUB_STEP_SUMMARY"
               exit 1
             fi
-            if [[ ! "$MCP_URL" =~ ^https://yemqnhnztlbyxmjxidis\\.supabase\\.co/functions/v1/mcp/[[:xdigit:]]{48}$ ]]; then
+            if [[ ! "$MCP_URL" =~ ^https://yemqnhnztlbyxmjxidis\.supabase\.co/functions/v1/mcp/[[:xdigit:]]{48}$ ]]; then
               echo "::error::MCP_URL must target the existing Lemma mcp function with a 48-hex-character path secret; no URL was printed."
               echo '### MCP post-deploy smoke: BLOCKED (invalid target)' >> "$GITHUB_STEP_SUMMARY"
               exit 1
