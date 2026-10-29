@@ -361,5 +361,24 @@ function load(){
  statusOverride=null;
  assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
   'checkpoint consistency reads remain owner scoped');
+ // Even a change while the final approved-plan check is in flight must
+ // be detected by the last checkpoint-status read before returning context.
+ let armedLate=false,changedLate=false;
+ beforeRead=async()=>{
+  const table=reads.at(-1)?.table;
+  if(table==='learning_events')armedLate=true;
+  if(armedLate && table==='study_plans' && !changedLate){
+   changedLate=true;statusOverride={'cp-3':'completed'};
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Study checkpoint status changed; reload checkpoint/,
+  'late checkpoint completion must not escape after plan consistency check');
+ assert.equal(changedLate,true,'late race must fire during final plan read');
+ assert.equal(events.length,checkpointRaceEvents);
+ assert.equal(rpc.length,checkpointRaceWrites);
+ beforeRead=async()=>{};statusOverride=null;
+ assert.equal((await load().activeContext()).checkpoint.id,'cp-3',
+  'stable checkpoint remains resumable after late-race rejection');
  console.log('PASS PLAN-01 P5i: twelve checkpoints, plan/session/checkpoint races fail closed, immutable proof resume');
 })().catch(e=>{console.error('FAIL PLAN-01 P4c3: '+e.stack);process.exitCode=1});
