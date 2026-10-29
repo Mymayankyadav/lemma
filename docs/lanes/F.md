@@ -1,3 +1,10 @@
+## R24 — signed-out Study plan and proof isolation (29 October 2026)
+
+- **Claim:** `automation-20261029-f-r24-study-private-isolation`; heartbeat 2026-10-29T10:59Z; branch `lane-f/release-r24-signedout-study-isolation`, base verified green `main@f4f5bafdeb506806d69789fbf7cc5e89c05b29b5` (regression 40858904890, local Supabase 40858904984, Pages 40858904944, live smoke 40858978921). Lane F has no competing open PR; E #201 owns T3k and B #163 remains held; C/Android paused.
+- **Gap:** the live Pages smoke verifies anonymous Study's sign-in prompt and a subset of evidence buttons, plus tutor preview, but does not reject hidden private approved-checkpoint details, proof/history text, plan draft editor or amendment approval UI mounted in the anonymous DOM. A leaked private Study section or approval control could pass the current smoke.
+- **Scope:** F-owned `test/release_live_smoke.js` and this handoff only. Assert absence of private Study sections, proof/plan inputs, checkpoint details and explicit consent actions on both normal Study navigation and direct `#study` reload; add disposable Chromium DOM-leak negative controls. No student approvals, production data, recovery activation, Android, release tag or other-lane code.
+- **Gate:** focused ready-fixture test, F ownership guard, exact-head regression and live Pages CI, reviewed diff and mergeability. Do not count synthetic signed-out assertions as authenticated owner acceptance. Next: implement, verify, merge only green and recheck main; B restore and E real Claude→ChatGPT→Claude T4 remain open.
+
 ## R23 — signed-out knowledge draft, accepted revision and approval isolation (29 October 2026)
 
 - **Claim:** `automation-20261029-f-r23-anonymous-knowledge`; heartbeat 2026-10-29T10:28:11Z; branch `lane-f/release-r23-anonymous-knowledge-isolation` from verified green `main@71f5e61ca302d4055c9934ba1e023d3fc2dd5052`. F was unclaimed; B #200 owns the separate signed-in review/publish UI, E #201 owns hint freshness, B #163 is held; Android remains paused.
