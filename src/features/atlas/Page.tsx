@@ -199,7 +199,8 @@ export default function Page(){
   if(!state||state.id!==node.id||state.pointerId!==event.pointerId)return;
   clearTimer();drag.current=null;event.stopPropagation();
   if(state.moved){
-   const point=positionFrom(event);
+   const point={x:state.original.x+(event.clientX-state.startX)/viewRef.current.k,
+    y:state.original.y+(event.clientY-state.startY)/viewRef.current.k};
    setPositions(p=>({...p,[node.id]:point}));
    pin.mutate({id:node.id,x:point.x,y:point.y},{
     onSuccess:()=>toast('Position pinned',{tone:'success'}),
@@ -210,7 +211,7 @@ export default function Page(){
  function onNodeCancel(){clearTimer();drag.current=null}
  function unpinNode(node:AtlasNode){
   setMenuId(null);
-  pin.mutate({id:node.id,x:null as unknown as number,y:null as unknown as number},{
+  pin.mutate({id:node.id,x:null,y:null},{
    onSuccess:()=>{setPositions(p=>{const next={...p};delete next[node.id];return next});toast('Concept unpinned',{tone:'success'})},
    onError:e=>toast(e.message||'Could not unpin concept',{tone:'danger'})
   });
@@ -224,7 +225,7 @@ export default function Page(){
    action={{label:'Try again',onClick:()=>{void query.refetch()}}}/></main>;
  return <main className="relative h-dvh min-h-[580px] overflow-hidden bg-obsidian text-ink" aria-label="Atlas">
   <Starfield/>
-  {nodeList.length?<svg ref={svg} width="100%" height="100%" role="img"
+  {nodeList.length?<svg ref={svg} width="100%" height="100%" role="group"
     aria-label={'Interactive knowledge graph with '+nodeList.length+' concepts. Drag nodes to pin; pinch or use zoom buttons to explore.'}
     className="absolute inset-0 h-full w-full touch-none"
     onClick={event=>{if(event.target===event.currentTarget)hideSelection()}}>
