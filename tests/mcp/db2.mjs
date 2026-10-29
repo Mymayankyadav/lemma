@@ -86,4 +86,24 @@ try {
  await undo(await last());
  assert.equal((await q(`select status from public.diagnostics where no=${gap}`))[0].status,'planned');
  console.log('PASS bridge demonstration resolves diagnostics and is reversible');
+ const source=(await q(`insert into public.sources(user_id,project_id,title,short) values ('${owner}','${project}','Generated fields','generated') returning id`))[0].id;
+ await db.exec(`insert into public.source_pages(user_id,source_id,page,body) values ('${owner}','${source}',1,'Differentiation and integration')`);
+ const page=(await q(`select * from public.source_pages where source_id='${source}'`))[0];
+ await db.exec(`delete from public.sources where id='${source}'`);r=await undo(await last());
+ const restored=(await q(`select * from public.source_pages where source_id='${source}'`))[0];
+ assert.deepEqual(restored,page);
+ await undo(r.as);assert.equal((await q(`select count(*) n from public.source_pages where source_id='${source}'`))[0].n,0);
+ console.log('PASS composite PK and generated-column cascade restore and redo');
+ await assert.rejects(db.exec(`update public.projects set prompt=repeat('x',1001) where id='${project}'`),/check constraint/);
+ await db.exec(`insert into public.settings(user_id,master_prompt) values ('${owner}','Use LaTeX')`);
+ await assert.rejects(db.exec(`update public.settings set master_prompt=repeat('x',2001) where user_id='${owner}'`),/check constraint/);
+ await db.exec(`update public.settings set master_prompt='Be Socratic' where user_id='${owner}'`);
+ await undo(await last());assert.equal((await q('select master_prompt from public.settings'))[0].master_prompt,'Use LaTeX');
+ console.log('PASS prompt limits and reversible prompt edits');
+ n=await note();await db.exec(`select set_config('test.uid','${other}',false); set role service_role`);
+ r=await undo(n.action);assert.equal(r.undone,n.action);
+ await assert.rejects(db.exec("update public.actions set summary='forged'"),/permission denied/);
+ await assert.rejects(db.exec('delete from public.action_changes'),/permission denied/);
+ await db.exec(`reset role;select set_config('test.uid','${owner}',false)`);
+ console.log('PASS service-role undo and journal immutability');
 } finally {await db.close();}

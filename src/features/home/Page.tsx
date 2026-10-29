@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
+import {getMode} from '../../data/mode';
 import {motion, useReducedMotion} from 'motion/react';
 import {Bot, ChevronDown, ChevronRight, CircleCheck, History, Inbox, MessageCircle, Plus, SlidersHorizontal, Sparkles, Waypoints} from 'lucide-react';
 import {useHome, useSettings, useUpdateSettings} from '../../data/hooks';
@@ -177,6 +178,11 @@ export default function Page(){
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-[13px] text-ink-2">
    You're offline. Changes cannot be saved until you're connected.
   </div>}
+  {getMode()==='live'&&settings.data&&!settings.data.connectorLastSeenAt&&<Link to="/settings" aria-label="Connect your tutor"
+   className="flex min-h-12 items-center justify-between gap-3 rounded-ctl border border-amber-line bg-amber-tint px-4 py-3 text-[13px] text-ink-soft">
+   <span><strong className="text-amber">Tutor not connected.</strong> Set up the connector in Settings to record study progress.</span>
+   <ChevronRight size={18} className="shrink-0 text-amber"/>
+  </Link>}
   <ResumeCard home={home.data} client={client} onChoose={chooseChat}/>
   <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
   <section aria-label="Projects" className="flex flex-col gap-2">
