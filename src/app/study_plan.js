@@ -65,7 +65,11 @@ const StudyPlan = (() => {
     return configure(q);
   }).then(rows);
 
-  async function activeContext() {
+  async function activeContext({planId:requestedPlanId=null,checkpointId:requestedCheckpointId=null}={}) {
+    if ((requestedPlanId!==null && !isUuid(requestedPlanId)) ||
+        (requestedCheckpointId!==null && (typeof requestedCheckpointId!=='string' ||
+          !requestedCheckpointId.trim() || requestedCheckpointId.length>160)))
+      throw new Error('Invalid approved checkpoint selection');
     const ctx = account();
     const plans = await list(ctx,'study_plans',
       'id,title,revision,updated_at,plan',
@@ -73,6 +77,8 @@ const StudyPlan = (() => {
     if (!plans.length) return null;
     const plan = plans[0];
     if (!isUuid(plan.id) || !revision(plan.revision)) throw new Error('Invalid plan record');
+    if(requestedPlanId && !same(requestedPlanId,plan.id))
+      throw new Error('Approved study checkpoint changed; reopen Study');
     const versions = await list(ctx,'study_plan_versions',
       'context_id,context_revision,snapshot',
       q => q.eq('plan_id',plan.id).eq('revision',plan.revision).limit(1));
@@ -106,8 +112,14 @@ const StudyPlan = (() => {
         status:saved?.status || cp.status || 'not_started',
         prerequisiteIds:Array.isArray(cp.prerequisite_checkpoint_ids)
           ? cp.prerequisite_checkpoint_ids : [],
+        learningTasks:Array.isArray(cp.learning_tasks)?cp.learning_tasks.filter(x=>typeof x==='string'):[],
+        assessmentPrompt:typeof cp.assessment_prompt==='string'?cp.assessment_prompt:'',
+        masteryCriterion:typeof cp.mastery_criterion==='string'?cp.mastery_criterion:'',
         sourceRefs:Array.isArray(cp.source_refs) ? cp.source_refs : [] };
     }).filter(Boolean);
+    const requested=choice.find(cp=>cp.id===requestedCheckpointId);
+    if(requestedCheckpointId && !requested)
+      throw new Error('Checkpoint is not in the current approved plan');
     // Prefer the explicitly in-progress checkpoint. Otherwise recover the
     // latest unfinished proof from the immutable active-session event ledger:
     // record_study_event creates a session, not a checkpoint status update.
@@ -130,7 +142,7 @@ const StudyPlan = (() => {
       typeof e.payload?.checkpoint_id === 'string' &&
       choice.some(cp => cp.id === e.payload.checkpoint_id &&
         incomplete.has(cp.status)));
-    const selected = choice.find(cp => cp.status === 'in_progress') ||
+    const selected = requested || choice.find(cp => cp.status === 'in_progress') ||
       (latestWork && choice.find(cp => cp.id === latestWork.payload.checkpoint_id)) ||
       choice.find(cp => cp.status === 'review_due') ||
       choice.find(cp => cp.status === 'not_started') ||
@@ -187,7 +199,9 @@ const StudyPlan = (() => {
       contextRevision:version.context_revision || null,
       checkpoint:{
         id:selected.id,title:selected.title,objective:selected.objective,
-        status:selected.status,prerequisiteIds:selected.prerequisiteIds
+        status:selected.status,prerequisiteIds:selected.prerequisiteIds,
+        learningTasks:selected.learningTasks,assessmentPrompt:selected.assessmentPrompt,
+        masteryCriterion:selected.masteryCriterion
       },sessionId,lastAttempt:attempt ? {
         eventId:attempt.event_id,type:attempt.event_type,
         payload:attempt.payload.data,createdAt:attempt.created_at
@@ -195,6 +209,7 @@ const StudyPlan = (() => {
       hintLevel:hint ? Math.max(0,hint.payload.data.level) : 0,
       lastFeedback:detail('feedback'),lastEvidence:detail('mastery_evidence'),
       nextAction:detail('session_note'),
+      checkpoints:choice.map(cp=>({id:cp.id,title:cp.title,status:cp.status})),
       sourceRefs:selected.sourceRefs
     };
   }

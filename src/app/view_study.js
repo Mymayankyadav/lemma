@@ -361,7 +361,10 @@ const StudyView = (() => {
         Promise.resolve().then(() => StudyPlan.readPlanDraft(context.planId))
           .then(row => {
             if (!valid()) return;
-            if (row?.status==='approved_pending') {
+            if (row?.expectedRevision===0) {
+              reviewButton.hidden=true;
+              status.textContent='An initial plan submission is preserved locally. Use Resume local plan drafts below to confirm its receipt.';
+            } else if (row?.status==='approved_pending') {
               reviewButton.hidden=true;
               status.textContent='A previously student-approved amendment is waiting. ' +
                 'Submission is a separate, explicit action.';
@@ -387,6 +390,9 @@ const StudyView = (() => {
         h('p', {class:'study-revision',text:'Published plan revision ' + context.planRevision}),
         h('h2', {text:cp.title || cp.id}),
         field('Objective',cp.objective),
+        cp.learningTasks?.length?field('Learning tasks',cp.learningTasks.join('\n')):null,
+        cp.assessmentPrompt?field('Assessment prompt',cp.assessmentPrompt):null,
+        cp.masteryCriterion?field('Mastery criterion',cp.masteryCriterion):null,
         field('Checkpoint status',cp.status.replaceAll('_',' ')),
         field('Latest proof attempt',context.lastAttempt?.payload?.text || ''),
         field('Current hint level',String(context.hintLevel || 0)),
@@ -397,6 +403,22 @@ const StudyView = (() => {
           ? 'Sources: ' + context.sourceRefs.join(' · ')
           : 'No source references attached to this checkpoint.'}));
       const forms = h('div', {class:'study-form-list'});
+      const unconfirmedSaves=new Set();
+      if(Array.isArray(context.checkpoints)&&context.checkpoints.length>1) {
+        const choose=h('select',{class:'input','aria-label':'Approved checkpoint'},
+          ...context.checkpoints.map(item=>h('option',{value:item.id,
+            selected:item.id===cp.id,text:item.title+' · '+item.status.replaceAll('_',' ')})));
+        choose.addEventListener('change',()=>{
+          if(!valid())return;
+          if(unconfirmedSaves.size || [...forms.querySelectorAll('textarea')].some(input=>input.value.trim())) {
+            choose.value=cp.id;
+            message.textContent='Save or clear typed observations before changing checkpoint. Unconfirmed saves must be retried first.';
+            return;
+          }
+          App.go('study',{planId:context.planId,checkpointId:choose.value});
+        });
+        detail.prepend(h('label',{class:'study-field-label'},'Choose an approved checkpoint',choose));
+      }
       for (const entry of entries) {
         const input = h('textarea', {class:'input study-input',rows:3,
           'aria-label':entry.label,placeholder:entry.label,'maxlength':4000});
@@ -415,6 +437,7 @@ const StudyView = (() => {
             const payload = {text};
             if (entry.type === 'hint') payload.level = (context.hintLevel || 0) + 1;
             pending = {text, payload, eventId:crypto.randomUUID()};
+            unconfirmedSaves.add(entry.type);
           }
           const attempt = pending;
           saving = true; button.disabled = true;input.readOnly = true;
@@ -435,6 +458,7 @@ const StudyView = (() => {
             if (entry.type === 'mastery_evidence') context.lastEvidence=attempt.payload;
             if (entry.type === 'session_note') context.nextAction=attempt.payload;
             pending = null;
+            unconfirmedSaves.delete(entry.type);
             input.value = '';
             feedback.textContent='Saved as append-only study evidence. No mastery or plan approval was changed.';
             // Keep summary in sync without discarding another in-progress input.
@@ -510,7 +534,7 @@ const StudyView = (() => {
         if (typeof StudyPlan === 'undefined' ||
             typeof StudyPlan.activeContext !== 'function')
           throw new Error('Study module unavailable');
-        const context = await StudyPlan.activeContext();
+        const context = await StudyPlan.activeContext({planId:params.planId,checkpointId:params.checkpointId});
         if (!valid()) return;
         if (!context?.checkpoint) {
           message.textContent='No published study checkpoint is available. Drafts are not approved plans.';
