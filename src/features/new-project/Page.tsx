@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {BookOpen,Check,Copy,FileText,Plus,UploadCloud,AlertTriangle} from 'lucide-react';
 import {useAddSource,useCreateProject,useCreateSubject,useStyles,useSubjects} from '../../data/hooks';
@@ -54,6 +54,8 @@ export default function Page(){
   [progress,setProgress]=useState<IngestProgress|null>(null),[saving,setSaving]=useState(false),
   [created,setCreated]=useState<Project|null>(null),[fileError,setFileError]=useState<string|null>(null);
  const fileInput=useRef<HTMLInputElement>(null);
+ // Keep Sheet's focus-management effect mounted while controlled inputs update.
+ const closeNewProject=useCallback(()=>navigate('/projects'),[navigate]);
  useEffect(()=>{
   if(!subjectId&&subjects.data?.length)setSubjectId(subjects.data[0].id);
  },[subjects.data,subjectId]);
@@ -100,7 +102,7 @@ export default function Page(){
  const prompt=planPrompt(name.trim()||'your project');
  return <Screen title="New project" back="/projects">
   <div className="pointer-events-none opacity-25"><div className="h-40 rounded-hero bg-slab"/></div>
-  <Sheet open onClose={()=>navigate('/projects')} title="New project">
+  <Sheet open onClose={closeNewProject} title="New project">
    {preparing?<div className="flex flex-col gap-4"><Skeleton h={50}/><Skeleton h={80}/><Skeleton h={60}/></div>:
     subjects.error||styles.error?<EmptyState art="plug" title="Setup couldn't load" body="Check your connection and try again."
      action={{label:'Retry',onClick:()=>{void subjects.refetch();void styles.refetch()}}}/>:
