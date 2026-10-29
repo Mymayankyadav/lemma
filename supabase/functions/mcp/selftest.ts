@@ -7,6 +7,7 @@ import { buildServer, TOOL_NAMES } from './server.ts';
 export async function selftest(c:Context):Promise<any>{
   const steps:{name:string;ok:boolean;ms:number;detail?:string}[]=[];
   let subjectId:string|undefined,projectId:string|undefined,extraId:string|undefined,extraSubjectId:string|undefined;
+  let extraSubjectName:string|undefined;
   async function check(name:string,f:()=>Promise<void>){
     const begin=Date.now();
     try{await f();steps.push({name,ok:true,ms:Date.now()-begin})}
@@ -76,7 +77,8 @@ export async function selftest(c:Context):Promise<any>{
     });
     await check('create, list and decide',async()=>{
       const title='zz-selftest extra '+Date.now();
-      const r=await createProject(c,{title,subject:'zz-selftest-'+Date.now(),goal:'Demo goal'});
+      extraSubjectName='zz-selftest-'+Date.now();
+      const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal'});
       const slug=r.match(/^created (\S+)/)?.[1];
       if(!slug)throw Error('Project creation failed');
       const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;
@@ -115,6 +117,10 @@ export async function selftest(c:Context):Promise<any>{
     // All deletions are by the owner and the exact throwaway IDs.
     for(const id of [extraId,projectId])if(id)await c.db.from('projects').delete().eq('user_id',c.userId).eq('id',id);
     if(subjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',subjectId);
+    if(!extraSubjectId&&extraSubjectName){
+      const {data:orphan}=await scoped(c,'subjects','id').eq('name',extraSubjectName).maybeSingle();
+      extraSubjectId=orphan?.id;
+    }
     if(extraSubjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',extraSubjectId);
   }
   return {ok:steps.length===11&&steps.every(x=>x.ok),steps};
