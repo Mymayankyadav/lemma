@@ -340,6 +340,7 @@ const TutorHandoff = (() => {
     if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
       throw new Error('The active checkpoint has changed; reopen its handoff');
     const ownerId = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.user?.id;
+    const openedClient = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.client;
     const openedIdentityEpoch = identityEpoch;
     const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
     const packet = exportPacket(ctx);
@@ -412,7 +413,7 @@ const TutorHandoff = (() => {
         const verifyCopyOwner = () => {
           if (identityEpoch !== openedIdentityEpoch ||
               (typeof LemmaAccount !== 'undefined' &&
-               LemmaAccount.user?.id !== ownerId) ||
+               (LemmaAccount.user?.id !== ownerId || LemmaAccount.client !== openedClient)) ||
               (typeof App !== 'undefined' &&
                (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
             throw new Error('Study account or workspace changed');
