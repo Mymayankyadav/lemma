@@ -41,10 +41,7 @@ export class LiveAdapter implements LemmaApi {
       result=checked(await db.from('settings').update({time_zone:zone})
         .eq('user_id',uid).select('*').single()) as unknown as Row
     }
-    const hash=sessionStorage.getItem('lemma:oauth-return')
-    if(hash && !window.location.hash) {sessionStorage.removeItem('lemma:oauth-return'); window.location.hash=hash}
-    const url=new URL(window.location.href)
-    if(url.searchParams.has('code')) {url.searchParams.delete('code'); window.history.replaceState(null,'',url.pathname+url.search+url.hash)}
+
   }
   return settingsRow(result)
  }
