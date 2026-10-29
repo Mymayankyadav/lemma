@@ -1,25 +1,134 @@
 import type { LemmaApi } from '../api'
-import { notImplemented } from '../api'
 
-/** Live implementation belongs to DATA-1. */
+import { liveClient } from './client'
+import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
+import { dueToday, checkpointUi, projectProgress, conceptStatus } from '../../lib/derive'
+import { studyDay } from '../../lib/calendar'
+import { ingest } from '../../pdf/ingest'
+import type { ProjectSummary, CheckpointView, ReviewItem, CardState, CardComment, Proposal, AtlasGraph } from '../types'
+import { LemmaError } from '../api'
+
+/** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
- async getAuth(..._args: Parameters<LemmaApi['getAuth']>): ReturnType<LemmaApi['getAuth']> { throw notImplemented('getAuth') }
- async signIn(..._args: Parameters<LemmaApi['signIn']>): ReturnType<LemmaApi['signIn']> { throw notImplemented('signIn') }
- async signOut(..._args: Parameters<LemmaApi['signOut']>): ReturnType<LemmaApi['signOut']> { throw notImplemented('signOut') }
- async bootstrap(..._args: Parameters<LemmaApi['bootstrap']>): ReturnType<LemmaApi['bootstrap']> { throw notImplemented('bootstrap') }
- async getSettings(..._args: Parameters<LemmaApi['getSettings']>): ReturnType<LemmaApi['getSettings']> { throw notImplemented('getSettings') }
- async updateSettings(..._args: Parameters<LemmaApi['updateSettings']>): ReturnType<LemmaApi['updateSettings']> { throw notImplemented('updateSettings') }
- async rotateConnectorSecret(..._args: Parameters<LemmaApi['rotateConnectorSecret']>): ReturnType<LemmaApi['rotateConnectorSecret']> { throw notImplemented('rotateConnectorSecret') }
- async listStyles(..._args: Parameters<LemmaApi['listStyles']>): ReturnType<LemmaApi['listStyles']> { throw notImplemented('listStyles') }
- async updateStyle(..._args: Parameters<LemmaApi['updateStyle']>): ReturnType<LemmaApi['updateStyle']> { throw notImplemented('updateStyle') }
+ async getAuth(...args: Parameters<LemmaApi['getAuth']>): ReturnType<LemmaApi['getAuth']> {
+  const {data,error} = await liveClient().auth.getUser()
+  if (error && !/missing|session/i.test(error.message)) fail(error)
+  return data.user?.email ? {email:data.user.email} : null
+ }
+ async signIn(...args: Parameters<LemmaApi['signIn']>): ReturnType<LemmaApi['signIn']> {
+  const db=liveClient()
+  if (typeof window === 'undefined') throw new LemmaError('auth','Sign-in requires a browser')
+  sessionStorage.setItem('lemma:oauth-return',window.location.hash)
+  const redirectTo=window.location.origin+window.location.pathname
+  const {error}=await db.auth.signInWithOAuth({provider:'google',options:{redirectTo}})
+  if(error) fail(error)
+ }
+ async signOut(...args: Parameters<LemmaApi['signOut']>): ReturnType<LemmaApi['signOut']> {
+  const {error}=await liveClient().auth.signOut()
+  if(error) fail(error)
+  if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lemma:oauth-return')
+ }
+ async bootstrap(...args: Parameters<LemmaApi['bootstrap']>): ReturnType<LemmaApi['bootstrap']> {
+  const db=liveClient()
+  await owner(db)
+  const result=checked(await db.rpc('bootstrap'))
+  if(typeof window !== 'undefined'){
+    const hash=sessionStorage.getItem('lemma:oauth-return')
+    if(hash && !window.location.hash) {sessionStorage.removeItem('lemma:oauth-return'); window.location.hash=hash}
+    const url=new URL(window.location.href)
+    if(url.searchParams.has('code')) {url.searchParams.delete('code'); window.history.replaceState(null,'',url.pathname+url.search+url.hash)}
+  }
+  return settingsRow(result as Row)
+ }
+ async getSettings(...args: Parameters<LemmaApi['getSettings']>): ReturnType<LemmaApi['getSettings']> {
+  const db=liveClient(), uid=await owner(db)
+  return settingsRow(checked(await db.from('settings').select('*').eq('user_id',uid).single()) as Row)
+ }
+ async updateSettings(...args: Parameters<LemmaApi['updateSettings']>): ReturnType<LemmaApi['updateSettings']> {
+  const [patch]=args
+  const db=liveClient(), uid=await owner(db)
+  const dbPatch=toDb(patch)
+  for (const key of ['connector_secret','connector_last_client','connector_last_seen_at','user_id']) delete dbPatch[key]
+  if(!Object.keys(dbPatch).length) return this.getSettings()
+  return settingsRow(checked(await db.from('settings').update(dbPatch).eq('user_id',uid).select('*').single()) as Row)
+ }
+ async rotateConnectorSecret(...args: Parameters<LemmaApi['rotateConnectorSecret']>): ReturnType<LemmaApi['rotateConnectorSecret']> {
+  const db=liveClient(), uid=await owner(db)
+  const bytes=new Uint8Array(24)
+  crypto.getRandomValues(bytes)
+  const secret=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('')
+  const row=checked(await db.from('settings').update({connector_secret:secret}).eq('user_id',uid).select('*').single())
+  return settingsRow(row as Row)
+ }
+ async listStyles(...args: Parameters<LemmaApi['listStyles']>): ReturnType<LemmaApi['listStyles']> {
+  const db=liveClient(), uid=await owner(db)
+  return (await rows(db,'styles',uid)).sort((a,b)=>a.position-b.position).map(styleRow)
+ }
+ async updateStyle(...args: Parameters<LemmaApi['updateStyle']>): ReturnType<LemmaApi['updateStyle']> {
+  const [key,patch]=args, db=liveClient(),uid=await owner(db)
+  return styleRow(checked(await db.from('styles').update(toDb(patch)).eq('user_id',uid).eq('key',key).select('*').single()) as Row)
+ }
  async getHome(..._args: Parameters<LemmaApi['getHome']>): ReturnType<LemmaApi['getHome']> { throw notImplemented('getHome') }
- async listSubjects(..._args: Parameters<LemmaApi['listSubjects']>): ReturnType<LemmaApi['listSubjects']> { throw notImplemented('listSubjects') }
- async createSubject(..._args: Parameters<LemmaApi['createSubject']>): ReturnType<LemmaApi['createSubject']> { throw notImplemented('createSubject') }
- async listProjects(..._args: Parameters<LemmaApi['listProjects']>): ReturnType<LemmaApi['listProjects']> { throw notImplemented('listProjects') }
+ async listSubjects(...args: Parameters<LemmaApi['listSubjects']>): ReturnType<LemmaApi['listSubjects']> {
+  const db=liveClient(),uid=await owner(db)
+  return (await rows(db,'subjects',uid)).sort((a,b)=>a.position-b.position).map(subjectRow)
+ }
+ async createSubject(...args: Parameters<LemmaApi['createSubject']>): ReturnType<LemmaApi['createSubject']> {
+  const [input]=args, db=liveClient(),uid=await owner(db)
+  const existing=await rows(db,'subjects',uid)
+  return subjectRow(checked(await db.from('subjects').insert({...input,user_id:uid,position:existing.length}).select('*').single()) as Row)
+ }
+ async listProjects(...args: Parameters<LemmaApi['listProjects']>): ReturnType<LemmaApi['listProjects']> {
+  const db=liveClient(),uid=await owner(db)
+  const [projects,subjects,cps,notes,sessions,sources,prereqs]=await Promise.all([
+    rows(db,'projects',uid),rows(db,'subjects',uid),rows(db,'checkpoints',uid),
+    rows(db,'notes',uid),rows(db,'sessions',uid),rows(db,'sources',uid),rows(db,'checkpoint_prereqs',uid)
+  ])
+  const subjectMap=new Map(subjects.map(s=>[s.id,subjectRow(s)]))
+  const cpMap=new Map(cps.map(c=>[c.id,c]))
+  const today=studyDay(Date.now())
+  const views=new Map<string,CheckpointView>()
+  const visiting=new Set<string>()
+  const getView=(c:Row): CheckpointView=>{
+    if(views.has(c.id)) return views.get(c.id)!
+    if(visiting.has(c.id)) throw new LemmaError('invalid','Checkpoint prerequisite cycle')
+    visiting.add(c.id)
+    const pre=prereqs.filter(p=>p.checkpoint_id===c.id).map(p=>cpMap.get(p.prereq_id)).filter(Boolean) as Row[]
+    const view=checkpointRow(c,pre.map(getView),today)
+    views.set(c.id,view);visiting.delete(c.id);return view
+  }
+  return projects.map(p=>{
+    const checkpoints=cps.filter(c=>c.project_id===p.id).sort((a,b)=>a.position-b.position).map(getView)
+    const counts=projectProgress(checkpoints)
+    const current=checkpoints.find(c=>c.ui==='now')??checkpoints.find(c=>c.ui==='next')
+    return {id:p.id,slug:p.slug,title:p.title,subject:subjectMap.get(p.subject_id)!,status:p.status,
+      done:counts.done,total:counts.total,
+      current:current?{code:current.code,title:current.title,step:current.currentStep,stepsTotal:current.stepsTotal}:null,
+      lastActivityAt:p.last_activity_at,cardsCount:notes.filter(n=>n.project_id===p.id&&n.status==='active').length,
+      sessionsCount:sessions.filter(s=>s.project_id===p.id&&s.state==='ended').length,
+      sourcesCount:sources.filter(s=>s.project_id===p.id).length} satisfies ProjectSummary
+  }).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
+ }
  async getProject(..._args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> { throw notImplemented('getProject') }
- async createProject(..._args: Parameters<LemmaApi['createProject']>): ReturnType<LemmaApi['createProject']> { throw notImplemented('createProject') }
- async updateProject(..._args: Parameters<LemmaApi['updateProject']>): ReturnType<LemmaApi['updateProject']> { throw notImplemented('updateProject') }
+ async createProject(...args: Parameters<LemmaApi['createProject']>): ReturnType<LemmaApi['createProject']> {
+  const [input]=args, db=liveClient(),uid=await owner(db)
+  const base=slugify(input.slug||input.title)
+  if(base.length<2) throw new LemmaError('invalid','Use a longer project title')
+  for(let n=1;n<100;n++){
+    const suffix=n===1?'':'-'+n
+    const slug=base.slice(0,40-suffix.length).replace(/-$/,'')+suffix
+    const res=await db.from('projects').insert({user_id:uid,title:input.title,goal:input.goal,
+      style:input.style,subject_id:input.subjectId,slug}).select('*').single()
+    if(!res.error) return projectRow(res.data as Row)
+    if(res.error.code!=='23505') fail(res.error)
+  }
+  throw new LemmaError('conflict','Too many projects with the same name')
+ }
+ async updateProject(...args: Parameters<LemmaApi['updateProject']>): ReturnType<LemmaApi['updateProject']> {
+  const [id,patch]=args,db=liveClient(),uid=await owner(db)
+  return projectRow(checked(await db.from('projects').update(toDb(patch)).eq('id',id).eq('user_id',uid).select('*').single()) as Row)
+ }
  async getCheckpoint(..._args: Parameters<LemmaApi['getCheckpoint']>): ReturnType<LemmaApi['getCheckpoint']> { throw notImplemented('getCheckpoint') }
  async addSource(..._args: Parameters<LemmaApi['addSource']>): ReturnType<LemmaApi['addSource']> { throw notImplemented('addSource') }
  async deleteSource(..._args: Parameters<LemmaApi['deleteSource']>): ReturnType<LemmaApi['deleteSource']> { throw notImplemented('deleteSource') }
