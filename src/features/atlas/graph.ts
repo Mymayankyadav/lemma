@@ -25,11 +25,11 @@ export function layoutAtlas(graph:AtlasGraph):AtlasLayout{
  // d3-force mutates a private link copy; retaining immutable IDs keeps React rendering stable.
  const links=edges.map(e=>({source:e.fromId,target:e.toId}));
  const simulation=forceSimulation(nodes)
-  .force('link',forceLink(links).id((node:any)=>node.id).distance(70).strength(0.5))
+  .force('link',forceLink<AtlasNode>(links).id(node=>node.id).distance(70).strength(0.5))
   .force('charge',forceManyBody().strength(-160))
   .force('collide',forceCollide(26))
-  .force('x',forceX((n:any)=>centers.get(n.subjectId)?.x??0).strength(0.10))
-  .force('y',forceY((n:any)=>centers.get(n.subjectId)?.y??0).strength(0.10))
+  .force('x',forceX<AtlasNode>(n=>centers.get(n.subjectId)?.x??0).strength(0.10))
+  .force('y',forceY<AtlasNode>(n=>centers.get(n.subjectId)?.y??0).strength(0.10))
   .stop();
  for(let i=0;i<300;i++)simulation.tick();
  simulation.stop();
@@ -50,7 +50,7 @@ function loop(points:Point[]):string{
 export interface Nebula{path:string;label:Point}
 export function nebula(nodes:readonly Point[],padding=28):Nebula|null{
  if(!nodes.length)return null;
- let hull=polygonHull(nodes.map(n=>[n.x,n.y]))?.map(p=>({x:p[0],y:p[1]}))??[];
+ let hull=polygonHull(nodes.map(n=>[n.x,n.y] as [number,number]))?.map(p=>({x:p[0],y:p[1]}))??[];
  if(hull.length<3){
   const center={x:nodes.reduce((n,p)=>n+p.x,0)/nodes.length,y:nodes.reduce((n,p)=>n+p.y,0)/nodes.length};
   hull=Array.from({length:16},(_,i)=>{const a=i*2*Math.PI/16;return {x:center.x+Math.cos(a)*54,y:center.y+Math.sin(a)*54}});
