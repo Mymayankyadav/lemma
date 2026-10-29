@@ -13,6 +13,7 @@ const cp='compactness-open-cover-proof';
 let dialog, revision=3, activeCheckpoint=cp, failSecond=false, afterContextRead=null;
 let hintLevel=1, attemptId=E1, sessionId=owner, checkpointStatus='in_progress';
 let contextId=null, contextRevision=null, lastFeedbackId=null, sourceRefs=[];
+let reflectOwnWrites=false;
 const calls=[];
 const app={workspaceRevision:1,workspaceBlocked:false};
 let signalIdentityChange=null;
@@ -25,7 +26,13 @@ const client={rpc(name,args){
   assert.equal(auth,'Bearer mock-token');
   if(failSecond && args.p_event_id===E2) {
    failSecond=false;
+   if(reflectOwnWrites)hintLevel=args.p_payload.level;
    throw Error('Network interrupted after a possible server write');
+  }
+  if(reflectOwnWrites){
+   if(sessionId===null)sessionId=owner;
+   if(['attempt','proof_step'].includes(args.p_event_type))attemptId=args.p_event_id;
+   if(args.p_event_type==='hint')hintLevel=args.p_payload.level;
   }
   return {data:{event:{eventId:args.p_event_id,sessionId:owner,
     seq:calls.length,planRevision:3},audit:{
@@ -241,5 +248,33 @@ async function open(){
  assert.equal(x.review.children.length,0);
  assert.equal(x.save.disabled,true);
  assert.equal(calls.length,4);
- console.log('PASS TUTOR-01 T3f: atomic evidence, retry IDs, identity and proof/hint/session freshness, no implicit cards');
+ // The first selected event may itself create a session and advance the
+ // proof. Its original UUID is allowed as self-caused context, so the second
+ // selected event must still be saved in the same deliberate action.
+ sessionId=null;attemptId=C1;hintLevel=1;reflectOwnWrites=true;
+ x=await open();select(0);select(1);
+ const beforeBatch=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeBatch+2,'both explicitly selected events persist');
+ assert.match(x.status.textContent,/Recorded 2 selected study event/);
+ assert.equal(x.save.disabled,true);
+ assert.equal(attemptId,E1);
+ assert.equal(hintLevel,2);
+
+ // A lost response may follow a server commit of the second event. The
+ // retry must accept only this sheet's attempted IDs and reuse E2 unchanged.
+ sessionId=null;attemptId=C1;hintLevel=1;
+ x=await open();select(0);select(1);failSecond=true;
+ const beforeRetry=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeRetry+2);
+ assert.equal(hintLevel,2,'server committed the hint before response loss');
+ assert.equal(x.save.disabled,false,'uncertain event remains selected');
+ await x.save.events.click();
+ assert.equal(calls.length,beforeRetry+3);
+ assert.equal(calls.at(-1).args.p_event_id,E2);
+ assert.deepEqual(calls.at(-1).args,calls.at(-2).args,'exact retry of uncertain hint');
+ assert.equal(x.save.disabled,true);
+ reflectOwnWrites=false;sessionId=owner;attemptId=E1;hintLevel=1;
+ console.log('PASS TUTOR-01 T3f: stale proof guards, self-written batch progress and lost-response retry, no implicit approvals');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
