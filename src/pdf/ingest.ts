@@ -42,7 +42,7 @@ export function isPdfFile(file: Pick<File, "name" | "type">): boolean {
     mime === "application/pdf" ||
     mime === "application/x-pdf" ||
     ((mime === "" || mime === "application/octet-stream" || mime === "binary/octet-stream") &&
-      /\\.pdf$/i.test(file.name))
+      /\.pdf$/i.test(file.name))
   );
 }
 
