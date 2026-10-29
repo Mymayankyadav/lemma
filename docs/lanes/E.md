@@ -4,7 +4,10 @@
 - **Cross-lane request D-E-HINT-01 → E · IN_PROGRESS:** `src/app/tutor_handoff.js` must compare reviewed `lastHint.eventId` with the fresh event ID, not just `hintLevel`. Permit a same-sheet attempted hint only if its original UUID is visible, and retain confirmed multi-event batch behavior. A foreign same-level hint must invalidate copy/save/card/amendment consent, with no unauthorized RPC or clipboard write.
 - **Scope:** E-owned tutor handoff source, focused tutor tests, this handoff. Preserve `TutorHandoff.ready=false`, existing packet format, per-action consent, owner/workspace guards and original retry IDs. No backend/migration/production/Android/Carrel change.
 - **Gate:** focused V8/Node tests, E guard, syntax/build, exact-head regression/local Supabase and diff review; merge only green after main CI. Real student-operated T4 and B authenticated restore remain unpassed.
-- **Next:** implement UUID comparison and tests for same-level foreign hint and own attempted hint, then verify exact head.
+- **Implemented:** `assertReviewedContext` now compares immutable `lastHint.eventId` as well as numeric `hintLevel`; only the exact originally attempted hint UUID can justify self-caused change. This is the shared guard for copy, evidence save, card-editor review and amendment staging. No new RPC or automatic write.
+- **Focused verification:** independent V8 execution of actual updated `test/tutor_record.js` and `test/tutor_copy_freshness.js` against updated source with Node-module shims PASS. New negatives reject foreign same-level UUID before RPC and clipboard; positive original lost-response proof/hint and multi-event retry cases remain passing. Both test files and source parse. This is **not** full Node/npm, E guard, real Chromium or Supabase; exact-head CI still required.
+- **D-E-HINT-01 implementation:** complete on this branch, pending green merge/main CI. D requester handoff still needs a separate evidence update; do not mark full T4 accepted.
+- **Next:** inspect exact-head regression, E guard and local Supabase; merge only green and verify main. Real student T4 and B recovery acceptance remain blocked.
 
 ## T3j — reject unproven new session after uncertain tutor event (29 October 2026)
 
