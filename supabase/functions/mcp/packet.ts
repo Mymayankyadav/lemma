@@ -59,7 +59,10 @@ export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?
   }
   const cps=await checkpoints(c,p);const open=(await scoped(c,'sessions').eq('project_id',p.id).eq('state','open').order('last_activity_at',{ascending:false}).limit(1)).data?.[0];
   const latest=(await scoped(c,'sessions').eq('project_id',p.id).order('started_at',{ascending:false}).limit(1)).data?.[0];
-  const cp=cps.find((x:any)=>x.id===open?.checkpoint_id)||cps.find((x:any)=>x.status==='in_progress')||cps.find((x:any)=>x.status==='not_started');
+  const prereqs=(await all(c,'checkpoint_prereqs','checkpoint_id,prereq_id')).filter((x:any)=>cps.some((z:any)=>z.id===x.checkpoint_id));
+  const finished=new Set(cps.filter((x:any)=>x.status==='demonstrated').map((x:any)=>x.id));
+  const next=cps.find((x:any)=>x.status==='not_started'&&prereqs.filter((edge:any)=>edge.checkpoint_id===x.id).every((edge:any)=>finished.has(edge.prereq_id)));
+  const cp=cps.find((x:any)=>x.id===open?.checkpoint_id)||cps.find((x:any)=>x.status==='in_progress')||next;
   const fix=(await scoped(c,'misconceptions').eq('project_id',p.id).is('resolved_at',null).order('last_seen_at',{ascending:false}).limit(3)).data||[];
   const warm=cps.filter((x:any)=>x.status==='demonstrated'&&(x.needs_revisit||(x.recheck_due&&x.recheck_due<=day(s)))&&x.recheck_prompt).sort((a:any,b:any)=>(a.recheck_due||'').localeCompare(b.recheck_due||'')).slice(0,2);
   const n=await counts(c,s);
