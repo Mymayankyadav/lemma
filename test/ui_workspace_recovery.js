@@ -8,11 +8,13 @@ const ROOT=path.resolve(__dirname,'..'),OUT=path.join(ROOT,'test-output/ui');
 fs.mkdirSync(OUT,{recursive:true});
 const html=fs.readFileSync(path.join(ROOT,'dist/test.html'),'utf8');
 const marker='/* ===== main.js ===== */';assert.ok(html.includes(marker));
-// Production must remain hidden until migration #17 and live recovery gates.
-const featureGate='const ACCOUNT_RECOVERY_READY = false;';
-assert.ok(html.includes(featureGate),'the production bundle must keep recovery gated');
-const enabled=html.replace(featureGate,'const ACCOUNT_RECOVERY_READY = true;');
-const app=enabled.replace(marker,'window.__recoveryHooks={Account:LemmaAccount,Sync:LemmaSync,Bridge:LemmaCloudBridge,Store,get App(){return App;}};\n'+marker);
+// Activation candidate must exercise the real built flag, never inject it.
+// The PR remains draft until live owner/security acceptance is evidenced.
+const featureGate='const ACCOUNT_RECOVERY_READY = true;';
+assert.ok(html.includes(featureGate),'candidate build must enable recovery explicitly');
+assert.ok(!html.includes('const ACCOUNT_RECOVERY_READY = false;'),
+  'candidate must not ship a contradictory hidden recovery flag');
+const app=html.replace(marker,'window.__recoveryHooks={Account:LemmaAccount,Sync:LemmaSync,Bridge:LemmaCloudBridge,Store,get App(){return App;}};\n'+marker);
 const MOCK=fs.readFileSync(path.join(__dirname,'mock_claude.js'),'utf8');
 const libs={'katex.min.js':'katex/dist/katex.min.js','marked.umd.js':'marked/lib/marked.umd.js','purify.min.js':'dompurify/dist/purify.min.js'};
 const owner='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
