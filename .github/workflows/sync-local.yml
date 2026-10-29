@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/sync-local.yml'
+      - '.github/workflows/deploy-knowledge.yml'
+      - 'test/deploy_knowledge_ci.js'
       - 'supabase/**'
       - 'docs/lanes/A.md'
       - 'test/sync_*.js'
