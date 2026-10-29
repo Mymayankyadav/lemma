@@ -66,6 +66,21 @@ const B = '00000000-0000-4000-8000-000000000002';
   await assert.rejects(bridge.verifyLocalRecoveryEnvelope(envelope),
     /Invalid local recovery envelope/);
 
+  // A caller must not receive a success for an input changed during digest.
+  const changing=copy();
+  let verifyEntered,releaseVerify;
+  const verifyStarted=new Promise(resolve=>verifyEntered=resolve);
+  hashingGate=(...args)=>{
+    verifyEntered();
+    return new Promise(resolve=>{releaseVerify=()=>resolve(webcrypto.subtle.digest(...args));});
+  };
+  const pendingVerification=bridge.verifyLocalRecoveryEnvelope(changing,A);
+  await verifyStarted;
+  changing.snapshot.stores.outbox[0].value.data.front='changed during verification';
+  releaseVerify();
+  await assert.rejects(pendingVerification,/changed during recovery verification/);
+  hashingGate=null;
+
   // A network-free SHA-256 operation can complete after sign-out or switch.
   // Revalidate the exact active handle after hashing, not just before.
   let hashingStarted,releaseHash;
@@ -234,6 +249,29 @@ const B = '00000000-0000-4000-8000-000000000002';
   assert.ok(checkedPair.localRows>=2);
   assert.equal(checkedPair.atomicAcrossDevices,false);
   assert.equal(checkedPair.readOnly,true);
+  // Pause the first digest while mutating caller-owned data already checked.
+  // Verification must be bound to one value and reject the changed input.
+  async function rejectMidHashMutation(input, verify, mutate) {
+    let started,release;
+    const entered=new Promise(resolve=>started=resolve);
+    hashingGate=(...args)=>{
+      started();
+      return new Promise(resolve=>{release=()=>{
+        hashingGate=null;resolve(webcrypto.subtle.digest(...args));
+      };});
+    };
+    const pending=verify(input,A);
+    await entered;
+    mutate(input);
+    release();
+    await assert.rejects(pending,/changed during recovery verification/);
+  }
+  await rejectMidHashMutation(structuredClone(paired.server),
+    remote.verifyServerWorkspaceArchive,
+    x=>{x.tables.client_mutation_receipts.push({user_id:A,request_id:'changed'});});
+  await rejectMidHashMutation(structuredClone(paired),
+    remote.verifyReadOnlyRecoveryPair,
+    x=>{x.local.snapshot.stores.outbox[0].value.data.front='changed';});
   const pairCopy=()=>JSON.parse(JSON.stringify(paired));
   const invalidPair=async(mutate,pattern)=>{
     const invalid=pairCopy();mutate(invalid);
