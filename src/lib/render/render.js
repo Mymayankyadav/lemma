@@ -373,4 +373,4 @@ const Render = (() => {
 
   return { render, renderInline, setPreamble, clozeOrds, plainText, transformCloze, extractMath, esc, ENV };
 })();
-if (typeof module !== 'undefined' && module.exports) module.exports = Render;
+export default Render;

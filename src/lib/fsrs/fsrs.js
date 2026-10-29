@@ -605,4 +605,4 @@ const FSRS = (() => {
     fuzzRange, hash32, rng,
   };
 })();
-if (typeof module !== 'undefined' && module.exports) module.exports = FSRS;
+export default FSRS;
