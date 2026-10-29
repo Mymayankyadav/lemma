@@ -1,3 +1,8 @@
+## RELEASE-01 — bound paired recovery verification overhead (29 October 2026)
+
+- **Claim:** `chat-20261029-a-recovery-memory`; branch `lane-a/recovery-verification-memory`, base `959304aee989d32996b577e2ff16bf3c1364973b`. A-owned `src/app/cloud_bridge.js`, `test/account_local_recovery_envelope.js`, and this handoff. The preceding race fix clones the whole pair and then clones each component again; reduce redundant copies without exposing unguarded verification APIs or weakening mutation/owner/size/checksum checks. No production writes, activation or user approval.
+- **Next:** measure and test one stable snapshot for the paired verifier with the existing race tests, verify exact-head gates, and preserve the hard recovery hold.
+
 ## RELEASE-01 — asynchronous recovery verification snapshot (29 October 2026)
 
 - **Claim:** `chat-20261029-a-recovery-verification-snapshot`; branch `lane-a/recovery-verification-snapshot`, base `5ec8ff73b713de577a9611fec65bf66ea6c0d920`. Scope A-owned recovery verification, focused account tests and this handoff. No production writes, recovery activation or student approval.
