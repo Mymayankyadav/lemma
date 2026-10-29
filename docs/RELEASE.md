@@ -2,13 +2,19 @@
 
 This is a **gate**, not an announcement that a release has passed. The 28 October 2026 ship scope is **web first**; Android and its hardware/notifications gates are paused. The intended tag is `v1.0.0` on a verified `main` commit, **never** on an unmerged PR or a red deployment. The canonical requirements are [plan.md](../plan.md), [ship plan](SHIP_PLAN.md), and [Lane F handoff](lanes/F.md).
 
+## Current release evidence — 29 October 2026
+
+- **Production migration history:** read-only query against Lemma project `yemqnhnztlbyxmjxidis` returned all **17** version IDs in the **17** SQL files on GitHub main, in matching order, through `20261028174411_release01_owner_restore_v1.sql`. Project health reported `ACTIVE_HEALTHY` (PostgreSQL 17.11). This resolves historical **version parity** but does **not** prove authenticated owner-only production restore, currently gated behind B #163, or real tutor T4 acceptance.
+- **Historical preflight below:** the 28 October nine-version / missing-migration observation is retained as an audit record, **not** the current production state. Likewise the R2b/R2d paragraphs describing unimplemented recovery are historical; R2i–R2k later implemented the local-stack and server recovery contract. The user-facing recovery enablement and owner/security acceptance remain open.
+- **Release byte provenance (R18):** successful workflow names and GitHub SHAs alone cannot certify what Pages serves. Post-deploy and tag smoke must compare raw served HTML to the exact checked-out `dist/index.html` built with the same public Supabase config as the Pages workflow. PR/manual smoke is behavior-only, without a deployed-SHA claim. Never disclose tokens/private account data in a browser artifact.
+
 ## Operator checklist — fail closed
 
 - [ ] Feature freeze: only tested fixes and gate evidence after **21:00 IST (15:30 UTC)**; ship cut **22:00 IST (16:30 UTC)**. Record actual UTC timestamps and commit SHAs.
 - [ ] No active unmerged feature PR is being mistaken for deployed behavior. Record which Study/tutor features are **hidden until ready** and which tests use mocks. Release Pages smoke must verify that Study navigation matches the deployed `StudyView.ready` flag, a direct `#study` reload falls back to Today while false, and unready tutor action controls are not exposed.
 - [ ] A confirms Lemma-only production migration history and source-version parity, including all merged knowledge/plan/tutor migrations, and security advisors. Never modify Carrel. If any required migration is absent, **hold** release.
 - [ ] At the chosen exact `main` SHA, regression and local Supabase/security workflows succeed. Android workflow is only a lane/syntax guard for this web cut, **not** APK/device acceptance.
-- [ ] At the same `main` SHA, Pages deploy finishes successfully. The downstream release smoke run opens the **deployed** https://mymayankyadav.github.io/lemma/ and passes anonymous create/review/reload, Today/Cards/Settings navigation, sign-in entry, no console/same-origin failures and negative-URL rejection. Record both workflow URLs. A PR smoke alone is insufficient.
+- [ ] At the same `main` SHA, Pages deploy finishes successfully. The downstream release smoke run opens the **deployed** https://mymayankyadav.github.io/lemma/ and passes anonymous create/review/reload, Today/Cards/Settings navigation, sign-in entry, no console/same-origin failures and negative-URL rejection. Record both workflow URLs. A PR smoke alone is insufficient. Require the exact deployed HTML digest to match the pinned-source build under identical public client config, with an explicit changed-byte negative control. A working older Pages document is not proof of current deployment.
 - [ ] Release PWA test passes with the service worker **enabled**: offline shell reload, cache version replacement and retention of IndexedDB cards. This does not prove cloud sync or Android offline.
 - [ ] Before any tag, the released Settings source explicitly enables account recovery (`ACCOUNT_RECOVERY_READY=true`) after production restore migration and live owner/security verification. Synthetic browser tests that temporarily flip a false flag are not proof that users can access a backup or restore. `test/release_recovery_gate.js --tag` refuses a hidden or missing flag; a separate B-owned activation and real acceptance remain mandatory.
 - [ ] Back up/restore validation: durable card/profile round trip, exact card scheduling and review histories, prerequisites, duplicate import and newer-review preservation. Separately document whether account-scoped context revisions, sources, approved plans and append-only learning events have an export/import path and validated round trip. **Current legacy `IO.exportJSON()` exports only `profile` and `notes`; do not call this full workspace recovery.**
@@ -43,6 +49,7 @@ Preserve the previous successful Pages deploy SHA and prior tested `main` SHA. R
 | Main regression | — | Not yet recorded |
 | Local Supabase + isolation | — | Not yet recorded |
 | Pages deployment | — | Not yet recorded |
+| Exact deployed HTML parity | — | R18 post-deploy/tag smoke compares served bytes to matching public-config build; exact release SHA not yet accepted |
 | Live Pages smoke | — | Not yet recorded |
 | PWA offline + update | [R1 PR #90](https://github.com/Mymayankyadav/lemma/pull/90) | R1 passed; recheck exact ship SHA |
 | Backup/restore | [R2 regression 40674426637](https://github.com/Mymayankyadav/lemma/actions/runs/40674426637) | Legacy card/profile round trip PASS, [PR #96](https://github.com/Mymayankyadav/lemma/pull/96) merged; account knowledge/plans/events still unverified |

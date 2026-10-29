@@ -4,11 +4,28 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const { chromium } = require('playwright');
 
 const OUT = path.resolve(__dirname, '../test-output/release-live');
 const DEFAULT_URL = 'https://mymayankyadav.github.io/lemma/';
 const timeout = 20000;
+// Prove the published document is exactly the built source on deploy/tag runs.
+function parityEnabled(value) {
+  if (value === undefined || value === 'false') return false;
+  if (value === 'true') return true;
+  throw Error('Invalid LEMMA_REQUIRE_DEPLOYED_PARITY setting');
+}
+function assertDeployedHtmlParity(served, expected) {
+  assert(Buffer.isBuffer(served) && Buffer.isBuffer(expected),
+    'Pages parity requires raw HTML byte buffers');
+  assert(served.length > 0 && expected.length > 0,
+    'Pages parity requires nonempty deployed and built HTML');
+  const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  assert.strictEqual(digest(served), digest(expected),
+    'Deployed Pages HTML does not match exact checked-out build');
+}
+
 
 // Derive readiness from the exact app bundle actually served, not nonexistent
 // globals outside build.js's private IIFE. Reject missing/ambiguous declarations
@@ -58,6 +75,9 @@ async function assertSignedOutRecoveryHidden(page) {
 
 async function smoke(url) {
   const parsed = new URL(url);
+  const requireParity = parityEnabled(process.env.LEMMA_REQUIRE_DEPLOYED_PARITY);
+  if (requireParity && parsed.href !== DEFAULT_URL)
+    throw Error('Deployment parity may only verify canonical Pages');
   if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid release smoke URL');
   // A fresh, ephemeral browser context must NEVER authenticate or use the owner's account.
   const browser = await chromium.launch();
@@ -94,6 +114,12 @@ async function smoke(url) {
   try {
     const response = await page.goto(parsed.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
     assert(response && response.ok(), 'Pages entry must respond HTTP 2xx');
+    if (requireParity) {
+      stage = 'deployed-html-parity';
+      const expected = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'));
+      assertDeployedHtmlParity(await response.body(), expected);
+      stage = 'navigation';
+    }
     assert.strictEqual(new URL(page.url()).origin, parsed.origin, 'unexpected origin redirect');
     await page.locator('.onboard, .today').first().waitFor({ timeout });
     assert.match(await page.title(), /Lemma/, 'correct application loaded');
@@ -253,6 +279,21 @@ async function smoke(url) {
   }
 }
 
+function paritySelfTest() {
+  const built = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'));
+  assert(built.length > 1000, 'Actual built app required for parity self-test');
+  assertDeployedHtmlParity(Buffer.from(built), built);
+  const stale = Buffer.from(built);
+  stale[stale.length - 1] ^= 1;
+  assert.throws(() => assertDeployedHtmlParity(stale, built), /does not match/);
+  assert.throws(() => assertDeployedHtmlParity(Buffer.alloc(0), built), /nonempty/);
+  assert.throws(() => assertDeployedHtmlParity('string', built), /raw HTML byte/);
+  assert.equal(parityEnabled('true'), true);
+  assert.equal(parityEnabled('false'), false);
+  assert.equal(parityEnabled(undefined), false);
+  assert.throws(() => parityEnabled('yes'), /Invalid LEMMA/);
+  console.log('PASS release deployed HTML parity self-test');
+}
 async function negativeSelfTest() {
   const server = http.createServer((_req, res) => { res.writeHead(404); res.end('missing'); });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -383,6 +424,7 @@ async function readySelfTest() {
   }
 }
 (async () => {
+  if (process.argv.includes('--parity-self-test')) return paritySelfTest();
   if (process.argv.includes('--negative-self-test')) return negativeSelfTest();
   if (process.argv.includes('--ready-self-test')) return readySelfTest();
   if (!process.env.LEMMA_LIVE_URL) {
