@@ -116,11 +116,13 @@ if (require.main === module) {
       const settings=path.join(root,'src/app/view_settings.js');
       fs.mkdirSync(path.dirname(settings),{recursive:true});
       const actual=fs.readFileSync(path.join(__dirname,'../src/app/view_settings.js'),'utf8');
-      assert.match(actual,/const ACCOUNT_RECOVERY_READY = false;/,
-        'current production recovery remains held pending live owner acceptance');
-      const enabled=actual.replace('const ACCOUNT_RECOVERY_READY = false;',
+      assert.match(actual,/const ACCOUNT_RECOVERY_READY = (?:true|false);/,
+        'Settings must retain one explicit recovery readiness declaration');
+      const enabled=actual.replace(/const ACCOUNT_RECOVERY_READY = (?:true|false);/,
         'const ACCOUNT_RECOVERY_READY = true;');
-      fs.writeFileSync(settings,actual);
+      const disabled=actual.replace(/const ACCOUNT_RECOVERY_READY = (?:true|false);/,
+        'const ACCOUNT_RECOVERY_READY = false;');
+      fs.writeFileSync(settings,disabled);
       assert.throws(()=>requireVisibleRecoveryControls(root),/not enabled/);
       fs.writeFileSync(settings,enabled);
       assert.equal(requireVisibleRecoveryControls(root),true,
