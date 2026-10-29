@@ -122,7 +122,8 @@ async function assertSignedOutTutorHidden(page) {
     'Copy packet', 'Review pasted reply', 'Save selected study events',
     'Review card in editor', 'Stage unapproved amendment draft']) {
     assert.equal(await page.locator('button').filter({
-      hasText: new RegExp('^\\\\s*' + label + '\\\\s*
+      hasText: new RegExp('^\\s*' + label + '\\s*$')
+    }).count(), 0, 'signed-out Study must not expose tutor action ' + label);
   }
 }
 
