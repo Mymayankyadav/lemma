@@ -24,6 +24,10 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          # A workflow_run event defaults to the *current* main branch, which
+          # can advance after the Pages deployment under test. Pin that SHA.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -31,10 +35,15 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Install Chromium for actual Pages checks
         run: npx playwright install --with-deps chromium
-      - name: Build isolated PWA shell for offline checks
+      - name: Build the identical public-configured Pages shell
         run: npm run build
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
       - name: Verify service worker offline and upgrade preservation
         run: node test/release_pwa.js
+      - name: Check that deployed HTML parity rejects changed bytes
+        run: node test/release_live_smoke.js --parity-self-test
       - name: Assert intentionally broken URL fails closed
         run: node test/release_live_smoke.js --negative-self-test
       - name: Exercise ready Study against disposable real-build browser fixture
@@ -42,6 +51,8 @@ jobs:
       - name: Check published Pages anonymously
         env:
           LEMMA_LIVE_URL: https://mymayankyadav.github.io/lemma/
+          # A PR or manual smoke does not claim to verify a deployed SHA.
+          LEMMA_REQUIRE_DEPLOYED_PARITY: ${{ github.event_name == 'workflow_run' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) }}
         run: node test/release_live_smoke.js
       - name: Upload Pages smoke evidence
         if: always()
