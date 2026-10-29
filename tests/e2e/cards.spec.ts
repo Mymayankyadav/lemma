@@ -39,6 +39,7 @@ test("search, notes, editing and pause work for a card", async ({ page }) => {
       .getByText("State the Heine–Borel theorem briefly."),
   ).toBeVisible();
   expect(errors).toEqual([]);
+  await expect(page.getByRole("status")).toHaveCount(0);
   await page.screenshot({
     path: "test-results/screens/cards.png",
     fullPage: true,

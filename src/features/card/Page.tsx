@@ -72,16 +72,14 @@ export default function Page() {
     const history = [...(detail?.history ?? [])].sort(
       (a, b) => Date.parse(a.reviewedAt) - Date.parse(b.reviewedAt),
     );
-    return history
-      .slice(1)
-      .map((r, i) => ({
-        value: Math.max(
-          0,
-          (Date.parse(r.reviewedAt) - Date.parse(history[i].reviewedAt)) /
-            86400000,
-        ),
-        rating: r.rating,
-      }));
+    return history.slice(1).map((r, i) => ({
+      value: Math.max(
+        0,
+        (Date.parse(r.reviewedAt) - Date.parse(history[i].reviewedAt)) /
+          86400000,
+      ),
+      rating: r.rating,
+    }));
   }, [detail?.history]);
   const recall =
     card?.lastReview && card.stability > 0
@@ -147,6 +145,7 @@ export default function Page() {
   };
   return (
     <Screen
+      className="[&_header_h1]:whitespace-nowrap [&_header_h1]:text-[20px]"
       title="Card detail"
       back="/cards"
       actions={
