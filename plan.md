@@ -292,7 +292,7 @@ With many agents, start every task whose dependencies are met; the milestones ar
 
 ## 10. Owner one-time steps
 
-1. If the agents cannot delete old branches: in a terminal with the GitHub CLI, run `git ls-remote --heads origin | awk '{print $2}' | sed 's#refs/heads/##' | grep -vx main | xargs -n 20 git push origin --delete`, or delete them on github.com › Branches.
+1. If the agents cannot delete old branches: in a terminal inside a local clone (`git clone https://github.com/Mymayankyadav/lemma && cd lemma`), run `git ls-remote --heads origin | awk '{print $2}' | sed 's#refs/heads/##' | grep -vx main | xargs -n 20 git push origin --delete`, or delete them on github.com › Branches.
 2. Confirm the database reset when DB-1 asks.
 3. GitHub › Settings › Secrets and variables › Actions: add secrets `SUPABASE_ACCESS_TOKEN` (supabase.com › Account › Access tokens) and `SUPABASE_DB_PASSWORD` (project database password); check that variables `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` exist. After the connector is live, add secret `MCP_URL` (copy from Lemma › Settings).
 4. Supabase › Authentication: keep Google enabled; Site URL `https://mymayankyadav.github.io/lemma/`; redirect URLs `https://mymayankyadav.github.io/lemma/**` and `http://localhost:5173/**`. After your first sign-in, turn off "Allow new users to sign up".
