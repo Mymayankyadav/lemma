@@ -5,6 +5,8 @@ import AppShell from './AppShell'
 import AuthGate from './AuthGate'
 import ErrorBoundary from './ErrorBoundary'
 import ToastHost from './ToastHost'
+import OfflineBanner from './OfflineBanner'
+import PwaStatus from './PwaStatus'
 import { screenRoutes } from './routes'
 const queryClient = new QueryClient({defaultOptions: {queries: {
  staleTime: 30_000, refetchOnWindowFocus: true,
@@ -16,6 +18,6 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, ch
 ]}])
 export default function App() {
  return <ErrorBoundary><QueryClientProvider client={queryClient}>
-  <RouterProvider router={router} /><ToastHost />
+  <RouterProvider router={router} /><ToastHost /><OfflineBanner /><PwaStatus />
  </QueryClientProvider></ErrorBoundary>
 }
