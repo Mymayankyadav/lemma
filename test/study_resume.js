@@ -318,5 +318,48 @@ function load(){
  assert.equal(oldContext.lastAttempt.eventId,ID1);
  assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
   'latest-plan recheck must remain owner scoped');
- console.log('PASS PLAN-01 P5h: twelve checkpoints, same-plan and cross-plan publication races fail closed, session consistency, immutable proof resume');
+ // P5i: a different device may finish the selected checkpoint after the
+ // first checkpoint-status query but before the immutable proof events load.
+ // The approved plan and session stay identical; the read must still fail.
+ const checkpointRaceEvents=events.length,checkpointRaceWrites=rpc.length;
+ let completedDuringRead=false;
+ beforeRead=async()=>{
+  if(!completedDuringRead && reads.at(-1)?.table==='learning_events'){
+   completedDuringRead=true;statusOverride={'cp-3':'completed'};
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Study checkpoint status changed; reload checkpoint/,
+  'a newly completed checkpoint must not return stale in-progress proof');
+ assert.equal(completedDuringRead,true,'test must change status during event read');
+ assert.equal(events.length,checkpointRaceEvents,'stale status cannot erase evidence');
+ assert.equal(rpc.length,checkpointRaceWrites,'read must not write a checkpoint');
+ statusOverride=null;beforeRead=async()=>{};
+ const stableCheckpoint=await load().activeContext();
+ assert.equal(stableCheckpoint.checkpoint.id,'cp-3',
+  'unchanged checkpoint statuses still resume the original proof');
+ assert.equal(stableCheckpoint.lastAttempt.eventId,ID1);
+
+ // A newly in-progress checkpoint elsewhere must also invalidate the old
+ // selected proof even though the old checkpoint's status is unchanged.
+ let changedFocus=false;
+ beforeRead=async()=>{
+  if(!changedFocus && reads.at(-1)?.table==='learning_events'){
+   changedFocus=true;statusOverride={'cp-9':'in_progress'};
+  }
+ };
+ await assert.rejects(load().activeContext(),
+  /Study checkpoint status changed; reload checkpoint/,
+  'new explicit in-progress focus must invalidate prior proof selection');
+ assert.equal(changedFocus,true);
+ assert.equal(events.length,checkpointRaceEvents);
+ assert.equal(rpc.length,checkpointRaceWrites);
+ beforeRead=async()=>{};
+ const freshFocus=await load().activeContext();
+ assert.equal(freshFocus.checkpoint.id,'cp-9',
+  'fresh read must follow the new explicit in-progress checkpoint');
+ statusOverride=null;
+ assert.ok(reads.every(r=>r.filters.some(([k,v])=>k==='user_id'&&(v===A||v===B))),
+  'checkpoint consistency reads remain owner scoped');
+ console.log('PASS PLAN-01 P5i: twelve checkpoints, plan/session/checkpoint races fail closed, immutable proof resume');
 })().catch(e=>{console.error('FAIL PLAN-01 P4c3: '+e.stack);process.exitCode=1});
