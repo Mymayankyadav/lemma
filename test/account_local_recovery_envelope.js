@@ -123,6 +123,8 @@ const B = '00000000-0000-4000-8000-000000000002';
       }};
     }
   };
+  let serverCloneCount=0;
+  const countedClone=value=>{serverCloneCount++;return structuredClone(value);};
   const serverVM=vm.createContext({
     LemmaAccount:{get user(){return {id:serverOwner};},get client(){return serverClient;}},
     LemmaSync:{accountHandle:()=>serverHandle},
@@ -132,7 +134,7 @@ const B = '00000000-0000-4000-8000-000000000002';
       return 'disposable-token';
     }},
     Model:{notes:new Map()},Store:{whenSaved:async()=>{}},
-    TextEncoder,crypto,structuredClone
+    TextEncoder,crypto,structuredClone:countedClone
   });
   vm.runInContext(fs.readFileSync('src/app/cloud_bridge.js','utf8')+
     '\nglobalThis.serverBridge=LemmaCloudBridge',serverVM);
@@ -244,7 +246,9 @@ const B = '00000000-0000-4000-8000-000000000002';
   assert.equal(paired.server.ownerId,A);
   assert.equal(paired.local.ownerId,A);
   assert.equal(verifyWorkspaceArchive(paired.server).tableCount,19);
+  serverCloneCount=0;
   const checkedPair=await remote.verifyReadOnlyRecoveryPair(paired,A);
+  assert.equal(serverCloneCount,1,'paired verification takes one stable copy');
   assert.equal(checkedPair.serverRows,1);
   assert.ok(checkedPair.localRows>=2);
   assert.equal(checkedPair.atomicAcrossDevices,false);
