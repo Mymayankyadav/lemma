@@ -48,7 +48,7 @@ function SubjectCreator({onCreated}:{onCreated:(id:string)=>void}){
 
 export default function Page(){
  const navigate=useNavigate(),subjects=useSubjects(),styles=useStyles(),createProject=useCreateProject(),
-  createSubject=addSource=useAddSource(),notify=useToast();
+  addSource=useAddSource(),notify=useToast();
  const [name,setName]=useState(''),[goal,setGoal]=useState(''),[subjectId,setSubjectId]=useState(''),
   [style,setStyle]=useState('socratic'),[file,setFile]=useState<File|null>(null),[addingSubject,setAddingSubject]=useState(false),
   [progress,setProgress]=useState<IngestProgress|null>(null),[saving,setSaving]=useState(false),
