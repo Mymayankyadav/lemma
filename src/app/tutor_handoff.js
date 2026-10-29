@@ -563,7 +563,7 @@ const TutorHandoff = (() => {
       try {
         if (typeof LemmaAccount === 'undefined' || !LemmaAccount.client)
           throw new Error('Sign in before recording tutor evidence');
-        for (const item of pending) {
+        const verifyConsent = () => {
           if (input.value !== reviewedText)
             throw new Error('Reply changed; review it again');
           if (identityEpoch !== openedIdentityEpoch ||
@@ -571,7 +571,14 @@ const TutorHandoff = (() => {
               (typeof App !== 'undefined' &&
                (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
             throw new Error('Study account or workspace changed; reopen the handoff');
+        };
+        for (const item of pending) {
+          verifyConsent();
           const now = await StudyPlan.activeContext();
+          // A same-owner relogin or workspace switch can occur during the
+          // asynchronous plan read. Consent belongs to the original sheet,
+          // not to the new identity epoch captured by the RPC client.
+          verifyConsent();
           if (!now || now.planId !== ctx.planId ||
               now.planRevision !== ctx.planRevision ||
               now.checkpoint?.id !== ctx.checkpoint.id)
