@@ -21,6 +21,7 @@ export async function checkpoints(c: Context,p: any): Promise<any[]> {
 }
 export async function checkpoint(c: Context,p: any, code?: string): Promise<any> {
   const items=await checkpoints(c,p);
+  if (!items.length) return null;
   if (!code) {
     const current=items.find((x:any)=>x.status==='in_progress');
     if(current)return current;
