@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {Clock3,Play,Search,Shuffle} from 'lucide-react';
 import {useDeckTree,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
-import type {DeckKey,DeckNode,ReviewItem,QueueFilter} from '../../data/types';
+import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
