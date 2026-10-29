@@ -161,8 +161,20 @@ const StudyPlan = (() => {
             .order('seq',{ascending:false}).limit(50);
           return beforeSeq === null ? q : q.lt('seq',beforeSeq);
         });
-      currentEvents.push(...page.filter(e => e.payload?.checkpoint_id === selected.id &&
-        (e.payload?.plan_revision == null || e.payload.plan_revision === plan.revision)));
+      // Keep at most one event for each displayed kind, even when a long
+      // history must be scanned to establish that another kind is absent.
+      for (const e of page) {
+        if (e.payload?.checkpoint_id !== selected.id ||
+            (e.payload?.plan_revision != null && e.payload.plan_revision !== plan.revision)) continue;
+        const type = e.event_type;
+        const proof = type === 'attempt' || type === 'proof_step';
+        if (proof && !currentEvents.some(x => x.event_type === 'attempt' || x.event_type === 'proof_step'))
+          currentEvents.push(e);
+        else if (type === 'hint' && Number.isSafeInteger(e.payload?.data?.level) &&
+                 !currentEvents.some(x => x.event_type === 'hint')) currentEvents.push(e);
+        else if (['feedback','mastery_evidence','session_note'].includes(type) &&
+                 !currentEvents.some(x => x.event_type === type)) currentEvents.push(e);
+      }
       const has = type => currentEvents.some(e => e.event_type === type);
       const complete = (has('attempt') || has('proof_step')) &&
         currentEvents.some(e => e.event_type === 'hint' && Number.isSafeInteger(e.payload?.data?.level)) &&
