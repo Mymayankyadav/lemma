@@ -39,3 +39,12 @@
 }
 /* Keep ink and surface synchronized during an immediate theme switch. */
 .study-page .study-handoff-entry { font-weight: 600; transition: transform 0.08s; }
+
+/* Acceptance-only tutor entry: visually distinct from a released feature. */
+.study-acceptance-entry {
+  margin-top:1rem; padding:.85rem 1rem;
+  border:1px dashed var(--border, #8888); border-radius:12px;
+  overflow-wrap:anywhere;
+}
+.study-acceptance-warning { margin:0 0 .75rem; font-size:.9rem; line-height:1.5; }
+.study-acceptance-entry .study-handoff-entry { min-height:44px; max-width:100%; white-space:normal; text-align:left; }
