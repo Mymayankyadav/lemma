@@ -1462,8 +1462,8 @@ export class DemoAdapter implements LemmaApi {
       links: clone(this.store.links),
     };
   }
-  async pinConcept(id: string, x: number, y: number) {
-    if (!Number.isFinite(x) || !Number.isFinite(y))
+  async pinConcept(id: string, x: number | null, y: number | null) {
+    if ((x===null)!==(y===null) || (x!==null&&!Number.isFinite(x)) || (y!==null&&!Number.isFinite(y)))
       invalid("Invalid pin coordinates");
     const c = found(
       this.store.concepts.find((c) => c.id === id),
