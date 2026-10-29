@@ -13,7 +13,8 @@ export function admin(): Db {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 export function scoped(c: Context, table: string, select = '*') {
-  return c.db.from(table).select(select).eq('user_id', c.userId);
+  const query = c.db.from(table).select(select).eq('user_id', c.userId);
+  return table === 'projects' ? query.neq('status', 'archived') : query;
 }
 export async function all(c: Context, table: string, select = '*'): Promise<any[]> {
   const {data, error} = await scoped(c, table, select).limit(1000);

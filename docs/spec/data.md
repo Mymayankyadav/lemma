@@ -88,6 +88,7 @@ Primary keys are `id uuid default gen_random_uuid()` unless stated.
 | `page_count` | int null | |
 | `status` | text, `'uploading'` | check in (`uploading`, `extracting`, `ready`, `failed`) |
 | `has_text` | bool, true | false when average extracted text < 30 chars per page |
+| `plan_checked_at` | timestamptz null | set when the tutor has compared this source with the plan (§2.22); null = new material not yet reflected in the plan |
 | `outline` | jsonb, `'[]'` | array of `{title, page, level}` (page = PDF page index, 1-based) |
 | `error` | text null | |
 
@@ -291,6 +292,27 @@ Indexes (`card_id`, `reviewed_at`) and (`user_id`, `reviewed_at`).
 
 Index (`user_id`, `status`).
 
+### 2.22 `diagnostics` (evidence that the plan should adapt)
+
+Evidence the tutor collects while teaching, shown as `D7`. When it is strong enough the tutor proposes a plan change that cites it (`connector.md` §6.4).
+
+| Column | Type / default | Notes |
+| --- | --- | --- |
+| `no` | bigint generated always as identity | unique; shown as `D7` |
+| `project_id` | uuid not null | FK cascade |
+| `checkpoint_id` | uuid null | FK set null; where it showed up |
+| `session_id` | uuid null | FK set null; latest session that saw it |
+| `kind` | text | check in (`gap`, `strength`, `material`, `pace`): a missing prerequisite (e.g. ring theory before quotient rings), something already known (skip or compress), new or changed course material, or a pace problem |
+| `topic` | text not null | 1–120, e.g. "ring theory basics" |
+| `evidence` | text not null | ≤ 600; latest concrete observation ("could not state the ideal test; guessed at kernels") |
+| `severity` | smallint, 1 | 1 minor, 2 slows progress, 3 blocks the current checkpoint |
+| `times` | int, 1 | sightings across sessions |
+| `status` | text, `'open'` | check in (`open`, `confirmed`, `planned`, `resolved`, `dismissed`) |
+| `proposal_id` | uuid null | FK `proposals` set null; the plan change that answers it |
+| `last_seen_at` | timestamptz default now() | |
+
+Unique (`project_id`, `kind`, lower(`topic`)). Status flow: `open` → `confirmed` (a short diagnostic quiz confirmed it) → `planned` (a plan change citing it was proposed) → `resolved` (the bridge checkpoint was demonstrated, the change was applied for `material`, or the strength was verified) or `dismissed`. A rejected proposal returns its diagnostics to `confirmed`.
+
 ### 2.20 Triggers
 
 - `updated_at` trigger on `settings`, `projects`, `checkpoints`, `notes`.
@@ -388,6 +410,7 @@ Read `user_id` from the proposal row and set it explicitly on every row the func
 - `{op:"move", code, after}` — new position = midpoint after `after`.
 - `{op:"prereq_add" | "prereq_remove", code, prereq}`.
 - `result = {"applied": n}`.
+- Diagnostics: proposals of kind `plan_change` carry `payload.diagnostics` (D-numbers) and optional `payload.book`. Creating the proposal sets those diagnostics to `planned` with `proposal_id`; approval keeps them `planned` (they become `resolved` when the added checkpoint is demonstrated, or immediately for `material`) and sets the book's `plan_checked_at = now()`; rejection sets them back to `confirmed`.
 
 ### 5.5 `reject_proposal(p_id uuid) returns void`
 Pending only; set `rejected` and `decided_at`.
