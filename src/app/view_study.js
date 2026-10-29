@@ -31,6 +31,120 @@ const StudyView = (() => {
         h('span', {class:'study-detail-label',text:label}),
         h('p', {text:value || 'Nothing recorded yet'}));
     }
+    function initialPlanSection() {
+      const section=h('section',{class:'study-initial','aria-label':'First study plan'});
+      const status=h('p',{class:'study-initial-status',role:'status'});
+      const drafts=h('div',{class:'study-amendment-actions'});
+      const actions=h('div',{class:'study-amendment-actions'});
+      const preview=h('div',{class:'study-initial-preview'});
+      const input=(label,limit,tag='input')=>h(tag,{class:'input study-input',
+        'aria-label':label,placeholder:label,maxlength:limit,rows:tag==='textarea'?8:null});
+      const title=input('Plan title',200),objective=input('Plan objective',4000,'textarea');
+      const contextId=input('Accepted context ID',36),contextRevision=input('Accepted context revision',15);
+      const snapshot=input('Plan snapshot JSON',100000,'textarea');
+      const source=input('Planning model or source (optional)',200);
+      const fields=[title,objective,contextId,contextRevision,snapshot,source];
+      const editor=h('div',{class:'study-initial-editor'},...fields.map(node=>
+        h('label',{class:'study-field-label'},node.getAttribute('aria-label'),node)));
+      const save=h('button',{type:'button',class:'btn',text:'Save unapproved plan draft'});
+      let row=null,review=null,busy=false,planId=crypto.randomUUID();
+      for(const f of fields)f.addEventListener('input',()=>{
+        review=null;fill(preview);fill(actions);
+        status.textContent='Edits are not saved. Save and review again before approving.';
+      });
+      function showRow(next) {
+        row=next;review=null;planId=next.planId;
+        title.value=next.title;objective.value=next.objective;
+        contextId.value=next.contextId || '';contextRevision.value=String(next.contextRevision || '');
+        snapshot.value=JSON.stringify(next.snapshot,null,2);source.value=next.source || '';
+        for(const f of fields)f.disabled=next.status!=='draft';
+        save.hidden=next.status!=='draft';fill(preview);fill(actions);
+        if(next.status==='draft') {
+          const read=h('button',{type:'button',class:'btn',text:'Review saved plan'});
+          read.addEventListener('click',()=>run(async()=>{
+            review=await StudyPlan.reviewInitialPlanDraft(planId);
+            if(!valid())return;
+            fill(preview,h('h3',{text:review.title}),
+              h('p',{text:review.objective}),
+              h('p',{text:'Accepted context '+review.contextId+' · revision '+review.contextRevision}),
+              h('p',{text:review.snapshot.checkpoints.length+' checkpoints · all start without mastery'}),
+              h('pre',{class:'study-plan-json',text:JSON.stringify(review.snapshot,null,2)}));
+            const approve=h('button',{type:'button',class:'btn btn-primary',text:'Approve this reviewed plan'});
+            approve.addEventListener('click',()=>run(async()=>{
+              const approved=await StudyPlan.approveInitialPlanDraft(planId,review,true);
+              if(!valid())return;
+              showRow(approved);status.textContent='Approval saved on this device. Submit separately to publish.';
+            }));
+            fill(actions,approve);status.textContent='Review every checkpoint, task and criterion above. Nothing is approved or published.';
+          }));
+          fill(actions,read);status.textContent='Unapproved draft saved on this device. Review before approving.';
+        } else if(next.status==='approved_pending') {
+          const submit=h('button',{type:'button',class:'btn btn-primary',text:'Submit approved plan'});
+          submit.addEventListener('click',()=>run(async()=>{
+            const receipt=await StudyPlan.submitApprovedPlanDraft(planId);
+            if(!valid())return;
+            if(receipt.status==='confirmed') {
+              fill(actions,h('button',{type:'button',class:'btn btn-primary',text:'Open published checkpoint',
+                onclick:()=>{if(valid())App.go('study');}}));
+              status.textContent='Published revision '+receipt.revision+' confirmed. Open your checkpoint to begin.';
+            } else if(receipt.status==='queued')status.textContent='Offline: approved intent preserved. Submit explicitly when connected.';
+            else {
+              fill(actions);status.textContent='The plan or accepted context changed. This approval cannot be reused; preserve it and start a new draft.';
+            }
+          }));
+          fill(actions,submit);status.textContent='Previously approved intent recovered. Submission requires your click.';
+        } else status.textContent='This rejected approval is preserved. Start a new draft against the accepted context; it needs fresh review.';
+      }
+      async function run(task) {
+        if(!valid()||busy)return;
+        busy=true;for(const button of section.querySelectorAll('button'))button.disabled=true;
+        try {await task();}
+        catch(error){if(valid()){
+          review=null;fill(preview);
+          status.textContent='Not confirmed: '+(error?.message||'request failed')+'. Saved drafts and approvals are preserved.';
+        }}
+        finally {busy=false;if(valid())for(const button of section.querySelectorAll('button'))button.disabled=false;}
+      }
+      async function refresh() {
+        const list=await StudyPlan.listInitialPlanDrafts();
+        if(!valid())return;
+        fill(drafts,...list.map(item=>h('button',{type:'button',class:'btn',
+          text:'Resume draft: '+item.title,onclick:()=>run(async()=>{
+            const saved=await StudyPlan.readPlanDraft(item.planId);
+            if(!valid())return;
+            if(!saved)throw Error('Draft changed; reload Study');showRow(saved);
+          })})));
+      }
+      save.addEventListener('click',()=>run(async()=>{
+        if(!/^[1-9]\d*$/.test(contextRevision.value.trim()))throw Error('Enter a positive accepted context revision');
+        let parsed;
+        try {parsed=JSON.parse(snapshot.value);}catch(_){throw Error('Plan snapshot must be valid JSON');}
+        const saved=await StudyPlan.saveInitialPlanDraft({planId,expectedRevision:0,
+          expectedLocalRevision:row?.localRevision||0,title:title.value.trim(),
+          objective:objective.value.trim(),contextId:contextId.value.trim(),
+          contextRevision:Number(contextRevision.value),snapshot:parsed,
+          source:source.value.trim(),changeSummary:'Initial plan proposed for student review'});
+        if(!valid())return;showRow(saved);await refresh();
+      }));
+      const start=h('button',{type:'button',class:'btn',text:'Start another draft',onclick:()=>{
+        if(!valid()||busy)return;
+        row=null;review=null;planId=crypto.randomUUID();
+        for(const f of fields){f.value='';f.disabled=false;}
+        save.hidden=false;fill(preview);fill(actions);
+        status.textContent='A new unapproved draft. Existing drafts and approvals are preserved.';
+      }});
+      const example={checkpoints:[{checkpoint_id:'proof-1',title:'Your first lemma',
+        objective:'State the precise goal',prerequisite_checkpoint_ids:[],source_refs:[],
+        learning_tasks:['Attempt the proof'],mastery_criterion:'Justify every implication',
+        assessment_prompt:'Give a complete proof',status:'not_started'}]};
+      section.append(h('h2',{text:'Create your first study plan'}),
+        h('p',{text:'Use your accepted context from Settings and a plan from your chosen planning session. Saving keeps a local draft; review, approval and publication are separate decisions.'}),
+        drafts,editor,h('details',{},h('summary',{text:'Plan snapshot format'}),
+          h('pre',{class:'study-plan-json',text:JSON.stringify(example,null,2)})),
+        save,start,status,preview,actions);
+      Promise.resolve().then(refresh).catch(error=>{if(valid())status.textContent=error.message;});
+      return section;
+    }
     function amendmentSection(context) {
       const section = h('section', {class:'study-amendment', 'aria-label':'Plan amendment'});
       const status = h('p', {class:'study-amendment-status',role:'status',
@@ -383,6 +497,7 @@ const StudyView = (() => {
         if (!valid()) return;
         if (!context?.checkpoint) {
           message.textContent='No published study checkpoint is available. Drafts are not approved plans.';
+          if(typeof StudyPlan.saveInitialPlanDraft==='function')fill(content,initialPlanSection());
           return;
         }
         if ((params.planId && params.planId !== context.planId) ||
@@ -393,11 +508,17 @@ const StudyView = (() => {
         message.textContent='This is the current approved checkpoint.';
         show(context);
       } catch (error) {
-        if (valid()) message.textContent='Cannot read approved study context: ' +
-          (error?.message || 'try again when connected');
+        if (valid()) {
+          message.textContent='Cannot read approved study context: ' +
+            (error?.message || 'try again when connected');
+          // Local drafts/approved intents remain reachable offline. Never
+          // infer that an unreadable cloud plan is absent or publish on load.
+          if(typeof StudyPlan.saveInitialPlanDraft==='function')fill(content,initialPlanSection());
+        }
       }
     });
     return root;
   }
   return {ready,render};
 })();
+
