@@ -3,6 +3,12 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const SHA = /^[0-9a-f]{40}$/;
+// GitHub Actions terminal outcomes. A malformed *older* trusted run is not
+// harmless: it must not be discarded merely because a newer run is green.
+const COMPLETED_CONCLUSIONS = new Set([
+  'success','failure','cancelled','timed_out','action_required',
+  'neutral','skipped','stale','startup_failure'
+]);
 // GitHub Actions display names are not unique. A release attestation must
 // refer to the expected workflow implementation, not a same-named workflow.
 const REQUIRE = Object.freeze({
@@ -44,8 +50,9 @@ function check(tagSha, mainSha, allRuns) {
       const updated = timestamp(run.updated_at, 'updated_at');
       if (updated < created)
         throw Error('Inconsistent trusted ' + name + ' run chronology');
+      const completed = run.status === 'completed';
       if (!['queued','in_progress','completed','waiting','requested','pending'].includes(run.status) ||
-          (run.status === 'completed' && typeof run.conclusion !== 'string'))
+          (completed ? !COMPLETED_CONCLUSIONS.has(run.conclusion) : run.conclusion !== null))
         throw Error('Malformed trusted ' + name + ' run state');
     }
     candidates.sort((a,b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) ||
@@ -143,6 +150,32 @@ if (require.main === module) {
     bad.push({...bad[0],id:504,created_at:'2026-10-28T10:59:00Z',
       updated_at:'2026-10-28T11:10:00Z',status:'in_progress',conclusion:null});
     assert.throws(()=>check(sha,sha,bad),/regression/);
+    // R17: malformed older trusted history must fail, even with a green latest run.
+    for (const outcome of COMPLETED_CONCLUSIONS) {
+      bad=copy(runs);
+      bad.push({...bad[0],id:600+Array.from(COMPLETED_CONCLUSIONS).indexOf(outcome),
+        created_at:'2026-10-28T10:58:00Z',updated_at:'2026-10-28T10:58:20Z',
+        status:'completed',conclusion:outcome});
+      assert.equal(check(sha,sha,bad).smokeRun,4,
+        'valid older terminal result should not displace latest success');
+    }
+    bad=copy(runs);
+    bad.push({...bad[0],id:620,created_at:'2026-10-28T10:58:00Z',
+      updated_at:'2026-10-28T10:58:20Z',conclusion:'fabricated-success'});
+    assert.throws(()=>check(sha,sha,bad),/Malformed trusted.*run state/,
+      'unknown older terminal conclusion cannot be ignored');
+    for (const status of ['queued','in_progress','waiting','requested','pending']) {
+      bad=copy(runs);
+      bad.push({...bad[0],id:621,created_at:'2026-10-28T10:58:00Z',
+        updated_at:'2026-10-28T10:58:20Z',status,conclusion:'success'});
+      assert.throws(()=>check(sha,sha,bad),/Malformed trusted.*run state/,
+        'unfinished older trusted run must not claim terminal success');
+    }
+    bad=copy(runs);
+    bad.push({...bad[0],id:622,created_at:'2026-10-28T10:58:00Z',
+      updated_at:'2026-10-28T10:58:20Z',status:'queued',conclusion:undefined});
+    assert.throws(()=>check(sha,sha,bad),/Malformed trusted.*run state/,
+      'missing null conclusion in unfinished run is malformed');
     console.log('ok: release tag exact-current-main, canonical workflow paths, latest trusted green runs and post-deploy smoke');
   } else throw Error('Unknown tag guard arguments');
 }
