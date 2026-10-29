@@ -1,3 +1,11 @@
+## P5r — E-T4-ACCESS-01 approved-checkpoint acceptance preview (29 October 2026)
+
+- **Claim:** `automation-20261029-d-p5r-tutor-preview`; heartbeat 2026-10-29T08:08:18.213Z; branch `lane-d/plan-p5r-tutor-acceptance-preview`, base `main@e98ef96b0f078507a1c55fe4a536d99a60bd235d`. E #193 merged its separate `TutorHandoff.openForAcceptance` contract; D has no competing open claim, B #163 remains held, C/Android paused. F #194 merged with exact-head regression/Pages green; its post-merge main checks are running at claim.
+- **Blocking cross-lane request:** E-T4-ACCESS-01 in `docs/lanes/E.md` remains OPEN. Normal D tutor entry requires `TutorHandoff.ready=true`, but T4 owner-operated acceptance must happen before E can set that flag. Provide an independently labelled, deliberately clicked preview path only inside signed-in, approved, ready Study checkpoint UI. Keep normal Tutor readiness and release flags unchanged.
+- **Scope:** D-owned `src/app/view_study.js`, `src/styles/study.css`, `test/study_tutor_entry.js`, `test/study_view_browser.js`, this handoff. Reuse existing dirty/unconfirmed-save and owner/workspace guards; recheck online and E preview API at click, call only `openForAcceptance({planId,checkpointId})`, never write/approve automatically. Preserve normal ready Tutor entry. Test absent/ready/unready/dirty/uncertain/owner switch and screenshot mobile/desktop light/dark.
+- **Acceptance:** focused tests, D guard, full exact-head regression/Pages, screenshot inspection and clean mergeability. Actual student Claude→ChatGPT→Claude proof continuity and production recovery remain unaccepted; no student approvals or backend writes.
+- **Next action:** implement, verify, merge only with exact-head green checks, and notify E of the deployed preview access path.
+
 ## P5q claim — prepare Study entry for accepted tutor handoff (29 October 2026)
 
 - Claim `chat-20261029-d-gated-tutor-entry`; branch `lane-d/plan-01-gated-tutor-entry`, base `309c70e25380d21191f922c38a0428d21db0cdec`. D-owned Study view, focused D tests and this handoff. E's `TutorHandoff.ready` remains false; no readiness, backend, production or approval changes.
