@@ -44,8 +44,16 @@ const StudyView = (() => {
       const snapshot=input('Plan snapshot JSON',100000,'textarea');
       const source=input('Planning model or source (optional)',200);
       const fields=[title,objective,contextId,contextRevision,snapshot,source];
-      const editor=h('div',{class:'study-initial-editor'},...fields.map(node=>
-        h('label',{class:'study-field-label'},node.getAttribute('aria-label'),node)));
+      const starter=h('button',{type:'button',class:'btn study-starter-plan',
+        text:'Use a starter checkpoint'});
+      const editor=h('div',{class:'study-initial-editor'},
+        ...fields.slice(0,4).map(node=>
+          h('label',{class:'study-field-label'},node.getAttribute('aria-label'),node)),
+        h('p',{class:'study-note',text:
+          'Start with one proof checkpoint. You can change its goal and criterion in the optional plan JSON before saving.'}),
+        starter,
+        ...fields.slice(4).map(node=>
+          h('label',{class:'study-field-label'},node.getAttribute('aria-label'),node)));
       const save=h('button',{type:'button',class:'btn',text:'Save unapproved plan draft'});
       let row=null,review=null,busy=false,planId=crypto.randomUUID();
       for(const f of fields)f.addEventListener('input',()=>{
@@ -144,6 +152,21 @@ const StudyView = (() => {
         objective:'State the precise goal',prerequisite_checkpoint_ids:[],source_refs:[],
         learning_tasks:['Attempt the proof'],mastery_criterion:'Justify every implication',
         assessment_prompt:'Give a complete proof',status:'not_started'}]};
+      starter.addEventListener('click',()=>{
+        if(!valid()||busy||row?.status==='approved_pending'||row?.status==='needs_review')return;
+        // An existing student-edited graph must never be overwritten merely
+        // because a helper button was clicked.
+        if(snapshot.value.trim()){
+          status.textContent='Plan JSON already contains content. Clear it yourself before using the starter checkpoint; nothing was replaced.';
+          return;
+        }
+        if(!title.value.trim())title.value='My first proof practice';
+        if(!objective.value.trim())objective.value=
+          'Write and improve a rigorous proof of one mathematical statement';
+        snapshot.value=JSON.stringify(example,null,2);
+        snapshot.dispatchEvent(new Event('input',{bubbles:true}));
+        status.textContent='One unapproved starter checkpoint filled in. Review the title, goal and criterion; then Save unapproved plan draft. Nothing was sent or approved.';
+      });
       section.append(h('h2',{text:hasPlan?'Local plan drafts':'Create your first study plan'}),
         h('p',{text:'Use your accepted context from Settings and a plan from your chosen planning session. Saving keeps a local draft; review, approval and publication are separate decisions.'}),
         drafts,editor,h('details',{},h('summary',{text:'Plan snapshot format'}),
