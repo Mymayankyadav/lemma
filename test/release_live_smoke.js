@@ -84,6 +84,22 @@ async function assertSignedOutRecoveryHidden(page) {
   }
 }
 
+// Tutor acceptance preview requires a real signed-in Study checkpoint.
+// Neither navigation nor direct hash reload may mount the preview or sheet
+// for an anonymous visitor, even while general Tutor readiness is false.
+async function assertSignedOutTutorHidden(page) {
+  for (const selector of ['.study-acceptance-entry', '.study-acceptance-warning',
+    '.tutor-handoff-sheet', '.tutor-handoff-acceptance-notice']) {
+    assert.equal(await page.locator(selector).count(), 0,
+      'signed-out Study must not mount tutor acceptance node ' + selector);
+  }
+  for (const label of ['Test tutor handoff (unreleased)', 'Open tutor handoff',
+    'Copy packet', 'Save selected study events']) {
+    assert.equal(await page.getByRole('button', { name:label, exact:true }).count(), 0,
+      'signed-out Study must not expose tutor action ' + label);
+  }
+}
+
 async function smoke(url) {
   const parsed = new URL(url);
   const requireParity = parityEnabled(process.env.LEMMA_REQUIRE_DEPLOYED_PARITY);
@@ -177,6 +193,7 @@ async function smoke(url) {
       assert.equal(await page.locator('.study-page button').filter({
         hasText: /save proof attempt|record hint|record evidence/i
       }).count(), 0, 'signed-out users must never see evidence-write controls');
+      await assertSignedOutTutorHidden(page);
       await capture('01b-ready-study-signed-out');
 
       stage = 'ready-study-deep-link';
@@ -188,6 +205,7 @@ async function smoke(url) {
       await page.locator('.study-page .study-message').filter({
         hasText: 'Sign in to open an approved study checkpoint.'
       }).waitFor({ timeout });
+      await assertSignedOutTutorHidden(page);
       await page.getByRole('button', { name: 'Back to Today' }).click();
       await page.locator('.today, .onboard').first().waitFor({ timeout });
       // In-app navigation does not rewrite a deep-link fragment. The later
@@ -420,12 +438,26 @@ async function readySelfTest() {
     assert.equal(await page.locator('.study-page button').filter({
       hasText: /save proof attempt|record hint|record evidence/i
     }).count(), 0, 'signed-out Study must not show evidence writes');
+    await assertSignedOutTutorHidden(page);
+    // Deliberately inject an anonymous acceptance action to prove this
+    // guard fails rather than simply passing when Study is signed out.
+    await page.evaluate(() => {
+      const leak=document.createElement('button');
+      leak.textContent='Test tutor handoff (unreleased)';
+      leak.dataset.tutorLeak='yes';
+      document.querySelector('.study-page').append(leak);
+    });
+    await assert.rejects(assertSignedOutTutorHidden(page),
+      /signed-out Study must not expose tutor action/);
+    await page.locator('[data-tutor-leak]').evaluate(node=>node.remove());
+    await assertSignedOutTutorHidden(page);
     await page.goto(origin + '#study', { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('.study-page:visible').first().waitFor({ timeout });
     await page.locator('.study-page .study-message').filter({
       hasText: 'Sign in to open an approved study checkpoint.'
     }).waitFor({ timeout });
+    await assertSignedOutTutorHidden(page);
     await page.getByRole('button', { name: 'Back to Today' }).click();
     await page.locator('.today, .onboard').first().waitFor({ timeout });
     // Recovery is explicitly enabled in this synthetic bundle. Its entire
@@ -449,7 +481,7 @@ async function readySelfTest() {
     await page.locator('#set-account-recovery').evaluate(node => node.remove());
     await assertSignedOutRecoveryHidden(page);
     assert.deepEqual(errors, [], 'injected ready Study/recovery must not cause browser exceptions');
-    console.log('PASS ready-Study/recovery fixture: signed-out isolation, direct Settings link and leak negative control');
+    console.log('PASS ready-Study/recovery fixture: signed-out tutor isolation, Study/Settings direct links and leak negative controls');
   } finally {
     await ctx.close();
     await browser.close();
