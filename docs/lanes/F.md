@@ -3,7 +3,9 @@
 - **Claim:** `automation-20261029-f-r14-signed-out-recovery`; heartbeat 2026-10-29T06:11Z; branch `lane-f/release-r14-signed-out-recovery-smoke`, base `main@477dbd6b`. Only open B #163 is a held recovery-activation draft; F unclaimed, C paused.
 - **Scope:** F-owned `test/release_live_smoke.js` and this handoff. Add real deployed Pages and disposable ready-fixture checks that no signed-out Settings view mounts account backup/restore controls, even when B eventually enables recovery. Include a deliberate DOM-leak negative control proving the assertion fails, plus reload verification. No sign-in, credentials, production mutations, feature-flag changes or student approval.
 - **Acceptance:** focused Node/Chromium smoke on exact PR head, F ownership guard, regression, local-stack and Pages CI as required; review the diff and merge only after required checks succeed. This is anonymous browser privacy coverage, **not** authenticated owner restore acceptance. B #163 remains held and T4 remains unaccepted.
-- **Next action:** implement the assertion, negative control and deployed-site checks; verify exact-head CI before merge.
+- **Implemented:** actual Pages smoke checks signed-out Settings by in-app navigation and full `#settings` reload, then resets the root URL before card/review persistence. Disposable built-bundle fixture enables both Study and recovery without credentials, asserts no recovery controls, deliberately mounts a forbidden recovery node, proves detection and removes it. No real account or backup/restore operation.
+- **Focused verification:** JavaScript parsed in V8; isolated assertion harness passed clean page and seven distinct forbidden-node/action leak negatives. Full Node/Chromium unavailable locally because GitHub DNS/checkout is blocked; exact-head CI is the required browser gate.
+- **Next action:** inspect exact-head regression/F guard and real Pages/Chromium smoke; merge only on green, then verify post-merge main. B authenticated recovery and E student T4 remain held.
 
 ## R13 — prove service-worker private-route cache isolation (29 October 2026)
 
