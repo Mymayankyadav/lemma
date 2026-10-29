@@ -148,17 +148,32 @@ const StudyPlan = (() => {
       choice.find(cp => cp.status === 'not_started') ||
       choice.find(cp => cp.status === 'blocked');
     if (!selected) return null;
-    // Activity in another checkpoint must not evict this checkpoint's proof
-    // from its packet. Bound the read and fail closed rather than silently
-    // presenting incomplete history if this checkpoint itself exceeds it.
-    const selectedEvents = sessionId ? await list(ctx,'learning_events',
-      'event_id,event_type,payload,seq,created_at',q => q.eq('session_id',sessionId)
-        .eq('payload->>checkpoint_id',selected.id)
-        .order('seq',{ascending:false}).limit(51)) : [];
-    if (selectedEvents.length > 50)
-      throw new Error('Checkpoint history exceeds the safe read limit; proof state is unavailable');
-    const currentEvents = selectedEvents.filter(e =>
-      e.payload?.plan_revision == null || e.payload.plan_revision === plan.revision);
+    // Find the newest eligible evidence per kind using checkpoint-scoped,
+    // descending keyset pages. Another checkpoint's events cannot evict this
+    // proof, and a long feedback history cannot hide an older attempt/hint.
+    // Each request is bounded; never silently truncate the selected history.
+    const currentEvents = [];
+    let beforeSeq = null;
+    while (sessionId) {
+      const page = await list(ctx,'learning_events',
+        'event_id,event_type,payload,seq,created_at',q => {
+          q = q.eq('session_id',sessionId).eq('payload->>checkpoint_id',selected.id)
+            .order('seq',{ascending:false}).limit(50);
+          return beforeSeq === null ? q : q.lt('seq',beforeSeq);
+        });
+      currentEvents.push(...page.filter(e => e.payload?.checkpoint_id === selected.id &&
+        (e.payload?.plan_revision == null || e.payload.plan_revision === plan.revision)));
+      const has = type => currentEvents.some(e => e.event_type === type);
+      const complete = (has('attempt') || has('proof_step')) &&
+        currentEvents.some(e => e.event_type === 'hint' && Number.isSafeInteger(e.payload?.data?.level)) &&
+        has('feedback') && has('mastery_evidence') && has('session_note');
+      if (page.length < 50 || complete) break;
+      const last = page[page.length - 1]?.seq;
+      if (!Number.isSafeInteger(last) || last < 1 ||
+          (beforeSeq !== null && last >= beforeSeq))
+        throw new Error('Invalid checkpoint history cursor; reload checkpoint');
+      beforeSeq = last;
+    }
     const attempt = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&
       (e.event_type === 'attempt' || e.event_type === 'proof_step'));
     const hint = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&

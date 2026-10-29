@@ -49,20 +49,22 @@ const records=table=>{
 };
 const client={
  from(table){
-  const query={filters:[],sort:null,count:null,
+  const query={filters:[],less:[],sort:null,count:null,
    select(){return this},
    eq(k,v){this.filters.push([k,v]);return this},
+   lt(k,v){this.less.push([k,v]);return this},
    order(k,options){this.sort={key:k,descending:options?.ascending===false};return this},
    limit(n){this.count=n;return this},
    setHeader(k,v){
     assert.equal(k,'Authorization');assert.equal(v,'Bearer test-token');
-    const filters=[...this.filters],sort=this.sort,count=this.count;
+    const filters=[...this.filters],less=[...this.less],sort=this.sort,count=this.count;
     reads.push({table,filters});
     return Promise.resolve().then(async()=>{
      await beforeRead();
      let result=records(table).filter(row=>
       filters.every(([key,value])=>
-       (key==='payload->>checkpoint_id'?row.payload?.checkpoint_id:row[key])===value));
+       (key==='payload->>checkpoint_id'?row.payload?.checkpoint_id:row[key])===value) &&
+       less.every(([key,value])=>row[key]<value));
      if(sort)result.sort((x,y)=>sort.descending?
        (y[sort.key]>x[sort.key]?1:y[sort.key]<x[sort.key]?-1:0):
        (x[sort.key]>y[sort.key]?1:x[sort.key]<y[sort.key]?-1:0));
@@ -144,10 +146,29 @@ function load(){
  assert.equal(busy.lastAttempt.eventId,ID1);
  assert.equal(busy.hintLevel,2);
  events.splice(2);
- // Fail closed if this checkpoint itself exceeds the bounded read.
+ // A long same-checkpoint feedback trail must not evict the older proof/hint.
  for(let i=0;i<51;i++)events.push({event_id:'same-'+i,seq:200+i,event_type:'feedback',
    payload:{checkpoint_id:'cp-3',plan_revision:3,data:{text:'Feedback'}}});
- await assert.rejects(reload.activeContext({planId:PLAN,checkpointId:'cp-3'}),/safe read limit/);
+ const longProof=await reload.activeContext({planId:PLAN,checkpointId:'cp-3'});
+ assert.equal(longProof.lastAttempt.eventId,ID1);
+ assert.equal(longProof.hintLevel,2);
+ let pageReads=0;
+ beforeRead=async()=>{
+  const r=reads.at(-1);
+  if(r?.table==='learning_events' && r.filters.some(([key])=>key==='payload->>checkpoint_id') && ++pageReads===2)
+   {owner=B;notify();}
+ };
+ await assert.rejects(reload.activeContext({planId:PLAN,checkpointId:'cp-3'}),/Account changed/);
+ beforeRead=async()=>{};owner=A;notify();
+ events.splice(2);
+ // Newer evidence from an old plan revision must not hide eligible legacy rows.
+ for(let i=0;i<55;i++)events.push({event_id:'old-'+i,seq:300+i,event_type:'attempt',
+   payload:{checkpoint_id:'cp-3',plan_revision:2,data:{text:'old version'}}});
+ events.push({event_id:'legacy-hint',seq:290,event_type:'hint',
+   payload:{checkpoint_id:'cp-3',data:{level:4}}});
+ const legacy=await reload.activeContext({planId:PLAN,checkpointId:'cp-3'});
+ assert.equal(legacy.lastAttempt.eventId,ID1);
+ assert.equal(legacy.hintLevel,4);
  events.splice(2);
  // Two demonstrated checkpoints: last proof activity for cp-7 takes focus.
  await reload.recordEvent({planId:PLAN,checkpointId:'cp-7',
