@@ -1,5 +1,6 @@
 /* TUTOR-01 T2: restrained, accessible student-controlled handoff sheet. */
 .tutor-handoff { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tutor-handoff-acceptance-notice { margin: 0; padding: 12px; border: 1px solid var(--rule-2); border-inline-start: 3px solid var(--accent); border-radius: 8px; color: var(--ink); background: var(--sheet-2); font-size: .88rem; line-height: 1.5; }
 .tutor-handoff-label { font-weight: 650; font-size: .9rem; margin-top: 8px; }
 .tutor-handoff-help, .tutor-handoff-status { font-size: .87rem; line-height: 1.5; color: var(--ink-2); }
 .tutor-handoff-status { margin: 4px 0; }

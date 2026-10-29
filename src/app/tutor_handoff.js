@@ -338,16 +338,25 @@ const TutorHandoff = (() => {
 
   // T3a: only explicitly selected events may be saved. Cards and plan
   // amendments remain proposals until separate student-driven approval flows.
-  async function open({ planId, checkpointId } = {}) {
+  async function open({ planId, checkpointId } = {}, { acceptancePreview=false } = {}) {
     if (typeof StudyPlan === 'undefined' || typeof StudyPlan.activeContext !== 'function')
       throw new Error('Study plan is not available');
-    const ctx = await StudyPlan.activeContext({planId,checkpointId});
-    if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
-      throw new Error('The active checkpoint has changed; reopen its handoff');
+    // Capture the identity before an asynchronous Study read. A sign-out,
+    // same-owner relogin or workspace rotation cannot silently rebind a
+    // previously requested handoff to another session while it opens.
     const ownerId = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.user?.id;
     const openedClient = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.client;
     const openedIdentityEpoch = identityEpoch;
     const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
+    const ctx = await StudyPlan.activeContext({planId,checkpointId});
+    if ((typeof LemmaAccount !== 'undefined' &&
+         (LemmaAccount.user?.id !== ownerId || LemmaAccount.client !== openedClient)) ||
+        identityEpoch !== openedIdentityEpoch ||
+        (typeof App !== 'undefined' &&
+         (App.workspaceBlocked || App.workspaceRevision !== workspaceRev)))
+      throw new Error('Study account or workspace changed; reopen the handoff');
+    if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
+      throw new Error('The active checkpoint has changed; reopen its handoff');
     const packet = exportPacket(ctx);
     // A plan revision can stay constant while another device advances the
     // unfinished proof, hint level, session or accepted context. The student's
@@ -705,6 +714,8 @@ const TutorHandoff = (() => {
     parseBtn.addEventListener('click',inspect);
     saveBtn.addEventListener('click',saveSelected);
     const body=h('div',{class:'tutor-handoff'},
+      ...(acceptancePreview ? [h('p',{class:'tutor-handoff-acceptance-notice',
+        text:'Tutor acceptance test — not a released feature. Only your deliberate Copy, Save, card editor and amendment actions can share or record anything. No model is connected automatically. Review every proposal; close this sheet to end the test.'})] : []),
       h('p',{class:'tutor-handoff-help',text:'Copy this bounded, approved-context packet to your chosen tutor. Return here with its JSON reply.'}),
       h('label',{class:'tutor-handoff-label',text:'Study context packet'}),output,copyBtn,
       h('label',{class:'tutor-handoff-label',text:'Tutor reply'}),input,parseBtn,
@@ -712,5 +723,24 @@ const TutorHandoff = (() => {
     return Sheets.open({title:'Continue with another tutor',wide:true,
       className:'tutor-handoff-sheet',body});
   }
-  return { ready:false, exportPacket, parseReply, recordReceipt, recordEventWithAudit, open };
+  // T4a: a separate reviewed acceptance entry may be called ONLY by an
+  // explicitly clicked Study UI action. It is not general feature readiness.
+  // The D-owned entry point must retain its dirty-save and account guards.
+  async function openForAcceptance({planId,checkpointId:selectedCheckpointId} = {}) {
+    if (typeof StudyPlan === 'undefined' || StudyPlan.ready !== true ||
+        typeof StudyView === 'undefined' || StudyView.ready !== true)
+      throw new Error('Study acceptance is not enabled');
+    if (!validId(planId) || !checkpointId(selectedCheckpointId))
+      throw new Error('Select an approved checkpoint in Study first');
+    if (typeof LemmaAccount === 'undefined' || !LemmaAccount.client ||
+        !validId(LemmaAccount.user?.id))
+      throw new Error('Sign in before testing a tutor handoff');
+    if (typeof App !== 'undefined' && App.workspaceBlocked)
+      throw new Error('Study workspace is unavailable');
+    if (typeof navigator !== 'undefined' && navigator.onLine === false)
+      throw new Error('Tutor acceptance requires current online study state');
+    return open({planId,checkpointId:selectedCheckpointId},{acceptancePreview:true});
+  }
+  return { ready:false, exportPacket, parseReply, recordReceipt,
+    recordEventWithAudit, open, openForAcceptance };
 })();

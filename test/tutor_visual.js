@@ -30,7 +30,8 @@ const packetContext={
 const hook='const __tutorMockContext='+JSON.stringify(packetContext)+';\n'+
   'if(typeof StudyPlan !== "undefined") StudyPlan.activeContext=async()=>__tutorMockContext;\n'+
   'else window.StudyPlan={activeContext:async()=>__tutorMockContext};\n'+
-  'window.__tutorVisual={open:()=>TutorHandoff.open({planId:__tutorMockContext.planId,checkpointId:__tutorMockContext.checkpoint.id})};\n';
+  'window.__tutorVisual={open:()=>TutorHandoff.open({planId:__tutorMockContext.planId,checkpointId:__tutorMockContext.checkpoint.id}),'+
+  'acceptance:()=>TutorHandoff.open({planId:__tutorMockContext.planId,checkpointId:__tutorMockContext.checkpoint.id},{acceptancePreview:true})};\n';
 const HTML=original.replace(anchor,hook+anchor);
 const errors=[];
 const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
@@ -144,6 +145,12 @@ const reply={schema:'lemma.tutor_reply.v1',contract_version:1,plan_id:planId,
       nodes.map(n=>n.getBoundingClientRect().height));
     assert.ok(boxes.every(h=>h>=44),'Handoff button target smaller than 44px');
     await page.screenshot({path:path.join(out,'tutor-sheet-'+size+'-'+scheme+'.png')});
+    // Acceptance preview is not normal navigation: exercise its banner without
+    // making Study/Tutor ready or writing a student event in this synthetic UI.
+    await page.evaluate(()=>window.__tutorVisual.acceptance());
+    await page.locator('.tutor-handoff-acceptance-notice').waitFor();
+    assert.match(await page.locator('.tutor-handoff-acceptance-notice').last().innerText(),/not a released feature/);
+    await page.screenshot({path:path.join(out,'tutor-acceptance-preview-'+size+'-'+scheme+'.png')});
     await page.close();
    }finally{await ctx.close();}
   }
