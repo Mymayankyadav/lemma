@@ -63,7 +63,9 @@ export default function Page(){
   if(styles.data?.length && !styles.data.some(s=>s.key===style))setStyle(styles.data[0].key);
  },[styles.data,style]);
  function selectFile(f:File|undefined){
-  if(!f){setFile(null);setFileError(null);return}
+  // Never retain an older PDF after a replacement fails validation.
+  setFile(null);setProgress(null);
+  if(!f){setFileError(null);return}
   if(!/\.pdf$/i.test(f.name)||f.type&&f.type!=='application/pdf'){
    setFileError('Choose a PDF document.');return
   }
@@ -97,7 +99,8 @@ export default function Page(){
    notify(project?'Project saved, but source upload needs a retry.':'Project could not be created.',{tone:'danger'});
   }finally{setSaving(false)}
  }
- const canSubmit=Boolean(name.trim()&&goal.trim()&&subjectId&&style&&(!fileError||created));
+ // A failed upload may retry its valid file; an invalid replacement must not submit.
+ const canSubmit=Boolean(name.trim()&&goal.trim()&&subjectId&&style&&(!fileError||(created&&file)));
  const preparing=subjects.isPending||styles.isPending;
  const prompt=planPrompt(name.trim()||'your project');
  return <Screen title="New project" back="/projects">

@@ -60,6 +60,23 @@ test('creates custom subject and accepts a real 3-page PDF',async({page})=>{
  await expect(page).toHaveURL(/#\/p\/topology-exercises$/,{timeout:30000})
  await expect(page.getByText(/Project created/)).toBeVisible()
 })
+test('invalid PDF replacement clears the previously selected file',async({page})=>{
+ await page.goto('./?demo=1#/projects/new')
+ await page.getByRole('textbox',{name:'Name'}).fill('Replace PDF')
+ await page.getByRole('textbox',{name:'Goal'}).fill('Study the selected source.')
+ const picker=page.locator('input[type=file]')
+ await picker.setInputFiles('tests/fixtures/sample.pdf')
+ await expect(page.getByText('sample.pdf')).toBeVisible()
+ await picker.setInputFiles({name:'not-a-pdf.txt',mimeType:'text/plain',buffer:Buffer.from('not a PDF')})
+ await expect(page.getByRole('alert')).toContainText('Choose a PDF')
+ await expect(page.getByText('sample.pdf')).toHaveCount(0)
+ await expect(page.getByRole('button',{name:'Create project'})).toBeDisabled()
+ await picker.setInputFiles('tests/fixtures/sample.pdf')
+ await expect(page.getByRole('alert')).toHaveCount(0)
+ await expect(page.getByText('sample.pdf')).toBeVisible()
+ await expect(page.getByRole('button',{name:'Create project'})).toBeEnabled()
+ await page.screenshot({path:'test-results/screens/new-project-replacement.png',fullPage:true})
+})
 test('rejects non-PDF files without creating a project',async({page})=>{
  await page.goto('./?demo=1#/projects/new')
  await page.getByRole('textbox',{name:'Name'}).fill('Rejected Upload')
@@ -68,4 +85,5 @@ test('rejects non-PDF files without creating a project',async({page})=>{
  await expect(page.getByRole('alert')).toContainText('Choose a PDF')
  await expect(page.getByRole('button',{name:'Create project'})).toBeDisabled()
 })
+
 
