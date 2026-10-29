@@ -32,8 +32,11 @@ test("search, notes, editing and pause work for a card", async ({ page }) => {
     .getByLabel("Front")
     .fill("State the Heine–Borel theorem briefly.");
   await dialog.getByRole("button", { name: "Save changes" }).click();
+  await expect(dialog).toBeHidden();
   await expect(
-    page.getByText("State the Heine–Borel theorem briefly."),
+    page
+      .locator("#main-content")
+      .getByText("State the Heine–Borel theorem briefly."),
   ).toBeVisible();
   expect(errors).toEqual([]);
   await page.screenshot({
