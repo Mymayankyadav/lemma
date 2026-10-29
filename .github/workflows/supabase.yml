@@ -1,4 +1,5 @@
 name: Supabase
+# FIX #253: deploy-time MCP verification follows in this PR.
 on:
   push:
     branches: [main]
