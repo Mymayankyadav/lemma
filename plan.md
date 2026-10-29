@@ -1,0 +1,311 @@
+# Lemma build plan v1
+
+Approved by the owner on 29 October 2026. This is the only task list. Behaviour lives in `docs/spec/`, visuals in `docs/design/`. Agents build; this plan does not change unless the owner asks.
+
+## 0. Quick start for an agent
+
+1. Read this file, then `AGENTS.md`, then only the spec sections your task lists.
+2. Pick a task from §8 whose dependencies are merged and that has no open PR (search open PRs for its ID).
+3. Open a draft PR named `<TASK-ID> <title>` from branch `t/<task-id-lowercase>` before writing code. That is your claim.
+4. Touch only the paths your task owns. Run `npm run check` and your tests. Mark ready, merge when CI is green.
+5. Then pick the next task. Never wait for permission between tasks.
+
+## 1. Goal
+
+A personal mathematics study app for one person. Claude and ChatGPT teach in their own apps; Lemma keeps everything else. One connector call (`resume`) restores where the owner stopped in about 300 tokens, the tutor saves progress while teaching, and every card, plan and card fix the tutor suggests waits for a one-tap approval in the app. The app (phone first, installable) shows what to resume, reviews cards with FSRS, approves proposals, holds the PDFs, draws the plan and an Atlas of ideas, and shows insights.
+
+The daily loop that must always work:
+1. Open Lemma → see the resume target, cards due and proposals waiting.
+2. Resume → the chat opens with "Resume Real Analysis"; the tutor calls `resume` and continues exactly where the last chat (in either app) stopped, even if that chat hit a usage limit.
+3. The tutor saves progress every few messages and proposes cards.
+4. Approve cards with a swipe; leave notes on cards for the next "update my cards".
+5. Review due cards, mixed across decks, with confidence before reveal.
+
+## 2. Decisions (do not revisit without the owner)
+
+| # | Decision | Reason |
+| --- | --- | --- |
+| 1 | One owner; Supabase project `yemqnhnztlbyxmjxidis` is the only store; online-first, no offline sync | The old plan failed on sync complexity |
+| 2 | Chatbots use a custom MCP connector (Supabase Edge Function), never raw SQL | Token cost and safety |
+| 3 | Connector auth = secret in the URL path, stored in `settings` and rotatable in the app | Works in both Claude ("No sign in") and ChatGPT ("No authentication") |
+| 4 | Curriculum changes are proposals approved in the app; progress records are written directly; dictated cards may skip approval | Owner's choice, 29 Oct |
+| 5 | PDFs are uploaded in the app and stored as page text the tutor reads by page | Both chatbots can read them; tokens stay low |
+| 6 | FSRS-6 engine from the old repo, run in the browser | Already verified against ts-fsrs |
+| 7 | React + Vite + TypeScript + Tailwind 4 + motion; GitHub Pages with hash routes; PWA | Familiar to every coding model; free hosting |
+| 8 | Demo mode with a fixed dataset | Lets screens be built in parallel and tested with no login |
+| 9 | Dark only, Amber on Obsidian | Owner approved the canvas |
+| 10 | Mix decks on by default; confidence before reveal is optional and reveals in one tap | Interleaving and calibration evidence |
+
+## 3. Architecture
+
+```
+ Phone / desktop browser (PWA on GitHub Pages)
+   React app ── supabase-js (publishable key + owner session, RLS) ──┐
+                                                                     ▼
+ Claude / ChatGPT ── MCP over HTTPS ──► Edge Function "mcp" ──► Supabase Postgres + Storage
+                      /functions/v1/mcp/<secret>   (secret key, filters by user_id)
+```
+
+- The app computes FSRS and writes review results through the `record_review` function.
+- The connector never schedules cards and never deletes data.
+- Curriculum flows: tutor → `proposals` table → owner approves in the app → `approve_proposal` applies it.
+
+## 4. Stack
+
+Use the latest release of each major listed; pin exact versions in `package.json` and commit the lockfile (P0-A).
+
+| Area | Choice |
+| --- | --- |
+| App | React 19, React DOM 19, TypeScript 5 (strict), Vite (latest) with `@vitejs/plugin-react` |
+| Styling | Tailwind CSS 4 (`@tailwindcss/vite`) on top of the CSS tokens in `design.md` §2 |
+| Motion | `motion` 12 (`import { motion } from "motion/react"`) |
+| Icons | `lucide-react` |
+| Routing | `react-router` 7, hash router |
+| Data | `@supabase/supabase-js` 2, `@tanstack/react-query` 5, `zustand` 5 for review-session state |
+| Math | `katex` 0.16, `marked` 18, `dompurify` 3 through the legacy renderer (`src/lib/render`) |
+| Scheduling | legacy `fsrs.js` (FSRS-6) wrapped in `src/lib/fsrs` |
+| PDF | `pdfjs-dist` (latest) with its module worker |
+| Charts and Atlas | `d3-scale`, `d3-shape`, `d3-array`, `d3-force`, `d3-zoom`, `d3-selection`, `d3-polygon` |
+| PWA | `vite-plugin-pwa` |
+| Tests | Vitest + jsdom, Playwright 1.63 (Chromium), `ts-fsrs` 5.4.1 and `tsx` (dev only, for the ported FSRS golden test) |
+| Connector | Deno Edge Function with `npm:@modelcontextprotocol/server@^2.0.0`, `npm:zod@^4.3.6`, `npm:@supabase/supabase-js@2` |
+| Hosting | GitHub Pages at `https://mymayankyadav.github.io/lemma/` (base path `/lemma/`) |
+
+## 5. Repository layout and ownership
+
+| Path | Owner task | Notes |
+| --- | --- | --- |
+| `package.json`, lockfile, `vite.config.ts`, `tsconfig*.json`, `index.html`, `.gitignore`, `.env.example` | P0-A | others may add a dependency only through a `CONTRACT` PR (§7) |
+| `src/styles/**` | P0-A creates, UI-1 maintains | tokens are fixed by `design.md` |
+| `src/app/**` (router, shell, providers, tab bar placeholder) | P0-B creates, UI-1 polishes the tab bar and transitions | |
+| `src/data/types.ts`, `src/data/api.ts`, `src/data/hooks.ts`, `src/data/mode.ts`, `src/data/index.ts`, `src/data/env.ts` | P0-B | contract files (§7) |
+| `src/data/live/**` | DATA-1 | |
+| `src/data/demo/**`, `scripts/make-demo-data.ts` | DEMO-1 | |
+| `src/lib/**` | LIB-1 | pure functions, no React |
+| `src/pdf/**`, `tests/fixtures/sample.pdf` | PDF-1 | |
+| `src/ui/**`, `src/features/kit/**` | UI-1 (components, motion) and UI-2 (`src/ui/art/**`, `src/ui/charts/**`) | |
+| `src/features/<screen>/**` | the screen task (§8 Phase 2) | |
+| `supabase/migrations/**`, `supabase/config.toml` | DB-1 (MCP-1 may add the `[functions.mcp]` block) | |
+| `supabase/functions/mcp/**`, `tests/mcp/**` | MCP-1 | |
+| `.github/**` | P0-C | |
+| `tests/unit/<area>/**`, `tests/e2e/<screen>.spec.ts` | the task named in `testing.md` | |
+| `legacy/**` | read-only reference; INT-1 deletes it at the end | |
+| `docs/**`, `plan.md`, `AGENTS.md`, `README.md` | owner (agents edit only when a task says so) | |
+
+## 6. Working protocol
+
+- **Claim**: branch `t/<task-id>` (lowercase, e.g. `t/scr-home`), draft PR titled `<TASK-ID> <title>` opened before the first code commit. If a draft PR with the same ID already exists and had a commit in the last 6 hours, pick another task. If it is older, comment "taking over", continue on a new branch, and link the old PR.
+- **Scope**: only your owned paths. Need something outside them? Use §7, or leave a note in your PR under "Needs from others" and build against what exists.
+- **Quality bar**: `npm run check` passes; your tests pass; screens match `design.md` and the boards (compare your screenshot from `test-results/screens/` with the board); no `console.error` in the browser; no hard-coded colours outside `src/styles`.
+- **PR description**: what changed, how you verified it (commands and results), screenshot(s) for UI, remaining gaps.
+- **Merge**: squash merge when CI is green on the last commit and there are no conflicts. On conflicts, merge `main` into your branch (never force-push, never rewrite history).
+- **After merge**: pick the next task in §8. Do not edit this plan to mark progress; merged PR titles are the progress record.
+- **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test, add tracking or analytics.
+- **Models**: use the strongest available model for P0-A/B, DB-1, MCP-1, LIB-1 and DEMO-1 (contracts and logic). Any capable model can do UI-1/2 and screens.
+
+## 7. Contract changes
+
+`src/data/types.ts`, `src/data/api.ts`, `src/data/hooks.ts` and the specs are contracts. If a task truly needs a change:
+1. Open a separate PR titled `CONTRACT <short description>` that only adds (never renames or removes) fields, methods or hooks, plus the matching line in `docs/spec/data.md`.
+2. Implement the new method as `throw notImplemented()` in both adapters in the same PR, and mention which task will fill it.
+3. Merge when green. Continue your task on top of it.
+
+## 8. Task board
+
+Phases run in order; tasks inside a phase run in parallel. "Done when" items are the acceptance checks for the PR.
+
+### Phase 0: foundation (one agent, three PRs, in order)
+
+#### P0-A Clean slate and scaffold
+- Depends on: none. Owns: repo root config, `src/styles/**`, `legacy/**` moves.
+- Read: this plan §4–5; `design.md` §2–3.
+1. Delete every remote branch except `main` (`git ls-remote --heads origin`, then `git push origin --delete <name>` in batches). If your environment refuses, skip and say so in the PR; the owner will do it (§10).
+2. Move `src/app/*.js` and `test/*` to `legacy/app/` and `legacy/test/`. Move `src/fsrs.js` to `src/lib/fsrs/fsrs.js` and `src/render.js` to `src/lib/render/render.js` without changing their content. Delete `build.js`, `src/index.html`, `src/config.js`, `src/service-worker.js`, `src/manifest.webmanifest`, `src/icons/`, the old `package.json` and lockfile.
+3. Create a Vite React TypeScript app at the repo root with `base: '/lemma/'` and strict TypeScript. Install the packages in §4 at their latest versions within the given majors; pin exact versions.
+4. Scripts: `dev`, `build` (`tsc -b && vite build`), `preview`, `typecheck`, `test` (`vitest run`), `e2e` (`playwright test`), `check` (typecheck, test, build), `format` (Prettier).
+5. Styles: `src/styles/tokens.css` with every token in `design.md` §2 exactly; `src/styles/base.css` (reset, `color-scheme: dark`, body font `--font-ui`, background `--obsidian`, focus ring, reduced-motion rule); `src/styles/surfaces.css` with the classes in `design.md` §3; `src/styles/app.css` that imports Tailwind and the three files and maps colours, radii and fonts with `@theme`.
+6. `index.html`: `lang="en"`, `viewport-fit=cover`, theme colour `#0D0C11`, Google Fonts links for Instrument Sans (400, 500, 600, 700, italic 400) and STIX Two Text (400, 500, 600, italic 400, 500) with `display=swap`, title "Lemma".
+7. `src/data/env.ts` reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; `.env.example` lists both; `.gitignore` covers `.env*`, `dist`, `test-results`, `playwright-report`.
+- Done when: `npm run check` passes; `npm run dev` shows an empty obsidian page with the lamp glow; `legacy/` holds the old files; no old build files remain.
+
+#### P0-B Contracts, shell and routes
+- Depends on: P0-A. Owns: `src/app/**`, contract files in `src/data/`, placeholder `src/features/*/Page.tsx`.
+- Read: `data.md` §7–9; `design.md` §6 (route list) and §5 (TabBar).
+1. `src/data/types.ts`: every type in `data.md` §7 with the exact names and fields.
+2. `src/data/api.ts`: interface `LemmaApi` with every method in `data.md` §8, a one-line comment each; class `LemmaError {code, message}`; helper `notImplemented(name)`.
+3. `src/data/mode.ts`: demo when the URL search has `demo=1` (remember it in `sessionStorage` for the tab), else live.
+4. `src/data/index.ts`: `getApi()` returns the demo or live adapter. Create `src/data/demo/adapter.ts` and `src/data/live/adapter.ts` as classes implementing `LemmaApi` where every method throws `notImplemented`.
+5. `src/data/hooks.ts`: all hooks, keys and invalidations in `data.md` §9.
+6. Router: hash routes for every screen in `design.md` §6 (`/`, `/projects`, `/projects/new`, `/p/:slug`, `/p/:slug/cp/:code`, `/s/:slug/:n`, `/proposals`, `/proposals/:id`, `/review`, `/review/run`, `/review/done`, `/cards`, `/cards/:no`, `/atlas`, `/insights`, `/settings`, `/sign-in`, `/kit`). Each renders `src/features/<name>/Page.tsx` (folders: `home`, `projects`, `new-project`, `project`, `checkpoint`, `session`, `proposals`, `plan-proposal`, `review`, `review-run`, `review-done`, `cards`, `card`, `atlas`, `insights`, `settings`, `sign-in`, `kit`). Each placeholder shows an `h1` with the screen name.
+7. Shell: `App.tsx` (QueryClient, router, toast host), `AppShell.tsx` (Ground, outlet, tab bar on `/`, `/projects`, `/review`, `/insights` only), `TabBar.tsx` (4 links with Lucide icons and active state; UI-1 restyles), `ErrorBoundary.tsx`, `DemoChip.tsx` (small "Demo" chip top-left in demo mode).
+8. Auth gate placeholder: in live mode without a session, redirect to `/sign-in`; in demo mode never.
+- Done when: every route renders its placeholder in demo mode; `npm run check` passes.
+
+#### P0-C CI, deploy and test harness
+- Depends on: P0-A. Owns: `.github/**`, `playwright.config.ts`, `vitest.config.ts`, `tests/e2e/routes.spec.ts`.
+- Read: `testing.md` §2, §4, §6.
+1. `ci.yml` (pull requests and pushes to `main`): Node 22, `npm ci`, `npx playwright install --with-deps chromium`, `npm run check`, `npm run e2e`; upload `playwright-report` and `test-results/screens` as artifacts.
+2. `pages.yml` (push to `main`): build with `VITE_SUPABASE_URL=${{ vars.SUPABASE_URL }}` and `VITE_SUPABASE_PUBLISHABLE_KEY=${{ vars.SUPABASE_PUBLISHABLE_KEY }}`; deploy `dist` with the official upload-pages-artifact and deploy-pages actions.
+3. `supabase.yml` (push to `main` touching `supabase/**`, and manual): Supabase CLI; link to `yemqnhnztlbyxmjxidis` with secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`; `supabase db push`; `supabase functions deploy mcp --no-verify-jwt`. If the secrets are missing, print a notice and succeed.
+4. `mcp-smoke.yml` (manual, and on success of `supabase.yml`): `node tests/mcp/smoke.mjs` with secret `MCP_URL`; skip with a notice if missing.
+5. `keepalive.yml` (daily at 03:17 UTC): `POST ${SUPABASE_URL}/rest/v1/rpc/ping` with headers `apikey` and `Content-Type: application/json`, body `{}`.
+6. `.github/pull_request_template.md`: Task ID, what changed, verification, screenshots, gaps.
+7. Playwright and Vitest configs exactly as `testing.md` §4 and §2; `tests/e2e/routes.spec.ts` visits every route and finds its `h1`.
+- Done when: CI is green on the PR; after merge the placeholder app is live at `https://mymayankyadav.github.io/lemma/?demo=1#/`.
+
+### Phase 1: core (eight agents in parallel; starts when Phase 0 is merged)
+
+#### DB-1 Database
+- Owns: `supabase/migrations/**`, `supabase/config.toml`, `src/data/live/database.types.ts`.
+- Read: `data.md` all.
+1. Reset the old schema exactly as `data.md` §11 (Supabase MCP `execute_sql` or the dashboard SQL editor). The tool may ask the owner to confirm; the owner approved this on 29 Oct.
+2. Write migrations with timestamp names, in this order: tables and constraints (§2), triggers (§2.20), RLS and grants (§3), storage bucket and policies (§4), functions and view (§5). Use `gen_random_uuid()`, `extensions.gen_random_bytes`, `search_path = ''`.
+3. Apply to `yemqnhnztlbyxmjxidis`. Preferred: merge the migrations and let `supabase.yml` run `supabase db push` (needs the owner's secrets, §10). If the secrets are not there yet, apply each file in order with Supabase MCP `apply_migration`, then make the history match the file names: `update supabase_migrations.schema_migrations set version = '<file timestamp>' where name = '<file name without timestamp>'`, so later `db push` runs see them as applied.
+4. Generate types into `src/data/live/database.types.ts`.
+5. Run the security advisor and fix every warning.
+6. In the PR, paste the result of these checks: `select count(*) from pg_tables where schemaname = 'public'` (expect 19); an RLS check showing every public table has RLS on; calling `bootstrap()` as the owner from the SQL editor via `set request.jwt.claims` returns a settings row and 6 styles.
+- Done when: the checks above pass; `approve_proposal` applied to a hand-written card, plan and plan change in a transaction you roll back produces the rows in `data.md` §5.4 (paste the output).
+
+#### MCP-1 Connector
+- Owns: `supabase/functions/mcp/**`, `tests/mcp/**`, the `[functions.mcp]` block in `supabase/config.toml`.
+- Read: `connector.md` all; `data.md` §2, §5, §6.
+1. Build the files in `connector.md` §3 and the 11 tools in §5 with the exact names, descriptions, parameters and outputs.
+2. Implement the packet builder (§8) and enforce the budgets in §1.
+3. Implement `/selftest` (§9) and `tests/mcp/smoke.mjs`.
+4. Deploy with `supabase functions deploy mcp --no-verify-jwt` (or Supabase MCP `deploy_edge_function`). DB-1 must be merged first for a live deploy; build and unit-check against a local `supabase start` if it is not.
+5. Run the smoke test with the owner's URL (read `settings.connector_secret` from the database with the Supabase MCP and build the URL; never paste the secret in the PR).
+- Done when: smoke passes against the deployed function; `tools/list` is ≤ 9,000 characters; the PR includes the resume packet produced by the self-test project.
+
+#### UI-1 Components and motion
+- Owns: `src/ui/**` except `src/ui/art/**` and `src/ui/charts/**`; `src/features/kit/**`; restyles `src/app/TabBar.tsx` and route transitions in `src/app/AppShell.tsx`.
+- Read: `design.md` §2–5, §7, §9; boards `Foundations.dc.html`, `Motion.dc.html`.
+1. `src/ui/motion.ts`: tokens and variants (rise, stagger, deal, unfold, flyLeft, flyRight, flyUp, sheet, pop) per `design.md` §7, each with a reduced-motion version.
+2. Components in the `design.md` §5 table except illustrations and charts, one file each, props as listed.
+3. `MathText` uses `src/lib/render` (if LIB-1 is not merged yet, wrap the legacy `render.js` through the same path; LIB-1 keeps the interface `renderMarkdown(source, {macros, cloze})`).
+4. Tab bar and route transitions (§7: tab crossfade, drill-in push with the page behind scaling to 0.94).
+5. `/kit` gallery with every component in every state.
+6. `tests/e2e/kit.spec.ts`.
+- Done when: `/kit` matches `Foundations.dc.html` side by side (attach both screenshots); kit spec passes; no raw colour values outside `src/styles`.
+
+#### UI-2 Illustrations and charts
+- Owns: `src/ui/art/**`, `src/ui/charts/**`; adds their sections to `/kit` (append-only edit of `src/features/kit/Page.tsx`).
+- Read: `design.md` §5 (illustrations, charts), §6.12, §6.16, §6.20, §7; boards `States.dc.html`, `Insights.dc.html`, `Done.dc.html`, `Atlas.dc.html`.
+1. Illustrations: `CompassArt`, `CardFanArt`, `PlugArt {connected}`, `PageStackArt`, `DoneBurst`, `Starfield` as animated SVG React components (CSS keyframes or `motion`), static under reduced motion.
+2. Charts: `LineArea`, `StackedBars`, `HBars`, `GroupedBars`, `Sparkline`, `CalibrationBars` drawn with d3-scale/d3-shape into SVG, sized by props, tokens for colours, draw-in animation, `role="img"` with an `aria-label` describing the data.
+- Done when: each item appears in `/kit` with sample data and matches its board.
+
+#### DATA-1 Live adapter
+- Owns: `src/data/live/**` (except the generated types file, which DB-1 owns).
+- Read: `data.md` all; `design.md` §6.4.
+1. Supabase client from `env.ts` (PKCE flow, persist session, detect session in URL).
+2. Implement every `LemmaApi` method with supabase-js queries, the RPCs and storage; map rows to the domain types; compute derived states with `src/lib/derive.ts` (LIB-1) — if LIB-1 is not merged, import from the path anyway and merge after it.
+3. `signIn` uses Google OAuth with `redirectTo` = current URL without the hash; `bootstrap()` after sign-in.
+4. `addSource` uses `src/pdf/ingest.ts` (PDF-1) and uploads to `sources/<user_id>/<source_id>.pdf`; insert pages in batches of 50; update status.
+5. Map Supabase errors to `LemmaError` codes; detect offline (`navigator.onLine` false or fetch failure) as `offline`.
+- Done when: `npm run check` passes; a script `scripts/live-read-check.ts` (run with the owner's session token in `LEMMA_TOKEN`, optional) lists projects; in the PR, list every method and how you exercised it (unit test with a mocked client is enough for writes).
+
+#### DEMO-1 Demo data and adapter
+- Owns: `src/data/demo/**`, `scripts/make-demo-data.ts`, `tests/unit/data/demo.test.ts`.
+- Read: `data.md` §5, §6, §7, §8, §10; boards for the visible numbers.
+1. Generator script with a fixed seed producing `src/data/demo/fixture.json` that satisfies every number in `data.md` §10 (concept names and links as on the Atlas board; review history realistic for FSRS).
+2. In-memory adapter implementing every method with the same rules as the database (approve logic of §5.4, review record and undo, comments, misconceptions, derived states via `src/lib/derive.ts`). Dates in the fixture are relative to load time.
+3. `addSource` in demo runs the real `src/pdf/ingest.ts` and keeps pages in memory.
+4. Unit tests from `testing.md` §3.
+- Done when: tests pass; every placeholder screen can call its hooks without errors in demo mode.
+
+#### LIB-1 Logic library
+- Owns: `src/lib/**` (wrappers around the moved legacy files), `tests/unit/lib/**`.
+- Read: `data.md` §6; `product.md` F8; `design.md` §6.11, §6.16; legacy `session.js`, `model.js`, `view_review.js`.
+1. `src/lib/fsrs/index.ts`: ESM wrapper exposing the legacy engine's `preview`, `formatIvl`, `makeClock`, `parseSteps`, `optimize`, `buildDataset`, `evaluate`, `retrievability`, `DEFAULT_W` with TypeScript types; `scheduleConfig(settings)` builds the engine config (`w`, `retention`, `maxIvl`, `learn`, `relearn`, `fuzz`, `loadBalance`). Keep `fsrs.js` unchanged.
+2. `src/lib/render/index.ts`: `renderMarkdown(source, {macros, cloze})`, `clozeOrds(source)`, `plainText(source, max)`, KaTeX with `output: 'htmlAndMathml'`.
+3. `src/lib/queue.ts`: build and advance a review queue from `ReviewItem[]` and settings per `product.md` F8 (port the logic of legacy `session.js`).
+4. `src/lib/derive.ts`: checkpoint UI status, project progress, session display, re-check ladder, concept status, due today (`data.md` §6).
+5. `src/lib/insights.ts`: all numbers on the Insights screen and the review summary.
+6. `src/lib/chat.ts`: prompt builders (`Resume <project>`, `Study <project>, <code> <title>`, `Plan <project>`, `Revise the plan for <project>: <text>`, `Update my cards`) and deep links (`https://claude.ai/new?q=`, `https://chatgpt.com/?q=`).
+7. `src/lib/text.ts`: slugify, relative time ("2 h ago", "Wed", "28 Oct"), minutes format ("18h 40m").
+8. `src/lib/optimizer.worker.ts`: runs `optimize` in a Web Worker for Settings.
+9. Unit tests from `testing.md` §3 (port the legacy tests).
+- Done when: unit tests pass; nothing in `src/lib` imports React.
+
+#### PDF-1 PDF ingestion
+- Owns: `src/pdf/**`, `tests/unit/pdf/**`, `tests/fixtures/sample.pdf`.
+- Read: `design.md` §6.4; `data.md` §2.4–2.5.
+1. `ingest(file, {onProgress})` returns `{pageCount, pages: [{page, label, body}], outline, hasText}` using pdf.js with its worker (Vite `?url` import).
+2. Text rules in `design.md` §6.4; labels from `getPageLabels()`; outline flattened with levels and resolved to page indexes.
+3. Create `tests/fixtures/sample.pdf` (3 pages, labels `i, 1, 2`, one outline entry, a hyphenated line) with a one-off script you do not commit, then unit-test it.
+- Done when: the unit test passes and a 300-page PDF is read in under 30 s on a laptop (note the timing in the PR).
+
+### Phase 2: screens (ten agents in parallel; starts when UI-1, UI-2, DEMO-1 and LIB-1 are merged; SCR-PROJ also needs PDF-1)
+
+Every screen task:
+- Builds `src/features/<folder>/` from the matching `design.md` §6 section and board, using only `src/ui` components, `src/lib` functions and `src/data/hooks.ts`.
+- Handles loading (skeletons after 300 ms), error (toast with "Try again"), empty (`EmptyState`) and offline states.
+- Respects reduced motion and the accessibility rules in `design.md` §9.
+- Adds its Playwright spec from `testing.md` §4 and attaches its screenshot next to the board in the PR.
+
+| Task | Screens (`design.md`) | Folders | Board(s) | Spec |
+| --- | --- | --- | --- | --- |
+| SCR-HOME | Home §6.1 | `home` | `Main` | `home.spec.ts` |
+| SCR-PROJ | Projects §6.2, New project §6.3 (uses PDF-1) | `projects`, `new-project` | `Projects`, `NewProject` | `projects.spec.ts` |
+| SCR-PATH | Project §6.5, checkpoint sheet §6.6 | `project`, `checkpoint` | `Path` | `project.spec.ts` |
+| SCR-SESS | Session record §6.9 | `session` | `Session` | `session.spec.ts` |
+| SCR-PROP | Approve §6.7, plan proposal §6.8 | `proposals`, `plan-proposal` | `Proposals`, `PlanReview` | `proposals.spec.ts` |
+| SCR-REV | Review §6.10, card review §6.11, summary §6.12 | `review`, `review-run`, `review-done` | `Review`, `Card`, `Done` | `review.spec.ts` |
+| SCR-CARD | Cards §6.13, card detail §6.14 | `cards`, `card` | `CardDetail` | `cards.spec.ts` |
+| SCR-ATLAS | Atlas §6.15 | `atlas` | `Atlas` | `atlas.spec.ts` |
+| SCR-INS | Insights §6.16 | `insights` | `Insights` | `insights.spec.ts` |
+| SCR-SET | Settings §6.17, sign in §6.18 | `settings`, `sign-in` | `Connect` | `settings.spec.ts` |
+
+Notes per task:
+- SCR-REV keeps review-session state in a `zustand` store in `src/features/review-run/store.ts` (queue, current card, revealed, confidence, answered, undo stack, start time per card for `durationMs`). Keyboard shortcuts as in §6.11.
+- SCR-PROP implements the drag gesture with `motion` (`drag="x"`, `dragElastic` 0.6, commit thresholds in §6.7).
+- SCR-ATLAS keeps the d3-force layout in `src/features/atlas/layout.ts` (pure) and pauses animations when the page is hidden.
+- SCR-SET runs the optimizer through `src/lib/optimizer.worker.ts`; the backup download uses a Blob URL with an `<a download>`.
+
+### Phase 3: integration and acceptance (starts when Phase 2 is merged)
+
+#### INT-1 Live mode, PWA and release
+- Owns: integration fixes across `src/app/**` and adapters (coordinate in the PR if you must touch a feature folder), `vite.config.ts` PWA block, `public/` icons.
+- Read: `design.md` §6.18, §6.20, §10; `connector.md` §10.
+1. End-to-end in live mode against the real project: sign in, bootstrap, create a project with a real PDF, see the connector URL in Settings.
+2. Offline banner and save-failure toasts with retry (3 attempts, back-off 1 s, 3 s, 9 s) for `recordReview` and approvals.
+3. PWA: manifest per `design.md` §10, icons generated from an SVG of the amber `∫` (192, 512, maskable), Workbox runtime caching for Google Fonts (cache-first) and app assets; "New version ready" toast with Reload.
+4. "Tutor not connected" state on Home until the first connector call.
+5. Delete `legacy/` once nothing imports from it.
+6. Write `docs/guide.md` for the owner: install the app on the phone, connect Claude and ChatGPT (from `connector.md` §10), the daily loop, what each screen does (one short paragraph each).
+- Done when: the deployed site works in live mode for the owner's account (screen recording or screenshots in the PR from a signed-in session are optional; the MCP smoke passing on `main` is required), Lighthouse PWA installable, and all CI is green.
+
+#### QA-1 Acceptance run
+- Depends on: Phase 2 for the first run, INT-1 for the final run.
+1. Give ChatGPT's browser agent `testing.md` §7 against the deployed demo; save its report as `docs/acceptance/<date>.md`.
+2. Open one issue per FAIL with the screenshot, labelled with the screen task ID; the owning task's agent (or any agent) fixes it in a PR titled `FIX <issue>`.
+3. Re-run until all checks pass.
+- Done when: a report with every check PASS is merged.
+
+## 9. Milestones (order of work when fewer agents are available)
+
+1. **M1 Study loop works**: P0-A, P0-B, P0-C → DB-1 → MCP-1 → LIB-1 → DEMO-1 → UI-1 → SCR-HOME, SCR-PROP, SCR-REV → DATA-1. The owner can plan and study in chat, approve cards and review.
+2. **M2 Full app**: UI-2, PDF-1, SCR-PROJ, SCR-PATH, SCR-SESS, SCR-CARD, SCR-SET.
+3. **M3 Insight and polish**: SCR-ATLAS, SCR-INS, INT-1, QA-1.
+
+With many agents, start every task whose dependencies are met; the milestones are only a priority order.
+
+## 10. Owner one-time steps
+
+1. If the agents cannot delete old branches: in a terminal with the GitHub CLI, run `git ls-remote --heads origin | awk '{print $2}' | sed 's#refs/heads/##' | grep -vx main | xargs -n 20 git push origin --delete`, or delete them on github.com › Branches.
+2. Confirm the database reset when DB-1 asks.
+3. GitHub › Settings › Secrets and variables › Actions: add secrets `SUPABASE_ACCESS_TOKEN` (supabase.com › Account › Access tokens) and `SUPABASE_DB_PASSWORD` (project database password); check that variables `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` exist. After the connector is live, add secret `MCP_URL` (copy from Lemma › Settings).
+4. Supabase › Authentication: keep Google enabled; Site URL `https://mymayankyadav.github.io/lemma/`; redirect URLs `https://mymayankyadav.github.io/lemma/**` and `http://localhost:5173/**`. After your first sign-in, turn off "Allow new users to sign up".
+5. Connect Claude and ChatGPT (`connector.md` §10).
+6. On the phone: open the site, Share › Add to Home Screen.
+
+## 11. Later (not in v1)
+
+OAuth sign-in for the connector instead of the URL secret; page images so Claude can read formulas from scans (`get_page_image`); Anki import and export; daily reminder notifications; offline review with a write queue; per-subject FSRS parameters; photos of handwritten proofs; full-text search across all projects.
+
+## 12. References
+
+- Specs: `docs/spec/product.md`, `data.md`, `connector.md`, `design.md`, `testing.md`.
+- Design boards: `docs/design/canvas/*.dc.html` (exported from the owner's canvas; inline styles hold the exact values; open in a browser for the visual, though interactive parts need the canvas runtime) and the owner's original reference `docs/design/reference-amber-on-obsidian.png`.
+- Owner-only links (private to the owner): design canvas https://claude.ai/artifact/NjsHYBnmuZYgphy3mY13Qu, research notes https://claude.ai/artifact/EQiFLZfqa1ewaHTR1vbCdo.
+- Legacy code kept for reference until INT-1: `legacy/` (FSRS engine and renderer already moved into `src/lib`).

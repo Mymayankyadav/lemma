@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foundations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F7B538;text-decoration:none}
+a:hover{color:#FFD47E}
+.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.s{font-family:'STIX Two Text','Times New Roman',serif}
+.num{font-variant-numeric:tabular-nums}
+@keyframes halo{0%{transform:scale(1);opacity:.6}100%{transform:scale(2);opacity:0}}
+@keyframes orbit{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position:relative;width:1280px;height:1720px;box-sizing:border-box;padding:72px 80px;overflow:hidden;font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#F4F0E6;background:#0D0C11;display:flex;flex-direction:column;gap:56px">
+<div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(50% 30% at 10% 0%, rgba(247,181,56,0.12), rgba(247,181,56,0) 60%), radial-gradient(40% 30% at 100% 30%, rgba(164,149,255,0.07), rgba(164,149,255,0) 60%)"></div>
+
+<header style="position:relative;display:flex;justify-content:space-between;align-items:flex-end">
+<div style="display:flex;flex-direction:column;gap:10px"><h1 style="margin:0;font-size:56px;font-weight:600;letter-spacing:-0.035em">Amber on Obsidian</h1><p class="s" style="margin:0;font-size:24px;font-style:italic;color:#ACA7B5">Light marks what you know. Everything else stays dark glass.</p></div>
+<span class="s" aria-hidden="true" style="font-size:120px;line-height:.8;font-style:italic;color:#F7B538;text-shadow:0 0 40px rgba(247,181,56,0.6)">∫</span>
+</header>
+
+<section aria-label="Color" style="position:relative;display:flex;flex-direction:column;gap:18px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Color</h2>
+<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px">
+<div style="display:flex;flex-direction:column;gap:8px"><span style="height:84px;border-radius:18px;background:#0D0C11;border:1px solid rgba(255,255,255,0.12)"></span><span style="font-size:14px;font-weight:600">Obsidian</span><span class="num" style="font-size:12px;color:#8C8796">#0D0C11 ground</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="height:84px;border-radius:18px;background:linear-gradient(165deg, rgba(164,149,255,0.09), rgba(164,149,255,0) 45%), #17161D;border:1px solid rgba(255,255,255,0.08)"></span><span style="font-size:14px;font-weight:600">Slab</span><span class="num" style="font-size:12px;color:#8C8796">#17161D + violet sheen</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="height:84px;border-radius:18px;background:#1D1C25;border:1px solid rgba(255,255,255,0.08)"></span><span style="font-size:14px;font-weight:600">Raised</span><span class="num" style="font-size:12px;color:#8C8796">#1D1C25 cards in review</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="height:84px;border-radius:18px;background:rgba(26,25,33,0.78);border:1px solid rgba(255,255,255,0.08);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08)"></span><span style="font-size:14px;font-weight:600">Glass</span><span class="num" style="font-size:12px;color:#8C8796">rgba 26 25 33 / .78, blur 22</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="height:84px;border-radius:18px;background:linear-gradient(180deg,#FFCD66,#F2A92C);box-shadow:0 14px 32px -12px rgba(247,181,56,0.75)"></span><span style="font-size:14px;font-weight:600">Amber</span><span class="num" style="font-size:12px;color:#8C8796">#F7B538, hi #FFD47E, deep #D98E1C</span></div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="height:84px;border-radius:18px;background:#1E1405;border:1px solid rgba(255,255,255,0.08)"></span><span style="font-size:14px;font-weight:600">Amber ink</span><span class="num" style="font-size:12px;color:#8C8796">#1E1405 text on amber</span></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:22px;font-weight:600;color:#F4F0E6">Aa</span><span class="num" style="font-size:12px;color:#8C8796">Ink #F4F0E6</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:22px;font-weight:600;color:#ACA7B5">Aa</span><span class="num" style="font-size:12px;color:#8C8796">Ink 2 #ACA7B5</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:22px;font-weight:600;color:#8C8796">Aa</span><span class="num" style="font-size:12px;color:#8C8796">Ink 3 #8C8796 (min for text)</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;gap:6px"><span style="width:26px;height:26px;border-radius:99px;background:#F2545B"></span><span style="width:26px;height:26px;border-radius:99px;background:#F39A4B"></span><span style="width:26px;height:26px;border-radius:99px;background:#F7B538"></span><span style="width:26px;height:26px;border-radius:99px;background:#4FC88E"></span></span><span class="num" style="font-size:12px;color:#8C8796">Again, Hard, Good, Easy</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;gap:6px"><span style="width:26px;height:26px;border-radius:99px;background:#F7B538"></span><span style="width:26px;height:26px;border-radius:99px;background:#A495FF"></span><span style="width:26px;height:26px;border-radius:99px;background:#62CBE6"></span></span><span class="num" style="font-size:12px;color:#8C8796">Atlas nebulae only, 8–12%</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;gap:6px"><span style="width:26px;height:26px;border-radius:99px;background:#4FC88E"></span><span style="width:26px;height:26px;border-radius:99px;background:#F2545B"></span></span><span class="num" style="font-size:12px;color:#8C8796">Success, danger</span></div>
+</div>
+</section>
+
+<section aria-label="Type" style="position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Interface: Instrument Sans</h2>
+<div style="display:flex;align-items:baseline;gap:18px"><span class="num" style="font-size:64px;font-weight:600;letter-spacing:-0.04em;line-height:1">23</span><span style="font-size:12px;color:#8C8796">Numeral 64/600, tracking −4%</span></div>
+<div style="display:flex;align-items:baseline;gap:18px"><span style="font-size:28px;font-weight:600;letter-spacing:-0.02em">Review</span><span style="font-size:12px;color:#8C8796">Title 28/600</span></div>
+<div style="display:flex;align-items:baseline;gap:18px"><span style="font-size:19px;font-weight:600">Compactness</span><span style="font-size:12px;color:#8C8796">Headline 19/600</span></div>
+<div style="display:flex;align-items:baseline;gap:18px"><span style="font-size:16px">Real Analysis</span><span style="font-size:12px;color:#8C8796">Body 16/400</span></div>
+<div style="display:flex;align-items:baseline;gap:18px"><span style="font-size:13px;color:#ACA7B5">cards due</span><span style="font-size:12px;color:#8C8796">Label 13/400, ink 2</span></div>
+<div style="display:flex;align-items:baseline;gap:18px"><span style="font-size:11px;font-weight:600;color:#F7B538">Review</span><span style="font-size:12px;color:#8C8796">Tab label 11/600, active only</span></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Mathematics: STIX Two Text</h2>
+<p class="s" style="margin:0;font-size:27px;line-height:1.3">State the Heine–Borel theorem.</p>
+<p class="s" style="margin:0;font-size:23px;line-height:1.45;color:#C9C4D1">For <i>K</i> ⊆ ℝ<sup style="font-size:14px"><i>n</i></sup>: <i>K</i> is compact ⟺ <i>K</i> is closed and bounded.</p>
+<p class="s" style="margin:0;font-size:21px;font-style:italic;color:#ACA7B5">Why is a finite subcover enough?</p>
+<span style="font-size:12px;color:#8C8796">Card 27/1.3, answer 23/1.45, tutor question 21 italic. In the app, KaTeX renders formulas; STIX is the text face around them.</span>
+</div>
+</section>
+
+<section aria-label="Depth" style="position:relative;display:flex;flex-direction:column;gap:18px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Depth</h2>
+<div style="position:relative;height:220px;border-radius:28px;overflow:hidden;background:#0A090E;border:1px solid rgba(255,255,255,0.05)">
+<div aria-hidden="true" style="position:absolute;inset:0;background:repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, rgba(255,255,255,0) 2px 14px)"></div>
+<div style="position:absolute;left:40px;top:40px;width:240px;height:140px;border-radius:22px;padding:16px;box-sizing:border-box;font-size:13px;color:#8C8796;background:#141319;border:1px solid rgba(255,255,255,0.06)">0 Flat row<br>no shadow</div>
+<div style="position:absolute;left:330px;top:40px;width:240px;height:140px;border-radius:22px;padding:16px;box-sizing:border-box;font-size:13px;color:#ACA7B5;background:linear-gradient(165deg, rgba(164,149,255,0.08), rgba(164,149,255,0) 45%), #17161D;border:1px solid rgba(255,255,255,0.08);box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 34px 60px -30px rgba(0,0,0,0.95)">1 Slab<br>inset top light, long soft drop</div>
+<div style="position:absolute;left:620px;top:40px;width:240px;height:140px;border-radius:22px;padding:16px;box-sizing:border-box;font-size:13px;color:#ACA7B5;background:rgba(26,25,33,0.72);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid rgba(255,255,255,0.09);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08), 0 26px 50px -14px rgba(0,0,0,0.85)">2 Glass<br>tab bar, sheets, overlays</div>
+<div style="position:absolute;left:910px;top:40px;width:240px;height:140px;border-radius:22px;padding:16px;box-sizing:border-box;font-size:13px;color:#1E1405;font-weight:600;background:linear-gradient(180deg,#FFCD66,#F2A92C);box-shadow:inset 0 1px 0 rgba(255,255,255,0.5), 0 18px 44px -12px rgba(247,181,56,0.75)">3 Lit<br>one primary action per screen</div>
+</div>
+</section>
+
+<section aria-label="Shape and spacing" style="position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:48px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Radius by role</h2>
+<div style="display:flex;align-items:flex-end;gap:16px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:84px;height:84px;border-radius:28px;background:#1D1C25;border:1px solid rgba(255,255,255,0.08)"></span><span class="num" style="font-size:12px;color:#8C8796">28 hero, card</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:72px;height:72px;border-radius:22px;background:#1D1C25;border:1px solid rgba(255,255,255,0.08)"></span><span class="num" style="font-size:12px;color:#8C8796">22 slab</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:60px;height:60px;border-radius:18px;background:#1D1C25;border:1px solid rgba(255,255,255,0.08)"></span><span class="num" style="font-size:12px;color:#8C8796">18 button</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:44px;height:44px;border-radius:14px;background:#1D1C25;border:1px solid rgba(255,255,255,0.08)"></span><span class="num" style="font-size:12px;color:#8C8796">14 control</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:76px;height:32px;border-radius:99px;background:#1D1C25;border:1px solid rgba(255,255,255,0.08)"></span><span class="num" style="font-size:12px;color:#8C8796">pill chip</span></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Spacing, 4 px base</h2>
+<div style="display:flex;align-items:flex-end;gap:14px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:8px;height:8px;background:#F7B538;border-radius:2px"></span><span class="num" style="font-size:12px;color:#8C8796">8</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:12px;height:12px;background:#F7B538;border-radius:2px"></span><span class="num" style="font-size:12px;color:#8C8796">12</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:16px;height:16px;background:#F7B538;border-radius:2px"></span><span class="num" style="font-size:12px;color:#8C8796">16</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:20px;height:20px;background:#F7B538;border-radius:2px"></span><span class="num" style="font-size:12px;color:#8C8796">20</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:24px;height:24px;background:#F7B538;border-radius:3px"></span><span class="num" style="font-size:12px;color:#8C8796">24 gutter</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:32px;height:32px;background:#F7B538;border-radius:3px"></span><span class="num" style="font-size:12px;color:#8C8796">32</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:48px;height:48px;background:#F7B538;border-radius:4px"></span><span class="num" style="font-size:12px;color:#8C8796">48</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px"><span style="width:56px;height:56px;background:rgba(247,181,56,0.25);border:1px dashed #F7B538;border-radius:4px"></span><span class="num" style="font-size:12px;color:#8C8796">58 top inset</span></div>
+</div>
+</div>
+</section>
+
+<section aria-label="Icons" style="position:relative;display:flex;flex-direction:column;gap:18px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Icons: Lucide, 1.75 stroke, rounded</h2>
+<div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;color:#ACA7B5">
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg><span style="font-size:11px;color:#8C8796">house</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2h7.2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span style="font-size:11px;color:#8C8796">folder</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3.5" width="12" height="15" rx="2.5"/><path d="M4.5 7v11a2.5 2.5 0 0 0 2.5 2.5h9"/></svg><span style="font-size:11px;color:#8C8796">copy (cards)</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-8M12 20V5M19 20v-11"/></svg><span style="font-size:11px;color:#8C8796">chart-column</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="7" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="13" cy="18" r="2"/><path d="M6.9 7.9 11.6 16.3M16.9 6.6 13.6 16M7 6.7l9-1.3"/></svg><span style="font-size:11px;color:#8C8796">waypoints</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h5l1.5 2.5h5L16 13h5"/><path d="M5.2 5h13.6L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"/></svg><span style="font-size:11px;color:#8C8796">inbox</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.7 7.1L4 20l1.3-4A8 8 0 1 1 20 11.5z"/></svg><span style="font-size:11px;color:#8C8796">message-circle</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.6 4.9 4.9 1.6-4.9 1.6L12 16.5l-1.6-4.9L5.5 10l4.9-1.6z"/></svg><span style="font-size:11px;color:#8C8796">sparkle</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.8"/></svg><span style="font-size:11px;color:#8C8796">target</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span style="font-size:11px;color:#8C8796">lightbulb</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/></svg><span style="font-size:11px;color:#8C8796">pencil</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4M12 16.8h.01"/></svg><span style="font-size:11px;color:#8C8796">triangle-alert</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg><span style="font-size:11px;color:#8C8796">book-open</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span style="font-size:11px;color:#8C8796">clock</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 4v4.5H8"/><path d="M12 8v4.2l2.8 1.8"/></svg><span style="font-size:11px;color:#8C8796">history</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h4v4M4 20 20 4M20 16v4h-4M15 15l5 5M4 4l5 5"/></svg><span style="font-size:11px;color:#8C8796">shuffle</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span style="font-size:11px;color:#8C8796">undo-2</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a2 2 0 0 1-2 2H8l-4 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M12 8v6M9 11h6"/></svg><span style="font-size:11px;color:#8C8796">message-square-plus</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2v6M15 2v6"/><path d="M6 8h12v4a6 6 0 0 1-12 0z"/><path d="M12 18v4"/></svg><span style="font-size:11px;color:#8C8796">plug</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span style="font-size:11px;color:#8C8796">sliders</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="11" width="13" height="9" rx="2"/><path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11"/></svg><span style="font-size:11px;color:#8C8796">lock</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span style="font-size:11px;color:#8C8796">download</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span style="font-size:11px;color:#8C8796">maximize</span></span>
+<span style="display:flex;flex-direction:column;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg><span style="font-size:11px;color:#8C8796">eye</span></span>
+</div>
+</section>
+
+<section aria-label="Components" style="position:relative;display:flex;flex-direction:column;gap:18px">
+<h2 style="margin:0;font-size:20px;font-weight:600">Components</h2>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px">
+<span style="height:52px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#1E1405;background:linear-gradient(180deg,#FFCD66,#F2A92C);box-shadow:inset 0 1px 0 rgba(255,255,255,0.5), 0 14px 32px -12px rgba(247,181,56,0.75)">Primary</span>
+<span style="height:52px;border-radius:17px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">Secondary</span>
+<span style="display:flex;gap:12px"><span style="width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#ACA7B5;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:22px;height:22px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></span><span style="position:relative;width:64px;height:64px;border-radius:99px;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%, #FFE08F, #F7B538 55%, #D98E1C);box-shadow:0 16px 40px -10px rgba(247,181,56,0.8)"><span aria-hidden="true" style="position:absolute;inset:-6px;border-radius:99px;border:1.5px solid rgba(247,181,56,0.6);animation:halo 2.8s ease-out infinite"></span><svg viewBox="0 0 24 24" aria-hidden="true" style="width:24px;height:24px;margin-left:3px;fill:#1E1405"><path d="M8 5.5v13l10.5-6.5z"/></svg></span></span>
+<span style="font-size:12px;color:#8C8796">Buttons: primary, secondary, icon (44), round start</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<span style="position:relative;height:44px;border-radius:14px;padding:4px;box-sizing:border-box;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);font-size:13px;font-weight:600"><span style="border-radius:10px;display:grid;place-items:center;background:#24232C">Path</span><span style="display:grid;place-items:center;color:#8C8796">Sessions</span><span style="display:grid;place-items:center;color:#8C8796">Sources</span></span>
+<span style="display:flex;gap:12px;align-items:center"><span style="position:relative;width:52px;height:32px;border-radius:99px;background:#F7B538"><span style="position:absolute;top:3px;left:23px;width:26px;height:26px;border-radius:99px;background:#F4F0E6"></span></span><span style="width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:#F7B538;color:#1E1405"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;stroke-width:2.4"><path d="M5 12.5 10 17l9-10"/></svg></span><span style="width:20px;height:20px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.22)"></span></span>
+<span style="display:flex;gap:8px"><span style="height:36px;padding:0 12px;border-radius:12px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#1E1405;background:#F7B538">All 22</span><span style="height:36px;padding:0 12px;border-radius:12px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#ACA7B5;border:1px solid rgba(255,255,255,0.08)">Revisit 3</span></span>
+<span style="font-size:12px;color:#8C8796">Segmented, switch, checkbox, filter chips</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<span style="display:flex;align-items:center;gap:14px">
+<span aria-label="Done" style="width:28px;height:28px;border-radius:99px;display:grid;place-items:center;color:#1E1405;background:#F7B538"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;stroke-width:2.6"><path d="M5.5 12.5 10 17l8.5-9.5"/></svg></span>
+<span style="position:relative;width:28px;height:28px;display:grid;place-items:center"><span aria-hidden="true" style="position:absolute;inset:0;border-radius:99px;background:rgba(247,181,56,0.5);animation:halo 2.4s ease-out infinite"></span><span aria-label="Current" style="position:relative;width:28px;height:28px;border-radius:99px;box-sizing:border-box;border:2.5px solid #F7B538;background:#17161D;display:grid;place-items:center"><span style="width:10px;height:10px;border-radius:99px;background:#FFD47E"></span></span></span>
+<span aria-label="Proposed" style="width:28px;height:28px;border-radius:99px;box-sizing:border-box;border:1.5px dashed #F7B538"></span>
+<span aria-label="Next" style="width:28px;height:28px;border-radius:99px;box-sizing:border-box;border:1.5px solid rgba(255,255,255,0.28)"></span>
+<span aria-label="Locked" style="width:28px;height:28px;border-radius:99px;display:grid;place-items:center;color:#5F5B68;background:#15141A"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px"><rect x="5.5" y="11" width="13" height="9" rx="2"/><path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11"/></svg></span>
+</span>
+<span style="display:block;height:4px;border-radius:4px;background:rgba(255,255,255,0.08)"><span style="display:block;height:4px;width:42%;border-radius:4px;background:linear-gradient(90deg,#D98E1C,#F7B538)"></span></span>
+<svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="30" style="fill:none;stroke:rgba(255,255,255,0.09);stroke-width:5;stroke-linecap:round;stroke-dasharray:39.1 8;transform:rotate(-86deg);transform-origin:38px 38px"/><circle cx="38" cy="38" r="30" style="fill:none;stroke:#F7B538;stroke-width:5;stroke-linecap:round;stroke-dasharray:39.1 8 39.1 102.3;transform:rotate(-86deg);transform-origin:38px 38px"/><g style="transform-origin:38px 38px;animation:orbit 10s linear infinite"><circle cx="38" cy="5" r="2.4" style="fill:#FFE3A6"/></g></svg>
+<span style="font-size:12px;color:#8C8796">Checkpoint states: done, current, proposed, next, locked. Rail, step ring.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<span style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+<span style="height:52px;border-radius:16px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;font-weight:600;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)"><span style="width:10px;height:10px;border-radius:99px;background:#F2545B"></span>Again</span>
+<span style="height:52px;border-radius:16px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;font-weight:600;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)"><span style="width:10px;height:10px;border-radius:99px;background:#F39A4B"></span>Hard</span>
+<span style="height:52px;border-radius:16px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;font-weight:600;background:rgba(247,181,56,0.12);box-shadow:0 0 0 1.5px rgba(247,181,56,0.8)"><span style="width:10px;height:10px;border-radius:99px;background:#F7B538"></span>Good</span>
+<span style="height:52px;border-radius:16px;display:flex;align-items:center;gap:10px;padding:0 14px;font-size:14px;font-weight:600;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)"><span style="width:10px;height:10px;border-radius:99px;background:#4FC88E"></span>Easy</span>
+</span>
+<span style="font-size:12px;color:#8C8796">Grade buttons; Good is lit when you said Sure.</span>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
