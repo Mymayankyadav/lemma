@@ -109,6 +109,7 @@ async function rejectCopy(label,change,pattern){
   await rejectCopy('new source',()=>{state.sourceRefs.push('new-source');},/stale_study_context/);
   await rejectCopy('checkpoint completed',()=>{state.checkpoint.status='demonstrated';},/stale_study_context/);
   await rejectCopy('same owner relogin',()=>identityChanged(),/account or workspace changed/);
+  await rejectCopy('client replacement',()=>{account.client={};},/account or workspace changed/);
   await rejectCopy('owner switch during read',()=>{onRead=()=>{account.user={id:changedId};};},
     /account or workspace changed/);
   await rejectCopy('workspace switch during read',()=>{onRead=()=>{app.workspaceRevision++;};},
