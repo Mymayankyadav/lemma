@@ -62,7 +62,7 @@ const input={planId:P,expectedRevision:1,title:'Group theory',
  source:'Claude',proposalId:C};
 const rejects=async(p,re)=>assert.rejects(p,re);
 (async()=>{
- assert.equal(api.ready,false);
+ assert.equal(api.ready,true);
  assert.equal(await api.reviewPendingAmendment(P),null,'no draft never reads server');
  assert.equal(reads.length,0);
  const draft=await api.savePlanDraft(input);

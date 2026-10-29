@@ -83,7 +83,7 @@ async function mount() {
  return root;
 }
 (async()=>{
- assert.equal(ui.ready,false,'Study must stay hidden until P5');
+ assert.equal(ui.ready,true,'Study is ready after P5 acceptance');
  let root=await mount();
  assert.equal(approvals,0);assert.equal(submissions,0);assert.equal(reviews,0);
  assert.equal(reads,1,'opening uses owner-local state, no cloud amendment read');

@@ -108,7 +108,7 @@ function load(){
 }
 (async()=>{
  let first=load();
- assert.equal(first.ready,false);
+ assert.equal(first.ready,true);
  assert.equal((await first.activeContext()).checkpoint.id,'cp-1',
   'without events, select the first pending checkpoint');
  await first.recordEvent({planId:PLAN,checkpointId:'cp-3',

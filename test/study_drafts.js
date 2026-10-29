@@ -36,7 +36,7 @@ const make=(over={})=>({
  proposalId:proposal,...over
 });
 (async()=>{
- assert.equal(api.ready,false,'local drafts do not unlock unfinished Study UI');
+ assert.equal(api.ready,true,'local drafts do not change Study readiness');
  assert.equal(await api.readPlanDraft(id),null);
  const draft=await api.savePlanDraft(make());
  assert.equal(draft.status,'draft');

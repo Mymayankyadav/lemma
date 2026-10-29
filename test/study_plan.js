@@ -68,7 +68,7 @@ vm.runInContext(fs.readFileSync('src/app/study_plan.js','utf8')+
 const api = sandbox.subject;
 
 (async () => {
- assert.equal(api.ready,false,'study cannot appear before acceptance gates');
+ assert.equal(api.ready,true,'Study acceptance enables readiness');
  const first=await api.activeContext();
  assert.equal(first.planId,plan);
  assert.equal(first.planRevision,2);

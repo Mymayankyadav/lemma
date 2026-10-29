@@ -50,7 +50,7 @@ function liveContext(){return {planId:P,planRevision:3,
  lastFeedback:{text:'Missing a cover argument'},
  lastEvidence:null,nextAction:{text:'Find finite refinement'}}}
 (async()=>{
- assert.equal(ui.ready,false,'P3 must remain hidden until full acceptance');
+ assert.equal(ui.ready,true,'accepted Study UI is ready');
  user=null;
  const noAccount=mount();await flush();
  assert.match(find(noAccount,n=>n.attrs.class==='study-message').textContent,/Sign in/);

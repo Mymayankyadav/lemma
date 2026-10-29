@@ -894,7 +894,7 @@ const StudyPlan = (() => {
     const draft = await savePlanDraft(input);
     return draft.draftId;
   }
-  return { ready:false, activeContext,recordEvent,proposeAmendment,
+  return { ready:true, activeContext,recordEvent,proposeAmendment,
     saveInitialPlanDraft,listInitialPlanDrafts,reviewInitialPlanDraft,approveInitialPlanDraft,
     savePlanDraft,readPlanDraft,discardPlanDraft,
     approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt,diffPlanSnapshots,reviewPendingAmendment,
