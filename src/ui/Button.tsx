@@ -1,8 +1,9 @@
-import type {ButtonHTMLAttributes,ReactNode} from 'react';
+import type {ReactNode} from 'react';
+import type {HTMLMotionProps} from 'motion/react';
 import type {LucideIcon} from 'lucide-react';
 import {LoaderCircle} from 'lucide-react';
 import {motion,useReducedMotion} from 'motion/react';
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>{variant?:'lit'|'ghost'|'danger'|'text';size?:'m'|'l'|'xl';icon?:LucideIcon;loading?:boolean;children:ReactNode}
+export interface ButtonProps extends Omit<HTMLMotionProps<'button'>,'children'>{variant?:'lit'|'ghost'|'danger'|'text';size?:'m'|'l'|'xl';icon?:LucideIcon;loading?:boolean;children:ReactNode}
 const heights={m:'min-h-12',l:'min-h-[52px]',xl:'min-h-14'};
 const variants={lit:'lit',ghost:'ghost',danger:'border border-again/30 bg-danger-tint text-again',text:'bg-transparent text-amber'};
 export function Button({variant='lit',size='l',icon:Icon,loading=false,disabled=false,className='',children,...rest}:ButtonProps){

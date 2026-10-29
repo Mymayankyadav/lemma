@@ -1,7 +1,7 @@
-import type {ButtonHTMLAttributes} from 'react';
+import type {HTMLMotionProps} from 'motion/react';
 import type {LucideIcon} from 'lucide-react';
 import {motion,useReducedMotion} from 'motion/react';
-export interface OrbProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>,'children'>{icon:LucideIcon;label:string;size?:64|76;halo?:boolean}
+export interface OrbProps extends Omit<HTMLMotionProps<'button'>,'children'>{icon:LucideIcon;label:string;size?:64|76;halo?:boolean}
 export function Orb({icon:Icon,label,size=76,halo=true,className='',...rest}:OrbProps){
  const reduce=!!useReducedMotion();
  return <span className="relative inline-flex items-center justify-center" style={{width:size,height:size}}>
