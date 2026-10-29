@@ -124,6 +124,20 @@ async function readAccepted(page) {
         await page.locator('#s-knowledge-id').fill(C);
         await page.getByRole('button',{name:'Open saved draft'}).click();
         await page.locator('#s-knowledge-inspect').waitFor({state:'visible'});
+        assert.equal(await page.locator('#s-knowledge-review-draft').isVisible(),true);
+        assert.equal(await page.locator('#s-knowledge-submit').isVisible(),false,
+          'an unapproved saved draft must not expose publication');
+        await page.getByRole('button',{name:'Review saved draft'}).click();
+        await page.locator('#s-knowledge-approval').waitFor({state:'visible'});
+        assert.match(await page.locator('#s-knowledge-approval').textContent(),
+          /Topology unapproved notes/,'review must show the persisted title');
+        assert.equal(await page.locator('#s-knowledge-approve').isVisible(),true);
+        assert.equal(await page.evaluate(()=>window.__readerTest.writes),0,
+          'review must never approve or publish by itself');
+        await page.locator('#set-knowledge-drafts').screenshot({
+          path:path.join(OUT,'knowledge-context-review-'+size+'-'+scheme+'.png'),
+          animations:'disabled',
+          style:'.topbar,.tabbar { visibility:hidden !important; }'});
         await page.locator('#set-knowledge-drafts').screenshot({
           path:path.join(OUT,'knowledge-reader-link-'+size+'-'+scheme+'.png'),
           animations:'disabled',
