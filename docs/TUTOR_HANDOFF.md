@@ -105,7 +105,7 @@ Synthetic tests `test/tutor_acceptance.js` cover the preview guards, including a
 
 ## T4: genuine cross-model acceptance (NOT YET PASSED)
 
-This is a **manual, owner-operated acceptance test**, not an AI integration or a request to approve plans on the owner's behalf. It may run only after Lane D has independently verified and enabled access to a **student-approved** active checkpoint through Study. At this checkpoint the production migration history has 16 exact versions, including the tutor audit and atomic event RPC (Lane A applied and verified in [run 40736286767](https://github.com/Mymayankyadav/lemma/actions/runs/40736286767)). The Study screen presently has `StudyView.ready=false`; neither a synthetic Playwright fixture nor an unapproved draft clears this blocker.
+This is a **manual, owner-operated acceptance test**, not an AI integration or a request to approve plans on the owner's behalf. It may run only after Lane D has independently verified and enabled access to a **student-approved** active checkpoint through Study. At this checkpoint the production migration history has 16 exact versions, including the tutor audit and atomic event RPC (Lane A applied and verified in [run 40736286767](https://github.com/Mymayankyadav/lemma/actions/runs/40736286767)). Study was independently enabled by D [#172](https://github.com/Mymayankyadav/lemma/pull/172) (`StudyView.ready=true`). The ordinary Study tutor entry prepared in D [#190](https://github.com/Mymayankyadav/lemma/pull/190) is still hidden until `TutorHandoff.ready=true`, which requires T4. The separately reviewed acceptance-preview path in T4a resolves the sequencing without opening normal navigation; mock CI and unapproved drafts do not pass T4.
 
 ### Test case and retained state
 
