@@ -46,6 +46,7 @@ Primary keys are `id uuid default gen_random_uuid()` unless stated.
 | `preferred_chat` | text, `'claude'` | check in (`claude`, `chatgpt`) |
 | `connector_secret` | text not null unique | default: 48 hex chars from `extensions.gen_random_bytes(24)` |
 | `connector_last_seen_at` | timestamptz null | written by connector |
+| `master_prompt` | text null | ≤ 2000; the owner's standing instructions for every chat (e.g. "Write all maths in LaTeX, never Unicode symbols. Be Socratic."); sent first in every packet and overrides style and rules |
 | `time_zone` | text, `'UTC'` | IANA name; the app sets it from the browser after sign-in; the connector uses it for "today" and dates |
 | `connector_last_client` | text null | `claude` / `chatgpt` / `other` |
 | `updated_at` | timestamptz default now() | trigger keeps it current |
@@ -68,7 +69,8 @@ Primary keys are `id uuid default gen_random_uuid()` unless stated.
 | `title` | text not null | 1–80 chars |
 | `goal` | text not null | 1–1200 chars; the owner's precise prompt |
 | `style` | text, `'socratic'` | `styles.key` |
-| `status` | text, `'planning'` | check in (`planning`, `active`, `paused`, `done`) |
+| `status` | text, `'planning'` | check in (`planning`, `active`, `paused`, `done`, `archived`); `archived` hides the project everywhere (reversible) |
+| `prompt` | text null | ≤ 1000; extra standing instructions for this project only, sent after `master_prompt` |
 | `next_session_number` | int, 1 | incremented when a session starts |
 | `last_activity_at` | timestamptz null | any session event or review in this project |
 | `updated_at` | timestamptz | trigger |
@@ -294,6 +296,32 @@ Index (`user_id`, `status`).
 - `updated_at` trigger on `settings`, `projects`, `checkpoints`, `notes`.
 - After insert on `session_events` and `reviews`: set `projects.last_activity_at = now()` for the related project (reviews: via card → note → project). Keep these triggers simple and `security invoker`.
 
+### 2.21 Action log (`actions`, `action_changes`) — every change is reversible
+
+Nothing the owner or a tutor does is ever lost. Every write to any table in §2.1–2.19, from the app or the connector, is recorded with the row before and after, and any recorded action can be undone through the connector (`connector.md` §5.15–5.17). Undoing is itself an action, so an undo can be undone (redo).
+
+`actions`:
+
+| Column | Type / default | Notes |
+| --- | --- | --- |
+| `no` | bigint generated always as identity PK | shown as `A123` |
+| `user_id` | uuid not null | owner of the changed rows |
+| `txid` | bigint not null unique | `txid_current()`; one action per database transaction |
+| `source` | text, `'app'` | check in (`app`, `claude`, `chatgpt`, `other`, `system`); from `current_setting('lemma.source', true)` |
+| `tool` | text null | connector tool or app method name, from `current_setting('lemma.tool', true)` |
+| `summary` | text null | ≤ 200, from `current_setting('lemma.summary', true)`; else generated: `insert notes 1, cards 2` |
+| `undoes` | bigint null | FK `actions(no)`: set when this action is an undo |
+| `undone_by` | bigint null | FK `actions(no)`: set on the original when it is undone; cleared when that undo is itself undone |
+| `created_at` | timestamptz default now() | |
+
+`action_changes`: `id` bigint identity PK, `action_no` FK `actions` (never deleted), `seq` int (order within the action), `table_name` text, `row_pk` jsonb (primary key values), `op` text check in (`insert`, `update`, `delete`), `old` jsonb null, `new` jsonb null. Index (`table_name`, `row_pk`), (`action_no`, `seq`).
+
+Capture: one generic `after insert or update or delete ... for each row` trigger function `public.log_change()` (`security definer`, `search_path = ''`) on every table of §2.1–2.19. It finds or creates the `actions` row for `txid_current()` (taking `user_id` from `NEW`/`OLD`), then appends the change with `to_jsonb(OLD)` / `to_jsonb(NEW)`. Updates that change only `updated_at` or `last_activity_at` are not logged. The app and the connector set `lemma.source`, `lemma.tool` and `lemma.summary` with `set_config(..., true)` at the start of each RPC; plain PostgREST writes from the app get `source = 'app'` and a generated summary.
+
+Both tables have RLS `owner_all` (select only for `authenticated`; writes only through the trigger and `undo_action`). Rows are never deleted.
+
+Hard deletes on user tables happen only inside `undo_action` (undoing an insert), and the deleted row stays in `action_changes`, so redo restores it with the same primary key. Other user-facing removal is a status change (`notes.status = 'deleted'`, `projects.status = 'archived'`, proposals `rejected`), which is an ordinary logged update.
+
 ## 3. Row-level security and grants
 
 - Enable RLS on every table in §2.
@@ -375,6 +403,19 @@ Columns: `user_id, card_id, note_id, note_no, ord, project_id, checkpoint_id, se
 ### 5.8 `save_progress(p_user_id uuid, p_project_id uuid, p_session_id uuid, p_payload jsonb) returns jsonb`
 
 Connector-only, `security invoker`; execute granted to `service_role` only. This is the atomic implementation of connector.md §5.6, not a new frontend LemmaApi method. The connector resolves the owner/project/session before calling it and passes only `step`, `events`, `misconception`, `resolved`, `next_question` in `p_payload` (the same names and limits as the tool). The function validates owner/project/session/checkpoint relationships, locks the project and open session, and applies all events, misconception changes, checkpoint steps/evidence/re-check ladder and session question/activity in one transaction. Any error rolls back the entire save. Dates use the owner's time zone and rollover hour. Returns `{step: number | null, events: number}`, where events includes a generated misconception event. No scheduling or curriculum approval happens here.
+
+### 5.8 `undo_action(p_user uuid, p_no bigint, p_force boolean default false) returns jsonb`
+`security definer`; callable by `service_role` (connector, passing the resolved owner) and by `authenticated` (where `p_user` must equal `auth.uid()`).
+1. Lock the action; raise `A<n> is not yours` / `A<n> is already undone (by A<m>)`.
+2. Conflict check: if any later action that is not undone changed one of the same rows (`table_name`, `row_pk`), raise `Undo A<later> first` listing them (newest first).
+3. Set `lemma.source`/`lemma.tool = 'undo'`/`lemma.summary = 'undo A<n>: <summary>'`; the trigger logs this transaction as the new action; set its `undoes = p_no`.
+4. Apply the inverse of each change in reverse `seq` order: insert → delete the row by `row_pk`; update → set the columns back to `old` (only columns that differ); delete → re-insert `old` (same primary key, identity values with `overriding system value`).
+5. Cascade check: if step 4 deleted rows that were not in the original action's changes (foreign-key cascades), raise `Undo would also remove: <table counts>; undo those actions first or confirm` unless `p_force` (then the cascade is logged and redo restores it).
+6. Mark the original `undone_by`. If the original was itself an undo (`undoes` set), clear `undone_by` on the action it had undone (this is redo).
+7. Return `{undone: n, as: m, changes: k}`.
+
+### 5.9 View `v_history` (`security_invoker = true`)
+`actions` with change counts per table and `undone_by`, newest first; used by the connector's `history` tool and later by an app screen.
 
 ## 6. Derived states (computed in `src/lib/derive.ts`, mirrored in the connector)
 

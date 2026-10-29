@@ -122,6 +122,8 @@ The owner wants to study in Claude and ChatGPT as soon as possible, with no app 
 | --- | --- | --- | --- |
 | 1 | DB-1 | now | Apply migrations with the Supabase MCP (no CI needed). Then seed the owner: run `public.bootstrap()` once as the owner (see `data.md` §5.1). |
 | 2 | MCP-1 | now, in parallel; deploy after DB-1 | Build all 14 tools, including `create_project`, `proposals` and `decide` (`connector.md` §5.12–5.14), which let the owner create projects and approve proposals in chat. Deploy with Supabase MCP `deploy_edge_function` (`verify_jwt: false`) if `supabase.yml` does not exist yet. Ship read tools + `resume` + `create_project` + `propose_plan` + `proposals` + `decide` + session tools in the first PR so planning and studying work; the rest can follow. |
+| 2b | DB-2 Action log | now | One migration: `actions`, `action_changes`, the `log_change()` trigger on every table, `undo_action`, `v_history`, `settings.master_prompt`, `projects.prompt`, `projects.status` `archived` (`data.md` §2.1, §2.3, §2.21, §5.8, §5.9). Test in a rolled-back transaction: insert, update and delete a note, undo each, undo the undo (redo), and the conflict and cascade errors. Existing reads must hide `archived` projects. |
+| 2c | MCP-2 Prompts and undo | after DB-2 | Tools `set_prompt`, `history`, `undo`, `remove`; `get(what=prompt)`; the `OWNER` block in every packet; `Undo: A<n>` at the end of every write tool's output; every connector write RPC sets `lemma.source`, `lemma.tool`, `lemma.summary`; new server instructions text (`connector.md` §4, §5.15–5.18, §8.1, §9 steps 11–12). |
 | 3 | Owner | after MCP-1 deploys | Get the connector address in the Supabase dashboard › SQL editor: `select 'https://yemqnhnztlbyxmjxidis.supabase.co/functions/v1/mcp/' \|\| connector_secret from settings;` then add it to Claude and ChatGPT (`connector.md` §10). |
 
 How the owner works before the app exists:
@@ -129,6 +131,8 @@ How the owner works before the app exists:
 - **Approve**: say "approve it" (or "approve P1, P3, reject P2"); the tutor calls `decide`. ChatGPT also asks to confirm each write.
 - **Study**: "Resume Real Analysis". Pages are read from the attached PDF (SRC shows "attached in chat") until PDF upload in the app (PDF-1, SCR-PROJ) stores page text.
 - **Cards** collect in Supabase; reviewing them waits for the review screen (SCR-REV). The tutor's warm-up questions and re-checks work from day one.
+
+After MCP-2 the owner says once: "From now on, always: write all maths in LaTeX, never Unicode symbols; be Socratic" — the tutor saves it with `set_prompt` and every later session starts with it. Any mistake: "undo that" or "show history".
 
 Agents on this track touch only `supabase/**` and `tests/mcp/**`, so they never conflict with Phase 0 or the UI work. With spare agents, continue Phase 0 → 3 as below in parallel.
 
@@ -329,7 +333,7 @@ Status on 29 Oct 2026, 21:30 IST:
 
 ## 11. Later (not in v1)
 
-OAuth sign-in for the connector instead of the URL secret; page images so Claude can read formulas from scans (`get_page_image`); Anki import and export; daily reminder notifications; offline review with a write queue; per-subject FSRS parameters; photos of handwritten proofs; full-text search across all projects.
+App screens for the master prompt (Settings) and the action history with undo buttons; OAuth sign-in for the connector instead of the URL secret; page images so Claude can read formulas from scans (`get_page_image`); Anki import and export; daily reminder notifications; offline review with a write queue; per-subject FSRS parameters; photos of handwritten proofs; full-text search across all projects.
 
 ## 12. Known traps (read before coding)
 
