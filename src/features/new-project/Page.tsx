@@ -48,7 +48,7 @@ function SubjectCreator({onCreated}:{onCreated:(id:string)=>void}){
 
 export default function Page(){
  const navigate=useNavigate(),subjects=useSubjects(),styles=useStyles(),createProject=useCreateProject(),
-  createSubject=useCreateSubject(),addSource=useAddSource(),notify=useToast();
+  createSubject=addSource=useAddSource(),notify=useToast();
  const [name,setName]=useState(''),[goal,setGoal]=useState(''),[subjectId,setSubjectId]=useState(''),
   [style,setStyle]=useState('socratic'),[file,setFile]=useState<File|null>(null),[addingSubject,setAddingSubject]=useState(false),
   [progress,setProgress]=useState<IngestProgress|null>(null),[saving,setSaving]=useState(false),
@@ -95,7 +95,7 @@ export default function Page(){
    notify(project?'Project saved, but source upload needs a retry.':'Project could not be created.',{tone:'danger'});
   }finally{setSaving(false)}
  }
- const canSubmit=Boolean(name.trim()&&goal.trim()&&subjectId&&style&&!fileError);
+ const canSubmit=Boolean(name.trim()&&goal.trim()&&subjectId&&style&&(!fileError||created));
  const preparing=subjects.isPending||styles.isPending;
  const prompt=planPrompt(name.trim()||'your project');
  return <Screen title="New project" back="/projects">
@@ -115,7 +115,7 @@ export default function Page(){
      <section aria-label="Subject" className="flex flex-col gap-3">
       <h3 className="text-[14px] font-semibold text-ink-2">Subject</h3>
       <div role="radiogroup" aria-label="Subject" className="flex flex-wrap gap-2">
-       {(subjects.data??[]).map(s=><button key={s.id} type="button" role="radio" aria-checked={subjectId===s.id}
+       {(subjects.data??[]).map(s=><button key={s.id} type="button" role="radio" aria-label={s.name} aria-checked={subjectId===s.id}
         disabled={saving||Boolean(created)} onClick={()=>setSubjectId(s.id)} className={'flex min-h-11 items-center gap-2 rounded-chip border px-3 text-[13px] '+
          (subjectId===s.id?'border-amber-line-2 bg-amber-tint-2 text-ink':'border-edge bg-fill-1 text-ink-2')}>
         <Glyph subject={s.glyph} hue={s.hue} size={32}/>{s.name}</button>)}
