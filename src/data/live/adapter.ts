@@ -32,14 +32,21 @@ export class LiveAdapter implements LemmaApi {
  async bootstrap(...args: Parameters<LemmaApi['bootstrap']>): ReturnType<LemmaApi['bootstrap']> {
   const db=liveClient()
   await owner(db)
-  const result=checked(await db.rpc('bootstrap'))
+  let result=checked(await db.rpc('bootstrap')) as unknown as Row
+  // Keep scheduling tied to the owner's local study day, not the server UTC date.
   if(typeof window !== 'undefined'){
+    const zone=Intl.DateTimeFormat().resolvedOptions().timeZone
+    if(zone && zone!==result.time_zone){
+      const uid=await owner(db)
+      result=checked(await db.from('settings').update({time_zone:zone})
+        .eq('user_id',uid).select('*').single()) as unknown as Row
+    }
     const hash=sessionStorage.getItem('lemma:oauth-return')
     if(hash && !window.location.hash) {sessionStorage.removeItem('lemma:oauth-return'); window.location.hash=hash}
     const url=new URL(window.location.href)
     if(url.searchParams.has('code')) {url.searchParams.delete('code'); window.history.replaceState(null,'',url.pathname+url.search+url.hash)}
   }
-  return settingsRow(result as Row)
+  return settingsRow(result)
  }
  async getSettings(...args: Parameters<LemmaApi['getSettings']>): ReturnType<LemmaApi['getSettings']> {
   const db=liveClient(), uid=await owner(db)
