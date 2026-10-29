@@ -21,7 +21,14 @@ export async function checkpoints(c: Context,p: any): Promise<any[]> {
 }
 export async function checkpoint(c: Context,p: any, code?: string): Promise<any> {
   const items=await checkpoints(c,p);
-  if (!code) return items.find((x:any)=>x.status==='in_progress') || items.find((x:any)=>x.status==='not_started') || null;
+  if (!code) {
+    const current=items.find((x:any)=>x.status==='in_progress');
+    if(current)return current;
+    const done=new Set(items.filter((x:any)=>x.status==='demonstrated').map((x:any)=>x.id));
+    const {data:edges,error}=await scoped(c,'checkpoint_prereqs').in('checkpoint_id',items.map((x:any)=>x.id));
+    if(error)throw new Error(error.message);
+    return items.find((x:any)=>x.status==='not_started'&&(edges||[]).filter((e:any)=>e.checkpoint_id===x.id).every((e:any)=>done.has(e.prereq_id)))||null;
+  }
   const found=items.find((x:any)=>x.code.toLowerCase()===code.toLowerCase());
   if(!found) throw new Error('No checkpoint '+code+'. Valid: '+items.map((x:any)=>x.code).join(', '));
   return found;
