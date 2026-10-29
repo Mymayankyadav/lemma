@@ -95,7 +95,12 @@ export async function selftest(c:Context):Promise<any>{
           protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'lemma-selftest',version:'1.0.0'}
         }})}));
       if(!initialized.ok)throw Error('MCP initialize failed: '+initialized.status);
-      const req=new Request('http://localhost/mcp',{...options,
+      const session=initialized.headers.get('Mcp-Session-Id');
+      const headers={...options.headers,...(session?{'Mcp-Session-Id':session}:{})};
+      const notified=await handler.fetch(new Request('http://localhost/mcp',{...options,headers,
+        body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})}));
+      if(!notified.ok)throw Error('MCP initialized notification rejected: '+notified.status);
+      const req=new Request('http://localhost/mcp',{...options,headers,
         body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})});
       const res=await handler.fetch(req),body=await res.text();
       let payload:any;
