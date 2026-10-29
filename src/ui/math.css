@@ -1,0 +1,7 @@
+.lemma-math p { margin: 0 0 .7em; }
+.lemma-math p:last-child { margin-bottom: 0; }
+.lemma-math .katex-display { overflow-x: auto; overflow-y: hidden; padding-block: .3em; }
+.lemma-math .cz.czq { display:inline; border-bottom:2px solid var(--amber); color:var(--amber-hi); white-space:nowrap; }
+.lemma-math .cz.cza { border-radius:var(--r-s); background:var(--amber-tint-2); color:var(--amber-hi); box-shadow:0 0 18px var(--amber-tint); padding-inline:.16em; }
+.lemma-math a { color:var(--amber); text-decoration:underline; text-underline-offset:3px; }
+.lemma-math code { font-size:.87em; border-radius:var(--r-s); background:var(--well); padding:.12em .3em; }
