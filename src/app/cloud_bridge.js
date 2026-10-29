@@ -322,7 +322,11 @@ const LemmaCloudBridge = (() => {
   }
   async function verifyLocalRecoveryEnvelope(envelope,expectedOwnerId) {
     const stable = stableRecoveryInput(envelope);
-    envelope = stable.snapshot;
+    const result = await verifyLocalRecoverySnapshot(stable.snapshot,expectedOwnerId);
+    stable.check();
+    return result;
+  }
+  async function verifyLocalRecoverySnapshot(envelope,expectedOwnerId) {
     if (envelope?.app !== 'lemma' || envelope.version !== 1 ||
         envelope.scope !== 'account-local-recovery-envelope' ||
         envelope.ownerId !== expectedOwnerId ||
@@ -335,7 +339,6 @@ const LemmaCloudBridge = (() => {
     if (bytes.length !== envelope.bytes ||
         await recoveryDigest(bytes) !== envelope.sha256)
       throw new Error('Local recovery checksum or size mismatch');
-    stable.check();
     return { ownerId:expectedOwnerId, rows, bytes:bytes.length,
       sha256:envelope.sha256, readOnly:true };
   }
@@ -568,7 +571,11 @@ const LemmaCloudBridge = (() => {
 
   async function verifyServerWorkspaceArchive(archive,expectedOwnerId){
     const stable = stableRecoveryInput(archive);
-    archive = stable.snapshot;
+    const result = await verifyServerWorkspaceSnapshot(stable.snapshot,expectedOwnerId);
+    stable.check();
+    return result;
+  }
+  async function verifyServerWorkspaceSnapshot(archive,expectedOwnerId){
     if(archive.app!=='lemma' || archive.version!==2 ||
        archive.scope!=='account-workspace' || archive.capture!=='transactional' ||
        archive.ownerId!==expectedOwnerId ||
@@ -598,7 +605,6 @@ const LemmaCloudBridge = (() => {
     if(archiveCanonical(archive.manifest)!==
        archiveCanonical({counts,hashes,sha256:digest}))
       throw new Error('Paired server archive checksum mismatch');
-    stable.check();
     return {ownerId:expectedOwnerId,count:verified.count,sha256:digest,readOnly:true};
   }
   async function restoreServerWorkspaceArchive(archive,{requestId,studentConfirmed=false,dryRun=true}={}){
@@ -644,9 +650,9 @@ const LemmaCloudBridge = (() => {
        pair.ownerId!==expectedOwnerId ||
        !pair.server || !pair.local || !pair.manifest)
       throw new Error('Invalid recovery pair or owner');
-    const verified=await verifyServerWorkspaceArchive(pair.server,expectedOwnerId);
+    const verified=await verifyServerWorkspaceSnapshot(pair.server,expectedOwnerId);
     const archive=pair.server, digest=archive.manifest.sha256;
-    const local=await verifyLocalRecoveryEnvelope(pair.local,expectedOwnerId);
+    const local=await verifyLocalRecoverySnapshot(pair.local,expectedOwnerId);
     const pairInput={app:'lemma',version:1,scope:'account-recovery-pair',
       capture:'two-independent-readonly-snapshots',ownerId:expectedOwnerId,
       serverSha256:digest,localSha256:local.sha256,
