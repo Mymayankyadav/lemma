@@ -98,7 +98,7 @@ Use the latest release of each major listed; pin exact versions in `package.json
 - **Scope**: only your owned paths. Need something outside them? Use §7, or leave a note in your PR under "Needs from others" and build against what exists.
 - **Quality bar**: `npm run check` passes; your tests pass; screens match `design.md` and the boards (compare your screenshot from `test-results/screens/` with the board); no `console.error` in the browser; no hard-coded colours outside `src/styles`.
 - **PR description**: what changed, how you verified it (commands and results), screenshot(s) for UI, remaining gaps.
-- **Merge**: squash merge when CI is green on the last commit and there are no conflicts. Bootstrap exception: until `.github/workflows/ci.yml` exists on `main` (P0-A, and P0-C itself), merge when `npm ci && npm run check` passes locally and the PR description pastes that output. On conflicts, merge `main` into your branch (never force-push, never rewrite history).
+- **Merge**: squash merge when CI is green on the last commit and there are no conflicts. Bootstrap exception: until `.github/workflows/ci.yml` exists on `main` (P0-A, P0-C itself, and chat-first PRs that land earlier), merge when `npm ci && npm run check` passes locally and the PR description pastes that output. On conflicts, merge `main` into your branch (never force-push, never rewrite history).
 - **After merge**: pick the next task in §8. Do not edit this plan to mark progress; merged PR titles are the progress record.
 - **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test, add tracking or analytics.
 - **Models**: use the strongest available model for P0-A/B, DB-1, MCP-1, LIB-1 and DEMO-1 (contracts and logic). Any capable model can do UI-1/2 and screens.
@@ -113,6 +113,24 @@ Use the latest release of each major listed; pin exact versions in `package.json
 ## 8. Task board
 
 Phases run in order; tasks inside a phase run in parallel. "Done when" items are the acceptance checks for the PR.
+
+### Priority: chat-first track (start now, before everything else)
+
+The owner wants to study in Claude and ChatGPT as soon as possible, with no app screens. This track needs only DB-1 and MCP-1; neither depends on P0-B, P0-C or any UI task.
+
+| Order | Task | Starts when | Notes |
+| --- | --- | --- | --- |
+| 1 | DB-1 | now | Apply migrations with the Supabase MCP (no CI needed). Then seed the owner: run `public.bootstrap()` once as the owner (see `data.md` §5.1). |
+| 2 | MCP-1 | now, in parallel; deploy after DB-1 | Build all 14 tools, including `create_project`, `proposals` and `decide` (`connector.md` §5.12–5.14), which let the owner create projects and approve proposals in chat. Deploy with Supabase MCP `deploy_edge_function` (`verify_jwt: false`) if `supabase.yml` does not exist yet. Ship read tools + `resume` + `create_project` + `propose_plan` + `proposals` + `decide` + session tools in the first PR so planning and studying work; the rest can follow. |
+| 3 | Owner | after MCP-1 deploys | Get the connector address in the Supabase dashboard › SQL editor: `select 'https://yemqnhnztlbyxmjxidis.supabase.co/functions/v1/mcp/' \|\| connector_secret from settings;` then add it to Claude and ChatGPT (`connector.md` §10). |
+
+How the owner works before the app exists:
+- **Start a project**: attach the book PDF to a Claude Project (or ChatGPT Project) and say "New project: Real Analysis, goal: …". The tutor calls `create_project` (with `book`), reads the attached PDF, and proposes a plan.
+- **Approve**: say "approve it" (or "approve P1, P3, reject P2"); the tutor calls `decide`. ChatGPT also asks to confirm each write.
+- **Study**: "Resume Real Analysis". Pages are read from the attached PDF (SRC shows "attached in chat") until PDF upload in the app (PDF-1, SCR-PROJ) stores page text.
+- **Cards** collect in Supabase; reviewing them waits for the review screen (SCR-REV). The tutor's warm-up questions and re-checks work from day one.
+
+Agents on this track touch only `supabase/**` and `tests/mcp/**`, so they never conflict with Phase 0 or the UI work. With spare agents, continue Phase 0 → 3 as below in parallel.
 
 ### Phase 0: foundation (one agent, three PRs, in order)
 
@@ -157,25 +175,28 @@ Phases run in order; tasks inside a phase run in parallel. "Done when" items are
 ### Phase 1: core (eight agents in parallel; starts when Phase 0 is merged)
 
 #### DB-1 Database
+- Priority: chat-first track; starts now, independent of Phase 0.
 - Owns: `supabase/migrations/**`, `supabase/config.toml`, `src/data/live/database.types.ts`.
 - Read: `data.md` all.
 1. Reset the old schema exactly as `data.md` §11 (Supabase MCP `execute_sql` or the dashboard SQL editor). The tool may ask the owner to confirm; the owner approved this on 29 Oct.
 2. Write migrations with timestamp names, in this order: tables and constraints (§2), triggers (§2.20), RLS and grants (§3), storage bucket and policies (§4), functions and view (§5). Use `gen_random_uuid()`, `extensions.gen_random_bytes`, `search_path = ''`.
 3. Apply to `yemqnhnztlbyxmjxidis`. Preferred: merge the migrations and let `supabase.yml` run `supabase db push` (needs the owner's secrets, §10). If the secrets are not there yet, apply each file in order with Supabase MCP `apply_migration`, then make the history match the file names: `update supabase_migrations.schema_migrations set version = '<file timestamp>' where name = '<file name without timestamp>'`, so later `db push` runs see them as applied.
-4. Generate types into `src/data/live/database.types.ts`.
-5. Run the security advisor and fix every warning.
-6. In the PR, paste the result of these checks: `select count(*) from pg_tables where schemaname = 'public'` (expect 19); an RLS check showing every public table has RLS on; calling `bootstrap()` as the owner from the SQL editor via `set request.jwt.claims` returns a settings row and 6 styles.
+4. Seed the owner so the connector works before the app exists: as `postgres`, `select set_config('request.jwt.claims', json_build_object('sub', (select id from auth.users limit 1), 'role', 'authenticated')::text, true); select public.bootstrap();` in one transaction (committed). Check: `select count(*) from settings` = 1, `select count(*) from styles` = 6.
+5. Generate types into `src/data/live/database.types.ts`.
+6. Run the security advisor and fix every warning.
+7. In the PR, paste the result of these checks: `select count(*) from pg_tables where schemaname = 'public'` (expect 19); an RLS check showing every public table has RLS on; calling `bootstrap()` as the owner from the SQL editor via `set request.jwt.claims` returns a settings row and 6 styles.
 - Done when: the checks above pass; `approve_proposal` applied to a hand-written card, plan and plan change in a transaction you roll back produces the rows in `data.md` §5.4 (paste the output).
 
 #### MCP-1 Connector
+- Priority: chat-first track; starts now, independent of Phase 0; live deploy after DB-1.
 - Owns: `supabase/functions/mcp/**`, `tests/mcp/**`, the `[functions.mcp]` block in `supabase/config.toml`.
 - Read: `connector.md` all; `data.md` §2, §5, §6.
-1. Build the files in `connector.md` §3 and the 11 tools in §5 with the exact names, descriptions, parameters and outputs.
+1. Build the files in `connector.md` §3 and the 14 tools in §5 with the exact names, descriptions, parameters and outputs.
 2. Implement the packet builder (§8) and enforce the budgets in §1.
 3. Implement `/selftest` (§9) and `tests/mcp/smoke.mjs`.
 4. Deploy with `supabase functions deploy mcp --no-verify-jwt` (or Supabase MCP `deploy_edge_function`). DB-1 must be merged first for a live deploy; build and unit-check against a local `supabase start` if it is not.
 5. Run the smoke test with the owner's URL (read `settings.connector_secret` from the database with the Supabase MCP and build the URL; never paste the secret in the PR).
-- Done when: smoke passes against the deployed function; `tools/list` is ≤ 9,000 characters; the PR includes the resume packet produced by the self-test project.
+- Done when: smoke passes against the deployed function; `tools/list` is ≤ 10,500 characters; the PR includes the resume packet produced by the self-test project.
 
 #### UI-1 Components and motion
 - Owns: `src/ui/**` except `src/ui/art/**` and `src/ui/charts/**`; `src/features/kit/**`; restyles `src/app/TabBar.tsx` and route transitions in `src/app/AppShell.tsx`.
@@ -285,6 +306,7 @@ Notes per task:
 
 ## 9. Milestones (order of work when fewer agents are available)
 
+0. **M0 Chat-first (priority)**: DB-1 and MCP-1 → the owner connects Claude and ChatGPT and studies in chat.
 1. **M1 Study loop works**: P0-A, P0-B, P0-C → DB-1 → MCP-1 → LIB-1 → DEMO-1 → UI-1 → SCR-HOME, SCR-PROP, SCR-REV → DATA-1. The owner can plan and study in chat, approve cards and review.
 2. **M2 Full app**: UI-2, PDF-1, SCR-PROJ, SCR-PATH, SCR-SESS, SCR-CARD, SCR-SET.
 3. **M3 Insight and polish**: SCR-ATLAS, SCR-INS, INT-1, QA-1.

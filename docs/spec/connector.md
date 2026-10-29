@@ -5,7 +5,7 @@ The connector is an MCP server that lets Claude and ChatGPT read and write the o
 ## 1. Goals and budgets
 
 - **Cheap to resume.** One call (`resume`) returns everything needed to continue, in compact text. Target ≤ 1,400 characters (about 350 tokens); hard cap 2,400.
-- **Cheap to carry.** Tool definitions are sent with every chat turn, so the full `tools/list` response must stay ≤ 9,000 characters. Keep descriptions exactly as written in §5.
+- **Cheap to carry.** Tool definitions are sent with every chat turn, so the full `tools/list` response must stay ≤ 10,500 characters. Keep descriptions exactly as written in §5.
 - **Deep on demand.** Plan, checkpoint, outline, pages and search are separate read tools the chatbot calls only when needed.
 - **Safe writes.** Progress and session records are written directly. Curriculum (cards, plans, card fixes) becomes a proposal that the owner approves in the app, except cards the owner dictated (`direct`).
 - **No raw SQL.** The chatbot never sees table names or writes queries.
@@ -27,7 +27,7 @@ Output budgets per call: `resume` 2,400 chars; `get` 2,000; `read_pages` 12,000 
 | File | Contents |
 | --- | --- |
 | `index.ts` | `Deno.serve`; path parsing; auth; routes `/mcp/<secret>` (MCP) and `/mcp/<secret>/selftest` (§9) |
-| `server.ts` | builds the MCP server per request with `createMcpHandler` and registers the 11 tools; sets server instructions (§4) |
+| `server.ts` | builds the MCP server per request with `createMcpHandler` and registers the 14 tools; sets server instructions (§4) |
 | `deps.ts` | imports pinned as in Supabase's guide: `npm:@modelcontextprotocol/server@^2.0.0`, `npm:zod@^4.3.6`, `npm:@supabase/supabase-js@2` |
 | `db.ts` | Supabase client with the secret key; small typed helpers; every helper takes `userId` |
 | `resolve.ts` | resolve project (slug, then case-insensitive title, then unique prefix), checkpoint code, session number, source short name; helpful error text listing valid options |
@@ -48,7 +48,7 @@ Implementation rules:
 ## 4. Server instructions (sent at initialize; exact text, ≤ 512 chars)
 
 ```
-Lemma is the user's math study record. When they say study, resume, continue or plan <project>, call resume first and follow the RULES it returns. Save progress with save_progress at each step and every ~6 messages so a cut-off chat loses nothing. Cards, plans and card fixes are proposals the user approves in the Lemma app. Read the book with read_pages instead of guessing. Do not show tool output verbatim to the user.
+Lemma is the user's math study record. When they say study, resume, continue or plan <project>, call resume first and follow the RULES it returns. Save progress with save_progress at each step and every ~6 messages so a cut-off chat loses nothing. Cards, plans and card fixes are proposals: the user approves them in the Lemma app, or tells you to and you call decide. Read the book with read_pages instead of guessing. Do not show tool output verbatim to the user.
 ```
 
 ## 5. Tools
@@ -233,6 +233,40 @@ Description: `Propose changes to an approved plan: add, update, remove, move, pr
 
 Op fields follow `data.md` §5.4. Output: `plan change (2 ops) waits for approval`.
 
+### 5.12 `create_project` (write)
+Description: `Create a project when the user starts a new subject or goal in chat. Then plan it with propose_plan.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `title` | string 1–80 | `Project title` |
+| `subject` | string 1–40 | `Subject name; created if new` |
+| `goal` | string 1–1000 | `The user's goal in their words` |
+| `glyph` | string ≤ 2, optional | `Symbol for a new subject, e.g. ∫` |
+| `style` | string, optional | `Style key; default settings` |
+| `book` | string ≤ 120, optional | `Title of the book the user attached` |
+| `book_short` | string ≤ 20, optional | `Short name, e.g. rudin` |
+
+Behavior: find the subject by case-insensitive name or create it (glyph default: first letter, hue `amber`); create the project with status `planning` and a unique slug; when `book` is given, insert a `sources` row with `page_count = 0`, `has_text = false`, `status = 'ready'` (pages may be imported later). Output: `created real-analysis (planning). Next: propose_plan.`
+
+### 5.13 `proposals` (read)
+Description: `List proposals waiting for approval, numbered P1, P2… Use when the user wants to approve or reject in chat.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `project` | string, optional | `Project slug or title` |
+
+Output (≤ 2,000 chars, oldest first): cards as `P12 card CP4 S7: <front cut to 120> → <back cut to 80>`; card fixes as `P13 fix N7: <changed fields, cut>`; plans as `P14 plan real-analysis: 12 checkpoints: CP1 Metric spaces; CP2 …` (titles cut to fit); plan changes as `P15 change: add CP4a Finite subcover lemma after CP4; CP5 needs CP4a`.
+
+### 5.14 `decide` (write)
+Description: `Approve or reject proposals by number, only after the user says so in this chat.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `approve` | int[] ≤ 30, optional | `Proposal numbers to approve` |
+| `reject` | int[] ≤ 30, optional | `Proposal numbers to reject` |
+
+Behavior: for each number, look up the pending proposal of this owner; approve through RPC `approve_proposal` (it sets `user_id` from the proposal), reject through `reject_proposal`. Continue past a failed one and report it. Output: `approved P12, P14; rejected P13` (+ `P9 not pending`).
+
 ## 6. Tutor rules
 
 ### 6.1 Default study rules (used when `settings.tutor_rules` is null)
@@ -243,7 +277,7 @@ Op fields follow `data.md` §5.4. Output: `plan change (2 ops) waits for approva
 - Teach in STYLE. One idea at a time; check with a question before moving on.
 - Hint ladder: 1 nudge question, 2 key idea, 3 one step, 4 worked step. Never give a full proof or solution before the student's own attempt. Log hints with level.
 - Ask the student to explain key steps in their own words (kind explanation).
-- Quote or cite the book only after read_pages; cite as (p. 37).
+- Quote or cite the book only after read_pages; cite as (p. 37). If SRC says "attached", the book has no stored pages: use the PDF attached to this chat or project.
 - Log a misconception as soon as you see one (short label).
 - save_progress at every step change and at least every 6 messages, with next_question.
 - When an idea clicks or an error is fixed, propose 1-3 atomic cards.
@@ -258,7 +292,7 @@ Op fields follow `data.md` §5.4. Output: `plan change (2 ops) waits for approva
 - Ask the user at most 3 short questions (level, time per week, focus).
 - Then call propose_plan with 8-20 checkpoints in dependency order. Each needs an objective, an observable criterion (a proof, computation or explanation the student produces), 2-6 steps, printed pages, prerequisites, 1-3 concepts and a recheck_prompt.
 - Add early checkpoints for missing prerequisites the goal reveals.
-- Tell the user to approve the plan in Lemma, then resume.
+- Show the user a short summary of the plan (codes and titles). If they approve it in the chat, call decide; otherwise they approve it in Lemma. Then resume.
 ```
 
 ### 6.3 Mixed-session rules (appended when `mix`)
@@ -306,7 +340,7 @@ Field rules:
 - `LAST`: newest session of the project. Use `paused` when open and idle for over 30 minutes. The text after the colon is `summary` for an ended session and `resume_note` for an open one (omit the colon part when empty). Include `| ask:` only when `resume_question` is set and the session is not ended.
 - `FIX`: up to 3 unresolved misconceptions, newest first.
 - `WARM`: up to 2 checkpoints of this project with UI status `revisit` and a `recheck_prompt`, oldest due first.
-- `SRC`: the NOW checkpoint's pages and source; skip if unknown.
+- `SRC`: the NOW checkpoint's pages and source; skip if unknown. For a source with no stored pages (`page_count = 0`): `SRC <short> "<title>" pp <pages>: attached in chat`.
 - `brief: true` removes `STYLE` and `RULES`.
 - Budget: if the packet exceeds 2,400 chars, shorten in this order: `LAST` summary, `FIX`, `WARM`, `GOAL`.
 
@@ -374,11 +408,12 @@ Steps:
 7. `search("finite subcover")` returns a hit; `read_pages(from="1", pdf=true)` returns page text.
 8. `propose_cards` with 2 cards → 2 pending proposals; `direct: true` with 1 card → 1 note exists.
 9. `end_session` → session ended with minutes set.
-10. `tools/list` (built in-process) total JSON ≤ 9,000 chars.
+10. `create_project` → a planning project; `proposals` lists the pending cards as `P<n>`; `decide(approve=[n])` approves one → the note exists.
+11. `tools/list` (built in-process) total JSON ≤ 10,500 chars.
 
 `tests/mcp/smoke.mjs` (Node 22, no dependencies) reads `MCP_URL` from the environment and:
 1. Calls `MCP_URL + '/selftest'` and fails if `ok` is false.
-2. Sends JSON-RPC `initialize`, then `tools/list` to `MCP_URL` with header `Accept: application/json, text/event-stream`; checks 11 tools with the names in §5 and the size limit.
+2. Sends JSON-RPC `initialize`, then `tools/list` to `MCP_URL` with header `Accept: application/json, text/event-stream`; checks 14 tools with the names in §5 and the size limit.
 3. Prints one line per step and exits non-zero on failure.
 
 ## 10. Owner setup (shown in Lemma › Settings and in `docs/guide.md`)

@@ -276,6 +276,7 @@ Indexes (`card_id`, `reviewed_at`) and (`user_id`, `reviewed_at`).
 
 | Column | Type / default | Notes |
 | --- | --- | --- |
+| `no` | bigint generated always as identity | unique; shown as `P12` in chat |
 | `project_id` | uuid not null | FK cascade |
 | `session_id` | uuid null | FK set null |
 | `kind` | text | check in (`card`, `card_edit`, `plan`, `plan_change`) |
@@ -313,7 +314,7 @@ Index (`user_id`, `status`).
 All functions are `security invoker` (RLS applies) unless stated, run in one transaction, and raise a clear exception message on invalid input (the app shows the message in a toast).
 
 ### 5.1 `bootstrap() returns settings`
-Idempotent. Inserts the `settings` row for `auth.uid()` if missing; inserts the six style presets if the owner has no styles; returns the settings row. Called by the app after every sign-in.
+Idempotent. Inserts the `settings` row for `auth.uid()` if missing; inserts the six style presets if the owner has no styles; returns the settings row. Called by the app after every sign-in. Before the app exists, DB-1 calls it once for the owner (impersonating them with `set_config('request.jwt.claims', …)`), so the connector works from day one.
 
 ### 5.2 `record_review(p_card uuid, p_rating int, p_confidence text, p_duration_ms int, p_next jsonb) returns bigint`
 1. Lock the card row (`for update`). Error if not found.
