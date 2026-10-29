@@ -1,3 +1,10 @@
+## SHIP-A2-CI-02 — wait for exact-main CI before migration preflight (29 October 2026)
+
+- **Claim:** `chat-20261029-deploy-await-main-ci`; integration branch `integration/20261029-deploy-await-main-ci` from `main@38b5752`. No competing open PR on pickup. Scope: deployment workflow, a shared executable CI-wait test, its regression routing/ownership and this handoff. No SQL or product code changes.
+- **Observed:** owner preflight succeeded on `c521347` (40804836650), then #160 moved main before apply (40804913057). Redispatch on `38b5752` failed while its regression/local-stack were running (40805014898). All affected apply steps were skipped. Exact-head checks remain mandatory.
+- **Plan:** bounded read-only wait for regression/local-stack SUCCESS on the dispatch SHA; stop on terminal failure, malformed/API error, timeout or a changed main SHA. Preserve existing Android proof, exact source prefix, dry-run and separate explicit apply. Do not follow main automatically or apply on an ancestor. Unit fixtures cover pending-to-green and every failure condition; exact PR-head CI required before merge.
+- **Next:** implement and verify; owner still performs fresh preflight then apply on current green main. This PR itself never dispatches or applies migrations.
+
 ## R2i integration — exact restore migration deployment scope
 
 - **Claim:** `chat-20261028-restore-operator`, heartbeat 2026-10-28T17:56Z; branch `integration/20261028-restore-version-operator`, base `2f2a410` after merged server restore PR #144. No competing integration PR. Scope is workflow staging and this handoff only; A local restore PR #146 and E tutor PR #145 own different files.
