@@ -183,7 +183,9 @@ async function shot(page, name, size, scheme) {
       if (size === 'mobile') {
         // Mobile navigation labels are part of the UI contract, not tooltips.
         const labels = await page.locator('.tabbar .tb-label:visible').allTextContents();
-        if (labels.join('|') !== 'Today|Cards|New|Settings')
+        const studyReady = await page.evaluate(() => typeof StudyView !== 'undefined' && StudyView.ready === true);
+        const expected = studyReady ? ['Today','Study','Cards','New','Settings'] : ['Today','Cards','New','Settings'];
+        if (labels.join('|') !== expected.join('|'))
           throw new Error('Mobile navigation labels missing or out of order: ' + labels.join(', '));
         const targets = await page.locator('.tabbar .tb').evaluateAll(items => items.map(el => {
           const r = el.getBoundingClientRect(); return { width: r.width, height: r.height };
@@ -191,12 +193,12 @@ async function shot(page, name, size, scheme) {
         if (targets.some(r => r.width < 44 || r.height < 44))
           throw new Error('Mobile navigation has an action smaller than 44×44px');
         // Prevent an unused grid track when a top-level nav item is removed.
-        const gaps = await page.locator('.tabbar').evaluate(bar => {
+        const gaps = await page.locator('.tabbar').evaluate((bar, count) => {
           const items = [...bar.querySelectorAll('.tb')];
-          if (items.length !== 4) return null;
+          if (items.length !== count) return null;
           const centres = items.map(el => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; });
           return centres.slice(1).map((x, i) => x - centres[i]);
-        });
+        }, expected.length);
         if (!gaps || Math.max(...gaps) - Math.min(...gaps) > 5)
           throw new Error('Mobile bottom navigation should distribute all four actions evenly');
       }
