@@ -11,6 +11,9 @@ const C1='00000000-0000-4000-8000-000000000004';
 const owner='00000000-0000-4000-8000-000000000005';
 const cp='compactness-open-cover-proof';
 let dialog, revision=3, activeCheckpoint=cp, failSecond=false, afterContextRead=null;
+let hintLevel=1, attemptId=E1, sessionId=owner, checkpointStatus='in_progress';
+let contextId=null, contextRevision=null, lastFeedbackId=null, sourceRefs=[];
+let reflectOwnWrites=false,externalAfterFirst=false;
 const calls=[];
 const app={workspaceRevision:1,workspaceBlocked:false};
 let signalIdentityChange=null;
@@ -23,7 +26,15 @@ const client={rpc(name,args){
   assert.equal(auth,'Bearer mock-token');
   if(failSecond && args.p_event_id===E2) {
    failSecond=false;
+   if(reflectOwnWrites)hintLevel=args.p_payload.level;
    throw Error('Network interrupted after a possible server write');
+  }
+  if(reflectOwnWrites){
+   if(sessionId===null)sessionId=owner;
+   if(['attempt','proof_step'].includes(args.p_event_type))attemptId=args.p_event_id;
+   if(args.p_event_type==='hint')hintLevel=args.p_payload.level;
+   if(externalAfterFirst && args.p_event_id===E1)
+    attemptId='00000000-0000-4000-8000-000000000007';
   }
   return {data:{event:{eventId:args.p_event_id,sessionId:owner,
     seq:calls.length,planRevision:3},audit:{
@@ -33,9 +44,11 @@ const client={rpc(name,args){
 account.client=client;
 const plan={
  async activeContext(){
-  const snapshot={planId:A,planRevision:revision,contextId:null,contextRevision:null,
-   checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:'in_progress'},
-   hintLevel:1,sourceRefs:[],lastAttempt:{eventId:E1,text:'Partial proof'}};
+  const snapshot={planId:A,planRevision:revision,contextId,contextRevision,
+   checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:checkpointStatus},
+   sessionId,hintLevel,sourceRefs:[...sourceRefs],
+   lastAttempt:attemptId ? {eventId:attemptId,text:'Partial proof'} : null,
+   lastFeedback:lastFeedbackId ? {eventId:lastFeedbackId} : null};
   if(afterContextRead){
    const change=afterContextRead;afterContextRead=null;
    await Promise.resolve();
@@ -198,6 +211,30 @@ async function open(){
  assert.match(x.status.textContent,/account or workspace changed/);
  account.user={id:owner};
 
+ // T3f: a stable plan ID/revision does not guarantee that the student is
+ // still working on the same proof, hint, active session or accepted context.
+ const changedStudyStates=[
+  ['hint level',()=>{hintLevel=2;},()=>{hintLevel=1;}],
+  ['new proof attempt',()=>{attemptId=E2;},()=>{attemptId=E1;}],
+  ['new active session',()=>{sessionId=C1;},()=>{sessionId=owner;}],
+  ['checkpoint completion',()=>{checkpointStatus='demonstrated';},
+   ()=>{checkpointStatus='in_progress';}],
+  ['accepted context',()=>{contextId=C1;contextRevision=2;},
+   ()=>{contextId=null;contextRevision=null;}],
+  ['new feedback',()=>{lastFeedbackId=E2;},()=>{lastFeedbackId=null;}],
+  ['changed citations',()=>{sourceRefs=['new-accepted-section'];},
+   ()=>{sourceRefs=[];}]
+ ];
+ for(const [label,change,reset] of changedStudyStates) {
+  x=await open();const checkbox=select(0);change();
+  await x.save.events.click();
+  assert.equal(calls.length,4,label+' cannot reuse consent or send RPC');
+  assert.match(x.status.textContent,/stale_study_context/,label);
+  assert.equal(checkbox.checked,true,'unsaved event selection retained for '+label);
+  assert.equal(x.save.disabled,false,'same event ID remains available for '+label);
+  reset();
+ }
+
  // Editing the reply invalidates review/consent and cannot keep old IDs.
  x=await open();select(0);
  x.input.value='{}';
@@ -213,5 +250,43 @@ async function open(){
  assert.equal(x.review.children.length,0);
  assert.equal(x.save.disabled,true);
  assert.equal(calls.length,4);
- console.log('PASS TUTOR-01 T3e: selected-only atomic evidence, retry IDs, post-read identity/workspace consent guard, no implicit cards');
+ // The first selected event may itself create a session and advance the
+ // proof. Its original UUID is allowed as self-caused context, so the second
+ // selected event must still be saved in the same deliberate action.
+ sessionId=null;attemptId=C1;hintLevel=1;reflectOwnWrites=true;
+ x=await open();select(0);select(1);
+ const beforeBatch=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeBatch+2,'both explicitly selected events persist');
+ assert.match(x.status.textContent,/Recorded 2 selected study event/);
+ assert.equal(x.save.disabled,true);
+ assert.equal(attemptId,E1);
+ assert.equal(hintLevel,2);
+
+ // A lost response may follow a server commit of the second event. The
+ // retry must accept only this sheet's attempted IDs and reuse E2 unchanged.
+ sessionId=null;attemptId=C1;hintLevel=1;
+ x=await open();select(0);select(1);failSecond=true;
+ const beforeRetry=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeRetry+2);
+ assert.equal(hintLevel,2,'server committed the hint before response loss');
+ assert.equal(x.save.disabled,false,'uncertain event remains selected');
+ await x.save.events.click();
+ assert.equal(calls.length,beforeRetry+3);
+ assert.equal(calls.at(-1).args.p_event_id,E2);
+ assert.deepEqual(calls.at(-1).args,calls.at(-2).args,'exact retry of uncertain hint');
+ assert.equal(x.save.disabled,true);
+ // Self-progress is not blanket permission for another device's new proof.
+ // An unrelated event ID after the first save must stop the remaining batch.
+ sessionId=null;attemptId=C1;hintLevel=1;externalAfterFirst=true;
+ x=await open();select(0);const pendingSecond=select(1);
+ const beforeExternal=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeExternal+1,'foreign proof event blocks second RPC');
+ assert.match(x.status.textContent,/stale_study_context/);
+ assert.equal(pendingSecond.checked,true,'uncommitted second selection retained');
+ externalAfterFirst=false;
+ reflectOwnWrites=false;sessionId=owner;attemptId=E1;hintLevel=1;
+ console.log('PASS TUTOR-01 T3f: stale proof guards, own-batch retry, external interleaving rejection, no implicit approvals');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

@@ -10,7 +10,7 @@ const OWNER='00000000-0000-4000-8000-000000000004';
 const CP='compactness-open-cover-proof';
 const ref='topology-notes:section-3.2';
 const captures=[],writes=[];
-let dialog,revision=3,checkpoint=CP,sources=[ref];
+let dialog,revision=3,checkpoint=CP,sources=[ref],hintLevel=1,sessionId=OWNER,attemptId=null;
 let notifyIdentityChange=null;
 const account={user:{id:OWNER},onIdentityChange(fn){notifyIdentityChange=fn;}};
 const app={workspaceRevision:1,workspaceBlocked:false,
@@ -18,7 +18,8 @@ const app={workspaceRevision:1,workspaceBlocked:false,
 const plan={
  async activeContext(){return {planId:ID,planRevision:revision,
    checkpoint:{id:checkpoint,objective:'Prove compactness',status:'in_progress'},
-   hintLevel:1,sourceRefs:sources,lastAttempt:null};},
+   sessionId,hintLevel,sourceRefs:sources,
+   lastAttempt:attemptId ? {eventId:attemptId} : null};},
  async recordEvent(x){writes.push(x);}
 };
 function h(tag,attrs,...kids) {
@@ -90,6 +91,22 @@ function selectCard(u) {u.card.checked=true;u.card.events.change();}
  assert.ok(captures[0].back.includes(ref));
  assert.match(u.status.textContent,/not saved here/);
 
+ // T3f: the editor must not receive a proposal whose reviewed proof packet
+ // was superseded without a plan revision change.
+ const changedStates=[
+  ['hint',()=>{hintLevel=2;},()=>{hintLevel=1;}],
+  ['session',()=>{sessionId=EVENT;},()=>{sessionId=OWNER;}],
+  ['attempt',()=>{attemptId=EVENT;},()=>{attemptId=null;}],
+  ['source refs',()=>{sources=['new-accepted-section'];},()=>{sources=[ref];}]
+ ];
+ for(const [label,change,reset] of changedStates){
+  u=await open();selectCard(u);change();
+  await u.editor.events.click();
+  assert.equal(captures.length,1,'stale '+label+' cannot open editor');
+  assert.match(u.status.textContent,/stale_study_context/);
+  reset();
+ }
+
  u=await open();selectCard(u);
  revision=4;await u.editor.events.click();
  assert.equal(captures.length,1,'stale approved revision rejects editor opening');
@@ -138,5 +155,5 @@ function selectCard(u) {u.card.checked=true;u.card.events.change();}
  assert.ok(captures[1].back.includes('\\u0060'));
  assert.ok(captures[1].back.includes('\\n### forged heading'));
  assert.equal(writes.length,0);
- console.log('PASS TUTOR-01 T3b1: deliberate editor review, visible provenance, owner/revision/citation guards, no implicit card/evidence saves');
+ console.log('PASS TUTOR-01 T3f: deliberate editor review, proof/hint/session freshness, provenance and no implicit saves');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

@@ -343,6 +343,50 @@ const TutorHandoff = (() => {
     const openedIdentityEpoch = identityEpoch;
     const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
     const packet = exportPacket(ctx);
+    // A plan revision can stay constant while another device advances the
+    // unfinished proof, hint level, session or accepted context. The student's
+    // review/selection is consent for THIS packet, not all future work on the
+    // same checkpoint. Recheck immediately after each fresh activeContext read.
+    function assertReviewedContext(now, ownEvents = [], ownSessionIds = []) {
+      if (!now || now.planId !== ctx.planId ||
+          now.planRevision !== ctx.planRevision ||
+          now.checkpoint?.id !== ctx.checkpoint.id)
+        throw new Error('stale_plan_revision: reopen the handoff');
+      const eventId = (state,field) => state[field]?.eventId ?? null;
+      const sameId = (a,b) => a === b ||
+        (typeof a === 'string' && typeof b === 'string' &&
+         a.toLowerCase() === b.toLowerCase());
+      const ownEvent = (field,types) => {
+        const currentId = eventId(now,field);
+        return sameId(currentId,eventId(ctx,field)) ||
+          ownEvents.some(e => types.includes(e.type) && sameId(e.eventId,currentId));
+      };
+      const beforeRefs = ctx.sourceRefs ?? [], afterRefs = now.sourceRefs ?? [];
+      const oldSession = ctx.sessionId ?? null, currentSession = now.sessionId ?? null;
+      // An event in this very sheet can start the first active session.
+      // Use its confirmed session receipt when available; after a lost response
+      // allow a valid new session only for an attempted original event UUID.
+      const ownNewSession = oldSession === null && ownEvents.length > 0 &&
+        validId(currentSession) &&
+        (!ownSessionIds.length || ownSessionIds.some(id => sameId(id,currentSession)));
+      const currentHint = now.hintLevel ?? 0;
+      const ownHint = ownEvents.some(e => e.type === 'hint' &&
+        e.payload?.level === currentHint);
+      if ((now.contextId ?? null) !== (ctx.contextId ?? null) ||
+          (now.contextRevision ?? null) !== (ctx.contextRevision ?? null) ||
+          (now.checkpoint?.status ?? 'in_progress') !==
+            (ctx.checkpoint?.status ?? 'in_progress') ||
+          (!sameId(currentSession,oldSession) && !ownNewSession) ||
+          (currentHint !== (ctx.hintLevel ?? 0) && !ownHint) ||
+          !ownEvent('lastAttempt',['attempt','proof_step']) ||
+          !ownEvent('lastFeedback',['feedback']) ||
+          !ownEvent('lastEvidence',['mastery_evidence']) ||
+          !ownEvent('nextAction',['session_note']) ||
+          !Array.isArray(afterRefs) || !Array.isArray(beforeRefs) ||
+          afterRefs.length !== beforeRefs.length ||
+          afterRefs.some((ref,i) => ref !== beforeRefs[i]))
+        throw new Error('stale_study_context: proof, hint or session changed; reopen the handoff');
+    }
     const output = h('textarea', { class:'tutor-handoff-packet', 'aria-label':'Handoff packet',
       readonly:true, spellcheck:false, rows:8 });
     output.value = packet.markdown;
@@ -360,6 +404,10 @@ const TutorHandoff = (() => {
     const saveBtn = h('button', { class:'btn', type:'button', text:'Save selected study events', disabled:true });
     const items = [];
     const savedIds = new Set();
+    // Include uncertain RPCs: a lost response can still have committed an
+    // event that legitimately advances this sheet's own proof/hint state.
+    const attemptedIds = new Set();
+    const confirmedSessionIds = new Set();
     let reviewedText = null;
     let saving = false;
     const selected = () => items.filter(x => x.kind === 'e' && x.checkbox.checked &&
@@ -371,6 +419,8 @@ const TutorHandoff = (() => {
       if (saving) return;
       reviewedText = null;
       savedIds.clear();
+      attemptedIds.clear();
+      confirmedSessionIds.clear();
       review.replaceChildren();
       items.length = 0;
       status.textContent = 'Tutor reply changed. Review it again before saving anything.';
@@ -414,10 +464,7 @@ const TutorHandoff = (() => {
         verifyOwner();
         const now = await StudyPlan.activeContext();
         verifyOwner();
-        if (!now || now.planId !== ctx.planId ||
-            now.planRevision !== ctx.planRevision ||
-            now.checkpoint?.id !== ctx.checkpoint.id)
-          throw new Error('stale_plan_revision: reopen the handoff');
+        assertReviewedContext(now);
         App.newCard(cardPreset(card));
         status.textContent = 'Card proposal opened in the editor, not saved here. Review and press Add card in the editor to accept it. Add suggested tags manually if wanted.';
       } catch (e) {
@@ -449,12 +496,7 @@ const TutorHandoff = (() => {
         verifyCurrent();
         const now = await StudyPlan.activeContext();
         verifyCurrent();
-        if (!now || now.planId !== ctx.planId ||
-            now.planRevision !== ctx.planRevision ||
-            now.contextId !== ctx.contextId ||
-            now.contextRevision !== ctx.contextRevision ||
-            now.checkpoint?.id !== ctx.checkpoint.id)
-          throw new Error('stale_plan_revision: reopen the handoff');
+        assertReviewedContext(now);
         const snapshot = amendment.snapshot;
         const draftId = await StudyPlan.proposeAmendment({
           planId:amendment.planId,expectedRevision:amendment.expectedRevision,
@@ -522,6 +564,8 @@ const TutorHandoff = (() => {
       const parsed = parseReply(input.value);
       reviewedText = null;
       savedIds.clear();
+      attemptedIds.clear();
+      confirmedSessionIds.clear();
       review.replaceChildren();
       items.length = 0;
       updateSave();
@@ -579,13 +623,18 @@ const TutorHandoff = (() => {
           // asynchronous plan read. Consent belongs to the original sheet,
           // not to the new identity epoch captured by the RPC client.
           verifyConsent();
-          if (!now || now.planId !== ctx.planId ||
-              now.planRevision !== ctx.planRevision ||
-              now.checkpoint?.id !== ctx.checkpoint.id)
-            throw new Error('stale_plan_revision: reopen the handoff');
+          // Distinguish an external proof/hint change from this same sheet's
+          // previously attempted events, including a server commit whose
+          // response was lost. Otherwise saving two selected events would
+          // invalidate the second merely because the first was successful.
+          const ownEvents = items.filter(x => x.kind === 'e' &&
+            attemptedIds.has(x.value.eventId)).map(x => x.value);
+          assertReviewedContext(now,ownEvents,[...confirmedSessionIds]);
           // Use the original proposal UUID and unchanged JSON payload on every
           // retry. The owner-scoped RPC enforces revision CAS and idempotency.
-          await recordEventWithAudit(item.value);
+          attemptedIds.add(item.value.eventId);
+          const receipt = await recordEventWithAudit(item.value);
+          confirmedSessionIds.add(receipt.event.sessionId);
           savedIds.add(item.value.eventId);
           item.checkbox.checked = false;
           item.checkbox.disabled = true;
