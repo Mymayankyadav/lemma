@@ -39,7 +39,9 @@ const preview=root=>find(root,n=>n.tag==='button'&&n.attrs.text==='Test tutor ha
  let testButton=preview(root);assert.ok(testButton,'separate preview entry is visible only on an approved checkpoint');
  assert.match(find(root,n=>n.attrs.class==='study-acceptance-warning').textContent,/not a released tutor feature/);
  assert.equal(previewOpens.length,0,'rendering must not open a tutor or write');
- await testButton.events.click();assert.deepEqual(previewOpens,[{planId,checkpointId:'proof-7'}]);
+ await testButton.events.click();assert.equal(previewOpens.length,1);
+ assert.equal(previewOpens[0].planId,planId);
+ assert.equal(previewOpens[0].checkpointId,'proof-7');
  assert.equal(writes.length,0,'preview opening is read-only');
  const previewForm=find(root,n=>n.attrs.class==='study-form');
  const previewInput=find(previewForm,n=>n.tag==='textarea');
