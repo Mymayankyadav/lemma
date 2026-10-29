@@ -306,7 +306,7 @@ export default function Page(){
      <Chip tone="quiet">{selected.dueCards} due</Chip>
      {selected.pinX!==null&&selected.pinY!==null&&<Chip tone="quiet" icon={LockKeyhole}>Pinned</Chip>}
      {menuId===selected.id&&<button type="button" onClick={()=>unpinNode(selected)} disabled={pin.isPending}
-       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-[13px] text-amber"><PinOff size={16}/>PinOff</button>}
+       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-[13px] text-amber"><PinOff size={16}/>Unpin</button>}
     </div>
     <div className="mt-5 flex items-center gap-2">
      {selected.checkpointRefs[0]?<Link to={'/p/'+selected.checkpointRefs[0].projectSlug+'/cp/'+selected.checkpointRefs[0].code}
