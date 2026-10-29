@@ -5,6 +5,11 @@ const {chromium}=require('playwright');
 const seed=require('./seed.js');
 const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'dist/test.html'),'utf8');
+const marker='/* ===== main.js ===== */';
+assert.ok(html.includes(marker),'built app marker required');
+// Expose existing objects within the bundle IIFE for synthetic transport;
+// do not replace or mutate either real readiness flag or Study module.
+const testHtml=html.replace(marker,'window.__studyActivation={get account(){return LemmaAccount},get cloud(){return LemmaCloud},get app(){return App}};\\n'+marker);
 const mock=fs.readFileSync(path.join(root,'test/mock_claude.js'),'utf8');
 const docs=Object.fromEntries(seed.map(n=>['data/users/u_test/profile/notes/'+n.id,n]));
 const libs={'katex.min.js':'katex/dist/katex.min.js','marked.umd.js':'marked/lib/marked.umd.js','purify.min.js':'dompurify/dist/purify.min.js'};
@@ -18,7 +23,7 @@ const libs={'katex.min.js':'katex/dist/katex.min.js','marked.umd.js':'marked/lib
    try {
     await context.route('**/*',async route=>{
      const url=route.request().url();
-     if(url.startsWith('https://lemma.test/'))return route.fulfill({status:200,contentType:'text/html',body:html});
+     if(url.startsWith('https://lemma.test/'))return route.fulfill({status:200,contentType:'text/html',body:testHtml});
      for(const [file,pkg] of Object.entries(libs))if(url.endsWith(file))return route.fulfill({status:200,contentType:'application/javascript',body:fs.readFileSync(path.join(root,'node_modules',pkg),'utf8')});
      if(url.includes('fonts.googleapis.com'))return route.fulfill({status:200,contentType:'text/css',body:''});
      if(url.startsWith('blob:')||url.startsWith('data:'))return route.continue();
@@ -36,10 +41,10 @@ const libs={'katex.min.js':'katex/dist/katex.min.js','marked.umd.js':'marked/lib
     await page.evaluate(()=>{
      window.__activationWrites=[];
      const client={from(){const q={select(){return q},eq(){return q},order(){return q},limit(){return q},setHeader(){return Promise.resolve({data:[]})}};return q;},rpc(name,args){window.__activationWrites.push({name,args});throw Error('unexpected write');}};
-     Object.defineProperty(LemmaAccount,'user',{configurable:true,get(){return {id:'00000000-0000-4000-8000-000000000001'};}});
-     Object.defineProperty(LemmaAccount,'client',{configurable:true,get(){return client;}});
-     LemmaCloud.accountToken=async()=> 'synthetic-token';
-     App.go('study');
+     Object.defineProperty(window.__studyActivation.account,'user',{configurable:true,get(){return {id:'00000000-0000-4000-8000-000000000001'};}});
+     Object.defineProperty(window.__studyActivation.account,'client',{configurable:true,get(){return client;}});
+     window.__studyActivation.cloud.accountToken=async()=> 'synthetic-token';
+     window.__studyActivation.app.go('study');
     });
     await page.getByRole('heading',{name:'Create your first study plan'}).waitFor();
     assert.equal(await page.getByRole('button',{name:'Approve this reviewed plan'}).count(),0);
