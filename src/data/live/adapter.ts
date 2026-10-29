@@ -200,8 +200,55 @@ export class LiveAdapter implements LemmaApi {
     })),cardsCount:notes.filter(x=>x.checkpoint_id===row.id&&x.status==='active').length,
     sessions:sessions.filter(s=>s.checkpointCode===code)}
  }
- async addSource(..._args: Parameters<LemmaApi['addSource']>): ReturnType<LemmaApi['addSource']> { throw notImplemented('addSource') }
- async deleteSource(..._args: Parameters<LemmaApi['deleteSource']>): ReturnType<LemmaApi['deleteSource']> { throw notImplemented('deleteSource') }
+ async addSource(...args: Parameters<LemmaApi['addSource']>): ReturnType<LemmaApi['addSource']> {
+  const [projectId,file,onProgress]=args,db=liveClient(),uid=await owner(db)
+  checked(await db.from('projects').select('id').eq('user_id',uid).eq('id',projectId).single())
+  const document=await ingest(file,{onProgress})
+  const basename=file.name.replace(/\.pdf$/i,'').trim()
+  const existing=await rows(db,'sources',uid)
+  const used=new Set(existing.filter(s=>s.project_id===projectId).map(s=>s.short))
+  const base=slugify(basename).replace(/-/g,'').slice(0,17)||'source'
+  let short=base,index=2
+  while(used.has(short)){short=base.slice(0,17)+index++}
+  const source=checked(await db.from('sources').insert({user_id:uid,project_id:projectId,
+    title:basename.slice(0,120),short,filename:file.name,bytes:file.size,status:'uploading',
+    page_count:document.pageCount,has_text:document.hasText,outline:document.outline
+  }).select('*').single()) as Row
+  const storagePath=`${uid}/${source.id}.pdf`
+  const progress=(phase:'uploading'|'saving'|'done'|'failed',page:number,message:string)=>
+    onProgress({phase,page,pageCount:document.pageCount,message})
+  try {
+    progress('uploading',0,'Uploading original PDF')
+    const {error:uploadError}=await db.storage.from('sources').upload(storagePath,file,{upsert:false,contentType:'application/pdf'})
+    if(uploadError) fail(uploadError)
+    checked(await db.from('sources').update({storage_path:storagePath,status:'extracting'})
+      .eq('id',source.id).eq('user_id',uid).select('id').single())
+    for(let i=0;i<document.pages.length;i+=50){
+      const slice=document.pages.slice(i,i+50).map(p=>({...p,body:p.body.slice(0,20000),source_id:source.id,user_id:uid}))
+      const {error}=await db.from('source_pages').insert(slice)
+      if(error) fail(error)
+      progress('saving',Math.min(i+50,document.pageCount),'Saving extracted text')
+    }
+    const completed=checked(await db.from('sources').update({status:'ready'})
+      .eq('id',source.id).eq('user_id',uid).select('*').single()) as Row
+    progress('done',document.pageCount,'Source is ready')
+    return sourceRow(completed)
+  }catch(error){
+    await db.from('sources').update({status:'failed',error:error instanceof Error?error.message:'Upload failed'})
+      .eq('id',source.id).eq('user_id',uid)
+    progress('failed',0,'Source upload failed')
+    throw error
+  }
+ }
+ async deleteSource(...args: Parameters<LemmaApi['deleteSource']>): ReturnType<LemmaApi['deleteSource']> {
+  const [id]=args,db=liveClient(),uid=await owner(db)
+  const source=checked(await db.from('sources').select('*').eq('user_id',uid).eq('id',id).single()) as Row
+  if(source.storage_path){
+    const {error}=await db.storage.from('sources').remove([source.storage_path])
+    if(error) fail(error)
+  }
+  checked(await db.from('sources').delete().eq('id',id).eq('user_id',uid).select('id').single())
+ }
  async listSessions(...args: Parameters<LemmaApi['listSessions']>): ReturnType<LemmaApi['listSessions']> {
   const [slug]=args, db=liveClient(),uid=await owner(db)
   const [projects,cps,sessions]=await Promise.all([rows(db,'projects',uid),rows(db,'checkpoints',uid),rows(db,'sessions',uid)])
@@ -275,23 +322,103 @@ export class LiveAdapter implements LemmaApi {
       comments:comments.filter(c=>c.note_id===note?.id).map(c=>commentRow(c))}:null,
     plan:p.kind==='plan'?payload:null,planChange:p.kind==='plan_change'?payload:null} as Proposal
  }
- async approveProposal(..._args: Parameters<LemmaApi['approveProposal']>): ReturnType<LemmaApi['approveProposal']> { throw notImplemented('approveProposal') }
- async rejectProposal(..._args: Parameters<LemmaApi['rejectProposal']>): ReturnType<LemmaApi['rejectProposal']> { throw notImplemented('rejectProposal') }
- async approveAllCards(..._args: Parameters<LemmaApi['approveAllCards']>): ReturnType<LemmaApi['approveAllCards']> { throw notImplemented('approveAllCards') }
+ async approveProposal(...args: Parameters<LemmaApi['approveProposal']>): ReturnType<LemmaApi['approveProposal']> {
+  const [id,edit]=args,db=liveClient()
+  await owner(db)
+  checked(await db.rpc('approve_proposal',{p_id:id,p_edit:edit?toDb(edit):null}))
+  return
+ }
+ async rejectProposal(...args: Parameters<LemmaApi['rejectProposal']>): ReturnType<LemmaApi['rejectProposal']> {
+  const [id]=args,db=liveClient()
+  await owner(db)
+  const {error}=await db.rpc('reject_proposal',{p_id:id})
+  if(error) fail(error)
+ }
+ async approveAllCards(...args: Parameters<LemmaApi['approveAllCards']>): ReturnType<LemmaApi['approveAllCards']> {
+  const cards=(await this.listProposals()).filter(p=>p.kind==='card')
+  let count=0
+  for(const card of cards){await this.approveProposal(card.id);count++}
+  return count
+ }
  async getDeckTree(..._args: Parameters<LemmaApi['getDeckTree']>): ReturnType<LemmaApi['getDeckTree']> { throw notImplemented('getDeckTree') }
  async getReviewItems(..._args: Parameters<LemmaApi['getReviewItems']>): ReturnType<LemmaApi['getReviewItems']> { throw notImplemented('getReviewItems') }
- async recordReview(..._args: Parameters<LemmaApi['recordReview']>): ReturnType<LemmaApi['recordReview']> { throw notImplemented('recordReview') }
- async undoReview(..._args: Parameters<LemmaApi['undoReview']>): ReturnType<LemmaApi['undoReview']> { throw notImplemented('undoReview') }
+ async recordReview(...args: Parameters<LemmaApi['recordReview']>): ReturnType<LemmaApi['recordReview']> {
+  const [input]=args,db=liveClient()
+  await owner(db)
+  const result=checked(await db.rpc('record_review',{p_card:input.cardId,p_rating:input.rating,
+    p_confidence:input.confidence,p_duration_ms:input.durationMs,p_next:cardStateDb(input.next)}))
+  return {reviewId:Number(result)}
+ }
+ async undoReview(...args: Parameters<LemmaApi['undoReview']>): ReturnType<LemmaApi['undoReview']> {
+  const [id]=args,db=liveClient()
+  await owner(db)
+  return cardState(checked(await db.rpc('undo_review',{p_review:id})) as Row)
+ }
  async searchCards(..._args: Parameters<LemmaApi['searchCards']>): ReturnType<LemmaApi['searchCards']> { throw notImplemented('searchCards') }
  async getCard(..._args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> { throw notImplemented('getCard') }
- async createNote(..._args: Parameters<LemmaApi['createNote']>): ReturnType<LemmaApi['createNote']> { throw notImplemented('createNote') }
- async updateNote(..._args: Parameters<LemmaApi['updateNote']>): ReturnType<LemmaApi['updateNote']> { throw notImplemented('updateNote') }
- async setNoteStatus(..._args: Parameters<LemmaApi['setNoteStatus']>): ReturnType<LemmaApi['setNoteStatus']> { throw notImplemented('setNoteStatus') }
- async addComment(..._args: Parameters<LemmaApi['addComment']>): ReturnType<LemmaApi['addComment']> { throw notImplemented('addComment') }
- async dismissComment(..._args: Parameters<LemmaApi['dismissComment']>): ReturnType<LemmaApi['dismissComment']> { throw notImplemented('dismissComment') }
- async resolveMisconception(..._args: Parameters<LemmaApi['resolveMisconception']>): ReturnType<LemmaApi['resolveMisconception']> { throw notImplemented('resolveMisconception') }
+ async createNote(...args: Parameters<LemmaApi['createNote']>): ReturnType<LemmaApi['createNote']> {
+  const [input]=args,db=liveClient(),uid=await owner(db)
+  const project=checked(await db.from('projects').select('*').eq('user_id',uid).eq('slug',input.projectSlug).single()) as Row
+  let checkpointId:string|null=null
+  if(input.checkpointCode){
+    const cp=checked(await db.from('checkpoints').select('id').eq('user_id',uid).eq('project_id',project.id).eq('code',input.checkpointCode).single()) as Row
+    checkpointId=cp.id
+  }
+  const note=checked(await db.from('notes').insert({user_id:uid,project_id:project.id,checkpoint_id:checkpointId,
+    front:input.front,back:input.back,type:input.type,kind:input.kind,origin:'user'}).select('*').single()) as Row
+  const cardRows=noteOrds(input.front,input.type).map(ord=>({user_id:uid,note_id:note.id,ord}))
+  const {error}=await db.from('cards').insert(cardRows)
+  if(error){await db.from('notes').delete().eq('user_id',uid).eq('id',note.id);fail(error)}
+  return {noteNo:Number(note.no)}
+ }
+ async updateNote(...args: Parameters<LemmaApi['updateNote']>): ReturnType<LemmaApi['updateNote']> {
+  const [no,patch]=args,db=liveClient(),uid=await owner(db)
+  const note=checked(await db.from('notes').select('*').eq('user_id',uid).eq('no',no).single()) as Row
+  const oldCards=checked(await db.from('cards').select('*').eq('user_id',uid).eq('note_id',note.id)) as Row[]
+  const newOrds=noteOrds(patch.front??note.front,patch.type??note.type)
+  const adding=newOrds.filter(ord=>!oldCards.some(c=>c.ord===ord))
+  const removing=oldCards.filter(c=>!newOrds.includes(c.ord)).map(c=>c.id)
+  // Add first and remove last, so a recoverable failure never loses previously scheduled cards.
+  if(adding.length){
+    const {error}=await db.from('cards').insert(adding.map(ord=>({user_id:uid,note_id:note.id,ord})))
+    if(error) fail(error)
+  }
+  const {error}=await db.from('notes').update(toDb(patch)).eq('no',no).eq('user_id',uid)
+  if(error) {
+    if(adding.length) await db.from('cards').delete().eq('user_id',uid).eq('note_id',note.id).in('ord',adding)
+    fail(error)
+  }
+  if(removing.length) {
+    const {error:removeError}=await db.from('cards').delete().eq('user_id',uid).in('id',removing)
+    if(removeError) fail(removeError)
+  }
+ }
+ async setNoteStatus(...args: Parameters<LemmaApi['setNoteStatus']>): ReturnType<LemmaApi['setNoteStatus']> {
+  const [no,status]=args,db=liveClient(),uid=await owner(db)
+  const {data,error}=await db.from('notes').update({status}).eq('no',no).eq('user_id',uid).select('id').single()
+  checked({data,error})
+ }
+ async addComment(...args: Parameters<LemmaApi['addComment']>): ReturnType<LemmaApi['addComment']> {
+  const [no,body]=args,db=liveClient(),uid=await owner(db)
+  const note=checked(await db.from('notes').select('id').eq('user_id',uid).eq('no',no).single()) as Row
+  return commentRow(checked(await db.from('card_comments').insert({user_id:uid,note_id:note.id,body}).select('*').single()) as Row)
+ }
+ async dismissComment(...args: Parameters<LemmaApi['dismissComment']>): ReturnType<LemmaApi['dismissComment']> {
+  const [no]=args,db=liveClient(),uid=await owner(db)
+  checked(await db.from('card_comments').update({status:'dismissed',resolved_at:new Date().toISOString()})
+    .eq('user_id',uid).eq('no',no).select('id').single())
+ }
+ async resolveMisconception(...args: Parameters<LemmaApi['resolveMisconception']>): ReturnType<LemmaApi['resolveMisconception']> {
+  const [id]=args,db=liveClient(),uid=await owner(db)
+  checked(await db.from('misconceptions').update({resolved_at:new Date().toISOString()})
+    .eq('id',id).eq('user_id',uid).select('id').single())
+ }
  async getAtlas(..._args: Parameters<LemmaApi['getAtlas']>): ReturnType<LemmaApi['getAtlas']> { throw notImplemented('getAtlas') }
- async pinConcept(..._args: Parameters<LemmaApi['pinConcept']>): ReturnType<LemmaApi['pinConcept']> { throw notImplemented('pinConcept') }
+ async pinConcept(...args: Parameters<LemmaApi['pinConcept']>): ReturnType<LemmaApi['pinConcept']> {
+  const [id,x,y]=args,db=liveClient(),uid=await owner(db)
+  if(!Number.isFinite(x)||!Number.isFinite(y)) throw new LemmaError('invalid','Invalid Atlas coordinates')
+  checked(await db.from('concepts').update({pin_x:x,pin_y:y}).eq('id',id).eq('user_id',uid).select('id').single())
+ }
  async getReviewLog(..._args: Parameters<LemmaApi['getReviewLog']>): ReturnType<LemmaApi['getReviewLog']> { throw notImplemented('getReviewLog') }
  async getInsightData(..._args: Parameters<LemmaApi['getInsightData']>): ReturnType<LemmaApi['getInsightData']> { throw notImplemented('getInsightData') }
  async exportAll(..._args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> { throw notImplemented('exportAll') }
