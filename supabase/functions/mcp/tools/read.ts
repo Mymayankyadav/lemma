@@ -64,10 +64,27 @@ export async function get(c: Context, a:any):Promise<string>{
     return capped(comments.filter((x:any)=>map.has(x.note_id)).slice(0,10).map((x:any)=>{const n:any=map.get(x.note_id);return '#'+x.no+' on N'+n.no+': '+x.body+'\n  FRONT '+cut(n.front,160)+'\n  BACK '+cut(n.back,160)}).join('\n'),2000);
   }
   if(a.what==='concepts'){
-    const subject=p.subject_id;
-    const concepts=(await scoped(c,'concepts').eq('subject_id',subject).limit(60)).data||[];
-    const links=(await all(c,'checkpoint_concepts')).filter((x:any)=>pcs.some((cp:any)=>cp.id===x.checkpoint_id));
-    return capped(concepts.map((x:any)=>x.name+' — '+(links.some((l:any)=>l.concept_id===x.id)?'in plan':'not started')).join('\n'),2000);
+    const concepts=(await scoped(c,'concepts').eq('subject_id',p.subject_id).limit(60)).data||[];
+    const projects=(await all(c,'projects','id,subject_id')).filter((x:any)=>x.subject_id===p.subject_id);
+    const pcps=(await all(c,'checkpoints')).filter((x:any)=>projects.some((proj:any)=>proj.id===x.project_id));
+    const cpById=new Map(pcps.map((x:any)=>[x.id,x]));
+    const edges=(await all(c,'checkpoint_prereqs')).filter((x:any)=>cpById.has(x.checkpoint_id));
+    const links=(await all(c,'checkpoint_concepts')).filter((x:any)=>cpById.has(x.checkpoint_id));
+    const errors=(await all(c,'misconceptions','concept_id,resolved_at')).filter((x:any)=>!x.resolved_at);
+    const notes=await all(c,'notes','id,concept_id');
+    const cards=await all(c,'cards','id,note_id');
+    const reviewed=(await scoped(c,'reviews','card_id,rating,reviewed_at').eq('rating',1).gte('reviewed_at',new Date(Date.now()-14*86400000).toISOString()).limit(1000)).data||[];
+    const noteForCard=new Map(cards.map((x:any)=>[x.id,x.note_id]));
+    const conceptForNote=new Map(notes.map((x:any)=>[x.id,x.concept_id]));
+    const today=day(s);
+    return capped(concepts.map((concept:any)=>{
+      const attached=links.filter((x:any)=>x.concept_id===concept.id).map((x:any)=>cpById.get(x.checkpoint_id)).filter(Boolean);
+      const statuses=attached.map((x:any)=>ui(x,edges.filter((e:any)=>e.checkpoint_id===x.id).map((e:any)=>e.prereq_id),cpById,today));
+      const again=reviewed.filter((r:any)=>conceptForNote.get(noteForCard.get(r.card_id))===concept.id).length;
+      const revisiting=statuses.includes('revisit')||errors.some((x:any)=>x.concept_id===concept.id)||again>=2;
+      const status=revisiting?'revisit':statuses.length&&statuses.every((x:string)=>x==='done')?'demonstrated':statuses.some((x:string)=>['now','done','revisit'].includes(x))?'in_progress':'not_started';
+      return concept.name+' — '+status;
+    }).join('\n'),2000);
   }
   throw new Error('Unknown get what');
 }
