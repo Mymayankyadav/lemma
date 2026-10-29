@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F7B538;text-decoration:none}
+a:hover{color:#FFD47E}
+button{font:inherit;color:inherit;cursor:pointer}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.s{font-family:'STIX Two Text','Times New Roman',serif}
+.num{font-variant-numeric:tabular-nums}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes halo{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.55);opacity:0}}
+@keyframes lamp{0%,100%{opacity:.7}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position:relative;width:390px;height:844px;overflow:hidden;font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#F4F0E6;background:#0D0C11">
+<div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(80% 45% at 90% -4%, rgba(247,181,56,0.12), rgba(247,181,56,0) 60%), radial-gradient(70% 40% at -10% 40%, rgba(164,149,255,0.06), rgba(164,149,255,0) 60%)"></div>
+
+<main style="position:relative;display:flex;flex-direction:column;gap:20px;padding:58px 24px 0">
+<header style="display:flex;align-items:center;justify-content:space-between;height:44px">
+<h1 style="margin:0;font-size:28px;font-weight:600;letter-spacing:-0.02em">Review</h1>
+<a href="CardDetail.dc.html" aria-label="Browse all cards" style="width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#ACA7B5;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></a>
+</header>
+
+<section aria-label="Start a review" style="position:relative;overflow:hidden;border-radius:28px;padding:22px;background:linear-gradient(160deg, rgba(164,149,255,0.07), rgba(164,149,255,0) 45%), #17161D;border:1px solid rgba(255,255,255,0.07);box-shadow:inset 0 1px 0 rgba(255,255,255,0.06), 0 34px 60px -30px rgba(0,0,0,0.95);animation:rise .6s cubic-bezier(.16,1,.3,1) both">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:baseline;gap:10px"><span class="num" style="font-size:64px;font-weight:600;letter-spacing:-0.04em;line-height:0.9">{{count}}</span><span style="font-size:15px;color:#ACA7B5">due</span></div>
+<span style="display:flex;align-items:center;gap:6px;font-size:13px;color:#8C8796"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>about {{minutes}} min</span>
+</div>
+<a href="Card.dc.html" aria-label="Start review" style="position:relative;width:76px;height:76px;border-radius:999px;display:grid;place-items:center;color:#1E1405;background:radial-gradient(circle at 35% 30%, #FFE08F, #F7B538 55%, #D98E1C);box-shadow:inset 0 1px 0 rgba(255,255,255,0.55), 0 16px 40px -10px rgba(247,181,56,0.8)">
+<span aria-hidden="true" style="position:absolute;inset:-6px;border-radius:999px;border:1.5px solid rgba(247,181,56,0.6);animation:halo 2.8s ease-out infinite"></span>
+<svg viewBox="0 0 24 24" aria-hidden="true" style="width:28px;height:28px;margin-left:3px;fill:#1E1405"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+</a>
+</div>
+<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between">
+<span style="display:flex;align-items:center;gap:10px;font-size:15px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="color:#F7B538"><path d="M16 4h4v4M4 20 20 4M20 16v4h-4M15 15l5 5M4 4l5 5"/></svg>Mix decks</span>
+<button type="button" role="switch" aria-checked="{{shuffle}}" aria-label="Mix decks" onClick="{{toggleShuffle}}" style="position:relative;width:52px;height:32px;border-radius:99px;border:none;padding:0;background:{{trackBg}};transition:background .25s"><span style="position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:99px;background:#F4F0E6;box-shadow:0 2px 6px rgba(0,0,0,0.5);transform:translateX({{knobX}}px);transition:transform .32s cubic-bezier(.16,1,.3,1)"></span></button>
+</div>
+</section>
+
+<section aria-label="Decks" style="display:flex;flex-direction:column;animation:rise .6s .1s cubic-bezier(.16,1,.3,1) both">
+<h2 style="margin:0 0 4px;font-size:15px;font-weight:600;color:#ACA7B5">Decks</h2>
+
+<div style="display:grid;grid-template-columns:44px 36px minmax(0,1fr) auto;align-items:center;gap:8px;height:52px">
+<button type="button" aria-label="Real Analysis" aria-pressed="{{raOn}}" onClick="{{toggleRa}}" style="width:44px;height:44px;margin-left:-10px;border:none;background:none;display:grid;place-items:center"><sc-if value="{{raOn}}" hint-placeholder-val="{{ true }}"><span style="width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:#F7B538;color:#1E1405"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;stroke-width:2.4"><path d="M5 12.5 10 17l9-10"/></svg></span></sc-if><sc-if value="{{raOff}}" hint-placeholder-val="{{ false }}"><span style="width:20px;height:20px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.22)"></span></sc-if></button>
+<span class="s" aria-hidden="true" style="width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:18px;font-style:italic;color:#F7B538;background:rgba(247,181,56,0.1)">∫</span>
+<span style="font-size:16px;font-weight:500">Real Analysis</span>
+<span class="num" style="font-size:15px;font-weight:600;color:#F7B538">14</span>
+</div>
+
+<div style="display:grid;grid-template-columns:44px 36px minmax(0,1fr) auto;align-items:center;gap:8px;height:48px;padding-left:28px;box-sizing:border-box">
+<button type="button" aria-label="Compactness" aria-pressed="{{cp4On}}" onClick="{{toggleCp4}}" style="width:44px;height:44px;margin-left:-10px;border:none;background:none;display:grid;place-items:center"><sc-if value="{{cp4On}}" hint-placeholder-val="{{ true }}"><span style="width:20px;height:20px;border-radius:6px;display:grid;place-items:center;background:#F7B538;color:#1E1405"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;stroke-width:2.4"><path d="M5 12.5 10 17l9-10"/></svg></span></sc-if><sc-if value="{{cp4Off}}" hint-placeholder-val="{{ false }}"><span style="width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.22)"></span></sc-if></button>
+<span class="num" style="font-size:12px;font-weight:600;color:#8C8796">CP4</span>
+<span style="font-size:15px;color:#E4DFD6">Compactness</span>
+<span class="num" style="font-size:14px;color:#F7B538">9</span>
+</div>
+
+<div style="display:grid;grid-template-columns:44px 36px minmax(0,1fr) auto;align-items:center;gap:8px;height:48px;padding-left:28px;box-sizing:border-box">
+<button type="button" aria-label="Sequences" aria-pressed="{{cp3On}}" onClick="{{toggleCp3}}" style="width:44px;height:44px;margin-left:-10px;border:none;background:none;display:grid;place-items:center"><sc-if value="{{cp3On}}" hint-placeholder-val="{{ true }}"><span style="width:20px;height:20px;border-radius:6px;display:grid;place-items:center;background:#F7B538;color:#1E1405"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:14px;height:14px;stroke-width:2.4"><path d="M5 12.5 10 17l9-10"/></svg></span></sc-if><sc-if value="{{cp3Off}}" hint-placeholder-val="{{ false }}"><span style="width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,0.22)"></span></sc-if></button>
+<span class="num" style="font-size:12px;font-weight:600;color:#8C8796">CP3</span>
+<span style="font-size:15px;color:#E4DFD6">Sequences</span>
+<span class="num" style="font-size:14px;color:#F7B538">5</span>
+</div>
+
+<div style="display:grid;grid-template-columns:44px 36px minmax(0,1fr) auto;align-items:center;gap:8px;height:52px">
+<button type="button" aria-label="Linear Algebra" aria-pressed="{{laOn}}" onClick="{{toggleLa}}" style="width:44px;height:44px;margin-left:-10px;border:none;background:none;display:grid;place-items:center"><sc-if value="{{laOn}}" hint-placeholder-val="{{ true }}"><span style="width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:#F7B538;color:#1E1405"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;stroke-width:2.4"><path d="M5 12.5 10 17l9-10"/></svg></span></sc-if><sc-if value="{{laOff}}" hint-placeholder-val="{{ false }}"><span style="width:20px;height:20px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.22)"></span></sc-if></button>
+<span class="s" aria-hidden="true" style="width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:18px;font-style:italic;color:#ACA7B5;background:rgba(255,255,255,0.05)">λ</span>
+<span style="font-size:16px;font-weight:500">Linear Algebra</span>
+<span class="num" style="font-size:15px;font-weight:600;color:#F7B538">6</span>
+</div>
+
+<div style="display:grid;grid-template-columns:44px 36px minmax(0,1fr) auto;align-items:center;gap:8px;height:52px">
+<button type="button" aria-label="Topology" aria-pressed="{{topOn}}" onClick="{{toggleTop}}" style="width:44px;height:44px;margin-left:-10px;border:none;background:none;display:grid;place-items:center"><sc-if value="{{topOn}}" hint-placeholder-val="{{ true }}"><span style="width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:#F7B538;color:#1E1405"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;stroke-width:2.4"><path d="M5 12.5 10 17l9-10"/></svg></span></sc-if><sc-if value="{{topOff}}" hint-placeholder-val="{{ false }}"><span style="width:20px;height:20px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.22)"></span></sc-if></button>
+<span class="s" aria-hidden="true" style="width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:18px;font-style:italic;color:#ACA7B5;background:rgba(255,255,255,0.05)">τ</span>
+<span style="font-size:16px;font-weight:500">Topology</span>
+<span class="num" style="font-size:15px;font-weight:600;color:#F7B538">3</span>
+</div>
+</section>
+
+<section aria-label="From sessions" style="display:flex;flex-direction:column;gap:10px;animation:rise .6s .18s cubic-bezier(.16,1,.3,1) both">
+<h2 style="margin:0;font-size:15px;font-weight:600;color:#ACA7B5">From sessions</h2>
+<div style="display:flex;gap:8px;overflow-x:auto;margin-right:-24px;padding-right:24px">
+<a href="Card.dc.html" style="flex:none;height:44px;padding:0 14px;border-radius:14px;display:flex;align-items:center;gap:8px;font-size:14px;color:#F4F0E6;background:rgba(247,181,56,0.1);border:1px solid rgba(247,181,56,0.25)"><span class="num" style="font-weight:600;color:#F7B538">S7</span>Compactness<span class="num" style="color:#ACA7B5">5</span></a>
+<a href="Card.dc.html" style="flex:none;height:44px;padding:0 14px;border-radius:14px;display:flex;align-items:center;gap:8px;font-size:14px;color:#F4F0E6;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)"><span class="num" style="font-weight:600;color:#ACA7B5">S12</span>Eigenvalues<span class="num" style="color:#ACA7B5">4</span></a>
+<a href="Card.dc.html" style="flex:none;height:44px;padding:0 14px;border-radius:14px;display:flex;align-items:center;gap:8px;font-size:14px;color:#F4F0E6;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)"><span class="num" style="font-weight:600;color:#ACA7B5">S6</span>Sequences<span class="num" style="color:#ACA7B5">3</span></a>
+</div>
+</section>
+</main>
+
+<nav aria-label="Main" style="position:absolute;left:16px;right:16px;bottom:20px;height:64px;border-radius:24px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;padding:0 6px;background:rgba(26,25,33,0.78);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border:1px solid rgba(255,255,255,0.07);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 26px 50px -14px rgba(0,0,0,0.85)">
+<a href="Main.dc.html" aria-label="Home" style="height:52px;display:grid;place-items:center;color:#8C8796"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/></svg></a>
+<a href="Projects.dc.html" aria-label="Projects" style="height:52px;display:grid;place-items:center;color:#8C8796"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2h7.2a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg></a>
+<a href="Review.dc.html" aria-current="page" style="height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#F7B538"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="filter:drop-shadow(0 0 8px rgba(247,181,56,0.55))"><rect x="7" y="3.5" width="12" height="15" rx="2.5"/><path d="M4.5 7v11a2.5 2.5 0 0 0 2.5 2.5h9"/></svg><span style="font-size:11px;font-weight:600">Review</span></a>
+<a href="Insights.dc.html" aria-label="Insights" style="height:52px;display:grid;place-items:center;color:#8C8796"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-8M12 20V5M19 20v-11"/></svg></a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cp4: true, cp3: true, la: true, top: true, shuffle: true };
+  }
+  renderVals() {
+    const s = this.state;
+    const count = (s.cp4 ? 9 : 0) + (s.cp3 ? 5 : 0) + (s.la ? 6 : 0) + (s.top ? 3 : 0);
+    const raOn = s.cp4 && s.cp3;
+    return {
+      count: count,
+      minutes: Math.max(1, Math.round(count * 0.4)),
+      shuffle: s.shuffle,
+      trackBg: s.shuffle ? '#F7B538' : 'rgba(255,255,255,0.14)',
+      knobX: s.shuffle ? 20 : 0,
+      toggleShuffle: () => this.setState({ shuffle: !s.shuffle }),
+      raOn: raOn, raOff: !raOn,
+      cp4On: s.cp4, cp4Off: !s.cp4,
+      cp3On: s.cp3, cp3Off: !s.cp3,
+      laOn: s.la, laOff: !s.la,
+      topOn: s.top, topOff: !s.top,
+      toggleRa: () => this.setState({ cp4: !raOn, cp3: !raOn }),
+      toggleCp4: () => this.setState({ cp4: !s.cp4 }),
+      toggleCp3: () => this.setState({ cp3: !s.cp3 }),
+      toggleLa: () => this.setState({ la: !s.la }),
+      toggleTop: () => this.setState({ top: !s.top })
+    };
+  }
+}
+</script>
+</body>
+</html>
