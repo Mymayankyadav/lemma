@@ -1,22 +1,8 @@
 node_modules/
 dist/
-test-output/
-android/app/build/
-.env
-.DS_Store
-
-# Capacitor/Android generated environment and build outputs
-android/.gradle/
-android/.idea/
-android/local.properties
-android/captures/
-android/build/
-android/app/.cxx/
-*.keystore
-*.jks
-.env.*
+.env*
 !.env.example
-
-
-# Local Supabase CLI metadata
-supabase/.temp/
+!.env.production
+*.tsbuildinfo
+test-results/
+playwright-report/
