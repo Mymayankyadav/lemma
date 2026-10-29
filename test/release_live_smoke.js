@@ -111,13 +111,18 @@ async function assertSignedOutKnowledgeHidden(page) {
 // for an anonymous visitor, even while general Tutor readiness is false.
 async function assertSignedOutTutorHidden(page) {
   for (const selector of ['.study-acceptance-entry', '.study-acceptance-warning',
-    '.tutor-handoff-sheet', '.tutor-handoff-acceptance-notice']) {
+    '.tutor-handoff', '.tutor-handoff-sheet', '.tutor-handoff-acceptance-notice',
+    '.tutor-handoff-packet', '.tutor-handoff-reply', '.tutor-handoff-review',
+    '.tutor-handoff-item', '.tutor-handoff-json', '.tutor-handoff-select',
+    '.tutor-handoff-status', '.tutor-handoff-help']) {
     assert.equal(await page.locator(selector).count(), 0,
       'signed-out Study must not mount tutor acceptance node ' + selector);
   }
   for (const label of ['Test tutor handoff (unreleased)', 'Open tutor handoff',
-    'Copy packet', 'Save selected study events']) {
-    assert.equal(await page.getByRole('button', { name:label, exact:true }).count(), 0,
+    'Copy packet', 'Review pasted reply', 'Save selected study events',
+    'Review card in editor', 'Stage unapproved amendment draft']) {
+    const texts = await page.locator('button').allTextContents();
+    assert.equal(texts.some(text => text.trim() === label), false,
       'signed-out Study must not expose tutor action ' + label);
   }
 }
@@ -504,6 +509,43 @@ async function readySelfTest() {
       /signed-out Study must not expose tutor action/);
     await page.locator('[data-tutor-leak]').evaluate(node=>node.remove());
     await assertSignedOutTutorHidden(page);
+    // A detached private packet, pasted reply or proposal can expose study
+    // content even if the sheet is hidden. Inject each as a hidden DOM node,
+    // then remove it and verify the anonymous guard recovers.
+    for (const className of ['tutor-handoff', 'tutor-handoff-packet',
+      'tutor-handoff-reply', 'tutor-handoff-review', 'tutor-handoff-json',
+      'tutor-handoff-select']) {
+      await page.evaluate(name => {
+        const leak = document.createElement(name.endsWith('packet') ||
+          name.endsWith('reply') ? 'textarea' : 'div');
+        leak.className = name;
+        leak.hidden = true;
+        leak.textContent = 'synthetic-private-tutor-fixture';
+        leak.dataset.tutorPrivateLeak = 'yes';
+        document.querySelector('.study-page').append(leak);
+      }, className);
+      await assert.rejects(assertSignedOutTutorHidden(page),
+        /signed-out Study must not mount tutor acceptance node/,
+        'hidden tutor packet/reply/proposal node must fail: ' + className);
+      await page.locator('[data-tutor-private-leak]').evaluate(node => node.remove());
+      await assertSignedOutTutorHidden(page);
+    }
+    for (const label of ['Copy packet', 'Review pasted reply',
+      'Save selected study events', 'Review card in editor',
+      'Stage unapproved amendment draft']) {
+      await page.evaluate(name => {
+        const leak = document.createElement('button');
+        leak.textContent = name;
+        leak.hidden = true;
+        leak.dataset.tutorPrivateLeak = 'yes';
+        document.querySelector('.study-page').append(leak);
+      }, label);
+      await assert.rejects(assertSignedOutTutorHidden(page),
+        /signed-out Study must not expose tutor action/,
+        'anonymous tutor consent action must fail: ' + label);
+      await page.locator('[data-tutor-private-leak]').evaluate(node => node.remove());
+      await assertSignedOutTutorHidden(page);
+    }
     // Anonymous Study must never mount even hidden private checkpoint data.
     for (const className of ['study-summary', 'study-initial-editor',
       'study-amendment', 'study-form', 'study-sources']) {
