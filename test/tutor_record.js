@@ -11,6 +11,8 @@ const C1='00000000-0000-4000-8000-000000000004';
 const owner='00000000-0000-4000-8000-000000000005';
 const cp='compactness-open-cover-proof';
 let dialog, revision=3, activeCheckpoint=cp, failSecond=false, afterContextRead=null;
+let hintLevel=1, attemptId=E1, sessionId=owner, checkpointStatus='in_progress';
+let contextId=null, contextRevision=null, lastFeedbackId=null, sourceRefs=[];
 const calls=[];
 const app={workspaceRevision:1,workspaceBlocked:false};
 let signalIdentityChange=null;
@@ -33,9 +35,11 @@ const client={rpc(name,args){
 account.client=client;
 const plan={
  async activeContext(){
-  const snapshot={planId:A,planRevision:revision,contextId:null,contextRevision:null,
-   checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:'in_progress'},
-   hintLevel:1,sourceRefs:[],lastAttempt:{eventId:E1,text:'Partial proof'}};
+  const snapshot={planId:A,planRevision:revision,contextId,contextRevision,
+   checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:checkpointStatus},
+   sessionId,hintLevel,sourceRefs:[...sourceRefs],
+   lastAttempt:attemptId ? {eventId:attemptId,text:'Partial proof'} : null,
+   lastFeedback:lastFeedbackId ? {eventId:lastFeedbackId} : null};
   if(afterContextRead){
    const change=afterContextRead;afterContextRead=null;
    await Promise.resolve();
@@ -198,6 +202,30 @@ async function open(){
  assert.match(x.status.textContent,/account or workspace changed/);
  account.user={id:owner};
 
+ // T3f: a stable plan ID/revision does not guarantee that the student is
+ // still working on the same proof, hint, active session or accepted context.
+ const changedStudyStates=[
+  ['hint level',()=>{hintLevel=2;},()=>{hintLevel=1;}],
+  ['new proof attempt',()=>{attemptId=E2;},()=>{attemptId=E1;}],
+  ['new active session',()=>{sessionId=C1;},()=>{sessionId=owner;}],
+  ['checkpoint completion',()=>{checkpointStatus='demonstrated';},
+   ()=>{checkpointStatus='in_progress';}],
+  ['accepted context',()=>{contextId=C1;contextRevision=2;},
+   ()=>{contextId=null;contextRevision=null;}],
+  ['new feedback',()=>{lastFeedbackId=E2;},()=>{lastFeedbackId=null;}],
+  ['changed citations',()=>{sourceRefs=['new-accepted-section'];},
+   ()=>{sourceRefs=[];}]
+ ];
+ for(const [label,change,reset] of changedStudyStates) {
+  x=await open();const checkbox=select(0);change();
+  await x.save.events.click();
+  assert.equal(calls.length,4,label+' cannot reuse consent or send RPC');
+  assert.match(x.status.textContent,/stale_study_context/,label);
+  assert.equal(checkbox.checked,true,'unsaved event selection retained for '+label);
+  assert.equal(x.save.disabled,false,'same event ID remains available for '+label);
+  reset();
+ }
+
  // Editing the reply invalidates review/consent and cannot keep old IDs.
  x=await open();select(0);
  x.input.value='{}';
@@ -213,5 +241,5 @@ async function open(){
  assert.equal(x.review.children.length,0);
  assert.equal(x.save.disabled,true);
  assert.equal(calls.length,4);
- console.log('PASS TUTOR-01 T3e: selected-only atomic evidence, retry IDs, post-read identity/workspace consent guard, no implicit cards');
+ console.log('PASS TUTOR-01 T3f: atomic evidence, retry IDs, identity and proof/hint/session freshness, no implicit cards');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
