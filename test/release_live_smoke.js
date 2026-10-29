@@ -253,8 +253,15 @@ async function readySelfTest() {
   const original = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'), 'utf8');
   assert.throws(() => readyFixture('invalid HTML'), /module boundary/,
     'missing source markers must fail closed');
-  assert.throws(() => readyFixture(original.replace('const ready = false;',
-    'const readinessFlag = false;')), /ambiguous ready-fixture flag/,
+  const viewStart = original.indexOf('/* ===== view_study.js ===== */');
+  const viewEnd = original.indexOf('/* ===== main.js ===== */', viewStart);
+  assert(viewStart >= 0 && viewEnd > viewStart, 'built StudyView module markers required');
+  const view = original.slice(viewStart, viewEnd);
+  const invalidView = view.replace(/const ready = (?:true|false);/,
+    'const missingReadiness = false;');
+  assert.notEqual(invalidView, view, 'StudyView readiness declaration required');
+  assert.throws(() => readyFixture(original.slice(0, viewStart) + invalidView +
+    original.slice(viewEnd)), /ambiguous ready-fixture flag/,
     'missing StudyView ready declaration must fail closed');
   const injected = readyFixture(original);
   const browser = await chromium.launch();
@@ -277,7 +284,8 @@ async function readySelfTest() {
     const flags = bundleReadiness(script);
     assert.equal(flags.study && flags.plan, true,
       'the real built StudyPlan and StudyView modules must both be ready in fixture');
-    assert.equal(flags.tutor, false, 'the fixture must not enable unaccepted Tutor features');
+    assert.equal(flags.tutor, bundleReadiness(original).tutor,
+      'the fixture must not change Tutor readiness');
     await page.locator('nav [data-go="study"]:visible').first().click();
     await page.locator('.study-page:visible').first().waitFor({ timeout });
     await page.locator('.study-page .study-message').filter({
