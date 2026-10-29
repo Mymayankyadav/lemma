@@ -27,45 +27,18 @@ export async function startSession(c:Context,a:any):Promise<string>{
   return 'started S'+s.number+(cp?' on '+cp.code+' (step '+(cp.current_step||1)+'/'+cp.steps.length+')':'');
 }
 export async function saveProgress(c:Context,a:any):Promise<string>{
-  const p=await project(c,a.project),s=await session(c,p,a.session);
-  if(s.state!=='open')throw new Error('Session S'+s.number+' is already ended');
-  const allowed=await checkpoints(c,p),byCode=new Map(allowed.map((x:any)=>[x.code.toUpperCase(),x]));
-  let cp=allowed.find((x:any)=>x.id===s.checkpoint_id);
-  const today=day(await settings(c));let saved=0;
-  // Every table write below is owner-scoped; validation completes before any mutation.
-  const events:(any[])=(a.events||[]).map((e:any)=>{
-    const target=e.checkpoint?byCode.get(e.checkpoint.toUpperCase()):cp;
-    if(e.checkpoint&&!target)throw new Error('Unknown checkpoint '+e.checkpoint);
-    return {kind:e.kind,body:e.text,outcome:e.outcome||null,hint_level:e.hint_level||null,checkpoint_id:target?.id||null,target};
+  const p=await project(c,a.project);
+  const s=await session(c,p,a.session);
+  // DB-1 CONTRACT #220 provides an owner-, project-, session-, and checkpoint-scoped
+  // Postgres transaction. Never split events and checkpoint updates across REST calls.
+  const payload:Record<string,unknown>={};
+  for(const key of ['step','events','misconception','resolved','next_question']){
+    if(a[key]!==undefined)payload[key]=a[key];
+  }
+  const result=await rpc(c,'save_progress',{
+    p_user_id:c.userId,p_project_id:p.id,p_session_id:s.id,p_payload:payload
   });
-  if(a.step!==undefined && (!cp||a.step>cp.steps.length))throw new Error('Step exceeds the checkpoint steps');
-  for(const e of events){
-    await insert(c,'session_events',{session_id:s.id,checkpoint_id:e.checkpoint_id,kind:e.kind,body:e.body,outcome:e.outcome,hint_level:e.hint_level});
-    saved++;
-    if(e.target&&e.kind==='evidence'&&e.outcome==='demonstrated'){
-      const next=new Date(Date.parse(today+'T12:00:00Z')+3*86400000).toISOString().slice(0,10);
-      await update(c,'checkpoints',e.target.id,{status:'demonstrated',demonstrated_at:new Date().toISOString(),current_step:e.target.steps.length,recheck_level:0,recheck_due:next,needs_revisit:false});
-    }
-    if(e.target&&e.kind==='recheck'&&e.outcome)await update(c,'checkpoints',e.target.id,ladder(e.target,e.outcome,today));
-  }
-  if(a.misconception){
-    await insert(c,'session_events',{session_id:s.id,checkpoint_id:cp?.id||null,kind:'misconception',body:a.misconception});
-    saved++;
-    const {data:old,error}=await scoped(c,'misconceptions').eq('project_id',p.id).ilike('label',a.misconception).maybeSingle();
-    if(error)throw new Error(error.message);
-    if(old)await update(c,'misconceptions',old.id,{times:old.times+1,last_seen_at:new Date().toISOString(),resolved_at:null});
-    else await insert(c,'misconceptions',{project_id:p.id,label:a.misconception});
-  }
-  if(a.resolved){
-    const {data:x,error}=await scoped(c,'misconceptions').eq('project_id',p.id).ilike('label',a.resolved).maybeSingle();
-    if(error)throw new Error(error.message);
-    if(x)await update(c,'misconceptions',x.id,{resolved_at:new Date().toISOString()});
-  }
-  const patch:any={last_activity_at:new Date().toISOString()};
-  if(a.step!==undefined){patch.resume_step=a.step; if(cp)await update(c,'checkpoints',cp.id,{current_step:a.step})}
-  if(a.next_question!==undefined)patch.resume_question=a.next_question;
-  await update(c,'sessions',s.id,patch);
-  return 'saved S'+s.number+': step '+(a.step??s.resume_step??cp?.current_step??0)+', '+saved+' events';
+  return 'saved S'+s.number+': step '+(result?.step??s.resume_step??0)+', '+(result?.events??0)+' events';
 }
 export async function endSession(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project),s=await session(c,p,a.session);
