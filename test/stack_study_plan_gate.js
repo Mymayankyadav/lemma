@@ -118,6 +118,19 @@ async function main(){
  await write(study,'proof-7','hint',{level:2,text:'Check the induction hypothesis'},h7,1);
  await write(study,'proof-7','feedback',
   {text:'Last step needs justification'},feedback,1);
+ // Two explicit, observable demonstrations use synthetic complete proofs,
+ // never a read/checkbox or inferred mastery. Both remain in the ledger.
+ const demonstrations=[
+  ['proof-3','A finite set K is compact: for each x in K choose a member of the given open cover containing x. These finitely many chosen members cover K.'],
+  ['proof-7','For continuous f and compact K, pull an open cover of f(K) back along f. The inverse images cover K and have a finite subcover; the corresponding original sets cover f(K).']
+ ];
+ for(const [checkpoint,text] of demonstrations) {
+  await write(study,checkpoint,'mastery_evidence',
+   {text,source:'synthetic:chapter-'+checkpoint.split('-')[1]},randomUUID(),1);
+  const visible=await reload(A).activeContext({planId:planA,checkpointId:checkpoint});
+  assert.equal(visible.lastEvidence.text,text,'explicit assessment evidence survives reload for its selected checkpoint');
+  assert.equal(visible.checkpoint.status,'not_started','recording evidence cannot silently change mastery status');
+ }
  const afterReload=await reload(A).activeContext();
  assert.equal(afterReload.checkpoint.id,'proof-7');
  assert.equal(afterReload.lastAttempt.payload.text,
@@ -194,7 +207,7 @@ async function main(){
  assert.equal(resumed.hintLevel,3);
  assert.equal((await must('/rest/v1/learning_events?select=event_id&event_id=eq.'+aId,A.token)).length,1);
  const allEvents=await must('/rest/v1/learning_events?select=event_id&session_id=eq.'+first.sessionId,A.token);
- assert.equal(allEvents.length,7,'2 checkpoints + amendment resume produce exactly seven distinct events');
+ assert.equal(allEvents.length,9,'2 checkpoints, 2 explicit demonstrations and amendment resume produce exactly nine distinct events');
  assert.deepEqual(await must('/rest/v1/learning_events?select=event_id&session_id=eq.'+first.sessionId,B.token),[],
   'other owner cannot read proof history after amendment');
  console.log('PASS PLAN-01 P5a real local: 12 checkpoints, two proofs, reload/hint resume, accepted prerequisite amendment, unchanged evidence, stale rejection, idempotent retry and owner isolation');
@@ -203,3 +216,4 @@ if(require.main===module)main().catch(e=>{
  console.error('FAIL PLAN-01 P5a local-stack: '+e.stack);process.exitCode=1;
 });
 module.exports={main};
+
