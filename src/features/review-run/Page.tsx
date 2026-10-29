@@ -60,8 +60,8 @@ export default function Page(){
  const undoCommitted=useReviewSession(s=>s.undoCommitted);
  const [sheetOpen,setSheetOpen]=useState(false),[note,setNote]=useState('');
  const init=useRef(false);
- const sessionId=search.get('session'),onlyNew=search.get('new')==='1';
- const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,newOnly:onlyNew}),[sessionId,onlyNew]);
+ const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
+ const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
  const apiCards=useReviewItems(filter);
  useEffect(()=>{
   if(init.current||!settings.data||!apiCards.data)return;
