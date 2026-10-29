@@ -97,11 +97,15 @@ describe("demo adapter", () => {
     expect(onlyNew.filter((r) => r.noteNo === newRow.noteNo)).toHaveLength(1);
     const plan = proposals.find((p) => p.kind === "plan_change")!;
     await api.approveProposal(plan.id);
-    expect(
-      (await api.getProject("real-analysis")).checkpoints.find(
-        (c) => c.code === "CP4a",
-      ),
-    ).toBeTruthy();
+    const path = (await api.getProject("real-analysis")).checkpoints;
+    const cp4 = path.find((c) => c.code === "CP4")!;
+    const cp4a = path.find((c) => c.code === "CP4a")!;
+    const cp5 = path.find((c) => c.code === "CP5")!;
+    expect(cp4.position).toBeLessThan(cp4a.position);
+    expect(cp4a.position).toBeLessThan(cp5.position);
+    expect((await api.getCheckpoint("real-analysis", "CP5")).prereqs).toContain(
+      "CP4a",
+    );
     await expect(api.approveProposal(plan.id)).rejects.toMatchObject({
       code: "conflict",
     });
