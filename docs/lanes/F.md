@@ -4,7 +4,9 @@
 - **Gap:** R16 validates only the *type* of a completed run's conclusion; an older trusted exact-SHA run with an impossible string, or a pending run already asserting success, may be ignored when the latest run is green. The release attestation should reject malformed trusted history before selecting a run, not just validate the chosen one.
 - **Scope:** F-owned `test/release_tag_guard.js` and this handoff. Require completed runs to have a documented GitHub Actions conclusion and noncompleted runs to have null conclusion. Add positive fixtures for legitimate completed statuses and negative controls for contradictory/unknown run states even on older candidates. Preserve R16 chronology, canonical provenance, exact-SHA and deployment ordering. No tag, live account use, readiness, Android or backend changes.
 - **Acceptance:** focused executable source assertions, F lane guard, full regression and Pages checks on the PR head; merge only after required green checks, post-merge main verification. Recovery B #163 and real tutor T4 remain acceptance blockers.
-- **Next:** implement and test the narrow guard increment on this claimed branch; report exact PR-head verification before merge.
+- **Implemented:** strict GitHub Actions terminal-conclusion allowlist, nonterminal-null consistency and self-test negatives for fabricated older completion, five pending states with false success, and missing null; positive fixtures cover all nine legitimate completion outcomes. Existing R16 temporal ordering, provenance and deployment smoke constraints preserved.
+- **Focused verification:** full built-in self-test executed against exact F17 source in an independent V8 harness: PASS. Local Node/npm and lane guard were not available; GitHub exact-head checks required. No local or production accounts used.
+- **Next:** verify exact-head full regression, lane guard and Pages smoke on PR #186; merge only when green, then inspect post-merge main. No release tag or change to B/E acceptance.
 
 ## R16 — reject malformed trusted CI run evidence (29 October 2026)
 
