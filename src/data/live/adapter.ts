@@ -98,13 +98,14 @@ export class LiveAdapter implements LemmaApi {
  }
  async listProjects(...args: Parameters<LemmaApi['listProjects']>): ReturnType<LemmaApi['listProjects']> {
   const db=liveClient(),uid=await owner(db)
-  const [projects,subjects,cps,notes,sessions,sources,prereqs]=await Promise.all([
+  const [projects,subjects,cps,notes,sessions,sources,prereqs,cards,settings]=await Promise.all([
     rows(db,'projects',uid),rows(db,'subjects',uid),rows(db,'checkpoints',uid),
-    rows(db,'notes',uid),rows(db,'sessions',uid),rows(db,'sources',uid),rows(db,'checkpoint_prereqs',uid)
+    rows(db,'notes',uid),rows(db,'sessions',uid),rows(db,'sources',uid),rows(db,'checkpoint_prereqs',uid),
+    rows(db,'cards',uid),this.getSettings()
   ])
   const subjectMap=new Map(subjects.map(s=>[s.id,subjectRow(s)]))
   const cpMap=new Map(cps.map(c=>[c.id,c]))
-  const today=studyDay(Date.now())
+  const today=studyDay(Date.now(),settings.timeZone,settings.rolloverHour)
   const views=new Map<string,CheckpointView>()
   const visiting=new Set<string>()
   const getView=(c:Row): CheckpointView=>{
@@ -122,7 +123,7 @@ export class LiveAdapter implements LemmaApi {
     return {id:p.id,slug:p.slug,title:p.title,subject:subjectMap.get(p.subject_id)!,status:p.status,
       done:counts.done,total:counts.total,
       current:current?{code:current.code,title:current.title,step:current.currentStep,stepsTotal:current.stepsTotal}:null,
-      lastActivityAt:p.last_activity_at,cardsCount:notes.filter(n=>n.project_id===p.id&&n.status==='active').length,
+      lastActivityAt:p.last_activity_at,cardsCount:cards.filter(c=>notes.some(n=>n.id===c.note_id&&n.project_id===p.id&&n.status==='active')).length,
       sessionsCount:sessions.filter(s=>s.project_id===p.id&&s.state==='ended').length,
       sourcesCount:sources.filter(s=>s.project_id===p.id).length} satisfies ProjectSummary
   }).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
@@ -130,11 +131,12 @@ export class LiveAdapter implements LemmaApi {
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
   const [slug]=args,db=liveClient(),uid=await owner(db)
   const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).single()) as Row
-  const [subjects,cps,prereqs,proposalRows,sources,sessionList]=await Promise.all([
+  const [subjects,cps,prereqs,proposalRows,sources,sessionList,settings,due]=await Promise.all([
     rows(db,'subjects',uid),rows(db,'checkpoints',uid),rows(db,'checkpoint_prereqs',uid),
-    rows(db,'proposals',uid),rows(db,'sources',uid),this.listSessions(slug)
+    rows(db,'proposals',uid),rows(db,'sources',uid),this.listSessions(slug),this.getSettings(),
+    this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false})
   ])
-  const today=studyDay(Date.now()),forProject=cps.filter(c=>c.project_id===project.id)
+  const today=studyDay(Date.now(),settings.timeZone,settings.rolloverHour),forProject=cps.filter(c=>c.project_id===project.id)
   const byId=new Map(forProject.map(c=>[c.id,c])),cached=new Map<string,CheckpointView>(),visiting=new Set<string>()
   const view=(cp:Row): CheckpointView=>{
     if(cached.has(cp.id))return cached.get(cp.id)!
@@ -144,13 +146,18 @@ export class LiveAdapter implements LemmaApi {
     const v=checkpointRow(cp,parents.map(view),today);cached.set(cp.id,v);visiting.delete(cp.id);return v
   }
   const views:CheckpointView[]=forProject.map(view)
+  for(const v of views) v.dueCards=due.filter(c=>c.projectSlug===slug&&c.checkpointCode===v.code).length
   const pending=proposalRows.filter(p=>p.project_id===project.id&&p.status==='pending')
   for (const proposal of pending.filter(p=>p.kind==='plan_change')){
     for(const op of (proposal.payload?.ops??[]) as Row[]){
       if(op.op!=='add')continue
       const previous=views.find(c=>c.code===op.after)
-      views.push({id:'proposed:'+proposal.id+':'+views.length,code:op.code??'Proposed',
-        title:op.title,position:(previous?.position??0)+0.5,ui:'proposed',
+      const next=views.filter(c=>c.position>(previous?.position??0)).sort((a,b)=>a.position-b.position)[0]
+      const position=previous&&next?(previous.position+next.position)/2:(previous?.position??0)+10
+      const candidate=op.after?.match(/^CP(\\d+)$/)?.[1]
+      const proposedCode=op.code??(candidate?'CP'+candidate+'a':'Proposed')
+      views.push({id:'proposed:'+proposal.id+':'+views.length,code:proposedCode,
+        title:op.title,position,ui:'proposed',
         currentStep:0,stepsTotal:op.steps?.length??0,recheckDue:null,dueCards:0})
     }
   }
@@ -383,7 +390,7 @@ export class LiveAdapter implements LemmaApi {
     if(filter.newOnly&&c.state.state!==0)return false
     if(!filter.includeNew&&c.state.state===0)return false
     if(filter.decks.length&&!filter.decks.some(d=>d===`project:${c.projectSlug}`||d===`cp:${c.projectSlug}:${c.checkpointCode}`))return false
-    if(filter.sessionId && sessionsById.get(notesById.get(c.noteId)?.session_id)?.id!==filter.sessionId)return false
+    if(filter.sessionId && notesById.get(c.noteId)?.session_id!==filter.sessionId)return false
     if(filter.conceptSlug){
       const n=notesById.get(c.noteId)
       if(concepts.find(x=>x.id===n?.concept_id)?.slug!==filter.conceptSlug)return false
