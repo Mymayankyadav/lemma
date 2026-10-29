@@ -122,6 +122,32 @@ async function assertSignedOutTutorHidden(page) {
   }
 }
 
+// Study is owner-scoped even when its navigation is publicly visible. A hidden
+// plan editor, published checkpoint, proof transcript or consent action in the
+// anonymous DOM is a privacy failure, not merely a visibility regression.
+async function assertSignedOutStudyPrivateHidden(page) {
+  for (const selector of ['.study-page .study-initial',
+    '.study-page .study-initial-editor', '.study-page .study-initial-preview',
+    '.study-page .study-amendment', '.study-page .study-amendment-details',
+    '.study-page .study-summary', '.study-page .study-detail',
+    '.study-page .study-sources', '.study-page .study-form-list',
+    '.study-page .study-form', '.study-page textarea.study-input',
+    '.study-page [aria-label="Approved checkpoint"]',
+    '.study-page [aria-label="Plan snapshot JSON"]']) {
+    assert.equal(await page.locator(selector).count(), 0,
+      'signed-out Study must not mount private plan or proof node ' + selector);
+  }
+  for (const label of ['Use a starter checkpoint', 'Save unapproved plan draft',
+    'Review saved plan', 'Approve this reviewed plan',
+    'Review pending amendment', 'Approve these displayed changes',
+    'Save proof attempt', 'Continue saved proof', 'Record hint',
+    'Save feedback', 'Record evidence', 'Save next action']) {
+    assert.equal(await page.locator('.study-page button').filter({
+      hasText: new RegExp('^\\s*' + label + '\\s*$')
+    }).count(), 0, 'signed-out Study must not mount private consent action ' + label);
+  }
+}
+
 async function smoke(url) {
   const parsed = new URL(url);
   const requireParity = parityEnabled(process.env.LEMMA_REQUIRE_DEPLOYED_PARITY);
@@ -216,6 +242,7 @@ async function smoke(url) {
         hasText: /save proof attempt|record hint|record evidence/i
       }).count(), 0, 'signed-out users must never see evidence-write controls');
       await assertSignedOutTutorHidden(page);
+      await assertSignedOutStudyPrivateHidden(page);
       await capture('01b-ready-study-signed-out');
 
       stage = 'ready-study-deep-link';
@@ -228,6 +255,7 @@ async function smoke(url) {
         hasText: 'Sign in to open an approved study checkpoint.'
       }).waitFor({ timeout });
       await assertSignedOutTutorHidden(page);
+      await assertSignedOutStudyPrivateHidden(page);
       await page.getByRole('button', { name: 'Back to Today' }).click();
       await page.locator('.today, .onboard').first().waitFor({ timeout });
       // In-app navigation does not rewrite a deep-link fragment. The later
@@ -463,6 +491,7 @@ async function readySelfTest() {
       hasText: /save proof attempt|record hint|record evidence/i
     }).count(), 0, 'signed-out Study must not show evidence writes');
     await assertSignedOutTutorHidden(page);
+    await assertSignedOutStudyPrivateHidden(page);
     // Deliberately inject an anonymous acceptance action to prove this
     // guard fails rather than simply passing when Study is signed out.
     await page.evaluate(() => {
@@ -475,6 +504,37 @@ async function readySelfTest() {
       /signed-out Study must not expose tutor action/);
     await page.locator('[data-tutor-leak]').evaluate(node=>node.remove());
     await assertSignedOutTutorHidden(page);
+    // Anonymous Study must never mount even hidden private checkpoint data.
+    for (const className of ['study-summary', 'study-initial-editor',
+      'study-amendment', 'study-form', 'study-sources']) {
+      await page.evaluate(name => {
+        const leak = document.createElement('div');
+        leak.className = name;
+        leak.hidden = true;
+        leak.dataset.studyPrivateLeak = 'yes';
+        document.querySelector('.study-page').append(leak);
+      }, className);
+      await assert.rejects(assertSignedOutStudyPrivateHidden(page),
+        /signed-out Study must not mount private plan or proof node/,
+        'hidden private Study node must fail: ' + className);
+      await page.locator('[data-study-private-leak]').evaluate(node => node.remove());
+      await assertSignedOutStudyPrivateHidden(page);
+    }
+    for (const label of ['Save unapproved plan draft', 'Approve this reviewed plan',
+      'Review pending amendment', 'Save proof attempt', 'Continue saved proof',
+      'Record hint']) {
+      await page.evaluate(name => {
+        const leak = document.createElement('button');
+        leak.textContent = name;
+        leak.dataset.studyPrivateLeak = 'yes';
+        document.querySelector('.study-page').append(leak);
+      }, label);
+      await assert.rejects(assertSignedOutStudyPrivateHidden(page),
+        /signed-out Study must not mount private consent action/,
+        'anonymous Study consent control must fail: ' + label);
+      await page.locator('[data-study-private-leak]').evaluate(node => node.remove());
+      await assertSignedOutStudyPrivateHidden(page);
+    }
     await page.goto(origin + '#study', { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('.study-page:visible').first().waitFor({ timeout });
@@ -482,6 +542,7 @@ async function readySelfTest() {
       hasText: 'Sign in to open an approved study checkpoint.'
     }).waitFor({ timeout });
     await assertSignedOutTutorHidden(page);
+    await assertSignedOutStudyPrivateHidden(page);
     await page.getByRole('button', { name: 'Back to Today' }).click();
     await page.locator('.today, .onboard').first().waitFor({ timeout });
     // Recovery is explicitly enabled in this synthetic bundle. Its entire
@@ -565,7 +626,7 @@ async function readySelfTest() {
       await assertSignedOutKnowledgeHidden(page);
     }
     assert.deepEqual(errors, [], 'injected ready Study/recovery must not cause browser exceptions');
-    console.log('PASS ready-Study/recovery fixture: signed-out tutor/knowledge isolation, Study/Settings direct links and leak negative controls');
+    console.log('PASS ready-Study/recovery fixture: signed-out tutor/knowledge/plan/proof isolation, Study/Settings direct links and leak negative controls');
   } finally {
     await ctx.close();
     await browser.close();
