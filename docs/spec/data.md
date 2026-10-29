@@ -404,7 +404,7 @@ Columns: `user_id, card_id, note_id, note_no, ord, project_id, checkpoint_id, se
 
 Connector-only, `security invoker`; execute granted to `service_role` only. This is the atomic implementation of connector.md §5.6, not a new frontend LemmaApi method. The connector resolves the owner/project/session before calling it and passes only `step`, `events`, `misconception`, `resolved`, `next_question` in `p_payload` (the same names and limits as the tool). The function validates owner/project/session/checkpoint relationships, locks the project and open session, and applies all events, misconception changes, checkpoint steps/evidence/re-check ladder and session question/activity in one transaction. Any error rolls back the entire save. Dates use the owner's time zone and rollover hour. Returns `{step: number | null, events: number}`, where events includes a generated misconception event. No scheduling or curriculum approval happens here.
 
-### 5.8 `undo_action(p_user uuid, p_no bigint, p_force boolean default false) returns jsonb`
+### 5.9 `undo_action(p_user uuid, p_no bigint, p_force boolean default false) returns jsonb`
 `security definer`; callable by `service_role` (connector, passing the resolved owner) and by `authenticated` (where `p_user` must equal `auth.uid()`).
 1. Lock the action; raise `A<n> is not yours` / `A<n> is already undone (by A<m>)`.
 2. Conflict check: if any later action that is not undone changed one of the same rows (`table_name`, `row_pk`), raise `Undo A<later> first` listing them (newest first).
@@ -414,7 +414,7 @@ Connector-only, `security invoker`; execute granted to `service_role` only. This
 6. Mark the original `undone_by`. If the original was itself an undo (`undoes` set), clear `undone_by` on the action it had undone (this is redo).
 7. Return `{undone: n, as: m, changes: k}`.
 
-### 5.9 View `v_history` (`security_invoker = true`)
+### 5.10 View `v_history` (`security_invoker = true`)
 `actions` with change counts per table and `undone_by`, newest first; used by the connector's `history` tool and later by an app screen.
 
 ## 6. Derived states (computed in `src/lib/derive.ts`, mirrored in the connector)

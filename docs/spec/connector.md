@@ -296,7 +296,7 @@ Description: `Reverse a change by its A-number (from history or a tool's reply).
 | `action` | int | `A-number to reverse` |
 | `force` | boolean, optional | `Also remove later items that depend on it` |
 
-Calls `undo_action` (`data.md` §5.8). Use `force` only after the user agrees to the listed side effects. Output: `undid A57 (as A58)` or the conflict message.
+Calls `undo_action` (`data.md` §5.9). Use `force` only after the user agrees to the listed side effects. Output: `undid A57 (as A58)` or the conflict message.
 
 ### 5.18 `remove` (write)
 Description: `Remove a card, project, checkpoint, session record or proposal the user no longer wants. Always reversible with undo.`
