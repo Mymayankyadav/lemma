@@ -210,7 +210,7 @@ async function nativeStudyZoom(mock,view) {
     const result=await page.getByRole('button',{name:'Save proof attempt'}).evaluate(node=>{
       const style=getComputedStyle(node);
       const parse=value=>{
-        const parts=value.match(/[\\d.]+/g)?.slice(0,3).map(Number);
+        const parts=value.match(/[\d.]+/g)?.slice(0,3).map(Number);
         if(!parts||parts.length!==3)throw Error('Unparseable color: '+value);
         return parts.map(channel=>{
           const normalized=channel/255;
