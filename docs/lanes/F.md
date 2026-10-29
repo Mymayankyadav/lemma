@@ -1,3 +1,10 @@
+## R8 release acceptance — visibly available account recovery (29 October 2026)
+
+- **Claim:** `chat-20261029-f-r8-recovery-visible`; branch `lane-f/release-01-r8-recovery-visible`, base `main@cd178834`; no open PR at claim. F-owned files: `test/release_recovery_gate.js`, `docs/RELEASE.md`, this handoff. Android remains paused.
+- **Problem:** R7 tag acceptance proves full account restore suites exist and were routed, but can succeed while B's production `ACCOUNT_RECOVERY_READY=false` hides the user-facing recovery workflow. That must not count as an accessible backup/restore release.
+- **Scope:** fail closed at tag time unless B has deliberately enabled account recovery in the released Settings source; self-test hidden/missing/disabled fixtures. No B-owned UI change, no automatic production data recovery, no student consent or release tag. Production migration #17 is applied; live owner-security verification and B-owned activation remain separate.
+- **Next:** add executable fixture, verify full F regression/guard/local CI, merge exact green PR head and check main. Then route B activation under its own acceptance; never flip readiness in this F slice.
+
 ## RELEASE-01 R2k — independent full workspace restore acceptance
 
 - **Claim:** `chat-20261028-f-full-restore`, heartbeat 2026-10-28T18:02Z; branch `lane-f/release-full-workspace-acceptance`, base main `33e9f3e` after A restore PRs #144/#146. No competing F claim. Owns `test/release_workspace_restore.js`, `test/release_recovery_gate.js`, `docs/RELEASE.md` and this handoff. Integration #147 owns real-stack routing; B #148 owns product controls.
