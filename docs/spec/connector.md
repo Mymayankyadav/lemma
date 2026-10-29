@@ -5,7 +5,7 @@ The connector is an MCP server that lets Claude and ChatGPT read and write the o
 ## 1. Goals and budgets
 
 - **Cheap to resume.** One call (`resume`) returns everything needed to continue, in compact text. Target ≤ 1,400 characters (about 350 tokens); hard cap 2,400.
-- **Cheap to carry.** Tool definitions are sent with every chat turn, so the full `tools/list` response must stay ≤ 12,500 characters. Keep descriptions exactly as written in §5.
+- **Cheap to carry.** Tool definitions are sent with every chat turn, so the full `tools/list` response must stay ≤ 15,000 characters. Keep descriptions exactly as written in §5.
 - **Deep on demand.** Plan, checkpoint, outline, pages and search are separate read tools the chatbot calls only when needed.
 - **Safe writes.** Progress and session records are written directly. Curriculum (cards, plans, card fixes) becomes a proposal that the owner approves in the app, except cards the owner dictated (`direct`).
 - **No raw SQL.** The chatbot never sees table names or writes queries.
@@ -27,7 +27,7 @@ Output budgets per call: `resume` 2,400 chars; `get` 2,000; `read_pages` 12,000 
 | File | Contents |
 | --- | --- |
 | `index.ts` | `Deno.serve`; path parsing; auth; routes `/mcp/<secret>` (MCP) and `/mcp/<secret>/selftest` (§9) |
-| `server.ts` | builds the MCP server per request with `createMcpHandler` and registers the 18 tools; sets server instructions (§4) |
+| `server.ts` | builds the MCP server per request with `createMcpHandler` and registers the 22 tools; sets server instructions (§4) |
 | `deps.ts` | imports pinned as in Supabase's guide: `npm:@modelcontextprotocol/server@^2.0.0`, `npm:zod@^4.3.6`, `npm:@supabase/supabase-js@2` |
 | `db.ts` | Supabase client with the secret key; small typed helpers; every helper takes `userId` |
 | `resolve.ts` | resolve project (slug, then case-insensitive title, then unique prefix), checkpoint code, session number, source short name; helpful error text listing valid options |
@@ -298,15 +298,76 @@ Description: `Reverse a change by its A-number (from history or a tool's reply).
 
 Calls `undo_action` (`data.md` §5.9). Use `force` only after the user agrees to the listed side effects. Output: `undid A57 (as A58)` or the conflict message.
 
-### 5.18 `remove` (write)
-Description: `Remove a card, project, checkpoint, session record or proposal the user no longer wants. Always reversible with undo.`
+### 5.18 `edit` (write)
+Description: `Change any detail the user asks for: project, checkpoint, session, card, comment, idea, subject, style, book or settings. Applies at once; undoable.`
 
 | Param | Type | Description |
 | --- | --- | --- |
-| `target` | string | `N7, P12, CP4 or S8 (with project), or a project slug` |
-| `project` | string, optional | `Project for CP and S codes` |
+| `target` | string | `e.g. real-analysis, CP4, S8, N7, #12, idea:compactness, subject:Analysis, style:socratic, book:rudin, settings` |
+| `project` | string, optional | `Project for CP, S and book targets` |
+| `set` | object | `Fields to change (see Lemma field names)` |
 
-Behavior: a card → `notes.status = 'deleted'`; a project → `status = 'archived'`; a pending proposal → rejected; a checkpoint or session → removed through `undo`-safe deletes inside one action (its rows stay in the action log). Output: `removed N7. Undo: A61`.
+Editable fields (anything else is rejected with the list of valid names):
+
+| Target | Fields |
+| --- | --- |
+| project | `title`, `slug`, `goal`, `style`, `status` (`planning`, `active`, `paused`, `done`, `archived`), `subject` (name), `prompt` |
+| checkpoint `CPn` | `code`, `title`, `objective`, `criterion`, `steps` (string[]), `pages`, `book`, `prereqs` (codes, replaces), `ideas` (names, replaces), `status` (`not_started`, `in_progress`, `demonstrated`), `current_step`, `recheck_prompt`, `recheck_due`, `needs_revisit`, `after` (move after a code) |
+| session `Sn` | `goal`, `style`, `checkpoint`, `state` (`open`, `ended`), `goal_met`, `summary`, `resume_question`, `resume_note`, `resume_step`, `minutes` |
+| card `Nn` | `front`, `back`, `type`, `kind`, `tags`, `checkpoint`, `idea`, `page`, `status` (`active`, `suspended`), `due` (`now` or a date: reschedule) |
+| comment `#n` | `body`, `status` (`open`, `addressed`, `dismissed`) |
+| `idea:<name>` | `name`, `blurb`, `subject`, `prereqs` (names), `related` (names) |
+| `subject:<name>` | `name`, `glyph`, `hue` |
+| `style:<key>` | `name`, `instructions` |
+| `book:<short>` | `title`, `short` |
+| `settings` | `desired_retention`, `new_per_day`, `reviews_per_day`, `learn_steps`, `relearn_steps`, `rollover_hour`, `default_style`, `tutor_rules`, `mix_decks`, `preferred_chat`, `master_prompt`, `time_zone` |
+
+Card text changes follow the ordinal rules of `data.md` §5.4 `card_edit`. Output: `edited CP4: title, steps. Undo: A70`.
+
+### 5.19 `add` (write)
+Description: `Create something directly when the user asks: checkpoint, card, subject, idea, style, comment or book. Undoable.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `kind` | enum `checkpoint`, `card`, `subject`, `idea`, `style`, `comment`, `book` | |
+| `project` | string, optional | `Needed for checkpoint, card, book` |
+| `fields` | object | `Same names as edit` |
+
+A checkpoint gets the next code (or `after` + letter, as `plan_change` add). A card is added without approval (the user asked). Output: `added CP13 Uniform limits. Undo: A71`.
+
+### 5.20 `delete` (write)
+Description: `Delete a project, checkpoint, session, card, comment, idea, subject, style, book or proposal the user wants gone. Undoable with undo.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `target` | string | `Same forms as edit` |
+| `project` | string, optional | |
+| `confirm` | boolean | `true only after the user confirmed what will be removed` |
+
+Without `confirm`, return what would be removed (`real-analysis: 12 checkpoints, 9 sessions, 48 cards, 1 book`) and change nothing. With `confirm`, delete inside one action (cascades included); every row stays in the action log, so `undo` restores it exactly. A subject or style still in use is refused with the projects using it. Output: `deleted real-analysis and 70 related items. Undo: A72`.
+
+### 5.21 `review` (read)
+Description: `Get the next due flashcards to quiz the user in chat (mixed across decks unless a project is given).`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `project` | string, optional | |
+| `count` | int 1–10, optional | `Default 5` |
+| `new` | boolean, optional | `Include new cards (default true)` |
+
+Output: `23 due. N7.1 [CP7] Front: … / Back: …` one card per block, in queue order (`src/lib/queue` rules, ported). The tutor shows only the front, waits for the answer, then reveals and grades.
+
+### 5.22 `grade` (write)
+Description: `Record the user's answers to review cards: again, hard, good or easy, with optional confidence.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `answers` | array 1–10 | |
+| `answers[].card` | string | `N7.1 (note.ordinal)` |
+| `answers[].rating` | enum `again`, `hard`, `good`, `easy` | |
+| `answers[].confidence` | enum `sure`, `unsure`, `guess`, optional | |
+
+Computes the next state with the same FSRS-6 engine as the app (`supabase/functions/_shared/fsrs.js`, an exact copy of `src/lib/fsrs/fsrs.js`; a unit test fails if they differ) and records each answer through `record_review`. Output: `graded 5: next N7.1 in 4d, N9.1 in 10m… 18 still due. Undo: A73`.
 
 All write tools end their output with `Undo: A<n>` (the action they created), so the user can reverse any step by saying "undo that".
 
@@ -326,6 +387,8 @@ All write tools end their output with `Undo: A<n>` (the action they created), so
 - When an idea clicks or an error is fixed, propose 1-3 atomic cards.
 - Mark demonstrated only when CRIT is met by the student's unaided work (kind evidence, outcome demonstrated, one-line description).
 - Before ending: 3 quick recall questions on today's ideas, then end_session.
+- Your own suggestions go through propose_*; when the user directly asks to change, add or delete something, use edit, add or delete (delete: show what goes and get a yes first), and mention the Undo number.
+- To review flashcards in chat: review, show only the front, wait for the answer, reveal, ask how it went (or judge it), then grade in batches.
 ```
 
 ### 6.2 Planning rules (packet for projects in `planning`)
@@ -454,12 +517,13 @@ Steps:
 9. `end_session` → session ended with minutes set.
 10. `create_project` → a planning project; `proposals` lists the pending cards as `P<n>`; `decide(approve=[n])` approves one → the note exists.
 11. `set_prompt(scope=all, text=…)` → `resume` starts with `OWNER` and that text; `history` lists it as the newest action; `undo` it → `resume` no longer shows it; `undo` the undo → it is back.
-12. `remove` a card → it no longer appears in `get(what=cards)`; `undo` → it is back.
-13. `tools/list` (built in-process) total JSON ≤ 12,500 chars.
+12. `edit` the project title and a checkpoint's steps → `get(what=plan)` shows them; `add` a card; `review` returns it; `grade` it good → its due moves forward.
+13. `delete` the project without `confirm` → counts only; with `confirm` → `resume` lists no such project; `undo` → the project and every child row are back with the same codes.
+14. `tools/list` (built in-process) total JSON ≤ 15,000 chars.
 
 `tests/mcp/smoke.mjs` (Node 22, no dependencies) reads `MCP_URL` from the environment and:
 1. Calls `MCP_URL + '/selftest'` and fails if `ok` is false.
-2. Sends JSON-RPC `initialize`, then `tools/list` to `MCP_URL` with header `Accept: application/json, text/event-stream`; checks 18 tools with the names in §5 and the size limit.
+2. Sends JSON-RPC `initialize`, then `tools/list` to `MCP_URL` with header `Accept: application/json, text/event-stream`; checks 22 tools with the names in §5 and the size limit.
 3. Prints one line per step and exits non-zero on failure.
 
 ## 10. Owner setup (shown in Lemma › Settings and in `docs/guide.md`)

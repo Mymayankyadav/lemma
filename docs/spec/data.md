@@ -320,7 +320,7 @@ Capture: one generic `after insert or update or delete ... for each row` trigger
 
 Both tables have RLS `owner_all` (select only for `authenticated`; writes only through the trigger and `undo_action`). Rows are never deleted.
 
-Hard deletes on user tables happen only inside `undo_action` (undoing an insert), and the deleted row stays in `action_changes`, so redo restores it with the same primary key. Other user-facing removal is a status change (`notes.status = 'deleted'`, `projects.status = 'archived'`, proposals `rejected`), which is an ordinary logged update.
+Hard deletes on user tables happen only inside `undo_action` (undoing an insert), and the deleted row stays in `action_changes`, so redo restores it with the same primary key. The connector's `delete` tool performs real deletes (with cascades) inside one action; nothing is lost because every deleted row is in `action_changes`. All foreign keys are `deferrable initially immediate` (DB-2 alters the existing ones) and `undo_action` runs `set constraints all deferred`, so restoring parents and children in any order succeeds.
 
 ## 3. Row-level security and grants
 
