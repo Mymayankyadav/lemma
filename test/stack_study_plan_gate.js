@@ -98,7 +98,7 @@ async function main(){
   return scope.study;
  }
  let study=reload(A);
- assert.equal(study.ready,false,'P5 cannot enable UI before full visual gate');
+ assert.equal(study.ready,true,'accepted Study is enabled for the tested bundle');
  const before=await study.activeContext();
  assert.equal(before.planRevision,1);
  assert.equal(before.checkpoint.id,'proof-1','first checkpoint before events');
