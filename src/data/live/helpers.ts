@@ -35,8 +35,18 @@ export async function owner(db: SupabaseClient): Promise<string> {
   if (!data.user) throw new LemmaError('auth', 'Sign in to Lemma first')
   return data.user.id
 }
+/** Supabase/PostgREST truncates unpaged selections at the API max (usually 1000). */
 export async function rows(db: SupabaseClient, table: string, uid: string): Promise<Row[]> {
-  return checked((await db.from(table).select('*').eq('user_id', uid)) as {data: Row[] | null; error: unknown})
+  const output: Row[] = []
+  const size = 1000
+  for (let start=0; ;start+=size) {
+    const batch = checked((await db.from(table).select('*').eq('user_id', uid).range(start,start+size-1)) as {
+      data: Row[] | null; error: unknown
+    })
+    output.push(...batch)
+    if (batch.length < size) break
+  }
+  return output
 }
 export function settingsRow(r: Row): Settings {
   return {
