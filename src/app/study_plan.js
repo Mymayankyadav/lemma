@@ -133,12 +133,12 @@ const StudyPlan = (() => {
     // Keep historical ledger rows intact, but do not display evidence
     // explicitly pinned to an older approved plan as current-revision work.
     // Legacy events without a revision remain readable for compatibility.
-    const currentEvents = recent.filter(e =>
+    const recentCurrentEvents = recent.filter(e =>
       e.payload?.plan_revision == null ||
       e.payload.plan_revision === plan.revision);
     const resumable = new Set(['attempt','proof_step','hint','session_note']);
     const incomplete = new Set(['not_started','review_due','blocked','in_progress']);
-    const latestWork = currentEvents.find(e => resumable.has(e.event_type) &&
+    const latestWork = recentCurrentEvents.find(e => resumable.has(e.event_type) &&
       typeof e.payload?.checkpoint_id === 'string' &&
       choice.some(cp => cp.id === e.payload.checkpoint_id &&
         incomplete.has(cp.status)));
@@ -148,6 +148,17 @@ const StudyPlan = (() => {
       choice.find(cp => cp.status === 'not_started') ||
       choice.find(cp => cp.status === 'blocked');
     if (!selected) return null;
+    // Activity in another checkpoint must not evict this checkpoint's proof
+    // from its packet. Bound the read and fail closed rather than silently
+    // presenting incomplete history if this checkpoint itself exceeds it.
+    const selectedEvents = sessionId ? await list(ctx,'learning_events',
+      'event_id,event_type,payload,seq,created_at',q => q.eq('session_id',sessionId)
+        .eq('payload->>checkpoint_id',selected.id)
+        .order('seq',{ascending:false}).limit(51)) : [];
+    if (selectedEvents.length > 50)
+      throw new Error('Checkpoint history exceeds the safe read limit; proof state is unavailable');
+    const currentEvents = selectedEvents.filter(e =>
+      e.payload?.plan_revision == null || e.payload.plan_revision === plan.revision);
     const attempt = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&
       (e.event_type === 'attempt' || e.event_type === 'proof_step'));
     const hint = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&

@@ -61,7 +61,8 @@ const client={
     return Promise.resolve().then(async()=>{
      await beforeRead();
      let result=records(table).filter(row=>
-      filters.every(([key,value])=>row[key]===value));
+      filters.every(([key,value])=>
+       (key==='payload->>checkpoint_id'?row.payload?.checkpoint_id:row[key])===value));
      if(sort)result.sort((x,y)=>sort.descending?
        (y[sort.key]>x[sort.key]?1:y[sort.key]<x[sort.key]?-1:0):
        (x[sort.key]>y[sort.key]?1:x[sort.key]<y[sort.key]?-1:0));
@@ -136,6 +137,18 @@ function load(){
  await assert.rejects(reload.activeContext({checkpointId:'unknown'}),/not in the current approved plan/);
  await assert.rejects(reload.activeContext({planId:NEW_PLAN,checkpointId:'cp-3'}),/changed/);
  assert.equal(events.length,2,'explicit checkpoint selection is read-only');
+ // Newer activity on other checkpoints must not evict this proof or hint.
+ for(let i=0;i<55;i++)events.push({event_id:'other-'+i,seq:100+i,event_type:'session_note',
+   payload:{checkpoint_id:'cp-12',plan_revision:3,data:{text:'Other work'}}});
+ const busy=await reload.activeContext({planId:PLAN,checkpointId:'cp-3'});
+ assert.equal(busy.lastAttempt.eventId,ID1);
+ assert.equal(busy.hintLevel,2);
+ events.splice(2);
+ // Fail closed if this checkpoint itself exceeds the bounded read.
+ for(let i=0;i<51;i++)events.push({event_id:'same-'+i,seq:200+i,event_type:'feedback',
+   payload:{checkpoint_id:'cp-3',plan_revision:3,data:{text:'Feedback'}}});
+ await assert.rejects(reload.activeContext({planId:PLAN,checkpointId:'cp-3'}),/safe read limit/);
+ events.splice(2);
  // Two demonstrated checkpoints: last proof activity for cp-7 takes focus.
  await reload.recordEvent({planId:PLAN,checkpointId:'cp-7',
   expectedPlanRevision:3,type:'proof_step',
