@@ -21,7 +21,8 @@ proposal.checkpoints.splice(3,0,{checkpoint_id:'cp-new',title:'Missing lemma',
  prerequisite_checkpoint_ids:['cp-3'],mastery_criterion:'Demonstrate proof'});
 proposal.checkpoints.find(x=>x.checkpoint_id==='cp-4')
  .prerequisite_checkpoint_ids=['cp-3','cp-new'];
-let livePlan={id:P,revision:1};
+let livePlan={id:P,revision:1,title:'Approved Test Plan',
+ objective:'Existing approved objective'};
 let liveVersion={revision:1,context_id:null,context_revision:null,
  snapshot:approved};
 const client={from(table) {
@@ -57,8 +58,8 @@ const scope=vm.createContext({
 vm.runInContext(fs.readFileSync('src/app/study_plan.js','utf8')+
  '\nglobalThis.api=StudyPlan;',scope);
 const api=scope.api;
-const input={planId:P,expectedRevision:1,title:'Group theory',
- objective:'Derive theorems',snapshot:proposal,changeSummary:'Insert missing prerequisite',
+const input={planId:P,expectedRevision:1,title:'',
+ objective:'',snapshot:proposal,changeSummary:'Insert missing prerequisite',
  source:'Claude',proposalId:C};
 const rejects=async(p,re)=>assert.rejects(p,re);
 (async()=>{
@@ -72,6 +73,8 @@ const rejects=async(p,re)=>assert.rejects(p,re);
  assert.equal(result.expectedRevision,1);
  assert.equal(result.expectedLocalRevision,1);
  assert.equal(result.draftId,C);
+ assert.equal(result.publishedTitle,'Approved Test Plan');
+ assert.equal(result.publishedObjective,'Existing approved objective');
  assert.deepEqual([...result.diff.added],['cp-new']);
  assert.deepEqual([...result.diff.modified.map(x=>x.checkpointId)],['cp-4']);
  assert.equal(result.diff.unchanged.length,11);
@@ -80,6 +83,9 @@ const rejects=async(p,re)=>assert.rejects(p,re);
  assert.equal(reads.filter(r=>r.table==='study_plans').length,2,
   'pinned plan revision is re-read after assembling review');
 
+ await rejects(api.approvePlanDraft(P,1,true),/Published plan metadata unavailable/);
+ assert.equal((await api.readPlanDraft(P)).status,'draft',
+  'missing title cannot approve without owner-reviewed metadata');
  livePlan={id:P,revision:2};
  const stale=await api.reviewPendingAmendment(P);
  assert.equal(stale.status,'stale');
@@ -110,7 +116,15 @@ const rejects=async(p,re)=>assert.rejects(p,re);
  assert.equal(await api.reviewPendingAmendment(P),null,
   'other owner has a distinct draft namespace');
  current=A;identityChange();
- await api.approvePlanDraft(P,1,true);
+ const fresh=await api.reviewPendingAmendment(P);
+ const approvedAmendment=await api.approvePlanDraft(P,1,true,fresh);
+ assert.equal(approvedAmendment.status,'approved_pending');
+ assert.equal(approvedAmendment.title,'Approved Test Plan');
+ assert.equal(approvedAmendment.objective,'Existing approved objective');
+ assert.equal(approvedAmendment.draftId,C);
+ assert.equal((await api.readPlanDraft(P)).requestId,approvedAmendment.requestId);
+ assert.equal((await api.approvePlanDraft(P,1,true,fresh)).requestId,
+  approvedAmendment.requestId,'retry keeps the same approval key');
  await rejects(api.reviewPendingAmendment(P),/not an unapproved draft/);
  assert.equal(rpc.length,0);
  console.log('PASS PLAN-01 P4b1: owner-pinned approved revision, 12-checkpoint diff, stale/context/offline/identity guards, no approval or writes');

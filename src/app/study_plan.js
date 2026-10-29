@@ -525,7 +525,7 @@ const StudyPlan = (() => {
   }
   // P2b: student consent is a durable local transition. No RPC is called by
   // approval itself. The immutable request key survives offline and crashes.
-  async function approvePlanDraft(planId,expectedLocalRevision,studentApproved) {
+  async function approvePlanDraft(planId,expectedLocalRevision,studentApproved,reviewedAmendment=null) {
     if (studentApproved !== true)
       throw new Error('Explicit student approval required for a plan');
     if (!revision(expectedLocalRevision))
@@ -538,9 +538,29 @@ const StudyPlan = (() => {
         return structuredClone(row);
       if (row.status !== 'draft' || row.localRevision !== expectedLocalRevision)
         throw new Error('Plan draft changed; review again before approval');
-      if (!row.title.trim())
+      // Tutor proposals may omit the unchanged top-level plan metadata.
+      // Recover it only from the pinned, student-reviewed published plan,
+      // preserving the local draft, its proposal ID and explicit consent.
+      const missingMetadata = row.expectedRevision > 0 &&
+        (!row.title.trim() || !row.objective.trim());
+      if (missingMetadata && (!object(reviewedAmendment) ||
+          reviewedAmendment.status !== 'review' ||
+          !same(reviewedAmendment.planId,row.planId) ||
+          reviewedAmendment.expectedRevision !== row.expectedRevision ||
+          reviewedAmendment.expectedLocalRevision !== row.localRevision ||
+          reviewedAmendment.draftId !== row.draftId ||
+          typeof reviewedAmendment.publishedTitle !== 'string' ||
+          !reviewedAmendment.publishedTitle.trim() ||
+          reviewedAmendment.publishedTitle.length > 200 ||
+          typeof reviewedAmendment.publishedObjective !== 'string' ||
+          reviewedAmendment.publishedObjective.length > 4000))
+        throw new Error('Published plan metadata unavailable; review amendment again');
+      const title = row.title.trim() ? row.title : reviewedAmendment?.publishedTitle || '';
+      const objective = row.objective.trim() ? row.objective :
+        (row.expectedRevision > 0 ? reviewedAmendment?.publishedObjective || '' : row.objective);
+      if (!title.trim())
         throw new Error('Plan needs a title before student approval');
-      const approved = {...row,status:'approved_pending',requestId:crypto.randomUUID(),
+      const approved = {...row,title,objective,status:'approved_pending',requestId:crypto.randomUUID(),
         localRevision:row.localRevision+1,
         approvedFromLocalRevision:row.localRevision,
         approvedBy:'student',approvedAt:Date.now(),
@@ -765,7 +785,7 @@ const StudyPlan = (() => {
       throw new Error('Initial study plan uses the separate approval flow');
     // Read the pinned server version, never use a cache or latest draft as the
     // accepted baseline. The account owner filter applies to every table read.
-    const plans = await list(ctx,'study_plans','id,revision',
+    const plans = await list(ctx,'study_plans','id,revision,title,objective',
       q => q.eq('id',planId).limit(1));
     ctx.check();
     if (plans.length !== 1 || !same(plans[0].id,planId) ||
@@ -812,6 +832,8 @@ const StudyPlan = (() => {
       throw new Error('Amendment changed; reopen review');
     return {status:'review',planId,expectedRevision:draft.expectedRevision,
       expectedLocalRevision:draft.localRevision,draftId:draft.draftId,
+      // Pinned, owner-scoped baseline for omitted top-level amendment fields.
+      publishedTitle:plans[0].title,publishedObjective:plans[0].objective,
       changeSummary:draft.changeSummary,source:draft.source,diff};
   }
   // P4c1: inspect a rejected student-approved intent. The original approval
