@@ -4,6 +4,7 @@ import {BookOpen,Check,Copy,FileText,Plus,UploadCloud,AlertTriangle} from 'lucid
 import {useAddSource,useCreateProject,useCreateSubject,useStyles,useSubjects} from '../../data/hooks';
 import type {Hue,IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
+import {isPdfFile} from '../../pdf/ingest';
 import {slugify} from '../../lib/text';
 import {Screen} from '../../ui/Screen';
 import {Sheet} from '../../ui/Sheet';
@@ -66,7 +67,7 @@ export default function Page(){
   // Never retain an older PDF after a replacement fails validation.
   setFile(null);setProgress(null);
   if(!f){setFileError(null);return}
-  if(!/\.pdf$/i.test(f.name)||f.type&&f.type!=='application/pdf'){
+  if(!isPdfFile(f)){
    setFileError('Choose a PDF document.');return
   }
   if(f.size>maxPdfBytes){setFileError('PDF must be 50 MB or smaller.');return}
