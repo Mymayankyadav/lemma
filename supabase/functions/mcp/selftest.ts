@@ -6,7 +6,7 @@ import { createMcpHandler } from './deps.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
 export async function selftest(c:Context):Promise<any>{
   const steps:{name:string;ok:boolean;ms:number;detail?:string}[]=[];
-  let subjectId:string|undefined,projectId:string|undefined,extraId:string|undefined;
+  let subjectId:string|undefined,projectId:string|undefined,extraId:string|undefined,extraSubjectId:string|undefined;
   async function check(name:string,f:()=>Promise<void>){
     const begin=Date.now();
     try{await f();steps.push({name,ok:true,ms:Date.now()-begin})}
@@ -68,7 +68,7 @@ export async function selftest(c:Context):Promise<any>{
       const r=await createProject(c,{title,subject:'zz-selftest-'+Date.now(),goal:'Demo goal'});
       const slug=r.match(/^created (\S+)/)?.[1];
       if(!slug)throw Error('Project creation failed');
-      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;
+      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;
       const lines=await proposals(c,{project:p.slug});
       if(!lines.includes('P'))throw Error('Pending proposals invisible');
       const {data:pending}=await scoped(c,'proposals').eq('project_id',p.id).eq('status','pending').eq('kind','card').order('no').limit(1);
@@ -92,10 +92,7 @@ export async function selftest(c:Context):Promise<any>{
     // All deletions are by the owner and the exact throwaway IDs.
     for(const id of [extraId,projectId])if(id)await c.db.from('projects').delete().eq('user_id',c.userId).eq('id',id);
     if(subjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',subjectId);
-    // An extra subject was generated with its own name; remove only zz-selftest subjects without projects.
-    // If it has a project, its FK prevents deletion; never remove real owner data.
-    const {data:extra}=await scoped(c,'subjects').like('name','zz-selftest-%').limit(100);
-    for(const s of extra||[])if(s.id!==subjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',s.id);
+    if(extraSubjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',extraSubjectId);
   }
   return {ok:steps.length===11&&steps.every(x=>x.ok),steps};
 }
