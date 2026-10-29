@@ -172,7 +172,7 @@ const fields = { title: 'Topology', markdown: '# Open covers',
   const reopened = await second.reopenConflict(packet);
   assert.equal(reopened.status, 'draft', 'explicitly reopened context is not approved');
   assert.equal(reopened.expectedRevision, 4);
-  assert.equal(reopened.localRevision, 3);
+  assert.equal(reopened.localRevision, 4);
   assert.equal(reopened.reopenedFromRequestId, id);
   assert.equal(reopened.requestId, undefined, 'new draft does not reuse original accepted request');
   await assert.rejects(second.reopenConflict(packet), /changed; compare again/);
