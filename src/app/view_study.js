@@ -517,7 +517,7 @@ const StudyView = (() => {
       // until its real cross-model acceptance has enabled that module.
       if (typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === true &&
           typeof TutorHandoff.open === 'function') {
-        const handoff=h('button',{type:'button',class:'btn',text:'Open tutor handoff'});
+        const handoff=h('button',{type:'button',class:'btn study-handoff-entry',text:'Open tutor handoff'});
         handoff.addEventListener('click',async()=>{
           if (!valid() || handoff.disabled || TutorHandoff.ready !== true) return;
           if (unconfirmedSaves.size || [...forms.querySelectorAll('textarea')].some(input=>input.value.trim())) {

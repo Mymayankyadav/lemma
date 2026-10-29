@@ -218,8 +218,8 @@ async function nativeStudyZoom(mock,view) {
   // Genuine computed-style contrast, not screenshot/color-name assumptions.
   // A D-owned readiness gate: both themes must keep deliberate proof and
   // amendment actions legible (disabled controls are tested separately).
-  async function assertPrimaryContrast(label) {
-    const result=await page.getByRole('button',{name:'Save proof attempt'}).evaluate(node=>{
+  async function assertPrimaryContrast(label,name='Save proof attempt') {
+    const result=await page.getByRole('button',{name}).evaluate(node=>{
       const style=getComputedStyle(node);
       const parse=value=>{
         const parts=value.match(/[\d.]+/g)?.slice(0,3).map(Number);
@@ -242,6 +242,7 @@ async function nativeStudyZoom(mock,view) {
       label+' deliberate proof action must be visually emphasized');
   }
   await assertPrimaryContrast('light');
+  await assertPrimaryContrast('light handoff','Open tutor handoff');
   await page.getByRole('button',{name:'Continue saved proof'}).click();
   const resumedText=await page.getByRole('textbox',{name:'Your unfinished proof'}).inputValue();
   assert.equal(resumedText,'Choose an open cover, then reduce to finitely many sets.');
@@ -257,6 +258,7 @@ async function nativeStudyZoom(mock,view) {
   await page.screenshot({path:'test-output/ui/study-p3-desktop.png',fullPage:true});
   await page.emulateMedia({colorScheme:'dark'});
   await assertPrimaryContrast('dark');
+  await assertPrimaryContrast('dark handoff','Open tutor handoff');
   await page.screenshot({path:'test-output/ui/study-p5b-desktop-dark.png',fullPage:true});
   await page.emulateMedia({colorScheme:'light'});
   // This is CSS zoom stress only, not proof of real browser 200% zoom.
