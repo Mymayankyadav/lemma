@@ -73,9 +73,9 @@ export async function endSession(c:Context,a:any):Promise<string>{
   const mins=Math.min(600,Math.max(0,Math.round((Date.now()-Date.parse(s.started_at))/60000)));
   await update(c,'sessions',s.id,{state:'ended',summary:a.summary,goal_met:a.goal_met,ended_at:new Date().toISOString(),minutes:mins,last_activity_at:new Date().toISOString()});
   if(a.recheck_prompt&&s.checkpoint_id)await update(c,'checkpoints',s.checkpoint_id,{recheck_prompt:a.recheck_prompt});
-  const {count,error}=await scoped(c,'proposals','id').eq('project_id',p.id).eq('status','pending');
+  const {data,error}=await scoped(c,'proposals','id').eq('project_id',p.id).eq('status','pending');
   if(error)throw new Error(error.message);
-  return 'closed S'+s.number+' ('+mins+' min). '+(count??0)+' proposals wait in Lemma.';
+  return 'closed S'+s.number+' ('+mins+' min). '+(data?.length??0)+' proposals wait in Lemma.';
 }
 export async function proposeCards(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project),s=a.session?await session(c,p,a.session):null;
