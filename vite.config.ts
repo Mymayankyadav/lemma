@@ -30,6 +30,7 @@ export default defineConfig({
    workbox:{
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     cleanupOutdatedCaches:true,
+    maximumFileSizeToCacheInBytes:4*1024*1024,
     navigateFallback:'/lemma/index.html',
     runtimeCaching:[
      {urlPattern:/^https:\/\/fonts\.googleapis\.com\//,handler:'StaleWhileRevalidate',
