@@ -1,3 +1,4 @@
+import './math.css';
 import {useMemo} from 'react';
 import {renderMarkdown} from '../lib/render';
 export interface MathTextProps{source:string;variant?:'card'|'answer'|'body';cloze?:{ord:number;revealed:boolean};className?:string}
