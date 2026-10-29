@@ -59,7 +59,7 @@ Config (task P0-C): Chromium only, viewport 390 × 844, device scale 2, `colorSc
 
 - Every PR: `npm ci`, `npm run check`, `npm run e2e` (only specs that exist).
 - `main`: the same, then deploy Pages; connector and migrations deploy when `supabase/**` changed; then the MCP smoke.
-- A PR merges only when CI is green on its last commit.
+- A PR merges only when CI is green on its last commit. Exception: P0-A and P0-C merge on a local `npm ci && npm run check` (pasted in the PR), because CI does not exist yet.
 
 ## 7. Acceptance checklist for ChatGPT's browser agent (task QA-1)
 

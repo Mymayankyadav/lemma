@@ -98,7 +98,7 @@ Use the latest release of each major listed; pin exact versions in `package.json
 - **Scope**: only your owned paths. Need something outside them? Use §7, or leave a note in your PR under "Needs from others" and build against what exists.
 - **Quality bar**: `npm run check` passes; your tests pass; screens match `design.md` and the boards (compare your screenshot from `test-results/screens/` with the board); no `console.error` in the browser; no hard-coded colours outside `src/styles`.
 - **PR description**: what changed, how you verified it (commands and results), screenshot(s) for UI, remaining gaps.
-- **Merge**: squash merge when CI is green on the last commit and there are no conflicts. On conflicts, merge `main` into your branch (never force-push, never rewrite history).
+- **Merge**: squash merge when CI is green on the last commit and there are no conflicts. Bootstrap exception: until `.github/workflows/ci.yml` exists on `main` (P0-A, and P0-C itself), merge when `npm ci && npm run check` passes locally and the PR description pastes that output. On conflicts, merge `main` into your branch (never force-push, never rewrite history).
 - **After merge**: pick the next task in §8. Do not edit this plan to mark progress; merged PR titles are the progress record.
 - **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test, add tracking or analytics.
 - **Models**: use the strongest available model for P0-A/B, DB-1, MCP-1, LIB-1 and DEMO-1 (contracts and logic). Any capable model can do UI-1/2 and screens.
@@ -152,7 +152,7 @@ Phases run in order; tasks inside a phase run in parallel. "Done when" items are
 6. `setup-check.yml` (manual): writes a table to the run summary saying which of `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `LEMMA_SUPABASE_DB_PASSWORD`, `MCP_URL` are present or missing, never their values. Run it once after merge and post the table on the PR.
 7. `.github/pull_request_template.md`: Task ID, what changed, verification, screenshots, gaps.
 8. Playwright and Vitest configs exactly as `testing.md` §4 and §2; `tests/e2e/routes.spec.ts` visits every route and finds its `h1`.
-- Done when: CI is green on the PR; after merge the placeholder app is live at `https://mymayankyadav.github.io/lemma/?demo=1#/`.
+- Done when: the new CI runs and is green on this PR itself (a workflow added in a PR runs on that PR); after merge the placeholder app is live at `https://mymayankyadav.github.io/lemma/?demo=1#/`.
 
 ### Phase 1: core (eight agents in parallel; starts when Phase 0 is merged)
 
