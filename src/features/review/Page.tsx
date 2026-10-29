@@ -121,15 +121,15 @@ export default function Page(){
      const checked=selection.every(Boolean)?true:selection.some(Boolean)?'mixed':false;
      return <div key={node.key} className="border-b border-edge/70 pb-2">
       <div className="flex min-h-12 items-center gap-3">
-       <Check checked={node.due===0?false:checked} disabled={node.due===0} label={'Include '+node.label}
-        onChange={value=>setProject(node,value)}/>
+       <span className="[&>label]:text-[0px]"><Check checked={node.due===0?false:checked} disabled={node.due===0} label={'Include '+node.label}
+        onChange={value=>setProject(node,value)}/></span>
        <Glyph size={32} subject={node.glyph}/>
        <span className="min-w-0 flex-1 truncate text-[16px] font-medium">{node.label}</span>
        <span className={'text-[15px] tabular-nums '+(node.due?'text-amber':'text-ink-3')}>{node.due}</span>
       </div>
       {children.map(child=><div key={child.key} className="ml-7 flex min-h-11 items-center gap-2">
-       <Check size={20} checked={enabled.has(child.key)} label={'Include '+child.label}
-        onChange={v=>setCheckpoint(node,child,v)}/>
+       <span className="[&>label]:text-[0px]"><Check size={20} checked={enabled.has(child.key)} label={'Include '+child.label}
+        onChange={v=>setCheckpoint(node,child,v)}/></span>
        <span className="shrink-0 text-[12px] font-semibold text-ink-3">{child.key.split(':').at(-1)}</span>
        <span className="min-w-0 flex-1 truncate text-[14px] text-ink-soft">{child.label}</span>
        <span className="text-[14px] tabular-nums text-amber">{child.due}</span>
