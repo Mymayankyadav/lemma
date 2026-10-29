@@ -367,6 +367,8 @@ Pending only; set `rejected` and `decided_at`.
 ### 5.6 `ping() returns timestamptz`
 `select now()`; `security definer`; granted to `anon`. Used by the keep-alive workflow (Free projects pause after 7 days without database activity).
 
+Privilege clarification: the pure timestamp implementation uses `security invoker`, superseding the definer designation above; the anonymous RPC contract is unchanged. See [keepalive-security.md](keepalive-security.md).
+
 ### 5.7 View `v_due_cards` (`security_invoker = true`)
 Columns: `user_id, card_id, note_id, note_no, ord, project_id, checkpoint_id, session_id, state, due`. Rows: cards of notes with `status = 'active'`. Clients filter by `due` and `state`.
 
