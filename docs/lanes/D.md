@@ -1,3 +1,8 @@
+## P5p claim — recover the last unfinished checkpoint through busy history (29 October 2026)
+
+- Claim `chat-20261029-d-resume-selection`; branch `lane-d/plan-01-resume-selection-history`, base `943672385e13d7cc37e855756300880e0c249edf`. Only D-owned `src/app/study_plan.js`, `test/study_resume.js`, `test/stack_study_plan_gate.js`, this handoff. No production writes or readiness change; preserve #183 selected-proof pagination and all owner/revision/session guards.
+- #183 fixes proof reads after a checkpoint is selected, but automatic selection still searches only the newest 50 events in the whole session. Fifty feedback events can hide a more recent unfinished proof and wrongly select the first checkpoint. Page the owner/session event stream in descending sequence until the first eligible resumable current/legacy event, or exhaustion; preserve explicit selection and in-progress precedence. Add >50-event, outdated revision, identity/session-race, and real local-stack coverage. Gate exact-head regression, D guard and disposable local Supabase.
+
 ## P5o claim — retain proof state across busy checkpoints (29 October 2026)
 
 - Claim `chat-20261029-d-checkpoint-proof-history`, branch `lane-d/plan-01-checkpoint-proof-history`, base `5ec8ff73b713de577a9611fec65bf66ea6c0d920`. D-owned `src/app/study_plan.js`, D/stack tests and this handoff. No production writes, new migration, readiness changes or approvals.
