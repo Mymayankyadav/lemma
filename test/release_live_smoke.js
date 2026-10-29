@@ -360,7 +360,9 @@ async function readySelfTest() {
     await page.goto(origin + '#settings', { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('.page.settings, .settings').first().waitFor({ timeout });
-    await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
+    // The disposable fixture does not initialize the production OAuth entry;
+    // the Settings data panel is a stable proof that the route actually rendered.
+    await page.locator('#set-data:visible').waitFor({ timeout });
     await assertSignedOutRecoveryHidden(page);
     // Negative control: the same assertion must detect an accidentally mounted
     // recovery section. This is a local DOM probe, not a real backup or restore.
