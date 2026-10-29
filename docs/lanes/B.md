@@ -1,3 +1,11 @@
+## RELEASE-01 — read-only account backup before live restore acceptance
+
+- **Claim:** `chat-20261029-b-backup-only`; base `a5e8803bb4e287b8925afb5db74d94ab8bddb59b`, branch `lane-b/recovery-backup-only`. The owner authorized a real same-account backup/clear/restore test of test data. Existing activation #163 stays held; it must not be merged before the real restore gate. This slice exposes only deliberate signed-in backup download while restore remains hidden and unready.
+- **Scope:** B-owned Settings, focused browser test and this handoff. Reuse the existing paired snapshot and account/workspace guards; signed-out gets no backup UI, no automatic network, no restore/consent controls. Check checksum and owner before download. No production data mutation or student action.
+- **Implemented:** a separate signed-in backup-only section uses explicit capture, then owner-bound verification, rechecks identity/workspace after each await, and downloads a private paired file. Restore controls remain hidden while the original flag is false. Default-bundle browser test checks signed-out absence, deliberate download, no implicit export, verified pair and mid-verification account switch; existing feature-enabled restore fixture remains.
+- **Local checks:** syntax, build, isolated B ownership guard and diff check pass. Chromium unavailable locally; exact-head regression/browser screenshots and local Supabase must pass and screenshot be reviewed before merge. No production data deletion; full owner-local device data is only captured on that device.
+- **Next:** inspect CI and screenshot, merge green if safe. A signed-in live test browser is available; perform backup and independently verify it before any destructive test, and prepare a real authenticated restore path.
+
 ## Study readiness browser-hook correction — 29 October 2026
 
 - Owner-directed claim `chat-20261029-b-readiness-hook`, branch `lane-b/ui-study-readiness-hook`, base `72d13382690cab55bc8e407a09b37b3ac5719422`. #163 remains held; scope B screenshot harness and this handoff.

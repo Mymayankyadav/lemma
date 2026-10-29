@@ -12,6 +12,7 @@ const marker='/* ===== main.js ===== */';assert.ok(html.includes(marker));
 const featureGate='const ACCOUNT_RECOVERY_READY = false;';
 assert.ok(html.includes(featureGate),'the production bundle must keep recovery gated');
 const enabled=html.replace(featureGate,'const ACCOUNT_RECOVERY_READY = true;');
+const defaultApp=html.replace(marker,'window.__recoveryHooks={Account:LemmaAccount,Sync:LemmaSync,Bridge:LemmaCloudBridge,Store,get App(){return App;}};\n'+marker);
 const app=enabled.replace(marker,'window.__recoveryHooks={Account:LemmaAccount,Sync:LemmaSync,Bridge:LemmaCloudBridge,Store,get App(){return App;}};\n'+marker);
 const MOCK=fs.readFileSync(path.join(__dirname,'mock_claude.js'),'utf8');
 const libs={'katex.min.js':'katex/dist/katex.min.js','marked.umd.js':'marked/lib/marked.umd.js','purify.min.js':'dompurify/dist/purify.min.js'};
@@ -21,6 +22,50 @@ const fixture={app:'lemma',scope:'account-recovery-pair',ownerId:owner,
 async function main(){
   const browser=await chromium.launch();const errors=[];
   try{
+    // Default production build exposes backup only after sign-in; restore is
+    // not rendered, and an account switch during verification cancels export.
+    for(const size of ['mobile','desktop'])for(const scheme of ['light','dark']){
+      const ctx=await browser.newContext({viewport:size==='mobile'?{width:390,height:844}:{width:1280,height:800},colorScheme:scheme,serviceWorkers:'block',acceptDownloads:true});
+      await ctx.route('**/*',route=>{
+        const url=route.request().url();
+        if(url.startsWith('https://lemma.test/'))return route.fulfill({contentType:'text/html',body:defaultApp});
+        for(const [name,pkg]of Object.entries(libs))if(url.endsWith(name))
+          return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(ROOT,'node_modules',pkg),'utf8')});
+        if(url.includes('fonts.googleapis.com'))return route.fulfill({contentType:'text/css',body:''});
+        if(url.startsWith('blob:')||url.startsWith('data:'))return route.continue();
+        return route.abort();
+      });
+      const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));
+      await page.addInitScript(mock=>{window.__SEED__={};(0,eval)(mock);},MOCK);
+      await page.goto('https://lemma.test/');await page.waitForSelector('.home');await page.waitForFunction(()=>!window.__recoveryHooks.App.loading);
+      await page.evaluate(()=>window.__recoveryHooks.App.go('settings'));
+      assert.equal(await page.locator('#set-account-backup').count(),0,'signed-out backup stays hidden');
+      await page.evaluate(({owner,fixture})=>{
+        const {Account,Sync,Bridge,App}=window.__recoveryHooks;Sync.stop();
+        const state=window.__backupState={owner,calls:[],fixture,change:false},client={};
+        Object.defineProperty(Account,'user',{configurable:true,get:()=>state.owner?{id:state.owner}:null});
+        Object.defineProperty(Account,'client',{configurable:true,get:()=>client});
+        Bridge.captureReadOnlyRecoveryPair=async flag=>{state.calls.push(['capture',flag]);return fixture;};
+        Bridge.verifyReadOnlyRecoveryPair=async(value,id)=>{
+          state.calls.push(['verify',id]);if(state.change)state.owner='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+          return {sha256:value.manifest.sha256};
+        };
+        App.go('settings');
+      },{owner,fixture});
+      const root=page.locator('#set-account-backup');await root.waitFor();
+      assert.equal(await page.locator('#set-account-recovery').count(),0,'restore remains gated');
+      assert.equal(await page.getByRole('button',{name:'Restore account backup'}).count(),0);
+      assert.equal(await page.evaluate(()=>window.__backupState.calls.length),0,'no automatic export');
+      const download=page.waitForEvent('download');await root.getByRole('button',{name:'Download account backup'}).click();
+      assert.deepEqual(JSON.parse(fs.readFileSync(await (await download).path(),'utf8')),fixture);
+      assert.deepEqual(await page.evaluate(()=>window.__backupState.calls.map(x=>x[0])),['capture','verify']);
+      await root.screenshot({path:path.join(OUT,`account-backup-${size}-${scheme}.png`)});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'backup section does not overflow');
+      await page.evaluate(()=>{window.__backupState.change=true;});
+      await root.getByRole('button',{name:'Download account backup'}).click();
+      await root.getByRole('status').filter({hasText:'Account or workspace changed'}).waitFor();
+      await ctx.close();
+    }
     for(const size of ['mobile','desktop'])for(const scheme of ['light','dark']){
       const ctx=await browser.newContext({viewport:size==='mobile'?{width:390,height:844}:{width:1280,height:800},
         colorScheme:scheme,serviceWorkers:'block',reducedMotion:'reduce',acceptDownloads:true});

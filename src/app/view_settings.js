@@ -313,6 +313,36 @@ const SettingsView = (() => {
   }
   const section = (id, title, intro, ...kids) => h('section', { class: 'panel settings-sec', id }, h('h2', { class: 'section-title', text: title }), intro ? h('p', { class: 'muted small sec-intro', text: intro }) : null, ...kids);
 
+  // Read-only backup can be offered before the separate restore gate opens.
+  function accountBackupSection(){
+    const ownerId=LemmaAccount.user.id,client=LemmaAccount.client;
+    const generation=App.workspaceRevision;
+    const status=h('p',{class:'muted small',role:'status','aria-live':'polite'});
+    const save=h('button',{class:'btn btn-sm',type:'button',text:'Download account backup'});
+    const root=section('set-account-backup','Account backup',
+      'Download a private backup of your account and unsynced work. Keep this file private. Account restore is not yet available.',
+      h('div',{class:'btn-row'},save),status);
+    const check=()=>{
+      if(!root.isConnected||LemmaAccount.user?.id!==ownerId||LemmaAccount.client!==client||
+         App.workspaceRevision!==generation||App.workspaceBlocked)
+        throw new Error('Account or workspace changed; reopen backup.');
+    };
+    save.onclick=async()=>{
+      if(save.disabled)return;save.disabled=true;
+      try {
+        check();const backup=await LemmaCloudBridge.captureReadOnlyRecoveryPair(true);check();
+        await LemmaCloudBridge.verifyReadOnlyRecoveryPair(backup,ownerId);check();
+        const url=URL.createObjectURL(new Blob([JSON.stringify(backup)],{type:'application/json;charset=utf-8'}));
+        const link=h('a',{href:url,download:'lemma-account-backup-'+new Date().toISOString().slice(0,10)+'.json',hidden:true});
+        document.body.appendChild(link);
+        try {check();link.click();status.textContent='Backup download started. Keep the file private and check that it saved.';}
+        finally {link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+      } catch(err) {if(root.isConnected)status.textContent='Backup: '+(err.message||'Unavailable.');}
+      finally {if(root.isConnected)save.disabled=false;}
+    };
+    return root;
+  }
+
   function accountRecoverySection(){
     const ownerId=LemmaAccount.user.id,client=LemmaAccount.client;
     const generation=App.workspaceRevision;
@@ -747,6 +777,10 @@ const SettingsView = (() => {
     if (ACCOUNT_RECOVERY_READY && LemmaAccount.user &&
         typeof LemmaCloudBridge.restoreRecoveryPair==='function')
       page.append(accountRecoverySection());
+    else if (!ACCOUNT_RECOVERY_READY && LemmaAccount.user &&
+        typeof LemmaCloudBridge.captureReadOnlyRecoveryPair==='function' &&
+        typeof LemmaCloudBridge.verifyReadOnlyRecoveryPair==='function')
+      page.append(accountBackupSection());
 
     // data
     const st = Store.status();
