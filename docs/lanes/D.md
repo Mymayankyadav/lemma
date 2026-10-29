@@ -1,6 +1,14 @@
+## P5j — resolve Study ↔ Tutor acceptance dependency cycle (29 October 2026)
+
+- **Claim:** `chat-20261029-d-p5j-readiness-order` on `lane-d/plan-01-p5-readiness-dependency`, base `d0f4d30a`; docs-only D-owned handoff correction, no competing D claim. B's recovery activation remains a separate draft and Android paused.
+- **Why:** `plan.md` §2 makes TUTOR-01 depend on PLAN-01; E's T4 explicitly requires one **student-approved, available Study checkpoint**. Waiting for E's live T4 session before exposing D's StudyView causes a circular gate. Earlier handoff prose mistakenly treated T4 as a precondition of D readiness. Do not falsely mark D or E DONE.
+- **D's independent remaining gate:** reconfirm 17/17 Lemma production exact migration versions and deployed PLAN/KNOWLEDGE functions; review authenticated owner-scoped security evidence for approved plan, 12 checkpoints, two demonstrated proof/hint checkpoints, explicit amendment diff/approval, stale idempotent writes, reload and account isolation; verify current P5a local HTTP acceptance and P5b/P5c visual screenshots plus later P5d–P5i race guards on final CI. D must not impersonate an owner or approve any plan on behalf of a student. Once every D criterion is evidenced, a separate D-owned feature readiness PR may change **both** `StudyPlan.ready` and `StudyView.ready`, and B's already-merged conditional navigation will expose Study. No readiness flag changes in this docs correction.
+- **E downstream gate:** only **after** a genuinely usable, student-approved Study checkpoint exists can E run T4 Claude→ChatGPT→Claude with saved unfinished proof/hint, per-action consent and stale handling. E's separate `TutorHandoff.ready` remains false until that real model test; core Study does not need a completed T4 to be independently useful.
+- **Verification:** docs-only `test:plan`, D ownership guard, links and review; exact PR-head guard CI. No production write, app change, implicit consent or release tag.
+
 # Lane D — study plan and checkpoints (PLAN-01)
 
-Next action: P5g guard active study-session identity against concurrent session rotation during context reads; preserve proof/hint evidence and hidden Study until production/security and cross-model gates.
+Next action: **P5 independent production/security and visual readiness audit** after merged P5a–P5i; keep Study hidden until D's own acceptance passes. The genuine T4 cross-model session is downstream of Study visibility, not a prerequisite of enabling Study.
 
 | Field | Value |
 | --- | --- |
