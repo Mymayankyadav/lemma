@@ -224,7 +224,8 @@ export default function Page() {
       setEditing(false);
       notify(accept ? "Approved" : "Rejected");
     } catch {
-      notify("Couldn't save. Try again.", { tone: "danger" });
+      notify("Couldn't confirm the proposal. Refresh to check whether it was saved.", { tone: "danger",
+        action: {label:"Refresh",onClick:()=>{void query.refetch()}} });
     }
   };
   const openEdit = () => {
@@ -422,7 +423,8 @@ export default function Page() {
                 setConfirm(false);
                 notify(`${n} cards approved`);
               } catch {
-                notify("Couldn't approve all cards.", { tone: "danger" });
+                notify("Couldn't confirm approvals. Refresh before retrying.", { tone: "danger",
+                  action: {label:"Refresh",onClick:()=>{void query.refetch()}} });
               }
             }}
           >
