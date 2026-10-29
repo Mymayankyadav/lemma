@@ -343,6 +343,32 @@ const TutorHandoff = (() => {
     const openedIdentityEpoch = identityEpoch;
     const workspaceRev = typeof App === 'undefined' ? null : App.workspaceRevision;
     const packet = exportPacket(ctx);
+    // A plan revision can stay constant while another device advances the
+    // unfinished proof, hint level, session or accepted context. The student's
+    // review/selection is consent for THIS packet, not all future work on the
+    // same checkpoint. Recheck immediately after each fresh activeContext read.
+    function assertReviewedContext(now) {
+      if (!now || now.planId !== ctx.planId ||
+          now.planRevision !== ctx.planRevision ||
+          now.checkpoint?.id !== ctx.checkpoint.id)
+        throw new Error('stale_plan_revision: reopen the handoff');
+      const eventId = (state,field) => state[field]?.eventId ?? null;
+      const beforeRefs = ctx.sourceRefs ?? [], afterRefs = now.sourceRefs ?? [];
+      if ((now.contextId ?? null) !== (ctx.contextId ?? null) ||
+          (now.contextRevision ?? null) !== (ctx.contextRevision ?? null) ||
+          (now.checkpoint?.status ?? 'in_progress') !==
+            (ctx.checkpoint?.status ?? 'in_progress') ||
+          (now.sessionId ?? null) !== (ctx.sessionId ?? null) ||
+          (now.hintLevel ?? 0) !== (ctx.hintLevel ?? 0) ||
+          eventId(now,'lastAttempt') !== eventId(ctx,'lastAttempt') ||
+          eventId(now,'lastFeedback') !== eventId(ctx,'lastFeedback') ||
+          eventId(now,'lastEvidence') !== eventId(ctx,'lastEvidence') ||
+          eventId(now,'nextAction') !== eventId(ctx,'nextAction') ||
+          !Array.isArray(afterRefs) || !Array.isArray(beforeRefs) ||
+          afterRefs.length !== beforeRefs.length ||
+          afterRefs.some((ref,i) => ref !== beforeRefs[i]))
+        throw new Error('stale_study_context: proof, hint or session changed; reopen the handoff');
+    }
     const output = h('textarea', { class:'tutor-handoff-packet', 'aria-label':'Handoff packet',
       readonly:true, spellcheck:false, rows:8 });
     output.value = packet.markdown;
@@ -414,10 +440,7 @@ const TutorHandoff = (() => {
         verifyOwner();
         const now = await StudyPlan.activeContext();
         verifyOwner();
-        if (!now || now.planId !== ctx.planId ||
-            now.planRevision !== ctx.planRevision ||
-            now.checkpoint?.id !== ctx.checkpoint.id)
-          throw new Error('stale_plan_revision: reopen the handoff');
+        assertReviewedContext(now);
         App.newCard(cardPreset(card));
         status.textContent = 'Card proposal opened in the editor, not saved here. Review and press Add card in the editor to accept it. Add suggested tags manually if wanted.';
       } catch (e) {
@@ -449,12 +472,7 @@ const TutorHandoff = (() => {
         verifyCurrent();
         const now = await StudyPlan.activeContext();
         verifyCurrent();
-        if (!now || now.planId !== ctx.planId ||
-            now.planRevision !== ctx.planRevision ||
-            now.contextId !== ctx.contextId ||
-            now.contextRevision !== ctx.contextRevision ||
-            now.checkpoint?.id !== ctx.checkpoint.id)
-          throw new Error('stale_plan_revision: reopen the handoff');
+        assertReviewedContext(now);
         const snapshot = amendment.snapshot;
         const draftId = await StudyPlan.proposeAmendment({
           planId:amendment.planId,expectedRevision:amendment.expectedRevision,
@@ -579,10 +597,7 @@ const TutorHandoff = (() => {
           // asynchronous plan read. Consent belongs to the original sheet,
           // not to the new identity epoch captured by the RPC client.
           verifyConsent();
-          if (!now || now.planId !== ctx.planId ||
-              now.planRevision !== ctx.planRevision ||
-              now.checkpoint?.id !== ctx.checkpoint.id)
-            throw new Error('stale_plan_revision: reopen the handoff');
+          assertReviewedContext(now);
           // Use the original proposal UUID and unchanged JSON payload on every
           // retry. The owner-scoped RPC enforces revision CAS and idempotency.
           await recordEventWithAudit(item.value);
