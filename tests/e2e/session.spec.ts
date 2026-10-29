@@ -7,7 +7,7 @@ test('session record shows the tutor reasoning, cards, unresolved mistakes and s
  await expect(page.getByText('42 min',{exact:true})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Reasoning'})).toBeVisible();
  await expect(page.getByRole('region',{name:'Reasoning'}).getByRole('listitem')).toHaveCount(4);
- await expect(page.getByRole('heading',{name:'Cards'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Cards',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:/Review/})).toBeVisible();
  await page.getByRole('button',{name:/Pages/}).click();
  await expect(page.getByRole('dialog',{name:'Session pages'})).toBeVisible();
