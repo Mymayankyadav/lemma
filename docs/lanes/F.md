@@ -1,3 +1,11 @@
+## R16 — reject malformed trusted CI run evidence (29 October 2026)
+
+- **Claim:** `automation-20261029-f-r16-malformed-ci`; heartbeat 2026-10-29T07:12Z; branch `lane-f/release-r16-malformed-ci-attestation` from `main@5ec8ff73b713de577a9611fec65bf66ea6c0d920`. Main regression, local Supabase, Pages and downstream smoke all SUCCESS at pickup. Open D #183 owns checkpoint proof; B #163 is held for genuine recovery acceptance. F unclaimed; Android C paused.
+- **Defect:** `test/release_tag_guard.js` sorts trusted runs using `Date.parse(created_at)`. An invalid timestamp yields `NaN` in the comparator, so an ambiguous/malformed trusted failed retry can be ignored in favor of an older green run. The tag gate must fail closed rather than guessing chronology or silently accepting malformed run evidence.
+- **Scope:** F-owned `test/release_tag_guard.js` and this handoff. Validate every exact-SHA, canonical-workflow candidate's timestamp, run identity, status, and chronology before selecting latest. Add negative controls for malformed/duplicate/inconsistent evidence, while preserving valid retries, exact-head checks and Pages→smoke ordering. No release tag, workflow edit, production data, credentials, Android, readiness or student approvals.
+- **Gate:** focused Node tests and syntax, F lane guard, exact-head regression and local Supabase if triggered, PR review/merge only after green CI; post-merge main verification. B authenticated recovery and E real T4 remain blocked.
+- **Next action:** implement and run fixtures; refresh this claim before CI and merge only after the required exact-head checks pass.
+
 ## R15 — bind release-tag evidence to canonical workflow paths (29 October 2026)
 
 - **Claim:** `automation-20261029-f-r15-workflow-provenance`; heartbeat 2026-10-29T06:22Z; branch `lane-f/release-r15-workflow-path-provenance`, base `main@714fa33b`. R14 #181 merged and all four exact-main workflows green. Only open B #163 is held for authenticated recovery acceptance; C paused, F otherwise unclaimed.
