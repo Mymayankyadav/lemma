@@ -1,3 +1,31 @@
+## RELEASE-01 recovery UI takeover (2026-10-28T23:20Z)
+
+
+### Recovery production feature gate (2026-10-28T23:35Z)
+
+- Fresh read-only Lemma production migration history contains **16** applied versions through `20261028163000_release01_owner_snapshot_v1`; the source seventeenth `20261028174411_release01_owner_restore_v1` remains undeployed. Publishing the recovery controls now would expose a restore path whose production RPC is absent. `SettingsView` therefore retains `ACCOUNT_RECOVERY_READY=false` in the shipped bundle; no real account sees these controls until a separately reviewed gate-enabling PR follows exact-version deployment and live security acceptance. The synthetic Chromium UI test explicitly enables the flag in its own generated test HTML and asserts the shipped default is false.
+- Additional commits `75af9d3` and `15b0eeb`; this is a **feature gate**, not evidence of production restore. The B PR can be reviewed/merged once all exact-head CI passes without exposing unaccepted functionality. Do not enable the flag on the basis of local mock success.
+
+### Recovery UI resumed-navigation fix checkpoint
+
+- `SettingsView` now retains only a module-local owner marker while `LemmaSync.withRecovery` has paused sync; when Settings is rendered again for the same owner and the actual account handle is stopped, the explicit **Resume account sync** action remains visible with a paused-state explanation. No private backup, consent or automatic restore/resume is persisted. A completed restore or deliberate resume clears the marker; changing owner never exposes the previous owner's action.
+- `test/ui_workspace_recovery.js` now navigates away after preflight, reopens Settings, confirms Resume survives a cleared backup selection, explicitly resumes exactly once, then re-selects and preflights before its existing ambiguous-failure/retry and identity tests. The original four 390px/1280px light/dark screenshots remain and require fresh exact-head review.
+- Commits `26c6884` and `e9d6f4e` on PR #148; exact-head regression/local-stack/guard pending. This is browser/mock recovery UI evidence, not a live production restore. No backend or production writes.
+
+
+
+- **Recovered claim:** `automation-20261029-b-r2-recovery-ui` takes over existing [PR #148](https://github.com/Mymayankyadav/lemma/pull/148) and branch `lane-b/release-account-recovery-controls` without discarding original commits. Prior heartbeat 2026-10-28T17:58Z and last PR update 18:12Z were over five hours old; two independent reads found the same head `412b72a`, no queued/running CI (regression 40742928487, local stack 40742928661 and Android guard 40742928479 all SUCCESS). No other B PR open. Lane D #157 merged separately; do not merge B over a red main.
+- **Visual review:** independently opened all four actual `ci-screenshots/pr-148/account-recovery-{mobile,desktop}-{light,dark}.png` from the tested head. Text, consent, file input, actions, 44px controls and paused-state warning are legible at 390px/1280px with no visible clipping; this is synthetic browser UI, not live production restore.
+- **Additional recovery gap:** `restoreRecoveryPair(...dryRun:true)` stops this tab's sync until explicit resume, but the B Settings recovery panel initializes `resume.hidden=true` on every render. Navigating away after preflight or ambiguous failure hides the only resume action. Fix the UI with an owner-scoped, tab-local paused-recovery indicator that survives Settings rerenders without carrying backup data, and show Resume only while the account handle is actually stopped. Clear on deliberate resume or completed restore; never resume automatically or assume a successful restore. Add a browser test for reopen/cancel/explicit resume. Keep the existing stable retry ID and consent gate.
+- **Gate:** B-owned UI and test changes, exact-head regression/local-stack/ownership and four screenshot review; merge only after current main CI and B head checks are green. No backend/production/Android edits or student approval.
+
+## RELEASE-01 — explicit account backup and restore controls
+
+- **Claim:** `chat-20261028-b-account-recovery`, heartbeat 2026-10-28T17:58Z, branch `lane-b/release-account-recovery-controls`, base main `2f2a410`. No other B PR open. Files: `src/app/view_settings.js`, `test/ui_workspace_recovery.js`, B test registration and handoff. A PR #146 owns local restore APIs; integration #147 owns deployment scopes; neither is edited here.
+- **Goal:** signed-in private account backup download, bounded file validation, explicit preview/confirmation and queued-edit consent, retained stable retry request after failure/reload, owner/workspace switch denial. No implicit restore, no production fixture data, no changes to legacy card import/export.
+- **Implemented:** signed-in paired private JSON download; 130 MiB input bound and read-only manifest/owner checks; same-account preflight, checkbox plus final confirmation, cancel and resume-sync controls, persistent random request key keyed only by owner/digest (never backup content), guarded UI after identity/workspace changes. Existing data import/export unchanged. Controls appear only once A's paired-restore API exists.
+- **Validation:** local syntax/build/ownership/diff checks pass; Chromium unavailable locally. New real-browser suite is appended to B's existing `test:ui`: download payload, owner validation, consent/cancel, interrupted retry/reopen with original ID, stale-owner denial, mobile/desktop light/dark screenshots and overflow. Transport is synthetic; A #144 proves actual database restore. Exact-head regression/browser screenshot review and post-merge main remain required. Next: run CI, inspect screenshots, merge only green after A #146.
+
 ## B CI repair claim — pending stale Study response selection (28 Oct 2026)
 
 - Claim `chat-20261028-b-stale-response-ci`, branch `lane-b/ui-02-stable-stale-study-response`, base latest main (includes #116). No open B PR on pickup. Own only `test/ui_study_nav.js` and this B handoff; production source and student-approved state unchanged.
