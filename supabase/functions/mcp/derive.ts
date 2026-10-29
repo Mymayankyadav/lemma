@@ -1,8 +1,19 @@
-export function day(settings:any): string {
+export function day(settings:any, at:Date|number|string=new Date()): string {
   const zone=settings?.time_zone||'UTC', rollover=settings?.rollover_hour??4;
-  const now=new Date(Date.now()-rollover*3600000);
-  try { return new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(now); }
-  catch {return now.toISOString().slice(0,10);}
+  const now=new Date(at);
+  // Format a local wall clock using IANA rules BEFORE applying the rollover.
+  // Subtracting hours from UTC first is wrong in Asia/Kolkata and DST zones.
+  try {
+    const parts=new Intl.DateTimeFormat('en-GB',{
+      timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',
+      hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+    }).formatToParts(now);
+    const get=(field:string)=>parts.find(x=>x.type===field)?.value||'00';
+    const wall=new Date(Date.UTC(Number(get('year')),Number(get('month'))-1,
+      Number(get('day')),Number(get('hour')),Number(get('minute')),Number(get('second'))));
+    wall.setUTCHours(wall.getUTCHours()-rollover);
+    return wall.toISOString().slice(0,10);
+  } catch {return new Date(now.getTime()-rollover*3600000).toISOString().slice(0,10)}
 }
 export function display(s:any): 'ended'|'paused'|'live' {
   if(s.state==='ended')return 'ended';
