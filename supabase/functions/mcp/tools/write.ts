@@ -12,6 +12,7 @@ async function addProposal(c:Context,p:any,kind:string,payload:any,reason?:strin
 }
 export async function startSession(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project),cp=await checkpoint(c,p,a.checkpoint);
+  if(!cp)throw new Error('No unlocked checkpoint. Approve a plan or finish its prerequisites first.');
   const now=Date.now();
   const {data,error}=await scoped(c,'sessions').eq('project_id',p.id).eq('state','open').order('last_activity_at',{ascending:false});
   if(error)throw new Error(error.message);
@@ -55,12 +56,15 @@ export async function proposeCards(c:Context,a:any):Promise<string>{
   const notes=(await scoped(c,'notes','front').eq('project_id',p.id).eq('status','active').limit(1000)).data||[];
   const existing=new Set(notes.map((x:any)=>normalizedFront(x.front)));
   const cps=await checkpoints(c,p);let added=0,skipped=0;
+  const {data:sources,error:sourceError}=await scoped(c,'sources','short').eq('project_id',p.id).order('created_at').limit(1);
+  if(sourceError)throw new Error(sourceError.message);
+  const book=sources?.[0]?.short;
   for(const card of a.cards){
     const front=normalizedFront(card.front);
     if(existing.has(front)){skipped++;continue}
     existing.add(front);
     if(card.checkpoint&&!cps.some((x:any)=>x.code.toLowerCase()===card.checkpoint.toLowerCase()))throw new Error('Unknown checkpoint '+card.checkpoint);
-    const payload={front:card.front,back:card.back||'',type:card.type||'basic',kind:card.kind||'other',checkpoint:card.checkpoint,concept:card.concept,page:card.page,direct:!!a.direct};
+    const payload={front:card.front,back:card.back||'',type:card.type||'basic',kind:card.kind||'other',checkpoint:card.checkpoint,concept:card.concept,page:card.page,...(card.page&&book?{source:book}:{}),direct:!!a.direct};
     const row=await addProposal(c,p,'card',payload,card.reason,s);
     if(a.direct)await rpc(c,'approve_proposal',{p_id:row.id});
     added++;
@@ -85,10 +89,13 @@ export async function proposeCardEdits(c:Context,a:any):Promise<string>{
 export async function proposePlan(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project);
   if(p.status!=='planning'||(await checkpoints(c,p)).length)throw new Error('This project already has a plan; propose changes instead');
+  const {data:sources,error:sourceError}=await scoped(c,'sources','short').eq('project_id',p.id).order('created_at').limit(1);
+  if(sourceError)throw new Error(sourceError.message);
+  const book=sources?.[0]?.short;
   const converted=a.checkpoints.map((x:any,i:number)=>{
     if(/^(read|review)\b/i.test(x.criterion.trim()))throw new Error('Criterion must be work the student produces');
     if((x.prereqs||[]).some((n:number)=>n<1||n>i))throw new Error('Prerequisites must be earlier checkpoint indexes');
-    return {code:'CP'+(i+1),title:x.title,objective:x.objective,criterion:x.criterion,steps:x.steps,pages:x.pages,prereqs:(x.prereqs||[]).map((n:number)=>'CP'+n),concepts:x.concepts||[],recheck_prompt:x.recheck_prompt};
+    return {code:'CP'+(i+1),title:x.title,objective:x.objective,criterion:x.criterion,steps:x.steps,pages:x.pages,...(x.pages&&book?{source:book}:{}),prereqs:(x.prereqs||[]).map((n:number)=>'CP'+n),concepts:x.concepts||[],recheck_prompt:x.recheck_prompt};
   });
   await addProposal(c,p,'plan',{checkpoints:converted,concepts:a.concepts||[]},a.reason);
   return 'plan with '+converted.length+' checkpoints waits for approval in Lemma';
