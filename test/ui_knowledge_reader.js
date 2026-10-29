@@ -124,6 +124,20 @@ async function readAccepted(page) {
         await page.locator('#s-knowledge-id').fill(C);
         await page.getByRole('button',{name:'Open saved draft'}).click();
         await page.locator('#s-knowledge-inspect').waitFor({state:'visible'});
+        assert.equal(await page.locator('#s-knowledge-review-draft').isVisible(),true);
+        assert.equal(await page.locator('#s-knowledge-submit').isVisible(),false,
+          'an unapproved saved draft must not expose publication');
+        await page.getByRole('button',{name:'Review saved draft'}).click();
+        await page.locator('#s-knowledge-approval').waitFor({state:'visible'});
+        assert.match(await page.locator('#s-knowledge-approval').textContent(),
+          /Topology unapproved notes/,'review must show the persisted title');
+        assert.equal(await page.locator('#s-knowledge-approve').isVisible(),true);
+        assert.equal(await page.evaluate(()=>window.__readerTest.writes),0,
+          'review must never approve or publish by itself');
+        await page.locator('#set-knowledge-drafts').screenshot({
+          path:path.join(OUT,'knowledge-context-review-'+size+'-'+scheme+'.png'),
+          animations:'disabled',
+          style:'.topbar,.tabbar { visibility:hidden !important; }'});
         await page.locator('#set-knowledge-drafts').screenshot({
           path:path.join(OUT,'knowledge-reader-link-'+size+'-'+scheme+'.png'),
           animations:'disabled',
@@ -212,6 +226,59 @@ async function readAccepted(page) {
         assert.match(await page.locator('#s-knowledge-status').textContent(),
           /Account or draft changed/);
         assert.equal(await page.evaluate(()=>window.__readerTest.writes),0);
+        // K3d: exercise the separate review -> approve -> publish UI in the
+        // actual built Settings page using a synthetic owner-local bridge.
+        // No account, production RPC or student approval is accessed here.
+        await page.evaluate(({A,C})=>{
+          const {Cloud}=window.__readerBridge,state=window.__readerTest;
+          state.userId=A;state.publicationCalls=[];state.publishMode='queued';
+          let saved={contextId:C,status:'draft',localRevision:2,expectedRevision:4,
+            title:'Topology unapproved notes',markdown:'My unsent proof',
+            authorKind:'student',payload:{schema_version:1,summary:'Draft only',goals:[]}};
+          Cloud.readKnowledgeDraft=async id=>id===C?structuredClone(saved):null;
+          Cloud.approveKnowledgeDraft=async (id,revision,consent)=>{
+            assertOwned(id===C && revision===2 && consent===true);
+            state.publicationCalls.push(['approve',revision]);
+            saved={...saved,status:'approved_pending',localRevision:3,
+              approvedFromLocalRevision:2,requestId:C,approvedBy:'student'};
+            return structuredClone(saved);
+          };
+          Cloud.submitApprovedKnowledgeDraft=async id=>{
+            assertOwned(id===C && saved.status==='approved_pending');
+            state.publicationCalls.push(['publish',saved.requestId]);
+            return state.publishMode==='queued'
+              ? {status:'queued',requestId:C}
+              : {status:'confirmed',requestId:C,revision:5};
+          };
+          function assertOwned(ok){if(!ok)throw Error('Incorrect publication selection');}
+        },{A,C});
+        await page.locator('#s-knowledge-id').fill(C);
+        await page.getByRole('button',{name:'Open saved draft'}).click();
+        await page.locator('#s-knowledge-review-draft').waitFor({state:'visible'});
+        await page.getByRole('button',{name:'Review saved draft'}).click();
+        await page.locator('#s-knowledge-approve').waitFor({state:'visible'});
+        assert.deepEqual(await page.evaluate(()=>window.__readerTest.publicationCalls),[],
+          'review never approves or publishes implicitly');
+        await page.getByRole('button',{name:'Approve this reviewed context'}).click();
+        await page.locator('#s-knowledge-submit').waitFor({state:'visible'});
+        assert.deepEqual(await page.evaluate(()=>window.__readerTest.publicationCalls),
+          [['approve',2]],'student approval is only a local durable intent');
+        await page.getByRole('button',{name:'Publish approved context'}).click();
+        await page.waitForFunction(()=>document.querySelector('#s-knowledge-status')?.textContent.includes('Offline: approved intent'));
+        assert.equal(await page.locator('#s-knowledge-submit').isVisible(),true,
+          'offline publish retains retry button');
+        await page.evaluate(()=>window.__readerTest.publishMode='confirmed');
+        await page.getByRole('button',{name:'Publish approved context'}).click();
+        await page.waitForFunction(()=>document.querySelector('#s-knowledge-status')?.textContent.includes('Accepted context published at revision 5'));
+        assert.deepEqual(await page.evaluate(()=>window.__readerTest.publicationCalls),
+          [['approve',2],['publish',C],['publish',C]],
+          'retry reuses original approved request ID');
+        assert.equal(await page.locator('#s-knowledge-submit').isVisible(),false,
+          'confirmed publish does not offer another submission');
+        await page.locator('#set-knowledge-drafts').screenshot({
+          path:path.join(OUT,'knowledge-context-published-'+size+'-'+scheme+'.png'),
+          animations:'disabled',
+          style:'.topbar,.tabbar { visibility:hidden !important; }'});
       } finally {await ctx.close()}
     }
     assert.deepEqual(problems,[],'no browser errors');

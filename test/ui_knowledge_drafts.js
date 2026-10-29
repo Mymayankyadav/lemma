@@ -11,7 +11,7 @@ let owner = 'owner-a', mode = 'account', generation = 1, blocked = false;
 let handle = { userId: owner };
 const rows = new Map();
 const calls = [];
-let holdSave = null;
+let holdSave = null, holdApproval=null, offline=false, submissionMode='confirmed';
 const bridge = {
   async readKnowledgeDraft(contextId) {
     calls.push(['read', contextId]);
@@ -31,6 +31,34 @@ const bridge = {
       status: 'draft', userId: owner };
     rows.set(input.contextId, structuredClone(next));
     return structuredClone(next);
+  },
+  async approveKnowledgeDraft(contextId,localRevision,confirmed){
+    calls.push(['approve',contextId,localRevision,confirmed]);
+    if(holdApproval)return new Promise(resolve=>{holdApproval=()=>resolve({
+      ...rows.get(contextId),status:'approved_pending',
+      approvedFromLocalRevision:localRevision,requestId:id
+    });});
+    const old=rows.get(contextId);
+    if (!confirmed || old?.status!=='draft' || old.localRevision!==localRevision)
+      throw Error('Knowledge draft changed; review before approval');
+    const row={...old,status:'approved_pending',localRevision:localRevision+1,
+      approvedFromLocalRevision:localRevision,requestId:id,approvedBy:'student'};
+    rows.set(contextId,structuredClone(row));
+    return structuredClone(row);
+  },
+  async submitApprovedKnowledgeDraft(contextId){
+    const old=rows.get(contextId);
+    calls.push(['publish',contextId,old?.requestId]);
+    if(old?.status!=='approved_pending'||old?.approvedBy!=='student')
+      throw Error('Explicit student approval required');
+    if(offline)return {status:'queued',requestId:old.requestId};
+    if(submissionMode==='failure')throw Error('Simulated lost response');
+    if(submissionMode==='conflict'){
+      rows.set(contextId,{...old,status:'needs_review'});
+      return {status:'conflict',requestId:old.requestId};
+    }
+    rows.delete(contextId);
+    return {status:'confirmed',revision:1,requestId:old.requestId};
   },
   async inspectKnowledgeConflict(contextId) {
     calls.push(['compare', contextId]);
@@ -92,7 +120,36 @@ const fields = { title: 'Topology', markdown: '# Open covers',
   assert.equal(second.current().localRevision, 1, 'failed CAS preserves editor state');
   await second.open(id);
   assert.equal(second.current().localRevision, 2);
-  rows.set(id, { ...rows.get(id), status: 'approved_pending', requestId: id });
+  const writesBeforeReview=calls.filter(c=>['save','approve','publish'].includes(c[0])).length;
+  await assert.rejects(second.approveReviewed(null),/review/);
+  await assert.rejects(second.submitApproved(),/Approve a reviewed context/);
+  const reviewed=await second.reviewSaved();
+  assert.equal(reviewed.status,'draft');
+  assert.equal(reviewed.localRevision,2);
+  assert.equal(calls.filter(c=>['save','approve','publish'].includes(c[0])).length,
+    writesBeforeReview,'review is read-only and never approves or publishes');
+  await assert.rejects(second.approveReviewed({...reviewed,title:'tampered'}),/changed/);
+  const approved=await second.approveReviewed(reviewed);
+  assert.equal(approved.status,'approved_pending');
+  assert.equal(approved.approvedFromLocalRevision,2);
+  assert.equal(approved.requestId,id);
+  assert.equal(calls.filter(c=>c[0]==='publish').length,0,'approval never publishes');
+  offline=true;
+  const queued=await second.submitApproved();
+  assert.equal(queued.status,'queued');
+  assert.equal(second.current().status,'approved_pending');
+  offline=false;submissionMode='failure';
+  await assert.rejects(second.submitApproved(),/lost response/);
+  assert.equal(second.current().status,'approved_pending','lost response keeps original approval');
+  submissionMode='confirmed';
+  const confirmed=await second.submitApproved();
+  assert.equal(confirmed.status,'confirmed');
+  assert.equal(second.current().status,'published');
+  assert.equal(second.current().publishedRevision,1);
+  assert.deepEqual(calls.filter(c=>c[0]==='publish').map(c=>c[2]),[id,id,id],
+    'offline and lost-response retries preserve exact request ID');
+  await assert.rejects(second.submitApproved(),/Approve a reviewed context/);
+  rows.set(id, { ...approved, status: 'approved_pending', requestId: id });
   await second.open(id);
   const beforeLocked = calls.length;
   await assert.rejects(second.save(fields), /locked after approval/);
@@ -115,7 +172,7 @@ const fields = { title: 'Topology', markdown: '# Open covers',
   const reopened = await second.reopenConflict(packet);
   assert.equal(reopened.status, 'draft', 'explicitly reopened context is not approved');
   assert.equal(reopened.expectedRevision, 4);
-  assert.equal(reopened.localRevision, 3);
+  assert.equal(reopened.localRevision, 4);
   assert.equal(reopened.reopenedFromRequestId, id);
   assert.equal(reopened.requestId, undefined, 'new draft does not reuse original accepted request');
   await assert.rejects(second.reopenConflict(packet), /changed; compare again/);
@@ -143,8 +200,9 @@ const fields = { title: 'Topology', markdown: '# Open covers',
   blocked = true;
   assert.throws(() => make().start(), /account workspace/);
   blocked = false;
-  assert(!source.slice(begin, end).includes('approveKnowledgeDraft('));
-  assert(!source.slice(begin, end).includes('commitAcceptedContext('));
-  assert(!source.slice(begin, end).includes('submitApprovedKnowledgeDraft('));
-  console.log('PASS KNOWLEDGE K3b: local CAS, guarded comparison, explicit draft reopen, account isolation, no auto-approval');
+  assert(source.slice(begin,end).includes('approveKnowledgeDraft('));
+  assert(source.slice(begin,end).includes('submitApprovedKnowledgeDraft('));
+  assert(!source.slice(begin,end).includes('commitAcceptedContext('),
+    'UI must call A guarded submission API, never write to cloud directly');
+  console.log('PASS KNOWLEDGE K3d: local CAS, reviewed consent, explicit idempotent publication, conflict reopen, account isolation');
 })().catch(err => { console.error(err); process.exitCode = 1; });

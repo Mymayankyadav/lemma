@@ -1,3 +1,9 @@
+## K3d — signed-in study-context review, approval and publication UI (29 October 2026)
+
+- **Claim:** `chat-20261029-b-k3d-context-publication`, branch `lane-b/knowledge-review-approve-publish-ui`, base `main@e3083bbc0a1a11e05d096edeb428fa84af277bb5`. The user cannot reach Study because Settings exposes only local drafts and accepted-context reader, despite existing A-owned `approveKnowledgeDraft` and `submitApprovedKnowledgeDraft`. Existing B draft #163 remains held pending authenticated restore acceptance; D #199 owns different Study files.
+- **Scope:** B-owned `src/app/view_settings.js`, `test/ui_knowledge_drafts.js` and this handoff. Supply distinct Save → Review saved → Approve reviewed locally → Submit approved to cloud actions, with state and account/workspace guards, dirty draft invalidation, stale revision fail-closed, same immutable retry request ID, no auto-submit or tutor approval, and visible accepted revision/ID. Preserve the old conflict-review reader and recovery UX. Use A's existing typed APIs, no schema or production state mutation by the agent.
+- **Acceptance:** deterministic student-consent, changed draft, pending/retry/queued/conflict/owner-switch tests; exact-head B ownership/regression and browser/Pages checks. No real account approval or mock read used to claim an accepted context.
+
 ## RELEASE-01 — read-only account backup before live restore acceptance
 
 - **Claim:** `chat-20261029-b-backup-only`; base `a5e8803bb4e287b8925afb5db74d94ab8bddb59b`, branch `lane-b/recovery-backup-only`. The owner authorized a real same-account backup/clear/restore test of test data. Existing activation #163 stays held; it must not be merged before the real restore gate. This slice exposes only deliberate signed-in backup download while restore remains hidden and unready.

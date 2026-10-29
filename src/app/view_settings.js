@@ -215,6 +215,83 @@ const KnowledgeDraftEditor = (() => {
         return row;
       } finally { busy = false; }
     }
+    // Read the exact persisted draft before presenting an approval choice.
+    // No remote write or approval occurs on this read-only review path.
+    async function reviewSaved() {
+      const before=scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original=current;
+      if (!original || original.status!=='draft')
+        throw new Error('Save an unapproved context draft before reviewing it');
+      busy=true;
+      try {
+        const saved=await LemmaCloudBridge.readKnowledgeDraft(original.contextId);
+        unchanged(before);
+        if (current!==original || !saved || saved.status!=='draft' ||
+            saved.contextId!==original.contextId ||
+            saved.localRevision!==original.localRevision ||
+            JSON.stringify(saved)!==JSON.stringify(original))
+          throw new Error('Saved context changed; reopen and review again');
+        return structuredClone(saved);
+      } finally {busy=false;}
+    }
+    // Only an explicit student click after reviewing the exact saved snapshot
+    // may stage immutable approval. IndexedDB checks the revision atomically.
+    async function approveReviewed(reviewed) {
+      const before=scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original=current;
+      if (!reviewed || !original || original.status!=='draft' ||
+          reviewed.contextId!==original.contextId ||
+          reviewed.localRevision!==original.localRevision ||
+          JSON.stringify(reviewed)!==JSON.stringify(original))
+        throw new Error('Context changed; review the saved draft again');
+      busy=true;
+      try {
+        const row=await LemmaCloudBridge.approveKnowledgeDraft(
+          original.contextId,original.localRevision,true);
+        unchanged(before);
+        if (current!==original || row?.status!=='approved_pending' ||
+            row.contextId!==original.contextId ||
+            row.approvedFromLocalRevision!==original.localRevision ||
+            !uuid.test(row.requestId||''))
+          throw new Error('Approved intent changed; reopen the context');
+        current=row;
+        return row;
+      } finally {busy=false;}
+    }
+    // Publication is another separate student gesture. A's bridge retains
+    // the same request ID on timeout, offline return or stale revision.
+    async function submitApproved() {
+      const before=scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original=current;
+      if (!original || original.status!=='approved_pending')
+        throw new Error('Approve a reviewed context before publication');
+      busy=true;
+      try {
+        const receipt=await LemmaCloudBridge.submitApprovedKnowledgeDraft(original.contextId);
+        unchanged(before);
+        if (current!==original || !receipt ||
+            !['confirmed','queued','conflict'].includes(receipt.status) ||
+            receipt.requestId!==original.requestId)
+          throw new Error('Knowledge publication receipt changed; reopen context');
+        if (receipt.status==='confirmed') {
+          if (!Number.isSafeInteger(receipt.revision) || receipt.revision<=original.expectedRevision)
+            throw new Error('Invalid accepted context revision');
+          current={...original,status:'published',publishedRevision:receipt.revision};
+        } else if (receipt.status==='conflict') {
+          const latest=await LemmaCloudBridge.readKnowledgeDraft(original.contextId);
+          unchanged(before);
+          if(current!==original || latest?.status!=='needs_review' ||
+              latest.contextId!==original.contextId ||
+              latest.requestId!==original.requestId)
+            throw new Error('Conflict changed; reopen context before comparing');
+          current=latest;
+        }
+        return receipt;
+      } finally {busy=false;}
+    }
     // A comparison is requested by the student, never by render/reconnect.
     async function compareConflict() {
       const before = scope();
@@ -263,7 +340,8 @@ const KnowledgeDraftEditor = (() => {
         return row;
       } finally { busy = false; }
     }
-    return { start, open, save, compareConflict, reopenConflict, current: () => current };
+    return { start, open, save, reviewSaved, approveReviewed, submitApproved,
+      compareConflict, reopenConflict, current: () => current };
   }
   return { create };
 })();
@@ -1045,11 +1123,20 @@ const SettingsView = (() => {
       type: 'button', hidden: true, text: 'Reopen as unapproved draft' });
     const review = h('div', { id: 's-knowledge-review', class: 'knowledge-context-review',
       hidden: true, 'aria-live': 'polite' });
-    let compared = null;
+    const reviewDraft=h('button',{id:'s-knowledge-review-draft',class:'btn btn-sm',
+      type:'button',hidden:true,text:'Review saved draft'});
+    const publish=h('button',{id:'s-knowledge-submit',class:'btn btn-primary btn-sm',
+      type:'button',hidden:true,text:'Publish approved context'});
+    const approval=h('div',{id:'s-knowledge-approval',class:'knowledge-context-review',
+      hidden:true,'aria-live':'polite'});
+    let reviewedDraft=null,compared=null,busyApproval=false;
     // An old Settings panel must not prefill another owner's reader after a switch.
     const mountedOwner = LemmaAccount.user?.id;
     const mountedHandle = LemmaSync.accountHandle();
     const mountedGeneration = App.workspaceRevision;
+    function clearApproval() {
+      reviewedDraft=null;approval.hidden=true;fill(approval);
+    }
     function clearComparison() {
       compared = null;
       review.hidden = true;
@@ -1057,7 +1144,9 @@ const SettingsView = (() => {
       fill(review);
     }
     function show(row) {
-      clearComparison();
+      clearApproval();clearComparison();
+      reviewDraft.hidden=row.status!=='draft';
+      publish.hidden=row.status!=='approved_pending';
       compare.hidden = row.status !== 'needs_review';
       inspectAccepted.hidden = row.status === 'unsaved';
       id.value = row.contextId;
@@ -1065,14 +1154,16 @@ const SettingsView = (() => {
       summary.value = typeof row.payload?.summary === 'string' ? row.payload.summary : '';
       goals.value = Array.isArray(row.payload?.goals) ? row.payload.goals.join('\n') : '';
       markdown.value = row.markdown || '';
-      const locked = row.status === 'approved_pending' || row.status === 'needs_review';
+      const locked = ['approved_pending','needs_review','published'].includes(row.status);
       for (const control of [title, summary, goals, markdown]) control.disabled = locked;
       save.disabled = locked;
       fields.hidden = false;
       status.textContent = row.status === 'needs_review'
         ? 'Accepted-context revision conflict. This reviewed draft is locked and was not applied to the cloud. Keep its context ID; inspect the current accepted revision before making a new approval decision.'
-        : locked
-          ? 'Approved intent is pending. This snapshot is locked; it is not a confirmed cloud revision.'
+        : row.status === 'approved_pending'
+          ? 'Approved on this device, but NOT published. Choose Publish approved context separately; a failed or offline submission retains the same approval.'
+        : row.status === 'published'
+          ? 'Accepted context published at revision '+row.publishedRevision+'. Copy the Context ID and this revision into your first Study plan. Open accepted revision reader to verify the published context.'
         : row.status === 'unsaved'
           ? 'New unsaved student draft. Save it locally before leaving this page.'
           : 'Local draft revision ' + row.localRevision + ' saved on this device. Not accepted or sent to cloud.' +
@@ -1086,6 +1177,10 @@ const SettingsView = (() => {
         goals.value !== (Array.isArray(row.payload?.goals) ? row.payload.goals.join('\n') : '') ||
         markdown.value !== (row.markdown || '');
     }
+    for (const field of [title,summary,goals,markdown])field.addEventListener('input',()=>{
+      if(reviewedDraft){clearApproval();status.textContent=
+        'Unsaved changes invalidate the review. Save your edits and review again.';}
+    });
     async function maySwitch() {
       if (!dirty()) return true;
       return confirmDialog({ title: 'Leave unsaved context edits?',
@@ -1117,6 +1212,75 @@ const SettingsView = (() => {
         save.disabled = locked;
         create.disabled = open.disabled = false;
       }
+    };
+    reviewDraft.onclick=async()=>{
+      if (busyApproval || reviewDraft.disabled) return;
+      if (dirty()) {
+        clearApproval();
+        status.textContent='Save or revert your edits before reviewing the exact saved context.';
+        return;
+      }
+      clearApproval();busyApproval=true;reviewDraft.disabled=true;
+      try {
+        const reviewed=await editor.reviewSaved();
+        if (dirty() || editor.current()?.localRevision!==reviewed.localRevision)
+          throw new Error('Unsaved edits changed this context; save and review again');
+        reviewedDraft=reviewed;
+        const approve=h('button',{id:'s-knowledge-approve',class:'btn btn-primary btn-sm',
+          type:'button',text:'Approve this reviewed context'});
+        approve.onclick=async()=>{
+          if (busyApproval || reviewedDraft!==reviewed || dirty()) {
+            clearApproval();
+            status.textContent='Review expired or context changed; save and review again.';
+            return;
+          }
+          busyApproval=true;approve.disabled=true;
+          try {
+            const row=await editor.approveReviewed(reviewed);
+            show(row);
+          } catch(err) {
+            clearApproval();
+            status.textContent='Approval not confirmed: '+(err.message||'reopen the saved draft')+
+              '. Reopen and review the exact saved revision before retrying.';
+          } finally {busyApproval=false;approve.disabled=false;}
+        };
+        fill(approval,
+          h('h3',{text:'Review saved context before approval'}),
+          h('p',{class:'muted small',text:
+            'Local revision '+reviewed.localRevision+' · Context ID '+reviewed.contextId+
+            ' · current accepted revision '+reviewed.expectedRevision}),
+          h('p',{text:'Title: '+reviewed.title}),
+          h('p',{text:'Summary: '+(reviewed.payload?.summary||'(empty)')}),
+          h('p',{text:'Learning goals'}),
+          h('pre',{class:'knowledge-context-preview',
+            text:(reviewed.payload?.goals||[]).join('\n')||'(none)'}),
+          h('p',{text:'Context notes'}),
+          h('pre',{class:'knowledge-context-preview',text:reviewed.markdown||'(empty)'}),
+          h('p',{class:'muted small',text:
+            'Approval locks this exact local snapshot. It does not publish or sync it. Publication is a separate action.'}),
+          approve);
+        approval.hidden=false;
+        status.textContent='Read the saved snapshot below. Only Approve this reviewed context records approval.';
+      } catch(err) {
+        clearApproval();
+        status.textContent='Review unavailable: '+(err.message||'reopen the saved draft');
+      } finally {busyApproval=false;reviewDraft.disabled=false;}
+    };
+    publish.onclick=async()=>{
+      if(busyApproval || publish.disabled)return;
+      if (!editor.current() || editor.current().status!=='approved_pending')return;
+      busyApproval=true;publish.disabled=true;
+      try {
+        const receipt=await editor.submitApproved();
+        if(receipt.status==='confirmed')show(editor.current());
+        else if(receipt.status==='conflict'){
+          show(editor.current());
+          status.textContent='Accepted revision changed on the server. Compare the locked intent before making a new approval decision.';
+        } else status.textContent='Offline: approved intent is preserved on this device. Reconnect and press Publish approved context again; the original request ID is retained.';
+      } catch(err) {
+        status.textContent='Publication not confirmed: '+(err.message||'network error')+
+          '. Your approved intent remains locked; retry Publish, never create a duplicate draft.';
+      } finally {busyApproval=false;publish.disabled=false;}
     };
     inspectAccepted.onclick = () => {
       const row = editor.current();
@@ -1199,6 +1363,7 @@ const SettingsView = (() => {
       'Unaccepted drafts are saved only in this device’s signed-in account cache. Copy the context ID to reopen it after a reload. Saving does not approve or publish a context.',
       h('label', { class: 'setting-label', for: 's-knowledge-id', text: 'Context ID' }),
       id, h('div', { class: 'btn-row' }, create, open), status, fields,
+      h('div', {class:'btn-row'},reviewDraft,publish),approval,
       h('div', { class: 'btn-row' }, inspectAccepted, compare, reopen), review);
   }
 
