@@ -48,7 +48,9 @@ test("editing a proposed card previews and approves the edited content", async (
   await page.getByRole("button", { name: "Edit card" }).click();
   const dialog = page.getByRole("dialog", { name: "Edit card" });
   await dialog.getByLabel("Front").fill("An edited question");
-  await expect(dialog.getByText("An edited question")).toBeVisible();
+  await expect(
+    dialog.getByRole("paragraph").filter({ hasText: "An edited question" }),
+  ).toBeVisible();
   await dialog.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByRole("button", { name: /Cards 4/ })).toBeVisible();
   await page.screenshot({
