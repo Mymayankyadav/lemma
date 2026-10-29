@@ -24,3 +24,10 @@
 .study-amendment-status { margin:.7rem 0; font-size:.92rem; }
 .study-amendment-warning { font-weight:600; }
 .study-amendment-actions { display:flex; flex-wrap:wrap; gap:.65rem; margin:.6rem 0; }
+
+/* Study's proof/approval actions must stay legible on both accent palettes. */
+.study-page .btn-primary {
+  color: var(--accent-ink, #fff); font-weight: 600;
+  /* Accent and accent-ink flip together on theme change: no transient low-contrast frame. */
+  transition: transform 0.08s;
+}
