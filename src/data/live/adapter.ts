@@ -2,10 +2,10 @@ import type { LemmaApi } from '../api'
 
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
-import { dueToday, studyDayBounds, checkpointUi, projectProgress, conceptStatus } from '../../lib/derive'
+import { dueToday, studyDayBounds, projectProgress, conceptStatus } from '../../lib/derive'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
-import type { ProjectSummary, CheckpointView, ReviewItem, CardState, CardComment, Proposal, AtlasGraph } from '../types'
+import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
 import { LemmaError } from '../api'
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
@@ -59,7 +59,7 @@ export class LiveAdapter implements LemmaApi {
   crypto.getRandomValues(bytes)
   const secret=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('')
   const row=checked(await db.from('settings').update({connector_secret:secret}).eq('user_id',uid).select('*').single())
-  return settingsRow(row as Row)
+  return settingsRow(row as unknown as Row)
  }
  async listStyles(...args: Parameters<LemmaApi['listStyles']>): ReturnType<LemmaApi['listStyles']> {
   const db=liveClient(), uid=await owner(db)
@@ -325,7 +325,7 @@ export class LiveAdapter implements LemmaApi {
  async approveProposal(...args: Parameters<LemmaApi['approveProposal']>): ReturnType<LemmaApi['approveProposal']> {
   const [id,edit]=args,db=liveClient()
   await owner(db)
-  checked(await db.rpc('approve_proposal',{p_id:id,p_edit:edit?toDb(edit):null}))
+  checked(await db.rpc('approve_proposal',{p_id:id,p_edit:edit?toDb({...edit}):null}))
   return
  }
  async rejectProposal(...args: Parameters<LemmaApi['rejectProposal']>): ReturnType<LemmaApi['rejectProposal']> {
