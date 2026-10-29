@@ -1,3 +1,10 @@
+## P5l — first-plan intake and explicit publication
+
+- **Claim:** `owner-20261029-d-first-plan-394904c55020`, heartbeat 2026-10-29T03:18Z; owner explicitly requested control of lane D. Branch `lane-d/plan-01-p5l-first-plan-intake`, base `2cfbaea01a686384f617098173ecb2f1263ef43a`. P5k #166 is merged; no other D PR open on claim. Preserve active B/E/F work; Android stays paused.
+- **Scope:** D-owned `src/app/study_plan.js`, `src/app/view_study.js`, `src/styles/study.css`, `test/study_*`, `docs/STUDY_PLANNING_PROTOCOL.md`, and this handoff. Complete no-plan draft intake, durable reload, pinned accepted context, visible review and separate student approval/submission. Never approve a real student's plan or create production fixtures. Both readiness flags remain false in this slice.
+- **Gate:** initial revision-0 draft workflow with explicit consent, same intent after offline/lost-response retry, two-owner/identity isolation, malformed/unsafe graph/context rejection, no network publication before Submit, responsive browser screenshots, existing PLAN acceptance, exact-head regression/local-stack/guard CI.
+- **Next:** implement and verify this bounded first-use workflow, merge only green; then separate P5m two-flag activation with navigation/security/browser acceptance if all D gates pass. Production read-only recheck confirms 17/17 migrations and authenticated-only public plan/context/event RPCs. No production writes.
+
 ## PLAN-01 P5k — independent Study readiness evidence audit (2026-10-29)
 
 - **Claim:** `chat-20261029-d-p5k-readiness-audit`, heartbeat 2026-10-29T02:57:29.381Z, branch `lane-d/plan-01-p5k-independent-readiness-audit` at `main@e2d5dc663bff`; no competing D PR. Lane B #163 is held for real production recovery owner-security acceptance; C paused. D owns this handoff, `src/app/study_plan.js`, `src/app/view_study.js` and D test/visual gates, not B UI or other lanes.
