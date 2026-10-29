@@ -12,6 +12,8 @@ Cited excerpts must match a source reference (at most four, 1,600 characters eac
 
 The packet is not account authorization. T2 must re-read `StudyPlan.activeContext()` and compare ID, revision and checkpoint before any student-approved write.
 
+When Study selects a checkpoint, the handoff requests that same plan and checkpoint on opening and on each fresh copy or proposal-action check. A changed plan, missing checkpoint, stale proof or failed read blocks the action; the selected checkpoint is never silently replaced with Study's default.
+
 ## Reply: `TutorHandoff.parseReply(text)`
 
 Accept one JSON object or a single complete fenced JSON object with **exact** fields:
@@ -42,6 +44,8 @@ Accept one JSON object or a single complete fenced JSON object with **exact** fi
 `amendment_proposal` can alternatively contain `{proposal_id, expected_revision, snapshot, change_summary, source?}`. Its revision must match the root revision. Event types match D's StudyPlan contract: `objective`, `question`, `attempt`, `hint`, `feedback`, `misconception`, `proof_step`, `mastery_evidence`, `source_read`, `flashcard_link`, `session_note`. Cards use the existing `basic`, `reverse` or `cloze` types.
 
 Event IDs and proposal IDs are UUIDs, unique **across the entire reply**. Retry an accepted event with the same ID and identical payload; new evidence receives a fresh ID. `parseReply` returns `{ok,events,cardProposals,amendmentProposal,errors}` and **never writes or approves anything**, schedules a card, or awards mastery. On any error it returns `ok:false` and **zero accepted items**; unknown fields, malformed revisions, duplicate IDs, unsafe JSON keys, unsupported types and oversized inputs are rejected (reply max **64 KiB**). Successful parsing is not verification of mathematical correctness.
+
+Hint event payloads must include an integer `level` from 0 to 20, representing the resulting level; ordinarily a new hint uses the current packet's `hint_level` plus one. The packet tells tutors this requirement. Both parsing and the atomic evidence client reject an invalid hint before a write, so a selected hint cannot be recorded without the level that Study needs to reconstruct it. The student still reviews the content and level; the client does not determine whether the mathematical hint is appropriate or enforce monotonicity.
 
 ## T2–T4 integration gates
 

@@ -43,7 +43,9 @@ function h(tag,attrs,...kids){
   return obj;
 }
 const plan={
-  async activeContext(){
+  async activeContext(selection){
+    assert.equal(selection?.planId,planId);
+    assert.equal(selection?.checkpointId,cp,'reads must retain the selected nondefault checkpoint');
     reads++;
     if(failRead)throw Error('Cloud read unavailable');
     const snapshot=JSON.parse(JSON.stringify(state));

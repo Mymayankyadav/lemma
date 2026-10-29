@@ -1,3 +1,8 @@
+## Study-ready navigation screenshot gate — 29 October 2026
+
+- Owner-directed integrated claim `chat-20261029-b-study-nav-gate`, branch `lane-b/ui-study-ready-screenshot-gate`, base `4d0839c7d83c1d108ede6179bf8c46897fb1b019`. Recovery candidate #163 is explicitly held and paused, with no overlapping source/test files; no recovery activation.
+- D activation #172 exact-head regression 40816664316 failed because `test/ui_screenshots.js` assumes exactly four nav items even when the genuine ready Study bundle displays five. Update the screenshot gate to assert the exact labels and evenly spaced touch targets for the actual Study readiness state, preserving the original four-item assertion when hidden. Verify both states and all existing mobile-size checks; D will incorporate the merged dependency before retesting activation.
+
 ## RELEASE-01 recovery UI takeover (2026-10-28T23:20Z)
 
 
