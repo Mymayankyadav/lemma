@@ -16,7 +16,7 @@ let notifyIdentityChange=null;
 const account={user:{id:OWNER},onIdentityChange(fn){notifyIdentityChange=fn;}};
 const app={workspaceRevision:1,workspaceBlocked:false};
 const plan={
- async activeContext(){return {planId:ID,planRevision:revision,
+ async activeContext(selection){assert.equal(selection?.planId,ID);assert.equal(selection?.checkpointId,CP);return {planId:ID,planRevision:revision,
    contextId:CONTEXT,contextRevision,
    checkpoint:{id:checkpoint,objective:'Show compactness',status:'in_progress'},
    sessionId,hintLevel,sourceRefs:[],

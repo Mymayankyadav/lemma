@@ -1,3 +1,9 @@
+## T3i claim — preserve selected checkpoint through tutor handoff (29 October 2026)
+
+- Claim `chat-20261029-e-selected-checkpoint`, branch `lane-e/tutor-01-selected-checkpoint`, base `c3ac30ed0d69d9484b30df2c98d06350be513ba9`. Scope E-owned `src/app/tutor_handoff.js`, `test/tutor_*.js`, this handoff and tutor protocol docs. D #172 and B #163 retain independent claims. No production write or readiness change.
+- D P5m allows a student to select any approved checkpoint using `StudyPlan.activeContext({planId,checkpointId})`. Tutor currently calls it without selection both on opening and at each consent/copy check, which instead chooses the default checkpoint. A valid selected nondefault checkpoint cannot be handed off, and later checks may inspect the wrong proof. Pass the original approved selection to every fresh read, retain identity/revision/proof checks, and test selected/nondefault and stale/missing selection. Exact-head regression, E guard and disposable local stack required. T4 access and real student acceptance remain separate.
+- Implementation: all five reads carry the original plan/checkpoint, including open, copy, event, card and amendment checks. Existing deterministic mock tests now require that exact selection on each path while preserving stale-proof, owner-change and no-write assertions. Focused tests, E guard, plan/syntax/build and diff check pass locally. Browser and disposable-stack verification require exact-head CI; feature remains hidden pending real T4.
+
 ## T3h claim — preserve usable hint levels in tutor replies (29 October 2026)
 
 - Claim `chat-20261029-e-hint-contract`, base `57c5f4ac5875dfa6593ce659600805b4e825013b`, branch `lane-e/tutor-01-hint-level-contract`. Scope E-owned `src/app/tutor_handoff.js`, `test/tutor_packet.js`, `docs/TUTOR_HANDOFF.md`, this handoff. No readiness or production change.

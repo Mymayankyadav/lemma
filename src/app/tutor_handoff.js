@@ -341,7 +341,7 @@ const TutorHandoff = (() => {
   async function open({ planId, checkpointId } = {}) {
     if (typeof StudyPlan === 'undefined' || typeof StudyPlan.activeContext !== 'function')
       throw new Error('Study plan is not available');
-    const ctx = await StudyPlan.activeContext();
+    const ctx = await StudyPlan.activeContext({planId,checkpointId});
     if (!ctx || ctx.planId !== planId || ctx.checkpoint?.id !== checkpointId)
       throw new Error('The active checkpoint has changed; reopen its handoff');
     const ownerId = typeof LemmaAccount === 'undefined' ? null : LemmaAccount.user?.id;
@@ -427,7 +427,7 @@ const TutorHandoff = (() => {
           verifyCopyOwner();
           if (typeof navigator !== 'undefined' && navigator.onLine === false)
             throw new Error('Offline: cannot verify the current study state');
-          const now = await StudyPlan.activeContext();
+          const now = await StudyPlan.activeContext({planId,checkpointId});
           verifyCopyOwner();
           assertReviewedContext(now);
         } catch (e) {
@@ -513,7 +513,7 @@ const TutorHandoff = (() => {
             throw new Error('Tutor reply changed; review it again');
         };
         verifyOwner();
-        const now = await StudyPlan.activeContext();
+        const now = await StudyPlan.activeContext({planId,checkpointId});
         verifyOwner();
         assertReviewedContext(now);
         App.newCard(cardPreset(card));
@@ -545,7 +545,7 @@ const TutorHandoff = (() => {
         if (typeof StudyPlan.proposeAmendment !== 'function')
           throw new Error('Unapproved amendment draft storage is unavailable');
         verifyCurrent();
-        const now = await StudyPlan.activeContext();
+        const now = await StudyPlan.activeContext({planId,checkpointId});
         verifyCurrent();
         assertReviewedContext(now);
         const snapshot = amendment.snapshot;
@@ -669,7 +669,7 @@ const TutorHandoff = (() => {
         };
         for (const item of pending) {
           verifyConsent();
-          const now = await StudyPlan.activeContext();
+          const now = await StudyPlan.activeContext({planId,checkpointId});
           // A same-owner relogin or workspace switch can occur during the
           // asynchronous plan read. Consent belongs to the original sheet,
           // not to the new identity epoch captured by the RPC client.
