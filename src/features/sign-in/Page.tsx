@@ -1,33 +1,13 @@
-import { useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { useAuth, useBootstrap, useSignIn } from "../../data/hooks";
+import { useLocation } from "react-router";
+import { useSignIn } from "../../data/hooks";
 import { getMode } from "../../data/mode";
 import { Button } from "../../ui/Button";
 import { useToast } from "../../ui/Toast";
 export default function Page() {
-  const auth = useAuth(),
-    bootstrap = useBootstrap(),
-    signIn = useSignIn(),
+  const signIn = useSignIn(),
     location = useLocation(),
-    navigate = useNavigate(),
-    notify = useToast(),
-    started = useRef(false);
+    notify = useToast();
   const from = (location.state as { from?: string } | null)?.from ?? "/";
-  useEffect(() => {
-    if (getMode() === "demo" || !auth.data || started.current) return;
-    started.current = true;
-    void bootstrap
-      .mutateAsync()
-      .then(() => {
-        const target = sessionStorage.getItem("lemma:sign-in-return") ?? from;
-        sessionStorage.removeItem("lemma:sign-in-return");
-        void navigate(target, { replace: true });
-      })
-      .catch(() => {
-        started.current = false;
-        notify("Couldn't finish sign-in. Try again.", { tone: "danger" });
-      });
-  }, [auth.data]);
   return (
     <section className="flex min-h-[75dvh] flex-col items-center justify-center text-center">
       <span
@@ -44,7 +24,7 @@ export default function Page() {
       <Button
         className="mt-8 w-full max-w-sm"
         disabled={
-          signIn.isPending || bootstrap.isPending || getMode() === "demo"
+          signIn.isPending || getMode() === "demo"
         }
         onClick={async () => {
           try {
