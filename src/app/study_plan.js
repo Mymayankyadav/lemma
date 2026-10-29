@@ -425,8 +425,13 @@ const StudyPlan = (() => {
   }
   async function approveInitialPlanDraft(planId,reviewed,studentApproved) {
     if (studentApproved !== true) throw new Error('Explicit student approval required for a plan');
+    const ctx=account();
+    let pinned;
+    try {pinned=canonical(structuredClone(reviewed));}
+    catch (_) {throw new Error('Invalid reviewed initial plan');}
     const current = await reviewInitialPlanDraft(planId);
-    if (canonical(current) !== canonical(reviewed))
+    ctx.check();
+    if (canonical(current) !== pinned)
       throw new Error('Plan draft changed; review again before approval');
     return approvePlanDraft(planId,current.localRevision,true);
   }

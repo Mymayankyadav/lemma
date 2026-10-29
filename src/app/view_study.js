@@ -31,7 +31,7 @@ const StudyView = (() => {
         h('span', {class:'study-detail-label',text:label}),
         h('p', {text:value || 'Nothing recorded yet'}));
     }
-    function initialPlanSection() {
+    function initialPlanSection(hasPlan=false) {
       const section=h('section',{class:'study-initial','aria-label':'First study plan'});
       const status=h('p',{class:'study-initial-status',role:'status'});
       const drafts=h('div',{class:'study-amendment-actions'});
@@ -98,12 +98,19 @@ const StudyView = (() => {
       async function run(task) {
         if(!valid()||busy)return;
         busy=true;for(const button of section.querySelectorAll('button'))button.disabled=true;
+        for(const f of fields)f.readOnly=true;
         try {await task();}
         catch(error){if(valid()){
           review=null;fill(preview);
           status.textContent='Not confirmed: '+(error?.message||'request failed')+'. Saved drafts and approvals are preserved.';
         }}
-        finally {busy=false;if(valid())for(const button of section.querySelectorAll('button'))button.disabled=false;}
+        finally {
+          busy=false;
+          if(valid()){
+            for(const button of section.querySelectorAll('button'))button.disabled=false;
+            for(const f of fields)f.readOnly=false;
+          }
+        }
       }
       async function refresh() {
         const list=await StudyPlan.listInitialPlanDrafts();
@@ -137,7 +144,7 @@ const StudyView = (() => {
         objective:'State the precise goal',prerequisite_checkpoint_ids:[],source_refs:[],
         learning_tasks:['Attempt the proof'],mastery_criterion:'Justify every implication',
         assessment_prompt:'Give a complete proof',status:'not_started'}]};
-      section.append(h('h2',{text:'Create your first study plan'}),
+      section.append(h('h2',{text:hasPlan?'Local plan drafts':'Create your first study plan'}),
         h('p',{text:'Use your accepted context from Settings and a plan from your chosen planning session. Saving keeps a local draft; review, approval and publication are separate decisions.'}),
         drafts,editor,h('details',{},h('summary',{text:'Plan snapshot format'}),
           h('pre',{class:'study-plan-json',text:JSON.stringify(example,null,2)})),
@@ -486,6 +493,16 @@ const StudyView = (() => {
         h('p', {class:'study-note',text:
           'Only an explicit Save adds an event. Reading this screen never demonstrates mastery.'}),
         forms,amendmentSection(context));
+      // A lost publication response may leave an approved local intent even
+      // though its plan is now visible remotely. Keep that receipt retry
+      // reachable after reload; never resubmit it automatically.
+      if(typeof StudyPlan.listInitialPlanDrafts==='function') {
+        Promise.resolve().then(()=>StudyPlan.listInitialPlanDrafts()).then(list=>{
+          if(valid()&&list.length)content.append(h('details',{},
+            h('summary',{text:'Resume local plan drafts or unconfirmed submissions'}),
+            initialPlanSection(true)));
+        }).catch(()=>{});
+      }
     }
     Promise.resolve().then(async () => {
       if (!valid()) return;

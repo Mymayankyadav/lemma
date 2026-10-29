@@ -57,7 +57,10 @@ const input=()=>({planId:id(3),expectedRevision:0,title:'Topology',objective:'Le
  const changed=await api.saveInitialPlanDraft({...input(),expectedLocalRevision:1,title:'Edited topology'});
  await assert.rejects(api.approveInitialPlanDraft(id(3),reviewed,true),/changed; review again/);
  const reviewedAgain=await api.reviewInitialPlanDraft(id(3));
+ onContext=()=>{reviewedAgain.title='Caller mutation during approval read';};
  const approved=await api.approveInitialPlanDraft(id(3),reviewedAgain,true);
+ onContext=()=>{};
+ assert.equal(approved.title,changed.title,'approval pins a private copy of the displayed review before awaits');
  assert.equal(approved.status,'approved_pending');assert.equal(calls.length,0,'approval is not publication');
  online=false;assert.equal((await api.submitApprovedPlanDraft(id(3))).status,'queued');
  assert.equal((await load().readPlanDraft(id(3))).requestId,approved.requestId);

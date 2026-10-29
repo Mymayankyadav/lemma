@@ -9,8 +9,15 @@ const source=['util','study_plan','view_study'].map(name=>fs.readFileSync('src/a
 const fixture=`
 window.__owner='${A}';window.__revision=2;window.__writes=[];window.__lost=false;
 const App={workspaceRevision:1,workspaceBlocked:false,go(route){window.__route=route}};
-const client={from(){const q={select(){return q},eq(){return q},order(){return q},limit(){return q},setHeader(){return Promise.resolve({data:[]})}};return q},
- rpc(name,args){window.__writes.push({name,args});return {setHeader(){return window.__lost?Promise.reject(Error('response lost')):Promise.resolve({data:1})}}}};
+const client={from(table){const q={select(){return q},eq(){return q},order(){return q},limit(){return q},setHeader(){
+ const plan=JSON.parse(localStorage.getItem('published-'+window.__owner)||'null');
+ const rows=!plan?[]:table==='study_plans'?[{id:plan.p_plan_id,revision:1}]:
+  table==='study_plan_versions'?[{context_id:plan.p_context_id,context_revision:2,snapshot:plan.p_snapshot}]:[];
+ return Promise.resolve({data:rows})}};return q},
+ rpc(name,args){window.__writes.push({name,args});return {setHeader(){
+  localStorage.setItem('published-'+window.__owner,JSON.stringify(args));
+  const log=JSON.parse(localStorage.getItem('requests')||'[]');log.push(args);localStorage.setItem('requests',JSON.stringify(log));
+  return window.__lost?Promise.reject(Error('response lost')):Promise.resolve({data:1})}}}};
 const LemmaAccount={client,get user(){return window.__owner?{id:window.__owner}:null},onIdentityChange(){}};
 const LemmaCloud={async accountToken(){return 'synthetic-local-token'}};
 const LemmaCloudBridge={async readAcceptedContext(id){return {context_id:id,revision:window.__revision}}};
@@ -77,11 +84,16 @@ async function fillPlan(page){
    assert.equal(key,approved.requestId);
    await page.evaluate(()=>window.__lost=true);await pending(page).click();
    await page.waitForFunction(()=>document.querySelector('.study-initial-status').textContent.includes('Not confirmed:'));
-   await page.evaluate(()=>window.__lost=false);await pending(page).click();
+   // The server committed despite losing its response. On reload the actual
+   // approved checkpoint is visible; its pending local receipt stays reachable.
+   await page.reload();
+   await page.getByRole('heading',{name:'Proof checkpoint 1',exact:true}).waitFor();
+   await page.getByText('Resume local plan drafts or unconfirmed submissions',{exact:true}).click();
+   await page.getByRole('button',{name:/^Resume draft:/}).click();await pending(page).click();
    await page.getByRole('button',{name:'Open published checkpoint'}).waitFor();
-   const writes=await page.evaluate(()=>window.__writes);
-   assert.equal(writes.length,2);assert.equal(writes[0].args.p_request_id,writes[1].args.p_request_id);
-   assert.equal(writes[0].args.p_context_id,C);assert.equal(writes[0].args.p_expected_revision,0);
+   const writes=await page.evaluate(()=>JSON.parse(localStorage.getItem('requests')));
+   assert.equal(writes.length,2);assert.equal(writes[0].p_request_id,writes[1].p_request_id);
+   assert.equal(writes[0].p_context_id,C);assert.equal(writes[0].p_expected_revision,0);
    await page.getByRole('button',{name:'Open published checkpoint'}).click();
    assert.equal(await page.evaluate(()=>window.__route),'study');
    // Same browser storage cannot reveal another owner's local drafts.
