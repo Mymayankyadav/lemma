@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/generate-icons.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
@@ -11,7 +12,8 @@
     "test": "vitest run --passWithNoTests",
     "e2e": "playwright test",
     "check": "npm run typecheck && npm run test && npm run build",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prebuild": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
