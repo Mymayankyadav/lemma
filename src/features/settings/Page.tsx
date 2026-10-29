@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
+  BookOpen,
+  CircleHelp,
+  List,
+  PencilLine,
+  Zap,
   Check,
   Copy,
   Download,
@@ -37,6 +42,25 @@ import { Slab } from "../../ui/Slab";
 import { PlugArt } from "../../ui/art/PlugArt";
 import { useToast } from "../../ui/Toast";
 import { useNavigate } from "react-router";
+import type { LucideIcon } from "lucide-react";
+const styleIcons: Record<string, LucideIcon> = {
+  "circle-help": CircleHelp,
+  list: List,
+  "pencil-line": PencilLine,
+  zap: Zap,
+  eye: Eye,
+  "book-open": BookOpen,
+};
+function StyleIcon({ name }: { name: string }) {
+  const Icon = styleIcons[name] ?? Sparkles;
+  return (
+    <Icon
+      aria-hidden="true"
+      size={19}
+      className="mr-2 inline-block text-amber"
+    />
+  );
+}
 const field =
   "mt-3 min-h-32 w-full rounded-ctl border border-edge bg-well p-3 text-ink";
 function elapsed(at: string) {
@@ -322,7 +346,7 @@ export default function Page() {
               onClick={() => void save({ defaultStyle: style.key })}
               className={`min-h-[70px] rounded-slab border p-4 text-left ${s.defaultStyle === style.key ? "border-amber-line-2 bg-amber-tint" : "border-edge bg-tile"}`}
             >
-              <span className="mr-2 text-amber">{style.icon}</span>
+              <StyleIcon name={style.icon} />
               {style.name}
             </button>
           ))}
