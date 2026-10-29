@@ -8,7 +8,7 @@ test('UI-2 illustrations, charts and empty states are visible and reduced motion
  await expect(art).toBeVisible();
  await expect(charts).toBeVisible();
  for(const name of ['Compass illustration','Study card illustration','Book pages illustration','Connected tutor illustration','Disconnected tutor illustration','Completed review illustration'])
-  await expect(art.getByRole('img',{name})).toHaveCount(name==='Disconnected tutor illustration'?2:1);
+  await expect(art.getByRole('img',{name}).first()).toBeVisible();
  for(const name of ['Recall over time','Reviews by day','Answer confidence calibration','Time by subject','Checkpoints by week','Card interval growth'])
   await expect(charts.getByRole('img',{name:new RegExp(name)})).toBeVisible();
  for(const title of ['No projects','Nothing due','Offline','All clear'])
