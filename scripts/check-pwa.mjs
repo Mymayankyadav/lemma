@@ -13,7 +13,7 @@ for(const [name,size] of [['lemma-192.png',192],['lemma-512.png',512],['lemma-ma
   throw Error('PWA icon corrupt or wrong dimensions: '+name);
 }
 if(!manifest.icons.some(icon=>icon.purpose==='maskable')||!manifest.icons.some(icon=>icon.sizes==='192x192'))
- throw Error('PWA manifest is missing installable icons');
+ throw Error('PWA manifest is missing installable icons: '+JSON.stringify(manifest.icons));
 const index=readFileSync(path('index.html'),'utf8');
 if(!index.includes('manifest.webmanifest'))throw Error('HTML does not link the PWA manifest');
 const worker=readFileSync(path('sw.js'),'utf8');
