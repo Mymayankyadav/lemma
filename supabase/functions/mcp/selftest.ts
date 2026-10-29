@@ -49,6 +49,17 @@ export async function selftest(c:Context):Promise<any>{
       const detail=await get(c,{what:'checkpoint',project:p.slug,id:'CP1'});
       if(!detail.includes('hint L1'))throw Error('Hint missing');
       if(!(await packet(c,{project:p.slug})).includes('FIX cover vs subcover'))throw Error('Misconception missing');
+      const {data:before}=await scoped(c,'session_events','id').eq('session_id',(await scoped(c,'sessions').eq('project_id',p.id).eq('number',1).single()).data.id);
+      let rolledBack=false;
+      try {
+        await saveProgress(c,{project:p.slug,session:sessionCode,step:1,
+          events:[{kind:'hint',text:'should roll back',hint_level:1},{kind:'note',text:''}],
+          next_question:'must not be saved'});
+      } catch {rolledBack=true}
+      const {data:after}=await scoped(c,'session_events','id').eq('session_id',(await scoped(c,'sessions').eq('project_id',p.id).eq('number',1).single()).data.id);
+      const {data:current}=await scoped(c,'sessions','resume_question').eq('project_id',p.id).eq('number',1).single();
+      if(!rolledBack || before?.length!==after?.length || current?.resume_question!=='Why finite?')
+        throw Error('Atomic rollback failed');
     });
     await check('PDF reads and search',async()=>{
       if(!(await search(c,{project:p.slug,query:'finite subcover'})).includes('selftest p.'))throw Error('Search failed');
