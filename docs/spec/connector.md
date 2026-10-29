@@ -5,7 +5,7 @@ The connector is an MCP server that lets Claude and ChatGPT read and write the o
 ## 1. Goals and budgets
 
 - **Cheap to resume.** One call (`resume`) returns everything needed to continue, in compact text. Target ≤ 1,400 characters (about 350 tokens); hard cap 2,400.
-- **Cheap to carry.** Tool definitions are sent with every chat turn, so the full `tools/list` response must stay ≤ 10,500 characters. Keep descriptions exactly as written in §5.
+- **Cheap to carry.** Tool definitions are sent with every chat turn, so the full `tools/list` response must stay ≤ 12,500 characters. Keep descriptions exactly as written in §5.
 - **Deep on demand.** Plan, checkpoint, outline, pages and search are separate read tools the chatbot calls only when needed.
 - **Safe writes.** Progress and session records are written directly. Curriculum (cards, plans, card fixes) becomes a proposal that the owner approves in the app, except cards the owner dictated (`direct`).
 - **No raw SQL.** The chatbot never sees table names or writes queries.
@@ -27,7 +27,7 @@ Output budgets per call: `resume` 2,400 chars; `get` 2,000; `read_pages` 12,000 
 | File | Contents |
 | --- | --- |
 | `index.ts` | `Deno.serve`; path parsing; auth; routes `/mcp/<secret>` (MCP) and `/mcp/<secret>/selftest` (§9) |
-| `server.ts` | builds the MCP server per request with `createMcpHandler` and registers the 14 tools; sets server instructions (§4) |
+| `server.ts` | builds the MCP server per request with `createMcpHandler` and registers the 18 tools; sets server instructions (§4) |
 | `deps.ts` | imports pinned as in Supabase's guide: `npm:@modelcontextprotocol/server@^2.0.0`, `npm:zod@^4.3.6`, `npm:@supabase/supabase-js@2` |
 | `db.ts` | Supabase client with the secret key; small typed helpers; every helper takes `userId` |
 | `resolve.ts` | resolve project (slug, then case-insensitive title, then unique prefix), checkpoint code, session number, source short name; helpful error text listing valid options |
@@ -48,7 +48,7 @@ Implementation rules:
 ## 4. Server instructions (sent at initialize; exact text, ≤ 512 chars)
 
 ```
-Lemma is the user's math study record. When they say study, resume, continue or plan <project>, call resume first and follow the RULES it returns. Save progress with save_progress at each step and every ~6 messages so a cut-off chat loses nothing. Cards, plans and card fixes are proposals: the user approves them in the Lemma app, or tells you to and you call decide. Read the book with read_pages instead of guessing. Do not show tool output verbatim to the user.
+Lemma is the user's math study record. When they say study, resume, continue or plan <project>, call resume first. Follow OWNER above all, then RULES. Save progress with save_progress at each step and every ~6 messages. Cards, plans and fixes are proposals the user approves in Lemma or by telling you (decide). Every write can be reversed with undo. Read the book with read_pages instead of guessing. Do not show tool output verbatim.
 ```
 
 ## 5. Tools
@@ -75,7 +75,7 @@ Description: `Read details on demand. what: plan, checkpoint (id CP4), session (
 
 | Param | Type | Description |
 | --- | --- | --- |
-| `what` | enum `plan`, `checkpoint`, `session`, `outline`, `cards`, `feedback`, `concepts`, `projects` | `What to read` |
+| `what` | enum `plan`, `checkpoint`, `session`, `outline`, `cards`, `feedback`, `concepts`, `projects`, `prompt` | `What to read` |
 | `project` | string, optional | `Project slug or title` |
 | `id` | string, optional, ≤ 20 | `CP4, S7 or source short name` |
 | `limit` | int 1–50, optional | `Max items` |
@@ -267,6 +267,49 @@ Description: `Approve or reject proposals by number, only after the user says so
 
 Behavior: for each number, look up the pending proposal of this owner; approve through RPC `approve_proposal` (it sets `user_id` from the proposal), reject through `reject_proposal`. Continue past a failed one and report it. Output: `approved P12, P14; rejected P13` (+ `P9 not pending`).
 
+### 5.15 `set_prompt` (write)
+Description: `Save the user's standing instructions (all chats, or one project). Use when they say always/never/from now on.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `scope` | string | `all, or a project slug or title` |
+| `text` | string ≤ 2000 | `Instructions in the user's words` |
+| `mode` | enum `replace`, `append`, `clear`, optional | `Default append` |
+
+Writes `settings.master_prompt` (scope `all`, ≤ 2000) or `projects.prompt` (≤ 1000). `append` adds a new line. Output: `saved for all chats (412 chars). Undo: A57`. `get(what=prompt)` returns both texts.
+
+### 5.16 `history` (read)
+Description: `List recent changes (A-numbers) from chats and the app, to find something to undo.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `project` | string, optional | `Only this project` |
+| `limit` | int 1–30, optional | `Default 10` |
+
+Output: one line per action, newest first: `A57 29 Oct 23:58 claude set_prompt: saved for all chats` with `(undone by A58)` when undone. Reviews are folded into one line per day (`A40–A52 app 13 reviews`).
+
+### 5.17 `undo` (write)
+Description: `Reverse a change by its A-number (from history or a tool's reply). Undoing an undo restores it.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `action` | int | `A-number to reverse` |
+| `force` | boolean, optional | `Also remove later items that depend on it` |
+
+Calls `undo_action` (`data.md` §5.8). Use `force` only after the user agrees to the listed side effects. Output: `undid A57 (as A58)` or the conflict message.
+
+### 5.18 `remove` (write)
+Description: `Remove a card, project, checkpoint, session record or proposal the user no longer wants. Always reversible with undo.`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `target` | string | `N7, P12, CP4 or S8 (with project), or a project slug` |
+| `project` | string, optional | `Project for CP and S codes` |
+
+Behavior: a card → `notes.status = 'deleted'`; a project → `status = 'archived'`; a pending proposal → rejected; a checkpoint or session → removed through `undo`-safe deletes inside one action (its rows stay in the action log). Output: `removed N7. Undo: A61`.
+
+All write tools end their output with `Undo: A<n>` (the action they created), so the user can reverse any step by saying "undo that".
+
 ## 6. Tutor rules
 
 ### 6.1 Default study rules (used when `settings.tutor_rules` is null)
@@ -341,7 +384,8 @@ Field rules:
 - `FIX`: up to 3 unresolved misconceptions, newest first.
 - `WARM`: up to 2 checkpoints of this project with UI status `revisit` and a `recheck_prompt`, oldest due first.
 - `SRC`: the NOW checkpoint's pages and source; skip if unknown. For a source with no stored pages (`page_count = 0`): `SRC <short> "<title>" pp <pages>: attached in chat`.
-- `brief: true` removes `STYLE` and `RULES`.
+- `OWNER`: when `settings.master_prompt` or the project's `prompt` is set, every packet (study, menu, planning, mix) starts with a block `OWNER (follow first; overrides STYLE and RULES)` followed by the master prompt, then the project prompt. It does not count toward the 2,400-character budget.
+- `brief: true` removes `STYLE` and `RULES` (`OWNER` stays).
 - Budget: if the packet exceeds 2,400 chars, shorten in this order: `LAST` summary, `FIX`, `WARM`, `GOAL`.
 
 ### 8.2 Example (demo data, about 1,100 characters)
@@ -409,11 +453,13 @@ Steps:
 8. `propose_cards` with 2 cards → 2 pending proposals; `direct: true` with 1 card → 1 note exists.
 9. `end_session` → session ended with minutes set.
 10. `create_project` → a planning project; `proposals` lists the pending cards as `P<n>`; `decide(approve=[n])` approves one → the note exists.
-11. `tools/list` (built in-process) total JSON ≤ 10,500 chars.
+11. `set_prompt(scope=all, text=…)` → `resume` starts with `OWNER` and that text; `history` lists it as the newest action; `undo` it → `resume` no longer shows it; `undo` the undo → it is back.
+12. `remove` a card → it no longer appears in `get(what=cards)`; `undo` → it is back.
+13. `tools/list` (built in-process) total JSON ≤ 12,500 chars.
 
 `tests/mcp/smoke.mjs` (Node 22, no dependencies) reads `MCP_URL` from the environment and:
 1. Calls `MCP_URL + '/selftest'` and fails if `ok` is false.
-2. Sends JSON-RPC `initialize`, then `tools/list` to `MCP_URL` with header `Accept: application/json, text/event-stream`; checks 14 tools with the names in §5 and the size limit.
+2. Sends JSON-RPC `initialize`, then `tools/list` to `MCP_URL` with header `Accept: application/json, text/event-stream`; checks 18 tools with the names in §5 and the size limit.
 3. Prints one line per step and exits non-zero on failure.
 
 ## 10. Owner setup (shown in Lemma › Settings and in `docs/guide.md`)
