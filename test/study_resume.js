@@ -128,8 +128,26 @@ function load(){
  assert.equal(resumed.lastAttempt.payload.text,
   'My compactness proof, unfinished at the finite subcover');
  assert.equal(resumed.hintLevel,2);
+ assert.equal(resumed.lastHint.eventId,ID2,'hint identity survives reload');
+ assert.equal(resumed.lastHint.level,2);
+ assert.equal(resumed.lastHint.createdAt,'timestamp');
  assert.equal(resumed.lastAttempt.eventId,ID1);
  assert.deepEqual([...resumed.sourceRefs],['synthetic:chapter-3']);
+ // A different hint at the SAME level must be observable by its event UUID.
+ // Tutor consent to the previous hint cannot be reused just because the
+ // integer level remains unchanged across two devices.
+ const foreignHintId='00000000-0000-4000-8000-000000000020';
+ events.push({event_id:foreignHintId,seq:3,event_type:'hint',created_at:'later',
+  payload:{checkpoint_id:'cp-3',plan_revision:3,
+   data:{text:'A different hint from another device',level:2}}});
+ const changedHint=await reload.activeContext({planId:PLAN,checkpointId:'cp-3'});
+ assert.equal(changedHint.hintLevel,2,'same numeric level must be preserved');
+ assert.equal(changedHint.lastHint.eventId,foreignHintId,
+  'latest hint UUID, not just level, identifies the reviewed context');
+ assert.equal(changedHint.lastHint.createdAt,'later');
+ events.pop();
+ assert.equal((await reload.activeContext({planId:PLAN,checkpointId:'cp-3'})).lastHint.eventId,ID2,
+  'removing synthetic concurrent hint restores original immutable identity');
  assert.equal(events.length,2,'rendering/resuming cannot append evidence');
  const manual=await reload.activeContext({planId:PLAN,checkpointId:'cp-12'});
  assert.equal(manual.checkpoint.id,'cp-12','student can choose any approved checkpoint');
@@ -244,6 +262,7 @@ function load(){
   'a checkpoint can remain explicitly in progress after amendment');
  assert.equal(amended.lastAttempt,null,'old-revision proof must not appear as current');
  assert.equal(amended.hintLevel,0,'old-revision hint level must not carry over');
+ assert.equal(amended.lastHint,null,'old-revision hint event UUID is historical');
  assert.equal(amended.lastFeedback,null,'old-revision feedback is historical');
  assert.equal(amended.lastEvidence,null,'old-revision evidence is historical');
  assert.equal(amended.nextAction,null,'old-revision next action is historical');

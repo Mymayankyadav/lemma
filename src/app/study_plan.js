@@ -263,6 +263,12 @@ const StudyPlan = (() => {
         payload:attempt.payload.data,createdAt:attempt.created_at
       } : null,
       hintLevel:hint ? Math.max(0,hint.payload.data.level) : 0,
+      // The numeric level alone cannot identify a hint: two devices may
+      // record different hints at the same level. Expose the already-read
+      // immutable event ID so tutor handoffs can reject stale same-level
+      // context without fetching or rewriting any additional evidence.
+      lastHint:hint ? {eventId:hint.event_id,level:hint.payload.data.level,
+        createdAt:hint.created_at} : null,
       lastFeedback:detail('feedback'),lastEvidence:detail('mastery_evidence'),
       nextAction:detail('session_note'),
       checkpoints:choice.map(cp=>({id:cp.id,title:cp.title,status:cp.status})),
