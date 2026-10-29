@@ -377,6 +377,8 @@ Description: `Record the user's answers to review cards: again, hard, good or ea
 
 Computes the next state with the same FSRS-6 engine as the app (`supabase/functions/_shared/fsrs.js`, an exact copy of `src/lib/fsrs/fsrs.js`; a unit test fails if they differ) and records each answer through `record_review`. Output: `graded 5: next N7.1 in 4d, N9.1 in 10m… 18 still due. Undo: A73`.
 
+Every tool output (read and write) ends with one `NEXT:` line naming the expected next step, because chat models follow the latest instruction best in long chats: `resume` → `NEXT: start_session, then WARM questions`; `start_session` → `NEXT: pretest or continue step <n>; save_progress at each step`; `save_progress` → `NEXT: <next_question or next step>; save again within ~6 messages`; `propose_*` → `NEXT: tell the user it waits for approval`; `end_session` → `NEXT: stop`; `review` → `NEXT: show only the first front`; `grade` → `NEXT: next card or review again`. Keep each ≤ 100 chars.
+
 All write tools end their output with `Undo: A<n>` (the action they created), so the user can reverse any step by saying "undo that".
 
 ## 6. Tutor rules
