@@ -1,3 +1,8 @@
+## P5o claim — retain proof state across busy checkpoints (29 October 2026)
+
+- Claim `chat-20261029-d-checkpoint-proof-history`, branch `lane-d/plan-01-checkpoint-proof-history`, base `5ec8ff73b713de577a9611fec65bf66ea6c0d920`. D-owned `src/app/study_plan.js`, D/stack tests and this handoff. No production writes, new migration, readiness changes or approvals.
+- Active-context reads truncate the session-wide event stream to 50 before selecting a checkpoint, so activity on unrelated checkpoints can hide its unfinished proof and hint. Preserve session-wide selection heuristic but fetch the selected checkpoint's evidence independently with owner/session constraints, preserve revision/session identity guards, and demonstrate >50 newer unrelated events on real disposable local HTTP and synthetic tests. Investigate same-checkpoint/revision truncation explicitly; never claim unbounded history. Gate exact-head regression, D ownership and local-stack CI.
+
 ## P5n — Study readiness activation
 
 - **Claim:** `owner-20261029-d-activation-394904c55020`, heartbeat 2026-10-29T03:46Z, branch `lane-d/plan-01-p5n-study-ready`, base `9557485a471dd8d6c95f0e9eaacaacc87fb7446f`. First-use workflow #170 and checkpoint selection/assessment #171 merged after exact-head regression, guard and real local Supabase SUCCESS. Current mobile light/dark screenshots directly inspected. No other D claim.
