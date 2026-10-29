@@ -212,10 +212,10 @@ function readyFixture(html) {
     const matches = [...slice.matchAll(flag)];
     if (matches.length !== 1) throw Error('Missing or ambiguous ready-fixture flag');
     return source.slice(0, start) +
-      slice.replace(flag, s => s.replace(/\\bfalse\\b/, 'true')) + source.slice(end);
+      slice.replace(flag, s => s.replace(/false/, 'true')) + source.slice(end);
   }
   const plan = enable(html, '/* ===== study_plan.js ===== */',
-    '/* ===== tutor_handoff.js ===== */', /return \\{ ready:(?:true|false), activeContext/g);
+    '/* ===== tutor_handoff.js ===== */', /return [{] ready:(?:true|false), activeContext/g);
   return enable(plan, '/* ===== view_study.js ===== */',
     '/* ===== main.js ===== */', /const ready = (?:true|false);/g);
 }
