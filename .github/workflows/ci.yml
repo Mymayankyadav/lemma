@@ -1,4 +1,5 @@
 name: CI
+# FIX #255: isolated PostgreSQL acceptance gate follows in this PR.
 on:
   pull_request:
   push:
