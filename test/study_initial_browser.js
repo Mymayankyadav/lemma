@@ -54,6 +54,7 @@ async function fillPlan(page){
    assert.equal(await page.getByRole('button',{name:'Approve this reviewed plan'}).count(),0);
    await page.reload();
    await page.getByRole('button',{name:/^Resume draft:/}).click();
+   await page.getByRole('button',{name:'Review saved plan',exact:true}).waitFor();
    assert.equal(await page.getByRole('textbox',{name:'Plan title',exact:true}).inputValue(),'Topology <script> is plain text');
    await page.getByRole('button',{name:'Review saved plan',exact:true}).click();
    const approve=page.getByRole('button',{name:'Approve this reviewed plan',exact:true});
