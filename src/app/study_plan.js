@@ -133,12 +133,12 @@ const StudyPlan = (() => {
     // Keep historical ledger rows intact, but do not display evidence
     // explicitly pinned to an older approved plan as current-revision work.
     // Legacy events without a revision remain readable for compatibility.
-    const currentEvents = recent.filter(e =>
+    const recentCurrentEvents = recent.filter(e =>
       e.payload?.plan_revision == null ||
       e.payload.plan_revision === plan.revision);
     const resumable = new Set(['attempt','proof_step','hint','session_note']);
     const incomplete = new Set(['not_started','review_due','blocked','in_progress']);
-    const latestWork = currentEvents.find(e => resumable.has(e.event_type) &&
+    const latestWork = recentCurrentEvents.find(e => resumable.has(e.event_type) &&
       typeof e.payload?.checkpoint_id === 'string' &&
       choice.some(cp => cp.id === e.payload.checkpoint_id &&
         incomplete.has(cp.status)));
@@ -148,6 +148,44 @@ const StudyPlan = (() => {
       choice.find(cp => cp.status === 'not_started') ||
       choice.find(cp => cp.status === 'blocked');
     if (!selected) return null;
+    // Find the newest eligible evidence per kind using checkpoint-scoped,
+    // descending keyset pages. Another checkpoint's events cannot evict this
+    // proof, and a long feedback history cannot hide an older attempt/hint.
+    // Each request is bounded; never silently truncate the selected history.
+    const currentEvents = [];
+    let beforeSeq = null;
+    while (sessionId) {
+      const page = await list(ctx,'learning_events',
+        'event_id,event_type,payload,seq,created_at',q => {
+          q = q.eq('session_id',sessionId).eq('payload->>checkpoint_id',selected.id)
+            .order('seq',{ascending:false}).limit(50);
+          return beforeSeq === null ? q : q.lt('seq',beforeSeq);
+        });
+      // Keep at most one event for each displayed kind, even when a long
+      // history must be scanned to establish that another kind is absent.
+      for (const e of page) {
+        if (e.payload?.checkpoint_id !== selected.id ||
+            (e.payload?.plan_revision != null && e.payload.plan_revision !== plan.revision)) continue;
+        const type = e.event_type;
+        const proof = type === 'attempt' || type === 'proof_step';
+        if (proof && !currentEvents.some(x => x.event_type === 'attempt' || x.event_type === 'proof_step'))
+          currentEvents.push(e);
+        else if (type === 'hint' && Number.isSafeInteger(e.payload?.data?.level) &&
+                 !currentEvents.some(x => x.event_type === 'hint')) currentEvents.push(e);
+        else if (['feedback','mastery_evidence','session_note'].includes(type) &&
+                 !currentEvents.some(x => x.event_type === type)) currentEvents.push(e);
+      }
+      const has = type => currentEvents.some(e => e.event_type === type);
+      const complete = (has('attempt') || has('proof_step')) &&
+        currentEvents.some(e => e.event_type === 'hint' && Number.isSafeInteger(e.payload?.data?.level)) &&
+        has('feedback') && has('mastery_evidence') && has('session_note');
+      if (page.length < 50 || complete) break;
+      const last = page[page.length - 1]?.seq;
+      if (!Number.isSafeInteger(last) || last < 1 ||
+          (beforeSeq !== null && last >= beforeSeq))
+        throw new Error('Invalid checkpoint history cursor; reload checkpoint');
+      beforeSeq = last;
+    }
     const attempt = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&
       (e.event_type === 'attempt' || e.event_type === 'proof_step'));
     const hint = currentEvents.find(e => e.payload?.checkpoint_id === selected.id &&

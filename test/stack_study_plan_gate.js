@@ -57,10 +57,11 @@ async function main(){
  // Mirrors StudyPlan's chainable contract without mocking any server answer.
  const adapter=(user)=>({
   from(table){
-   const fields={table,selected:'*',filters:[],order:null,limit:null};
+   const fields={table,selected:'*',filters:[],less:[],order:null,limit:null};
    const query={
     select(cols){fields.selected=cols;return query},
     eq(k,v){fields.filters.push([k,v]);return query},
+    lt(k,v){fields.less.push([k,v]);return query},
     order(k,opts){fields.order=k+'.'+(opts?.ascending===false?'desc':'asc');return query},
     limit(n){fields.limit=n;return query},
     setHeader(k,v){
@@ -68,6 +69,7 @@ async function main(){
      assert.equal(v,'Bearer '+user.token);
      const qs=new URLSearchParams({select:fields.selected});
      for(const [name,val] of fields.filters)qs.append(name,'eq.'+val);
+     for(const [name,val] of fields.less)qs.append(name,'lt.'+val);
      if(fields.order)qs.set('order',fields.order);
      if(fields.limit!=null)qs.set('limit',fields.limit);
      return call('/rest/v1/'+fields.table+'?'+qs,user.token)
@@ -210,6 +212,17 @@ async function main(){
  assert.equal(allEvents.length,9,'2 checkpoints, 2 explicit demonstrations and amendment resume produce exactly nine distinct events');
  assert.deepEqual(await must('/rest/v1/learning_events?select=event_id&session_id=eq.'+first.sessionId,B.token),[],
   'other owner cannot read proof history after amendment');
+ // Greater than the old session-wide 50-event window, on another checkpoint.
+ for(let i=0;i<51;i++)await write(reload(A),'proof-4','session_note',
+  {text:'Unrelated checkpoint activity '+i},randomUUID(),2);
+ const retained=await reload(A).activeContext({planId:planA,checkpointId:'proof-7'});
+ assert.equal(retained.lastAttempt.eventId,newStepId,'selected proof survives unrelated activity');
+ assert.equal(retained.hintLevel,3,'selected hint survives unrelated activity');
+ for(let i=0;i<51;i++)await write(reload(A),'proof-7','feedback',
+  {text:'Additional feedback '+i},randomUUID(),2);
+ const longRetained=await reload(A).activeContext({planId:planA,checkpointId:'proof-7'});
+ assert.equal(longRetained.lastAttempt.eventId,newStepId,'proof survives same-checkpoint pagination');
+ assert.equal(longRetained.hintLevel,3,'hint survives same-checkpoint pagination');
  console.log('PASS PLAN-01 P5a real local: 12 checkpoints, two proofs, reload/hint resume, accepted prerequisite amendment, unchanged evidence, stale rejection, idempotent retry and owner isolation');
 }
 if(require.main===module)main().catch(e=>{
