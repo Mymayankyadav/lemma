@@ -20,7 +20,7 @@ const HTML = fs.readFileSync(distHtml, 'utf8');
 const MARKER = '/* ===== main.js ===== */';
 if (!HTML.includes(MARKER)) throw new Error('UI test app marker missing');
 const TEST_HTML = HTML.replace(MARKER,
-  'window.__uiAcceptance = { get App() { return App; }, get Store() { return Store; }, get Sync() { return LemmaSync; }, get Account() { return LemmaAccount; }, get Bridge() { return LemmaCloudBridge; } };\n' + MARKER);
+  'window.__uiAcceptance = { get App() { return App; }, get Store() { return Store; }, get Sync() { return LemmaSync; }, get Account() { return LemmaAccount; }, get Bridge() { return LemmaCloudBridge; }, get studyReady() { return typeof StudyView !== \'undefined\' && StudyView.ready === true; } };\n' + MARKER);
 const MOCK = fs.readFileSync(path.join(__dirname, 'mock_claude.js'), 'utf8');
 const LIBS = {
   'katex.min.js': path.join(ROOT, 'node_modules/katex/dist/katex.min.js'),
@@ -183,7 +183,7 @@ async function shot(page, name, size, scheme) {
       if (size === 'mobile') {
         // Mobile navigation labels are part of the UI contract, not tooltips.
         const labels = await page.locator('.tabbar .tb-label:visible').allTextContents();
-        const studyReady = await page.evaluate(() => typeof StudyView !== 'undefined' && StudyView.ready === true);
+        const studyReady = await page.evaluate(() => window.__uiAcceptance.studyReady);
         const expected = studyReady ? ['Today','Study','Cards','New','Settings'] : ['Today','Cards','New','Settings'];
         if (labels.join('|') !== expected.join('|'))
           throw new Error('Mobile navigation labels missing or out of order: ' + labels.join(', '));
