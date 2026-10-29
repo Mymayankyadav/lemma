@@ -4,7 +4,9 @@
 - **Cause:** Tutor staging supplies `title/objective` from optional top-level proposal `snapshot`; an existing plan snapshot only contains `checkpoints`, so both fields are blank in IndexedDB. Generic approval insists on a plan title.
 - **Scope:** D-owned `src/app/study_plan.js`, `src/app/view_study.js`, focused `test/study_*.js` and this handoff. For amendments only, inherit omitted plan metadata from the exact published revision at the *review/approval* boundary. Preserve the owner's already-staged local draft and existing reviewed checkpoint-only diff; do not autoapprove, submit, rebase, invent a new proposal ID or change initial-plan rules.
 - **Gate:** real owner-local missing-title repro and regression, stale/owner/offline guards, stage/review/approve without RPC, explicit submit preserved, D ownership, full exact-head regression/local stack, deployment/live smoke before reporting fixed.
-- **Next action:** implement regression and bounded fix, confirm exact-head CI, merge only green; owner must explicitly re-review and approve on live app after deployment.
+- **Implemented:** D review fetches pinned server `title/objective` with owner and revision guard and rechecks the snapshot, then student-click approval carries the reviewed baseline through the same local draft CAS only if the unchanged metadata was missing. Existing draft UUID/local revision, original per-checkpoint snapshot and separate publish click are preserved. Bad/missing reviewed metadata fails closed. Live owner screenshot's error is reproduced by the title-less draft fixture.
+- **Verification pending:** exact PR-head regression including D lane guard, local Supabase, and Pages/live smoke. No production user data touched.
+- **Next action:** confirm exact-head green CI, merge then verify main deployment; owner must explicitly re-review and approve the *existing* local draft in Chrome.
 
 ## P5t — one-click first checkpoint starter instead of hand-written JSON (29 October 2026)
 
