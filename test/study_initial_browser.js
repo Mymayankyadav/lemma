@@ -8,13 +8,14 @@ const css=fs.readFileSync('src/app.css','utf8')+'\n'+fs.readFileSync('src/styles
 const source=['util','study_plan','view_study'].map(name=>fs.readFileSync('src/app/'+name+'.js','utf8')).join('\n');
 const fixture=`
 window.__owner='${A}';window.__revision=2;window.__writes=[];window.__lost=false;
-const App={workspaceRevision:1,workspaceBlocked:false,go(route){window.__route=route}};
+const App={workspaceRevision:1,workspaceBlocked:false,go(route,params){window.__route=route;window.__params=params;if(route==='study')window.__mount(params)}};
 const client={from(table){const q={select(){return q},eq(){return q},order(){return q},limit(){return q},setHeader(){
  const plan=JSON.parse(localStorage.getItem('published-'+window.__owner)||'null');
  const rows=!plan?[]:table==='study_plans'?[{id:plan.p_plan_id,revision:1}]:
   table==='study_plan_versions'?[{context_id:plan.p_context_id,context_revision:2,snapshot:plan.p_snapshot}]:[];
  return Promise.resolve({data:rows})}};return q},
- rpc(name,args){window.__writes.push({name,args});return {setHeader(){
+ rpc(name,args){if(name==='record_study_event')return {setHeader(){return Promise.reject(Error('lost evidence response'))}};
+ window.__writes.push({name,args});return {setHeader(){
   localStorage.setItem('published-'+window.__owner,JSON.stringify(args));
   const log=JSON.parse(localStorage.getItem('requests')||'[]');log.push(args);localStorage.setItem('requests',JSON.stringify(log));
   return window.__lost?Promise.reject(Error('response lost')):Promise.resolve({data:1})}}}};
@@ -22,8 +23,8 @@ const LemmaAccount={client,get user(){return window.__owner?{id:window.__owner}:
 const LemmaCloud={async accountToken(){return 'synthetic-local-token'}};
 const LemmaCloudBridge={async readAcceptedContext(id){return {context_id:id,revision:window.__revision}}};
 `;
-const html='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+css+'</style></head><body><main id="app"></main><script>'+fixture+source+
- '\nwindow.__study=StudyPlan;window.__mount=()=>document.querySelector("#app").replaceChildren(StudyView.render());window.__mount();</script></body></html>';
+const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>'+css+'</style></head><body><main id="app"></main><script>'+fixture+source+
+ '\nwindow.__study=StudyPlan;window.__mount=(params)=>document.querySelector("#app").replaceChildren(StudyView.render(params));window.__mount();</script></body></html>';
 const snapshot={checkpoints:Array.from({length:12},(_,i)=>({checkpoint_id:'proof-'+(i+1),
  title:'Proof checkpoint '+(i+1),objective:'Prove lemma '+(i+1),
  prerequisite_checkpoint_ids:i?['proof-'+i]:[],source_refs:['notes:3.2'],
@@ -97,6 +98,26 @@ async function fillPlan(page){
    assert.equal(writes[0].p_context_id,C);assert.equal(writes[0].p_expected_revision,0);
    await page.getByRole('button',{name:'Open published checkpoint'}).click();
    assert.equal(await page.evaluate(()=>window.__route),'study');
+   await page.getByRole('heading',{name:'Proof checkpoint 1',exact:true}).waitFor();
+   assert.equal(await page.getByRole('combobox',{name:'Approved checkpoint'}).locator('option').count(),12);
+   assert.match(await page.locator('.study-summary').textContent(),/Justify each implication/);
+   const proof=page.getByRole('textbox',{name:'Your unfinished proof',exact:true});
+   await proof.fill('Unsubmitted observation');
+   await page.getByRole('combobox',{name:'Approved checkpoint'}).selectOption('proof-12');
+   assert.equal(await proof.inputValue(),'Unsubmitted observation');
+   assert.equal(await page.getByRole('combobox',{name:'Approved checkpoint'}).inputValue(),'proof-1');
+   await proof.fill('');
+   await page.getByRole('combobox',{name:'Approved checkpoint'}).selectOption('proof-12');
+   await page.getByRole('heading',{name:'Proof checkpoint 12',exact:true}).waitFor();
+   assert.match(await page.locator('.study-summary').textContent(),/Give a proof without notes/);
+   assert.equal((await page.evaluate(()=>JSON.parse(localStorage.getItem('requests')))).length,2,'checkpoint selection never publishes or writes evidence');
+   await page.screenshot({path:'test-output/ui/study-checkpoint-selection-mobile-'+scheme+'.png',fullPage:true});
+   await proof.fill('An unconfirmed proof observation');
+   await page.getByRole('button',{name:'Save proof attempt',exact:true}).click();
+   await page.waitForFunction(()=>[...document.querySelectorAll('.study-write-status')].some(node=>node.textContent.includes('Not confirmed:')));
+   await proof.fill('');
+   await page.getByRole('combobox',{name:'Approved checkpoint'}).selectOption('proof-1');
+   assert.equal(await page.getByRole('combobox',{name:'Approved checkpoint'}).inputValue(),'proof-12','clearing the editor cannot discard an unconfirmed event retry ID');
    // Same browser storage cannot reveal another owner's local drafts.
    await page.evaluate(owner=>{window.__owner=owner;window.__mount()},B);
    await page.getByRole('heading',{name:'Create your first study plan'}).waitFor();

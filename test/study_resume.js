@@ -128,6 +128,14 @@ function load(){
  assert.equal(resumed.lastAttempt.eventId,ID1);
  assert.deepEqual([...resumed.sourceRefs],['synthetic:chapter-3']);
  assert.equal(events.length,2,'rendering/resuming cannot append evidence');
+ const manual=await reload.activeContext({planId:PLAN,checkpointId:'cp-12'});
+ assert.equal(manual.checkpoint.id,'cp-12','student can choose any approved checkpoint');
+ assert.equal(manual.lastAttempt,null,'selection must not inherit another checkpoint proof');
+ assert.equal(manual.checkpoints.length,12);
+ assert.equal((await reload.activeContext({checkpointId:'cp-3'})).lastAttempt.eventId,ID1);
+ await assert.rejects(reload.activeContext({checkpointId:'unknown'}),/not in the current approved plan/);
+ await assert.rejects(reload.activeContext({planId:NEW_PLAN,checkpointId:'cp-3'}),/changed/);
+ assert.equal(events.length,2,'explicit checkpoint selection is read-only');
  // Two demonstrated checkpoints: last proof activity for cp-7 takes focus.
  await reload.recordEvent({planId:PLAN,checkpointId:'cp-7',
   expectedPlanRevision:3,type:'proof_step',
@@ -382,3 +390,4 @@ function load(){
   'stable checkpoint remains resumable after late-race rejection');
  console.log('PASS PLAN-01 P5i: twelve checkpoints, plan/session/checkpoint races fail closed, immutable proof resume');
 })().catch(e=>{console.error('FAIL PLAN-01 P4c3: '+e.stack);process.exitCode=1});
+

@@ -63,6 +63,10 @@ async function main(){
  const versions=await must('/rest/v1/study_plan_versions?select=revision,request_id&plan_id=eq.'+planId,a.token);
  assert.equal(versions.length,1);assert.equal(versions[0].request_id,keyBefore);assert.equal(publishes,2);
  assert.equal((await api.activeContext()).checkpoint.id,'proof-1');
+ const chosen=await api.activeContext({planId,checkpointId:'proof-12'});
+ assert.equal(chosen.checkpoint.id,'proof-12');assert.equal(chosen.checkpoints.length,12);
+ assert.equal(chosen.checkpoint.masteryCriterion,'Every step justified');
+ assert.equal(chosen.checkpoint.assessmentPrompt,'Prove the lemma');
  assert.equal((await must('/rest/v1/study_plan_versions?select=revision&plan_id=eq.'+planId,b.token)).length,0);
  const foreign=randomUUID();await load(b).saveInitialPlanDraft(input(foreign));
  await assert.rejects(load(b).reviewInitialPlanDraft(foreign));assert.equal(publishes,2);
