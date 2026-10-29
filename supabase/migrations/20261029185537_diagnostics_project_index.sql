@@ -1,0 +1,1 @@
+-- DB-2 follow-up: cover the diagnostics project foreign key.
