@@ -145,6 +145,8 @@ async function nativeStudyZoom(mock,view) {
   window.LemmaAccount={user:{id:'00000000-0000-4000-8000-000000000001'}};
   window.App={workspaceRevision:1,workspaceBlocked:false,go(){}};
   window.__writes=[];
+  window.__handoffCalls=[];
+  window.TutorHandoff={ready:true,async open(value){window.__handoffCalls.push(value)}};
   window.__amendmentActions=[];
   window.__draftStatus='draft';
   window.StudyPlan={
@@ -203,6 +205,16 @@ async function nativeStudyZoom(mock,view) {
     window._StudyView.render({planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'})
   ));
   await page.getByRole('heading',{name:'Compactness checkpoint'}).waitFor();
+  // Synthetic ready tutor: click is explicit and carries the selected checkpoint.
+  const handoff=page.getByRole('button',{name:'Open tutor handoff'});
+  await handoff.click();
+  assert.deepEqual(await page.evaluate(()=>window.__handoffCalls),[{
+    planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'}]);
+  await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('Unsaved proof');
+  await handoff.click();
+  assert.equal(await page.evaluate(()=>window.__handoffCalls.length),1);
+  await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('');
+  assert.equal(await page.evaluate(()=>window.__writes.length),0);
   // Genuine computed-style contrast, not screenshot/color-name assumptions.
   // A D-owned readiness gate: both themes must keep deliberate proof and
   // amendment actions legible (disabled controls are tested separately).

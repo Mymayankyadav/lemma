@@ -513,6 +513,26 @@ const StudyView = (() => {
           h('label', {class:'study-field-label',text:entry.label}),
           input,continueButton,button,feedback));
       }
+      // The tutor lane owns readiness and consent; never expose the entry
+      // until its real cross-model acceptance has enabled that module.
+      if (typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === true &&
+          typeof TutorHandoff.open === 'function') {
+        const handoff=h('button',{type:'button',class:'btn',text:'Open tutor handoff'});
+        handoff.addEventListener('click',async()=>{
+          if (!valid() || handoff.disabled || TutorHandoff.ready !== true) return;
+          if (unconfirmedSaves.size || [...forms.querySelectorAll('textarea')].some(input=>input.value.trim())) {
+            message.textContent='Save or clear typed observations before opening a handoff. Unconfirmed saves must be retried first.';
+            return;
+          }
+          handoff.disabled=true;
+          try {
+            await TutorHandoff.open({planId:context.planId,checkpointId:cp.id});
+          } catch (error) {
+            if (valid()) message.textContent='Could not open tutor handoff: '+(error?.message || 'try again');
+          } finally {handoff.disabled=false;}
+        });
+        detail.append(handoff);
+      }
       fill(content,detail,
         h('p', {class:'study-note',text:
           'Only an explicit Save adds an event. Reading this screen never demonstrates mastery.'}),
