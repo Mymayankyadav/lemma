@@ -1,3 +1,9 @@
+## R12 claim — restore the normal URL after live Study deep-link smoke (29 October 2026)
+
+- Owner-directed claim `chat-20261029-f-study-hash-smoke`; branch `lane-f/release-live-study-hash`, base `ea56b3dfb38398f428f7d10926a61b3bc57501f6`. Study activation #172 merged after full PR gates; post-merge Pages deployed but [live smoke 40818578225](https://github.com/Mymayankyadav/lemma/actions/runs/40818578225) failed at create-card's reload waiting for Today.
+- The ready-Study smoke navigates to `#study`, clicks Back to Today, then tests local card creation. In-app navigation changes view without changing the URL fragment, so its later reload correctly boots the still-present `#study` and the smoke waits for the wrong page. Return explicitly to the normal root URL after the independent deep-link check, assert Today and empty fragment, then preserve the existing card/review persistence checks. No app or production data changes; anonymous live smoke remains independent.
+- Gate: exact-head F guard/regression and live workflow tests; merge corrective PR only on green, then verify exact-main deploy/live smoke and regression/local stack. Do not tag until all release gates pass.
+
 ## R11 release safety — fail closed on disconnected recovery controls (29 October 2026)
 
 - **Claim:** `automation-20261029-f-r11-recovery-guard`, heartbeat 2026-10-29T04:05Z; branch `lane-f/release-r11-recovery-source-guard`, base `main@0b0c3db`. F is unclaimed; B #163 owns the separately held production recovery activation, D #172 owns Study activation. Android remains paused.
