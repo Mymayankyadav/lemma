@@ -48,9 +48,12 @@ const record=x=>scope.Handoff.recordEventWithAudit(x);
   {...input,checkpointId:''}, {...input,expectedPlanRevision:0},
   {...input,type:'plan_approved'}, {...input,payload:null},
   {...input,payload:{constructor:{pollution:true}}},
-  {...input,payload:{text:'x'.repeat(14000)}}
+  {...input,payload:{level:1,text:'x'.repeat(14000)}}
  ];
  for(const bad of invalid)await assert.rejects(record(bad),/Invalid tutor study event|Invalid tutor handoff|payload limit/);
+ await assert.rejects(record({...input,payload:{}}),/Hint payload requires integer level/);
+ for(const level of [null,'1',-1,1.5,21])
+  await assert.rejects(record({...input,payload:{level}}),/Hint payload requires integer level/);
  assert.equal(calls.length,0,'invalid input must not reach server');
  const result=await record(input);
  assert.equal(result.event.eventId,EVENT);

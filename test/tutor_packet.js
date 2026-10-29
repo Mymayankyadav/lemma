@@ -39,6 +39,7 @@ const validReply = () => ({
   const context1 = await studyPlanMock.activeContext();
   const packet = api.exportPacket(context1);
   assert.ok(packet.markdown.includes('```json'));
+  assert.match(packet.markdown, /payload\.level must be an integer from 0 to 20/);
   assert.equal(packet.json.schema,'lemma.tutor_handoff.v1');
   assert.equal(packet.json.plan_revision,5);
   assert.equal(packet.json.context_revision,3);
@@ -104,6 +105,12 @@ const validReply = () => ({
   invalid({...valid,events:[{...valid.events[0],event_id:'not-a-uuid'}]},'event ID');
   invalid({...valid,events:[{...valid.events[0],type:'mastery_complete'}]},'unknown event');
   invalid({...valid,events:[{...valid.events[0],payload:'text'}]},'payload not JSON object');
+  for (const level of [undefined, null, '2', -1, 1.5, 21]) {
+    invalid({...valid,events:[{...valid.events[0],payload:{level}}]},'invalid hint level');
+  }
+  for (const level of [0, 20]) {
+    assert.equal(api.parseReply(JSON.stringify({...valid,events:[{...valid.events[0],payload:{level}}]})).ok,true);
+  }
   invalid({...valid,events:[{...valid.events[0],role:'system'}]},'untrusted event role');
   invalid({...valid,events:[valid.events[0],valid.events[0]]},'repeated event ID');
   invalid({...valid,events:[{...valid.events[0],payload:JSON.parse('{"__proto__":{"isAdmin":true}}')}]},'prototype pollution');
