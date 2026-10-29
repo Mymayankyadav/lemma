@@ -352,6 +352,89 @@ const StudyPlan = (() => {
   async function readPlanDraft(planId) {
     return draftTransaction(planId,false,row => row ? structuredClone(row) : null);
   }
+  // First-use intake is local staging, never publication or student consent.
+  function initialPlanInput(input) {
+    const data = draftInput(input);
+    if (data.expectedRevision !== 0 || !isUuid(data.contextId) ||
+        !revision(data.contextRevision) || !data.title.trim() || !data.objective.trim())
+      throw new Error('Initial plan needs a title, objective and accepted context revision');
+    const {snapshot} = snapshotGraph(data.snapshot);
+    for (const cp of snapshot.checkpoints) {
+      if (['title','objective','mastery_criterion','assessment_prompt'].some(k =>
+          typeof cp[k] !== 'string' || !cp[k].trim() || cp[k].length > 4000) ||
+          (cp.status != null && cp.status !== 'not_started') ||
+          !Array.isArray(cp.learning_tasks) || !cp.learning_tasks.length ||
+          cp.learning_tasks.length > 40 || cp.learning_tasks.some(x =>
+            typeof x !== 'string' || !x.trim() || x.length > 4000) ||
+          !Array.isArray(cp.source_refs) || cp.source_refs.length > 40 ||
+          cp.source_refs.some(x => typeof x !== 'string' || x.length > 500))
+        throw new Error('Initial checkpoints need tasks, assessment and criteria; no prior mastery');
+    }
+    return data;
+  }
+  async function saveInitialPlanDraft(input) {
+    return savePlanDraft(initialPlanInput(input));
+  }
+  async function listInitialPlanDrafts() {
+    const ctx = account(), db = await openDraftDB(ctx.userId);
+    try {
+      ctx.check();
+      const result = await new Promise((resolve,reject) => {
+        const tx = db.transaction('drafts','readonly'), found=[];
+        const request = tx.objectStore('drafts').openCursor();
+        request.onsuccess = () => {
+          try {
+            ctx.check();
+            const cursor = request.result;
+            if (!cursor || found.length === 20) return;
+            const row = cursor.value;
+            if (row.userId === ctx.userId && row.expectedRevision === 0)
+              found.push({planId:row.planId,title:row.title,status:row.status});
+            cursor.continue();
+          } catch (e) {tx.abort();reject(e);}
+        };
+        request.onerror = () => reject(new Error('Cannot list local plan drafts'));
+        tx.oncomplete = () => resolve(found);
+        tx.onabort = tx.onerror = () => reject(new Error('Local plan draft list interrupted'));
+      });
+      ctx.check();return result;
+    } finally {db.close();}
+  }
+  async function reviewInitialPlanDraft(planId) {
+    const ctx = account(), row = await readPlanDraft(planId);
+    ctx.check();
+    if (!row || row.status !== 'draft' || row.expectedRevision !== 0)
+      throw new Error('No unapproved initial plan draft to review');
+    const {status,userId,draftId,localRevision,createdAt,updatedAt,...input} = row;
+    initialPlanInput({...input,expectedLocalRevision:localRevision});
+    const existing = await list(ctx,'study_plans','id,revision',
+      q => q.eq('id',planId).limit(1));
+    if (existing.length) throw new Error('Initial plan ID is already published');
+    if (typeof LemmaCloudBridge === 'undefined' ||
+        typeof LemmaCloudBridge.readAcceptedContext !== 'function')
+      throw new Error('Accepted context unavailable');
+    const accepted = await LemmaCloudBridge.readAcceptedContext(row.contextId);
+    ctx.check();
+    if (!same(accepted?.context_id,row.contextId) || accepted.revision !== row.contextRevision)
+      throw new Error('Accepted context changed; create a new draft for review');
+    const current = await readPlanDraft(planId);
+    ctx.check();
+    if (canonical(current) !== canonical(row))
+      throw new Error('Plan draft changed; review again before approval');
+    return structuredClone(row);
+  }
+  async function approveInitialPlanDraft(planId,reviewed,studentApproved) {
+    if (studentApproved !== true) throw new Error('Explicit student approval required for a plan');
+    const ctx=account();
+    let pinned;
+    try {pinned=canonical(structuredClone(reviewed));}
+    catch (_) {throw new Error('Invalid reviewed initial plan');}
+    const current = await reviewInitialPlanDraft(planId);
+    ctx.check();
+    if (canonical(current) !== pinned)
+      throw new Error('Plan draft changed; review again before approval');
+    return approvePlanDraft(planId,current.localRevision,true);
+  }
   async function discardPlanDraft(planId,expectedLocalRevision) {
     if (!revision(expectedLocalRevision))
       throw new Error('Invalid local plan draft revision');
@@ -797,7 +880,9 @@ const StudyPlan = (() => {
     return draft.draftId;
   }
   return { ready:false, activeContext,recordEvent,proposeAmendment,
+    saveInitialPlanDraft,listInitialPlanDrafts,reviewInitialPlanDraft,approveInitialPlanDraft,
     savePlanDraft,readPlanDraft,discardPlanDraft,
     approvePlanDraft,submitApprovedPlanDraft,readPlanReceipt,diffPlanSnapshots,reviewPendingAmendment,
     reviewConflictedAmendment,restartConflictedAmendment,readConflictArchive };
 })();
+
