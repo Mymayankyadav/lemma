@@ -53,6 +53,8 @@ create table public.action_changes (
   unique(action_no, seq)
 );
 create index action_changes_row_idx on public.action_changes using btree (table_name, row_pk);
+create index actions_undoes_idx on public.actions(undoes);
+create index actions_undone_by_idx on public.actions(undone_by);
 create index actions_user_idx on public.actions(user_id, no desc);
 alter table public.actions enable row level security;
 alter table public.action_changes enable row level security;
