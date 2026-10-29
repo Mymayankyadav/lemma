@@ -1,3 +1,9 @@
+## P5t — one-click first checkpoint starter instead of hand-written JSON (29 October 2026)
+
+- **Claim:** `chat-20261029-d-p5t-first-plan-template`, branch `lane-d/plan-first-checkpoint-template`, base `main@71f5e61ca302d4055c9934ba1e023d3fc2dd5052`. User cannot complete the first Study checkpoint because onboarding exposes raw Plan snapshot JSON. Separate B #200 provides student-controlled accepted-context publication. No overlapping D PR at claim; E/F active in their own files.
+- **Scope:** D-owned `src/app/view_study.js`, `test/study_view_browser.js`, this handoff. Add explicitly clicked starter checkpoint template, editable advanced JSON behind details, retain existing Plan review/approval/submit and expected context validation. No automatic approval, saved plan, cloud write or plan readiness change on template click; never overwrite entered JSON. Existing approved draft/resume paths remain.
+- **Acceptance:** browser click fills graph and optional title/objective without writes, refuses overwriting a populated JSON, preserves 390px/desktop light/dark UI and 44px controls, then exact-head regression/D guard/local stack. No student approval or production data touched.
+
 ## P5s — expose current hint event provenance for tutor freshness (29 October 2026)
 
 - **Claim:** `automation-20261029-d-p5s-hint-provenance`; heartbeat 2026-10-29T10:16:24.721Z; branch `lane-d/plan-p5s-hint-event-provenance`, base `main@e3083bbc0a1a11e05d096edeb428fa84af277bb5`. Main regression/local Supabase/Pages/live smoke passed (40855654075/40855654250/40855654161/40855725400). No active D claim; B #163 held, C paused.
