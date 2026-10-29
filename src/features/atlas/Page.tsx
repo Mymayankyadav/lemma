@@ -96,7 +96,7 @@ export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams(),toast=useToast(),reduce=!!useReducedMotion();
  const query=useAtlas(),pin=usePinConcept(),svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior|null>(null);
  const [view,setView]=useState<ZoomTransform>({x:0,y:0,k:1});
- const viewRef=useRef(view),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const viewRef=useRef(view),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),longPressed=useRef<string|null>(null);
  const [positions,setPositions]=useState<Record<string,Point>>({}),[selectedId,setSelectedId]=useState<string|null>(null);
  const [filter,setFilter]=useState<Filter>('all'),[menuId,setMenuId]=useState<string|null>(null);
  const focus=params.get('focus');
@@ -175,12 +175,13 @@ export default function Page(){
  function onNodeDown(event:ReactPointerEvent<SVGGElement>,node:AtlasNode){
   if(event.pointerType==='mouse'&&event.button!==0)return;
   event.stopPropagation();event.currentTarget.setPointerCapture(event.pointerId);
+  longPressed.current=null;
   drag.current={pointerId:event.pointerId,id:node.id,startX:event.clientX,startY:event.clientY,
     original:positions[node.id]??{x:node.x,y:node.y},moved:false};
   clearTimer();
   if(node.pinX!==null&&node.pinY!==null){
    timer.current=setTimeout(()=>{
-    if(drag.current?.id===node.id&&!drag.current.moved){setMenuId(node.id);setSelectedId(node.id)}
+    if(drag.current?.id===node.id&&!drag.current.moved){longPressed.current=node.id;setMenuId(node.id);setSelectedId(node.id)}
    },650);
   }
  }
@@ -206,9 +207,10 @@ export default function Page(){
     onSuccess:()=>toast('Position pinned',{tone:'success'}),
     onError:(e)=>{setPositions(p=>{const next={...p};delete next[node.id];return next});toast(e.message||'Could not pin concept',{tone:'danger'})}
    });
-  } else selectNode(node.id);
+  } else if(longPressed.current!==node.id) selectNode(node.id);
+  longPressed.current=null;
  }
- function onNodeCancel(){clearTimer();drag.current=null}
+ function onNodeCancel(){clearTimer();drag.current=null;longPressed.current=null}
  function unpinNode(node:AtlasNode){
   setMenuId(null);
   pin.mutate({id:node.id,x:null,y:null},{
