@@ -1,0 +1,10 @@
+*,*::before,*::after{box-sizing:border-box}
+html{min-height:100%;background:var(--obsidian);scroll-behavior:smooth}
+body{min-width:320px;min-height:100vh;margin:0;background:var(--obsidian);color:var(--ink);font-family:var(--font-ui);font-size:15px;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--amber-hi);outline-offset:3px}
+::selection{background:var(--amber-tint-2);color:var(--ink)}
+#root{min-height:100vh;isolation:isolate}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
