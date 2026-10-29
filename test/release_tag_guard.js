@@ -70,11 +70,24 @@ function check(tagSha, mainSha, allRuns) {
     throw Error('Live Pages smoke did not verify the most recent deploy');
   return {sha:tagSha, deployRun:deploy.id, smokeRun:smoke.id};
 }
+// The tag workflow requests one page (per_page=100) filtered to the tag SHA.
+// GitHub includes total_count even when it truncates workflow_runs. An
+// incomplete page could omit an older malformed trusted run or a failed retry;
+// never treat that partial evidence as a complete release attestation.
+function checkInventory(tagSha, mainSha, inventory) {
+  if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory) ||
+      !Array.isArray(inventory.workflow_runs) ||
+      !Number.isSafeInteger(inventory.total_count) || inventory.total_count < 0 ||
+      inventory.total_count > 100 ||
+      inventory.total_count !== inventory.workflow_runs.length)
+    throw Error('Incomplete or malformed GitHub Actions run inventory; cannot attest release');
+  return check(tagSha, mainSha, inventory.workflow_runs);
+}
 if (require.main === module) {
   if (process.argv[2] === '--check') {
     if (process.argv.length !== 6) throw Error('Usage: release_tag_guard.js --check runs.json TAG_SHA MAIN_SHA');
     const runs = JSON.parse(fs.readFileSync(process.argv[3],'utf8'));
-    const accepted = check(process.argv[4],process.argv[5],runs.workflow_runs);
+    const accepted = checkInventory(process.argv[4],process.argv[5],runs);
     console.log('PASS tag/head and exact deployed Pages smoke: ' + accepted.sha +
       ' deploy=' + accepted.deployRun + ' smoke=' + accepted.smokeRun);
   } else if (process.argv.length === 2) {
@@ -89,6 +102,25 @@ if (require.main === module) {
     const manual = JSON.parse(JSON.stringify(runs)); manual[2].event='workflow_dispatch';
     assert.equal(check(sha,sha,manual).deployRun,3);
     const copy = x => JSON.parse(JSON.stringify(x));
+    // R20: the first GitHub Actions API page is not necessarily complete.
+    // The real --check path must validate total_count before trusting any run.
+    const inventory = { total_count:runs.length, workflow_runs:runs };
+    assert.equal(checkInventory(sha,sha,inventory).smokeRun,4);
+    assert.equal(checkInventory(sha,sha,{...inventory,workflow_runs:copy(runs)}).deployRun,3);
+    for (const count of [undefined,null,'4',NaN,-1,3,5,101,Number.MAX_SAFE_INTEGER+1]) {
+      assert.throws(()=>checkInventory(sha,sha,{...inventory,total_count:count}),
+        /Incomplete or malformed.*inventory/,
+        'invalid or truncated GitHub inventory count must fail closed: ' + count);
+    }
+    assert.throws(()=>checkInventory(sha,sha,{workflow_runs:runs}),/Incomplete or malformed/);
+    assert.throws(()=>checkInventory(sha,sha,{total_count:4,workflow_runs:null}),/Incomplete or malformed/);
+    assert.throws(()=>checkInventory(sha,sha,null),/Incomplete or malformed/);
+    assert.throws(()=>checkInventory(sha,sha,[]),/Incomplete or malformed/);
+    assert.throws(()=>checkInventory(sha,sha,{total_count:4,workflow_runs:runs.slice(0,3)}),
+      /Incomplete or malformed/, 'truncated first page cannot certify older trusted history');
+    assert.throws(()=>checkInventory(sha,sha,{total_count:101,workflow_runs:runs}),
+      /Incomplete or malformed/, 'more than one page must fail closed');
+
     assert.throws(()=>check('b'.repeat(40),sha,runs),/current main HEAD/);
     assert.throws(()=>check(sha,sha,runs.slice(0,3)),/live Pages smoke/i);
     let bad=copy(runs);bad[3].head_branch='feature';
@@ -179,4 +211,4 @@ if (require.main === module) {
     console.log('ok: release tag exact-current-main, canonical workflow paths, latest trusted green runs and post-deploy smoke');
   } else throw Error('Unknown tag guard arguments');
 }
-module.exports={check};
+module.exports={check,checkInventory};
