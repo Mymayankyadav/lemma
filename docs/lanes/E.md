@@ -1,3 +1,11 @@
+## T3j — reject unproven new session after uncertain tutor event (29 October 2026)
+
+- **Claim:** `automation-20261029-e-t3j-session-provenance`; heartbeat 2026-10-29T10:01:32.708Z; branch `lane-e/tutor-t3j-unconfirmed-session-provenance`, base `main@6e0d0b4b7d7b4aa8b976604c31e3979b472d6304`. Fresh main regression/local Supabase/Pages/live smoke all SUCCESS (40847516804/40847516837/40847516947/40847581423). Only B #163 is open and held; no competing E claim. Android remains paused.
+- **Defect:** an uncertain first tutor event can leave the reviewed packet with no session ID. The existing retry guard treats any new active session as self-caused when a prior event UUID was attempted, even if the new session has no evidence of that UUID. Another device can start a different session and reach the same hint level; a retry would then reuse the old consent against the new session.
+- **Scope:** E-owned `src/app/tutor_handoff.js`, `test/tutor_record.js`, and this handoff only. Require either a confirmed RPC session receipt or an original attempted event UUID visible in the freshly read active session. When neither exists, fail closed with selections and original retry IDs intact; preserve confirmed multi-event batches and recoverable lost-response proof retries. No readiness change, migration, production writes, card/plan approvals, or Carrel/Android changes.
+- **Gate:** focused tutor record regression, syntax/build, E ownership guard, full exact-head regression and applicable local Supabase CI; review diff, merge only green. T4 real student-operated cross-model acceptance and B authenticated recovery remain separately blocked.
+- **Next:** implement and verify the new-session provenance check and negative retry fixture, then inspect PR-head CI.
+
 ## T4a claim — explicit consent-gated acceptance preview contract (29 October 2026)
 
 - Claim `chat-20261029-e-t4a-preview`; baseline `main@f40b6e4d` with current main regression/local Supabase/Pages/live smoke SUCCESS. Branch `lane-e/tutor-01-t4-acceptance-entry-contract`. E-owned files only: `src/app/tutor_handoff.js`, `test/tutor_*.js`, `docs/TUTOR_HANDOFF.md`, this handoff. Other work: B #192; B #163 held. No overlapping E PR.
