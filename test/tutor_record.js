@@ -10,7 +10,7 @@ const E2='00000000-0000-4000-8000-000000000003';
 const C1='00000000-0000-4000-8000-000000000004';
 const owner='00000000-0000-4000-8000-000000000005';
 const cp='compactness-open-cover-proof';
-let dialog, revision=3, activeCheckpoint=cp, failSecond=false;
+let dialog, revision=3, activeCheckpoint=cp, failSecond=false, afterContextRead=null;
 const calls=[];
 const app={workspaceRevision:1,workspaceBlocked:false};
 let signalIdentityChange=null;
@@ -32,9 +32,17 @@ const client={rpc(name,args){
 }};
 account.client=client;
 const plan={
- async activeContext(){return {planId:A,planRevision:revision,contextId:null,contextRevision:null,
-  checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:'in_progress'},
-  hintLevel:1,sourceRefs:[],lastAttempt:{eventId:E1,text:'Partial proof'}};},
+ async activeContext(){
+  const snapshot={planId:A,planRevision:revision,contextId:null,contextRevision:null,
+   checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:'in_progress'},
+   hintLevel:1,sourceRefs:[],lastAttempt:{eventId:E1,text:'Partial proof'}};
+  if(afterContextRead){
+   const change=afterContextRead;afterContextRead=null;
+   await Promise.resolve();
+   change();
+  }
+  return snapshot;
+ },
  async recordEvent(){throw Error('Unpaired StudyPlan.recordEvent must never be used');}
 };
 function h(tag,attrs,...kids){
@@ -165,6 +173,31 @@ async function open(){
  assert.equal(calls.length,4,'same-owner relogin cannot reuse old sheet selection');
  assert.match(x.status.textContent,/account or workspace changed/);
 
+ // T3e: same-owner relogin DURING the asynchronous plan read must not
+ // reuse the old sheet's selected-event consent with the new identity epoch.
+ x=await open();select(0);
+ afterContextRead=()=>{signalIdentityChange();};
+ await x.save.events.click();
+ assert.equal(calls.length,4,'post-read relogin cannot submit old tutor consent');
+ assert.match(x.status.textContent,/account or workspace changed/);
+ assert.equal(x.save.disabled,false,'failed selection retains its original event ID');
+
+ // A workspace rotation during the same await must also fail before RPC.
+ x=await open();select(0);
+ afterContextRead=()=>{app.workspaceRevision=2;};
+ await x.save.events.click();
+ assert.equal(calls.length,4,'post-read workspace switch cannot submit old tutor consent');
+ assert.match(x.status.textContent,/account or workspace changed/);
+ app.workspaceRevision=1;
+
+ // A changed account during the await must never submit the event either.
+ x=await open();select(0);
+ afterContextRead=()=>{account.user={id:'00000000-0000-4000-8000-000000000006'};};
+ await x.save.events.click();
+ assert.equal(calls.length,4,'post-read account switch cannot submit old tutor consent');
+ assert.match(x.status.textContent,/account or workspace changed/);
+ account.user={id:owner};
+
  // Editing the reply invalidates review/consent and cannot keep old IDs.
  x=await open();select(0);
  x.input.value='{}';
@@ -180,5 +213,5 @@ async function open(){
  assert.equal(x.review.children.length,0);
  assert.equal(x.save.disabled,true);
  assert.equal(calls.length,4);
- console.log('PASS TUTOR-01 T3c2c: selected-only atomic event+audit save, retry IDs, partial receipts, owner/revision/stale guards, no implicit cards');
+ console.log('PASS TUTOR-01 T3e: selected-only atomic evidence, retry IDs, post-read identity/workspace consent guard, no implicit cards');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
