@@ -128,6 +128,13 @@ async function smoke(url) {
       }).waitFor({ timeout });
       await page.getByRole('button', { name: 'Back to Today' }).click();
       await page.locator('.today, .onboard').first().waitFor({ timeout });
+      // In-app navigation does not rewrite a deep-link fragment. The later
+      // card-persistence reload must begin from the normal app URL.
+      const normal = new URL(parsed.href);
+      normal.hash = '';
+      await page.goto(normal.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.locator('.today, .onboard').first().waitFor({ timeout });
+      assert.equal(new URL(page.url()).hash, '', 'normal smoke URL must not retain the Study deep link');
     } else {
       // A manually entered URL fragment must not bypass the Study readiness
       // guard. Full reload is essential: the app reads the hash at boot.
