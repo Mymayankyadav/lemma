@@ -1,3 +1,10 @@
+## P5n — Study readiness activation
+
+- **Claim:** `owner-20261029-d-activation-394904c55020`, heartbeat 2026-10-29T03:46Z, branch `lane-d/plan-01-p5n-study-ready`, base `9557485a471dd8d6c95f0e9eaacaacc87fb7446f`. First-use workflow #170 and checkpoint selection/assessment #171 merged after exact-head regression, guard and real local Supabase SUCCESS. Current mobile light/dark screenshots directly inspected. No other D claim.
+- **Scope:** activate both D readiness flags, update D-owned readiness assertions, add a real built-app browser gate with no flag injection, and reconcile D task/status evidence. Never activate Tutor or recovery controls, approve a production student plan or change backend data. Android remains paused.
+- **Evidence:** #170 regression 40812361102/local stack 40812361078; #171 regression 40813515275/local stack 40813515250. Twelve checkpoints, two explicit synthetic proof demonstrations, mid-proof/hint reload, prerequisite diff/amendment, old revisions/history, stale/CAS/retry, owner isolation, all selection and draft workflows accepted. Production read-only audit confirms 17/17 exact migrations; owner RLS; authenticated-only plan/context/event RPCs; no client UPDATE/DELETE events or direct plan/version INSERT grants.
+- **Gate/next:** exact-head full regression + D ownership + real local Supabase, actual bundle signed-in intake and signed-out route isolation at mobile/desktop light/dark with inspected screenshots; merge only green, then verify exact-main Pages deploy and downstream live ready-Study smoke. E's real student-operated T4 remains separate; D does not impersonate owner approval.
+
 ## P5m — navigate approved checkpoints and show assessment criteria
 
 - **Claim:** `owner-20261029-d-checkpoints-394904c55020`, heartbeat 2026-10-29T03:34Z, branch `lane-d/plan-01-p5m-checkpoint-navigation`, base `aa83ddb2148f857a0ac23485bc6439e2ed0adb22`. P5l [#170](https://github.com/Mymayankyadav/lemma/pull/170) merged after exact-head regression 40812361102 and real local Supabase 40812361078 SUCCESS; directly reviewed its mobile-dark and desktop-light screenshots. No other D claim.
