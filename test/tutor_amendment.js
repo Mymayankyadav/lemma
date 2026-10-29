@@ -10,6 +10,7 @@ const CONTEXT='00000000-0000-4000-8000-000000000004';
 const CP='compactness-proof';
 const otherOwner='00000000-0000-4000-8000-000000000005';
 let dialog,revision=3,checkpoint=CP,contextRevision=2,failOnce=false;
+let hintLevel=1,sessionId=OWNER,attemptId=null;
 const staged=[],approvals=[],published=[],events=[];
 let notifyIdentityChange=null;
 const account={user:{id:OWNER},onIdentityChange(fn){notifyIdentityChange=fn;}};
@@ -18,7 +19,8 @@ const plan={
  async activeContext(){return {planId:ID,planRevision:revision,
    contextId:CONTEXT,contextRevision,
    checkpoint:{id:checkpoint,objective:'Show compactness',status:'in_progress'},
-   hintLevel:1,sourceRefs:[],lastAttempt:null};},
+   sessionId,hintLevel,sourceRefs:[],
+   lastAttempt:attemptId ? {eventId:attemptId} : null};},
  async proposeAmendment(input){
    staged.push(JSON.parse(JSON.stringify(input)));
    if(failOnce){failOnce=false;throw Error('Draft response lost');}
@@ -119,6 +121,22 @@ async function attempt(u){return u.stage.events.click();}
  assert.deepEqual(staged[2],staged[1],'retry never changes student-reviewed payload');
  assert.match(u.status.textContent,/unapproved amendment draft/);
 
+ // T3f: a new hint or attempt changes the consented proof packet even when
+ // the plan and accepted context revisions remain identical.
+ const changedStates=[
+  ['hint',()=>{hintLevel=2;},()=>{hintLevel=1;}],
+  ['session',()=>{sessionId=PROPOSAL;},()=>{sessionId=OWNER;}],
+  ['attempt',()=>{attemptId=PROPOSAL;},()=>{attemptId=null;}]
+ ];
+ for(const [label,change,reset] of changedStates){
+  u=await open();select(u);change();
+  await attempt(u);
+  assert.equal(staged.length,3,'stale '+label+' must not stage an amendment');
+  assert.match(u.status.textContent,/stale_study_context/);
+  assert.equal(u.checkbox.checked,true,'failed selection remains for explicit re-review');
+  reset();
+ }
+
  u=await open();select(u);
  revision=4;await attempt(u);
  assert.equal(staged.length,3);
@@ -166,5 +184,5 @@ async function attempt(u){return u.stage.events.click();}
  assert.equal(approvals.length,0,'never invoke student approval API');
  assert.equal(published.length,0,'never publish on behalf of the student');
  assert.equal(events.length,0,'amendment does not automatically record events');
- console.log('PASS TUTOR-01 T3b2: explicit local-only amendment staging, stable retry ID, owner/revision/context guards, no approval');
+ console.log('PASS TUTOR-01 T3f: explicit amendment staging, proof/hint/session freshness, stable retry and no approval');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
