@@ -63,6 +63,7 @@ const preview=root=>find(root,n=>n.tag==='button'&&n.attrs.text==='Test tutor ha
  root.isConnected=false;tutor.openForAcceptance=previewFn;
  user=null;root=await mount();assert.equal(preview(root),undefined,'signed-out view hides preview');
  root.isConnected=false;user=owner;
+ writes.length=0; // Isolate the normal-ready fixture from the preview's simulated failed write.
  tutor.ready=true;root=await mount();let button=entry(root);assert.ok(button);
  assert.equal(preview(root),undefined,'released tutor readiness suppresses test-only preview');
  await button.events.click();assert.equal(opens.length,1);
