@@ -1,3 +1,11 @@
+## R19 — verify deployed PWA shell asset bytes (29 October 2026)
+
+- **Claim:** `chat-20261029-f-r19-static-parity`; heartbeat 2026-10-29T07:34:34.957Z; branch `lane-f/release-r19-shell-asset-parity`, base `main@a5e8803`. No competing F PR. R18 #189 merged and initial real Pages HTML parity PASS. B #163 held, D #190 active; Android paused.
+- **Gap:** R18 proves the served HTML matches its build, but an outdated service worker, manifest or icon could still be published, changing offline/install behavior without detection by the local PWA test.
+- **Scope:** F-owned `test/release_live_smoke.js` and this handoff. With real deployed/tag parity enabled, check HTTP 200 and exact built bytes for `service-worker.js`, `manifest.webmanifest` and `icons/icon.svg`. Add changed-byte and missing-asset negative fixtures; ordinary PR/dispatch smoke remains behavior-only.
+- **Acceptance:** focused tests, F guard, full regression and live Pages CI on exact head; then main deployment and live smoke. No accounts, backend, readiness, Android, production mutation or release tag.
+- **Next:** implement and verify the narrow source/published shell asset match, merge only green; B authenticated restore and E real T4 still gated.
+
 ## R18 — bind deployed Pages HTML to exact build bytes (29 October 2026)
 
 - **Claim:** `chat-20261029-f-r18-pages-parity`; heartbeat 2026-10-29T07:24:15.459Z; branch `lane-f/release-r18-pages-content-parity`, base `main@a00ad906`. No open competing F PR. B #163 held pending owner-security acceptance; D #188 active; C paused.
