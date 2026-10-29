@@ -1166,6 +1166,15 @@ export type Database = {
         Returns: number
       }
       reject_proposal: { Args: { p_id: string }; Returns: undefined }
+      save_progress: {
+        Args: {
+          p_payload: Json
+          p_project_id: string
+          p_session_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       undo_review: { Args: { p_review: number }; Returns: Json }
     }
     Enums: {
