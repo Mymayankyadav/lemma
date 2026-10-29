@@ -215,6 +215,83 @@ const KnowledgeDraftEditor = (() => {
         return row;
       } finally { busy = false; }
     }
+    // Read the exact persisted draft before presenting an approval choice.
+    // No remote write or approval occurs on this read-only review path.
+    async function reviewSaved() {
+      const before=scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original=current;
+      if (!original || original.status!=='draft')
+        throw new Error('Save an unapproved context draft before reviewing it');
+      busy=true;
+      try {
+        const saved=await LemmaCloudBridge.readKnowledgeDraft(original.contextId);
+        unchanged(before);
+        if (current!==original || !saved || saved.status!=='draft' ||
+            saved.contextId!==original.contextId ||
+            saved.localRevision!==original.localRevision ||
+            JSON.stringify(saved)!==JSON.stringify(original))
+          throw new Error('Saved context changed; reopen and review again');
+        return structuredClone(saved);
+      } finally {busy=false;}
+    }
+    // Only an explicit student click after reviewing the exact saved snapshot
+    // may stage immutable approval. IndexedDB checks the revision atomically.
+    async function approveReviewed(reviewed) {
+      const before=scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original=current;
+      if (!reviewed || !original || original.status!=='draft' ||
+          reviewed.contextId!==original.contextId ||
+          reviewed.localRevision!==original.localRevision ||
+          JSON.stringify(reviewed)!==JSON.stringify(original))
+        throw new Error('Context changed; review the saved draft again');
+      busy=true;
+      try {
+        const row=await LemmaCloudBridge.approveKnowledgeDraft(
+          original.contextId,original.localRevision,true);
+        unchanged(before);
+        if (current!==original || row?.status!=='approved_pending' ||
+            row.contextId!==original.contextId ||
+            row.approvedFromLocalRevision!==original.localRevision ||
+            !uuid.test(row.requestId||''))
+          throw new Error('Approved intent changed; reopen the context');
+        current=row;
+        return row;
+      } finally {busy=false;}
+    }
+    // Publication is another separate student gesture. A's bridge retains
+    // the same request ID on timeout, offline return or stale revision.
+    async function submitApproved() {
+      const before=scope();
+      if (busy) throw new Error('Wait for the current draft operation');
+      const original=current;
+      if (!original || original.status!=='approved_pending')
+        throw new Error('Approve a reviewed context before publication');
+      busy=true;
+      try {
+        const receipt=await LemmaCloudBridge.submitApprovedKnowledgeDraft(original.contextId);
+        unchanged(before);
+        if (current!==original || !receipt ||
+            !['confirmed','queued','conflict'].includes(receipt.status) ||
+            receipt.requestId!==original.requestId)
+          throw new Error('Knowledge publication receipt changed; reopen context');
+        if (receipt.status==='confirmed') {
+          if (!Number.isSafeInteger(receipt.revision) || receipt.revision<=original.expectedRevision)
+            throw new Error('Invalid accepted context revision');
+          current={...original,status:'published',publishedRevision:receipt.revision};
+        } else if (receipt.status==='conflict') {
+          const latest=await LemmaCloudBridge.readKnowledgeDraft(original.contextId);
+          unchanged(before);
+          if(current!==original || latest?.status!=='needs_review' ||
+              latest.contextId!==original.contextId ||
+              latest.requestId!==original.requestId)
+            throw new Error('Conflict changed; reopen context before comparing');
+          current=latest;
+        }
+        return receipt;
+      } finally {busy=false;}
+    }
     // A comparison is requested by the student, never by render/reconnect.
     async function compareConflict() {
       const before = scope();
@@ -263,7 +340,8 @@ const KnowledgeDraftEditor = (() => {
         return row;
       } finally { busy = false; }
     }
-    return { start, open, save, compareConflict, reopenConflict, current: () => current };
+    return { start, open, save, reviewSaved, approveReviewed, submitApproved,
+      compareConflict, reopenConflict, current: () => current };
   }
   return { create };
 })();
