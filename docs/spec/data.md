@@ -370,6 +370,10 @@ Pending only; set `rejected` and `decided_at`.
 ### 5.7 View `v_due_cards` (`security_invoker = true`)
 Columns: `user_id, card_id, note_id, note_no, ord, project_id, checkpoint_id, session_id, state, due`. Rows: cards of notes with `status = 'active'`. Clients filter by `due` and `state`.
 
+### 5.8 `save_progress(p_user_id uuid, p_project_id uuid, p_session_id uuid, p_payload jsonb) returns jsonb`
+
+Connector-only, `security invoker`; execute granted to `service_role` only. This is the atomic implementation of connector.md §5.6, not a new frontend LemmaApi method. The connector resolves the owner/project/session before calling it and passes only `step`, `events`, `misconception`, `resolved`, `next_question` in `p_payload` (the same names and limits as the tool). The function validates owner/project/session/checkpoint relationships, locks the project and open session, and applies all events, misconception changes, checkpoint steps/evidence/re-check ladder and session question/activity in one transaction. Any error rolls back the entire save. Dates use the owner's time zone and rollover hour. Returns `{step: number | null, events: number}`, where events includes a generated misconception event. No scheduling or curriculum approval happens here.
+
 ## 6. Derived states (computed in `src/lib/derive.ts`, mirrored in the connector)
 
 ### 6.1 Checkpoint UI status (one of)
