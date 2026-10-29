@@ -30,3 +30,6 @@ enable_confirmations = false
 [inbucket]
 enabled = true
 port = 54324
+
+[functions.mcp]
+verify_jwt = false
