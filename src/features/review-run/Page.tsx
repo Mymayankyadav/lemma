@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
@@ -59,6 +59,8 @@ export default function Page(){
  const cancelGrade=useReviewSession(s=>s.cancelGrade),committed=useReviewSession(s=>s.committed);
  const undoCommitted=useReviewSession(s=>s.undoCommitted);
  const [sheetOpen,setSheetOpen]=useState(false),[note,setNote]=useState('');
+ // Sheet restores focus when onClose changes; keep it stable while typing a note.
+ const closeNoteSheet=useCallback(()=>setSheetOpen(false),[]);
  const init=useRef(false);
  const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
  const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
@@ -192,7 +194,7 @@ export default function Page(){
     </button>
    })}
   </section>}
-  <Sheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="For your tutor">
+  <Sheet open={sheetOpen} onClose={closeNoteSheet} title="For your tutor">
    <div className="flex flex-col gap-4">
     <label htmlFor="review-note" className="text-[14px] text-ink-2">Ask your tutor to improve or explain this card</label>
     <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>setNote(e.target.value)}
