@@ -269,10 +269,10 @@ const KnowledgeDraftEditor = (() => {
 })();
 
 const SettingsView = (() => {
-  // RELEASE-01: keep recovery UI unavailable on Pages until the exact
-  // account-restore migration and live owner-isolation gate are verified.
-  // Browser acceptance enables this only in its synthetic test bundle.
-  const ACCOUNT_RECOVERY_READY = false;
+  // RELEASE-01 activation candidate: only merge after genuine live
+  // authenticated owner/security acceptance of the restored-account RPCs.
+  // Explicit consent and same-owner empty-workspace constraints still apply.
+  const ACCOUNT_RECOVERY_READY = true;
   let optResult = null;
   let optResultGeneration = -1;
   let sweep = null;
