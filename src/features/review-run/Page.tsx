@@ -194,7 +194,7 @@ export default function Page(){
     </button>
    })}
   </section>}
-  <Sheet open={sheetOpen} onClose={closeNoteSheet} title="For your tutor" dismissOnBackdrop={false} draggable={false}>
+  <Sheet open={sheetOpen} onClose={closeNoteSheet} title="For your tutor">
    <div className="flex flex-col gap-4">
     <label htmlFor="review-note" className="text-[14px] text-ink-2">Ask your tutor to improve or explain this card</label>
     <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>setNote(e.target.value)}
