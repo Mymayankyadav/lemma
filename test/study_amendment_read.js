@@ -21,8 +21,9 @@ proposal.checkpoints.splice(3,0,{checkpoint_id:'cp-new',title:'Missing lemma',
  prerequisite_checkpoint_ids:['cp-3'],mastery_criterion:'Demonstrate proof'});
 proposal.checkpoints.find(x=>x.checkpoint_id==='cp-4')
  .prerequisite_checkpoint_ids=['cp-3','cp-new'];
-let livePlan={id:P,revision:1,title:'Approved Test Plan',
+const publishedPlan={id:P,revision:1,title:'Approved Test Plan',
  objective:'Existing approved objective'};
+let livePlan=publishedPlan;
 let liveVersion={revision:1,context_id:null,context_revision:null,
  snapshot:approved};
 const client={from(table) {
@@ -91,7 +92,7 @@ const rejects=async(p,re)=>assert.rejects(p,re);
  assert.equal(stale.status,'stale');
  assert.equal(stale.currentRevision,2);
  assert.equal(rpc.length,0);
- livePlan={id:P,revision:1};liveVersion={...liveVersion,context_id:D,context_revision:3};
+ livePlan=publishedPlan;liveVersion={...liveVersion,context_id:D,context_revision:3};
  assert.equal((await api.reviewPendingAmendment(P)).status,'stale_context');
  liveVersion={revision:1,context_id:null,context_revision:null,snapshot:approved};
 
@@ -103,7 +104,7 @@ const rejects=async(p,re)=>assert.rejects(p,re);
  liveVersion={revision:1,context_id:null,context_revision:null,snapshot:approved};
  livePlan=null;
  await rejects(api.reviewPendingAmendment(P),/Published study plan unavailable/);
- livePlan={id:P,revision:1};
+ livePlan=publishedPlan;
 
  // Identity switch during a server read returns no foreign plan or diff.
  beforeRead=async(table)=>{if(table==='study_plans'){
