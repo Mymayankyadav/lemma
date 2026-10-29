@@ -1,3 +1,9 @@
+## RELEASE-01 — read-only account backup before live restore acceptance
+
+- **Claim:** `chat-20261029-b-backup-only`; base `a5e8803bb4e287b8925afb5db74d94ab8bddb59b`, branch `lane-b/recovery-backup-only`. The owner authorized a real same-account backup/clear/restore test of test data. Existing activation #163 stays held; it must not be merged before the real restore gate. This slice exposes only deliberate signed-in backup download while restore remains hidden and unready.
+- **Scope:** B-owned Settings, focused browser test and this handoff. Reuse the existing paired snapshot and account/workspace guards; signed-out gets no backup UI, no automatic network, no restore/consent controls. Check checksum and owner before download. No production data mutation or student action.
+- **Next:** implement, test actual built default and feature-enabled paths, inspect exact-head CI/screenshots; no live data deletion before independent verified backup and tested restore path exist.
+
 ## Study readiness browser-hook correction — 29 October 2026
 
 - Owner-directed claim `chat-20261029-b-readiness-hook`, branch `lane-b/ui-study-readiness-hook`, base `72d13382690cab55bc8e407a09b37b3ac5719422`. #163 remains held; scope B screenshot harness and this handoff.
