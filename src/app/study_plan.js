@@ -147,6 +147,18 @@ const StudyPlan = (() => {
     const detail = type => { const e = latest(type);
       return e && object(e.payload?.data) ? { ...e.payload.data,
         eventId:e.event_id,createdAt:e.created_at } : null; };
+    // A concurrent device can complete this checkpoint or move the active
+    // focus while proof events are loading, without changing the plan or
+    // session revision. Never present that stale status as the current proof.
+    // Compare only the displayed/selection fields, not unrelated progress
+    // metadata; normalize order because the owner-scoped query is unordered.
+    const checkpointState = items => JSON.stringify(items.map(item => [
+      item.checkpoint_id,item.title,item.status
+    ]).sort((a,b) => String(a[0]).localeCompare(String(b[0]))));
+    const currentStatuses = await list(ctx,'study_checkpoints',
+      'checkpoint_id,title,status',q => q.eq('plan_id',plan.id));
+    if (checkpointState(currentStatuses) !== checkpointState(statuses))
+      throw new Error('Study checkpoint status changed; reload checkpoint');
     // A second device may finish this session or start a newer one while
     // events are loading. A stable plan revision alone cannot establish that
     // this proof/hint packet still belongs to the active learning session.
