@@ -13,7 +13,7 @@ const cp='compactness-open-cover-proof';
 let dialog, revision=3, activeCheckpoint=cp, failSecond=false, afterContextRead=null;
 let hintLevel=1, attemptId=E1, sessionId=owner, checkpointStatus='in_progress';
 let contextId=null, contextRevision=null, lastFeedbackId=null, sourceRefs=[];
-let reflectOwnWrites=false;
+let reflectOwnWrites=false,externalAfterFirst=false;
 const calls=[];
 const app={workspaceRevision:1,workspaceBlocked:false};
 let signalIdentityChange=null;
@@ -33,6 +33,8 @@ const client={rpc(name,args){
    if(sessionId===null)sessionId=owner;
    if(['attempt','proof_step'].includes(args.p_event_type))attemptId=args.p_event_id;
    if(args.p_event_type==='hint')hintLevel=args.p_payload.level;
+   if(externalAfterFirst && args.p_event_id===E1)
+    attemptId='00000000-0000-4000-8000-000000000007';
   }
   return {data:{event:{eventId:args.p_event_id,sessionId:owner,
     seq:calls.length,planRevision:3},audit:{
@@ -275,6 +277,16 @@ async function open(){
  assert.equal(calls.at(-1).args.p_event_id,E2);
  assert.deepEqual(calls.at(-1).args,calls.at(-2).args,'exact retry of uncertain hint');
  assert.equal(x.save.disabled,true);
+ // Self-progress is not blanket permission for another device's new proof.
+ // An unrelated event ID after the first save must stop the remaining batch.
+ sessionId=null;attemptId=C1;hintLevel=1;externalAfterFirst=true;
+ x=await open();select(0);const pendingSecond=select(1);
+ const beforeExternal=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeExternal+1,'foreign proof event blocks second RPC');
+ assert.match(x.status.textContent,/stale_study_context/);
+ assert.equal(pendingSecond.checked,true,'uncommitted second selection retained');
+ externalAfterFirst=false;
  reflectOwnWrites=false;sessionId=owner;attemptId=E1;hintLevel=1;
- console.log('PASS TUTOR-01 T3f: stale proof guards, self-written batch progress and lost-response retry, no implicit approvals');
+ console.log('PASS TUTOR-01 T3f: stale proof guards, own-batch retry, external interleaving rejection, no implicit approvals');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
