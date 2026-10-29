@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "check": "npm run typecheck && npm run test && npm run build",
     "format": "prettier --write .",
-    "prebuild": "node scripts/generate-icons.mjs"
+    "prebuild": "node scripts/generate-icons.mjs",
+    "postbuild": "node scripts/check-pwa.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",
