@@ -42,12 +42,38 @@ function requireAcceptance(root) {
 // feature flag remains disabled. Synthetic UI fixtures do not count as a
 // released user-accessible recovery path.
 function requireVisibleRecoveryControls(root){
-  const source=fs.readFileSync(path.join(root,'src/app/view_settings.js'),'utf8');
+  const raw=fs.readFileSync(path.join(root,'src/app/view_settings.js'),'utf8');
+  // Ignore whole-line and block comments: a commented-out recovery mount is
+  // not an accessible Settings feature. This is a source regression gate,
+  // not a substitute for B's real authenticated production acceptance.
+  const source=raw.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^[ \t]*\/\/[^\n]*$/gm,'');
   const definitions=[...source.matchAll(/^[ \t]*const ACCOUNT_RECOVERY_READY\s*=\s*(true|false)\s*;[ \t]*$/gm)];
   if(definitions.length!==1 || definitions[0][1]!=='true')
     throw Error('Account recovery controls are not enabled in production Settings');
-  if(!/\bif\s*\(\s*ACCOUNT_RECOVERY_READY\s*&&\s*LemmaAccount\.user\b/.test(source))
-    throw Error('Account recovery controls are not gated to a signed-in user');
+  // Require the actual Settings render to mount the section behind the signed-in
+  // flag and restore API. A stray "if" or dead helper must not pass the tag gate.
+  if(!/\bif\s*\(\s*ACCOUNT_RECOVERY_READY\s*&&\s*LemmaAccount\.user\s*&&\s*typeof\s+LemmaCloudBridge\.restoreRecoveryPair\s*===\s*['"]function['"]\s*\)\s*page\.append\(\s*accountRecoverySection\(\)\s*\)\s*;/.test(source))
+    throw Error('Account recovery controls are not mounted behind the signed-in restore guard');
+  const begin=source.indexOf('function accountRecoverySection(){');
+  const end=source.indexOf('\n  function render(',begin);
+  if(begin<0 || end<=begin)throw Error('Account recovery section implementation is missing');
+  const section=source.slice(begin,end);
+  const required=[
+    [/text:'Download account backup'/,'private backup download control'],
+    [/text:'Restore account backup'/,'explicit restore control'],
+    [/const current=\(\)=>root\.isConnected&&LemmaAccount\.user\?\.id===ownerId&&\s*LemmaAccount\.client===client&&App\.workspaceRevision===generation&&!App\.workspaceBlocked;/,
+      'owner, client and workspace revalidation'],
+    [/restore\.disabled=[^;]*!validated[^;]*!consent\.checked[^;]*Store\.mode!=='local'/,
+      'local-only, previewed, explicitly consented restore'],
+    [/restoreRecoveryPair\(pair,\{requestId,studentConfirmed:true,dryRun:true\}\)/,
+      'authenticated dry-run restore preflight'],
+    [/const accepted=await confirmDialog\([\s\S]*?check\(\);if\(!accepted\)return;/,
+      'final restore confirmation and identity recheck'],
+    [/restoreRecoveryPair\(pair,\{requestId,studentConfirmed:true,dryRun:false,resumeSync:true\}\)/,
+      'explicit confirmed restore and queued-edit resumption']
+  ];
+  for(const [pattern,description] of required)
+    if(!pattern.test(section))throw Error('Account recovery controls missing '+description);
   return true;
 }
 function verifyExecutableAcceptance(root){
@@ -89,14 +115,39 @@ if (require.main === module) {
       assert.equal(verifyExecutableAcceptance(path.resolve(__dirname,'..')).tables,19);
       const settings=path.join(root,'src/app/view_settings.js');
       fs.mkdirSync(path.dirname(settings),{recursive:true});
-      const guard='if (ACCOUNT_RECOVERY_READY && LemmaAccount.user && true) {}\n';
-      fs.writeFileSync(settings,'const ACCOUNT_RECOVERY_READY = false;\n'+guard);
+      const actual=fs.readFileSync(path.join(__dirname,'../src/app/view_settings.js'),'utf8');
+      assert.match(actual,/const ACCOUNT_RECOVERY_READY = false;/,
+        'current production recovery remains held pending live owner acceptance');
+      const enabled=actual.replace('const ACCOUNT_RECOVERY_READY = false;',
+        'const ACCOUNT_RECOVERY_READY = true;');
+      fs.writeFileSync(settings,actual);
       assert.throws(()=>requireVisibleRecoveryControls(root),/not enabled/);
-      fs.writeFileSync(settings,'// const ACCOUNT_RECOVERY_READY = true;\n'+guard);
-      assert.throws(()=>requireVisibleRecoveryControls(root),/not enabled/);
-      fs.writeFileSync(settings,'const ACCOUNT_RECOVERY_READY = true;\n');
-      assert.throws(()=>requireVisibleRecoveryControls(root),/not gated/);
-      fs.writeFileSync(settings,'const ACCOUNT_RECOVERY_READY = true;\n'+guard);
+      fs.writeFileSync(settings,enabled);
+      assert.equal(requireVisibleRecoveryControls(root),true,
+        'synthetic enabled Settings source retains its full guarded flow');
+      const reject=(needle,replacement,reason)=>{
+        assert(enabled.includes(needle),'fixture source anchor exists: '+needle);
+        fs.writeFileSync(settings,enabled.replace(needle,replacement));
+        assert.throws(()=>requireVisibleRecoveryControls(root),reason);
+      };
+      reject('const ACCOUNT_RECOVERY_READY = true;',
+        '// const ACCOUNT_RECOVERY_READY = true;',/not enabled/);
+      reject('page.append(accountRecoverySection());',
+        '/* page.append(accountRecoverySection()); */',/not mounted/);
+      reject('page.append(accountRecoverySection());',
+        'page.append(knowledgeDraftSection());',/not mounted/);
+      reject('LemmaAccount.user &&','true &&',/not mounted/);
+      reject('function accountRecoverySection(){',
+        'function disconnectedRecoverySection(){',/implementation is missing/);
+      reject('LemmaAccount.client===client','true',/owner, client and workspace/);
+      reject("Store.mode!=='local'","true",/local-only/);
+      reject('studentConfirmed:true,dryRun:true',
+        'studentConfirmed:false,dryRun:true',/dry-run restore preflight/);
+      reject('const accepted=await confirmDialog(',
+        'const accepted=await skippedDialog(',/final restore confirmation/);
+      reject('studentConfirmed:true,dryRun:false,resumeSync:true',
+        'studentConfirmed:false,dryRun:false,resumeSync:true',/explicit confirmed restore/);
+      fs.writeFileSync(settings,enabled);
       assert.equal(requireVisibleRecoveryControls(root),true);
 
       for(const p of REQUIRED) {
@@ -107,7 +158,7 @@ if (require.main === module) {
       fs.writeFileSync(path.join(root,'.github/workflows/sync-local.yml'),
         'run: echo not-a-stack-gate\n');
       assert.throws(()=>requireAcceptance(root),/not wired/);
-      console.log('ok: release tag refuses missing restore tests, unwired CI and hidden recovery controls');
+      console.log('ok: release tag refuses missing restore tests, unwired CI, disconnected recovery UI and removed consent guards');
     } finally {fs.rmSync(root,{recursive:true,force:true});}
   } else throw Error('Unknown release recovery gate arguments');
 }
