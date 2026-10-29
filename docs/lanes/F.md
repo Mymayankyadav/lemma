@@ -1,3 +1,11 @@
+## R21 — signed-out tutor acceptance preview isolation (29 October 2026)
+
+- **Claim:** `chat-20261029-f-r21-tutor-preview-isolation`; branch `lane-f/release-r21-signedout-tutor-preview`, baseline `main@0d9eba4ac7143bfeac374d9c3e6f4d8d429f9aeb` with exact-main regression, local Supabase, Pages and live smoke SUCCESS. No competing F open PR, B #163 held; C Android paused.
+- **Gap:** D #195 introduces an explicitly clicked `Test tutor handoff (unreleased)` action inside approved Study for genuine T4 acceptance. F's deployed Pages and future-ready synthetic browser smoke already reject signed-out evidence writes but do not explicitly assert *neither* the acceptance preview control nor the tutor sheet is exposed to signed-out visitors, including direct Study-link reloads. Guard the new security boundary and prove the guard catches a simulated leaked preview node.
+- **Scope:** F-owned `test/release_live_smoke.js` and this handoff only; add signed-out tutor acceptance assertions and negative control in real-build browser fixture. Preserve approved-Study access, T4 student consent, B recovery controls, Android pause and release tag gates. No production/account write or readiness flip.
+- **Acceptance:** focused live smoke/ready self-test, `node test/lane_guard.js F`, exact-head regression and live Pages CI, direct review of changed assertions. Merge only when green; owner-operated T4 and authenticated B restore remain outstanding.
+- **Next:** implement, test exact head, merge, verify post-merge main and stop only at genuine owner acceptance gates.
+
 ## R20 — fail closed on incomplete release Actions inventory (29 October 2026)
 
 - **Claim:** `automation-20261029-f-r20-inventory`; heartbeat 2026-10-29T08:00:51.346Z; branch `lane-f/release-r20-actions-inventory-completeness`, base `main@ea4331fad727731daf44e04a687983eeb0326a1d`. Fresh main regression, disposable local Supabase, Pages and downstream smoke all SUCCESS (40838112665 / 40838112633 / 40838113005 / 40838165126). Open E #193 owns T4a; B #163 is held for real authenticated recovery; no competing F PR. Android remains paused.
