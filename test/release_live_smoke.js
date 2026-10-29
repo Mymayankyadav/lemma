@@ -10,6 +10,35 @@ const OUT = path.resolve(__dirname, '../test-output/release-live');
 const DEFAULT_URL = 'https://mymayankyadav.github.io/lemma/';
 const timeout = 20000;
 
+// Derive readiness from the exact app bundle actually served, not nonexistent
+// globals outside build.js's private IIFE. Reject missing/ambiguous declarations
+// instead of silently interpreting an unparseable module as disabled.
+function bundleReadiness(source) {
+  function moduleText(startMarker, endMarker) {
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker, start + startMarker.length);
+    if (start < 0 || end <= start || source.indexOf(startMarker, start + startMarker.length) !== -1)
+      throw Error('Missing or ambiguous built app module: ' + startMarker);
+    return source.slice(start, end);
+  }
+  function flag(text, expression, name) {
+    const found = [...text.matchAll(expression)];
+    if (found.length !== 1) throw Error('Missing or ambiguous readiness flag: ' + name);
+    return found[0][1] === 'true';
+  }
+  const plan = moduleText('/* ===== study_plan.js ===== */',
+    '/* ===== tutor_handoff.js ===== */');
+  const tutor = moduleText('/* ===== tutor_handoff.js ===== */',
+    '/* ===== view_study.js ===== */');
+  const study = moduleText('/* ===== view_study.js ===== */',
+    '/* ===== main.js ===== */');
+  return {
+    study: flag(study, /const ready = (true|false);/g, 'StudyView'),
+    plan: flag(plan, /return [{] ready:(true|false), activeContext/g, 'StudyPlan'),
+    tutor: flag(tutor, /return [{] ready:(true|false), exportPacket/g, 'TutorHandoff')
+  };
+}
+
 async function smoke(url) {
   const parsed = new URL(url);
   if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid release smoke URL');
@@ -57,11 +86,12 @@ async function smoke(url) {
     // SHIP-F1: hidden-until-ready is an acceptance property of the *deployed*
     // site, not just a unit-test assertion about a source-code boolean.
     stage = 'feature-readiness';
-    const flags = await page.evaluate(() => ({
-      study: typeof StudyView !== 'undefined' && StudyView.ready === true,
-      plan: typeof StudyPlan !== 'undefined' && StudyPlan.ready === true,
-      tutor: typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === true
-    }));
+    // build.js encloses app modules in an IIFE. Their lexical bindings are
+    // intentionally NOT browser globals; reading typeof StudyView from
+    // page.evaluate would always return undefined and misreport readiness.
+    const script = await page.evaluate(() =>
+      [...document.scripts].map(s => s.textContent || '').join('\n'));
+    const flags = bundleReadiness(script);
     const studyNav = await page.locator('nav [data-go="study"]:visible').count();
     assert.equal(studyNav > 0, flags.study,
       'visible Study navigation must agree with StudyView.ready');
@@ -242,8 +272,12 @@ async function readySelfTest() {
   try {
     await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.locator('.today, .onboard').first().waitFor({ timeout });
-    const ready = await page.evaluate(() => StudyView.ready && StudyPlan.ready);
-    assert.equal(ready, true, 'the real built modules must both be ready in fixture');
+    const script = await page.evaluate(() =>
+      [...document.scripts].map(s => s.textContent || '').join('\n'));
+    const flags = bundleReadiness(script);
+    assert.equal(flags.study && flags.plan, true,
+      'the real built StudyPlan and StudyView modules must both be ready in fixture');
+    assert.equal(flags.tutor, false, 'the fixture must not enable unaccepted Tutor features');
     await page.locator('nav [data-go="study"]:visible').first().click();
     await page.locator('.study-page:visible').first().waitFor({ timeout });
     await page.locator('.study-page .study-message').filter({
