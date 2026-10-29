@@ -67,11 +67,13 @@ function bundleReadiness(source) {
   };
 }
 
-// Anonymous Pages acceptance: account recovery contains private owner data and
-// must never mount even a hidden file picker, consent box or action while signed out.
-// This must remain true when B eventually enables the production recovery flag.
+// Anonymous Pages acceptance: both the currently available backup-only section
+// and the future full recovery UI contain private owner data. Neither may mount
+// even a hidden download link, file picker, consent box or action while signed out.
+// This must remain true with recovery disabled or later enabled by B.
 async function assertSignedOutRecoveryHidden(page) {
-  for (const selector of ['#set-account-recovery', '#account-recovery-file',
+  for (const selector of ['#set-account-backup', '#set-account-recovery',
+    'a[download^="lemma-account-backup-"]', '#account-recovery-file',
     '#account-recovery-consent']) {
     assert.equal(await page.locator(selector).count(), 0,
       'signed-out Settings must not mount private recovery node ' + selector);
@@ -479,6 +481,26 @@ async function readySelfTest() {
     await assert.rejects(assertSignedOutRecoveryHidden(page),
       /signed-out Settings must not mount private recovery node/);
     await page.locator('#set-account-recovery').evaluate(node => node.remove());
+    await assertSignedOutRecoveryHidden(page);
+    // Backup-only is a distinct shipped UI path while recovery stays gated.
+    // A leaked section or even a detached private download link must fail.
+    await page.evaluate(() => {
+      const leak = document.createElement('section');
+      leak.id = 'set-account-backup';
+      document.querySelector('.settings').append(leak);
+    });
+    await assert.rejects(assertSignedOutRecoveryHidden(page),
+      /signed-out Settings must not mount private recovery node.*set-account-backup/);
+    await page.locator('#set-account-backup').evaluate(node => node.remove());
+    await page.evaluate(() => {
+      const leak = document.createElement('a');
+      leak.download = 'lemma-account-backup-leaked.json';
+      leak.href = 'data:application/json,fixture';
+      document.querySelector('.settings').append(leak);
+    });
+    await assert.rejects(assertSignedOutRecoveryHidden(page),
+      /signed-out Settings must not mount private recovery node.*download/);
+    await page.locator('a[download^="lemma-account-backup-"]').evaluate(node => node.remove());
     await assertSignedOutRecoveryHidden(page);
     assert.deepEqual(errors, [], 'injected ready Study/recovery must not cause browser exceptions');
     console.log('PASS ready-Study/recovery fixture: signed-out tutor isolation, Study/Settings direct links and leak negative controls');
