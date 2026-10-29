@@ -38,6 +38,18 @@ function requireAcceptance(root) {
     throw Error('Full restore acceptance files are not wired into both required CI suites');
   return {required:REQUIRED.length};
 }
+// Full recovery is not available to students while B's production Settings
+// feature flag remains disabled. Synthetic UI fixtures do not count as a
+// released user-accessible recovery path.
+function requireVisibleRecoveryControls(root){
+  const source=fs.readFileSync(path.join(root,'src/app/view_settings.js'),'utf8');
+  const definitions=[...source.matchAll(/^[ \t]*const ACCOUNT_RECOVERY_READY\s*=\s*(true|false)\s*;[ \t]*$/gm)];
+  if(definitions.length!==1 || definitions[0][1]!=='true')
+    throw Error('Account recovery controls are not enabled in production Settings');
+  if(!/\bif\s*\(\s*ACCOUNT_RECOVERY_READY\s*&&\s*LemmaAccount\.user\b/.test(source))
+    throw Error('Account recovery controls are not gated to a signed-in user');
+  return true;
+}
 function verifyExecutableAcceptance(root){
   const suite=require(path.join(root,'test/release_workspace_restore.js'));
   const backend=require(path.join(root,'test/stack_knowledge_workspace_restore.js'));
@@ -56,6 +68,7 @@ if (require.main === module) {
     const root=path.resolve(__dirname,'..');
     const pass=requireAcceptance(root);
     verifyExecutableAcceptance(root);
+    requireVisibleRecoveryControls(root);
     console.log('Recovery acceptance suites present and wired: '+pass.required+
       ' (must also pass exact-SHA regression/local-stack)');
   } else if (process.argv.length === 2) {
@@ -74,6 +87,18 @@ if (require.main === module) {
       assert.equal(requireAcceptance(root).required,REQUIRED.length);
       assert.throws(()=>verifyExecutableAcceptance(root),/not executable acceptance/);
       assert.equal(verifyExecutableAcceptance(path.resolve(__dirname,'..')).tables,19);
+      const settings=path.join(root,'src/app/view_settings.js');
+      fs.mkdirSync(path.dirname(settings),{recursive:true});
+      const guard='if (ACCOUNT_RECOVERY_READY && LemmaAccount.user && true) {}\n';
+      fs.writeFileSync(settings,'const ACCOUNT_RECOVERY_READY = false;\n'+guard);
+      assert.throws(()=>requireVisibleRecoveryControls(root),/not enabled/);
+      fs.writeFileSync(settings,'// const ACCOUNT_RECOVERY_READY = true;\n'+guard);
+      assert.throws(()=>requireVisibleRecoveryControls(root),/not enabled/);
+      fs.writeFileSync(settings,'const ACCOUNT_RECOVERY_READY = true;\n');
+      assert.throws(()=>requireVisibleRecoveryControls(root),/not gated/);
+      fs.writeFileSync(settings,'const ACCOUNT_RECOVERY_READY = true;\n'+guard);
+      assert.equal(requireVisibleRecoveryControls(root),true);
+
       for(const p of REQUIRED) {
         fs.rmSync(path.join(root,p));
         assert.throws(()=>requireAcceptance(root),/not implemented/);
@@ -82,8 +107,8 @@ if (require.main === module) {
       fs.writeFileSync(path.join(root,'.github/workflows/sync-local.yml'),
         'run: echo not-a-stack-gate\n');
       assert.throws(()=>requireAcceptance(root),/not wired/);
-      console.log('ok: release tag refuses missing owner-restoration tests or unwired CI');
+      console.log('ok: release tag refuses missing restore tests, unwired CI and hidden recovery controls');
     } finally {fs.rmSync(root,{recursive:true,force:true});}
   } else throw Error('Unknown release recovery gate arguments');
 }
-module.exports={requireAcceptance,verifyExecutableAcceptance,REQUIRED};
+module.exports={requireAcceptance,verifyExecutableAcceptance,requireVisibleRecoveryControls,REQUIRED};
