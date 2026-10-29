@@ -28,7 +28,7 @@ function check(tagSha, mainSha, allRuns) {
     const seen = new Set();
     const timestamp = (value, field) => {
       if (typeof value !== 'string' ||
-          !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$/.test(value))
+          !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value))
         throw Error('Malformed trusted ' + name + ' ' + field);
       const parsed = Date.parse(value);
       if (!Number.isFinite(parsed) ||
