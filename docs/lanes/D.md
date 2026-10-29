@@ -1,3 +1,10 @@
+## P5m — navigate approved checkpoints and show assessment criteria
+
+- **Claim:** `owner-20261029-d-checkpoints-394904c55020`, heartbeat 2026-10-29T03:34Z, branch `lane-d/plan-01-p5m-checkpoint-navigation`, base `aa83ddb2148f857a0ac23485bc6439e2ed0adb22`. P5l [#170](https://github.com/Mymayankyadav/lemma/pull/170) merged after exact-head regression 40812361102 and real local Supabase 40812361078 SUCCESS; directly reviewed its mobile-dark and desktop-light screenshots. No other D claim.
+- **Gap:** Study currently chooses one checkpoint automatically and rejects routes to other approved checkpoints; the student cannot select a different checkpoint from the 12-checkpoint plan. The checkpoint screen also omits the approved learning tasks, assessment prompt and mastery criterion. Expose read-only approved selection and those fields without claiming mastery, erasing typed work or changing evidence. Preserve latest-plan/revision/session/status race guards.
+- **Scope/gates:** D client/view, D tests and handoff/protocol only. Reject foreign/stale plan and unknown checkpoint selections; no writes on selection, retain correct proof/hint packet per checkpoint, block selection with typed/unconfirmed observations, responsive browser tests, exact-head regression/local-stack/guard. Also fix UTF-8 declaration in the synthetic first-plan fixture and distinguish pending initial receipts from amendments. Both readiness flags stay false until final activation acceptance.
+- **Next:** implement/verify/merge green, check main; then a small final StudyPlan/StudyView activation PR with current production/security/P5 evidence. E's actual cross-model T4 stays downstream, B recovery independent, Android paused.
+
 ## P5l — first-plan intake and explicit publication
 
 - **Claim:** `owner-20261029-d-first-plan-394904c55020`, heartbeat 2026-10-29T03:18Z; owner explicitly requested control of lane D. Branch `lane-d/plan-01-p5l-first-plan-intake`, base `2cfbaea01a686384f617098173ecb2f1263ef43a`. P5k #166 is merged; no other D PR open on claim. Preserve active B/E/F work; Android stays paused.
