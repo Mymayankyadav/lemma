@@ -1,0 +1,21 @@
+import {motion,useReducedMotion} from 'motion/react';
+import {scaleBand,scaleLinear} from 'd3-scale';
+import type {ChartSize} from './types';
+export interface StackedBarDatum{label:string;again:number;hard:number;good:number;easy:number}
+export interface StackedBarsProps extends ChartSize{data:StackedBarDatum[]}
+const parts=[['again','var(--again)'],['hard','var(--hard)'],['good','var(--good)'],['easy','var(--easy)']] as const;
+export function StackedBars({data,width=316,height=120,title='Reviews by day',className=''}:StackedBarsProps){
+ const reduce=!!useReducedMotion(),w=Math.max(120,width),h=Math.max(70,height),top=8,bottom=h-23,left=8,right=w-7;
+ const max=Math.max(1,...data.map(d=>d.again+d.hard+d.good+d.easy));
+ const x=scaleBand().domain(data.map((_,i)=>String(i))).range([left,right]).padding(data.length>16?0.18:0.32);
+ const y=scaleLinear().domain([0,max]).range([bottom,top]);
+ return <svg role="img" aria-label={`${title}: ${data.length} periods and ${data.reduce((n,d)=>n+d.again+d.hard+d.good+d.easy,0)} reviews.`} className={className} width="100%" viewBox={`0 0 ${w} ${h}`} style={{maxWidth:w}}>
+ <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="var(--edge-3)"/>
+ {data.map((d,i)=>{let offset=0;return <g key={i}>
+ {parts.map(([key,color])=>{const count=d[key],base=offset;offset+=count;const topY=y(offset),bottomY=y(base),barHeight=Math.max(0,bottomY-topY);
+ return count>0?<motion.rect key={key} x={x(String(i))||0} width={Math.max(1,x.bandwidth())} fill={color} rx={1.5}
+ initial={reduce?false:{y:bottom,height:0}} animate={{y:topY,height:barHeight}} transition={{duration:0.55,delay:reduce?0:i*(data.length>16?0.018:0.06)}}/>:null})}
+ {(data.length<=8||i%Math.max(1,Math.ceil(data.length/6))===0)&&<text x={(x(String(i))||0)+x.bandwidth()/2} y={h-5} fontSize="9" textAnchor="middle" fill="var(--ink-3)">{d.label}</text>}
+ </g>})}</svg>;
+}
+export default StackedBars;
