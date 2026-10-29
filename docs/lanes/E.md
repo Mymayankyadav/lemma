@@ -35,7 +35,7 @@
 
 # Lane E — tutor handoff (TUTOR-01)
 
-Next action: TUTOR-01 T4 genuine Claude→ChatGPT→Claude acceptance on a student-approved StudyPlan checkpoint. T1–T3d backend and consent code are merged; production migrations 14–16 applied. **BLOCKED on D-owned StudyView.ready=false** and explicit owner-operated model sessions. Do not enable `TutorHandoff.ready` or claim real model verification from synthetic CI.
+Next action: TUTOR-01 T4 genuine Claude→ChatGPT→Claude on a student-approved Study checkpoint. T1–T3d and E safety hardening have merged; tutor migrations are deployed. **StudyView.ready is true after D #172**, but normal handoff remains hidden behind `TutorHandoff.ready=false`; D #190 prepares only the post-T4 button. E-T4-ACCESS-01 requests a separately clicked, guarded acceptance preview entry from D after E #193 is merged. The real student-operated round trip is still required. Do not flip general tutor readiness or claim synthetic CI is real acceptance.
 
 | Field | Value |
 | --- | --- |
