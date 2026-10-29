@@ -1,3 +1,10 @@
+## R14 — signed-out recovery controls must never render on deployed Pages (29 October 2026)
+
+- **Claim:** `automation-20261029-f-r14-signed-out-recovery`; heartbeat 2026-10-29T06:15Z; branch `lane-f/release-r14-signed-out-recovery-smoke`, base `main@477dbd6b`. Only open B #163 is a held recovery-activation draft; F unclaimed, C paused.
+- **Scope:** F-owned `test/release_live_smoke.js` and this handoff. Add real deployed Pages and disposable ready-fixture checks that no signed-out Settings view mounts account backup/restore controls, even when B eventually enables recovery. Include a deliberate DOM-leak negative control proving the assertion fails, plus reload verification. No sign-in, credentials, production mutations, feature-flag changes or student approval.
+- **Acceptance:** focused Node/Chromium smoke on exact PR head, F ownership guard, regression, local-stack and Pages CI as required; review the diff and merge only after required checks succeed. This is anonymous browser privacy coverage, **not** authenticated owner restore acceptance. B #163 remains held and T4 remains unaccepted.
+- **Next action:** implement the assertion, negative control and deployed-site checks; verify exact-head CI before merge.
+
 ## R13 — prove service-worker private-route cache isolation (29 October 2026)
 
 - **Claim:** `automation-20261029-f-r13-private-cache`; heartbeat 2026-10-29T05:00Z; branch `lane-f/release-r13-private-cache-boundary`, base `main@f3fb20d6c27ff7962d8ce6517e5de7a4baee4db8`. Only open B PR #163 is a held, independently owned recovery activation candidate. F has no competing open claim; C remains paused.
