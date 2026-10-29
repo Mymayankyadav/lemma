@@ -4,7 +4,9 @@
 - **Gap:** the release tag guard identifies required Actions runs by display name/event/SHA but not their canonical workflow file. A second workflow could reuse a required display name and accidentally satisfy the release gate without running the expected regression, local-stack, Pages or smoke implementation.
 - **Scope:** F-owned `test/release_tag_guard.js` and this handoff. Bind each required run to the exact `.github/workflows/*.yml` path and add positive/negative fixtures for missing, spoofed and duplicate names. Preserve latest trusted-run and post-deploy smoke ordering checks. No workflow, tag, database or readiness changes.
 - **Acceptance:** focused Node/V8 checks, F guard, exact-head regression/live Pages CI, review/merge only green; post-merge main checks. Real recovery/T4 acceptance still separate.
-- **Next action:** implement path-bound run selection and negative fixtures; verify exact head before merge.
+- **Implemented:** each of the four release workflow names is bound to its canonical `.github/workflows/*.yml` path; a same-named workflow cannot replace trusted CI evidence. Added missing/renamed path negatives and a newer spoofed success masking a real trusted failure. Existing exact SHA, latest trusted run, deploy→smoke ordering and bounded inventory rules remain intact.
+- **Focused verification:** V8 syntax parse and executable `check()` harness passed positive four-workflow provenance and five spoofed/missing-path negative cases. Local Node/npm/browser unavailable because GitHub checkout DNS is blocked; exact-head CI required before merge.
+- **Next action:** inspect exact-head regression/F guard and Pages smoke, merge only green; verify main. No release tag while B recovery and E T4 are unaccepted.
 
 ## R14 — signed-out recovery controls must never render on deployed Pages (29 October 2026)
 
