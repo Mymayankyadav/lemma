@@ -11,6 +11,7 @@ const contextId = '00000000-0000-4000-8000-000000000003';
 const attemptId = '00000000-0000-4000-8000-000000000004';
 const sessionId = '00000000-0000-4000-8000-000000000005';
 const changedId = '00000000-0000-4000-8000-000000000006';
+const hintId = '00000000-0000-4000-8000-000000000007';
 const cp = 'compactness-open-cover-proof';
 let dialog, onRead, failRead = false, copyAvailable = true;
 let identityChanged, reads = 0;
@@ -25,7 +26,7 @@ let state;
 function reset(){
   state = {planId,planRevision:3,contextId,contextRevision:2,
     checkpoint:{id:cp,objective:'Prove the compact Hausdorff theorem',status:'in_progress'},
-    sessionId,hintLevel:1,
+    sessionId,hintLevel:1,lastHint:{eventId:hintId,level:1},
     lastAttempt:{eventId:attemptId,text:'I can separate x from one point, not all of K.'},
     sourceRefs:['topology-notes:section-3.2']};
   app.workspaceRevision=1;app.workspaceBlocked=false;
@@ -106,6 +107,8 @@ async function rejectCopy(label,change,pattern){
   await rejectCopy('checkpoint focus',()=>{state.checkpoint.id='new-proof';},/stale_plan_revision/);
   await rejectCopy('new attempt',()=>{state.lastAttempt.eventId=changedId;},/stale_study_context/);
   await rejectCopy('new hint',()=>{state.hintLevel=2;},/stale_study_context/);
+  await rejectCopy('different hint at same level',()=>{state.lastHint.eventId=changedId;},
+    /stale_study_context/);
   await rejectCopy('new session',()=>{state.sessionId=changedId;},/stale_study_context/);
   await rejectCopy('context revision',()=>{state.contextRevision++;},/stale_study_context/);
   await rejectCopy('new source',()=>{state.sourceRefs.push('new-source');},/stale_study_context/);
