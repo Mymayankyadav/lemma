@@ -1,3 +1,10 @@
+## R9 release acceptance — live ready-Study navigation and signed-out isolation (29 October 2026)
+
+- **Claim:** `chat-20261029-f-r9-ready-study-smoke`; branch `lane-f/release-r9-ready-study-live-smoke`, base `main@e2d5dc6`. F-owned `test/release_live_smoke.js`, this handoff, and optionally `docs/RELEASE.md`. No competing F PR on pickup. Lane B #163 and D #166 remain independently claimed. Android remains paused.
+- **Gap:** the existing real-Pages smoke enforces hidden Study routes when `StudyView.ready=false` but, once D enables readiness, tests only the navigation tab's existence. A broken ready Study route could therefore ship green. Check `StudyPlan.ready` consistency, authenticated-only message while signed out, the rendered ready checkpoint route after tap and direct-hash reload, and return to Today, without signing in or touching student data.
+- **Acceptance:** preserve anonymous card/review/PWA smoke and all existing hidden-mode assertions, give explicit failure stage for visible-mode regressions, and run exact-head regression/F guard/live smoke CI. This is synthetic-free deployed Pages navigation, **not** student-approved plan or production authenticated T4 acceptance. No change to readiness, production, SQL, or B/D/E-owned code.
+- **Next:** implement and verify on PR head, merge only after green CI. D's readiness activation and E's genuine T4 remain independent gates.
+
 ## R8 release acceptance — visibly available account recovery (29 October 2026)
 
 - **Claim:** `chat-20261029-f-r8-recovery-visible`; branch `lane-f/release-01-r8-recovery-visible`, base `main@cd178834`; no open PR at claim. F-owned files: `test/release_recovery_gate.js`, `docs/RELEASE.md`, this handoff. Android remains paused.
