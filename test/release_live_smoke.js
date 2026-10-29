@@ -121,9 +121,9 @@ async function assertSignedOutTutorHidden(page) {
   for (const label of ['Test tutor handoff (unreleased)', 'Open tutor handoff',
     'Copy packet', 'Review pasted reply', 'Save selected study events',
     'Review card in editor', 'Stage unapproved amendment draft']) {
-    assert.equal(await page.locator('button').filter({
-      hasText: new RegExp('^\\s*' + label + '\\s*$')
-    }).count(), 0, 'signed-out Study must not expose tutor action ' + label);
+    const texts = await page.locator('button').allTextContents();
+    assert.equal(texts.some(text => text.trim() === label), false,
+      'signed-out Study must not expose tutor action ' + label);
   }
 }
 
