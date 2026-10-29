@@ -9,7 +9,7 @@ const marker='/* ===== main.js ===== */';
 assert.ok(html.includes(marker),'built app marker required');
 // Expose existing objects within the bundle IIFE for synthetic transport;
 // do not replace or mutate either real readiness flag or Study module.
-const testHtml=html.replace(marker,'window.__studyActivation={get account(){return LemmaAccount},get cloud(){return LemmaCloud},get app(){return App}};\\n'+marker);
+const testHtml=html.replace(marker,'window.__studyActivation={get account(){return LemmaAccount},get cloud(){return LemmaCloud},get app(){return App}};\n'+marker);
 const mock=fs.readFileSync(path.join(root,'test/mock_claude.js'),'utf8');
 const docs=Object.fromEntries(seed.map(n=>['data/users/u_test/profile/notes/'+n.id,n]));
 const libs={'katex.min.js':'katex/dist/katex.min.js','marked.umd.js':'marked/lib/marked.umd.js','purify.min.js':'dompurify/dist/purify.min.js'};
