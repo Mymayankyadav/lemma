@@ -168,6 +168,18 @@ const StudyPlan = (() => {
     if (stillApproved.length !== 1 || !same(stillApproved[0].id,plan.id) ||
         stillApproved[0].revision !== plan.revision)
       throw new Error('Approved study plan changed; reload checkpoint');
+    // A concurrent device can complete this checkpoint or move the active
+    // focus while proof events are loading, without changing the plan or
+    // session revision. Never present that stale status as the current proof.
+    // Compare only the displayed/selection fields, not unrelated progress
+    // metadata; normalize order because the owner-scoped query is unordered.
+    const checkpointState = items => JSON.stringify(items.map(item => [
+      item.checkpoint_id,item.title,item.status
+    ]).sort((a,b) => String(a[0]).localeCompare(String(b[0]))));
+    const currentStatuses = await list(ctx,'study_checkpoints',
+      'checkpoint_id,title,status',q => q.eq('plan_id',plan.id));
+    if (checkpointState(currentStatuses) !== checkpointState(statuses))
+      throw new Error('Study checkpoint status changed; reload checkpoint');
     ctx.check();
     return {
       planId:plan.id,planRevision:plan.revision,
