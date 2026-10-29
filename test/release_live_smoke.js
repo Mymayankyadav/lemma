@@ -200,8 +200,76 @@ async function negativeSelfTest() {
   fs.rmSync(OUT, { recursive: true, force: true }); // negative fixture is not live evidence
   console.log('PASS negative smoke: HTTP 404 release URL is rejected');
 }
+// Exercise the R9 *ready* path before it becomes user-visible. This modifies
+// only the HTML served to a disposable, signed-out Chromium context; it never
+// changes the checked-in source, the deployed site, or any account workspace.
+function readyFixture(html) {
+  function enable(source, startMarker, endMarker, flag) {
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker, start + startMarker.length);
+    if (start < 0 || end < 0 || end <= start) throw Error('Missing ready-fixture module boundary');
+    const slice = source.slice(start, end);
+    const matches = [...slice.matchAll(flag)];
+    if (matches.length !== 1) throw Error('Missing or ambiguous ready-fixture flag');
+    return source.slice(0, start) +
+      slice.replace(flag, s => s.replace(/\\bfalse\\b/, 'true')) + source.slice(end);
+  }
+  const plan = enable(html, '/* ===== study_plan.js ===== */',
+    '/* ===== tutor_handoff.js ===== */', /return \\{ ready:(?:true|false), activeContext/g);
+  return enable(plan, '/* ===== view_study.js ===== */',
+    '/* ===== main.js ===== */', /const ready = (?:true|false);/g);
+}
+async function readySelfTest() {
+  const original = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'), 'utf8');
+  assert.throws(() => readyFixture('invalid HTML'), /module boundary/,
+    'missing source markers must fail closed');
+  assert.throws(() => readyFixture(original.replace('const ready = false;',
+    'const readinessFlag = false;')), /ambiguous ready-fixture flag/,
+    'missing StudyView ready declaration must fail closed');
+  const injected = readyFixture(original);
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({
+    serviceWorkers: 'block', viewport: { width: 390, height: 844 },
+    colorScheme: 'light', reducedMotion: 'reduce'
+  });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', err => errors.push(err.message));
+  const origin = 'http://127.0.0.1:42999/';
+  await ctx.route(origin + '**', route => route.fulfill({
+    status: 200, contentType: 'text/html', body: injected
+  }));
+  try {
+    await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.today, .onboard').first().waitFor({ timeout });
+    const ready = await page.evaluate(() => StudyView.ready && StudyPlan.ready);
+    assert.equal(ready, true, 'the real built modules must both be ready in fixture');
+    await page.locator('nav [data-go="study"]:visible').first().click();
+    await page.locator('.study-page:visible').first().waitFor({ timeout });
+    await page.locator('.study-page .study-message').filter({
+      hasText: 'Sign in to open an approved study checkpoint.'
+    }).waitFor({ timeout });
+    assert.equal(await page.locator('.study-page button').filter({
+      hasText: /save proof attempt|record hint|record evidence/i
+    }).count(), 0, 'signed-out Study must not show evidence writes');
+    await page.goto(origin + '#study', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.study-page:visible').first().waitFor({ timeout });
+    await page.locator('.study-page .study-message').filter({
+      hasText: 'Sign in to open an approved study checkpoint.'
+    }).waitFor({ timeout });
+    await page.getByRole('button', { name: 'Back to Today' }).click();
+    await page.locator('.today, .onboard').first().waitFor({ timeout });
+    assert.deepEqual(errors, [], 'injected ready Study must not cause browser exceptions');
+    console.log('PASS ready-Study fixture: real StudyPlan/StudyView, anonymous navigation, deep link and return');
+  } finally {
+    await ctx.close();
+    await browser.close();
+  }
+}
 (async () => {
   if (process.argv.includes('--negative-self-test')) return negativeSelfTest();
+  if (process.argv.includes('--ready-self-test')) return readySelfTest();
   if (!process.env.LEMMA_LIVE_URL) {
     console.log('SKIP live Pages smoke: LEMMA_LIVE_URL unset (offline npm test)');
     return;
