@@ -136,11 +136,13 @@ if (require.main === module) {
         '/* page.append(accountRecoverySection()); */',/not mounted/);
       reject('page.append(accountRecoverySection());',
         'page.append(knowledgeDraftSection());',/not mounted/);
-      reject('LemmaAccount.user &&','true &&',/not mounted/);
+      reject('if (ACCOUNT_RECOVERY_READY && LemmaAccount.user &&',
+        'if (ACCOUNT_RECOVERY_READY && true &&',/not mounted/);
       reject('function accountRecoverySection(){',
         'function disconnectedRecoverySection(){',/implementation is missing/);
       reject('LemmaAccount.client===client','true',/owner, client and workspace/);
-      reject("Store.mode!=='local'","true",/local-only/);
+      reject("restore.disabled=busy||!validated||!consent.checked||Store.mode!=='local';",
+        "restore.disabled=busy||!validated||!consent.checked||true;",/local-only/);
       reject('studentConfirmed:true,dryRun:true',
         'studentConfirmed:false,dryRun:true',/dry-run restore preflight/);
       reject('const accepted=await confirmDialog(',
