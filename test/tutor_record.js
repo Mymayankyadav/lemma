@@ -11,7 +11,7 @@ const C1='00000000-0000-4000-8000-000000000004';
 const owner='00000000-0000-4000-8000-000000000005';
 const cp='compactness-open-cover-proof';
 let dialog, revision=3, activeCheckpoint=cp, failFirst=false, failSecond=false, afterContextRead=null;
-let hintLevel=1, attemptId=E1, sessionId=owner, checkpointStatus='in_progress';
+let hintLevel=1, hintEventId=null, attemptId=E1, sessionId=owner, checkpointStatus='in_progress';
 let contextId=null, contextRevision=null, lastFeedbackId=null, sourceRefs=[];
 let reflectOwnWrites=false,externalAfterFirst=false;
 const calls=[];
@@ -34,13 +34,13 @@ const client={rpc(name,args){
   }
   if(failSecond && args.p_event_id===E2) {
    failSecond=false;
-   if(reflectOwnWrites)hintLevel=args.p_payload.level;
+   if(reflectOwnWrites){hintLevel=args.p_payload.level;hintEventId=args.p_event_id;}
    throw Error('Network interrupted after a possible server write');
   }
   if(reflectOwnWrites){
    if(sessionId===null)sessionId=owner;
    if(['attempt','proof_step'].includes(args.p_event_type))attemptId=args.p_event_id;
-   if(args.p_event_type==='hint')hintLevel=args.p_payload.level;
+   if(args.p_event_type==='hint'){hintLevel=args.p_payload.level;hintEventId=args.p_event_id;}
    if(externalAfterFirst && args.p_event_id===E1)
     attemptId='00000000-0000-4000-8000-000000000007';
   }
@@ -55,7 +55,8 @@ const plan={
   assert.equal(selection?.planId,A);assert.equal(selection?.checkpointId,cp);
   const snapshot={planId:A,planRevision:revision,contextId,contextRevision,
    checkpoint:{id:activeCheckpoint,objective:'Show compactness',status:checkpointStatus},
-   sessionId,hintLevel,sourceRefs:[...sourceRefs],
+   sessionId,hintLevel,lastHint:hintEventId?{eventId:hintEventId,level:hintLevel}:null,
+   sourceRefs:[...sourceRefs],
    lastAttempt:attemptId ? {eventId:attemptId,text:'Partial proof'} : null,
    lastFeedback:lastFeedbackId ? {eventId:lastFeedbackId} : null};
   if(afterContextRead){
@@ -262,7 +263,7 @@ async function open(){
  // The first selected event may itself create a session and advance the
  // proof. Its original UUID is allowed as self-caused context, so the second
  // selected event must still be saved in the same deliberate action.
- sessionId=null;attemptId=C1;hintLevel=1;reflectOwnWrites=true;
+ sessionId=null;attemptId=C1;hintLevel=1;hintEventId=null;reflectOwnWrites=true;
  x=await open();select(0);select(1);
  const beforeBatch=calls.length;
  await x.save.events.click();
@@ -274,7 +275,7 @@ async function open(){
 
  // A lost response may follow a server commit of the second event. The
  // retry must accept only this sheet's attempted IDs and reuse E2 unchanged.
- sessionId=null;attemptId=C1;hintLevel=1;
+ sessionId=null;attemptId=C1;hintLevel=1;hintEventId=null;
  x=await open();select(0);select(1);failSecond=true;
  const beforeRetry=calls.length;
  await x.save.events.click();
@@ -288,7 +289,7 @@ async function open(){
  assert.equal(x.save.disabled,true);
  // Self-progress is not blanket permission for another device's new proof.
  // An unrelated event ID after the first save must stop the remaining batch.
- sessionId=null;attemptId=C1;hintLevel=1;externalAfterFirst=true;
+ sessionId=null;attemptId=C1;hintLevel=1;hintEventId=null;externalAfterFirst=true;
  x=await open();select(0);const pendingSecond=select(1);
  const beforeExternal=calls.length;
  await x.save.events.click();
@@ -315,7 +316,7 @@ async function open(){
  // An uncertain hint with no visible event UUID cannot justify ANY new
  // session. A second device may have created it and reached the same level.
  // The old rule accepted this merely because an event ID was attempted.
- sessionId=null;attemptId=null;hintLevel=1;reflectOwnWrites=false;
+ sessionId=null;attemptId=null;hintLevel=1;hintEventId=null;reflectOwnWrites=false;
  x=await open();const unprovenHint=select(1);failSecond=true;
  const beforeForeignSession=calls.length;
  await x.save.events.click();
@@ -329,6 +330,20 @@ async function open(){
  assert.equal(unprovenHint.checked,true,'stale retry preserves the original selection');
  assert.equal(x.save.disabled,false,'student may retry only after reopening a fresh handoff');
 
- reflectOwnWrites=false;sessionId=owner;attemptId=E1;hintLevel=1;
- console.log('PASS TUTOR-01 T3j: witnessed lost-proof retry, foreign unproven session denial, consent retained');
+ // T3k: an unrelated same-level hint has a different immutable UUID.
+ // It must invalidate consent even though plan, checkpoint, session, proof
+ // and numeric hint level all remain unchanged.
+ reflectOwnWrites=false;sessionId=owner;attemptId=E1;
+ hintLevel=2;hintEventId=E2;
+ x=await open();const foreignHintSelection=select(0);
+ const beforeSameLevel=calls.length;
+ hintEventId=C1; // another device recorded a different level-2 hint
+ await x.save.events.click();
+ assert.equal(calls.length,beforeSameLevel,
+  'foreign same-level hint must not reuse prior tutor consent');
+ assert.match(x.status.textContent,/stale_study_context/);
+ assert.equal(foreignHintSelection.checked,true,'foreign hint must preserve uncommitted selection');
+ hintEventId=null;hintLevel=1;
+ reflectOwnWrites=false;sessionId=owner;attemptId=E1;
+ console.log('PASS TUTOR-01 T3k: same-level foreign hint UUID rejected, witnessed retry preserved');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});
