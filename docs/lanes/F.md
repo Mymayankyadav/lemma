@@ -1,3 +1,11 @@
+## R18 — bind deployed Pages HTML to exact build bytes (29 October 2026)
+
+- **Claim:** `chat-20261029-f-r18-pages-parity`; heartbeat 2026-10-29T07:24:15.459Z; branch `lane-f/release-r18-pages-content-parity`, base `main@a00ad906`. No open competing F PR. B #163 held pending owner-security acceptance; D #188 active; C paused.
+- **Defect:** Existing release attestation binds successful workflow IDs to current SHA, but anonymous smoke only checks behavior: Pages can serve an older working HTML and still pass. Also the smoke's isolated build omits public Supabase environment variables used by the real Pages build, and a `workflow_run` checkout may drift to newer main. A correct byte match needs the same build SHA and public config.
+- **Scope:** F-owned `.github/workflows/release.yml`, `test/release_live_smoke.js`, this handoff. Bind workflow_run checkout to its deployed commit, pass identical public Pages build variables, and compare served document bytes with the built `dist/index.html` for deployed-head/tag events. Test local stale/modified bytes and matching bytes; preserve PR/dispatch smoke as behavior-only, not production parity. No production mutation, credentials, readiness, Android or tag publication.
+- **Acceptance:** focused parity self-test and negative controls, lane guard, exact-head regression and release Pages CI; merge only green, verify main. No real account, restore or student approval.
+- **Next:** implement, test and commit bounded F-owned parity slice; inspect all exact-head checks and update handoff.
+
 ## R17 — enforce workflow conclusion/status consistency (2026-10-29)
 
 - **Claim:** `chat-20261029-f-r17-run-state`; heartbeat 2026-10-29T07:12:51.019Z; branch `lane-f/release-r17-workflow-state-consistency`, base `main@019da5d`. R16 #184 merged with exact-head regression, ownership guard and Pages smoke SUCCESS; post-merge main workflows pending. No competing F PR at pickup. Other lane PRs B #163, D #183, A #185 are independent.
