@@ -13,14 +13,16 @@ export async function counts(c:Context,s:any):Promise<{due:number;pending:number
     scoped(c,'proposals','id').eq('status','pending'),
     scoped(c,'card_comments','id').eq('status','open'),
     scoped(c,'v_due_cards','card_id,state,due').limit(2000),
-    scoped(c,'reviews','id,reviewed_at,state_before').gte('reviewed_at',new Date(Date.now()-86400000).toISOString()).limit(1000)
+    scoped(c,'reviews','id,reviewed_at,state_before').gte('reviewed_at',new Date(Date.now()-172800000).toISOString()).limit(1000)
   ]);
   for(const x of [props,comments,rows,reviews])if(x.error)throw new Error(x.error.message);
-  const today=day(s), end=Date.parse(today+'T23:59:59Z');
-  const newDone=(reviews.data||[]).filter((x:any)=>x.state_before===0).length;
-  const due=(rows.data||[]).filter((x:any)=>x.state!==0 && Date.parse(x.due)<=end).length;
+  const today=day(s);
+  const reviewedToday=(reviews.data||[]).filter((x:any)=>day(s,x.reviewed_at)===today);
+  const newDone=reviewedToday.filter((x:any)=>x.state_before===0).length;
+  const due=(rows.data||[]).filter((x:any)=>x.state!==0 && day(s,x.due)<=today).length;
   const fresh=Math.min(Math.max(0,(s.new_per_day??20)-newDone),(rows.data||[]).filter((x:any)=>x.state===0).length);
-  return {due:Math.min(s.reviews_per_day??200,due+fresh),pending:(props.data||[]).length,comments:(comments.data||[]).length};
+  const capacity=Math.max(0,(s.reviews_per_day??200)-reviewedToday.length);
+  return {due:Math.min(capacity,due+fresh),pending:(props.data||[]).length,comments:(comments.data||[]).length};
 }
 async function list(c:Context,s:any):Promise<string>{
   const ps=await all(c,'projects','id,slug,title,status,last_activity_at');
