@@ -555,7 +555,8 @@ export class LiveAdapter implements LemmaApi {
  }
  async pinConcept(...args: Parameters<LemmaApi['pinConcept']>): ReturnType<LemmaApi['pinConcept']> {
   const [id,x,y]=args,db=liveClient(),uid=await owner(db)
-  if(!Number.isFinite(x)||!Number.isFinite(y)) throw new LemmaError('invalid','Invalid Atlas coordinates')
+  if((x===null)!==(y===null)||(x!==null&&!Number.isFinite(x))||(y!==null&&!Number.isFinite(y)))
+    throw new LemmaError('invalid','Invalid Atlas coordinates')
   checked(await db.from('concepts').update({pin_x:x,pin_y:y}).eq('id',id).eq('user_id',uid).select('id').single())
  }
  async getReviewLog(...args: Parameters<LemmaApi['getReviewLog']>): ReturnType<LemmaApi['getReviewLog']> {

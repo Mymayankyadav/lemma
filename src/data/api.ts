@@ -96,7 +96,7 @@ export interface LemmaApi {
  /** Read concepts and their knowledge links. */
  getAtlas(): Promise<AtlasGraph>
  /** Save a concept position in the Atlas. */
- pinConcept(id: string, x: number, y: number): Promise<void>
+ pinConcept(id: string, x: number | null, y: number | null): Promise<void>
  /** Read non-undone reviews for the FSRS optimizer. */
  getReviewLog(): Promise<ReviewLogEntry[]>
  /** Read raw insight rows for the selected period. */
