@@ -89,7 +89,14 @@ export async function selftest(c:Context):Promise<any>{
     });
     await check('MCP tool list and size',async()=>{
       const handler=createMcpHandler(()=>buildServer(c));
-      const req=new Request('http://localhost/mcp',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})});
+      const options={method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream'}};
+      const initialized=await handler.fetch(new Request('http://localhost/mcp',{...options,
+        body:JSON.stringify({jsonrpc:'2.0',id:0,method:'initialize',params:{
+          protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'lemma-selftest',version:'1.0.0'}
+        }})}));
+      if(!initialized.ok)throw Error('MCP initialize failed: '+initialized.status);
+      const req=new Request('http://localhost/mcp',{...options,
+        body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})});
       const res=await handler.fetch(req),body=await res.text();
       let payload:any;
       if(body.startsWith('event:')){const line=body.split('\n').find((s:string)=>s.startsWith('data: '));payload=JSON.parse(line?.slice(6)||'{}')}
