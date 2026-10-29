@@ -27,7 +27,10 @@ const resources = new Map([
   ['/index.html', () => [next ? nextHtml : html, mime['.html']]],
   ['/service-worker.js', () => [next ? nextWorker : worker, mime['.js']]],
   ['/manifest.webmanifest', () => [fs.readFileSync(path.join(dist, 'manifest.webmanifest')), mime['.webmanifest']]],
-  ['/icons/icon.svg', () => [fs.readFileSync(path.join(dist, 'icons/icon.svg')), mime['.svg']]]
+  ['/icons/icon.svg', () => [fs.readFileSync(path.join(dist, 'icons/icon.svg')), mime['.svg']]],
+  // Synthetic owner-only routes: these are NEVER production data or credentials.
+  ['/private/workspace.json', () => ['private-workspace-fixture', 'application/json']],
+  ['/private/proof.html', () => ['private-proof-fixture', mime['.html']]]
 ]);
 const server = http.createServer((req, res) => {
   const pathname = new URL(req.url, 'http://localhost').pathname;
@@ -61,6 +64,20 @@ async function snapshot(page, front) {
       tx.oncomplete = () => db.close();
     };
   }), front);
+}
+// Inspect *all* worker caches, not just the active shell cache: a retired
+// cache containing an owner response is still a privacy failure.
+async function privateCacheHits(page, urls) {
+  return page.evaluate(async urls => {
+    const hits = [];
+    for (const name of await caches.keys()) {
+      const cache = await caches.open(name);
+      for (const url of urls) {
+        if (await cache.match(url)) hits.push(name + ': ' + url);
+      }
+    }
+    return hits;
+  }, urls);
 }
 async function assertCard(page, title) {
   await page.locator('[data-go="browse"]:visible').first().click();
@@ -108,12 +125,53 @@ async function run() {
     assert(before && before.title === title, 'card saved to actual IndexedDB');
     console.log('PASS initial service worker install + durable local card');
 
+    // The worker is permitted to cache only the public application shell.
+    // Test real controlled fetches to synthetic same-origin owner/API routes,
+    // arbitrary HTML and a query-bearing shell URL. The server sends no-store
+    // responses so a successful offline read cannot be explained by HTTP cache.
+    const privateUrls = [
+      new URL('private/workspace.json', url).href,
+      new URL('private/proof.html', url).href,
+      new URL('?private_probe=owner-context', url).href
+    ];
+    const privateResponses = await page.evaluate(async urls => Promise.all(urls.map(async u => {
+      const response = await fetch(u, { cache: 'no-store' });
+      return { ok: response.ok, body: await response.text() };
+    })), privateUrls);
+    assert(privateResponses.every(x => x.ok), 'synthetic private routes must be reachable online');
+    assert.equal(privateResponses[0].body, 'private-workspace-fixture');
+    assert.equal(privateResponses[1].body, 'private-proof-fixture');
+    assert.match(privateResponses[2].body, /<title>/, 'query-bearing shell is served online');
+    assert.deepEqual(await privateCacheHits(page, privateUrls), [],
+      'private responses and query-bearing documents must not enter any SW cache');
+    // Negative control: prove the inventory would catch an accidentally cached
+    // private response. Remove this test-only entry before offline verification.
+    await page.evaluate(async ({name, target}) => {
+      const cache = await caches.open(name);
+      await cache.put(target, new Response('private-fixture-negative-control'));
+    }, {name: oldName, target: privateUrls[0]});
+    assert((await privateCacheHits(page, privateUrls)).some(x => x.includes(privateUrls[0])),
+      'private cache inventory must detect a deliberately injected leak');
+    await page.evaluate(async ({name, target}) => {
+      await (await caches.open(name)).delete(target);
+    }, {name: oldName, target: privateUrls[0]});
+    assert.deepEqual(await privateCacheHits(page, privateUrls), [],
+      'negative control must leave no synthetic private cache entry');
+
     await context.setOffline(true);
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('.today').waitFor({ timeout: wait });
     await assertCard(page, title);
     assert.deepEqual(await snapshot(page, front), before, 'offline reload preserves full card');
-    console.log('PASS offline navigation through cached shell and IndexedDB');
+    const offlinePrivate = await page.evaluate(async urls => Promise.all(urls.map(async u => {
+      try { await fetch(u, { cache: 'no-store' }); return 'unexpected success'; }
+      catch (_) { return 'network denied'; }
+    })), privateUrls);
+    assert.deepEqual(offlinePrivate, privateUrls.map(() => 'network denied'),
+      'offline worker must not return private routes or query-bearing shell');
+    assert.deepEqual(await privateCacheHits(page, privateUrls), [],
+      'offline navigation must not populate private CacheStorage');
+    console.log('PASS offline public shell and IndexedDB; private routes denied and uncached');
 
     await context.setOffline(false);
     await page.evaluate(() => { window.__releaseOldController = navigator.serviceWorker.controller; });
@@ -172,6 +230,8 @@ async function run() {
     await page.locator('.today').waitFor({ timeout: wait });
     assert.match(await page.title(), /PWA upgrade/, 'updated shell remains offline-available');
     assert.deepEqual(await snapshot(page, front), before, 'updated offline shell retains card');
+    assert.deepEqual(await privateCacheHits(page, privateUrls), [],
+      'service-worker upgrade must not introduce private cache entries');
     assert.deepEqual(pageErrors, [], 'no page JavaScript errors in PWA lifecycle');
     console.log('PASS versioned SW update, current-cache offline shell and IndexedDB retention');
   } finally {
