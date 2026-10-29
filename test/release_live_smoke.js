@@ -10,6 +10,7 @@ const { chromium } = require('playwright');
 const OUT = path.resolve(__dirname, '../test-output/release-live');
 const DEFAULT_URL = 'https://mymayankyadav.github.io/lemma/';
 const timeout = 20000;
+const SHELL_ASSETS = Object.freeze(['service-worker.js', 'manifest.webmanifest', 'icons/icon.svg']);
 // Prove the published document is exactly the built source on deploy/tag runs.
 function parityEnabled(value) {
   if (value === undefined || value === 'false') return false;
@@ -26,6 +27,16 @@ function assertDeployedHtmlParity(served, expected) {
     'Deployed Pages HTML does not match exact checked-out build');
 }
 
+
+function assertDeployedShellAsset(name, status, served, expected) {
+  assert(SHELL_ASSETS.includes(name), 'Only approved public shell assets may be attested');
+  assert.equal(status, 200, 'Deployed Pages ' + name + ' must respond HTTP 200');
+  try {
+    assertDeployedHtmlParity(served, expected);
+  } catch (e) {
+    throw new Error('Deployed Pages ' + name + ' mismatch: ' + e.message, { cause:e });
+  }
+}
 
 // Derive readiness from the exact app bundle actually served, not nonexistent
 // globals outside build.js's private IIFE. Reject missing/ambiguous declarations
@@ -118,6 +129,14 @@ async function smoke(url) {
       stage = 'deployed-html-parity';
       const expected = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'));
       assertDeployedHtmlParity(await response.body(), expected);
+      stage = 'deployed-shell-assets';
+      for (const name of SHELL_ASSETS) {
+        const assetResponse = await ctx.request.get(new URL(name, parsed.href).href, {
+          timeout: 45000, maxRedirects: 0
+        });
+        const builtAsset = fs.readFileSync(path.resolve(__dirname, '../dist', name));
+        assertDeployedShellAsset(name, assetResponse.status(), await assetResponse.body(), builtAsset);
+      }
       stage = 'navigation';
     }
     assert.strictEqual(new URL(page.url()).origin, parsed.origin, 'unexpected origin redirect');
@@ -292,7 +311,20 @@ function paritySelfTest() {
   assert.equal(parityEnabled('false'), false);
   assert.equal(parityEnabled(undefined), false);
   assert.throws(() => parityEnabled('yes'), /Invalid LEMMA/);
-  console.log('PASS release deployed HTML parity self-test');
+  for (const name of SHELL_ASSETS) {
+    const bytes = fs.readFileSync(path.resolve(__dirname, '../dist', name));
+    assert(bytes.length > 0, 'Built public shell asset must not be empty: ' + name);
+    assertDeployedShellAsset(name, 200, Buffer.from(bytes), bytes);
+    const staleAsset = Buffer.from(bytes);
+    staleAsset[0] ^= 1;
+    assert.throws(() => assertDeployedShellAsset(name, 200, staleAsset, bytes),
+      /Deployed Pages .* mismatch/, 'stale public shell asset must fail');
+    assert.throws(() => assertDeployedShellAsset(name, 404, bytes, bytes),
+      /must respond HTTP 200/, 'missing public shell asset must fail');
+  }
+  assert.throws(() => assertDeployedShellAsset('private.json', 200, built, built),
+    /Only approved public shell assets/, 'no private route can become a release artifact');
+  console.log('PASS release deployed HTML and PWA shell asset parity self-test');
 }
 async function negativeSelfTest() {
   const server = http.createServer((_req, res) => { res.writeHead(404); res.end('missing'); });
