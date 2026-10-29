@@ -1,3 +1,12 @@
+## P5s — expose current hint event provenance for tutor freshness (29 October 2026)
+
+- **Claim:** `automation-20261029-d-p5s-hint-provenance`; heartbeat 2026-10-29T10:16:24.721Z; branch `lane-d/plan-p5s-hint-event-provenance`, base `main@e3083bbc0a1a11e05d096edeb428fa84af277bb5`. Main regression/local Supabase/Pages/live smoke passed (40855654075/40855654250/40855654161/40855725400). No active D claim; B #163 held, C paused.
+- **Gap:** `StudyPlan.activeContext()` returns only `hintLevel`, not the immutable hint event UUID. Another device can record a different hint at the same numeric level, which a tutor handoff cannot distinguish from the reviewed hint. A same-level replacement must invalidate stale tutor consent even when plan/session/revision remain unchanged.
+- **Scope:** D-owned `src/app/study_plan.js`, `test/study_resume.js`, and this handoff. Expose read-only `lastHint` as `{eventId,level,createdAt}` or null from the already selected latest current-revision event; keep `hintLevel` and existing checkpoint selection unchanged. Add reload, same-level distinct UUID and amendment-history tests. No new SQL, writes, approvals, readiness change, production or Android edits.
+- **Cross-lane request D-E-HINT-01 → E · OPEN:** in `src/app/tutor_handoff.js`, bind reviewed packet freshness to the `lastHint.eventId` from this D contract; for own confirmed/uncertain hint writes allow only the original UUID, not a coincidentally equal numeric level. Test equal-level foreign UUID rejection and original lost-response retry. Depends on this D slice merged and green; E must implement in its own lane/PR, not this D branch.
+- **Gate:** D ownership, focused study resume, syntax/build and exact-head regression/local Supabase; review diff, merge only green. Real student T4 and authenticated recovery remain separate.
+- **Next:** implement read-only hint event metadata, test, inspect CI, then hand off D-E-HINT-01 to E.
+
 ## P5r — E-T4-ACCESS-01 approved-checkpoint acceptance preview (29 October 2026)
 
 - **Claim:** `automation-20261029-d-p5r-tutor-preview`; heartbeat 2026-10-29T08:08:18.213Z; branch `lane-d/plan-p5r-tutor-acceptance-preview`, base `main@e98ef96b0f078507a1c55fe4a536d99a60bd235d`. E #193 merged its separate `TutorHandoff.openForAcceptance` contract; D has no competing open claim, B #163 remains held, C/Android paused. F #194 merged with exact-head regression/Pages green; its post-merge main checks are running at claim.
