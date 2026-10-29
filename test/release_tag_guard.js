@@ -3,11 +3,13 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const SHA = /^[0-9a-f]{40}$/;
+// GitHub Actions display names are not unique. A release attestation must
+// refer to the expected workflow implementation, not a same-named workflow.
 const REQUIRE = Object.freeze({
-  'Lemma regression tests': 'push',
-  'Lemma local Supabase sync gates': 'push',
-  'Deploy Lemma web': ['push','workflow_dispatch'],
-  'Lemma live Pages smoke': 'workflow_run',
+  'Lemma regression tests': { event:'push', path:'.github/workflows/test.yml' },
+  'Lemma local Supabase sync gates': { event:'push', path:'.github/workflows/sync-local.yml' },
+  'Deploy Lemma web': { event:['push','workflow_dispatch'], path:'.github/workflows/pages.yml' },
+  'Lemma live Pages smoke': { event:'workflow_run', path:'.github/workflows/release.yml' },
 });
 function check(tagSha, mainSha, allRuns) {
   if (!SHA.test(tagSha) || !SHA.test(mainSha) || tagSha !== mainSha)
@@ -15,8 +17,10 @@ function check(tagSha, mainSha, allRuns) {
   if (!Array.isArray(allRuns) || allRuns.length > 100)
     throw Error('Invalid bounded GitHub Actions run inventory');
   const chosen = {};
-  for (const [name, event] of Object.entries(REQUIRE)) {
-    const candidates = allRuns.filter(r => r && r.name === name && (Array.isArray(event) ? event.includes(r.event) : r.event === event) &&
+  for (const [name, spec] of Object.entries(REQUIRE)) {
+    const candidates = allRuns.filter(r => r && r.name === name &&
+      r.path === spec.path &&
+      (Array.isArray(spec.event) ? spec.event.includes(r.event) : r.event === spec.event) &&
       r.head_branch === 'main' && r.head_sha === tagSha);
     candidates.sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at) ||
       (b.id || 0) - (a.id || 0));
@@ -42,8 +46,9 @@ if (require.main === module) {
       ' deploy=' + accepted.deployRun + ' smoke=' + accepted.smokeRun);
   } else if (process.argv.length === 2) {
     const sha='a'.repeat(40), clock='2026-10-28T11:00:00Z';
-    const runs=Object.entries(REQUIRE).map(([name,event],i)=>({
-      name,event:Array.isArray(event) ? event[0] : event,id:i+1,head_sha:sha,head_branch:'main',status:'completed',
+    const runs=Object.entries(REQUIRE).map(([name,spec],i)=>({
+      name,path:spec.path,event:Array.isArray(spec.event) ? spec.event[0] : spec.event,
+      id:i+1,head_sha:sha,head_branch:'main',status:'completed',
       conclusion:'success',created_at:new Date(Date.parse(clock)+i*60000).toISOString(),
       updated_at:new Date(Date.parse(clock)+i*60000+20000).toISOString()
     }));
@@ -62,7 +67,25 @@ if (require.main === module) {
     bad=copy(runs);bad.push({...bad[0],id:500,
       created_at:'2026-10-28T11:09:00Z',conclusion:'failure'});
     assert.throws(()=>check(sha,sha,bad),/regression/);
-    console.log('ok: release tag exact-current-main, latest green workflows and post-deploy smoke negative controls');
+    // A display name alone is not evidence that the trusted workflow ran.
+    bad=copy(runs);bad[0].path='.github/workflows/fake-regression.yml';
+    assert.throws(()=>check(sha,sha,bad),/regression/);
+    bad=copy(runs);bad[1].path=null;
+    assert.throws(()=>check(sha,sha,bad),/local Supabase/);
+    bad=copy(runs);bad[2].path='.github/workflows/alternate-pages.yml';
+    assert.throws(()=>check(sha,sha,bad),/Deploy Lemma web/);
+    bad=copy(runs);bad[3].path='.github/workflows/alternate-smoke.yml';
+    assert.throws(()=>check(sha,sha,bad),/live Pages smoke/);
+    bad=copy(runs);bad.push({...bad[0],path:'.github/workflows/spoof.yml',
+      id:999,created_at:'2026-10-28T12:00:00Z',conclusion:'success'});
+    assert.equal(check(sha,sha,bad).smokeRun,4,
+      'same-named untrusted workflow must not displace trusted success');
+    bad=copy(runs);bad[0].conclusion='failure';
+    bad.push({...bad[0],path:'.github/workflows/spoof.yml',
+      id:999,created_at:'2026-10-28T12:00:00Z',conclusion:'success'});
+    assert.throws(()=>check(sha,sha,bad),/regression/,
+      'same-named untrusted success must not conceal trusted failure');
+    console.log('ok: release tag exact-current-main, canonical workflow paths, latest trusted green runs and post-deploy smoke');
   } else throw Error('Unknown tag guard arguments');
 }
 module.exports={check};
