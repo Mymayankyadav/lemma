@@ -394,14 +394,21 @@ const TutorHandoff = (() => {
         (ownSessionIds.some(id => sameId(id,currentSession)) ||
           (!ownSessionIds.length && witnessedOwnEvent));
       const currentHint = now.hintLevel ?? 0;
+      const oldHintId = eventId(ctx,'lastHint');
+      const currentHintId = eventId(now,'lastHint');
+      // Numeric hint levels are not identities: two devices can record
+      // different hints at the same level. A changed hint is self-caused
+      // only when the original attempted UUID is visible in the active
+      // session, never just because its level happens to match.
       const ownHint = ownEvents.some(e => e.type === 'hint' &&
-        e.payload?.level === currentHint);
+        e.payload?.level === currentHint && sameId(e.eventId,currentHintId));
       if ((now.contextId ?? null) !== (ctx.contextId ?? null) ||
           (now.contextRevision ?? null) !== (ctx.contextRevision ?? null) ||
           (now.checkpoint?.status ?? 'in_progress') !==
             (ctx.checkpoint?.status ?? 'in_progress') ||
           (!sameId(currentSession,oldSession) && !ownNewSession) ||
-          (currentHint !== (ctx.hintLevel ?? 0) && !ownHint) ||
+          ((currentHint !== (ctx.hintLevel ?? 0) ||
+            !sameId(currentHintId,oldHintId)) && !ownHint) ||
           !ownEvent('lastAttempt',['attempt','proof_step']) ||
           !ownEvent('lastFeedback',['feedback']) ||
           !ownEvent('lastEvidence',['mastery_evidence']) ||
