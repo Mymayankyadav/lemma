@@ -1,3 +1,11 @@
+## R17 — enforce workflow conclusion/status consistency (2026-10-29)
+
+- **Claim:** `chat-20261029-f-r17-run-state`; heartbeat 2026-10-29T07:12:51.019Z; branch `lane-f/release-r17-workflow-state-consistency`, base `main@019da5d`. R16 #184 merged with exact-head regression, ownership guard and Pages smoke SUCCESS; post-merge main workflows pending. No competing F PR at pickup. Other lane PRs B #163, D #183, A #185 are independent.
+- **Gap:** R16 validates only the *type* of a completed run's conclusion; an older trusted exact-SHA run with an impossible string, or a pending run already asserting success, may be ignored when the latest run is green. The release attestation should reject malformed trusted history before selecting a run, not just validate the chosen one.
+- **Scope:** F-owned `test/release_tag_guard.js` and this handoff. Require completed runs to have a documented GitHub Actions conclusion and noncompleted runs to have null conclusion. Add positive fixtures for legitimate completed statuses and negative controls for contradictory/unknown run states even on older candidates. Preserve R16 chronology, canonical provenance, exact-SHA and deployment ordering. No tag, live account use, readiness, Android or backend changes.
+- **Acceptance:** focused executable source assertions, F lane guard, full regression and Pages checks on the PR head; merge only after required green checks, post-merge main verification. Recovery B #163 and real tutor T4 remain acceptance blockers.
+- **Next:** implement and test the narrow guard increment on this claimed branch; report exact PR-head verification before merge.
+
 ## R16 — reject malformed trusted CI run evidence (29 October 2026)
 
 - **Claim:** `automation-20261029-f-r16-malformed-ci`; heartbeat 2026-10-29T07:07Z; branch `lane-f/release-r16-malformed-ci-attestation` from `main@5ec8ff73b713de577a9611fec65bf66ea6c0d920`. Main regression, local Supabase, Pages and downstream smoke all SUCCESS at pickup. Open D #183 owns checkpoint proof; B #163 is held for genuine recovery acceptance. F unclaimed; Android C paused.
