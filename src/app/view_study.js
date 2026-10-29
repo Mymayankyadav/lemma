@@ -513,17 +513,22 @@ const StudyView = (() => {
           h('label', {class:'study-field-label',text:entry.label}),
           input,continueButton,button,feedback));
       }
-      // The tutor lane owns readiness and consent; never expose the entry
-      // until its real cross-model acceptance has enabled that module.
+      // Only the tutor lane can enable normal handoff readiness. Before real
+      // T4 acceptance, the E-owned preview API is a separate, explicitly
+      // labelled student action on an already approved Study checkpoint.
+      const handoffSafe = () => {
+        if (unconfirmedSaves.size || [...forms.querySelectorAll('textarea')].some(input=>input.value.trim())) {
+          message.textContent='Save or clear typed observations before opening a handoff. Unconfirmed saves must be retried first.';
+          return false;
+        }
+        return true;
+      };
       if (typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === true &&
           typeof TutorHandoff.open === 'function') {
         const handoff=h('button',{type:'button',class:'btn study-handoff-entry',text:'Open tutor handoff'});
         handoff.addEventListener('click',async()=>{
           if (!valid() || handoff.disabled || TutorHandoff.ready !== true) return;
-          if (unconfirmedSaves.size || [...forms.querySelectorAll('textarea')].some(input=>input.value.trim())) {
-            message.textContent='Save or clear typed observations before opening a handoff. Unconfirmed saves must be retried first.';
-            return;
-          }
+          if (!handoffSafe()) return;
           handoff.disabled=true;
           try {
             await TutorHandoff.open({planId:context.planId,checkpointId:cp.id});
@@ -532,6 +537,34 @@ const StudyView = (() => {
           } finally {handoff.disabled=false;}
         });
         detail.append(handoff);
+      } else if (ready === true && typeof StudyPlan !== 'undefined' &&
+                 StudyPlan.ready === true &&
+                 typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === false &&
+                 typeof TutorHandoff.openForAcceptance === 'function') {
+        const preview=h('button',{type:'button',class:'btn study-handoff-entry',
+          text:'Test tutor handoff (unreleased)'});
+        preview.addEventListener('click',async()=>{
+          if (!valid() || preview.disabled || ready !== true || StudyPlan.ready !== true ||
+              TutorHandoff.ready !== false ||
+              typeof TutorHandoff.openForAcceptance !== 'function') return;
+          if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+            message.textContent='Tutor acceptance preview requires an online approved checkpoint.';
+            return;
+          }
+          if (!handoffSafe()) return;
+          preview.disabled=true;
+          try {
+            await TutorHandoff.openForAcceptance({planId:context.planId,checkpointId:cp.id});
+          } catch (error) {
+            if (valid()) message.textContent='Could not open tutor acceptance preview: '+
+              (error?.message || 'try again');
+          } finally {preview.disabled=false;}
+        });
+        detail.append(h('section',{class:'study-acceptance-entry',
+          'aria-label':'Tutor acceptance preview'},
+          h('p',{class:'study-acceptance-warning',text:
+            'Acceptance test only — not a released tutor feature. Copying a packet to a model and saving any reply require your separate deliberate actions. No plan, card or proof is approved automatically.'}),
+          preview));
       }
       fill(content,detail,
         h('p', {class:'study-note',text:
