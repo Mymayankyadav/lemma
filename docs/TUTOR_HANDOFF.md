@@ -12,6 +12,8 @@ Cited excerpts must match a source reference (at most four, 1,600 characters eac
 
 The packet is not account authorization. T2 must re-read `StudyPlan.activeContext()` and compare ID, revision and checkpoint before any student-approved write.
 
+When Study selects a checkpoint, the handoff requests that same plan and checkpoint on opening and on each fresh copy or proposal-action check. A changed plan, missing checkpoint, stale proof or failed read blocks the action; the selected checkpoint is never silently replaced with Study's default.
+
 ## Reply: `TutorHandoff.parseReply(text)`
 
 Accept one JSON object or a single complete fenced JSON object with **exact** fields:
