@@ -11,6 +11,7 @@ import { screenRoutes } from './routes'
 const queryClient = new QueryClient({defaultOptions: {queries: {
  staleTime: 30_000, refetchOnWindowFocus: true,
  retry: (count, error) => !(error instanceof LemmaError && ['auth', 'not_found', 'invalid', 'not_implemented'].includes(error.code)) && count < 2,
+ retryDelay: attempt=>Math.min(2_000,250*2**attempt),
 }, mutations: {retry: false}}})
 const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, children: [
  ...screenRoutes,
