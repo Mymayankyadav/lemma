@@ -1,3 +1,9 @@
+## PLAN-01 P5k — independent Study readiness evidence audit (2026-10-29)
+
+- **Claim:** `chat-20261029-d-p5k-readiness-audit`, heartbeat 2026-10-29T02:57:29.381Z, branch `lane-d/plan-01-p5k-independent-readiness-audit` at `main@e2d5dc663bff`; no competing D PR. Lane B #163 is held for real production recovery owner-security acceptance; C paused. D owns this handoff, `src/app/study_plan.js`, `src/app/view_study.js` and D test/visual gates, not B UI or other lanes.
+- **Slice:** independently reconcile P5a–P5i executable evidence, current 17-version production PLAN/KNOWLEDGE schema/ACL shape, 12-checkpoint approved proof workflow, 2 checkpoints, reload/unfinished hint, explicit amendment and stale write rejection. Assess P5b/P5c genuine browser screenshots and latest main CI. Do not claim a real production owner session or pretend synthetic approvals are a real student's decisions. If and only if D's independent requirements are evidenced, create the smallest D-owned readiness activation slice (both flags) with regression and screenshots; otherwise record exact blockers and leave both flags false.
+- **Next action:** inspect exact source/CI and production read-only evidence; keep existing consent, account isolation and history immutable. No production writes, unreviewed readiness, TutorHandoff.ready toggle, external AI sessions, Carrel, or Android work.
+
 ## P5j — resolve Study ↔ Tutor acceptance dependency cycle (29 October 2026)
 
 - **Claim:** `chat-20261029-d-p5j-readiness-order` on `lane-d/plan-01-p5-readiness-dependency`, base `d0f4d30a`; docs-only D-owned handoff correction, no competing D claim. B's recovery activation remains a separate draft and Android paused.
