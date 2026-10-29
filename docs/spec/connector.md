@@ -75,7 +75,7 @@ Description: `Read details on demand. what: plan, checkpoint (id CP4), session (
 
 | Param | Type | Description |
 | --- | --- | --- |
-| `what` | enum `plan`, `checkpoint`, `session`, `outline`, `cards`, `feedback`, `concepts`, `projects`, `prompt` | `What to read` |
+| `what` | enum `plan`, `checkpoint`, `session`, `outline`, `cards`, `feedback`, `concepts`, `projects`, `prompt`, `diagnostics` | `What to read` |
 | `project` | string, optional | `Project slug or title` |
 | `id` | string, optional, ≤ 20 | `CP4, S7 or source short name` |
 | `limit` | int 1–50, optional | `Max items` |
@@ -141,6 +141,12 @@ Description: `Save in one call: step, events, misconception and the next questio
 | `events[].outcome` | enum `demonstrated`, `partial`, `failed`, optional | `For attempt, evidence, recheck` |
 | `events[].hint_level` | int 1–4, optional | `For hint` |
 | `events[].checkpoint` | string, optional | `If not the session's checkpoint` |
+| `diagnostics` | array ≤ 5, optional | `Plan evidence: gaps, strengths, material, pace` |
+| `diagnostics[].kind` | enum `gap`, `strength`, `material`, `pace` | |
+| `diagnostics[].topic` | string ≤ 120 | `e.g. ring theory basics` |
+| `diagnostics[].evidence` | string ≤ 600 | `What you observed` |
+| `diagnostics[].severity` | int 1–3, optional | `3 = blocks this checkpoint` |
+| `diagnostics[].confirmed` | boolean, optional | `A diagnostic quiz confirmed it` |
 | `misconception` | string ≤ 120, optional | `Short label of a new or repeated error` |
 | `resolved` | string ≤ 120, optional | `Label of a misconception now fixed` |
 | `next_question` | string ≤ 300, optional | `The question to ask when resuming` |
@@ -230,6 +236,8 @@ Description: `Propose changes to an approved plan: add, update, remove, move, pr
 | `project` | string | `Project slug or title` |
 | `ops` | array 1–20 | `Operations as in the plan change format` |
 | `reason` | string 1–300 | `Why the plan should change` |
+| `diagnostics` | int[], optional | `D-numbers this answers` |
+| `book` | string, optional | `Book short name, when new material prompted it` |
 
 Op fields follow `data.md` §5.4. Output: `plan change (2 ops) waits for approval`.
 
@@ -401,6 +409,16 @@ All write tools end their output with `Undo: A<n>` (the action they created), so
 - Show the user a short summary of the plan (codes and titles). If they approve it in the chat, call decide; otherwise they approve it in Lemma. Then resume.
 ```
 
+### 6.4 Adapting the plan (part of the default rules; sent as the last block of RULES)
+
+```
+- Pretest at each new checkpoint also probes its prerequisites. Record what you learn with save_progress diagnostics: gap (missing prerequisite), strength (already knows it), pace.
+- A gap with severity 3, or seen twice: ask 2-3 short diagnostic questions on that topic. If confirmed, save it with confirmed=true and propose_plan_change adding 1-3 bridge checkpoints before the blocked one (after the previous code, e.g. CP3a), citing its D-number. A whole missing subject (e.g. ring theory): propose a short prerequisite block in this plan, or offer a separate project.
+- A strength: give one criterion-level task; if solved unaided, record evidence demonstrated and move on.
+- New material (ADAPT shows NEW, or the user shares new notes): read its outline or the attached file, compare with the plan, and propose_plan_change (add, update pages, move, remove not-started checkpoints) with book set. Never silently ignore new material.
+- Tell the user in one line why the plan should change, then let them approve (decide) or refuse.
+```
+
 ### 6.3 Mixed-session rules (appended when `mix`)
 
 ```
@@ -433,6 +451,7 @@ NOW <code> <title>, step <n>/<total>: <step title>
 CRIT <criterion>
 LAST S<n> <date> <live|paused|ended>[ goal <yes|partial|no>]: <summary cut to 160> | ask: <resume_question>
 FIX <label> (<times>x); <label> (<times>x)
+ADAPT D<n> gap <topic> (<times>x, sev <s>, <status>); D<n> strength <topic>; NEW <book short> not in plan
 WARM <code>: <recheck_prompt>; <code>: <recheck_prompt>
 CARDS <due> due; <pending> proposals waiting; <open comments> card notes
 SRC <short> "<source title cut to 40>" pp <pages>: read_pages(source="<short>", from="<a>", to="<b>")
@@ -445,6 +464,7 @@ Field rules:
 - `NOW`: the checkpoint of the newest open session; else the first checkpoint with UI status `now`; else the first `next`. If none: `NOW all checkpoints done`.
 - `LAST`: newest session of the project. Use `paused` when open and idle for over 30 minutes. The text after the colon is `summary` for an ended session and `resume_note` for an open one (omit the colon part when empty). Include `| ask:` only when `resume_question` is set and the session is not ended.
 - `FIX`: up to 3 unresolved misconceptions, newest first.
+- `ADAPT`: up to 3 diagnostics of this project with status `open` or `confirmed`, highest severity then most sightings first, plus `NEW <short>` for every source with `plan_checked_at` null. Omit when empty. Shortened before `FIX` when over budget.
 - `WARM`: up to 2 checkpoints of this project with UI status `revisit` and a `recheck_prompt`, oldest due first.
 - `SRC`: the NOW checkpoint's pages and source; skip if unknown. For a source with no stored pages (`page_count = 0`): `SRC <short> "<title>" pp <pages>: attached in chat`.
 - `OWNER`: when `settings.master_prompt` or the project's `prompt` is set, every packet (study, menu, planning, mix) starts with a block `OWNER (follow first; overrides STYLE and RULES)` followed by the master prompt, then the project prompt. It does not count toward the 2,400-character budget.
@@ -518,6 +538,7 @@ Steps:
 10. `create_project` → a planning project; `proposals` lists the pending cards as `P<n>`; `decide(approve=[n])` approves one → the note exists.
 11. `set_prompt(scope=all, text=…)` → `resume` starts with `OWNER` and that text; `history` lists it as the newest action; `undo` it → `resume` no longer shows it; `undo` the undo → it is back.
 12. `edit` the project title and a checkpoint's steps → `get(what=plan)` shows them; `add` a card; `review` returns it; `grade` it good → its due moves forward.
+12b. `save_progress` with a gap diagnostic twice → `resume` shows `ADAPT D1 gap … (2x`; `propose_plan_change` citing D1 → D1 `planned`; approve → the bridge checkpoint exists; rejecting instead returns D1 to `confirmed`.
 13. `delete` the project without `confirm` → counts only; with `confirm` → `resume` lists no such project; `undo` → the project and every child row are back with the same codes.
 14. `tools/list` (built in-process) total JSON ≤ 15,000 chars.
 
