@@ -37,6 +37,8 @@ jobs:
         run: node test/release_pwa.js
       - name: Assert intentionally broken URL fails closed
         run: node test/release_live_smoke.js --negative-self-test
+      - name: Exercise ready Study against disposable real-build browser fixture
+        run: node test/release_live_smoke.js --ready-self-test
       - name: Check published Pages anonymously
         env:
           LEMMA_LIVE_URL: https://mymayankyadav.github.io/lemma/

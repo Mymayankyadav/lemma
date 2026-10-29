@@ -10,6 +10,35 @@ const OUT = path.resolve(__dirname, '../test-output/release-live');
 const DEFAULT_URL = 'https://mymayankyadav.github.io/lemma/';
 const timeout = 20000;
 
+// Derive readiness from the exact app bundle actually served, not nonexistent
+// globals outside build.js's private IIFE. Reject missing/ambiguous declarations
+// instead of silently interpreting an unparseable module as disabled.
+function bundleReadiness(source) {
+  function moduleText(startMarker, endMarker) {
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker, start + startMarker.length);
+    if (start < 0 || end <= start || source.indexOf(startMarker, start + startMarker.length) !== -1)
+      throw Error('Missing or ambiguous built app module: ' + startMarker);
+    return source.slice(start, end);
+  }
+  function flag(text, expression, name) {
+    const found = [...text.matchAll(expression)];
+    if (found.length !== 1) throw Error('Missing or ambiguous readiness flag: ' + name);
+    return found[0][1] === 'true';
+  }
+  const plan = moduleText('/* ===== study_plan.js ===== */',
+    '/* ===== tutor_handoff.js ===== */');
+  const tutor = moduleText('/* ===== tutor_handoff.js ===== */',
+    '/* ===== view_study.js ===== */');
+  const study = moduleText('/* ===== view_study.js ===== */',
+    '/* ===== main.js ===== */');
+  return {
+    study: flag(study, /const ready = (true|false);/g, 'StudyView'),
+    plan: flag(plan, /return [{] ready:(true|false), activeContext/g, 'StudyPlan'),
+    tutor: flag(tutor, /return [{] ready:(true|false), exportPacket/g, 'TutorHandoff')
+  };
+}
+
 async function smoke(url) {
   const parsed = new URL(url);
   if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid release smoke URL');
@@ -57,11 +86,12 @@ async function smoke(url) {
     // SHIP-F1: hidden-until-ready is an acceptance property of the *deployed*
     // site, not just a unit-test assertion about a source-code boolean.
     stage = 'feature-readiness';
-    const flags = await page.evaluate(() => ({
-      study: typeof StudyView !== 'undefined' && StudyView.ready === true,
-      plan: typeof StudyPlan !== 'undefined' && StudyPlan.ready === true,
-      tutor: typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === true
-    }));
+    // build.js encloses app modules in an IIFE. Their lexical bindings are
+    // intentionally NOT browser globals; reading typeof StudyView from
+    // page.evaluate would always return undefined and misreport readiness.
+    const script = await page.evaluate(() =>
+      [...document.scripts].map(s => s.textContent || '').join('\n'));
+    const flags = bundleReadiness(script);
     const studyNav = await page.locator('nav [data-go="study"]:visible').count();
     assert.equal(studyNav > 0, flags.study,
       'visible Study navigation must agree with StudyView.ready');
@@ -200,8 +230,88 @@ async function negativeSelfTest() {
   fs.rmSync(OUT, { recursive: true, force: true }); // negative fixture is not live evidence
   console.log('PASS negative smoke: HTTP 404 release URL is rejected');
 }
+// Exercise the R9 *ready* path before it becomes user-visible. This modifies
+// only the HTML served to a disposable, signed-out Chromium context; it never
+// changes the checked-in source, the deployed site, or any account workspace.
+function readyFixture(html) {
+  function enable(source, startMarker, endMarker, flag) {
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker, start + startMarker.length);
+    if (start < 0 || end < 0 || end <= start) throw Error('Missing ready-fixture module boundary');
+    const slice = source.slice(start, end);
+    const matches = [...slice.matchAll(flag)];
+    if (matches.length !== 1) throw Error('Missing or ambiguous ready-fixture flag');
+    return source.slice(0, start) +
+      slice.replace(flag, s => s.replace(/false/, 'true')) + source.slice(end);
+  }
+  const plan = enable(html, '/* ===== study_plan.js ===== */',
+    '/* ===== tutor_handoff.js ===== */', /return [{] ready:(?:true|false), activeContext/g);
+  return enable(plan, '/* ===== view_study.js ===== */',
+    '/* ===== main.js ===== */', /const ready = (?:true|false);/g);
+}
+async function readySelfTest() {
+  const original = fs.readFileSync(path.resolve(__dirname, '../dist/index.html'), 'utf8');
+  assert.throws(() => readyFixture('invalid HTML'), /module boundary/,
+    'missing source markers must fail closed');
+  const viewStart = original.indexOf('/* ===== view_study.js ===== */');
+  const viewEnd = original.indexOf('/* ===== main.js ===== */', viewStart);
+  assert(viewStart >= 0 && viewEnd > viewStart, 'built StudyView module markers required');
+  const view = original.slice(viewStart, viewEnd);
+  const invalidView = view.replace(/const ready = (?:true|false);/,
+    'const missingReadiness = false;');
+  assert.notEqual(invalidView, view, 'StudyView readiness declaration required');
+  assert.throws(() => readyFixture(original.slice(0, viewStart) + invalidView +
+    original.slice(viewEnd)), /ambiguous ready-fixture flag/,
+    'missing StudyView ready declaration must fail closed');
+  const injected = readyFixture(original);
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({
+    serviceWorkers: 'block', viewport: { width: 390, height: 844 },
+    colorScheme: 'light', reducedMotion: 'reduce'
+  });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', err => errors.push(err.message));
+  const origin = 'http://127.0.0.1:42999/';
+  await ctx.route(origin + '**', route => route.fulfill({
+    status: 200, contentType: 'text/html', body: injected
+  }));
+  try {
+    await page.goto(origin, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.today, .onboard').first().waitFor({ timeout });
+    const script = await page.evaluate(() =>
+      [...document.scripts].map(s => s.textContent || '').join('\n'));
+    const flags = bundleReadiness(script);
+    assert.equal(flags.study && flags.plan, true,
+      'the real built StudyPlan and StudyView modules must both be ready in fixture');
+    assert.equal(flags.tutor, bundleReadiness(original).tutor,
+      'the fixture must not change Tutor readiness');
+    await page.locator('nav [data-go="study"]:visible').first().click();
+    await page.locator('.study-page:visible').first().waitFor({ timeout });
+    await page.locator('.study-page .study-message').filter({
+      hasText: 'Sign in to open an approved study checkpoint.'
+    }).waitFor({ timeout });
+    assert.equal(await page.locator('.study-page button').filter({
+      hasText: /save proof attempt|record hint|record evidence/i
+    }).count(), 0, 'signed-out Study must not show evidence writes');
+    await page.goto(origin + '#study', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.locator('.study-page:visible').first().waitFor({ timeout });
+    await page.locator('.study-page .study-message').filter({
+      hasText: 'Sign in to open an approved study checkpoint.'
+    }).waitFor({ timeout });
+    await page.getByRole('button', { name: 'Back to Today' }).click();
+    await page.locator('.today, .onboard').first().waitFor({ timeout });
+    assert.deepEqual(errors, [], 'injected ready Study must not cause browser exceptions');
+    console.log('PASS ready-Study fixture: real StudyPlan/StudyView, anonymous navigation, deep link and return');
+  } finally {
+    await ctx.close();
+    await browser.close();
+  }
+}
 (async () => {
   if (process.argv.includes('--negative-self-test')) return negativeSelfTest();
+  if (process.argv.includes('--ready-self-test')) return readySelfTest();
   if (!process.env.LEMMA_LIVE_URL) {
     console.log('SKIP live Pages smoke: LEMMA_LIVE_URL unset (offline npm test)');
     return;
