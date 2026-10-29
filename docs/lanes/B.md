@@ -1,3 +1,10 @@
+## RELEASE-01 — production recovery activation candidate (29 October 2026)
+
+- **Claim:** `chat-20261029-b-recovery-activation-preview`; draft branch `lane-b/release-01-r8-recovery-activation`, base `main@d0f4d30a`. Ownership limited to `src/app/view_settings.js`, `test/ui_workspace_recovery.js` and this handoff. No other open B PR at pickup, Android paused.
+- **Dependency:** Lemma production migration #17 `20261028174411` now appears in exact remote history, with no schema/write changes made here. F R8 gate [#162](https://github.com/Mymayankyadav/lemma/pull/162) is merged and intentionally rejects hidden recovery controls on a release tag.
+- **Goal:** prepare/test a separate B-owned candidate that enables the existing recovery UI in the branch's *actual built bundle* and adjusts the synthetic Chromium test to test that bundle unmodified, retaining signed-out hiding and explicit restore consent. This PR is **DRAFT/NOT MERGEABLE BY POLICY** until live authenticated owner/security acceptance is recorded and current-main CI green; local-stack/synthetic acceptance is necessary but not sufficient.
+- **Next:** implement isolated flag/test change, run head CI and compare light/dark mobile/desktop screenshots; document live acceptance blocker. Do not merge, tag, perform a production restore, approve an account transfer or change Android.
+
 ## RELEASE-01 recovery UI takeover (2026-10-28T23:20Z)
 
 
