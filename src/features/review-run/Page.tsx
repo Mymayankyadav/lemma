@@ -91,7 +91,8 @@ export default function Page(){
    if(!useReviewSession.getState().current)navigate('/review/done');
   }catch(error){
    cancelGrade();
-   notify(error instanceof Error?error.message:'Could not save answer',{tone:'danger'});
+   notify((error instanceof Error?error.message:'Could not confirm answer')+'. Current card kept.',
+    {tone:'danger',action:{label:'Retry',onClick:()=>{if(navigator.onLine)void grade(rating);else notify('Reconnect before retrying',{tone:'danger'})}}});
   }
  }
  async function undoLast(){
