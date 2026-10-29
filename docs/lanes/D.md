@@ -1,3 +1,9 @@
+## P5q claim — prepare Study entry for accepted tutor handoff (29 October 2026)
+
+- Claim `chat-20261029-d-gated-tutor-entry`; branch `lane-d/plan-01-gated-tutor-entry`, base `309c70e25380d21191f922c38a0428d21db0cdec`. D-owned Study view, focused D tests and this handoff. E's `TutorHandoff.ready` remains false; no readiness, backend, production or approval changes.
+- An approved checkpoint has no UI route to the E-owned handoff sheet even after E's eventual T4 gate. Add an explicit button only when the actual Tutor module is ready, pass the selected plan/checkpoint, block unsaved or unconfirmed observations, recheck readiness/account/workspace at click, and report errors without writes. Default hidden behavior must remain unchanged. Test absent/unready/ready, selected checkpoint, dirty/pending evidence and owner switch; run D guard and exact-head regression. Real T4 acceptance access and E readiness are separately blocked; this does not expose preview or claim acceptance.
+- Implemented the hidden-until-ready button and a student-click-only handoff with original plan/checkpoint, no implicit evidence write, dirty/unconfirmed-save and identity guards. Local unit tests, D guard, plan/syntax/build passed; synthetic ready-tutor browser screenshot and full exact-head regression pending. Actual Tutor remains `ready:false`; normal live UI stays unchanged and real T4 acceptance still needs a separate access path.
+
 ## P5p claim — recover the last unfinished checkpoint through busy history (29 October 2026)
 
 - Claim `chat-20261029-d-resume-selection`; branch `lane-d/plan-01-resume-selection-history`, base `943672385e13d7cc37e855756300880e0c249edf`. Only D-owned `src/app/study_plan.js`, `test/study_resume.js`, `test/stack_study_plan_gate.js`, this handoff. No production writes or readiness change; preserve #183 selected-proof pagination and all owner/revision/session guards.

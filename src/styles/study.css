@@ -37,3 +37,5 @@
   /* Accent and accent-ink flip together on theme change: no transient low-contrast frame. */
   transition: transform 0.08s;
 }
+/* Keep ink and surface synchronized during an immediate theme switch. */
+.study-page .study-handoff-entry { font-weight: 600; transition: transform 0.08s; }

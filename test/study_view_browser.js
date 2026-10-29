@@ -145,6 +145,8 @@ async function nativeStudyZoom(mock,view) {
   window.LemmaAccount={user:{id:'00000000-0000-4000-8000-000000000001'}};
   window.App={workspaceRevision:1,workspaceBlocked:false,go(){}};
   window.__writes=[];
+  window.__handoffCalls=[];
+  window.TutorHandoff={ready:true,async open(value){window.__handoffCalls.push(value)}};
   window.__amendmentActions=[];
   window.__draftStatus='draft';
   window.StudyPlan={
@@ -203,11 +205,21 @@ async function nativeStudyZoom(mock,view) {
     window._StudyView.render({planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'})
   ));
   await page.getByRole('heading',{name:'Compactness checkpoint'}).waitFor();
+  // Synthetic ready tutor: click is explicit and carries the selected checkpoint.
+  const handoff=page.getByRole('button',{name:'Open tutor handoff'});
+  await handoff.click();
+  assert.deepEqual(await page.evaluate(()=>window.__handoffCalls),[{
+    planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'}]);
+  await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('Unsaved proof');
+  await handoff.click();
+  assert.equal(await page.evaluate(()=>window.__handoffCalls.length),1);
+  await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('');
+  assert.equal(await page.evaluate(()=>window.__writes.length),0);
   // Genuine computed-style contrast, not screenshot/color-name assumptions.
   // A D-owned readiness gate: both themes must keep deliberate proof and
   // amendment actions legible (disabled controls are tested separately).
-  async function assertPrimaryContrast(label) {
-    const result=await page.getByRole('button',{name:'Save proof attempt'}).evaluate(node=>{
+  async function assertPrimaryContrast(label,name='Save proof attempt') {
+    const result=await page.getByRole('button',{name}).evaluate(node=>{
       const style=getComputedStyle(node);
       const parse=value=>{
         const parts=value.match(/[\d.]+/g)?.slice(0,3).map(Number);
@@ -230,6 +242,7 @@ async function nativeStudyZoom(mock,view) {
       label+' deliberate proof action must be visually emphasized');
   }
   await assertPrimaryContrast('light');
+  await assertPrimaryContrast('light handoff','Open tutor handoff');
   await page.getByRole('button',{name:'Continue saved proof'}).click();
   const resumedText=await page.getByRole('textbox',{name:'Your unfinished proof'}).inputValue();
   assert.equal(resumedText,'Choose an open cover, then reduce to finitely many sets.');
@@ -245,6 +258,7 @@ async function nativeStudyZoom(mock,view) {
   await page.screenshot({path:'test-output/ui/study-p3-desktop.png',fullPage:true});
   await page.emulateMedia({colorScheme:'dark'});
   await assertPrimaryContrast('dark');
+  await assertPrimaryContrast('dark handoff','Open tutor handoff');
   await page.screenshot({path:'test-output/ui/study-p5b-desktop-dark.png',fullPage:true});
   await page.emulateMedia({colorScheme:'light'});
   // This is CSS zoom stress only, not proof of real browser 200% zoom.
