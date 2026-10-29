@@ -59,6 +59,7 @@ async function smoke(url) {
     stage = 'feature-readiness';
     const flags = await page.evaluate(() => ({
       study: typeof StudyView !== 'undefined' && StudyView.ready === true,
+      plan: typeof StudyPlan !== 'undefined' && StudyPlan.ready === true,
       tutor: typeof TutorHandoff !== 'undefined' && TutorHandoff.ready === true
     }));
     const studyNav = await page.locator('nav [data-go="study"]:visible').count();
@@ -70,7 +71,34 @@ async function smoke(url) {
       assert.equal(await page.locator('.tutor-handoff-sheet:visible').count(), 0,
         'unaccepted tutor handoff sheet must be hidden');
     }
-    if (!flags.study) {
+    if (flags.study) {
+      // A ready Study tab must actually render both via navigation and through
+      // a fresh deep-link boot. This anonymous test must NEVER sign in, import
+      // student data, or record evidence. Real owner acceptance remains separate.
+      stage = 'ready-study-navigation';
+      assert(flags.plan, 'ready Study view requires the approved StudyPlan API to be ready');
+      await nav('study', '.study-page');
+      await page.getByRole('heading', { name: 'Study checkpoint' }).waitFor({ timeout });
+      await page.locator('.study-page .study-message').filter({
+        hasText: 'Sign in to open an approved study checkpoint.'
+      }).waitFor({ timeout });
+      assert.equal(await page.locator('.study-page button').filter({
+        hasText: /save proof attempt|record hint|record evidence/i
+      }).count(), 0, 'signed-out users must never see evidence-write controls');
+      await capture('01b-ready-study-signed-out');
+
+      stage = 'ready-study-deep-link';
+      const guarded = new URL(parsed.href);
+      guarded.hash = 'study';
+      await page.goto(guarded.href, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.locator('.study-page:visible').first().waitFor({ timeout });
+      await page.locator('.study-page .study-message').filter({
+        hasText: 'Sign in to open an approved study checkpoint.'
+      }).waitFor({ timeout });
+      await page.getByRole('button', { name: 'Back to Today' }).click();
+      await page.locator('.today, .onboard').first().waitFor({ timeout });
+    } else {
       // A manually entered URL fragment must not bypass the Study readiness
       // guard. Full reload is essential: the app reads the hash at boot.
       const guarded = new URL(parsed.href);
