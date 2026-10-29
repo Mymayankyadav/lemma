@@ -1,3 +1,10 @@
+## RELEASE-01 SEC-01 — public SECURITY DEFINER RPC ACL regression (2026-10-29)
+
+- **Claim:** `chat-20261029-a-rpc-acl`, heartbeat 2026-10-29T02:49:01.931Z, branch `lane-a/release01-public-rpc-security-gate`, baseline `main@d0f4d30a7300`; only B PR #163 open and independently owned. A takes only `test/stack_knowledge_rpc_acl.js` and this handoff; no migrations, production writes, student approval, readiness change, or Carrel access.
+- **Observed:** Lemma security advisors report 3 authenticated-executable public SECURITY DEFINER RPCs (`record_study_event`, `record_tutor_handoff_receipt`, `record_tutor_evidence_with_receipt`) plus the intentionally inaccessible private restore receipts table and Auth leaked-password protection setting. Read-only production catalog says the 3 RPCs are **not** executable by `anon` or `PUBLIC`, have `search_path=''`, and are explicitly executable by `authenticated`. Prior two-owner local HTTP tests test data isolation; advisor warnings alone do not prove a flaw or clearance.
+- **Slice:** Add an independent, disposable local-stack regression asserting precise function allowlist/EXECUTE/search-path and the ownership/anonymous denial behavior of all 3 warned RPCs; record what advisors do and do not certify. Running under existing `test/run_prefix.js stack_` in local CI. Do not revoke intentional authenticated access or weaken existing RPC behavior to silence warnings.
+- **Next action:** implement `test/stack_knowledge_rpc_acl.js`, run syntax and local fixture if available, then exact-PR-head regression/local-stack/guard; merge only after required SUCCESS, no competing A claim, and healthy main. Keep account recovery and T4 readiness gates separate.
+
 ## RELEASE-CI-01 — authenticated callback startup synchronization
 
 - **Claim / heartbeat:** `chat-20261028-release-callback-boot`, 2026-10-28T18:21Z; branch `lane-a/release-callback-boot-gate`, base main `a9a5a6f`. No open A PR at pickup; B #148 and F #149 retain their independent recovery work.
