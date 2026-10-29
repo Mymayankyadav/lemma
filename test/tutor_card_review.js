@@ -16,7 +16,7 @@ const account={user:{id:OWNER},onIdentityChange(fn){notifyIdentityChange=fn;}};
 const app={workspaceRevision:1,workspaceBlocked:false,
  newCard(preset){captures.push(JSON.parse(JSON.stringify(preset)));}};
 const plan={
- async activeContext(){return {planId:ID,planRevision:revision,
+ async activeContext(selection){assert.equal(selection?.planId,ID);assert.equal(selection?.checkpointId,CP);return {planId:ID,planRevision:revision,
    checkpoint:{id:checkpoint,objective:'Prove compactness',status:'in_progress'},
    sessionId,hintLevel,sourceRefs:sources,
    lastAttempt:attemptId ? {eventId:attemptId} : null};},
