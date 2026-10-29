@@ -139,6 +139,24 @@ function load(){
  await assert.rejects(reload.activeContext({checkpointId:'unknown'}),/not in the current approved plan/);
  await assert.rejects(reload.activeContext({planId:NEW_PLAN,checkpointId:'cp-3'}),/changed/);
  assert.equal(events.length,2,'explicit checkpoint selection is read-only');
+ // Automatic resume must search past non-resumable activity in the session.
+ for(let i=0;i<55;i++)events.push({event_id:'noise-'+i,seq:100+i,event_type:'feedback',
+   payload:{checkpoint_id:'cp-12',plan_revision:3,data:{text:'Other feedback'}}});
+ events.push({event_id:'obsolete-attempt',seq:200,event_type:'attempt',
+   payload:{checkpoint_id:'cp-12',plan_revision:2,data:{text:'Old plan'}}});
+ const autoBusy=await reload.activeContext();
+ assert.equal(autoBusy.checkpoint.id,'cp-3','resume past fifty non-resumable events');
+ assert.equal(autoBusy.lastAttempt.eventId,ID1);
+ assert.equal(autoBusy.hintLevel,2);
+ let globalPageReads=0;
+ beforeRead=async()=>{
+  const r=reads.at(-1);
+  if(r?.table==='learning_events' && !r.filters.some(([key])=>key==='payload->>checkpoint_id') && ++globalPageReads===2)
+   {owner=B;notify();}
+ };
+ await assert.rejects(reload.activeContext(),/Account changed/);
+ beforeRead=async()=>{};owner=A;notify();
+ events.splice(2);
  // Newer activity on other checkpoints must not evict this proof or hint.
  for(let i=0;i<55;i++)events.push({event_id:'other-'+i,seq:100+i,event_type:'session_note',
    payload:{checkpoint_id:'cp-12',plan_revision:3,data:{text:'Other work'}}});

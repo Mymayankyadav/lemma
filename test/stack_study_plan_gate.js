@@ -223,6 +223,9 @@ async function main(){
  const longRetained=await reload(A).activeContext({planId:planA,checkpointId:'proof-7'});
  assert.equal(longRetained.lastAttempt.eventId,newStepId,'proof survives same-checkpoint pagination');
  assert.equal(longRetained.hintLevel,3,'hint survives same-checkpoint pagination');
+ const autoAfterFeedback=await reload(A).activeContext();
+ assert.equal(autoAfterFeedback.checkpoint.id,'proof-4',
+  'automatic resume finds latest unfinished work beyond 50 newer feedback events');
  console.log('PASS PLAN-01 P5a real local: 12 checkpoints, two proofs, reload/hint resume, accepted prerequisite amendment, unchanged evidence, stale rejection, idempotent retry and owner isolation');
 }
 if(require.main===module)main().catch(e=>{

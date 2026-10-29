@@ -138,11 +138,29 @@ const StudyPlan = (() => {
       e.payload.plan_revision === plan.revision);
     const resumable = new Set(['attempt','proof_step','hint','session_note']);
     const incomplete = new Set(['not_started','review_due','blocked','in_progress']);
-    const latestWork = recentCurrentEvents.find(e => resumable.has(e.event_type) &&
+    const isResumable = e => resumable.has(e.event_type) &&
       typeof e.payload?.checkpoint_id === 'string' &&
       choice.some(cp => cp.id === e.payload.checkpoint_id &&
-        incomplete.has(cp.status)));
-    const selected = requested || choice.find(cp => cp.status === 'in_progress') ||
+        incomplete.has(cp.status));
+    let latestWork = recentCurrentEvents.find(isResumable);
+    const inProgress = choice.find(cp => cp.status === 'in_progress');
+    // Feedback and evidence on other checkpoints must not conceal the latest
+    // resumable proof. Explicit selection and in-progress status take
+    // precedence, so only scan when the automatic heuristic needs it.
+    let searchPage = recent, searchBeforeSeq = null;
+    while (!requested && !inProgress && !latestWork && searchPage.length === 50) {
+      const last = searchPage[searchPage.length - 1]?.seq;
+      if (!Number.isSafeInteger(last) || last < 1 ||
+          (searchBeforeSeq !== null && last >= searchBeforeSeq))
+        throw new Error('Invalid study history cursor; reload checkpoint');
+      searchBeforeSeq = last;
+      searchPage = await list(ctx,'learning_events',
+        'event_id,event_type,payload,seq,created_at',q => q.eq('session_id',sessionId)
+          .order('seq',{ascending:false}).limit(50).lt('seq',searchBeforeSeq));
+      latestWork = searchPage.find(e =>
+        (e.payload?.plan_revision == null || e.payload.plan_revision === plan.revision) && isResumable(e));
+    }
+    const selected = requested || inProgress ||
       (latestWork && choice.find(cp => cp.id === latestWork.payload.checkpoint_id)) ||
       choice.find(cp => cp.status === 'review_due') ||
       choice.find(cp => cp.status === 'not_started') ||
