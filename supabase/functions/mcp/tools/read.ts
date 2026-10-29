@@ -93,6 +93,8 @@ export async function readPages(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project),src=await source(c,p,a.source);
   if(!src.has_text||src.page_count===0)return 'This PDF has no extractable text (scanned or attached in chat). Ask the user to paste the passage or read the attached PDF.';
   const labels=pageRange(a.from,a.to);
+  if(a.pdf&&labels.some((x:string)=>!/^\d+$/.test(x)||Number(x)<1))
+    throw new Error('PDF page indexes must be positive integers');
   let q=scoped(c,'source_pages').eq('source_id',src.id);
   if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');
   else q=q.in('label',labels).order('page');
