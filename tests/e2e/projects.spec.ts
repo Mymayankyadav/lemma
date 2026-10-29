@@ -50,3 +50,5 @@ test('rejects non-PDF files without creating a project',async({page})=>{
  await expect(page.getByRole('alert')).toContainText('Choose a PDF')
  await expect(page.getByRole('button',{name:'Create project'})).toBeDisabled()
 })
+
+// FIX #257 claim: keyboard-focus regression coverage follows in this PR.
