@@ -49,6 +49,21 @@ async function fillPlan(page){
    await page.goto('https://lemma.test/');
    await page.getByRole('heading',{name:'Create your first study plan'}).waitFor();
    assert.equal((await page.evaluate(()=>window.__writes)).length,0);
+   // First-use assistance fills only a local unapproved graph and never
+   // changes a student-supplied JSON graph.
+   await page.getByRole('button',{name:'Use a starter checkpoint'}).click();
+   const starter=await page.getByRole('textbox',{name:'Plan snapshot JSON',exact:true}).inputValue();
+   assert.equal(JSON.parse(starter).checkpoints.length,1);
+   assert.equal(JSON.parse(starter).checkpoints[0].status,'not_started');
+   assert.equal(await page.getByRole('textbox',{name:'Plan title',exact:true}).inputValue(),
+     'My first proof practice');
+   assert.equal((await page.evaluate(()=>window.__writes)).length,0,
+     'starter does not submit an approved plan');
+   await page.getByRole('button',{name:'Use a starter checkpoint'}).click();
+   assert.equal(await page.getByRole('textbox',{name:'Plan snapshot JSON',exact:true}).inputValue(),starter,
+     'repeated starter click cannot overwrite a populated plan');
+   await page.screenshot({path:'test-output/ui/study-initial-starter-mobile-'+scheme+'.png',
+     fullPage:true});
    await fillPlan(page);
    await page.getByRole('button',{name:'Save unapproved plan draft'}).click();
    await page.getByRole('button',{name:'Review saved plan',exact:true}).waitFor();
@@ -123,7 +138,11 @@ async function fillPlan(page){
    await page.getByRole('heading',{name:'Create your first study plan'}).waitFor();
    assert.equal(await page.getByRole('button',{name:/^Resume draft:/}).count(),0);
    await page.setViewportSize({width:1280,height:800});
-   await page.screenshot({path:'test-output/ui/study-initial-empty-desktop-'+scheme+'.png',fullPage:true});
+   await page.getByRole('button',{name:'Use a starter checkpoint'}).click();
+   assert.equal(JSON.parse(await page.getByRole('textbox',{name:'Plan snapshot JSON'}).inputValue()).checkpoints.length,1);
+   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('requests')).length),2,
+     'desktop starter must not produce a new request');
+   await page.screenshot({path:'test-output/ui/study-initial-starter-desktop-'+scheme+'.png',fullPage:true});
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
    await page.evaluate(()=>{window.__owner=null;window.__mount()});
    assert.equal(await page.locator('.study-initial').count(),0);
