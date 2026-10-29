@@ -22,8 +22,34 @@ function check(tagSha, mainSha, allRuns) {
       r.path === spec.path &&
       (Array.isArray(spec.event) ? spec.event.includes(r.event) : r.event === spec.event) &&
       r.head_branch === 'main' && r.head_sha === tagSha);
-    candidates.sort((a,b) => Date.parse(b.created_at) - Date.parse(a.created_at) ||
-      (b.id || 0) - (a.id || 0));
+    // A retried run retains its original created_at; its latest attempt can
+    // finish after a newer run. updated_at orders the evidence actually
+    // observed at release time. Never let malformed dates sort as NaN/equals.
+    const seen = new Set();
+    const timestamp = (value, field) => {
+      if (typeof value !== 'string' ||
+          !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value))
+        throw Error('Malformed trusted ' + name + ' ' + field);
+      const parsed = Date.parse(value);
+      if (!Number.isFinite(parsed) ||
+          new Date(parsed).toISOString().slice(0,19) !== value.slice(0,19))
+        throw Error('Malformed trusted ' + name + ' ' + field);
+      return parsed;
+    };
+    for (const run of candidates) {
+      if (!Number.isSafeInteger(run.id) || run.id <= 0 || seen.has(run.id))
+        throw Error('Missing or duplicate trusted ' + name + ' run ID');
+      seen.add(run.id);
+      const created = timestamp(run.created_at, 'created_at');
+      const updated = timestamp(run.updated_at, 'updated_at');
+      if (updated < created)
+        throw Error('Inconsistent trusted ' + name + ' run chronology');
+      if (!['queued','in_progress','completed','waiting','requested','pending'].includes(run.status) ||
+          (run.status === 'completed' && typeof run.conclusion !== 'string'))
+        throw Error('Malformed trusted ' + name + ' run state');
+    }
+    candidates.sort((a,b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) ||
+      b.id - a.id);
     const latest = candidates[0];
     if (!latest || !Number.isFinite(Date.parse(latest.created_at)) ||
         latest.status !== 'completed' || latest.conclusion !== 'success')
@@ -65,7 +91,8 @@ if (require.main === module) {
     bad=copy(runs);bad[3].created_at=clock;
     assert.throws(()=>check(sha,sha,bad),/most recent deploy/);
     bad=copy(runs);bad.push({...bad[0],id:500,
-      created_at:'2026-10-28T11:09:00Z',conclusion:'failure'});
+      created_at:'2026-10-28T11:09:00Z',
+      updated_at:'2026-10-28T11:09:20Z',conclusion:'failure'});
     assert.throws(()=>check(sha,sha,bad),/regression/);
     // A display name alone is not evidence that the trusted workflow ran.
     bad=copy(runs);bad[0].path='.github/workflows/fake-regression.yml';
@@ -85,6 +112,37 @@ if (require.main === module) {
       id:999,created_at:'2026-10-28T12:00:00Z',conclusion:'success'});
     assert.throws(()=>check(sha,sha,bad),/regression/,
       'same-named untrusted success must not conceal trusted failure');
+    // A failed retry of an older run may complete after a newer successful
+    // run. created_at ordering alone would incorrectly accept that success.
+    bad=copy(runs);
+    bad.push({...bad[0],id:501,created_at:'2026-10-28T10:59:00Z',
+      updated_at:'2026-10-28T11:10:00Z',conclusion:'failure'});
+    assert.throws(()=>check(sha,sha,bad),/regression/);
+    bad=copy(runs);
+    bad.push({...bad[0],id:502,created_at:'not-a-date',
+      updated_at:'2026-10-28T11:11:00Z',conclusion:'failure'});
+    assert.throws(()=>check(sha,sha,bad),/Malformed trusted.*created_at/);
+    bad=copy(runs);
+    bad.push({...bad[0],id:503,created_at:'2026-02-31T11:00:00Z',
+      updated_at:'2026-10-28T11:11:00Z',conclusion:'failure'});
+    assert.throws(()=>check(sha,sha,bad),/Malformed trusted.*created_at/);
+    bad=copy(runs);bad[0].updated_at='invalid';
+    assert.throws(()=>check(sha,sha,bad),/Malformed trusted.*updated_at/);
+    bad=copy(runs);bad[0].updated_at='2026-10-28T10:59:00Z';
+    assert.throws(()=>check(sha,sha,bad),/chronology/);
+    bad=copy(runs);bad.push({...bad[0],conclusion:'failure'});
+    assert.throws(()=>check(sha,sha,bad),/duplicate trusted.*run ID/);
+    bad=copy(runs);bad[0].id=null;
+    assert.throws(()=>check(sha,sha,bad),/run ID/);
+    bad=copy(runs);bad[0].status='unknown';
+    assert.throws(()=>check(sha,sha,bad),/run state/);
+    bad=copy(runs);bad[0].status='completed';bad[0].conclusion=null;
+    assert.throws(()=>check(sha,sha,bad),/run state/);
+    // A pending retry is not a completed release gate.
+    bad=copy(runs);
+    bad.push({...bad[0],id:504,created_at:'2026-10-28T10:59:00Z',
+      updated_at:'2026-10-28T11:10:00Z',status:'in_progress',conclusion:null});
+    assert.throws(()=>check(sha,sha,bad),/regression/);
     console.log('ok: release tag exact-current-main, canonical workflow paths, latest trusted green runs and post-deploy smoke');
   } else throw Error('Unknown tag guard arguments');
 }
