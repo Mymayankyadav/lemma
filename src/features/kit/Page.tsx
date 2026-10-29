@@ -1,3 +1,16 @@
+import {CompassArt} from '../../ui/art/CompassArt';
+import {CardFanArt} from '../../ui/art/CardFanArt';
+import {PlugArt} from '../../ui/art/PlugArt';
+import {PageStackArt} from '../../ui/art/PageStackArt';
+import {DoneBurst} from '../../ui/art/DoneBurst';
+import {Starfield} from '../../ui/art/Starfield';
+import {EmptyState} from '../../ui/EmptyState';
+import {LineArea} from '../../ui/charts/LineArea';
+import {StackedBars} from '../../ui/charts/StackedBars';
+import {HBars} from '../../ui/charts/HBars';
+import {GroupedBars} from '../../ui/charts/GroupedBars';
+import {Sparkline} from '../../ui/charts/Sparkline';
+import {CalibrationBars} from '../../ui/charts/CalibrationBars';
 import {useState} from 'react';
 import {ArrowRight,BookOpen,Check as Tick,Lightbulb,Play,Plus,Settings,Sparkles} from 'lucide-react';
 import {Screen} from '../../ui/Screen';
@@ -70,6 +83,24 @@ export default function Page(){
   <Button variant="ghost" onClick={()=>notify('Could not save',{tone:'danger'})}>Danger toast</Button>
   <div className="flex flex-col gap-2"><Skeleton w="80%" h={18}/><Skeleton w="55%" h={18}/></div>
   <KeyHints items={keys}/>
+ </Section>
+ <Section title="Illustrations and empty states">
+  <div className="grid grid-cols-3 gap-2">
+  <CompassArt size={105}/><CardFanArt size={105}/><PageStackArt size={105}/>
+  <PlugArt connected size={105}/><PlugArt connected={false} size={105}/><DoneBurst size={105}/>
+  </div>
+  <div className="relative h-32 overflow-hidden rounded-slab bg-obsidian-deep"><Starfield/><span className="absolute bottom-3 left-3 text-[12px] text-ink-2">Starfield</span></div>
+  <div className="grid grid-cols-2 gap-3">
+  {(['compass','deck','plug','inbox'] as const).map(art=><Tile key={art} className="min-h-[160px]"><EmptyState art={art} title={art==='deck'?'Nothing due':art==='plug'?'Offline':art==='inbox'?'All clear':'No projects'} body="A calm place to continue." className="gap-1 py-0 [&_svg]:h-20 [&_svg]:w-20"/></Tile>)}
+  </div>
+ </Section>
+ <Section title="Analytical charts">
+  <Slab><h3 className="mb-2 text-[15px] font-semibold">Recall · 30 days</h3><LineArea data={[{label:'30d ago',value:0.84},{label:'',value:0.9},{label:'',value:0.89},{label:'',value:0.94},{label:'Today',value:0.92}]} target={0.9}/></Slab>
+  <Slab><h3 className="mb-2 text-[15px] font-semibold">Reviews by day</h3><StackedBars data={[{label:'M',again:2,hard:4,good:12,easy:3},{label:'T',again:1,hard:3,good:10,easy:8},{label:'W',again:3,hard:1,good:15,easy:5},{label:'T',again:0,hard:2,good:13,easy:9},{label:'F',again:2,hard:3,good:8,easy:2},{label:'S',again:1,hard:2,good:12,easy:6},{label:'S',again:1,hard:3,good:9,easy:5}]}/></Slab>
+  <Slab><h3 className="mb-2 text-[15px] font-semibold">When you said</h3><CalibrationBars data={[{confidence:'sure',total:20,right:19,rate:0.95},{confidence:'unsure',total:14,right:9,rate:9/14},{confidence:'guess',total:6,right:2,rate:1/3}]}/></Slab>
+  <Slab><h3 className="mb-2 text-[15px] font-semibold">Time by subject</h3><HBars data={[{label:'Analysis',glyph:'∫',value:560,display:'9h 20m'},{label:'Algebra',glyph:'λ',value:365,display:'6h 5m'},{label:'Topology',glyph:'τ',value:195,display:'3h 15m'}]}/></Slab>
+  <Slab><h3 className="mb-2 text-[15px] font-semibold">Checkpoints</h3><GroupedBars data={[{label:'W1',demonstrated:3,rechecked:2},{label:'W2',demonstrated:2,rechecked:5},{label:'W3',demonstrated:5,rechecked:3},{label:'Now',demonstrated:4,rechecked:6}]}/></Slab>
+  <Slab><h3 className="mb-2 text-[15px] font-semibold">Card interval history</h3><Sparkline data={[{value:1,rating:3},{value:4,rating:4},{value:10,rating:3},{value:26,rating:2},{value:54,rating:4}]}/></Slab>
  </Section>
  <Sheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="Checkpoint details"><div className="flex flex-col gap-5"><MathText source="Why does a finite subcover exist?" variant="card"/><Button onClick={()=>setSheetOpen(false)} icon={Lightbulb}>Got it</Button></div></Sheet>
  </Screen>;
