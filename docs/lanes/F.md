@@ -1,3 +1,13 @@
+## R19 — verify deployed PWA shell asset bytes (29 October 2026)
+
+- **Claim:** `chat-20261029-f-r19-static-parity`; heartbeat 2026-10-29T07:34:34.957Z; branch `lane-f/release-r19-shell-asset-parity`, base `main@a5e8803`. No competing F PR. R18 #189 merged and initial real Pages HTML parity PASS. B #163 held, D #190 active; Android paused.
+- **Gap:** R18 proves the served HTML matches its build, but an outdated service worker, manifest or icon could still be published, changing offline/install behavior without detection by the local PWA test.
+- **Scope:** F-owned `test/release_live_smoke.js` and this handoff. With real deployed/tag parity enabled, check HTTP 200 and exact built bytes for `service-worker.js`, `manifest.webmanifest` and `icons/icon.svg`. Add changed-byte and missing-asset negative fixtures; ordinary PR/dispatch smoke remains behavior-only.
+- **Acceptance:** focused tests, F guard, full regression and live Pages CI on exact head; then main deployment and live smoke. No accounts, backend, readiness, Android, production mutation or release tag.
+- **Implemented:** exact-deployment parity now compares all three public shell assets via an anonymous `BrowserContext.request` to their built `dist/` byte equivalents, requiring HTTP 200 without following redirects. The existing opt-in boundary stays restricted to deployed/tag smoke, not PR/manual smoke. `--parity-self-test` proves positive built assets and independently rejects each asset's one-byte stale response and HTTP 404; unauthorized private asset paths are rejected. Existing HTML parity, negative URL, ready Study and service-worker offline tests remain intact.
+- **Test gate:** committed source `de7fe0e2` plus this handoff; exact-head F guard, full regression and Pages smoke must pass. First R18 real post-merge Pages HTML parity on main `a5e8803`: [live smoke 40836125695](https://github.com/Mymayankyadav/lemma/actions/runs/40836125695) SUCCESS. Main regression/local Supabase still running at R19 pickup; this is not an owner-account restore acceptance.
+- **Next:** inspect PR #191 exact final-head CI and review diff, merge only on green; verify post-merge actual Pages asset parity, full main regression and local security. B authenticated restore and E genuine T4 still gated.
+
 ## R18 — bind deployed Pages HTML to exact build bytes (29 October 2026)
 
 - **Claim:** `chat-20261029-f-r18-pages-parity`; heartbeat 2026-10-29T07:24:15.459Z; branch `lane-f/release-r18-pages-content-parity`, base `main@a00ad906`. No open competing F PR. B #163 held pending owner-security acceptance; D #188 active; C paused.
