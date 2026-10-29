@@ -6,7 +6,7 @@ test('Insights renders study statistics and updates when the period changes',asy
  await expect(page.getByRole('heading',{name:'Insights'})).toBeVisible();
  await expect(page.getByRole('group',{name:'Time range'})).toBeVisible();
  await expect(page.getByText('18h 40m')).toBeVisible();
- await expect(page.getByText('26',{exact:true})).toBeVisible();
+ await expect(page.locator('.tile').filter({hasText:'sessions'}).getByText('26',{exact:true})).toBeVisible();
  await expect(page.getByText('412',{exact:true})).toBeVisible();
  await expect(page.getByText('91%',{exact:true})).toBeVisible();
  await expect(page.getByText('94%',{exact:true})).toBeVisible();
