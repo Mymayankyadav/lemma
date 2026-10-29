@@ -74,7 +74,7 @@ vm.runInContext(fs.readFileSync('src/app/study_plan.js','utf8')+
  '\nglobalThis.api=StudyPlan;',scope);
 const api=scope.api;
 (async()=>{
- assert.equal(api.ready,false);
+ assert.equal(api.ready,true);
  // Migrate an existing v2 local DB with no conflict_archive store.
  const legacy=await new Promise((resolve,reject)=>{
   const req=indexedDB.open('lemma-plan-drafts-v1-'+A,2);

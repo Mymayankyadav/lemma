@@ -1,6 +1,6 @@
-/* PLAN-01 P3: checkpoint screen for a published plan. Kept hidden through P5. */
+/* PLAN-01: checkpoint screen and explicit first-plan workflow. */
 const StudyView = (() => {
-  const ready = false;
+  const ready = true;
   const entries = [
     {type:'attempt', title:'Proof attempt', label:'Your unfinished proof', button:'Save proof attempt'},
     {type:'hint', title:'Hint received', label:'A hint you actually used', button:'Record hint'},

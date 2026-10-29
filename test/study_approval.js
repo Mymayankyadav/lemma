@@ -51,7 +51,7 @@ const make=(over={})=>({planId:id,expectedRevision:0,expectedLocalRevision:0,
  });
  oldDb.close();
 
- assert.equal(api.ready,false);
+ assert.equal(api.ready,true);
  const draft=await api.savePlanDraft(make());
  assert.equal(draft.localRevision,1);
  assert.equal(draft.status,'draft');
@@ -154,6 +154,6 @@ const make=(over={})=>({planId:id,expectedRevision:0,expectedLocalRevision:0,
  current=a;notify();
  assert.equal((await api.readPlanDraft(other)).status,'approved_pending');
  assert.equal(await api.readPlanReceipt(other),null);
- assert.equal(api.ready,false);
+ assert.equal(api.ready,true);
  console.log('PASS PLAN-01 P2b: student consent, v1->v2 migration, durable retry/receipt, rollback, stale conflict, owner isolation and no auto-approval');
 })().catch(e=>{console.error('FAIL PLAN-01 P2b: '+e.message);process.exitCode=1;});

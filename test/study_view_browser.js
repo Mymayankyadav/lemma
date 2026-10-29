@@ -66,7 +66,7 @@ async function nativeStudyZoom(mock,view) {
         viewport:innerWidth,doc:document.documentElement.scrollWidth,
         ready:window._StudyView.ready,visible:!!document.querySelector('.study-page')
       }));
-      assert.equal(bounds.ready,false,'native zoom cannot enable the Study tab');
+      assert.equal(bounds.ready,true,'readiness stays enabled at native zoom');
       assert.ok(bounds.visible && bounds.doc<=bounds.viewport+1,
         label+' overflows at genuine 200% tab zoom: '+JSON.stringify(bounds));
       // Playwright full-page captures crop under native zoom; deep-scroll
@@ -239,7 +239,7 @@ async function nativeStudyZoom(mock,view) {
   assert.equal(await page.evaluate(()=>window.__writes.length),0,
     'resuming an unfinished proof cannot append evidence');
   await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('');
-  assert.equal(await page.evaluate(()=>window._StudyView.ready),false);
+  assert.equal(await page.evaluate(()=>window._StudyView.ready),true);
   assert.equal(await page.evaluate(()=>window.__writes.length),0);
   fs.mkdirSync('test-output/ui',{recursive:true});
   await page.screenshot({path:'test-output/ui/study-p3-desktop.png',fullPage:true});

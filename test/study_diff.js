@@ -16,7 +16,7 @@ const base={topic:'Group theory',objective:'Construct complete proofs',
   source_refs:['book:'+i]
  }))};
 const copy=x=>JSON.parse(JSON.stringify(x));
-assert.equal(scope.ready,false);
+assert.equal(scope.ready,true);
 const same=diff(base,copy(base));
 assert.deepEqual(same.added,[]);
 assert.deepEqual(same.removed,[]);
