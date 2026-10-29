@@ -176,7 +176,7 @@ begin
   perform public.lemma_reconcile_cards(p.user_id,note.id);
   with changed as (
    update public.card_comments set status='addressed',resolved_at=now(),resolved_by_proposal=p.id
-    where user_id=p.user_id and note_id=note.id and no in (select value::bigint from jsonb_array_elements_text(coalesce(payload->'resolves','[]')))
+    where user_id=p.user_id and note_id=note.id and no in (select resolved_no::bigint from jsonb_array_elements_text(coalesce(payload->'resolves','[]')) as ids(resolved_no))
     returning no
   ) select coalesce(array_agg(no order by no),'{}'::bigint[]) into resolved from changed;
   approval_result:=jsonb_build_object('note_no',note.no,'resolved',to_jsonb(resolved));
