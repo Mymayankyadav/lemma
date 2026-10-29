@@ -4,7 +4,9 @@ export function cut(value: unknown, max: number): string {
   const v = s.slice(0, Math.max(0, max - 1));
   return (v.slice(0, Math.max(0, v.lastIndexOf(' '))) || v) + '…';
 }
-export function capped(s: string, n: number): string { return s.length > n ? cut(s, n) : s; }
+export function capped(s: string, n: number): string { if (s.length<=n) return s;
+  const prefix=s.slice(0,n-1);
+  return prefix.slice(0,Math.max(prefix.lastIndexOf(' '),prefix.lastIndexOf('\n'),n-80))+'…'; }
 export function date(s?: string): string {
   if (!s) return '';
   return new Date(s).toLocaleDateString('en-GB', {day:'numeric',month:'short',timeZone:'UTC'});
