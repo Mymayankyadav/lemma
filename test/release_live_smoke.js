@@ -86,6 +86,25 @@ async function assertSignedOutRecoveryHidden(page) {
   }
 }
 
+// Private knowledge drafts, accepted revisions and their source excerpts are
+// owner-scoped, as are explicit review/approval/publication controls. Test DOM
+// presence, not just visibility: a hidden node can still leak private text.
+async function assertSignedOutKnowledgeHidden(page) {
+  for (const selector of ['#set-knowledge-drafts', '#set-accepted-reader',
+    '[id^="s-knowledge-"]', '[id^="s-accepted-"]',
+    '.knowledge-context-preview', '.accepted-reader-excerpt',
+    '.accepted-reader-source', '.knowledge-context-review']) {
+    assert.equal(await page.locator(selector).count(), 0,
+      'signed-out Settings must not mount private knowledge node ' + selector);
+  }
+  for (const label of ['New draft', 'Open saved draft', 'Save draft on this device',
+    'Review saved draft', 'Approve this reviewed context',
+    'Publish approved context', 'Read accepted revision']) {
+    assert.equal(await page.getByRole('button', { name:label, exact:true }).count(), 0,
+      'signed-out Settings must not expose knowledge consent action ' + label);
+  }
+}
+
 // Tutor acceptance preview requires a real signed-in Study checkpoint.
 // Neither navigation nor direct hash reload may mount the preview or sheet
 // for an anonymous visitor, even while general Tutor readiness is false.
@@ -237,6 +256,7 @@ async function smoke(url) {
     // Render the sign-in UI, but never click a provider or enter account credentials.
     await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
     await assertSignedOutRecoveryHidden(page);
+    await assertSignedOutKnowledgeHidden(page);
     // Booting directly into Settings must not bypass the signed-out guard.
     const settingsUrl = new URL(parsed.href);
     settingsUrl.hash = 'settings';
@@ -245,6 +265,7 @@ async function smoke(url) {
     await page.locator('.page.settings, .settings').first().waitFor({ timeout });
     await page.getByRole('button', { name: 'Continue with Google' }).waitFor({ timeout });
     await assertSignedOutRecoveryHidden(page);
+    await assertSignedOutKnowledgeHidden(page);
     await capture('02-settings-sign-in');
 
     stage = 'cards';
@@ -471,6 +492,7 @@ async function readySelfTest() {
     // the Settings data panel is a stable proof that the route actually rendered.
     await page.locator('#set-data:visible').waitFor({ timeout });
     await assertSignedOutRecoveryHidden(page);
+    await assertSignedOutKnowledgeHidden(page);
     // Negative control: the same assertion must detect an accidentally mounted
     // recovery section. This is a local DOM probe, not a real backup or restore.
     await page.evaluate(() => {
@@ -502,8 +524,48 @@ async function readySelfTest() {
       /signed-out Settings must not mount private recovery node.*download/);
     await page.locator('a[download^="lemma-account-backup-"]').evaluate(node => node.remove());
     await assertSignedOutRecoveryHidden(page);
+    await assertSignedOutKnowledgeHidden(page);
+    // These are synthetic DOM leaks, never real account contexts or approvals.
+    // Each independent forbidden node must make the same signed-out guard fail.
+    for (const selector of ['set-knowledge-drafts', 'set-accepted-reader',
+      's-knowledge-approval']) {
+      await page.evaluate(id => {
+        const leak = document.createElement('section');
+        leak.id = id;
+        document.querySelector('.settings').append(leak);
+      }, selector);
+      await assert.rejects(assertSignedOutKnowledgeHidden(page),
+        /signed-out Settings must not mount private knowledge node/,
+        'anonymous knowledge section or approval state must be rejected: ' + selector);
+      await page.locator('#' + selector).evaluate(node => node.remove());
+      await assertSignedOutKnowledgeHidden(page);
+    }
+    await page.evaluate(() => {
+      const leak = document.createElement('pre');
+      leak.className = 'knowledge-context-preview';
+      leak.textContent = 'synthetic-private-knowledge-fixture';
+      document.querySelector('.settings').append(leak);
+    });
+    await assert.rejects(assertSignedOutKnowledgeHidden(page),
+      /signed-out Settings must not mount private knowledge node/,
+      'anonymous private context preview must be rejected');
+    await page.locator('.knowledge-context-preview').evaluate(node => node.remove());
+    for (const label of ['Review saved draft', 'Approve this reviewed context',
+      'Publish approved context']) {
+      await page.evaluate(text => {
+        const leak = document.createElement('button');
+        leak.textContent = text;
+        leak.dataset.knowledgeLeak = 'yes';
+        document.querySelector('.settings').append(leak);
+      }, label);
+      await assert.rejects(assertSignedOutKnowledgeHidden(page),
+        /signed-out Settings must not expose knowledge consent action/,
+        'anonymous knowledge consent control must be rejected: ' + label);
+      await page.locator('[data-knowledge-leak]').evaluate(node => node.remove());
+      await assertSignedOutKnowledgeHidden(page);
+    }
     assert.deepEqual(errors, [], 'injected ready Study/recovery must not cause browser exceptions');
-    console.log('PASS ready-Study/recovery fixture: signed-out tutor isolation, Study/Settings direct links and leak negative controls');
+    console.log('PASS ready-Study/recovery fixture: signed-out tutor/knowledge isolation, Study/Settings direct links and leak negative controls');
   } finally {
     await ctx.close();
     await browser.close();
