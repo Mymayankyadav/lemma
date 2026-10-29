@@ -106,3 +106,10 @@ Use one approved checkpoint for the theorem “A compact subset of a Hausdorff s
 ### Release gate
 
 If any real response is malformed, the student rejects it or either model cannot resume the exact proof and hint level, keep the handoff entry points hidden and TUTOR-01 open. If all acceptance cases pass, Lane E opens a **separate** readiness PR with the evidence, checks that `StudyView.ready` is already independently accepted, and asks Lane B to expose navigation only when both owning `ready` flags are true. No automatic AI account linkage or paid-model request is required for core study.
+
+## T3g: fresh proof validation before copying a handoff
+
+The **Copy packet** action is an explicit student gesture, not an automatic tutor connection. A sheet displays a frozen approved checkpoint snapshot; another device can publish a new plan, complete a checkpoint, change the proof/hint/session, or replace its accepted context while the sheet is open. Copy now re-reads `StudyPlan.activeContext()` and checks the original account identity epoch/client, workspace and reviewed packet's plan/context revisions, checkpoint state, proof/feedback/evidence/next-action event IDs, hint level, session and cited references **before** calling the clipboard helper. A stale, offline or unverifiable packet is **not copied by that button**; its old text is cleared from the sheet and the user is instructed to reopen a fresh handoff. A validated packet may use the existing manual-selection fallback if browser clipboard permission is unavailable.
+
+This is a **client-side freshness check at the time of the copy gesture**, not a transactional lock on another device, proof of model identity or a way to revoke a packet already shared. The user should use the validated Copy action rather than manually copying an old visible packet. The original `TutorHandoff.ready=false` and student approval gates remain unchanged. `test/tutor_copy_freshness.js` uses deterministic synthetic contexts to exercise stale plan, proof, hint, session, citation, owner and workspace changes; genuine Claude→ChatGPT→Claude T4 acceptance remains separate.
+
