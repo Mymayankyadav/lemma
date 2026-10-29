@@ -1,3 +1,8 @@
+## Study readiness browser-hook correction — 29 October 2026
+
+- Owner-directed claim `chat-20261029-b-readiness-hook`, branch `lane-b/ui-study-readiness-hook`, base `72d13382690cab55bc8e407a09b37b3ac5719422`. #163 remains held; scope B screenshot harness and this handoff.
+- [#177](https://github.com/Mymayankyadav/lemma/pull/177) incorrectly read `StudyView` from a browser global, but build wraps modules in a private IIFE. D #172 exact-head regression 40817335093 proves the five-item case still fails. Extend the existing test-only lexical hook to expose actual readiness, then retain exact four/five labels, touch targets and spacing assertions. D must test the five-item enabled bundle; no production app change.
+
 ## Study-ready navigation screenshot gate — 29 October 2026
 
 - Owner-directed integrated claim `chat-20261029-b-study-nav-gate`, branch `lane-b/ui-study-ready-screenshot-gate`, base `4d0839c7d83c1d108ede6179bf8c46897fb1b019`. Recovery candidate #163 is explicitly held and paused, with no overlapping source/test files; no recovery activation.
