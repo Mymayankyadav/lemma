@@ -24,8 +24,8 @@ async function main(){
   try{
     // Default production build exposes backup only after sign-in; restore is
     // not rendered, and an account switch during verification cancels export.
-    {
-      const ctx=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block',acceptDownloads:true});
+    for(const size of ['mobile','desktop'])for(const scheme of ['light','dark']){
+      const ctx=await browser.newContext({viewport:size==='mobile'?{width:390,height:844}:{width:1280,height:800},colorScheme:scheme,serviceWorkers:'block',acceptDownloads:true});
       await ctx.route('**/*',route=>{
         const url=route.request().url();
         if(url.startsWith('https://lemma.test/'))return route.fulfill({contentType:'text/html',body:defaultApp});
@@ -59,7 +59,8 @@ async function main(){
       const download=page.waitForEvent('download');await root.getByRole('button',{name:'Download account backup'}).click();
       assert.deepEqual(JSON.parse(fs.readFileSync(await (await download).path(),'utf8')),fixture);
       assert.deepEqual(await page.evaluate(()=>window.__backupState.calls.map(x=>x[0])),['capture','verify']);
-      await root.screenshot({path:path.join(OUT,'account-backup-mobile-light.png')});
+      await root.screenshot({path:path.join(OUT,`account-backup-${size}-${scheme}.png`)});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'backup section does not overflow');
       await page.evaluate(()=>{window.__backupState.change=true;});
       await root.getByRole('button',{name:'Download account backup'}).click();
       await root.getByRole('status').filter({hasText:'Account or workspace changed'}).waitFor();
