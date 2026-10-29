@@ -1,3 +1,11 @@
+## R22 — signed-out account backup-only section isolation (29 October 2026)
+
+- **Claim:** `automation-20261029-f-r22-backup-isolation`; heartbeat 2026-10-29T09:04Z; branch `lane-f/release-r22-signedout-backup-isolation`, base `main@5f393c486175ceaecda7acd1497284d164941e97`. Only open B #163 is a held recovery activation candidate; F has no competing open PR. Android C remains paused.
+- **Gap:** B's separate, already shipped `accountBackupSection()` now mounts `#set-account-backup` for signed-in users even while `ACCOUNT_RECOVERY_READY=false`. R14/R21's anonymous Pages smoke checks `#set-account-recovery` and recovery actions but does not reject a leaked backup-only section or its private capture/download state. Signed-out backup leakage must be detected in both normal Settings navigation and a direct `#settings` reload.
+- **Scope:** F-owned `test/release_live_smoke.js` and this handoff only. Extend the existing signed-out Settings guard to cover backup-only section and its explicit action, and add a synthetic DOM-leak negative control for that distinct section. No account login, backup download, restore, database, readiness, Android, or tag change.
+- **Acceptance:** focused fixture, F ownership guard, exact-head regression and live Pages smoke CI, reviewed diff and mergeable PR. This is anonymous privacy evidence only; genuine authenticated recovery acceptance B #163 and student-operated tutor T4 remain open.
+- **Next:** implement guard and negative control; inspect exact-head CI and merge only when required checks pass; then verify current main.
+
 ## R21 — signed-out tutor acceptance preview isolation (29 October 2026)
 
 - **Claim:** `chat-20261029-f-r21-tutor-preview-isolation`; branch `lane-f/release-r21-signedout-tutor-preview`, baseline `main@0d9eba4ac7143bfeac374d9c3e6f4d8d429f9aeb` with exact-main regression, local Supabase, Pages and live smoke SUCCESS. No competing F open PR, B #163 held; C Android paused.
