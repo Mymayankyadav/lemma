@@ -34,7 +34,8 @@ const diff={added:['cp-new'],removed:[],
  reordered:false,requiresReassessment:[]};
 const mockReview=()=>({status:reviewStatus,planId:P,expectedRevision:2,
  expectedLocalRevision:1,draftId:'00000000-0000-4000-8000-000000000003',
- changeSummary:'Insert an explicit prerequisite',source:'Claude',diff});
+ changeSummary:'Insert an explicit prerequisite',source:'Claude',
+ publishedTitle:'Existing plan title',publishedObjective:'Existing objective',diff});
 const plan={
  ready:false,async activeContext(){return context},
  async readPlanDraft(){reads++;return localStatus?{status:localStatus}:null},
@@ -56,8 +57,10 @@ const plan={
   if(restartError)throw Error('Conflict changed; reopen amendment review');
   localStatus='draft';return {status:'draft'};
  },
- async approvePlanDraft(planId,revision,consent){
+ async approvePlanDraft(planId,revision,consent,reviewed){
   assert.equal(planId,P);assert.equal(revision,1);assert.equal(consent,true);
+  assert.equal(reviewed.publishedTitle,'Existing plan title');
+  assert.equal(reviewed.publishedObjective,'Existing objective');
   approvals++;localStatus='approved_pending';return {status:localStatus}
  },
  async submitApprovedPlanDraft(planId){

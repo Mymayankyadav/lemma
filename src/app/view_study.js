@@ -349,6 +349,8 @@ const StudyView = (() => {
                     current.expectedRevision!==preview.expectedRevision ||
                     current.expectedLocalRevision!==preview.expectedLocalRevision ||
                     current.draftId!==preview.draftId ||
+                    current.publishedTitle!==preview.publishedTitle ||
+                    current.publishedObjective!==preview.publishedObjective ||
                     JSON.stringify(current.diff)!==JSON.stringify(preview.diff)) {
                   status.textContent='The amendment changed. Review it again before approval.';
                   fill(buttons);
@@ -356,7 +358,7 @@ const StudyView = (() => {
                   return;
                 }
                 await StudyPlan.approvePlanDraft(context.planId,
-                  preview.expectedLocalRevision,true);
+                  preview.expectedLocalRevision,true,current);
                 if (!valid()) return;
                 preview=null;
                 fill(details);

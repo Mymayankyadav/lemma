@@ -1,3 +1,13 @@
+## P5u — repair title-less tutor amendment drafts (29 October 2026)
+
+- **Claim:** `chat-20261029-d-p5u-amendment-metadata`; branch `lane-d/plan-amendment-missing-title-repair`; base `main@d2bc525699f9236f20e05f2212c31afae721c77f`. The owner reproduced on a real signed-in Android Chrome session: local tutor amendment proposal correctly stages a title-only checkpoint diff, but clicking **Approve these displayed changes** fails `Plan needs a title before student approval`. No competing lane D PR was open at claim.
+- **Cause:** Tutor staging supplies `title/objective` from optional top-level proposal `snapshot`; an existing plan snapshot only contains `checkpoints`, so both fields are blank in IndexedDB. Generic approval insists on a plan title.
+- **Scope:** D-owned `src/app/study_plan.js`, `src/app/view_study.js`, focused `test/study_*.js` and this handoff. For amendments only, inherit omitted plan metadata from the exact published revision at the *review/approval* boundary. Preserve the owner's already-staged local draft and existing reviewed checkpoint-only diff; do not autoapprove, submit, rebase, invent a new proposal ID or change initial-plan rules.
+- **Gate:** real owner-local missing-title repro and regression, stale/owner/offline guards, stage/review/approve without RPC, explicit submit preserved, D ownership, full exact-head regression/local stack, deployment/live smoke before reporting fixed.
+- **Implemented:** D review fetches pinned server `title/objective` with owner and revision guard and rechecks the snapshot, then student-click approval carries the reviewed baseline through the same local draft CAS only if the unchanged metadata was missing. Existing draft UUID/local revision, original per-checkpoint snapshot and separate publish click are preserved. Bad/missing reviewed metadata fails closed. Live owner screenshot's error is reproduced by the title-less draft fixture.
+- **Verification pending:** exact PR-head regression including D lane guard, local Supabase, and Pages/live smoke. No production user data touched.
+- **Next action:** confirm exact-head green CI, merge then verify main deployment; owner must explicitly re-review and approve the *existing* local draft in Chrome.
+
 ## P5t — one-click first checkpoint starter instead of hand-written JSON (29 October 2026)
 
 - **Claim:** `chat-20261029-d-p5t-first-plan-template`, branch `lane-d/plan-first-checkpoint-template`, base `main@71f5e61ca302d4055c9934ba1e023d3fc2dd5052`. User cannot complete the first Study checkpoint because onboarding exposes raw Plan snapshot JSON. Separate B #200 provides student-controlled accepted-context publication. No overlapping D PR at claim; E/F active in their own files.
