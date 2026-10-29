@@ -146,10 +146,13 @@ async function nativeStudyZoom(mock,view) {
   window.App={workspaceRevision:1,workspaceBlocked:false,go(){}};
   window.__writes=[];
   window.__handoffCalls=[];
-  window.TutorHandoff={ready:true,async open(value){window.__handoffCalls.push(value)}};
+  window.__previewCalls=[];
+  window.TutorHandoff={ready:true,async open(value){window.__handoffCalls.push(value)},
+    async openForAcceptance(value){window.__previewCalls.push(value)}};
   window.__amendmentActions=[];
   window.__draftStatus='draft';
   window.StudyPlan={
+    ready:true,
     async activeContext(){return {
       planId:'00000000-0000-4000-8000-000000000002',planRevision:3,
       checkpoint:{id:'proof-1',title:'Compactness checkpoint',
@@ -205,6 +208,55 @@ async function nativeStudyZoom(mock,view) {
     window._StudyView.render({planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'})
   ));
   await page.getByRole('heading',{name:'Compactness checkpoint'}).waitFor();
+  // E-T4-ACCESS-01: the actual Study view must offer a labelled preview
+  // while normal Tutor readiness stays false. This is a synthetic account.
+  await page.evaluate(()=>{
+    window.TutorHandoff.ready=false;
+    document.querySelector('#app').replaceChildren(window._StudyView.render({
+      planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'
+    }));
+  });
+  const preview=page.getByRole('button',{name:'Test tutor handoff (unreleased)'});
+  await preview.waitFor();
+  assert.equal(await page.getByRole('button',{name:'Open tutor handoff'}).count(),0);
+  assert.match(await page.locator('.study-acceptance-warning').innerText(),/not a released tutor feature/);
+  assert.equal(await page.evaluate(()=>window.__previewCalls.length),0);
+  await preview.click();
+  assert.deepEqual(await page.evaluate(()=>window.__previewCalls),[{
+    planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'}]);
+  assert.equal(await page.evaluate(()=>window.__writes.length),0);
+  await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('Unsaved preview proof');
+  await preview.click();
+  assert.equal(await page.evaluate(()=>window.__previewCalls.length),1,
+    'dirty proof must block preview');
+  await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('');
+  // The previous rejection intentionally showed a warning. Capture the normal
+  // clean approved-checkpoint state, not that transient test-only message.
+  await page.evaluate(()=>document.querySelector('#app').replaceChildren(
+    window._StudyView.render({
+      planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'
+    })
+  ));
+  await page.getByText('This is the current approved checkpoint.').waitFor();
+  fs.mkdirSync('test-output/ui',{recursive:true});
+  for(const size of ['mobile','desktop'])for(const scheme of ['light','dark']) {
+    await page.setViewportSize(size==='mobile'?{width:390,height:844}:{width:1280,height:900});
+    await page.emulateMedia({colorScheme:scheme});
+    const bounds=await page.evaluate(()=>({doc:document.documentElement.scrollWidth,viewport:innerWidth}));
+    assert.ok(bounds.doc<=bounds.viewport+1,'preview overflows '+size+'/'+scheme);
+    assert.ok(await preview.evaluate(node=>node.getBoundingClientRect().height>=44),
+      'preview touch target below 44px');
+    await page.screenshot({path:'test-output/ui/study-p5r-tutor-preview-'+size+'-'+scheme+'.png',fullPage:true});
+  }
+  await page.setViewportSize({width:1280,height:900});
+  await page.emulateMedia({colorScheme:'light'});
+  await page.evaluate(()=>{
+    window.TutorHandoff.ready=true;
+    document.querySelector('#app').replaceChildren(window._StudyView.render({
+      planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'
+    }));
+  });
+  await page.getByRole('button',{name:'Open tutor handoff'}).waitFor();
   // Synthetic ready tutor: click is explicit and carries the selected checkpoint.
   const handoff=page.getByRole('button',{name:'Open tutor handoff'});
   await handoff.click();
