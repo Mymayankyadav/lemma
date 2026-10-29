@@ -2,6 +2,7 @@
 
 - Claim `chat-20261029-e-hint-contract`, base `57c5f4ac5875dfa6593ce659600805b4e825013b`, branch `lane-e/tutor-01-hint-level-contract`. Scope E-owned `src/app/tutor_handoff.js`, `test/tutor_packet.js`, `docs/TUTOR_HANDOFF.md`, this handoff. No readiness or production change.
 - Study reconstructs the latest hint level only from integer `payload.data.level` in the ledger; tutor RPC wraps the reply payload as `data`. Current parser accepts hint payloads without a valid level and export does not instruct the model to supply one, allowing a selected hint to be saved without carrying its level into the next packet. Add bounded validation and explicit model-facing instructions and tests. Next: implement, validate exact head, merge only on green CI; real T4 and E-T4-ACCESS-01 remain open.
+- Implementation: exported packet explains the level field; parser and atomic client reject missing, non-integer or out-of-range hint levels before a write. Focused packet, event/identity and atomic client tests, plan/E guard, syntax and build passed locally. Local `npm test` passed initial nonbrowser suites but stopped at render because the Playwright Chromium executable is absent. Exact-head GitHub regression/E guard and disposable local-stack CI remain required. This does not enforce monotonic progression or verify a hint's correctness; student review remains mandatory.
 
 ## T4 access dependency — 29 October 2026
 
