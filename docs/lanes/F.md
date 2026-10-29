@@ -1,3 +1,10 @@
+## R11 release safety — fail closed on disconnected recovery controls (29 October 2026)
+
+- **Claim:** `automation-20261029-f-r11-recovery-guard`, heartbeat 2026-10-29T04:05Z; branch `lane-f/release-r11-recovery-source-guard`, base `main@0b0c3db`. F is unclaimed; B #163 owns the separately held production recovery activation, D #172 owns Study activation. Android remains paused.
+- **Gap:** R8's tag gate accepts any source occurrence of `if (ACCOUNT_RECOVERY_READY && LemmaAccount.user`, even a disconnected/comment-only condition. It does not verify that Settings actually mounts the recovery section or that the existing explicit preview/confirmation and owner/workspace guards remain present. A future UI refactor could therefore make the release tag gate report accessible recovery while the controls are unreachable or unsafe.
+- **Scope:** strengthen only F-owned `test/release_recovery_gate.js`, its negative fixtures and this handoff. Require the enabled flag, live Settings mount, owner/workspace checks, local-only restore, explicit preflight and final consent; fail closed on removed/disabled/commented controls. Preserve B's draft hold; static source checks and synthetic fixtures are **not** live owner acceptance.
+- **Gate/next:** implement, run local negative fixtures if runtime available, F lane guard and exact-head regression/local CI, merge only after required checks pass and current main is healthy. Do not enable recovery, change student data or tag a release.
+
 ## R10 release acceptance — executable ready-Study positive fixture (29 October 2026)
 
 - **Claim:** `chat-20261029-f-r10-ready-fixture`; branch `lane-f/release-r10-ready-study-self-test`, base `main@3fe5c5b` after merged R9. Files: F-owned `test/release_live_smoke.js`, `.github/workflows/release.yml`, this handoff. B #163/D #166 are independently claimed; no other F PR on pickup.
