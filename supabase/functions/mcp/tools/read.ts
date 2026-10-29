@@ -87,7 +87,7 @@ export async function readPages(c:Context,a:any):Promise<string>{
     const room=12000-parts.join('\n').length-head.length-80;
     if(room<=0)break;
     parts.push(head+String(row.body||'').slice(0,room));
-    if(String(row.body||'').length>room){parts.push('[cut, call again from p.'+((row.label||row.page)+1)+']');break}
+    if(String(row.body||'').length>room){parts.push('[cut, call again from p.'+(Number(row.page)+1)+']');break}
   }
   return parts.join('\n').slice(0,12000);
 }
