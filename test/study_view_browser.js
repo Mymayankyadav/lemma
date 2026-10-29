@@ -230,6 +230,14 @@ async function nativeStudyZoom(mock,view) {
   assert.equal(await page.evaluate(()=>window.__previewCalls.length),1,
     'dirty proof must block preview');
   await page.getByRole('textbox',{name:'Your unfinished proof'}).fill('');
+  // The previous rejection intentionally showed a warning. Capture the normal
+  // clean approved-checkpoint state, not that transient test-only message.
+  await page.evaluate(()=>document.querySelector('#app').replaceChildren(
+    window._StudyView.render({
+      planId:'00000000-0000-4000-8000-000000000002',checkpointId:'proof-1'
+    })
+  ));
+  await page.getByText('This is the current approved checkpoint.').waitFor();
   fs.mkdirSync('test-output/ui',{recursive:true});
   for(const size of ['mobile','desktop'])for(const scheme of ['light','dark']) {
     await page.setViewportSize(size==='mobile'?{width:390,height:844}:{width:1280,height:900});
