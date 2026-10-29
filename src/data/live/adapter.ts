@@ -154,7 +154,7 @@ export class LiveAdapter implements LemmaApi {
       const previous=views.find(c=>c.code===op.after)
       const next=views.filter(c=>c.position>(previous?.position??0)).sort((a,b)=>a.position-b.position)[0]
       const position=previous&&next?(previous.position+next.position)/2:(previous?.position??0)+10
-      const candidate=op.after?.match(/^CP(\\d+)$/)?.[1]
+      const candidate=op.after?.match(/^CP(\d+)$/)?.[1]
       const proposedCode=op.code??(candidate?'CP'+candidate+'a':'Proposed')
       views.push({id:'proposed:'+proposal.id+':'+views.length,code:proposedCode,
         title:op.title,position,ui:'proposed',
@@ -211,7 +211,7 @@ export class LiveAdapter implements LemmaApi {
   const [projectId,file,onProgress]=args,db=liveClient(),uid=await owner(db)
   checked(await db.from('projects').select('id').eq('user_id',uid).eq('id',projectId).single())
   const document=await ingest(file,{onProgress})
-  const basename=file.name.replace(/\.pdf$/i,'').trim()
+  const basename=file.name.replace(/\.pdf$/i,'').trim()||'Untitled PDF'
   const existing=await rows(db,'sources',uid)
   const used=new Set(existing.filter(s=>s.project_id===projectId).map(s=>s.short))
   const base=slugify(basename).replace(/-/g,'').slice(0,17)||'source'
