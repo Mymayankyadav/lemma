@@ -10,7 +10,7 @@ const E2='00000000-0000-4000-8000-000000000003';
 const C1='00000000-0000-4000-8000-000000000004';
 const owner='00000000-0000-4000-8000-000000000005';
 const cp='compactness-open-cover-proof';
-let dialog, revision=3, activeCheckpoint=cp, failSecond=false, afterContextRead=null;
+let dialog, revision=3, activeCheckpoint=cp, failFirst=false, failSecond=false, afterContextRead=null;
 let hintLevel=1, attemptId=E1, sessionId=owner, checkpointStatus='in_progress';
 let contextId=null, contextRevision=null, lastFeedbackId=null, sourceRefs=[];
 let reflectOwnWrites=false,externalAfterFirst=false;
@@ -24,6 +24,14 @@ const client={rpc(name,args){
  return {setHeader:async(header,auth)=>{
   assert.equal(header,'Authorization');
   assert.equal(auth,'Bearer mock-token');
+  if(failFirst && args.p_event_id===E1) {
+   failFirst=false;
+   if(reflectOwnWrites){
+    if(sessionId===null)sessionId=owner;
+    attemptId=E1;
+   }
+   throw Error('Network interrupted after a possible first proof write');
+  }
   if(failSecond && args.p_event_id===E2) {
    failSecond=false;
    if(reflectOwnWrites)hintLevel=args.p_payload.level;
@@ -288,6 +296,39 @@ async function open(){
  assert.match(x.status.textContent,/stale_study_context/);
  assert.equal(pendingSecond.checked,true,'uncommitted second selection retained');
  externalAfterFirst=false;
+
+ // T3j: a lost first proof response can be retried only because the exact
+ // original event UUID is now visible in the freshly read active session.
+ sessionId=null;attemptId=C1;hintLevel=1;reflectOwnWrites=true;
+ x=await open();const proofSelection=select(0);failFirst=true;
+ const beforeLostProof=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeLostProof+1);
+ assert.equal(proofSelection.checked,true,'uncertain proof retains consent and UUID');
+ assert.equal(sessionId,owner);
+ assert.equal(attemptId,E1,'server may have committed the original proof');
+ await x.save.events.click();
+ assert.equal(calls.length,beforeLostProof+2,'witnessed original UUID permits exact retry');
+ assert.equal(calls.at(-1).args.p_event_id,E1);
+ assert.equal(proofSelection.disabled,true);
+
+ // An uncertain hint with no visible event UUID cannot justify ANY new
+ // session. A second device may have created it and reached the same level.
+ // The old rule accepted this merely because an event ID was attempted.
+ sessionId=null;attemptId=null;hintLevel=1;reflectOwnWrites=false;
+ x=await open();const unprovenHint=select(1);failSecond=true;
+ const beforeForeignSession=calls.length;
+ await x.save.events.click();
+ assert.equal(calls.length,beforeForeignSession+1,'first hint attempt is uncertain');
+ assert.equal(unprovenHint.checked,true,'uncertain selection is preserved');
+ sessionId=C1;hintLevel=2; // unrelated device created a session and matching hint level
+ await x.save.events.click();
+ assert.equal(calls.length,beforeForeignSession+1,
+  'unproven foreign session must not receive a second RPC');
+ assert.match(x.status.textContent,/stale_study_context/);
+ assert.equal(unprovenHint.checked,true,'stale retry preserves the original selection');
+ assert.equal(x.save.disabled,false,'student may retry only after reopening a fresh handoff');
+
  reflectOwnWrites=false;sessionId=owner;attemptId=E1;hintLevel=1;
- console.log('PASS TUTOR-01 T3f: stale proof guards, own-batch retry, external interleaving rejection, no implicit approvals');
+ console.log('PASS TUTOR-01 T3j: witnessed lost-proof retry, foreign unproven session denial, consent retained');
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

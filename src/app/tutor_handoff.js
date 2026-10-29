@@ -378,12 +378,21 @@ const TutorHandoff = (() => {
       };
       const beforeRefs = ctx.sourceRefs ?? [], afterRefs = now.sourceRefs ?? [];
       const oldSession = ctx.sessionId ?? null, currentSession = now.sessionId ?? null;
-      // An event in this very sheet can start the first active session.
-      // Use its confirmed session receipt when available; after a lost response
-      // allow a valid new session only for an attempted original event UUID.
-      const ownNewSession = oldSession === null && ownEvents.length > 0 &&
-        validId(currentSession) &&
-        (!ownSessionIds.length || ownSessionIds.some(id => sameId(id,currentSession)));
+      // An event in this sheet can start the first active session. A
+      // confirmed RPC receipt identifies that session; after a lost response
+      // we must instead observe an attempted original event UUID in the
+      // freshly read session. An attempted hint with no visible event ID is
+      // NOT proof that an unrelated new session belongs to this sheet.
+      const witnessedOwnEvent = [
+        ['lastAttempt',['attempt','proof_step']],
+        ['lastFeedback',['feedback']],
+        ['lastEvidence',['mastery_evidence']],
+        ['nextAction',['session_note']]
+      ].some(([field,kinds]) => ownEvents.some(e =>
+        kinds.includes(e.type) && sameId(e.eventId,eventId(now,field))));
+      const ownNewSession = oldSession === null && validId(currentSession) &&
+        (ownSessionIds.some(id => sameId(id,currentSession)) ||
+          (!ownSessionIds.length && witnessedOwnEvent));
       const currentHint = now.hintLevel ?? 0;
       const ownHint = ownEvents.some(e => e.type === 'hint' &&
         e.payload?.level === currentHint);
