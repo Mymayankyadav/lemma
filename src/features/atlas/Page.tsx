@@ -13,7 +13,7 @@ import {Button} from '../../ui/Button';
 import {Segmented} from '../../ui/Segmented';
 import {AtlasListViews} from './AtlasListViews';
 import {AtlasMinimap} from './AtlasMinimap';
-import {OrbitRings} from './OrbitRings';
+import {OrbitRings,orbitFitPoints} from './OrbitRings';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
@@ -117,12 +117,13 @@ export default function Page(){
  useEffect(()=>{viewRef.current=view},[view]);
  const handleFit=useCallback(()=>{
   const element=svg.current,model=layout;
-  if(!element||!model||!zoomRef.current)return;
+  if(!element||!model||!zoomRef.current||!graph)return;
   const size=element.getBoundingClientRect();
-  const t=fitAtlasViewport(model.nodes.map(n=>positions[n.id]??n),size.width,size.height);
+  const nodes=model.nodes.map(n=>({...n,...positions[n.id]}));
+  const t=fitAtlasViewport([...nodes,...orbitFitPoints(graph,nodes)],size.width,size.height);
   userMoved.current=false;
   zoomRef.current.transform(select(element),zoomIdentity.translate(t.x,t.y).scale(t.k));
- },[layout,positions]);
+ },[layout,positions,graph]);
  const navigateMinimap=useCallback((point:Point)=>{
   const element=svg.current;
   if(!element||!zoomRef.current)return;
@@ -137,7 +138,8 @@ export default function Page(){
  },[]);
  useEffect(()=>{
   const element=svg.current,model=layout;
-  if(!element||!model)return;
+  if(!element||!model||!graph)return;
+  const fitPoints=[...model.nodes,...orbitFitPoints(graph,model.nodes)];
   const behavior=zoom<SVGSVGElement,unknown>().scaleExtent([.2,3])
    .filter(event=>!(event.target instanceof Element&&event.target.closest('[data-node]')) &&
        ((event as MouseEvent).button===undefined||(event as MouseEvent).button===0))
@@ -147,20 +149,20 @@ export default function Page(){
   selection.call(behavior);
   selection.on('dblclick.zoom',null);
   const box=element.getBoundingClientRect();
-  const fitted=fitAtlasViewport(model.nodes,box.width,box.height);
+  const fitted=fitAtlasViewport(fitPoints,box.width,box.height);
   behavior.transform(selection,zoomIdentity.translate(fitted.x,fitted.y).scale(fitted.k));
   const resize=new ResizeObserver(()=>{
    // Preserve the user's zoom when rotating; fit only if no interaction has yet occurred.
    if(!svg.current||!zoomRef.current)return;
    const b=svg.current.getBoundingClientRect();
    if(b.width&&b.height&&!userMoved.current) {
-    const f=fitAtlasViewport(model.nodes,b.width,b.height);
+    const f=fitAtlasViewport(fitPoints,b.width,b.height);
     zoomRef.current.transform(select(svg.current),zoomIdentity.translate(f.x,f.y).scale(f.k));
    }
   });
   resize.observe(element);
   return()=>{resize.disconnect();selection.on('.zoom',null);zoomRef.current=null};
- },[layout,mode]);
+ },[layout,mode,graph]);
  useEffect(()=>{
   if(!layout||!focus||mode!=='orbits')return;
   const found=layout.nodes.find(n=>n.slug===focus);
