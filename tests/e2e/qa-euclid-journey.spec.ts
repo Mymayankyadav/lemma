@@ -5,7 +5,7 @@ import {test,expect} from '@playwright/test';
  * Navigate through every primary destination, approve exactly one proposal,
  * and verify that the Home count updates without a reload or implicit approval.
  */
-for (const world of ['euclid','euclid-night'] as const) {
+for (const world of ['graph','graph-night'] as const) {
  test(`QA-1 Euclid cross-screen study loop and explicit approval: ${world}`,async({page})=>{
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
@@ -21,8 +21,8 @@ for (const world of ['euclid','euclid-night'] as const) {
 
   await nav.getByRole('link',{name:'Paths'}).click();
   await expect(nav.getByRole('link',{name:'Paths'})).toHaveAttribute('aria-current','page');
-  await expect(page.getByRole('heading',{name:'Paths',level:2})).toBeVisible();
-  await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Real Analysis');
+  await expect(page.getByRole('heading',{name:'Paths',level:1})).toBeVisible();
+  await expect(page.locator('[data-project-row="real-analysis"]')).toContainText('Real Analysis');
 
   await nav.getByRole('link',{name:'Review'}).click();
   await expect(nav.getByRole('link',{name:'Review'})).toHaveAttribute('aria-current','page');

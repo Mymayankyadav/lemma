@@ -45,6 +45,8 @@ export interface ProjectSummary {
  id: string; slug: string; title: string; subject: Subject; status: ProjectStatus; done: number; total: number
  current: {code: string; title: string; step: number; stepsTotal: number} | null
  lastActivityAt: IsoDate | null; cardsCount: number; sessionsCount: number; sourcesCount: number
+ /** Titles of this project's own sources, for searching the Paths library without N+1 fetches. */
+ sourceTitles?: string[]
 }
 export interface Project {
  pinned?: boolean; system?: boolean

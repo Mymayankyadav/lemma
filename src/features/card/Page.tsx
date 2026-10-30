@@ -226,7 +226,7 @@ export default function Page() {
                 </Chip>
               )}
               {note.sessionNumber && (
-                <Link to={`/s/${note.projectSlug}/${note.sessionNumber}`}>
+                <Link to={`/s/${note.projectSlug}/${note.sessionNumber}`} className="inline-flex min-h-11 items-center">
                   <Chip icon={MessageCircle}>S{note.sessionNumber}</Chip>
                 </Link>
               )}

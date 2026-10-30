@@ -62,7 +62,7 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
     <Glyph subject={subject.glyph} hue={subject.hue} size={32}/>
     <div className="min-w-0 flex-1">
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold">{project.title}</h2>
-     <p className="mt-1 break-words text-label leading-relaxed text-ink-2">{project.goal}</p>
+     <p className="mt-1 break-words text-label leading-relaxed text-ink-2">{project.goal?.trim()||'Your tutor fills this in'}</p>
     </div>
     <strong className="shrink-0 font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
    </div>
