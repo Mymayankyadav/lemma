@@ -95,6 +95,6 @@ export function scheduleDetail(row:ScheduledCheckpoint):string|null{
   ': '+(Math.abs(delta)<=2?'on time':suffix)
 }
 export const scheduleColor:Record<ScheduleState,string>={
- early:'var(--good)',on_time:'var(--accent)',late:'var(--bad)',
+ early:'var(--good)',on_time:'var(--accent)',late:'var(--bad, var(--again))',
  future:'var(--ink-3)',unscheduled:'var(--line)'
 }
