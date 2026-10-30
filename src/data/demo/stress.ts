@@ -141,7 +141,9 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   data.misconceptions = [];
   data.checkpointEvents = [];
   data.seed = extreme ? 2026103102 : 2026103101;
-  data.settings.reviewsPerDay = dueCount;
-  data.settings.newPerDay = dueCount;
+  // Keep the backlog real: dueCount describes overdue cards, not the daily quota.
+  // A 4,000-card backlog must still offer a bounded 200-card daily share.
+  data.settings.reviewsPerDay = 200;
+  data.settings.newPerDay = 20;
   return data;
 }
