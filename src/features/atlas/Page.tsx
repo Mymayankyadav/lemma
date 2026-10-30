@@ -127,7 +127,7 @@ export default function Page(){
   const behavior=zoom<SVGSVGElement,unknown>().scaleExtent([.2,3])
    .filter(event=>!(event.target instanceof Element&&event.target.closest('[data-node]')) &&
        ((event as MouseEvent).button===undefined||(event as MouseEvent).button===0))
-   .on('zoom',event=>{if(event.sourceEvent)userMoved.current=true;setView(event.transform)});
+   .on('zoom',event=>{if('sourceEvent' in event && event.sourceEvent)userMoved.current=true;setView(event.transform)});
   zoomRef.current=behavior;
   const selection=select(element);
   selection.call(behavior);
