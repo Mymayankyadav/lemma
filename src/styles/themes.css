@@ -51,6 +51,8 @@ html[data-theme="graph"] {
   --again: #B3261E;
   --hard: #B85C00;
   --easy: #1E7A4C;
+  /* A Good review: graph-paper ink blue, distinct from Again (red) and Easy (green). */
+  --grade-good: #2F5DA8;
   --success-tint: color-mix(in srgb, #1E7A4C 12%, transparent);
   --danger-tint: color-mix(in srgb, #B3261E 12%, transparent);
   --grad-lit: #C8372D;
@@ -126,6 +128,7 @@ html[data-theme="graph-night"] {
   --again: #FF8A8A;
   --hard: #F2B05E;
   --easy: #86D39C;
+  --grade-good: #8FB4F0;
   --success-tint: color-mix(in srgb, #86D39C 12%, transparent);
   --danger-tint: color-mix(in srgb, #FF8A8A 12%, transparent);
   --grad-lit: #FF7B6B;

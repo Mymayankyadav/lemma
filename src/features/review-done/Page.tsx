@@ -79,7 +79,7 @@ export default function Page(){
     title={a.card.projectSlug+' · '+(['','Again','Hard','Good','Easy'][a.rating]??'')}
     aria-label={a.card.projectSlug+' '+(['','Again','Hard','Good','Easy'][a.rating]??'')}
     className="size-4 rounded-[2px] border border-edge"
-    style={{background:a.rating===1?'var(--bad)':a.rating===2?'var(--warn)':a.rating===3?'var(--accent)':'var(--good)'}}/>)}</div>
+    style={{background:a.rating===1?'var(--bad)':a.rating===2?'var(--warn)':a.rating===3?'var(--grade-good)':'var(--good)'}}/>)}</div>
   </section>
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>

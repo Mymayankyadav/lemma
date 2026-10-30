@@ -8,7 +8,7 @@
   --amber: #F7B538; --amber-hi: #FFD47E; --amber-glow: #FFE3A6; --amber-deep: #D98E1C; --amber-ink: #1E1405;
   --amber-tint: rgba(247,181,56,0.10); --amber-tint-2: rgba(247,181,56,0.12);
   --amber-line: rgba(247,181,56,0.25); --amber-line-2: rgba(247,181,56,0.55);
-  --again: #F2545B; --hard: #F39A4B; --good: #F7B538; --easy: #4FC88E;
+  --again: #F2545B; --hard: #F39A4B; --good: #F7B538; --easy: #4FC88E; --grade-good: var(--good);
   --success-tint: rgba(79,200,142,0.12); --danger-tint: rgba(242,84,91,0.08);
   --violet: #A495FF; --cyan: #62CBE6; --rose: #F28FAD; --lime: #A8D66B; --slate: #8C8796;
   --grad-lit: linear-gradient(180deg, #FFCD66 0%, #F2A92C 100%);

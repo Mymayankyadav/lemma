@@ -1,8 +1,8 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
-import {useProject,useProjects,useUpdateProject} from '../../data/hooks';
-import {buildSchedule,scheduleHeadline,scheduleColor} from '../../lib/schedule';
+import {useInsightData,useProject,useProjects,useUpdateProject} from '../../data/hooks';
+import {buildSchedule,scheduleHeadline,scheduleColor,paceFromDemonstrations} from '../../lib/schedule';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
 import {Screen} from '../../ui/Screen';
 import {Skeleton} from '../../ui/Skeleton';
@@ -17,9 +17,11 @@ const newest=(a:ProjectSummary,b:ProjectSummary)=>(Date.parse(b.lastActivityAt??
 const pct=(project:ProjectSummary)=>project.total?Math.round(100*project.done/project.total):0;
 
 function MiniMetro({project}:{project:ProjectSummary}){
- const detail=useProject(project.slug);
+ const detail=useProject(project.slug),insight=useInsightData(30);
  const percent=pct(project);
- const schedule=detail.data?buildSchedule(detail.data.checkpoints,{targetDate:project.targetDate}):[];
+ // Same pace as Today and the project page, so every screen states the same delay.
+ const pacePerWeek=insight.data?paceFromDemonstrations(insight.data.checkpointEvents,project.id):undefined;
+ const schedule=detail.data?buildSchedule(detail.data.checkpoints,{targetDate:project.targetDate,pacePerWeek}):[];
  const headline=scheduleHeadline(schedule);
  const n=schedule.length;
  return <div className="flex min-w-0 items-center gap-2">

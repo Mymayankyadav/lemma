@@ -92,7 +92,7 @@ describe("demo adapter", () => {
     const fixture = JSON.parse(fixtureText) as DemoStore;
     const analysis = fixture.projects.find(p => p.slug === "real-analysis")!;
     expect(analysis.targetDate).toBe("@date:84");
-    expect(analysis.targetLabel).toBe("22 Jan");
+    expect(analysis.targetLabel).toBe("Final exam");
     const cps = fixture.checkpoints.filter(cp => cp.projectId === analysis.id);
     expect(cps).toHaveLength(12);
     expect(new Set(cps.map(cp => cp.stage)).size).toBe(4);
