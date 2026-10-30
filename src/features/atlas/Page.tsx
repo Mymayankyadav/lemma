@@ -10,6 +10,7 @@ import {useAtlas,usePinConcept} from '../../data/hooks';
 import type {AtlasGraph} from '../../data/types';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
+import {plainMath} from '../../lib/plain-math';
 import {Segmented} from '../../ui/Segmented';
 import {AtlasListViews} from './AtlasListViews';
 import {AtlasMinimap} from './AtlasMinimap';
@@ -67,7 +68,7 @@ function WorldNode({node,selected,dim,reduce,showLabel,position,zoomScale,onDown
  onSelect:(id:string)=>void;
 }){
  const {x,y}=position,status=node.status;
- return <g data-node={node.id} role="button" aria-label={node.name+', '+names[status]}
+ return <g data-node={node.id} role="button" aria-label={plainMath(node.name)+', '+names[status]}
   aria-pressed={selected} tabIndex={0} style={{cursor:'pointer',touchAction:'none',outline:'none',transition:reduce?'none':'opacity .4s'}}
   opacity={dim?.18:1}
   onPointerDown={e=>onDown(e,node)} onPointerMove={e=>onMove(e,node)} onPointerUp={e=>onUp(e,node)}
@@ -88,7 +89,7 @@ function WorldNode({node,selected,dim,reduce,showLabel,position,zoomScale,onDown
   {selected&&<circle cx={x} cy={y} r={10} fill="none" stroke="var(--amber-hi)" strokeWidth={1} strokeOpacity={0.9}/>}
   {showLabel&&<text x={x} y={y+23/zoomScale} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={(selected?13:11.5)/zoomScale}
    fontWeight={selected?600:500} fill={selected?'var(--ink)':'var(--ink-2)'}
-   stroke="var(--obsidian)" strokeWidth={3/zoomScale} paintOrder="stroke" pointerEvents="none">{node.name}</text>}
+   stroke="var(--obsidian)" strokeWidth={3/zoomScale} paintOrder="stroke" pointerEvents="none">{plainMath(node.name)}</text>}
  </g>;
 }
 function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:number;active:boolean;onClick:()=>void;icon?:typeof Check}){
