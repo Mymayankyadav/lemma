@@ -504,6 +504,38 @@ export class DemoAdapter implements LemmaApi {
       return this.projectValue(project);
     });
   }
+  async createProjectDraft(input: { title: string; sources?: File[] }): Promise<Project> {
+    text(input.title, 1, 80, "Title");
+    const subject = this.store.subjects[0];
+    if (!subject) invalid("No demo subject available");
+    const style = this.store.settings.defaultStyle;
+    const project = await this.createProject({
+      title: input.title,
+      goal: "",
+      subjectId: subject.id,
+      style,
+    });
+    for (const file of input.sources ?? []) {
+      await this.addSource(project.id, file, () => {});
+    }
+    return project;
+  }
+  async listPlanRevisions(slug: string) {
+    this.project(slug);
+    return [];
+  }
+  async updateSource(id: string, patch: { title?: string; kind?: Source["kind"] }): Promise<Source> {
+    return this.transaction(() => {
+      keys(patch, ["title", "kind"]);
+      const source = found(this.store.sources.find((s) => s.id === id), "Source");
+      if (patch.title !== undefined) text(patch.title, 1, 120, "Source title");
+      if (patch.kind !== undefined && !["book", "notes", "slides", "problems", "syllabus", "exam", "other"].includes(patch.kind))
+        invalid("Unknown source kind");
+      Object.assign(source, patch);
+      const { pages, error, ...value } = source;
+      return clone(value);
+    });
+  }
   async updateProject(id: string, patch: ProjectPatch) {
     return this.transaction(() => {
       keys(patch, ["title", "goal", "style", "status", "subjectId"]);
