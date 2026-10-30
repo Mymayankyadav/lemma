@@ -21,6 +21,7 @@ import {useToast} from '../../ui/Toast';
 import {CardFanArt} from '../../ui/art/CardFanArt';
 import type {HomeSummary, ProjectSummary} from '../../data/types';
 import {GoalDistance} from './GoalDistance';
+import {ReviewOutlook} from './ReviewOutlook';
 
 type ChatClient = 'claude' | 'chatgpt';
 
@@ -188,6 +189,7 @@ export default function Page(){
   <section aria-label="Cards" className="flex flex-col gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Cards</h2>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
+   <ReviewOutlook/>
   </section>
   <section aria-label="Projects" className="flex flex-col gap-2">
    <div className="flex min-h-11 items-center justify-between">
