@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
-import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
+import {AnimatePresence,motion,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
 import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatus,useUndoReview,useSessions} from '../../data/hooks';
 import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../data/types';
@@ -64,11 +64,13 @@ export default function Page(){
  // An unsaved note belongs to its review card, never to the next card dealt.
  const [draft,setDraft]=useState<{cardId:string;value:string}|null>(null);
  const note=draft&&current&&draft.cardId===current.cardId?draft.value:'';
+ const dragX=useMotionValue(0),rotation=useTransform(dragX,x=>x/22);
  const previousCardId=useRef<string|null>(null);
  useEffect(()=>{
   const cardId=current?.cardId??null;
   if(previousCardId.current===cardId)return;
   previousCardId.current=cardId;
+  dragX.set(0);
   setDraft(null);
   setSheetOpen(false);
  },[current?.cardId]);
@@ -176,7 +178,16 @@ export default function Page(){
   </header>
   <AnimatePresence mode="wait" initial={false}>
    <motion.div key={current.cardId} initial={{opacity:0,y:reduce?0:34,scale:reduce?1:0.94}} animate={{opacity:1,y:0,scale:1}}
-    exit={{opacity:0,y:-12}} transition={{duration:reduce?0.15:0.42}}>
+    exit={{opacity:0,y:-12}} transition={{duration:reduce?0.15:0.42}}
+    drag={revealed&&!submitting} dragElastic={0.6} dragSnapToOrigin
+    dragConstraints={{left:0,right:0,top:0,bottom:0}}
+    style={{x:dragX,rotate:rotation,touchAction:revealed?'none':'auto'}}
+    onDragEnd={(_,info)=>{
+     if(!revealed||submitting)return;
+     if(info.offset.x>110)void grade(3);
+     else if(info.offset.x< -110)void grade(1);
+     else if(info.offset.y< -110)void grade(4);
+    }}>
     <CardFace item={current} revealed={revealed} confidence={confidence}/>
    </motion.div>
   </AnimatePresence>
