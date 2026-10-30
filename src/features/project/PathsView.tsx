@@ -8,7 +8,7 @@ import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
 import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
-import {buildSchedule,scheduleHeadline,scheduleDate,scheduleColor,type ScheduledCheckpoint} from '../../lib/schedule';
+import {buildSchedule,scheduleHeadline,scheduleDate,scheduleColor,paceFromDemonstrations,type ScheduledCheckpoint} from '../../lib/schedule';
 
 const DAY=86_400_000;
 type Stage={key:string;name:string;checkpoints:CheckpointView[]};
@@ -39,10 +39,8 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
 }
 
 function goalEstimate(detail:ProjectDetail,events:ReturnType<typeof useInsightData>['data']){
- const now=Date.now(),since=now-28*DAY;
- const ids=new Set((events?.checkpointEvents??[]).filter(e=>e.projectId===detail.project.id
-  &&e.kind==='demonstrated'&&Date.parse(e.at)>=since&&Date.parse(e.at)<=now).map(e=>e.checkpointCode));
- const pace=Math.max(1,ids.size)/4;
+ const now=Date.now();
+ const pace=paceFromDemonstrations(events?.checkpointEvents??[],detail.project.id,now);
  const remaining=Math.max(0,detail.total-detail.done);
  const finish=new Date(now+remaining/pace*7*DAY);
  const target=detail.project.targetDate;
