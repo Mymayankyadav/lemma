@@ -151,3 +151,22 @@ test('Atlas list modes remain legible in Euclid night on a narrow phone',async({
  await page.getByRole('button',{name:'Branches'}).click();
  await page.screenshot({path:'test-results/screens/atlas-euclid-night-branches.png',fullPage:true});
 });
+
+test('Euclid Atlas semantic zoom opens subject and topic breadcrumbs and returns to full fit',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('./?demo=1&theme=euclid#/atlas');
+ const graph=page.locator('svg[aria-label^="Interactive knowledge graph"] > g').first();
+ await expect(page.locator('[data-atlas-subject-focus]')).toHaveCount(3);
+ const old=await graph.getAttribute('transform');
+ await page.locator('[data-atlas-subject-focus]').first().click();
+ await expect(page.getByRole('navigation',{name:'Atlas breadcrumb'})).toBeVisible();
+ await expect.poll(()=>graph.getAttribute('transform')).not.toBe(old);
+ const topic=page.locator('[data-atlas-topic-focus]').first();
+ await expect(topic).toBeVisible();
+ await topic.click();
+ await expect(page.getByRole('navigation',{name:'Atlas breadcrumb'})).toContainText('General');
+ await page.screenshot({path:'test-results/screens/atlas-euclid-topic-focus.png',fullPage:true});
+ await page.getByRole('navigation',{name:'Atlas breadcrumb'}).getByRole('button',{name:'All'}).click();
+ await expect(page.getByRole('navigation',{name:'Atlas breadcrumb'})).toHaveCount(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
