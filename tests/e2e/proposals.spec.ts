@@ -102,6 +102,7 @@ test('tapping a checkpoint opens a drawer that steps through the plan',async({pa
  await page.goto('/lemma/?demo=1#/proposals?tab=plan');
  await page.getByRole('link',{name:'See the whole plan'}).click();
  await expect(page.getByRole('button',{name:'Approve plan'})).toBeVisible();
+ await page.getByLabel('Checkpoint prerequisites').screenshot({path:'test-results/screens/plan-map.png'});
  await page.getByRole('region',{name:'Checkpoints'}).getByRole('button').first().click();
  const drawer=page.locator('[data-checkpoint-drawer]');
  await expect(drawer).toBeVisible();

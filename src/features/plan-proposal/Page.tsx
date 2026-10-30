@@ -21,6 +21,7 @@ import {
 } from "../../data/hooks";
 import {planReviewNodes} from "./nodes";
 import {planIdeasGraph} from "./ideas";
+import {layoutPlanMap, R} from "./planMap";
 import {buildAtlasTree} from "../atlas/tree";
 import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
@@ -37,6 +38,7 @@ import { Tex } from "../../ui/Tex";
 import { plainMath } from "../../lib/plain-math";
 
 type Node = ReviewNode;
+/** Checkpoints as a tree spanning out left to right; every prerequisite drawn as a dashed line. */
 function PlanMap({
   nodes,
   selected,
@@ -46,103 +48,30 @@ function PlanMap({
   selected: string;
   onSelect: (code: string) => void;
 }) {
-  const layout = useMemo(() => {
-    const byCode = new Map(nodes.map((n) => [n.code, n])),
-      cache = new Map<string, number>();
-    const depth = (code: string, path: Set<string>): number => {
-      if (cache.has(code)) return cache.get(code)!;
-      if (path.has(code)) return 0;
-      const node = byCode.get(code),
-        next = new Set(path).add(code),
-        parents = node?.prereqs.filter((p) => byCode.has(p)) ?? [];
-      const d = parents.length
-        ? 1 + Math.max(...parents.map((p) => depth(p, next)))
-        : 0;
-      cache.set(code, d);
-      return d;
-    };
-    // Plan order runs left to right (scroll sideways); prerequisite depth picks the lane.
-    // A long plan stays one short strip instead of a tall column above the list.
-    const positions = new Map<string, { x: number; y: number }>();
-    let lanes = 0;
-    nodes.forEach((n, i) => {
-      const d = Math.min(3, depth(n.code, new Set()));
-      lanes = Math.max(lanes, d);
-      positions.set(n.code, { x: 30 + i * 54, y: 30 + d * 50 });
-    });
-    return {
-      positions,
-      width: Math.max(120, 60 + (nodes.length - 1) * 54),
-      height: 62 + lanes * 50,
-    };
-  }, [nodes]);
+  const layout = useMemo(() => layoutPlanMap(nodes), [nodes]);
+  const at = useMemo(() => new Map(layout.nodes.map((n) => [n.code, n])), [layout]);
+  const byCode = useMemo(() => new Map(nodes.map((n) => [n.code, n])), [nodes]);
   return (
-    <div
-      className="overflow-x-auto rounded-slab border border-edge bg-well p-3"
-      aria-label="Checkpoint prerequisites"
-    >
-      <svg
-        role="img"
-        aria-label="Map of proposed checkpoints and prerequisites"
-        viewBox={`0 0 ${layout.width} ${layout.height}`}
-        width={layout.width}
-        height={layout.height}
-        style={{ maxWidth: "none" }}
-      >
-        {nodes.flatMap((n) =>
-          n.prereqs.map((parent) => {
-            const a = layout.positions.get(parent),
-              b = layout.positions.get(n.code);
-            if (!a || !b) return null;
-            const lift = a.y === b.y ? Math.min(28, 10 + Math.abs(b.x - a.x) / 8) : 0;
-            return (
-              <path
-                key={`${parent}-${n.code}`}
-                d={`M${a.x} ${a.y - (lift ? 18 : 0)} Q${(a.x + b.x) / 2} ${Math.min(a.y, b.y) - (lift ? 18 + lift : 0)} ${b.x} ${b.y - (lift ? 18 : 0)}`}
-                fill="none"
-                stroke="var(--amber-line-2)"
-                strokeWidth="1.5"
-                strokeDasharray="3 4"
-              />
-            );
-          }),
-        )}
-        {nodes.map((n) => {
-          const pos = layout.positions.get(n.code)!;
+    <div className="overflow-x-auto rounded-slab border border-edge bg-well" aria-label="Checkpoint prerequisites">
+      <svg role="img" aria-label="Map of proposed checkpoints and prerequisites" width={layout.width} height={layout.height}
+        viewBox={`0 0 ${layout.width} ${layout.height}`} style={{ maxWidth: "none" }} className="block">
+        {layout.edges.map((e) => {
+          const a = at.get(e.from)!, b = at.get(e.to)!;
+          return <line key={e.from + ">" + e.to} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+            stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4" />;
+        })}
+        {layout.nodes.map((pos) => {
+          const n = byCode.get(pos.code)!, on = selected === n.code;
           return (
-            <g
-              key={n.code}
-              role="button"
-              tabIndex={0}
-              aria-label={`Select ${n.code} ${n.title}`}
+            <g key={n.code} role="button" tabIndex={0} aria-label={`Select ${n.code} ${n.title}`} style={{ cursor: "pointer" }}
               onClick={() => onSelect(n.code)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onSelect(n.code);
-                }
-              }}
-            >
-              <circle cx={pos.x} cy={pos.y} r="23" fill="transparent" />
-              <circle
-                cx={pos.x}
-                cy={pos.y}
-                r="18"
-                fill={selected === n.code ? "var(--amber)" : "var(--raised)"}
-                stroke={n.change ? "var(--amber)" : "var(--amber-line-2)"}
-                strokeWidth={n.change ? 2 : 1}
-                strokeDasharray={n.change === "added" ? "4 3" : undefined}
-              />
-              <text
-                x={pos.x}
-                y={pos.y + 3}
-                textAnchor="middle"
-                fontSize="8"
-                fontWeight="600"
-                fill={selected === n.code ? "var(--amber-ink)" : "var(--ink)"}
-              >
-                {n.code}
-              </text>
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(n.code); } }}>
+              <circle cx={pos.x} cy={pos.y} r={R + 5} fill="transparent" />
+              <circle cx={pos.x} cy={pos.y} r={R} fill={on ? "var(--amber)" : "var(--raised)"}
+                stroke={n.change ? "var(--amber)" : "var(--amber-line-2)"} strokeWidth={n.change ? 2 : 1}
+                strokeDasharray={n.change === "added" ? "4 3" : undefined} />
+              <text x={pos.x} y={pos.y + 3} textAnchor="middle" fontSize={n.code.length > 4 ? 8 : 9} fontWeight="600"
+                fill={on ? "var(--amber-ink)" : "var(--ink)"}>{n.code}</text>
             </g>
           );
         })}
@@ -423,7 +352,7 @@ export default function Page() {
           {nodes.length > 0 && (
             <PlanMap
               nodes={nodes}
-              selected={current?.code ?? ""}
+              selected={drawer ?? ""}
               onSelect={openCheckpoint}
             />
           )}

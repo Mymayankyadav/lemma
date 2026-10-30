@@ -24,7 +24,9 @@ export function planReviewNodes(
     sources: cp.sources ?? [], recheck: cp.recheck_prompt,
   }));
   if (!change) return [];
-  const nodes: ReviewNode[] = existing.map(cp => ({
+  // The base is the approved plan: checkpoints still shown as "proposed" are this
+  // (or another pending) proposal's preview and would otherwise appear twice.
+  const nodes: ReviewNode[] = existing.filter(cp => cp.ui !== "proposed").map(cp => ({
     code: cp.code, title: cp.title, criterion: "", stage: cp.stage ?? undefined,
     steps: [], prereqs: [], dueOn: cp.dueOn ?? null,
   }));
@@ -49,14 +51,18 @@ export function planReviewNodes(
   for (const op of change.ops) {
     if (op.op === "add") {
       const code = op.code || provisional(op.after);
+      const at0 = op.after ? nodes.findIndex(n => n.code === op.after) : -1;
       const node: ReviewNode = {
         code, title: op.title || "Untitled checkpoint", criterion: op.criterion || "",
-        stage: op.stage ?? undefined, steps: Array.isArray(op.steps) ? op.steps : [],
+        // An inserted checkpoint without a stage belongs to the stage it is inserted into.
+        stage: op.stage ?? (at0 >= 0 ? nodes[at0].stage : undefined), steps: Array.isArray(op.steps) ? op.steps : [],
         source: op.source, pages: op.pages,
         prereqs: Array.isArray(op.prereqs) ? op.prereqs : [],
         objective: op.objective, dueOn: op.due_on ?? null, concepts: op.concepts ?? [],
         sources: op.sources ?? [], recheck: op.recheck_prompt, change: "added",
       };
+      const same = nodes.findIndex(n => n.code === code);
+      if (same >= 0) nodes.splice(same, 1);
       const at = op.after ? nodes.findIndex(n => n.code === op.after) : -1;
       nodes.splice(at >= 0 ? at + 1 : nodes.length, 0, node);
     } else if (op.op === "update") {
