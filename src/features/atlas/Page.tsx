@@ -213,7 +213,7 @@ export default function Page(){
  if(query.error||!graph||!model)return <main aria-label="Atlas" className="h-dvh bg-obsidian p-4">
   <button type="button" className="min-h-11" onClick={()=>navigate(-1)}>Back</button>
   <EmptyState art="plug" title="Could not open Atlas" body="Check your connection." action={{label:'Try again',onClick:()=>void query.refetch()}}/></main>;
- return <main aria-label="Atlas" className="relative h-dvh min-h-[540px] overflow-hidden bg-obsidian text-ink">
+ return <main aria-label="Atlas" className="relative h-dvh min-h-[540px] overflow-hidden text-ink">
   <header className="absolute inset-x-0 top-0 z-20 border-b border-edge bg-obsidian/95 px-3 pt-[env(safe-area-inset-top)]">
    <div className="flex h-14 items-center gap-2">
     <button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>
