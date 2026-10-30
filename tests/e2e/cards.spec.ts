@@ -1,3 +1,4 @@
+// FIX #291: claim card-filter mobile layout regression before implementation.
 import { test, expect } from "@playwright/test";
 test("search, notes, editing and pause work for a card", async ({ page }) => {
   const errors: string[] = [];
