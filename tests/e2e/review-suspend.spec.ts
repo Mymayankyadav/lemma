@@ -12,6 +12,9 @@ test('suspending a card advances the polygon and resets the next card timer',asy
  await page.clock.fastForward(120_000)
  await page.getByRole('button',{name:'Note for tutor'}).click()
  await page.getByRole('dialog',{name:'For your tutor'}).getByRole('button',{name:'Suspend this card'}).click()
+ // Playwright's fake clock freezes Motion's exit animation unless RAF is run.
+ // Count these 300ms toward the *next* card's two-second reading interval.
+ await page.clock.runFor(300)
  await expect(page.getByRole('dialog',{name:'For your tutor'})).toBeHidden()
  await expect(page.locator('[data-review-vertex="current"]')).toHaveCount(1)
  const position=await page.locator('[data-review-vertex]').evaluateAll(nodes=>nodes.findIndex(n=>n.getAttribute('data-review-vertex')==='current'))
@@ -19,7 +22,7 @@ test('suspending a card advances the polygon and resets the next card timer',asy
  await expect(page.locator('[data-review-edge="passed"]')).toHaveCount(0)
  await page.screenshot({path:'test-results/screens/review-suspend-progress.png',fullPage:true})
 
- await page.clock.fastForward(2_000)
+ await page.clock.fastForward(1_700)
  await page.getByRole('button',{name:'Sure',exact:true}).click()
  await page.getByRole('button',{name:'Grade Good'}).click()
  await expect(page.locator('[data-review-edge="passed"]')).toHaveCount(1)
