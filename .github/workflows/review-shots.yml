@@ -15,23 +15,15 @@ jobs:
         with: { node-version: '22', cache: npm }
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx tsx scripts/make-themes.ts
-      - run: npm run build
-      - name: Capture every theme and assemble five-screen sheets
-        env:
-          THEMES: all
-          DENSITY: compact
-          EFFECTS: calm
+      - name: Checks
         run: |
-          (npx vite preview --port 4173 --strictPort > /tmp/lemma-preview.log 2>&1 &) 
-          sleep 5
-          node scripts/review-shots.mjs
-      - name: Commit contact sheets to the review branch
+          mkdir -p ci-logs/screens
+          (npm run typecheck > ci-logs/typecheck.txt 2>&1; echo "exit $?" >> ci-logs/typecheck.txt) || true
+          (npm test > ci-logs/unit.txt 2>&1; echo "exit $?" >> ci-logs/unit.txt) || true
+          (npm run build > ci-logs/build.txt 2>&1; echo "exit $?" >> ci-logs/build.txt) || true
+          (npx playwright test --reporter=line > ci-logs/e2e.txt 2>&1; echo "exit $?" >> ci-logs/e2e.txt) || true
+          cp test-results/screens/atlas-tree-*.png test-results/screens/plan-*.png ci-logs/screens/ 2>/dev/null || true
+      - name: Commit
         run: |
-          git config user.name "review-bot"
-          git config user.email "review-bot@users.noreply.github.com"
-          git add -f review-shots
-          if ! git diff --cached --quiet; then
-            git commit -m "[shots] all-theme contact sheets"
-            git push
-          fi
+          git config user.name review-bot; git config user.email review-bot@users.noreply.github.com
+          git add -f ci-logs && git commit -m "[shots] ui-7c" && git push
