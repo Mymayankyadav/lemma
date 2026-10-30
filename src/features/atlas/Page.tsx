@@ -5,6 +5,7 @@ import {select} from 'd3-selection';
 import {zoom,zoomIdentity} from 'd3-zoom';
 import type {ZoomBehavior,ZoomTransform} from 'd3-zoom';
 import {ArrowLeft,ChevronRight,Compass,Minus,MoreHorizontal,Plus,Search,X,MessageCircle} from 'lucide-react';
+import {getMode} from '../../data/mode';
 import {useAtlas} from '../../data/hooks';
 import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
@@ -238,7 +239,7 @@ export default function Page(){
   <button type="button" className="min-h-11" onClick={()=>navigate(-1)}>Back</button>
   <EmptyState art="plug" title="Could not open Atlas" body="Check your connection." action={{label:'Try again',onClick:()=>void query.refetch()}}/></main>;
  return <main aria-label="Atlas" className="relative h-dvh min-h-[540px] overflow-hidden text-ink">
-  <header className="absolute inset-x-0 top-0 z-20 border-b border-edge bg-obsidian/95 px-3 pt-[env(safe-area-inset-top)]">
+  <header className={"absolute inset-x-0 top-0 z-20 border-b border-edge bg-obsidian/95 px-3 "+(getMode()==='demo'?'pt-[calc(env(safe-area-inset-top)+30px)]':'pt-[env(safe-area-inset-top)]')}>
    <div className="flex h-14 items-center gap-2">
     <button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>
     <h1 className="flex-1 font-serif text-title-s">Atlas</h1>

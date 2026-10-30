@@ -141,7 +141,9 @@ function StageCard({stage,slug,initiallyOpen,schedule}:{stage:Stage;slug:string;
 
 export function Stages({detail}:{detail:ProjectDetail}){
  const stages=groupStages(detail.checkpoints),hasCurrent=stages.some(s=>s.checkpoints.some(cp=>cp.ui==='now'));
- const schedule=new Map(buildSchedule(detail.checkpoints,{targetDate:detail.project.targetDate}).map(row=>[row.checkpoint.id,row]));
+ const insight=useInsightData(30);
+ const pacePerWeek=insight.data?paceFromDemonstrations(insight.data.checkpointEvents,detail.project.id):undefined;
+ const schedule=new Map(buildSchedule(detail.checkpoints,{targetDate:detail.project.targetDate,pacePerWeek}).map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
    <h2 className="font-[var(--font-display)] text-title-s italic">Stages</h2>
