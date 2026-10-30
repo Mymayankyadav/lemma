@@ -157,9 +157,11 @@ export default function Page(){
  useEffect(()=>{
   const handler=(event:KeyboardEvent)=>{
    if(event.defaultPrevented||sheetOpen||event.ctrlKey||event.altKey||event.metaKey||
-    isInteractiveShortcutTarget(event.target))return;
+    (event.target instanceof Element&&!!event.target.closest('input, textarea, select, [contenteditable]')))return;
    if(!current || submitting)return;
+   // Escape still exits a round when a button or link has focus.
    if(event.key==='Escape'){event.preventDefault();close();return}
+   if(isInteractiveShortcutTarget(event.target))return;
    if(!revealed){
     if(event.key==='1'||event.key==='2'||event.key==='3'){
      event.preventDefault();reveal(['sure','unsure','guess'][Number(event.key)-1] as Confidence);
