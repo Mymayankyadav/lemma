@@ -7,14 +7,12 @@ import { LiveAdapter } from './live/adapter'
 import { getMode, getDemoProfile } from './mode'
 const adapters: Partial<Record<'live' | 'default' | 'stress' | 'extreme', LemmaApi>> = {}
 export function getApi(): LemmaApi {
- const mode = getMode()
- const profile = mode === 'live' ? 'live' : getDemoProfile()
- if (!adapters[profile]) {
-  adapters[profile] = mode === 'live' ? new LiveAdapter()
-   : profile === 'default' ? new DemoAdapter()
-   : new DemoAdapter({fixture: makeStressStore(JSON.parse(fixtureText) as DemoStore, profile)})
- }
- return adapters[profile]!
+ if (getMode() === 'live') return adapters.live ??= new LiveAdapter()
+ const profile = getDemoProfile()
+ if (profile === 'default') return adapters.default ??= new DemoAdapter()
+ return adapters[profile] ??= new DemoAdapter({
+  fixture: makeStressStore(JSON.parse(fixtureText) as DemoStore, profile),
+ })
 }
 export * from './types'
 export * from './api'
