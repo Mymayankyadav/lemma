@@ -222,7 +222,7 @@ export class DemoAdapter implements LemmaApi {
       front: note.note.front,
       back: note.note.back,
       projectSlug: project.slug,
-      glyph: this.subject(project.subjectId).glyph,
+      glyph: this.displaySubject(project.subjectId).glyph,
       checkpointCode: note.note.checkpointCode,
       checkpointTitle: cp?.title ?? null,
       sessionNumber: note.note.sessionNumber,
@@ -292,6 +292,9 @@ export class DemoAdapter implements LemmaApi {
       minutes: s.minutes,
     };
   }
+  private displaySubject(id: string): Subject {
+    return id ? this.subject(id) : { id: "", name: "Unassigned", glyph: "·", hue: "slate", position: 999 };
+  }
   private summary(p: DemoProject, eligible = this.eligible()): ProjectSummary {
     const cps = this.store.checkpoints.filter((cp) => cp.projectId === p.id),
       views = cps.map((cp) => this.cpView(cp, eligible)),
@@ -301,7 +304,7 @@ export class DemoAdapter implements LemmaApi {
       id: p.id,
       slug: p.slug,
       title: p.title,
-      subject: clone(this.subject(p.subjectId)),
+      subject: clone(this.displaySubject(p.subjectId)),
       status: p.status,
       pinned: p.pinned ?? false,
       system: p.system ?? false,
@@ -727,7 +730,7 @@ export class DemoAdapter implements LemmaApi {
       summary = this.summary(p, eligible);
     return {
       project: this.projectValue(p),
-      subject: clone(this.subject(p.subjectId)),
+      subject: clone(this.displaySubject(p.subjectId)),
       checkpoints: [
         ...this.store.checkpoints.filter((cp) => cp.projectId === p.id),
         ...this.proposed(p),
@@ -821,7 +824,7 @@ export class DemoAdapter implements LemmaApi {
           ? {
               projectSlug: p.slug,
               projectTitle: p.title,
-              glyph: this.subject(p.subjectId).glyph,
+              glyph: this.displaySubject(p.subjectId).glyph,
               checkpointCode: cp.code,
               checkpointTitle: cp.title,
               step: open?.resumeStep ?? cp.currentStep,
@@ -1654,7 +1657,7 @@ export class DemoAdapter implements LemmaApi {
       projects: this.store.projects.map((p) => ({
         id: p.id,
         title: p.title,
-        subject: clone(this.subject(p.subjectId)),
+        subject: clone(this.displaySubject(p.subjectId)),
       })),
       misconceptions: this.store.misconceptions.map((m) => ({
         label: m.label,
