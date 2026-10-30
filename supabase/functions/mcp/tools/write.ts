@@ -169,17 +169,8 @@ export async function createProject(c:Context,a:any):Promise<string>{
     await insert(c,'sources',{project_id:p.id,title:a.book,short:src,filename:src+'.pdf',page_count:0,has_text:false,status:'ready'});
     attached++;
   }
-  const seen=new Set<string>();
-  for(const book of a.books||[]){
-    if(book.sha256&&seen.has(book.sha256))continue;
-    if(book.sha256)seen.add(book.sha256);
-    await insert(c,'sources',{project_id:p.id,title:book.title,filename:book.filename,
-      ...(book.kind?{kind:book.kind}:{}),...(book.sha256?{sha256:book.sha256}:{}),
-      page_count:0,has_text:false,status:'uploading'});
-    attached++;
-  }
   return 'created '+unique+' (planning)'+(subject?' in '+subject.name+(found?' (reused existing subject)':' (new subject)'):'; subject pending')+
-    (attached?' with '+attached+' source record(s); upload PDF bytes in Lemma':'')+'. Tutor can now propose a plan for student approval.';
+    (attached?' with attached-in-chat book reference; upload PDF bytes in Lemma':'')+'. Tutor can now propose a plan for student approval.';
 }
 export async function proposals(c:Context,a:any):Promise<string>{
   const p=a.project?await project(c,a.project):null;
