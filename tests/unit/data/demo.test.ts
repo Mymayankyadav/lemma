@@ -46,7 +46,7 @@ describe("demo adapter", () => {
     });
     expect(await api.getReviewItems({ ...filter, decks: [] })).toHaveLength(23);
     const atlas = await api.getAtlas();
-    expect(atlas.concepts).toHaveLength(22);
+    expect(atlas.concepts).toHaveLength(82);
     expect(
       atlas.concepts.filter((c) => c.status === "demonstrated"),
     ).toHaveLength(9);
@@ -72,6 +72,45 @@ describe("demo adapter", () => {
     expect(insights.calibration.map((c) => Math.round(c.rate! * 100))).toEqual([
       94, 71, 38,
     ]);
+  });
+
+  it("models V3 projects, stages, sources and the navigable concept hierarchy", async () => {
+    const fixture = JSON.parse(fixtureText) as DemoStore;
+    const analysis = fixture.projects.find(p => p.slug === "real-analysis")!;
+    expect(analysis.targetDate).toBe("@date:84");
+    expect(analysis.targetLabel).toBe("22 Jan");
+    const cps = fixture.checkpoints.filter(cp => cp.projectId === analysis.id);
+    expect(cps).toHaveLength(12);
+    expect(new Set(cps.map(cp => cp.stage)).size).toBe(4);
+    expect(fixture.checkpoints.every(cp => cp.dueOn?.startsWith("@date:"))).toBe(true);
+    expect(fixture.checkpoints.filter(cp => cp.status === "demonstrated").every(cp => cp.demonstratedAt)).toBe(true);
+
+    for (const project of fixture.projects) {
+      const sources = fixture.sources.filter(s => s.projectId === project.id);
+      expect(sources.length).toBeGreaterThanOrEqual(2);
+      expect(sources.length).toBeLessThanOrEqual(4);
+      expect(new Set(sources.map(s => s.kind)).size).toBeGreaterThan(1);
+      expect(sources.some(s => s.planCheckedAt === null)).toBe(true);
+    }
+
+    const levels = (["cluster", "galaxy", "system", "planet", "moon"] as const)
+      .map(level => fixture.concepts.filter(c => c.level === level));
+    expect(levels.map(concepts => concepts.length)).toEqual([3, 6, 12, 46, 15]);
+    const conceptIds = new Set(fixture.concepts.map(c => c.id));
+    for (const concept of fixture.concepts) {
+      if (concept.level === "cluster") expect(concept.parentId).toBeNull();
+      else expect(conceptIds.has(concept.parentId!)).toBe(true);
+    }
+    for (const system of levels[2]) {
+      expect(fixture.concepts.filter(c => c.parentId === system.id && c.isStar)).toHaveLength(1);
+    }
+
+    expect(fixture.notes).toHaveLength(90);
+    for (const { note } of fixture.notes) {
+      expect(note.front).not.toMatch(/^Explain .*\\(\\d+\\)\\.$/);
+      expect(note.back).not.toContain("State the definition and justify the relevant hypotheses");
+      expect(note.front.trim().length).toBeGreaterThan(12);
+    }
   });
   it("shows session evidence and supports proposals and review undo", async () => {
     const api = make(),
