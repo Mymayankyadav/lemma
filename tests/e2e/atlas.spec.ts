@@ -102,6 +102,10 @@ test('Euclid Atlas switches Orbits, Branches and Outline without losing concept 
  await page.goto('./?demo=1&theme=euclid#/atlas');
  await expect(page.getByRole('group',{name:'Atlas view'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Move Atlas viewport'})).toBeVisible();
+ // Record the unpanned initial state separately. The later drag intentionally
+ // pans the viewport and should not be used to judge fit/label clipping.
+ await expect(page.locator('[data-atlas-ring]')).toHaveCount(6);
+ await page.screenshot({path:'test-results/screens/atlas-euclid-orbits-initial.png',fullPage:true});
  const graph=page.locator('svg[aria-label^="Interactive knowledge graph"] > g').first();
  const before=await graph.getAttribute('transform');
  await page.getByRole('button',{name:'Move Atlas viewport'}).click({position:{x:83,y:23}});
@@ -115,7 +119,7 @@ test('Euclid Atlas switches Orbits, Branches and Outline without losing concept 
  await page.mouse.move(box!.x+76,box!.y+75,{steps:5});
  await page.mouse.up();
  await expect.poll(()=>graph.getAttribute('transform')).not.toBe(clicked);
- await page.screenshot({path:'test-results/screens/atlas-euclid-orbits.png',fullPage:true});
+ await page.screenshot({path:'test-results/screens/atlas-euclid-orbits-panned.png',fullPage:true});
 
  await page.getByRole('button',{name:'Branches'}).click();
  await expect(page.locator('[data-atlas-mode="branches"]')).toBeVisible();
