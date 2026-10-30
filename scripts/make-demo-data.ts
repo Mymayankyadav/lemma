@@ -561,7 +561,9 @@ for (let no = 1; no <= 90; no++) {
       back:
         no === 7
           ? "A subset of $\\mathbb{R}^n$ is compact if and only if it is closed and bounded."
-          : example[1],
+          : no === 1
+            ? "For each $x$ in the finite intersection choose an open neighborhood contained in every open set; the intersection of finitely many such neighborhoods is open."
+            : example[1],
       type: "basic",
       kind,
       tags: [def.slug],
