@@ -10,12 +10,27 @@ export function SubjectsPanel(){
  const [open,setOpen]=useState(false),[selected,setSelected]=useState<Subject|null>(null)
  const [name,setName]=useState(''),[glyph,setGlyph]=useState(''),[target,setTarget]=useState('')
  const [confirm,setConfirm]=useState(false)
+ const [reordering,setReordering]=useState(false)
  const live=getMode()==='live'
- const all=[...(subjects.data??[])].sort((a,b)=>a.position-b.position)
+ const all=[...(subjects.data??[])].sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name)||a.id.localeCompare(b.id))
  useEffect(()=>{
   if(!open){setSelected(null);setConfirm(false);setTarget('')}
  },[open])
  function choose(subject:Subject){setSelected(subject);setName(subject.name);setGlyph(subject.glyph);setTarget('');setConfirm(false)}
+ async function move(subject:Subject,direction:-1|1){
+  const index=all.findIndex(item=>item.id===subject.id),next=all[index+direction]
+  if(!live||!next||reordering||index<0)return
+  setReordering(true)
+  // Swap adjacent positions, rolling back the first write if the second fails.
+  const original=subject.position,other=next.position
+  try{
+   await edit.mutateAsync({id:next.id,patch:{position:original}})
+   try{await edit.mutateAsync({id:subject.id,patch:{position:other}})}
+   catch(error){await edit.mutateAsync({id:next.id,patch:{position:other}}).catch(()=>undefined);throw error}
+   notify('Subject order saved',{tone:'success'})
+  }catch(error){notify(error instanceof Error?error.message:'Unable to reorder subjects',{tone:'danger'})}
+  finally{setReordering(false)}
+ }
  async function save(){
   if(!selected)return
   const trimmed=name.trim(),mark=glyph.trim()
@@ -44,12 +59,18 @@ export function SubjectsPanel(){
    <div className="space-y-3">
     {!live&&<p className="text-label text-ink-2">Demo subjects are examples. Editing and merging use your live study record.</p>}
     {subjects.isPending?<p className="text-label text-ink-2">Loading subjects…</p>:
-     all.map(subject=><button type="button" key={subject.id} onClick={()=>choose(subject)}
+     all.map((subject,index)=><div key={subject.id} className="flex items-center gap-1"><button type="button" onClick={()=>choose(subject)}
       aria-pressed={selected?.id===subject.id} className="flex min-h-11 w-full items-center gap-3 rounded-ctl border border-edge px-3 text-left">
       <span aria-hidden="true" className="text-title-s text-amber">{subject.glyph}</span>
       <span className="flex-1 text-body">{subject.name}</span>
-      <span className="text-caption text-ink-3">{subject.position}</span>
-     </button>)}
+      </button>
+      {live&&<div className="flex shrink-0 flex-col gap-1">
+       <button type="button" aria-label={'Move '+subject.name+' up'} disabled={reordering||index===0}
+        onClick={()=>void move(subject,-1)} className="min-h-9 min-w-11 rounded-ctl border border-edge text-label disabled:opacity-30">↑</button>
+       <button type="button" aria-label={'Move '+subject.name+' down'} disabled={reordering||index===all.length-1}
+        onClick={()=>void move(subject,1)} className="min-h-9 min-w-11 rounded-ctl border border-edge text-label disabled:opacity-30">↓</button>
+      </div>}
+     </div>)}
     {selected&&<div className="space-y-3 border-t border-edge pt-4" aria-label={'Edit '+selected.name}>
      <label className="block text-label text-ink-2">Name
       <input value={name} onChange={event=>setName(event.target.value)} className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body text-ink"/>
