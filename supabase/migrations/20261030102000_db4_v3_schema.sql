@@ -62,7 +62,7 @@ create trigger a_source_short before insert on public.sources
 -- A checkpoint may cite several sources. Both composite FKs enforce owner
 -- isolation; the trigger also forbids a source from a different project.
 create table public.checkpoint_sources (
-  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade deferrable initially immediate,
   created_at timestamptz not null default now(),
   checkpoint_id uuid not null,
   source_id uuid not null,
@@ -154,8 +154,9 @@ begin
   return new;
 end $$;
 revoke all on function public.lemma_concept_parent() from public,anon;
-create trigger a_concept_parent before insert or update of parent_id,subject_id on public.concepts
-  for each row execute function public.lemma_concept_parent();
+-- Deferred validation allows moving a whole hierarchy in one subject merge.
+create constraint trigger a_concept_parent after insert or update on public.concepts
+  deferrable initially deferred for each row execute function public.lemma_concept_parent();
 
 -- Preserve linked legacy concepts and turn their topic into a system. Never
 -- manufacture hierarchy for detached subjects slated for cleanup below.
