@@ -30,6 +30,7 @@ function MiniMetro({project}:{project:ProjectSummary}){
 function ProjectRow({project}:{project:ProjectSummary}){
  const update=useUpdateProject(),notify=useToast(),[menu,setMenu]=useState(false);
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const longPressed=useRef(false);
  const clear=()=>{if(hold.current!==null){clearTimeout(hold.current);hold.current=null}};
  const actions:{label:string;patch:{pinned?:boolean;status?:ProjectStatus}}[]=[
   {label:project.pinned?'Unpin':'Pin',patch:{pinned:!project.pinned}},
@@ -46,7 +47,8 @@ function ProjectRow({project}:{project:ProjectSummary}){
  useEffect(()=>()=>clear(),[]);
  return <article className="rounded-slab border border-edge bg-[var(--card)] p-3" data-project-row={project.slug}
   onContextMenu={event=>{event.preventDefault();setMenu(true)}}
-  onPointerDown={event=>{if(event.pointerType!=='mouse'){clear();hold.current=setTimeout(()=>setMenu(true),550)}}}
+  onPointerDown={event=>{longPressed.current=false;if(event.pointerType!=='mouse'){clear();hold.current=setTimeout(()=>{longPressed.current=true;setMenu(true)},550)}}}
+  onClickCapture={event=>{if(longPressed.current){event.preventDefault();event.stopPropagation();longPressed.current=false}}}
   onPointerUp={clear} onPointerCancel={clear} onPointerLeave={clear}>
   <div className="flex items-start gap-2">
    <Link to={'/p/'+project.slug} className="min-w-0 flex-1 rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
