@@ -14,7 +14,17 @@ export type GoalMet = 'yes' | 'partial' | 'no' | null
 export type EventKind = 'pretest' | 'attempt' | 'hint' | 'explanation' | 'misconception' | 'evidence' | 'recheck' | 'note'
 export type Outcome = 'demonstrated' | 'partial' | 'failed' | null
 export type CheckpointUi = 'proposed' | 'revisit' | 'done' | 'now' | 'next' | 'locked'
+/** Optional DB-3 preferences; unknown keys survive future client upgrades. */
+export interface UiPreferences {
+ world?: string; keep?: string[]; fav?: string[]
+ timeline?: 'ascent' | 'metro' | 'line'; timelineKeep?: string[]
+ atlas?: 'orbits' | 'branches' | 'outline'; atlasKeep?: string[]
+ density?: 'compact' | 'cozy' | 'comfortable'; motion?: 'calm' | 'lively'
+ follow?: boolean; day?: string; night?: string
+ [key: string]: unknown
+}
 export interface Settings {
+ ui?: UiPreferences | null
  desiredRetention: number; newPerDay: number; reviewsPerDay: number
  learnSteps: string; relearnSteps: string; rolloverHour: number; maxIntervalDays: number
  fuzz: boolean; loadBalance: boolean; learnAheadMinutes: number
@@ -26,14 +36,17 @@ export interface Settings {
 export interface Style { key: string; name: string; icon: string; instructions: string; position: number }
 export interface Subject { id: string; name: string; glyph: Glyph; hue: Hue; position: number }
 export interface ProjectSummary {
+ targetDate?: IsoDate | null; targetLabel?: string | null
  id: string; slug: string; title: string; subject: Subject; status: ProjectStatus; done: number; total: number
  current: {code: string; title: string; step: number; stepsTotal: number} | null
  lastActivityAt: IsoDate | null; cardsCount: number; sessionsCount: number; sourcesCount: number
 }
 export interface Project {
+ targetDate?: IsoDate | null; targetLabel?: string | null
  id: string; slug: string; title: string; goal: string; style: string; status: ProjectStatus; subjectId: string; createdAt: IsoDate
 }
 export interface CheckpointView {
+ stage?: string | null
  id: string; code: string; title: string; position: number; ui: CheckpointUi; currentStep: number; stepsTotal: number
  recheckDue: IsoDate | null; dueCards: number
 }
@@ -74,16 +87,17 @@ export interface CardPayload {
 }
 export interface CardEditPayload { note_no: number; front?: string; back?: string; type?: NoteType; resolves?: number[] }
 export interface PlanCheckpoint {
+ stage?: string | null
  code?: string; title: string; objective: string; criterion: string; steps: string[]; pages?: string
  source?: string; prereqs?: string[]; concepts?: string[]; recheck_prompt?: string
 }
 export interface PlanPayload {
  checkpoints: PlanCheckpoint[]
- concepts?: {name: string; blurb?: string; prereqs?: string[]; related?: string[]}[]
+ concepts?: {name: string; topic?: string | null; blurb?: string; prereqs?: string[]; related?: string[]}[]
 }
 export type PlanChangeOp =
  | ({op: 'add'; after?: string} & PlanCheckpoint)
- | ({op: 'update'; code: string} & Partial<Pick<PlanCheckpoint, 'title' | 'objective' | 'criterion' | 'steps' | 'pages' | 'recheck_prompt'>>)
+ | ({op: 'update'; code: string} & Partial<Pick<PlanCheckpoint, 'title' | 'objective' | 'criterion' | 'steps' | 'pages' | 'recheck_prompt' | 'stage'>>)
  | {op: 'remove'; code: string}
  | {op: 'move'; code: string; after: string}
  | {op: 'prereq_add' | 'prereq_remove'; code: string; prereq: string}
@@ -124,7 +138,7 @@ export interface CardComment {
 }
 export interface AtlasGraph {
  subjects: Subject[]
- concepts: {id: string; slug: string; name: string; blurb: string | null; subjectId: string
+ concepts: {id: string; slug: string; name: string; topic?: string | null; blurb: string | null; subjectId: string
  status: 'revisit' | 'demonstrated' | 'in_progress' | 'not_started'; pinX: number | null; pinY: number | null
  checkpointRefs: {projectSlug: string; code: string}[]; dueCards: number}[]
  links: {fromId: string; toId: string; kind: 'prereq' | 'related'}[]

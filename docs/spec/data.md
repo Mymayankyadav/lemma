@@ -506,6 +506,14 @@ Names are fixed; fields use camelCase. Dates are ISO strings. `Glyph` is a 1–2
 | `HomeSummary` | resume (`{projectSlug, projectTitle, glyph, checkpointCode, checkpointTitle, step, stepsTotal, question, objective, pausedAt, sessionNumber} \| null`), due, pendingProposals, projects (`ProjectSummary[]`) |
 | `NewProjectInput` | title, slug (optional; derived from title), subjectId, goal, style |
 
+### 7.1 DB-3 additive planning and appearance fields
+
+Per `lab.md` §6 and `ui-euclid.md`, add `checkpoints.stage` (nullable text, ≤40), `projects.target_date` (nullable date), `projects.target_label` (nullable text, ≤20), `concepts.topic` (nullable text, ≤40), and `settings.ui` (nullable JSON object). The migration is DB-3; MCP-3 fills connector planning/editing and proposal application support. UI screen/data-adapter integration follows without changing existing methods here.
+
+Additive domain fields are optional during migration: `CheckpointView.stage`, `PlanCheckpoint.stage`, `PlanChangeOp` update `stage`, plan concepts and Atlas concepts `topic`, `Project` and `ProjectSummary` `targetDate`/`targetLabel`, and `Settings.ui`. Missing and null mean unset; current adapters remain valid until their DB-3 field mapping is implemented. Target dates use ISO calendar dates (`YYYY-MM-DD`), without a time zone conversion.
+
+`UiPreferences` is an extensible object with optional `world`, `keep`/`fav` (world ID arrays), `timeline` (`ascent`, `metro`, retained `line`), `timelineKeep`, `atlas` (`orbits`, `branches`, `outline`), `atlasKeep`, `density` (`compact`, `cozy`, `comfortable`), `motion` (`calm`, `lively`), and system-pairing `follow`, `day`, `night`. Retain unknown keys when updating preferences. UI defaults come from `ui-euclid.md`; a null stored object does not override them. This contract adds no API methods and does not claim adapter persistence or live columns before DB-3 ships.
+
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
 
 Both adapters (`src/data/live`, `src/data/demo`) implement every method with identical behavior. Errors are thrown as `LemmaError {code, message}` with codes `not_found`, `invalid`, `conflict`, `offline`, `auth`, `server`, `not_implemented` (stubs only).
