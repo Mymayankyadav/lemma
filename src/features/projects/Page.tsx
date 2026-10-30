@@ -28,7 +28,7 @@ function MiniMetro({project}:{project:ProjectSummary}){
 }
 
 function ProjectRow({project}:{project:ProjectSummary}){
- const update=useUpdateProject(),notify=useToast(),[menu,setMenu]=useState(false);
+ const update=useUpdateProject(),projects=useProjects(),notify=useToast(),[menu,setMenu]=useState(false);
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const longPressed=useRef(false);
  const clear=()=>{if(hold.current!==null){clearTimeout(hold.current);hold.current=null}};
@@ -43,6 +43,9 @@ function ProjectRow({project}:{project:ProjectSummary}){
   ];
  async function act(label:string,patch:{pinned?:boolean;status?:ProjectStatus}){
   setMenu(false);
+  if(patch.pinned&&(projects.data??[]).filter(item=>item.pinned&&!item.system&&item.status!=='archived').length>=4){
+   notify('At most four projects can be pinned. Unpin one first.',{tone:'danger'});return;
+  }
   try{await update.mutateAsync({id:project.id,patch});notify(label+' saved',{tone:'success'})}
   catch(error){notify(error instanceof Error?error.message:'Unable to update project',{tone:'danger'})}
  }
@@ -114,14 +117,14 @@ export default function Page(){
  const pinned=visible.filter(project=>project.pinned).slice(0,4);
  const pinnedIds=new Set(pinned.map(project=>project.id));
  const groups=useMemo(()=>{
-  const map=new Map<string,{name:string;glyph:string;items:ProjectSummary[]}>();
+  const map=new Map<string,{name:string;glyph:string;position:number;items:ProjectSummary[]}>();
   for(const project of visible){
    if(pinnedIds.has(project.id))continue;
    const key=project.subject?.id??'unassigned';
-   const group=map.get(key)??{name:project.subject?.name??'Unassigned',glyph:project.subject?.glyph??'∫',items:[]};
+   const group=map.get(key)??{name:project.subject?.name??'Unassigned',glyph:project.subject?.glyph??'∫',position:project.subject?.position??Number.MAX_SAFE_INTEGER,items:[]};
    group.items.push(project);map.set(key,group);
   }
-  return [...map.entries()].map(([id,group])=>({id,...group}));
+  return [...map.entries()].map(([id,group])=>({id,...group})).sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
  },[visible,pinnedIds]);
  const toggle=(id:string)=>setCollapsed(items=>items.includes(id)?items.filter(item=>item!==id):[...items,id]);
  const choose=(next:Filter)=>{const p=new URLSearchParams(params);if(next==='active')p.delete('status');else p.set('status',next);setParams(p)};
