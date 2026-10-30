@@ -59,3 +59,18 @@ html:is([data-theme="graph"],[data-theme="graph-night"]) .font-math{font-family:
 html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content:not(.w-full){
  padding-inline:16px;
 }
+
+/* #343: graph-paper switches use a drawn outline and a contrasting paper thumb. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-track{
+ border:1.5px solid var(--ink);border-radius:4px;background:var(--card);
+ box-shadow:2px 2px 0 var(--ink);
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-track[data-checked="true"]{
+ border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--card));
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-thumb{
+ border:1.5px solid var(--ink);border-radius:3px;background:var(--card);box-shadow:none;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-track[data-checked="true"] .ui-switch-thumb{
+ border-color:var(--accent);background:var(--accent);
+}
