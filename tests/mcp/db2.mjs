@@ -17,7 +17,7 @@ try {
  create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
  create function extensions.gen_random_bytes(n int) returns bytea language sql as $$select decode(repeat('00',n),'hex')$$;
  grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
- for(const file of ['20261029164215_lemma_tables.sql','20261029164314_lemma_triggers.sql','20261029164323_lemma_rls.sql','20261029164341_lemma_functions.sql','20261029165642_lemma_atomic_progress.sql','20261029183249_action_log.sql'])await db.exec(await readFile(new URL('../../supabase/migrations/'+file,import.meta.url),'utf8'));
+ for(const file of ['20261029164215_lemma_tables.sql','20261029164314_lemma_triggers.sql','20261029164323_lemma_rls.sql','20261029164341_lemma_functions.sql','20261029165642_lemma_atomic_progress.sql','20261029183249_action_log.sql','20261030031945_initial_plan_source_coverage.sql'])await db.exec(await readFile(new URL('../../supabase/migrations/'+file,import.meta.url),'utf8'));
  await db.exec(`select set_config('test.uid','${owner}',false); insert into auth.users values ('${owner}'),('${other}')`);
  await db.exec(`insert into public.subjects(id,user_id,name,glyph,hue) values ('22222222-2222-2222-2222-222222222222','${owner}','Analysis','A','amber')`);
  await db.exec(`insert into public.projects(id,user_id,slug,subject_id,title,goal) values ('${project}','${owner}','analysis','22222222-2222-2222-2222-222222222222','Analysis','Study')`);
@@ -64,6 +64,17 @@ try {
  await undo(archive);
  assert.equal((await q('select count(*) n from public.projects'))[0].n,1);
  await db.exec('reset role'); console.log('PASS archive hides descendants; undo restores visibility');
+ const planProject=(await q(`insert into public.projects(user_id,slug,subject_id,title,goal) values ('${owner}','source-coverage','22222222-2222-2222-2222-222222222222','Coverage','Study') returning id`))[0].id;
+ const firstSource=(await q(`insert into public.sources(user_id,project_id,title,short) values ('${owner}','${planProject}','First','first') returning id`))[0].id;
+ const initialPlan=(await q(`insert into public.proposals(user_id,project_id,kind,origin,payload) values ('${owner}','${planProject}','plan','other','{"checkpoints":[{"code":"CP1","title":"Start","objective":"Learn","criterion":"Explain","steps":["Try"]}]}') returning id`))[0].id;
+ const laterSource=(await q(`insert into public.sources(user_id,project_id,title,short,created_at) select '${owner}','${planProject}','Later','later',created_at+interval '1 second' from public.proposals where id='${initialPlan}' returning id`))[0].id;
+ await db.exec(`select public.approve_proposal('${initialPlan}')`); const planApproval=await last();
+ assert.ok((await q(`select plan_checked_at from public.sources where id='${firstSource}'`))[0].plan_checked_at);
+ assert.equal((await q(`select plan_checked_at from public.sources where id='${laterSource}'`))[0].plan_checked_at,null);
+ await undo(planApproval);
+ assert.equal((await q(`select plan_checked_at from public.sources where id='${firstSource}'`))[0].plan_checked_at,null);
+ console.log('PASS initial plan marks only preexisting sources and undo restores them');
+ await db.exec(`delete from public.projects where id='${planProject}'`);
  await db.exec(`insert into public.sources(user_id,project_id,title,short) values ('${owner}','${project}','Book','book')`);
  const diagnostic=(await q(`insert into public.diagnostics(user_id,project_id,kind,topic,evidence) values ('${owner}','${project}','material','New chapter','Attached') returning no`))[0].no;
  const prop=(await q(`insert into public.proposals(user_id,project_id,kind,origin,payload) values ('${owner}','${project}','plan_change','other','{"ops":[],"diagnostics":["D${diagnostic}"],"book":"book"}') returning id`))[0].id;
