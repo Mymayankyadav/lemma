@@ -1,2 +1,0 @@
-FIX #407: review keyboard shortcuts must not intercept focused interactive controls.
-Temporary claim marker; remove in implementation commit.
