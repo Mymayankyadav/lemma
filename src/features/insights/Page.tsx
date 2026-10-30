@@ -26,9 +26,9 @@ export default function Page(){
   :query.isError||settings.isError?<div role="alert">Couldn’t load insights. <button className="text-amber" onClick={()=>{void query.refetch();void settings.refetch()}}>Try again</button></div>
   :values&&<>
   <div className="grid grid-cols-3 gap-2.5">
-   <Tile className="min-w-0 p-3"><Clock size={17} className="mb-2 text-amber"/><strong className="block text-headline font-semibold">{duration(values.minutes)}</strong><span className="text-xs text-ink-2">studied</span></Tile>
-   <Tile className="min-w-0 p-3"><MessageCircle size={17} className="mb-2 text-amber"/><strong className="block text-title font-semibold">{values.sessions}</strong><span className="text-xs text-ink-2">sessions</span></Tile>
-   <Tile className="min-w-0 p-3"><Layers size={17} className="mb-2 text-amber"/><strong className="block text-title font-semibold">{values.reviews}</strong><span className="text-xs text-ink-2">reviews</span></Tile>
+   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Clock size={17} className="mb-2 text-amber"/><strong className="block whitespace-nowrap text-[clamp(0.8rem,3.7vw,var(--type-headline))] font-semibold">{duration(values.minutes)}</strong><span className="text-xs text-ink-2">studied</span></Tile>
+   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><MessageCircle size={17} className="mb-2 text-amber"/><strong className="block whitespace-nowrap text-title font-semibold">{values.sessions}</strong><span className="text-xs text-ink-2">sessions</span></Tile>
+   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Layers size={17} className="mb-2 text-amber"/><strong className="block whitespace-nowrap text-title font-semibold">{values.reviews}</strong><span className="text-xs text-ink-2">reviews</span></Tile>
   </div>
   <Slab className="flex flex-col gap-3"><div className="flex items-center justify-between"><h2 className="text-title-s font-semibold">Recall</h2><strong className="text-num-l font-semibold text-amber">{percent(values.recall)}</strong></div>
    <LineArea data={values.recallBuckets.map((row,i)=>({label:i===0?`${days} days ago`:i===values.recallBuckets.length-1?'Today':'',value:row.recall}))} target={settings.data?.desiredRetention??0.9}/>

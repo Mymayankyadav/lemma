@@ -93,7 +93,7 @@ export default function Page() {
         />
       }
     >
-      <label className="flex min-h-14 items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
+      <label className="flex min-h-[var(--row)] items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
         <Search size={19} />
         <span className="sr-only">Search cards</span>
         <input

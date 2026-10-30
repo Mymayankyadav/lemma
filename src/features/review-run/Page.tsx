@@ -28,7 +28,7 @@ const confidenceOptions=[
 function CardFace({item,revealed,confidence}:{item:ReviewItem;revealed:boolean;confidence:Confidence}){
  const front=item.type==='reverse'&&item.ord===2?item.back:item.front;
  const back=item.type==='reverse'&&item.ord===2?item.front:item.back;
- return <Card stack className="flex min-h-[370px] flex-col gap-6 px-6 py-7">
+ return <Card stack className="flex min-h-[220px] flex-col gap-3 p-[var(--pad)]">
   <div className="flex items-center justify-between gap-2">
    <Chip tone="quiet" size={28}>{item.kind.charAt(0).toUpperCase()+item.kind.slice(1)}</Chip>
    {revealed&&confidence&&<Chip tone={confidence==='sure'?'amber':'quiet'} size={28}>{confidence}</Chip>}
@@ -187,7 +187,7 @@ export default function Page(){
    <p className="text-center text-label text-ink-3">How sure? Tap to reveal</p>
    <div className="grid grid-cols-3 gap-2">
     {confidenceOptions.map(({value,label,icon:Icon})=><button type="button" key={value}
-      onClick={()=>reveal(value)} className={'flex min-h-[60px] items-center justify-center gap-2 rounded-btn border border-edge-2 bg-raised px-2 text-label '+(value==='sure'?'text-amber':'text-ink-soft')}>
+      onClick={()=>reveal(value)} className={'flex min-h-[var(--ctl)] items-center justify-center gap-2 rounded-btn border border-edge-2 bg-raised px-2 text-label '+(value==='sure'?'text-amber':'text-ink-soft')}>
       <Icon size={18} aria-hidden="true"/>{label}</button>)}
    </div>
    <button type="button" className="min-h-11 text-label text-ink-3 underline-offset-4 hover:underline" onClick={()=>reveal(null)}>Show answer</button>
@@ -196,7 +196,7 @@ export default function Page(){
     const rating=(i+1) as Rating;
     return <button key={rating} type="button" disabled={submitting}
      onClick={()=>{void grade(rating)}} aria-label={'Grade '+label}
-     className={'flex min-h-[60px] items-center justify-between rounded-btn border px-5 disabled:opacity-50 '+
+     className={'flex min-h-[var(--ctl)] items-center justify-between rounded-btn border px-5 disabled:opacity-50 '+
       (rating===3&&confidence==='sure'?'border-amber-line-2 bg-amber-tint':'border-edge-2 bg-raised')}>
      <span className="flex items-center gap-2 text-body-l font-semibold"><span className={'size-2 rounded-full '+dots[i]}/>{label}</span>
      <span className="text-label text-ink-3">{intervals?.[rating].label??'—'}</span>

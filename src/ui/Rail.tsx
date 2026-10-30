@@ -1,4 +1,5 @@
 import {motion,useReducedMotion} from 'motion/react';
+import {useCalm} from './useCalm';
 export interface RailProps{value:number;sheen?:boolean;delay?:number;label?:string;className?:string}
 export function Rail({value,sheen=false,delay=0,label='Progress',className=''}:RailProps){
  const reduce=!!useReducedMotion(),v=Math.min(1,Math.max(0,Number.isFinite(value)?value:0));

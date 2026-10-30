@@ -3,6 +3,7 @@
 @import './themes.css';
 @import './base.css';
 @import './surfaces.css';
+@import './effects.css';
 @theme inline {
   --text-micro: var(--type-micro); --text-caption: var(--type-caption); --text-label: var(--type-label);
   --text-body: var(--type-body); --text-body-l: var(--type-body-l); --text-headline: var(--type-headline);

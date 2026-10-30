@@ -42,7 +42,7 @@ function TodayHeader({pending}: {pending:number}) {
 
 function LoadingDesk(){
  return <Screen tabBar><TodayHeader pending={0}/>
-  <Slab className="flex min-h-[250px] flex-col gap-5 p-6">
+  <Slab className="flex min-h-[200px] flex-col gap-3 p-[var(--pad)]">
    <div className="flex items-center gap-4"><Skeleton w={40} h={40}/><div className="flex flex-1 flex-col gap-2"><Skeleton w="45%" h={15}/><Skeleton w="72%" h={22}/></div><Skeleton w={76} h={76} radius={40}/></div>
    <Skeleton h={55}/><Skeleton h={52} radius={17}/>
   </Slab>
@@ -56,7 +56,7 @@ function ProjectLink({project,index}:{project:ProjectSummary;index:number}){
  return <motion.div initial={reduce?false:{opacity:0,y:12}} animate={{opacity:1,y:0}}
   transition={{duration:reduce?0.15:0.6,delay:reduce?0:index*0.1}}>
   <Link to={'/p/'+project.slug} aria-label={project.title+', '+project.done+' of '+project.total+' checkpoints'}
-   className="group grid min-h-14 grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
+   className="group grid min-h-[var(--row)] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
    <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={32}/>
    <span className="flex min-w-0 flex-col gap-1">
     <span className="truncate text-headline font-medium">{project.title}</span>
@@ -78,7 +78,7 @@ function ResumeCard({home,client,onChoose}:{home:HomeSummary;client:ChatClient;o
  </Slab>;
  const hasSession=resume.sessionNumber!==null;
  const status=resume.pausedAt?relativeTime(resume.pausedAt):null;
- return <Slab as="section" lamp aria-label="Resume where you stopped" className="p-[22px]">
+ return <Slab as="section" lamp aria-label="Resume where you stopped" className="p-[var(--pad)]">
   <div className="relative flex items-center justify-between gap-3">
    <div className="flex min-w-0 items-center gap-3">
     <Glyph subject={resume.glyph} active/>
@@ -91,10 +91,10 @@ function ResumeCard({home,client,onChoose}:{home:HomeSummary;client:ChatClient;o
    </div>
    {resume.stepsTotal>0?<StepRing steps={resume.stepsTotal} current={Math.max(1,resume.step)} spark/>:<span className="text-label text-ink-3">Needs a plan</span>}
   </div>
-  <div className="mt-6 min-h-[65px] font-math text-title italic leading-[1.32] text-ink-soft">
+  <div className="mt-3 min-h-0 line-clamp-3 font-math text-question italic leading-[1.32] text-ink-soft">
    {resume.question??resume.objective??'Pick up where you left off.'}
   </div>
-  <div className="relative mt-5 flex flex-wrap items-stretch gap-2">
+  <div className="relative mt-3 flex flex-wrap items-stretch gap-2">
    <Button icon={MessageCircle} className="min-w-[138px] flex-1" onClick={()=>onChoose(client)}>Resume</Button>
    <div className="relative">
     <button type="button" aria-haspopup="menu" aria-expanded={menuOpen}
@@ -123,14 +123,14 @@ function SummaryTiles({due,pending}:{due:number;pending:number}){
  return <motion.div className="grid grid-cols-2 gap-3" initial={reduce?false:{opacity:0,y:12}}
   animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.7,delay:reduce?0:0.12}}>
   <Link to="/review" aria-label={due+' cards due. Start reviewing'} className="focus-visible:outline-2 focus-visible:outline-amber">
-   <Tile className="relative flex h-[100px] flex-col justify-between overflow-hidden p-4">
+   <Tile className="relative flex h-[var(--summary-tile)] flex-col justify-between overflow-hidden p-[var(--pad-tile)]">
     <span className="text-num-l font-semibold leading-none tracking-tight tabular-nums">{due}</span>
     <span className="text-label text-ink-2">{due===0?'all clear':'cards due'}</span>
     <CardFanArt size={62} className="pointer-events-none absolute right-0 top-0 opacity-70"/>
    </Tile>
   </Link>
   <Link to="/proposals" aria-label={pending+' proposals to approve'} className="focus-visible:outline-2 focus-visible:outline-amber">
-   <Tile className="relative flex h-[100px] flex-col justify-between overflow-hidden p-4">
+   <Tile className="relative flex h-[var(--summary-tile)] flex-col justify-between overflow-hidden p-[var(--pad-tile)]">
     <span className="text-num-l font-semibold leading-none tracking-tight tabular-nums">{pending}</span>
     <span className="text-label text-ink-2">{pending===0?'inbox clear':'to approve'}</span>
     <span aria-hidden="true" className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-s bg-amber-tint text-amber"><Inbox size={22}/></span>
