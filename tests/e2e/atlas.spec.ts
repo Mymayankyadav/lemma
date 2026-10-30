@@ -32,7 +32,7 @@ test('opening shows only fully fitted clusters, not a wall of links or a sheet',
 
 test('ten zoom-out steps have no artificial lower zoom bound',async({page})=>{
  const camera=page.locator('[data-atlas-camera]');
- const getScale=async()=>Number((await camera.getAttribute('transform'))?.match(/scale\\(([^)]+)\\)/)?.[1]);
+ const getScale=async()=>Number((await camera.getAttribute('transform'))?.match(/scale\(([^)]+)\)/)?.[1]);
  let previous=await getScale();
  expect(previous).toBeGreaterThan(0);
  for(let i=0;i<10;i++){
@@ -74,10 +74,10 @@ test('minimap uses a single scale and the true viewport rectangle',async({page})
  const result=await page.evaluate(()=>{
   const stage=document.querySelector('[data-atlas-stage]')!.getBoundingClientRect();
   const camera=document.querySelector('[data-atlas-camera]')!.getAttribute('transform')!;
-  const [x,y,k]=camera.match(/-?\\d+(?:\\.\\d+)?(?:e[-+]?\\d+)?/gi)!.map(Number);
+  const [x,y,k]=camera.match(/-?\d+(?:\.\d+)?(?:e[-+]?\d+)?/gi)!.map(Number);
   const nodes=[...document.querySelectorAll('[data-level="cluster"]')].map(node=>{
    const circle=node.querySelector('circle')!,r=Number(circle.getAttribute('r'));
-   const t=node.getAttribute('transform')!.match(/-?\\d+(?:\\.\\d+)?/g)!.map(Number);
+   const t=node.getAttribute('transform')!.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
    return {x:t[0],y:t[1],r};
   });
   const minX=Math.min(...nodes.map(n=>n.x-n.r))-12,maxX=Math.max(...nodes.map(n=>n.x+n.r))+12;
