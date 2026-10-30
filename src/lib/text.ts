@@ -41,3 +41,21 @@ export function relativeTime(
       : { timeZone, day: "numeric", month: "short" },
   ).format(at);
 }
+
+/** Format non-negative counts with grouped digits and ordinary spaces (12 345). */
+export function formatCount(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  return Math.max(0, Math.round(value)).toLocaleString("en-US").replaceAll(",", " ");
+}
+
+/** Compact, readable elapsed study time, including multi-day totals. */
+export function formatDurationMinutes(minutes: number): string {
+  if (!Number.isFinite(minutes)) return "—";
+  const total = Math.max(0, Math.round(minutes));
+  const days = Math.floor(total / 1440);
+  const hours = Math.floor((total % 1440) / 60);
+  const rest = total % 60;
+  if (days) return `${formatCount(days)} d${hours ? ` ${hours} h` : ""}`;
+  if (hours) return `${hours} h${rest ? ` ${rest} m` : ""}`;
+  return `${rest} m`;
+}
