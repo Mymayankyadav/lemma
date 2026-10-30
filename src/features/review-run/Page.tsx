@@ -204,15 +204,15 @@ export default function Page(){
       <Icon size={18} aria-hidden="true"/>{label}</button>)}
    </div>
    <button type="button" className="min-h-11 text-label text-ink-3 underline-offset-4 hover:underline" onClick={()=>reveal(null)}>Show answer</button>
-  </section>:<section aria-label="Grade answer" className="grid grid-cols-2 gap-3">
+  </section>:<section aria-label="Grade answer" className="grid grid-cols-4 gap-1.5">
    {gradeNames.map((label,i)=>{
     const rating=(i+1) as Rating;
     return <button key={rating} type="button" disabled={submitting}
      onClick={()=>{void grade(rating)}} aria-label={'Grade '+label}
-     className={'flex min-h-[var(--ctl)] items-center justify-between rounded-btn border px-5 disabled:opacity-50 '+
+     className={'flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-btn border px-1 disabled:opacity-50 '+
       (rating===3&&confidence==='sure'?'border-amber-line-2 bg-amber-tint':'border-edge-2 bg-raised')}>
-     <span className="flex items-center gap-2 text-body-l font-semibold"><span className={'size-2 rounded-full '+dots[i]}/>{label}</span>
-     <span className="text-label text-ink-3">{intervals?.[rating].label??'—'}</span>
+     <span className="flex items-center gap-1 text-label font-semibold"><span className={'size-1.5 rounded-full '+dots[i]}/>{label}</span>
+     <span className="text-[11px] tabular-nums text-ink-3">{intervals?.[rating].label??'—'}</span>
     </button>
    })}
   </section>}
