@@ -1,6 +1,7 @@
 import type { HTMLAttributes,CSSProperties } from 'react';
 import {useLocation} from 'react-router';
 import {Construction} from './backgrounds/euclid/Construction';
+import {GraphSketch} from './backgrounds/graph/GraphSketch';
 import type {Figure} from './backgrounds/euclid/draw';
 const constructionFor=(path:string):Figure|undefined=>{
  if(path==='/')return 'i1';
@@ -18,6 +19,6 @@ const positions={tl:'8% -6%',tr:'108% -6%',center:'50% 20%',none:'50% 50%'};
 export function Ground({lamp='tl',deep=false,className='',style,...props}:GroundProps){
  const path=useLocation().pathname,figure=constructionFor(path);
  return <><div aria-hidden="true" {...props} className={`ground pointer-events-none fixed inset-0 z-0 ${className}`}
- style={{...({'--lamp-position':positions[lamp]} as CSSProperties),...(deep?{backgroundColor:'var(--obsidian-deep)'}:{}),...style}}/>{figure&&<Construction figure={figure} visitKey={path}/>}</>;
+ style={{...({'--lamp-position':positions[lamp]} as CSSProperties),...(deep?{backgroundColor:'var(--obsidian-deep)'}:{}),...style}}/>{figure&&<Construction figure={figure} visitKey={path}/>}<GraphSketch path={path}/></>;
 }
 export default Ground;
