@@ -107,7 +107,7 @@ describe("demo adapter", () => {
 
     expect(fixture.notes).toHaveLength(90);
     for (const { note } of fixture.notes) {
-      expect(note.front).not.toMatch(/^Explain .*\\(\\d+\\)\\.$/);
+      expect(note.front).not.toMatch(/^Explain .*\(\d+\)\.$/);
       expect(note.back).not.toContain("State the definition and justify the relevant hypotheses");
       expect(note.front.trim().length).toBeGreaterThan(12);
     }
