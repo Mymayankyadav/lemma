@@ -74,8 +74,8 @@ test('UI-6a appearance exposes only Automatic, Day and Night and persists',async
  await appearance.getByRole('radio',{name:/^Night /}).click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
  await appearance.getByRole('radio',{name:/^Automatic /}).click();
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.emulateMedia({colorScheme:'dark'});
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid-night');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
  await page.screenshot({path:'test-results/screens/review/ui6a-settings-night.png',fullPage:true});
 });
