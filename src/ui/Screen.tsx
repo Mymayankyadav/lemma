@@ -9,7 +9,7 @@ export function Screen({title,back,actions,tabBar=false,children,className=''}:S
  return <motion.section initial="hidden" animate="visible" variants={variantFor(rise,reduce)} className={`relative flex flex-col gap-6 ${tabBar?'pb-2':''} ${className}`}>
  {(title||back||actions)&&<header className="flex min-h-11 items-center gap-3">
   {back&&<Link aria-label="Back" to={back} className="flex h-11 w-11 items-center justify-center rounded-ctl text-ink-2 hover:bg-fill-1"><ArrowLeft size={22}/></Link>}
-  {title&&<h1 className="min-w-0 flex-1 text-[28px] font-semibold tracking-tight">{title}</h1>}
+  {title&&<h1 className="min-w-0 flex-1 text-title font-semibold tracking-tight">{title}</h1>}
   {actions&&<div className="ml-auto flex items-center gap-2">{actions}</div>}
  </header>}
  {children}</motion.section>;
