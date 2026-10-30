@@ -23,7 +23,7 @@ export function SubjectRules({data,format}: {data:SubjectMinutes[];format:(minut
      <button type="button" title={row.subject.name} aria-label={row.subject.name} onClick={()=>setFullLabel(fullLabel===row.subject.name?null:row.subject.name)}
       className={`flex min-h-11 min-w-0 flex-1 items-center text-left text-ink-2 ${fullLabel===row.subject.name?'break-words':'overflow-hidden'}`}>
       <span aria-hidden="true" className="mr-2 shrink-0 font-math italic text-amber">{row.subject.glyph}</span>
-      <span className={fullLabel===row.subject.name?'min-w-0 break-words':'min-w-0 truncate'}>{row.subject.name}</span>
+      <span className={fullLabel===row.subject.name?'min-w-0 break-words':'clip-1'}>{row.subject.name}</span>
      </button>
      <span className="shrink-0 tabular-nums text-ink-2">{format(row.minutes)}</span>
     </div>
@@ -34,7 +34,7 @@ export function SubjectRules({data,format}: {data:SubjectMinutes[];format:(minut
    {other.length>0&&<div className="flex flex-col gap-1">
     <button type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}
      className="flex min-h-11 w-full items-center justify-between gap-3 text-left text-label text-ink-2">
-     <span className="min-w-0 truncate">{expanded?'Hide other subjects':`Other (${other.length})`}</span>
+     <span className="clip-1">{expanded?'Hide other subjects':`Other (${other.length})`}</span>
      <span className="shrink-0 tabular-nums">{format(otherMinutes)}</span>
     </button>
     {!expanded&&<div className="h-1 w-full overflow-hidden rounded-[1px] bg-fill-2">
