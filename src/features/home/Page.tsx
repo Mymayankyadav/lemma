@@ -9,7 +9,6 @@ import {relativeTime} from '../../lib/text';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
-import {Button} from '../../ui/Button';
 import {IconButton} from '../../ui/IconButton';
 import {Glyph} from '../../ui/Glyph';
 import {Rail} from '../../ui/Rail';
