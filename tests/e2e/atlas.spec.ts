@@ -1,3 +1,4 @@
+// FIX #293 claim: viewport fit and overlapping label regression.
 import {test,expect} from '@playwright/test'
 
 test.beforeEach(async({page})=>{
