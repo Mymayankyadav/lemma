@@ -74,7 +74,7 @@ export default function Page(){
  const [draft,setDraft]=useState<{cardId:string;value:string}|null>(null);
  const note=draft&&current&&draft.cardId===current.cardId?draft.value:'';
  const dragX=useMotionValue(0),dragY=useMotionValue(0),rotation=useTransform(dragX,x=>x/22);
- const swipeLabel=useTransform([dragX,dragY],([x,y])=>Number(y)<-60?'Easy':Number(x)>40?'Good':Number(x)<-40?'Again':'');
+ const swipeLabel=useTransform([dragX,dragY],([x,y]):string=>Number(y)<-60?'Easy':Number(x)>40?'Good':Number(x)<-40?'Again':'');
  const cardMotion=useAnimationControls();
  const [stamp,setStamp]=useState(false),[calibrationNote,setCalibrationNote]=useState<string|null>(null);
  const previousCardId=useRef<string|null>(null);
@@ -118,9 +118,11 @@ export default function Page(){
    setCalibrationNote(note);
    if(rating>=3)setStamp(true);
    if(!reduce){
+    try{
     if(rating>=3)await cardMotion.start({scale:1,transition:{duration:.12}});
     const exit=rating===1?{x:0,y:72,scale:.86}:rating===2?{x:-140,y:0,scale:1}:rating===3?{x:0,y:-130,scale:1}:{x:130,y:-170,scale:1};
     await cardMotion.start({...exit,opacity:0,transition:{duration:.3,ease:'easeIn'}});
+    }catch{/* The durable answer still commits if a visual animation is interrupted. */}
    }
    committed({card:current,reviewId:result.reviewId,rating,confidence,durationMs,
     next:intervals[rating].card,answeredAt:Date.now()});
@@ -200,7 +202,7 @@ export default function Page(){
    <IconButton icon={Undo2} label="Undo last answer" disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
    <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>setSheetOpen(true)}/>
   </header>
-  <AnimatePresence mode="wait" initial={false}>
+  <div>
    <motion.div key={current.cardId} initial={reduce?false:{opacity:0,y:34,scale:0.94}} animate={cardMotion}
     exit={{opacity:0,transition:{duration:0}}} transition={{duration:reduce?0:.48}}
     drag={revealed&&!submitting} dragElastic={0.6} dragSnapToOrigin
@@ -215,7 +217,7 @@ export default function Page(){
     <motion.span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 z-10 text-center font-math text-num italic text-amber">{swipeLabel}</motion.span>
     <CardFace item={current} revealed={revealed} confidence={confidence} quiet={reduce} stamp={stamp}/>
    </motion.div>
-  </AnimatePresence>
+  </div>
   <p className="text-center text-caption text-ink-3">{Math.max(0,total-new Set(answers.map(a=>a.card.cardId)).size-1)} after this</p>
   {calibrationNote&&<p role="status" className="text-center font-math text-label italic text-ink-2">{calibrationNote}</p>}
   {!revealed?<section aria-label="Confidence" className="flex flex-col gap-3">
