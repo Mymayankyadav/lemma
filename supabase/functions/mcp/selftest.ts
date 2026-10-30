@@ -94,7 +94,8 @@ export async function selftest(c:Context):Promise<any>{
         throw Error('Atomic rollback failed');
     });
     await check('PDF reads and search',async()=>{
-      if(!(await search(c,{project:p.slug,query:'finite subcover'})).includes('selftest p.'))throw Error('Search failed');
+      const hits=await search(c,{project:p.slug,query:'finite subcover'});
+      if(!hits.includes('selftest "Selftest PDF" p.')||!hits.includes('finite subcover'))throw Error('Source-labelled search failed');
       if(!(await readPages(c,{project:p.slug,from:'1',pdf:true})).includes('finite subcover'))throw Error('PDF read failed');
     });
     await check('card proposals and direct card',async()=>{
