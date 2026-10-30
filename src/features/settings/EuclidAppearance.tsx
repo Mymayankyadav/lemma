@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Check, Star} from 'lucide-react';
 import type {UiPreferences} from '../../data/types';
 import {getMode} from '../../data/mode';
@@ -20,6 +20,7 @@ export function EuclidAppearance({ui,busy,onChange}:Props){
   if(getMode()!=='demo')return ui??{};
   try{return {...(ui??{}),...JSON.parse(localStorage.getItem('lemma.ui-demo')||'{}')}}catch{return ui??{}}
  });
+ useEffect(()=>{if(getMode()!=='demo')setPrefs(ui??{})},[ui]);
  const timeline=prefs.timeline==='metro'?'metro':'ascent';
  const atlas=prefs.atlas==='branches'||prefs.atlas==='outline'?ui.atlas:'orbits';
  const follow=prefs.follow??true;
