@@ -53,7 +53,7 @@ for(const world of ['graph','graph-night'] as const){
   await expect(page.locator('[data-atlas-details]')).toHaveCount(0)
   await expect(page.locator('[data-minimap="true"]')).toBeVisible()
   const camera=page.locator('[data-atlas-camera]')
-  const scale=async()=>Number((await camera.getAttribute('transform'))?.match(/scale\\(([^)]+)\\)/)?.[1])
+  const scale=async()=>Number((await camera.getAttribute('transform'))?.match(/scale\(([^)]+)\)/)?.[1])
   const before=await scale()
   await page.getByRole('button',{name:'Zoom out'}).click()
   await page.getByRole('button',{name:'Zoom out'}).click()
@@ -67,7 +67,7 @@ for(const world of ['graph','graph-night'] as const){
   await dialog.getByRole('textbox',{name:'Name'}).fill('QA Two World Project')
   await capturePhone(page,world,'new-project')
   await dialog.getByRole('button',{name:'Create project'}).click()
-  await expect(page).toHaveURL(/#\\/p\\/qa-two-world-project\\?tab=sources$/)
+  await expect(page).toHaveURL(/#\/p\/qa-two-world-project\?tab=sources$/)
   await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Your tutor fills this in')
   await capturePhone(page,world,'draft-project')
 
