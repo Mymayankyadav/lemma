@@ -105,19 +105,22 @@ export function visibleAtlasLabels(nodes: readonly AtlasNode[], selectedId: stri
  * progressively reveals the rest without overwhelming a phone-sized screen.
  */
 export function visibleOrbitLabels(nodes:readonly AtlasNode[],selectedId:string|null,scale:number):Set<string>{
- const collisionSafe=visibleAtlasLabels(nodes,selectedId);
- if(scale>=0.9)return collisionSafe;
- const result=new Set<string>();
- const counts=new Map<string,number>();
+ const result=new Set<string>(),occupied:{left:number;right:number;top:number;bottom:number}[]=[];
+ const counts=new Map<string,number>(),k=Math.max(.2,scale);
  const priority:Record<AtlasNode['status'],number>={revisit:0,in_progress:1,demonstrated:2,not_started:3};
- const ordered=[...nodes].filter(n=>collisionSafe.has(n.id)).sort((a,b)=>
+ const ordered=[...nodes].sort((a,b)=>Number(b.id===selectedId)-Number(a.id===selectedId)||
   priority[a.status]-priority[b.status]||a.name.localeCompare(b.name));
  for(const node of ordered){
-  const count=counts.get(node.subjectId)??0;
-  if(count>=2&&node.id!==selectedId)continue;
+  const selected=node.id===selectedId,count=counts.get(node.subjectId)??0;
+  if(k<.9&&count>=2&&!selected)continue;
+  const width=(node.name.length*(selected?8.4:7.5)+12)/k;
+  const rect={left:node.x-width/2,right:node.x+width/2,
+   top:node.y+9/k,bottom:node.y+34/k};
+  if(!selected&&occupied.some(other=>rect.left<other.right&&rect.right>other.left&&
+   rect.top<other.bottom&&rect.bottom>other.top))continue;
   result.add(node.id);
   counts.set(node.subjectId,count+1);
+  occupied.push(rect);
  }
- if(selectedId)result.add(selectedId);
  return result;
 }
