@@ -165,7 +165,7 @@ export async function selftest(c:Context):Promise<any>{
       if(restored.length!==before.length||before.some((x:any)=>!restored.some((y:any)=>y.concept_id===x.concept_id)))throw Error('Original links not restored');
     });
     await check('idea relationship duplicates, conflicts and undo',async()=>{
-      const base=await insert(c,'concepts',{subject_id:p.subject_id,slug:'selftest-links',name:'Selftest links'});
+      const base=await insert(c,'concepts',{subject_id:p.subject_id,slug:'selftest-links',name:'Selftest links '+p.slug});
       const subject=(await scoped(c,'subjects').eq('id',p.subject_id).single()).data.name;
       const links=async()=>{const r=await scoped(c,'concept_links').eq('to_id',base.id);if(r.error)throw Error(r.error.message);return r.data||[];};
       for(const tool of ['add','edit'])for(const field of ['prereqs','related']){

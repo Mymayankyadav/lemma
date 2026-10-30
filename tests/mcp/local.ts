@@ -26,8 +26,9 @@ try{
  // The owner's real concept must neither collide with nor be changed by selftest.
  const subject=(await db.query(`insert into public.subjects(user_id,name,glyph,hue) values('${userId}','Existing subject','E','amber') returning id`)).rows[0].id;
  const existing=(await db.query(`insert into public.concepts(user_id,subject_id,slug,name,topic) values($1,$2,'open-cover','Open cover','Owner topic') returning id`,[userId,subject])).rows[0].id;
+ const links=(await db.query(`insert into public.concepts(user_id,subject_id,slug,name,topic) values($1,$2,'selftest-links','Selftest links','Owner links') returning id`,[userId,subject])).rows[0].id;
  const result=await selftest({db:client,userId});for(const s of result.steps)console.log((s.ok?'PASS ':'FAIL ')+s.name+(s.detail?': '+s.detail:''));if(!result.ok)throw Error('Connector selftest failed');
- const retained=(await db.query('select name,topic from public.concepts where id=$1',[existing])).rows[0];if(retained?.name!=='Open cover'||retained?.topic!=='Owner topic')throw Error('Selftest altered owner concept');console.log('PASS selftest preserves colliding owner concept');
+ const retained=(await db.query('select name,topic from public.concepts where id=$1',[existing])).rows[0];if(retained?.name!=='Open cover'||retained?.topic!=='Owner topic')throw Error('Selftest altered owner concept');const retainedLinks=(await db.query('select name,topic from public.concepts where id=$1',[links])).rows[0];if(retainedLinks?.name!=='Selftest links'||retainedLinks?.topic!=='Owner links')throw Error('Selftest altered existing relationship fixture');console.log('PASS selftest preserves both colliding owner concepts');
 }finally{await db.close();}
 
 Deno.exit(0);
