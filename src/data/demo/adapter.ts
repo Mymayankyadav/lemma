@@ -1573,13 +1573,13 @@ export class DemoAdapter implements LemmaApi {
   }
   async getAtlas(): Promise<AtlasGraph> {
     const eligible = this.eligible();
-    // Until UI-6c ships its hierarchy navigator, keep the legacy flat Atlas
-    // usable. The full 82-body V3 cosmos is retained in the fixture with
-    // level/parentId metadata for the forthcoming hierarchical renderer.
-    const visible = new Set(this.store.checkpoints.flatMap(cp => cp.conceptIds));
+    // The v3 Atlas navigates the entire owner-visible hierarchy, including
+    // structural ancestors and supporting ideas without checkpoint references.
+    // Limiting this to checkpoint concept IDs hides clusters/galaxies/systems.
+    const visibleSubjects = new Set((await this.listSubjects()).map(subject => subject.id));
     return {
       subjects: await this.listSubjects(),
-      concepts: this.store.concepts.filter(c => visible.has(c.id)).map((c) => {
+      concepts: this.store.concepts.filter(c => visibleSubjects.has(c.subjectId)).map((c) => {
         const checkpoints = this.store.checkpoints.filter((cp) =>
             cp.conceptIds.includes(c.id),
           ),
