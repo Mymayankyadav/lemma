@@ -121,7 +121,7 @@ export async function readPages(c:Context,a:any):Promise<string>{
  const readable=selected.filter((x:any)=>x.has_text&&x.page_count!==0);
  if(!readable.length)return 'These PDFs have no extractable text. Ask the student to paste the passage or read the attached PDFs.';
  const labels=pageRange(a.from,a.to);
- if(a.pdf&&labels.some((x:string)=>!/^\\d+$/.test(x)||Number(x)<1))
+ if(a.pdf&&labels.some((x:string)=>!/^\d+$/.test(x)||Number(x)<1))
    throw Error('PDF page indexes must be positive integers');
  let q=scoped(c,'source_pages').in('source_id',readable.map((x:any)=>x.id));
  if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');
