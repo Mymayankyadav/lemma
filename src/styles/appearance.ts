@@ -1,50 +1,35 @@
 import {themes,type ThemeId} from './themes';
-export type Density='compact'|'cozy'|'comfortable';
-export type Effects='calm'|'rich'; // "rich" is the persisted name for lively motion.
-export type ThemePreference=ThemeId|'system';
-export interface Appearance {theme:ThemePreference;density:Density;effects:Effects}
-export const DEFAULT_APPEARANCE:Appearance={theme:'system',density:'compact',effects:'rich'};
-const densities:Density[]=['compact','cozy','comfortable'],effects:Effects[]=['calm','rich'];
-const valid=(value:unknown):value is ThemePreference=>value==='system'||themes.some(t=>t.id===value);
-export function resolveTheme(preference:ThemePreference):ThemeId {
- return preference==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'euclid-night':'euclid'):preference;
+export type AppearanceMode='auto'|'day'|'night';
+export interface Appearance {mode:AppearanceMode}
+export const DEFAULT_APPEARANCE:Appearance={mode:'auto'};
+const valid=(mode:unknown):mode is AppearanceMode=>mode==='auto'||mode==='day'||mode==='night';
+function normalize(value:unknown):Appearance {
+ const old=value&&typeof value==='object'?value as Record<string,unknown>:{};
+ if(valid(old.mode))return {mode:old.mode};
+ return {mode:old.theme==='graph'?'day':old.theme==='graph-night'?'night':'auto'};
 }
-function normalize(value:Partial<Appearance>):Appearance {
- return {theme:valid(value.theme)?value.theme:DEFAULT_APPEARANCE.theme,
- density:densities.includes(value.density as Density)?value.density!:DEFAULT_APPEARANCE.density,
- effects:effects.includes(value.effects as Effects)?value.effects!:DEFAULT_APPEARANCE.effects};
+export function resolveTheme(mode:AppearanceMode):ThemeId {
+ return mode==='auto'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'graph-night':'graph'):mode==='day'?'graph':'graph-night';
 }
 export function readAppearance():Appearance {
- if(typeof document!=='undefined'&&document.documentElement.dataset.theme){
- const d=document.documentElement.dataset;
- return normalize({theme:(d.themePreference||d.theme) as ThemePreference,density:d.density as Density,effects:d.effects as Effects});
- }
- try{return normalize(JSON.parse(localStorage.getItem('lemma.ui')||'{}') as Partial<Appearance>)}
- catch{return DEFAULT_APPEARANCE}
+ try{return normalize(JSON.parse(localStorage.getItem('lemma.ui')||'{}'))}catch{return DEFAULT_APPEARANCE}
 }
-function updateTheme(pref:ThemePreference){
- const theme=resolveTheme(pref),root=document.documentElement;
- root.dataset.theme=theme;root.dataset.themePreference=pref;
- document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#F1E7D3');
+function updateTheme(mode:AppearanceMode){
+ const theme=resolveTheme(mode),root=document.documentElement;
+ root.dataset.theme=theme;root.dataset.appearanceMode=mode;
+ root.dataset.density='compact';root.dataset.effects='calm';
+ delete root.dataset.themePreference;
+ document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#FAFAF6');
 }
 export function applyAppearance(patch:Partial<Appearance>):Appearance {
  const next=normalize({...readAppearance(),...patch});
- updateTheme(next.theme);
- document.documentElement.dataset.density=next.density;
- document.documentElement.dataset.effects=next.effects;
+ updateTheme(next.mode);
  try{localStorage.setItem('lemma.ui',JSON.stringify(next))}catch{/* optional */}
  window.dispatchEvent(new Event('lemma-ui-change'));
  return next;
 }
 if(typeof window!=='undefined'&&window.matchMedia){
  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
- if(readAppearance().theme==='system'){updateTheme('system');window.dispatchEvent(new Event('lemma-ui-change'))}
+  if(readAppearance().mode==='auto'){updateTheme('auto');window.dispatchEvent(new Event('lemma-ui-change'))}
  });
-}
-export function labEnabled():boolean {
- try{return localStorage.getItem('lemma.lab')!=='off'}catch{return false}
-}
-export function setLabEnabled(enabled:boolean):void {
- try{localStorage.setItem('lemma.lab',enabled?'on':'off')}catch{/* optional */}
- window.dispatchEvent(new Event('lemma-ui-change'));
 }

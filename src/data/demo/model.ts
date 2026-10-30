@@ -100,6 +100,7 @@ export interface DemoSource extends Source {
 }
 export interface DemoProposal extends Proposal {
   status: "pending" | "approved" | "rejected";
+  approvedAt?: string;
 }
 export interface DemoStore {
   version: 1;

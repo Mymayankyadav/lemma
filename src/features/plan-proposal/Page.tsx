@@ -11,10 +11,12 @@ import {
 import {
   useApproveProposal,
   useProposal,
+  useProject,
   useRejectProposal,
   useSettings,
 } from "../../data/hooks";
-import type { PlanCheckpoint } from "../../data/types";
+import {planReviewNodes} from "./nodes";
+import type {ReviewNode} from "./nodes";
 import { chatLink, revisePlanPrompt } from "../../lib/chat";
 import { Button } from "../../ui/Button";
 import { Glyph } from "../../ui/Glyph";
@@ -25,28 +27,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { useToast } from "../../ui/Toast";
 
-type Node = {
-  code: string;
-  title: string;
-  criterion: string;
-  stage?: string;
-  steps: string[];
-  pages?: string;
-  source?: string;
-  prereqs: string[];
-};
-function mapNodes(checkpoints: PlanCheckpoint[]): Node[] {
-  return checkpoints.map((c, i) => ({
-    code: c.code ?? `CP${i + 1}`,
-    title: c.title,
-    criterion: c.criterion,
-    stage: c.stage ?? undefined,
-    steps: c.steps ?? [],
-    pages: c.pages,
-    source: c.source,
-    prereqs: c.prereqs ?? [],
-  }));
-}
+type Node = ReviewNode;
 function PlanMap({
   nodes,
   selected,
@@ -164,6 +145,7 @@ export default function Page() {
   const { id = "" } = useParams(),
     navigate = useNavigate(),
     query = useProposal(id),
+    project = useProject(query.data?.projectSlug ?? ""),
     settings = useSettings(),
     approve = useApproveProposal(),
     reject = useRejectProposal(),
@@ -183,25 +165,8 @@ export default function Page() {
   }, [query.isLoading]);
   const p = query.data;
   const nodes = useMemo(
-    () =>
-      p?.plan
-        ? mapNodes(p.plan.checkpoints)
-        : mapNodes(
-            (p?.planChange?.ops ?? [])
-              .filter((op) => op.op === "add")
-              .map((op) => ({
-                code: op.code,
-                title: op.title,
-                objective: op.objective,
-                criterion: op.criterion,
-                stage: op.stage ?? undefined,
-                steps: op.steps,
-                pages: op.pages,
-                source: op.source,
-                prereqs: op.prereqs,
-              })),
-          ),
-    [p],
+    () => planReviewNodes(p?.plan ?? null, p?.planChange ?? null, project.data?.checkpoints ?? []),
+    [p, project.data?.checkpoints],
   );
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
   const pending = approve.isPending || reject.isPending;
@@ -351,7 +316,7 @@ export default function Page() {
                     {op.op === "add" ? "Add" : op.op === "remove" ? "Cut" : op.op === "move" ? "Move" : op.op === "update" ? "Edit" : "Link"}
                   </span>
                   <span className="min-w-0 flex-1">
-                    {op.op === "add" ? `Add ${op.code} · ${op.title}`
+                    {op.op === "add" ? `Add ${nodes.find(n => n.title === op.title && n.stage === (op.stage ?? undefined))?.code ?? op.code ?? "new checkpoint"} · ${op.title}`
                       : op.op === "prereq_add" ? `${op.code} needs ${op.prereq}`
                       : op.op === "prereq_remove" ? `${op.code} no longer needs ${op.prereq}`
                       : op.op === "move" ? `Move ${op.code} after ${op.after}`

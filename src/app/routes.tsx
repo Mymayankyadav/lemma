@@ -1,3 +1,5 @@
+import {Suspense} from "react";
+import RouteError, {RouteFallback} from "./RouteError";
 import Page0 from '../features/home/Page'
 import Page1 from '../features/projects/Page'
 import Page2 from '../features/new-project/Page'
@@ -18,22 +20,22 @@ import Page16 from '../features/sign-in/Page'
 import Page17 from '../features/kit/Page'
 /** The canonical route inventory from design.md §6. */
 export const screenRoutes = [
- {path: '/', element: <Page0 /> },
- {path: '/projects', element: <Page1 /> },
- {path: '/projects/new', element: <Page2 /> },
- {path: '/p/:slug', element: <Page3 /> },
- {path: '/p/:slug/cp/:code', element: <Page4 /> },
- {path: '/s/:slug/:n', element: <Page5 /> },
- {path: '/proposals', element: <Page6 /> },
- {path: '/proposals/:id', element: <Page7 /> },
- {path: '/review', element: <Page8 /> },
- {path: '/review/run', element: <Page9 /> },
- {path: '/review/done', element: <Page10 /> },
- {path: '/cards', element: <Page11 /> },
- {path: '/cards/:no', element: <Page12 /> },
- {path: '/atlas', element: <Page13 /> },
- {path: '/insights', element: <Page14 /> },
- {path: '/settings', element: <Page15 /> },
- {path: '/sign-in', element: <Page16 /> },
- {path: '/kit', element: <Page17 /> },
+ {path: '/', element: <Suspense fallback={<RouteFallback/>}><Page0 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/projects', element: <Suspense fallback={<RouteFallback/>}><Page1 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/projects/new', element: <Suspense fallback={<RouteFallback/>}><Page2 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/p/:slug', element: <Suspense fallback={<RouteFallback/>}><Page3 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/p/:slug/cp/:code', element: <Suspense fallback={<RouteFallback/>}><Page4 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/s/:slug/:n', element: <Suspense fallback={<RouteFallback/>}><Page5 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/proposals', element: <Suspense fallback={<RouteFallback/>}><Page6 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/proposals/:id', element: <Suspense fallback={<RouteFallback/>}><Page7 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/review', element: <Suspense fallback={<RouteFallback/>}><Page8 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/review/run', element: <Suspense fallback={<RouteFallback/>}><Page9 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/review/done', element: <Suspense fallback={<RouteFallback/>}><Page10 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/cards', element: <Suspense fallback={<RouteFallback/>}><Page11 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/cards/:no', element: <Suspense fallback={<RouteFallback/>}><Page12 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/atlas', element: <Suspense fallback={<RouteFallback/>}><Page13 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/insights', element: <Suspense fallback={<RouteFallback/>}><Page14 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/settings', element: <Suspense fallback={<RouteFallback/>}><Page15 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/sign-in', element: <Suspense fallback={<RouteFallback/>}><Page16 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/kit', element: <Suspense fallback={<RouteFallback/>}><Page17 /></Suspense>, errorElement: <RouteError/> },
 ]

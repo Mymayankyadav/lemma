@@ -137,15 +137,15 @@ test('rejects non-PDF files without creating a project',async({page})=>{
 
 
 test('Paths tab switches projects and expands stage checkpoints',async({page})=>{
- await page.goto('./?demo=1&theme=euclid#/projects')
+ await page.goto('./?demo=1&theme=graph#/projects')
  const chips=page.getByRole('navigation',{name:'Choose a path'})
  const stages=page.getByRole('region',{name:'Stages'})
  await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Real Analysis')
  await expect(stages.getByRole('link',{name:/CP4 Compactness, in progress/})).toBeVisible()
- const stage=stages.getByRole('article',{name:'Compactness and continuity stage'})
- await stage.getByRole('button',{name:/Compactness and continuity/}).click()
+ const stage=stages.getByRole('article',{name:/stage$/}).first()
+ await stage.getByRole('button',{name:/Unassigned checkpoints/}).click()
  await expect(stage.getByRole('link',{name:/CP4 Compactness/})).toBeHidden()
- await stage.getByRole('button',{name:/Compactness and continuity/}).click()
+ await stage.getByRole('button',{name:/Unassigned checkpoints/}).click()
  await expect(stage.getByRole('link',{name:/CP4 Compactness/})).toBeVisible()
  await chips.getByRole('link',{name:'Linear Algebra',exact:true}).click()
  await expect(page).toHaveURL(/project=linear-algebra/)
@@ -155,7 +155,7 @@ test('Paths tab switches projects and expands stage checkpoints',async({page})=>
 
 test('Paths matches compact Euclid and Euclid-night without horizontal overflow',async({page})=>{
  await page.setViewportSize({width:360,height:740})
- for(const theme of ['euclid','euclid-night']){
+ for(const theme of ['graph','graph-night']){
   await page.goto('./?demo=1&theme='+theme+'#/projects')
   await expect(page.getByRole('region',{name:'Stages'})).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth),theme).toBeLessThanOrEqual(360)

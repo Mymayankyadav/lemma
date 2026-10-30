@@ -266,3 +266,15 @@ it("does not leak a previous card preamble into the next card", () => {
   expect(second.querySelector("math mtext")?.textContent).toBe("\\myfield");
   expect(second.querySelector("math mi")).toBeNull();
 });
+
+it("keeps punctuation adjacent to inline math in a nonwrapping span", () => {
+  const html = renderMarkdown("The fixed field is $K^H$, and $K/k$. Is $x$?");
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const pairs = [...doc.querySelectorAll(".lemma-math-punct")];
+  expect(pairs).toHaveLength(3);
+  expect(pairs.map(pair => pair.textContent?.slice(-1))).toEqual([",", ".", "?"]);
+  for (const pair of pairs) expect(pair.querySelector(".katex")).not.toBeNull();
+  expect(renderMarkdown("Untouched $x$ with spacing")).not.toContain("lemma-math-punct");
+  expect(renderMarkdown("Display: $$x$$.")).not.toContain("lemma-math-punct");
+  expect(renderMarkdown("A code literal `$x$.`")).not.toContain("lemma-math-punct");
+});

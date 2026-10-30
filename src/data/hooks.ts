@@ -8,6 +8,9 @@ export function useHome(...args: Parameters<LemmaApi['getHome']>) {
 export function useProjects(...args: Parameters<LemmaApi['listProjects']>) {
  return useQuery({ ...queryDefaults, queryKey: ['projects'], queryFn: () => getApi().listProjects() })
 }
+export function usePlanRevisions(...args: Parameters<LemmaApi['listPlanRevisions']>) {
+ return useQuery({ ...queryDefaults, queryKey: ['plan-revisions', args[0]], queryFn: () => getApi().listPlanRevisions(args[0]) })
+}
 export function useProject(...args: Parameters<LemmaApi['getProject']>) {
  return useQuery({ ...queryDefaults, queryKey: ['project', args[0]], queryFn: () => getApi().getProject(args[0]) })
 }
@@ -91,6 +94,18 @@ export function useUpdateStyle() {
 }
 export function useCreateSubject() {
  return useWrite((api, value: Parameters<LemmaApi['createSubject']>[0]) => api.createSubject(value), ['subjects'])
+}
+export function useUpdateSubject() {
+ return useWrite((api, value: {id: string; patch: Parameters<LemmaApi['updateSubject']>[1]}) => api.updateSubject(value.id,value.patch), ['subjects','projects','atlas'])
+}
+export function useMergeSubjects() {
+ return useWrite((api, value: {sourceId:string; targetId:string}) => api.mergeSubjects(value.sourceId,value.targetId), ['subjects','projects','project','home','atlas'])
+}
+export function useCreateProjectDraft() {
+ return useWrite((api, value: Parameters<LemmaApi['createProjectDraft']>[0]) => api.createProjectDraft(value), ['projects','home'])
+}
+export function useUpdateSource() {
+ return useWrite((api, value: {id:string; patch: Parameters<LemmaApi['updateSource']>[1]}) => api.updateSource(value.id,value.patch), ['project','projects','home','plan-revisions'])
 }
 export function useCreateProject() {
  return useWrite((api, value: Parameters<LemmaApi['createProject']>[0]) => api.createProject(value), ['projects', 'home'])

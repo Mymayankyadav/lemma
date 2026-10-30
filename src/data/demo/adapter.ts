@@ -9,6 +9,8 @@ import type {
   NotePatch,
   InsightDays,
   ReviewLogEntry,
+  SubjectPatch,
+  SourcePatch,
 } from "../api";
 import { LemmaError } from "../api";
 import type {
@@ -27,6 +29,7 @@ import type {
   NoteStatus,
   PlanCheckpoint,
   PlanPayload,
+  PlanRevision,
   Project,
   ProjectDetail,
   ProjectSummary,
@@ -112,7 +115,7 @@ export interface DemoOptions {
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
-    const ids=new Set(this.store.projects.filter(p=>String(p.status)!=='archived').map(p=>p.id));
+    const ids=new Set(this.store.projects.filter(p=>p.status!=="archived"&&!p.system).map(p=>p.id));
     const cards=this.store.notes.filter(n=>n.note.status==='active'&&ids.has(n.projectId)).flatMap(n=>n.cards.map(c=>c.state));
     return reviewForecast(cards,this.store.settings,this.now());
   }
@@ -152,11 +155,10 @@ export class DemoAdapter implements LemmaApi {
       "Project",
     );
   }
-  private subject(id: string) {
-    return found(
-      this.store.subjects.find((s) => s.id === id),
-      "Subject",
-    );
+  private subject(id: string): Subject {
+    // A v3 draft may exist before the tutor chooses its subject.
+    if (!id) return { id: "", name: "Unassigned", glyph: "□", hue: "slate", position: -1 };
+    return found(this.store.subjects.find((s) => s.id === id), "Subject");
   }
   private checkpoint(projectId: string, code: string) {
     return found(
@@ -230,8 +232,9 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   private allItems() {
+    const active = new Set(this.store.projects.filter(p => p.status !== "archived" && !p.system).map(p => p.id));
     return this.store.notes
-      .filter((n) => n.note.status === "active")
+      .filter((n) => n.note.status === "active" && active.has(n.projectId))
       .flatMap((n) => n.cards.map((c) => this.item(n, c)));
   }
   private eligible(): ReviewItem[] {
@@ -263,6 +266,8 @@ export class DemoAdapter implements LemmaApi {
       title: cp.title,
       position: cp.position,
       stage: cp.stage ?? null,
+      dueOn: cp.dueOn ?? null,
+      demonstratedAt: cp.demonstratedAt ?? null,
       ui: this.cpUi(cp),
       currentStep: cp.currentStep,
       stepsTotal: cp.steps.length,
@@ -298,6 +303,10 @@ export class DemoAdapter implements LemmaApi {
       title: p.title,
       subject: clone(this.subject(p.subjectId)),
       status: p.status,
+      pinned: p.pinned ?? false,
+      system: p.system ?? false,
+      targetDate: p.targetDate ?? null,
+      targetLabel: p.targetLabel ?? null,
       done: progress.done,
       total: progress.total,
       current: current
@@ -454,9 +463,48 @@ export class DemoAdapter implements LemmaApi {
       return clone(subject);
     });
   }
+  async updateSubject(id: string, patch: SubjectPatch): Promise<Subject> {
+    return this.transaction(() => {
+      keys(patch, ["name", "glyph", "position"]);
+      const subject = this.subject(id);
+      if (!subject.id) invalid("Cannot edit the unassigned placeholder");
+      if (patch.name !== undefined) {
+        text(patch.name.trim(), 1, 40, "Subject");
+        if (this.store.subjects.some(s => s.id !== id && s.name.toLowerCase() === patch.name!.trim().toLowerCase()))
+          conflict("Subject already exists");
+        patch = {...patch, name: patch.name.trim()};
+      }
+      if (patch.glyph !== undefined) text(patch.glyph, 1, 2, "Glyph");
+      if (patch.position !== undefined && (!Number.isFinite(patch.position) || patch.position < 0))
+        invalid("Invalid subject position");
+      Object.assign(subject, patch);
+      return clone(subject);
+    });
+  }
+  async mergeSubjects(sourceId: string, targetId: string): Promise<void> {
+    this.transaction(() => {
+      if (sourceId === targetId) invalid("Choose two different subjects");
+      const source = this.subject(sourceId), target = this.subject(targetId);
+      if (!source.id || !target.id) invalid("Unassigned is not a subject");
+      for (const project of this.store.projects)
+        if (project.subjectId === sourceId) project.subjectId = targetId;
+      const used = new Set(this.store.concepts.filter(c => c.subjectId === targetId).map(c => c.slug));
+      for (const concept of this.store.concepts.filter(c => c.subjectId === sourceId)) {
+        let slug = concept.slug, n = 2;
+        while (used.has(slug)) slug = concept.slug + "-" + n++;
+        used.add(slug);
+        concept.slug = slug;
+        concept.subjectId = targetId;
+      }
+      this.store.subjects = this.store.subjects.filter(s => s.id !== sourceId);
+      this.store.subjects.sort((a,b) => a.position-b.position)
+        .forEach((s,i) => { s.position = i; });
+    });
+  }
   async listProjects() {
     const eligible = this.eligible();
     return this.store.projects
+      .filter(p => !p.system)
       .map((p) => this.summary(p, eligible))
       .sort(
         (a, b) =>
@@ -505,26 +553,49 @@ export class DemoAdapter implements LemmaApi {
     });
   }
   async createProjectDraft(input: { title: string; sources?: File[] }): Promise<Project> {
-    text(input.title, 1, 80, "Title");
-    const subject = this.store.subjects[0];
-    if (!subject) invalid("No demo subject available");
-    const style = this.store.settings.defaultStyle;
-    const project = await this.createProject({
-      title: input.title,
-      goal: "",
-      subjectId: subject.id,
-      style,
+    text(input.title?.trim(), 2, 80, "Title");
+    const title = input.title.trim();
+    const base = slugify(title);
+    if (base.length < 2) invalid("Invalid project slug");
+    const project = this.transaction(() => {
+      const draft: DemoProject = {
+        id: crypto.randomUUID(),
+        slug: this.freeSlug(base.slice(0, 40)),
+        title,
+        goal: "",
+        style: this.store.settings.defaultStyle,
+        status: "planning",
+        subjectId: "",
+        pinned: false,
+        createdAt: this.iso(),
+        lastActivityAt: null,
+      };
+      this.store.projects.push(draft);
+      return this.projectValue(draft);
     });
-    for (const file of input.sources ?? []) {
-      await this.addSource(project.id, file, () => {});
-    }
+    for (const file of input.sources ?? []) await this.addSource(project.id, file, () => {});
     return project;
   }
-  async listPlanRevisions(slug: string) {
-    this.project(slug);
-    return [];
+  private planHistory(project: DemoProject): PlanRevision[] {
+    const approvals = this.store.proposals
+      .filter(p => p.projectSlug === project.slug && p.status === "approved" &&
+        (p.kind === "plan" || p.kind === "plan_change"))
+      .sort((a,b) => Date.parse(a.approvedAt ?? a.createdAt) - Date.parse(b.approvedAt ?? b.createdAt));
+    const hasInitial = this.store.checkpoints.some(cp => cp.projectId === project.id);
+    const baseline: PlanRevision[] = hasInitial && !approvals.some(p => p.kind === "plan")
+      ? [{revision: 1, approvedAt: project.createdAt, summary: "Initial study plan", proposalId: null}]
+      : [];
+    return [...baseline, ...approvals.map(p => ({
+      revision: 0,
+      approvedAt: p.approvedAt ?? p.createdAt,
+      summary: p.reason?.trim() || (p.kind === "plan" ? "Initial study plan" : "Plan amendment"),
+      proposalId: p.id,
+    }))].map((entry, index) => ({...entry, revision: index + 1})).reverse();
   }
-  async updateSource(id: string, patch: { title?: string; kind?: Source["kind"] }): Promise<Source> {
+  async listPlanRevisions(slug: string): Promise<PlanRevision[]> {
+    return clone(this.planHistory(this.project(slug)));
+  }
+  async updateSource(id: string, patch: SourcePatch): Promise<Source> {
     return this.transaction(() => {
       keys(patch, ["title", "kind"]);
       const source = found(this.store.sources.find((s) => s.id === id), "Source");
@@ -538,7 +609,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async updateProject(id: string, patch: ProjectPatch) {
     return this.transaction(() => {
-      keys(patch, ["title", "goal", "style", "status", "subjectId"]);
+      keys(patch, ["title", "goal", "style", "status", "subjectId", "pinned"]);
       const p = this.projectById(id);
       if (patch.title !== undefined) text(patch.title, 1, 80, "Title");
       if (patch.goal !== undefined) text(patch.goal, 1, 1200, "Goal");
@@ -550,10 +621,13 @@ export class DemoAdapter implements LemmaApi {
         );
       if (
         patch.status &&
-        !["planning", "active", "paused", "done"].includes(patch.status)
+        !["planning", "active", "paused", "done", "archived"].includes(patch.status)
       )
         invalid("Unknown project status");
+      if (patch.pinned && !p.pinned && this.store.projects.filter(x => x.pinned && x.status !== "archived").length >= 4)
+        conflict("At most four projects can be pinned");
       Object.assign(p, patch);
+      if (p.status === "archived") p.pinned = false;
       return this.projectValue(p);
     });
   }
@@ -654,6 +728,7 @@ export class DemoAdapter implements LemmaApi {
         .map((cp) => this.cpView(cp, eligible)),
       done: summary.done,
       total: summary.total,
+      planRevisions: clone(this.planHistory(p)),
       sources: this.store.sources
         .filter((s) => s.projectId === p.id)
         .map(({ pages, error, ...source }) => clone(source)),
@@ -714,9 +789,9 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   async getHome(): Promise<HomeSummary> {
-    const projects = await this.listProjects(),
+    const projects = (await this.listProjects()).filter(p => p.status !== "archived"),
       open = this.store.sessions
-        .filter((s) => s.state === "open")
+        .filter((s) => s.state === "open" && this.projectById(s.projectId).status !== "archived")
         .sort(
           (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
         )[0];
@@ -1234,6 +1309,11 @@ export class DemoAdapter implements LemmaApi {
       }
       this.validateGraph(project.id);
       proposal.status = "approved";
+      if (proposal.kind === "plan" || proposal.kind === "plan_change") {
+        proposal.approvedAt = this.iso();
+        for (const source of this.store.sources.filter(s => s.projectId === project.id && !s.planCheckedAt))
+          source.planCheckedAt = proposal.approvedAt;
+      }
     });
   }
   async rejectProposal(id: string) {
@@ -1276,7 +1356,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async getDeckTree(): Promise<DeckNode[]> {
     const due = this.eligible();
-    return (await this.listProjects()).map((p) => ({
+    return (await this.listProjects()).filter(p => p.status !== "archived").map((p) => ({
       key: `project:${p.slug}` as const,
       label: p.title,
       glyph: p.subject.glyph,
@@ -1608,6 +1688,10 @@ export class DemoAdapter implements LemmaApi {
       hasText: true,
       outline: [] as Source["outline"],
       createdAt: this.iso(),
+      addedAt: this.iso(),
+      planCheckedAt: null as string | null,
+      kind: "other" as const,
+      position: this.store.sources.filter(s => s.projectId === projectId).length,
       pages: [] as { page: number; label: string; body: string }[],
       error: null as string | null,
     };

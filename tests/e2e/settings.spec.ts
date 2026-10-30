@@ -50,36 +50,47 @@ test("rotating the connector requires confirmation", async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
-for(const world of ['euclid','euclid-night'] as const){
- test(`UI-5h appearance preferences and demo preview in ${world}`,async({page})=>{
+for(const world of ['graph','graph-night'] as const){
+ test(`UI-6a sign-in stays readable in ${world}`,async({page})=>{
   await page.setViewportSize({width:360,height:740});
-  await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/settings`);
-  await expect(page.getByRole('region',{name:'Euclid preferences'})).toBeVisible();
-  const metro=page.getByRole('button',{name:'Metro',exact:true});
-  await metro.click();
-  await expect(metro).toHaveAttribute('aria-pressed','true');
-  await page.getByRole('button',{name:'Branches',exact:true}).click();
-  await page.getByRole('button',{name:'Show demo preview'}).click();
-  const preview=page.getByRole('region',{name:'Appearance preview'});
-  await expect(preview).toContainText('Abstract Algebra');
-  await expect(preview).toContainText('Atlas: Branches');
-  await expect(preview.getByRole('img',{name:'Metro demo timeline'})).toBeVisible();
-  await page.getByRole('button',{name:'Star Euclid',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Star Euclid',exact:true})).toHaveAttribute('aria-pressed','true');
-  await page.reload();
-  await expect(page.getByRole('button',{name:'Metro',exact:true})).toHaveAttribute('aria-pressed','true');
-  await expect(page.getByRole('button',{name:'Star Euclid',exact:true})).toHaveAttribute('aria-pressed','true');
-  await page.getByRole('button',{name:'Show demo preview'}).click();
-  await expect(page.getByRole('region',{name:'Appearance preview'})).toBeVisible();
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
-  await page.screenshot({path:`test-results/screens/review/ui5h-settings-${world}.png`,fullPage:true});
- });
- test(`UI-5h Euclid sign-in in ${world}`,async({page})=>{
-  await page.setViewportSize({width:360,height:740});
-  await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/sign-in`);
+  await page.goto(`/lemma/?demo=1&theme=${world}#/sign-in`);
   await expect(page.getByRole('heading',{name:'Sign in'})).toBeVisible();
-  await expect(page.getByText('Lemma',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Continue with Google'})).toBeDisabled();
-  await page.screenshot({path:`test-results/screens/review/ui5h-sign-in-${world}.png`,fullPage:true});
+  await page.screenshot({path:`test-results/screens/review/ui6a-sign-in-${world}.png`,fullPage:true});
  });
 }
+test('UI-6a appearance exposes only Automatic, Day and Night and persists',async({page})=>{
+ await page.emulateMedia({colorScheme:'light'});
+ await page.goto('/lemma/?demo=1#/settings');
+ const appearance=page.getByRole('region',{name:'Appearance'});
+ await expect(appearance.getByRole('radio')).toHaveCount(3);
+ await expect(page.getByRole('button',{name:'Open theme lab'})).toHaveCount(0);
+ await expect(page.getByRole('radiogroup',{name:'Density'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Branches',exact:true})).toHaveCount(0);
+ await appearance.getByRole('radio',{name:/^Day /}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+ await page.reload();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+ await appearance.getByRole('radio',{name:/^Night /}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
+ await appearance.getByRole('radio',{name:/^Automatic /}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+ await page.emulateMedia({colorScheme:'dark'});
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
+ await page.screenshot({path:'test-results/screens/review/ui6a-settings-night.png',fullPage:true});
+});
+
+test('UI-6a migrates obsolete stored worlds and fixes compact calm mode',async({page})=>{
+ await page.emulateMedia({colorScheme:'light'});
+ await page.addInitScript(()=>{
+  localStorage.setItem('lemma.ui',JSON.stringify({theme:'euclid-night',density:'comfortable',effects:'rich'}));
+ });
+ await page.goto('/lemma/?demo=1#/settings');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+ await expect(page.locator('html')).toHaveAttribute('data-density','compact');
+ await expect(page.locator('html')).toHaveAttribute('data-effects','calm');
+ await expect(page.getByRole('radiogroup',{name:'Appearance mode'}).getByRole('radio',{name:/^Automatic /})).toHaveAttribute('aria-checked','true');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('lemma.ui')||'{}'))).toEqual({mode:'auto'});
+ await page.emulateMedia({colorScheme:'dark'});
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
+});

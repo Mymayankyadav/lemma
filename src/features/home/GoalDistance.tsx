@@ -29,7 +29,7 @@ function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'asce
   <div className="flex min-w-0 items-start gap-3">
    <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={32}/>
    <div className="min-w-0 flex-1">
-    <Link to={'/p/'+project.slug} className="block break-words font-semibold text-headline text-ink focus-visible:outline-2 focus-visible:outline-amber">{project.title}</Link>
+    <Link to={'/p/'+project.slug} className="flex min-h-11 items-center break-words font-semibold text-headline text-ink focus-visible:outline-2 focus-visible:outline-amber">{project.title}</Link>
     <p className="mt-1 text-label leading-snug text-ink-2">
      {project.done}/{project.total} checkpoints{project.current?', now '+project.current.code+' '+project.current.title:''}
     </p>

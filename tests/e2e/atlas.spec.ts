@@ -99,7 +99,7 @@ test('Atlas fits node centres between overlays and avoids overlapping labels', a
 });
 
 test('Euclid Atlas switches Orbits, Branches and Outline without losing concept selection',async({page})=>{
- await page.goto('./?demo=1&theme=euclid#/atlas');
+ await page.goto('./?demo=1&theme=graph#/atlas');
  await expect(page.getByRole('group',{name:'Atlas view'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Move Atlas viewport'})).toBeVisible();
  // Record the unpanned initial state separately. The later drag intentionally
@@ -143,7 +143,7 @@ test('Euclid Atlas switches Orbits, Branches and Outline without losing concept 
 
 test('Atlas list modes remain legible in Euclid night on a narrow phone',async({page})=>{
  await page.setViewportSize({width:360,height:740});
- await page.goto('./?demo=1&theme=euclid-night#/atlas?view=outline');
+ await page.goto('./?demo=1&theme=graph-night#/atlas?view=outline');
  await expect(page.locator('[data-atlas-mode="outline"]')).toBeVisible();
  await expect(page.locator('[data-atlas-idea]')).toHaveCount(22);
  await expect(page.evaluate(()=>document.documentElement.scrollWidth)).resolves.toBeLessThanOrEqual(360);
@@ -154,7 +154,7 @@ test('Atlas list modes remain legible in Euclid night on a narrow phone',async({
 
 test('Euclid Atlas semantic zoom opens subject and topic breadcrumbs and returns to full fit',async({page})=>{
  await page.setViewportSize({width:390,height:844});
- await page.goto('./?demo=1&theme=euclid#/atlas');
+ await page.goto('./?demo=1&theme=graph#/atlas');
  const graph=page.locator('svg[aria-label^="Interactive knowledge graph"] > g').first();
  await expect(page.locator('[data-atlas-subject-focus]')).toHaveCount(3);
  const old=await graph.getAttribute('transform');
@@ -175,7 +175,7 @@ test('Euclid Atlas semantic zoom opens subject and topic breadcrumbs and returns
 });
 
 
-for(const world of ['euclid','euclid-night'] as const){
+for(const world of ['graph','graph-night'] as const){
  test(`Atlas semantic focus keeps labels clear of overlays: ${world}`,async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.goto(`./?demo=1&theme=${world}#/atlas`);
