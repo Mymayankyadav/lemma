@@ -4,6 +4,7 @@
 @import './base.css';
 @import './surfaces.css';
 @import './effects.css';
+@import './euclid.css';
 @theme inline {
   --text-micro: var(--type-micro); --text-caption: var(--type-caption); --text-label: var(--type-label);
   --text-body: var(--type-body); --text-body-l: var(--type-body-l); --text-headline: var(--type-headline);
@@ -17,6 +18,6 @@
   --color-amber: var(--amber); --color-amber-hi: var(--amber-hi); --color-amber-glow: var(--amber-glow); --color-amber-deep: var(--amber-deep); --color-amber-ink: var(--amber-ink); --color-amber-tint: var(--amber-tint); --color-amber-tint-2: var(--amber-tint-2); --color-amber-line: var(--amber-line); --color-amber-line-2: var(--amber-line-2);
   --color-again: var(--again); --color-hard: var(--hard); --color-good: var(--good); --color-easy: var(--easy); --color-success-tint: var(--success-tint); --color-danger-tint: var(--danger-tint); --color-violet: var(--violet); --color-cyan: var(--cyan); --color-rose: var(--rose); --color-lime: var(--lime); --color-slate: var(--slate);
   --radius-hero: var(--r-hero); --radius-sheet: var(--r-sheet); --radius-slab: var(--r-slab); --radius-btn: var(--r-btn); --radius-ctl: var(--r-ctl); --radius-chip: var(--r-chip); --radius-s: var(--r-s);
-  --font-ui: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-math: 'STIX Two Text', 'Times New Roman', serif;
+  --font-ui: var(--font-ui);
+  --font-math: var(--font-math);
 }
