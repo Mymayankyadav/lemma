@@ -191,6 +191,7 @@ for(const quiet of [false,true]){
   await expect(page.locator('[data-round-edge]')).toHaveCount(23)
   await expect(page.locator('[data-round-edge="missed"]')).toHaveCount(1)
   await expect(page.locator('[data-seal-ray]')).toHaveCount(32)
+  await expect(page.getByRole('button',{name:'Open theme lab'})).toHaveCount(0)
   await expect(page.getByRole('region',{name:'Round transcript'}).locator('[title]')).toHaveCount(23)
   const tiles=page.getByRole('region',{name:'Review statistics'})
   await expect(tiles.locator('strong')).toHaveCount(4)

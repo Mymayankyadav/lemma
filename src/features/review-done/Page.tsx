@@ -81,7 +81,6 @@ export default function Page(){
     className="size-4 rounded-[2px] border border-edge"
     style={{background:a.rating===1?'var(--bad)':a.rating===2?'var(--warn)':a.rating===3?'var(--accent)':'var(--good)'}}/>)}</div>
   </section>
-  {stats.sureSummary&&<Slab className="w-full px-4 py-3 text-center text-body text-ink-soft">{stats.sureSummary}</Slab>}
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>
   <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
