@@ -7,9 +7,9 @@ const tabs=[{to:'/',label:'Today',icon:House},{to:'/projects',label:'Paths',icon
 export default function TabBar(){
  const reduce=!!useReducedMotion();
  const {data}=useHome();
- return <nav aria-label="Main navigation" className="glass fixed inset-x-4 bottom-[calc(20px+env(safe-area-inset-bottom))] z-30 mx-auto flex h-[var(--tab)] max-w-[480px] items-center justify-around rounded-slab px-1">
+ return <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-30 flex h-[calc(var(--tab)+env(safe-area-inset-bottom))] w-full items-center justify-around border-t border-edge-2 bg-[var(--tab-bg)] px-2 pb-[env(safe-area-inset-bottom)]">
  {tabs.map(({to,label,icon:Icon})=><NavLink key={to} to={to} end aria-label={label}
- className={({isActive})=>`relative flex min-h-11 min-w-[64px] flex-1 flex-col items-center justify-center gap-[2px] rounded-ctl ${isActive?'text-amber':'text-ink-3'}`}>
+ className={({isActive})=>`relative flex min-h-11 min-w-[64px] max-w-[160px] flex-1 flex-col items-center justify-center gap-[2px] rounded-ctl ${isActive?'text-amber':'text-ink-3'}`}>
  {({isActive})=><>
  <span className="relative"><Icon aria-hidden="true" size={22} strokeWidth={1.75}/>
  {label==='Review'&&!!data?.due&&<span className="absolute -right-4 -top-2 flex min-w-5 items-center justify-center rounded-[4px] px-1 text-[10px] font-bold" style={{background:'var(--accent)',color:'var(--on-accent)'}}>{data.due}</span>}
