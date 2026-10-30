@@ -52,7 +52,7 @@ test('home shortcuts navigate to review, proposals and the project path',async({
 })
 
 for(const theme of ['graph','graph-night'] as const){
- test(`UI-5b goal-first Today and keyboard Ascent timeline: ${theme}`,async({page})=>{
+ test(`UI-6b goal-first Today and keyboard Metro timeline: ${theme}`,async({page})=>{
   await page.goto(`./?demo=1&theme=${theme}#/`)
   const goals=page.getByRole('region',{name:'Distance to your goals'})
   const cards=page.getByRole('region',{name:'Cards'})
@@ -69,7 +69,7 @@ for(const theme of ['graph','graph-night'] as const){
   expect(order).toBe(true)
   const algebra=goals.getByRole('article',{name:/Goal progress for Real Analysis/})
   await expect(algebra).toContainText(/3\/12 checkpoints/)
-  const timeline=algebra.locator('[data-timeline="ascent"]')
+  const timeline=algebra.locator('[data-timeline="metro"]')
   await expect(timeline.getByRole('button')).toHaveAttribute('aria-label',/Arrow keys to browse; Enter to open/)
   await page.screenshot({path:`test-results/screens/review/ui5b-goals-${theme}.png`,fullPage:true})
   await timeline.getByRole('button').focus()
