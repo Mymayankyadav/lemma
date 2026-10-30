@@ -32,13 +32,15 @@ function ProjectRow({project}:{project:ProjectSummary}){
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const longPressed=useRef(false);
  const clear=()=>{if(hold.current!==null){clearTimeout(hold.current);hold.current=null}};
- const actions:{label:string;patch:{pinned?:boolean;status?:ProjectStatus}}[]=[
-  {label:project.pinned?'Unpin':'Pin',patch:{pinned:!project.pinned}},
-  {label:'Set active',patch:{status:'active'}},
-  {label:'Pause',patch:{status:'paused'}},
-  {label:'Finish',patch:{status:'done'}},
-  {label:'Archive',patch:{status:'archived'}},
- ];
+ const actions:{label:string;patch:{pinned?:boolean;status?:ProjectStatus}}[]=project.status==='archived'
+  ?[{label:'Restore as active',patch:{status:'active'}}]
+  :[
+   {label:project.pinned?'Unpin':'Pin',patch:{pinned:!project.pinned}},
+   {label:'Set active',patch:{status:'active'}},
+   {label:'Pause',patch:{status:'paused'}},
+   {label:'Finish',patch:{status:'done'}},
+   {label:'Archive',patch:{status:'archived'}},
+  ];
  async function act(label:string,patch:{pinned?:boolean;status?:ProjectStatus}){
   setMenu(false);
   try{await update.mutateAsync({id:project.id,patch});notify(label+' saved',{tone:'success'})}
@@ -155,9 +157,9 @@ export default function Page(){
     {groups.map(group=><ProjectGroup key={group.id} name={group.name} glyph={group.glyph} items={group.items}
      collapsed={collapsed.includes(group.id)} onToggle={()=>toggle(group.id)}/>)}
    </div>}
-  <button type="button" onClick={()=>choose('archived')} aria-pressed={filter==='archived'}
+  <button type="button" onClick={()=>choose(filter==='archived'?'active':'archived')} aria-pressed={filter==='archived'}
    className="flex min-h-11 w-full items-center justify-between border-t border-edge text-left text-label text-ink-2">
-   Archived projects <ChevronRight size={17}/>
+   {filter==='archived'?'Back to active projects':'Archived projects'} <ChevronRight size={17}/>
   </button>
   {filter==='archived'&&<p className="text-caption text-ink-3">Archived projects are preserved for undo. Your library may hide them until restored.</p>}
  </Screen>;
