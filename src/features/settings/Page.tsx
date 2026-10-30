@@ -33,6 +33,7 @@ import type {
   OptimizerRequest,
 } from "../../lib/optimizer.worker";
 import { Button } from "../../ui/Button";
+import { AppearanceControls } from "../../ui/ThemeLab";
 import { Chip } from "../../ui/Chip";
 import { IconButton } from "../../ui/IconButton";
 import { Screen } from "../../ui/Screen";
@@ -217,6 +218,7 @@ export default function Page() {
     busy = update.isPending;
   return (
     <Screen title="Settings" back="/" className="pb-8">
+      <AppearanceControls />
       <Slab className="p-5">
         <div className="flex items-center gap-4">
           <PlugArt connected={connected} size={92} />
