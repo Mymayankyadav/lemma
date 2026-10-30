@@ -29,3 +29,7 @@ export function pageRange(a: string, b?: string): string[] {
 export function normalizedFront(s: string): string {
   return s.toLowerCase().replace(/[$\\]/g,'').replace(/\s+/g,' ').trim();
 }
+/** PDF indexes are one-based integers; source labels may also be roman. */
+export function validPdfPageIndex(value:string):boolean{
+ return /^\d+$/.test(value)&&Number(value)>=1
+}
