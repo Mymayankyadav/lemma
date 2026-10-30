@@ -251,10 +251,6 @@ export async function selftest(c:Context):Promise<any>{
         else extraId=data?.id;
       }catch(error){cleanupFailures.push('lookup extra project: '+String(error))}
     }
-    for(const id of [extraId,projectId])await purge('projects','id',id);
-    // Concepts created by the self-test may be independent of its checkpoints.
-    // Delete them before their subjects, including on early failures.
-    for(const id of [extraSubjectId,subjectId])await purge('concepts','subject_id',id);
     if(!extraSubjectId&&extraSubjectName){
       try{
         const {data,error}=await scoped(c,'subjects','id').eq('name',extraSubjectName).maybeSingle();
@@ -262,6 +258,10 @@ export async function selftest(c:Context):Promise<any>{
         else extraSubjectId=data?.id;
       }catch(error){cleanupFailures.push('lookup extra subject: '+String(error))}
     }
+    for(const id of [extraId,projectId])await purge('projects','id',id);
+    // Concepts created by the self-test may be independent of its checkpoints.
+    // Delete them before their subjects, including on early failures.
+    for(const id of [extraSubjectId,subjectId])await purge('concepts','subject_id',id);
     for(const id of [extraSubjectId,subjectId])await purge('subjects','id',id);
     // A successful DELETE request alone is insufficient: verify the IDs are gone.
     for(const [table,ids] of [['projects',[extraId,projectId]],['subjects',[extraSubjectId,subjectId]]] as const){
