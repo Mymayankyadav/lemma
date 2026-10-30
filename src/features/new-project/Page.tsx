@@ -14,7 +14,7 @@ import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
 
 type UploadState='queued'|'reading'|'uploading'|'saving'|'ready'|'failed';
-type QueueItem={id:number;file:File;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
+type QueueItem={id:number;file:File|null;name:string;size:number;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
 const MAX_PDF_BYTES=50*1024*1024;
 const validPdf=(file:File)=>isPdfFile(file)&&file.size>0&&file.size<=MAX_PDF_BYTES;
 const bytes=(size:number)=>size>=1048576?(size/1048576).toFixed(1)+' MB':Math.ceil(size/1024)+' KB';
@@ -33,7 +33,7 @@ export default function Page(){
   const incoming=Array.from(files),accepted:QueueItem[]=[],invalid:string[]=[];
   for(const file of incoming){
    if(!validPdf(file)){invalid.push(file.name);continue}
-   accepted.push({id:++nextId.current,file,status:'queued',progress:null,error:null,sha256:null});
+   accepted.push({id:++nextId.current,file,name:file.name,size:file.size,status:'queued',progress:null,error:null,sha256:null});
   }
   setItems(previous=>[...previous,...accepted]);
   setError(invalid.length?'PDFs must be nonempty and at most 50 MB: '+invalid.join(', '):null);
@@ -56,16 +56,19 @@ export default function Page(){
    for(const item of items){
     if(item.status==='ready')continue;
     try{
+     const file=item.file;
+     if(!file)throw new Error('File no longer available. Remove and reselect it.');
      patch(item.id,{status:'reading',error:null});
-     const hash=await fingerprint(item.file);
+     const hash=await fingerprint(file);
      if(hashes.has(hash)){
       patch(item.id,{status:'failed',error:'Already added',sha256:hash});failed=true;continue;
      }
-     await addSource.mutateAsync({projectId:project.id,file:item.file,onProgress:progress=>{
+     await addSource.mutateAsync({projectId:project.id,file,onProgress:progress=>{
       patch(item.id,{progress,status:progress.phase==='done'?'saving':progress.phase==='failed'?'failed':progress.phase});
      }});
      hashes.add(hash);
-     patch(item.id,{status:'ready',sha256:hash,error:null});
+     // Keep only display metadata and the digest; release the uploaded Blob reference.
+     patch(item.id,{status:'ready',file:null,sha256:hash,error:null});
     }catch(cause){
      patch(item.id,{status:'failed',error:cause instanceof Error?cause.message:'Upload failed'});
      failed=true;
@@ -114,13 +117,13 @@ export default function Page(){
       {items.map(item=><li key={item.id} className="flex min-w-0 items-start gap-3 rounded-slab border border-edge bg-raised p-3">
        <FileText size={19} className="mt-1 shrink-0 text-amber" aria-hidden="true"/>
        <div className="min-w-0 flex-1">
-        <p className="truncate text-body font-semibold">{item.file.name}</p>
-        <p className="text-label text-ink-3">{bytes(item.file.size)} · {item.status}{item.progress?.pageCount?' · '+item.progress.page+'/'+item.progress.pageCount+' pages':''}</p>
+        <p className="truncate text-body font-semibold">{item.name}</p>
+        <p className="text-label text-ink-3">{bytes(item.size)} · {item.status}{item.progress?.pageCount?' · '+item.progress.page+'/'+item.progress.pageCount+' pages':''}</p>
         {item.progress&&item.status!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Progress for '+item.file.name}/>}
         {item.error&&<p role="alert" className="text-label text-again">{item.error}</p>}
        </div>
        {item.status==='ready'?<Check size={18} className="text-easy"/>:
-        !saving&&<button type="button" aria-label={'Remove '+item.file.name} onClick={()=>setItems(previous=>previous.filter(x=>x.id!==item.id))}
+        !saving&&<button type="button" aria-label={'Remove '+item.name} onClick={()=>setItems(previous=>previous.filter(x=>x.id!==item.id))}
          className="flex size-11 shrink-0 items-center justify-center text-ink-3"><Trash2 size={17}/></button>}
       </li>)}
      </ul>
