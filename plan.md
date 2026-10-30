@@ -319,6 +319,11 @@ Notes per task:
 - After PR 3: push a branch `review/themes` with `THEMES=all` so the review workflow commits contact sheets per theme; link them in the PR.
 - Done when: `themes.md` §7.
 
+#### Stress (owner, 31 Oct 00:24): ST-0 … ST-7, MCP-5, QA-3, the next plan
+- Spec: `docs/spec/stress.md`. Every UI element is fed 10–100× realistic data (36–100 checkpoints, 2,500 ideas, 30,000 cards, 4,000 due, 1,500-character card faces, 10×10 matrices, 60 projects) to find where it stops doing its job. Each element keeps its job by changing form above a measured switch point: the stage Metro, segmented progress bars, folded lists, scrolling card faces with a sticky grade bar, a full-screen maths view, a daily review share, and server-side aggregates.
+- Trigger: the owner's Algebra 1 (36 checkpoints, no stages) turned the Paths bar into a barcode and the project Metro into overlapping rings.
+- Start ST-0 (stress fixtures and suite), ST-5 (server aggregates and paging) and MCP-5 (connector guards) now. Then ST-1 … ST-7 (ST-1 and ST-4 first), then QA-3. Done means each section's acceptance passes in profiles S and X, in both themes, at 390 and 360 px.
+
 #### v3 (owner's decisions, 30 Oct 14:48): DB-4, MCP-4, DEMO-2, UI-6a … UI-6e, QA-2
 - Spec: `docs/spec/v3.md`. It overrides every earlier design document: Graph paper by day and at night only (automatic, with an Automatic/Day/Night override), compact, calm, docked tab bar, Metro with schedule colours, the Atlas as a cosmos hierarchy, and sources-first projects (name plus many PDFs, sources appended any time, the tutor fills the rest and appends plans).
 - Start DB-4, UI-6a and DEMO-2 now; then UI-6b, UI-6c, UI-6d, UI-6e and MCP-4; QA-2 last. Issues #337–#345 are the review gaps.
