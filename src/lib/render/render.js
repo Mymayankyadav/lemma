@@ -322,6 +322,11 @@ const Render = (() => {
   function substitute(html, maths) {
     // display math eats the <br> line breaks around it
     html = html.replace(/(?:<br>\s*)?(\d+)(?:\s*<br>)?/g, (_, k) => renderMath(maths[+k].tex, true));
+    // Keep sentence punctuation with inline KaTeX; otherwise a trailing period
+    // can occupy a line by itself on a narrow card or in an approval sheet.
+    // Only a punctuation run immediately following the math is joined.
+    html = html.replace(/(\d+)([.,;:!?]+)/g, (_, k, punctuation) =>
+      '<span class="lemma-math-punct">' + renderMath(maths[+k].tex, false) + punctuation + '</span>');
     html = html.replace(/(\d+)/g, (_, k) => renderMath(maths[+k].tex, false));
     html = html.replace(//g, '<span class="cz czq">[…]</span>')
       .replace(//g, '<span class="cz czq">[').replace(//g, ']</span>')
