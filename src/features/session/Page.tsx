@@ -5,7 +5,6 @@ import {motion,useReducedMotion} from 'motion/react';
 import {useProject,useSession,useSettings,useResolveMisconception} from '../../data/hooks';
 import {chatLink,resumePrompt,studyPrompt} from '../../lib/chat';
 import {Slab} from '../../ui/Slab';
-import {Tile} from '../../ui/Tile';
 import {Chip} from '../../ui/Chip';
 import {Button} from '../../ui/Button';
 import {IconButton} from '../../ui/IconButton';
