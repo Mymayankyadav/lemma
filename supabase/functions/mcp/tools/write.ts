@@ -1,4 +1,5 @@
 import { planningFields } from '../planning.ts';
+import { reuseSubject } from '../v3.ts';
 import { Context, scoped, insert, update, rpc, all } from '../db.ts';
 import { project, checkpoint, checkpoints, session, source } from '../resolve.ts';
 import { day, ladder } from '../derive.ts';
@@ -117,8 +118,8 @@ export async function createProject(c:Context,a:any):Promise<string>{
   const styles=await all(c,'styles','key');
   const chosen=a.style ?? st.default_style ?? 'socratic';
   if(!styles.some((x:any)=>x.key===chosen))throw new Error('Unknown style key. Available: '+styles.map((x:any)=>x.key).join(', '));
-  const {data:found,error}=await scoped(c,'subjects').ilike('name',a.subject).maybeSingle();
-  if(error)throw new Error(error.message);
+  const existingSubjects=await all(c,'subjects','id,name');
+  const found=reuseSubject(existingSubjects,a.subject);
   const subject=found||await insert(c,'subjects',{name:a.subject,glyph:a.glyph||a.subject.slice(0,1),hue:'amber'});
   const existing=await all(c,'projects','slug');
   let base=slug(a.title);if(base.length<2)base='study';
@@ -128,7 +129,7 @@ export async function createProject(c:Context,a:any):Promise<string>{
     const src=slug(a.book_short||a.book).slice(0,20)||'book';
     await insert(c,'sources',{project_id:p.id,title:a.book,short:src,filename:src+'.pdf',page_count:0,has_text:false,status:'ready'});
   }
-  return 'created '+unique+' (planning). Next: propose_plan.';
+  return 'created '+unique+' (planning) in '+subject.name+(found?' (reused existing subject)':' (new subject)')+'. Next: propose_plan.';
 }
 export async function proposals(c:Context,a:any):Promise<string>{
   const p=a.project?await project(c,a.project):null;
