@@ -215,6 +215,13 @@ begin
   if (select count(*) from public.subjects where id in (p_source,p_target) and user_id=owner_id)<>2 then
     raise exception 'Subject not found for owner';
   end if;
+
+  if exists(select 1 from public.subjects s
+      where s.id in (p_source,p_target) and s.user_id=owner_id and s.name ilike 'zz-selftest%')
+     or exists(select 1 from public.projects p
+      where p.subject_id in (p_source,p_target) and p.user_id=owner_id and p.system) then
+    raise exception 'System and self-test subjects cannot be merged into study subjects';
+  end if;
   update public.projects set subject_id=p_target where user_id=owner_id and subject_id=p_source;
   get diagnostics moved_projects=row_count;
   moved_concepts:=0;
