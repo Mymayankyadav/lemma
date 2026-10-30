@@ -15,7 +15,7 @@ try {
   'grant execute on function auth.uid() to authenticated;',
   'create table public.subjects(id uuid primary key,user_id uuid,name text,glyph text,hue text,position int);',
   'create table public.projects(id uuid primary key,user_id uuid,subject_id uuid,slug text,title text,status text,pinned boolean,system boolean,target_date date,target_label text,last_activity_at timestamptz);',
-  'create table public.checkpoints(id uuid primary key,user_id uuid,project_id uuid,code text,title text,position int,status text,current_step int,steps jsonb,objective text);',
+  'create table public.checkpoints(id uuid primary key,user_id uuid,project_id uuid,code text,title text,position int,status text,current_step int,steps jsonb,objective text,stage text,due_on date);',
   'create table public.checkpoint_prereqs(user_id uuid,checkpoint_id uuid,prereq_id uuid);',
   'create table public.notes(id uuid primary key,user_id uuid,project_id uuid,checkpoint_id uuid,no bigint,front text,back text,type text,kind text,status text);',
   'create table public.cards(id uuid primary key,user_id uuid,note_id uuid,state int,due timestamptz);',
@@ -58,6 +58,23 @@ try {
  assert.equal(project.total,3);assert.equal(project.done,1)
  assert.equal(project.current.code,'CP2');assert.equal(project.current.stepsTotal,3)
  assert.equal(project.cardsCount,2);assert.deepEqual(project.sourceTitles,['Textbook'])
+ // Unstaged plans must be grouped by checkpoint order, not returned as 36 ticks.
+ assert.deepEqual(project.stageProgress.map(x=>x.label),['CP1–CP3'])
+ assert.equal(project.stageProgress[0].done,1)
+ assert.equal(project.stageProgress[0].total,3)
+ assert.equal(project.stageProgress[0].schedule,'unscheduled')
+ assert.equal(project.scheduleHeadline,'Dates planned')
+ // Explicit stages keep their names and include overdue counts without extra RPCs.
+ await db.exec('reset role')
+ await db.exec("update public.checkpoints set stage=case when code in ('CP1','CP2') then 'Basics' else 'Rings' end, due_on=case when code='CP3' then current_date-1 else current_date+2 end where project_id='33333333-3333-3333-3333-333333333333'")
+ await db.exec('set role authenticated')
+ const staged=(await q('select public.project_summaries() item')).map(x=>x.item).find(x=>x.slug==='algebra')
+ assert.deepEqual(staged.stageProgress.map(x=>x.label),['Basics','Rings'])
+ assert.deepEqual(staged.stageProgress.map(x=>x.total),[2,1])
+ assert.deepEqual(staged.stageProgress.map(x=>x.done),[1,0])
+ assert.deepEqual(staged.stageProgress.map(x=>x.schedule),['dated','behind'])
+ assert.equal(staged.stageProgress[1].overdue,1)
+ assert.equal(staged.scheduleHeadline,'1 overdue')
  assert.equal(summaries.some(x=>x.slug==='system'||x.slug==='private'),false)
  console.log('PASS ST-5 project summaries, checkpoint progress, counts and RLS')
  const percent=(await q("select public.search_cards_page('%',null,50,0) item")).map(x=>x.item)
