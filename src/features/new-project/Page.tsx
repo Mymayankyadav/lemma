@@ -1,3 +1,4 @@
+import {MathPreview} from '../../ui/MathPreview';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {BookOpen,Check,Copy,FileText,Plus,UploadCloud,AlertTriangle} from 'lucide-react';
@@ -118,6 +119,7 @@ export default function Page(){
       <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
        value={name} onChange={e=>setName(e.target.value)} disabled={saving||Boolean(created)}
        placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
+      <MathPreview source={name}/>
       <p className="text-label text-ink-3">Path: {slugify(name||'project')}</p>
      </section>
      <section aria-label="Subject" className="flex flex-col gap-3">
@@ -138,6 +140,7 @@ export default function Page(){
        placeholder="What should you be able to do? What do you know already?"
        disabled={saving||Boolean(created)} value={goal} onChange={e=>setGoal(e.target.value)}
        className="min-h-[98px] w-full rounded-ctl border border-edge-2 bg-well p-3 text-body-l leading-relaxed text-ink"/>
+      <MathPreview source={goal}/>
      </section>
      <section aria-label="Source" className="flex flex-col gap-3">
       <h3 className="text-body font-semibold text-ink-2">Source (optional)</h3>
