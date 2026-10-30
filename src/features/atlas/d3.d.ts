@@ -30,8 +30,9 @@ declare module 'd3-zoom' {
  export const zoomIdentity:ZoomTransform & {translate(x:number,y:number):typeof zoomIdentity;scale(k:number):typeof zoomIdentity};
 }
 declare module 'd3-selection' {
- export function select(element:Element):{
-   call(behavior:unknown,...args:unknown[]):void;
-   on(name:string,fn:null|((event:Event)=>void)):void;
- };
+ export interface Selection {
+   call(behavior:unknown,...args:unknown[]):Selection;
+   on(name:string,fn:null|((event:Event)=>void)):Selection;
+ }
+ export function select(element:Element):Selection;
 }
