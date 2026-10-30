@@ -102,6 +102,8 @@ export default function Page(){
  const [parentId,setParentId]=useState<string|null>(null),[selectedId,setSelectedId]=useState<string|null>(null);
  const [filter,setFilter]=useState<Filter>('all'),[menu,setMenu]=useState(false),[searchOpen,setSearchOpen]=useState(false),[search,setSearch]=useState('');
  const current=model?.bodies.get(parentId??'')??null;
+ const currentRef=useRef<string|null>(null),lastSemantic=useRef(0);
+ currentRef.current=current?.id??null;
  const children=useMemo(()=>model?childrenOf(model,current?.id??null):[],[model,current?.id]);
  const displayed=useMemo(()=>children.filter(b=>isOnScreen(b,view,size.width,size.height)),[children,view,size]);
  const selected=selectedId?model?.bodies.get(selectedId):null;
@@ -138,11 +140,26 @@ export default function Page(){
   const el=svg.current;
   const behavior=zoom<SVGSVGElement,unknown>()
    .scaleExtent([1e-12,64])
-   .filter(event=>event.type==='wheel'||event.type==='dblclick'||!(event.target instanceof Element&&event.target.closest('[data-body]')))
+   .filter(event=>event.type==='wheel'||event.type.startsWith('touch')||event.type==='dblclick'||!(event.target instanceof Element&&event.target.closest('[data-body]')))
    .on('zoom',event=>{
     const t=event.transform as ZoomTransform;
     const camera={x:t.x,y:t.y,k:t.k};viewRef.current=camera;setView(camera);
-    if(event.sourceEvent)userMoved.current=true;
+    if(event.sourceEvent){
+     userMoved.current=true;
+     // Semantic zoom changes only the visible level, never the camera.
+     if(Date.now()-lastSemantic.current>220){
+      const active=currentRef.current,body=active?model.bodies.get(active):null;
+      const target=childrenOf(model,active);
+      const worldCenter={x:(el.clientWidth/2-camera.x)/camera.k,y:(el.clientHeight/2-camera.y)/camera.k};
+      const closest=target.reduce<Body|null>((best,b)=>!best||
+       Math.hypot(b.x-worldCenter.x,b.y-worldCenter.y)<Math.hypot(best.x-worldCenter.x,best.y-worldCenter.y)?b:best,null);
+      if(body&&body.radius*camera.k<35){
+       lastSemantic.current=Date.now();setParentId(body.parentId);
+      }else if(closest&&closest.children.length&&closest.radius*camera.k>115){
+       lastSemantic.current=Date.now();setParentId(closest.id);
+      }
+     }
+    }
    });
   zoomRef.current=behavior;
   const selection=select(el).call(behavior);
@@ -168,10 +185,10 @@ export default function Page(){
  useEffect(()=>{
   if(!model||!focusSlug)return;
   const found=[...model.bodies.values()].find(b=>b.slug===focusSlug);
-  if(!found)return;
+  if(!found||selectedId===found.id)return;
   setSelectedId(found.id);
   focusNode(found.parentId);
- },[model,focusSlug,focusNode]);
+ },[model,focusSlug,focusNode,selectedId]);
  const navigateMinimap=(point:Point)=>{
   if(!svg.current||!zoomRef.current)return;
   const k=viewRef.current.k;userMoved.current=true;
@@ -286,7 +303,8 @@ export default function Page(){
      onClick={()=>{const target=l.other!;focusNode(target.parentId);setSelection(target.id)}}>
      <span className="shrink-0 text-ink-3">{l.direction}</span><span className="min-w-0 flex-1 truncate"><MathText source={l.other!.name}/></span><ChevronRight size={14}/></button>)}
    </div>}
-   <button type="button" className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-btn border border-edge-2 text-body"
+   <Link to={'/review/run?concept='+encodeURIComponent(selected.slug)} className="mt-3 flex min-h-11 items-center justify-center rounded-btn border border-edge-2 text-body">Review {selected.dueCards}</Link>
+   <button type="button" className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-btn border border-edge-2 text-body"
     onClick={()=>{void navigator.clipboard.writeText('Quiz me in chat on '+selected.name).then(()=>toast('Quiz prompt copied')).catch(()=>toast('Could not copy prompt'))}}>
     <MessageCircle size={16}/>Quiz me in chat</button>
   </section>}
