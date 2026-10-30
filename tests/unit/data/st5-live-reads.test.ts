@@ -37,6 +37,15 @@ describe('ST-5 bounded live reads',()=>{
   expect(mock.rpc).toHaveBeenCalledWith('home_summary')
   expect(mock.getUser).toHaveBeenCalledOnce()
  })
+ it('loads the Review deck tree in one RPC without whole-table downloads',async()=>{
+  const tree=[{key:'project:algebra',label:'Algebra',glyph:'∫',level:0,due:3,
+   children:[{key:'cp:algebra:CP1',label:'Groups',glyph:'∫',level:1,due:3,children:[]}]}]
+  mock.rpc.mockResolvedValue({data:tree,error:null})
+  expect(await new LiveAdapter().getDeckTree()).toEqual(tree)
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('deck_tree')
+  expect(mock.getUser).toHaveBeenCalledOnce()
+ })
  it('searches server-side and requests no more than fifty cards',async()=>{
   mock.rpc.mockResolvedValue({data:[],error:null})
   expect(await new LiveAdapter().searchCards('x%_','algebra')).toEqual([])
