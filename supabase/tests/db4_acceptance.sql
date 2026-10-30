@@ -83,6 +83,21 @@ begin
     raise exception 'Merged source subject remains';
   end if;
 
+  -- Deferred Atlas parent validation must reject cross-subject edges.
+  begin
+    update public.concepts set parent_id=idea1 where id=idea2;
+    -- Both ideas are in B after the merge, so this is valid.
+    set constraints all immediate;
+    if (select parent_id from public.concepts where id=idea2)<>idea1 then
+      raise exception 'Valid Atlas parent did not persist';
+    end if;
+  exception when others then
+    raise exception 'Valid same-subject Atlas parent failed: %',sqlerrm;
+  end;
+  if not exists(select 1 from pg_trigger where tgname='a_project_pin_limit') then
+    raise exception 'Four-project pin cap trigger missing';
+  end if;
+
   insert into public.proposals(user_id,project_id,kind,payload,origin,status,decided_at)
     values(owner_id,p1,'plan','{}'::jsonb,'other','approved',now());
   if not exists(select 1 from public.v_plan_revisions where project_id=p1 and revision>=1) then
