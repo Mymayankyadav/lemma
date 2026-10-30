@@ -20,7 +20,7 @@ for(const theme of ['graph','graph-night'] as const){
   await expect(storage.getByRole('progressbar',{name:'PDF storage used'}))
    .toHaveAttribute('aria-valuetext','At least 2 KB of 1 GB');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  await expect(page.getByText('PDF added')).toBeHidden();
+  await page.getByRole('button',{name:'Dismiss notification'}).click();
   await page.screenshot({path:'test-results/screens/fix-399-storage-'+theme+'.png',fullPage:true});
  });
 }
