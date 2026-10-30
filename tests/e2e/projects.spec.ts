@@ -106,10 +106,13 @@ test('Paths tab switches projects and expands stage checkpoints',async({page})=>
  const stages=page.getByRole('region',{name:'Stages'})
  await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Real Analysis')
  await expect(stages.getByRole('link',{name:/CP4 Compactness, in progress/})).toBeVisible()
- const stage=stages.getByRole('article',{name:/stage$/}).first()
- await stage.getByRole('button',{name:/Unassigned checkpoints/}).click()
+ const stage=stages.getByRole('article',{name:'Compactness and continuity stage'})
+ const toggle=stage.getByRole('button',{name:/Compactness and continuity/})
+ await expect(toggle).toHaveAttribute('aria-expanded','true')
+ await toggle.click()
+ await expect(toggle).toHaveAttribute('aria-expanded','false')
  await expect(stage.getByRole('link',{name:/CP4 Compactness/})).toBeHidden()
- await stage.getByRole('button',{name:/Unassigned checkpoints/}).click()
+ await toggle.click()
  await expect(stage.getByRole('link',{name:/CP4 Compactness/})).toBeVisible()
  await chips.getByRole('link',{name:'Linear Algebra',exact:true}).click()
  await expect(page).toHaveURL(/project=linear-algebra/)
@@ -117,7 +120,7 @@ test('Paths tab switches projects and expands stage checkpoints',async({page})=>
  await expect(chips.getByRole('link',{name:'Linear Algebra',exact:true})).toHaveAttribute('aria-current','page')
 })
 
-test('Paths matches compact Euclid and Euclid-night without horizontal overflow',async({page})=>{
+test('Paths matches compact Graph Paper day and night without horizontal overflow',async({page})=>{
  await page.setViewportSize({width:360,height:740})
  for(const theme of ['graph','graph-night']){
   await page.goto('./?demo=1&theme='+theme+'#/projects')
