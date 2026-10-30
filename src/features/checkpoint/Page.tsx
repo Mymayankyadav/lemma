@@ -1,9 +1,10 @@
 import {Tex} from '../../ui/Tex';
 import {useNavigate,useParams} from 'react-router';
 import {BookOpen,Check,ChevronRight,Circle,Clock3,HelpCircle,Layers,MessageCircle,RotateCcw,Target} from 'lucide-react';
-import {useCheckpoint,useProject,useSettings} from '../../data/hooks';
+import {useCheckpoint,useInsightData,useProject,useSettings} from '../../data/hooks';
 import type {CheckpointView} from '../../data/types';
 import {chatLink,studyPrompt} from '../../lib/chat';
+import {buildSchedule,paceFromDemonstrations,scheduleDetail} from '../../lib/schedule';
 import ProjectPage from '../project/Page';
 import {Sheet} from '../../ui/Sheet';
 import {Chip} from '../../ui/Chip';
@@ -17,7 +18,7 @@ const statusTitles:Record<CheckpointView['ui'],string>={
 };
 export default function Page(){
  const {slug:slugParam,code:codeParam}=useParams(),slug=slugParam??'',code=codeParam??'';
- const navigate=useNavigate(),query=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),notify=useToast();
+ const navigate=useNavigate(),query=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),insight=useInsightData(30),notify=useToast();
  const close=()=>navigate('/p/'+slug);
  async function study(){
   const title=project.data?.project.title??slug,cp=query.data?.view;
@@ -28,6 +29,10 @@ export default function Page(){
   window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
  }
  const detail=query.data,view=detail?.view;
+ const pace=paceFromDemonstrations(insight.data?.checkpointEvents??[],project.data?.project.id??'');
+ const schedule=project.data?buildSchedule(project.data.checkpoints,{targetDate:project.data.project.targetDate,pacePerWeek:pace}):[];
+ const scheduled=schedule.find(row=>row.checkpoint.code===view?.code);
+ const scheduleText=scheduled?scheduleDetail(scheduled):null;
  return <>
   {/* A checkpoint is a sheet over its actual project path, not a blank route. */}
   <div data-sheet-background aria-hidden="true" inert><ProjectPage/></div>
@@ -42,6 +47,7 @@ export default function Page(){
       <Chip tone={view.ui==='done'?'success':view.ui==='revisit'?'amber':'quiet'}>{statusTitles[view.ui]}</Chip>
       {view.stage&&<Chip tone="quiet"><Tex source={view.stage}/></Chip>}
      </div>
+     {scheduleText&&<p aria-label="Checkpoint schedule" className="rounded-ctl border border-edge bg-raised px-3 py-2 text-label text-ink-2">{scheduleText}</p>}
      <p className="font-math text-title-s italic leading-relaxed text-ink-soft"><Tex source={detail.objective}/></p>
      <section className="flex flex-col gap-2 rounded-ctl border border-edge bg-raised p-4">
       <h3 className="flex items-center gap-2 text-label font-semibold text-ink-2"><Target size={17} className="text-amber"/>Evidence required</h3>
