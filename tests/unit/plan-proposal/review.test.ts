@@ -1,1 +1,42 @@
-// Regression coverage for proposal P131 will be added under FIX #354.
+import {describe, expect, it} from "vitest";
+import type {CheckpointView, PlanChangePayload} from "../../../src/data/types";
+import {planReviewNodes} from "../../../src/features/plan-proposal/nodes";
+
+const current: CheckpointView[] = [
+  {id:"cp1", code:"CP1", title:"Current proof", stage:"Original", position:1, ui:"now",
+    currentStep:2, stepsTotal:2, recheckDue:null, dueCards:0},
+];
+
+describe("plan-review live payload regression (#354)", () => {
+  it("renders existing checkpoints and an add without code with a noncolliding provisional code", () => {
+    // Production P131 contains an update to CP1 followed by an add with no code.
+    const planChange: PlanChangePayload = {ops:[
+      {op:"update", code:"CP1", stage:"Revised"},
+      {op:"add", stage:"Bridge", steps:["Think"], title:"Bridge", criterion:"Proves it", objective:"Learn"},
+    ]};
+    const nodes = planReviewNodes(null, planChange, current);
+    expect(nodes.map(n => n.code)).toEqual(["CP1","CP2"]);
+    expect(nodes[0].stage).toBe("Revised");
+    expect(nodes[1]).toMatchObject({title:"Bridge", criterion:"Proves it", steps:["Think"]});
+    expect(new Set(nodes.map(n => n.code)).size).toBe(nodes.length);
+  });
+  it("allocates a suffix after an existing checkpoint and skips later explicit additions", () => {
+    const nodes = planReviewNodes(null,{ops:[
+      {op:"add",after:"CP1", title:"Bridge", criterion:"Evidence", objective:"Learn", steps:[]},
+      {op:"add",code:"CP1a",title:"Named", criterion:"Evidence", objective:"Learn",steps:[]},
+    ]},current);
+    expect(nodes.map(n => n.code)).toEqual(["CP1", "CP1a", "CP1b"]);
+    expect(nodes.map(n => n.title)).toEqual(["Current proof","Named","Bridge"]);
+  });
+  it("applies updates, moves, deletes and prerequisite links in the preview only", () => {
+    const nodes=planReviewNodes(null,{ops:[
+      {op:"add",code:"CP2",title:"Next",objective:"Learn",criterion:"Verify",steps:[]},
+      {op:"prereq_add",code:"CP2",prereq:"CP1"},
+      {op:"move",code:"CP2",after:"CP1"},
+      {op:"remove",code:"CP1"},
+    ]},current);
+    expect(nodes.map(n=>n.code)).toEqual(["CP2"]);
+    expect(nodes[0].prereqs).toEqual(["CP1"]);
+    expect(current[0].stage).toBe("Original");
+  });
+});
