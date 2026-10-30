@@ -1,5 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {atlasHierarchy} from '../../../src/features/atlas/hierarchy';
+import {layoutOrbitGraph} from '../../../src/features/atlas/orbitsLayout';
+import {atlasOrbitGroups} from '../../../src/features/atlas/OrbitRings';
 import {atlasMinimapBounds,minimapPoint,minimapViewport,minimapWorldPoint} from '../../../src/features/atlas/AtlasMinimap';
 import type {AtlasGraph} from '../../../src/data/types';
 
@@ -47,5 +49,23 @@ describe('Atlas minimap camera geometry',()=>{
   const close=minimapViewport({x:0,y:0,k:2},390,844,b);
   expect(close.width).toBeCloseTo(wide.width/2);
   expect(close.height).toBeCloseTo(wide.height/2);
+ });
+});
+
+describe('Euclid orbit construction',()=>{
+ it('places subjects in separate cells without overlapping their progress circles',()=>{
+  const layout=layoutOrbitGraph(graph);
+  const groups=atlasOrbitGroups(graph,layout.nodes);
+  expect(layout.nodes).toHaveLength(3);
+  expect(groups).toHaveLength(2);
+  expect(Math.hypot(groups[0].x-groups[1].x,groups[0].y-groups[1].y))
+   .toBeGreaterThan(groups[0].radius+groups[1].radius);
+  expect(groups[0].topics[0].total).toBe(2);
+  expect(groups[0].topics[0].done).toBe(1);
+ });
+ it('retains owner-pinned idea positions',()=>{
+  const pinned={...graph,concepts:graph.concepts.map(c=>c.id==='c2'?{...c,pinX:77,pinY:-25}:c)};
+  const node=layoutOrbitGraph(pinned).byId.get('c2');
+  expect(node).toMatchObject({x:77,y:-25,fx:77,fy:-25});
  });
 });
