@@ -613,6 +613,7 @@ export class LiveAdapter implements LemmaApi {
     const again=reviews.filter(r=>cardIds.has(r.card_id)&&!r.undone_at&&r.rating===1)
       .map(r=>({reviewedAt:r.reviewed_at,rating:r.rating}))
     return {id:c.id,slug:c.slug,name:c.name,blurb:c.blurb,subjectId:c.subject_id,
+      topic:c.topic??null,level:c.level??'planet',parentId:c.parent_id??null,isStar:!!c.is_star,
       status:conceptStatus(linkedCps.map(getView).map(v=>v.ui),
         misconceptions.some(m=>m.concept_id===c.id&&!m.resolved_at),again),
       pinX:c.pin_x,pinY:c.pin_y,
