@@ -276,3 +276,108 @@ as $$
 $$;
 revoke all on function public.home_summary() from public, anon;
 grant execute on function public.home_summary() to authenticated, service_role;
+
+
+-- The deck tree needs only owner-scoped daily due counts, never card bodies,
+-- histories, source pages or whole checkpoint tables in the browser.
+-- Preserve sibling-safe selection, learning priority and daily new/review caps.
+create or replace function public.deck_tree()
+returns setof jsonb
+language sql stable security invoker set search_path = ''
+as $$
+  with prefs as (
+    select s.user_id, s.reviews_per_day, s.new_per_day,
+      ((date_trunc('day', now() at time zone s.time_zone
+          - make_interval(hours => s.rollover_hour))
+        + make_interval(hours => s.rollover_hour))
+        at time zone s.time_zone) as day_start,
+      ((date_trunc('day', now() at time zone s.time_zone
+          - make_interval(hours => s.rollover_hour))
+        + interval '1 day' + make_interval(hours => s.rollover_hour))
+        at time zone s.time_zone) as day_end
+    from public.settings s where s.user_id = (select auth.uid())
+  ),
+  answered as (
+    select count(*)::integer as total,
+      count(*) filter (where r.state_before = 0)::integer as fresh
+    from public.reviews r cross join prefs s
+    where r.user_id = s.user_id and r.undone_at is null
+      and r.reviewed_at >= s.day_start
+  ),
+  candidates as (
+    select distinct on (n.id) n.id as note_id, n.project_id, n.checkpoint_id,
+      n.no, c.state, c.due, c.id as card_id
+    from public.cards c
+    join public.notes n on n.id = c.note_id and n.user_id = c.user_id
+    join public.projects p on p.id = n.project_id and p.user_id = n.user_id
+    cross join prefs s
+    where c.user_id = s.user_id and n.status = 'active'
+      and p.status <> 'archived' and p.system = false
+      and (c.state = 0 or c.due < s.day_end)
+    order by n.id, case when c.state = 0 then 1 else 0 end,
+      case when c.state in (1,3) and c.due <= now() then 0 else 1 end,
+      c.due, c.id
+  ),
+  prioritized as (
+    select c.*,
+      row_number() over (order by
+        case when c.state = 0 then 2
+             when c.state in (1,3) and c.due <= now() then 0
+             else 1 end,
+        c.due, c.no, c.card_id) as seq,
+      sum(case when c.state = 0 then 1 else 0 end) over (order by
+        case when c.state = 0 then 2
+             when c.state in (1,3) and c.due <= now() then 0
+             else 1 end,
+        c.due, c.no, c.card_id) as fresh_seq
+    from candidates c
+  ),
+  quota as (
+    select p.*,
+      row_number() over (order by p.seq) as review_seq
+    from prioritized p cross join prefs s cross join answered a
+    where p.state <> 0 or p.fresh_seq <= greatest(s.new_per_day - a.fresh, 0)
+  ),
+  selected as (
+    select q.project_id, q.checkpoint_id
+    from quota q cross join prefs s cross join answered a
+    where q.review_seq <= greatest(s.reviews_per_day - a.total, 0)
+  ),
+  counts as (
+    select project_id, checkpoint_id, count(*)::integer as due
+    from selected group by project_id, checkpoint_id
+  ),
+  library as (
+    select item from public.project_summaries() as p(item)
+    where item->>'status' <> 'archived'
+  )
+  select jsonb_build_object(
+    'key', 'project:' || l.item->>'slug',
+    'label', l.item->>'title',
+    'glyph', l.item->'subject'->>'glyph',
+    'level', 0,
+    'due', coalesce(total.due, 0),
+    'children', cp.children
+  )
+  from library l
+  cross join lateral (
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'key', 'cp:' || l.item->>'slug' || ':' || c.code,
+      'label', c.title,
+      'glyph', l.item->'subject'->>'glyph',
+      'level', 1,
+      'due', coalesce(cnt.due, 0),
+      'children', '[]'::jsonb
+    ) order by c.position, c.id), '[]'::jsonb) as children
+    from public.checkpoints c
+    left join counts cnt on cnt.project_id = c.project_id and cnt.checkpoint_id = c.id
+    where c.user_id = (select auth.uid()) and c.project_id = (l.item->>'id')::uuid
+  ) cp
+  cross join lateral (
+    select count(*)::integer as due from selected s
+    where s.project_id = (l.item->>'id')::uuid
+  ) total
+  order by l.item->>'lastActivityAt' desc nulls last, l.item->>'id';
+$$;
+revoke all on function public.deck_tree() from public, anon;
+grant execute on function public.deck_tree() to authenticated, service_role;
