@@ -27,7 +27,6 @@ import {Switch} from '../../ui/Switch';
 import {Check} from '../../ui/Check';
 import {Rail} from '../../ui/Rail';
 import {SegmentBar} from '../../ui/SegmentBar';
-import {StepRing} from '../../ui/StepRing';
 import {ProgressRing} from '../../ui/ProgressRing';
 import {StatusNode} from '../../ui/StatusNode';
 import {Glyph} from '../../ui/Glyph';
@@ -66,7 +65,7 @@ export default function Page(){
  <Section title="Progress and learning state">
   <Rail value={0.67} sheen label="Project progress"/><Rail value={0.18} label="Short progress"/><Rail value={0} label="Empty progress"/>
   <SegmentBar total={8} done={3} current={4}/>
-  <div className="flex items-center justify-around"><StepRing steps={4} current={2} spark/><ProgressRing value={0.75} label="Course progress"/><ProgressRing value={0} label="Not started"/></div>
+  <div className="flex items-center justify-around"><SegmentBar total={4} done={1} current={2}/><ProgressRing value={0.75} label="Course progress"/><ProgressRing value={0} label="Not started"/></div>
   <div className="flex flex-wrap items-center gap-4">{statuses.map(status=><div key={status} className="flex flex-col items-center gap-2"><StatusNode status={status}/><span className="text-caption text-ink-3">{status}</span></div>)}</div>
   <div className="flex gap-3"><Glyph subject="∫" active/><Glyph subject="τ" hue="violet"/><Glyph subject="λ" hue="cyan" size={32}/><Glyph subject="∂" hue="rose" size={48}/></div>
  </Section>
