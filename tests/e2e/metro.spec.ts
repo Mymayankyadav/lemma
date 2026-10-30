@@ -22,6 +22,9 @@ for(const world of ['graph','graph-night'] as const){
   await expect(timeline).toContainText('Planned')
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   await page.screenshot({path:'test-results/screens/ui6b-project-'+world+'.png',fullPage:true})
+  await page.goto('./?demo=1&theme='+world+'#/p/real-analysis/cp/CP4')
+  await expect(page.getByRole('dialog',{name:'Compactness'}).getByLabel('Checkpoint schedule')).toContainText('Planned')
+  await page.screenshot({path:'test-results/screens/ui6b-checkpoint-'+world+'.png',fullPage:true})
  })
  test('UI-6b scheduled Metro appears in Today and the Paths library in '+world,async({page})=>{
   await page.goto('./?demo=1&theme='+world+'#/')
