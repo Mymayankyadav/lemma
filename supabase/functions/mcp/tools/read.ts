@@ -32,7 +32,7 @@ export async function get(c: Context, a:any):Promise<string>{
     const done=pcs.filter((x:any)=>x.status==='demonstrated').length;
     const lines=['PLAN '+p.slug+' '+done+'/'+pcs.length+' done'];
     for(const cp of pcs){const needs=prereqs.filter((x:any)=>x.checkpoint_id===cp.id).map((x:any)=>ids.get(x.prereq_id)?.code).filter(Boolean);
-      lines.push(cp.code+' '+status(cp)+(status(cp)==='now'?' step '+cp.current_step+'/'+(cp.steps||[]).length:'')+' '+cp.title+(cp.stage?' ['+cp.stage+']':'')+(status(cp)==='locked'?' (needs '+needs.join(', ')+')':''))}
+      lines.push(cp.code+' '+status(cp)+(status(cp)==='now'?' step '+cp.current_step+'/'+(cp.steps||[]).length:'')+' '+cp.title+(cp.stage?' ['+cp.stage+']':'')+(cp.due_on?' due '+cp.due_on:'')+(status(cp)==='locked'?' (needs '+needs.join(', ')+')':''))}
     const planned=(await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan_change').eq('status','pending')).data||[];
     for(const x of planned)for(const op of (x.payload?.ops||[]))if(op.op==='add')lines.push((op.code||'CP?')+' proposed '+op.title);
     return capped(lines.join('\n'),2000);
