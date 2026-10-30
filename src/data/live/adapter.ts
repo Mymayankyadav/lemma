@@ -579,29 +579,12 @@ export class LiveAdapter implements LemmaApi {
     .map(r=>({cardId:r.card_id,reviewedAt:r.reviewed_at,rating:r.rating}))
  }
  async getInsightData(...args: Parameters<LemmaApi['getInsightData']>): ReturnType<LemmaApi['getInsightData']> {
-  const [days]=args,db=liveClient(),uid=await owner(db)
-  const cutoff=new Date(Date.now()-days*86_400_000).toISOString()
-  const [reviews,cards,notes,projects,subjects,sessions,events,cps,misconceptions,concepts]=await Promise.all([
-    rows(db,'reviews',uid),rows(db,'cards',uid),rows(db,'notes',uid),rows(db,'projects',uid),
-    rows(db,'subjects',uid),rows(db,'sessions',uid),rows(db,'session_events',uid),
-    rows(db,'checkpoints',uid),rows(db,'misconceptions',uid),rows(db,'concepts',uid)
-  ])
-  const cardById=new Map(cards.map(c=>[c.id,c]))
-  const noteById=new Map(notes.map(n=>[n.id,n]))
-  const cpsById=new Map(cps.map(c=>[c.id,c]))
-  const sessionsById=new Map(sessions.map(s=>[s.id,s]))
-  return {reviews:reviews.filter(r=>r.reviewed_at>=cutoff&&!r.undone_at).map(r=>({
-      reviewedAt:r.reviewed_at,rating:r.rating,stateBefore:r.state_before,confidence:r.confidence,
-      durationMs:r.duration_ms,projectId:noteById.get(cardById.get(r.card_id)?.note_id)?.project_id??''
-    })),sessions:sessions.filter(s=>s.started_at>=cutoff&&s.state==='ended').map(s=>({
-      startedAt:s.started_at,minutes:s.minutes??0,projectId:s.project_id,goalMet:s.goal_met
-    })),checkpointEvents:events.filter(e=>e.created_at>=cutoff && (e.kind==='evidence'||e.kind==='recheck') && e.outcome)
-      .map(e=>{const cp=cpsById.get(e.checkpoint_id)
-        return {at:e.created_at,kind:e.kind==='evidence'&&e.outcome==='demonstrated'?'demonstrated':
-          e.outcome==='demonstrated'?'recheck_ok':'recheck_fail',
-          checkpointCode:cp?.code??'',projectId:cp?.project_id??sessionsById.get(e.session_id)?.project_id??''}
-      }),projects:projects.map(p=>({id:p.id,title:p.title,subject:subjectRow(subjects.find(s=>s.id===p.subject_id)!)})),
-    misconceptions:misconceptions.map(m=>({label:m.label,times:m.times,conceptName:concepts.find(c=>c.id===m.concept_id)?.name??null}))} as import('../types').InsightData
+  const [days]=args,db=liveClient()
+  await owner(db)
+  // ST-5: aggregate in PostgreSQL. Never transfer every review, session,
+  // card and checkpoint event just to draw bounded Insights charts.
+  const aggregate=checked(await db.rpc('insights',{p_days:days})) as import('../types').InsightAggregate
+  return {aggregate,reviews:[],sessions:[],checkpointEvents:[],projects:[],misconceptions:[]}
  }
  async exportAll(...args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> {
   const db=liveClient(),uid=await owner(db)
