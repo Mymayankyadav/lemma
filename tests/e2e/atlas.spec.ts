@@ -158,7 +158,10 @@ test('Euclid Atlas semantic zoom opens subject and topic breadcrumbs and returns
  const graph=page.locator('svg[aria-label^="Interactive knowledge graph"] > g').first();
  await expect(page.locator('[data-atlas-subject-focus]')).toHaveCount(3);
  const old=await graph.getAttribute('transform');
- await page.locator('[data-atlas-subject-focus]').first().click();
+ const subject=page.locator('[data-atlas-subject-focus]').first();
+ await expect(subject).toHaveAttribute('role','button');
+ await subject.focus();
+ await page.keyboard.press('Enter');
  await expect(page.getByRole('navigation',{name:'Atlas breadcrumb'})).toBeVisible();
  await expect.poll(()=>graph.getAttribute('transform')).not.toBe(old);
  const topic=page.locator('[data-atlas-topic-focus]').first();
