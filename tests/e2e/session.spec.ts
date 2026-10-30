@@ -24,3 +24,18 @@ test('nonexistent session has a readable recovery link',async({page})=>{
  await expect(page.getByRole('alert')).toContainText('Session unavailable');
  await expect(page.getByRole('link',{name:'Open project'})).toBeVisible();
 });
+
+for(const world of ['euclid','euclid-night'] as const){
+ test(`UI-5f session is a numbered proof with marginal misconceptions in ${world}`,async({page})=>{
+  await page.setViewportSize({width:360,height:740});
+  await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/s/real-analysis/7`);
+  const proof=page.getByRole('region',{name:'Reasoning'}).getByRole('listitem');
+  await expect(proof).toHaveCount(4);
+  for(let i=0;i<4;i++)
+   await expect(proof.nth(i).locator('span[aria-hidden="true"]').first()).toHaveText(String(i+1));
+  await expect(page.getByRole('heading',{name:'Things to revisit'})).toBeVisible();
+  await expect(page.locator('[data-euclid-session]')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
+  await page.screenshot({path:`test-results/screens/review/ui5f-session-${world}.png`,fullPage:true});
+ });
+}
