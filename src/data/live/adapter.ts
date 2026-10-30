@@ -195,7 +195,8 @@ export class LiveAdapter implements LemmaApi {
       current:current?{code:current.code,title:current.title,step:current.currentStep,stepsTotal:current.stepsTotal}:null,
       lastActivityAt:p.last_activity_at,cardsCount:cards.filter(c=>notes.some(n=>n.id===c.note_id&&n.project_id===p.id&&n.status==='active')).length,
       sessionsCount:sessions.filter(s=>s.project_id===p.id&&s.state==='ended').length,
-      sourcesCount:sources.filter(s=>s.project_id===p.id).length} satisfies ProjectSummary
+      sourcesCount:sources.filter(s=>s.project_id===p.id).length,
+       sourceTitles:sources.filter(s=>s.project_id===p.id).map(s=>String(s.title))} satisfies ProjectSummary
   })).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
