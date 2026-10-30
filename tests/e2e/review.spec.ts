@@ -154,9 +154,33 @@ test('right swipe grades Good after confidence reveal',async({page})=>{
  await page.screenshot({path:'test-results/screens/review-swipe-good.png',fullPage:true})
 })
 
+test('focused review controls retain Space activation while unfocused shortcuts still work',async({page})=>{
+ await page.getByRole('button',{name:'Start review'}).click()
+ const noteButton=page.getByRole('button',{name:'Note for tutor'})
+ await noteButton.focus()
+ await page.keyboard.press('Space')
+ const dialog=page.getByRole('dialog',{name:'For your tutor'})
+ await expect(dialog).toBeVisible()
+ await expect(page.getByRole('button',{name:'Grade Good'})).toHaveCount(0)
+ await page.screenshot({path:'test-results/screens/review-keyboard-focus.png',fullPage:true})
+ await dialog.getByRole('button',{name:'Close'}).click()
+ await expect(dialog).toBeHidden()
+ // With no interactive element focused, the numeric confidence shortcut still reveals.
+ await page.evaluate(()=>(document.activeElement as HTMLElement|null)?.blur())
+ await page.keyboard.press('1')
+ await expect(page.getByRole('button',{name:'Grade Good'})).toBeVisible()
+ // Space on a focused Close button must close the round, not grade Good.
+ const closeButton=page.getByRole('button',{name:'Close review'})
+ await closeButton.focus()
+ await page.keyboard.press('Space')
+ await expect(page).toHaveURL(/#\/review$/)
+ await expect(page.getByRole('region',{name:'Review summary'}).getByText('23',{exact:true})).toBeVisible()
+})
+
 test('Escape exits an ungraded round without recording an answer',async({page})=>{
  await page.getByRole('button',{name:'Start review'}).click()
  await expect(page).toHaveURL(/#\/review\/run$/)
+ await page.getByRole('button',{name:'Close review'}).focus()
  await page.keyboard.press('Escape')
  await expect(page).toHaveURL(/#\/review$/)
  await expect(page.getByRole('region',{name:'Review summary'}).getByText('23',{exact:true})).toBeVisible()
