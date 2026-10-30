@@ -17,7 +17,7 @@ import {OrbitRings,orbitFitPoints} from './OrbitRings';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
-import {fitAtlasViewport,visibleAtlasLabels} from './graph';
+import {fitAtlasViewport,visibleOrbitLabels} from './graph';
 import {layoutOrbitGraph} from './orbitsLayout';
 import type {AtlasNode,Point} from './graph';
 
@@ -112,7 +112,7 @@ export default function Page(){
  const layout=useMemo(()=>graph?layoutOrbitGraph(graph):null,[graph]);
  const nodeList=layout?.nodes??[],selected=nodeList.find(n=>n.id===selectedId)??null;
  const byId=layout?.byId;
- const labels=useMemo(()=>visibleAtlasLabels(nodeList.map(n=>({...n,...positions[n.id]})),selectedId),[nodeList,positions,selectedId]);
+ const labels=useMemo(()=>visibleOrbitLabels(nodeList.map(n=>({...n,...positions[n.id]})),selectedId,view.k),[nodeList,positions,selectedId,view.k]);
  const countAll=nodeList.length,countRevisit=nodeList.filter(n=>n.status==='revisit').length,
    countDone=nodeList.filter(n=>n.status==='demonstrated').length;
  useEffect(()=>{viewRef.current=view},[view]);
