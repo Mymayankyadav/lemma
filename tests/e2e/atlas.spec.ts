@@ -97,3 +97,44 @@ test('Atlas fits node centres between overlays and avoids overlapping labels', a
  await expect(page.locator('[data-node="concept-compactness"] text')).toBeVisible();
  await page.screenshot({path:'test-results/screens/atlas-fitted-selected.png',fullPage:true});
 });
+
+test('Euclid Atlas switches Orbits, Branches and Outline without losing concept selection',async({page})=>{
+ await page.goto('./?demo=1&theme=euclid#/atlas');
+ await expect(page.getByRole('group',{name:'Atlas view'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Move Atlas viewport'})).toBeVisible();
+ const graph=page.locator('svg[aria-label^="Interactive knowledge graph"] > g').first();
+ const before=await graph.getAttribute('transform');
+ await page.getByRole('button',{name:'Move Atlas viewport'}).click({position:{x:83,y:23}});
+ await expect.poll(()=>graph.getAttribute('transform')).not.toBe(before);
+ await page.screenshot({path:'test-results/screens/atlas-euclid-orbits.png',fullPage:true});
+
+ await page.getByRole('button',{name:'Branches'}).click();
+ await expect(page.locator('[data-atlas-mode="branches"]')).toBeVisible();
+ await expect(page.locator('[data-atlas-subject]')).toHaveCount(3);
+ await expect(page.locator('[data-atlas-topic]').first()).toBeVisible();
+ await page.screenshot({path:'test-results/screens/atlas-euclid-branches.png',fullPage:true});
+
+ await page.getByRole('button',{name:'Outline'}).click();
+ await expect(page.locator('[data-atlas-mode="outline"]')).toBeVisible();
+ await expect(page.locator('[data-atlas-idea]')).toHaveCount(22);
+ await page.getByRole('button',{name:/Compactness, In progress/}).click();
+ await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible();
+ await expect(page).toHaveURL(/focus=compactness/);
+ await page.getByRole('button',{name:'Close concept details'}).click();
+ await page.getByRole('button',{name:/Revisit \d+/}).click();
+ await expect(page.locator('[data-atlas-idea]').first()).toBeVisible();
+ await page.screenshot({path:'test-results/screens/atlas-euclid-outline.png',fullPage:true});
+ await page.reload();
+ await expect(page.locator('[data-atlas-mode="outline"]')).toBeVisible();
+});
+
+test('Atlas list modes remain legible in Euclid night on a narrow phone',async({page})=>{
+ await page.setViewportSize({width:360,height:740});
+ await page.goto('./?demo=1&theme=euclid-night#/atlas?view=outline');
+ await expect(page.locator('[data-atlas-mode="outline"]')).toBeVisible();
+ await expect(page.locator('[data-atlas-idea]')).toHaveCount(22);
+ await expect(page.evaluate(()=>document.documentElement.scrollWidth)).resolves.toBeLessThanOrEqual(360);
+ await page.screenshot({path:'test-results/screens/atlas-euclid-night-outline.png',fullPage:true});
+ await page.getByRole('button',{name:'Branches'}).click();
+ await page.screenshot({path:'test-results/screens/atlas-euclid-night-branches.png',fullPage:true});
+});
