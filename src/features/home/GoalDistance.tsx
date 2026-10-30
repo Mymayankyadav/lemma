@@ -14,7 +14,7 @@ function goalEstimate(project:ProjectSummary,events:InsightData['checkpointEvent
  const day=finish.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})
  const target=project.targetDate
  const spare=target?Math.floor((Date.parse(target+'T23:59:59Z')-finish.getTime())/DAY):null
- return {pace,day,spare,baseline:distinct.size===0}
+ return {pace,day,spare,baseline:!events.some(e=>e.projectId===project.id&&e.kind==='demonstrated'&&Date.parse(e.at)>=now-28*DAY&&Date.parse(e.at)<=now)}
 }
 function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'ascent'|'metro';events:InsightData['checkpointEvents']|undefined}){
  const detail=useProject(project.slug)
