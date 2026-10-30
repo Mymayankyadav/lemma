@@ -5,15 +5,11 @@ import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline'
 import {Slab} from '../../ui/Slab'
 import {Glyph} from '../../ui/Glyph'
 import {Skeleton} from '../../ui/Skeleton'
-import {buildSchedule,scheduleHeadline} from '../../lib/schedule'
+import {buildSchedule,scheduleHeadline,paceFromDemonstrations} from '../../lib/schedule'
 
 const DAY=86_400_000
 function goalEstimate(project:ProjectSummary,events:InsightData['checkpointEvents'],now=Date.now()){
- const since=now-28*DAY
- const distinct=new Set(events.filter(e=>e.projectId===project.id&&e.kind==='demonstrated'
-  &&Date.parse(e.at)>=since&&Date.parse(e.at)<=now).map(e=>e.checkpointCode))
- // A single checkpoint per four weeks is the agreed conservative floor.
- const pace=Math.max(1,distinct.size)/4
+ const pace=paceFromDemonstrations(events,project.id,now)
  const finish=new Date(now+Math.max(0,project.total-project.done)/pace*7*DAY)
  const day=finish.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})
  const target=project.targetDate
