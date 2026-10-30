@@ -112,8 +112,8 @@ try {
  await db.exec('reset role')
  await db.exec([
   "insert into public.projects values ('12121212-1212-1212-1212-121212121212','11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','long-plan','Long plan','active',false,false,null,null,now());",
-  "insert into public.checkpoints(id,user_id,project_id,code,title,position,status,current_step,steps,objective) select md5('stress-cp-'||n::text)::uuid,'11111111-1111-1111-1111-111111111111','12121212-1212-1212-1212-121212121212','CP'||n,'Checkpoint '||n,n,'not_started',0,'[\\"Read\\"]'::jsonb,'Study' from generate_series(1,100) n;"
- ].join('\\n'))
+  "insert into public.checkpoints(id,user_id,project_id,code,title,position,status,current_step,steps,objective) select md5('stress-cp-'||n::text)::uuid,'11111111-1111-1111-1111-111111111111','12121212-1212-1212-1212-121212121212','CP'||n,'Checkpoint '||n,n,'not_started',0,jsonb_build_array('Read'),'Study' from generate_series(1,100) n;"
+ ].join('\n'))
  await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
  const longPlan=(await q('select public.project_summaries() item')).map(x=>x.item).find(x=>x.slug==='long-plan')
  assert.equal(longPlan.total,100)
