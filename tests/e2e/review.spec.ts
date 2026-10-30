@@ -219,7 +219,7 @@ for(const world of ['graph','graph-night'] as const){
   const before=await track.evaluate(el=>({track:getComputedStyle(el).backgroundColor,thumb:getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor,border:getComputedStyle(el).borderTopWidth}));
   expect(before.track).not.toBe(before.thumb);
   expect(Number.parseFloat(before.border)).toBeGreaterThanOrEqual(1);
-  await control.uncheck();
+  await page.getByText('Mix decks',{exact:true}).click();
   await expect(track).toHaveAttribute('data-checked','false');
   const after=await track.evaluate(el=>({track:getComputedStyle(el).backgroundColor,thumb:getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor}));
   expect(after.track).toBe(after.thumb);
