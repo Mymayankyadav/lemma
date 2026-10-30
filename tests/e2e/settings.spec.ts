@@ -69,6 +69,8 @@ for(const world of ['euclid','euclid-night'] as const){
   await page.reload();
   await expect(page.getByRole('button',{name:'Metro',exact:true})).toHaveAttribute('aria-pressed','true');
   await expect(page.getByRole('button',{name:'Star Euclid',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'Show demo preview'}).click();
+  await expect(page.getByRole('region',{name:'Appearance preview'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
   await page.screenshot({path:`test-results/screens/review/ui5h-settings-${world}.png`,fullPage:true});
  });
