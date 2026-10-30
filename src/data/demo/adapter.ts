@@ -1673,6 +1673,13 @@ export class DemoAdapter implements LemmaApi {
     onProgress: (progress: IngestProgress) => void,
   ): Promise<Source> {
     this.projectById(projectId);
+    // Hash before creating the row so concurrent identical uploads cannot both enter
+    // the queue; a failed upload remains retryable.
+    const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+    const sha256 = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+    if (this.store.sources.some(source => source.projectId === projectId &&
+        source.sha256 === sha256 && source.status !== "failed"))
+      conflict("Already added: this PDF is in the project");
     const title = (file.name.replace(/\.pdf$/i, "") || "Source").slice(0, 120),
       base = (
         title
@@ -1694,6 +1701,7 @@ export class DemoAdapter implements LemmaApi {
       title,
       short,
       filename: file.name,
+      sha256,
       pageCount: null as number | null,
       status: "uploading" as Source["status"],
       hasText: true,
