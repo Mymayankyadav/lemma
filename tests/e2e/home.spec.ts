@@ -50,3 +50,28 @@ test('home shortcuts navigate to review, proposals and the project path',async({
  await page.getByRole('link',{name:/Real Analysis, 3 of 12 checkpoints/i}).click()
  await expect(page).toHaveURL(/#\/p\/real-analysis$/)
 })
+
+for(const theme of ['euclid','euclid-night'] as const){
+ test(`UI-5b goal-first Today and keyboard Ascent timeline: ${theme}`,async({page})=>{
+  await page.goto(`./?demo=1&theme=${theme}#/`)
+  const goals=page.getByRole('region',{name:'Distance to your goals'})
+  const cards=page.getByRole('region',{name:'Cards'})
+  await expect(goals).toBeVisible()
+  await expect(cards).toBeVisible()
+  const order=await page.evaluate(()=>{
+   const a=document.querySelector('[aria-label="Distance to your goals"]')
+   const b=document.querySelector('[aria-label="Cards"]')
+   return !!(a&&b&&(a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING))
+  })
+  expect(order).toBe(true)
+  const algebra=goals.getByRole('article',{name:/Goal progress for Real Analysis/})
+  await expect(algebra).toContainText(/3\/12 checkpoints/)
+  const timeline=algebra.locator('[data-timeline="ascent"]')
+  await expect(timeline.getByRole('button')).toHaveAttribute('aria-label',/Arrow keys to browse; Enter to open/)
+  await page.screenshot({path:`test-results/screens/review/ui5b-goals-${theme}.png`,fullPage:true})
+  await timeline.getByRole('button').focus()
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\//)
+ })
+}
