@@ -1,3 +1,4 @@
+import {MathPreview} from '../../ui/MathPreview';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -339,6 +340,7 @@ export default function Page() {
               <ArrowRight size={20} />
             </button>
           </form>
+          <MathPreview source={message}/>
           <Sheet
             open={editing}
             onClose={closeEditing}

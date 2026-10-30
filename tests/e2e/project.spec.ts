@@ -10,7 +10,7 @@ test('Graph Paper Paths groups checkpoints into named stages with current stage 
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await expect(page.getByRole('heading',{name:'Project',level:1})).toBeVisible()
- await expect(page.getByRole('navigation',{name:'Choose a path'}).getByRole('link',{name:/Real Analysis/})).toHaveAttribute('aria-current','page')
+ await expect(page.getByRole('button',{name:'Switch project from Real Analysis'})).toBeVisible()
  await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Rudin')
  await expect(page.getByRole('region',{name:'Checkpoint progress'})).toContainText('12')
  await expect(page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="ascent"]')).toBeVisible()
@@ -36,25 +36,30 @@ test('Graph Paper Paths groups checkpoints into named stages with current stage 
  expect(errors).toEqual([])
 })
 
-test('Path chips switch projects and checkpoint rows open sheets',async({page})=>{
- const chips=page.getByRole('navigation',{name:'Choose a path'})
- await chips.getByRole('link',{name:/Linear Algebra/}).click()
+test('Project title opens a searchable recent-project switcher',async({page})=>{
+ await page.getByRole('button',{name:'Switch project from Real Analysis'}).click()
+ const dialog=page.getByRole('dialog',{name:'Switch project'})
+ await expect(dialog.getByRole('button',{name:/Linear Algebra/})).toBeVisible()
+ await dialog.getByRole('button',{name:/Linear Algebra/}).click()
  await expect(page).toHaveURL(/linear-algebra$/)
  await expect(page.getByRole('heading',{name:'Project',level:1})).toContainText('Linear Algebra')
- await chips.getByRole('link',{name:/Real Analysis/}).click()
+ await page.getByRole('button',{name:'Switch project from Linear Algebra'}).click()
+ const search=page.getByRole('dialog',{name:'Switch project'}).getByRole('searchbox',{name:'Find a project'})
+ await search.fill('Real')
+ await expect(page.getByRole('dialog',{name:'Switch project'}).getByRole('button',{name:/Real Analysis/})).toBeVisible()
+ await page.getByRole('dialog',{name:'Switch project'}).getByRole('button',{name:/Real Analysis/}).click()
  await expect(page).toHaveURL(/real-analysis$/)
  await page.getByRole('region',{name:'Stages'}).getByRole('link',{name:/CP4 Compactness, in progress/}).click()
  await expect(page).toHaveURL(/CP4$/)
  await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible()
 })
-
 test('Sessions and Sources tabs preserve the selected tab in URL',async({page})=>{
  await page.getByRole('button',{name:/Sessions/}).click()
  await expect(page).toHaveURL(/tab=sessions/)
  await expect(page.getByRole('link',{name:/S7/i})).toBeVisible()
  await page.getByRole('button',{name:/Sources/}).click()
  await expect(page).toHaveURL(/tab=sources/)
- await expect(page.getByRole('region',{name:'Sources'}).getByRole('button',{name:'Add a PDF'})).toBeVisible()
+ await expect(page.getByRole('region',{name:'Sources'}).getByRole('button',{name:/Add sources/})).toBeVisible()
  await page.screenshot({path:'test-results/screens/project-sources.png',fullPage:true})
 })
 
@@ -78,7 +83,7 @@ test('a new PDF can be uploaded from project Sources',async({page})=>{
  const sources=page.getByRole('region',{name:'Sources'})
  await sources.locator('input[type=file]').setInputFiles('tests/fixtures/sample.pdf')
  await expect(page.getByText('PDF added')).toBeVisible({timeout:30000})
- await expect(sources.getByText('sample',{exact:false})).toBeVisible()
+ await expect(sources.getByText('sample',{exact:true})).toBeVisible()
 })
 
 test('Euclid project ascent opens a checkpoint without horizontal scrolling',async({page})=>{
@@ -111,4 +116,18 @@ test('Graph Paper Paths fits both worlds at compact phone widths',async({page})=
    })
   }
  }
+})
+
+test('v3 Sources groups PDFs and exposes audited metadata controls',async({page})=>{
+ await page.goto('./?demo=1#/p/real-analysis?tab=sources')
+ const sources=page.getByRole('region',{name:'Sources'})
+ await expect(sources.getByRole('heading',{name:/book|notes|other/i}).first()).toBeVisible()
+ const edit=sources.getByRole('button',{name:'Edit'}).first()
+ await edit.click()
+ await expect(sources.getByRole('textbox',{name:'Source title'})).toBeVisible()
+ await expect(sources.getByRole('combobox',{name:'Source kind'})).toBeVisible()
+ await expect(sources.getByRole('button',{name:'Cancel'})).toBeVisible()
+ await sources.getByRole('button',{name:'Cancel'}).click()
+ await expect(sources.getByRole('textbox',{name:'Source title'})).toHaveCount(0)
+ await page.screenshot({path:'test-results/screens/v3-project-sources.png',fullPage:true})
 })
