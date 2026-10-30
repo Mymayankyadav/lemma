@@ -16,10 +16,15 @@ for(const world of ['graph','graph-night'] as const){
    const card=getComputedStyle(element);
    const ground=getComputedStyle(document.querySelector('.ground')!);
    const title=getComputedStyle(document.querySelector('h1')!);
-   return {border:card.borderTopWidth,radius:card.borderTopLeftRadius,
-    shadow:card.boxShadow,background:ground.backgroundImage,font:title.fontFamily};
+   return {border:card.borderTopWidth,borderColor:card.borderTopColor,
+    borderToken:getComputedStyle(document.documentElement).getPropertyValue('--card-border').trim(),
+    radius:card.borderTopLeftRadius,shadow:card.boxShadow,
+    background:ground.backgroundImage,font:title.fontFamily};
   });
-  expect(material.border).toBe('1.5px');
+  // Chromium snaps fractional borders to device pixels; the token keeps the exact 1.5px design value.
+  expect(material.borderToken).toContain('1.5px solid');
+  expect(Number.parseFloat(material.border)).toBeGreaterThanOrEqual(1);
+  expect(material.borderColor).toBe(world==='graph'?'rgb(27, 42, 65)':'rgb(201, 211, 224)');
   expect(material.radius).toBe('6px');
   expect(material.shadow).toContain('3px 3px 0px');
   expect(material.background).toContain('linear-gradient');
