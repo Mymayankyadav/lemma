@@ -106,7 +106,7 @@ test('search, details and connection jumps work without test subjects',async({pa
  await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible();
  await expect(page).toHaveURL(/focus=compactness/);
  await expect(page.locator('[data-atlas-details]')).toBeVisible();
- await expect(page.getByRole('link',{name:/Checkpoint CP4/})).toHaveAttribute('href',new RegExp('p/real-analysis/cp/CP4
+ await expect(page.getByRole('link',{name:/Checkpoint CP4/})).toHaveAttribute('href',new RegExp('p/real-analysis/cp/CP4$'));
  await page.getByRole('button',{name:'Close concept details'}).click();
  await expect(page.locator('[data-atlas-details]')).toHaveCount(0);
  await expect(page).not.toHaveURL(/focus=compactness/);
