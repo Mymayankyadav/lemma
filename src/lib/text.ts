@@ -59,3 +59,10 @@ export function formatDurationMinutes(minutes: number): string {
   if (hours) return `${hours} h${rest ? ` ${rest} m` : ""}`;
   return `${rest} m`;
 }
+
+/** Badges have a fixed footprint; exact values belong in the parent control's label. */
+export function formatBadgeCount(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  const count = Math.max(0, Math.round(value));
+  return count > 999 ? "999+" : String(count);
+}
