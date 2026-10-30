@@ -21,7 +21,8 @@ export function AppearanceControls() {
    <h2 className="font-semibold text-title-s">Appearance</h2>
    <span className="text-caption text-ink-3">Stored on this device</span>
   </div>
-  <div role="radiogroup" aria-label="Colour theme" className="grid grid-cols-3 gap-2">
+  <div role="radiogroup" aria-label="Colour theme" className="grid grid-cols-2 gap-2">
+   <button type="button" role="radio" aria-checked={ui.theme==='system'} onClick={()=>applyAppearance({theme:'system'})} className={`min-h-11 rounded-ctl border px-3 text-left text-label ${ui.theme==='system'?'border-amber':'border-edge'}`}>Day and night · Automatic</button>
    {themes.map(t=><button key={t.id} type="button" role="radio" aria-checked={ui.theme===t.id}
     onClick={()=>applyAppearance({theme:t.id})}
     className={`min-h-28 rounded-ctl border p-2 text-left transition-colors focus-visible:outline-amber ${ui.theme===t.id?'border-amber-line-2 ring-2 ring-amber-line':'border-edge'}`}>
@@ -46,10 +47,10 @@ export function AppearanceControls() {
    </div>
   </fieldset>
   <div className="flex items-center justify-between gap-3">
-   <div><p className="font-semibold">Effects</p><p className="text-label text-ink-3">Calm or rich visuals</p></div>
-   <button type="button" role="switch" aria-label="Rich effects" aria-checked={ui.effects==='rich'} onClick={()=>applyAppearance({effects:ui.effects==='rich'?'calm':'rich'})}
+   <div><p className="font-semibold">Effects</p><p className="text-label text-ink-3">Calm or lively motion</p></div>
+   <button type="button" role="switch" aria-label="Lively motion" aria-checked={ui.effects==='rich'} onClick={()=>applyAppearance({effects:ui.effects==='rich'?'calm':'rich'})}
     className={`min-h-11 min-w-24 rounded-ctl border px-3 text-label font-semibold ${ui.effects==='rich'?'border-amber-line-2 bg-amber-tint':'border-edge bg-raised-2'}`}>
-    {ui.effects==='rich'?'Rich':'Calm'}</button>
+    {ui.effects==='rich'?'Lively':'Calm'}</button>
   </div>
   <div className="flex items-center justify-between gap-3">
    <div><p className="font-semibold">Floating theme lab</p><p className="text-label text-ink-3">Quickly compare the current screen</p></div>
@@ -64,7 +65,7 @@ export function ThemeLabButton() {
  const [open,setOpen]=useState(false);
  const start=useRef<number|null>(null);
  const cycle=(direction:number)=>{
-  const i=themes.findIndex(t=>t.id===ui.theme);
+  const i=Math.max(0,themes.findIndex(t=>t.id===ui.theme));
   applyAppearance({theme:themes[(i+direction+themes.length)%themes.length].id});
  };
  if(!enabled)return null;
@@ -77,7 +78,7 @@ export function ThemeLabButton() {
      onTouchStart={e=>{start.current=e.touches[0]?.clientX??null;}}
      onTouchEnd={e=>{const x=e.changedTouches[0]?.clientX;if(x!==undefined&&start.current!==null&&Math.abs(x-start.current)>40)cycle(x<start.current?1:-1);start.current=null;}}>
     <button type="button" className="flex size-11 items-center justify-center" aria-label="Previous theme" onClick={()=>cycle(-1)}><ChevronLeft size={20}/></button>
-    <span className="text-label font-semibold">{themes.find(t=>t.id===ui.theme)?.name}</span>
+    <span className="text-label font-semibold">{ui.theme==='system'?'Automatic · Euclid':themes.find(t=>t.id===ui.theme)?.name}</span>
     <button type="button" className="flex size-11 items-center justify-center" aria-label="Next theme" onClick={()=>cycle(1)}><ChevronRight size={20}/></button>
    </div>
    <AppearanceControls/>
