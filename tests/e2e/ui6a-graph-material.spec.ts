@@ -29,9 +29,12 @@ for(const world of ['graph','graph-night'] as const){
   expect(material.shadow).toContain('3px 3px 0px');
   expect(material.background).toContain('linear-gradient');
   expect(material.font).toContain('Newsreader');
+  // Today has no heavy action button after FIX #350; inspect the shared button material in the kit.
+  await page.goto(`./?demo=1&theme=${world}#/kit`);
   const button=page.locator('.ui-button').first();
   await expect(button).toBeVisible();
   expect(await button.evaluate(element=>getComputedStyle(element).boxShadow)).toContain('2px 2px 0px');
+  await page.goto(`./?demo=1&theme=${world}#/`);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({path:`test-results/screens/review/ui6a-material-${world}.png`,fullPage:true});
  });

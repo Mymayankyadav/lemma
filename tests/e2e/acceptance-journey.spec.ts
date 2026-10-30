@@ -18,7 +18,7 @@ test('acceptance 1–6: Home -> proposals -> plan approval -> project -> session
  await page.goto(demo)
  // 1: all values on Today
  await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible()
- await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible()
+ await expect(page.getByRole('region',{name:'Resume where you stopped'})).toContainText('Compactness, step 2 of 4')
  await expect(page.getByRole('link',{name:/23 cards due/})).toBeVisible()
  await expect(page.getByRole('link',{name:/6 proposals to approve/})).toBeVisible()
  await expect(page.getByRole('link',{name:/Real Analysis, 3 of 12/})).toBeVisible()
