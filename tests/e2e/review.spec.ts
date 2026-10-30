@@ -162,7 +162,7 @@ test('Escape exits an ungraded round without recording an answer',async({page})=
  await expect(page.getByRole('region',{name:'Review summary'}).getByText('23',{exact:true})).toBeVisible()
 })
 
-for(const theme of ['euclid','euclid-night'])
+for(const theme of ['graph','graph-night'])
 for(const quiet of [false,true]){
  test(`Euclid complete round and missed-only retry: ${theme}, ${quiet?'reduced':'lively'}`,async({page})=>{
   test.setTimeout(90_000)
