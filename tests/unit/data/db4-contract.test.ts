@@ -8,12 +8,12 @@ describe("DB-4 additive contract stubs", () => {
     const adapters: LemmaApi[] = [new DemoAdapter(), new LiveAdapter()];
     for (const adapter of adapters) {
       for (const operation of [
-        adapter.createProjectDraft({title:"New study"}),
-        adapter.updateSubject("subject-1", {name:"Algebra"}),
-        adapter.mergeSubjects("subject-1", "subject-2"),
-        adapter.updateSource("source-1", {kind:"notes"}),
-        adapter.listPlanRevisions("algebra"),
-      ]) await expect(operation).rejects.toMatchObject({code:"not_implemented"});
+        () => adapter.createProjectDraft({title:"New study"}),
+        () => adapter.updateSubject("subject-1", {name:"Algebra"}),
+        () => adapter.mergeSubjects("subject-1", "subject-2"),
+        () => adapter.updateSource("source-1", {kind:"notes"}),
+        () => adapter.listPlanRevisions("algebra"),
+      ]) await expect(operation()).rejects.toMatchObject({code:"not_implemented"});
     }
   });
 });
