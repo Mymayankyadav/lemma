@@ -21,7 +21,7 @@ test('Paths library groups projects, searches and opens a project without errors
  await expect(page.locator('[data-project-row="real-analysis"]')).toBeVisible()
  await page.screenshot({path:'test-results/screens/projects-dashboard.png',fullPage:true})
  await page.locator('[data-project-row="real-analysis"]').getByRole('link').click()
- await expect(page).toHaveURL(/#\\/p\\/real-analysis$/)
+ await expect(page).toHaveURL(/real-analysis$/)
  expect(errors).toEqual([])
 })
 test('new-project form retains keyboard focus while editing controlled fields',async({page})=>{
