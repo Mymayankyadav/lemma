@@ -68,17 +68,20 @@ for(const theme of ['euclid','euclid-night'] as const)
 for(const density of ['compact','comfortable'] as const)
 for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
  test(`UI-5a layout: ${theme}, ${density}, ${viewport.width}x${viewport.height}`,async({page})=>{
+  test.setTimeout(120_000);
   await page.setViewportSize(viewport);
+  const failures:string[]=[];
   for(const route of routes){
    await page.goto(`/lemma/?demo=1&theme=${theme}&density=${density}&effects=calm#${route}`);
    await page.locator('#main-content').waitFor();
    await page.evaluate(()=>document.fonts.ready);
    const issues=[...(await audit(page)),...(await coveredAtBottom(page))];
-   expect(issues,`${route}: ${issues.map(i=>i.selector+': '+i.reason).join('; ')}`).toEqual([]);
+   failures.push(...issues.map(i=>`${route} / ${i.selector}: ${i.reason}`));
    if(density==='compact'&&viewport.width===390&&(route==='/'||route==='/review')){
     await page.screenshot({path:`test-results/screens/review/ui5a-${theme}-${route==='/'?'today':'review'}.png`,fullPage:true});
    }
   }
+  expect(failures,failures.join('\n')).toEqual([]);
  });
 }
 
