@@ -54,14 +54,14 @@ test('cluster, galaxy and system drilldown updates breadcrumbs and labelled chil
  await page.getByRole('button',{name:'Close concept details'}).click();
  const hasGalaxies=await page.locator('[data-level="galaxy"]').count()>0;
  if(hasGalaxies){
-  await expect(page.locator('[data-level="galaxy"]').toHaveCount(2);
+  await expect(page.locator('[data-level="galaxy"]')).toHaveCount(2);
   await page.locator('[data-level="galaxy"]').first().click();
-  await expect(page.locator('[data-level="system"]').toHaveCount(2);
+  await expect(page.locator('[data-level="system"]')).toHaveCount(2);
   await expect(crumb.locator('button')).toHaveCount(3);
   await page.getByRole('button',{name:'Close concept details'}).click();
- }else await expect(page.locator('[data-level="system"]').not.toHaveCount(0);
+ }else await expect(page.locator('[data-level="system"]')).not.toHaveCount(0);
  await page.locator('[data-level="system"]').first().click();
- await expect(page.locator('[data-level="planet"]').not.toHaveCount(0);
+ await expect(page.locator('[data-level="planet"]')).not.toHaveCount(0);
  await expect(crumb.locator('button')).toHaveCount(hasGalaxies?4:3);
  await page.screenshot({path:'test-results/screens/atlas-cosmos-system.png',fullPage:true});
  await crumb.getByRole('button',{name:'Universe'}).click();
