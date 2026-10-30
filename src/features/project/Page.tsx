@@ -1,7 +1,7 @@
 import {useEffect,useState,useRef} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
-import {ArrowLeft,BookOpen,ChevronDown,ChevronRight,Check,Clock3,FileText,Layers,MessageCircle,Pause,Play,Plus,RotateCcw,Waypoints} from 'lucide-react';
+import {ArrowLeft,BookOpen,ChevronRight,Check,Clock3,FileText,Layers,MessageCircle,Pause,Play,Plus,Waypoints} from 'lucide-react';
 import {useAddSource,useCheckpoint,useProject,useSettings} from '../../data/hooks';
 import type {CheckpointView,IngestProgress,ProjectDetail,SessionSummary,Source} from '../../data/types';
 import {chatLink,planPrompt,resumePrompt,studyPrompt} from '../../lib/chat';
@@ -12,8 +12,6 @@ import {Tile} from '../../ui/Tile';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
 import {Chip} from '../../ui/Chip';
-import {Glyph} from '../../ui/Glyph';
-import {StatusNode} from '../../ui/StatusNode';
 import {Segmented} from '../../ui/Segmented';
 import {SegmentBar} from '../../ui/SegmentBar';
 import {Skeleton} from '../../ui/Skeleton';
@@ -21,9 +19,8 @@ import {EmptyState} from '../../ui/EmptyState';
 import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
 import {PageStackArt} from '../../ui/art/PageStackArt';
-import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
+import {ProjectChips,GoalOverview,Stages} from './PathsView';
 
-type Tab='path'|'sessions'|'sources';
 function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<typeof useToast>){
  void navigator.clipboard?.writeText(prompt).then(()=>notify('Tutor prompt copied',{tone:'success'}))
   .catch(()=>notify('Chat opened; copy was unavailable'));
@@ -57,48 +54,6 @@ function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:C
   <Button size="m" icon={Play} className="mt-5 w-full" onClick={()=>
    copyAndChat(studyPrompt(project.project.title,cp.code,cp.title),client,notify)}>Resume</Button>
  </Slab>;
-}
-function PathTimeline({slug,detail}:{slug:string;detail:ProjectDetail}){
- const [expanded,setExpanded]=useState(false),settings=useSettings(),notify=useToast();
- const checkpoints=detail.checkpoints,view=expanded?checkpoints:checkpoints.slice(0,8);
- if(!checkpoints.length)return <EmptyState art="compass" title="A plan is waiting to be written"
-  body="Ask your tutor to break your goal into checkpoints."
-  action={{label:'Copy plan prompt',onClick:()=>{void navigator.clipboard.writeText(planPrompt(detail.project.title));
-   notify('Plan prompt copied',{tone:'success'})}}}/>;
- return <ol className="flex flex-col">
-  {view.map((cp,index)=>{
-   const isCurrent=cp.ui==='now',isProposed=cp.ui==='proposed',isDone=cp.ui==='done'||cp.ui==='revisit';
-   const next=view[index+1],connector=next
-    ?isDone&&(next.ui==='done'||next.ui==='revisit')?'bg-amber/60':isCurrent||isDone?'bg-linear-to-b from-amber/60 to-edge-3':'border-l border-dashed border-edge-3'
-    :'';
-   return <li key={cp.id} className="grid grid-cols-[36px_minmax(0,1fr)] gap-3">
-    <div className="relative flex flex-col items-center">
-     <div className="z-10 flex size-9 items-center justify-center"><StatusNode status={cp.ui}/></div>
-     {next&&<div aria-hidden="true" className={'min-h-7 w-px flex-1 '+connector}/>}
-    </div>
-    <div className={'min-w-0 '+(isCurrent?'pb-5':'pb-5')}>
-     {isCurrent?<NowCheckpoint slug={slug} cp={cp} project={detail}/>:isProposed?
-      <Link to="/proposals?tab=plan" className="flex min-h-12 flex-col justify-center gap-1 rounded-ctl px-1 text-ink-soft">
-       <span className="flex items-center gap-2 text-body-l"><span className="min-w-0 flex-1 truncate">{cp.title}</span><Chip tone="amber">Proposed</Chip></span>
-       <span className="text-label text-ink-3">Tap to approve</span>
-      </Link>:
-      <Link to={'/p/'+slug+'/cp/'+cp.code} className="flex min-h-12 flex-col justify-center gap-1 rounded-ctl px-1">
-       <span className="flex items-center gap-3">
-        <span className={'min-w-0 flex-1 truncate text-headline '+(cp.ui==='locked'?'text-ink-3':'text-ink-soft')}>{cp.title}</span>
-        <span className="text-label text-ink-3">{cp.code}</span>
-       </span>
-       {cp.ui==='revisit'&&<span className="flex items-center gap-1 text-label text-amber"><RotateCcw size={13} aria-hidden="true"/>Re-check due</span>}
-       {cp.ui==='next'&&<span className="text-label text-ink-3">Next checkpoint</span>}
-      </Link>}
-    </div>
-   </li>;
-  })}
-  {!expanded&&checkpoints.length>8&&<li>
-   <button type="button" onClick={()=>setExpanded(true)} className="ml-11 flex min-h-11 items-center gap-2 text-label text-amber">
-    {checkpoints.length-8} more <ChevronDown size={16}/>
-   </button>
-  </li>}
- </ol>;
 }
 function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
  if(!sessions.length)return <EmptyState art="inbox" title="No sessions yet" body="Resume a checkpoint in your tutor to start an evidence trail."/>;
@@ -162,37 +117,32 @@ export default function Page(){
   body="Check your connection or try again." action={{label:'Try again',onClick:()=>{void query.refetch()}}}/></Screen>;
  const data=query.data,project=data.project;
  const now=data.checkpoints.find(cp=>cp.ui==='now');
- const currentPosition=now?data.checkpoints.indexOf(now)+1:undefined;
- function setTab(value:string){const next=new URLSearchParams(params);if(value==='path')next.delete('tab');else next.set('tab',value);setParams(next)}
+  function setTab(value:string){const next=new URLSearchParams(params);if(value==='path')next.delete('tab');else next.set('tab',value);setParams(next)}
  return <Screen className="gap-6" >
   <header className="flex items-center gap-3">
    <IconButton icon={ArrowLeft} label="Back to projects" onClick={()=>navigate('/projects')}/>
    <div className="min-w-0 flex-1">
-    <h1 aria-label="Project" className="truncate text-num-l font-semibold tracking-tight">{project.title}</h1>
+    <h1 aria-label="Project" className="break-words font-[var(--font-display)] text-title-s font-semibold tracking-tight">{project.title}</h1>
     <p className="mt-1 flex items-center gap-1.5 truncate text-label text-ink-3">
      <BookOpen size={14} aria-hidden="true"/>{data.sources[0]?.title??data.subject.name}</p>
    </div>
    <IconButton icon={Waypoints} label="View in Atlas" to="/atlas"/>
   </header>
-  <section aria-label="Checkpoint progress">
-   <p className="mb-3 flex items-baseline gap-1.5 tabular-nums">
-    <strong className="text-num-xl leading-none">{data.done}</strong>
-    <span className="text-headline text-ink-3">/ {data.total}</span>
-    <span className="ml-auto text-label text-ink-3">checkpoints</span>
-   </p>
-   <SegmentBar total={data.total} done={data.done} current={currentPosition}/>
-  </section>
-  <section aria-label="Project timeline" className="min-w-0">
-   <h2 className="mb-2 font-[var(--font-display)] text-title-s italic text-ink">Your ascent</h2>
-   <ProjectTimeline project={{title:project.title,slug:project.slug,done:data.done,total:data.total}}
-    checkpoints={data.checkpoints} variant={appearance.data?.ui?.timeline==='metro'?'metro':'ascent'} height={96}/>
-  </section>
+  <ProjectChips detail={data}/>
+  <GoalOverview detail={data} variant={appearance.data?.ui?.timeline==='metro'?'metro':'ascent'}/>
   <Segmented value={tab} onChange={setTab} tone="raised" options={[
    {value:'path',label:'Path'},{value:'sessions',label:'Sessions',count:data.sessions.length},
    {value:'sources',label:'Sources',count:data.sources.length}
   ]}/>
   <motion.div key={tab} initial={reduce?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.4}}>
-   {tab==='path'?<PathTimeline slug={slug} detail={data}/>:tab==='sessions'?
+   {tab==='path'?
+    <div className="flex min-w-0 flex-col gap-4">
+     {now&&<NowCheckpoint slug={slug} cp={now} project={data}/>}
+     {data.checkpoints.length?<Stages detail={data}/>:<EmptyState art="compass" title="A plan is waiting to be written"
+      body="Ask your tutor to break your goal into checkpoints."
+      action={{label:'Copy plan prompt',onClick:()=>{void navigator.clipboard.writeText(planPrompt(project.title));
+       notify('Plan prompt copied',{tone:'success'})}}}/>}
+    </div>:tab==='sessions'?
     <Sessions slug={slug} sessions={data.sessions}/>:<SourceList sources={data.sources} projectId={project.id}/>}
   </motion.div>
  </Screen>;
