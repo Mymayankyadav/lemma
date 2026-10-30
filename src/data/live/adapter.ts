@@ -1,6 +1,6 @@
 import type { LemmaApi } from '../api'
 import {reviewForecast} from '../../lib/review-forecast'
-import {summaryMetadata,ownerProjects,resumableProjects} from './project-summary'
+import {resumableProjects} from './project-summary'
 
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
@@ -167,37 +167,11 @@ export class LiveAdapter implements LemmaApi {
   return subjectRow(checked(await db.from('subjects').insert({...input,user_id:uid,position:existing.length}).select('*').single()) as Row)
  }
  async listProjects(...args: Parameters<LemmaApi['listProjects']>): ReturnType<LemmaApi['listProjects']> {
-  const db=liveClient(),uid=await owner(db)
-  const [projects,subjects,cps,notes,sessions,sources,prereqs,cards,settings]=await Promise.all([
-    rows(db,'projects',uid,true),rows(db,'subjects',uid),rows(db,'checkpoints',uid),
-    rows(db,'notes',uid),rows(db,'sessions',uid),rows(db,'sources',uid),rows(db,'checkpoint_prereqs',uid),
-    rows(db,'cards',uid),this.getSettings()
-  ])
-  const subjectMap=new Map(subjects.map(s=>[s.id,subjectRow(s)]))
-  const cpMap=new Map(cps.map(c=>[c.id,c]))
-  const today=studyDay(Date.now(),settings.timeZone,settings.rolloverHour)
-  const views=new Map<string,CheckpointView>()
-  const visiting=new Set<string>()
-  const getView=(c:Row): CheckpointView=>{
-    if(views.has(c.id)) return views.get(c.id)!
-    if(visiting.has(c.id)) throw new LemmaError('invalid','Checkpoint prerequisite cycle')
-    visiting.add(c.id)
-    const pre=prereqs.filter(p=>p.checkpoint_id===c.id).map(p=>cpMap.get(p.prereq_id)).filter(Boolean) as Row[]
-    const view=checkpointRow(c,pre.map(getView),today)
-    views.set(c.id,view);visiting.delete(c.id);return view
-  }
-  return ownerProjects(projects.map(p=>{
-    const checkpoints=cps.filter(c=>c.project_id===p.id).sort((a,b)=>a.position-b.position).map(getView)
-    const counts=projectProgress(checkpoints)
-    const current=checkpoints.find(c=>c.ui==='now')??checkpoints.find(c=>c.ui==='next')
-    return {id:p.id,slug:p.slug,title:p.title,...summaryMetadata(p,subjectMap),status:p.status,
-      done:counts.done,total:counts.total,
-      current:current?{code:current.code,title:current.title,step:current.currentStep,stepsTotal:current.stepsTotal}:null,
-      lastActivityAt:p.last_activity_at,cardsCount:cards.filter(c=>notes.some(n=>n.id===c.note_id&&n.project_id===p.id&&n.status==='active')).length,
-      sessionsCount:sessions.filter(s=>s.project_id===p.id&&s.state==='ended').length,
-      sourcesCount:sources.filter(s=>s.project_id===p.id).length,
-       sourceTitles:sources.filter(s=>s.project_id===p.id).map(s=>String(s.title))} satisfies ProjectSummary
-  })).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
+  const db=liveClient()
+  await owner(db)
+  // ST-5: one owner-scoped summary RPC replaces full-table downloads of
+  // projects, checkpoints, prerequisites, notes, cards, sessions and sources.
+  return checked(await db.rpc('project_summaries')) as ProjectSummary[]
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
   const [slug]=args,db=liveClient(),uid=await owner(db)
@@ -488,24 +462,13 @@ export class LiveAdapter implements LemmaApi {
   return cardState(checked(await db.rpc('undo_review',{p_review:id})) as Row)
  }
  async searchCards(...args: Parameters<LemmaApi['searchCards']>): ReturnType<LemmaApi['searchCards']> {
-  const [query,slug]=args,db=liveClient(),uid=await owner(db)
-  const [notes,projects,subjects,cps,cards,comments]=await Promise.all([
-    rows(db,'notes',uid),rows(db,'projects',uid),rows(db,'subjects',uid),
-    rows(db,'checkpoints',uid),rows(db,'cards',uid),rows(db,'card_comments',uid)
-  ])
-  const term=query.trim().toLocaleLowerCase()
-  const matches=notes.filter(n=>{
-    const p=projects.find(p=>p.id===n.project_id)
-    return p && (!slug||p.slug===slug) && (!term||[n.front,n.back].some(text=>String(text).toLocaleLowerCase().includes(term)))
-  }).slice(0,100)
-  return matches.map(n=>{
-    const project=projects.find(p=>p.id===n.project_id)!,subject=subjects.find(s=>s.id===project.subject_id)
-    const cp=cps.find(c=>c.id===n.checkpoint_id)
-    return {noteNo:Number(n.no),front:n.front,type:n.type,kind:n.kind,
-      projectSlug:project.slug,glyph:subject?.glyph??'∫',checkpointCode:cp?.code??null,
-      due:cards.filter(c=>c.note_id===n.id).sort((a,b)=>a.due.localeCompare(b.due))[0]?.due??null,
-      status:n.status,openComments:comments.filter(c=>c.note_id===n.id&&c.status==='open').length}
-  })
+  const [query,slug]=args,db=liveClient()
+  await owner(db)
+  // ST-5: the database searches and returns only one bounded page. Never fetch
+  // every note/card/comment into the browser for a simple search.
+  return checked(await db.rpc('search_cards_page',{
+   p_query:query,p_slug:slug??null,p_limit:50,p_offset:0
+  })) as import('../types').CardRow[]
  }
  async getCard(...args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> {
   const [no]=args,db=liveClient(),uid=await owner(db)
