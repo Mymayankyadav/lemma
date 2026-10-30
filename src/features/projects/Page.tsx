@@ -113,7 +113,7 @@ export default function Page(){
  },[projects.error,projects.refetch,notify]);
  const all=useMemo(()=>(projects.data??[]).filter(project=>!project.system),[projects.data]);
  const visible=useMemo(()=>all.filter(project=>matches(project,filter)&&
-  (!search.trim()||[project.title,project.subject?.name??'Unassigned'].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
+  (!search.trim()||[project.title,project.subject?.name??'Unassigned',...(project.sourceTitles??[])].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
  const pinned=visible.filter(project=>project.pinned).slice(0,4);
  const pinnedIds=new Set(pinned.map(project=>project.id));
  const groups=useMemo(()=>{
