@@ -49,6 +49,18 @@ create unique index sources_project_sha256 on public.sources(project_id,sha256)
 create index sources_project_added on public.sources(project_id,added_at desc);
 alter table public.sources alter column short set default '';
 
+
+-- Preserve the original upload chronology instead of assigning migration time
+-- to pre-existing PDFs. Existing stable shorts are never renamed.
+with ranked as (
+  select id,created_at,
+    (row_number() over(partition by project_id order by created_at,id)-1)::integer as source_position
+  from public.sources
+)
+update public.sources s set added_at=r.created_at,position=r.source_position
+from ranked r where s.id=r.id
+  and (s.added_at is distinct from r.created_at or s.position<>r.source_position);
+
 -- The generated short is stable after creation, even if the title is renamed.
 -- Serialize allocation within a project to avoid two concurrent suffix choices.
 create function public.lemma_source_short() returns trigger
