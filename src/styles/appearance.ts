@@ -3,11 +3,11 @@ export type Density='compact'|'cozy'|'comfortable';
 export type Effects='calm'|'rich'; // "rich" is the persisted name for lively motion.
 export type ThemePreference=ThemeId|'system';
 export interface Appearance {theme:ThemePreference;density:Density;effects:Effects}
-export const DEFAULT_APPEARANCE:Appearance={theme:'system',density:'compact',effects:'rich'};
+export const DEFAULT_APPEARANCE:Appearance={theme:'system',density:'compact',effects:'calm'};
 const densities:Density[]=['compact','cozy','comfortable'],effects:Effects[]=['calm','rich'];
 const valid=(value:unknown):value is ThemePreference=>value==='system'||themes.some(t=>t.id===value);
 export function resolveTheme(preference:ThemePreference):ThemeId {
- return preference==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'euclid-night':'euclid'):preference;
+ return preference==='system'?(window.matchMedia('(prefers-color-scheme: dark)').matches?'graph-night':'graph'):preference;
 }
 function normalize(value:Partial<Appearance>):Appearance {
  return {theme:valid(value.theme)?value.theme:DEFAULT_APPEARANCE.theme,
