@@ -32,7 +32,7 @@ for(const world of ['graph','graph-night'] as const){
   await expect(first).toContainText('ready');
   await page.getByRole('button',{name:'Create project'}).click();
   await expect(page).toHaveURL(/#\/p\/topology-exercises\?tab=sources$/);
-  await expect(page.getByRole('region',{name:'Sources'}).getByText('notes.pdf')).toBeVisible();
+  await expect(page.getByRole('region',{name:'Sources'}).getByText('notes',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({path:'test-results/screens/fix-404-complete-'+world+'.png',fullPage:true});
   expect(errors).toEqual([]);
