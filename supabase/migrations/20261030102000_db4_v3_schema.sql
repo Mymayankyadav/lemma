@@ -61,6 +61,17 @@ update public.sources s set added_at=r.created_at,position=r.source_position
 from ranked r where s.id=r.id
   and (s.added_at is distinct from r.created_at or s.position<>r.source_position);
 
+
+update public.sources set kind=case
+  when filename ~* '(syllabus|outline)' then 'syllabus'
+  when filename ~* '(exam|test|quiz)' then 'exam'
+  when filename ~* '(homework|problem|exercise|sheet|hw[0-9])' then 'problems'
+  when filename ~* '(lecture|notes|week[0-9]|class)' then 'notes'
+  when filename ~* '(slides|presentation)' then 'slides'
+  else 'book'
+end
+where kind='other';
+
 -- The generated short is stable after creation, even if the title is renamed.
 -- Serialize allocation within a project to avoid two concurrent suffix choices.
 create function public.lemma_source_short() returns trigger
