@@ -27,6 +27,3 @@ test('suspending a card advances the polygon and resets the next card timer',asy
  await expect(page).toHaveURL(new RegExp('#/review/done$'))
  await expect(page.getByRole('region',{name:'Review statistics'}).getByText('0:02',{exact:true})).toBeVisible()
 })
-))
- await expect(page.getByRole('region',{name:'Review statistics'}).getByText('0:02',{exact:true})).toBeVisible()
-})
