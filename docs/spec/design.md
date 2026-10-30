@@ -1,6 +1,6 @@
 # Design specification: Amber on Obsidian
 
-Sizes, colours, elevations and effect defaults are now governed by `themes.md` (owner feedback, 30 Oct: smaller text, denser layout, calmer look, selectable themes). Visual source of truth, in this order: this file, the boards in `docs/design/canvas/` (open them in a browser or read their inline styles for exact values), and the owner's reference image `docs/design/reference-amber-on-obsidian.png`. The owner approved the canvas on 29 Oct 2026. When this file and a board disagree, this file wins.
+Home, the project timeline, the Atlas and Appearance are now governed by `lab.md` (round 2, 30 Oct). Sizes, colours, elevations and effect defaults are governed by `themes.md` (owner feedback, 30 Oct: smaller text, denser layout, calmer look, selectable themes). Visual source of truth, in this order: this file, the boards in `docs/design/canvas/` (open them in a browser or read their inline styles for exact values), and the owner's reference image `docs/design/reference-amber-on-obsidian.png`. The owner approved the canvas on 29 Oct 2026. When this file and a board disagree, this file wins.
 
 ## 1. Direction
 

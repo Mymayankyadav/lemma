@@ -319,6 +319,10 @@ Notes per task:
 - After PR 3: push a branch `review/themes` with `THEMES=all` so the review workflow commits contact sheets per theme; link them in the PR.
 - Done when: `themes.md` §7.
 
+#### Lemma Lab round 2 (owner feedback, 30 Oct): DB-3, MCP-3, UI-4a, UI-4b, UI-4c
+- Spec: `docs/spec/lab.md` (it overrides `design.md` for Home, Atlas, the project timeline and Appearance). Reference prototype: `docs/design/lab/lemma-lab.html`.
+- Start UI-4a, DB-3 now and in parallel; UI-4b and UI-4c can start on demo data at once and switch to live fields when DB-3 merges; MCP-3 after DB-3.
+
 ## 9. Milestones (order of work when fewer agents are available)
 
 0. **M0 Chat-first (priority)**: DB-1 and MCP-1 → the owner connects Claude and ChatGPT and studies in chat.
