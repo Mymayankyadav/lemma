@@ -400,8 +400,8 @@ export class LiveAdapter implements LemmaApi {
     rows(db,'checkpoints',uid),rows(db,'sessions',uid),rows(db,'sources',uid),
     this.getSettings(),rows(db,'reviews',uid),rows(db,'concepts',uid)
   ])
-  const notesById=new Map(notes.filter(n=>n.status==='active').map(n=>[n.id,n]))
-  const projectsById=new Map(projects.map(p=>[p.id,p]))
+  const projectsById=new Map(projects.filter(p=>p.status!=='archived'&&p.system!==true).map(p=>[p.id,p]))
+  const notesById=new Map(notes.filter(n=>n.status==='active'&&projectsById.has(n.project_id)).map(n=>[n.id,n]))
   const subjectsById=new Map(subjects.map(s=>[s.id,s]))
   const cpById=new Map(cps.map(c=>[c.id,c]))
   const sessionsById=new Map(sessions.map(s=>[s.id,s]))
