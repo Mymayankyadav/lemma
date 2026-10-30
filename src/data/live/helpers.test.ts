@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { cardState, cardStateDb, checkpointRow, fail, noteOrds, rows, settingsRow, slugify } from './helpers'
+import { cardState, cardStateDb, checkpointRow, fail, noteOrds, rows, settingsRow, slugify, sourceRow } from './helpers'
 
 describe('live adapter mappers', () => {
   it('makes only user-owned connector URLs and maps settings', () => {
@@ -15,6 +15,12 @@ describe('live adapter mappers', () => {
     expect(mapped.rolloverHour).toBe(4)
     expect(mapped.connectorUrl).toContain('/functions/v1/mcp/test-secret')
     expect(mapped.desiredRetention).toBe(.9)
+  })
+  it('exposes source storage bytes without guessing missing legacy sizes', () => {
+    const base={id:'s',project_id:'p',title:'Notes',short:'notes',filename:'notes.pdf',page_count:3,
+      status:'ready',has_text:true,outline:[],created_at:'2026-10-30T00:00:00Z'}
+    expect(sourceRow({...base,bytes:2048}).bytes).toBe(2048)
+    expect(sourceRow(base).bytes).toBeNull()
   })
   it('round-trips scheduling state to the RPC snake_case JSON', () => {
     const before={state:2 as const,due:'2026-10-30T12:00:00Z',stability:3,difficulty:5,

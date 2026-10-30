@@ -71,7 +71,7 @@ export interface CheckpointDetail {
 }
 export interface Source {
  kind?: SourceKind; sha256?: string | null; position?: number; addedAt?: IsoDate; planCheckedAt?: IsoDate | null
- id: string; projectId: string; title: string; short: string; filename: string; pageCount: number | null
+ id: string; projectId: string; title: string; short: string; filename: string; bytes?: number | null; pageCount: number | null
  status: 'queued' | 'reading' | 'uploading' | 'saving' | 'extracting' | 'ready' | 'failed'; hasText: boolean
  outline: {title: string; page: number; level: number}[]; createdAt: IsoDate
 }
@@ -169,4 +169,5 @@ export interface HomeSummary {
 export interface NewProjectInput { title: string; slug?: string; subjectId: string; goal: string; style: string }
 /** v3 name-only creation; the tutor supplies goal, subject and style later. */
 export interface NewProjectDraftInput { title: string; sources?: File[] }
+
 

@@ -72,7 +72,7 @@ export function projectRow(r: Row): Project {
   return {id:r.id,slug:r.slug,title:r.title,goal:r.goal??'',style:r.style??'socratic',status:r.status,subjectId:r.subject_id??'',createdAt:r.created_at,pinned:r.pinned??false,system:r.system??false,targetDate:r.target_date??null,targetLabel:r.target_label??null}
 }
 export function sourceRow(r: Row): Source {
-  return {id:r.id,projectId:r.project_id,title:r.title,short:r.short,filename:r.filename,pageCount:r.page_count,status:r.status,hasText:r.has_text,outline:r.outline ?? [],createdAt:r.created_at,kind:r.kind??'other',sha256:r.sha256??null,position:r.position??0,addedAt:r.added_at??r.created_at,planCheckedAt:r.plan_checked_at??null}
+  return {id:r.id,projectId:r.project_id,title:r.title,short:r.short,filename:r.filename,bytes:r.bytes??null,pageCount:r.page_count,status:r.status,hasText:r.has_text,outline:r.outline ?? [],createdAt:r.created_at,kind:r.kind??'other',sha256:r.sha256??null,position:r.position??0,addedAt:r.added_at??r.created_at,planCheckedAt:r.plan_checked_at??null}
 }
 export function cardState(r: Row): CardState {
   return {state:r.state,due:r.due,stability:r.stability,difficulty:r.difficulty,lastReview:r.last_review,step:r.step,reps:r.reps,lapses:r.lapses}

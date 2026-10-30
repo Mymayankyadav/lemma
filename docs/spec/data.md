@@ -488,7 +488,7 @@ Names are fixed; fields use camelCase. Dates are ISO strings. `Glyph` is a 1–2
 | `CheckpointView` | id, code, title, position, ui (`'proposed' \| 'revisit' \| 'done' \| 'now' \| 'next' \| 'locked'`), currentStep, stepsTotal, recheckDue, dueCards |
 | `ProjectDetail` | project (`Project`), subject (`Subject`), checkpoints (`CheckpointView[]`, includes proposed ones), done, total, sources (`Source[]`), sessions (`SessionSummary[]`), pendingProposals (number) |
 | `CheckpointDetail` | view (`CheckpointView`), objective, criterion, steps (string[]), pages, sourceShort, prereqs (codes), concepts (`{slug, name}[]`), recheckPrompt, events (`SessionEvent[]`, newest 20), cardsCount, sessions (`SessionSummary[]`) |
-| `Source` | id, projectId, title, short, filename, pageCount, status, hasText, outline (`{title, page, level}[]`), createdAt |
+| `Source` | id, projectId, title, short, filename, optional bytes (original PDF size in bytes; null when unknown), pageCount, status, hasText, outline (`{title, page, level}[]`), createdAt |
 | `IngestProgress` | phase (`'reading' \| 'uploading' \| 'saving' \| 'done' \| 'failed'`), page, pageCount, message |
 | `SessionSummary` | id, projectSlug, number, goal, checkpointCode, client, display (`'live' \| 'paused' \| 'ended'`), goalMet, startedAt, lastActivityAt, minutes |
 | `SessionEvent` | id, kind, body, outcome, hintLevel, checkpointCode, createdAt |
