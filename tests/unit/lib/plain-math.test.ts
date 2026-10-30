@@ -5,7 +5,7 @@ import {renderMarkdown} from '../../../src/lib/render';
 describe('non-card mathematical content',()=>{
  it('produces readable SVG and aria labels without TeX source',()=>{
   expect(plainMath('Galois $H\\mapsto K^H$ over $\\mathbb{R}$'))
-   .toBe('Galois H↦Kᴴ over ℝ');
+   .toBe('Galois H↦ Kᴴ over ℝ');
   expect(plainMath('A $\\subseteq$ B; $x_1\\in\\mathbb{C}$'))
    .toBe('A ⊆ B; x₁∈ℂ');
   expect(plainMath('From \\(x^2\\) to \\[\\alpha\\]')).toBe('From x² to α');
