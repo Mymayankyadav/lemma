@@ -359,7 +359,7 @@ describe("demo adapter", () => {
     await expect(api.mergeSubjects(subjects[0].id, subjects[0].id)).rejects.toMatchObject({code: "invalid"});
   });
 
-  it("rejects identical PDF bytes even under a different filename, but permits retry after failure", async () => {
+  it("rejects identical PDF bytes even under a different filename", async () => {
     const api = make();
     const project = (await api.getProject("real-analysis")).project;
     const bytes = await readFile(new URL("../../fixtures/sample.pdf", import.meta.url));
@@ -367,7 +367,7 @@ describe("demo adapter", () => {
       new File([bytes], "first.pdf", {type: "application/pdf"}), () => {});
     expect(original.sha256).toMatch(/^[a-f0-9]{64}$/);
     await expect(api.addSource(project.id,
-      new File([bytes], "renamed.pdf", {type: "application/pdf"}), () => {})
+      new File([bytes], "renamed.pdf", {type: "application/pdf"}), () => {}))
       .rejects.toMatchObject({code: "conflict", message: expect.stringMatching(/Already added/)});
     expect((await api.getProject("real-analysis")).sources.filter(s => s.sha256 === original.sha256))
       .toHaveLength(1);
