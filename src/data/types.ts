@@ -170,7 +170,19 @@ export interface AtlasGraph {
  checkpointRefs: {projectSlug: string; code: string}[]; dueCards: number}[]
  links: {fromId: string; toId: string; kind: 'prereq' | 'related'}[]
 }
+/** Bounded owner-scoped Insights RPC payload; demo may continue using raw rows. */
+export interface InsightAggregate {
+ days: number; reviews: number; right: number
+ reviewDays: {date: IsoDate; count: number; again: number; hard: number; good: number; easy: number; right: number}[]
+ calibration: {confidence: Exclude<Confidence, null>; total: number; right: number}[]
+ sessions: number; minutes: number; typicalSession: number | null
+ subjectMinutes: {subject: Subject; minutes: number}[]
+ checkpointDays: {date: IsoDate; demonstrated: number; rechecked: number}[]
+ mostRevisited: {label: string; times: number; conceptName: string | null} | null
+}
 export interface InsightData {
+ /** ST-5: server aggregate, supplied instead of unbounded raw rows in live mode. */
+ aggregate?: InsightAggregate
  reviews: {reviewedAt: IsoDate; rating: Rating; stateBefore: SchedulingState; confidence: Confidence; durationMs: number; projectId: string}[]
  sessions: {startedAt: IsoDate; minutes: number; projectId: string; goalMet: GoalMet}[]
  checkpointEvents: {at: IsoDate; kind: 'demonstrated' | 'recheck_ok' | 'recheck_fail'; checkpointCode: string; projectId: string}[]
