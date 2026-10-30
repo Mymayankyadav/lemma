@@ -277,7 +277,6 @@ export default function Page(){
    </defs>
    <motion.g transform={'translate('+view.x+' '+view.y+') scale('+view.k+')'}
     initial={reduce?false:{opacity:0}} animate={{opacity:1}} transition={{duration:reduce?.15:1}}>
-    <OrbitRings graph={graph} nodes={nodeList.map(n=>({...n,...positions[n.id]}))} scale={view.k} onFocus={focusOrbit}/>
     {layout?.edges.map((edge,index)=>{
      const from=byId?.get(edge.fromId),to=byId?.get(edge.toId);
      if(!from||!to)return null;
@@ -291,6 +290,7 @@ export default function Page(){
     {nodeList.map(node=><WorldNode key={node.id} node={node} position={positions[node.id]??node}
      zoomScale={view.k} selected={selectedId===node.id} dim={filtered(node)} reduce={reduce} showLabel={labels.has(node.id)}
      onSelect={selectNode} onDown={onNodeDown} onMove={onNodeMove} onUp={onNodeUp} onCancel={onNodeCancel}/>)}
+    <OrbitRings graph={graph} nodes={nodeList.map(n=>({...n,...positions[n.id]}))} scale={view.k} onFocus={focusOrbit}/>
    </motion.g>
   </svg>:!nodeList.length?<div className="absolute inset-0 flex items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty"
    body="Concepts will appear as you develop your study plans."/></div>:null}
