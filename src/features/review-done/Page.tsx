@@ -85,11 +85,6 @@ export default function Page(){
     style={{background:a.rating===1?'var(--bad)':a.rating===2?'var(--warn)':a.rating===3?'var(--accent)':'var(--good)'}}/>)}</div>
   </section>
   {stats.sureSummary&&<Slab className="w-full px-4 py-3 text-center text-body text-ink-soft">{stats.sureSummary}</Slab>}
-  <div className="flex min-h-12 w-full items-center justify-center gap-2 text-body text-ink-2">
-   <CalendarDays size={19} className="text-amber" aria-hidden="true"/>
-   {tomorrow===null?'Your next study day is ahead':tomorrow===0?'Nothing scheduled for tomorrow':
-    tomorrow+' due tomorrow'+(tomorrow>=100?' (at least)':'')}
-  </div>
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>
   <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
