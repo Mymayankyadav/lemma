@@ -477,7 +477,15 @@ export class DemoAdapter implements LemmaApi {
       if (patch.glyph !== undefined) text(patch.glyph, 1, 2, "Glyph");
       if (patch.position !== undefined && (!Number.isFinite(patch.position) || patch.position < 0))
         invalid("Invalid subject position");
-      Object.assign(subject, patch);
+      const {position, ...fields} = patch;
+      Object.assign(subject, fields);
+      if (position !== undefined) {
+        const others = this.store.subjects.filter(s => s.id !== id)
+          .sort((a,b) => a.position - b.position);
+        const index = Math.min(others.length, Math.floor(position));
+        others.splice(index, 0, subject);
+        others.forEach((s, i) => { s.position = i; });
+      }
       return clone(subject);
     });
   }
@@ -791,7 +799,7 @@ export class DemoAdapter implements LemmaApi {
   async getHome(): Promise<HomeSummary> {
     const projects = (await this.listProjects()).filter(p => p.status !== "archived"),
       open = this.store.sessions
-        .filter((s) => s.state === "open" && this.projectById(s.projectId).status !== "archived")
+        .filter((s) => s.state === "open" && this.projectById(s.projectId).status !== "archived" && !this.projectById(s.projectId).system)
         .sort(
           (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
         )[0];
