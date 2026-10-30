@@ -19,7 +19,10 @@ export interface ProjectTimelineProps {
 export function ProjectTimeline({project,checkpoints,variant='ascent',height=84,mini=false}:ProjectTimelineProps){
  const navigate=useNavigate()
  const n=checkpoints.length
- const currentIndex=Math.max(0,checkpoints.findIndex(cp=>cp.ui==='now'||cp.ui==='revisit'||cp.ui==='next'))
+ const current=checkpoints.findIndex(cp=>cp.ui==='now')
+ const revisit=checkpoints.findIndex(cp=>cp.ui==='revisit')
+ const next=checkpoints.findIndex(cp=>cp.ui==='next')
+ const currentIndex=current>=0?current:revisit>=0?revisit:Math.max(0,next)
  const [selected,setSelected]=useState<number|null>(null)
  const focusedIndex=selected===null?currentIndex:Math.min(selected,Math.max(0,n-1))
  const selectedCheckpoint=checkpoints[focusedIndex]
