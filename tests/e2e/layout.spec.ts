@@ -122,7 +122,7 @@ test('UI-6a auto-switches graph worlds with OS theme and respects a manual choic
  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#13171D');
  await page.getByRole('radio',{name:/^Day /}).click();
  await page.emulateMedia({colorScheme:'light'});
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.emulateMedia({colorScheme:'dark'});
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
 });
