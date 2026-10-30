@@ -94,6 +94,14 @@ export function scheduleDetail(row:ScheduledCheckpoint):string|null{
  return prefix+', '+(row.projected?'expected ':'done ')+scheduleDate(row.actualOn)+
   ': '+(Math.abs(delta)<=2?'on time':suffix)
 }
+/** Shared pace estimate used by both the project Metro and checkpoint sheet. */
+export function paceFromDemonstrations(events:readonly {projectId:string;checkpointCode:string;kind:string;at:string}[],
+ projectId:string,now=Date.now()):number{
+ const since=now-28*DAY
+ const completed=new Set(events.filter(event=>event.projectId===projectId&&event.kind==='demonstrated'
+  &&Date.parse(event.at)>=since&&Date.parse(event.at)<=now).map(event=>event.checkpointCode))
+ return Math.max(1,completed.size)/4
+}
 export const scheduleColor:Record<ScheduleState,string>={
  early:'var(--good)',on_time:'var(--accent)',late:'var(--bad, var(--again))',
  future:'var(--ink-3)',unscheduled:'var(--line)'
