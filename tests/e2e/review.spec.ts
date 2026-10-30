@@ -207,3 +207,22 @@ for(const quiet of [false,true]){
   expect(errors).toEqual([])
  })
 }
+
+for(const world of ['graph','graph-night'] as const){
+ test(`FIX #343 Mix decks switch has a distinct thumb and track in ${world}`,async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(`./?demo=1&theme=${world}#/review`);
+  const control=page.getByRole('switch',{name:'Mix decks'});
+  await expect(control).toBeVisible();
+  const track=page.locator('.ui-switch-track').first(),thumb=track.locator('.ui-switch-thumb');
+  await expect(track).toHaveAttribute('data-checked','true');
+  const before=await track.evaluate(el=>({track:getComputedStyle(el).backgroundColor,thumb:getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor,border:getComputedStyle(el).borderTopWidth}));
+  expect(before.track).not.toBe(before.thumb);
+  expect(Number.parseFloat(before.border)).toBeGreaterThanOrEqual(1);
+  await control.uncheck();
+  await expect(track).toHaveAttribute('data-checked','false');
+  const after=await track.evaluate(el=>({track:getComputedStyle(el).backgroundColor,thumb:getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor}));
+  expect(after.track).toBe(after.thumb);
+  await page.screenshot({path:`test-results/screens/review/ui6a-mix-decks-${world}.png`,fullPage:true});
+ });
+}
