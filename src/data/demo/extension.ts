@@ -1,4 +1,4 @@
-import type { DemoStore } from "./model";
+import type { DemoStore, DemoSource } from "./model";
 /** V3 deterministic demo enrichment; also used by scripts/make-demo-data.ts. */
 export function enrichDemoStore(data: DemoStore) {
  const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
@@ -23,7 +23,7 @@ export function enrichDemoStore(data: DemoStore) {
  }
  const existing=data.sources.find(s=>s.id==="source-rudin");
  if (existing) {existing.kind="book";existing.position=0;existing.addedAt="@day:-96:0.5:0";existing.planCheckedAt="@day:-8:0.5:0";}
- const extras=[
+ const extras: Array<[string, string, string, NonNullable<DemoSource["kind"]>, string, number, string, string | null]> = [
   ["project-analysis","analysis-notes","Weekly analysis lecture notes","notes","week-7-notes.pdf",13,"@day:-12:0.5:0","@day:-6:0.5:0"],
   ["project-analysis","analysis-sheet","Compactness problem sheet","problems","problem-sheet-4.pdf",6,"@day:-5:0.5:0","@day:-2:0.5:0"],
   ["project-analysis","analysis-slides","Lecture 8: continuity","slides","slides-continuity.pdf",21,"@day:-1:0.5:0",null],
