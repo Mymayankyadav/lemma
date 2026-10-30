@@ -173,7 +173,7 @@ as $$
     select value as item from public.project_summaries() as value
   ),
   project_json as (
-    select coalesce(jsonb_agg(item order by item->>'lastActivityAt' desc nulls last, item->>'id'), '[]'::jsonb) as items
+    select coalesce(jsonb_agg(item - 'sourceTitles' order by item->>'lastActivityAt' desc nulls last, item->>'id'), '[]'::jsonb) as items
     from library where item->>'status' <> 'archived'
   ),
   visible as (
