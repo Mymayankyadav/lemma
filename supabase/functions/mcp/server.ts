@@ -44,8 +44,8 @@ export function buildServer(c:Context):McpServer{
     project:optProject,source:S().optional(),from:S().min(1).max(12),
     to:S().max(12).optional(),pdf:z.boolean().optional()
   }),true,(a,ctx)=>readPages(ctx,a));
-  register('search','Full-text search in the project\'s PDFs. Returns pages with short snippets.',z.object({
-    query:S().min(2).max(120),project:optProject,limit:z.number().int().min(1).max(8).optional()
+  register('search','Full-text search across the project PDFs; optionally narrow to one source short code.',z.object({
+    query:S().min(2).max(120),project:optProject,source:S().max(20).optional(),limit:z.number().int().min(1).max(8).optional()
   }),true,(a,ctx)=>search(ctx,a));
   register('start_session','Open a study session before teaching. Returns its code. Reuses an open session on the same checkpoint from the last 3 hours.',z.object({
     project:name,goal:S().min(1).max(200),checkpoint:cp.optional(),
@@ -85,17 +85,20 @@ export function buildServer(c:Context):McpServer{
   const planningCp=z.object({
     stage:S().max(40).nullable().optional(),title:S().min(1).max(80),objective:S().min(1).max(400),
     criterion:S().min(1).max(400),steps:z.array(S().min(1).max(80)).min(1).max(8),
-    pages:S().optional(),prereqs:z.array(z.number().int()).optional(),
+    pages:S().optional(),due_on:S().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    sources:z.array(z.object({source:S().min(1).max(20),pages:S().max(120).optional()})).max(12).optional(),
+    prereqs:z.array(z.number().int()).optional(),
     concepts:z.array(S().max(60)).max(4).optional(),
     recheck_prompt:S().max(300).optional()
   });
   register('propose_plan','Propose a first plan: checkpoints with stage, criteria, steps, pages, prerequisites; concepts with topic. User approval required.',z.object({
     project:name,checkpoints:z.array(planningCp).min(3).max(40),
-    concepts:z.array(z.object({name:S().max(60),topic:S().max(40).nullable().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
+    concepts:z.array(z.object({name:S().min(1).max(60),level:z.enum(['cluster','galaxy','system','planet','moon']).optional(),parent:S().max(60).nullable().optional(),star:z.boolean().optional(),topic:S().max(40).nullable().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
     reason:S().max(300).optional()
   }),false,(a,ctx)=>proposePlan(ctx,a));
   register('propose_plan_change','Propose changes to an approved plan: add, update, remove, move, prereq_add, prereq_remove. Keep unaffected checkpoints. The user approves in Lemma.',z.object({
     project:name,ops:z.array(z.object({op:z.enum(['add','update','remove','move','prereq_add','prereq_remove'])}).catchall(z.unknown())).min(1).max(20),
+    concepts:z.array(z.object({name:S().min(1).max(60),level:z.enum(['cluster','galaxy','system','planet','moon']).optional(),parent:S().max(60).nullable().optional(),star:z.boolean().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
     diagnostics:z.array(S().regex(/^D[0-9]+$/)).max(20).optional(),book:S().max(20).optional(),reason:S().min(1).max(300)
   }),false,(a,ctx)=>proposePlanChange(ctx,a));
   register('create_project','Start a sources-first project with only a name, optionally a subject, goal, schedule and PDF metadata. Student uploads actual PDF bytes in Lemma; tutor proposes the plan for approval.',z.object({
