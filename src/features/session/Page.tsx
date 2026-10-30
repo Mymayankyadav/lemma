@@ -24,7 +24,7 @@ function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
   <div className="min-w-0 pt-1">
    <div className="flex flex-wrap items-center gap-2"><Icon size={15} aria-hidden="true" className={event.kind==='misconception'?'text-amber':'text-ink-3'}/><h3 className="text-body-l font-semibold">{name[event.kind]}</h3>
    {event.checkpointCode&&<span className="text-caption text-ink-3">{event.checkpointCode}</span>}
-   {event.hintLevel!==null&&event.kind==='hint'&&<span aria-label={`Hint level ${event.hintLevel}`} className="flex gap-1">{[1,2,3,4].map(n=><i key={n} className={`h-1 w-3 rounded-full ${n<=event.hintLevel!?'bg-amber':'bg-fill-2'}`}/>)}</span>}
+   {event.hintLevel!==null&&event.kind==='hint'&&<span aria-label={`Hint level ${event.hintLevel}`} className="inline-flex items-center gap-1.5"><span className="text-caption tabular-nums text-ink-2">Level {event.hintLevel}</span>{[1,2,3,4].map(n=><i key={n} aria-hidden="true" className={`h-1 w-2.5 rounded-[1px] ${n<=Math.ceil(event.hintLevel/5)?'bg-amber':'bg-fill-2'}`}/>)}</span>}
    </div>
    <div className={event.kind==='misconception'?'mt-2 border-l-2 border-amber pl-3 italic':'mt-1.5'}><MathText source={event.body} className="text-body text-ink-2"/></div>
    {event.outcome&&<Chip size={28} tone={event.outcome==='demonstrated'?'success':event.outcome==='failed'?'danger':'amber'}>{event.outcome}</Chip>}
