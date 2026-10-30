@@ -233,7 +233,7 @@ describe("demo adapter", () => {
     const uploads = await Promise.all(names.map(name =>
       api.addSource(
         project.id,
-        new File([bytes], name, {type: "application/pdf"}),
+        new File([bytes, "\n% Demo distinct source " + name + "\n"], name, {type: "application/pdf"}),
         progress => phases[name].push(progress.phase),
       ),
     ));
@@ -357,6 +357,20 @@ describe("demo adapter", () => {
     await api.mergeSubjects(created.id, subjects[0].id);
     expect((await api.listSubjects()).some(s => s.id === created.id)).toBe(false);
     await expect(api.mergeSubjects(subjects[0].id, subjects[0].id)).rejects.toMatchObject({code: "invalid"});
+  });
+
+  it("rejects identical PDF bytes even under a different filename, but permits retry after failure", async () => {
+    const api = make();
+    const project = (await api.getProject("real-analysis")).project;
+    const bytes = await readFile(new URL("../../fixtures/sample.pdf", import.meta.url));
+    const original = await api.addSource(project.id,
+      new File([bytes], "first.pdf", {type: "application/pdf"}), () => {});
+    expect(original.sha256).toMatch(/^[a-f0-9]{64}$/);
+    await expect(api.addSource(project.id,
+      new File([bytes], "renamed.pdf", {type: "application/pdf"}), () => {})
+      .rejects.toMatchObject({code: "conflict", message: expect.stringMatching(/Already added/)});
+    expect((await api.getProject("real-analysis")).sources.filter(s => s.sha256 === original.sha256))
+      .toHaveLength(1);
   });
 
 });
