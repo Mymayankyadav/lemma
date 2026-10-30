@@ -214,7 +214,7 @@ for(const world of ['graph','graph-night'] as const){
   await page.goto(`./?demo=1&theme=${world}#/review`);
   const control=page.getByRole('switch',{name:'Mix decks'});
   await expect(control).toBeVisible();
-  const track=page.locator('.ui-switch-track').first(),thumb=track.locator('.ui-switch-thumb');
+  const track=page.locator('.ui-switch-track').first();
   await expect(track).toHaveAttribute('data-checked','true');
   const before=await track.evaluate(el=>({track:getComputedStyle(el).backgroundColor,thumb:getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor,border:getComputedStyle(el).borderTopWidth}));
   expect(before.track).not.toBe(before.thumb);
