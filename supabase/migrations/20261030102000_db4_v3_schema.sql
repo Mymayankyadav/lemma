@@ -169,7 +169,7 @@ begin
       values(new.user_id,new.id,new.source_id,new.pages)
     on conflict (checkpoint_id,source_id) do update
       set pages=excluded.pages
-      where public.checkpoint_sources.pages is distinct from excluded.pages;
+      where checkpoint_sources.pages is distinct from excluded.pages;
   end if;
   return new;
 end $;
