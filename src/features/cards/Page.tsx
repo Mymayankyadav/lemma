@@ -104,7 +104,8 @@ export default function Page() {
         />
       </label>
       <div
-        className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1"\n        role="group"
+        className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1"
+        role="group"
         aria-label="Card filters"
       >
         <Chip className="shrink-0 whitespace-nowrap" selected={filter === "all"} onClick={() => setFilter("all")}>
@@ -113,16 +114,19 @@ export default function Page() {
         {projects.data?.map((p) => (
           <Chip
             key={p.id}
+            className="shrink-0 whitespace-nowrap"
             selected={filter === p.slug}
             onClick={() => setFilter(p.slug)}
           >
-            <span aria-hidden="true" className="shrink-0">{p.subject.glyph}</span>\n            <span className="whitespace-nowrap">{p.title}</span>
+            <span aria-hidden="true" className="shrink-0">{p.subject.glyph}</span>
+            <span className="whitespace-nowrap">{p.title}</span>
           </Chip>
         ))}
         <Chip className="shrink-0 whitespace-nowrap" selected={filter === "notes"} onClick={() => setFilter("notes")}>
           Has notes
         </Chip>
         <Chip
+          className="shrink-0 whitespace-nowrap"
           selected={filter === "paused"}
           onClick={() => setFilter("paused")}
         >
