@@ -137,7 +137,7 @@ for (const [width, density] of [
   });
 }
 
-for(const world of ['euclid','euclid-night'] as const){
+for(const world of ['graph','graph-night'] as const){
  test(`UI-5g card rows and tutor marginalia in ${world}`,async({page})=>{
   await page.setViewportSize({width:360,height:740});
   await page.addInitScript(theme=>localStorage.setItem('lemma.ui',JSON.stringify({theme,density:'compact',effects:'calm'})),world);
@@ -156,7 +156,7 @@ for(const world of ['euclid','euclid-night'] as const){
  });
 }
 
-for(const theme of ['euclid','euclid-night'])test(`focused card routes keep floating tools clear: ${theme}`,async({page})=>{
+for(const theme of ['graph','graph-night'])test(`focused card routes keep floating tools clear: ${theme}`,async({page})=>{
  for(const route of ['/cards','/cards/31']){
   await page.goto(`/lemma/?demo=1&theme=${theme}&effects=calm#${route}`)
   await expect(page.getByRole('heading',{name:route==='/cards'?'Cards':'Card detail',level:1})).toBeVisible()
