@@ -262,6 +262,7 @@ export class DemoAdapter implements LemmaApi {
       code: cp.code,
       title: cp.title,
       position: cp.position,
+      stage: cp.stage ?? null,
       ui: this.cpUi(cp),
       currentStep: cp.currentStep,
       stepsTotal: cp.steps.length,
