@@ -38,7 +38,7 @@ function CardFace({item,revealed,confidence}:{item:ReviewItem;revealed:boolean;c
    <div className="mb-5 flex items-center gap-2 text-amber"><span className="h-px flex-1 bg-amber-line"/>
     <span aria-hidden="true" className="size-2 rotate-45 bg-amber"/><span className="h-px flex-1 bg-amber-line"/></div>
    {back?<MathText source={back} variant="answer"/>:item.type==='cloze'?<MathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}}/>:
-    <p className="font-math text-[18px] text-ink-2">See the highlighted answer above.</p>}
+    <p className="font-math text-title-s text-ink-2">See the highlighted answer above.</p>}
   </motion.div>}
   <div className="mt-auto flex flex-wrap gap-2 text-ink-3">
    {item.sourceShort&&<Chip tone="quiet" icon={BookOpen}>{item.sourceShort}{item.pageLabel?' p. '+item.pageLabel:''}</Chip>}
@@ -155,7 +155,7 @@ export default function Page(){
   }catch(error){notify(error instanceof Error?error.message:'Could not suspend',{tone:'danger'})}
  }
  if(settings.isPending||apiCards.isPending)return <Screen title="Card review" back="/review"><Skeleton h={50}/><Skeleton h={380}/></Screen>;
- if(!current && !queue)return <Screen title="Card review" back="/review"><div className="text-[14px] text-ink-2">Preparing your cards…</div></Screen>;
+ if(!current && !queue)return <Screen title="Card review" back="/review"><div className="text-body text-ink-2">Preparing your cards…</div></Screen>;
  if(!current)return <Screen title="Card review" back="/review"><p className="text-ink-2">Nothing due in this selection.</p>
   <Button onClick={()=>navigate(answers.length?'/review/done':'/review')}>Continue</Button></Screen>;
  const progress=Math.max(1,answers.length+1),progressWidth=Math.min(100,100*answers.length/Math.max(1,total));
@@ -164,7 +164,7 @@ export default function Page(){
   <header className="flex items-center gap-2">
    <IconButton icon={X} label="Close review" onClick={close}/>
    <div className="min-w-0 flex-1">
-    <div className="flex items-center justify-between gap-1 text-[12px] text-ink-3">
+    <div className="flex items-center justify-between gap-1 text-label text-ink-3">
      <span className="flex min-w-0 items-center gap-1 truncate"><span className="font-math italic text-amber">{current.glyph}</span>
       {current.checkpointTitle??current.projectSlug}</span>
      <span className="shrink-0 tabular-nums">{progress} / {Math.max(total,progress)}</span>
@@ -184,13 +184,13 @@ export default function Page(){
    </motion.div>
   </AnimatePresence>
   {!revealed?<section aria-label="Confidence" className="flex flex-col gap-3">
-   <p className="text-center text-[13px] text-ink-3">How sure? Tap to reveal</p>
+   <p className="text-center text-label text-ink-3">How sure? Tap to reveal</p>
    <div className="grid grid-cols-3 gap-2">
     {confidenceOptions.map(({value,label,icon:Icon})=><button type="button" key={value}
-      onClick={()=>reveal(value)} className={'flex min-h-[60px] items-center justify-center gap-2 rounded-btn border border-edge-2 bg-raised px-2 text-[13px] '+(value==='sure'?'text-amber':'text-ink-soft')}>
+      onClick={()=>reveal(value)} className={'flex min-h-[60px] items-center justify-center gap-2 rounded-btn border border-edge-2 bg-raised px-2 text-label '+(value==='sure'?'text-amber':'text-ink-soft')}>
       <Icon size={18} aria-hidden="true"/>{label}</button>)}
    </div>
-   <button type="button" className="min-h-11 text-[13px] text-ink-3 underline-offset-4 hover:underline" onClick={()=>reveal(null)}>Show answer</button>
+   <button type="button" className="min-h-11 text-label text-ink-3 underline-offset-4 hover:underline" onClick={()=>reveal(null)}>Show answer</button>
   </section>:<section aria-label="Grade answer" className="grid grid-cols-2 gap-3">
    {gradeNames.map((label,i)=>{
     const rating=(i+1) as Rating;
@@ -198,16 +198,16 @@ export default function Page(){
      onClick={()=>{void grade(rating)}} aria-label={'Grade '+label}
      className={'flex min-h-[60px] items-center justify-between rounded-btn border px-5 disabled:opacity-50 '+
       (rating===3&&confidence==='sure'?'border-amber-line-2 bg-amber-tint':'border-edge-2 bg-raised')}>
-     <span className="flex items-center gap-2 text-[15px] font-semibold"><span className={'size-2 rounded-full '+dots[i]}/>{label}</span>
-     <span className="text-[13px] text-ink-3">{intervals?.[rating].label??'—'}</span>
+     <span className="flex items-center gap-2 text-body-l font-semibold"><span className={'size-2 rounded-full '+dots[i]}/>{label}</span>
+     <span className="text-label text-ink-3">{intervals?.[rating].label??'—'}</span>
     </button>
    })}
   </section>}
   <Sheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="For your tutor">
    <div className="flex flex-col gap-4">
-    <label htmlFor="review-note" className="text-[14px] text-ink-2">Ask your tutor to improve or explain this card</label>
+    <label htmlFor="review-note" className="text-body text-ink-2">Ask your tutor to improve or explain this card</label>
     <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>{if(current)setDraft({cardId:current.cardId,value:e.target.value})}}
-     className="w-full rounded-ctl border border-edge-2 bg-well p-3 text-[15px] text-ink" placeholder="What should the tutor revisit?"/>
+     className="w-full rounded-ctl border border-edge-2 bg-well p-3 text-body-l text-ink" placeholder="What should the tutor revisit?"/>
     <Button disabled={!note.trim()||addComment.isPending} onClick={()=>{void leaveNote()}} icon={Check}>Save note</Button>
     <Button variant="ghost" onClick={()=>{void suspendCard()}}>Suspend this card</Button>
    </div>

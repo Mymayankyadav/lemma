@@ -6,9 +6,9 @@ export function Segmented({options,value,onChange,tone='raised',label='Choose vi
  const id=useId(),reduce=!!useReducedMotion();
  return <div role="group" aria-label={label} className="flex min-h-12 gap-1 rounded-ctl bg-well p-1">
  {options.map(option=><button type="button" key={option.value} aria-pressed={value===option.value} onClick={()=>onChange(option.value)}
- className={`relative flex min-h-11 min-w-11 flex-1 items-center justify-center gap-1.5 rounded-[11px] px-2 text-[13px] font-semibold ${value===option.value?(tone==='amber'?'text-amber-ink':'text-ink'):'text-ink-3'}`}>
+ className={`relative flex min-h-[var(--ctl)] min-w-11 flex-1 items-center justify-center gap-1.5 rounded-[11px] px-2 text-label font-semibold ${value===option.value?(tone==='amber'?'text-amber-ink':'text-ink'):'text-ink-3'}`}>
  {value===option.value&&<motion.span aria-hidden="true" layoutId={id+'-thumb'} transition={reduce?{duration:0.15}:{duration:0.35,ease:[0.16,1,0.3,1]}} className={`absolute inset-0 rounded-[11px] ${tone==='amber'?'bg-amber':'bg-raised-2'}`}/>}
- <span className="relative">{option.label}</span>{option.count!==undefined&&<span className="relative text-[11px]">{option.count}</span>}
+ <span className="relative">{option.label}</span>{option.count!==undefined&&<span className="relative text-caption">{option.count}</span>}
  </button>)}
  </div>;
 }

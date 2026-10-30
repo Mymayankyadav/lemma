@@ -3,6 +3,11 @@
 @import './base.css';
 @import './surfaces.css';
 @theme inline {
+  --text-micro: var(--type-micro); --text-caption: var(--type-caption); --text-label: var(--type-label);
+  --text-body: var(--type-body); --text-body-l: var(--type-body-l); --text-headline: var(--type-headline);
+  --text-title-s: var(--type-title-s); --text-title: var(--type-title);
+  --text-num-l: var(--type-num-l); --text-num-xl: var(--type-num-xl);
+  --text-card: var(--type-card); --text-answer: var(--type-answer); --text-question: var(--type-question);
   --color-obsidian: var(--obsidian); --color-obsidian-deep: var(--obsidian-deep);
   --color-slab: var(--slab); --color-tile: var(--tile); --color-raised: var(--raised); --color-raised-2: var(--raised-2); --color-sheet: var(--sheet); --color-well: var(--well); --color-glass: var(--glass); --color-glass-strong: var(--glass-strong);
   --color-edge: var(--edge); --color-edge-2: var(--edge-2); --color-edge-3: var(--edge-3); --color-fill-1: var(--fill-1); --color-fill-2: var(--fill-2);

@@ -16,8 +16,8 @@ import {DoneBurst} from '../../ui/art/DoneBurst';
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
  return <Tile className="flex min-h-[95px] flex-col items-center justify-center gap-1 px-2 py-3 text-center">
   <Icon size={18} aria-hidden="true" className="text-amber"/>
-  <strong className="text-[23px] font-semibold tabular-nums">{value}</strong>
-  <span className="text-[12px] text-ink-3">{label}</span>
+  <strong className="text-card font-semibold tabular-nums">{value}</strong>
+  <span className="text-label text-ink-3">{label}</span>
  </Tile>;
 }
 export default function Page(){
@@ -45,26 +45,26 @@ export default function Page(){
  return <Screen className="items-center gap-5">
   <div className="mt-4 flex flex-col items-center text-center">
    <DoneBurst size={168}/>
-   <h1 className="mt-1 text-[27px] font-semibold">Review complete</h1>
-   <p className="mt-4 text-[64px] font-semibold leading-none tracking-tight tabular-nums">{stats.count}</p>
-   <p className="text-[15px] text-ink-2">{stats.count===1?'card reviewed':'cards reviewed'}</p>
+   <h1 className="mt-1 text-card font-semibold">Review complete</h1>
+   <p className="mt-4 text-num-xl font-semibold leading-none tracking-tight tabular-nums">{stats.count}</p>
+   <p className="text-body-l text-ink-2">{stats.count===1?'card reviewed':'cards reviewed'}</p>
   </div>
   <section aria-label="Review statistics" className="grid w-full grid-cols-3 gap-2">
    <Metric icon={Target} label="recalled" value={recall}/>
    <Metric icon={Clock3} label="time" value={formatMinutes(minutes)}/>
    <Metric icon={RotateCcw} label="again" value={String(stats.again)}/>
   </section>
-  {stats.sureSummary&&<Slab className="w-full px-4 py-3 text-center text-[14px] text-ink-soft">{stats.sureSummary}</Slab>}
-  <div className="flex min-h-12 w-full items-center justify-center gap-2 text-[14px] text-ink-2">
+  {stats.sureSummary&&<Slab className="w-full px-4 py-3 text-center text-body text-ink-soft">{stats.sureSummary}</Slab>}
+  <div className="flex min-h-12 w-full items-center justify-center gap-2 text-body text-ink-2">
    <CalendarDays size={19} className="text-amber" aria-hidden="true"/>
    {tomorrow===null?'Your next study day is ahead':tomorrow===0?'Nothing scheduled for tomorrow':
     tomorrow+' due tomorrow'+(tomorrow>=100?' (at least)':'')}
   </div>
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>
-  <Link className="flex min-h-11 items-center justify-center text-[14px] text-amber" to="/review">
+  <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
    Review more
   </Link>
   {newRemaining&&filter.sessionId&&<Link to={'/review/run?session='+encodeURIComponent(filter.sessionId)+'&new=1'}
-   className="flex min-h-11 items-center justify-center text-[13px] text-ink-2">Review new cards from this session</Link>}
+   className="flex min-h-11 items-center justify-center text-label text-ink-2">Review new cards from this session</Link>}
  </Screen>;
 }

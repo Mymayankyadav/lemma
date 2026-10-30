@@ -87,7 +87,7 @@ function WorldNode({node,selected,dim,reduce,position,onDown,onMove,onUp,onCance
 }
 function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:number;active:boolean;onClick:()=>void;icon?:typeof Check}){
  return <button type="button" onClick={onClick} aria-pressed={active}
-  className={'flex min-h-10 shrink-0 items-center gap-1.5 rounded-chip border px-3 text-[12px] font-medium backdrop-blur-xl '+
+  className={'flex min-h-10 shrink-0 items-center gap-1.5 rounded-chip border px-3 text-label font-medium backdrop-blur-xl '+
    (active?'border-amber bg-amber text-amber-ink':'border-edge-2 bg-glass text-ink-2')}>
   {Icon&&<Icon size={14} aria-hidden="true"/>}{label} {count}
  </button>;
@@ -271,7 +271,7 @@ export default function Page(){
   <header className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-linear-to-b from-obsidian via-obsidian/85 to-transparent px-5 pb-9 pt-[calc(20px+env(safe-area-inset-top))]">
    <div className="pointer-events-auto flex items-center gap-3">
     <button type="button" onClick={()=>navigate(-1)} aria-label="Back" className="glass flex size-11 items-center justify-center rounded-ctl text-ink-2"><ArrowLeft size={22}/></button>
-    <h1 className="min-w-0 flex-1 text-[24px] font-semibold tracking-tight">Atlas</h1>
+    <h1 className="min-w-0 flex-1 text-title-s font-semibold tracking-tight">Atlas</h1>
     <button type="button" onClick={handleFit} aria-label="Fit all concepts" className="glass flex size-11 items-center justify-center rounded-ctl text-amber"><Waypoints size={22}/></button>
    </div>
    <div className="pointer-events-auto mt-5 flex gap-2 overflow-x-auto pb-2">
@@ -287,34 +287,34 @@ export default function Page(){
   </div>
   <motion.div initial={reduce?false:{y:20,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reduce?.15:.55}}
    className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 mx-auto max-w-[650px] rounded-t-sheet border border-edge-2 bg-glass-strong px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-5 shadow-[var(--e-float)] backdrop-blur-[22px]">
-   {!selected?<div className="flex min-h-11 items-center justify-center gap-2 text-[14px] text-ink-3">
+   {!selected?<div className="flex min-h-11 items-center justify-center gap-2 text-body text-ink-3">
     <Waypoints size={17} className="text-amber"/>{nodeList.length?'Tap an idea':'Create a plan to grow your Atlas'}
    </div>:<>
     <div className="flex items-start gap-2">
      <div className="min-w-0 flex-1">
       <div className="mb-2 flex items-center gap-2">
        <Chip tone={selected.status==='demonstrated'?'success':selected.status==='revisit'||selected.status==='in_progress'?'amber':'quiet'}>{names[selected.status]}</Chip>
-       <span className="text-[12px] text-ink-3">{graph.subjects.find(x=>x.id===selected.subjectId)?.name??'Mathematics'}</span>
+       <span className="text-label text-ink-3">{graph.subjects.find(x=>x.id===selected.subjectId)?.name??'Mathematics'}</span>
       </div>
-      <h2 className="text-[21px] font-semibold">{selected.name}</h2>
+      <h2 className="text-title font-semibold">{selected.name}</h2>
      </div>
      <button type="button" onClick={hideSelection} aria-label="Close concept details" className="flex size-11 shrink-0 items-center justify-center rounded-ctl bg-fill-1 text-ink-2"><X size={20}/></button>
     </div>
-    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-[16px] leading-relaxed text-ink-soft">{selected.blurb}</p>}
+    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-headline leading-relaxed text-ink-soft">{selected.blurb}</p>}
     <div className="mt-4 flex flex-wrap items-center gap-2">
      {selected.checkpointRefs.slice(0,3).map(ref=><Chip key={ref.projectSlug+ref.code} tone="quiet">{ref.code}</Chip>)}
      <Chip tone="quiet">{selected.dueCards} due</Chip>
      {selected.pinX!==null&&selected.pinY!==null&&<Chip tone="quiet" icon={LockKeyhole}>Pinned</Chip>}
      {menuId===selected.id&&<button type="button" onClick={()=>unpinNode(selected)} disabled={pin.isPending}
-       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-[13px] text-amber"><PinOff size={16}/>Unpin</button>}
+       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-label text-amber"><PinOff size={16}/>Unpin</button>}
     </div>
     <div className="mt-5 flex items-center gap-2">
      {selected.checkpointRefs[0]?<Link to={'/p/'+selected.checkpointRefs[0].projectSlug+'/cp/'+selected.checkpointRefs[0].code}
-       className="lit flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-btn px-3 text-[14px] font-semibold">
+       className="lit flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-btn px-3 text-body font-semibold">
        Open checkpoint<ChevronRight size={18}/></Link>:
       <Button size="m" className="flex-1" disabled>Not in a checkpoint</Button>}
      <Link to={'/review/run?concept='+encodeURIComponent(selected.slug)}
-      className="ghost flex min-h-[52px] items-center justify-center gap-1 rounded-btn px-4 text-[13px]">
+      className="ghost flex min-h-[52px] items-center justify-center gap-1 rounded-btn px-4 text-label">
       Review {selected.dueCards}</Link>
     </div>
    </>}

@@ -75,7 +75,7 @@ export function Editor({
     [tags, setTags] = useState(initial?.tags.join(", ") ?? "");
   return (
     <form
-      className="flex flex-col gap-4 text-[14px] text-ink-2"
+      className="flex flex-col gap-4 text-body text-ink-2"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit({
@@ -179,7 +179,7 @@ export function Editor({
         </label>
       )}
       <div>
-        <p className="mb-3 text-[12px] font-semibold uppercase text-ink-3">
+        <p className="mb-3 text-label font-semibold uppercase text-ink-3">
           Preview
         </p>
         <MathText

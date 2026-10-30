@@ -24,7 +24,7 @@ export function ToastHost(){
  const reduce=!!useReducedMotion();
  return <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed inset-x-4 bottom-[calc(108px+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-[480px] flex-col gap-2">
  <AnimatePresence>{items.map(item=><motion.div key={item.id} role="status" initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0.15:0.22}}
- className={`glass pointer-events-auto flex min-h-12 items-center gap-3 rounded-chip px-4 py-2 text-[13px] ${item.tone==='danger'?'text-again':item.tone==='success'?'text-easy':'text-ink'}`}>
+ className={`glass pointer-events-auto flex min-h-12 items-center gap-3 rounded-chip px-4 py-2 text-label ${item.tone==='danger'?'text-again':item.tone==='success'?'text-easy':'text-ink'}`}>
  <span className="min-w-0 flex-1">{item.message}</span>{item.action&&<button className="min-h-11 shrink-0 font-semibold text-amber" onClick={()=>{item.action?.onClick();dismiss(item.id)}}>{item.action.label}</button>}
  <button type="button" aria-label="Dismiss notification" className="flex size-11 shrink-0 items-center justify-center" onClick={()=>dismiss(item.id)}><X size={16}/></button>
  </motion.div>)}</AnimatePresence></div>;

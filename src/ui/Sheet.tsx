@@ -33,7 +33,7 @@ export function Sheet({open,onClose,title,children}:SheetProps){
  variants={variantFor(sheet,reduce)} drag={reduce?false:'y'} dragConstraints={{top:0,bottom:0}} dragElastic={{top:0,bottom:0.5}} onDragEnd={(_,info)=>{if(info.offset.y>100||info.velocity.y>500)onClose()}}
  className="relative max-h-[90dvh] w-full max-w-[528px] overflow-y-auto rounded-t-sheet border border-edge bg-glass-strong px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4 shadow-[var(--e-float)] backdrop-blur-[22px]">
  <div aria-hidden="true" className="mx-auto mb-5 h-[5px] w-10 rounded-full bg-edge-3"/>
- <div className="mb-5 flex items-center justify-between gap-4">{title&&<h2 id={labelId} className="text-[24px] font-semibold">{title}</h2>}
+ <div className="mb-5 flex items-center justify-between gap-4">{title&&<h2 id={labelId} className="text-title-s font-semibold">{title}</h2>}
  <button type="button" onClick={onClose} aria-label="Close" className="ml-auto flex size-11 items-center justify-center rounded-ctl text-ink-2 hover:bg-fill-1"><X size={22}/></button></div>{children}
  </motion.div></div>}
  </AnimatePresence>,document.body);
