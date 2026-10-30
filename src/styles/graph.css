@@ -17,7 +17,7 @@ html:is([data-theme="graph"],[data-theme="graph-night"]) :is(h1,h2,h3,h4,.ui-she
  font-family:var(--font-display);font-weight:500;line-height:1.18;
 }
 html:is([data-theme="graph"],[data-theme="graph-night"]) .ground{
- background:var(--bg-css),var(--bg);filter:none;
+ background:var(--bg-css),var(--bg)!important;filter:none;
 }
 html:is([data-theme="graph"],[data-theme="graph-night"]) .ground::after{display:none}
 html:is([data-theme="graph"],[data-theme="graph-night"]) :is(.card,.slab,.tile){
