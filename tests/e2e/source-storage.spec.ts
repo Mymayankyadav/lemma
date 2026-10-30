@@ -21,6 +21,7 @@ for(const theme of ['graph','graph-night'] as const){
    .toHaveAttribute('aria-valuetext','At least 2 KB of 1 GB');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.getByRole('button',{name:'Dismiss notification'}).click();
+  await expect(page.getByRole('status').filter({hasText:'PDF added'})).toHaveCount(0);
   await page.screenshot({path:'test-results/screens/fix-399-storage-'+theme+'.png',fullPage:true});
  });
 }
