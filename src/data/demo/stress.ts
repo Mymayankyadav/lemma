@@ -55,7 +55,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
         currentStep: n < 4 ? 3 : 0, recheckLevel: 0, recheckDue: null,
         recheckPrompt: `Explain the argument for ${code}`, needsRevisit: false,
         prereqs: n > 1 ? [`CP${n - 1}`] : [], conceptIds: [],
-        stage: pIndex === 0 ? undefined : `Stage ${Math.min(15, Math.ceil(n / Math.ceil(count / 15)))}`,
+        stage: pIndex === 0 ? undefined : `Stage ${Math.min(15, Math.floor((n - 1) * 15 / count) + 1)}`,
         dueOn: `@date:${n - 10}`, demonstratedAt: n < 4 ? "@date:-10" : null,
       };
       data.checkpoints.push(cp);
@@ -63,7 +63,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     if (pIndex > 0) {
       for (const cp of existing) {
         const n = Number(cp.code.replace("CP", ""));
-        cp.stage = `Stage ${Math.min(15, Math.ceil(n / Math.ceil(count / 15)))}`;
+        cp.stage = `Stage ${Math.min(15, Math.floor((n - 1) * 15 / count) + 1)}`;
       }
     }
   }
