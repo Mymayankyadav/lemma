@@ -13,7 +13,7 @@ test('today desk shows resume, reviews, proposals and projects with no runtime e
  await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible()
  await expect(page.getByRole('link',{name:/cards due/i}).getByText('23',{exact:true})).toBeVisible()
- await expect(page.getByText('6',{exact:true})).toBeVisible()
+ await expect(page.getByRole('link',{name:/6 proposals to approve/i}).getByText('6',{exact:true})).toBeVisible()
  await expect(page.getByText('to approve')).toBeVisible()
  await expect(page.getByText('Why is a finite subcover enough to separate x from K?')).toBeVisible()
  await expect(page.getByRole('link',{name:/Real Analysis, 3 of 12 checkpoints/i})).toBeVisible()
