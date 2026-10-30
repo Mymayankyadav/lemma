@@ -26,22 +26,25 @@ async function call(method,params={}){
   assert.equal(record.error,undefined,method+' error: '+record.error?.message);
   return record.result;
 }
-const selftestStarted=Date.now();
-let res;
-try {
-  // Below Supabase's 150s request idle limit and the runner's 148s process limit.
-  res=await fetch(url+'/selftest',{signal:AbortSignal.timeout(147_000)});
-} catch(error) {
-  const kind=error instanceof Error&&error.name==='TimeoutError'?'timeout':'network error';
-  console.error('FAIL selftest request ('+kind+') after '+(Date.now()-selftestStarted)+'ms');
-  throw new Error('MCP selftest request failed (endpoint redacted)');
+// The self-test runs in two halves so each request stays well under the
+// edge function's 150s wall-clock limit.
+for(const part of [1,2]){
+  const started=Date.now();
+  let res;
+  try {
+    res=await fetch(url+'/selftest?part='+part,{signal:AbortSignal.timeout(140_000)});
+  } catch(error) {
+    const kind=error instanceof Error&&error.name==='TimeoutError'?'timeout':'network error';
+    console.error('FAIL selftest part '+part+' request ('+kind+') after '+(Date.now()-started)+'ms');
+    throw new Error('MCP selftest request failed (endpoint redacted)');
+  }
+  const self=await res.json();
+  console.log('Selftest part '+part+' in '+(Date.now()-started)+'ms; '+(self.steps?.length||0)+' steps');
+  for(const step of self.steps||[])console.log((step.ok?'PASS':'FAIL')+' '+step.name+' ('+step.ms+'ms)'+(step.ok?'':' — '+step.detail));
+  assert.equal(res.ok,true,'selftest part '+part+' HTTP error');
+  assert.equal(self.ok,true,'selftest part '+part+' did not pass');
+  assert.equal(self.steps?.length,self.expected,'selftest part '+part+' did not complete all checks and cleanup');
 }
-const self=await res.json();
-console.log('Selftest response in '+(Date.now()-selftestStarted)+'ms; '+(self.steps?.length||0)+' steps');
-for(const step of self.steps||[])console.log((step.ok?'PASS':'FAIL')+' '+step.name+' ('+step.ms+'ms)'+(step.ok?'':' — '+step.detail));
-assert.equal(res.ok,true,'selftest HTTP error');
-assert.equal(self.ok,true,'selftest did not pass');
-assert.equal(self.steps?.length,18,'selftest did not complete all checks and cleanup');
 console.log('PASS selftest and verified cleanup');
 const options=await fetch(url,{method:'OPTIONS'});
 assert.equal(options.status,204,'OPTIONS must return HTTP 204');

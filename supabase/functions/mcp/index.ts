@@ -37,7 +37,8 @@ Deno.serve(async (req:Request)=>{
     const c={db:admin(),userId};
     if(path[i+2]==='selftest'&&path.length===i+3){
       if(req.method!=='GET')return new Response(null,{status:405,headers:cors});
-      const result=await selftest(c);
+      const q=new URL(req.url).searchParams.get('part');
+      const result=await selftest(c,q==='1'?1:q==='2'?2:'all');
       return Response.json(result,{status:result.ok?200:500,headers:cors});
     }
     if(path.length!==i+2)return new Response(null,{status:404,headers:cors});
