@@ -77,6 +77,8 @@ Primary keys are `id uuid default gen_random_uuid()` unless stated.
 
 > **v3 list contract:** `ProjectSummary.sourceTitles?: string[]` returns the titles of the project's own sources for Paths library search. Both data adapters populate it from sources they already read; the UI must not issue one network request per project to search source names. This is additive and does not expose source page content.
 
+> **ST-5 additive Paths contract:** `ProjectSummary.stageProgress?: ProjectStageProgress[]` supplies ordered, bounded stage segments `{label, firstCode, lastCode, done, total, overdue, schedule}` from the server summary. `schedule` is `complete`, `behind`, `dated`, or `unscheduled`; absent tutor stages are grouped in consecutive checkpoint ranges of at most eight. `ProjectSummary.scheduleHeadline?: string | null` is a date-grounded short summary (`N overdue`, `Target passed`, `Dates planned`, `Complete`, or null when no evidence). These optional fields must not trigger per-project detail fetches. The live adapter receives them from `project_summaries()` (ST-5); demo/stress adapters may populate them when available. ST-1 consumes the fields for the Paths mini Metro. No existing contract fields change.
+
 ### 2.4 `sources` (uploaded PDFs)
 
 | Column | Type / default | Notes |
@@ -505,6 +507,8 @@ Names are fixed; fields use camelCase. Dates are ISO strings. `Glyph` is a 1–2
 | `CardComment` | no, body, status, createdAt, resolvedAt, resolvedByOrigin |
 | `AtlasGraph` | subjects (`Subject[]`), concepts (`{id, slug, name, blurb, subjectId, status, pinX, pinY, checkpointRefs: {projectSlug, code}[], dueCards}[]`), links (`{fromId, toId, kind}[]`) |
 | `InsightData` | reviews (`{reviewedAt, rating, stateBefore, confidence, durationMs, projectId}[]`), sessions (`{startedAt, minutes, projectId, goalMet}[]`), checkpointEvents (`{at, kind: 'demonstrated' \| 'recheck_ok' \| 'recheck_fail', checkpointCode, projectId}[]`), projects (`{id, title, subject: Subject}[]`), misconceptions (`{label, times, conceptName}[]`) |
+
+> **ST-5 additive Insights contract:** `InsightData.aggregate?: InsightAggregate` is an optional, bounded, owner-scoped payload from `insights(days)` (7/30/90 study days). It contains `days`, `reviews`, `right`, `reviewDays` (daily date, count, rating counts and right count), `calibration` (confidence, total and right), `sessions`, `minutes`, `typicalSession`, `subjectMinutes` (`{subject: Subject, minutes}[]`), `checkpointDays` (28 daily demonstrated/rechecked counts), and `mostRevisited` (`{label,times,conceptName}` or null). The live adapter uses one RPC and may return empty legacy arrays; `buildInsights` must prefer the aggregate when present. The demo adapter may continue supplying the existing raw rows. No existing field or hook is removed.
 | `HomeSummary` | resume (`{projectSlug, projectTitle, glyph, checkpointCode, checkpointTitle, step, stepsTotal, question, objective, pausedAt, sessionNumber} \| null`), due, pendingProposals, projects (`ProjectSummary[]`) |
 | `NewProjectInput` | title, slug (optional; derived from title), subjectId, goal, style |
 

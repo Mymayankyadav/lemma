@@ -191,7 +191,12 @@ export default function Page(){
     const next=state.queue;
     const {nextCard}=await import('../../lib/queue');
     const advanced=nextCard(next);
-    useReviewSession.setState({current:advanced.item,queue:advanced.queue,revealed:false,confidence:null});
+    useReviewSession.setState({
+     current:advanced.item,queue:advanced.queue,revealed:false,confidence:null,
+     startTime:Date.now(),
+     roundOrder:advanced.item&&!state.roundOrder.includes(advanced.item.cardId)
+      ?[...state.roundOrder,advanced.item.cardId]:state.roundOrder,
+    });
     if(!advanced.item)navigate('/review/done');
    }
    notify('Card suspended',{tone:'success'});
