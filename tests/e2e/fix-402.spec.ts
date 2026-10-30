@@ -11,7 +11,7 @@ for(const world of ['graph','graph-night'] as const){
   page.on('pageerror',error=>errors.push(error.message));
   await page.setViewportSize({width:390,height:844});
   await page.goto('./?demo=1&theme='+world+'#/projects/new');
-  const title='Vector spaces over $\\mathbb{R}
+  const title=String.raw`Vector spaces over \(\mathbb{R}\)`;
   await page.getByRole('textbox',{name:'Name'}).fill(title);
   await expect(page.getByRole('region',{name:'Math preview'}).locator('.katex')).toBeVisible();
   await page.getByRole('button',{name:'Create project'}).click();
