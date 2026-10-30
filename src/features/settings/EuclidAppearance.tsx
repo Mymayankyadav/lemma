@@ -17,8 +17,7 @@ const modes:readonly {id:Mode;label:string;detail:string}[]=[
 const valid=(value:unknown):value is Mode=>value==='auto'||value==='day'||value==='night';
 function initialMode(ui:UiPreferences|null|undefined):Mode {
  if(valid(ui?.mode))return ui.mode;
- const theme=readAppearance().theme;
- return theme==='graph'?'day':theme==='graph-night'?'night':'auto';
+ return readAppearance().mode;
 }
 /** The v3 appearance choice is the only editable visual preference. */
 export function EuclidAppearance({ui,busy,onChange}:Props){
@@ -26,17 +25,17 @@ export function EuclidAppearance({ui,busy,onChange}:Props){
  useEffect(()=>{
   if(getMode()==='demo'||!valid(ui?.mode))return;
   setMode(ui.mode);
-  applyAppearance({theme:ui.mode==='auto'?'system':ui.mode==='day'?'graph':'graph-night',density:'compact',effects:'calm'});
+  applyAppearance({mode:ui.mode});
  },[ui?.mode]);
  const choose=async(next:Mode)=>{
   if(busy||next===mode)return;
   const previous=mode;
   setMode(next);
-  applyAppearance({theme:next==='auto'?'system':next==='day'?'graph':'graph-night',density:'compact',effects:'calm'});
+  applyAppearance({mode:next});
   if(getMode()==='demo')return;
   if(!await onChange({mode:next})){
    setMode(previous);
-   applyAppearance({theme:previous==='auto'?'system':previous==='day'?'graph':'graph-night',density:'compact',effects:'calm'});
+   applyAppearance({mode:previous});
   }
  };
  return <section aria-label="Appearance" className="space-y-3">
