@@ -1,5 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; }
-html { color-scheme: dark; }
+html { color-scheme: light dark; }
 body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--font-ui); color: var(--ink); background: var(--obsidian); font-variant-numeric: tabular-nums; }
 button, input, textarea, select { font: inherit; }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
