@@ -10,7 +10,7 @@ import {EmptyState} from '../../ui/EmptyState';
 import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
-import {STORE,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
+import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
 import {ancestors,arcsFor,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
@@ -26,7 +26,7 @@ function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onCl
   <h3 className="mb-1 flex items-center gap-2 text-caption font-semibold text-ink-3"><span className="h-[2px] w-4" style={{background:toneColor[tone]}}/>{label}</h3>
   {items.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
-   <StatusMark node={item}/><span className="min-w-0 flex-1 truncate"><Tex source={item.name}/></span>
+   <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
    <span className="shrink-0 text-caption text-ink-3">{levelName[item.level]}</span><ChevronRight size={14} className="text-ink-3"/></button>)}
  </div>:null;
  return <Sheet open onClose={onClose} title={plainMath(node.name)}>
@@ -173,8 +173,8 @@ export default function Page(){
   </div>
   {selected&&!details&&<div data-atlas-peek="true" className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-[528px] items-center gap-2 rounded-slab border border-edge-2 bg-raised py-2 pl-4 pr-2 shadow-[var(--e-float)]">
    <div className="min-w-0 flex-1">
-    <p className="truncate text-body font-semibold"><Tex source={selected.name}/></p>
-    <p className="truncate text-caption text-ink-3">
+    <p style={clip} className="text-body font-semibold"><Tex source={selected.name}/></p>
+    <p style={clip} className="text-caption text-ink-3">
      <span style={{color:'var(--grade-good)'}}>builds on {focus?.up.size??0}</span> · <span style={{color:'var(--accent)'}}>opens up {focus?.down.size??0}</span>
      {near&&near.related.length>0?' · '+near.related.length+' related':''}</p>
    </div>
