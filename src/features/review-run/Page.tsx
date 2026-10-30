@@ -6,6 +6,7 @@ import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatu
 import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../data/types';
 import {preview,scheduleConfig} from '../../lib/fsrs';
 import {useReviewSession} from './store';
+import {PolygonProgress} from './PolygonProgress';
 import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
@@ -55,6 +56,7 @@ export default function Page(){
  const revealed=useReviewSession(s=>s.revealed),confidence=useReviewSession(s=>s.confidence);
  const submitting=useReviewSession(s=>s.submitting),answers=useReviewSession(s=>s.answers);
  const lastUndo=useReviewSession(s=>s.lastUndo),total=useReviewSession(s=>s.total),startTime=useReviewSession(s=>s.startTime);
+ const roundOrder=useReviewSession(s=>s.roundOrder);
  const reveal=useReviewSession(s=>s.reveal),beginGrade=useReviewSession(s=>s.beginGrade);
  const cancelGrade=useReviewSession(s=>s.cancelGrade),committed=useReviewSession(s=>s.committed);
  const undoCommitted=useReviewSession(s=>s.undoCommitted);
@@ -158,20 +160,15 @@ export default function Page(){
  if(!current && !queue)return <Screen title="Card review" back="/review"><div className="text-body text-ink-2">Preparing your cards…</div></Screen>;
  if(!current)return <Screen title="Card review" back="/review"><p className="text-ink-2">Nothing due in this selection.</p>
   <Button onClick={()=>navigate(answers.length?'/review/done':'/review')}>Continue</Button></Screen>;
- const progress=Math.max(1,answers.length+1),progressWidth=Math.min(100,100*answers.length/Math.max(1,total));
  return <Screen className="gap-6">
   <h1 className="sr-only">Card review</h1>
   <header className="flex items-center gap-2">
    <IconButton icon={X} label="Close review" onClick={close}/>
    <div className="min-w-0 flex-1">
-    <div className="flex items-center justify-between gap-1 text-label text-ink-3">
-     <span className="flex min-w-0 items-center gap-1 truncate"><span className="font-math italic text-amber">{current.glyph}</span>
-      {current.checkpointTitle??current.projectSlug}</span>
-     <span className="shrink-0 tabular-nums">{progress} / {Math.max(total,progress)}</span>
-    </div>
-    <div className="mt-2 h-1 overflow-hidden rounded-full bg-fill-2">
-     <motion.div className="h-1 rounded-full bg-amber shadow-[0_0_10px_var(--amber)]"
-      animate={{width:progressWidth+'%'}} transition={{duration:reduce?0.15:0.4}}/>
+    <PolygonProgress total={total} order={roundOrder} currentCardId={current.cardId} answers={answers}/>
+    <div className="mt-1 flex items-center justify-center gap-1 text-label text-ink-3">
+     <span className="font-math italic text-amber">{current.glyph}</span>
+     <span className="truncate">{current.checkpointTitle??current.projectSlug}</span>
     </div>
    </div>
    <IconButton icon={Undo2} label="Undo last answer" disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
