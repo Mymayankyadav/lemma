@@ -36,8 +36,8 @@ export function buildServer(c:Context):McpServer{
   register('resume','Start here to study or plan: position, warm-up, rules and ETA. Omit project to list projects.',z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
-  register('get','Read details on demand. what: plan, checkpoint (id CP4), session (id S7), outline, cards (id CP4 or S7), feedback (open card notes), concepts, projects, prompt, diagnostics.',z.object({
-    what:z.enum(['plan','checkpoint','session','outline','cards','feedback','concepts','projects','prompt','diagnostics']),project:optProject,
+  register('get','Read details on demand. what: plan, plan_revisions, checkpoint (id CP4), session (id S7), sources, outline, cards (id CP4 or S7), feedback, concepts, projects, prompt, diagnostics.',z.object({
+    what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics']),project:optProject,
     id:S().max(20).optional(),limit:z.number().int().min(1).max(50).optional()
   }),true,(a,ctx)=>get(ctx,a));
   register('read_pages','Read the project\'s PDF by printed page numbers (pdf: true for PDF indexes). Max 5 pages per call.',z.object({
