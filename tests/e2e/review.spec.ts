@@ -90,3 +90,24 @@ test('unsaved tutor-note drafts stay on their card and never leak into the next 
  await expect(editor).toHaveValue('')
  await expect(dialog.getByRole('button',{name:'Save note'})).toBeDisabled()
 })
+
+test('review sessions remain fully scrollable above the density-aware floating dock',async({page})=>{
+ for(const viewport of [{width:390,height:844},{width:320,height:568}]){
+  await page.setViewportSize(viewport)
+  const sessions=page.locator('section[aria-label="From sessions"]')
+  await expect(sessions).toBeVisible()
+  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight))
+  await expect.poll(async()=>page.evaluate(()=>{
+   const dock=document.querySelector<HTMLElement>('nav[aria-label="Main navigation"]')
+   const last=document.querySelector<HTMLElement>('section[aria-label="From sessions"]')
+   if(!dock||!last)return -1
+   return dock.getBoundingClientRect().top-last.getBoundingClientRect().bottom
+  })).toBeGreaterThanOrEqual(15)
+  const heights=await page.evaluate(()=>{
+   const dock=document.querySelector<HTMLElement>('nav[aria-label="Main navigation"]')!
+   return {actual:dock.getBoundingClientRect().height,token:parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tab'))}
+  })
+  expect(heights.actual).toBeCloseTo(heights.token,1)
+ }
+ await page.screenshot({path:'test-results/screens/review-hub-tab-clearance.png',fullPage:true})
+})
