@@ -22,3 +22,35 @@ test('UI-1 components render in demo mode, remain accessible and respect reduced
  await page.goto('/lemma/?demo=1#/');
  await expect(page.getByRole('navigation',{name:'Main navigation'}).getByRole('link')).toHaveCount(4);
 });
+
+for(const theme of ['obsidian','paper'] as const){
+ for(const density of ['compact','comfortable'] as const){
+  test(`UI-3 kit renders ${theme} in ${density} density`,async({page})=>{
+   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+   await page.goto(`/lemma/?demo=1&theme=${theme}&density=${density}&effects=calm#/kit`);
+   await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
+   await expect(page.locator('html')).toHaveAttribute('data-density',density);
+   await expect(page.getByRole('heading',{name:'Component kit'})).toBeVisible();
+   await expect(page.getByRole('button',{name:'Start studying'})).toBeVisible();
+   await expect(page.locator('html')).toHaveCSS('color-scheme',theme==='paper'?'light':'dark');
+   await expect(errors).toEqual([]);
+   await page.screenshot({path:`test-results/screens/kit-${theme}-${density}.png`,fullPage:true});
+  });
+ }
+}
+test('UI-3 Appearance applies, persists, and can cycle themes from floating lab',async({page})=>{
+ await page.goto('/lemma/?demo=1#/settings');
+ await expect(page.getByRole('heading',{name:'Appearance'})).toBeVisible();
+ await page.getByRole('radio',{name:'Paper',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','paper');
+ await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#F6F4EF');
+ await page.getByRole('radio',{name:'Cozy'}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-density','cozy');
+ await page.reload();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','paper');
+ await expect(page.locator('html')).toHaveAttribute('data-density','cozy');
+ await page.getByRole('button',{name:'Open theme lab'}).click();
+ await expect(page.getByRole('dialog',{name:'Theme lab'})).toBeVisible();
+ await page.getByRole('button',{name:'Next theme'}).click();
+ await expect(page.locator('html')).not.toHaveAttribute('data-theme','paper');
+});

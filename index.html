@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0D0C11" />
+<script>
+      /* Prepaint UI preferences; URL overrides persist on this device. */
+      (function () {
+        var colors = {"obsidian":"#0D0C11","graphite":"#111213","chalk":"#18211E","midnight":"#0A0F1C","nord":"#2B303B","solar-dark":"#002B36","plum":"#141018","forest":"#0E1411","ember":"#131010","contrast":"#000000","night":"#12100C","paper":"#F6F4EF","solar-light":"#FDF6E3","blueprint":"#F3F6FA","sepia":"#F2E9D8"};
+        var allowedDensity = ['compact','cozy','comfortable'];
+        var allowedEffects = ['calm','rich'];
+        var value = {theme:'obsidian',density:'compact',effects:'calm'};
+        try { var saved = JSON.parse(localStorage.getItem('lemma.ui') || 'null'); if (saved && typeof saved === 'object') Object.assign(value,saved); } catch (_) {}
+        var query = new URLSearchParams(location.search);
+        ['theme','density','effects'].forEach(function (key) { if (query.has(key)) value[key] = query.get(key); });
+        if (!Object.prototype.hasOwnProperty.call(colors,value.theme)) value.theme = 'obsidian';
+        if (!allowedDensity.includes(value.density)) value.density = 'compact';
+        if (!allowedEffects.includes(value.effects)) value.effects = 'calm';
+        document.documentElement.dataset.theme = value.theme;
+        document.documentElement.dataset.density = value.density;
+        document.documentElement.dataset.effects = value.effects;
+        document.querySelector('meta[name="theme-color"]').setAttribute('content',colors[value.theme]);
+        try { localStorage.setItem('lemma.ui',JSON.stringify(value)); } catch (_) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
