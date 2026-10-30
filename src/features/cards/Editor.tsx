@@ -1,3 +1,4 @@
+import {MathPreview} from '../../ui/MathPreview';
 import { useState } from "react";
 import { useProject, useProjects } from "../../data/hooks";
 import type { CardDetail, NoteKind, NoteType } from "../../data/types";
@@ -100,6 +101,7 @@ export function Editor({
           onChange={(e) => setFront(e.target.value)}
           className={`${field} min-h-24`}
         />
+        <MathPreview source={front}/>
       </label>
       <label>
         Back
@@ -108,6 +110,7 @@ export function Editor({
           onChange={(e) => setBack(e.target.value)}
           className={`${field} min-h-24`}
         />
+        <MathPreview source={back}/>
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label>
