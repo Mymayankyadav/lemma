@@ -46,7 +46,8 @@ describe('ST-5 Insights aggregate (one bounded RPC)',()=>{
   expect(payload.aggregate).toEqual(value)
   expect(payload.reviews).toEqual([])
   expect(payload.sessions).toEqual([])
-  expect(mock.rpc).toHaveBeenCalledExactlyOnceWith('insights',{p_days:days})
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('insights',{p_days:days})
   expect(mock.getUser).toHaveBeenCalledOnce()
   const charts=buildInsights(payload,days)
   expect(charts).toMatchObject({
