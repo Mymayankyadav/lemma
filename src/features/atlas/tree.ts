@@ -87,7 +87,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   const own=!n.synthetic&&(n.level==='planet'||n.level==='moon'||n.children.length===0);
   n.total=(own?1:0)+kids.reduce((s,k)=>s+k.total,0);
   n.done=(own&&n.status==='demonstrated'?1:0)+kids.reduce((s,k)=>s+k.done,0);
-  n.revisit=(n.status==='revisit'?1:0)+kids.reduce((s,k)=>s+k.revisit,0);
+  n.revisit=(own&&n.status==='revisit'?1:0)+kids.reduce((s,k)=>s+k.revisit,0);
   n.due=n.dueCards+kids.reduce((s,k)=>s+k.due,0);
   n.rank=Math.min(rank.get(id)??Number.MAX_SAFE_INTEGER,...kids.map(k=>k.rank));
   if(n.synthetic||!own){
