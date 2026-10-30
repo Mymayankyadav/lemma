@@ -15,3 +15,7 @@ try{const p=parseMcpReply(body,res.headers.get('Content-Type')||'',1);const list
 console.log('count',list?.length,'missing',TOOL_NAMES.filter(x=>!list.some((t:any)=>t.name===x)));
 console.log('total',JSON.stringify({tools:list}).length,'instructions',INSTRUCTIONS.length);
 for(const t of list)console.log(t.name,JSON.stringify(t).length);}catch(e){console.log('parse error',String(e))}
+const bad=await handler.fetch(new Request('http://localhost/mcp',{...options,headers,body:JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'get',arguments:{what:'nope'}}})}));
+console.log('invalid call',bad.status,(await bad.text()).slice(0,400));
+const bad2=await handler.fetch(new Request('http://localhost/mcp',{...options,headers,body:JSON.stringify({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'undo',arguments:{action:-3}}})}));
+console.log('invalid undo',bad2.status,(await bad2.text()).slice(0,400));
