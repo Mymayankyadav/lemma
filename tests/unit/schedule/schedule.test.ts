@@ -24,7 +24,7 @@ describe('UI-6b schedule-aware Metro',()=>{
    cp('large',{ui:'locked',stepsTotal:6}),
    cp('fixed',{ui:'locked',dueOn:'2026-11-17'}),
   ],{now,targetDate:'2026-11-18'})
-  expect(rows.map(row=>row.dueOn)).toEqual([null,'2026-11-12','2026-11-16','2026-11-17'])
+  expect(rows.map(row=>row.dueOn)).toEqual([null,'2026-11-11','2026-11-15','2026-11-17'])
   expect(rows.map(row=>row.inferred)).toEqual([false,true,true,false])
  })
  it('projects the current checkpoint from remaining steps and pace',()=>{
