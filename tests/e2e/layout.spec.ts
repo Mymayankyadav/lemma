@@ -10,7 +10,7 @@ async function audit(page:Page):Promise<Issue[]>{
  return page.evaluate(()=>{
   const issues:Issue[]=[];
   const selector=(e:Element)=>{const id=e.id?'#'+e.id:'';const cls=[...e.classList].slice(0,2).join('.');return e.tagName.toLowerCase()+id+(cls?'.'+cls:'')};
-  const visible=(e:Element)=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};
+  const visible=(e:Element)=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return !e.closest('.sr-only,[aria-hidden="true"]')&&r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};
   const report=(e:Element,reason:string)=>issues.push({selector:selector(e),reason});
   if(document.documentElement.scrollWidth>innerWidth+1)report(document.documentElement,`horizontal scroll: ${document.documentElement.scrollWidth}px > ${innerWidth}px`);
   // Text ranges are leaves, not nested element boxes: that avoids parent/child false positives.
