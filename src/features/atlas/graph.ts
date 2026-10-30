@@ -59,10 +59,44 @@ export function nebula(nodes:readonly Point[],padding=28):Nebula|null{
  const expanded=hull.map(p=>{const dx=p.x-cx,dy=p.y-cy,length=Math.hypot(dx,dy)||1;return {x:p.x+dx/length*padding,y:p.y+dy/length*padding}});
  return {path:loop(expanded),label:{x:Math.min(...expanded.map(p=>p.x))+8,y:Math.min(...expanded.map(p=>p.y))-4}};
 }
-export function fitAtlas(nodes:readonly Point[],w:number,h:number,margin=90){
+export function fitAtlas(nodes:readonly Point[],w:number,h:number,margin=24){
  if(!nodes.length)return {x:w/2,y:h/2,k:1};
  const minX=Math.min(...nodes.map(n=>n.x)),maxX=Math.max(...nodes.map(n=>n.x));
  const minY=Math.min(...nodes.map(n=>n.y)),maxY=Math.max(...nodes.map(n=>n.y));
- const k=Math.max(0.4,Math.min(2,Math.min((w-2*margin)/Math.max(maxX-minX,100),(h-2*margin)/Math.max(maxY-minY,100))));
+ const k=Math.max(0.2,Math.min(2,Math.min((w-2*margin)/Math.max(maxX-minX,100),(h-2*margin)/Math.max(maxY-minY,100))));
  return {x:w/2-k*(minX+maxX)/2,y:h/2-k*(minY+maxY)/2,k};
+}
+
+/** Fit within the unobstructed area between Atlas's header and detail tray. */
+export function fitAtlasViewport(nodes: readonly Point[], width: number, height: number) {
+ const top = Math.min(150, height * 0.24);
+ const bottom = Math.min(132, height * 0.21);
+ const availableHeight = Math.max(100, height - top - bottom);
+ const fit = fitAtlas(nodes, width, availableHeight, 24);
+ return {...fit, y: fit.y + top};
+}
+
+/** Keep important labels readable without drawing two labels over one another. */
+export function visibleAtlasLabels(nodes: readonly AtlasNode[], selectedId: string | null): Set<string> {
+ const priorities: Record<AtlasNode['status'], number> = {
+  revisit: 0, in_progress: 1, demonstrated: 2, not_started: 3,
+ };
+ const ordered = [...nodes].sort((a, b) =>
+  Number(b.id === selectedId) - Number(a.id === selectedId) ||
+  priorities[a.status] - priorities[b.status] ||
+  a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+ const occupied: {left: number; right: number; top: number; bottom: number}[] = [];
+ const visible = new Set<string>();
+ for (const node of ordered) {
+  const selected = node.id === selectedId;
+  const width = node.name.length * (selected ? 8.4 : 7.5) + 12;
+  const rect = {left: node.x - width / 2, right: node.x + width / 2,
+   top: node.y + 9, bottom: node.y + 31};
+  if (!selected && occupied.some(other =>
+   rect.left < other.right && rect.right > other.left &&
+   rect.top < other.bottom && rect.bottom > other.top)) continue;
+  visible.add(node.id);
+  occupied.push(rect);
+ }
+ return visible;
 }

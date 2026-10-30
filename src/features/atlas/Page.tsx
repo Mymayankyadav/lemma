@@ -13,7 +13,7 @@ import {Button} from '../../ui/Button';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
-import {fitAtlas,layoutAtlas,nebula} from './graph';
+import {fitAtlasViewport,layoutAtlas,nebula,visibleAtlasLabels} from './graph';
 import type {AtlasNode,Point} from './graph';
 
 type Filter='all'|'revisit'|'demonstrated';
@@ -52,8 +52,8 @@ function star(cx:number,cy:number,r=7){
  }
  return parts.join(' ')+' Z';
 }
-function WorldNode({node,selected,dim,reduce,position,onDown,onMove,onUp,onCancel,onSelect}:{
- node:AtlasNode;selected:boolean;dim:boolean;reduce:boolean;position:Point;
+function WorldNode({node,selected,dim,reduce,showLabel,position,onDown,onMove,onUp,onCancel,onSelect}:{
+ node:AtlasNode;selected:boolean;dim:boolean;reduce:boolean;showLabel:boolean;position:Point;
  onDown:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
  onMove:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
  onUp:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
@@ -80,9 +80,9 @@ function WorldNode({node,selected,dim,reduce,position,onDown,onMove,onUp,onCance
   </>}
   {status==='not_started'&&<circle cx={x} cy={y} r={selected?6:4.5} fill="var(--obsidian)" stroke="var(--ink-4)" strokeWidth={1.35}/>}
   {selected&&<circle cx={x} cy={y} r={10} fill="none" stroke="var(--amber-hi)" strokeWidth={1} strokeOpacity={0.9}/>}
-  <text x={x} y={y+23} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={selected?13:11.5}
+  {showLabel&&<text x={x} y={y+23} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={selected?13:11.5}
    fontWeight={selected?600:500} fill={selected?'var(--ink)':'var(--ink-2)'}
-   stroke="var(--obsidian)" strokeWidth={3} paintOrder="stroke" pointerEvents="none">{node.name}</text>
+   stroke="var(--obsidian)" strokeWidth={3} paintOrder="stroke" pointerEvents="none">{node.name}</text>}
  </g>;
 }
 function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:number;active:boolean;onClick:()=>void;icon?:typeof Check}){
@@ -96,7 +96,7 @@ export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams(),toast=useToast(),reduce=!!useReducedMotion();
  const query=useAtlas(),pin=usePinConcept(),svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior|null>(null);
  const [view,setView]=useState<ZoomTransform>({x:0,y:0,k:1});
- const viewRef=useRef(view),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),longPressed=useRef<string|null>(null);
+ const viewRef=useRef(view),userMoved=useRef(false),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),longPressed=useRef<string|null>(null);
  const [positions,setPositions]=useState<Record<string,Point>>({}),[selectedId,setSelectedId]=useState<string|null>(null);
  const [filter,setFilter]=useState<Filter>('all'),[menuId,setMenuId]=useState<string|null>(null);
  const focus=params.get('focus');
@@ -104,6 +104,7 @@ export default function Page(){
  const layout=useMemo(()=>graph?layoutAtlas(graph):null,[graph]);
  const nodeList=layout?.nodes??[],selected=nodeList.find(n=>n.id===selectedId)??null;
  const byId=layout?.byId;
+ const labels=useMemo(()=>visibleAtlasLabels(nodeList.map(n=>({...n,...positions[n.id]})),selectedId),[nodeList,positions,selectedId]);
  const countAll=nodeList.length,countRevisit=nodeList.filter(n=>n.status==='revisit').length,
    countDone=nodeList.filter(n=>n.status==='demonstrated').length;
  useEffect(()=>{viewRef.current=view},[view]);
@@ -111,33 +112,35 @@ export default function Page(){
   const element=svg.current,model=layout;
   if(!element||!model||!zoomRef.current)return;
   const size=element.getBoundingClientRect();
-  const t=fitAtlas(model.nodes.map(n=>positions[n.id]??n),size.width,size.height,Math.min(90,size.width*.13));
+  const t=fitAtlasViewport(model.nodes.map(n=>positions[n.id]??n),size.width,size.height);
+  userMoved.current=false;
   zoomRef.current.transform(select(element),zoomIdentity.translate(t.x,t.y).scale(t.k));
  },[layout,positions]);
  const handleZoom=useCallback((factor:number)=>{
   if(!svg.current||!zoomRef.current)return;
+  userMoved.current=true;
   zoomRef.current.scaleBy(select(svg.current),factor);
  },[]);
  useEffect(()=>{
   const element=svg.current,model=layout;
   if(!element||!model)return;
-  const behavior=zoom<SVGSVGElement,unknown>().scaleExtent([.4,3])
+  const behavior=zoom<SVGSVGElement,unknown>().scaleExtent([.2,3])
    .filter(event=>!(event.target instanceof Element&&event.target.closest('[data-node]')) &&
        ((event as MouseEvent).button===undefined||(event as MouseEvent).button===0))
-   .on('zoom',event=>setView(event.transform));
+   .on('zoom',event=>{if('sourceEvent' in event && event.sourceEvent)userMoved.current=true;setView(event.transform)});
   zoomRef.current=behavior;
   const selection=select(element);
   selection.call(behavior);
   selection.on('dblclick.zoom',null);
   const box=element.getBoundingClientRect();
-  const fitted=fitAtlas(model.nodes,box.width,box.height,Math.min(90,box.width*.13));
+  const fitted=fitAtlasViewport(model.nodes,box.width,box.height);
   behavior.transform(selection,zoomIdentity.translate(fitted.x,fitted.y).scale(fitted.k));
   const resize=new ResizeObserver(()=>{
    // Preserve the user's zoom when rotating; fit only if no interaction has yet occurred.
    if(!svg.current||!zoomRef.current)return;
    const b=svg.current.getBoundingClientRect();
-   if(b.width&&b.height&&viewRef.current.k===1) {
-    const f=fitAtlas(model.nodes,b.width,b.height,Math.min(90,b.width*.13));
+   if(b.width&&b.height&&!userMoved.current) {
+    const f=fitAtlasViewport(model.nodes,b.width,b.height);
     zoomRef.current.transform(select(svg.current),zoomIdentity.translate(f.x,f.y).scale(f.k));
    }
   });
@@ -263,7 +266,7 @@ export default function Page(){
       pointerEvents="none"/>;
     })}
     {nodeList.map(node=><WorldNode key={node.id} node={node} position={positions[node.id]??node}
-     selected={selectedId===node.id} dim={filtered(node)} reduce={reduce}
+     selected={selectedId===node.id} dim={filtered(node)} reduce={reduce} showLabel={labels.has(node.id)}
      onSelect={selectNode} onDown={onNodeDown} onMove={onNodeMove} onUp={onNodeUp} onCancel={onNodeCancel}/>)}
    </motion.g>
   </svg>:<div className="absolute inset-0 flex items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty"
