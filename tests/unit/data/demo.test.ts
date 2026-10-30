@@ -23,6 +23,15 @@ const now = Date.parse("2026-10-29T12:00:00Z");
 const make = () => new DemoAdapter({ now: () => now, timeZone: "UTC" });
 
 describe("demo adapter", () => {
+  it("includes each project's own source titles in the searchable summary", async () => {
+    const projects = await make().listProjects();
+    expect(projects.some((project) => project.sourcesCount > 0)).toBe(true);
+    for (const project of projects) {
+      expect(project.sourceTitles).toHaveLength(project.sourcesCount);
+      expect(project.sourceTitles?.every((title) => typeof title === "string")).toBe(true);
+    }
+  });
+
   it.each([
     ["UTC", "2026-10-29T04:01:00Z"],
     ["UTC", "2026-10-29T23:59:00Z"],
