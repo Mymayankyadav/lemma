@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {Check, Star} from 'lucide-react';
 import type {UiPreferences} from '../../data/types';
+import {getMode} from '../../data/mode';
 import {themes} from '../../styles/themes';
 import {applyAppearance,readAppearance} from '../../styles/appearance';
 
@@ -15,17 +16,27 @@ function chooseLabel(value:string){return value.charAt(0).toUpperCase()+value.sl
 /** UI-5h preferences are owner data; appearance still applies immediately on this device. */
 export function EuclidAppearance({ui,busy,onChange}:Props){
  const [preview,setPreview]=useState(false);
- const timeline=ui?.timeline==='metro'?'metro':'ascent';
- const atlas=ui?.atlas==='branches'||ui?.atlas==='outline'?ui.atlas:'orbits';
- const follow=ui?.follow??true;
- const kept=ui?.keep??themes.map(t=>t.id);
- const favorites=ui?.fav??[];
- const update=(patch:Partial<UiPreferences>)=>{void onChange(patch)};
+ const [prefs,setPrefs]=useState<UiPreferences>(()=>{
+  if(getMode()!=='demo')return ui??{};
+  try{return {...(ui??{}),...JSON.parse(localStorage.getItem('lemma.ui-demo')||'{}')}}catch{return ui??{}}
+ });
+ const timeline=prefs.timeline==='metro'?'metro':'ascent';
+ const atlas=prefs.atlas==='branches'||prefs.atlas==='outline'?ui.atlas:'orbits';
+ const follow=prefs.follow??true;
+ const kept=prefs.keep??themes.map(t=>t.id);
+ const favorites=prefs.fav??[];
+ const update=(patch:Partial<UiPreferences>)=>{
+  const next={...prefs,...patch};
+  if(getMode()==='demo'){
+   setPrefs(next);
+   try{localStorage.setItem('lemma.ui-demo',JSON.stringify(next))}catch{/* optional demo preference */}
+  }else void onChange(patch).then(ok=>{if(ok)setPrefs(next)});
+ };
  const toggle=(list:string[],id:string)=>list.includes(id)?list.filter(v=>v!==id):[...list,id];
  const setFollow=(next:boolean)=>{
   const current=readAppearance().theme;
   applyAppearance({theme:next?'system':current==='system'?'euclid':current});
-  update({follow:next,day:ui?.day??'euclid',night:ui?.night??'euclid-night'});
+  update({follow:next,day:prefs.day??'euclid',night:prefs.night??'euclid-night'});
  };
  return <section aria-label="Euclid preferences" className="space-y-5">
   <div className="space-y-2">
