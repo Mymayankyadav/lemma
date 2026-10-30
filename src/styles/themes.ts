@@ -1,365 +1,316 @@
-/* Palette source of truth: docs/spec/themes.md §2.1. */
-export interface Theme { id: string; name: string; mode: 'dark' | 'light'; c: Record<'bg' | 'deep' | 'surface' | 'tile' | 'raised' | 'raised2' | 'sheet' | 'well' | 'ink' | 'soft' | 'ink2' | 'ink3' | 'ink4' | 'accent' | 'hi' | 'accentDeep' | 'onAccent', string>; }
+/* UI-5a: all eight retained Lemma Lab worlds; token values from lemma-lab.html. */
+export interface Theme {
+ id: string; name: string; mode: 'dark'|'light';
+ t: Record<'bg'|'card'|'card2'|'line'|'ink'|'ink2'|'ink3'|'accent'|'on'|'warn'|'bad'|'good'|'track'|'tab',string>;
+ radius: number; border: string; shadow: string; blur: string;
+ fonts: {ui:string; display:string; num:string}; background: string;
+ c: {bg:string;surface:string;accent:string;ink:string;ink3:string};
+}
 export const themes = [
   {
     "id": "obsidian",
-    "name": "Amber on Obsidian",
+    "name": "Obsidian lamp",
     "mode": "dark",
+    "t": {
+      "bg": "#0D0C11",
+      "card": "rgba(27,26,34,.72)",
+      "card2": "rgba(255,255,255,.04)",
+      "line": "rgba(255,255,255,.08)",
+      "ink": "#F4F0E6",
+      "ink2": "#B3AEBB",
+      "ink3": "#8C8796",
+      "accent": "#F7B538",
+      "on": "#1E1405",
+      "warn": "#F39A4B",
+      "bad": "#F2545B",
+      "good": "#4FC88E",
+      "track": "rgba(255,255,255,.10)",
+      "tab": "rgba(22,21,28,.82)"
+    },
+    "radius": 18,
+    "border": "1px solid rgba(255,255,255,.08)",
+    "shadow": "0 18px 40px -24px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.05)",
+    "blur": "blur(16px) saturate(140%)",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "num": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+    },
+    "background": "none",
     "c": {
       "bg": "#0D0C11",
-      "deep": "#09080D",
-      "surface": "#17161D",
-      "tile": "#141319",
-      "raised": "#1B1A22",
-      "raised2": "#24232C",
-      "sheet": "#16151C",
-      "well": "#0F0E14",
-      "ink": "#F4F0E6",
-      "soft": "#C9C4D1",
-      "ink2": "#ACA7B5",
-      "ink3": "#8C8796",
-      "ink4": "#5F5B68",
+      "surface": "rgba(27,26,34,.72)",
       "accent": "#F7B538",
-      "hi": "#FFD47E",
-      "accentDeep": "#D98E1C",
-      "onAccent": "#1E1405"
+      "ink": "#F4F0E6",
+      "ink3": "#8C8796"
     }
   },
   {
-    "id": "graphite",
-    "name": "Graphite",
-    "mode": "dark",
-    "c": {
-      "bg": "#111213",
-      "deep": "#0B0C0D",
-      "surface": "#191A1C",
-      "tile": "#161718",
-      "raised": "#1E2022",
-      "raised2": "#282A2D",
-      "sheet": "#1A1B1D",
-      "well": "#0E0F10",
-      "ink": "#ECECEA",
-      "soft": "#C8C9C6",
-      "ink2": "#A9AAA7",
-      "ink3": "#8B8C89",
-      "ink4": "#55575A",
-      "accent": "#E8E6E1",
-      "hi": "#FFFFFF",
-      "accentDeep": "#BDBBB5",
-      "onAccent": "#121314"
-    }
-  },
-  {
-    "id": "chalk",
-    "name": "Chalkboard",
-    "mode": "dark",
-    "c": {
-      "bg": "#18211E",
-      "deep": "#121916",
-      "surface": "#1F2A26",
-      "tile": "#1C2622",
-      "raised": "#24302B",
-      "raised2": "#2D3A35",
-      "sheet": "#1E2824",
-      "well": "#141C19",
-      "ink": "#EEF0E8",
-      "soft": "#CDD3C8",
-      "ink2": "#AEB7AC",
-      "ink3": "#8F9A8E",
-      "ink4": "#5B665C",
-      "accent": "#F1E3B5",
-      "hi": "#FFF4D1",
-      "accentDeep": "#CDBB86",
-      "onAccent": "#1A1A12"
-    }
-  },
-  {
-    "id": "midnight",
-    "name": "Midnight",
-    "mode": "dark",
-    "c": {
-      "bg": "#0A0F1C",
-      "deep": "#070B15",
-      "surface": "#111829",
-      "tile": "#0F1524",
-      "raised": "#151D31",
-      "raised2": "#1E2840",
-      "sheet": "#121A2C",
-      "well": "#0B1120",
-      "ink": "#E8EDFB",
-      "soft": "#C3CBE2",
-      "ink2": "#A3ADC8",
-      "ink3": "#8590AE",
-      "ink4": "#545E7A",
-      "accent": "#7FA6FF",
-      "hi": "#B3CAFF",
-      "accentDeep": "#4F7BE0",
-      "onAccent": "#0A1020"
-    }
-  },
-  {
-    "id": "nord",
-    "name": "Nord",
-    "mode": "dark",
-    "c": {
-      "bg": "#2B303B",
-      "deep": "#242833",
-      "surface": "#343A47",
-      "tile": "#313643",
-      "raised": "#3B4252",
-      "raised2": "#434C5E",
-      "sheet": "#353B48",
-      "well": "#262A34",
-      "ink": "#ECEFF4",
-      "soft": "#D8DEE9",
-      "ink2": "#C0C7D4",
-      "ink3": "#AAB2C1",
-      "ink4": "#6B7385",
-      "accent": "#88C0D0",
-      "hi": "#B5DCE6",
-      "accentDeep": "#5E9DB0",
-      "onAccent": "#1F2630"
-    }
-  },
-  {
-    "id": "solar-dark",
-    "name": "Solarized dark",
-    "mode": "dark",
-    "c": {
-      "bg": "#002B36",
-      "deep": "#00222B",
-      "surface": "#073642",
-      "tile": "#05313C",
-      "raised": "#0B3D4A",
-      "raised2": "#134957",
-      "sheet": "#063440",
-      "well": "#00252F",
-      "ink": "#EEE8D5",
-      "soft": "#D3CDBA",
-      "ink2": "#ADB8B8",
-      "ink3": "#9CA9A9",
-      "ink4": "#586E75",
-      "accent": "#B58900",
-      "hi": "#D9AE2B",
-      "accentDeep": "#8F6C00",
-      "onAccent": "#001F27"
-    }
-  },
-  {
-    "id": "plum",
-    "name": "Plum",
-    "mode": "dark",
-    "c": {
-      "bg": "#141018",
-      "deep": "#0E0B11",
-      "surface": "#1D1722",
-      "tile": "#19141E",
-      "raised": "#221B28",
-      "raised2": "#2C2433",
-      "sheet": "#1B1620",
-      "well": "#110D14",
-      "ink": "#F1EAF4",
-      "soft": "#D2C6D9",
-      "ink2": "#B3A6BC",
-      "ink3": "#958AA0",
-      "ink4": "#5E5468",
-      "accent": "#C9A0FF",
-      "hi": "#E2CCFF",
-      "accentDeep": "#9D6FE0",
-      "onAccent": "#170F20"
-    }
-  },
-  {
-    "id": "forest",
-    "name": "Forest",
-    "mode": "dark",
-    "c": {
-      "bg": "#0E1411",
-      "deep": "#0A0F0C",
-      "surface": "#151E19",
-      "tile": "#131A16",
-      "raised": "#19241E",
-      "raised2": "#222F28",
-      "sheet": "#141C18",
-      "well": "#0C120F",
-      "ink": "#E8F0EA",
-      "soft": "#C6D3CA",
-      "ink2": "#A6B5AA",
-      "ink3": "#889A8D",
-      "ink4": "#546459",
-      "accent": "#7FD48C",
-      "hi": "#B2EBBB",
-      "accentDeep": "#52A862",
-      "onAccent": "#0B1A0F"
-    }
-  },
-  {
-    "id": "ember",
-    "name": "Ember",
-    "mode": "dark",
-    "c": {
-      "bg": "#131010",
-      "deep": "#0E0B0B",
-      "surface": "#1C1716",
-      "tile": "#181413",
-      "raised": "#211B1A",
-      "raised2": "#2B2422",
-      "sheet": "#1A1514",
-      "well": "#100D0C",
-      "ink": "#F3ECE6",
-      "soft": "#D6CBC3",
-      "ink2": "#B7AAA1",
-      "ink3": "#998C83",
-      "ink4": "#62574F",
-      "accent": "#FF8F5A",
-      "hi": "#FFB892",
-      "accentDeep": "#E0663A",
-      "onAccent": "#1E0E06"
-    }
-  },
-  {
-    "id": "contrast",
-    "name": "High contrast",
-    "mode": "dark",
-    "c": {
-      "bg": "#000000",
-      "deep": "#000000",
-      "surface": "#0F0F0F",
-      "tile": "#0A0A0A",
-      "raised": "#141414",
-      "raised2": "#222222",
-      "sheet": "#0D0D0D",
-      "well": "#050505",
-      "ink": "#FFFFFF",
-      "soft": "#E6E6E6",
-      "ink2": "#CFCFCF",
-      "ink3": "#B3B3B3",
-      "ink4": "#6E6E6E",
-      "accent": "#FFD60A",
-      "hi": "#FFE666",
-      "accentDeep": "#E6B800",
-      "onAccent": "#000000"
-    }
-  },
-  {
-    "id": "night",
-    "name": "Night shift (dim, low blue)",
-    "mode": "dark",
-    "c": {
-      "bg": "#12100C",
-      "deep": "#0D0B08",
-      "surface": "#1A1712",
-      "tile": "#17140F",
-      "raised": "#1F1B15",
-      "raised2": "#29241C",
-      "sheet": "#191611",
-      "well": "#0F0D0A",
-      "ink": "#D8CCB6",
-      "soft": "#BFB39E",
-      "ink2": "#A69A85",
-      "ink3": "#8E836F",
-      "ink4": "#5A5244",
-      "accent": "#C99A4E",
-      "hi": "#E0BC7D",
-      "accentDeep": "#A17630",
-      "onAccent": "#17120A"
-    }
-  },
-  {
-    "id": "paper",
-    "name": "Paper",
+    "id": "graph",
+    "name": "Graph paper",
     "mode": "light",
+    "t": {
+      "bg": "#FAFAF6",
+      "card": "#FFFFFF",
+      "card2": "rgba(27,42,65,.04)",
+      "line": "rgba(27,42,65,.16)",
+      "ink": "#1B2A41",
+      "ink2": "#44536B",
+      "ink3": "#5F6C80",
+      "accent": "#C8372D",
+      "on": "#FFFFFF",
+      "warn": "#B85C00",
+      "bad": "#B3261E",
+      "good": "#1E7A4C",
+      "track": "rgba(27,42,65,.10)",
+      "tab": "#FFFFFF"
+    },
+    "radius": 6,
+    "border": "1.5px solid #1B2A41",
+    "shadow": "3px 3px 0 #1B2A41",
+    "blur": "none",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'Newsreader', Georgia, serif",
+      "num": "'IBM Plex Mono', ui-monospace, Menlo, monospace"
+    },
+    "background": "linear-gradient(rgba(40,90,170,.16) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(90deg,rgba(40,90,170,.16) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(rgba(40,90,170,.07) 1px,transparent 1px) 0 0/12px 12px,linear-gradient(90deg,rgba(40,90,170,.07) 1px,transparent 1px) 0 0/12px 12px",
     "c": {
-      "bg": "#F6F4EF",
-      "deep": "#EFECE5",
+      "bg": "#FAFAF6",
       "surface": "#FFFFFF",
-      "tile": "#FBFAF7",
-      "raised": "#FFFFFF",
-      "raised2": "#EDEAE3",
-      "sheet": "#FFFFFF",
-      "well": "#F0EDE6",
-      "ink": "#1C1A17",
-      "soft": "#3D3933",
-      "ink2": "#57524A",
-      "ink3": "#6E685F",
-      "ink4": "#A39D93",
-      "accent": "#A8650A",
-      "hi": "#C98A2E",
-      "accentDeep": "#8A5206",
-      "onAccent": "#FFFFFF"
+      "accent": "#C8372D",
+      "ink": "#1B2A41",
+      "ink3": "#5F6C80"
     }
   },
   {
-    "id": "solar-light",
-    "name": "Solarized light",
+    "id": "euclid",
+    "name": "Euclid",
     "mode": "light",
-    "c": {
-      "bg": "#FDF6E3",
-      "deep": "#F5EDD6",
-      "surface": "#FFFBF0",
-      "tile": "#FAF3DF",
-      "raised": "#FFFBF0",
-      "raised2": "#EEE8D5",
-      "sheet": "#FFFBF0",
-      "well": "#F3ECD7",
-      "ink": "#073642",
-      "soft": "#2E4A53",
-      "ink2": "#4B6169",
-      "ink3": "#5A6C73",
-      "ink4": "#93A1A1",
-      "accent": "#1D6BB8",
-      "hi": "#4A95DD",
-      "accentDeep": "#175A9C",
-      "onAccent": "#FFFFFF"
-    }
-  },
-  {
-    "id": "blueprint",
-    "name": "Blueprint",
-    "mode": "light",
-    "c": {
-      "bg": "#F3F6FA",
-      "deep": "#EAEFF6",
-      "surface": "#FFFFFF",
-      "tile": "#F9FBFD",
-      "raised": "#FFFFFF",
-      "raised2": "#E4EAF2",
-      "sheet": "#FFFFFF",
-      "well": "#EDF1F7",
-      "ink": "#13203A",
-      "soft": "#2E3D5A",
-      "ink2": "#48587A",
-      "ink3": "#5F6E8C",
-      "ink4": "#A2ADC0",
-      "accent": "#2459D6",
-      "hi": "#4F7FEA",
-      "accentDeep": "#1B45A8",
-      "onAccent": "#FFFFFF"
-    }
-  },
-  {
-    "id": "sepia",
-    "name": "Sepia",
-    "mode": "light",
-    "c": {
-      "bg": "#F2E9D8",
-      "deep": "#EADFCA",
-      "surface": "#FAF4E8",
-      "tile": "#F6EEDF",
-      "raised": "#FBF6EC",
-      "raised2": "#E7DCC6",
-      "sheet": "#FBF6EC",
-      "well": "#EDE3D0",
+    "t": {
+      "bg": "#F1E7D3",
+      "card": "#FAF4E6",
+      "card2": "rgba(58,46,34,.05)",
+      "line": "rgba(58,46,34,.18)",
       "ink": "#33291E",
-      "soft": "#4C3F30",
-      "ink2": "#64553F",
-      "ink3": "#6F5E47",
-      "ink4": "#AE9F87",
-      "accent": "#8C4F1E",
-      "hi": "#B0703A",
-      "accentDeep": "#6E3C14",
-      "onAccent": "#FFF8EE"
+      "ink2": "#5A4B39",
+      "ink3": "#6E5D47",
+      "accent": "#8C2F1E",
+      "on": "#FFF8EE",
+      "warn": "#A8590E",
+      "bad": "#9E2A2A",
+      "good": "#3E6B2F",
+      "track": "rgba(58,46,34,.12)",
+      "tab": "#FAF4E6"
+    },
+    "radius": 6,
+    "border": "1px solid rgba(58,46,34,.28)",
+    "shadow": "0 1px 0 rgba(58,46,34,.08)",
+    "blur": "none",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'EB Garamond', Garamond, 'Times New Roman', serif",
+      "num": "'EB Garamond', Garamond, 'Times New Roman', serif"
+    },
+    "background": "none",
+    "c": {
+      "bg": "#F1E7D3",
+      "surface": "#FAF4E6",
+      "accent": "#8C2F1E",
+      "ink": "#33291E",
+      "ink3": "#6E5D47"
+    }
+  },
+  {
+    "id": "euclid-night",
+    "name": "Euclid at night",
+    "mode": "dark",
+    "t": {
+      "bg": "#17130E",
+      "card": "#211B14",
+      "card2": "rgba(237,227,207,.045)",
+      "line": "rgba(237,227,207,.14)",
+      "ink": "#EDE3CF",
+      "ink2": "#CBBDA2",
+      "ink3": "#A69780",
+      "accent": "#E8705F",
+      "on": "#1A0F0B",
+      "warn": "#E9A55B",
+      "bad": "#F07A7A",
+      "good": "#9CC48A",
+      "track": "rgba(237,227,207,.10)",
+      "tab": "#1E1812"
+    },
+    "radius": 6,
+    "border": "1px solid rgba(237,227,207,.22)",
+    "shadow": "0 1px 0 rgba(0,0,0,.4)",
+    "blur": "none",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'EB Garamond', Garamond, 'Times New Roman', serif",
+      "num": "'EB Garamond', Garamond, 'Times New Roman', serif"
+    },
+    "background": "none",
+    "c": {
+      "bg": "#17130E",
+      "surface": "#211B14",
+      "accent": "#E8705F",
+      "ink": "#EDE3CF",
+      "ink3": "#A69780"
+    }
+  },
+  {
+    "id": "scriptorium",
+    "name": "Scriptorium",
+    "mode": "dark",
+    "t": {
+      "bg": "#14110D",
+      "card": "#1C1813",
+      "card2": "rgba(207,174,91,.05)",
+      "line": "rgba(207,174,91,.18)",
+      "ink": "#EFE6D2",
+      "ink2": "#CDBFA4",
+      "ink3": "#A89A80",
+      "accent": "#CFAE5B",
+      "on": "#1A1408",
+      "warn": "#E5975A",
+      "bad": "#EA7A6E",
+      "good": "#A8C68A",
+      "track": "rgba(239,230,210,.10)",
+      "tab": "#1A1612"
+    },
+    "radius": 2,
+    "border": "1px solid rgba(207,174,91,.45)",
+    "shadow": "inset 0 0 0 3px #1C1813, inset 0 0 0 4px rgba(207,174,91,.26)",
+    "blur": "none",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'EB Garamond', Garamond, 'Times New Roman', serif",
+      "num": "'EB Garamond', Garamond, 'Times New Roman', serif"
+    },
+    "background": "none",
+    "c": {
+      "bg": "#14110D",
+      "surface": "#1C1813",
+      "accent": "#CFAE5B",
+      "ink": "#EFE6D2",
+      "ink3": "#A89A80"
+    }
+  },
+  {
+    "id": "astrolabe",
+    "name": "Astrolabe",
+    "mode": "dark",
+    "t": {
+      "bg": "#0B0F17",
+      "card": "rgba(20,27,40,.66)",
+      "card2": "rgba(200,220,255,.05)",
+      "line": "rgba(184,148,86,.22)",
+      "ink": "#E9E4D8",
+      "ink2": "#C1BBAE",
+      "ink3": "#9C978C",
+      "accent": "#62C2B2",
+      "on": "#06161A",
+      "warn": "#E8B06A",
+      "bad": "#F08080",
+      "good": "#8FD49E",
+      "track": "rgba(233,228,216,.10)",
+      "tab": "rgba(14,19,30,.8)"
+    },
+    "radius": 14,
+    "border": "1px solid rgba(184,148,86,.38)",
+    "shadow": "0 18px 40px -26px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.05)",
+    "blur": "blur(10px) saturate(130%)",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'EB Garamond', Garamond, 'Times New Roman', serif",
+      "num": "'EB Garamond', Garamond, 'Times New Roman', serif"
+    },
+    "background": "none",
+    "c": {
+      "bg": "#0B0F17",
+      "surface": "rgba(20,27,40,.66)",
+      "accent": "#62C2B2",
+      "ink": "#E9E4D8",
+      "ink3": "#9C978C"
+    }
+  },
+  {
+    "id": "lamp-compass",
+    "name": "Lamp and compass",
+    "mode": "dark",
+    "t": {
+      "bg": "#0D0C11",
+      "card": "rgba(27,26,34,.72)",
+      "card2": "rgba(255,255,255,.04)",
+      "line": "rgba(255,255,255,.08)",
+      "ink": "#F4F0E6",
+      "ink2": "#B3AEBB",
+      "ink3": "#8C8796",
+      "accent": "#F7B538",
+      "on": "#1E1405",
+      "warn": "#F39A4B",
+      "bad": "#F2545B",
+      "good": "#4FC88E",
+      "track": "rgba(255,255,255,.10)",
+      "tab": "rgba(22,21,28,.82)"
+    },
+    "radius": 14,
+    "border": "1px solid rgba(255,255,255,.08)",
+    "shadow": "0 18px 40px -24px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.05)",
+    "blur": "blur(16px) saturate(140%)",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'EB Garamond', Garamond, 'Times New Roman', serif",
+      "num": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+    },
+    "background": "none",
+    "c": {
+      "bg": "#0D0C11",
+      "surface": "rgba(27,26,34,.72)",
+      "accent": "#F7B538",
+      "ink": "#F4F0E6",
+      "ink3": "#8C8796"
+    }
+  },
+  {
+    "id": "graph-night",
+    "name": "Graph paper at night",
+    "mode": "dark",
+    "t": {
+      "bg": "#13171D",
+      "card": "#1B2129",
+      "card2": "rgba(200,215,235,.04)",
+      "line": "rgba(200,215,235,.16)",
+      "ink": "#E6ECF4",
+      "ink2": "#B7C2D0",
+      "ink3": "#93A0B2",
+      "accent": "#FF7B6B",
+      "on": "#1B0A07",
+      "warn": "#F2B05E",
+      "bad": "#FF8A8A",
+      "good": "#86D39C",
+      "track": "rgba(230,236,244,.10)",
+      "tab": "#1B2129"
+    },
+    "radius": 6,
+    "border": "1.5px solid #C9D3E0",
+    "shadow": "3px 3px 0 #05070A",
+    "blur": "none",
+    "fonts": {
+      "ui": "'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+      "display": "'Newsreader', Georgia, serif",
+      "num": "'IBM Plex Mono', ui-monospace, Menlo, monospace"
+    },
+    "background": "linear-gradient(rgba(120,160,220,.15) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(90deg,rgba(120,160,220,.15) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(rgba(120,160,220,.06) 1px,transparent 1px) 0 0/12px 12px,linear-gradient(90deg,rgba(120,160,220,.06) 1px,transparent 1px) 0 0/12px 12px",
+    "c": {
+      "bg": "#13171D",
+      "surface": "#1B2129",
+      "accent": "#FF7B6B",
+      "ink": "#E6ECF4",
+      "ink3": "#93A0B2"
     }
   }
 ] as const satisfies readonly Theme[];
 export type ThemeId = (typeof themes)[number]['id'];
+export const EUCLID_WORLDS: readonly ThemeId[] = ['euclid','euclid-night'];
