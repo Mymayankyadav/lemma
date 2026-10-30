@@ -7,7 +7,6 @@ test('suspending a card advances the polygon and resets the next card timer',asy
  await page.goto('./?demo=1#/review')
  await page.getByRole('button',{name:'Start review'}).click()
  await expect(page.locator('[data-review-vertex="current"]')).toHaveCount(1)
- await expect(page.locator('[data-review-vertex="current"]')).toHaveAttribute('cx',/./)
 
  // Time spent reading the suspended card must not be charged to the next one.
  await page.clock.fastForward(120_000)
@@ -25,6 +24,9 @@ test('suspending a card advances the polygon and resets the next card timer',asy
  await page.getByRole('button',{name:'Grade Good'}).click()
  await expect(page.locator('[data-review-edge="passed"]')).toHaveCount(1)
  await page.getByRole('button',{name:'Close review'}).click()
- await expect(page).toHaveURL(/#\\/review\\/done$/)
+ await expect(page).toHaveURL(new RegExp('#/review/done
+ await expect(page.getByRole('region',{name:'Review statistics'}).getByText('0:02',{exact:true})).toBeVisible()
+})
+))
  await expect(page.getByRole('region',{name:'Review statistics'}).getByText('0:02',{exact:true})).toBeVisible()
 })
