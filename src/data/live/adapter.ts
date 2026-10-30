@@ -170,7 +170,7 @@ export class LiveAdapter implements LemmaApi {
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
   const [slug]=args,db=liveClient(),uid=await owner(db)
-  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).neq('status','archived').single()) as Row
+  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).neq('status','archived').eq('system',false).single()) as Row
   const [subjects,cps,prereqs,proposalRows,sources,sessionList,settings,due]=await Promise.all([
     rows(db,'subjects',uid),rows(db,'checkpoints',uid),rows(db,'checkpoint_prereqs',uid),
     rows(db,'proposals',uid),rows(db,'sources',uid),this.listSessions(slug),this.getSettings(),
@@ -299,7 +299,7 @@ export class LiveAdapter implements LemmaApi {
  async listSessions(...args: Parameters<LemmaApi['listSessions']>): ReturnType<LemmaApi['listSessions']> {
   const [slug]=args, db=liveClient(),uid=await owner(db)
   const [projects,cps,sessions]=await Promise.all([rows(db,'projects',uid),rows(db,'checkpoints',uid),rows(db,'sessions',uid)])
-  const projectsById=new Map(projects.map(p=>[p.id,p]))
+  const projectsById=new Map(projects.filter(p=>p.system!==true).map(p=>[p.id,p]))
   const cpById=new Map(cps.map(c=>[c.id,c]))
   return sessions.filter(s=>projectsById.has(s.project_id)&&(!slug||projectsById.get(s.project_id)?.slug===slug))
     .map(s=>sessionRow(s,projectsById.get(s.project_id)!.slug,cpById.get(s.checkpoint_id)?.code??null))
