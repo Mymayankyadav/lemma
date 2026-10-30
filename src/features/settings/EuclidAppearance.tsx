@@ -22,7 +22,7 @@ export function EuclidAppearance({ui,busy,onChange}:Props){
  });
  useEffect(()=>{if(getMode()!=='demo')setPrefs(ui??{})},[ui]);
  const timeline=prefs.timeline==='metro'?'metro':'ascent';
- const atlas=prefs.atlas==='branches'||prefs.atlas==='outline'?ui.atlas:'orbits';
+ const atlas=prefs.atlas==='branches'||prefs.atlas==='outline'?prefs.atlas:'orbits';
  const follow=prefs.follow??true;
  const kept=prefs.keep??themes.map(t=>t.id);
  const favorites=prefs.fav??[];
@@ -109,3 +109,4 @@ export function EuclidAppearance({ui,busy,onChange}:Props){
    <p className="mt-1 text-label text-ink-2">Atlas: {chooseLabel(atlas)} · 7 cards due</p>
   </div>}
  </section>;
+}
