@@ -81,4 +81,12 @@ test('unsaved tutor-note drafts stay on their card and never leak into the next 
  await expect(editor).toHaveValue('')
  await expect(dialog.getByRole('button',{name:'Save note'})).toBeDisabled()
  await page.screenshot({path:'test-results/screens/review-note-card-isolation.png',fullPage:true})
+ await dialog.getByRole('button',{name:'Close'}).click()
+ await expect(dialog).toBeHidden()
+
+ // Undo returns to the first card, but must not resurrect its abandoned draft.
+ await page.getByRole('button',{name:'Undo last answer'}).click()
+ await page.getByRole('button',{name:'Note for tutor'}).click()
+ await expect(editor).toHaveValue('')
+ await expect(dialog.getByRole('button',{name:'Save note'})).toBeDisabled()
 })
