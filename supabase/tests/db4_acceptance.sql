@@ -70,6 +70,13 @@ begin
   insert into public.concepts(id,user_id,subject_id,slug,name,level)
     values(idea1,owner_id,a,'compactness','Compactness','planet'),
           (idea2,owner_id,b,'compactness','Compactness','planet');
+  begin
+    update public.concepts set parent_id=idea1 where id=idea2;
+    set constraints all immediate;
+    raise exception 'Cross-subject Atlas parent was accepted';
+  exception when raise_exception then
+    if sqlerrm='Cross-subject Atlas parent was accepted' then raise; end if;
+  end;
   if (public.merge_subjects(a,b)->>'projects')::integer<>1 then
     raise exception 'Subject merge did not move the project';
   end if;
