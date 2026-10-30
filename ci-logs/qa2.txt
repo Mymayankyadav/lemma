@@ -1,0 +1,19 @@
+[WebServer] [plugin builtin:vite-reporter] 
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+[WebServer] [INEFFECTIVE_DYNAMIC_IMPORT] src/lib/queue.ts is dynamically imported by src/features/review-run/Page.tsx but also statically imported by src/data/demo/adapter.ts, src/features/review-run/store.ts, dynamic import will not move module into another chunk.
+[WebServer] 
+
+[WebServer] [INEFFECTIVE_DYNAMIC_IMPORT] src/pdf/ingest.ts is dynamically imported by src/data/demo/adapter.ts but also statically imported by src/data/live/adapter.ts, src/features/new-project/Page.tsx, src/features/project/SourcesPanel.tsx, dynamic import will not move module into another chunk.
+[WebServer] 
+
+
+Running 2 tests using 2 workers
+
+[1/2] [chromium] › tests/e2e/qa-v3.spec.ts:23:2 › QA-2 v3 integrated phone journey — graph-night
+[2/2] [chromium] › tests/e2e/qa-v3.spec.ts:23:2 › QA-2 v3 integrated phone journey — graph
+  2 passed (18.6s)
+exit 0
