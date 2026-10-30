@@ -154,7 +154,7 @@ export default function Page() {
               className="flex min-h-16 items-center gap-3 border-b border-edge py-3"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-math text-headline">
+                <span className="block whitespace-normal break-words font-math text-headline">
                   {plain(row.front)}
                 </span>
                 <span className="mt-1 block text-label text-ink-3">

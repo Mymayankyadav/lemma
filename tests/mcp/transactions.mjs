@@ -123,3 +123,6 @@ try {
  assert.equal(await readFile(new URL('../../supabase/functions/_shared/fsrs.js',import.meta.url),'utf8'),await readFile(new URL('../../src/lib/fsrs/fsrs.js',import.meta.url),'utf8'));
  console.log('PASS connector batch atomicity, source metadata, whole-call undo, failure rollback, restricted RPC and identical FSRS engine');
 } finally {await db.close();}
+
+// DB-3 additive schema and reversible stage backfill acceptance.
+await import("./db3.mjs");

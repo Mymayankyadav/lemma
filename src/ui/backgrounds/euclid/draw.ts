@@ -1,5 +1,4 @@
-/* Compass and straightedge drawings, pure in (context, size, palette, progress).
- * Every figure is deliberately faint; the accent stroke is its last phase. */
+/* Pure compass/straightedge geometry: circles, supporting rules, then rubric. */
 export type Figure='i1'|'i10'|'iii1'|'i2'|'i9'|'ii11'|'i46'|'i47';
 export interface Palette{ink:string;accent:string}
 export type Drawing=(ctx:CanvasRenderingContext2D,w:number,h:number,t:Palette,progress:number)=>void;
@@ -12,43 +11,56 @@ function arc(c:CanvasRenderingContext2D,x:number,y:number,r:number,p=1,start=0,a
  if(p<=0)return;c.beginPath();c.arc(x,y,r,start,start+angle*clamp(p));c.stroke();
 }
 function draw(c:CanvasRenderingContext2D,w:number,h:number,t:Palette,p:number,kind:Figure){
- c.save();const s=Math.min(w*.2,h*.17,130),x=w*.72,y=h*.32;
- c.translate(x,y);c.lineWidth=1.2;c.strokeStyle=t.ink;c.globalAlpha=.12;
+ c.save();const s=Math.min(w*.2,h*.17,130);
+ c.translate(w*.72,h*.32);c.scale(s,s);c.lineWidth=1.2/s;c.strokeStyle=t.ink;c.globalAlpha=.12;
  const circle=phase(p,0,.58),rule=phase(p,.5,.82),red=phase(p,.78,1);
- const A=-s*.5,B=s*.5;
+ const rubric=()=>{c.strokeStyle=t.accent;c.globalAlpha=.27};
  if(kind==='i1'){
-  arc(c,A,0,s,circle);arc(c,B,0,s,circle);
-  c.strokeStyle=t.ink;line(c,A,0,B,0,rule);
-  c.strokeStyle=t.accent;c.globalAlpha=.27;line(c,A,0,0,-Math.sqrt(3)*s/2,red);line(c,B,0,0,-Math.sqrt(3)*s/2,red);
- } else if(kind==='i10'){
-  arc(c,A,0,s*.76,circle,-1.03,2.06);arc(c,B,0,s*.76,circle,Math.PI-1.03,2.06);
-  line(c,A,0,B,0,rule);c.strokeStyle=t.accent;c.globalAlpha=.25;line(c,0,-s*.58,0,s*.58,red);
- } else if(kind==='iii1'){
-  arc(c,0,0,s*.85,circle);line(c,-s*.67,-s*.52,s*.68,-s*.52,rule);
-  line(c,0,-s*.72,0,s*.62,rule);c.strokeStyle=t.accent;c.globalAlpha=.26;arc(c,0,0,s*.08,red);
- } else if(kind==='i2'){
-  arc(c,-s*.42,s*.2,s*.7,circle);arc(c,s*.38,s*.2,s*.42,circle);
-  line(c,-s*.42,s*.2,s*.42,s*.2,rule);line(c,-s*.42,s*.2,0,-s*.55,rule);
-  c.strokeStyle=t.accent;c.globalAlpha=.27;line(c,s*.38,s*.2,s*.38,-s*.42,red);
- } else if(kind==='i9'){
-  arc(c,0,s*.22,s*.62,circle,-Math.PI*.89,Math.PI*.55);
-  line(c,0,s*.22,-s*.8,-s*.44,rule);line(c,0,s*.22,s*.8,-s*.44,rule);
-  c.strokeStyle=t.accent;c.globalAlpha=.27;line(c,0,s*.22,0,-s*.69,red);
- } else if(kind==='ii11'){
-  arc(c,-s*.6,-s*.3,s*.58,circle,-.1,Math.PI*1.1);
-  line(c,-s,0,s,0,rule);line(c,-s*.24,-s*.14,-s*.24,s*.14,rule);
-  c.strokeStyle=t.accent;c.globalAlpha=.3;line(c,-s*.24,0,s,0,red);
- } else if(kind==='i46'){
-  arc(c,-s*.4,s*.48,s*.4,circle,-Math.PI*.7,Math.PI*1.3);
-  line(c,-s*.5,s*.5,s*.5,s*.5,rule);line(c,-s*.5,s*.5,-s*.5,-s*.5,rule);line(c,-s*.5,-s*.5,s*.5,-s*.5,rule);
-  c.strokeStyle=t.accent;c.globalAlpha=.28;line(c,s*.5,-s*.5,s*.5,s*.5,red);
- } else if(kind==='i47'){
-  arc(c,-s*.35,s*.3,s*.3,circle);
-  line(c,-s*.47,-s*.2,s*.45,-s*.2,rule);line(c,-s*.47,-s*.2,-s*.47,s*.46,rule);
-  c.strokeStyle=t.accent;c.globalAlpha=.25;line(c,-s*.47,s*.46,s*.45,-s*.2,red);
-  // Squares on the two legs and hypotenuse of the right triangle.
-  line(c,-s*.47,-s*.2,-s*.47,-s*.65,red);line(c,-s*.47,-s*.65,s*.45,-s*.65,red);
-  line(c,s*.45,-s*.65,s*.45,-s*.2,red);
+  const top=-Math.sqrt(3)/2;
+  arc(c,-.5,0,1,circle);arc(c,.5,0,1,circle);
+  rubric();line(c,-.5,0,.5,0,red);line(c,-.5,0,0,top,red);line(c,.5,0,0,top,red);
+ }else if(kind==='i10'){
+  const r=.76,intersection=Math.sqrt(r*r-.25);
+  arc(c,-.5,0,r,circle,-1.03,2.06);arc(c,.5,0,r,circle,Math.PI-1.03,2.06);
+  line(c,-.5,0,.5,0,rule);rubric();line(c,0,-intersection,0,intersection,red);
+ }else if(kind==='iii1'){
+  const r=.85,chordY=-.4,x=Math.sqrt(r*r-chordY*chordY);
+  arc(c,0,0,r,circle);line(c,-x,chordY,x,chordY,rule);
+  line(c,-r,0,r,0,rule);line(c,0,-r,0,r,rule);
+  rubric();arc(c,0,0,.035,red);
+ }else if(kind==='i2'){
+  // Equilateral DAB. Extend DB to G and DA to L; BG = AL = BC = .55.
+  const dy=.3-.4*Math.sqrt(3),ly=dy+1.35*Math.sqrt(3)/2;
+  arc(c,.4,.3,.55,circle);arc(c,0,dy,1.35,circle,Math.PI/6,Math.PI*2/3);
+  line(c,-.4,.3,.4,.3,rule);line(c,0,dy,.675,ly,rule);line(c,0,dy,-.675,ly,rule);
+  rubric();line(c,.4,.3,.95,.3,red);line(c,-.4,.3,-.675,ly,red);
+ }else if(kind==='i9'){
+  const r=Math.hypot(.6,.6),intersection=-.2-Math.sqrt(.8*.8-.6*.6);
+  arc(c,0,.4,r,circle,-3*Math.PI/4,Math.PI/2);
+  arc(c,-.6,-.2,.8,circle,-1.4,1.4);arc(c,.6,-.2,.8,circle,Math.PI,1.4);
+  line(c,0,.4,-.85,-.45,rule);line(c,0,.4,.85,-.45,rule);
+  rubric();line(c,0,.4,0,intersection,red);
+ }else if(kind==='ii11'){
+  // A square on AB, E the midpoint of AD. EF = EB and AH = AF.
+  const radius=Math.hypot(.8,.4),gold=radius-.4;
+  arc(c,-.4,0,radius,circle,Math.atan2(.4,.8),Math.PI/2-Math.atan2(.4,.8));
+  arc(c,-.4,.4,gold,circle,-Math.PI/2,Math.PI/2);
+  line(c,-.4,.4,.4,.4,rule);line(c,.4,.4,.4,-.4,rule);line(c,.4,-.4,-.4,-.4,rule);
+  line(c,-.4,-.4,-.4,radius,rule);line(c,-.4,0,.4,.4,rule);
+  rubric();line(c,-.4,.4,-.4+gold,.4,red);line(c,-.4+gold,.32,-.4+gold,.48,red);
+ }else if(kind==='i46'){
+  arc(c,-.5,.5,1,circle,-Math.PI/2,Math.PI/2);
+  line(c,-.5,.5,.5,.5,rule);line(c,-.5,.5,-.5,-.5,rule);
+  rubric();line(c,-.5,-.5,.5,-.5,red);line(c,.5,-.5,.5,.5,red);
+ }else{
+  // Three outward squares on an exact 3:4:5 right triangle (Elements I.47).
+  const u=.18,A=[-.45,.3],B=[A[0]+4*u,A[1]],C=[A[0],A[1]-3*u];
+  arc(c,A[0],A[1],3*u,circle,-Math.PI/2,Math.PI/2);
+  const poly=(pts:number[][],progress:number)=>pts.forEach((a,i)=>{const b=pts[(i+1)%pts.length];line(c,a[0],a[1],b[0],b[1],progress)});
+  poly([A,B,[B[0],B[1]+4*u],[A[0],A[1]+4*u]],rule);
+  poly([A,C,[C[0]-3*u,C[1]],[A[0]-3*u,A[1]]],rule);
+  poly([B,C,[C[0]+3*u,C[1]-4*u],[B[0]+3*u,B[1]-4*u]],rule);
+  rubric();poly([A,B,C],red);
  }
  c.restore();
 }

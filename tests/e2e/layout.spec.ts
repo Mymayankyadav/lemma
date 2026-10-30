@@ -1,8 +1,8 @@
 import {test,expect,type Page} from '@playwright/test';
 /** UI-5a §9: repeatable Euclid mobile audit with the offending DOM selector in each failure. */
 const routes=[
- '/', '/projects','/projects/new','/p/algebra-1','/p/algebra-1/cp/CP11','/s/algebra-1/7',
- '/proposals','/proposals/example','/review','/review/run','/review/done',
+ '/', '/projects','/projects/new','/p/real-analysis','/p/real-analysis/cp/CP4','/s/real-analysis/7',
+ '/proposals','/proposals/proposal-6','/review','/review/run','/review/done',
  '/cards','/cards/31','/atlas','/insights','/settings','/sign-in','/kit'
 ] as const;
 type Issue={selector:string;reason:string};
@@ -10,7 +10,11 @@ async function audit(page:Page):Promise<Issue[]>{
  return page.evaluate(()=>{
   const issues:Issue[]=[];
   const selector=(e:Element)=>{const id=e.id?'#'+e.id:'';const cls=[...e.classList].slice(0,2).join('.');return e.tagName.toLowerCase()+id+(cls?'.'+cls:'')};
-  const visible=(e:Element)=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return !e.closest('.sr-only,[aria-hidden="true"]')&&r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};
+  const visible=(e:Element)=>{
+   if(e.closest('[inert],.sr-only,.katex-mathml'))return false;
+   const r=e.getBoundingClientRect(),s=getComputedStyle(e);
+   return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'&&s.clipPath!=='inset(50%)';
+  };
   const report=(e:Element,reason:string)=>issues.push({selector:selector(e),reason});
   if(document.documentElement.scrollWidth>innerWidth+1)report(document.documentElement,`horizontal scroll: ${document.documentElement.scrollWidth}px > ${innerWidth}px`);
   // Text ranges are leaves, not nested element boxes: that avoids parent/child false positives.
@@ -21,12 +25,21 @@ async function audit(page:Page):Promise<Issue[]>{
    for(let n=walk.nextNode();n;n=walk.nextNode()){
     if(!n.textContent?.trim())continue;
     const parent=n.parentElement;
-    if(!parent||!visible(parent)||parent.closest('[data-bleed]'))continue;
+    if(!parent||!visible(parent)||parent.closest('[data-bleed],.katex'))continue;
     const range=document.createRange();range.selectNodeContents(n);
     for(const rect of Array.from(range.getClientRects())){
      if(rect.width===0||rect.height===0)continue;
      if(rect.left<edge.left+11.5||rect.right>edge.right-11.5)report(parent,`card edge clearance < 12px in ${selector(card)}`);
      texts.push({node:n,rect,element:parent});
+    }
+   }
+   // KaTeX positions glyphs and its hidden MathML in overlapping boxes by design.
+   // Audit the visible formula as one atom against neighbouring prose instead.
+   for(const math of card.querySelectorAll('.katex')){
+    if(visible(math)&&!math.closest('[data-bleed]')){
+     const rect=math.getBoundingClientRect();
+     if(rect.left<edge.left+11.5||rect.right>edge.right-11.5)report(math,`formula crosses card clearance in ${selector(card)}`);
+     texts.push({node:math,rect,element:math});
     }
    }
    for(let i=0;i<texts.length;i++)for(let j=i+1;j<texts.length;j++){
@@ -73,13 +86,27 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
   await page.setViewportSize(viewport);
   const failures:string[]=[];
   for(const route of routes){
-   await page.goto(`/lemma/?demo=1&theme=${theme}&density=${density}&effects=calm#${route}`);
-   await page.locator('#main-content').waitFor();
+   const entry=route.startsWith('/review/')?'/review':route;
+   await page.goto(`/lemma/?demo=1&theme=${theme}&density=${density}&effects=calm#${entry}`);
+   await page.waitForFunction(()=> (document.querySelector('#main-content')?.textContent?.trim().length??0)>40);
+   if(route.startsWith('/review/')){
+    await page.getByRole('button',{name:'Start review'}).click();
+    await expect(page.getByRole('button',{name:'Sure',exact:true})).toBeVisible();
+    if(route==='/review/done'){
+     await page.getByRole('button',{name:'Sure',exact:true}).click();
+     await page.getByRole('button',{name:'Grade Good'}).click();
+     await page.getByRole('button',{name:'Close review'}).click();
+     await expect(page.getByRole('heading',{name:'Review complete',level:1})).toBeVisible();
+    }
+   }
+   await expect(page).toHaveURL(new RegExp('#'+route.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$'));
    await page.evaluate(()=>document.fonts.ready);
+   // Wait for the shell's drill-in transform to settle before measuring boxes.
+   await expect.poll(()=>page.locator('#main-content > div').first().evaluate(e=>getComputedStyle(e).transform)).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
    const issues=[...(await audit(page)),...(await coveredAtBottom(page))];
    failures.push(...issues.map(i=>`${route} / ${i.selector}: ${i.reason}`));
-   if(density==='compact'&&viewport.width===390&&(route==='/'||route==='/review')){
-    await page.screenshot({path:`test-results/screens/review/ui5a-${theme}-${route==='/'?'today':'review'}.png`,fullPage:true});
+   if(density==='compact'&&viewport.width===390){
+    await page.screenshot({path:`test-results/screens/review/ui5a-${theme}-${route==='/'?'today':route.slice(1).replaceAll('/','-')}.png`,fullPage:true});
    }
   }
   expect(failures,failures.join('\n')).toEqual([]);
