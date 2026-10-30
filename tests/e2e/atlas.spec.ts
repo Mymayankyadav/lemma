@@ -136,3 +136,22 @@ test('narrow day and night screenshots do not overflow the document',async({page
   await page.screenshot({path:`test-results/screens/atlas-cosmos-${mode}.png`,fullPage:true});
  }
 });
+
+for(const world of ['graph','graph-night'] as const){
+ test('QA-2 Atlas cluster labels are unobstructed by controls in '+world,async({page})=>{
+  await page.goto('./?demo=1&theme='+world+'#/atlas');
+  const label=page.locator('[data-atlas-label]').filter({hasText:'Topology'}).first();
+  const minimap=page.locator('[data-minimap="true"]');
+  const zoom=page.getByRole('button',{name:'Zoom in'}).locator('..');
+  await expect(label).toBeVisible();
+  await expect(minimap).toBeVisible();
+  const [textRect,mapRect,zoomRect]=await Promise.all([label.boundingBox(),minimap.boundingBox(),zoom.boundingBox()]);
+  for(const rect of [mapRect,zoomRect]){
+   expect(rect).not.toBeNull();
+   const horizontal=Math.min(textRect!.x+textRect!.width,rect!.x+rect!.width)-Math.max(textRect!.x,rect!.x);
+   const vertical=Math.min(textRect!.y+textRect!.height,rect!.y+rect!.height)-Math.max(textRect!.y,rect!.y);
+   expect(horizontal<=0||vertical<=0,'Atlas control obscures Topology label').toBe(true);
+  }
+  await page.screenshot({path:'test-results/screens/qa2-atlas-label-'+world+'.png',fullPage:true});
+ });
+}
