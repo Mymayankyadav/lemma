@@ -113,7 +113,7 @@ function ProjectSwitcher({open,onClose,current}:{open:boolean;onClose:()=>void;c
 
 export default function Page(){
  const {slug:rawSlug}=useParams(),slug=rawSlug??'';
- const [params,setParams]=useSearchParams(),query=useProject(slug),navigate=useNavigate(),notify=useToast(),reduce=!!useReducedMotion(),appearance=useSettings();
+ const [params,setParams]=useSearchParams(),query=useProject(slug),navigate=useNavigate(),notify=useToast(),reduce=!!useReducedMotion();
  const [switcherOpen,setSwitcherOpen]=useState(false);
  const tab=params.get('tab')==='sessions'?'sessions':params.get('tab')==='sources'?'sources':'path';
  useEffect(()=>{
