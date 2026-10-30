@@ -4,7 +4,18 @@ import {liveClient} from '../../../src/data/live/client'
 vi.mock('../../../src/data/live/client',()=>({liveClient:vi.fn()}))
 vi.mock('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url',()=>({default:'worker'}))
 const data:Record<string,any[]>={}
-const client={auth:{getUser:async()=>({data:{user:{id:'owner'}},error:null})},from(table:string){
+const client={auth:{getUser:async()=>({data:{user:{id:'owner'}},error:null})},
+ rpc(name:string){
+  if(name!=='project_summaries')throw new Error('Unexpected RPC '+name)
+  // The server RPC hides system projects but deliberately retains archived ones.
+  const result=(data.projects??[]).filter(p=>p.user_id==='owner'&&!p.system)
+   .map(p=>({...p,subject:{id:'sub',name:'Math',glyph:'M',hue:'amber',position:0},
+    lastActivityAt:p.last_activity_at,current:null,done:0,total:0,cardsCount:0,
+    sessionsCount:0,sourcesCount:0,sourceTitles:[]}))
+   .sort((a,b)=>b.lastActivityAt.localeCompare(a.lastActivityAt))
+  return Promise.resolve({data:result,error:null})
+ },
+ from(table:string){
  let result=(data[table]??[]).slice()
  const q:any={select(){return q},eq(k:string,v:any){result=result.filter(r=>r[k]===v);return q},neq(k:string,v:any){result=result.filter(r=>r[k]!==v);return q},range(start:number,end:number){return Promise.resolve({data:result.slice(start,end+1),error:null})},single(){return Promise.resolve(result.length===1?{data:result[0],error:null}:{data:null,error:{code:'PGRST116',message:'No row'}})}};return q
 }}
