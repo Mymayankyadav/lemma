@@ -25,7 +25,14 @@ export async function target(c:Context,a:any):Promise<{table:string;row:any;p?:a
  return {table:'projects',row:await project(c,t)};
 }
 function pk(table:string,row:any){return table==='settings'?{user_id:row.user_id}:table==='styles'?{user_id:row.user_id,key:row.key}:{id:row.id};}
-async function idea(c:Context,name:string,subject_id:string){const x=(await all(c,'concepts')).find(x=>x.name.toLowerCase()===name.toLowerCase()&&x.subject_id===subject_id);if(x)return x;return insert(c,'concepts',{subject_id,slug:slug(name),name});}
+async function idea(c:Context,name:string,subject_id:string){
+ const matches=(x:any)=>x.user_id===c.userId&&x.subject_id===subject_id&&x.name.toLowerCase()===name.toLowerCase();
+ // Queued inserts have UUIDs already, but are not visible to database reads yet.
+ const pending=c.batch?.find(x=>x.op==='insert'&&x.table==='concepts'&&matches(x.values));
+ if(pending)return pending.values;
+ const existing=(await all(c,'concepts')).find(matches);
+ return existing||insert(c,'concepts',{subject_id,slug:slug(name),name});
+}
 export async function setPrompt(c:Context,a:any){const global=a.scope==='all',r=global?await settings(c):await project(c,a.scope),key=global?'master_prompt':'prompt';
  const value=a.mode==='clear'?null:a.mode==='replace'?a.text:[r[key],a.text].filter(Boolean).join('\n');
  if((value?.length||0)>(global?2000:1000))throw Error('Prompt exceeds '+(global?2000:1000)+' characters');
@@ -52,7 +59,7 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
  }
  if(patch.due!==undefined){const due=patch.due==='now'?new Date().toISOString():new Date(patch.due).toISOString();for(const x of (await all(c,'cards')).filter(x=>x.note_id===row.id))enqueue(c,'cards',{id:x.id},{due});delete patch.due;}
  if(patch.after!==undefined){const cps=(await all(c,'checkpoints')).filter(x=>x.project_id===p.id&&x.id!==row.id).sort((a,b)=>a.position-b.position);const i=patch.after===null?-1:cps.findIndex(x=>x.code===patch.after);if(patch.after!==null&&i<0)throw Error('Unknown insertion point');patch.position=i<0?(cps[0]?.position||10)-10:(cps[i].position+(cps[i+1]?.position||cps[i].position+20))/2;delete patch.after;}
- for(const [field,join,left,right] of [['prereqs','checkpoint_prereqs','checkpoint_id','prereq_id'],['ideas','checkpoint_concepts','checkpoint_id','concept_id']] as const){if(table==='checkpoints'&&field in patch){for(const x of (await all(c,join)).filter(x=>x[left]===row.id))c.batch!.push({op:'delete',table:join,where:{[left]:x[left],[right]:x[right]}});for(const name of patch[field]){const r=field==='prereqs'?await checkpoint(c,p,name):await idea(c,name,p.subject_id);const vals:any={[left]:row.id,[right]:r.id};c.batch!.push({op:'insert',table:join,values:vals});}delete patch[field];}}
+ for(const [field,join,left,right] of [['prereqs','checkpoint_prereqs','checkpoint_id','prereq_id'],['ideas','checkpoint_concepts','checkpoint_id','concept_id']] as const){if(table==='checkpoints'&&field in patch){for(const x of (await all(c,join)).filter(x=>x[left]===row.id))c.batch!.push({op:'delete',table:join,where:{[left]:x[left],[right]:x[right]}});const linked=new Set<string>();for(const name of patch[field]){const r=field==='prereqs'?await checkpoint(c,p,name):await idea(c,name,p.subject_id);if(linked.has(r.id))continue;linked.add(r.id);const vals:any={[left]:row.id,[right]:r.id};c.batch!.push({op:'insert',table:join,values:vals});}delete patch[field];}}
  if(table==='concepts')for(const field of ['prereqs','related'])if(field in patch){const kind=field==='prereqs'?'prereq':'related';for(const x of (await all(c,'concept_links')).filter(x=>x.to_id===row.id&&x.kind===kind))c.batch!.push({op:'delete',table:'concept_links',where:{from_id:x.from_id,to_id:x.to_id}});for(const name of patch[field]){const other=await idea(c,name,row.subject_id);c.batch!.push({op:'insert',table:'concept_links',values:{from_id:other.id,to_id:row.id,kind}});}delete patch[field];}
  if(Object.keys(patch).length)enqueue(c,table,pk(table,row),patch);
  return 'edited '+a.target+': '+Object.keys(a.set).join(', ');

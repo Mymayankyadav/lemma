@@ -117,6 +117,20 @@ export async function selftest(c:Context):Promise<any>{
       const d=await scoped(c,'diagnostics').eq('project_id',p.id).single();if(d.data?.times!==2)throw Error('Diagnostic sightings failed');
       if(!(await packet(c,{project:p.slug})).includes('ADAPT D'+d.data.no))throw Error('ADAPT missing');
     });
+    await check('repeated new concept references and undo',async()=>{
+      const name='Selftest repeated concept';
+      const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
+      const before=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
+      const action=await run('edit',edit,{project:p.slug,target:'CP1',set:{ideas:[name,name.toLowerCase(),name]}});
+      const found=(await scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)).data||[];
+      if(found.length!==1)throw Error('Expected one canonical concept');
+      const links=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
+      if(links.length!==1||links[0].concept_id!==found[0].id)throw Error('Expected one concept link');
+      await run('undo',undo,{action:action.action});
+      if((await scoped(c,'concepts').eq('id',found[0].id)).data?.length)throw Error('Concept survived undo');
+      const restored=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
+      if(restored.length!==before.length||before.some((x:any)=>!restored.some((y:any)=>y.concept_id===x.concept_id)))throw Error('Original links not restored');
+    });
     await check('delete preview cascade and undo',async()=>{
       const preview=await run('delete',remove,{target:p.slug,confirm:false});if(preview.action)throw Error('Preview wrote data');
       const r=await run('delete',remove,{target:p.slug,confirm:true});
@@ -158,5 +172,5 @@ export async function selftest(c:Context):Promise<any>{
     }
     if(extraSubjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',extraSubjectId);
   }
-  return {ok:steps.length===15&&steps.every(x=>x.ok),steps};
+  return {ok:steps.length===16&&steps.every(x=>x.ok),steps};
 }
