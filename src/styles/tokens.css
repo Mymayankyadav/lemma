@@ -66,3 +66,8 @@ html[data-density="comfortable"] {
 :root { --type-decor-hero: 180px; --type-decor-tile: 110px; --type-decor-icon: 90px; --type-hidden: 0px; }
 html[data-density="cozy"] { --type-decor-hero: 210px; --type-decor-tile: 130px; --type-decor-icon: 105px; }
 html[data-density="comfortable"] { --type-decor-hero: 250px; --type-decor-tile: 150px; --type-decor-icon: 120px; }
+
+/* Screen-specific space scales, still configurable per density. */
+:root { --step-ring: 44px; --summary-tile: 72px; }
+html[data-density="cozy"] { --step-ring: 52px; --summary-tile: 80px; }
+html[data-density="comfortable"] { --step-ring: 76px; --summary-tile: 100px; }

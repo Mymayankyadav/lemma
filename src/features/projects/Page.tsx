@@ -18,22 +18,22 @@ import {EmptyState} from '../../ui/EmptyState';
 
 function Featured({project}:{project:ProjectSummary}){
  const detail=useProject(project.slug);
- return <Slab lamp as="article" className="p-[22px]">
+ return <Slab lamp as="article" className="max-h-[30dvh] overflow-hidden p-[var(--pad)]">
   <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-14 select-none font-math text-[length:var(--type-decor-hero)] italic leading-none text-amber opacity-[0.07]">{project.subject.glyph}</span>
   <div className="relative z-10 flex items-center justify-between gap-3">
    <div className="flex min-w-0 flex-col gap-1">
     <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={40}/>
-    <Link to={'/p/'+project.slug} className="mt-3 truncate text-card font-semibold tracking-tight">{project.title}</Link>
+    <Link to={'/p/'+project.slug} className="mt-2 truncate text-card font-semibold tracking-tight">{project.title}</Link>
     <p className="line-clamp-2 font-math text-headline italic leading-snug text-ink-2">{detail.data?.project.goal??'Make steady progress on your learning goal.'}</p>
    </div>
    <ProgressRing value={project.total?project.done/project.total:0} label="Checkpoints complete"/>
   </div>
-  <div className="relative mt-6 flex flex-wrap gap-4 text-label text-ink-3">
+  <div className="relative mt-3 flex flex-wrap gap-4 text-label text-ink-3">
    <span className="flex items-center gap-1.5"><BookOpen size={15} aria-hidden="true"/>{project.sourcesCount} {project.sourcesCount===1?'book':'books'}</span>
    <span className="flex items-center gap-1.5"><Layers size={15} aria-hidden="true"/>{project.cardsCount} cards</span>
    <span className="flex items-center gap-1.5"><MessageCircle size={15} aria-hidden="true"/>{project.sessionsCount} sessions</span>
   </div>
-  <Link to={'/p/'+project.slug} className="relative mt-4 flex min-h-12 items-center gap-2 border-t border-edge pt-3 text-body text-ink-soft">
+  <Link to={'/p/'+project.slug} className="relative mt-2 flex min-h-11 items-center gap-2 border-t border-edge pt-3 text-body text-ink-soft">
    <span aria-hidden="true" className="size-2 rounded-full bg-amber shadow-[0_0_9px_var(--amber)]"/>
    <span className="min-w-0 flex-1 truncate">{project.current?
      project.current.title+', step '+project.current.step:'See your study path'}</span>
@@ -43,13 +43,13 @@ function Featured({project}:{project:ProjectSummary}){
 }
 function ProjectTile({project}:{project:ProjectSummary}){
  return <Link to={'/p/'+project.slug} className="block focus-visible:outline-2 focus-visible:outline-amber">
-  <Tile className="relative overflow-hidden px-5 py-4">
+  <Tile className="relative min-h-[var(--row)] overflow-hidden px-[var(--pad-tile)] py-2">
    <span aria-hidden="true" className="pointer-events-none absolute -right-4 -top-6 select-none font-math text-[length:var(--type-decor-tile)] italic leading-none text-ink opacity-[0.035]">{project.subject.glyph}</span>
    <div className="relative flex items-center justify-between gap-3">
     <h3 className="truncate text-title-s font-semibold">{project.title}</h3>
     <span className="text-body tabular-nums text-ink-2">{project.done}/{project.total}</span>
    </div>
-   <Rail label={project.title+' completion'} value={project.total?project.done/project.total:0} className="my-3"/>
+   <Rail label={project.title+' completion'} value={project.total?project.done/project.total:0} className="my-1"/>
    <p className="relative truncate text-label text-ink-3">{
     project.current?'Next: '+project.current.title:'No active checkpoint'}</p>
   </Tile>
