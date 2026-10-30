@@ -1,7 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
-import {motion, useReducedMotion} from 'motion/react';
 import {ChevronRight, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
@@ -48,22 +47,20 @@ function LoadingDesk(){
  </Screen>;
 }
 
-function ProjectLink({project,index}:{project:ProjectSummary;index:number}){
- const reduce=!!useReducedMotion();
- return <motion.div initial={reduce?false:{opacity:0,y:12}} animate={{opacity:1,y:0}}
-  transition={{duration:reduce?0.15:0.6,delay:reduce?0:index*0.1}}>
+function ProjectLink({project}:{project:ProjectSummary}){
+ return <div>
   <Link to={'/p/'+project.slug} aria-label={project.title+', '+project.done+' of '+project.total+' checkpoints'}
    className="group grid min-h-[var(--row)] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <span className="flex min-w-0 flex-col gap-1">
     <span className="truncate text-headline font-medium">{project.title}</span>
-    <Rail label={project.title+' progress'} value={project.total?project.done/project.total:0} sheen={index===0} delay={index*0.1}/>
+    <Rail label={project.title+' progress'} value={project.total?project.done/project.total:0}/>
    </span>
    <span className="flex items-center gap-1 text-body tabular-nums text-ink-2">
     {project.total===0?'Needs a plan':project.done+'/'+project.total}<ChevronRight size={15} aria-hidden="true" className="text-ink-3"/>
    </span>
   </Link>
- </motion.div>;
+ </div>;
 }
 
 /** A passive 56px handoff, not an in-app tutor launcher. */
@@ -90,9 +87,7 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
 }
 
 function SummaryTiles({due,pending}:{due:number;pending:number}){
- const reduce=!!useReducedMotion();
- return <motion.div className="grid grid-cols-2 gap-3" initial={reduce?false:{opacity:0,y:12}}
-  animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.7,delay:reduce?0:0.12}}>
+ return <div className="grid grid-cols-2 gap-3">
   <Link to="/review" aria-label={due+' cards due. Start reviewing'} className="focus-visible:outline-2 focus-visible:outline-amber">
    <Tile className="relative flex h-[var(--summary-tile)] flex-col justify-between overflow-hidden p-[var(--pad-tile)]">
     <span className="text-num-l font-semibold leading-none tracking-tight tabular-nums">{due}</span>
@@ -105,7 +100,7 @@ function SummaryTiles({due,pending}:{due:number;pending:number}){
     <span className="text-label text-ink-2">{pending===0?'inbox clear':'to approve'}</span>
    </Tile>
   </Link>
- </motion.div>;
+ </div>;
 }
 
 export default function Page(){
@@ -165,7 +160,7 @@ export default function Page(){
     <IconButton tone="plain" icon={Plus} label="New project" to="/projects/new" className="text-amber"/>
    </div>
    <div className="flex flex-col gap-1">
-    {projects.slice(0,4).map((p,i)=><ProjectLink key={p.id} project={p} index={i}/>)}
+    {projects.slice(0,4).map(p=><ProjectLink key={p.id} project={p}/>)}
    </div>
    <Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All paths</Link>
    {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
