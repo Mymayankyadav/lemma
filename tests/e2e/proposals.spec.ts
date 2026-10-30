@@ -58,3 +58,41 @@ test("editing a proposed card previews and approves the edited content", async (
     fullPage: true,
   });
 });
+
+for(const world of ['euclid','euclid-night'] as const){
+ test(`UI-5f approval and errata sheet in ${world}`,async({page})=>{
+  await page.setViewportSize({width:360,height:740});
+  await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/proposals`);
+  await expect(page.getByRole('button',{name:'Approve card'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Edit card'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Reject card'})).toBeVisible();
+  await page.screenshot({path:`test-results/screens/review/ui5f-approve-${world}.png`,fullPage:true});
+  await page.getByRole('button',{name:/Plan 1/}).click();
+  await expect(page.getByRole('region',{name:'Plan errata'})).toContainText('CP5 needs CP4a');
+  await page.getByRole('link',{name:'See the whole plan'}).click();
+  await expect(page.getByRole('region',{name:'Plan errata'})).toContainText('CP5 needs CP4a');
+  await expect(page.getByRole('button',{name:'Approve plan'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
+  await page.screenshot({path:`test-results/screens/review/ui5f-plan-${world}.png`,fullPage:true});
+ });
+}
+
+test('a blocked tutor handoff keeps the proposed plan pending',async({page})=>{
+ await page.goto('/lemma/?demo=1#/proposals?tab=plan');
+ await page.getByRole('link',{name:'See the whole plan'}).click();
+ await page.evaluate(()=>{
+  window.open=()=>null;
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+   writeText:async()=>{throw Error('Clipboard denied')},
+  }});
+ });
+ await page.getByRole('button',{name:'Ask for changes'}).click();
+ const dialog=page.getByRole('dialog',{name:'Ask for changes'});
+ await dialog.getByRole('textbox',{name:'What should change?'}).fill('Clarify the second lemma');
+ await dialog.getByRole('button',{name:'Send'}).click();
+ await expect(page.getByText(/proposal is still pending/)).toBeVisible();
+ await expect(page.getByRole('button',{name:'Approve plan'})).toBeVisible();
+ await expect(dialog.getByRole('textbox',{name:'What should change?'})).toHaveValue('Clarify the second lemma');
+ await page.goto('/lemma/?demo=1#/proposals?tab=plan');
+ await expect(page.getByRole('link',{name:'See the whole plan'})).toBeVisible();
+});

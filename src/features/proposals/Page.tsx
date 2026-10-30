@@ -27,7 +27,6 @@ import { Card } from "../../ui/Card";
 import { EmptyState } from "../../ui/EmptyState";
 import { Glyph } from "../../ui/Glyph";
 import { MathText } from "../../ui/MathText";
-import { Orb } from "../../ui/Orb";
 import { Screen } from "../../ui/Screen";
 import { Segmented } from "../../ui/Segmented";
 import { Sheet } from "../../ui/Sheet";
@@ -101,8 +100,8 @@ function PendingCard({
       transition={{ duration: reduce ? 0.15 : 0.55 }}
       aria-label="Proposal card, swipe right to approve or left to reject"
     >
-      <Card stack className="min-h-[385px] p-6">
-        <div className="flex items-center gap-2 text-label font-semibold uppercase tracking-wide text-ink-3">
+      <Card stack className="min-h-[340px] rounded-slab p-5">
+        <div className="flex items-center gap-2 text-label font-medium text-ink-3">
           <Sparkles size={15} className="text-amber" />
           <span>
             {edit ? `Fix for N${edit.note_no}` : (card?.kind ?? "Card")}
@@ -125,7 +124,7 @@ function PendingCard({
             />
           </div>
         )}
-        <div className="mt-8">
+        <div className="mt-6 font-math">
           <MathText
             source={front}
             variant="card"
@@ -134,7 +133,7 @@ function PendingCard({
             }
           />
         </div>
-        <div className="my-6 h-px bg-edge" />
+        <div aria-hidden="true" className="my-5 h-px bg-amber-line" />
         <MathText
           source={back}
           variant="answer"
@@ -150,7 +149,7 @@ function PendingCard({
             </p>
           ))}
         {proposal.reason && (
-          <p className="mt-8 flex items-center gap-2 text-label text-ink-3">
+          <p className="mt-6 flex items-start gap-2 text-label italic text-ink-3">
             <Sparkles size={15} className="text-amber" />
             {proposal.reason}
           </p>
@@ -297,32 +296,30 @@ export default function Page() {
                 ),
               )}
             </div>
-            <div className="flex items-center justify-center gap-6">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 aria-label="Reject card"
                 disabled={pending}
                 onClick={() => void commit(active, false)}
-                className="flex size-[62px] items-center justify-center rounded-full bg-danger-tint text-again disabled:opacity-50"
+                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl border border-again bg-danger-tint px-2 text-again disabled:opacity-50"
               >
-                <X size={26} />
+                <X size={18} /><span className="text-label">Reject</span>
               </button>
               <button
                 type="button"
                 aria-label="Edit card"
                 disabled={pending || !active.card}
                 onClick={openEdit}
-                className="flex size-[50px] items-center justify-center rounded-full bg-fill-1 text-ink-2 disabled:opacity-40"
+                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl border border-edge bg-fill-1 px-2 text-ink-2 disabled:opacity-40"
               >
-                <PencilLine size={21} />
+                <PencilLine size={17} /><span className="text-label">Edit</span>
               </button>
-              <Orb
-                icon={Check}
-                label="Approve card"
-                size={76}
+              <button type="button" aria-label="Approve card" disabled={pending}
                 onClick={() => void commit(active, true)}
-                disabled={pending}
-              />
+                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl bg-amber px-2 text-amber-ink disabled:opacity-50">
+                <Check size={18}/><span className="text-label font-semibold">Approve</span>
+              </button>
             </div>
           </>
         ) : (
@@ -347,11 +344,11 @@ export default function Page() {
                   </p>
                 </div>
               </div>
-              <div className="my-5 flex flex-col gap-3">
+              <div role="region" aria-label="Plan errata" className="my-5 flex flex-col">
                 {p.planChange?.ops.map((op, i) => (
-                  <p
+                  <div
                     key={i}
-                    className="flex items-center gap-2 text-body text-ink-soft"
+                    className="flex min-h-11 items-start gap-3 border-b border-edge py-3 text-body text-ink-soft last:border-0"
                   >
                     {op.op === "add" ? (
                       <Plus size={17} className="text-easy" />
@@ -360,8 +357,8 @@ export default function Page() {
                     ) : (
                       <ArrowRight size={17} className="text-ink-3" />
                     )}
-                    {describe(op)}
-                  </p>
+                    <span className="min-w-0 flex-1">{describe(op)}</span>
+                  </div>
                 ))}
                 {p.plan && (
                   <p className="text-ink-soft">
@@ -370,7 +367,7 @@ export default function Page() {
                 )}
               </div>
               {p.reason && (
-                <p className="mb-4 flex gap-2 text-label text-ink-3">
+                <p className="mb-4 flex gap-2 text-label italic text-ink-3">
                   <Sparkles size={15} />
                   {p.reason}
                 </p>

@@ -18,6 +18,7 @@ import type { PlanCheckpoint } from "../../data/types";
 import { chatLink, revisePlanPrompt } from "../../lib/chat";
 import { Button } from "../../ui/Button";
 import { Glyph } from "../../ui/Glyph";
+import { MathText } from "../../ui/MathText";
 import { Screen } from "../../ui/Screen";
 import { Sheet } from "../../ui/Sheet";
 import { Skeleton } from "../../ui/Skeleton";
@@ -28,6 +29,7 @@ type Node = {
   code: string;
   title: string;
   criterion: string;
+  stage?: string;
   steps: string[];
   pages?: string;
   source?: string;
@@ -38,6 +40,7 @@ function mapNodes(checkpoints: PlanCheckpoint[]): Node[] {
     code: c.code ?? `CP${i + 1}`,
     title: c.title,
     criterion: c.criterion,
+    stage: c.stage ?? undefined,
     steps: c.steps ?? [],
     pages: c.pages,
     source: c.source,
@@ -89,7 +92,7 @@ function PlanMap({
   }, [nodes]);
   return (
     <div
-      className="overflow-x-auto rounded-[24px] bg-well p-3"
+      className="overflow-x-auto rounded-slab border border-edge bg-well p-3"
       aria-label="Checkpoint prerequisites"
     >
       <svg
@@ -191,6 +194,7 @@ export default function Page() {
                 title: op.title,
                 objective: op.objective,
                 criterion: op.criterion,
+                stage: op.stage ?? undefined,
                 steps: op.steps,
                 pages: op.pages,
                 source: op.source,
@@ -212,36 +216,39 @@ export default function Page() {
     }
   };
   const askChanges = async () => {
-    if (!p || !request.trim()) return;
+    if (!p || !request.trim() || pending) return;
     const prompt = revisePlanPrompt(
       p.projectSlug.replaceAll("-", " "),
       request.trim(),
     );
+    // A new window must be opened synchronously on a click to avoid popup
+    // blocking. Do not reject the pending plan unless the handoff is viable.
     const target = window.open("about:blank", "_blank");
+    if (target) target.opener = null;
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      copied = true;
+    } catch {
+      // The pre-opened chat window can still carry the exact prompt.
+    }
+    if (!target && !copied) {
+      notify("Could not copy or open your tutor. Your proposal is still pending.", { tone: "danger" });
+      return;
+    }
     try {
       await reject.mutateAsync(p.id);
-      try {
-        await navigator.clipboard.writeText(prompt);
-        notify("Prompt copied");
-      } catch {
-        notify("Could not copy the prompt; opening chat.");
+      if (target) {
+        target.location.href = chatLink(settings.data?.preferredChat ?? "claude", prompt);
+      } else {
+        notify("Request copied. Paste it into your tutor.");
       }
-      if (target)
-        target.location.href = chatLink(
-          settings.data?.preferredChat ?? "claude",
-          prompt,
-        );
-      else
-        window.open(
-          chatLink(settings.data?.preferredChat ?? "claude", prompt),
-          "_blank",
-          "noopener,noreferrer",
-        );
+      if (copied && target) notify("Request copied for your tutor");
       setAsking(false);
       void navigate("/proposals?tab=plan");
     } catch {
       target?.close();
-      notify("Couldn't request changes.", { tone: "danger" });
+      notify("Couldn't request changes. The proposal remains available.", { tone: "danger" });
     }
   };
   return (
@@ -267,7 +274,7 @@ export default function Page() {
       ) : (
         <>
           <div>
-            <h2 className="text-title-s font-semibold">
+            <h2 className="text-title-s font-medium italic" style={{fontFamily:"var(--font-display)"}}>
               {p.kind === "plan" ? "New plan" : "Plan change"}
             </h2>
             <div className="mt-3 flex items-center gap-3 text-label text-ink-3">
@@ -296,25 +303,25 @@ export default function Page() {
           )}
           <div className="flex flex-col gap-2">
             {(expanded ? nodes : nodes.slice(0, 5)).map((node) => (
-              <Slab key={node.code} className="p-4">
+              <Slab key={node.code} className="rounded-slab p-4">
                 <button
                   type="button"
                   onClick={() => setSelected(node.code)}
                   aria-expanded={current?.code === node.code}
                   className="flex min-h-11 w-full items-center gap-3 text-left"
                 >
-                  <span className="text-label font-semibold text-amber">
+                  <span className="w-[46px] shrink-0 rounded-s border border-amber-line py-1 text-center text-label font-semibold text-amber">
                     {node.code}
                   </span>
-                  <span className="flex-1 font-semibold">{node.title}</span>
+                  <span className="min-w-0 flex-1 font-semibold leading-snug">{node.title}{node.stage&&<span className="mt-1 block text-label font-normal text-ink-3">{node.stage}</span>}</span>
                   <MessageSquare size={17} className="text-ink-3" />
                 </button>
                 {current?.code === node.code && (
                   <div className="ml-1 mt-3 flex flex-col gap-3 text-body text-ink-2">
-                    <p className="flex gap-2 font-math text-body-l">
-                      <Target size={17} className="shrink-0 text-amber" />
-                      {node.criterion}
-                    </p>
+                    <div className="flex gap-2 font-math text-body-l">
+                      <Target size={17} className="mt-1 shrink-0 text-amber" />
+                      <MathText source={node.criterion} className="min-w-0 flex-1"/>
+                    </div>
                     <p className="flex gap-2">
                       <BookOpen size={16} className="shrink-0" />
                       {node.source
@@ -336,21 +343,24 @@ export default function Page() {
             )}
           </div>
           {p.planChange && (
-            <div className="flex flex-col gap-2 text-body text-ink-2">
-              {p.planChange.ops
-                .filter((op) => op.op !== "add")
-                .map((op, i) => (
-                  <p key={i}>
-                    {op.op === "prereq_add"
-                      ? `${op.code} needs ${op.prereq}`
-                      : op.op === "prereq_remove"
-                        ? `${op.code} no longer needs ${op.prereq}`
-                        : op.op === "move"
-                          ? `Move ${op.code} after ${op.after}`
-                          : `${op.op === "remove" ? "Remove" : "Update"} ${op.code}`}
-                  </p>
-                ))}
-            </div>
+            <section aria-label="Plan errata" className="flex flex-col text-body text-ink-2">
+              <h3 className="mb-2 text-title-s italic" style={{fontFamily:"var(--font-display)"}}>Proposed amendments</h3>
+              {p.planChange.ops.map((op, i) => (
+                <div key={i} className="flex min-h-11 items-start gap-3 border-b border-edge py-3 last:border-0">
+                  <span className="w-[46px] shrink-0 rounded-s border border-amber-line px-1 py-1 text-center text-label text-amber">
+                    {op.op === "add" ? "Add" : op.op === "remove" ? "Cut" : op.op === "move" ? "Move" : op.op === "update" ? "Edit" : "Link"}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    {op.op === "add" ? `Add ${op.code} · ${op.title}`
+                      : op.op === "prereq_add" ? `${op.code} needs ${op.prereq}`
+                      : op.op === "prereq_remove" ? `${op.code} no longer needs ${op.prereq}`
+                      : op.op === "move" ? `Move ${op.code} after ${op.after}`
+                      : `${op.op === "remove" ? "Remove" : "Update"} ${op.code}`}
+                  </span>
+                </div>
+              ))}
+              {p.reason && <p className="mt-3 text-label italic text-ink-3">{p.reason}</p>}
+            </section>
           )}
           <p className="flex items-center gap-2 text-label text-ink-3">
             <Waypoints size={17} />
