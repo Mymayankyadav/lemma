@@ -11,7 +11,7 @@ function circleFor(nodes:readonly AtlasNode[],padding:number){
 }
 /** Circles are derived from the positioned concepts, so pinning and camera fit stay coherent. */
 export function atlasOrbitGroups(graph:AtlasGraph,nodes:readonly AtlasNode[]):OrbitGroup[]{
- return graph.subjects.flatMap(subject=>{
+ return [...graph.subjects].sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name)).flatMap(subject=>{
   const members=nodes.filter(n=>n.subjectId===subject.id);
   if(!members.length)return [];
   const byTopic=new Map<string,AtlasNode[]>();
