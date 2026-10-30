@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+
+/** QA-1: prove the new Atlas is part of the study loop, not an isolated demo. */
+for(const world of ['euclid','euclid-night'] as const){
+ test(`QA-1 Atlas-to-checkpoint handoff: ${world}`,async({page})=>{
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.setViewportSize({width:390,height:844});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+  await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/`);
+  await expect(page.getByRole('link',{name:/6 proposals to approve/})).toBeVisible();
+  await page.getByRole('navigation',{name:'Desk actions'}).getByRole('link',{name:'Open the Atlas'}).click();
+  await expect(page).toHaveURL(/#\/atlas$/);
+  await expect(page.getByRole('heading',{name:'Atlas',level:1})).toBeVisible();
+  await expect(page.locator('[data-atlas-ring]')).toHaveCount(6);
+  await page.getByRole('button',{name:'Branches'}).click();
+  await expect(page.locator('[data-atlas-mode="branches"]')).toBeVisible();
+  await page.getByRole('button',{name:'Outline'}).click();
+  await expect(page.locator('[data-atlas-mode="outline"]')).toBeVisible();
+  await expect(page).toHaveURL(/view=outline/);
+  await page.getByRole('button',{name:/Compactness, In progress/}).click();
+  await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible();
+  await page.getByRole('link',{name:/Open checkpoint/}).click();
+  await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4$/);
+  await expect(page.getByText('Compactness',{exact:true}).first()).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme',world);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  expect(errors).toEqual([]);
+  await page.screenshot({path:`test-results/screens/review/qa1-atlas-checkpoint-${world}.png`,fullPage:true});
+ });
+}
