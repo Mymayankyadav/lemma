@@ -139,7 +139,7 @@ export class LiveAdapter implements LemmaApi {
  async listProjects(...args: Parameters<LemmaApi['listProjects']>): ReturnType<LemmaApi['listProjects']> {
   const db=liveClient(),uid=await owner(db)
   const [projects,subjects,cps,notes,sessions,sources,prereqs,cards,settings]=await Promise.all([
-    rows(db,'projects',uid),rows(db,'subjects',uid),rows(db,'checkpoints',uid),
+    rows(db,'projects',uid,true),rows(db,'subjects',uid),rows(db,'checkpoints',uid),
     rows(db,'notes',uid),rows(db,'sessions',uid),rows(db,'sources',uid),rows(db,'checkpoint_prereqs',uid),
     rows(db,'cards',uid),this.getSettings()
   ])
