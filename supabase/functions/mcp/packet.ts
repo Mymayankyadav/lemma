@@ -3,7 +3,7 @@ import { project, checkpoints } from './resolve.ts';
 import { cut, capped, date } from './text.ts';
 import { day, display, ui, goalEta } from './derive.ts';
 import { STUDY, PLANNING, MIX } from './rules.ts';
-import { sourceLine, visibleProjects } from './v3.ts';
+import { sourceLine, visibleProjects, scheduleHint } from './v3.ts';
 export async function settings(c:Context):Promise<any>{
   const {data,error}=await scoped(c,'settings').maybeSingle();
   if(error||!data)throw new Error('Owner settings not initialized; run bootstrap first');
@@ -67,7 +67,7 @@ async function basePacket(c:Context,args:{project?:string;mix?:boolean;brief?:bo
   const fix=(await scoped(c,'misconceptions').eq('project_id',p.id).is('resolved_at',null).order('last_seen_at',{ascending:false}).limit(3)).data||[];
   const warm=cps.filter((x:any)=>x.status==='demonstrated'&&(x.needs_revisit||(x.recheck_due&&x.recheck_due<=day(s)))&&x.recheck_prompt).sort((a:any,b:any)=>(a.recheck_due||'').localeCompare(b.recheck_due||'')).slice(0,2);
   const n=await counts(c,s);
-  const lines=['LEMMA '+p.title+' ['+p.slug+'] style '+p.style,'GOAL '+cut(p.goal,160)+goalEta(p,cps)];
+  const lines=['LEMMA '+p.title+' ['+p.slug+'] style '+p.style,'GOAL '+cut(p.goal,160)+goalEta(p,cps)+scheduleHint(p,cps)];
   if(cp){const step=cp.steps?.[Math.max(0,(open?.resume_step||cp.current_step||1)-1)];lines.push('NOW '+cp.code+' '+cp.title+', step '+(open?.resume_step||cp.current_step||1)+'/'+(cp.steps||[]).length+(step?': '+cut(step,100):''));lines.push('CRIT '+cut(cp.criterion,400))}
   else lines.push('NOW all checkpoints done');
   if(latest){const last='LAST S'+latest.number+' '+date(latest.last_activity_at)+' '+display(latest)+(latest.goal_met?' goal '+latest.goal_met:'')+(latest.state==='ended'&&latest.summary?': '+cut(latest.summary,160):latest.resume_note?': '+cut(latest.resume_note,160):'')+(latest.state==='open'&&latest.resume_question?' | ask: '+cut(latest.resume_question,300):'');lines.push(last)}
