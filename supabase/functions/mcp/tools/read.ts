@@ -3,6 +3,7 @@ import { project, checkpoints, checkpoint, session, source } from '../resolve.ts
 import { settings, packet } from '../packet.ts';
 import { day, ui, display } from '../derive.ts';
 import { cut, capped, date, pageRange, number } from '../text.ts';
+import { sourceLine } from '../v3.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='prompt'){const st=await settings(c),p=a.project?await project(c,a.project):null;return ['OWNER',st.master_prompt||'(no master prompt)',p?.prompt||''].filter(Boolean).join('\n');}
@@ -14,6 +15,19 @@ export async function get(c: Context, a:any):Promise<string>{
   const prereqs=(await all(c,'checkpoint_prereqs')).filter((x:any)=>ids.has(x.checkpoint_id));
   const s=await settings(c);
   const status=(cp:any)=>ui(cp,prereqs.filter((x:any)=>x.checkpoint_id===cp.id).map((x:any)=>x.prereq_id),ids,day(s));
+  if(a.what==='sources'){
+    const {data,error}=await scoped(c,'sources').eq('project_id',p.id)
+      .order('added_at',{ascending:false}).limit(limit);
+    if(error)throw new Error(error.message);
+    return capped((data||[]).map((x:any)=>sourceLine(x)).join('\n')||'No sources yet.',2000);
+  }
+  if(a.what==='plan_revisions'){
+    const {data,error}=await scoped(c,'v_plan_revisions').eq('project_id',p.id)
+      .order('revision',{ascending:false}).limit(limit);
+    if(error)throw new Error(error.message);
+    return capped((data||[]).map((x:any)=>'v'+x.revision+' '+date(x.approved_at)+': '+cut(x.summary,150))
+      .join('\n')||'No approved plan revisions.',2000);
+  }
   if(a.what==='plan'){
     const done=pcs.filter((x:any)=>x.status==='demonstrated').length;
     const lines=['PLAN '+p.slug+' '+done+'/'+pcs.length+' done'];
@@ -34,7 +48,15 @@ export async function get(c: Context, a:any):Promise<string>{
     const ss=(await all(c,'sessions')).filter((x:any)=>x.project_id===p.id);
     const lines=[cp.code+' '+cp.title+' ['+status(cp)+', step '+cp.current_step+'/'+cp.steps.length+']','OBJ '+cp.objective,'CRIT '+cp.criterion,'STEPS '+cp.steps.map((x:string,i:number)=>(i+1)+' '+x+(i+1<cp.current_step?' ✓':i+1===cp.current_step?' ←':'')).join(' | ') ];
     if(cp.stage)lines.push('STAGE '+cp.stage);
-    if(cp.pages)lines.push('PAGES '+(src?.short||'book')+' '+cp.pages);
+    const {data:citations,error:citationError}=await scoped(c,'checkpoint_sources')
+      .eq('checkpoint_id',cp.id);
+    if(citationError)throw new Error(citationError.message);
+    const sourceRows=(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+    for(const cite of citations||[]){
+      const ref=sourceRows.find((x:any)=>x.id===cite.source_id);
+      if(ref)lines.push('PAGES '+ref.short+' '+(cite.pages||'all'));
+    }
+    if(!(citations||[]).length&&cp.pages)lines.push('PAGES '+(src?.short||'book')+' '+cp.pages);
     if(pre.length)lines.push('NEEDS '+pre.join(', '));if(concepts.length)lines.push('IDEAS '+concepts.join(', '));
     if(cp.recheck_due)lines.push('RECHECK due '+cp.recheck_due+': '+(cp.recheck_prompt||''));
     for(const e of events.reverse()){const ssn=ss.find((x:any)=>x.id===e.session_id);lines.push('S'+(ssn?.number||'?')+' '+e.kind+(e.hint_level?' L'+e.hint_level:'')+': '+cut(e.body,140))}
@@ -86,7 +108,7 @@ export async function get(c: Context, a:any):Promise<string>{
       const again=reviewed.filter((r:any)=>conceptForNote.get(noteForCard.get(r.card_id))===concept.id).length;
       const revisiting=statuses.includes('revisit')||errors.some((x:any)=>x.concept_id===concept.id)||again>=2;
       const status=revisiting?'revisit':statuses.length&&statuses.every((x:string)=>x==='done')?'demonstrated':statuses.some((x:string)=>['now','done','revisit'].includes(x))?'in_progress':'not_started';
-      return concept.name+' ['+(concept.topic||'Other')+'] — '+status;
+      return concept.name+' ['+concept.level+(concept.is_star?', key result':'')+(concept.parent_id?', parent '+(concepts.find((x:any)=>x.id===concept.parent_id)?.name||concept.parent_id):'')+'] — '+status;
     }).join('\n'),2000);
   }
   throw new Error('Unknown get what');
