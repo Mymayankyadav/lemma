@@ -381,3 +381,153 @@ as $$
 $$;
 revoke all on function public.deck_tree() from public, anon;
 grant execute on function public.deck_tree() to authenticated, service_role;
+
+
+-- Insights: aggregate at the database rather than sending every review,
+-- session, event, note and card to the browser. The response is bounded to
+-- 90 daily buckets, 28 checkpoint buckets, three confidence rows, and one
+-- row per subject regardless of the number of historical reviews.
+-- All dates use the owner's configured study-day rollover.
+create index if not exists st5_reviews_owner_time
+  on public.reviews(user_id, reviewed_at desc) where undone_at is null;
+create index if not exists st5_sessions_owner_time
+  on public.sessions(user_id, started_at desc) where state = 'ended';
+create index if not exists st5_events_owner_time
+  on public.session_events(user_id, created_at desc)
+  where kind in ('evidence','recheck') and outcome is not null;
+
+create or replace function public.insights(p_days integer default 30)
+returns jsonb
+language sql stable security invoker set search_path = ''
+as $$
+with prefs as (
+  select s.user_id, s.time_zone, s.rollover_hour,
+    ((now() at time zone s.time_zone)
+      - make_interval(hours => s.rollover_hour))::date as today,
+    least(greatest(coalesce(p_days,30),1),90) as days
+  from public.settings s
+  where s.user_id = (select auth.uid())
+),
+calendar as (
+  select d.day::date as day
+  from prefs p
+  cross join lateral generate_series(
+    p.today - (p.days - 1), p.today, interval '1 day'
+  ) as d(day)
+),
+review_rows as (
+  select r.rating, r.confidence,
+    ((r.reviewed_at at time zone p.time_zone)
+      - make_interval(hours => p.rollover_hour))::date as day
+  from public.reviews r
+  cross join prefs p
+  where r.user_id = p.user_id and r.undone_at is null
+    and r.reviewed_at <= now()
+    and r.reviewed_at >= ((p.today - (p.days - 1))::timestamp
+      + make_interval(hours => p.rollover_hour)) at time zone p.time_zone
+),
+daily_reviews as (
+  select d.day, count(r.rating)::integer as total,
+    count(*) filter (where r.rating = 1)::integer as again,
+    count(*) filter (where r.rating = 2)::integer as hard,
+    count(*) filter (where r.rating = 3)::integer as good,
+    count(*) filter (where r.rating = 4)::integer as easy,
+    count(*) filter (where r.rating > 1)::integer as right_count
+  from calendar d
+  left join review_rows r on r.day = d.day
+  group by d.day
+),
+confidence_counts as (
+  select x.confidence, count(r.rating)::integer as total,
+    count(*) filter (where r.rating > 1)::integer as right_count
+  from (values ('sure'),('unsure'),('guess')) as x(confidence)
+  left join review_rows r on r.confidence = x.confidence
+  group by x.confidence
+),
+session_rows as (
+  select s.project_id, coalesce(s.minutes,0) as minutes
+  from public.sessions s
+  cross join prefs p
+  where s.user_id = p.user_id and s.state = 'ended'
+    and s.started_at <= now()
+    and s.started_at >= ((p.today - (p.days - 1))::timestamp
+      + make_interval(hours => p.rollover_hour)) at time zone p.time_zone
+),
+subject_minutes as (
+  select sub.id, sub.name, sub.glyph, sub.hue, sub.position,
+    sum(sess.minutes)::integer as minutes
+  from session_rows sess
+  join public.projects pr on pr.id = sess.project_id
+    and pr.user_id = (select auth.uid())
+  join public.subjects sub on sub.id = pr.subject_id
+    and sub.user_id = pr.user_id
+  group by sub.id, sub.name, sub.glyph, sub.hue, sub.position
+),
+checkpoint_days as (
+  select d.day,
+    count(*) filter (
+      where e.kind = 'evidence' and e.outcome = 'demonstrated'
+    )::integer as demonstrated,
+    count(*) filter (
+      where e.kind = 'recheck' and e.outcome is not null
+    )::integer as rechecked
+  from (
+    select (p.today - n)::date as day
+    from prefs p cross join generate_series(0,27) as n
+  ) d
+  left join (
+    select e.kind, e.outcome,
+      ((e.created_at at time zone p.time_zone)
+        - make_interval(hours => p.rollover_hour))::date as day
+    from public.session_events e
+    cross join prefs p
+    where e.user_id = p.user_id
+      and e.kind in ('evidence','recheck') and e.outcome is not null
+      and e.created_at <= now()
+      and e.created_at >= ((p.today - 27)::timestamp
+        + make_interval(hours => p.rollover_hour)) at time zone p.time_zone
+  ) e on e.day = d.day
+  group by d.day
+),
+top_misconception as (
+  select jsonb_build_object(
+    'label', m.label, 'times', m.times, 'conceptName', c.name
+  ) as item
+  from public.misconceptions m
+  left join public.concepts c on c.id = m.concept_id
+    and c.user_id = m.user_id
+  where m.user_id = (select auth.uid())
+  order by m.times desc, m.label, m.id
+  limit 1
+)
+select jsonb_build_object(
+  'days', p.days,
+  'reviews', (select count(*)::integer from review_rows),
+  'right', (select count(*)::integer from review_rows where rating > 1),
+  'reviewDays', (select coalesce(jsonb_agg(jsonb_build_object(
+    'date', d.day, 'count', d.total, 'again', d.again, 'hard', d.hard,
+    'good', d.good, 'easy', d.easy, 'right', d.right_count
+  ) order by d.day), '[]'::jsonb) from daily_reviews d),
+  'calibration', (select coalesce(jsonb_agg(jsonb_build_object(
+    'confidence', c.confidence, 'total', c.total, 'right', c.right_count
+  ) order by case c.confidence when 'sure' then 0 when 'unsure' then 1 else 2 end),
+    '[]'::jsonb) from confidence_counts c),
+  'sessions', (select count(*)::integer from session_rows),
+  'minutes', (select coalesce(sum(minutes),0)::integer from session_rows),
+  'typicalSession', (select percentile_cont(0.5)
+    within group (order by minutes) from session_rows),
+  'subjectMinutes', (select coalesce(jsonb_agg(jsonb_build_object(
+    'subject', jsonb_build_object(
+      'id', s.id, 'name', s.name, 'glyph', s.glyph, 'hue', s.hue,
+      'position', s.position
+    ), 'minutes', s.minutes
+  ) order by s.minutes desc, s.name), '[]'::jsonb) from subject_minutes s),
+  'checkpointDays', (select coalesce(jsonb_agg(jsonb_build_object(
+    'date', d.day, 'demonstrated', d.demonstrated, 'rechecked', d.rechecked
+  ) order by d.day), '[]'::jsonb) from checkpoint_days d),
+  'mostRevisited', (select item from top_misconception)
+)
+from prefs p;
+$$;
+revoke all on function public.insights(integer) from public, anon;
+grant execute on function public.insights(integer) to authenticated, service_role;
