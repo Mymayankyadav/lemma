@@ -200,13 +200,19 @@ export default function Page(){
   }
   return()=>{if(flight.current!==null)cancelAnimationFrame(flight.current);flight.current=null;resize.disconnect();selection.on('.zoom',null);zoomRef.current=null};
  },[model]);
+ const initialFocusHandled=useRef(false);
  useEffect(()=>{
-  if(!model||!focusSlug)return;
+  // Read an incoming deep link once. User-driven selection updates the URL
+  // synchronously with React state; reacting again to the old URL reopens a
+  // dismissed sheet and steals the camera from a newly entered cluster.
+  if(!model||initialFocusHandled.current)return;
+  initialFocusHandled.current=true;
+  if(!focusSlug)return;
   const found=[...model.bodies.values()].find(b=>b.slug===focusSlug);
-  if(!found||selectedId===found.id)return;
+  if(!found)return;
   setSelectedId(found.id);
-  focusNode(found.parentId);
- },[model,focusSlug,focusNode,selectedId]);
+  focusNode(found.parentId,true,false);
+ },[model,focusSlug,focusNode]);
  const navigateMinimap=(point:Point)=>{
   if(!svg.current||!zoomRef.current)return;
   const k=viewRef.current.k;userMoved.current=true;

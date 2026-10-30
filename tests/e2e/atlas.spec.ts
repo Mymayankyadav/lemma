@@ -68,32 +68,45 @@ test('cluster, galaxy and system drilldown updates breadcrumbs and labelled chil
  await expect(page.locator('[data-level="cluster"]')).toHaveCount(3);
 });
 
-test('minimap uses a single scale and the true viewport rectangle',async({page})=>{
+test('minimap is isotropic and tracks the true camera viewport within two pixels',async({page})=>{
  const mini=page.locator('[data-minimap="true"]');
  await expect(mini).toBeVisible();
- const nodes=await page.locator('[data-level="cluster"]').evaluateAll(elements=>elements.map(node=>{
-   const circle=node.querySelector('circle')!,r=Number(circle.getAttribute('r'));
-   const t=node.getAttribute('transform')!.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
-   return {x:t[0],y:t[1],r};
+ // Infer the miniature affine transform from corresponding root centres rather than
+ // estimating root radii from the adaptive 44px SVG hit-target circles.
+ const world=await page.locator('[data-level="cluster"]').evaluateAll(elements=>elements.map(node=>{
+  const coords=node.getAttribute('transform')!.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
+  return {x:coords[0],y:coords[1]};
  }));
+ const dots=await mini.locator('svg circle').evaluateAll(elements=>elements.map(c=>({
+  x:Number(c.getAttribute('cx')),y:Number(c.getAttribute('cy'))
+ })));
+ expect(world.length).toBe(3);
+ expect(dots.length).toBe(3);
+ const projection=(()=>{
+  const dx=world[1].x-world[0].x,dy=world[1].y-world[0].y;
+  const mx=dots[1].x-dots[0].x,my=dots[1].y-dots[0].y;
+  const k=(mx*dx+my*dy)/(dx*dx+dy*dy);
+  return {k,x:dots[0].x-world[0].x*k,y:dots[0].y-world[0].y*k};
+ })();
+ expect(projection.k).toBeGreaterThan(0);
+ for(let i=0;i<world.length;i++){
+  expect(Math.abs(dots[i].x-(projection.x+world[i].x*projection.k))).toBeLessThan(.05);
+  expect(Math.abs(dots[i].y-(projection.y+world[i].y*projection.k))).toBeLessThan(.05);
+ }
  const before=await page.locator('[data-atlas-camera]').getAttribute('transform');
  await mini.click({position:{x:70,y:32}});
  await expect.poll(()=>page.locator('[data-atlas-camera]').getAttribute('transform')).not.toBe(before);
- const result=await page.evaluate((nodes)=>{
+ const difference=await page.evaluate(p=>{
   const stage=document.querySelector('[data-atlas-stage]')!.getBoundingClientRect();
   const camera=document.querySelector('[data-atlas-camera]')!.getAttribute('transform')!;
   const [x,y,k]=camera.match(/-?\d+(?:\.\d+)?(?:e[-+]?\d+)?/gi)!.map(Number);
-  const minX=Math.min(...nodes.map(n=>n.x-n.r))-12,maxX=Math.max(...nodes.map(n=>n.x+n.r))+12;
-  const minY=Math.min(...nodes.map(n=>n.y-n.r))-12,maxY=Math.max(...nodes.map(n=>n.y+n.r))+12;
-  const mk=Math.min(86/(maxX-minX),86/(maxY-minY));
-  const mx=48-(minX+maxX)/2*mk,my=48-(minY+maxY)/2*mk;
+  const expected={x:p.x-x/k*p.k,y:p.y-y/k*p.k,width:stage.width/k*p.k,height:stage.height/k*p.k};
   const viewport=document.querySelector('[data-minimap-viewport]')!;
-  const expected={x:mx-x/k*mk,y:my-y/k*mk,width:stage.width/k*mk,height:stage.height/k*mk};
   const actual={x:Number(viewport.getAttribute('x')),y:Number(viewport.getAttribute('y')),
    width:Number(viewport.getAttribute('width')),height:Number(viewport.getAttribute('height'))};
-  return {expected,actual};
- },nodes);
- for(const key of ['x','y','width','height'] as const)expect(Math.abs(result.expected[key]-result.actual[key])).toBeLessThan(2);
+  return Object.fromEntries((['x','y','width','height'] as const).map(key=>[key,Math.abs(expected[key]-actual[key])]));
+ },projection);
+ for(const key of ['x','y','width','height'])expect(difference[key],key+': '+JSON.stringify(difference)).toBeLessThan(2);
  await page.screenshot({path:'test-results/screens/atlas-cosmos-minimap.png',fullPage:true});
 });
 

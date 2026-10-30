@@ -92,7 +92,7 @@ test('acceptance 10–13: Atlas, Insights, Settings and mobile viewport',async({
  await page.getByRole('textbox',{name:'Find an idea'}).fill('Compactness')
  await page.getByRole('button',{name:/Compactness/}).first().click()
  await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible()
- await expect(page.getByText('In progress',{exact:true})).toBeVisible()
+ await expect(page.locator('[data-atlas-details]')).toContainText('In progress')
  await screenshot(page,'10-atlas')
  await page.goto(demo+'insights')
  await expect(page.getByText('18h 40m')).toBeVisible()
