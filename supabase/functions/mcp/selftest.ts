@@ -78,6 +78,23 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
     });
     if(only(1))await check('planning resume',async()=>{if(!(await packet(c,{project:p.slug})).includes('PLANNING'))throw Error('No planning packet')});
     await check('plan proposal and approval',async()=>{
+      // MCP-5: reject malformed scale proposals before creating any proposal.
+      const noStages=Array.from({length:9},(_,i)=>({
+        title:'Large CP '+(i+1),objective:'Understand',criterion:'Demonstrates understanding',steps:['Prove']
+      }));
+      let rejected='';
+      try{await proposePlan(c,{project:p.slug,checkpoints:noStages});}
+      catch(e){rejected=(e as Error).message;}
+      if(!/3–7 named stages/.test(rejected))throw Error('Stage-free large plan was not rejected');
+      const flatIdeas=Array.from({length:21},(_,i)=>({name:'Flat idea '+i}));
+      rejected='';
+      try{await proposePlan(c,{project:p.slug,checkpoints:noStages.slice(0,3),concepts:flatIdeas});}
+      catch(e){rejected=(e as Error).message;}
+      if(!/levels and parent links/.test(rejected))throw Error('Flat large idea proposal was not rejected');
+      rejected='';
+      try{await createProject(c,{title:'Goal-free selftest',subject:'Topology'});}
+      catch(e){rejected=(e as Error).message;}
+      if(!/specific learning goal/.test(rejected))throw Error('Goal-free project was not rejected');
       await proposePlan(c,{project:p.slug,checkpoints:[
         {stage:'Foundations',title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
         {stage:'Covers',title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},

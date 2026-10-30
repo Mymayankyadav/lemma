@@ -1,4 +1,5 @@
 import { planningFields } from '../planning.ts';
+import { requireStageStructure, projectedPlanCheckpoints, requireIdeaHierarchy, requireLearningGoal, longCardAdvice } from '../stress-guards.ts';
 import { reuseSubject } from '../v3.ts';
 import { Context, scoped, insert, update, rpc, all } from '../db.ts';
 import { project, checkpoint, checkpoints, session, source } from '../resolve.ts';
@@ -70,7 +71,7 @@ export async function proposeCards(c:Context,a:any):Promise<string>{
     if(a.direct)await rpc(c,'approve_proposal',{p_id:row.id});
     added++;
   }
-  return (a.direct?added+' cards added':added+' cards wait for approval in Lemma')+(skipped?'; skipped '+skipped+' duplicate':'');
+  return (a.direct?added+' cards added':added+' cards wait for approval in Lemma')+(skipped?'; skipped '+skipped+' duplicate':'')+longCardAdvice(a.cards);
 }
 export async function proposeCardEdits(c:Context,a:any):Promise<string>{
   const notes=await all(c,'notes','id,no,project_id');
@@ -113,12 +114,15 @@ export async function proposePlan(c:Context,a:any):Promise<string>{
  const p=await project(c,a.project);
  if(p.status!=='planning'||(await checkpoints(c,p)).length)throw Error('This project already has a plan; propose changes instead');
  if(!p.subject_id)throw Error('Set the subject with edit before proposing a plan');
+ requireLearningGoal(p.goal);
+ requireStageStructure(a.checkpoints);
  const {data:sources,error}=await scoped(c,'sources','short').eq('project_id',p.id).order('created_at').limit(1);
  if(error)throw Error(error.message);
  const legacySource=sources?.[0]?.short;
  await validatePlanSources(c,p,a.checkpoints);
  for(const idea of a.concepts||[])planningFields(idea);
  validateConceptHierarchy(a.concepts||[]);
+ requireIdeaHierarchy(a.concepts||[]);
  const converted=a.checkpoints.map((x:any,i:number)=>{
   if(/^(read|review)\b/i.test(x.criterion.trim()))throw Error('Criterion must be work the student produces');
   if((x.prereqs||[]).some((n:number)=>n<1||n>i))throw Error('Prerequisites must be earlier checkpoint indexes');
@@ -134,7 +138,8 @@ export async function proposePlan(c:Context,a:any):Promise<string>{
 }
 export async function proposePlanChange(c:Context,a:any):Promise<string>{
  const p=await project(c,a.project);
- if(!(await checkpoints(c,p)).length)throw Error('No plan yet; use propose_plan');
+ const current=await checkpoints(c,p);
+ if(!current.length)throw Error('No plan yet; use propose_plan');
  const valid=['add','update','remove','move','prereq_add','prereq_remove'];
  if(a.ops.some((x:any)=>!valid.includes(x.op)))throw Error('Unknown plan operation');
  for(const op of a.ops){
@@ -142,15 +147,18 @@ export async function proposePlanChange(c:Context,a:any):Promise<string>{
   if(op.op==='add'&&!op.code&&(op.due_on!==undefined||op.sources!==undefined))
    throw Error('New checkpoints with schedules or source citations must specify an unused code');
  }
+ requireStageStructure(projectedPlanCheckpoints(current,a.ops));
  await validatePlanSources(c,p,a.ops);
  for(const idea of a.concepts||[])planningFields(idea);
  const knownIdeas=new Set((await scoped(c,'concepts','name').eq('subject_id',p.subject_id)).data?.map((x:any)=>String(x.name).toLowerCase())||[]);
  validateConceptHierarchy(a.concepts||[],knownIdeas);
+ requireIdeaHierarchy(a.concepts||[]);
  const payload={ops:a.ops,concepts:a.concepts||[],diagnostics:a.diagnostics||[],...(a.book?{book:a.book}:{})};
  await addProposal(c,p,'plan_change',payload,a.reason);
  return 'plan change ('+a.ops.length+' ops) waits for student approval';
 }
 export async function createProject(c:Context,a:any):Promise<string>{
+  requireLearningGoal(a.goal);
   planningFields(a);
   const st=await settings(c);
   const styles=await all(c,'styles','key');

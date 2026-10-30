@@ -12,7 +12,8 @@ import {useToast} from '../../ui/Toast';
 type QueueEntry={id:number;file:File|null;name:string;bytes:number;pagesRead:number;phase:'queued'|'reading'|'uploading'|'saving'|'ready'|'failed';progress:IngestProgress|null;error:string|null};
 const kinds:SourceKind[]=['book','notes','slides','problems','syllabus','exam','other'];
 const limit=50*1024*1024;
-const formatSize=(bytes:number)=>bytes>=1024*1024?(bytes/1024/1024).toFixed(1)+' MB':Math.max(1,Math.ceil(bytes/1024))+' KB';
+const formatSize=(bytes:number)=>bytes<=0?'0 KB':bytes>=1024*1024?(bytes/1024/1024).toFixed(1)+' MB':Math.max(1,Math.ceil(bytes/1024))+' KB';
+const storageLimit=1024*1024*1024;
 export function SourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
  const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0);
@@ -67,8 +68,22 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   catch(error){notify(error instanceof Error?error.message:'Could not delete source',{tone:'danger'})}
  }
  const grouped=kinds.map(value=>({kind:value,rows:sources.filter(s=>(s.kind??'other')===value).sort((a,b)=>Date.parse(b.addedAt??b.createdAt)-Date.parse(a.addedAt??a.createdAt))})).filter(g=>g.rows.length);
+ const sized=sources.filter(source=>typeof source.bytes==='number'&&Number.isFinite(source.bytes)&&source.bytes>=0);
+ const storageBytes=sized.reduce((total,source)=>total+source.bytes!,0),unknownSizes=sources.length-sized.length;
+ const storagePct=Math.min(100,storageBytes/storageLimit*100);
  return <section aria-label="Sources" className="flex flex-col gap-4">
-  <p className="text-label text-ink-3">{sources.length} sources · Free plan storage limit 1 GB</p>
+  <div role="group" aria-label="Source storage" className="flex flex-col gap-1.5">
+   <div className="flex items-center justify-between gap-2 text-label text-ink-3">
+    <span>{sources.length} sources</span>
+    <span className="tabular-nums">{unknownSizes?'At least ':''}{formatSize(storageBytes)} / 1 GB</span>
+   </div>
+   <div role="progressbar" aria-label="PDF storage used" aria-valuemin={0} aria-valuemax={100}
+    aria-valuenow={Math.round(storagePct)} aria-valuetext={(unknownSizes?'At least ':'')+formatSize(storageBytes)+' of 1 GB'}
+    className="h-1.5 overflow-hidden rounded-full bg-fill-2">
+    <div className="h-full rounded-full bg-amber" style={{width:storagePct+'%'}}/>
+   </div>
+   {unknownSizes>0&&<p className="text-caption text-ink-3">{unknownSizes} source {unknownSizes===1?'size':'sizes'} unknown; actual storage may be higher.</p>}
+  </div>
   {grouped.map(group=><div key={group.kind} className="flex flex-col gap-2">
    <h3 className="text-label font-semibold uppercase tracking-wider text-ink-2">{group.kind}</h3>
    {group.rows.map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
@@ -112,3 +127,4 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   </ul>}
  </section>;
 }
+
