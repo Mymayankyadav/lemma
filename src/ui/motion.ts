@@ -1,4 +1,5 @@
 import type { Variants, Transition } from 'motion/react';
+import {isCalm} from './useCalm';
 /** UI-1 motion primitives. All movements collapse to a short fade for reduced motion. */
 export const easeOut = [0.16, 1, 0.3, 1] as const;
 export const easeInOut = [0.65, 0, 0.35, 1] as const;
@@ -16,5 +17,5 @@ export const flyUp: Variants = {exit:{opacity:0,y:-160,transition:{duration:dura
 export const sheet: Variants = {hidden:{y:'100%'},visible:{y:0,transition:springs.sheet},exit:{y:'100%',transition:{duration:durations.base}}};
 export const pop: Variants = {hidden:{opacity:0,scale:0.8},visible:{opacity:1,scale:1,transition:springs.pop}};
 export const reduced: Variants = fade;
-export function variantFor(variants:Variants, reduce:boolean):Variants { return reduce ? fade : variants; }
+export function variantFor(variants:Variants, reduce:boolean):Variants { return reduce || isCalm() ? fade : variants; }
 export const tabTransition:Transition={duration:0.2,ease:easeOut};

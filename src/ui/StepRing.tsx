@@ -1,4 +1,5 @@
 import {motion,useReducedMotion} from 'motion/react';
+import {useCalm} from './useCalm';
 export interface StepRingProps{steps:number;current:number;spark?:boolean}
 export function StepRing({steps,current,spark=false}:StepRingProps){
  const reduce=!!useReducedMotion(),n=Math.max(1,Math.min(12,Math.floor(steps))),done=Math.max(0,Math.min(n,Math.floor(current)-1));
