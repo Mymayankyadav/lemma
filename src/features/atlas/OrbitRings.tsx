@@ -50,26 +50,34 @@ export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:r
  return <g data-atlas-orbits="true" pointerEvents="none">
   {groups.map(group=><g key={group.id}>
    <ProgressCircle ring={group} scale={scale} subject/>
-   <text x={group.x} y={group.y-group.radius-10/scale} textAnchor="middle"
-    data-atlas-subject-focus={group.id} role="button" tabIndex={0}
-    aria-label={'Zoom into '+group.name}
+   <g data-atlas-subject-focus={group.id} role="button" tabIndex={0}
+    aria-label={'Focus '+group.name}
     onClick={event=>{event.stopPropagation();onFocus?.(group.id)}}
     onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id)}}}
-    pointerEvents="all" className="cursor-pointer"
-    fontFamily="var(--font-ui)" fontSize={13/scale} fontWeight="700"
-    fill="var(--ink)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">
-    {group.name} · {group.done}/{group.total}
-   </text>
+    pointerEvents="all" className="cursor-pointer">
+    <rect x={group.x-Math.max(128,group.name.length*10+55)/(2*scale)}
+     y={group.y-group.radius-34/scale} width={Math.max(128,group.name.length*10+55)/scale}
+     height={44/scale} fill="transparent" pointerEvents="all"/>
+    <text x={group.x} y={group.y-group.radius-12/scale} textAnchor="middle"
+     pointerEvents="none" fontFamily="var(--font-ui)" fontSize={13/scale} fontWeight="700"
+     fill="var(--ink)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">
+     {group.name} · {group.done}/{group.total}
+    </text>
+   </g>
    {group.topics.map(topic=><g key={topic.id}>
     <ProgressCircle ring={topic} scale={scale}/>
-    {topic.radius*scale>=44&&<text x={topic.x} y={topic.y-topic.radius-5/scale}
-     data-atlas-topic-focus={topic.id} role="button" tabIndex={0}
-     aria-label={'Zoom into '+group.name+' / '+topic.name}
+    {topic.radius*scale>=44&&<g data-atlas-topic-focus={topic.id} role="button" tabIndex={0}
+     aria-label={'Focus '+group.name+' / '+topic.name}
      onClick={event=>{event.stopPropagation();onFocus?.(group.id,topic.id)}}
      onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id,topic.id)}}}
-     pointerEvents="all" className="cursor-pointer"
-     textAnchor="middle" fontFamily="var(--font-ui)" fontSize={11/scale}
-     fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">{topic.name}</text>}
+     pointerEvents="all" className="cursor-pointer">
+     <rect x={topic.x-Math.max(100,topic.name.length*9+28)/(2*scale)}
+      y={topic.y-topic.radius+9/scale} width={Math.max(100,topic.name.length*9+28)/scale}
+      height={44/scale} fill="transparent" pointerEvents="all"/>
+     <text x={topic.x} y={topic.y-topic.radius+34/scale}
+      pointerEvents="none" textAnchor="middle" fontFamily="var(--font-ui)" fontSize={11/scale}
+      fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">{topic.name}</text>
+    </g>}
    </g>)}
   </g>)}
  </g>;
