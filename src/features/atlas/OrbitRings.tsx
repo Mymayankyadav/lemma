@@ -66,18 +66,9 @@ export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:r
    </g>
    {group.topics.map(topic=><g key={topic.id}>
     <ProgressCircle ring={topic} scale={scale}/>
-    {topic.radius*scale>=44&&<g data-atlas-topic-focus={topic.id} role="button" tabIndex={0}
-     aria-label={'Focus '+group.name+' / '+topic.name}
-     onClick={event=>{event.stopPropagation();onFocus?.(group.id,topic.id)}}
-     onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id,topic.id)}}}
-     pointerEvents="all" className="cursor-pointer">
-     <rect x={topic.x-Math.max(100,topic.name.length*9+28)/(2*scale)}
-      y={topic.y-topic.radius+2/scale} width={Math.max(100,topic.name.length*9+28)/scale}
-      height={58/scale} fill="transparent" pointerEvents="all"/>
-     <text x={topic.x} y={topic.y-topic.radius+34/scale}
-      pointerEvents="none" textAnchor="middle" fontFamily="var(--font-ui)" fontSize={11/scale}
-      fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">{topic.name}</text>
-    </g>}
+    {topic.radius*scale>=44&&<text x={topic.x} y={topic.y-topic.radius+34/scale}
+     pointerEvents="none" textAnchor="middle" fontFamily="var(--font-ui)" fontSize={11/scale}
+     fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">{topic.name}</text>}
    </g>)}
   </g>)}
  </g>;
