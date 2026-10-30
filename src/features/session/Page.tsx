@@ -18,13 +18,13 @@ const goalText:Record<Exclude<GoalMet,null>,string>={yes:'Goal met',partial:'Par
 const date=(iso:string)=>new Date(iso).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
 const short=(iso:string)=>new Date(iso).toLocaleDateString(undefined,{weekday:'long'});
 function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
- const Icon=icons[event.kind],reduce=!!useReducedMotion(),demonstrated=event.kind==='evidence'&&event.outcome==='demonstrated';
+ const Icon=icons[event.kind],reduce=!!useReducedMotion(),demonstrated=event.kind==='evidence'&&event.outcome==='demonstrated',hintLevel=event.hintLevel??0;
  return <motion.li initial={reduce?false:{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.4,delay:Math.min(index,6)*0.07}} className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-3 pb-5 last:pb-0">
   <span aria-hidden="true" className={`relative z-10 flex size-10 items-center justify-center rounded-full border font-semibold ${demonstrated?'border-amber bg-amber text-amber-ink':event.kind==='misconception'?'border-amber-line text-amber':'border-edge-2 bg-tile text-ink-2'}`} style={{fontFamily:'var(--font-display)',fontSize:20}}>{index+1}</span>
   <div className="min-w-0 pt-1">
    <div className="flex flex-wrap items-center gap-2"><Icon size={15} aria-hidden="true" className={event.kind==='misconception'?'text-amber':'text-ink-3'}/><h3 className="text-body-l font-semibold">{name[event.kind]}</h3>
    {event.checkpointCode&&<span className="text-caption text-ink-3">{event.checkpointCode}</span>}
-   {event.hintLevel!==null&&event.kind==='hint'&&<span aria-label={`Hint level ${event.hintLevel}`} className="inline-flex items-center gap-1.5"><span className="text-caption tabular-nums text-ink-2">Level {event.hintLevel}</span>{[1,2,3,4].map(n=><i key={n} aria-hidden="true" className={`h-1 w-2.5 rounded-[1px] ${n<=Math.ceil(event.hintLevel/5)?'bg-amber':'bg-fill-2'}`}/>)}</span>}
+   {event.hintLevel!==null&&event.kind==='hint'&&<span aria-label={`Hint level ${event.hintLevel}`} className="inline-flex items-center gap-1.5"><span className="text-caption tabular-nums text-ink-2">Level {event.hintLevel}</span>{[1,2,3,4].map(n=><i key={n} aria-hidden="true" className={`h-1 w-2.5 rounded-[1px] ${n<=Math.ceil(hintLevel/5)?'bg-amber':'bg-fill-2'}`}/>)}</span>}
    </div>
    <div className={event.kind==='misconception'?'mt-2 border-l-2 border-amber pl-3 italic':'mt-1.5'}><MathText source={event.body} className="text-body text-ink-2"/></div>
    {event.outcome&&<Chip size={28} tone={event.outcome==='demonstrated'?'success':event.outcome==='failed'?'danger':'amber'}>{event.outcome}</Chip>}
