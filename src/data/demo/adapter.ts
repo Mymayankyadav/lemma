@@ -1703,6 +1703,7 @@ export class DemoAdapter implements LemmaApi {
       title,
       short,
       filename: file.name,
+      bytes: file.size,
       sha256,
       pageCount: null as number | null,
       status: "uploading" as Source["status"],
