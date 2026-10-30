@@ -42,7 +42,7 @@ if(typeof window!=='undefined'&&window.matchMedia){
  });
 }
 export function labEnabled():boolean {
- try{return localStorage.getItem('lemma.lab')==='on'}catch{return false}
+ try{return localStorage.getItem('lemma.lab')!=='off'}catch{return false}
 }
 export function setLabEnabled(enabled:boolean):void {
  try{localStorage.setItem('lemma.lab',enabled?'on':'off')}catch{/* optional */}
