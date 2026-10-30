@@ -25,7 +25,7 @@ test('nonexistent session has a readable recovery link',async({page})=>{
  await expect(page.getByRole('link',{name:'Open project'})).toBeVisible();
 });
 
-for(const world of ['euclid','euclid-night'] as const){
+for(const world of ['graph','graph-night'] as const){
  test(`UI-5f session is a numbered proof with marginal misconceptions in ${world}`,async({page})=>{
   await page.setViewportSize({width:360,height:740});
   await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/s/real-analysis/7`);
