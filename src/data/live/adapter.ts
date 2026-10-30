@@ -7,11 +7,27 @@ import { dueToday, studyDayBounds, projectProgress, conceptStatus } from '../../
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError } from '../api'
+import { LemmaError, notImplemented } from '../api'
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ /** DB-4 implementation supplies these APIs; legacy adapters stay unchanged until then. */
+ async updateSubject(..._args: Parameters<LemmaApi['updateSubject']>): ReturnType<LemmaApi['updateSubject']> {
+  throw notImplemented('updateSubject');
+ }
+ async mergeSubjects(..._args: Parameters<LemmaApi['mergeSubjects']>): ReturnType<LemmaApi['mergeSubjects']> {
+  throw notImplemented('mergeSubjects');
+ }
+ async createProjectDraft(..._args: Parameters<LemmaApi['createProjectDraft']>): ReturnType<LemmaApi['createProjectDraft']> {
+  throw notImplemented('createProjectDraft');
+ }
+ async updateSource(..._args: Parameters<LemmaApi['updateSource']>): ReturnType<LemmaApi['updateSource']> {
+  throw notImplemented('updateSource');
+ }
+ async listPlanRevisions(..._args: Parameters<LemmaApi['listPlanRevisions']>): ReturnType<LemmaApi['listPlanRevisions']> {
+  throw notImplemented('listPlanRevisions');
+ }
  async getReviewForecast(): ReturnType<LemmaApi['getReviewForecast']> {
   const db=liveClient(),uid=await owner(db)
   const [settings,notes,projects,cards]=await Promise.all([this.getSettings(),rows(db,'notes',uid),rows(db,'projects',uid),rows(db,'cards',uid)])
