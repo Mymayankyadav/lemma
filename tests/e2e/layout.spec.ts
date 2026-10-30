@@ -81,3 +81,17 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
   }
  });
 }
+
+test('UI-5a auto-switches Euclid worlds with OS theme and respects a manual choice',async({page})=>{
+ await page.emulateMedia({colorScheme:'light'});
+ await page.goto('/lemma/?demo=1&theme=system#/settings');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await page.emulateMedia({colorScheme:'dark'});
+ await expect(page.locator('html')).toHaveAttribute('data-theme','euclid-night');
+ await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#17130E');
+ await page.getByRole('radio',{name:'Euclid',exact:true}).click();
+ await page.emulateMedia({colorScheme:'light'});
+ await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await page.emulateMedia({colorScheme:'dark'});
+ await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+});

@@ -36,3 +36,12 @@ html:is([data-theme="euclid"],[data-theme="euclid-night"]) :is(input:not([type="
 html:is([data-theme="euclid"],[data-theme="euclid-night"]) .font-math{font-family:var(--font-math)}
 html:is([data-theme="graph"],[data-theme="graph-night"]) .ground{background:var(--bg-css),var(--bg)}
 html:is([data-theme="scriptorium"],[data-theme="astrolabe"],[data-theme="lamp-compass"]) :is(h1,h2,h3){font-family:var(--font-display)}
+
+/* Lively only: a barely perceptible drafting-paper drift. Reduced motion and calm stop it. */
+@keyframes euclid-drift{from{transform:translate(0,0) scale(1)}to{transform:translate(-1.6%,-1.2%) scale(1.03)}}
+html:is([data-theme="euclid"],[data-theme="euclid-night"])[data-effects="rich"] .euclid-construction{
+ animation:euclid-drift 38s ease-in-out infinite alternate;
+}
+@media(prefers-reduced-motion:reduce){
+ html .euclid-construction{animation:none!important}
+}
