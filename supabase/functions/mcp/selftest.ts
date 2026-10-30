@@ -2,7 +2,7 @@ import { Context, insert, scoped, rpc, commitBatch } from './db.ts';
 import {setPrompt,history,undo,edit,add,remove,review,grade} from './tools/control.ts';
 import { packet } from './packet.ts';
 import { get, search, readPages } from './tools/read.ts';
-import { proposePlan, startSession, saveProgress, proposeCards, endSession, createProject, proposals, decide } from './tools/write.ts';
+import { proposePlanChange, proposePlan, startSession, saveProgress, proposeCards, endSession, createProject, proposals, decide } from './tools/write.ts';
 import { createMcpHandler } from './deps.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
 export async function selftest(c:Context):Promise<any>{
@@ -28,15 +28,43 @@ export async function selftest(c:Context):Promise<any>{
     await check('planning resume',async()=>{if(!(await packet(c,{project:p.slug})).includes('PLANNING'))throw Error('No planning packet')});
     await check('plan proposal and approval',async()=>{
       await proposePlan(c,{project:p.slug,checkpoints:[
-        {title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
-        {title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},
-        {title:'Applications',objective:'Apply theorem',criterion:'Constructs a correct example',steps:['Find example','Explain'],prereqs:[2]}
-      ]});
+        {stage:'Foundations',title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
+        {stage:'Covers',title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},
+        {stage:'Applications',title:'Applications',objective:'Apply theorem',criterion:'Constructs a correct example',steps:['Find example','Explain'],prereqs:[2]}
+      ],concepts:[{name:'Selftest cover '+p.slug,topic:'Topology'}]});
       const {data}=await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle();
       if(!data)throw Error('No plan proposal');
+      if((await scoped(c,'checkpoints').eq('project_id',p.id)).data?.length)throw Error('Plan applied before approval');
       planId=data.id;await rpc(c,'approve_proposal',{p_id:planId});
       const {data:active}=await scoped(c,'projects').eq('id',p.id).maybeSingle();
       if(active?.status!=='active')throw Error('Plan not active');
+    });
+    await check('planning metadata, ETA and undo',async()=>{
+      const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
+      const concept=(await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Selftest cover '+p.slug).single()).data;
+      if(cp.stage!=='Foundations'||concept.topic!=='Topology')throw Error('Approved plan lost stage/topic');
+      const change=await run('propose_plan_change',proposePlanChange,{project:p.slug,reason:'Selftest stages',ops:[
+        {op:'update',code:'CP1',stage:'Revised'},
+        {op:'add',title:'Bridge',objective:'Learn',criterion:'Proves it',steps:['Think'],stage:'Bridge'}]});
+      const prop=(await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan_change').eq('status','pending').single()).data;
+      if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Foundations')throw Error('Change applied before approval');
+      const approved=await run('decide',decide,{approve:[prop.no]});
+      if((await scoped(c,'checkpoints').eq('project_id',p.id).eq('stage','Bridge')).data?.length!==1)throw Error('Added stage missing');
+      if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Revised')throw Error('Updated stage missing');
+      await run('undo',undo,{action:approved.action});
+      if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Foundations')throw Error('Stage undo failed');
+      const edited=await run('edit',edit,{target:p.slug,set:{target_date:'2027-01-15',target_label:'Prelim'}});
+      const packetText=await packet(c,{project:p.slug});
+      if(!packetText.includes('finish ≈')||!packetText.includes('Prelim 15 Jan'))throw Error('ETA/target missing');
+      await run('undo',undo,{action:edited.action});
+      if((await scoped(c,'projects').eq('id',p.id).single()).data.target_date!==null)throw Error('Target undo failed');
+      await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:null}});
+      await run('edit',edit,{target:'idea:Selftest cover '+p.slug,set:{topic:'Open sets'}});
+      if((await scoped(c,'concepts').eq('id',concept.id).single()).data.topic!=='Open sets')throw Error('Topic edit failed');
+      await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:'Foundations'}});
+      for(const set of [{target_date:'2027-02-30'},{target_label:'x'.repeat(21)}]){
+        let failed=false;try{await run('edit',edit,{target:p.slug,set});}catch{failed=true;}if(!failed)throw Error('Invalid target accepted');
+      }
     });
     await check('study resume bounds',async()=>{
       const s=await packet(c,{project:p.slug});
@@ -80,10 +108,13 @@ export async function selftest(c:Context):Promise<any>{
     await check('create, list and decide',async()=>{
       const title='zz-selftest extra '+Date.now();
       extraSubjectName='zz-selftest-'+Date.now();
-      const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal'});
+      let invalid='';try{await run('create_project',createProject,{title,subject:extraSubjectName,goal:'Demo goal',style:'Teach with careful examples'});}catch(e){invalid=(e as Error).message;}
+      if(!invalid.includes('Unknown style key')||!invalid.includes('socratic'))throw Error('Invalid style accepted or usable keys missing');
+      if((await scoped(c,'subjects').eq('name',extraSubjectName)).data?.length)throw Error('Rejected style created a subject');
+      const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal',style:'socratic',target_date:'2027-01-15',target_label:'Prelim'});
       const slug=r.match(/^created (\S+)/)?.[1];
       if(!slug)throw Error('Project creation failed');
-      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;
+      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;if(!newP?.target_date||newP?.target_label!=='Prelim')throw Error('Create target lost');if(newP?.style!=='socratic')throw Error('Valid style not saved');
       const lines=await proposals(c,{project:p.slug});
       if(!lines.includes('P'))throw Error('Pending proposals invisible');
       const {data:pending}=await scoped(c,'proposals').eq('project_id',p.id).eq('status','pending').eq('kind','card').order('no').limit(1);
@@ -94,7 +125,9 @@ export async function selftest(c:Context):Promise<any>{
     await check('prompt history undo and redo',async()=>{
       const r=await run('set_prompt',setPrompt,{scope:p.slug,text:'Selftest Socratic prompt',mode:'replace'});
       if(!(await packet(c,{project:p.slug})).startsWith('OWNER'))throw Error('OWNER missing');
-      if(!(await history(c,{})).startsWith('A'+r.action+' '))throw Error('Newest action missing');
+      // Other owner or CI writes can land between the prompt write and this read.
+      // Assert the newest action in this throwaway project, not the global log.
+      if(!(await history(c,{project:p.slug})).startsWith('A'+r.action+' '))throw Error('Newest project action missing');
       const u=await run('undo',undo,{action:r.action});
       if((await packet(c,{project:p.slug})).includes('Selftest Socratic prompt'))throw Error('Prompt undo failed');
       await run('undo',undo,{action:u.action});
@@ -116,6 +149,50 @@ export async function selftest(c:Context):Promise<any>{
       for(let i=0;i<2;i++)await run('save_progress',saveProgress,{project:p.slug,session:code,diagnostics:[{kind:'gap',topic:'Selftest prerequisite',evidence:'Could not explain it',severity:3,confirmed:true}]});
       const d=await scoped(c,'diagnostics').eq('project_id',p.id).single();if(d.data?.times!==2)throw Error('Diagnostic sightings failed');
       if(!(await packet(c,{project:p.slug})).includes('ADAPT D'+d.data.no))throw Error('ADAPT missing');
+    });
+    await check('repeated new concept references and undo',async()=>{
+      const name='Selftest repeated concept';
+      const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
+      const before=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
+      const action=await run('edit',edit,{project:p.slug,target:'CP1',set:{ideas:[name,name.toLowerCase(),name]}});
+      const found=(await scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)).data||[];
+      if(found.length!==1)throw Error('Expected one canonical concept');
+      const links=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
+      if(links.length!==1||links[0].concept_id!==found[0].id)throw Error('Expected one concept link');
+      await run('undo',undo,{action:action.action});
+      if((await scoped(c,'concepts').eq('id',found[0].id)).data?.length)throw Error('Concept survived undo');
+      const restored=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
+      if(restored.length!==before.length||before.some((x:any)=>!restored.some((y:any)=>y.concept_id===x.concept_id)))throw Error('Original links not restored');
+    });
+    await check('idea relationship duplicates, conflicts and undo',async()=>{
+      const base=await insert(c,'concepts',{subject_id:p.subject_id,slug:'selftest-links',name:'Selftest links '+p.slug});
+      const subject=(await scoped(c,'subjects').eq('id',p.subject_id).single()).data.name;
+      const links=async()=>{const r=await scoped(c,'concept_links').eq('to_id',base.id);if(r.error)throw Error(r.error.message);return r.data||[];};
+      for(const tool of ['add','edit'])for(const field of ['prereqs','related']){
+        const name='Selftest '+tool+' '+field;
+        const args=tool==='add'?{kind:'idea',fields:{subject,name:base.name,[field]:[name,name.toLowerCase(),name]}}:{target:'idea:'+base.name,set:{[field]:[name,name.toLowerCase(),name]}};
+        const action=await run(tool,tool==='add'?add:edit,args);
+        const rows=await links();if(rows.length!==1||rows[0].kind!==(field==='prereqs'?'prereq':'related'))throw Error('Expected one canonical relationship');
+        await run('undo',undo,{action:action.action});
+        if((await links()).length)throw Error('Undo left relationships');
+        if((await scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)).data?.length)throw Error('Undo left new concept');
+      }
+      for(const tool of ['add','edit']){
+        const name='Selftest conflicting '+tool;
+        const fields={prereqs:[name],related:[name.toLowerCase()]};
+        let message='';try{await run(tool,tool==='add'?add:edit,tool==='add'?{kind:'idea',fields:{subject,name:base.name,...fields}}:{target:'idea:'+base.name,set:fields});}catch(e){message=(e as Error).message;}
+        if(!message.includes('both prerequisite and related'))throw Error('Expected explicit relationship conflict: '+message);
+        if((await links()).length||(await scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)).data?.length)throw Error('Rejected write changed data');
+      }
+      await run('add',add,{kind:'idea',fields:{subject,name:base.name,prereqs:['Selftest retained']}});
+      await run('add',add,{kind:'idea',fields:{subject,name:base.name,prereqs:['selftest retained']}});
+      if((await links()).length!==1)throw Error('Repeated add duplicated existing relationship');
+      let conflict='';try{await run('edit',edit,{target:'idea:'+base.name,set:{related:['selftest retained']}});}catch(e){conflict=(e as Error).message;}
+      if(!conflict.includes('both prerequisite and related'))throw Error('Untouched prerequisite silently replaced');
+      const changed=await run('edit',edit,{target:'idea:'+base.name,set:{prereqs:[],related:['selftest retained']}});
+      if((await links())[0]?.kind!=='related')throw Error('Explicit kind change failed');
+      await run('undo',undo,{action:changed.action});
+      if((await links())[0]?.kind!=='prereq')throw Error('Undo did not restore relationship kind');
     });
     await check('delete preview cascade and undo',async()=>{
       const preview=await run('delete',remove,{target:p.slug,confirm:false});if(preview.action)throw Error('Preview wrote data');
@@ -158,5 +235,5 @@ export async function selftest(c:Context):Promise<any>{
     }
     if(extraSubjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',extraSubjectId);
   }
-  return {ok:steps.length===15&&steps.every(x=>x.ok),steps};
+  return {ok:steps.length===18&&steps.every(x=>x.ok),steps};
 }

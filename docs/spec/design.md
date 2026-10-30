@@ -1,6 +1,6 @@
 # Design specification: Amber on Obsidian
 
-Visual source of truth, in this order: this file, the boards in `docs/design/canvas/` (open them in a browser or read their inline styles for exact values), and the owner's reference image `docs/design/reference-amber-on-obsidian.png`. The owner approved the canvas on 29 Oct 2026. When this file and a board disagree, this file wins.
+All visuals are now governed by `ui-euclid.md` (owner's final choice, 30 Oct), then `lab.md`; this file remains for behaviour and screen content. Home, the project timeline, the Atlas and Appearance are governed by `lab.md` (round 2, 30 Oct). Sizes, colours, elevations and effect defaults are governed by `themes.md` (owner feedback, 30 Oct: smaller text, denser layout, calmer look, selectable themes). Visual source of truth, in this order: this file, the boards in `docs/design/canvas/` (open them in a browser or read their inline styles for exact values), and the owner's reference image `docs/design/reference-amber-on-obsidian.png`. The owner approved the canvas on 29 Oct 2026. When this file and a board disagree, this file wins.
 
 ## 1. Direction
 

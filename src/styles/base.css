@@ -1,6 +1,14 @@
 *, *::before, *::after { box-sizing: border-box; }
-html { color-scheme: dark; }
+html { color-scheme: light dark; }
 body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--font-ui); color: var(--ink); background: var(--obsidian); font-variant-numeric: tabular-nums; }
 button, input, textarea, select { font: inherit; }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+
+/* Responsive density without changing the shell's shared route contract. */
+#main-content:not(.w-full) { padding-left: var(--gutter); padding-right: var(--gutter); }
+nav[aria-label="Main navigation"] { height: var(--tab); }
+:where(button, a, input, select, textarea):focus-visible { outline-offset: 3px; }
+
+/* Float the lab above the dock when the dock is present. */
+body:has(nav[aria-label="Main navigation"]) .lemma-lab-fab { bottom: calc(var(--tab) + 44px + env(safe-area-inset-bottom)); }

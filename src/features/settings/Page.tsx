@@ -33,6 +33,7 @@ import type {
   OptimizerRequest,
 } from "../../lib/optimizer.worker";
 import { Button } from "../../ui/Button";
+import { AppearanceControls } from "../../ui/ThemeLab";
 import { Chip } from "../../ui/Chip";
 import { IconButton } from "../../ui/IconButton";
 import { Screen } from "../../ui/Screen";
@@ -217,6 +218,7 @@ export default function Page() {
     busy = update.isPending;
   return (
     <Screen title="Settings" back="/" className="pb-8">
+      <AppearanceControls />
       <Slab className="p-5">
         <div className="flex items-center gap-4">
           <PlugArt connected={connected} size={92} />
@@ -224,7 +226,7 @@ export default function Page() {
             <h2 className="font-semibold">
               {connected ? "Connected" : "Not connected yet"}
             </h2>
-            <p className="mt-1 text-[13px] text-ink-3">
+            <p className="mt-1 text-label text-ink-3">
               {s.connectorLastSeenAt
                 ? `Last call ${elapsed(s.connectorLastSeenAt)}${s.connectorLastClient ? `, ${s.connectorLastClient === "claude" ? "Claude" : s.connectorLastClient === "chatgpt" ? "ChatGPT" : s.connectorLastClient}` : ""}`
                 : "Connect your tutor to get started."}
@@ -232,7 +234,7 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-4 flex items-center gap-1 rounded-ctl bg-well p-2">
-          <span className="min-w-0 flex-1 truncate pl-2 font-mono text-[12px] text-ink-2">
+          <span className="min-w-0 flex-1 break-all pl-2 font-mono text-label text-ink-2">
             {revealed ? s.connectorUrl : masked}
           </span>
           <IconButton
@@ -251,20 +253,20 @@ export default function Page() {
           />
         </div>
         <button
-          className="mt-3 min-h-11 text-[13px] font-semibold text-amber"
+          className="mt-3 min-h-11 text-label font-semibold text-amber"
           onClick={() => setSheet("rotate")}
         >
           Make a new address
         </button>
       </Slab>
       <section>
-        <h2 className="mb-3 text-[16px] font-semibold">Apps</h2>
+        <h2 className="mb-3 text-headline font-semibold">Apps</h2>
         <Slab className="divide-y divide-edge px-4">
           <div className="flex min-h-[68px] items-center gap-3">
             <Sparkles className="text-amber" size={20} />
             <div className="flex-1">
               <p className="font-semibold">Claude</p>
-              <p className="text-[12px] text-ink-3">Phone and web</p>
+              <p className="text-label text-ink-3">Phone and web</p>
             </div>
             {s.connectorLastClient === "claude" && (
               <Check className="text-easy" size={19} />
@@ -274,7 +276,7 @@ export default function Page() {
             <Bot className="text-ink-2" size={20} />
             <div className="flex-1">
               <p className="font-semibold">ChatGPT</p>
-              <p className="text-[12px] text-ink-3">Web, developer mode</p>
+              <p className="text-label text-ink-3">Web, developer mode</p>
             </div>
             <Chip
               tone="amber"
@@ -285,7 +287,7 @@ export default function Page() {
             </Chip>
           </div>
           {setup && (
-            <ol className="list-decimal space-y-3 pb-5 pl-6 pt-2 text-[13px] leading-relaxed text-ink-2">
+            <ol className="list-decimal space-y-3 pb-5 pl-6 pt-2 text-label leading-relaxed text-ink-2">
               <li>
                 In ChatGPT settings, open Apps, then Advanced settings and
                 enable Developer mode.
@@ -303,7 +305,7 @@ export default function Page() {
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-[16px] font-semibold">Say this to start</h2>
+        <h2 className="mb-3 text-headline font-semibold">Say this to start</h2>
         <div className="flex flex-wrap gap-2">
           {home.data?.resume && (
             <Chip
@@ -331,7 +333,7 @@ export default function Page() {
         </div>
       </section>
       <section>
-        <h2 className="mb-3 text-[16px] font-semibold">Teaching style</h2>
+        <h2 className="mb-3 text-headline font-semibold">Teaching style</h2>
         <div
           role="radiogroup"
           aria-label="Teaching style"
@@ -352,7 +354,7 @@ export default function Page() {
           ))}
         </div>
         <button
-          className="mt-3 min-h-11 text-[14px] font-semibold text-amber"
+          className="mt-3 min-h-11 text-body font-semibold text-amber"
           onClick={() => {
             setRules(s.tutorRules ?? "");
             setSheet("rules");
@@ -362,7 +364,7 @@ export default function Page() {
         </button>
       </section>
       <section>
-        <h2 className="mb-3 text-[16px] font-semibold">Memory</h2>
+        <h2 className="mb-3 text-headline font-semibold">Memory</h2>
         <Slab className="p-5">
           <div className="flex justify-between">
             <label htmlFor="retention" className="font-semibold">
@@ -394,7 +396,7 @@ export default function Page() {
             }}
             className="my-3 w-full accent-amber"
           />
-          <p className="text-[12px] text-ink-3">
+          <p className="text-label text-ink-3">
             Higher means more reviews each day.
           </p>
           <div className="mt-4 flex min-h-14 items-center justify-between">
@@ -430,14 +432,14 @@ export default function Page() {
             Tune to my reviews
           </Button>
           {(reviews.data?.length ?? 0) < 400 && (
-            <p className="mt-2 text-[12px] text-ink-3">
+            <p className="mt-2 text-label text-ink-3">
               Needs 400 reviews (you have {reviews.data?.length ?? 0})
             </p>
           )}
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-[16px] font-semibold">More</h2>
+        <h2 className="mb-3 text-headline font-semibold">More</h2>
         <div className="flex flex-col gap-2">
           <Button
             variant="ghost"
@@ -471,7 +473,7 @@ export default function Page() {
           </Button>
         </div>
       </section>
-      <p className="text-[12px] text-ink-3">
+      <p className="text-label text-ink-3">
         Lemma · {getMode() === "demo" ? "Demo data" : "Your study record"}
       </p>
       <Sheet
@@ -544,10 +546,10 @@ export default function Page() {
           <textarea
             value={macros}
             onChange={(e) => setMacros(e.target.value)}
-            className={`${field} font-mono text-[12px]`}
+            className={`${field} font-mono text-label`}
           />
         </label>
-        <p className="mt-4 text-[12px] text-ink-3">Preview</p>
+        <p className="mt-4 text-label text-ink-3">Preview</p>
         <div
           className="lemma-math my-3"
           dangerouslySetInnerHTML={{ __html: preview }}

@@ -93,7 +93,7 @@ export default function Page() {
         />
       }
     >
-      <label className="flex min-h-14 items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
+      <label className="flex min-h-[var(--row)] items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
         <Search size={19} />
         <span className="sr-only">Search cards</span>
         <input
@@ -104,25 +104,29 @@ export default function Page() {
         />
       </label>
       <div
-        className="flex gap-2 overflow-x-auto pb-1"
+        className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1"
+        role="group"
         aria-label="Card filters"
       >
-        <Chip selected={filter === "all"} onClick={() => setFilter("all")}>
+        <Chip className="shrink-0 whitespace-nowrap" selected={filter === "all"} onClick={() => setFilter("all")}>
           All
         </Chip>
         {projects.data?.map((p) => (
           <Chip
             key={p.id}
+            className="shrink-0 whitespace-nowrap"
             selected={filter === p.slug}
             onClick={() => setFilter(p.slug)}
           >
-            {p.subject.glyph} {p.title}
+            <span aria-hidden="true" className="shrink-0">{p.subject.glyph}</span>
+            <span className="whitespace-nowrap">{p.title}</span>
           </Chip>
         ))}
-        <Chip selected={filter === "notes"} onClick={() => setFilter("notes")}>
+        <Chip className="shrink-0 whitespace-nowrap" selected={filter === "notes"} onClick={() => setFilter("notes")}>
           Has notes
         </Chip>
         <Chip
+          className="shrink-0 whitespace-nowrap"
           selected={filter === "paused"}
           onClick={() => setFilter("paused")}
         >
@@ -147,21 +151,23 @@ export default function Page() {
             <Link
               key={row.noteNo}
               to={`/cards/${row.noteNo}`}
-              className="flex min-h-16 items-center gap-3 border-b border-edge py-3"
+              className="flex min-h-16 items-center gap-3 border-b border-edge py-3 focus-visible:outline-2 focus-visible:outline-amber"
             >
+              <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-math text-[16px]">
+                <span className="line-clamp-2 font-math text-headline leading-snug text-ink">
                   {plain(row.front)}
                 </span>
-                <span className="mt-1 block text-[12px] text-ink-3">
-                  {row.glyph} {row.checkpointCode ?? "No checkpoint"} ·{" "}
-                  {row.status === "suspended" ? "Paused" : relative(row.due)}
+                <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
+                  <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
+                  <span>{row.status === "suspended" ? "Paused" : relative(row.due)}</span>
+                  {row.openComments > 0 && <span className="text-amber">{row.openComments} tutor {row.openComments===1?"note":"notes"}</span>}
                 </span>
               </span>
               {row.openComments > 0 && (
                 <span
                   aria-label={`${row.openComments} open notes`}
-                  className="size-2 rounded-full bg-amber"
+                  className="h-7 w-[2px] shrink-0 bg-amber"
                 />
               )}
             </Link>
@@ -169,7 +175,7 @@ export default function Page() {
         </div>
       ) : (
         <div className="py-12 text-center">
-          <h2 className="text-[20px] font-semibold">No cards match</h2>
+          <h2 className="text-card font-semibold">No cards match</h2>
           <Button
             variant="text"
             onClick={() => {

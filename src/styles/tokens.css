@@ -28,3 +28,46 @@
   --ease-out: cubic-bezier(.16,1,.3,1); --ease-in-out: cubic-bezier(.65,0,.35,1); --ease-in: cubic-bezier(.4,0,.6,1);
   --duration-fast: 140ms; --duration-base: 220ms; --duration-slow: 360ms; --duration-enter: 600ms; --duration-reveal: 500ms; --duration-deal: 550ms; --duration-grade: 420ms;
 }
+
+/* UI-3: --amber* is the current theme accent and --obsidian* the background.
+   Defaults are compact; the html density attribute overrides these semantic sizes. */
+:root {
+  --type-micro: 10px; --type-caption: 11px; --type-label: 12px;
+  --type-body: 14px; --type-body-l: 15px; --type-headline: 16px;
+  --type-title-s: 18px; --type-title: 21px;
+  --type-num-l: 26px; --type-num-xl: 40px;
+  --type-card: 20px; --type-answer: 17px; --type-question: 17px;
+  --gutter: 14px; --pad: 14px; --pad-tile: 12px; --gap: 10px;
+  --row: 44px; --ctl: 44px; --tab: 56px;
+  --r-hero: 20px; --r-slab: 16px; --r-ctl: 12px;
+}
+html[data-density="cozy"] {
+  --type-micro: 10.5px; --type-caption: 11.5px; --type-label: 12.5px;
+  --type-body: 14.5px; --type-body-l: 15.5px; --type-headline: 17.5px;
+  --type-title-s: 21px; --type-title: 24px;
+  --type-num-l: 32px; --type-num-xl: 52px;
+  --type-card: 23px; --type-answer: 20px; --type-question: 19px;
+  --gutter: 18px; --pad: 18px; --pad-tile: 14px; --gap: 12px;
+  --row: 50px; --ctl: 48px; --tab: 60px;
+  --r-hero: 24px; --r-slab: 19px; --r-ctl: 13px;
+}
+html[data-density="comfortable"] {
+  --type-micro: 11px; --type-caption: 12px; --type-label: 13px;
+  --type-body: 15px; --type-body-l: 16px; --type-headline: 19px;
+  --type-title-s: 24px; --type-title: 28px;
+  --type-num-l: 38px; --type-num-xl: 64px;
+  --type-card: 27px; --type-answer: 23px; --type-question: 21px;
+  --gutter: 24px; --pad: 22px; --pad-tile: 16px; --gap: 12px;
+  --row: 56px; --ctl: 52px; --tab: 64px;
+  --r-hero: 28px; --r-slab: 22px; --r-ctl: 14px;
+}
+
+/* Decorative math glyph scales; labels hidden visually retain accessible names. */
+:root { --type-decor-hero: 180px; --type-decor-tile: 110px; --type-decor-icon: 90px; --type-hidden: 0px; }
+html[data-density="cozy"] { --type-decor-hero: 210px; --type-decor-tile: 130px; --type-decor-icon: 105px; }
+html[data-density="comfortable"] { --type-decor-hero: 250px; --type-decor-tile: 150px; --type-decor-icon: 120px; }
+
+/* Screen-specific space scales, still configurable per density. */
+:root { --step-ring: 44px; --summary-tile: 72px; }
+html[data-density="cozy"] { --step-ring: 52px; --summary-tile: 80px; }
+html[data-density="comfortable"] { --step-ring: 76px; --summary-tile: 100px; }

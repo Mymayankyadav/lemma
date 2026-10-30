@@ -3,10 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0D0C11" />
+    <meta name="theme-color" content="#F1E7D3" />
+<script>
+      /* Resolve the preferred Euclid world before first paint. */
+      (function(){
+        var colors={"obsidian":"#0D0C11","graph":"#FAFAF6","euclid":"#F1E7D3","euclid-night":"#17130E","scriptorium":"#14110D","astrolabe":"#0B0F17","lamp-compass":"#0D0C11","graph-night":"#13171D"};
+        var value={theme:'system',density:'compact',effects:'rich'};
+        try{var saved=JSON.parse(localStorage.getItem('lemma.ui')||'null');if(saved&&typeof saved==='object')Object.assign(value,saved)}catch(_){}
+        var query=new URLSearchParams(location.search);
+        ['theme','density','effects'].forEach(function(k){if(query.has(k))value[k]=query.get(k)});
+        if(value.theme!=='system'&&!Object.prototype.hasOwnProperty.call(colors,value.theme))value.theme='system';
+        if(!['compact','cozy','comfortable'].includes(value.density))value.density='compact';
+        if(!['rich','calm'].includes(value.effects))value.effects='rich';
+        var actual=value.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'euclid-night':'euclid'):value.theme;
+        document.documentElement.dataset.theme=actual;
+        document.documentElement.dataset.themePreference=value.theme;
+        document.documentElement.dataset.density=value.density;
+        document.documentElement.dataset.effects=value.effects;
+        document.querySelector('meta[name="theme-color"]').setAttribute('content',colors[actual]);
+        try{localStorage.setItem('lemma.ui',JSON.stringify(value))}catch(_){}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
     <title>Lemma</title>
   </head>
   <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>

@@ -36,13 +36,13 @@ function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:C
  return <Slab as="article" lamp aria-label={'Current checkpoint '+cp.code} className="border border-amber-line-2 p-4">
   <div className="flex items-center justify-between gap-3">
    <div className="flex min-w-0 flex-col gap-1">
-    <span className="text-[12px] font-semibold text-amber">{cp.code} · IN PROGRESS</span>
-    <h3 className="truncate text-[18px] font-semibold">{cp.title}</h3>
+    <span className="text-label font-semibold text-amber">{cp.code} · IN PROGRESS</span>
+    <h3 className="truncate text-title-s font-semibold">{cp.title}</h3>
    </div>
    <Link to={url} aria-label={'Details for '+cp.code} className="flex size-11 items-center justify-center rounded-ctl text-ink-2"><ChevronRight size={20}/></Link>
   </div>
-  {checkpoint.data?.objective&&<p className="mt-3 font-math text-[17px] italic leading-relaxed text-ink-soft">{checkpoint.data.objective}</p>}
-  <div className="mt-4 flex items-center justify-between text-[12px] text-ink-2">
+  {checkpoint.data?.objective&&<p className="mt-3 font-math text-answer italic leading-relaxed text-ink-soft">{checkpoint.data.objective}</p>}
+  <div className="mt-4 flex items-center justify-between text-label text-ink-2">
    <span>Step {cp.stepsTotal?Math.min(cp.currentStep,cp.stepsTotal):0} of {cp.stepsTotal}</span>
    <span className="max-w-[70%] truncate">{step}</span>
   </div>
@@ -78,22 +78,22 @@ function PathTimeline({slug,detail}:{slug:string;detail:ProjectDetail}){
     <div className={'min-w-0 '+(isCurrent?'pb-5':'pb-5')}>
      {isCurrent?<NowCheckpoint slug={slug} cp={cp} project={detail}/>:isProposed?
       <Link to="/proposals?tab=plan" className="flex min-h-12 flex-col justify-center gap-1 rounded-ctl px-1 text-ink-soft">
-       <span className="flex items-center gap-2 text-[15px]"><span className="min-w-0 flex-1 truncate">{cp.title}</span><Chip tone="amber">Proposed</Chip></span>
-       <span className="text-[12px] text-ink-3">Tap to approve</span>
+       <span className="flex items-center gap-2 text-body-l"><span className="min-w-0 flex-1 truncate">{cp.title}</span><Chip tone="amber">Proposed</Chip></span>
+       <span className="text-label text-ink-3">Tap to approve</span>
       </Link>:
       <Link to={'/p/'+slug+'/cp/'+cp.code} className="flex min-h-12 flex-col justify-center gap-1 rounded-ctl px-1">
        <span className="flex items-center gap-3">
-        <span className={'min-w-0 flex-1 truncate text-[16px] '+(cp.ui==='locked'?'text-ink-3':'text-ink-soft')}>{cp.title}</span>
-        <span className="text-[12px] text-ink-3">{cp.code}</span>
+        <span className={'min-w-0 flex-1 truncate text-headline '+(cp.ui==='locked'?'text-ink-3':'text-ink-soft')}>{cp.title}</span>
+        <span className="text-label text-ink-3">{cp.code}</span>
        </span>
-       {cp.ui==='revisit'&&<span className="flex items-center gap-1 text-[12px] text-amber"><RotateCcw size={13} aria-hidden="true"/>Re-check due</span>}
-       {cp.ui==='next'&&<span className="text-[12px] text-ink-3">Next checkpoint</span>}
+       {cp.ui==='revisit'&&<span className="flex items-center gap-1 text-label text-amber"><RotateCcw size={13} aria-hidden="true"/>Re-check due</span>}
+       {cp.ui==='next'&&<span className="text-label text-ink-3">Next checkpoint</span>}
       </Link>}
     </div>
    </li>;
   })}
   {!expanded&&checkpoints.length>8&&<li>
-   <button type="button" onClick={()=>setExpanded(true)} className="ml-11 flex min-h-11 items-center gap-2 text-[13px] text-amber">
+   <button type="button" onClick={()=>setExpanded(true)} className="ml-11 flex min-h-11 items-center gap-2 text-label text-amber">
     {checkpoints.length-8} more <ChevronDown size={16}/>
    </button>
   </li>}
@@ -108,10 +108,10 @@ function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
     {good?<Check size={18} aria-hidden="true"/>:partial?<Pause size={16} aria-hidden="true"/>:<MessageCircle size={17} aria-hidden="true"/>}
    </span>
    <span className="min-w-0 flex-1">
-    <strong className="block truncate text-[15px] font-semibold">{s.goal}</strong>
-    <span className="mt-1 block text-[12px] text-ink-3">{'S'+s.number+' · '+relativeTime(s.startedAt)+' · '+s.client}</span>
+    <strong className="block truncate text-body-l font-semibold">{s.goal}</strong>
+    <span className="mt-1 block text-label text-ink-3">{'S'+s.number+' · '+relativeTime(s.startedAt)+' · '+s.client}</span>
    </span>
-   <span className="text-[13px] tabular-nums text-ink-2">{s.minutes===null?s.display:formatMinutes(s.minutes)}</span>
+   <span className="text-label tabular-nums text-ink-2">{s.minutes===null?s.display:formatMinutes(s.minutes)}</span>
    <ChevronRight size={16} className="text-ink-3"/>
   </Link>;
  })}</div>;
@@ -133,18 +133,18 @@ function SourceList({projectId,sources}:{projectId:string;sources:Source[]}){
  }
  return <section aria-label="Sources" className="flex flex-col gap-3">
   {sources.map(source=><Tile key={source.id} className="flex items-center gap-3 p-3">
-   <span className="flex h-[58px] w-[46px] shrink-0 items-center justify-center rounded-s bg-amber-tint text-[11px] font-semibold text-amber">PDF</span>
-   <span className="min-w-0 flex-1"><strong className="block truncate text-[15px]">{source.title}</strong>
-    <span className="mt-1 block text-[12px] text-ink-3">{source.pageCount??'—'} pages · {source.status}</span>
+   <span className="flex h-[58px] w-[46px] shrink-0 items-center justify-center rounded-s bg-amber-tint text-caption font-semibold text-amber">PDF</span>
+   <span className="min-w-0 flex-1"><strong className="block truncate text-body-l">{source.title}</strong>
+    <span className="mt-1 block text-label text-ink-3">{source.pageCount??'—'} pages · {source.status}</span>
    </span>
    {source.status==='ready'?<Check size={18} className="text-easy"/>:<FileText size={18} className="text-ink-3"/>}
   </Tile>)}
   <input ref={picker} type="file" hidden accept=".pdf,application/pdf"
    onChange={e=>{void upload(e.target.files?.[0])}}/>
   <button type="button" disabled={pending} onClick={()=>picker.current?.click()}
-   className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-[14px] text-ink-2">
+   className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
    <Plus size={22} className="text-amber"/>{pending?'Uploading '+name:'Add a PDF'}
-   {progress&&<span className="text-[12px] text-ink-3">{progress.message+' '+progress.page+'/'+progress.pageCount}</span>}
+   {progress&&<span className="text-label text-ink-3">{progress.message+' '+progress.page+'/'+progress.pageCount}</span>}
   </button>
   {progress&&<Rail value={progress.pageCount?progress.page/progress.pageCount:0} label="PDF upload progress" sheen/>}
  </section>;
@@ -167,17 +167,17 @@ export default function Page(){
   <header className="flex items-center gap-3">
    <IconButton icon={ArrowLeft} label="Back to projects" onClick={()=>navigate('/projects')}/>
    <div className="min-w-0 flex-1">
-    <h1 aria-label="Project" className="truncate text-[26px] font-semibold tracking-tight">{project.title}</h1>
-    <p className="mt-1 flex items-center gap-1.5 truncate text-[13px] text-ink-3">
+    <h1 aria-label="Project" className="truncate text-num-l font-semibold tracking-tight">{project.title}</h1>
+    <p className="mt-1 flex items-center gap-1.5 truncate text-label text-ink-3">
      <BookOpen size={14} aria-hidden="true"/>{data.sources[0]?.title??data.subject.name}</p>
    </div>
    <IconButton icon={Waypoints} label="View in Atlas" to="/atlas"/>
   </header>
   <section aria-label="Checkpoint progress">
    <p className="mb-3 flex items-baseline gap-1.5 tabular-nums">
-    <strong className="text-[40px] leading-none">{data.done}</strong>
-    <span className="text-[16px] text-ink-3">/ {data.total}</span>
-    <span className="ml-auto text-[13px] text-ink-3">checkpoints</span>
+    <strong className="text-num-xl leading-none">{data.done}</strong>
+    <span className="text-headline text-ink-3">/ {data.total}</span>
+    <span className="ml-auto text-label text-ink-3">checkpoints</span>
    </p>
    <SegmentBar total={data.total} done={data.done} current={currentPosition}/>
   </section>

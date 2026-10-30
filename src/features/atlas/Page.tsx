@@ -13,7 +13,7 @@ import {Button} from '../../ui/Button';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
-import {fitAtlas,layoutAtlas,nebula} from './graph';
+import {fitAtlasViewport,layoutAtlas,nebula,visibleAtlasLabels} from './graph';
 import type {AtlasNode,Point} from './graph';
 
 type Filter='all'|'revisit'|'demonstrated';
@@ -52,8 +52,8 @@ function star(cx:number,cy:number,r=7){
  }
  return parts.join(' ')+' Z';
 }
-function WorldNode({node,selected,dim,reduce,position,onDown,onMove,onUp,onCancel,onSelect}:{
- node:AtlasNode;selected:boolean;dim:boolean;reduce:boolean;position:Point;
+function WorldNode({node,selected,dim,reduce,showLabel,position,zoomScale,onDown,onMove,onUp,onCancel,onSelect}:{
+ node:AtlasNode;selected:boolean;dim:boolean;reduce:boolean;showLabel:boolean;position:Point;zoomScale:number;
  onDown:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
  onMove:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
  onUp:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
@@ -67,7 +67,7 @@ function WorldNode({node,selected,dim,reduce,position,onDown,onMove,onUp,onCance
   onPointerDown={e=>onDown(e,node)} onPointerMove={e=>onMove(e,node)} onPointerUp={e=>onUp(e,node)}
   onPointerCancel={onCancel}
   onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onSelect(node.id)}}}>
-  <circle cx={x} cy={y} r={25} fill="transparent" stroke="none"/>
+  <circle cx={x} cy={y} r={22/zoomScale} fill="transparent" stroke="none"/>
   {selected&&<motion.circle cx={x} cy={y} r={22} fill="none" stroke="var(--amber)" strokeOpacity=".4" strokeWidth={1.3}
     animate={reduce?{}:{r:[17,26,17],opacity:[.7,.15,.7]}} transition={{duration:3,repeat:Infinity}}/>}
   {status==='revisit'&&<motion.circle cx={x} cy={y} r={11} fill="none" stroke="var(--amber)"
@@ -80,14 +80,14 @@ function WorldNode({node,selected,dim,reduce,position,onDown,onMove,onUp,onCance
   </>}
   {status==='not_started'&&<circle cx={x} cy={y} r={selected?6:4.5} fill="var(--obsidian)" stroke="var(--ink-4)" strokeWidth={1.35}/>}
   {selected&&<circle cx={x} cy={y} r={10} fill="none" stroke="var(--amber-hi)" strokeWidth={1} strokeOpacity={0.9}/>}
-  <text x={x} y={y+23} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={selected?13:11.5}
+  {showLabel&&<text x={x} y={y+23} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={selected?13:11.5}
    fontWeight={selected?600:500} fill={selected?'var(--ink)':'var(--ink-2)'}
-   stroke="var(--obsidian)" strokeWidth={3} paintOrder="stroke" pointerEvents="none">{node.name}</text>
+   stroke="var(--obsidian)" strokeWidth={3} paintOrder="stroke" pointerEvents="none">{node.name}</text>}
  </g>;
 }
 function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:number;active:boolean;onClick:()=>void;icon?:typeof Check}){
  return <button type="button" onClick={onClick} aria-pressed={active}
-  className={'flex min-h-10 shrink-0 items-center gap-1.5 rounded-chip border px-3 text-[12px] font-medium backdrop-blur-xl '+
+  className={'flex min-h-11 shrink-0 items-center gap-1.5 rounded-chip border px-3 text-label font-medium backdrop-blur-xl '+
    (active?'border-amber bg-amber text-amber-ink':'border-edge-2 bg-glass text-ink-2')}>
   {Icon&&<Icon size={14} aria-hidden="true"/>}{label} {count}
  </button>;
@@ -96,7 +96,7 @@ export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams(),toast=useToast(),reduce=!!useReducedMotion();
  const query=useAtlas(),pin=usePinConcept(),svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior|null>(null);
  const [view,setView]=useState<ZoomTransform>({x:0,y:0,k:1});
- const viewRef=useRef(view),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),longPressed=useRef<string|null>(null);
+ const viewRef=useRef(view),userMoved=useRef(false),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),longPressed=useRef<string|null>(null);
  const [positions,setPositions]=useState<Record<string,Point>>({}),[selectedId,setSelectedId]=useState<string|null>(null);
  const [filter,setFilter]=useState<Filter>('all'),[menuId,setMenuId]=useState<string|null>(null);
  const focus=params.get('focus');
@@ -104,6 +104,7 @@ export default function Page(){
  const layout=useMemo(()=>graph?layoutAtlas(graph):null,[graph]);
  const nodeList=layout?.nodes??[],selected=nodeList.find(n=>n.id===selectedId)??null;
  const byId=layout?.byId;
+ const labels=useMemo(()=>visibleAtlasLabels(nodeList.map(n=>({...n,...positions[n.id]})),selectedId),[nodeList,positions,selectedId]);
  const countAll=nodeList.length,countRevisit=nodeList.filter(n=>n.status==='revisit').length,
    countDone=nodeList.filter(n=>n.status==='demonstrated').length;
  useEffect(()=>{viewRef.current=view},[view]);
@@ -111,33 +112,35 @@ export default function Page(){
   const element=svg.current,model=layout;
   if(!element||!model||!zoomRef.current)return;
   const size=element.getBoundingClientRect();
-  const t=fitAtlas(model.nodes.map(n=>positions[n.id]??n),size.width,size.height,Math.min(90,size.width*.13));
+  const t=fitAtlasViewport(model.nodes.map(n=>positions[n.id]??n),size.width,size.height);
+  userMoved.current=false;
   zoomRef.current.transform(select(element),zoomIdentity.translate(t.x,t.y).scale(t.k));
  },[layout,positions]);
  const handleZoom=useCallback((factor:number)=>{
   if(!svg.current||!zoomRef.current)return;
+  userMoved.current=true;
   zoomRef.current.scaleBy(select(svg.current),factor);
  },[]);
  useEffect(()=>{
   const element=svg.current,model=layout;
   if(!element||!model)return;
-  const behavior=zoom<SVGSVGElement,unknown>().scaleExtent([.4,3])
+  const behavior=zoom<SVGSVGElement,unknown>().scaleExtent([.2,3])
    .filter(event=>!(event.target instanceof Element&&event.target.closest('[data-node]')) &&
        ((event as MouseEvent).button===undefined||(event as MouseEvent).button===0))
-   .on('zoom',event=>setView(event.transform));
+   .on('zoom',event=>{if('sourceEvent' in event && event.sourceEvent)userMoved.current=true;setView(event.transform)});
   zoomRef.current=behavior;
   const selection=select(element);
   selection.call(behavior);
   selection.on('dblclick.zoom',null);
   const box=element.getBoundingClientRect();
-  const fitted=fitAtlas(model.nodes,box.width,box.height,Math.min(90,box.width*.13));
+  const fitted=fitAtlasViewport(model.nodes,box.width,box.height);
   behavior.transform(selection,zoomIdentity.translate(fitted.x,fitted.y).scale(fitted.k));
   const resize=new ResizeObserver(()=>{
    // Preserve the user's zoom when rotating; fit only if no interaction has yet occurred.
    if(!svg.current||!zoomRef.current)return;
    const b=svg.current.getBoundingClientRect();
-   if(b.width&&b.height&&viewRef.current.k===1) {
-    const f=fitAtlas(model.nodes,b.width,b.height,Math.min(90,b.width*.13));
+   if(b.width&&b.height&&!userMoved.current) {
+    const f=fitAtlasViewport(model.nodes,b.width,b.height);
     zoomRef.current.transform(select(svg.current),zoomIdentity.translate(f.x,f.y).scale(f.k));
    }
   });
@@ -263,7 +266,7 @@ export default function Page(){
       pointerEvents="none"/>;
     })}
     {nodeList.map(node=><WorldNode key={node.id} node={node} position={positions[node.id]??node}
-     selected={selectedId===node.id} dim={filtered(node)} reduce={reduce}
+     zoomScale={view.k} selected={selectedId===node.id} dim={filtered(node)} reduce={reduce} showLabel={labels.has(node.id)}
      onSelect={selectNode} onDown={onNodeDown} onMove={onNodeMove} onUp={onNodeUp} onCancel={onNodeCancel}/>)}
    </motion.g>
   </svg>:<div className="absolute inset-0 flex items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty"
@@ -271,7 +274,7 @@ export default function Page(){
   <header className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-linear-to-b from-obsidian via-obsidian/85 to-transparent px-5 pb-9 pt-[calc(20px+env(safe-area-inset-top))]">
    <div className="pointer-events-auto flex items-center gap-3">
     <button type="button" onClick={()=>navigate(-1)} aria-label="Back" className="glass flex size-11 items-center justify-center rounded-ctl text-ink-2"><ArrowLeft size={22}/></button>
-    <h1 className="min-w-0 flex-1 text-[24px] font-semibold tracking-tight">Atlas</h1>
+    <h1 className="min-w-0 flex-1 text-title-s font-semibold tracking-tight">Atlas</h1>
     <button type="button" onClick={handleFit} aria-label="Fit all concepts" className="glass flex size-11 items-center justify-center rounded-ctl text-amber"><Waypoints size={22}/></button>
    </div>
    <div className="pointer-events-auto mt-5 flex gap-2 overflow-x-auto pb-2">
@@ -287,34 +290,34 @@ export default function Page(){
   </div>
   <motion.div initial={reduce?false:{y:20,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reduce?.15:.55}}
    className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 mx-auto max-w-[650px] rounded-t-sheet border border-edge-2 bg-glass-strong px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-5 shadow-[var(--e-float)] backdrop-blur-[22px]">
-   {!selected?<div className="flex min-h-11 items-center justify-center gap-2 text-[14px] text-ink-3">
+   {!selected?<div className="flex min-h-11 items-center justify-center gap-2 text-body text-ink-3">
     <Waypoints size={17} className="text-amber"/>{nodeList.length?'Tap an idea':'Create a plan to grow your Atlas'}
    </div>:<>
     <div className="flex items-start gap-2">
      <div className="min-w-0 flex-1">
       <div className="mb-2 flex items-center gap-2">
        <Chip tone={selected.status==='demonstrated'?'success':selected.status==='revisit'||selected.status==='in_progress'?'amber':'quiet'}>{names[selected.status]}</Chip>
-       <span className="text-[12px] text-ink-3">{graph.subjects.find(x=>x.id===selected.subjectId)?.name??'Mathematics'}</span>
+       <span className="text-label text-ink-3">{graph.subjects.find(x=>x.id===selected.subjectId)?.name??'Mathematics'}</span>
       </div>
-      <h2 className="text-[21px] font-semibold">{selected.name}</h2>
+      <h2 className="text-title font-semibold">{selected.name}</h2>
      </div>
      <button type="button" onClick={hideSelection} aria-label="Close concept details" className="flex size-11 shrink-0 items-center justify-center rounded-ctl bg-fill-1 text-ink-2"><X size={20}/></button>
     </div>
-    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-[16px] leading-relaxed text-ink-soft">{selected.blurb}</p>}
+    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-headline leading-relaxed text-ink-soft">{selected.blurb}</p>}
     <div className="mt-4 flex flex-wrap items-center gap-2">
      {selected.checkpointRefs.slice(0,3).map(ref=><Chip key={ref.projectSlug+ref.code} tone="quiet">{ref.code}</Chip>)}
      <Chip tone="quiet">{selected.dueCards} due</Chip>
      {selected.pinX!==null&&selected.pinY!==null&&<Chip tone="quiet" icon={LockKeyhole}>Pinned</Chip>}
      {menuId===selected.id&&<button type="button" onClick={()=>unpinNode(selected)} disabled={pin.isPending}
-       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-[13px] text-amber"><PinOff size={16}/>Unpin</button>}
+       className="flex min-h-11 items-center gap-2 rounded-chip border border-amber-line bg-amber-tint px-3 text-label text-amber"><PinOff size={16}/>Unpin</button>}
     </div>
     <div className="mt-5 flex items-center gap-2">
      {selected.checkpointRefs[0]?<Link to={'/p/'+selected.checkpointRefs[0].projectSlug+'/cp/'+selected.checkpointRefs[0].code}
-       className="lit flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-btn px-3 text-[14px] font-semibold">
+       className="lit flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-btn px-3 text-body font-semibold">
        Open checkpoint<ChevronRight size={18}/></Link>:
       <Button size="m" className="flex-1" disabled>Not in a checkpoint</Button>}
      <Link to={'/review/run?concept='+encodeURIComponent(selected.slug)}
-      className="ghost flex min-h-[52px] items-center justify-center gap-1 rounded-btn px-4 text-[13px]">
+      className="ghost flex min-h-[52px] items-center justify-center gap-1 rounded-btn px-4 text-label">
       Review {selected.dueCards}</Link>
     </div>
    </>}

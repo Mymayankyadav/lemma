@@ -1,4 +1,5 @@
 import type { Variants, Transition } from 'motion/react';
+import {isCalm} from './useCalm';
 /** UI-1 motion primitives. All movements collapse to a short fade for reduced motion. */
 export const easeOut = [0.16, 1, 0.3, 1] as const;
 export const easeInOut = [0.65, 0, 0.35, 1] as const;
@@ -16,5 +17,19 @@ export const flyUp: Variants = {exit:{opacity:0,y:-160,transition:{duration:dura
 export const sheet: Variants = {hidden:{y:'100%'},visible:{y:0,transition:springs.sheet},exit:{y:'100%',transition:{duration:durations.base}}};
 export const pop: Variants = {hidden:{opacity:0,scale:0.8},visible:{opacity:1,scale:1,transition:springs.pop}};
 export const reduced: Variants = fade;
-export function variantFor(variants:Variants, reduce:boolean):Variants { return reduce ? fade : variants; }
+export function variantFor(variants:Variants, reduce:boolean):Variants { return reduce || isCalm() ? fade : variants; }
 export const tabTransition:Transition={duration:0.2,ease:easeOut};
+
+/* UI-5a timing contract. Feature tasks use these for their Euclid-specific gestures. */
+export const euclidTiming={
+ construction:1.4,climber:.7,revealRule:.3,revealAnswer:.25,
+ approvalPen:.28,tab:.2,drill:.28,deal:.48,halo:2.4,drift:38,
+} as const;
+export const euclidTransitions={
+ tab:{duration:euclidTiming.tab,ease:easeInOut},
+ drill:{duration:euclidTiming.drill,ease:easeOut},
+ climber:{duration:euclidTiming.climber,ease:easeInOut},
+ revealRule:{duration:euclidTiming.revealRule,ease:easeInOut},
+ revealAnswer:{duration:euclidTiming.revealAnswer,ease:easeOut},
+ approvalPen:{duration:euclidTiming.approvalPen,ease:easeInOut},
+} as const;

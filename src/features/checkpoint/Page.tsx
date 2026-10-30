@@ -3,7 +3,7 @@ import {BookOpen,Check,ChevronRight,Circle,Clock3,HelpCircle,Layers,MessageCircl
 import {useCheckpoint,useProject,useSettings} from '../../data/hooks';
 import type {CheckpointView} from '../../data/types';
 import {chatLink,studyPrompt} from '../../lib/chat';
-import {Screen} from '../../ui/Screen';
+import ProjectPage from '../project/Page';
 import {Sheet} from '../../ui/Sheet';
 import {Chip} from '../../ui/Chip';
 import {Button} from '../../ui/Button';
@@ -27,7 +27,10 @@ export default function Page(){
   window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
  }
  const detail=query.data,view=detail?.view;
- return <Screen title="Checkpoint" back={'/p/'+slug}>
+ return <>
+  {/* A checkpoint is a sheet over its actual project path, not a blank route. */}
+  <div data-sheet-background aria-hidden="true" inert><ProjectPage/></div>
+  <h1 className="sr-only">Checkpoint</h1>
   <Sheet open onClose={close} title={view?.title??'Checkpoint'}>
    {query.isPending?<div className="flex flex-col gap-3"><Skeleton h={35}/><Skeleton h={70}/><Skeleton h={150}/></div>:
     query.error||!detail||!view?<EmptyState art="plug" title="Checkpoint unavailable" body="Try again or return to the project."
@@ -37,13 +40,13 @@ export default function Page(){
       <Chip tone="amber">{view.code}</Chip>
       <Chip tone={view.ui==='done'?'success':view.ui==='revisit'?'amber':'quiet'}>{statusTitles[view.ui]}</Chip>
      </div>
-     <p className="font-math text-[18px] italic leading-relaxed text-ink-soft">{detail.objective}</p>
+     <p className="font-math text-title-s italic leading-relaxed text-ink-soft">{detail.objective}</p>
      <section className="flex flex-col gap-2 rounded-ctl border border-edge bg-raised p-4">
-      <h3 className="flex items-center gap-2 text-[13px] font-semibold text-ink-2"><Target size={17} className="text-amber"/>Evidence required</h3>
-      <p className="text-[14px] leading-relaxed text-ink-soft">{detail.criterion}</p>
+      <h3 className="flex items-center gap-2 text-label font-semibold text-ink-2"><Target size={17} className="text-amber"/>Evidence required</h3>
+      <p className="text-body leading-relaxed text-ink-soft">{detail.criterion}</p>
      </section>
      <section aria-label="Checkpoint steps">
-      <h3 className="mb-3 text-[15px] font-semibold text-ink-2">Steps</h3>
+      <h3 className="mb-3 text-body-l font-semibold text-ink-2">Steps</h3>
       <ol className="flex flex-col gap-3">
        {detail.steps.map((step,i)=>{
         const complete=i<view.currentStep,active=i===view.currentStep;
@@ -51,7 +54,7 @@ export default function Page(){
          <span className={'flex size-7 shrink-0 items-center justify-center rounded-full '+(complete?'bg-amber text-amber-ink':active?'border border-amber bg-amber-tint text-amber':'border border-edge-3 text-ink-3')}>
           {complete?<Check size={16} aria-hidden="true"/>:active?<Circle size={10} fill="currentColor" aria-hidden="true"/>:i+1}
          </span>
-         <span className={'min-w-0 flex-1 pt-1 text-[14px] '+(complete?'text-ink-soft':active?'font-semibold text-ink':'text-ink-3')}>{step}</span>
+         <span className={'min-w-0 flex-1 pt-1 text-body '+(complete?'text-ink-soft':active?'font-semibold text-ink':'text-ink-3')}>{step}</span>
         </li>;
        })}
       </ol>
@@ -60,43 +63,43 @@ export default function Page(){
       <Chip icon={BookOpen}>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Chip>
      </div>}
      {detail.prereqs.length>0&&<section aria-label="Prerequisites">
-      <h3 className="mb-2 text-[14px] font-semibold text-ink-2">Prerequisites</h3>
+      <h3 className="mb-2 text-body font-semibold text-ink-2">Prerequisites</h3>
       <div className="flex flex-wrap gap-2">{detail.prereqs.map(p=><button key={p} type="button"
-       onClick={()=>navigate('/p/'+slug+'/cp/'+p)} className="min-h-11 rounded-chip bg-fill-1 px-3 text-[13px] text-amber">{p}</button>)}</div>
+       onClick={()=>navigate('/p/'+slug+'/cp/'+p)} className="min-h-11 rounded-chip bg-fill-1 px-3 text-label text-amber">{p}</button>)}</div>
      </section>}
      {detail.concepts.length>0&&<section aria-label="Concepts">
-      <h3 className="mb-2 text-[14px] font-semibold text-ink-2">Concepts</h3>
+      <h3 className="mb-2 text-body font-semibold text-ink-2">Concepts</h3>
       <div className="flex flex-wrap gap-2">{detail.concepts.map(concept=><button key={concept.slug} type="button"
        onClick={()=>navigate('/atlas?focus='+encodeURIComponent(concept.slug))}
-       className="min-h-11 rounded-chip border border-edge-2 bg-fill-1 px-3 text-[13px] text-ink-soft">{concept.name}</button>)}</div>
+       className="min-h-11 rounded-chip border border-edge-2 bg-fill-1 px-3 text-label text-ink-soft">{concept.name}</button>)}</div>
      </section>}
-     {detail.recheckPrompt&&<div className="flex items-start gap-2 rounded-ctl bg-amber-tint px-4 py-3 text-[13px] text-amber">
+     {detail.recheckPrompt&&<div className="flex items-start gap-2 rounded-ctl bg-amber-tint px-4 py-3 text-label text-amber">
       <RotateCcw size={18} className="mt-0.5 shrink-0"/><span>{view.ui==='revisit'?'Re-check due':'Next re-check'}: {detail.recheckPrompt}</span>
      </div>}
      {detail.events.length>0&&<section aria-label="Recent evidence">
-      <h3 className="mb-3 text-[14px] font-semibold text-ink-2">Recent evidence</h3>
+      <h3 className="mb-3 text-body font-semibold text-ink-2">Recent evidence</h3>
       <div className="flex flex-col gap-3">{detail.events.slice(0,8).map(event=><article key={event.id}
        className="rounded-ctl border border-edge bg-raised px-4 py-3">
-       <div className="flex items-center gap-2 text-[12px] text-ink-3">
+       <div className="flex items-center gap-2 text-label text-ink-3">
         {event.kind==='hint'?<HelpCircle size={15}/>:<MessageCircle size={15}/>}
         <span className="flex-1 capitalize">{event.kind.replaceAll('_',' ')}</span>
         {event.hintLevel!==null&&<span>{'Hint '+event.hintLevel}</span>}
         <span>{new Date(event.createdAt).toLocaleDateString()}</span>
        </div>
-       <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-ink-soft">{event.body}</p>
+       <p className="mt-2 line-clamp-3 text-label leading-relaxed text-ink-soft">{event.body}</p>
       </article>)}</div>
      </section>}
      <Button size="xl" onClick={()=>{void study()}} icon={MessageCircle} className="w-full">Study this</Button>
      <div className="flex flex-wrap gap-2">
-      <button type="button" onClick={()=>navigate('/review')} className="flex min-h-11 items-center gap-2 rounded-chip bg-fill-1 px-3 text-[13px] text-ink-2">
+      <button type="button" onClick={()=>navigate('/review')} className="flex min-h-11 items-center gap-2 rounded-chip bg-fill-1 px-3 text-label text-ink-2">
        <Layers size={17} aria-hidden="true"/>{detail.cardsCount} cards <ChevronRight size={14}/>
       </button>
       {detail.sessions.length>0&&<button type="button" onClick={()=>navigate('/s/'+slug+'/'+detail.sessions[0].number)}
-       className="flex min-h-11 items-center gap-2 rounded-chip bg-fill-1 px-3 text-[13px] text-ink-2">
+       className="flex min-h-11 items-center gap-2 rounded-chip bg-fill-1 px-3 text-label text-ink-2">
        <Clock3 size={16} aria-hidden="true"/>{detail.sessions.length} sessions <ChevronRight size={14}/>
       </button>}
      </div>
     </div>}
   </Sheet>
- </Screen>;
+ </>;
 }

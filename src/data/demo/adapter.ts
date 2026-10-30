@@ -66,6 +66,7 @@ import { parseSteps } from "../../lib/fsrs";
 import legacyRender from "../../lib/render/render.js";
 import { slugify } from "../../lib/text";
 import { DAY } from "../../lib/calendar";
+import {reviewForecast} from "../../lib/review-forecast";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const invalid = (message: string): never => {
@@ -110,6 +111,11 @@ export interface DemoOptions {
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
+  async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
+    const ids=new Set(this.store.projects.filter(p=>String(p.status)!=='archived').map(p=>p.id));
+    const cards=this.store.notes.filter(n=>n.note.status==='active'&&ids.has(n.projectId)).flatMap(n=>n.cards.map(c=>c.state));
+    return reviewForecast(cards,this.store.settings,this.now());
+  }
   private store: DemoStore;
   private readonly now: () => number;
   constructor(options: DemoOptions = {}) {

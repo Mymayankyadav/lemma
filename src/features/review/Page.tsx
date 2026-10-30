@@ -6,6 +6,7 @@ import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
+import {Button} from '../../ui/Button';
 import {Check} from '../../ui/Check';
 import {Glyph} from '../../ui/Glyph';
 import {IconButton} from '../../ui/IconButton';
@@ -95,13 +96,13 @@ export default function Page(){
     <div className="flex items-center justify-between gap-4">
      <div>
       <div className="flex items-baseline gap-2">
-       <strong className="text-[64px] font-semibold leading-none tracking-tight tabular-nums">{selectedCount}</strong>
-       <span className="text-[17px] text-ink-2">due</span>
+       <strong className="font-[var(--font-display)] text-num-xl font-semibold leading-none tracking-tight tabular-nums">{selectedCount}</strong>
+       <span className="text-answer text-ink-2">due</span>
       </div>
-      <p className="mt-2 flex items-center gap-2 text-[13px] text-ink-3"><Clock3 size={16} aria-hidden="true"/>
+      <p className="mt-2 flex items-center gap-2 text-label text-ink-3"><Clock3 size={16} aria-hidden="true"/>
        {selectedCount>0?'about '+estimated+' min':'All clear for today'}</p>
      </div>
-     <Orb size={76} icon={Play} label="Start review" disabled={!selectedCount} onClick={()=>start()}/>
+     <Button aria-label="Start review" icon={Play} disabled={!selectedCount} onClick={()=>start()}>Start</Button>
     </div>
     <div className="mt-5 border-t border-edge pt-3">
      <div className="flex items-center gap-2"><Shuffle size={18} aria-hidden="true" className="text-amber"/>
@@ -114,35 +115,35 @@ export default function Page(){
     </div>
    </Slab>
    <section aria-label="Decks" className="flex flex-col gap-1">
-    <h2 className="mb-2 text-[16px] font-semibold text-ink-2">Decks</h2>
+    <h2 className="mb-2 text-headline font-semibold text-ink-2">Decks</h2>
     {nodes.map(node=>{
      const children=node.children.filter(c=>c.due>0);
      const selection=children.length?children.map(c=>enabled.has(c.key)):[enabled.has(node.key)];
      const checked=selection.every(Boolean)?true:selection.some(Boolean)?'mixed':false;
      return <div key={node.key} className="border-b border-edge/70 pb-2">
       <div className="flex min-h-12 items-center gap-3">
-       <span className="[&>label]:text-[0px]"><Check checked={node.due===0?false:checked} disabled={node.due===0} label={'Include '+node.label}
+       <span className="[&>label]:text-[length:var(--type-hidden)]"><Check checked={node.due===0?false:checked} disabled={node.due===0} label={'Include '+node.label}
         onChange={value=>setProject(node,value)}/></span>
        <Glyph size={32} subject={node.glyph}/>
-       <span className="min-w-0 flex-1 truncate text-[16px] font-medium">{node.label}</span>
-       <span className={'text-[15px] tabular-nums '+(node.due?'text-amber':'text-ink-3')}>{node.due}</span>
+       <span className="min-w-0 flex-1 truncate text-headline font-medium">{node.label}</span>
+       <span className={'text-body-l tabular-nums '+(node.due?'text-amber':'text-ink-3')}>{node.due}</span>
       </div>
       {children.map(child=><div key={child.key} className="ml-7 flex min-h-11 items-center gap-2">
-       <span className="[&>label]:text-[0px]"><Check size={20} checked={enabled.has(child.key)} label={'Include '+child.label}
+       <span className="[&>label]:text-[length:var(--type-hidden)]"><Check size={20} checked={enabled.has(child.key)} label={'Include '+child.label}
         onChange={v=>setCheckpoint(node,child,v)}/></span>
-       <span className="shrink-0 text-[12px] font-semibold text-ink-3">{child.key.split(':').at(-1)}</span>
-       <span className="min-w-0 flex-1 truncate text-[14px] text-ink-soft">{child.label}</span>
-       <span className="text-[14px] tabular-nums text-amber">{child.due}</span>
+       <span className="shrink-0 text-label font-semibold text-ink-3">{child.key.split(':').at(-1)}</span>
+       <span className="min-w-0 flex-1 truncate text-body text-ink-soft">{child.label}</span>
+       <span className="text-body tabular-nums text-amber">{child.due}</span>
       </div>)}
      </div>;
     })}
    </section>
    {groupedSessions.length>0&&<section aria-label="From sessions" className="flex flex-col gap-3">
-    <h2 className="text-[16px] font-semibold text-ink-2">From sessions</h2>
+    <h2 className="text-headline font-semibold text-ink-2">From sessions</h2>
     <div className="flex flex-wrap gap-2">{groupedSessions.map(s=><Chip key={s.id} tone="quiet" size={40}
      onClick={()=>start(s.id)}>{'S'+s.number+' · '+s.goal.slice(0,22)+' · '+s.count}</Chip>)}</div>
    </section>}
-   {selectedCount===0&&<p className="text-[13px] text-ink-3">No cards due in these decks. Choose another deck or return tomorrow.</p>}
+   {selectedCount===0&&<p className="text-label text-ink-3">No cards due in these decks. Choose another deck or return tomorrow.</p>}
    </>
   }
  </Screen>;

@@ -27,3 +27,15 @@ test('global offline banner explicitly marks unconfirmed writes and clears on re
  await context.setOffline(false)
  await expect(page.getByRole('status').filter({hasText:/You're offline. Answers and approvals/})).toHaveCount(0)
 })
+
+test('demo PWA readiness never obscures review sheet actions',async({page})=>{
+ await page.goto('./?demo=1#/review')
+ await expect(page.getByRole('heading',{name:'Review',level:1})).toBeVisible()
+ await page.getByRole('button',{name:'Start review'}).click()
+ await page.getByRole('button',{name:'Note for tutor'}).click()
+ await expect(page.getByRole('dialog',{name:'For your tutor'})).toBeVisible()
+ // Wait until the registration is active; the live-mode ready toast is emitted during installation.
+ await page.evaluate(async()=>{if('serviceWorker' in navigator)await navigator.serviceWorker.ready})
+ await expect(page.getByText('Lemma is ready to open offline. Changes still require a connection to save.')).toHaveCount(0)
+ await page.screenshot({path:'test-results/screens/integration-demo-pwa-sheet.png',fullPage:true})
+})
