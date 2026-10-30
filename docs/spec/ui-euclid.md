@@ -1,5 +1,7 @@
 # Lemma UI v2: Euclid by day, Euclid at night
 
+> Superseded for look and appearance by `v3.md` (30 Oct 14:48): Graph paper day and night only. Spacing, shape, component and screen-content rules here still apply where `v3.md` does not change them.
+
 The owner's final choice (30 Oct 2026, 10:48): **Euclid by day and Euclid at night by night, switching with the phone's light and dark mode**, the **Ascent** timeline (Metro as the alternative), the **Orbits** Atlas (Branches and Outline kept), **compact** text and **lively** motion. Eight worlds stay selectable in Settings › Appearance: Obsidian lamp, Graph paper, Euclid, Euclid at night, Scriptorium, Astrolabe, Lamp and compass, Graph paper at night.
 
 This document is the visual source of truth for every screen. It overrides `design.md`, `themes.md` and `lab.md` wherever they differ. The working reference is `docs/design/lab/lemma-lab.html` (Today, Paths, Atlas, Lab tabs, both Euclid worlds, every rule below already applied).
