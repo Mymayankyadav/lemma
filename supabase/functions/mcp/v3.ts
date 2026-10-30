@@ -92,3 +92,8 @@ export function scheduleHint(
   if (delta <= -3) return ' | ' + Math.abs(delta) + ' days ahead of plan'
   return ' | on schedule'
 }
+
+/** Accept only positive decimal PDF page indexes; printed labels may be Roman. */
+export function isPdfPageIndex(value:string):boolean {
+  return /^\d+$/.test(value) && Number(value)>0
+}
