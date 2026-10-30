@@ -39,7 +39,17 @@ export interface Settings {
 }
 export interface Style { key: string; name: string; icon: string; instructions: string; position: number }
 export interface Subject { id: string; name: string; glyph: Glyph; hue: Hue; position: number }
+/** Bounded server-computed segment for the Paths mini Metro (ST-5/ST-1). */
+export interface ProjectStageProgress {
+ label: string; firstCode: string; lastCode: string
+ done: number; total: number; overdue: number
+ schedule: 'complete' | 'behind' | 'dated' | 'unscheduled'
+}
 export interface ProjectSummary {
+ /** Optional until both demo/live adapters supply the ST-5 stage aggregate. */
+ stageProgress?: ProjectStageProgress[]
+ /** Date-grounded headline, null when there is no schedule evidence. */
+ scheduleHeadline?: string | null
  pinned?: boolean; system?: boolean
  targetDate?: IsoDate | null; targetLabel?: string | null
  id: string; slug: string; title: string; subject: Subject; status: ProjectStatus; done: number; total: number
