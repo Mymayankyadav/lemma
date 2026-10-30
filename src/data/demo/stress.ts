@@ -93,9 +93,9 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   // Long faces and four representative maths stress cases remain real card content.
   const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
   const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
-  const matrix = String.raw`$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
-  const aligned = String.raw`$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
-  const sum = String.raw`$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
+  const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
+  const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
+  const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
   const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
   data.notes = [];
   data.reviews = [];
