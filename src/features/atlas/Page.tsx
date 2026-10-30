@@ -174,10 +174,14 @@ export default function Page(){
   select(selectedId===node.id?null:node.id);
  };
  const focusSlug=params.get('focus');
+ const seen=useRef<string|null>(null);
  useEffect(()=>{
-  // An incoming ?focus= link (from elsewhere in the app) unfolds to the idea and opens it.
-  // Selections made here record the slug they write, so they never re-trigger this.
-  if(!tree||!expanded||!focusSlug||focusSlug===written.current)return;
+  // React only when ?focus= itself changes to a slug this page did not write: an incoming
+  // link from elsewhere unfolds to the idea and opens it. (The URL updates a render after
+  // a selection here, so comparing against the current selection would undo it.)
+  if(!tree||!expanded||focusSlug===seen.current)return;
+  seen.current=focusSlug;
+  if(!focusSlug||focusSlug===written.current)return;
   written.current=focusSlug;
   const found=[...tree.nodes.values()].find(n=>n.slug===focusSlug);
   if(found){reveal(found.id);setSelectedId(found.id);setDetails(true)}
