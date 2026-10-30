@@ -586,7 +586,7 @@ export class DemoAdapter implements LemmaApi {
             code: op.code ?? this.code(p.id, op.after, rows),
             title: op.title,
             position: this.position(p.id, op.after, undefined, rows),
-            stage: op.stage ?? rows.find(cp=>cp.projectId===p.id&&cp.code===op.after)?.stage ?? null,
+            stage: op.stage ?? rows.find(cp=>cp.projectId===p.id&&cp.code===op.after)?.stage ?? undefined,
             objective: op.objective,
             criterion: op.criterion,
             steps: [...op.steps],
@@ -993,7 +993,7 @@ export class DemoAdapter implements LemmaApi {
       code,
       title: input.title,
       position,
-      stage: input.stage ?? null,
+      stage: input.stage ?? undefined,
       objective: input.objective,
       criterion: input.criterion,
       steps: [...input.steps],
@@ -1129,7 +1129,7 @@ export class DemoAdapter implements LemmaApi {
                 ...op,
                 stage: op.stage ?? this.store.checkpoints.find(row =>
                   row.projectId === project.id && row.code === op.after
-                )?.stage ?? null,
+                )?.stage ?? undefined,
               },
               op.code ?? this.code(project.id, op.after),
               this.position(project.id, op.after),
