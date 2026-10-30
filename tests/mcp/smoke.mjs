@@ -31,7 +31,8 @@ const self=await res.json();
 for(const step of self.steps||[])console.log((step.ok?'PASS':'FAIL')+' '+step.name+(step.ok?'':' — '+step.detail));
 assert.equal(res.ok,true,'selftest HTTP error');
 assert.equal(self.ok,true,'selftest did not pass');
-console.log('PASS selftest');
+assert.equal(self.steps?.length,18,'selftest did not complete all checks and cleanup');
+console.log('PASS selftest and verified cleanup');
 const options=await fetch(url,{method:'OPTIONS'});
 assert.equal(options.status,204,'OPTIONS must return HTTP 204');
 assert.equal(options.headers.get('Access-Control-Allow-Origin'),'*','CORS origin missing');
@@ -61,4 +62,8 @@ for(const t of tools.tools){
   }
 }
 console.log('PASS tools/list: 22 tools, '+JSON.stringify(tools).length+' characters');
+const resumed=await call('tools/call',{name:'resume',arguments:{}});
+const resumeText=(resumed.content||[]).map(item=>item.text||'').join('\n');
+assert.doesNotMatch(resumeText,/zz-selftest/i,'self-test leaked into owner resume packet');
+console.log('PASS self-test fixtures excluded from owner resume');
 console.log('PASS all MCP smoke checks');
