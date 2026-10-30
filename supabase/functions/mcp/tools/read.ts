@@ -3,7 +3,7 @@ import { project, checkpoints, checkpoint, session, source } from '../resolve.ts
 import { settings, packet } from '../packet.ts';
 import { day, ui, display } from '../derive.ts';
 import { cut, capped, date, pageRange, number } from '../text.ts';
-import { sourceLine } from '../v3.ts';
+import { sourceLine, isPdfPageIndex } from '../v3.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='prompt'){const st=await settings(c),p=a.project?await project(c,a.project):null;return ['OWNER',st.master_prompt||'(no master prompt)',p?.prompt||''].filter(Boolean).join('\n');}
@@ -121,7 +121,7 @@ export async function readPages(c:Context,a:any):Promise<string>{
  const readable=selected.filter((x:any)=>x.has_text&&x.page_count!==0);
  if(!readable.length)return 'These PDFs have no extractable text. Ask the student to paste the passage or read the attached PDFs.';
  const labels=pageRange(a.from,a.to);
- if(a.pdf&&labels.some((x:string)=>!/^\\d+$/.test(x)||Number(x)<1))
+ if(a.pdf&&labels.some((x:string)=>!isPdfPageIndex(x)))
    throw Error('PDF page indexes must be positive integers');
  let q=scoped(c,'source_pages').in('source_id',readable.map((x:any)=>x.id));
  if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');
@@ -132,13 +132,13 @@ export async function readPages(c:Context,a:any):Promise<string>{
  const parts:string[]=[];
  for(const row of data.slice(0,5)){
   const src=readable.find((x:any)=>x.id===row.source_id);
-  const head='=== '+(src?.short||'?')+' "'+cut(src?.title||'',50)+'" p.'+(row.label||row.page)+' (pdf '+row.page+') ===\\n';
-  const room=12000-parts.join('\\n').length-head.length-80;
+  const head='=== '+(src?.short||'?')+' "'+cut(src?.title||'',50)+'" p.'+(row.label||row.page)+' (pdf '+row.page+') ===\n';
+  const room=12000-parts.join('\n').length-head.length-80;
   if(room<=0)break;
   parts.push(head+String(row.body||'').slice(0,room));
   if(String(row.body||'').length>room){parts.push('[cut, call again by source from p.'+(Number(row.page)+1)+']');break}
  }
- return parts.join('\\n').slice(0,12000);
+ return parts.join('\n').slice(0,12000);
 }
 export async function search(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project);
