@@ -79,3 +79,18 @@ test('UI-6a appearance exposes only Automatic, Day and Night and persists',async
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
  await page.screenshot({path:'test-results/screens/review/ui6a-settings-night.png',fullPage:true});
 });
+
+test('UI-6a migrates obsolete stored worlds and fixes compact calm mode',async({page})=>{
+ await page.emulateMedia({colorScheme:'light'});
+ await page.addInitScript(()=>{
+  localStorage.setItem('lemma.ui',JSON.stringify({theme:'euclid-night',density:'comfortable',effects:'rich'}));
+ });
+ await page.goto('/lemma/?demo=1#/settings');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+ await expect(page.locator('html')).toHaveAttribute('data-density','compact');
+ await expect(page.locator('html')).toHaveAttribute('data-effects','calm');
+ await expect(page.getByRole('radiogroup',{name:'Appearance mode'}).getByRole('radio',{name:/^Automatic /})).toHaveAttribute('aria-checked','true');
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('lemma.ui')||'{}'))).toEqual({mode:'auto'});
+ await page.emulateMedia({colorScheme:'dark'});
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
+});
