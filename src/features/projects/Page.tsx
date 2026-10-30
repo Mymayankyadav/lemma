@@ -51,15 +51,24 @@ function ProjectRow({project}:{project:ProjectSummary}){
   onClickCapture={event=>{if(longPressed.current){event.preventDefault();event.stopPropagation();longPressed.current=false}}}
   onPointerUp={clear} onPointerCancel={clear} onPointerLeave={clear}>
   <div className="flex items-start gap-2">
-   <Link to={'/p/'+project.slug} className="min-w-0 flex-1 rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
-    <div className="flex items-center gap-2">
-     <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
-     <span className="min-w-0 flex-1 break-words text-body-l font-semibold">{project.title}</span>
-     {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
-     <ChevronRight size={17} className="shrink-0 text-ink-3" aria-hidden="true"/>
-    </div>
-    <div className="mt-1 text-caption text-ink-2">{project.current?'Now '+project.current.code+' '+project.current.title:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
-   </Link>
+   {project.status==='archived'?
+    <button type="button" onClick={()=>setMenu(true)} aria-label={'Restore options for '+project.title}
+     className="min-w-0 flex-1 rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-amber">
+     <span className="flex items-center gap-2">
+      <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
+      <span className="min-w-0 flex-1 break-words text-body-l font-semibold">{project.title}</span>
+      <span className="text-caption text-ink-2">Archived · restore</span>
+     </span>
+    </button>:
+    <Link to={'/p/'+project.slug} className="min-w-0 flex-1 rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
+     <div className="flex items-center gap-2">
+      <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
+      <span className="min-w-0 flex-1 break-words text-body-l font-semibold">{project.title}</span>
+      {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
+      <ChevronRight size={17} className="shrink-0 text-ink-3" aria-hidden="true"/>
+     </div>
+     <div className="mt-1 text-caption text-ink-2">{project.current?'Now '+project.current.code+' '+project.current.title:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
+    </Link>}
    <button type="button" aria-label={'Actions for '+project.title} aria-expanded={menu} aria-haspopup="menu"
     onClick={()=>setMenu(value=>!value)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-edge text-ink-2">
     <MoreHorizontal size={19}/>
