@@ -6,7 +6,7 @@ import type {Hue,IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
 import {isPdfFile} from '../../pdf/ingest';
 import {slugify} from '../../lib/text';
-import {Screen} from '../../ui/Screen';
+import ProjectsPage from '../projects/Page';
 import {Sheet} from '../../ui/Sheet';
 import {Chip} from '../../ui/Chip';
 import {Glyph} from '../../ui/Glyph';
@@ -104,8 +104,10 @@ export default function Page(){
  const canSubmit=Boolean(name.trim()&&goal.trim()&&subjectId&&style&&(!fileError||(created&&file)));
  const preparing=subjects.isPending||styles.isPending;
  const prompt=planPrompt(name.trim()||'your project');
- return <Screen title="New project" back="/projects">
-  <div className="pointer-events-none opacity-25"><div className="h-40 rounded-hero bg-slab"/></div>
+ return <>
+  {/* Keep the real parent screen in place beneath this route-backed modal. */}
+  <div data-sheet-background aria-hidden="true" inert><ProjectsPage/></div>
+  <h1 className="sr-only">New project</h1>
   <Sheet open onClose={closeNewProject} title="New project">
    {preparing?<div className="flex flex-col gap-4"><Skeleton h={50}/><Skeleton h={80}/><Skeleton h={60}/></div>:
     subjects.error||styles.error?<EmptyState art="plug" title="Setup couldn't load" body="Check your connection and try again."
@@ -177,5 +179,5 @@ export default function Page(){
      </div>
     </form>}
   </Sheet>
- </Screen>;
+ </>;
 }
