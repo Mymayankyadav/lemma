@@ -25,7 +25,7 @@ export function groupStages(checkpoints:readonly CheckpointView[]):Stage[]{
 
 export function ProjectChips({detail}:{detail:ProjectDetail}){
  const projects=useProjects();
- const options=projects.data?.length?projects.data.filter(p=>p.status!=='done'):
+ const options=projects.data?.length?projects.data.filter(p=>p.status!=='done'||p.slug===detail.project.slug):
   [{id:detail.project.id,slug:detail.project.slug,title:detail.project.title,subject:detail.subject}];
  return <nav aria-label="Choose a path" className="flex min-w-0 gap-2 overflow-x-auto pb-1">
   {options.map(p=><Link key={p.id} to={'/p/'+p.slug} aria-current={p.slug===detail.project.slug?'page':undefined}
@@ -96,7 +96,7 @@ const labels:Record<CheckpointUi,string>={
  done:'done',revisit:'re-check',now:'in progress',next:'up next',locked:'locked',proposed:'proposed'
 };
 const marks:Record<CheckpointUi,string>={
- done:'border-amber bg-amber',revisit:'border-easy bg-success-tint',
+ done:'border-amber bg-amber',revisit:'border-hard bg-amber-tint',
  now:'border-[3px] border-amber bg-raised',next:'border-ink-2 bg-raised',
  locked:'border-dotted border-edge-3 opacity-70',proposed:'border-dashed border-amber'
 };
@@ -124,7 +124,7 @@ function StageCard({stage,slug,initiallyOpen}:{stage:Stage;slug:string;initially
     <span aria-hidden="true" className={'size-[14px] shrink-0 rounded-full border-[1.5px] '+marks[cp.ui]}/>
     <span className="w-[46px] shrink-0 rounded-code text-label tabular-nums text-ink-3">{cp.code}</span>
     <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}>{cp.title}</span>
-    <span className={'max-w-[84px] shrink-0 text-right text-caption '+(cp.ui==='revisit'?'text-easy':cp.ui==='proposed'||cp.ui==='now'?'text-amber':'text-ink-3')}>
+    <span className={'max-w-[84px] shrink-0 text-right text-caption '+(cp.ui==='revisit'?'text-hard':cp.ui==='proposed'||cp.ui==='now'?'text-amber':'text-ink-3')}>
      {cp.ui==='now'&&cp.stepsTotal>0?cp.currentStep+'/'+cp.stepsTotal:labels[cp.ui]}
     </span>
    </Link>)}
