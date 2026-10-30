@@ -51,7 +51,7 @@ Config (task P0-C): Chromium only, viewport 390 × 844, device scale 2, `colorSc
 
 ## 5. Connector test
 
-- `GET <MCP_URL>/selftest` (built in MCP-1, specified in `connector.md` §9) runs the full tool sequence on throwaway data and cleans up.
+- `GET <MCP_URL>/selftest` (built in MCP-1, specified in `connector.md` §9) runs the full tool sequence on throwaway data and cleans up. `?part=1` and `?part=2` run two independent halves (12 and 9 steps) so each request stays under the edge function's 150 s limit; the smoke calls both.
 - `tests/mcp/smoke.mjs` calls the self-test, then speaks MCP (`initialize`, `tools/list`) and checks names and size.
 - Workflow `.github/workflows/mcp-smoke.yml`: manual trigger and after every successful connector deploy; reads the `MCP_URL` repository secret; skips with a notice if it is missing.
 

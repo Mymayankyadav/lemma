@@ -13,7 +13,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || secrets.LEMMA_SUPABASE_DB_PASSWORD }}
@@ -85,8 +85,8 @@ jobs:
         run: |
           # Smoke reads the configured endpoint; never echo or print MCP_URL.
           for attempt in 1 2 3; do
-            echo "MCP smoke attempt $attempt/3 (148s maximum; no endpoint details)."
-            if timeout --signal=TERM --kill-after=5s 148s node tests/mcp/smoke.mjs; then
+            echo "MCP smoke attempt $attempt/3 (300s maximum; no endpoint details)."
+            if timeout --signal=TERM --kill-after=5s 300s node tests/mcp/smoke.mjs; then
               echo "Deployed MCP smoke passed (attempt $attempt)."
               echo '### MCP post-deploy smoke: PASS' >> "$GITHUB_STEP_SUMMARY"
               exit 0
