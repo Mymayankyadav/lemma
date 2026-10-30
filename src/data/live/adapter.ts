@@ -1,7 +1,5 @@
 import type { LemmaApi } from '../api'
 import {reviewForecast} from '../../lib/review-forecast'
-import {resumableProjects} from './project-summary'
-
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
 import { dueToday, studyDayBounds, projectProgress, conceptStatus } from '../../lib/derive'
@@ -138,24 +136,11 @@ export class LiveAdapter implements LemmaApi {
   return styleRow(checked(await db.from('styles').update(toDb(patch)).eq('user_id',uid).eq('key',key).select('*').single()) as Row)
  }
  async getHome(...args: Parameters<LemmaApi['getHome']>): ReturnType<LemmaApi['getHome']> {
-  const [projects,sessions,proposals,due]=await Promise.all([
-    this.listProjects(),this.listSessions(),this.listProposals(),
-    this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false})
-  ])
-  const visible=resumableProjects(projects)
-  const active=sessions.filter(s=>s.display!=='ended'&&visible.some(p=>p.slug===s.projectSlug))
-   .sort((a,b)=>b.lastActivityAt.localeCompare(a.lastActivityAt))[0]
-  const p=active?visible.find(x=>x.slug===active.projectSlug):visible[0]
-  const detail=p?await this.getProject(p.slug):null
-  const current=detail?.checkpoints.find(x=>x.code===active?.checkpointCode)
-    ??detail?.checkpoints.find(x=>x.ui==='now')
-  const session=active?await this.getSession(active.projectSlug,active.number):null
-  return {resume:p?{projectSlug:p.slug,projectTitle:p.title,glyph:p.subject.glyph,
-      checkpointCode:current?.code??null,checkpointTitle:current?.title??null,
-      step:session?.resumeStep??current?.currentStep??0,stepsTotal:current?.stepsTotal??0,
-      question:session?.resumeQuestion??null,objective:current?((await this.getCheckpoint(p.slug,current.code)).objective):null,
-      pausedAt:active?.lastActivityAt??p.lastActivityAt,sessionNumber:active?.number??null}:null,
-    due:due.length,pendingProposals:proposals.length,projects:visible}
+  const db=liveClient()
+  await owner(db)
+  // ST-5: a single owner-scoped RPC computes Today, the active resume target,
+  // pending count and the daily review quota without downloading full tables.
+  return checked(await db.rpc('home_summary')) as import('../types').HomeSummary
  }
  async listSubjects(...args: Parameters<LemmaApi['listSubjects']>): ReturnType<LemmaApi['listSubjects']> {
   const db=liveClient(),uid=await owner(db)
