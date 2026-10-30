@@ -8,7 +8,8 @@ import { buildServer, TOOL_NAMES } from './server.ts';
 export async function selftest(c:Context):Promise<any>{
   const steps:{name:string;ok:boolean;ms:number;detail?:string}[]=[];
   let subjectId:string|undefined,projectId:string|undefined,extraId:string|undefined,extraSubjectId:string|undefined;
-  let extraSubjectName:string|undefined;
+  let extraSubjectName:string|undefined,extraTitle:string|undefined;
+  const cleanupFailures:string[]=[];
   async function check(name:string,f:()=>Promise<void>){
     const begin=Date.now();
     try{await f();steps.push({name,ok:true,ms:Date.now()-begin})}
@@ -19,7 +20,7 @@ export async function selftest(c:Context):Promise<any>{
   try{
     await check('fixtures',async()=>{
       const subject=await insert(c,'subjects',{name:'zz-selftest-'+Date.now(),glyph:'z',hue:'slate'});subjectId=subject.id;
-      p=await insert(c,'projects',{subject_id:subjectId,slug:'zz-selftest-'+Date.now(),title:'Selftest',goal:'Study finite subcovers using a tiny book.',status:'planning'});
+      p=await insert(c,'projects',{subject_id:subjectId,slug:'zz-selftest-'+Date.now(),title:'Selftest',goal:'Study finite subcovers using a tiny book.',status:'planning',system:true});
       projectId=p.id;
       const src=await insert(c,'sources',{project_id:p.id,title:'Selftest PDF',short:'selftest',filename:'selftest.pdf',page_count:2,status:'ready',has_text:true});
       await insert(c,'source_pages',{source_id:src.id,page:1,label:'1',body:'A finite subcover is a finite collection of open sets selected from the cover.'});
@@ -106,7 +107,7 @@ export async function selftest(c:Context):Promise<any>{
       if(!(await endSession(c,{project:p.slug,session:sessionCode,summary:'Studied covers.',goal_met:'yes'})).includes('closed S1'))throw Error('No closed session');
     });
     await check('create, list and decide',async()=>{
-      const title='zz-selftest extra '+Date.now();
+      const title='zz-selftest extra '+Date.now();extraTitle=title;
       extraSubjectName='zz-selftest-'+Date.now();
       let invalid='';try{await run('create_project',createProject,{title,subject:extraSubjectName,goal:'Demo goal',style:'Teach with careful examples'});}catch(e){invalid=(e as Error).message;}
       if(!invalid.includes('Unknown style key')||!invalid.includes('socratic'))throw Error('Invalid style accepted or usable keys missing');
@@ -114,7 +115,14 @@ export async function selftest(c:Context):Promise<any>{
       const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal',style:'socratic',target_date:'2027-01-15',target_label:'Prelim'});
       const slug=r.match(/^created (\S+)/)?.[1];
       if(!slug)throw Error('Project creation failed');
-      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;if(!newP?.target_date||newP?.target_label!=='Prelim')throw Error('Create target lost');if(newP?.style!=='socratic')throw Error('Valid style not saved');
+      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;
+      if(!extraId)throw Error('Created test project could not be resolved');
+      // create_project is deliberately exercised as a public tool; immediately
+      // hide its result from every owner total before continuing the self-test.
+      const {error:markError}=await c.db.from('projects').update({system:true})
+       .eq('user_id',c.userId).eq('id',extraId);
+      if(markError)throw Error('Cannot isolate test project: '+markError.message);
+      if(!newP?.target_date||newP?.target_label!=='Prelim')throw Error('Create target lost');if(newP?.style!=='socratic')throw Error('Valid style not saved');
       const lines=await proposals(c,{project:p.slug});
       if(!lines.includes('P'))throw Error('Pending proposals invisible');
       const {data:pending}=await scoped(c,'proposals').eq('project_id',p.id).eq('status','pending').eq('kind','card').order('no').limit(1);
@@ -226,14 +234,45 @@ export async function selftest(c:Context):Promise<any>{
       if(chars>15000)throw Error('tools/list too large: '+chars);
     });
   }catch{/* Every failure is recorded in steps. */}finally{
-    // All deletions are by the owner and the exact throwaway IDs.
-    for(const id of [extraId,projectId])if(id)await c.db.from('projects').delete().eq('user_id',c.userId).eq('id',id);
-    if(subjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',subjectId);
-    if(!extraSubjectId&&extraSubjectName){
-      const {data:orphan}=await scoped(c,'subjects','id').eq('name',extraSubjectName).maybeSingle();
-      extraSubjectId=orphan?.id;
+    // Never delete by prefix: every destructive operation is owner-scoped and
+    // restricted to IDs created in this invocation. Keep cleaning even if an
+    // earlier deletion fails, and fail the self-test if anything survives.
+    const purge=async(table:string,column:string,id:string|undefined)=>{
+      if(!id)return;
+      try{
+        const {error}=await c.db.from(table).delete().eq('user_id',c.userId).eq(column,id);
+        if(error)cleanupFailures.push(table+': '+error.message);
+      }catch(error){cleanupFailures.push(table+': '+(error instanceof Error?error.message:String(error)))}
+    };
+    if(!extraId&&extraTitle){
+      try{
+        const {data,error}=await scoped(c,'projects','id').eq('title',extraTitle).maybeSingle();
+        if(error)cleanupFailures.push('lookup extra project: '+error.message);
+        else extraId=data?.id;
+      }catch(error){cleanupFailures.push('lookup extra project: '+String(error))}
     }
-    if(extraSubjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',extraSubjectId);
+    for(const id of [extraId,projectId])await purge('projects','id',id);
+    // Concepts created by the self-test may be independent of its checkpoints.
+    // Delete them before their subjects, including on early failures.
+    for(const id of [extraSubjectId,subjectId])await purge('concepts','subject_id',id);
+    if(!extraSubjectId&&extraSubjectName){
+      try{
+        const {data,error}=await scoped(c,'subjects','id').eq('name',extraSubjectName).maybeSingle();
+        if(error)cleanupFailures.push('lookup extra subject: '+error.message);
+        else extraSubjectId=data?.id;
+      }catch(error){cleanupFailures.push('lookup extra subject: '+String(error))}
+    }
+    for(const id of [extraSubjectId,subjectId])await purge('subjects','id',id);
+    // A successful DELETE request alone is insufficient: verify the IDs are gone.
+    for(const [table,ids] of [['projects',[extraId,projectId]],['subjects',[extraSubjectId,subjectId]]] as const){
+      for(const id of ids)if(id){
+        try{
+          const {data,error}=await c.db.from(table).select('id').eq('user_id',c.userId).eq('id',id).maybeSingle();
+          if(error||data)cleanupFailures.push(table+' cleanup verification failed');
+        }catch{cleanupFailures.push(table+' cleanup verification unavailable')}
+      }
+    }
+    if(cleanupFailures.length)steps.push({name:'cleanup',ok:false,ms:0,detail:cleanupFailures.join('; ')});
   }
-  return {ok:steps.length===18&&steps.every(x=>x.ok),steps};
+  return {ok:steps.length===18&&steps.every(x=>x.ok)&&cleanupFailures.length===0,steps};
 }
