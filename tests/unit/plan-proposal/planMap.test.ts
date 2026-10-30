@@ -1,38 +1,25 @@
 import {describe,expect,it} from "vitest";
 import type {ReviewNode} from "../../../src/features/plan-proposal/nodes";
-import {directPrereqs,layoutPlanMap} from "../../../src/features/plan-proposal/planMap";
+import {layoutPlanMap} from "../../../src/features/plan-proposal/planMap";
 
-const cp=(i:number,stage:string,prereqs:number[]):ReviewNode=>({code:`CP${i}`,title:`T${i}`,criterion:"",stage,steps:[],prereqs:prereqs.map(p=>`CP${p}`)});
-/** The owner's case: 36 checkpoints in stages, each needing the previous one and some earlier ones. */
-const plan=Array.from({length:36},(_,k)=>{
-  const i=k+1,stage=`${Math.floor(k/5)} Stage`;
-  return cp(i,stage,i===1?[]:i%4===0?[i-1,i-3,1]:[i-1]);
-});
+const cp=(i:number,prereqs:number[]):ReviewNode=>({code:`CP${i}`,title:`T${i}`,criterion:"",steps:[],prereqs:prereqs.map(p=>`CP${p}`)});
 
-describe("plan checkpoint map",()=>{
-  it("draws only direct prerequisites",()=>{
-    const direct=directPrereqs(plan);
-    expect(direct.get("CP8")).toEqual(["CP7"]);
-    expect(direct.get("CP2")).toEqual(["CP1"]);
+describe("plan checkpoint map as a tree",()=>{
+  // CP1 → CP2, CP3 ; CP2 → CP4 ; CP3 → CP5 ; CP4, CP5 → CP6
+  const plan=[cp(1,[]),cp(2,[1]),cp(3,[1]),cp(4,[2]),cp(5,[3]),cp(6,[4,5,1])];
+  const layout=layoutPlanMap(plan),at=new Map(layout.nodes.map(n=>[n.code,n]));
+  it("puts each prerequisite depth in its own column, left to right",()=>{
+    expect(at.get("CP1")!.x).toBeLessThan(at.get("CP2")!.x);
+    expect(at.get("CP2")!.x).toBe(at.get("CP3")!.x);
+    expect(at.get("CP6")!.x).toBeGreaterThan(at.get("CP4")!.x);
   });
-  it("fits a phone width, keeps stages as bands and stays compact",()=>{
-    const layout=layoutPlanMap(plan,342);
-    expect(layout.width).toBeLessThanOrEqual(342);
-    expect(Math.max(...layout.nodes.map(n=>n.x))).toBeLessThanOrEqual(342-17);
-    expect(layout.labels).toHaveLength(8);
-    expect(layout.edges).toHaveLength(35);
-    expect(layout.hidden).toBe(17);
-    expect(layout.height).toBeLessThan(36*40);
+  it("centres columns so the tree spans out from its root",()=>{
+    expect(at.get("CP1")!.y).toBeCloseTo((at.get("CP2")!.y+at.get("CP3")!.y)/2);
   });
-  it("keeps consecutive checkpoints next to each other, snaking at line ends",()=>{
-    const layout=layoutPlanMap(plan,342),at=new Map(layout.nodes.map(n=>[n.code,n]));
-    for(let i=1;i<5;i++){
-      const a=at.get(`CP${i}`)!,b=at.get(`CP${i+1}`)!;
-      expect(a.y).toBe(b.y);
-      expect(Math.abs(a.x-b.x)).toBeLessThan(80);
-    }
-    // The next stage starts on the side where the previous one ended.
-    expect(Math.abs(at.get("CP6")!.x-at.get("CP5")!.x)).toBeLessThanOrEqual(58.1);
-    expect(at.get("CP6")!.y).toBeGreaterThan(at.get("CP5")!.y);
+  it("keeps each branch level with what it builds on",()=>{
+    expect(Math.sign(at.get("CP4")!.y-at.get("CP5")!.y)).toBe(Math.sign(at.get("CP2")!.y-at.get("CP3")!.y));
+  });
+  it("draws every prerequisite",()=>{
+    expect(layout.edges).toHaveLength(7);
   });
 });
