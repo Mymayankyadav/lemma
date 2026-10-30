@@ -118,3 +118,23 @@ test('review sessions remain fully scrollable above the density-aware floating d
  }
  await page.screenshot({path:'test-results/screens/review-hub-tab-clearance.png',fullPage:true})
 })
+
+test('Again dashes its polygon side and returns after two other cards',async({page})=>{
+ await page.getByRole('button',{name:'Start review'}).click()
+ const vertexIndex=()=>page.locator('[data-review-vertex="current"]').evaluate(el=>
+  Array.from(el.parentElement!.querySelectorAll('[data-review-vertex]')).indexOf(el))
+ expect(await vertexIndex()).toBe(0)
+ await page.getByRole('button',{name:'Sure',exact:true}).click()
+ await page.getByRole('button',{name:'Grade Again'}).click()
+ await expect(page.locator('[data-review-edge="missed"]')).toHaveCount(1)
+ expect(await vertexIndex()).toBe(1)
+ for(let i=0;i<2;i++){
+  await page.getByRole('button',{name:'Sure',exact:true}).click()
+  await page.getByRole('button',{name:'Grade Good'}).click()
+ }
+ expect(await vertexIndex()).toBe(0)
+ await page.getByRole('button',{name:'Sure',exact:true}).click()
+ await page.getByRole('button',{name:'Grade Good'}).click()
+ await expect(page.locator('[data-review-edge="missed"]')).toHaveCount(0)
+ await page.screenshot({path:'test-results/screens/review-again-polygon.png',fullPage:true})
+})
