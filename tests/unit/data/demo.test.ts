@@ -82,6 +82,45 @@ describe("demo adapter", () => {
       94, 71, 38,
     ]);
   });
+
+  it("models V3 projects, stages, sources and the navigable concept hierarchy", async () => {
+    const fixture = JSON.parse(fixtureText) as DemoStore;
+    const analysis = fixture.projects.find(p => p.slug === "real-analysis")!;
+    expect(analysis.targetDate).toBe("@date:84");
+    expect(analysis.targetLabel).toBe("22 Jan");
+    const cps = fixture.checkpoints.filter(cp => cp.projectId === analysis.id);
+    expect(cps).toHaveLength(12);
+    expect(new Set(cps.map(cp => cp.stage)).size).toBe(4);
+    expect(fixture.checkpoints.every(cp => cp.dueOn?.startsWith("@date:"))).toBe(true);
+    expect(fixture.checkpoints.filter(cp => cp.status === "demonstrated").every(cp => cp.demonstratedAt)).toBe(true);
+
+    for (const project of fixture.projects) {
+      const sources = fixture.sources.filter(s => s.projectId === project.id);
+      expect(sources.length).toBeGreaterThanOrEqual(2);
+      expect(sources.length).toBeLessThanOrEqual(4);
+      expect(new Set(sources.map(s => s.kind)).size).toBeGreaterThan(1);
+      expect(sources.some(s => s.planCheckedAt === null)).toBe(true);
+    }
+
+    const levels = (["cluster", "galaxy", "system", "planet", "moon"] as const)
+      .map(level => fixture.concepts.filter(c => c.level === level));
+    expect(levels.map(concepts => concepts.length)).toEqual([3, 6, 12, 46, 15]);
+    const conceptIds = new Set(fixture.concepts.map(c => c.id));
+    for (const concept of fixture.concepts) {
+      if (concept.level === "cluster") expect(concept.parentId).toBeNull();
+      else expect(conceptIds.has(concept.parentId!)).toBe(true);
+    }
+    for (const system of levels[2]) {
+      expect(fixture.concepts.filter(c => c.parentId === system.id && c.isStar)).toHaveLength(1);
+    }
+
+    expect(fixture.notes).toHaveLength(90);
+    for (const { note } of fixture.notes) {
+      expect(note.front).not.toMatch(/^Explain .*\(\d+\)\.$/);
+      expect(note.back).not.toContain("State the definition and justify the relevant hypotheses");
+      expect(note.front.trim().length).toBeGreaterThan(12);
+    }
+  });
   it("shows session evidence and supports proposals and review undo", async () => {
     const api = make(),
       session = await api.getSession("real-analysis", 7);
@@ -190,6 +229,38 @@ describe("demo adapter", () => {
     await api.setNoteStatus(note.noteNo, "suspended");
     expect((await api.getCard(note.noteNo)).note.status).toBe("suspended");
   });
+  it("can ingest a three-file demo queue through the real PDF parser", async () => {
+    const api = make();
+    const project = (await api.getProject("real-analysis")).project;
+    const bytes = await readFile(
+      new URL("../../fixtures/sample.pdf", import.meta.url),
+    );
+    const names = ["lecture-a.pdf", "lecture-b.pdf", "problem-set.pdf"];
+    const phases: Record<string, string[]> = Object.fromEntries(
+      names.map(name => [name, []]),
+    );
+    const uploads = await Promise.all(names.map(name =>
+      api.addSource(
+        project.id,
+        new File([bytes, "\n% Demo distinct source " + name + "\n"], name, {type: "application/pdf"}),
+        progress => phases[name].push(progress.phase),
+      ),
+    ));
+    expect(uploads).toHaveLength(3);
+    for (const [index, source] of uploads.entries()) {
+      expect(source).toMatchObject({status: "ready", pageCount: 3, filename: names[index]});
+      expect(phases[names[index]]).toContain("reading");
+      expect(phases[names[index]].at(-1)).toBe("done");
+    }
+    const stored = JSON.parse(await (await api.exportAll()).text()) as DemoStore;
+    for (const source of uploads) {
+      expect(stored.sources.find(s => s.id === source.id)?.pages).toHaveLength(3);
+    }
+    const projectSources = (await api.getProject("real-analysis")).sources;
+    for (const source of uploads) {
+      expect(projectSources.find(s => s.id === source.id)).toMatchObject({status: "ready"});
+    }
+  });
   it("imports real PDF pages even when another operation rolls back during ingestion", async () => {
     const api = make(),
       project = (await api.getProject("real-analysis")).project;
@@ -233,4 +304,82 @@ describe("demo adapter", () => {
       ),
     ).toBe(false);
   });
+  it("creates subjectless v3 drafts and exposes editable source metadata", async () => {
+    const api = make();
+    const draft = await api.createProjectDraft({title: "Complex Analysis"});
+    expect(draft).toMatchObject({slug: "complex-analysis", goal: "", subjectId: "", status: "planning"});
+    expect((await api.getProject(draft.slug)).subject.name).toBe("Unassigned");
+    const second = await api.createProjectDraft({title: "Complex Analysis"});
+    expect(second.slug).toBe("complex-analysis-2");
+    const source = (await api.getProject("real-analysis")).sources[0];
+    const renamed = await api.updateSource(source.id, {title: "Rudin annotated", kind: "notes"});
+    expect(renamed).toMatchObject({title: "Rudin annotated", kind: "notes"});
+    await expect(api.updateSource(source.id, {title: ""})).rejects.toMatchObject({code: "invalid"});
+    expect((await api.getProject("real-analysis")).sources[0].title).toBe("Rudin annotated");
+  });
+
+  it("lists subjectless drafts safely and keeps their study queues empty", async () => {
+    const api = make();
+    const draft = await api.createProjectDraft({ title: "Algebraic Topology" });
+    const summary = (await api.listProjects()).find(p => p.id === draft.id);
+    expect(summary).toMatchObject({ slug: "algebraic-topology", subject: { name: "Unassigned" }, total: 0, sourcesCount: 0 });
+    expect((await api.getProject(draft.slug)).subject).toMatchObject({ name: "Unassigned" });
+    expect((await api.getHome()).projects.some(p => p.id === draft.id)).toBe(true);
+    expect((await api.getReviewItems({...filter, decks: []})).some(item => item.projectSlug === draft.slug)).toBe(false);
+  });
+
+  it("records approved plan revisions and keeps rejected changes out of history", async () => {
+    const api = make();
+    const initial = await api.listPlanRevisions("real-analysis");
+    expect(initial).toMatchObject([{revision: 1, summary: "Initial study plan", proposalId: null}]);
+    const change = (await api.listProposals()).find(p => p.kind === "plan_change")!;
+    await api.approveProposal(change.id);
+    const revisions = await api.listPlanRevisions("real-analysis");
+    expect(revisions).toHaveLength(2);
+    expect(revisions[0]).toMatchObject({revision: 2, proposalId: change.id});
+    expect((await api.getProject("real-analysis")).planRevisions).toEqual(revisions);
+    const rejected = (await api.listProposals()).find(p => p.kind === "plan_change");
+    if (rejected) await api.rejectProposal(rejected.id);
+    expect(await api.listPlanRevisions("real-analysis")).toEqual(revisions);
+  });
+
+  it("archives and pins demo projects without contaminating review queues", async () => {
+    const api = make();
+    const project = (await api.getProject("real-analysis")).project;
+    expect((await api.getHome()).due).toBe(23);
+    expect((await api.updateProject(project.id, {pinned: true})).pinned).toBe(true);
+    await api.updateProject(project.id, {status: "archived"});
+    expect((await api.listProjects()).find(p => p.id === project.id)).toMatchObject({status: "archived", pinned: false});
+    expect((await api.getHome()).projects.some(p => p.id === project.id)).toBe(false);
+    expect((await api.getReviewItems({...filter, decks: []})).some(item => item.projectSlug === project.slug)).toBe(false);
+    await api.updateProject(project.id, {status: "active"});
+    expect((await api.getHome()).projects.some(p => p.id === project.id)).toBe(true);
+  });
+
+  it("edits and merges subjects while preserving project and concept references", async () => {
+    const api = make();
+    const subjects = await api.listSubjects();
+    const created = await api.createSubject({name: "Algebra II", glyph: "A", hue: "violet"});
+    await api.updateSubject(created.id, {name: "Algebraic Structures", position: 0});
+    expect((await api.listSubjects())[0].id).toBe(created.id);
+    await expect(api.updateSubject(created.id, {name: subjects[0].name})).rejects.toMatchObject({code: "conflict"});
+    await api.mergeSubjects(created.id, subjects[0].id);
+    expect((await api.listSubjects()).some(s => s.id === created.id)).toBe(false);
+    await expect(api.mergeSubjects(subjects[0].id, subjects[0].id)).rejects.toMatchObject({code: "invalid"});
+  });
+
+  it("rejects identical PDF bytes even under a different filename", async () => {
+    const api = make();
+    const project = (await api.getProject("real-analysis")).project;
+    const bytes = await readFile(new URL("../../fixtures/sample.pdf", import.meta.url));
+    const original = await api.addSource(project.id,
+      new File([bytes], "first.pdf", {type: "application/pdf"}), () => {});
+    expect(original.sha256).toMatch(/^[a-f0-9]{64}$/);
+    await expect(api.addSource(project.id,
+      new File([bytes], "renamed.pdf", {type: "application/pdf"}), () => {}))
+      .rejects.toMatchObject({code: "conflict", message: expect.stringMatching(/Already added/)});
+    expect((await api.getProject("real-analysis")).sources.filter(s => s.sha256 === original.sha256))
+      .toHaveLength(1);
+  });
+
 });

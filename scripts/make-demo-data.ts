@@ -1,4 +1,6 @@
 import { writeFileSync, readFileSync } from "node:fs";
+import { mathPrompts } from "../src/data/demo/math-prompts";
+import { enrichDemoStore } from "../src/data/demo/extension";
 import type {
   DemoStore,
   DemoCheckpoint,
@@ -535,6 +537,9 @@ for (let no = 1; no <= 90; no++) {
   )!;
   const kind: NoteKind =
     no === 7 ? "theorem" : no % 3 === 0 ? "why" : "definition";
+  const examples = mathPrompts[`${def.slug}:${cp.title}`];
+  if (!examples?.length) throw new Error(`Missing genuine demo card for ${def.slug} / ${cp.title}`);
+  const example = examples[(no - 1) % examples.length];
   const note: DemoNote = {
     projectId: def.id,
     sessionId: `${def.id}-session-${sessionNumber}`,
@@ -552,11 +557,13 @@ for (let no = 1; no <= 90; no++) {
           ? "State the Heine–Borel theorem."
           : no === 1
             ? "Why does a finite intersection of open neighborhoods remain open?"
-            : `Explain ${cp.title.toLowerCase()} (${no}).`,
+            : example[0],
       back:
         no === 7
           ? "A subset of $\\mathbb{R}^n$ is compact if and only if it is closed and bounded."
-          : `State the definition and justify the relevant hypotheses for ${cp.title.toLowerCase()}.`,
+          : no === 1
+            ? "For each $x$ in the finite intersection choose an open neighborhood contained in every open set; the intersection of finitely many such neighborhoods is open."
+            : example[1],
       type: "basic",
       kind,
       tags: [def.slug],
@@ -775,6 +782,7 @@ data.proposals.push({
   },
   status: "pending",
 });
+enrichDemoStore(data);
 writeFileSync(
   new URL("../src/data/demo/fixture.json", import.meta.url),
   JSON.stringify(data) + "\n",

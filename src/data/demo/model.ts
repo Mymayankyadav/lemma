@@ -20,6 +20,10 @@ export interface DemoCheckpoint {
   id: string;
   projectId: string;
   code: string;
+  /** V3 Metro data: hydrated relative to the demo study day. */
+  stage?: string;
+  dueOn?: string | null;
+  demonstratedAt?: string | null;
   title: string;
   position: number;
   objective: string;
@@ -81,13 +85,22 @@ export interface DemoMisconception extends Misconception {
 export type DemoConcept = Omit<
   AtlasGraph["concepts"][number],
   "status" | "checkpointRefs" | "dueCards"
->;
+> & {
+  level?: "cluster" | "galaxy" | "system" | "planet" | "moon";
+  parentId?: string | null;
+  isStar?: boolean;
+};
 export interface DemoSource extends Source {
+  kind?: "book" | "notes" | "slides" | "problems" | "syllabus" | "exam" | "other";
+  addedAt?: string;
+  planCheckedAt?: string | null;
+  position?: number;
   pages: { page: number; label: string; body: string }[];
   error?: string | null;
 }
 export interface DemoProposal extends Proposal {
   status: "pending" | "approved" | "rejected";
+  approvedAt?: string;
 }
 export interface DemoStore {
   version: 1;
