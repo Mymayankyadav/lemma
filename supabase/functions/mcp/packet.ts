@@ -10,20 +10,31 @@ export async function settings(c:Context):Promise<any>{
   return data;
 }
 export async function counts(c:Context,s:any):Promise<{due:number;pending:number;comments:number}>{
+  // Connector uses a privileged key: every owner-facing total must explicitly
+  // exclude archived and system projects, not rely on app-side RLS policies.
+  const visible=visibleProjects(await all(c,'projects','id,status,system'));
+  const projectIds=new Set(visible.map(x=>x.id));
+  const notes=(await all(c,'notes','id,project_id')).filter(x=>projectIds.has(x.project_id));
+  const noteIds=new Set(notes.map(x=>x.id));
+  const cards=(await all(c,'cards','id,note_id')).filter(x=>noteIds.has(x.note_id));
+  const cardIds=new Set(cards.map(x=>x.id));
   const [props,comments,rows,reviews]=await Promise.all([
-    scoped(c,'proposals','id').eq('status','pending'),
-    scoped(c,'card_comments','id').eq('status','open'),
+    scoped(c,'proposals','id,project_id').eq('status','pending'),
+    scoped(c,'card_comments','id,note_id').eq('status','open'),
     scoped(c,'v_due_cards','card_id,state,due').limit(2000),
-    scoped(c,'reviews','id,reviewed_at,state_before').gte('reviewed_at',new Date(Date.now()-172800000).toISOString()).limit(1000)
+    scoped(c,'reviews','id,card_id,reviewed_at,state_before').gte('reviewed_at',new Date(Date.now()-172800000).toISOString()).limit(1000)
   ]);
   for(const x of [props,comments,rows,reviews])if(x.error)throw new Error(x.error.message);
   const today=day(s);
-  const reviewedToday=(reviews.data||[]).filter((x:any)=>day(s,x.reviewed_at)===today);
+  const dueRows=(rows.data||[]).filter((x:any)=>cardIds.has(x.card_id));
+  const reviewedToday=(reviews.data||[]).filter((x:any)=>cardIds.has(x.card_id)&&day(s,x.reviewed_at)===today);
   const newDone=reviewedToday.filter((x:any)=>x.state_before===0).length;
-  const due=(rows.data||[]).filter((x:any)=>x.state!==0 && day(s,x.due)<=today).length;
-  const fresh=Math.min(Math.max(0,(s.new_per_day??20)-newDone),(rows.data||[]).filter((x:any)=>x.state===0).length);
+  const due=dueRows.filter((x:any)=>x.state!==0&&day(s,x.due)<=today).length;
+  const fresh=Math.min(Math.max(0,(s.new_per_day??20)-newDone),dueRows.filter((x:any)=>x.state===0).length);
   const capacity=Math.max(0,(s.reviews_per_day??200)-reviewedToday.length);
-  return {due:Math.min(capacity,due+fresh),pending:(props.data||[]).length,comments:(comments.data||[]).length};
+  return {due:Math.min(capacity,due+fresh),
+    pending:(props.data||[]).filter((x:any)=>projectIds.has(x.project_id)).length,
+    comments:(comments.data||[]).filter((x:any)=>noteIds.has(x.note_id)).length};
 }
 async function list(c:Context,s:any):Promise<string>{
   const ps=visibleProjects(await all(c,'projects','id,slug,title,status,last_activity_at,system'));
@@ -86,9 +97,11 @@ export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?
  const st=await settings(c);const p=args.project?await project(c,args.project):null;
  const owner=(st.master_prompt||p?.prompt)?['OWNER (follow first; overrides STYLE and RULES)',st.master_prompt,p?.prompt].filter(Boolean).join('\n'):'';
  const diagnostics=await all(c,'diagnostics');const sources=await all(c,'sources');
- const active=diagnostics.filter(x=>(!p||x.project_id===p.id)&&['open','confirmed'].includes(x.status)).sort((a,b)=>b.severity-a.severity||b.times-a.times).slice(0,3);
+ const ids=new Set(visibleProjects(await all(c,'projects','id,status,system')).map(x=>x.id));
+ const allowed=(id:string)=>p?id===p.id:ids.has(id);
+ const active=diagnostics.filter(x=>allowed(x.project_id)&&['open','confirmed'].includes(x.status)).sort((a,b)=>b.severity-a.severity||b.times-a.times).slice(0,3);
  const adapt=active.map(x=>'D'+x.no+' '+x.kind+' '+x.topic+' ('+x.times+'x, '+x.status+')');
- const fresh=sources.filter(x=>(!p||x.project_id===p.id)&&!x.plan_checked_at).map(x=>'NEW '+x.short);
+ const fresh=sources.filter(x=>allowed(x.project_id)&&!x.plan_checked_at).map(x=>'NEW '+x.short);
  const {ADAPT}=await import('./rules.ts');
  let body=await basePacket(c,args);const extra=[...(adapt.length||fresh.length?['ADAPT '+cut([...adapt,...fresh].join('; '),300)]:[]),args.brief?'':ADAPT].filter(Boolean).join('\n');body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';return [owner,capped(body+(line?'\n'+line:''),budget)].filter(Boolean).join('\n');
 }
