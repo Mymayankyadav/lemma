@@ -112,3 +112,5 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   </ul>}
  </section>;
 }
+
+// FIX #399 claim: source storage usage display follows in draft PR.
