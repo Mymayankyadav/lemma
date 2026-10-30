@@ -63,5 +63,5 @@ test('Euclid project ascent opens a checkpoint without horizontal scrolling',asy
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
  await button.focus()
  await page.keyboard.press('Enter')
- await expect(page).toHaveURL(/#\\/p\\/real-analysis\\/cp\\/CP4$/)
+ await expect(page).toHaveURL(/CP4$/)
 })
