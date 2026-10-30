@@ -13,8 +13,19 @@ export async function selftest(c:Context):Promise<any>{
   const cleanupFailures:string[]=[];
   async function check(name:string,f:()=>Promise<void>){
     const begin=Date.now();
-    try{await f();steps.push({name,ok:true,ms:Date.now()-begin})}
-    catch(e){steps.push({name,ok:false,ms:Date.now()-begin,detail:e instanceof Error?e.message:String(e)});throw e}
+    // Static step names and elapsed times only: never log owner data or connector credentials.
+    console.info('[lemma selftest] START '+name);
+    try{
+      await f();
+      const ms=Date.now()-begin;
+      steps.push({name,ok:true,ms});
+      console.info('[lemma selftest] PASS '+name+' ('+ms+'ms)');
+    }catch(e){
+      const ms=Date.now()-begin;
+      steps.push({name,ok:false,ms,detail:e instanceof Error?e.message:String(e)});
+      console.warn('[lemma selftest] FAIL '+name+' ('+ms+'ms)');
+      throw e;
+    }
   }
   let p:any,sessionCode='S1',planId:string|undefined;
   const run=async(n:string,fn:any,a:any)=>{const tx={...c,batch:[] as any[]};const text=await fn(tx,a);return {...await commitBatch(tx,n,a,text),text};};
@@ -238,6 +249,8 @@ export async function selftest(c:Context):Promise<any>{
       if(chars>15000)throw Error('tools/list too large: '+chars);
     });
   }catch{/* Every failure is recorded in steps. */}finally{
+    const cleanupStarted=Date.now();
+    console.info('[lemma selftest] START cleanup');
     // Never delete by prefix: every destructive operation is owner-scoped and
     // restricted to IDs created in this invocation. Keep cleaning even if an
     // earlier deletion fails, and fail the self-test if anything survives.
@@ -276,7 +289,9 @@ export async function selftest(c:Context):Promise<any>{
         }catch{cleanupFailures.push(table+' cleanup verification unavailable')}
       }
     }
-    if(cleanupFailures.length)steps.push({name:'cleanup',ok:false,ms:0,detail:cleanupFailures.join('; ')});
+    const cleanupMs=Date.now()-cleanupStarted;
+    if(cleanupFailures.length)steps.push({name:'cleanup',ok:false,ms:cleanupMs,detail:cleanupFailures.join('; ')});
+    console.info('[lemma selftest] '+(cleanupFailures.length?'FAIL':'PASS')+' cleanup ('+cleanupMs+'ms)');
   }
   return {ok:steps.length===18&&steps.every(x=>x.ok)&&cleanupFailures.length===0,steps};
 }

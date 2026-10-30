@@ -26,9 +26,19 @@ async function call(method,params={}){
   assert.equal(record.error,undefined,method+' error: '+record.error?.message);
   return record.result;
 }
-const res=await fetch(url+'/selftest');
+const selftestStarted=Date.now();
+let res;
+try {
+  // Below Supabase's 150s request idle limit and the runner's 140s process limit.
+  res=await fetch(url+'/selftest',{signal:AbortSignal.timeout(138_000)});
+} catch(error) {
+  const kind=error instanceof Error&&error.name==='TimeoutError'?'timeout':'network error';
+  console.error('FAIL selftest request ('+kind+') after '+(Date.now()-selftestStarted)+'ms');
+  throw new Error('MCP selftest request failed (endpoint redacted)');
+}
 const self=await res.json();
-for(const step of self.steps||[])console.log((step.ok?'PASS':'FAIL')+' '+step.name+(step.ok?'':' — '+step.detail));
+console.log('Selftest response in '+(Date.now()-selftestStarted)+'ms; '+(self.steps?.length||0)+' steps');
+for(const step of self.steps||[])console.log((step.ok?'PASS':'FAIL')+' '+step.name+' ('+step.ms+'ms)'+(step.ok?'':' — '+step.detail));
 assert.equal(res.ok,true,'selftest HTTP error');
 assert.equal(self.ok,true,'selftest did not pass');
 assert.equal(self.steps?.length,18,'selftest did not complete all checks and cleanup');
