@@ -191,6 +191,17 @@ export default function Page(){
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
    <ReviewOutlook/>
   </section>
+  <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
+   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">From your tutor</h2>
+   <Link to="/proposals" aria-label="Review tutor suggestions"
+    className="flex min-h-11 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 py-3 text-label text-ink-2">
+    <span className="min-w-0 break-words">
+     {home.data.pendingProposals===0?'All tutor proposals reviewed':
+      home.data.pendingProposals+' tutor proposals awaiting your decision'}
+    </span>
+    <ChevronRight size={16} className="shrink-0 text-amber"/>
+   </Link>
+  </section>
   <section aria-label="Projects" className="flex flex-col gap-2">
    <div className="flex min-h-11 items-center justify-between">
     <h2 className="text-body-l font-semibold text-ink-2">Projects</h2>
