@@ -59,7 +59,7 @@ function ProjectLink({project,index}:{project:ProjectSummary;index:number}){
   transition={{duration:reduce?0.15:0.6,delay:reduce?0:index*0.1}}>
   <Link to={'/p/'+project.slug} aria-label={project.title+', '+project.done+' of '+project.total+' checkpoints'}
    className="group grid min-h-[var(--row)] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
-   <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={32}/>
+   <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <span className="flex min-w-0 flex-col gap-1">
     <span className="truncate text-headline font-medium">{project.title}</span>
     <Rail label={project.title+' progress'} value={project.total?project.done/project.total:0} sheen={index===0} delay={index*0.1}/>
