@@ -173,7 +173,7 @@ test('focused review controls retain Space activation while unfocused shortcuts 
  const closeButton=page.getByRole('button',{name:'Close review'})
  await closeButton.focus()
  await page.keyboard.press('Space')
- await expect(page).toHaveURL(/#\\/review$/)
+ await expect(page).toHaveURL(/#\/review$/)
  await expect(page.getByRole('region',{name:'Review summary'}).getByText('23',{exact:true})).toBeVisible()
 })
 
