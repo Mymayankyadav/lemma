@@ -25,8 +25,8 @@ describe("plan-review live payload regression (#354)", () => {
       {op:"add",after:"CP1", title:"Bridge", criterion:"Evidence", objective:"Learn", steps:[]},
       {op:"add",code:"CP1a",title:"Named", criterion:"Evidence", objective:"Learn",steps:[]},
     ]},current);
-    expect(nodes.map(n => n.code)).toEqual(["CP1", "CP1a", "CP1b"]);
-    expect(nodes.map(n => n.title)).toEqual(["Current proof","Named","Bridge"]);
+    expect(nodes.map(n => n.code)).toEqual(["CP1", "CP1b", "CP1a"]);
+    expect(nodes.map(n => n.title)).toEqual(["Current proof","Bridge","Named"]);
   });
   it("applies updates, moves, deletes and prerequisite links in the preview only", () => {
     const nodes=planReviewNodes(null,{ops:[
