@@ -6,6 +6,7 @@ import { proposePlanChange, proposePlan, startSession, saveProgress, proposeCard
 import { createMcpHandler } from './deps.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
 export async function selftest(c:Context):Promise<any>{
+  c.selftestProjectIds=new Set<string>();
   const steps:{name:string;ok:boolean;ms:number;detail?:string}[]=[];
   let subjectId:string|undefined,projectId:string|undefined,extraId:string|undefined,extraSubjectId:string|undefined;
   let extraSubjectName:string|undefined,extraTitle:string|undefined;
@@ -22,6 +23,7 @@ export async function selftest(c:Context):Promise<any>{
       const subject=await insert(c,'subjects',{name:'zz-selftest-'+Date.now(),glyph:'z',hue:'slate'});subjectId=subject.id;
       p=await insert(c,'projects',{subject_id:subjectId,slug:'zz-selftest-'+Date.now(),title:'Selftest',goal:'Study finite subcovers using a tiny book.',status:'planning',system:true});
       projectId=p.id;
+      c.selftestProjectIds.add(projectId!);
       const src=await insert(c,'sources',{project_id:p.id,title:'Selftest PDF',short:'selftest',filename:'selftest.pdf',page_count:2,status:'ready',has_text:true});
       await insert(c,'source_pages',{source_id:src.id,page:1,label:'1',body:'A finite subcover is a finite collection of open sets selected from the cover.'});
       await insert(c,'source_pages',{source_id:src.id,page:2,label:'2',body:'Every open cover of a compact space has a finite subcover.'});
@@ -118,6 +120,7 @@ export async function selftest(c:Context):Promise<any>{
       if(!slug)throw Error('Project creation failed');
       const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;
       if(!extraId)throw Error('Created test project could not be resolved');
+      c.selftestProjectIds.add(extraId);
       // create_project is deliberately exercised as a public tool; immediately
       // hide its result from every owner total before continuing the self-test.
       const {error:markError}=await c.db.from('projects').update({system:true})
