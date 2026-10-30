@@ -18,6 +18,10 @@ test('Projects shows featured work, other projects and Atlas without errors',asy
 })
 test('new-project form retains keyboard focus while editing controlled fields',async({page})=>{
  await page.goto('./?demo=1#/projects/new')
+ const backdrop=page.locator('[data-sheet-background]')
+ await expect(backdrop.locator('h1')).toHaveText('Projects')
+ await expect(backdrop.getByText('Compactness, step 2')).toBeVisible()
+ await expect(backdrop).toHaveAttribute('inert','')
  const dialog=page.getByRole('dialog',{name:'New project'})
  const name=dialog.getByRole('textbox',{name:'Name'})
  await expect(name).toBeVisible()

@@ -3,7 +3,7 @@ import {BookOpen,Check,ChevronRight,Circle,Clock3,HelpCircle,Layers,MessageCircl
 import {useCheckpoint,useProject,useSettings} from '../../data/hooks';
 import type {CheckpointView} from '../../data/types';
 import {chatLink,studyPrompt} from '../../lib/chat';
-import {Screen} from '../../ui/Screen';
+import ProjectPage from '../project/Page';
 import {Sheet} from '../../ui/Sheet';
 import {Chip} from '../../ui/Chip';
 import {Button} from '../../ui/Button';
@@ -27,7 +27,10 @@ export default function Page(){
   window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
  }
  const detail=query.data,view=detail?.view;
- return <Screen title="Checkpoint" back={'/p/'+slug}>
+ return <>
+  {/* A checkpoint is a sheet over its actual project path, not a blank route. */}
+  <div data-sheet-background aria-hidden="true" inert><ProjectPage/></div>
+  <h1 className="sr-only">Checkpoint</h1>
   <Sheet open onClose={close} title={view?.title??'Checkpoint'}>
    {query.isPending?<div className="flex flex-col gap-3"><Skeleton h={35}/><Skeleton h={70}/><Skeleton h={150}/></div>:
     query.error||!detail||!view?<EmptyState art="plug" title="Checkpoint unavailable" body="Try again or return to the project."
@@ -98,5 +101,5 @@ export default function Page(){
      </div>
     </div>}
   </Sheet>
- </Screen>;
+ </>;
 }
