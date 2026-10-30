@@ -1,3 +1,4 @@
+// FIX #281: unsaved tutor-note drafts must not migrate across review cards.
 import {test,expect} from '@playwright/test'
 
 test.beforeEach(async({page})=>{
@@ -55,4 +56,37 @@ test('card notes are stored for tutor during a run',async({page})=>{
  await page.screenshot({path:'test-results/screens/review-tutor-note.png',fullPage:true})
  await page.getByRole('button',{name:'Save note'}).click()
  await expect(page.getByText('Note saved for your tutor')).toBeVisible()
+})
+
+test('unsaved tutor-note drafts stay on their card and never leak into the next card',async({page})=>{
+ await page.getByRole('button',{name:'Start review'}).click()
+ await page.getByRole('button',{name:'Note for tutor'}).click()
+ const dialog=page.getByRole('dialog',{name:'For your tutor'})
+ const editor=page.getByRole('textbox',{name:/Ask your tutor/})
+ await editor.fill('Unfinished note for the first card')
+ await dialog.getByRole('button',{name:'Close'}).click()
+ await expect(dialog).toBeHidden()
+
+ // Reopening on the same card must preserve an unsaved draft.
+ await page.getByRole('button',{name:'Note for tutor'}).click()
+ await expect(editor).toHaveValue('Unfinished note for the first card')
+ await dialog.getByRole('button',{name:'Close'}).click()
+ await expect(dialog).toBeHidden()
+
+ // Grading deals a different card; the previous draft must not be submitted for it.
+ await page.getByRole('button',{name:'Sure',exact:true}).click()
+ await page.getByRole('button',{name:'Grade Good'}).click()
+ await expect(page.getByRole('button',{name:'Sure',exact:true})).toBeVisible()
+ await page.getByRole('button',{name:'Note for tutor'}).click()
+ await expect(editor).toHaveValue('')
+ await expect(dialog.getByRole('button',{name:'Save note'})).toBeDisabled()
+ await page.screenshot({path:'test-results/screens/review-note-card-isolation.png',fullPage:true})
+ await dialog.getByRole('button',{name:'Close'}).click()
+ await expect(dialog).toBeHidden()
+
+ // Undo returns to the first card, but must not resurrect its abandoned draft.
+ await page.getByRole('button',{name:'Undo last answer'}).click()
+ await page.getByRole('button',{name:'Note for tutor'}).click()
+ await expect(editor).toHaveValue('')
+ await expect(dialog.getByRole('button',{name:'Save note'})).toBeDisabled()
 })

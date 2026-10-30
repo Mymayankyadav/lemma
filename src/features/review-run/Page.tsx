@@ -58,7 +58,18 @@ export default function Page(){
  const reveal=useReviewSession(s=>s.reveal),beginGrade=useReviewSession(s=>s.beginGrade);
  const cancelGrade=useReviewSession(s=>s.cancelGrade),committed=useReviewSession(s=>s.committed);
  const undoCommitted=useReviewSession(s=>s.undoCommitted);
- const [sheetOpen,setSheetOpen]=useState(false),[note,setNote]=useState('');
+ const [sheetOpen,setSheetOpen]=useState(false);
+ // An unsaved note belongs to its review card, never to the next card dealt.
+ const [draft,setDraft]=useState<{cardId:string;value:string}|null>(null);
+ const note=draft&&current&&draft.cardId===current.cardId?draft.value:'';
+ const previousCardId=useRef<string|null>(null);
+ useEffect(()=>{
+  const cardId=current?.cardId??null;
+  if(previousCardId.current===cardId)return;
+  previousCardId.current=cardId;
+  setDraft(null);
+  setSheetOpen(false);
+ },[current?.cardId]);
  const init=useRef(false);
  const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
  const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
@@ -124,7 +135,7 @@ export default function Page(){
   if(!current || !note.trim())return;
   try{
    await addComment.mutateAsync({noteNo:current.noteNo,body:note.trim()});
-   setNote('');setSheetOpen(false);notify('Note saved for your tutor',{tone:'success'});
+   setDraft(null);setSheetOpen(false);notify('Note saved for your tutor',{tone:'success'});
   }catch(error){notify(error instanceof Error?error.message:'Could not add note',{tone:'danger'})}
  }
  async function suspendCard(){
@@ -195,7 +206,7 @@ export default function Page(){
   <Sheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="For your tutor">
    <div className="flex flex-col gap-4">
     <label htmlFor="review-note" className="text-[14px] text-ink-2">Ask your tutor to improve or explain this card</label>
-    <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>setNote(e.target.value)}
+    <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>{if(current)setDraft({cardId:current.cardId,value:e.target.value})}}
      className="w-full rounded-ctl border border-edge-2 bg-well p-3 text-[15px] text-ink" placeholder="What should the tutor revisit?"/>
     <Button disabled={!note.trim()||addComment.isPending} onClick={()=>{void leaveNote()}} icon={Check}>Save note</Button>
     <Button variant="ghost" onClick={()=>{void suspendCard()}}>Suspend this card</Button>
