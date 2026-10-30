@@ -51,4 +51,7 @@ html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content a[href]
 
 /* Euclid names wrap and the rubric action remains square at every density. */
 html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content .truncate{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
-html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content{padding-inline:16px}
+html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content:not(.w-full){padding-inline:16px}
+
+/* Session-card carousels bleed to the Euclid 16px gutter, not the former 24px gutter. */
+html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content [class~="-mx-6"]{margin-inline:-16px;padding-inline:16px}
