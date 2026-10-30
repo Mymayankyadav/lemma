@@ -57,3 +57,38 @@ export function sourceLine(s: V3Source): string {
     '" ' + pages + (s.added_at ? ' added ' + s.added_at.slice(0, 10) : '') +
     (s.plan_checked_at ? '' : ' NEW')
 }
+
+const DAY = 86_400_000
+const isoDay = (time: number) => new Date(time).toISOString().slice(0, 10)
+
+export function scheduleHint(
+  project: { target_date?: string | null },
+  checkpoints: Array<{ status: string; due_on?: string | null; demonstrated_at?: string | null; steps?: unknown[]; current_step?: number }>,
+  now = Date.now(),
+): string {
+  const unfinished = checkpoints.filter(x => x.status !== 'demonstrated')
+  const current = unfinished[0]
+  if (!current) return ''
+  const completed = checkpoints.filter(x => x.status === 'demonstrated'
+    && x.demonstrated_at && Date.parse(x.demonstrated_at) >= now - 28 * DAY
+    && Date.parse(x.demonstrated_at) <= now)
+  const weeksPerCheckpoint = 4 / Math.max(1, completed.length)
+  const expected = now + Math.ceil(weeksPerCheckpoint * 7) * DAY
+  let due = current.due_on
+  if (!due && project.target_date) {
+    const target = Date.parse(project.target_date + 'T12:00:00Z')
+    if (Number.isFinite(target)) {
+      const weights = unfinished.map(x => Math.max(1,
+        (x.steps?.length || 1) - Math.max(0, (x.current_step || 1) - 1)))
+      const total = weights.reduce((a, b) => a + b, 0)
+      due = isoDay(now + Math.max(0, target - now) * weights[0] / total)
+    }
+  }
+  if (!due) return ''
+  const dueAt = Date.parse(due + 'T12:00:00Z')
+  if (!Number.isFinite(dueAt)) return ''
+  const delta = Math.round((expected - dueAt) / DAY)
+  if (delta >= 3) return ' | ' + delta + ' days behind plan'
+  if (delta <= -3) return ' | ' + Math.abs(delta) + ' days ahead of plan'
+  return ' | on schedule'
+}
