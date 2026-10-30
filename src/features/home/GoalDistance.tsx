@@ -13,7 +13,7 @@ function GoalCard({project,variant}:{project:ProjectSummary;variant:'ascent'|'me
  const targetDisplay=target?new Date(target+'T12:00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}):null
  return <Slab as="article" aria-label={'Goal progress for '+project.title} className="flex min-w-0 flex-col gap-3 p-4">
   <div className="flex min-w-0 items-start gap-3">
-   <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={28}/>
+   <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={32}/>
    <div className="min-w-0 flex-1">
     <Link to={'/p/'+project.slug} className="block break-words font-semibold text-headline text-ink focus-visible:outline-2 focus-visible:outline-amber">{project.title}</Link>
     <p className="mt-1 text-label leading-snug text-ink-2">
