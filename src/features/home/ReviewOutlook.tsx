@@ -9,7 +9,7 @@ import {Tex} from '../../ui/Tex'
 export function ReviewOutlook(){
  const decks=useDeckTree()
  const forecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),staleTime:30_000})
- const allGroups=(decks.data??[]).filter(node=>node.due>0).sort((a,b)=>b.due-a.due)
+ const allGroups=[...(decks.data??[])].filter(node=>node.due>0).sort((a,b)=>b.due-a.due)
  const dueTotal=allGroups.reduce((sum,node)=>sum+node.due,0)
  const top=allGroups.slice(0,4).map(({key,label,due})=>({key,label,due}))
  const tail=allGroups.slice(4)
