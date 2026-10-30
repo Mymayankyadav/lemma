@@ -17,7 +17,7 @@ export default function Page(){
  const [days,setDays]=useState<InsightDays>(30);
  const query=useInsightData(days),settings=useSettings();
  const values=useMemo(()=>query.data?buildInsights(query.data,days,{timeZone:settings.data?.timeZone??'UTC',rolloverHour:settings.data?.rolloverHour??4}):null,[query.data,days,settings.data?.timeZone,settings.data?.rolloverHour]);
- const legend=[{name:'Again',color:'bg-again'},{name:'Hard',color:'bg-hard'},{name:'Good',color:'bg-good'},{name:'Easy',color:'bg-easy'}];
+ const legend=[{name:'Again',color:'bg-[var(--bad)]'},{name:'Hard',color:'bg-[var(--warn)]'},{name:'Good',color:'bg-[var(--accent)]'},{name:'Easy',color:'bg-[var(--good)]'}];
  return <section className="flex flex-col gap-5 pb-2">
   <h1 className="text-title font-semibold" style={{fontFamily:"var(--font-display)"}}>Insights</h1>
   <Segmented label="Time range" tone="amber" value={String(days)} onChange={value=>setDays(Number(value) as InsightDays)} options={[{value:'7',label:'7 days'},{value:'30',label:'30 days'},{value:'90',label:'90 days'}]}/>
@@ -33,7 +33,7 @@ export default function Page(){
    <InkRecall data={values.recallBuckets.map((row,i)=>({label:i===0?`${days} days ago`:i===values.recallBuckets.length-1?'Today':'',value:row.recall}))} target={settings.data?.desiredRetention??0.9}/>
   </Slab>
   <Slab className="flex flex-col gap-3 p-4"><h2 className="text-title-s font-medium" style={{fontFamily:"var(--font-display)"}}>Reviews by {days===90?'week':'day'}</h2>
-   <div className="flex flex-wrap gap-3 text-caption text-ink-2">{legend.map(g=><span key={g.name} className="flex items-center gap-1.5"><span className={`size-2 rounded-full ${g.color}`}/>{g.name}</span>)}</div>
+   <div className="flex flex-wrap gap-3 text-caption text-ink-2">{legend.map(g=><span key={g.name} data-review-grade={g.name.toLowerCase()} className="flex items-center gap-1.5"><span className={`size-2 rounded-full ${g.color}`}/>{g.name}</span>)}</div>
    <StackedBars data={values.reviewBuckets.map((row,i)=>({label:days===7?['M','T','W','T','F','S','S'][i]||'':days===90?`W${i+1}`:String(i+1),again:row.again,hard:row.hard,good:row.good,easy:row.easy}))}/>
   </Slab>
   <Slab className="flex flex-col gap-3 p-4"><h2 className="text-title-s font-medium" style={{fontFamily:"var(--font-display)"}}>When you said</h2><CalibrationRules data={values.calibration}/>{values.calibrationMessage&&<p className="border-l-2 border-amber pl-3 font-math text-label italic text-ink-2">{values.calibrationMessage}</p>}</Slab>
