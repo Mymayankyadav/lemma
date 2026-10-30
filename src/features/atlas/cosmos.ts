@@ -13,7 +13,7 @@ const radii:Record<ConceptLevel,number>={cluster:280,galaxy:100,system:44,planet
 const orbit:Record<ConceptLevel,number>={cluster:600,galaxy:188,system:70,planet:33,moon:13};
 const levels:ConceptLevel[]=['cluster','galaxy','system','planet','moon'];
 export const levelLabel=(level:ConceptLevel)=>({cluster:'Field',galaxy:'Area',system:'Topic',planet:'Idea',moon:'Supporting idea'})[level];
-const isTest=(s:string)=>/zz[-_ ]?selftest|self[-_ ]test|^system([-_ ]|$)/i.test(s);
+const isTest=(s:string)=>/zz[-_ ]?selftest|^self[-_ ]test$|^system[-_]test/i.test(s);
 const emptyRefs:Body['checkpointRefs']=[];
 function synthetic(id:string,name:string,subjectId:string,level:ConceptLevel,parentId:string|null):Body{
  return {id,slug:id,name,subjectId,level,parentId,children:[],x:0,y:0,radius:radii[level],
