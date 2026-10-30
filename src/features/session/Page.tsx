@@ -19,7 +19,7 @@ const date=(iso:string)=>new Date(iso).toLocaleDateString(undefined,{weekday:'sh
 const short=(iso:string)=>new Date(iso).toLocaleDateString(undefined,{weekday:'long'});
 function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
  const Icon=icons[event.kind],reduce=!!useReducedMotion(),demonstrated=event.kind==='evidence'&&event.outcome==='demonstrated';
- return <motion.li initial={reduce?{opacity:0}:{opacity:0,y:10}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{duration:reduce?0.15:0.4,delay:Math.min(index,6)*0.07}} className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-3 pb-5 last:pb-0">
+ return <motion.li initial={reduce?false:{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.4,delay:Math.min(index,6)*0.07}} className="relative grid grid-cols-[40px_minmax(0,1fr)] gap-3 pb-5 last:pb-0">
   <span aria-hidden="true" className={`relative z-10 flex size-10 items-center justify-center rounded-full border font-semibold ${demonstrated?'border-amber bg-amber text-amber-ink':event.kind==='misconception'?'border-amber-line text-amber':'border-edge-2 bg-tile text-ink-2'}`} style={{fontFamily:'var(--font-display)',fontSize:20}}>{index+1}</span>
   <div className="min-w-0 pt-1">
    <div className="flex flex-wrap items-center gap-2"><Icon size={15} aria-hidden="true" className={event.kind==='misconception'?'text-amber':'text-ink-3'}/><h3 className="text-body-l font-semibold">{name[event.kind]}</h3>
