@@ -5,6 +5,7 @@ import { get, search, readPages } from './tools/read.ts';
 import { proposePlanChange, proposePlan, startSession, saveProgress, proposeCards, endSession, createProject, proposals, decide } from './tools/write.ts';
 import { createMcpHandler } from './deps.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
+import { parseMcpReply } from './protocol.ts';
 export async function selftest(c:Context):Promise<any>{
   c.selftestProjectIds=new Set<string>();
   const steps:{name:string;ok:boolean;ms:number;detail?:string}[]=[];
@@ -30,6 +31,31 @@ export async function selftest(c:Context):Promise<any>{
   let p:any,sessionCode='S1',planId:string|undefined;
   const run=async(n:string,fn:any,a:any)=>{const tx={...c,batch:[] as any[]};const text=await fn(tx,a);return {...await commitBatch(tx,n,a,text),text};};
   try{
+    // Protocol preflight is independent of fixtures: fail promptly instead of
+    // spending ~140s on database checks before discovering an MCP transport error.
+    await check('MCP tool list and size',async()=>{
+      const handler=createMcpHandler(()=>buildServer(c));
+      const options={method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream'}};
+      const initialized=await handler.fetch(new Request('http://localhost/mcp',{...options,
+        body:JSON.stringify({jsonrpc:'2.0',id:0,method:'initialize',params:{
+          protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'lemma-selftest',version:'1.0.0'}
+        }})}));
+      if(!initialized.ok)throw Error('MCP initialize failed: '+initialized.status);
+      const session=initialized.headers.get('Mcp-Session-Id');
+      const headers={...options.headers,...(session?{'Mcp-Session-Id':session}:{})};
+      const notified=await handler.fetch(new Request('http://localhost/mcp',{...options,headers,
+        body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})}));
+      if(!notified.ok)throw Error('MCP initialized notification rejected: '+notified.status);
+      const req=new Request('http://localhost/mcp',{...options,headers,
+        body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})});
+      const res=await handler.fetch(req),body=await res.text();
+      if(!res.ok)throw Error('MCP tools/list HTTP '+res.status);
+      const payload=parseMcpReply(body,res.headers.get('Content-Type')||'',1);
+      const list=payload.tools;
+      if(!list||list.length!==22||TOOL_NAMES.some(n=>!list.some((x:any)=>x.name===n)))throw Error('Not all 22 tools registered');
+      const chars=JSON.stringify({tools:list}).length;
+      if(chars>15000)throw Error('tools/list too large: '+chars);
+    });
     await check('fixtures',async()=>{
       const subject=await insert(c,'subjects',{name:'zz-selftest-'+Date.now(),glyph:'z',hue:'slate'});subjectId=subject.id;
       p=await insert(c,'projects',{subject_id:subjectId,slug:'zz-selftest-'+Date.now(),title:'Selftest',goal:'Study finite subcovers using a tiny book.',status:'planning',system:true});
@@ -224,30 +250,7 @@ export async function selftest(c:Context):Promise<any>{
       await run('undo',undo,{action:r.action});
       if(!(await scoped(c,'projects').eq('id',p.id)).data?.length)throw Error('Cascade restore failed');
     });
-    await check('MCP tool list and size',async()=>{
-      const handler=createMcpHandler(()=>buildServer(c));
-      const options={method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream'}};
-      const initialized=await handler.fetch(new Request('http://localhost/mcp',{...options,
-        body:JSON.stringify({jsonrpc:'2.0',id:0,method:'initialize',params:{
-          protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'lemma-selftest',version:'1.0.0'}
-        }})}));
-      if(!initialized.ok)throw Error('MCP initialize failed: '+initialized.status);
-      const session=initialized.headers.get('Mcp-Session-Id');
-      const headers={...options.headers,...(session?{'Mcp-Session-Id':session}:{})};
-      const notified=await handler.fetch(new Request('http://localhost/mcp',{...options,headers,
-        body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})}));
-      if(!notified.ok)throw Error('MCP initialized notification rejected: '+notified.status);
-      const req=new Request('http://localhost/mcp',{...options,headers,
-        body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})});
-      const res=await handler.fetch(req),body=await res.text();
-      let payload:any;
-      if(body.startsWith('event:')){const line=body.split('\n').find((s:string)=>s.startsWith('data: '));payload=JSON.parse(line?.slice(6)||'{}')}
-      else payload=JSON.parse(body);
-      const list=payload.result?.tools;
-      if(!list||list.length!==22||TOOL_NAMES.some(n=>!list.some((x:any)=>x.name===n)))throw Error('Not all 22 tools registered');
-      const chars=JSON.stringify({tools:list}).length;
-      if(chars>15000)throw Error('tools/list too large: '+chars);
-    });
+
   }catch{/* Every failure is recorded in steps. */}finally{
     const cleanupStarted=Date.now();
     console.info('[lemma selftest] START cleanup');

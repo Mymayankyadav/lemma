@@ -29,8 +29,8 @@ async function call(method,params={}){
 const selftestStarted=Date.now();
 let res;
 try {
-  // Below Supabase's 150s request idle limit and the runner's 140s process limit.
-  res=await fetch(url+'/selftest',{signal:AbortSignal.timeout(138_000)});
+  // Below Supabase's 150s request idle limit and the runner's 148s process limit.
+  res=await fetch(url+'/selftest',{signal:AbortSignal.timeout(147_000)});
 } catch(error) {
   const kind=error instanceof Error&&error.name==='TimeoutError'?'timeout':'network error';
   console.error('FAIL selftest request ('+kind+') after '+(Date.now()-selftestStarted)+'ms');
