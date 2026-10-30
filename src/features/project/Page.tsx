@@ -1,8 +1,8 @@
-import {useEffect} from 'react';
+import {useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
 import {ArrowLeft,BookOpen,ChevronRight,Check,Layers,MessageCircle,Pause,Play,Waypoints} from 'lucide-react';
-import {useCheckpoint,usePlanRevisions,useProject,useSettings} from '../../data/hooks';
+import {useCheckpoint,usePlanRevisions,useProject,useProjects,useSettings} from '../../data/hooks';
 import type {CheckpointView,ProjectDetail,SessionSummary} from '../../data/types';
 import {chatLink,planPrompt,resumePrompt,studyPrompt} from '../../lib/chat';
 import {formatMinutes,relativeTime} from '../../lib/text';
@@ -17,8 +17,9 @@ import {SegmentBar} from '../../ui/SegmentBar';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
-import {ProjectChips,GoalOverview,Stages} from './PathsView';
+import {GoalOverview,Stages} from './PathsView';
 import {SourcesPanel} from './SourcesPanel';
+import {Sheet} from '../../ui/Sheet';
 
 function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<typeof useToast>){
  void navigator.clipboard?.writeText(prompt).then(()=>notify('Tutor prompt copied',{tone:'success'}))
@@ -84,9 +85,35 @@ function PlanHistory({slug}:{slug:string}){
   </Tile>)}
  </section>;
 }
+function ProjectSwitcher({open,onClose,current}:{open:boolean;onClose:()=>void;current:string}){
+ const projects=useProjects(),navigate=useNavigate(),[search,setSearch]=useState('');
+ const list=(projects.data??[]).filter(p=>!p.system&&p.status!=='archived')
+  .filter(p=>!search.trim()||[p.title,p.subject?.name??'Unassigned'].some(v=>v.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
+  .sort((a,b)=>(Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0))
+  .slice(0,search.trim()?30:6);
+ return <Sheet open={open} onClose={onClose} title="Switch project">
+  <div className="space-y-3">
+   <input aria-label="Find a project" type="search" value={search} onChange={event=>setSearch(event.target.value)}
+    placeholder="Find a project" className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body text-ink"/>
+   {projects.isPending?<Skeleton h={120}/>:!list.length?<p className="py-6 text-center text-label text-ink-2">No projects match</p>:
+    <div className="space-y-1">{list.map(p=><button type="button" key={p.id}
+     aria-current={p.slug===current?'page':undefined}
+     onClick={()=>{onClose();navigate('/p/'+p.slug)}}
+     className="flex min-h-12 w-full items-center gap-3 rounded-ctl border border-edge px-3 text-left">
+     <span className="text-amber" aria-hidden="true">{p.subject?.glyph??'∫'}</span>
+     <span className="min-w-0 flex-1 break-words text-body">{p.title}</span>
+     <span className="text-caption text-ink-3">{p.done}/{p.total}</span>
+     <ChevronRight size={16} className="text-ink-3" aria-hidden="true"/>
+    </button>)}</div>}
+   <Link to="/projects" onClick={onClose} className="flex min-h-11 items-center justify-center rounded-ctl border border-edge text-label text-amber">All paths</Link>
+  </div>
+ </Sheet>;
+}
+
 export default function Page(){
  const {slug:rawSlug}=useParams(),slug=rawSlug??'';
  const [params,setParams]=useSearchParams(),query=useProject(slug),navigate=useNavigate(),notify=useToast(),reduce=!!useReducedMotion(),appearance=useSettings();
+ const [switcherOpen,setSwitcherOpen]=useState(false);
  const tab=params.get('tab')==='sessions'?'sessions':params.get('tab')==='sources'?'sources':'path';
  useEffect(()=>{
   if(query.error)notify("Couldn't load this project",{tone:'danger',action:{label:'Try again',onClick:()=>{void query.refetch()}}});
@@ -101,13 +128,13 @@ export default function Page(){
   <header className="flex items-center gap-3">
    <IconButton icon={ArrowLeft} label="Back to projects" onClick={()=>navigate('/projects')}/>
    <div className="min-w-0 flex-1">
-    <h1 aria-label="Project" className="break-words font-[var(--font-display)] text-title-s font-semibold tracking-tight">{project.title}</h1>
+    <h1 aria-label="Project" className="font-[var(--font-display)] text-title-s font-semibold tracking-tight"><button type="button" aria-label={"Switch project from "+project.title} aria-haspopup="dialog" aria-expanded={switcherOpen} onClick={()=>setSwitcherOpen(true)} className="flex min-h-11 max-w-full items-center gap-2 text-left"><span className="min-w-0 break-words">{project.title}</span><ChevronRight size={17} className="shrink-0 text-amber" aria-hidden="true"/></button></h1>
     <p className="mt-1 flex items-center gap-1.5 truncate text-label text-ink-3">
      <BookOpen size={14} aria-hidden="true"/>{data.sources[0]?.title??data.subject.name}</p>
    </div>
    <IconButton icon={Waypoints} label="View in Atlas" to="/atlas"/>
   </header>
-  <ProjectChips detail={data}/>
+  <ProjectSwitcher open={switcherOpen} onClose={()=>setSwitcherOpen(false)} current={slug}/>
   <GoalOverview detail={data} variant={appearance.data?.ui?.timeline==='metro'?'metro':'ascent'}/>
   <Segmented value={tab} onChange={setTab} tone="raised" options={[
    {value:'path',label:'Path'},{value:'sessions',label:'Sessions',count:data.sessions.length},
