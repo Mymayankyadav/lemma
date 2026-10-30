@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reuseSubject, visibleProjects, sourceLine } from '../../../supabase/functions/mcp/v3.ts'
+import { reuseSubject, visibleProjects, sourceLine, scheduleHint } from '../../../supabase/functions/mcp/v3.ts'
 
 const subjects = [
   { id: 'analysis', name: 'Analysis' },
@@ -25,6 +25,18 @@ describe('MCP-4 owner-facing project and subject matching', () => {
       { slug: 'test', status: 'active', system: true },
     ]
     expect(visibleProjects(rows).map(x => x.slug)).toEqual(['analysis'])
+  })
+
+  it('reports early, on-time and late checkpoint projections without shaming', () => {
+    const now = Date.parse('2026-10-30T12:00:00Z')
+    const cp = (due_on: string) => [{ status: 'in_progress', due_on, steps: ['Prove'] }]
+    expect(scheduleHint({}, cp('2026-11-20'), now)).toBe(' | 7 days behind plan')
+    expect(scheduleHint({}, cp('2026-11-27'), now)).toBe(' | on schedule')
+    expect(scheduleHint({}, cp('2026-12-10'), now)).toBe(' | 13 days ahead of plan')
+    expect(scheduleHint({}, [{ status: 'in_progress' }], now)).toBe('')
+    expect(scheduleHint({ target_date: '2026-12-10' }, [
+      { status: 'in_progress', steps: ['Read'] }, { status: 'not_started', steps: ['Prove'] },
+    ], now)).toContain('days behind plan')
   })
 
   it('lists source kind, upload date and unplanned status', () => {
