@@ -14,11 +14,20 @@ import { LemmaError, notImplemented } from '../api'
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
  /** DB-4 implementation supplies these APIs; legacy adapters stay unchanged until then. */
- async updateSubject(..._args: Parameters<LemmaApi['updateSubject']>): ReturnType<LemmaApi['updateSubject']> {
-  throw notImplemented('updateSubject');
+ async updateSubject(...args: Parameters<LemmaApi['updateSubject']>): ReturnType<LemmaApi['updateSubject']> {
+  const [id,patch]=args,db=liveClient(),uid=await owner(db)
+  if(!Object.keys(patch).length){
+   const subject=checked(await db.from('subjects').select('*').eq('id',id).eq('user_id',uid).single()) as Row
+   return subjectRow(subject)
+  }
+  return subjectRow(checked(await db.from('subjects').update(toDb(patch))
+   .eq('id',id).eq('user_id',uid).select('*').single()) as Row)
  }
- async mergeSubjects(..._args: Parameters<LemmaApi['mergeSubjects']>): ReturnType<LemmaApi['mergeSubjects']> {
-  throw notImplemented('mergeSubjects');
+ async mergeSubjects(...args: Parameters<LemmaApi['mergeSubjects']>): ReturnType<LemmaApi['mergeSubjects']> {
+  const [sourceId,targetId]=args,db=liveClient()
+  await owner(db)
+  if(sourceId===targetId)throw new LemmaError('invalid','Choose two different subjects to merge')
+  checked(await db.rpc('merge_subjects',{p_source:sourceId,p_target:targetId}))
  }
  async createProjectDraft(..._args: Parameters<LemmaApi['createProjectDraft']>): ReturnType<LemmaApi['createProjectDraft']> {
   throw notImplemented('createProjectDraft');
