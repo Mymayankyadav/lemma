@@ -7,21 +7,25 @@ import {sheet,fade,variantFor} from './motion';
 export interface SheetProps{open:boolean;onClose:()=>void;title?:string;children:ReactNode}
 export function Sheet({open,onClose,title,children}:SheetProps){
  const labelId=useId(),reduce=!!useReducedMotion(),panel=useRef<HTMLDivElement>(null);
+ // Keep the latest close handler without restarting the focus trap on every render.
+ // Inline onClose callbacks are common; restarting this effect steals textarea focus.
+ const onCloseRef=useRef(onClose);
+ onCloseRef.current=onClose;
  useEffect(()=>{
   if(!open)return;
   const prior=document.activeElement as HTMLElement|null;
   const old=document.body.style.overflow;
   document.body.style.overflow='hidden';
   panel.current?.focus();
-  const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();onClose()}if(e.key==='Tab'&&panel.current){
-   const els=Array.from(panel.current.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+  const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();onCloseRef.current()}if(e.key==='Tab'&&panel.current){
+   const els=Array.from(panel.current.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])'));
    if(!els.length){e.preventDefault();return}
    const first=els[0],last=els[els.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
   }};
   document.addEventListener('keydown',key);
   return ()=>{document.body.style.overflow=old;document.removeEventListener('keydown',key);prior?.focus()};
- },[open,onClose]);
+ },[open]);
  return createPortal(<AnimatePresence>
  {open&&<div className="fixed inset-0 z-40 flex items-end justify-center" role="presentation">
  <motion.div aria-hidden="true" initial="hidden" animate="visible" exit="exit" variants={variantFor(fade,reduce)} className="absolute inset-0 bg-obsidian/75 backdrop-blur-[3px]" onClick={onClose}/>
