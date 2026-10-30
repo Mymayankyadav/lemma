@@ -6,7 +6,7 @@ The owner tried the theme lab (UI-3) and asked for more: themes that change how 
 
 Open it locally by wrapping it: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>` + file + `</body></html>`.
 
-## 0. Owner's choices (30 Oct, 10:42)
+## 0. Owner's choices (30 Oct, 10:42; final choice and UI plan in `ui-euclid.md`)
 
 - **World: Euclid.** Kept: Obsidian lamp, Graph paper, Euclid. The other nine original worlds are eliminated: do not port them.
 - **New dark worlds** made from those choices, to be judged next (port all five): Euclid at night, Scriptorium, Astrolabe, Lamp and compass, Graph paper at night (§1.1).
