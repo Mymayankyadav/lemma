@@ -29,6 +29,12 @@ export function atlasOrbitGroups(graph:AtlasGraph,nodes:readonly AtlasNode[]):Or
    total:members.length,done:members.filter(n=>n.status==='demonstrated').length}];
  });
 }
+export function orbitFitPoints(graph:AtlasGraph,nodes:readonly AtlasNode[]):Point[]{
+ return atlasOrbitGroups(graph,nodes).flatMap(group=>[
+  {x:group.x-group.radius,y:group.y-group.radius},
+  {x:group.x+group.radius,y:group.y+group.radius},
+ ]);
+}
 function ProgressCircle({ring,scale,subject=false}:{ring:Ring;scale:number;subject?:boolean}){
  const circumference=2*Math.PI*ring.radius;
  return <g data-atlas-ring={ring.id} pointerEvents="none">
