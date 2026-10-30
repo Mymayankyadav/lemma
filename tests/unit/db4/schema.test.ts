@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const migration = readFileSync(
-  new URL('../../../supabase/migrations/20261030102000_db4_v3_schema.sql', import.meta.url),
+  'supabase/migrations/20261030102000_db4_v3_schema.sql',
   'utf8',
 )
 const acceptance = readFileSync(
-  new URL('../../../supabase/tests/db4_acceptance.sql', import.meta.url),
+  'supabase/tests/db4_acceptance.sql',
   'utf8',
 )
 
