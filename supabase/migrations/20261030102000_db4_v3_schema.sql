@@ -1,6 +1,12 @@
 -- DB-4: additive v3 schema. All backfills are journalled; no reset, truncate or
 -- unlogged delete. The existing mcp Edge Function and connector secret are untouched.
 
+-- All data backfills and the narrowly scoped orphan cleanup share a clearly
+-- labelled, undoable DB-2 action instead of looking like an app edit.
+select set_config('lemma.source','system',true);
+select set_config('lemma.tool','db4_migration',true);
+select set_config('lemma.summary','DB-4 source, system and orphan Atlas backfill',true);
+
 -- Sources-first project drafts are allowed to have no subject or goal until the
 -- tutor supplies them. Existing non-null values and validation remain intact.
 alter table public.projects alter column subject_id drop not null;
