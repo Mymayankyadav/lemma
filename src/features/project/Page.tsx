@@ -1,9 +1,9 @@
-import {useEffect,useState,useRef} from 'react';
+import {useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
-import {ArrowLeft,BookOpen,ChevronRight,Check,FileText,Layers,MessageCircle,Pause,Play,Plus,Waypoints} from 'lucide-react';
-import {useAddSource,useCheckpoint,useProject,useProjects,useSettings} from '../../data/hooks';
-import type {CheckpointView,IngestProgress,ProjectDetail,SessionSummary,Source} from '../../data/types';
+import {ArrowLeft,BookOpen,ChevronRight,Check,Layers,MessageCircle,Pause,Play,Waypoints} from 'lucide-react';
+import {useCheckpoint,usePlanRevisions,useProject,useProjects,useSettings} from '../../data/hooks';
+import type {CheckpointView,ProjectDetail,SessionSummary} from '../../data/types';
 import {chatLink,planPrompt,resumePrompt,studyPrompt} from '../../lib/chat';
 import {formatMinutes,relativeTime} from '../../lib/text';
 import {Screen} from '../../ui/Screen';
@@ -16,10 +16,9 @@ import {Segmented} from '../../ui/Segmented';
 import {SegmentBar} from '../../ui/SegmentBar';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
-import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
-import {PageStackArt} from '../../ui/art/PageStackArt';
 import {GoalOverview,Stages} from './PathsView';
+import {SourcesPanel} from './SourcesPanel';
 import {Sheet} from '../../ui/Sheet';
 
 function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<typeof useToast>){
@@ -73,37 +72,17 @@ function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
   </Link>;
  })}</div>;
 }
-function SourceList({projectId,sources}:{projectId:string;sources:Source[]}){
- const add=useAddSource(),notify=useToast(),picker=useRef<HTMLInputElement>(null),
-  [progress,setProgress]=useState<IngestProgress|null>(null),[pending,setPending]=useState(false),[name,setName]=useState('');
- async function upload(file:File|undefined){
-  if(!file)return;
-  if(!/\.pdf$/i.test(file.name)||file.size>50*1024*1024||file.size===0){
-   notify('Choose a nonempty PDF under 50 MB',{tone:'danger'});return;
-  }
-  setPending(true);setName(file.name);
-  try{
-   await add.mutateAsync({projectId,file,onProgress:setProgress});
-   notify('PDF added',{tone:'success'});setName('');setProgress(null);
-  }catch(error){notify(error instanceof Error?error.message:'PDF upload failed',{tone:'danger'})}
-  finally{setPending(false);if(picker.current)picker.current.value=''}
- }
- return <section aria-label="Sources" className="flex flex-col gap-3">
-  {sources.map(source=><Tile key={source.id} className="flex items-center gap-3 p-3">
-   <span className="flex h-[58px] w-[46px] shrink-0 items-center justify-center rounded-s bg-amber-tint text-caption font-semibold text-amber">PDF</span>
-   <span className="min-w-0 flex-1"><strong className="block truncate text-body-l">{source.title}</strong>
-    <span className="mt-1 block text-label text-ink-3">{source.pageCount??'—'} pages · {source.status}</span>
-   </span>
-   {source.status==='ready'?<Check size={18} className="text-easy"/>:<FileText size={18} className="text-ink-3"/>}
+function PlanHistory({slug}:{slug:string}){
+ const revisions=usePlanRevisions(slug);
+ if(revisions.isPending)return <Skeleton h={80}/>;
+ if(revisions.error)return <p className="text-label text-ink-3">Plan history is not available yet.</p>;
+ if(!revisions.data?.length)return null;
+ return <section aria-label="Plan history" className="mt-5 flex flex-col gap-2">
+  <h3 className="text-title-s font-semibold">Plan history</h3>
+  {revisions.data.map(revision=><Tile key={revision.revision} className="p-3">
+   <p className="text-body font-semibold">Plan v{revision.revision}</p>
+   <p className="text-label text-ink-3">{new Date(revision.approvedAt).toLocaleDateString()} · {revision.summary}</p>
   </Tile>)}
-  <input ref={picker} type="file" hidden accept=".pdf,application/pdf"
-   onChange={e=>{void upload(e.target.files?.[0])}}/>
-  <button type="button" disabled={pending} onClick={()=>picker.current?.click()}
-   className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
-   <Plus size={22} className="text-amber"/>{pending?'Uploading '+name:'Add a PDF'}
-   {progress&&<span className="text-label text-ink-3">{progress.message+' '+progress.page+'/'+progress.pageCount}</span>}
-  </button>
-  {progress&&<Rail value={progress.pageCount?progress.page/progress.pageCount:0} label="PDF upload progress" sheen/>}
  </section>;
 }
 function ProjectSwitcher({open,onClose,current}:{open:boolean;onClose:()=>void;current:string}){
@@ -170,7 +149,7 @@ export default function Page(){
       action={{label:'Copy plan prompt',onClick:()=>{void navigator.clipboard.writeText(planPrompt(project.title));
        notify('Plan prompt copied',{tone:'success'})}}}/>}
     </div>:tab==='sessions'?
-    <Sessions slug={slug} sessions={data.sessions}/>:<SourceList sources={data.sources} projectId={project.id}/>}
+    <Sessions slug={slug} sessions={data.sessions}/>:<><SourcesPanel sources={data.sources} projectId={project.id}/><PlanHistory slug={slug}/></>}
   </motion.div>
  </Screen>;
 }

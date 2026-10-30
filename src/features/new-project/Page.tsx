@@ -1,183 +1,137 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {useCallback,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {BookOpen,Check,Copy,FileText,Plus,UploadCloud,AlertTriangle} from 'lucide-react';
-import {useAddSource,useCreateProject,useCreateSubject,useStyles,useSubjects} from '../../data/hooks';
-import type {Hue,IngestProgress,Project} from '../../data/types';
+import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
+import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
+import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
 import {isPdfFile} from '../../pdf/ingest';
 import {slugify} from '../../lib/text';
 import ProjectsPage from '../projects/Page';
 import {Sheet} from '../../ui/Sheet';
-import {Chip} from '../../ui/Chip';
-import {Glyph} from '../../ui/Glyph';
 import {Button} from '../../ui/Button';
 import {Rail} from '../../ui/Rail';
-import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
-import {PageStackArt} from '../../ui/art/PageStackArt';
-import {EmptyState} from '../../ui/EmptyState';
 
-const hues:Hue[]=['amber','violet','cyan','rose','lime','slate'];
-const glyphs=['∫','λ','τ','∂','∑','π','∞','α','𝔸','φ','ℤ','⊕'];
-const maxPdfBytes=50*1024*1024;
-
-function SubjectCreator({onCreated}:{onCreated:(id:string)=>void}){
- const create=useCreateSubject(),notify=useToast();
- const [name,setName]=useState(''),[glyph,setGlyph]=useState('∫'),[hue,setHue]=useState<Hue>('amber');
- async function save(){
-  const trimmed=name.trim();
-  if(!trimmed)return;
-  try{
-   const result=await create.mutateAsync({name:trimmed,glyph,hue});
-   onCreated(result.id);notify('Subject added',{tone:'success'});
-  }catch(error){notify(error instanceof Error?error.message:'Could not add subject',{tone:'danger'})}
- }
- return <section aria-label="New subject" className="flex flex-col gap-3 rounded-slab border border-edge-2 bg-raised p-4">
-  <label htmlFor="subject-name" className="text-label text-ink-2">Subject name</label>
-  <input id="subject-name" maxLength={55} value={name} onChange={e=>setName(e.target.value)} autoComplete="off"
-   className="min-h-12 rounded-ctl border border-edge-2 bg-well p-3 text-body-l text-ink" placeholder="e.g. Number Theory"/>
-  <p className="text-label text-ink-3">Choose a mathematical symbol</p>
-  <div className="flex flex-wrap gap-2">{glyphs.map(g=><button type="button" key={g} onClick={()=>setGlyph(g)} aria-label={'Glyph '+g}
-   aria-pressed={glyph===g} className={'flex size-10 items-center justify-center rounded-s font-math text-card italic '+(glyph===g?'bg-amber-tint text-amber ring-1 ring-amber-line-2':'bg-fill-1 text-ink-2')}>{g}</button>)}</div>
-  <p className="text-label text-ink-3">Subject colour</p>
-  <div className="flex gap-3">{hues.map(c=><button type="button" key={c} aria-label={'Colour '+c} aria-pressed={c===hue} onClick={()=>setHue(c)}
-   className={'flex size-10 items-center justify-center rounded-chip '+(c===hue?'ring-2 ring-amber ring-offset-2 ring-offset-sheet':'')}>
-   <span aria-hidden="true" className="size-6 rounded-full" style={{background:'var(--'+c+')'}}/></button>)}</div>
-  <Button icon={Plus} size="m" disabled={!name.trim()||create.isPending} loading={create.isPending} onClick={()=>{void save()}}>Add subject</Button>
- </section>;
+type UploadState='queued'|'reading'|'uploading'|'saving'|'ready'|'failed';
+type QueueItem={id:number;file:File;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
+const MAX_PDF_BYTES=50*1024*1024;
+const validPdf=(file:File)=>isPdfFile(file)&&file.size>0&&file.size<=MAX_PDF_BYTES;
+const bytes=(size:number)=>size>=1048576?(size/1048576).toFixed(1)+' MB':Math.ceil(size/1024)+' KB';
+async function fingerprint(file:File):Promise<string>{
+ const digest=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());
+ return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
 }
 
 export default function Page(){
- const navigate=useNavigate(),subjects=useSubjects(),styles=useStyles(),createProject=useCreateProject(),
-  addSource=useAddSource(),notify=useToast();
- const [name,setName]=useState(''),[goal,setGoal]=useState(''),[subjectId,setSubjectId]=useState(''),
-  [style,setStyle]=useState('socratic'),[file,setFile]=useState<File|null>(null),[addingSubject,setAddingSubject]=useState(false),
-  [progress,setProgress]=useState<IngestProgress|null>(null),[saving,setSaving]=useState(false),
-  [created,setCreated]=useState<Project|null>(null),[fileError,setFileError]=useState<string|null>(null);
- const fileInput=useRef<HTMLInputElement>(null);
- // Keep Sheet's focus-management effect mounted while controlled inputs update.
- const closeNewProject=useCallback(()=>navigate('/projects'),[navigate]);
- useEffect(()=>{
-  if(!subjectId&&subjects.data?.length)setSubjectId(subjects.data[0].id);
- },[subjects.data,subjectId]);
- useEffect(()=>{
-  if(styles.data?.length && !styles.data.some(s=>s.key===style))setStyle(styles.data[0].key);
- },[styles.data,style]);
- function selectFile(f:File|undefined){
-  // Never retain an older PDF after a replacement fails validation.
-  setFile(null);setProgress(null);
-  if(!f){setFileError(null);return}
-  if(!isPdfFile(f)){
-   setFileError('Choose a PDF document.');return
+ const navigate=useNavigate(),notify=useToast(),create=useCreateProjectDraft(),addSource=useAddSource();
+ const [name,setName]=useState(''),[items,setItems]=useState<QueueItem[]>([]),[error,setError]=useState<string|null>(null),
+  [saving,setSaving]=useState(false),[created,setCreated]=useState<Project|null>(null);
+ const input=useRef<HTMLInputElement>(null),nextId=useRef(0);
+ const close=useCallback(()=>navigate('/projects'),[navigate]);
+ function enqueue(files:FileList|File[]){
+  const incoming=Array.from(files),accepted:QueueItem[]=[],invalid:string[]=[];
+  for(const file of incoming){
+   if(!validPdf(file)){invalid.push(file.name);continue}
+   accepted.push({id:++nextId.current,file,status:'queued',progress:null,error:null,sha256:null});
   }
-  if(f.size>maxPdfBytes){setFileError('PDF must be 50 MB or smaller.');return}
-  if(!f.size){setFileError('The selected PDF is empty.');return}
-  setFileError(null);setFile(f);setProgress(null);
+  setItems(previous=>[...previous,...accepted]);
+  setError(invalid.length?'PDFs must be nonempty and at most 50 MB: '+invalid.join(', '):null);
  }
- async function copyPlanPrompt(){
-  try{await navigator.clipboard.writeText(planPrompt(name.trim()));notify('Prompt copied',{tone:'success'})}
-  catch{notify('Copy is unavailable in this browser',{tone:'danger'})}
+ function patch(id:number,change:Partial<QueueItem>){
+  setItems(previous=>previous.map(item=>item.id===id?{...item,...change}:item));
  }
- async function submit(e:React.FormEvent){
-  e.preventDefault();
-  if(saving||!name.trim()||!goal.trim()||!subjectId||!style)return;
-  setSaving(true);
+ async function submit(event:React.FormEvent){
+  event.preventDefault();
+  if(saving||!name.trim())return;
+  setSaving(true);setError(null);
   let project=created;
   try{
    if(!project){
-    project=await createProject.mutateAsync({title:name.trim(),subjectId,goal:goal.trim(),style});
+    project=await create.mutateAsync({title:name.trim()});
     setCreated(project);
    }
-   if(file){
-    setProgress({phase:'reading',page:0,pageCount:0,message:'Reading PDF'});
-    await addSource.mutateAsync({projectId:project.id,file,onProgress:setProgress});
+   const hashes=new Set(items.filter(item=>item.status==='ready'&&item.sha256).map(item=>item.sha256));
+   let failed=false;
+   for(const item of items){
+    if(item.status==='ready')continue;
+    try{
+     patch(item.id,{status:'reading',error:null});
+     const hash=await fingerprint(item.file);
+     if(hashes.has(hash)){
+      patch(item.id,{status:'failed',error:'Already added',sha256:hash});failed=true;continue;
+     }
+     await addSource.mutateAsync({projectId:project.id,file:item.file,onProgress:progress=>{
+      patch(item.id,{progress,status:progress.phase==='done'?'saving':progress.phase==='failed'?'failed':progress.phase});
+     }});
+     hashes.add(hash);
+     patch(item.id,{status:'ready',sha256:hash,error:null});
+    }catch(cause){
+     patch(item.id,{status:'failed',error:cause instanceof Error?cause.message:'Upload failed'});
+     failed=true;
+    }
    }
-   notify('Project created. Tell your tutor: '+planPrompt(project.title),{tone:'success',
-    action:{label:'Copy',onClick:()=>{void navigator.clipboard.writeText(planPrompt(project!.title))}}});
-   navigate('/p/'+project.slug);
-  }catch(error){
-   setFileError(error instanceof Error?error.message:'Could not create your project');
-   notify(project?'Project saved, but source upload needs a retry.':'Project could not be created.',{tone:'danger'});
+   if(failed){
+    notify('Project saved. Retry or remove failed files to continue.',{tone:'danger'});
+    return;
+   }
+   notify('Project created. Tell your tutor: '+planPrompt(project.title),{tone:'success'});
+   navigate('/p/'+project.slug+'?tab=sources');
+  }catch(cause){
+   setError(cause instanceof Error?cause.message:'Could not create project');
+   notify('Could not save your project',{tone:'danger'});
   }finally{setSaving(false)}
  }
- // A failed upload may retry its valid file; an invalid replacement must not submit.
- const canSubmit=Boolean(name.trim()&&goal.trim()&&subjectId&&style&&(!fileError||(created&&file)));
- const preparing=subjects.isPending||styles.isPending;
- const prompt=planPrompt(name.trim()||'your project');
+ const remaining=items.filter(item=>item.status!=='ready').length;
  return <>
-  {/* Keep the real parent screen in place beneath this route-backed modal. */}
   <div data-sheet-background aria-hidden="true" inert><ProjectsPage/></div>
   <h1 className="sr-only">New project</h1>
-  <Sheet open onClose={closeNewProject} title="New project">
-   {preparing?<div className="flex flex-col gap-4"><Skeleton h={50}/><Skeleton h={80}/><Skeleton h={60}/></div>:
-    subjects.error||styles.error?<EmptyState art="plug" title="Setup couldn't load" body="Check your connection and try again."
-     action={{label:'Retry',onClick:()=>{void subjects.refetch();void styles.refetch()}}}/>:
-    <form onSubmit={e=>{void submit(e)}} className="flex flex-col gap-6">
-     <section className="flex flex-col gap-2">
-      <label htmlFor="project-title" className="text-label font-medium text-ink-2">Name</label>
-      <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
-       value={name} onChange={e=>setName(e.target.value)} disabled={saving||Boolean(created)}
-       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
-      <p className="text-label text-ink-3">Path: {slugify(name||'project')}</p>
-     </section>
-     <section aria-label="Subject" className="flex flex-col gap-3">
-      <h3 className="text-body font-semibold text-ink-2">Subject</h3>
-      <div role="radiogroup" aria-label="Subject" className="flex flex-wrap gap-2">
-       {(subjects.data??[]).map(s=><button key={s.id} type="button" role="radio" aria-label={s.name} aria-checked={subjectId===s.id}
-        disabled={saving||Boolean(created)} onClick={()=>setSubjectId(s.id)} className={'flex min-h-11 items-center gap-2 rounded-chip border px-3 text-label '+
-         (subjectId===s.id?'border-amber-line-2 bg-amber-tint-2 text-ink':'border-edge bg-fill-1 text-ink-2')}>
-        <Glyph subject={s.glyph} hue={s.hue} size={32}/>{s.name}</button>)}
-       <button type="button" className="flex min-h-11 items-center gap-2 rounded-chip border border-dashed border-edge-3 px-3 text-label text-amber"
-        aria-expanded={addingSubject} onClick={()=>setAddingSubject(v=>!v)} disabled={saving||Boolean(created)}><Plus size={18} aria-hidden="true"/>Add subject</button>
-      </div>
-      {addingSubject&&<SubjectCreator onCreated={id=>{setSubjectId(id);setAddingSubject(false)}}/>}
-     </section>
-     <section className="flex flex-col gap-2">
-      <label htmlFor="project-goal" className="text-body font-semibold text-ink-2">Goal</label>
-      <textarea id="project-goal" rows={3} maxLength={2000} required
-       placeholder="What should you be able to do? What do you know already?"
-       disabled={saving||Boolean(created)} value={goal} onChange={e=>setGoal(e.target.value)}
-       className="min-h-[98px] w-full rounded-ctl border border-edge-2 bg-well p-3 text-body-l leading-relaxed text-ink"/>
-     </section>
-     <section aria-label="Source" className="flex flex-col gap-3">
-      <h3 className="text-body font-semibold text-ink-2">Source (optional)</h3>
-      <input ref={fileInput} hidden type="file" accept=".pdf,application/pdf"
-       onChange={e=>{const selected=e.currentTarget.files?.[0];e.currentTarget.value='';selectFile(selected)}}/>
-      {!file?<button type="button" disabled={saving} onClick={()=>fileInput.current?.click()}
-       className="flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
-       <FileText size={24} aria-hidden="true" className="text-amber"/>Add a PDF
-       <span className="text-label text-ink-3">Up to 50 MB</span>
-      </button>:<div className="flex items-center gap-3 rounded-slab border border-edge bg-raised p-3">
-       <PageStackArt size={65}/>
-       <div className="min-w-0 flex-1">
-        <p className="truncate text-body font-semibold">{file.name}</p>
-        <p className="mt-1 text-label text-ink-3">{progress?.message??'Ready to import'}{progress?.pageCount?' · '+progress.page+'/'+progress.pageCount:''}</p>
-        {progress&&<Rail value={progress.pageCount?progress.page/progress.pageCount:0} label="PDF processing progress" className="mt-2" sheen/>}
-       </div>
-       {!saving&&<button type="button" onClick={()=>{setFile(null);setProgress(null);setFileError(null)}} className="min-h-11 text-label text-ink-3">Remove</button>}
-      </div>}
-      {fileError&&<p role="alert" className="flex items-center gap-2 text-label text-again"><AlertTriangle size={15} aria-hidden="true"/>{fileError}</p>}
-      {progress?.phase==='done'&&<p className="flex items-center gap-1.5 text-label text-easy"><Check size={16}/>Contents found</p>}
-      {progress?.phase==='failed'&&<p className="text-label text-ink-3">Try the upload again or remove the PDF and continue.</p>}
-     </section>
-     <section aria-label="Teaching style" className="flex flex-col gap-3">
-      <h3 className="text-body font-semibold text-ink-2">Teaching style</h3>
-      <div role="radiogroup" aria-label="Teaching style" className="flex gap-2 overflow-x-auto pb-1">
-       {(styles.data??[]).map(s=><button key={s.key} role="radio" aria-checked={style===s.key}
-        type="button" onClick={()=>setStyle(s.key)} disabled={saving||Boolean(created)}
-        className={'min-h-11 shrink-0 rounded-chip border px-3 text-label '+
-         (style===s.key?'border-amber-line-2 bg-amber-tint-2 text-amber':'border-edge bg-fill-1 text-ink-2')}>
-        {s.name}</button>)}
-      </div>
-      <p className="min-h-10 text-label leading-relaxed text-ink-3">{styles.data?.find(s=>s.key===style)?.instructions}</p>
-     </section>
-     <Button size="xl" loading={saving} disabled={!canSubmit||saving} type="submit" icon={UploadCloud} className="w-full">
-      {saving?progress?.message??'Creating project':created?'Retry PDF upload':'Create project'}
-     </Button>
-     <div className="flex flex-wrap items-center justify-center gap-2 text-label text-ink-3">
-      Then tell your tutor <Chip tone="quiet" icon={Copy} onClick={()=>{void copyPlanPrompt()}}>{prompt}</Chip>
+  <Sheet open onClose={close} title="New project">
+   <form onSubmit={event=>{void submit(event)}} className="flex flex-col gap-5">
+    <section className="flex flex-col gap-2">
+     <label htmlFor="project-title" className="text-label font-medium text-ink-2">Name</label>
+     <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
+      value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
+      placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
+     <p className="text-label text-ink-3">Path: {slugify(name||'project')}</p>
+     <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
+    </section>
+    <section aria-label="Sources" className="flex flex-col gap-3"
+     onDragOver={event=>event.preventDefault()}
+     onDrop={event=>{event.preventDefault();if(!saving)enqueue(event.dataTransfer.files)}}>
+     <div className="flex items-center justify-between gap-2">
+      <h3 className="text-body font-semibold text-ink-2">Sources (optional)</h3>
+      <span className="text-label text-ink-3">PDF · 50 MB each</span>
      </div>
-    </form>}
+     <input ref={input} hidden type="file" multiple accept=".pdf,application/pdf"
+      onChange={event=>{if(event.currentTarget.files)enqueue(event.currentTarget.files);event.currentTarget.value=''}}/>
+     <button type="button" disabled={saving} onClick={()=>input.current?.click()}
+      className="flex min-h-24 items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
+      <Plus size={20} className="text-amber"/>Add PDFs or drop them here
+     </button>
+     <ul aria-label="Upload queue" className="flex flex-col gap-2">
+      {items.map(item=><li key={item.id} className="flex min-w-0 items-start gap-3 rounded-slab border border-edge bg-raised p-3">
+       <FileText size={19} className="mt-1 shrink-0 text-amber" aria-hidden="true"/>
+       <div className="min-w-0 flex-1">
+        <p className="truncate text-body font-semibold">{item.file.name}</p>
+        <p className="text-label text-ink-3">{bytes(item.file.size)} · {item.status}{item.progress?.pageCount?' · '+item.progress.page+'/'+item.progress.pageCount+' pages':''}</p>
+        {item.progress&&item.status!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Progress for '+item.file.name}/>}
+        {item.error&&<p role="alert" className="text-label text-again">{item.error}</p>}
+       </div>
+       {item.status==='ready'?<Check size={18} className="text-easy"/>:
+        !saving&&<button type="button" aria-label={'Remove '+item.file.name} onClick={()=>setItems(previous=>previous.filter(x=>x.id!==item.id))}
+         className="flex size-11 shrink-0 items-center justify-center text-ink-3"><Trash2 size={17}/></button>}
+      </li>)}
+     </ul>
+    </section>
+    {error&&<p role="alert" className="flex gap-2 text-label text-again"><AlertTriangle size={16}/>{error}</p>}
+    <Button size="xl" className="w-full" type="submit" disabled={saving||!name.trim()} loading={saving}>
+     {saving?'Saving project and sources':created&&remaining?'Retry remaining uploads':'Create project'}
+    </Button>
+    <button type="button" className="flex min-h-11 items-center justify-center gap-2 text-label text-amber"
+     onClick={()=>{void navigator.clipboard.writeText(planPrompt(name.trim()||'your project')).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy unavailable',{tone:'danger'}))}}>
+     <Copy size={15}/>Tell your tutor: {planPrompt(name.trim()||'your project')}
+    </button>
+   </form>
   </Sheet>
  </>;
 }
