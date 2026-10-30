@@ -66,11 +66,11 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
     </div>
     <strong className="shrink-0 font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
    </div>
-   <div role="region" aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
+   <section aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
     <strong className="font-[var(--font-display)] text-title-s tabular-nums text-ink">{done}</strong>
     <span>of {total} checkpoints done</span>
     {current>=0&&<span className="ml-auto text-amber">{checkpoints[current].code} now</span>}
-   </div>
+   </section>
    <div role="region" aria-label="Project timeline" className="min-w-0">
     <ProjectTimeline project={{title:project.title,slug:project.slug,done,total}} checkpoints={checkpoints}
      variant={variant} height={96}/>
