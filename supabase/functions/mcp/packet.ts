@@ -3,6 +3,7 @@ import { project, checkpoints } from './resolve.ts';
 import { cut, capped, date } from './text.ts';
 import { day, display, ui, goalEta } from './derive.ts';
 import { STUDY, PLANNING, MIX } from './rules.ts';
+import { sourceLine, visibleProjects } from './v3.ts';
 export async function settings(c:Context):Promise<any>{
   const {data,error}=await scoped(c,'settings').maybeSingle();
   if(error||!data)throw new Error('Owner settings not initialized; run bootstrap first');
@@ -25,7 +26,7 @@ export async function counts(c:Context,s:any):Promise<{due:number;pending:number
   return {due:Math.min(capacity,due+fresh),pending:(props.data||[]).length,comments:(comments.data||[]).length};
 }
 async function list(c:Context,s:any):Promise<string>{
-  const ps=await all(c,'projects','id,slug,title,status,last_activity_at');
+  const ps=visibleProjects(await all(c,'projects','id,slug,title,status,last_activity_at,system'));
   const ss=await all(c,'sessions','project_id,number,state,last_activity_at,checkpoint_id');
   const cs=await all(c,'checkpoints','id,project_id,code,title,status');
   const lines=['LEMMA projects. Ask which one, or resume with mix=true.'];
@@ -41,7 +42,7 @@ async function basePacket(c:Context,args:{project?:string;mix?:boolean;brief?:bo
   const s=await settings(c);
   if(!args.project&&!args.mix)return list(c,s);
   if(args.mix){
-    const ps=(await all(c,'projects','*')).filter((x:any)=>x.status==='active');
+    const ps=visibleProjects(await all(c,'projects','*')).filter((x:any)=>x.status==='active');
     const lines=['LEMMA mix: '+ps.map((x:any)=>x.slug).join(', '),'NOW'];
     const fragments:string[]=[];const warm:string[]=[];
     for(const p of ps){const cps=await checkpoints(c,p),cp=cps.find((x:any)=>x.status==='in_progress')||cps.find((x:any)=>x.status==='not_started');if(cp)fragments.push(p.slug+' '+cp.code+' '+cp.title+' step '+cp.current_step+'/'+cp.steps.length);const re=cps.find((x:any)=>x.recheck_due&&x.recheck_due<=day(s)&&x.recheck_prompt);if(re)warm.push(p.slug+' '+re.code+': '+re.recheck_prompt)}
@@ -51,10 +52,10 @@ async function basePacket(c:Context,args:{project?:string;mix?:boolean;brief?:bo
     return capped(lines.join('\n'),2400);
   }
   const p=await project(c,args.project);
-  const sources=(await scoped(c,'sources').eq('project_id',p.id).order('created_at')).data||[];
+  const sources=(await scoped(c,'sources').eq('project_id',p.id).order('added_at',{ascending:false})).data||[];
   const style=(await scoped(c,'styles').eq('key',p.style).maybeSingle()).data;
   if(p.status==='planning'){
-    const src=sources.map((x:any)=>x.short+' "'+cut(x.title,40)+'" '+(x.page_count||'attached')+' pages, outline '+(x.outline||[]).length+' entries: get(what=outline)').join('; ');
+    const src=sources.map((x:any)=>sourceLine(x)+' outline '+(x.outline||[]).length+' entries: get(what=outline)').join('; ');
     return capped(['LEMMA '+p.title+' ['+p.slug+'] PLANNING','GOAL '+cut(p.goal,1000)+goalEta(p,[]),src?'SRC '+src:'',args.brief?'':'STYLE '+(style?.name||p.style),args.brief?'':'RULES\n'+PLANNING].filter(Boolean).join('\n'),2400);
   }
   const cps=await checkpoints(c,p);const open=(await scoped(c,'sessions').eq('project_id',p.id).eq('state','open').order('last_activity_at',{ascending:false}).limit(1)).data?.[0];
