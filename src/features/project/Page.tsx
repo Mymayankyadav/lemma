@@ -136,7 +136,7 @@ export default function Page(){
    <IconButton icon={Waypoints} label="View in Atlas" to="/atlas"/>
   </header>
   <ProjectSwitcher open={switcherOpen} onClose={()=>setSwitcherOpen(false)} current={slug}/>
-  <GoalOverview detail={data} variant={appearance.data?.ui?.timeline==='metro'?'metro':'ascent'}/>
+  <GoalOverview detail={data} variant="metro"/>
   <Segmented value={tab} onChange={setTab} tone="raised" options={[
    {value:'path',label:'Path'},{value:'sessions',label:'Sessions',count:data.sessions.length},
    {value:'sources',label:'Sources',count:data.sources.length}
