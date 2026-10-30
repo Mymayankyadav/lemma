@@ -60,6 +60,18 @@ begin
     where c.table_name='checkpoint_sources' and c.new->>'checkpoint_id'=cp1::text) then
     raise exception 'Checkpoint source was not journalled';
   end if;
+
+  update public.checkpoints set source_id=src,pages='5-6' where id=cp1;
+  if (select pages from public.checkpoint_sources
+      where checkpoint_id=cp1 and source_id=src)<>'5-6' then
+    raise exception 'Legacy checkpoint source update did not sync';
+  end if;
+  update public.checkpoints set source_id=null where id=cp1;
+  if exists(select 1 from public.checkpoint_sources
+      where checkpoint_id=cp1 and source_id=src) then
+    raise exception 'Legacy source removal left a stale citation';
+  end if;
+
   begin
     insert into public.checkpoint_sources(user_id,checkpoint_id,source_id)
       values(owner_id,cp2,src);
