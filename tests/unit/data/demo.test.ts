@@ -46,7 +46,7 @@ describe("demo adapter", () => {
     });
     expect(await api.getReviewItems({ ...filter, decks: [] })).toHaveLength(23);
     const atlas = await api.getAtlas();
-    expect(atlas.concepts).toHaveLength(82);
+    expect(atlas.concepts).toHaveLength(22);
     expect(
       atlas.concepts.filter((c) => c.status === "demonstrated"),
     ).toHaveLength(9);
