@@ -24,6 +24,7 @@ interface ReviewState {
  answers:Answer[]
  lastUndo:Answer|null
  total:number
+ roundOrder:string[]
  initialize:(items:ReviewItem[],settings:QueueSettings,filter:QueueFilter)=>void
  reveal:(confidence:Confidence)=>void
  beginGrade:()=>void
@@ -35,11 +36,12 @@ interface ReviewState {
 const defaultFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false}
 export const useReviewSession=create<ReviewState>((set,get)=>({
  filter:defaultFilter,queue:null,current:null,confidence:null,revealed:false,submitting:false,
- startTime:Date.now(),answers:[],lastUndo:null,total:0,
+ startTime:Date.now(),answers:[],lastUndo:null,total:0,roundOrder:[],
  initialize(items,settings,filter){
   const first=nextCard(buildQueue(items,settings),Date.now())
   set({filter,queue:first.queue,current:first.item,total:items.length,
-   revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],lastUndo:null})
+   revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],lastUndo:null,
+   roundOrder:first.item?[first.item.cardId]:[]})
  },
  reveal(confidence){if(get().current&&!get().submitting)set({revealed:true,confidence})},
  beginGrade(){set({submitting:true})},
@@ -50,7 +52,9 @@ export const useReviewSession=create<ReviewState>((set,get)=>({
   const advanced=advanceQueue(queue,current,receipt.next)
   const next=nextCard(advanced)
   const entry:Answer={...receipt,queueBefore:queue}
+  const roundOrder=get().roundOrder
   set({current:next.item,queue:next.queue,answers:[...answers,entry],lastUndo:entry,
+   roundOrder:next.item&&!roundOrder.includes(next.item.cardId)?[...roundOrder,next.item.cardId]:roundOrder,
    confidence:null,revealed:false,submitting:false,startTime:Date.now()})
  },
  undoCommitted(){
@@ -60,5 +64,5 @@ export const useReviewSession=create<ReviewState>((set,get)=>({
    lastUndo:null,confidence:null,revealed:false,submitting:false,startTime:Date.now()})
   return lastUndo
  },
- close(){set({current:null,queue:null,confidence:null,revealed:false,submitting:false,startTime:Date.now()})},
+ close(){set({current:null,queue:null,roundOrder:[],confidence:null,revealed:false,submitting:false,startTime:Date.now()})},
 }))
