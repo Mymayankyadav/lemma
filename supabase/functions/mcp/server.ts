@@ -98,11 +98,12 @@ export function buildServer(c:Context):McpServer{
     project:name,ops:z.array(z.object({op:z.enum(['add','update','remove','move','prereq_add','prereq_remove'])}).catchall(z.unknown())).min(1).max(20),
     diagnostics:z.array(S().regex(/^D[0-9]+$/)).max(20).optional(),book:S().max(20).optional(),reason:S().min(1).max(300)
   }),false,(a,ctx)=>proposePlanChange(ctx,a));
-  register('create_project','Create a project, optionally with target_date (YYYY-MM-DD) and target_label. Then propose_plan.',z.object({
-    target_date:S().nullable().optional(),target_label:S().max(20).nullable().optional(),title:S().min(1).max(80),subject:S().min(1).max(40),
-    goal:S().min(1).max(1000),glyph:S().max(2).optional(),
+  register('create_project','Start a sources-first project with only a name, optionally a subject, goal, schedule and PDF metadata. Student uploads actual PDF bytes in Lemma; tutor proposes the plan for approval.',z.object({
+    target_date:S().nullable().optional(),target_label:S().max(20).nullable().optional(),title:S().min(1).max(80),subject:S().min(1).max(40).optional(),
+    goal:S().min(1).max(1000).optional(),glyph:S().max(2).optional(),
     style:S().optional(),book:S().max(120).optional(),
-    book_short:S().max(20).optional()
+    book_short:S().max(20).optional(),
+    books:z.array(z.object({title:S().min(1).max(120),filename:S().min(1).max(255),kind:z.enum(['book','notes','slides','problems','syllabus','exam','other']).optional(),sha256:S().regex(/^[0-9a-f]{64}$/).optional()})).max(20).optional()
   }),false,(a,ctx)=>createProject(ctx,a));
   register('proposals','List proposals waiting for approval, numbered P1, P2… Use when the user wants to approve or reject in chat.',z.object({project:optProject}),true,(a,ctx)=>proposals(ctx,a));
   register('decide','Approve or reject proposals by number, only after the user says so in this chat.',z.object({
