@@ -136,3 +136,22 @@ for (const [width, density] of [
     await expect(paused).toHaveAttribute("aria-pressed", "true");
   });
 }
+
+for(const world of ['euclid','euclid-night'] as const){
+ test(`UI-5g card rows and tutor marginalia in ${world}`,async({page})=>{
+  await page.setViewportSize({width:360,height:740});
+  await page.addInitScript(theme=>localStorage.setItem('lemma.ui',JSON.stringify({theme,density:'compact',effects:'calm'})),world);
+  await page.goto('/lemma/?demo=1#/cards');
+  const row=page.getByRole('link',{name:/Heine/});
+  await expect(row).toBeVisible();
+  await expect(row.locator('span').filter({hasText:/CP/}).first()).toBeVisible();
+  await page.screenshot({path:`test-results/screens/ui-5g-cards-${world}.png`,fullPage:true});
+  await row.click();
+  await expect(page.getByRole('article',{name:'Card front and answer'})).toBeVisible();
+  const note=page.getByText('Too wordy. Make the hypotheses a cloze.');
+  await expect(note).toBeVisible();
+  expect(await note.locator('..').evaluate(el=>getComputedStyle(el).borderLeftWidth)).toBe('2px');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
+  await page.screenshot({path:`test-results/screens/ui-5g-card-detail-${world}.png`,fullPage:true});
+ });
+}
