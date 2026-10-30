@@ -1,0 +1,5 @@
+
+> lemma@0.1.0 typecheck
+> tsc -b
+
+exit 0
