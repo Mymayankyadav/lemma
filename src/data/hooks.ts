@@ -38,6 +38,9 @@ export function useReviewItems(...args: Parameters<LemmaApi['getReviewItems']>) 
 export function useSearchCards(...args: Parameters<LemmaApi['searchCards']>) {
  return useQuery({ ...queryDefaults, queryKey: ['cards', args[0], args[1]], queryFn: () => getApi().searchCards(args[0], args[1]) })
 }
+export function useSearchCardsPage(...args: Parameters<LemmaApi['searchCardsPage']>) {
+ return useQuery({ ...queryDefaults, queryKey: ['cards-page', args[0]], queryFn: () => getApi().searchCardsPage(args[0]) })
+}
 export function useCard(...args: Parameters<LemmaApi['getCard']>) {
  return useQuery({ ...queryDefaults, queryKey: ['card', args[0]], queryFn: () => getApi().getCard(args[0]) })
 }
