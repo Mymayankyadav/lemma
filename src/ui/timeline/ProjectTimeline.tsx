@@ -1,11 +1,11 @@
 import {useMemo,useState,type KeyboardEvent, type MouseEvent} from 'react'
 import {useNavigate} from 'react-router'
-import type {CheckpointView,ProjectSummary} from '../../data/types'
+import type {CheckpointView} from '../../data/types'
 
 export type TimelineVariant='ascent'|'metro'
 
 export interface ProjectTimelineProps {
- project:ProjectSummary
+ project:{title:string;slug:string;done:number;total:number}
  checkpoints:readonly CheckpointView[]
  variant?:TimelineVariant
  height?:number
