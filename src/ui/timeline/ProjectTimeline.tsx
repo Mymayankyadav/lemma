@@ -115,7 +115,10 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
    </svg>
    {!mini&&variant==='metro'&&groups.map((group,i)=>{
     const start=geometry[group.start].x,end=geometry[group.end].x
-    if(end-start<72)return null
+    // Stage labels must fit their segment: never clip or overlap mathematical text.
+    const available=(end-start)*.9
+    const needed=group.name.length*7.2+12
+    if(available<needed)return null
     return <span key={group.start} aria-hidden="true"
      className="pointer-events-none absolute truncate text-center text-caption text-ink-3"
      style={{left:(start/360*100)+'%',width:((end-start)/360*100)+'%',
@@ -127,7 +130,6 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
   {!mini&&<p className="mt-1 min-w-0 text-label text-ink-2">
    <span className="font-semibold text-amber">{selectedCheckpoint?.code}</span>{' '}
    <span className="break-words"><Tex source={selectedCheckpoint?.title??''}/></span>
-   <span className="text-ink-3"> · {Math.round(100*project.done/Math.max(1,project.total))}% complete</span>
    {detail&&<span className="block text-caption text-ink-2">{detail}</span>}
   </p>}
  </div>
