@@ -77,6 +77,8 @@ Primary keys are `id uuid default gen_random_uuid()` unless stated.
 
 > **v3 list contract:** `ProjectSummary.sourceTitles?: string[]` returns the titles of the project's own sources for Paths library search. Both data adapters populate it from sources they already read; the UI must not issue one network request per project to search source names. This is additive and does not expose source page content.
 
+> **ST-5 additive Paths contract:** `ProjectSummary.stageProgress?: ProjectStageProgress[]` supplies ordered, bounded stage segments `{label, firstCode, lastCode, done, total, overdue, schedule}` from the server summary. `schedule` is `complete`, `behind`, `dated`, or `unscheduled`; absent tutor stages are grouped in consecutive checkpoint ranges of at most eight. `ProjectSummary.scheduleHeadline?: string | null` is a date-grounded short summary (`N overdue`, `Target passed`, `Dates planned`, `Complete`, or null when no evidence). These optional fields must not trigger per-project detail fetches. The live adapter receives them from `project_summaries()` (ST-5); demo/stress adapters may populate them when available. ST-1 consumes the fields for the Paths mini Metro. No existing contract fields change.
+
 ### 2.4 `sources` (uploaded PDFs)
 
 | Column | Type / default | Notes |
