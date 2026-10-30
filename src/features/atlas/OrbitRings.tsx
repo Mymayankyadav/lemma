@@ -45,12 +45,17 @@ function ProgressCircle({ring,scale,subject=false}:{ring:Ring;scale:number;subje
    transform={'rotate(-90 '+ring.x+' '+ring.y+')'}/>
  </g>;
 }
-export function OrbitRings({graph,nodes,scale}:{graph:AtlasGraph;nodes:readonly AtlasNode[];scale:number}){
+export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:readonly AtlasNode[];scale:number;onFocus?:(subjectId:string,topicId?:string)=>void}){
  const groups=atlasOrbitGroups(graph,nodes);
  return <g aria-hidden="true" data-atlas-orbits="true" pointerEvents="none">
   {groups.map(group=><g key={group.id}>
    <ProgressCircle ring={group} scale={scale} subject/>
    <text x={group.x} y={group.y-group.radius-10/scale} textAnchor="middle"
+    data-atlas-subject-focus={group.id} role="button" tabIndex={0}
+    aria-label={'Zoom into '+group.name}
+    onClick={event=>{event.stopPropagation();onFocus?.(group.id)}}
+    onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id)}}}
+    pointerEvents="all" className="cursor-pointer"
     fontFamily="var(--font-ui)" fontSize={13/scale} fontWeight="700"
     fill="var(--ink)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">
     {group.name} · {group.done}/{group.total}
@@ -58,6 +63,11 @@ export function OrbitRings({graph,nodes,scale}:{graph:AtlasGraph;nodes:readonly 
    {group.topics.map(topic=><g key={topic.id}>
     <ProgressCircle ring={topic} scale={scale}/>
     {topic.radius*scale>=44&&<text x={topic.x} y={topic.y-topic.radius-5/scale}
+     data-atlas-topic-focus={topic.id} role="button" tabIndex={0}
+     aria-label={'Zoom into '+group.name+' / '+topic.name}
+     onClick={event=>{event.stopPropagation();onFocus?.(group.id,topic.id)}}
+     onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id,topic.id)}}}
+     pointerEvents="all" className="cursor-pointer"
      textAnchor="middle" fontFamily="var(--font-ui)" fontSize={11/scale}
      fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">{topic.name}</text>}
    </g>)}
