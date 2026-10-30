@@ -19,16 +19,19 @@ try {
   'create table public.checkpoint_prereqs(user_id uuid,checkpoint_id uuid,prereq_id uuid);',
   'create table public.notes(id uuid primary key,user_id uuid,project_id uuid,checkpoint_id uuid,no bigint,front text,back text,type text,kind text,status text);',
   'create table public.cards(id uuid primary key,user_id uuid,note_id uuid,state int,due timestamptz);',
-  'create table public.sessions(id uuid primary key,user_id uuid,project_id uuid,checkpoint_id uuid,number int,resume_step int,resume_question text,last_activity_at timestamptz,state text);',
+  'create table public.sessions(id uuid primary key,user_id uuid,project_id uuid,checkpoint_id uuid,number int,resume_step int,resume_question text,last_activity_at timestamptz,state text,started_at timestamptz,minutes int);',
   'create table public.sources(id uuid primary key,user_id uuid,project_id uuid,title text,position int);',
   'create table public.card_comments(id uuid primary key,user_id uuid,note_id uuid,status text);',
   'create table public.settings(user_id uuid primary key,reviews_per_day int,new_per_day int,time_zone text,rollover_hour int);',
-  'create table public.reviews(id uuid primary key,user_id uuid,state_before int,undone_at timestamptz,reviewed_at timestamptz);',
+  'create table public.reviews(id uuid primary key,user_id uuid,state_before int,undone_at timestamptz,reviewed_at timestamptz,rating int,confidence text,duration_ms int);',
   'create table public.proposals(id uuid primary key,user_id uuid,status text);',
+  'create table public.session_events(id uuid primary key,user_id uuid,kind text,outcome text,created_at timestamptz);',
+  'create table public.concepts(id uuid primary key,user_id uuid,name text);',
+  'create table public.misconceptions(id uuid primary key,user_id uuid,concept_id uuid,label text,times int);',
   'grant usage on schema public to authenticated;',
   'grant select on all tables in schema public to authenticated;'
  ].join('\n'))
- for(const name of ['subjects','projects','checkpoints','checkpoint_prereqs','notes','cards','sessions','sources','card_comments','settings','reviews','proposals']){
+ for(const name of ['subjects','projects','checkpoints','checkpoint_prereqs','notes','cards','sessions','sources','card_comments','settings','reviews','proposals','session_events','concepts','misconceptions']){
   await db.exec('alter table public.'+name+' enable row level security; create policy owner_read on public.'+name+' for select to authenticated using(user_id=(select auth.uid()));')
  }
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031012600_st5_paged_reads.sql',import.meta.url),'utf8'))
@@ -86,4 +89,39 @@ try {
  assert.deepEqual(privateHome.projects.map(x=>x.slug),['private'])
  assert.equal(privateHome.pendingProposals,0);assert.equal(privateHome.due,1)
  console.log('PASS ST-5 review caps and cross-owner isolation')
+
+ // Populate historical metrics only after the earlier Today/deck quota assertions.
+ await db.exec('reset role')
+ await db.exec([
+  "insert into public.sessions(id,user_id,project_id,checkpoint_id,number,resume_step,resume_question,last_activity_at,state,started_at,minutes) values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333',null,4,null,null,now(),'ended',now()-interval '10 minutes',45);",
+  "insert into public.reviews values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4','11111111-1111-1111-1111-111111111111',2,null,now()-interval '10 minutes',3,'sure',1800),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5','99999999-9999-9999-9999-999999999999',2,null,now()-interval '10 minutes',1,'guess',2000);",
+  "insert into public.session_events values('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee','11111111-1111-1111-1111-111111111111','evidence','demonstrated',now()-interval '10 minutes');",
+  "insert into public.concepts values('ffffffff-ffff-ffff-ffff-ffffffffffff','11111111-1111-1111-1111-111111111111','Groups');",
+  "insert into public.misconceptions values('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeef','11111111-1111-1111-1111-111111111111','ffffffff-ffff-ffff-ffff-ffffffffffff','Closure',3);"
+ ].join('\n'))
+ await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
+ const insights=(await q('select public.insights(7) result'))[0].result
+ assert.equal(insights.days,7)
+ assert.equal(insights.reviewDays.length,7)
+ assert.equal(insights.reviews,1);assert.equal(insights.right,1)
+ assert.equal(insights.reviewDays.reduce((sum,d)=>sum+d.good,0),1)
+ assert.deepEqual(insights.calibration.map(x=>x.confidence),['sure','unsure','guess'])
+ assert.deepEqual(insights.calibration.map(x=>x.total),[1,0,0])
+ assert.equal(insights.sessions,1);assert.equal(insights.minutes,45)
+ assert.equal(insights.typicalSession,45)
+ assert.equal(insights.subjectMinutes.length,1)
+ assert.equal(insights.subjectMinutes[0].subject.name,'Algebra')
+ assert.equal(insights.subjectMinutes[0].minutes,45)
+ assert.equal(insights.checkpointDays.length,28)
+ assert.equal(insights.checkpointDays.reduce((sum,d)=>sum+d.demonstrated,0),1)
+ assert.deepEqual(insights.mostRevisited,{label:'Closure',times:3,conceptName:'Groups'})
+ assert.equal((await q('select public.insights(900) result'))[0].result.reviewDays.length,90)
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ const otherInsights=(await q('select public.insights(7) result'))[0].result
+ assert.equal(otherInsights.reviews,1);assert.equal(otherInsights.right,0)
+ assert.equal(otherInsights.sessions,0);assert.equal(otherInsights.minutes,0)
+ assert.equal(otherInsights.mostRevisited,null)
+ assert.deepEqual(otherInsights.subjectMinutes,[])
+ console.log('PASS ST-5 bounded Insights aggregates, study metrics and owner isolation')
+
 } finally {await db.close()}
