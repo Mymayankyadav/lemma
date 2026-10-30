@@ -53,3 +53,12 @@ html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content a[href]
 html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content .font-math.block.truncate{
  white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;
 }
+
+/* Atlas uses d3 zoom; enlarge its transparent SVG hit-circle without changing visible nodes.
+   At the default fit on narrow phones a 25-unit circle shrinks below 44 CSS px. */
+html:is([data-theme="euclid"],[data-theme="euclid-night"]) svg[aria-label^="Interactive knowledge graph"] g[data-node] > circle:first-child{
+ r:43px;
+}
+html:is([data-theme="euclid"],[data-theme="euclid-night"]) [aria-label="Atlas"] button{
+ min-height:44px;
+}
