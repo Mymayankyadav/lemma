@@ -1,3 +1,4 @@
+import {reuseSubject} from '../v3.ts';
 import {planningFields} from '../planning.ts';
 import {Context,scoped,all,insert,update,rpc} from '../db.ts';
 import {project,checkpoint,session,source} from '../resolve.ts';
@@ -6,9 +7,9 @@ import {slug,cut} from '../text.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
 const allowed:Record<string,string[]|string>={
- projects:'target_date target_label title slug goal style status subject prompt',checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due needs_revisit after',
+ projects:'target_date target_label title slug goal style status subject prompt',checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
  sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due',card_comments:'body status',
- concepts:'topic name blurb subject prereqs related',subjects:'name glyph hue',styles:'name instructions',sources:'title short',settings:'desired_retention new_per_day reviews_per_day learn_steps relearn_steps rollover_hour default_style tutor_rules mix_decks preferred_chat master_prompt time_zone'
+ concepts:'topic name blurb subject prereqs related level parent star',subjects:'name glyph hue',styles:'name instructions',sources:'title short kind',settings:'desired_retention new_per_day reviews_per_day learn_steps relearn_steps rollover_hour default_style tutor_rules mix_decks preferred_chat master_prompt time_zone'
 };
 const enqueue=(c:Context,table:string,where:any,values:any)=>c.batch!.push({op:'update',table,where,values});
 async function find(c:Context,table:string,key:string,value:any){const {data,error}=await scoped(c,table).eq(key,value).maybeSingle();if(error)throw Error(error.message);if(!data)throw Error('No '+table+' '+value);return data;}
@@ -90,7 +91,13 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
  planningFields(patch);
  const p=given||(row.project_id?await find(c,'projects','id',row.project_id):null);
  if(table==='notes'&&patch.status!==undefined&&!['active','suspended'].includes(patch.status))throw Error('Card status must be active or suspended');
- if(patch.subject!==undefined){const sub=await find(c,'subjects','name',patch.subject);patch.subject_id=sub.id;delete patch.subject;}
+ if(patch.subject!==undefined){
+  if(patch.subject===null){if(table!=='projects')throw Error('Only project subjects can be unset');patch.subject_id=null;}
+  else {const owned=await all(c,'subjects','id,name');const sub=reuseSubject(owned,String(patch.subject));
+   const target=sub||await insert(c,'subjects',{name:patch.subject,glyph:String(patch.subject).slice(0,1),hue:'amber'});
+   patch.subject_id=target.id;}
+  delete patch.subject;
+ }
  if(patch.checkpoint!==undefined){patch.checkpoint_id=patch.checkpoint===null?null:(await checkpoint(c,p,patch.checkpoint)).id;delete patch.checkpoint;}
  if(patch.book!==undefined){patch.source_id=patch.book===null?null:(await source(c,p,patch.book)).id;delete patch.book;}
  if(patch.idea!==undefined){patch.concept_id=patch.idea===null?null:(await idea(c,patch.idea,p.subject_id)).id;delete patch.idea;}
@@ -102,7 +109,17 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
  if(patch.due!==undefined){const due=patch.due==='now'?new Date().toISOString():new Date(patch.due).toISOString();for(const x of (await all(c,'cards')).filter(x=>x.note_id===row.id))enqueue(c,'cards',{id:x.id},{due});delete patch.due;}
  if(patch.after!==undefined){const cps=(await all(c,'checkpoints')).filter(x=>x.project_id===p.id&&x.id!==row.id).sort((a,b)=>a.position-b.position);const i=patch.after===null?-1:cps.findIndex(x=>x.code===patch.after);if(patch.after!==null&&i<0)throw Error('Unknown insertion point');patch.position=i<0?(cps[0]?.position||10)-10:(cps[i].position+(cps[i+1]?.position||cps[i].position+20))/2;delete patch.after;}
  for(const [field,join,left,right] of [['prereqs','checkpoint_prereqs','checkpoint_id','prereq_id'],['ideas','checkpoint_concepts','checkpoint_id','concept_id']] as const){if(table==='checkpoints'&&field in patch){for(const x of (await all(c,join)).filter(x=>x[left]===row.id))c.batch!.push({op:'delete',table:join,where:{[left]:x[left],[right]:x[right]}});const linked=new Set<string>();for(const name of patch[field]){const r=field==='prereqs'?await checkpoint(c,p,name):await idea(c,name,p.subject_id);if(linked.has(r.id))continue;linked.add(r.id);const vals:any={[left]:row.id,[right]:r.id};c.batch!.push({op:'insert',table:join,values:vals});}delete patch[field];}}
- if(table==='concepts'){await ideaLinks(c,row,patch,true);delete patch.prereqs;delete patch.related;}
+ if(table==='concepts'){
+  if(patch.parent!==undefined){
+   if(patch.parent===null)patch.parent_id=null;
+   else {const own=(await all(c,'concepts')).filter(x=>x.subject_id===row.subject_id&&x.id!==row.id);
+    const parent=own.find(x=>x.name.toLowerCase()===String(patch.parent).toLowerCase());
+    if(!parent)throw Error('Atlas parent must be an idea in the same subject');patch.parent_id=parent.id;}
+   delete patch.parent;
+  }
+  if(patch.star!==undefined){if(typeof patch.star!=='boolean')throw Error('star must be boolean');patch.is_star=patch.star;delete patch.star;}
+  await ideaLinks(c,row,patch,true);delete patch.prereqs;delete patch.related;
+ }
  if(Object.keys(patch).length)enqueue(c,table,pk(table,row),patch);
  return 'edited '+a.target+': '+Object.keys(a.set).join(', ');
 }
@@ -118,7 +135,9 @@ export async function add(c:Context,a:any){const f={...a.fields};planningFields(
   const extra:any={};for(const k of ['status','current_step','recheck_due','needs_revisit'])if(k in f)extra[k]=f[k];if(Object.keys(extra).length)enqueue(c,'checkpoints',{project_id:p.id,code:f.code},extra);return 'added '+f.code;
  }
  if(a.kind==='subject'){for(const k of Object.keys(f))if(!['name','glyph','hue'].includes(k))throw Error('Valid fields: name, glyph, hue');await insert(c,'subjects',{glyph:f.name?.slice(0,1)||'M',hue:'amber',...f});}
- else if(a.kind==='idea'){const sub=await find(c,'subjects','name',f.subject);const row=await idea(c,f.name,sub.id);if(f.topic!==undefined)enqueue(c,'concepts',{id:row.id},{topic:f.topic});if(f.blurb!==undefined)enqueue(c,'concepts',{id:row.id},{blurb:f.blurb});await ideaLinks(c,row,f,false);}
+ else if(a.kind==='idea'){const sub=await find(c,'subjects','name',f.subject);const row=await idea(c,f.name,sub.id);const patch:any={};for(const k of ['topic','blurb','level'])if(f[k]!==undefined)patch[k]=f[k];if(f.star!==undefined)patch.is_star=!!f.star;
+ if(f.parent){const parent=(await all(c,'concepts')).find(x=>x.subject_id===sub.id&&x.name.toLowerCase()===String(f.parent).toLowerCase());if(!parent)throw Error('Atlas parent must exist in this subject');patch.parent_id=parent.id;}
+ if(Object.keys(patch).length)enqueue(c,'concepts',{id:row.id},patch);await ideaLinks(c,row,f,false);}
  else if(a.kind==='style'){const key=f.key||slug(f.name).replace(/-/g,'_').slice(0,20);if(!/^[a-z_]{2,20}$/.test(key))throw Error('Style key must contain lowercase letters or underscores');c.batch!.push({op:'insert',table:'styles',values:{user_id:c.userId,key,name:f.name,instructions:f.instructions,icon:'sparkles'}});}
  else if(a.kind==='comment'){const n=await find(c,'notes','no',Number(String(f.card).replace(/^N/i,'')));await insert(c,'card_comments',{note_id:n.id,body:f.body});}
  else if(a.kind==='book'){await insert(c,'sources',{project_id:p.id,title:f.title,short:f.short||slug(f.title).slice(0,20),filename:'attached.pdf',status:'ready',has_text:false,page_count:0});}
