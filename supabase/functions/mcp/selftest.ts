@@ -97,7 +97,9 @@ export async function selftest(c:Context):Promise<any>{
     await check('prompt history undo and redo',async()=>{
       const r=await run('set_prompt',setPrompt,{scope:p.slug,text:'Selftest Socratic prompt',mode:'replace'});
       if(!(await packet(c,{project:p.slug})).startsWith('OWNER'))throw Error('OWNER missing');
-      if(!(await history(c,{})).startsWith('A'+r.action+' '))throw Error('Newest action missing');
+      // Other owner or CI writes can land between the prompt write and this read.
+      // Assert the newest action in this throwaway project, not the global log.
+      if(!(await history(c,{project:p.slug})).startsWith('A'+r.action+' '))throw Error('Newest project action missing');
       const u=await run('undo',undo,{action:r.action});
       if((await packet(c,{project:p.slug})).includes('Selftest Socratic prompt'))throw Error('Prompt undo failed');
       await run('undo',undo,{action:u.action});
