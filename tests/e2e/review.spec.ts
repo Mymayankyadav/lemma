@@ -221,7 +221,7 @@ for(const world of ['graph','graph-night'] as const){
   expect(Number.parseFloat(before.border)).toBeGreaterThanOrEqual(1);
   await page.getByText('Mix decks',{exact:true}).click();
   await expect(track).toHaveAttribute('data-checked','false');
-  await expect.poll(()=>track.evaluate(el=>({track:getComputedStyle(el).backgroundColor,thumb:getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor}))).toEqual(expect.objectContaining({track:await thumb.evaluate(el=>getComputedStyle(el).backgroundColor)}));
+  await expect.poll(()=>track.evaluate(el=>getComputedStyle(el).backgroundColor===getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor)).toBe(true);
   await page.screenshot({path:`test-results/screens/review/ui6a-mix-decks-${world}.png`,fullPage:true});
  });
 }
