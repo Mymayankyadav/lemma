@@ -48,3 +48,8 @@ html:is([data-theme="euclid"],[data-theme="euclid-night"])[data-effects="rich"] 
 
 /* Compact layout still gives every block navigation link a 44px touch target. */
 html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content a[href]:not([data-inline-link]){min-height:44px}
+
+/* A mathematical card's front is not an ellipsis: let it wrap naturally. */
+html:is([data-theme="euclid"],[data-theme="euclid-night"]) #main-content .font-math.block.truncate{
+ white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;
+}
