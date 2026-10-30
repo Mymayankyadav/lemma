@@ -8,7 +8,7 @@ import { dueToday, studyDayBounds, projectProgress, conceptStatus } from '../../
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError } from '../api'
+import { LemmaError, notImplemented } from '../api'
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
@@ -506,6 +506,9 @@ export class LiveAdapter implements LemmaApi {
       due:cards.filter(c=>c.note_id===n.id).sort((a,b)=>a.due.localeCompare(b.due))[0]?.due??null,
       status:n.status,openComments:comments.filter(c=>c.note_id===n.id&&c.status==='open').length}
   })
+ }
+ async searchCardsPage(..._args: Parameters<LemmaApi['searchCardsPage']>): ReturnType<LemmaApi['searchCardsPage']> {
+  throw notImplemented('searchCardsPage')
  }
  async getCard(...args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> {
   const [no]=args,db=liveClient(),uid=await owner(db)
