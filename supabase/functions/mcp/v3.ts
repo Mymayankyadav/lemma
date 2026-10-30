@@ -46,6 +46,15 @@ export function visibleProjects<T extends { system?: boolean; status?: string }>
   return rows.filter(x => !x.system && x.status !== 'archived')
 }
 
+/** Owner review excludes system/archived projects. Only explicit request-local
+ * self-test IDs can expose internal fixture cards during connector self-tests. */
+export function reviewableProjects<T extends {id:string;system?:boolean;status?:string}>(
+ rows:T[],selftestIds?:ReadonlySet<string>,
+):T[]{
+ return rows.filter(p=>(!p.system&&p.status!=='archived')||
+   (!!p.system&&!!selftestIds?.has(p.id)))
+}
+
 export type V3Source = {
   short: string; title: string; kind?: string; page_count?: number | null;
   added_at?: string | null; plan_checked_at?: string | null
