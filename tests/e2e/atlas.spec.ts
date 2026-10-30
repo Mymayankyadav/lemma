@@ -1,4 +1,3 @@
-// FIX #293 claim: viewport fit and overlapping label regression.
 import {test,expect} from '@playwright/test'
 
 test.beforeEach(async({page})=>{
@@ -56,3 +55,44 @@ test('dragging a concept pins and long-press offers unpin',async({page})=>{
  await page.getByRole('button',{name:'Unpin'}).click()
  await expect(page.getByText('Concept unpinned')).toBeVisible()
 })
+
+test('Atlas fits node centres between overlays and avoids overlapping labels', async ({page}) => {
+ await page.setViewportSize({width:390,height:844});
+ const svg = page.getByRole('group',{name:/Interactive knowledge graph/});
+ await expect(page.locator('[data-node]')).toHaveCount(22);
+ await expect.poll(async()=>svg.locator('> g').first().getAttribute('transform')).not.toBeNull();
+ const geometry = await page.locator('[data-node]').evaluateAll(nodes =>
+  nodes.map(node => {
+   const circle=node.querySelector('circle');
+   const svg=node.ownerSVGElement!;
+   const point=svg.createSVGPoint();
+   point.x=Number(circle?.getAttribute('cx'));
+   point.y=Number(circle?.getAttribute('cy'));
+   const centre=point.matrixTransform(node.getScreenCTM()!);
+   return {x:centre.x,y:centre.y};
+  }));
+ expect(geometry).toHaveLength(22);
+ for (const centre of geometry) {
+  expect(centre.x).toBeGreaterThanOrEqual(23);
+  expect(centre.x).toBeLessThanOrEqual(367);
+  expect(centre.y).toBeGreaterThanOrEqual(145);
+  expect(centre.y).toBeLessThanOrEqual(716);
+ }
+ const labels=await page.locator('[data-node] text').evaluateAll(elements =>
+  elements.map(element=>{
+   const rect=element.getBoundingClientRect();
+   return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};
+  }));
+ expect(labels.length).toBeGreaterThan(3);
+ expect(labels.length).toBeLessThan(22);
+ for (let i=0;i<labels.length;i++) for(let j=i+1;j<labels.length;j++) {
+  const a=labels[i],b=labels[j];
+  const overlap=Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 &&
+   Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
+  expect(overlap).toBe(false);
+ }
+ await page.screenshot({path:'test-results/screens/atlas-fitted-mobile.png',fullPage:true});
+ await page.getByRole('button',{name:/Compactness, In progress/}).click();
+ await expect(page.locator('[data-node="concept-compactness"] text')).toBeVisible();
+ await page.screenshot({path:'test-results/screens/atlas-fitted-selected.png',fullPage:true});
+});
