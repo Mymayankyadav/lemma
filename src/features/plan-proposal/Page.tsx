@@ -20,6 +20,9 @@ import {
   useSettings,
 } from "../../data/hooks";
 import {planReviewNodes} from "./nodes";
+import {planIdeasGraph} from "./ideas";
+import {buildAtlasTree} from "../atlas/tree";
+import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
 import { chatLink, revisePlanPrompt } from "../../lib/chat";
 import { Button } from "../../ui/Button";
@@ -310,6 +313,13 @@ export default function Page() {
   );
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
   const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
+  const ideaTree = useMemo(() => {
+    if (!p) return null;
+    const graph = planIdeasGraph(p.plan, p.planChange, nodes, p.projectSlug,
+      {name: project.data?.subject?.name ?? "This plan", glyph: p.projectGlyph});
+    return graph ? buildAtlasTree(graph) : null;
+  }, [p, nodes, project.data?.subject?.name]);
+  const ideaCount = ideaTree ? [...ideaTree.nodes.values()].filter((n) => !n.synthetic).length : 0;
   const stages = useMemo(() => {
     const groups: { name: string; nodes: Node[] }[] = [];
     for (const n of nodes) {
@@ -466,14 +476,22 @@ export default function Page() {
               {p.reason && <p className="mt-3 text-label italic text-ink-3">{p.reason}</p>}
             </section>
           )}
-          <p className="flex items-center gap-2 text-label text-ink-3">
-            <Waypoints size={17} />
-            {(() => {
-              const count = p.plan?.concepts?.length ??
-                new Set(p.planChange?.ops.flatMap((op) => op.op === "add" ? (op.concepts ?? []) : []) ?? []).size;
-              return `${count} ${count === 1 ? "idea" : "ideas"} in your Atlas`;
-            })()}
-          </p>
+          {ideaTree ? (
+            <section aria-label="Ideas in this plan" className="flex flex-col gap-2">
+              <h3 className="flex items-baseline justify-between gap-3">
+                <span className="flex items-center gap-2 text-title-s italic" style={{ fontFamily: "var(--font-display)" }}>
+                  <Waypoints size={17} className="text-amber" />Ideas in this plan
+                </span>
+                <span className="text-caption text-ink-3">{ideaCount} {ideaCount === 1 ? "idea" : "ideas"}</span>
+              </h3>
+              <p className="text-label text-ink-3">Fold clusters to see how they connect; tap an idea to trace what it builds on and opens up.</p>
+              <IdeaGraph tree={ideaTree} label="Ideas in this plan" onCheckpoint={openCheckpoint} />
+            </section>
+          ) : (
+            <p className="flex items-center gap-2 text-label text-ink-3">
+              <Waypoints size={17} />No new ideas for your Atlas
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="ghost"
