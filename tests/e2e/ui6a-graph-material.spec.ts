@@ -36,3 +36,19 @@ for(const world of ['graph','graph-night'] as const){
   await page.screenshot({path:`test-results/screens/review/ui6a-material-${world}.png`,fullPage:true});
  });
 }
+
+test('UI-6a plotted curves are static, route-specific and never cover controls',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ for(const [route,kind] of [['/','today'],['/projects','paths'],['/review','review'],['/insights','insights'],['/settings','unit']] as const){
+  await page.goto(`./?demo=1&theme=graph#${route}`);
+  const sketch=page.locator('[data-graph-sketch]');
+  await expect(sketch).toHaveAttribute('data-graph-sketch',kind);
+  expect(await sketch.evaluate(el=>getComputedStyle(el).pointerEvents)).toBe('none');
+  expect(await sketch.evaluate(el=>el.getAnimations().length)).toBe(0);
+  await page.screenshot({path:`test-results/screens/review/ui6a-curve-${kind}.png`,fullPage:true});
+ }
+ for(const route of ['/atlas','/review/run']){
+  await page.goto(`./?demo=1&theme=graph#${route}`);
+  await expect(page.locator('[data-graph-sketch]')).toHaveCount(0);
+ }
+});
