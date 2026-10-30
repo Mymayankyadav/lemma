@@ -153,9 +153,10 @@ export async function remove(c:Context,a:any){const {table,row}=await target(c,a
  if(!a.confirm)return a.target+': '+(counts.join(', ')||'1 '+table)+'. Confirm before deleting.';
  c.batch!.push({op:'delete',table,where:pk(table,row)});return 'deleted '+a.target+(counts.length?' and '+counts.join(', '):'');}
 export async function review(c:Context,a:any){const p=a.project?await project(c,a.project):null,s=await settings(c),today=new Date();
- const ps=await all(c,'projects'),notes=(await all(c,'notes')).filter(x=>x.status==='active'&&ps.some(p=>p.id===x.project_id)&&(!p||x.project_id===p.id));const nm=new Map(notes.map(x=>[x.id,x]));
+ const ps=(await all(c,'projects')).filter(x=>!x.system&&x.status!=='archived');
+ const notes=(await all(c,'notes')).filter(x=>x.status==='active'&&ps.some(project=>project.id===x.project_id)&&(!p||x.project_id===p.id));const nm=new Map(notes.map(x=>[x.id,x]));
  const cards=(await all(c,'cards')).filter(x=>nm.has(x.note_id)&&(x.state!==0?Date.parse(x.due)<studyDayBounds(+today,s.time_zone,s.rollover_hour).end:a.new!==false));
- const {day}=await import('../derive.ts');const logs=(await all(c,'reviews')).filter(x=>!x.undone_at&&day(s,x.reviewed_at)===day(s));const newLeft=Math.max(0,s.new_per_day-logs.filter(x=>x.state_before===0).length),left=Math.max(0,s.reviews_per_day-logs.length);
+ const {day}=await import('../derive.ts');const cardIds=new Set((await all(c,'cards')).filter(x=>nm.has(x.note_id)).map(x=>x.id));const logs=(await all(c,'reviews')).filter(x=>cardIds.has(x.card_id)&&!x.undone_at&&day(s,x.reviewed_at)===day(s));const newLeft=Math.max(0,s.new_per_day-logs.filter(x=>x.state_before===0).length),left=Math.max(0,s.reviews_per_day-logs.length);
  const seenNotes=new Set<string>();const priority=(x:any)=>[1,3].includes(x.state)?0:x.state===2?1:2;
  const eligible=cards.sort((a,b)=>priority(a)-priority(b)||Date.parse(a.due)-Date.parse(b.due)||nm.get(a.note_id).no-nm.get(b.note_id).no||a.ord-b.ord).filter(x=>seenNotes.has(x.note_id)?false:(seenNotes.add(x.note_id),true));
  const learning=eligible.filter(x=>[1,3].includes(x.state)),due=eligible.filter(x=>x.state===2),fresh=eligible.filter(x=>x.state===0).slice(0,newLeft);const queue:any[]=[];let since=0,last='',ratio=Math.max(1,Math.ceil(due.length/(fresh.length+1)));
@@ -168,7 +169,8 @@ export async function review(c:Context,a:any){const p=a.project?await project(c,
  }
  return queue.length+' due.\n'+queue.slice(0,a.count||5).map(x=>{const n=nm.get(x.note_id);return 'N'+n.no+'.'+x.ord+' Front: '+n.front+' / Back: '+n.back;}).join('\n');}
 export async function grade(c:Context,a:any){const s=await settings(c),notes=await all(c,'notes'),cards=await all(c,'cards'),out:string[]=[];const seen=new Set<string>();
- for(const ans of a.answers){if(seen.has(ans.card))throw Error('Duplicate card');seen.add(ans.card);const m=ans.card.match(/^N(\d+)\.(\d+)$/i);if(!m)throw Error('Use N7.1');const n=notes.find(x=>x.no===Number(m[1])),card=cards.find(x=>x.note_id===n?.id&&x.ord===Number(m[2]));if(!card||n.status!=='active')throw Error('Card not found');
+ const visibleIds=new Set((await all(c,'projects')).filter(x=>!x.system&&x.status!=='archived').map(x=>x.id));
+ for(const ans of a.answers){if(seen.has(ans.card))throw Error('Duplicate card');seen.add(ans.card);const m=ans.card.match(/^N(\d+)\.(\d+)$/i);if(!m)throw Error('Use N7.1');const n=notes.find(x=>x.no===Number(m[1])),card=cards.find(x=>x.note_id===n?.id&&x.ord===Number(m[2]));if(!card||n.status!=='active'||!visibleIds.has(n.project_id))throw Error('Card not found');
  const now=Date.now(),rating=['again','hard','good','easy'].indexOf(ans.rating)+1;const cfg={w:s.fsrs_weights||FSRS.DEFAULT_W,retention:s.desired_retention,maxIvl:s.max_interval_days,learn:FSRS.parseSteps(s.learn_steps),relearn:FSRS.parseSteps(s.relearn_steps),fuzz:s.fuzz,loadBalance:s.load_balance};
  const x=(FSRS.preview({st:card.state,due:Date.parse(card.due),s:card.stability,d:card.difficulty,last:card.last_review?Date.parse(card.last_review):0,step:card.step,reps:card.reps,lapses:card.lapses},now,cfg,{clock:studyClock(s.rollover_hour,s.time_zone)}) as any)[rating];
  const v=x.card,next={state:v.st,due:new Date(v.due).toISOString(),stability:v.s,difficulty:v.d,last_review:new Date(v.last).toISOString(),step:v.step,reps:v.reps,lapses:v.lapses};
