@@ -18,7 +18,7 @@ export async function get(c: Context, a:any):Promise<string>{
     const done=pcs.filter((x:any)=>x.status==='demonstrated').length;
     const lines=['PLAN '+p.slug+' '+done+'/'+pcs.length+' done'];
     for(const cp of pcs){const needs=prereqs.filter((x:any)=>x.checkpoint_id===cp.id).map((x:any)=>ids.get(x.prereq_id)?.code).filter(Boolean);
-      lines.push(cp.code+' '+status(cp)+(status(cp)==='now'?' step '+cp.current_step+'/'+(cp.steps||[]).length:'')+' '+cp.title+(status(cp)==='locked'?' (needs '+needs.join(', ')+')':''))}
+      lines.push(cp.code+' '+status(cp)+(status(cp)==='now'?' step '+cp.current_step+'/'+(cp.steps||[]).length:'')+' '+cp.title+(cp.stage?' ['+cp.stage+']':'')+(status(cp)==='locked'?' (needs '+needs.join(', ')+')':''))}
     const planned=(await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan_change').eq('status','pending')).data||[];
     for(const x of planned)for(const op of (x.payload?.ops||[]))if(op.op==='add')lines.push((op.code||'CP?')+' proposed '+op.title);
     return capped(lines.join('\n'),2000);
@@ -33,6 +33,7 @@ export async function get(c: Context, a:any):Promise<string>{
     const events=(await scoped(c,'session_events').eq('checkpoint_id',cp.id).order('created_at',{ascending:false}).limit(8)).data||[];
     const ss=(await all(c,'sessions')).filter((x:any)=>x.project_id===p.id);
     const lines=[cp.code+' '+cp.title+' ['+status(cp)+', step '+cp.current_step+'/'+cp.steps.length+']','OBJ '+cp.objective,'CRIT '+cp.criterion,'STEPS '+cp.steps.map((x:string,i:number)=>(i+1)+' '+x+(i+1<cp.current_step?' ✓':i+1===cp.current_step?' ←':'')).join(' | ') ];
+    if(cp.stage)lines.push('STAGE '+cp.stage);
     if(cp.pages)lines.push('PAGES '+(src?.short||'book')+' '+cp.pages);
     if(pre.length)lines.push('NEEDS '+pre.join(', '));if(concepts.length)lines.push('IDEAS '+concepts.join(', '));
     if(cp.recheck_due)lines.push('RECHECK due '+cp.recheck_due+': '+(cp.recheck_prompt||''));
@@ -85,7 +86,7 @@ export async function get(c: Context, a:any):Promise<string>{
       const again=reviewed.filter((r:any)=>conceptForNote.get(noteForCard.get(r.card_id))===concept.id).length;
       const revisiting=statuses.includes('revisit')||errors.some((x:any)=>x.concept_id===concept.id)||again>=2;
       const status=revisiting?'revisit':statuses.length&&statuses.every((x:string)=>x==='done')?'demonstrated':statuses.some((x:string)=>['now','done','revisit'].includes(x))?'in_progress':'not_started';
-      return concept.name+' — '+status;
+      return concept.name+' ['+(concept.topic||'Other')+'] — '+status;
     }).join('\n'),2000);
   }
   throw new Error('Unknown get what');

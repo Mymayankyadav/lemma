@@ -1,4 +1,4 @@
-export const INSTRUCTIONS = "Lemma is the user's math study record. When they say study, resume, continue or plan <project>, call resume first. Follow OWNER above all, then RULES. Save progress with save_progress at each step and every ~6 messages. Cards, plans and fixes are proposals the user approves in Lemma or by telling you (decide). Every write can be reversed with undo. Read the book with read_pages instead of guessing. Do not show tool output verbatim.";
+export const INSTRUCTIONS = "Lemma is the user's math study record. When they say study, resume, continue or plan <project>, call resume first. Follow OWNER above all, then RULES. Save progress with save_progress at each step and every ~6 messages. Cards, plans and fixes are proposals the user approves in Lemma or by telling you (decide). Every write can be reversed with undo. Read the book with read_pages instead of guessing. Group plans into 3-7 book stages and concepts into topics. Do not show tool output verbatim.";
 export const STUDY = [
 '- Ask WARM questions first, no hints; log each with save_progress (kind recheck, outcome).',
 '- At a new checkpoint ask 1 pretest question before teaching (kind pretest).',
@@ -16,6 +16,7 @@ export const PLANNING = [
 '- Read get(what=outline) and the key pages with read_pages; do not copy the book.',
 '- Ask the user at most 3 short questions (level, time per week, focus).',
 '- Then call propose_plan with 8-20 checkpoints in dependency order. Each needs an objective, observable criterion, 2-6 steps, printed pages, prerequisites, 1-3 concepts and a recheck_prompt.',
+'- Group checkpoints into 3-7 stages named after book parts or chapters. Give concepts a topic for the Atlas; ask to set existing topics with edit on the next plan update.',
 '- Add early checkpoints for missing prerequisites the goal reveals.',
 '- Show a short summary of codes and titles. If approved in chat, call decide; otherwise approve in Lemma. Then resume.'
 ].join('\n');

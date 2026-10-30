@@ -33,3 +33,14 @@ export function ladder(cp:any,outcome:string,today:string): Record<string,unknow
   }
   return {needs_revisit:true,recheck_level:0,recheck_due:shift(1)};
 }
+// Four-week observed throughput, never zero; projections are estimates, not deadlines.
+export function goalEta(project:any,checkpoints:any[],now=Date.now()):string {
+  const done=checkpoints.filter(x=>x.status==='demonstrated');
+  const recent=done.filter(x=>{const at=Date.parse(x.demonstrated_at);return at>=now-28*86400000&&at<=now;}).length;
+  const perWeek=Math.max(1,recent)/4;
+  const remaining=Math.max(0,checkpoints.length-done.length);
+  const finish=new Date(now+Math.ceil(remaining/perWeek*7)*86400000);
+  const fmt=(d:Date)=>new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',timeZone:'UTC'}).format(d);
+  return (checkpoints.length?' | '+(remaining?'finish ≈ '+fmt(finish):'complete'):'')+
+    (project.target_date?' | '+(project.target_label||'target')+' '+fmt(new Date(String(project.target_date).slice(0,10)+'T12:00:00Z')):'');
+}
