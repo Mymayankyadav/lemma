@@ -131,6 +131,36 @@ export async function selftest(c:Context):Promise<any>{
       const restored=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
       if(restored.length!==before.length||before.some((x:any)=>!restored.some((y:any)=>y.concept_id===x.concept_id)))throw Error('Original links not restored');
     });
+    await check('idea relationship duplicates, conflicts and undo',async()=>{
+      const base=await insert(c,'concepts',{subject_id:p.subject_id,slug:'selftest-links',name:'Selftest links'});
+      const subject=(await scoped(c,'subjects').eq('id',p.subject_id).single()).data.name;
+      const links=async()=>{const r=await scoped(c,'concept_links').eq('to_id',base.id);if(r.error)throw Error(r.error.message);return r.data||[];};
+      for(const tool of ['add','edit'])for(const field of ['prereqs','related']){
+        const name='Selftest '+tool+' '+field;
+        const args=tool==='add'?{kind:'idea',fields:{subject,name:base.name,[field]:[name,name.toLowerCase(),name]}}:{target:'idea:'+base.name,set:{[field]:[name,name.toLowerCase(),name]}};
+        const action=await run(tool,tool==='add'?add:edit,args);
+        const rows=await links();if(rows.length!==1||rows[0].kind!==(field==='prereqs'?'prereq':'related'))throw Error('Expected one canonical relationship');
+        await run('undo',undo,{action:action.action});
+        if((await links()).length)throw Error('Undo left relationships');
+        if((await scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)).data?.length)throw Error('Undo left new concept');
+      }
+      for(const tool of ['add','edit']){
+        const name='Selftest conflicting '+tool;
+        const fields={prereqs:[name],related:[name.toLowerCase()]};
+        let message='';try{await run(tool,tool==='add'?add:edit,tool==='add'?{kind:'idea',fields:{subject,name:base.name,...fields}}:{target:'idea:'+base.name,set:fields});}catch(e){message=(e as Error).message;}
+        if(!message.includes('both prerequisite and related'))throw Error('Expected explicit relationship conflict: '+message);
+        if((await links()).length||(await scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)).data?.length)throw Error('Rejected write changed data');
+      }
+      await run('add',add,{kind:'idea',fields:{subject,name:base.name,prereqs:['Selftest retained']}});
+      await run('add',add,{kind:'idea',fields:{subject,name:base.name,prereqs:['selftest retained']}});
+      if((await links()).length!==1)throw Error('Repeated add duplicated existing relationship');
+      let conflict='';try{await run('edit',edit,{target:'idea:'+base.name,set:{related:['selftest retained']}});}catch(e){conflict=(e as Error).message;}
+      if(!conflict.includes('both prerequisite and related'))throw Error('Untouched prerequisite silently replaced');
+      const changed=await run('edit',edit,{target:'idea:'+base.name,set:{prereqs:[],related:['selftest retained']}});
+      if((await links())[0]?.kind!=='related')throw Error('Explicit kind change failed');
+      await run('undo',undo,{action:changed.action});
+      if((await links())[0]?.kind!=='prereq')throw Error('Undo did not restore relationship kind');
+    });
     await check('delete preview cascade and undo',async()=>{
       const preview=await run('delete',remove,{target:p.slug,confirm:false});if(preview.action)throw Error('Preview wrote data');
       const r=await run('delete',remove,{target:p.slug,confirm:true});
@@ -172,5 +202,5 @@ export async function selftest(c:Context):Promise<any>{
     }
     if(extraSubjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',extraSubjectId);
   }
-  return {ok:steps.length===16&&steps.every(x=>x.ok),steps};
+  return {ok:steps.length===17&&steps.every(x=>x.ok),steps};
 }
