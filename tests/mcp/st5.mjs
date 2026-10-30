@@ -83,6 +83,25 @@ try {
  assert.deepEqual(underscore.map(x=>x.noteNo),[12])
  assert.equal((await q("select count(*)::int n from public.search_cards_page('',null,50,50)"))[0].n,0)
  console.log('PASS ST-5 literal search, comments and bounded pages')
+
+ // D6: filters run in SQL *before* paging, and never return another owner.
+ const filtered=(args)=>q('select public.search_cards_filtered_page('+args+') item')
+ const pageAll=(await filtered("'',null,null,null,null,null,0")).map(x=>x.item)
+ assert.deepEqual(pageAll.map(x=>x.noteNo),[13,12])
+ assert.deepEqual((await filtered("'%',null,null,null,null,null,0")).map(x=>x.item.noteNo),[12])
+ assert.deepEqual((await filtered("'',null,'CP2',null,null,null,0")).map(x=>x.item.noteNo),[12])
+ assert.deepEqual((await filtered("'',null,null,0,null,null,0")).map(x=>x.item.noteNo),[13])
+ assert.deepEqual((await filtered("'',null,null,2,null,null,0")).map(x=>x.item.noteNo),[12])
+ assert.deepEqual((await filtered("'',null,null,null,'active',true,0")).map(x=>x.item.noteNo),[12])
+ assert.deepEqual((await filtered("'',null,null,null,'active',false,0")).map(x=>x.item.noteNo),[13])
+ assert.deepEqual((await filtered("'',null,null,null,'suspended',null,0")).map(x=>x.item.noteNo),[])
+ assert.deepEqual((await filtered("'',null,null,null,null,null,1")).map(x=>x.item.noteNo),[12])
+ assert.deepEqual((await filtered("'','private',null,null,null,null,0")).map(x=>x.item.noteNo),[])
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ assert.deepEqual((await filtered("'',null,null,null,null,null,0")).map(x=>x.item.noteNo),[14])
+ await db.exec("select set_config('test.uid','"+owner+"',false)")
+ console.log('PASS ST-5 filtered card pages, stable offsets and owner isolation')
+
  const home=(await q('select public.home_summary() result'))[0].result
  assert.deepEqual(home.projects.map(x=>x.slug),['algebra'])
  assert.equal(home.due,2);assert.equal(home.pendingProposals,1)
