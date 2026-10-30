@@ -1,0 +1,131 @@
+[WebServer] [plugin builtin:vite-reporter] 
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+[WebServer] [INEFFECTIVE_DYNAMIC_IMPORT] src/lib/queue.ts is dynamically imported by src/features/review-run/Page.tsx but also statically imported by src/data/demo/adapter.ts, src/features/review-run/store.ts, dynamic import will not move module into another chunk.
+[WebServer] 
+
+[WebServer] [INEFFECTIVE_DYNAMIC_IMPORT] src/pdf/ingest.ts is dynamically imported by src/data/demo/adapter.ts but also statically imported by src/data/live/adapter.ts, src/features/new-project/Page.tsx, src/features/project/SourcesPanel.tsx, dynamic import will not move module into another chunk.
+[WebServer] 
+
+
+Running 114 tests using 2 workers
+
+[1/114] [chromium] › tests/e2e/acceptance-journey.spec.ts:15:1 › acceptance 1–6: Home -> proposals -> plan approval -> project -> session
+[2/114] [chromium] › tests/e2e/acceptance-journey.spec.ts:54:1 › acceptance 7–9: deck filtering -> confidence-first grading -> undo -> tutor note
+[3/114] [chromium] › tests/e2e/acceptance-journey.spec.ts:84:1 › acceptance 10–13: Atlas, Insights, Settings and mobile viewport
+[4/114] [chromium] › tests/e2e/atlas.spec.ts:11:1 › opening shows only fully fitted clusters, not a wall of links or a sheet
+[5/114] [chromium] › tests/e2e/atlas.spec.ts:33:1 › ten zoom-out steps have no artificial lower zoom bound
+[6/114] [chromium] › tests/e2e/atlas.spec.ts:48:1 › cluster, galaxy and system drilldown updates breadcrumbs and labelled children
+[7/114] [chromium] › tests/e2e/atlas.spec.ts:71:1 › minimap is isotropic and tracks the true camera viewport within two pixels
+[8/114] [chromium] › tests/e2e/atlas.spec.ts:113:1 › search, details and connection jumps work without test subjects
+[9/114] [chromium] › tests/e2e/atlas.spec.ts:131:1 › narrow day and night screenshots do not overflow the document
+[10/114] [chromium] › tests/e2e/atlas.spec.ts:141:2 › QA-2 Atlas cluster labels are unobstructed by controls in graph
+[11/114] [chromium] › tests/e2e/atlas.spec.ts:141:2 › QA-2 Atlas cluster labels are unobstructed by controls in graph-night
+[12/114] [chromium] › tests/e2e/cards.spec.ts:2:1 › search, notes, editing and pause work for a card
+[13/114] [chromium] › tests/e2e/cards.spec.ts:48:1 › new cards can be created in a project
+[14/114] [chromium] › tests/e2e/cards.spec.ts:66:1 › new card editor retains focus through a delayed search update
+[15/114] [chromium] › tests/e2e/cards.spec.ts:96:3 › card filters stay on one scrollable row at 320px / comfortable
+[16/114] [chromium] › tests/e2e/cards.spec.ts:96:3 › card filters stay on one scrollable row at 390px / compact
+[17/114] [chromium] › tests/e2e/cards.spec.ts:96:3 › card filters stay on one scrollable row at 390px / cozy
+[18/114] [chromium] › tests/e2e/cards.spec.ts:96:3 › card filters stay on one scrollable row at 390px / comfortable
+[19/114] [chromium] › tests/e2e/cards.spec.ts:141:2 › UI-5g card rows and tutor marginalia in graph
+[20/114] [chromium] › tests/e2e/cards.spec.ts:141:2 › UI-5g card rows and tutor marginalia in graph-night
+[21/114] [chromium] › tests/e2e/cards.spec.ts:159:44 › focused card routes keep floating tools clear: graph
+[22/114] [chromium] › tests/e2e/cards.spec.ts:159:44 › focused card routes keep floating tools clear: graph-night
+[23/114] [chromium] › tests/e2e/home.spec.ts:9:1 › today desk shows resume, reviews, proposals and projects with no runtime errors
+[24/114] [chromium] › tests/e2e/home.spec.ts:28:1 › Last chat is a 56px passive row with a single Copy action
+[25/114] [chromium] › tests/e2e/home.spec.ts:48:1 › home shortcuts navigate to review, proposals and the project path
+[26/114] [chromium] › tests/e2e/home.spec.ts:60:2 › UI-6b goal-first Today and keyboard Metro timeline: graph
+[27/114] [chromium] › tests/e2e/home.spec.ts:60:2 › UI-6b goal-first Today and keyboard Metro timeline: graph-night
+[28/114] [chromium] › tests/e2e/insights.spec.ts:2:1 › Insights renders study statistics and updates when the period changes
+[29/114] [chromium] › tests/e2e/insights.spec.ts:26:2 › UI-5g ink charts stay legible in graph
+[30/114] [chromium] › tests/e2e/insights.spec.ts:26:2 › UI-5g ink charts stay legible in graph-night
+[31/114] [chromium] › tests/e2e/insights.spec.ts:44:2 › FIX #342 review grade colours are distinct in graph
+[32/114] [chromium] › tests/e2e/insights.spec.ts:44:2 › FIX #342 review grade colours are distinct in graph-night
+[33/114] [chromium] › tests/e2e/integration.spec.ts:7:1 › Atlas occupies the mobile viewport and deep-link review filters by concept
+[34/114] [chromium] › tests/e2e/integration.spec.ts:21:1 › global offline banner explicitly marks unconfirmed writes and clears on reconnect
+[35/114] [chromium] › tests/e2e/integration.spec.ts:31:1 › demo PWA readiness never obscures review sheet actions
+[36/114] [chromium] › tests/e2e/kit.spec.ts:2:1 › UI-1 components render in demo mode, remain accessible and respect reduced motion
+[37/114] [chromium] › tests/e2e/kit.spec.ts:27:2 › UI-6a component kit renders graph with fixed compact calm materials
+[38/114] [chromium] › tests/e2e/kit.spec.ts:27:2 › UI-6a component kit renders graph-night with fixed compact calm materials
+[39/114] [chromium] › tests/e2e/latex.spec.ts:7:1 › new card editor previews LaTeX and keeps malformed math editable
+[40/114] [chromium] › tests/e2e/latex.spec.ts:25:1 › sources-first project name accepts live mathematical notation
+[41/114] [chromium] › tests/e2e/latex.spec.ts:34:1 › cards retain the real renderer for mathematical questions
+[42/114] [chromium] › tests/e2e/layout.spec.ts:84:2 › UI-6a layout: graph, compact, 390x844
+[43/114] [chromium] › tests/e2e/layout.spec.ts:84:2 › UI-6a layout: graph, compact, 360x740
+[44/114] [chromium] › tests/e2e/layout.spec.ts:84:2 › UI-6a layout: graph-night, compact, 390x844
+[45/114] [chromium] › tests/e2e/layout.spec.ts:84:2 › UI-6a layout: graph-night, compact, 360x740
+[46/114] [chromium] › tests/e2e/layout.spec.ts:116:1 › UI-6a auto-switches graph worlds with OS theme and respects a manual choice
+[47/114] [chromium] › tests/e2e/metro.spec.ts:10:2 › UI-6b Metro shows scheduled stations, a legend and a project headline in graph
+[48/114] [chromium] › tests/e2e/metro.spec.ts:31:2 › UI-6b scheduled Metro appears in Today and the Paths library in graph
+[49/114] [chromium] › tests/e2e/metro.spec.ts:10:2 › UI-6b Metro shows scheduled stations, a legend and a project headline in graph-night
+[50/114] [chromium] › tests/e2e/metro.spec.ts:31:2 › UI-6b scheduled Metro appears in Today and the Paths library in graph-night
+[51/114] [chromium] › tests/e2e/project.spec.ts:9:1 › Graph Paper Paths groups checkpoints into named stages with current stage expanded
+[52/114] [chromium] › tests/e2e/project.spec.ts:39:1 › Project title opens a searchable recent-project switcher
+[53/114] [chromium] › tests/e2e/project.spec.ts:56:1 › Sessions and Sources tabs preserve the selected tab in URL
+[54/114] [chromium] › tests/e2e/project.spec.ts:66:1 › checkpoint sheet shows criterion, steps, prerequisite and study CTA
+[55/114] [chromium] › tests/e2e/project.spec.ts:81:1 › a new PDF can be uploaded from project Sources
+[56/114] [chromium] › tests/e2e/project.spec.ts:89:1 › Metro project timeline opens a checkpoint without horizontal scrolling
+[57/114] [chromium] › tests/e2e/project.spec.ts:102:1 › Graph Paper Paths fits both worlds at compact phone widths
+[58/114] [chromium] › tests/e2e/project.spec.ts:121:1 › v3 Sources groups PDFs and exposes audited metadata controls
+[59/114] [chromium] › tests/e2e/projects.spec.ts:8:1 › Paths library groups projects, searches and opens a project without errors
+[60/114] [chromium] › tests/e2e/projects.spec.ts:27:1 › v3 name-only sheet retains focus and keeps real parent inert
+[61/114] [chromium] › tests/e2e/projects.spec.ts:44:1 › v3 creates a project from its name alone
+[62/114] [chromium] › tests/e2e/projects.spec.ts:53:1 › v3 accepts multiple real PDFs in one queue and uploads sequentially
+[63/114] [chromium] › tests/e2e/projects.spec.ts:69:1 › v3 accepts Android document-provider PDF MIME types
+[64/114] [chromium] › tests/e2e/projects.spec.ts:80:1 › v3 rejects invalid files without discarding valid queued PDFs
+[65/114] [chromium] › tests/e2e/projects.spec.ts:91:1 › v3 removes and reselects the same native PDF
+[66/114] [chromium] › tests/e2e/projects.spec.ts:103:1 › v3 rejects non-PDF files without adding them to the queue
+[67/114] [chromium] › tests/e2e/projects.spec.ts:112:1 › Paths status filters, collapsed groups and project actions work
+[68/114] [chromium] › tests/e2e/projects.spec.ts:129:1 › Paths matches compact Euclid and Euclid-night without horizontal overflow
+[69/114] [chromium] › tests/e2e/projects.spec.ts:139:1 › Paths search finds a project by its PDF source title
+[70/114] [chromium] › tests/e2e/projects.spec.ts:147:1 › Archived project can be restored directly from the Paths library
+[71/114] [chromium] › tests/e2e/proposals.spec.ts:2:1 › card approval, rejection, swipe, and plan approval update the inbox
+[72/114] [chromium] › tests/e2e/proposals.spec.ts:41:1 › editing a proposed card previews and approves the edited content
+[73/114] [chromium] › tests/e2e/proposals.spec.ts:63:2 › UI-5f approval and errata sheet in graph
+[74/114] [chromium] › tests/e2e/proposals.spec.ts:63:2 › UI-5f approval and errata sheet in graph-night
+[75/114] [chromium] › tests/e2e/proposals.spec.ts:80:1 › a blocked tutor handoff keeps the proposed plan pending
+[76/114] [chromium] › tests/e2e/qa-atlas-handoff.spec.ts:5:2 › QA-1 Atlas-to-checkpoint handoff: graph
+[77/114] [chromium] › tests/e2e/qa-atlas-handoff.spec.ts:5:2 › QA-1 Atlas-to-checkpoint handoff: graph-night
+[78/114] [chromium] › tests/e2e/qa-euclid-journey.spec.ts:9:2 › QA-1 Euclid cross-screen study loop and explicit approval: graph
+[79/114] [chromium] › tests/e2e/qa-euclid-journey.spec.ts:9:2 › QA-1 Euclid cross-screen study loop and explicit approval: graph-night
+[80/114] [chromium] › tests/e2e/qa-v3.spec.ts:23:2 › QA-2 v3 integrated phone journey — graph
+[81/114] [chromium] › tests/e2e/qa-v3.spec.ts:23:2 › QA-2 v3 integrated phone journey — graph-night
+[82/114] [chromium] › tests/e2e/review.spec.ts:10:1 › review hub displays due count, deck tree and start control at mobile size
+[83/114] [chromium] › tests/e2e/review.spec.ts:22:1 › confidence reveal, FSRS grade, undo, close and completion metrics
+[84/114] [chromium] › tests/e2e/review.spec.ts:52:1 › card notes are stored for tutor during a run
+[85/114] [chromium] › tests/e2e/review.spec.ts:68:1 › unsaved tutor-note drafts stay on their card and never leak into the next card
+[86/114] [chromium] › tests/e2e/review.spec.ts:101:1 › review sessions remain fully scrollable above the density-aware floating dock
+[87/114] [chromium] › tests/e2e/review.spec.ts:122:1 › Again dashes its polygon side and returns after two other cards
+[88/114] [chromium] › tests/e2e/review.spec.ts:142:1 › right swipe grades Good after confidence reveal
+[89/114] [chromium] › tests/e2e/review.spec.ts:157:1 › Escape exits an ungraded round without recording an answer
+[90/114] [chromium] › tests/e2e/review.spec.ts:167:2 › Euclid complete round and missed-only retry: graph, lively
+[91/114] [chromium] › tests/e2e/review.spec.ts:167:2 › Euclid complete round and missed-only retry: graph, reduced
+[92/114] [chromium] › tests/e2e/review.spec.ts:167:2 › Euclid complete round and missed-only retry: graph-night, lively
+[93/114] [chromium] › tests/e2e/review.spec.ts:167:2 › Euclid complete round and missed-only retry: graph-night, reduced
+[94/114] [chromium] › tests/e2e/review.spec.ts:212:2 › FIX #343 Mix decks switch has a distinct thumb and track in graph
+[95/114] [chromium] › tests/e2e/review.spec.ts:212:2 › FIX #343 Mix decks switch has a distinct thumb and track in graph-night
+[96/114] [chromium] › tests/e2e/routes.spec.ts:12:1 › every screen renders in demo mode with correct navigation and no errors
+[97/114] [chromium] › tests/e2e/routes.spec.ts:33:1 › demo persists in the tab and explicit live mode gates private screens
+[98/114] [chromium] › tests/e2e/session.spec.ts:2:1 › session record shows the tutor reasoning, cards, unresolved mistakes and source citation
+[99/114] [chromium] › tests/e2e/session.spec.ts:22:1 › nonexistent session has a readable recovery link
+[100/114] [chromium] › tests/e2e/session.spec.ts:29:2 › UI-5f session is a numbered proof with marginal misconceptions in graph
+[101/114] [chromium] › tests/e2e/session.spec.ts:29:2 › UI-5f session is a numbered proof with marginal misconceptions in graph-night
+[102/114] [chromium] › tests/e2e/settings.spec.ts:2:1 › connector visibility, app setup, memory setting and backup
+[103/114] [chromium] › tests/e2e/settings.spec.ts:39:1 › rotating the connector requires confirmation
+[104/114] [chromium] › tests/e2e/settings.spec.ts:54:2 › UI-6a sign-in stays readable in graph
+[105/114] [chromium] › tests/e2e/settings.spec.ts:54:2 › UI-6a sign-in stays readable in graph-night
+[106/114] [chromium] › tests/e2e/settings.spec.ts:62:1 › UI-6a appearance exposes only Automatic, Day and Night and persists
+[107/114] [chromium] › tests/e2e/settings.spec.ts:83:1 › UI-6a migrates obsolete stored worlds and fixes compact calm mode
+[108/114] [chromium] › tests/e2e/settings.spec.ts:98:1 › v3 subject management is discoverable and requires confirmation before merging
+[109/114] [chromium] › tests/e2e/tab-bar-euclid.spec.ts:5:2 › UI-6a graph tab dock is flush, icon-first and clears the last action
+[110/114] [chromium] › tests/e2e/tab-bar-euclid.spec.ts:5:2 › UI-6a graph-night tab dock is flush, icon-first and clears the last action
+[111/114] [chromium] › tests/e2e/ui2.spec.ts:2:1 › UI-2 illustrations, charts and empty states are visible and reduced motion is static
+[112/114] [chromium] › tests/e2e/ui6a-graph-material.spec.ts:7:2 › UI-6a graph-paper material and type in graph
+[113/114] [chromium] › tests/e2e/ui6a-graph-material.spec.ts:7:2 › UI-6a graph-paper material and type in graph-night
+[114/114] [chromium] › tests/e2e/ui6a-graph-material.spec.ts:43:1 › UI-6a plotted curves are static, route-specific and never cover controls
+  114 passed (2.2m)
+exit 0
