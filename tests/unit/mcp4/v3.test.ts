@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reuseSubject, visibleProjects, sourceLine, scheduleHint } from '../../../supabase/functions/mcp/v3.ts'
+import { reuseSubject, visibleProjects, sourceLine, scheduleHint, reviewableProjects } from '../../../supabase/functions/mcp/v3.ts'
 import {planningFields} from '../../../supabase/functions/mcp/planning.ts'
 
 const subjects = [
@@ -25,6 +25,19 @@ describe('MCP-4 owner-facing project and subject matching', () => {
     expect(reuseSubject(subjects, 'zz-selftest-123')).toBeNull()
     expect(reuseSubject(subjects, 'Probability')).toBeNull()
   })
+
+  it('excludes owner-invisible projects from review except exact internal fixture IDs',()=>{
+    const projects=[
+      {id:'owner',system:false,status:'active'},
+      {id:'archive',system:false,status:'archived'},
+      {id:'fixture',system:true,status:'planning'},
+      {id:'old-test',system:true,status:'active'},
+    ];
+    expect(reviewableProjects(projects).map(x=>x.id)).toEqual(['owner']);
+    expect(reviewableProjects(projects,new Set(['fixture'])).map(x=>x.id)).toEqual(['owner','fixture']);
+    expect(reviewableProjects(projects,new Set(['old-test'])).map(x=>x.id)).toEqual(['owner','old-test']);
+    expect(reviewableProjects(projects,new Set(['archive'])).map(x=>x.id)).toEqual(['owner']);
+  });
 
   it('never exposes archived or system projects to connector menus', () => {
     const rows = [
