@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCount, formatDurationMinutes } from "../../../src/lib/text";
+import { formatBadgeCount, formatCount, formatDurationMinutes } from "../../../src/lib/text";
 import { summarizeSubjects } from "../../../src/features/insights/InkRules";
 
 describe("ST-7 scale-safe formatting", () => {
@@ -10,6 +10,9 @@ describe("ST-7 scale-safe formatting", () => {
     expect(formatCount(1234567)).toBe("1 234 567");
     expect(formatCount(-5)).toBe("0");
     expect(formatCount(Infinity)).toBe("—");
+    expect(formatBadgeCount(999)).toBe("999");
+    expect(formatBadgeCount(1000)).toBe("999+");
+    expect(formatBadgeCount(4000)).toBe("999+");
   });
 
   it("shows minutes, hours and days without overflow-prone hour totals", () => {
