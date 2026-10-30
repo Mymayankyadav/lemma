@@ -15,6 +15,7 @@ test('new card editor previews LaTeX and keeps malformed math editable',async({p
  await front.fill('Unclosed $x');
  await expect(dialog.getByRole('alert',{name:'Math preview'})).toContainText('Unclosed $');
  await expect(front).toHaveValue('Unclosed $x');
+ await dialog.getByLabel('Project').selectOption('real-analysis');
  await expect(dialog.getByRole('button',{name:'Create card'})).toBeEnabled();
  await front.fill('Prove that $\\mathbb{R}$ is complete');
  await expect(dialog.getByRole('region',{name:'Math preview'}).first().locator('.katex')).toHaveCount(1);
