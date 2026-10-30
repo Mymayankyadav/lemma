@@ -103,13 +103,22 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const {data}=await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle();
       if(!data)throw Error('No plan proposal');
       if((await scoped(c,'checkpoints').eq('project_id',p.id)).data?.length)throw Error('Plan applied before approval');
-      planId=data.id;await rpc(c,'approve_proposal',{p_id:planId});
+      if(data.payload?.concepts?.length!==1)throw Error('Plan proposal lost its single concept');
+      planId=data.id;
+      const applied=await rpc(c,'approve_proposal',{p_id:planId});
+      if(applied?.concepts!==1)throw Error('Plan approval did not report one concept');
       const {data:active}=await scoped(c,'projects').eq('id',p.id).maybeSingle();
       if(active?.status!=='active')throw Error('Plan not active');
     });
     if(only(1))await check('planning metadata, ETA and undo',async()=>{
       const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
-      const concept=(await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Selftest cover '+p.slug).single()).data;
+      const {data:concept,error:conceptError}=await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Selftest cover '+p.slug).maybeSingle();
+      if(conceptError)throw Error('Approved concept lookup failed: '+conceptError.message);
+      if(!concept){
+        const {data:subjectConcepts,error:subjectError}=await scoped(c,'concepts','id').eq('subject_id',p.subject_id).limit(10);
+        if(subjectError)throw Error('Approved concept subject lookup failed: '+subjectError.message);
+        throw Error('Approved concept missing after successful plan approval; subject contains '+(subjectConcepts?.length??0)+' concepts');
+      }
       if(cp.stage!=='Foundations'||concept.topic!=='Topology')throw Error('Approved plan lost stage/topic');
       const change=await run('propose_plan_change',proposePlanChange,{project:p.slug,reason:'Selftest stages',ops:[
         {op:'update',code:'CP1',stage:'Revised'},
