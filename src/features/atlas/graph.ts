@@ -100,3 +100,24 @@ export function visibleAtlasLabels(nodes: readonly AtlasNode[], selectedId: stri
  }
  return visible;
 }
+
+/** At overview scale show a few high-priority ideas per subject; expanding the camera
+ * progressively reveals the rest without overwhelming a phone-sized screen.
+ */
+export function visibleOrbitLabels(nodes:readonly AtlasNode[],selectedId:string|null,scale:number):Set<string>{
+ const collisionSafe=visibleAtlasLabels(nodes,selectedId);
+ if(scale>=0.9)return collisionSafe;
+ const result=new Set<string>();
+ const counts=new Map<string,number>();
+ const priority:Record<AtlasNode['status'],number>={revisit:0,in_progress:1,demonstrated:2,not_started:3};
+ const ordered=[...nodes].filter(n=>collisionSafe.has(n.id)).sort((a,b)=>
+  priority[a.status]-priority[b.status]||a.name.localeCompare(b.name));
+ for(const node of ordered){
+  const count=counts.get(node.subjectId)??0;
+  if(count>=2&&node.id!==selectedId)continue;
+  result.add(node.id);
+  counts.set(node.subjectId,count+1);
+ }
+ if(selectedId)result.add(selectedId);
+ return result;
+}
