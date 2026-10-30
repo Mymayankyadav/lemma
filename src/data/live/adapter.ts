@@ -466,9 +466,13 @@ export class LiveAdapter implements LemmaApi {
   await owner(db)
   // ST-5: the database searches and returns only one bounded page. Never fetch
   // every note/card/comment into the browser for a simple search.
-  return checked(await db.rpc('search_cards_page',{
-   p_query:query,p_slug:slug??null,p_limit:50,p_offset:0
-  })) as import('../types').CardRow[]
+  const args={p_query:query,p_slug:slug??null,p_limit:50}
+  const first=checked(await db.rpc('search_cards_page',{...args,p_offset:0})) as import('../types').CardRow[]
+  // Preserve the existing 100-result search contract until a separate
+  // additive pagination contract lets the UI request later pages.
+  if(first.length<50)return first
+  const second=checked(await db.rpc('search_cards_page',{...args,p_offset:50})) as import('../types').CardRow[]
+  return [...first,...second]
  }
  async getCard(...args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> {
   const [no]=args,db=liveClient(),uid=await owner(db)
