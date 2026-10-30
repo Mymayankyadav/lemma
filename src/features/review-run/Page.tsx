@@ -29,15 +29,20 @@ const confidenceOptions=[
 function CardFace({item,revealed,confidence}:{item:ReviewItem;revealed:boolean;confidence:Confidence}){
  const front=item.type==='reverse'&&item.ord===2?item.back:item.front;
  const back=item.type==='reverse'&&item.ord===2?item.front:item.back;
- return <Card stack className="flex min-h-[220px] flex-col gap-3 p-[var(--pad)]">
-  <div className="flex items-center justify-between gap-2">
-   <Chip tone="quiet" size={28}>{item.kind.charAt(0).toUpperCase()+item.kind.slice(1)}</Chip>
+ return <Card stack className="flex flex-col gap-4 rounded-[6px] px-[18px] pb-[26px] pt-4"
+  style={{minHeight:'min(50vh,400px)',backgroundImage:'repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, var(--line) 28px)'}}>
+  <div className="flex items-center justify-between gap-2 border-b border-edge pb-3">
+   <span className="text-label uppercase tracking-wide text-ink-3">{item.kind}</span>
+   <span className="font-math text-label text-ink-2">N{item.noteNo}</span>
    {revealed&&confidence&&<Chip tone={confidence==='sure'?'amber':'quiet'} size={28}>{confidence}</Chip>}
   </div>
-  <MathText source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined}/>
-  {revealed&&<motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{duration:0.35}} className="mt-auto">
-   <div className="mb-5 flex items-center gap-2 text-amber"><span className="h-px flex-1 bg-amber-line"/>
-    <span aria-hidden="true" className="size-2 rotate-45 bg-amber"/><span className="h-px flex-1 bg-amber-line"/></div>
+  <div className="font-math text-[21px] leading-[28px]">
+   <MathText source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined}/>
+  </div>
+  {revealed&&<motion.div initial={{opacity:0,clipPath:'inset(0 100% 0 0)'}} animate={{opacity:1,clipPath:'inset(0 0% 0 0)'}}
+   transition={{duration:0.52}} className="mt-auto font-math text-[18px] leading-[28px]">
+   <motion.div initial={{scaleX:0}} animate={{scaleX:1}} transition={{duration:0.32}}
+    className="mb-5 h-[1.5px] origin-left bg-amber"/>
    {back?<MathText source={back} variant="answer"/>:item.type==='cloze'?<MathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}}/>:
     <p className="font-math text-title-s text-ink-2">See the highlighted answer above.</p>}
   </motion.div>}
