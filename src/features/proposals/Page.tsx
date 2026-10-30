@@ -344,7 +344,7 @@ export default function Page() {
                   </p>
                 </div>
               </div>
-              <div aria-label="Plan errata" className="my-5 flex flex-col">
+              <div role="region" aria-label="Plan errata" className="my-5 flex flex-col">
                 {p.planChange?.ops.map((op, i) => (
                   <div
                     key={i}
