@@ -25,9 +25,10 @@ function Geometry({body,scale,selected}:{body:Body;scale:number;selected:boolean
  const outline=showStatus(body)?status==='revisit'?'var(--hard)':'var(--amber)':'var(--ink-2)';
  const fill=status==='demonstrated'?'var(--amber)':'var(--obsidian)';
  const progress=body.total?body.done/body.total:0;
+ const clusterArc=Math.max(r*.7,r-6/scale),smallArc=Math.max(r*.7,r-4/scale);
  return <g>
   {level==='cluster'&&<><circle r={r} fill="var(--amber)" fillOpacity=".035" stroke="var(--edge-3)" strokeWidth={1/scale} strokeDasharray={`${12/scale} ${14/scale}`}/>
-   <circle r={r-6/scale} fill="none" stroke="var(--amber)" strokeWidth={3/scale} strokeDasharray={`${2*Math.PI*(r-6/scale)*progress} ${2*Math.PI*r}`} transform="rotate(-90)"/></>}
+   <circle r={clusterArc} fill="none" stroke="var(--amber)" strokeWidth={Math.min(3/scale,r*.2)} strokeDasharray={`${2*Math.PI*clusterArc*progress} ${2*Math.PI*clusterArc}`} transform="rotate(-90)"/></>}
   {level==='galaxy'&&<><circle r={r} fill="var(--amber)" fillOpacity=".04" stroke="var(--edge-3)" strokeWidth={1/scale}/>
    <path d={`M ${-r*.6} 0 Q ${-r*.35} ${-r*.8} ${r*.1} ${-r*.25} Q ${r*.8} ${r*.25} ${r*.55} ${r*.65}`}
     fill="none" stroke="var(--amber)" strokeOpacity=".55" strokeWidth={5/scale} strokeLinecap="round"/>
@@ -43,8 +44,8 @@ function Geometry({body,scale,selected}:{body:Body;scale:number;selected:boolean
    {body.isStar&&<circle r={r*.34} fill="var(--amber)" opacity=".65"/>}
   </>}
   {selected&&<circle r={r+6/scale} fill="none" stroke="var(--amber)" strokeWidth={2/scale}/>}
-  {(level==='galaxy'||level==='system')&&<circle r={r-4/scale} fill="none" stroke="var(--amber)" strokeWidth={2/scale}
-   strokeDasharray={`${2*Math.PI*(r-4/scale)*progress} ${2*Math.PI*r}`} transform="rotate(-90)"/>}
+  {(level==='galaxy'||level==='system')&&<circle r={smallArc} fill="none" stroke="var(--amber)" strokeWidth={Math.min(2/scale,r*.2)}
+   strokeDasharray={`${2*Math.PI*smallArc*progress} ${2*Math.PI*smallArc}`} transform="rotate(-90)"/>}
  </g>;
 }
 function BodyMark({body,view,selected,dim,onSelect,onEnter}:{
@@ -139,7 +140,7 @@ export default function Page(){
   if(!svg.current||!model)return;
   const el=svg.current;
   const behavior=zoom<SVGSVGElement,unknown>()
-   .scaleExtent([1e-12,64])
+   .scaleExtent([1e-12,Math.max(1,el.clientWidth)/(6*7)])
    .filter(event=>event.type==='wheel'||event.type.startsWith('touch')||event.type==='dblclick'||!(event.target instanceof Element&&event.target.closest('[data-body]')))
    .on('zoom',event=>{
     const t=event.transform as ZoomTransform;
@@ -168,6 +169,7 @@ export default function Page(){
    const rect=el.getBoundingClientRect();
    if(!rect.width||!rect.height)return;
    setSize({width:rect.width,height:rect.height});
+   behavior.scaleExtent([1e-12,Math.max(1,rect.width)/(6*7)]);
    if(!userMoved.current){
     const camera=fit(area(childrenOf(model,null)),rect.width,rect.height);
     selection.call(behavior.transform,zoomIdentity.translate(camera.x,camera.y).scale(camera.k));
@@ -251,7 +253,7 @@ export default function Page(){
        fill="none" stroke="var(--amber)" strokeWidth={1.5/view.k} strokeDasharray={`${5/view.k} ${4/view.k}`} pointerEvents="none"/>;
      })}
      {displayed.map(b=><BodyMark key={b.id} body={b} view={view} selected={selectedId===b.id}
-      dim={filter!=='all'&&b.status!==filter} onSelect={inspect} onEnter={id=>focusNode(id)}/>)}
+      dim={selectedId!==b.id&&filter!=='all'&&b.status!==filter} onSelect={inspect} onEnter={id=>focusNode(id)}/>)}
      {displayed.flatMap(b=>b.children.slice(0,30).map(childId=>model.bodies.get(childId)!).filter(Boolean)
        .filter(child=>isOnScreen(child,view,size.width,size.height)&&child.radius*view.k<44))
        .map(dot=><circle key={'small-'+dot.id} data-descendant="true" cx={dot.x} cy={dot.y} r={Math.max(1,Math.min(dot.radius,4/view.k))}
