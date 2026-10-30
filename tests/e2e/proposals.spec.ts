@@ -76,3 +76,23 @@ for(const world of ['euclid','euclid-night'] as const){
   await page.screenshot({path:`test-results/screens/review/ui5f-plan-${world}.png`,fullPage:true});
  });
 }
+
+test('a blocked tutor handoff keeps the proposed plan pending',async({page})=>{
+ await page.goto('/lemma/?demo=1#/proposals?tab=plan');
+ await page.getByRole('link',{name:'See the whole plan'}).click();
+ await page.evaluate(()=>{
+  window.open=()=>null;
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{
+   writeText:async()=>{throw Error('Clipboard denied')},
+  }});
+ });
+ await page.getByRole('button',{name:'Ask for changes'}).click();
+ const dialog=page.getByRole('dialog',{name:'Ask for changes'});
+ await dialog.getByRole('textbox',{name:'What should change?'}).fill('Clarify the second lemma');
+ await dialog.getByRole('button',{name:'Send'}).click();
+ await expect(page.getByText(/proposal is still pending/)).toBeVisible();
+ await expect(page.getByRole('button',{name:'Approve plan'})).toBeVisible();
+ await expect(dialog.getByRole('textbox',{name:'What should change?'})).toHaveValue('Clarify the second lemma');
+ await page.goto('/lemma/?demo=1#/proposals?tab=plan');
+ await expect(page.getByRole('link',{name:'See the whole plan'})).toBeVisible();
+});
