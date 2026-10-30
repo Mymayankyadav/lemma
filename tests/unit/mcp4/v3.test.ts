@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { reuseSubject, visibleProjects, sourceLine, scheduleHint } from '../../../supabase/functions/mcp/v3.ts'
+import {planningFields} from '../../../supabase/functions/mcp/planning.ts'
 
 const subjects = [
   { id: 'analysis', name: 'Analysis' },
@@ -9,6 +10,13 @@ const subjects = [
 ]
 
 describe('MCP-4 owner-facing project and subject matching', () => {
+  it('rejects impossible dates in dynamically edited checkpoint schedules',()=>{
+    expect(()=>planningFields({due_on:'2026-02-30'})).toThrow(/due_on/);
+    expect(()=>planningFields({due_on:'not-a-date'})).toThrow(/due_on/);
+    expect(()=>planningFields({due_on:'2026-11-12'})).not.toThrow();
+    expect(()=>planningFields({due_on:null})).not.toThrow();
+  })
+
   it('reuses subjects across case, field qualification and close spelling', () => {
     expect(reuseSubject(subjects, 'analysis')?.id).toBe('analysis')
     expect(reuseSubject(subjects, 'Real Analysis')?.id).toBe('analysis')
