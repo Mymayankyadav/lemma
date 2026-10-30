@@ -153,6 +153,29 @@ join public.sources s on s.id=c.source_id and s.user_id=c.user_id and s.project_
 where c.source_id is not null
 on conflict (checkpoint_id,source_id) do nothing;
 
+
+-- Until MCP-4 switches to multi-source writes, keep legacy checkpoint.source_id
+-- and pages in sync with the citation table. Do not overwrite other citations.
+create function public.lemma_checkpoint_source_legacy() returns trigger
+language plpgsql security invoker set search_path = '' as $
+begin
+  if tg_op='UPDATE' and old.source_id is distinct from new.source_id
+      and old.source_id is not null then
+    delete from public.checkpoint_sources
+      where checkpoint_id=new.id and source_id=old.source_id and user_id=new.user_id;
+  end if;
+  if new.source_id is not null then
+    insert into public.checkpoint_sources(user_id,checkpoint_id,source_id,pages)
+      values(new.user_id,new.id,new.source_id,new.pages)
+    on conflict (checkpoint_id,source_id) do update
+      set pages=excluded.pages;
+  end if;
+  return new;
+end $;
+revoke all on function public.lemma_checkpoint_source_legacy() from public,anon;
+create trigger z_checkpoint_source_legacy after insert or update of source_id,pages
+  on public.checkpoints for each row execute function public.lemma_checkpoint_source_legacy();
+
 -- Extend DB-2 undo's fixed table allow-list and lock list. Preserve its
 -- conflict, cascade and authorization behavior verbatim.
 do $$
