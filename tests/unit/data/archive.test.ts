@@ -6,6 +6,16 @@ vi.mock('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url',()=>({default:'worker'}
 const data:Record<string,any[]>={}
 const client={auth:{getUser:async()=>({data:{user:{id:'owner'}},error:null})},
  rpc(name:string){
+  if(name==='home_summary'){
+   // The server-side summary excludes archived and system sessions before
+   // selecting the most recently active resume target.
+   const visible=(data.projects??[]).filter(p=>p.user_id==='owner'&&!p.system&&p.status!=='archived')
+   const sessions=(data.sessions??[]).filter(s=>visible.some(p=>p.id===s.project_id)&&s.state!=='ended')
+    .sort((a,b)=>b.last_activity_at.localeCompare(a.last_activity_at))
+   const project=visible.find(p=>p.id===sessions[0]?.project_id)??visible[0]
+   return Promise.resolve({data:{resume:project?{projectSlug:project.slug}:null,
+    projects:visible,due:0,pendingProposals:0},error:null})
+  }
   if(name!=='project_summaries')throw new Error('Unexpected RPC '+name)
   // The server RPC hides system projects but deliberately retains archived ones.
   const result=(data.projects??[]).filter(p=>p.user_id==='owner'&&!p.system)
