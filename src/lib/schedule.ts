@@ -83,7 +83,7 @@ export function scheduleHeadline(rows:readonly ScheduledCheckpoint[]):string|nul
 export function scheduleDate(date:string):string{
  const day=dayNumber(date)
  if(day===null)return date
- return new Date(day*DAY).toLocaleDateString('en',{day:'numeric',month:'short',timeZone:'UTC'})
+ return new Date(day*DAY).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'})
 }
 export function scheduleDetail(row:ScheduledCheckpoint):string|null{
  if(!row.dueOn)return null
