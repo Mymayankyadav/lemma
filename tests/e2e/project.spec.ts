@@ -32,6 +32,10 @@ test('Sessions and Sources tabs preserve the selected tab in URL',async({page})=
 
 test('checkpoint sheet shows criterion, steps, prerequisite and study CTA',async({page})=>{
  await page.goto('./?demo=1#/p/real-analysis/cp/CP4')
+ const backdrop=page.locator('[data-sheet-background]')
+ await expect(backdrop.locator('h1')).toHaveText('Real Analysis')
+ await expect(backdrop.locator('section[aria-label="Checkpoint progress"]')).toContainText('12')
+ await expect(backdrop).toHaveAttribute('inert','')
  await expect(page.getByRole('heading',{name:'Checkpoint',level:1})).toBeVisible()
  await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible()
  await expect(page.getByRole('region',{name:'Checkpoint steps'})).toBeVisible()
