@@ -6,18 +6,40 @@ test.beforeEach(async({page})=>{
  await page.goto('./?demo=1#/p/real-analysis')
 })
 
-test('project timeline displays prerequisite states, current step and progress',async({page})=>{
+test('Euclid Paths shows goal, stages, current work and checkpoint states',async({page})=>{
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await expect(page.getByRole('heading',{name:'Project',level:1})).toBeVisible()
+ await expect(page.getByRole('navigation',{name:'Choose a path'}).getByRole('link',{name:/Real Analysis/})).toHaveAttribute('aria-current','page')
+ await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Rudin')
  await expect(page.getByRole('region',{name:'Checkpoint progress'})).toContainText('12')
+ await expect(page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="ascent"]')).toBeVisible()
  await expect(page.getByRole('article',{name:'Current checkpoint CP4'})).toBeVisible()
- await expect(page.getByText('Metric spaces',{exact:true})).toBeVisible()
- await expect(page.getByRole('button',{name:/\d+ more/})).toBeVisible()
- await page.screenshot({path:'test-results/screens/project-path.png',fullPage:true})
- await page.getByRole('button',{name:/\d+ more/}).click()
+ const stage=page.getByRole('region',{name:'Stages'}).getByRole('article',{name:/stage$/}).first()
+ const toggle=stage.getByRole('button',{name:/Unassigned checkpoints/})
+ await expect(toggle).toHaveAttribute('aria-expanded','true')
+ await expect(stage.getByRole('link',{name:/CP1 Metric spaces, done/})).toBeVisible()
+ await expect(stage.getByRole('link',{name:/CP4 Compactness, in progress/})).toBeVisible()
  await expect(page.getByText('Capstone proofs',{exact:true})).toBeVisible()
+ await page.screenshot({path:'test-results/screens/project-path.png',fullPage:true})
+ await toggle.click()
+ await expect(toggle).toHaveAttribute('aria-expanded','false')
+ await expect(stage.getByRole('link',{name:/CP1 Metric spaces/})).toBeHidden()
+ await toggle.click()
+ await expect(stage.getByRole('link',{name:/CP1 Metric spaces/})).toBeVisible()
  expect(errors).toEqual([])
+})
+
+test('Path chips switch projects and checkpoint rows open sheets',async({page})=>{
+ const chips=page.getByRole('navigation',{name:'Choose a path'})
+ await chips.getByRole('link',{name:/Linear Algebra/}).click()
+ await expect(page).toHaveURL(/linear-algebra$/)
+ await expect(page.getByRole('heading',{name:'Project',level:1})).toContainText('Linear Algebra')
+ await chips.getByRole('link',{name:/Real Analysis/}).click()
+ await expect(page).toHaveURL(/real-analysis$/)
+ await page.getByRole('region',{name:'Stages'}).getByRole('link',{name:/CP4 Compactness, in progress/}).click()
+ await expect(page).toHaveURL(/CP4$/)
+ await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible()
 })
 
 test('Sessions and Sources tabs preserve the selected tab in URL',async({page})=>{
@@ -64,4 +86,22 @@ test('Euclid project ascent opens a checkpoint without horizontal scrolling',asy
  await button.focus()
  await page.keyboard.press('Enter')
  await expect(page).toHaveURL(/CP4$/)
+})
+
+test('Euclid Paths fits both worlds at compact phone widths',async({page})=>{
+ for(const world of ['euclid','euclid-night']){
+  for(const density of ['compact','comfortable']){
+   await page.setViewportSize({width:360,height:740})
+   await page.goto('./?demo=1&theme='+world+'&density='+density+'#/p/real-analysis')
+   await expect(page.getByRole('region',{name:'Stages'})).toBeVisible()
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth),world+' '+density).toBeLessThanOrEqual(360)
+   const row=page.getByRole('region',{name:'Stages'}).locator('[data-cp-row]').first()
+   await expect(row).toBeVisible()
+   const metrics=await row.evaluate(el=>({width:el.getBoundingClientRect().width,scroll:el.scrollWidth}))
+   expect(metrics.scroll,world+' '+density).toBeLessThanOrEqual(Math.ceil(metrics.width)+1)
+   if(density==='compact')await page.screenshot({
+    path:'test-results/screens/review/ui5c-paths-'+world+'.png',fullPage:true
+   })
+  }
+ }
 })

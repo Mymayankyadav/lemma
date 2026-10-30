@@ -5,12 +5,12 @@ test.beforeEach(async({page})=>{
  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}))
  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}))
 })
-test('Projects shows featured work, other projects and Atlas without errors',async({page})=>{
+test('Paths shows goal, active checkpoint, stages and Atlas without errors',async({page})=>{
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await page.goto('./?demo=1#/projects')
- await expect(page.getByRole('heading',{name:'Projects',level:1})).toBeVisible()
- await expect(page.getByRole('link',{name:'Real Analysis',exact:true})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'Paths',level:2})).toBeVisible()
+ await expect(page.getByRole('navigation',{name:'Choose a path'}).getByRole('link',{name:'Real Analysis',exact:true})).toBeVisible()
  await expect(page.getByText('Compactness, step 2')).toBeVisible()
  await expect(page.getByRole('link',{name:/Atlas/i})).toBeVisible()
  await page.screenshot({path:'test-results/screens/projects-dashboard.png',fullPage:true})
@@ -135,3 +135,30 @@ test('rejects non-PDF files without creating a project',async({page})=>{
 })
 
 
+
+test('Paths tab switches projects and expands stage checkpoints',async({page})=>{
+ await page.goto('./?demo=1&theme=euclid#/projects')
+ const chips=page.getByRole('navigation',{name:'Choose a path'})
+ const stages=page.getByRole('region',{name:'Stages'})
+ await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Real Analysis')
+ await expect(stages.getByRole('link',{name:/CP4 Compactness, in progress/})).toBeVisible()
+ const stage=stages.getByRole('article',{name:/stage$/}).first()
+ await stage.getByRole('button',{name:/Unassigned checkpoints/}).click()
+ await expect(stage.getByRole('link',{name:/CP4 Compactness/})).toBeHidden()
+ await stage.getByRole('button',{name:/Unassigned checkpoints/}).click()
+ await expect(stage.getByRole('link',{name:/CP4 Compactness/})).toBeVisible()
+ await chips.getByRole('link',{name:'Linear Algebra',exact:true}).click()
+ await expect(page).toHaveURL(/project=linear-algebra/)
+ await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Linear Algebra')
+ await expect(chips.getByRole('link',{name:'Linear Algebra',exact:true})).toHaveAttribute('aria-current','page')
+})
+
+test('Paths matches compact Euclid and Euclid-night without horizontal overflow',async({page})=>{
+ await page.setViewportSize({width:360,height:740})
+ for(const theme of ['euclid','euclid-night']){
+  await page.goto('./?demo=1&theme='+theme+'#/projects')
+  await expect(page.getByRole('region',{name:'Stages'})).toBeVisible()
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth),theme).toBeLessThanOrEqual(360)
+  await page.screenshot({path:'test-results/screens/review/ui5c-paths-tab-'+theme+'.png',fullPage:true})
+ }
+})
