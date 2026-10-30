@@ -1,5 +1,6 @@
 import type { LemmaApi } from '../api'
 import {reviewForecast} from '../../lib/review-forecast'
+import {summaryMetadata,ownerProjects,resumableProjects} from './project-summary'
 
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
@@ -31,7 +32,7 @@ export class LiveAdapter implements LemmaApi {
  async getReviewForecast(): ReturnType<LemmaApi['getReviewForecast']> {
   const db=liveClient(),uid=await owner(db)
   const [settings,notes,projects,cards]=await Promise.all([this.getSettings(),rows(db,'notes',uid),rows(db,'projects',uid),rows(db,'cards',uid)])
-  const projectIds=new Set(projects.filter(p=>p.status!=='archived').map(p=>p.id))
+  const projectIds=new Set(projects.filter(p=>p.status!=='archived'&&p.system!==true).map(p=>p.id))
   const noteIds=new Set(notes.filter(n=>n.status==='active'&&projectIds.has(n.project_id)).map(n=>n.id))
   return reviewForecast(cards.filter(c=>noteIds.has(c.note_id)).map(c=>({state:Number(c.state),due:c.due})),settings)
  }
@@ -102,8 +103,10 @@ export class LiveAdapter implements LemmaApi {
     this.listProjects(),this.listSessions(),this.listProposals(),
     this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false})
   ])
-  const active=sessions.filter(s=>s.display!=='ended').sort((a,b)=>b.lastActivityAt.localeCompare(a.lastActivityAt))[0]
-  const p=active?projects.find(x=>x.slug===active.projectSlug):projects[0]
+  const visible=resumableProjects(projects)
+  const active=sessions.filter(s=>s.display!=='ended'&&visible.some(p=>p.slug===s.projectSlug))
+   .sort((a,b)=>b.lastActivityAt.localeCompare(a.lastActivityAt))[0]
+  const p=active?visible.find(x=>x.slug===active.projectSlug):visible[0]
   const detail=p?await this.getProject(p.slug):null
   const current=detail?.checkpoints.find(x=>x.code===active?.checkpointCode)
     ??detail?.checkpoints.find(x=>x.ui==='now')
@@ -113,7 +116,7 @@ export class LiveAdapter implements LemmaApi {
       step:session?.resumeStep??current?.currentStep??0,stepsTotal:current?.stepsTotal??0,
       question:session?.resumeQuestion??null,objective:current?((await this.getCheckpoint(p.slug,current.code)).objective):null,
       pausedAt:active?.lastActivityAt??p.lastActivityAt,sessionNumber:active?.number??null}:null,
-    due:due.length,pendingProposals:proposals.length,projects}
+    due:due.length,pendingProposals:proposals.length,projects:visible}
  }
  async listSubjects(...args: Parameters<LemmaApi['listSubjects']>): ReturnType<LemmaApi['listSubjects']> {
   const db=liveClient(),uid=await owner(db)
@@ -144,17 +147,17 @@ export class LiveAdapter implements LemmaApi {
     const view=checkpointRow(c,pre.map(getView),today)
     views.set(c.id,view);visiting.delete(c.id);return view
   }
-  return projects.map(p=>{
+  return ownerProjects(projects.map(p=>{
     const checkpoints=cps.filter(c=>c.project_id===p.id).sort((a,b)=>a.position-b.position).map(getView)
     const counts=projectProgress(checkpoints)
     const current=checkpoints.find(c=>c.ui==='now')??checkpoints.find(c=>c.ui==='next')
-    return {id:p.id,slug:p.slug,title:p.title,subject:subjectMap.get(p.subject_id)!,status:p.status,
+    return {id:p.id,slug:p.slug,title:p.title,...summaryMetadata(p,subjectMap),status:p.status,
       done:counts.done,total:counts.total,
       current:current?{code:current.code,title:current.title,step:current.currentStep,stepsTotal:current.stepsTotal}:null,
       lastActivityAt:p.last_activity_at,cardsCount:cards.filter(c=>notes.some(n=>n.id===c.note_id&&n.project_id===p.id&&n.status==='active')).length,
       sessionsCount:sessions.filter(s=>s.project_id===p.id&&s.state==='ended').length,
       sourcesCount:sources.filter(s=>s.project_id===p.id).length} satisfies ProjectSummary
-  }).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
+  })).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
   const [slug]=args,db=liveClient(),uid=await owner(db)
