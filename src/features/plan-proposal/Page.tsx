@@ -29,6 +29,7 @@ type Node = {
   code: string;
   title: string;
   criterion: string;
+  stage?: string;
   steps: string[];
   pages?: string;
   source?: string;
@@ -39,6 +40,7 @@ function mapNodes(checkpoints: PlanCheckpoint[]): Node[] {
     code: c.code ?? `CP${i + 1}`,
     title: c.title,
     criterion: c.criterion,
+    stage: c.stage ?? undefined,
     steps: c.steps ?? [],
     pages: c.pages,
     source: c.source,
@@ -192,6 +194,7 @@ export default function Page() {
                 title: op.title,
                 objective: op.objective,
                 criterion: op.criterion,
+                stage: op.stage ?? undefined,
                 steps: op.steps,
                 pages: op.pages,
                 source: op.source,
@@ -219,6 +222,9 @@ export default function Page() {
       request.trim(),
     );
     const target = window.open("about:blank", "_blank");
+    // Pre-open synchronously to avoid popup blocking, but disown this window
+    // before navigating it to an external chat client.
+    if (target) target.opener = null;
     try {
       await reject.mutateAsync(p.id);
       try {
@@ -307,7 +313,7 @@ export default function Page() {
                   <span className="w-[46px] shrink-0 rounded-s border border-amber-line py-1 text-center text-label font-semibold text-amber">
                     {node.code}
                   </span>
-                  <span className="min-w-0 flex-1 font-semibold leading-snug">{node.title}</span>
+                  <span className="min-w-0 flex-1 font-semibold leading-snug">{node.title}{node.stage&&<span className="mt-1 block text-label font-normal text-ink-3">{node.stage}</span>}</span>
                   <MessageSquare size={17} className="text-ink-3" />
                 </button>
                 {current?.code === node.code && (
