@@ -21,6 +21,7 @@ export function plainMath(source:string):string{
     .replace(/\\(?:mathcal|mathrm|mathbf|operatorname|text)\{([^}]*)\}/g,'$1')
     .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,'($1/$2)')
     .replace(/\\([A-Za-z]+)/g,(_,cmd:string)=>symbols[cmd]??cmd)
+    .replace(/\\(?:\(|\)|\[|\])/g,'')
     .replace(/\\([{}[\](),.;:!?%$])/g,'$1')
     .replace(/\^\{([^}]+)\}/g,(_,value:string)=>raised(value,superscript))
     .replace(/\^([A-Za-z0-9+-])/g,(_,value:string)=>raised(value,superscript))
