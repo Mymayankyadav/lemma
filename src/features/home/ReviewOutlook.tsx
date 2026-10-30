@@ -1,6 +1,7 @@
 import {useQuery} from '@tanstack/react-query'
 import {getApi} from '../../data'
 import {useDeckTree} from '../../data/hooks'
+import {Tex} from '../../ui/Tex'
 
 /** Seven-day due forecast is read from the adapter's complete scheduled-card set.
  * Deck counts come from the review service, not a capped search or fabricated percentages.
@@ -21,7 +22,7 @@ export function ReviewOutlook(){
    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
     {groups.map((group,i)=><span key={group.key} className="inline-flex items-center gap-1.5 text-label text-ink-2">
      <span aria-hidden="true" className="size-2 shrink-0 rounded-[1px]" style={{background:'var(--accent)',opacity:Math.max(.3,1-i*.15)}}/>
-     {group.label} <span className="tabular-nums text-ink-3">{group.due}</span>
+     <Tex source={group.label}/> <span className="tabular-nums text-ink-3">{group.due}</span>
     </span>)}
    </div>
   </div>}

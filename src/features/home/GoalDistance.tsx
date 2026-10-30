@@ -5,6 +5,7 @@ import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline'
 import {Slab} from '../../ui/Slab'
 import {Glyph} from '../../ui/Glyph'
 import {Skeleton} from '../../ui/Skeleton'
+import {Tex} from '../../ui/Tex'
 import {buildSchedule,scheduleHeadline,paceFromDemonstrations} from '../../lib/schedule'
 
 const DAY=86_400_000
@@ -26,11 +27,11 @@ function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'asce
  const targetDisplay=target?new Date(target+'T12:00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}):null
  return <Slab as="article" aria-label={'Goal progress for '+project.title} className="flex min-w-0 flex-col gap-3 p-4">
   <div className="flex min-w-0 items-start gap-3">
-   <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={32}/>
+   <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <div className="min-w-0 flex-1">
-    <Link to={'/p/'+project.slug} className="flex min-h-11 items-center break-words font-semibold text-headline text-ink focus-visible:outline-2 focus-visible:outline-amber">{project.title}</Link>
+    <Link to={'/p/'+project.slug} className="flex min-h-11 items-center break-words font-semibold text-headline text-ink focus-visible:outline-2 focus-visible:outline-amber"><Tex source={project.title}/></Link>
     <p className="mt-1 text-label leading-snug text-ink-2">
-     {project.done}/{project.total} checkpoints{project.current?', now '+project.current.code+' '+project.current.title:''}
+     {project.done}/{project.total} checkpoints{project.current&&<>, now {project.current.code} <Tex source={project.current.title}/></>}
     </p>
    </div>
    <div className="flex shrink-0 flex-col items-end gap-1"><strong className="font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
@@ -43,7 +44,7 @@ function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'asce
    <span>Finish ≈ <strong className="text-ink">{estimate.day}</strong></span>
    <span className="text-ink-3">at {estimate.pace.toFixed(2)}/wk{estimate.baseline?' (baseline)':''}</span>
    {targetDisplay&&<span className="basis-full">
-    <strong className="text-amber">{project.targetLabel??'Target'}:</strong>{' '}
+    <strong className="text-amber"><Tex source={project.targetLabel??'Target'}/>:</strong>{' '}
     <time dateTime={target!}>{targetDisplay}</time>
     {estimate.spare!==null&&<span className={estimate.spare>=0?'text-easy':'text-hard'}>
      {' · '+(estimate.spare>=0?estimate.spare+' days spare':Math.abs(estimate.spare)+' days late')}
