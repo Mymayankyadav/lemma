@@ -6,6 +6,9 @@ import {arcTone} from './tree';
 
 /** Shared pieces of the collapsible idea graph: used by the Atlas and by plan review. */
 export const ROW=44,GUTTER=84,INDENT=16;
+/** Rows have a fixed height, so long names are clipped here (the graph theme un-truncates
+ * `.truncate` elsewhere to keep formulas whole); the full name is in the details. */
+export const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
 export const STORE='lemma.atlas.v2';
 export const statusName={demonstrated:'Demonstrated',revisit:'Re-check due',in_progress:'In progress',not_started:'Not started'};
 export const toneColor:Record<Tone,string>={up:'var(--grade-good)',down:'var(--accent)',related:'var(--hard)',self:'var(--accent)',none:'var(--ink-3)'};
@@ -67,7 +70,7 @@ export function Row({node,open,tone,match,onToggle,onSelect}:{
   <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
-   <span className={'min-w-0 truncate whitespace-nowrap [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><Tex source={node.name}/></span>
+   <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><Tex source={node.name}/></span>
    {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
     {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-1.5 rounded-full bg-[var(--hard)]"/>}
     {node.done}/{node.total}
