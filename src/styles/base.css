@@ -4,3 +4,8 @@ body { margin: 0; min-width: 320px; min-height: 100vh; font-family: var(--font-u
 button, input, textarea, select { font: inherit; }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+
+/* Responsive density without changing the shell's shared route contract. */
+#main-content:not(.w-full) { padding-left: var(--gutter); padding-right: var(--gutter); }
+nav[aria-label="Main navigation"] { height: var(--tab); }
+:where(button, a, input, select, textarea):focus-visible { outline-offset: 3px; }
