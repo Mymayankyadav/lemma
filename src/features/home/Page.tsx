@@ -59,7 +59,7 @@ function ProjectLink({project,index}:{project:ProjectSummary;index:number}){
   transition={{duration:reduce?0.15:0.6,delay:reduce?0:index*0.1}}>
   <Link to={'/p/'+project.slug} aria-label={project.title+', '+project.done+' of '+project.total+' checkpoints'}
    className="group grid min-h-[var(--row)] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
-   <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={32}/>
+   <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <span className="flex min-w-0 flex-col gap-1">
     <span className="truncate text-headline font-medium">{project.title}</span>
     <Rail label={project.title+' progress'} value={project.total?project.done/project.total:0} sheen={index===0} delay={index*0.1}/>
@@ -174,7 +174,9 @@ export default function Page(){
    body={offline?'Reconnect to resume studying.':'Your study data is safe. Try loading again.'}
    action={{label:'Try again',onClick:()=>{void home.refetch()}}}/>
  </Screen>;
- const projects=home.data.projects;
+ const projects=home.data.projects.filter(p=>!p.system&&p.status!=='archived')
+  .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
+   (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
  return <Screen tabBar className="gap-6">
   <TodayHeader pending={home.data.pendingProposals}/>
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
@@ -210,7 +212,7 @@ export default function Page(){
    <div className="flex flex-col gap-1">
     {projects.slice(0,4).map((p,i)=><ProjectLink key={p.id} project={p} index={i}/>)}
    </div>
-   {projects.length>4&&<Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All projects</Link>}
+   <Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All paths</Link>
    {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
   </section>
   <section aria-label="Last chat" className="flex flex-col gap-3">

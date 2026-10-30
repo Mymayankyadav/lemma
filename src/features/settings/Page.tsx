@@ -34,6 +34,7 @@ import type {
 } from "../../lib/optimizer.worker";
 import { Button } from "../../ui/Button";
 import { EuclidAppearance } from "./EuclidAppearance";
+import { SubjectsPanel } from "./SubjectsPanel";
 import { Chip } from "../../ui/Chip";
 import { IconButton } from "../../ui/IconButton";
 import { Screen } from "../../ui/Screen";
@@ -219,6 +220,7 @@ export default function Page() {
   return (
     <Screen title="Settings" back="/" className="pb-8">
       <EuclidAppearance ui={s.ui} busy={busy} onChange={(patch)=>save({ui:patch})}/>
+      <SubjectsPanel/>
       <Slab className="p-5">
         <div className="flex items-center gap-4">
           <PlugArt connected={connected} size={92} />

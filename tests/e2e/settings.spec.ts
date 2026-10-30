@@ -94,3 +94,20 @@ test('UI-6a migrates obsolete stored worlds and fixes compact calm mode',async({
  await page.emulateMedia({colorScheme:'dark'});
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
 });
+
+test('v3 subject management is discoverable and requires confirmation before merging',async({page})=>{
+ await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}))
+ await page.goto('/lemma/?demo=1#/settings')
+ const section=page.getByRole('region',{name:'Subjects'})
+ await expect(section).toBeVisible()
+ await section.getByRole('button',{name:'Manage'}).click()
+ const sheet=page.getByRole('dialog',{name:'Manage subjects'})
+ await expect(sheet).toContainText('Demo subjects are examples')
+ const first=sheet.getByRole('button',{name:/Analysis/}).first()
+ await first.click()
+ await expect(sheet.getByLabel('Name',{exact:true})).toBeVisible()
+ await expect(sheet.getByLabel('Glyph',{exact:true})).toBeVisible()
+ await expect(sheet.getByRole('button',{name:'Save subject'})).toHaveCount(0)
+ await expect(sheet.getByRole('button',{name:'Confirm merge'})).toHaveCount(0)
+ await page.screenshot({path:'test-results/screens/review/ui6e-subjects-graph.png',fullPage:true})
+})
