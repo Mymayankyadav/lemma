@@ -71,12 +71,12 @@ export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:r
      onClick={event=>{event.stopPropagation();onFocus?.(group.id,topic.id)}}
      onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id,topic.id)}}}
      pointerEvents="all" className="cursor-pointer">
-     {/* The hit area is outside the top of the ring, rather than over an idea.
+     {/* The hit area is below the ring, rather than over an idea.
          At every camera scale it is at least 48 CSS pixels high. */}
      <rect x={topic.x-Math.max(104,topic.name.length*10+40)/(2*scale)}
-      y={topic.y-topic.radius-47/scale} width={Math.max(104,topic.name.length*10+40)/scale}
+      y={topic.y+topic.radius+4/scale} width={Math.max(104,topic.name.length*10+40)/scale}
       height={48/scale} fill="transparent" pointerEvents="all"/>
-     <text x={topic.x} y={topic.y-topic.radius-17/scale} textAnchor="middle"
+     <text x={topic.x} y={topic.y+topic.radius+33/scale} textAnchor="middle"
       pointerEvents="none" fontFamily="var(--font-ui)" fontSize={12/scale} fontWeight="600"
       fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">
       {topic.name}
