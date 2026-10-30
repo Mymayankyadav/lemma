@@ -74,6 +74,8 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
    await page.waitForTimeout(150);
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
+   // Avoid counting the same cached resources again on subsequent hash routes.
+   await page.evaluate(() => performance.clearResourceTimings());
    const name = route === '/' ? 'today' : route.replaceAll('/','-').replace(/^-/, '');
    mkdirSync('test-results/screens/stress',{recursive:true});
    await page.screenshot({path:'test-results/screens/stress/'+profile+'-'+theme+'-'+width+'-'+name+'.png',fullPage:false,timeout:30_000});
