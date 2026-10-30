@@ -15,6 +15,7 @@ import {Chip} from '../../ui/Chip';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
+import {Tex} from '../../ui/Tex';
 import type {HomeSummary, ProjectSummary} from '../../data/types';
 import {GoalDistance} from './GoalDistance';
 import {ReviewOutlook} from './ReviewOutlook';
@@ -53,7 +54,7 @@ function ProjectLink({project}:{project:ProjectSummary}){
    className="group grid min-h-[var(--row)] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <span className="flex min-w-0 flex-col gap-1">
-    <span className="truncate text-headline font-medium">{project.title}</span>
+    <span className="truncate text-headline font-medium"><Tex source={project.title}/></span>
     <Rail label={project.title+' progress'} value={project.total?project.done/project.total:0}/>
    </span>
    <span className="flex items-center gap-1 text-body tabular-nums text-ink-2">
@@ -76,8 +77,8 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
  return <Slab as="section" aria-label="Resume where you stopped" className="flex h-14 min-w-0 items-center gap-3 px-3">
   <span aria-hidden="true" className="w-5 shrink-0 text-center font-math text-headline text-amber">{resume.glyph}</span>
   <div className="min-w-0 flex-1">
-   <p className="truncate text-body font-medium text-ink">{description}{step}</p>
-   <p className="truncate text-caption text-ink-3">{resume.projectTitle}{status?' · paused '+status:''}</p>
+   <p className="truncate text-body font-medium text-ink"><Tex source={description}/>{step}</p>
+   <p className="truncate text-caption text-ink-3"><Tex source={resume.projectTitle}/>{status?' · paused '+status:''}</p>
   </div>
   <button type="button" onClick={()=>onCopy(resume.projectTitle)} aria-label="Copy resume prompt"
    className="flex min-h-11 shrink-0 items-center rounded-ctl px-3 text-label font-medium text-amber hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
