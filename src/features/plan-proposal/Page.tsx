@@ -1,3 +1,4 @@
+import {MathPreview} from '../../ui/MathPreview';
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
@@ -362,6 +363,7 @@ export default function Page() {
                 onChange={(e) => setRequest(e.target.value)}
                 className="mt-3 min-h-28 w-full rounded-ctl border border-edge bg-well p-3 text-ink"
               />
+              <MathPreview source={request}/>
             </label>
             <p className="my-4 text-label text-ink-3">
               This rejects the proposal and opens your tutor with your request.
