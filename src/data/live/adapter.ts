@@ -317,8 +317,10 @@ export class LiveAdapter implements LemmaApi {
     progress('done',document.pageCount,'Source is ready')
     return sourceRow(completed)
   }catch(error){
-    await db.from('sources').update({status:'failed',error:error instanceof Error?error.message:'Upload failed'})
-      .eq('id',source.id).eq('user_id',uid)
+    // An incomplete upload is not a usable source. Clean up only this attempt,
+    // allowing the queue's Retry action to reuse the same content fingerprint.
+    await db.storage.from('sources').remove([storagePath]).catch(()=>undefined)
+    await db.from('sources').delete().eq('id',source.id).eq('user_id',uid)
     progress('failed',0,'Source upload failed')
     throw error
   }
