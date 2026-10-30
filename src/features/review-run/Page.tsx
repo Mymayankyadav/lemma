@@ -61,7 +61,7 @@ export default function Page(){
  const [sheetOpen,setSheetOpen]=useState(false);
  // An unsaved note belongs to its review card, never to the next card dealt.
  const [draft,setDraft]=useState<{cardId:string;value:string}|null>(null);
- const note=draft?.cardId===current?.cardId?draft.value:'';
+ const note=draft&&current&&draft.cardId===current.cardId?draft.value:'';
  const previousCardId=useRef<string|null>(null);
  useEffect(()=>{
   const cardId=current?.cardId??null;
