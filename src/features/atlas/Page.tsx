@@ -9,7 +9,7 @@ import type {ZoomBehavior,ZoomTransform} from 'd3-zoom';
 import {useAtlas,usePinConcept} from '../../data/hooks';
 import type {AtlasGraph} from '../../data/types';
 import {useToast} from '../../ui/Toast';
-import {Button} from '../../ui/Button';
+import {Tex} from '../../ui/Tex';
 import {Segmented} from '../../ui/Segmented';
 import {AtlasListViews} from './AtlasListViews';
 import {AtlasMinimap} from './AtlasMinimap';
@@ -352,11 +352,11 @@ export default function Page(){
        <Chip tone={selected.status==='demonstrated'?'success':selected.status==='revisit'||selected.status==='in_progress'?'amber':'quiet'}>{names[selected.status]}</Chip>
        <span className="text-label text-ink-3">{graph.subjects.find(x=>x.id===selected.subjectId)?.name??'Mathematics'}</span>
       </div>
-      <h2 className="text-title font-semibold">{selected.name}</h2>
+      <h2 className="text-title font-semibold"><Tex source={selected.name}/></h2>
      </div>
      <button type="button" onClick={hideSelection} aria-label="Close concept details" className="flex size-11 shrink-0 items-center justify-center rounded-ctl bg-fill-1 text-ink-2"><X size={20}/></button>
     </div>
-    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-headline leading-relaxed text-ink-soft">{selected.blurb}</p>}
+    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-headline leading-relaxed text-ink-soft"><Tex source={selected.blurb}/></p>}
     <div className="mt-4 flex flex-wrap items-center gap-2">
      {selected.checkpointRefs.slice(0,3).map(ref=><Chip key={ref.projectSlug+ref.code} tone="quiet">{ref.code}</Chip>)}
      <Chip tone="quiet">{selected.dueCards} due</Chip>
@@ -368,7 +368,7 @@ export default function Page(){
      {selected.checkpointRefs[0]?<Link to={'/p/'+selected.checkpointRefs[0].projectSlug+'/cp/'+selected.checkpointRefs[0].code}
        className="lit flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-btn px-3 text-body font-semibold">
        Open checkpoint<ChevronRight size={18}/></Link>:
-      <Button size="m" className="flex-1" disabled>Not in a checkpoint</Button>}
+      <span role="note" className="flex flex-1 items-center text-label text-ink-3">Not in a checkpoint yet</span>}
      <Link to={'/review/run?concept='+encodeURIComponent(selected.slug)}
       className="ghost flex min-h-[52px] items-center justify-center gap-1 rounded-btn px-4 text-label">
       Review {selected.dueCards}</Link>
