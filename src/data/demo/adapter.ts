@@ -1440,9 +1440,13 @@ export class DemoAdapter implements LemmaApi {
   }
   async getAtlas(): Promise<AtlasGraph> {
     const eligible = this.eligible();
+    // Until UI-6c ships its hierarchy navigator, keep the legacy flat Atlas
+    // usable. The full 82-body V3 cosmos is retained in the fixture with
+    // level/parentId metadata for the forthcoming hierarchical renderer.
+    const visible = new Set(this.store.checkpoints.flatMap(cp => cp.conceptIds));
     return {
       subjects: await this.listSubjects(),
-      concepts: this.store.concepts.map((c) => {
+      concepts: this.store.concepts.filter(c => visible.has(c.id)).map((c) => {
         const checkpoints = this.store.checkpoints.filter((cp) =>
             cp.conceptIds.includes(c.id),
           ),
