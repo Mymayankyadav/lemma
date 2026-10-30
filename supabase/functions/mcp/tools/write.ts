@@ -108,14 +108,17 @@ export async function proposePlanChange(c:Context,a:any):Promise<string>{
   return 'plan change ('+a.ops.length+' ops) waits for approval';
 }
 export async function createProject(c:Context,a:any):Promise<string>{
+  const st=await settings(c);
+  const styles=await all(c,'styles','key');
+  const chosen=a.style ?? st.default_style ?? 'socratic';
+  if(!styles.some((x:any)=>x.key===chosen))throw new Error('Unknown style key. Available: '+styles.map((x:any)=>x.key).join(', '));
   const {data:found,error}=await scoped(c,'subjects').ilike('name',a.subject).maybeSingle();
   if(error)throw new Error(error.message);
   const subject=found||await insert(c,'subjects',{name:a.subject,glyph:a.glyph||a.subject.slice(0,1),hue:'amber'});
   const existing=await all(c,'projects','slug');
   let base=slug(a.title);if(base.length<2)base='study';
   let unique=base;for(let i=2;existing.some((p:any)=>p.slug===unique);i++)unique=base.slice(0,35)+'-'+i;
-  const st=await settings(c);
-  const p=await insert(c,'projects',{subject_id:subject.id,title:a.title,slug:unique,goal:a.goal,status:'planning',style:a.style||st.default_style||'socratic'});
+  const p=await insert(c,'projects',{subject_id:subject.id,title:a.title,slug:unique,goal:a.goal,status:'planning',style:chosen});
   if(a.book){
     const src=slug(a.book_short||a.book).slice(0,20)||'book';
     await insert(c,'sources',{project_id:p.id,title:a.book,short:src,filename:src+'.pdf',page_count:0,has_text:false,status:'ready'});
