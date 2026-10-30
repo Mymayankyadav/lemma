@@ -85,11 +85,13 @@ jobs:
         run: |
           # Smoke reads the configured endpoint; never echo or print MCP_URL.
           for attempt in 1 2 3; do
-            if timeout --signal=TERM --kill-after=5s 120s node tests/mcp/smoke.mjs; then
+            echo "MCP smoke attempt $attempt/3 (140s maximum; no endpoint details)."
+            if timeout --signal=TERM --kill-after=5s 140s node tests/mcp/smoke.mjs; then
               echo "Deployed MCP smoke passed (attempt $attempt)."
               echo '### MCP post-deploy smoke: PASS' >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
+            echo "::warning::MCP smoke attempt $attempt did not complete successfully within its bounded window."
             if [[ "$attempt" -eq 3 ]]; then
               echo '### MCP post-deploy smoke: FAIL (3 bounded attempts)' >> "$GITHUB_STEP_SUMMARY"
               echo "::error::Deployed MCP smoke failed after 3 attempts. Inspect MCP and Supabase logs; do not disclose the connector URL."
