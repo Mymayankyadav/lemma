@@ -71,7 +71,14 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    const throttle = index===0 ? 4 : 1;
    if(index===1) await cdp.send('Emulation.setCPUThrottlingRate', {rate:1});
    const start = Date.now();
-   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#'+route, {waitUntil:'domcontentloaded',timeout:90_000});
+   // Load the 30,000-card extreme fixture once per test, not once per route.
+   // HashRouter navigation still exercises every screen and its route hooks,
+   // while avoiding 18 full fixture regenerations and the 15-minute CI timeout.
+   if(index===0){
+    await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#'+route, {waitUntil:'domcontentloaded',timeout:90_000});
+   }else{
+    await page.evaluate(nextRoute => {window.location.hash=nextRoute},route);
+   }
    await expect(page.locator('#main-content')).toBeVisible({timeout:90_000});
    await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
    await page.waitForTimeout(150);
