@@ -1,0 +1,2 @@
+-- DB-4: v3 additive schema, safe owner-scoped cleanup and reversible subject merge.
+-- Implementation follows in this draft PR.
