@@ -42,7 +42,10 @@ test('confidence reveal, FSRS grade, undo, close and completion metrics',async({
  await page.getByRole('button',{name:'Close review'}).click()
  await expect(page).toHaveURL(/#\/review\/done$/)
  await expect(page.getByRole('heading',{name:'Review complete',level:1})).toBeVisible()
- await expect(page.getByText('1',{exact:true})).toBeVisible()
+ await expect(page.getByText('Q.E.D.')).toBeVisible()
+ await expect(page.getByText('1 card reviewed, 0 needed another pass.')).toBeVisible()
+ await expect(page.getByRole('region',{name:'Review statistics'}).locator('> *')).toHaveCount(4)
+ await expect(page.getByRole('region',{name:'Round transcript'}).locator('[title]')).toHaveCount(1)
  await page.screenshot({path:'test-results/screens/review-done.png',fullPage:true})
 })
 
