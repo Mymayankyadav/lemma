@@ -332,6 +332,8 @@ export class DemoAdapter implements LemmaApi {
       ).length,
       sourcesCount: this.store.sources.filter((s) => s.projectId === p.id)
         .length,
+      sourceTitles: this.store.sources.filter((s) => s.projectId === p.id)
+        .map((source) => source.title),
     };
   }
   async getAuth() {
