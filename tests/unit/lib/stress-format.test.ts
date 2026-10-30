@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatCount, formatDurationMinutes } from "../../../src/lib/text";
+import { summarizeSubjects } from "../../../src/features/insights/InkRules";
 
 describe("ST-7 scale-safe formatting", () => {
   it("groups large counts with ordinary spaces and handles invalid input", () => {
@@ -21,5 +22,23 @@ describe("ST-7 scale-safe formatting", () => {
     expect(formatDurationMinutes(31 * 1440 + 60)).toBe("31 d 1 h");
     expect(formatDurationMinutes(-1)).toBe("0 m");
     expect(formatDurationMinutes(NaN)).toBe("—");
+  });
+});
+
+describe("ST-7 subject grouping", () => {
+  it("preserves every minute while limiting the default view to six subjects", () => {
+    const data = Array.from({ length: 40 }, (_, i) => ({
+      subject: { name: `Subject ${i + 1}`, glyph: "∑" },
+      minutes: i + 1,
+    }));
+    const original = [...data];
+    const { top, other, otherMinutes } = summarizeSubjects(data);
+    expect(top).toHaveLength(6);
+    expect(top.map(row => row.minutes)).toEqual([40, 39, 38, 37, 36, 35]);
+    expect(other).toHaveLength(34);
+    expect(otherMinutes).toBe(34 * 35 / 2);
+    expect(top.reduce((sum, row) => sum + row.minutes, 0) + otherMinutes)
+      .toBe(data.reduce((sum, row) => sum + row.minutes, 0));
+    expect(data).toEqual(original);
   });
 });
