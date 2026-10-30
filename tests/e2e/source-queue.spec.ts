@@ -14,9 +14,9 @@ for(const theme of ['graph','graph-night'] as const){
   const queue=sources.getByRole('list',{name:'Source upload queue'});
   const row=queue.getByRole('listitem').first();
   await expect(row).toContainText('sample.pdf');
-  await expect(row).toContainText(/\\d+(?:\\.\\d+)? (?:KB|MB)/);
+  await expect(row).toContainText(/\d+(?:\\.\d+)? (?:KB|MB)/);
   await expect(row.getByLabel('Upload status: ready')).toBeVisible({timeout:30000});
-  await expect(row).toContainText(/\\d+\\/\\d+ pages read/);
+  await expect(row).toContainText(/\d+\\/\d+ pages read/);
   await expect(row.getByRole('button',{name:'Retry'})).toHaveCount(0);
   await page.screenshot({path:'test-results/screens/fix-397-queue-'+theme+'.png',fullPage:true});
  });
