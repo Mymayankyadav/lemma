@@ -170,3 +170,5 @@ export interface NewProjectInput { title: string; slug?: string; subjectId: stri
 /** v3 name-only creation; the tutor supplies goal, subject and style later. */
 export interface NewProjectDraftInput { title: string; sources?: File[] }
 
+
+// CONTRACT #399 claim: expose source storage bytes (implementation follows).
