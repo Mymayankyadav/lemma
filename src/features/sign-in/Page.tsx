@@ -16,9 +16,9 @@ export default function Page() {
       >
         ∫
       </span>
-      <h1 className="mt-6 text-[28px] font-semibold">Sign in</h1>
-      <p className="mt-2 text-[20px] font-semibold">Lemma</p>
-      <p className="mt-2 font-math text-[17px] text-ink-2">
+      <h1 className="mt-6 text-title font-semibold">Sign in</h1>
+      <p className="mt-2 text-card font-semibold">Lemma</p>
+      <p className="mt-2 font-math text-answer text-ink-2">
         Your math study record.
       </p>
       <Button
@@ -38,7 +38,7 @@ export default function Page() {
         Continue with Google
       </Button>
       {getMode() === "demo" && (
-        <p className="mt-4 text-[13px] text-ink-3">
+        <p className="mt-4 text-label text-ink-3">
           Sign-in is available in live mode.
         </p>
       )}
