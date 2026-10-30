@@ -33,10 +33,10 @@ test('Euclid Paths shows goal, stages, current work and checkpoint states',async
 test('Path chips switch projects and checkpoint rows open sheets',async({page})=>{
  const chips=page.getByRole('navigation',{name:'Choose a path'})
  await chips.getByRole('link',{name:/Linear Algebra/}).click()
- await expect(page).toHaveURL(/#\\/p\\/linear-algebra$/)
+ await expect(page).toHaveURL(/linear-algebra$/)
  await expect(page.getByRole('heading',{name:'Project',level:1})).toContainText('Linear Algebra')
  await chips.getByRole('link',{name:/Real Analysis/}).click()
- await expect(page).toHaveURL(/#\\/p\\/real-analysis$/)
+ await expect(page).toHaveURL(/real-analysis$/)
  await page.getByRole('region',{name:'Stages'}).getByRole('link',{name:/CP4 Compactness, in progress/}).click()
  await expect(page).toHaveURL(/CP4$/)
  await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible()
