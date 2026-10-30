@@ -4,6 +4,10 @@ export async function project(c: Context, name?: string): Promise<any> {
   const {data,error}=await scoped(c,'projects').order('last_activity_at',{ascending:false,nullsFirst:false}).limit(100);
   if(error) throw new Error(error.message);
   const items=visibleProjects(data||[]);
+  // The authenticated owner never sees system projects. The internal self-test
+  // may resolve only the exact throwaway IDs created in this request.
+  if(c.selftestProjectIds)for(const item of data||[])
+   if(c.selftestProjectIds.has(item.id)&&!items.some((p:any)=>p.id===item.id))items.push(item);
   if (!name) {
     if (items.length===1) return items[0];
     throw new Error('Specify project. Projects: '+items.map((p:any)=>p.slug).join(', '));
