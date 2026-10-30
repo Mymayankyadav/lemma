@@ -16,6 +16,11 @@ describe('ST-0 deterministic stress data', () => {
    expect(data.links).toHaveLength(links);
    expect(data.notes).toHaveLength(cards);
    expect(data.notes.filter(n => n.cards[0].state.due === '@due:-1')).toHaveLength(due);
+   // Backlog size must not inflate the owner's daily quota or violate settings limits.
+   expect(data.settings.reviewsPerDay).toBe(200);
+   expect(data.settings.newPerDay).toBe(20);
+   expect(data.settings.reviewsPerDay).toBeLessThanOrEqual(2000);
+   expect(data.settings.newPerDay).toBeLessThanOrEqual(200);
    expect(data.proposals).toHaveLength(proposals);
    expect(data.sessions).toHaveLength(sessions);
    const projectIds = new Set(data.projects.map(p => p.id));
