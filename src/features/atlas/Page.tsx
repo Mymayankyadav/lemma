@@ -4,7 +4,7 @@ import {Link,useNavigate,useSearchParams} from 'react-router';
 import {select} from 'd3-selection';
 import {zoom,zoomIdentity} from 'd3-zoom';
 import type {ZoomBehavior,ZoomTransform} from 'd3-zoom';
-import {ArrowLeft,ChevronRight,Compass,Minus,MoreHorizontal,Plus,Search,X,MessageCircle,RotateCcw} from 'lucide-react';
+import {ArrowLeft,ChevronRight,Compass,Minus,MoreHorizontal,Plus,Search,X,MessageCircle} from 'lucide-react';
 import {useAtlas} from '../../data/hooks';
 import {MathText} from '../../ui/MathText';
 import {Skeleton} from '../../ui/Skeleton';
@@ -95,7 +95,7 @@ export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams(),toast=useToast();
  const query=useAtlas(),graph=query.data;
  const model=useMemo(()=>graph?buildCosmos(graph):null,[graph]);
- const svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior<SVGSVGElement,unknown>|null>(null);
+ const svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior|null>(null);
  const viewRef=useRef<Camera>({x:0,y:0,k:1}),userMoved=useRef(false);
  const [view,setView]=useState<Camera>(viewRef.current);
  const [size,setSize]=useState({width:390,height:680});
