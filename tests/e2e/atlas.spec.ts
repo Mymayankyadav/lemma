@@ -60,7 +60,7 @@ test('Atlas fits node centres between overlays and avoids overlapping labels', a
  await page.setViewportSize({width:390,height:844});
  const svg = page.getByRole('group',{name:/Interactive knowledge graph/});
  await expect(page.locator('[data-node]')).toHaveCount(22);
- await expect.poll(async()=>svg.locator('> g').first().getAttribute('transform')).not.toBeNull();
+ await expect.poll(async()=>svg.locator(':scope > g').first().getAttribute('transform')).not.toBeNull();
  const geometry = await page.locator('[data-node]').evaluateAll(nodes =>
   nodes.map(node => {
    const circle=node.querySelector('circle');
@@ -92,7 +92,8 @@ test('Atlas fits node centres between overlays and avoids overlapping labels', a
   expect(overlap).toBe(false);
  }
  await page.screenshot({path:'test-results/screens/atlas-fitted-mobile.png',fullPage:true});
- await page.getByRole('button',{name:/Compactness, In progress/}).click();
+ await page.goto('./?demo=1#/atlas?focus=compactness');
+ await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible();
  await expect(page.locator('[data-node="concept-compactness"] text')).toBeVisible();
  await page.screenshot({path:'test-results/screens/atlas-fitted-selected.png',fullPage:true});
 });
