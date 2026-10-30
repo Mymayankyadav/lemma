@@ -39,6 +39,7 @@ export default function Page(){
      <div className="flex flex-wrap items-center gap-2">
       <Chip tone="amber">{view.code}</Chip>
       <Chip tone={view.ui==='done'?'success':view.ui==='revisit'?'amber':'quiet'}>{statusTitles[view.ui]}</Chip>
+      {view.stage&&<Chip tone="quiet">{view.stage}</Chip>}
      </div>
      <p className="font-math text-title-s italic leading-relaxed text-ink-soft">{detail.objective}</p>
      <section className="flex flex-col gap-2 rounded-ctl border border-edge bg-raised p-4">
@@ -89,7 +90,9 @@ export default function Page(){
        <p className="mt-2 line-clamp-3 text-label leading-relaxed text-ink-soft">{event.body}</p>
       </article>)}</div>
      </section>}
-     <Button size="xl" onClick={()=>{void study()}} icon={MessageCircle} className="w-full">Study this</Button>
+     {view.ui==='proposed'?
+      <Button size="xl" onClick={()=>navigate('/proposals?tab=plan')} className="w-full">Review this proposal</Button>:
+      <Button size="xl" onClick={()=>{void study()}} icon={MessageCircle} className="w-full">Study this</Button>}
      <div className="flex flex-wrap gap-2">
       <button type="button" onClick={()=>navigate('/review')} className="flex min-h-11 items-center gap-2 rounded-chip bg-fill-1 px-3 text-label text-ink-2">
        <Layers size={17} aria-hidden="true"/>{detail.cardsCount} cards <ChevronRight size={14}/>
