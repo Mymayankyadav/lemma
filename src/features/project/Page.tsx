@@ -1,7 +1,7 @@
 import {useEffect,useState,useRef} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
-import {ArrowLeft,BookOpen,ChevronRight,Check,Clock3,FileText,Layers,MessageCircle,Pause,Play,Plus,Waypoints} from 'lucide-react';
+import {ArrowLeft,BookOpen,ChevronRight,Check,FileText,Layers,MessageCircle,Pause,Play,Plus,Waypoints} from 'lucide-react';
 import {useAddSource,useCheckpoint,useProject,useSettings} from '../../data/hooks';
 import type {CheckpointView,IngestProgress,ProjectDetail,SessionSummary,Source} from '../../data/types';
 import {chatLink,planPrompt,resumePrompt,studyPrompt} from '../../lib/chat';
@@ -117,7 +117,7 @@ export default function Page(){
   body="Check your connection or try again." action={{label:'Try again',onClick:()=>{void query.refetch()}}}/></Screen>;
  const data=query.data,project=data.project;
  const now=data.checkpoints.find(cp=>cp.ui==='now');
-  function setTab(value:string){const next=new URLSearchParams(params);if(value==='path')next.delete('tab');else next.set('tab',value);setParams(next)}
+ function setTab(value:string){const next=new URLSearchParams(params);if(value==='path')next.delete('tab');else next.set('tab',value);setParams(next)}
  return <Screen className="gap-6" >
   <header className="flex items-center gap-3">
    <IconButton icon={ArrowLeft} label="Back to projects" onClick={()=>navigate('/projects')}/>
