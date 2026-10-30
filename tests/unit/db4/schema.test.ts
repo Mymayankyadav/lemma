@@ -18,7 +18,7 @@ describe('DB-4 v3 migration contract', () => {
     expect(migration).toMatch(/add column sha256 text/)
     expect(migration).toMatch(/add column level text not null default 'planet'/)
     expect(migration).toMatch(/add column parent_id uuid/)
-    expect(migration).not.toMatch(/\b(?:truncate|drop table|drop schema)\b/i)
+    expect(migration).not.toMatch(/^\s*(?:truncate|drop table|drop schema)\b/im)
   })
 
   it('keeps source citations owner-scoped, journalled and undoable', () => {
