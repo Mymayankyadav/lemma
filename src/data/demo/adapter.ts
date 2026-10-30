@@ -10,7 +10,7 @@ import type {
   InsightDays,
   ReviewLogEntry,
 } from "../api";
-import { LemmaError } from "../api";
+import { LemmaError, notImplemented } from "../api";
 import type {
   AtlasGraph,
   CardComment,
@@ -111,6 +111,22 @@ export interface DemoOptions {
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
+ /** DB-4 implementation supplies these APIs; legacy adapters stay unchanged until then. */
+ async updateSubject(..._args: Parameters<LemmaApi['updateSubject']>): ReturnType<LemmaApi['updateSubject']> {
+  throw notImplemented('updateSubject');
+ }
+ async mergeSubjects(..._args: Parameters<LemmaApi['mergeSubjects']>): ReturnType<LemmaApi['mergeSubjects']> {
+  throw notImplemented('mergeSubjects');
+ }
+ async createProjectDraft(..._args: Parameters<LemmaApi['createProjectDraft']>): ReturnType<LemmaApi['createProjectDraft']> {
+  throw notImplemented('createProjectDraft');
+ }
+ async updateSource(..._args: Parameters<LemmaApi['updateSource']>): ReturnType<LemmaApi['updateSource']> {
+  throw notImplemented('updateSource');
+ }
+ async listPlanRevisions(..._args: Parameters<LemmaApi['listPlanRevisions']>): ReturnType<LemmaApi['listPlanRevisions']> {
+  throw notImplemented('listPlanRevisions');
+ }
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
     const ids=new Set(this.store.projects.filter(p=>String(p.status)!=='archived').map(p=>p.id));
     const cards=this.store.notes.filter(n=>n.note.status==='active'&&ids.has(n.projectId)).flatMap(n=>n.cards.map(c=>c.state));

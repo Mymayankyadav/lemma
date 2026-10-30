@@ -1,4 +1,4 @@
-import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardDetail, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating } from './types'
+import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardDetail, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
 
 export type LemmaErrorCode = 'not_found' | 'invalid' | 'conflict' | 'offline' | 'auth' | 'server' | 'not_implemented'
 export class LemmaError extends Error {
@@ -9,7 +9,9 @@ export function notImplemented(name: string): LemmaError { return new LemmaError
 export type SettingsPatch = Partial<Omit<Settings, 'connectorUrl' | 'connectorLastSeenAt' | 'connectorLastClient'>>
 export type StylePatch = Partial<Pick<Style, 'name' | 'instructions'>>
 export type CreateSubjectInput = Pick<Subject, 'name' | 'glyph' | 'hue'>
-export type ProjectPatch = Partial<Pick<Project, 'title' | 'goal' | 'style' | 'status' | 'subjectId'>>
+export type ProjectPatch = Partial<Pick<Project, 'title' | 'goal' | 'style' | 'status' | 'subjectId' | 'pinned'>>
+export type SubjectPatch = Partial<Pick<Subject, 'name' | 'glyph' | 'position'>>
+export type SourcePatch = Partial<Pick<Source, 'title' | 'kind'>>
 export interface ProposalEdit { front?: string; back?: string; type?: NoteType }
 export interface CreateNoteInput { projectSlug: string; front: string; back: string; type: NoteType; kind: NoteKind; checkpointCode?: string }
 export type NotePatch = Partial<Pick<CardDetail['note'], 'front' | 'back' | 'type' | 'kind' | 'tags'>>
@@ -43,18 +45,28 @@ export interface LemmaApi {
  listSubjects(): Promise<Subject[]>
  /** Create a subject. */
  createSubject(input: CreateSubjectInput): Promise<Subject>
+ /** v3: rename, change glyph, or reorder an owner's subject. */
+ updateSubject(id: string, patch: SubjectPatch): Promise<Subject>
+ /** v3: merge one owner subject into another, preserving references and audit. */
+ mergeSubjects(sourceId: string, targetId: string): Promise<void>
  /** List projects by latest activity. */
  listProjects(): Promise<ProjectSummary[]>
  /** Read a project including proposed checkpoints. */
  getProject(slug: string): Promise<ProjectDetail>
  /** Create a project with a collision-safe slug. */
  createProject(input: NewProjectInput): Promise<Project>
+ /** v3: create a project with only a title; sources may be appended afterward. */
+ createProjectDraft(input: NewProjectDraftInput): Promise<Project>
  /** Edit a project. */
  updateProject(id: string, patch: ProjectPatch): Promise<Project>
+ /** v3: list approved plan revisions newest-first. */
+ listPlanRevisions(slug: string): Promise<PlanRevision[]>
  /** Read checkpoint details and recent events. */
  getCheckpoint(slug: string, code: string): Promise<CheckpointDetail>
  /** Extract and upload a PDF source with progress. */
  addSource(projectId: string, file: File, onProgress: (progress: IngestProgress) => void): Promise<Source>
+ /** v3: rename or reclassify one source with owner-scoped auditing. */
+ updateSource(id: string, patch: SourcePatch): Promise<Source>
  /** Delete a source, its extracted pages and stored PDF. */
  deleteSource(id: string): Promise<void>
  /** List sessions, optionally for one project. */
