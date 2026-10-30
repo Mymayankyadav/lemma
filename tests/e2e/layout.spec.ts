@@ -1,8 +1,9 @@
 import {test,expect,type Page} from '@playwright/test';
 /** UI-5a §9: repeatable Euclid mobile audit with the offending DOM selector in each failure. */
 const routes=[
- '/', '/projects','/p/algebra-1','/p/algebra-1/cp/CP11','/s/algebra-1/7',
- '/proposals','/review','/cards','/cards/31','/atlas','/insights','/settings','/sign-in'
+ '/', '/projects','/projects/new','/p/algebra-1','/p/algebra-1/cp/CP11','/s/algebra-1/7',
+ '/proposals','/proposals/example','/review','/review/run','/review/done',
+ '/cards','/cards/31','/atlas','/insights','/settings','/sign-in','/kit'
 ] as const;
 type Issue={selector:string;reason:string};
 async function audit(page:Page):Promise<Issue[]>{
