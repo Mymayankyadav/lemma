@@ -21,6 +21,7 @@ import {EmptyState} from '../../ui/EmptyState';
 import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
 import {PageStackArt} from '../../ui/art/PageStackArt';
+import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
 
 type Tab='path'|'sessions'|'sources';
 function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<typeof useToast>){
@@ -151,7 +152,7 @@ function SourceList({projectId,sources}:{projectId:string;sources:Source[]}){
 }
 export default function Page(){
  const {slug:rawSlug}=useParams(),slug=rawSlug??'';
- const [params,setParams]=useSearchParams(),query=useProject(slug),navigate=useNavigate(),notify=useToast(),reduce=!!useReducedMotion();
+ const [params,setParams]=useSearchParams(),query=useProject(slug),navigate=useNavigate(),notify=useToast(),reduce=!!useReducedMotion(),appearance=useSettings();
  const tab=params.get('tab')==='sessions'?'sessions':params.get('tab')==='sources'?'sources':'path';
  useEffect(()=>{
   if(query.error)notify("Couldn't load this project",{tone:'danger',action:{label:'Try again',onClick:()=>{void query.refetch()}}});
@@ -180,6 +181,11 @@ export default function Page(){
     <span className="ml-auto text-label text-ink-3">checkpoints</span>
    </p>
    <SegmentBar total={data.total} done={data.done} current={currentPosition}/>
+  </section>
+  <section aria-label="Project timeline" className="min-w-0">
+   <h2 className="mb-2 font-[var(--font-display)] text-title-s italic text-ink">Your ascent</h2>
+   <ProjectTimeline project={{title:project.title,slug:project.slug,done:data.done,total:data.total}}
+    checkpoints={data.checkpoints} variant={appearance.data?.ui?.timeline==='metro'?'metro':'ascent'} height={96}/>
   </section>
   <Segmented value={tab} onChange={setTab} tone="raised" options={[
    {value:'path',label:'Path'},{value:'sessions',label:'Sessions',count:data.sessions.length},
