@@ -76,7 +76,7 @@ test('a new PDF can be uploaded from project Sources',async({page})=>{
 })
 
 test('Euclid project ascent opens a checkpoint without horizontal scrolling',async({page})=>{
- await page.goto('./?demo=1&theme=euclid-night#/p/real-analysis')
+ await page.goto('./?demo=1&theme=graph-night#/p/real-analysis')
  const timeline=page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="ascent"]')
  await expect(timeline).toBeVisible()
  const button=timeline.getByRole('button')
@@ -89,7 +89,7 @@ test('Euclid project ascent opens a checkpoint without horizontal scrolling',asy
 })
 
 test('Euclid Paths fits both worlds at compact phone widths',async({page})=>{
- for(const world of ['euclid','euclid-night']){
+ for(const world of ['graph','graph-night']){
   for(const density of ['compact','comfortable']){
    await page.setViewportSize({width:360,height:740})
    await page.goto('./?demo=1&theme='+world+'&density='+density+'#/p/real-analysis')
