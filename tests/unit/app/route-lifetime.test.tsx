@@ -3,11 +3,14 @@ import {createRoot} from 'react-dom/client'
 import {createMemoryRouter, RouterProvider} from 'react-router'
 import {expect,test,vi} from 'vitest'
 import AppShell from '../../../src/app/AppShell'
+const motionPreference=vi.hoisted(()=>({reduce:false}))
+vi.mock('motion/react',async importOriginal=>({...await importOriginal<typeof import('motion/react')>(),useReducedMotion:()=>motionPreference.reduce}))
 vi.mock('../../../src/ui/Ground',()=>({Ground:()=>null}))
 vi.mock('../../../src/app/TabBar',()=>({default:()=>null}))
 vi.mock('../../../src/app/DemoChip',()=>({default:()=>null}))
 
-test('incoming route mounts once and retains input through the outgoing route exit',async()=>{
+test.each([false,true])('incoming route mounts once through exit (reduced motion: %s)',async(reduce)=>{
+ motionPreference.reduce=reduce
  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
  let mounts=0,unmounts=0
  function Editor(){
