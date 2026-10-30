@@ -1,4 +1,6 @@
 import {useState} from 'react';
+import {Tex} from '../../ui/Tex';
+import {plainMath} from '../../lib/plain-math';
 import type {AtlasGraph} from '../../data/types';
 import {ChevronDown,ChevronRight,Check,RotateCcw} from 'lucide-react';
 import {atlasHierarchy} from './hierarchy';
@@ -18,10 +20,10 @@ function StatusMark({status}:{status:AtlasConcept['status']}){
 function Idea({concept,filter,selected,onSelect,mode}:{concept:AtlasConcept;filter:AtlasFilter;selected:boolean;onSelect:(id:string)=>void;mode:AtlasListMode}){
  const dim=filter!=='all'&&concept.status!==filter&&!selected;
  return <button type="button" data-atlas-idea={concept.id} onClick={()=>onSelect(concept.id)}
-  aria-label={concept.name+', '+statusName[concept.status]} aria-pressed={selected}
+  aria-label={plainMath(concept.name)+', '+statusName[concept.status]} aria-pressed={selected}
   className={'flex min-h-11 w-full items-center gap-2 rounded-ctl px-3 text-left transition-opacity '+(selected?'bg-amber-tint text-amber':'text-ink-soft hover:bg-fill-1')+(dim?' opacity-[.18]':'')}>
   <StatusMark status={concept.status}/>
-  <span className="min-w-0 flex-1 break-words font-math text-body">{concept.name}</span>
+  <span className="min-w-0 flex-1 break-words font-math text-body"><Tex source={concept.name}/></span>
   {mode==='outline'&&concept.dueCards>0&&<span className="shrink-0 text-caption tabular-nums text-ink-3">{concept.dueCards} due</span>}
  </button>;
 }
@@ -38,7 +40,7 @@ function Topic({topic,subjectId,mode,filter,selectedId,onSelect,defaultOpen}:{to
   <button type="button" aria-expanded={open} onClick={()=>setOpen(v=>!v)}
    className="flex min-h-11 w-full items-center gap-2 rounded-ctl px-2 text-left text-ink">
    {open?<ChevronDown size={16} aria-hidden="true"/>:<ChevronRight size={16} aria-hidden="true"/>}
-   <span className="min-w-0 flex-1 break-words font-semibold text-body">{topic.name}</span>
+   <span className="min-w-0 flex-1 break-words font-semibold text-body"><Tex source={topic.name}/></span>
    <span className="shrink-0 text-caption tabular-nums text-ink-3">{topic.demonstrated}/{topic.concepts.length}</span>
   </button>
   <Progress done={topic.demonstrated} total={topic.concepts.length}/>
@@ -59,7 +61,7 @@ export function AtlasListViews({graph,mode,filter,selectedId,onSelect}:{graph:At
      <button type="button" aria-expanded={open} onClick={()=>setCollapsed(ids=>open?[...ids,subject.id]:ids.filter(id=>id!==subject.id))}
       className="flex min-h-11 w-full items-center gap-3 rounded-ctl text-left">
       <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-ctl bg-amber-tint font-math text-headline text-amber">{subject.glyph}</span>
-      <span className="min-w-0 flex-1"><strong className="block break-words font-serif text-title-s">{subject.name}</strong>
+      <span className="min-w-0 flex-1"><strong className="block break-words font-serif text-title-s"><Tex source={subject.name}/></strong>
        <span className="text-caption text-ink-3">{subject.demonstrated}/{subject.total} ideas demonstrated</span></span>
       {open?<ChevronDown size={18}/>:<ChevronRight size={18}/>}
      </button>

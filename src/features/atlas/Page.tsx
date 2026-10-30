@@ -9,7 +9,8 @@ import type {ZoomBehavior,ZoomTransform} from 'd3-zoom';
 import {useAtlas,usePinConcept} from '../../data/hooks';
 import type {AtlasGraph} from '../../data/types';
 import {useToast} from '../../ui/Toast';
-import {Button} from '../../ui/Button';
+import {Tex} from '../../ui/Tex';
+import {plainMath} from '../../lib/plain-math';
 import {Segmented} from '../../ui/Segmented';
 import {AtlasListViews} from './AtlasListViews';
 import {AtlasMinimap} from './AtlasMinimap';
@@ -67,7 +68,7 @@ function WorldNode({node,selected,dim,reduce,showLabel,position,zoomScale,onDown
  onSelect:(id:string)=>void;
 }){
  const {x,y}=position,status=node.status;
- return <g data-node={node.id} role="button" aria-label={node.name+', '+names[status]}
+ return <g data-node={node.id} role="button" aria-label={plainMath(node.name)+', '+names[status]}
   aria-pressed={selected} tabIndex={0} style={{cursor:'pointer',touchAction:'none',outline:'none',transition:reduce?'none':'opacity .4s'}}
   opacity={dim?.18:1}
   onPointerDown={e=>onDown(e,node)} onPointerMove={e=>onMove(e,node)} onPointerUp={e=>onUp(e,node)}
@@ -88,7 +89,7 @@ function WorldNode({node,selected,dim,reduce,showLabel,position,zoomScale,onDown
   {selected&&<circle cx={x} cy={y} r={10} fill="none" stroke="var(--amber-hi)" strokeWidth={1} strokeOpacity={0.9}/>}
   {showLabel&&<text x={x} y={y+23/zoomScale} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={(selected?13:11.5)/zoomScale}
    fontWeight={selected?600:500} fill={selected?'var(--ink)':'var(--ink-2)'}
-   stroke="var(--obsidian)" strokeWidth={3/zoomScale} paintOrder="stroke" pointerEvents="none">{node.name}</text>}
+   stroke="var(--obsidian)" strokeWidth={3/zoomScale} paintOrder="stroke" pointerEvents="none">{plainMath(node.name)}</text>}
  </g>;
 }
 function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:number;active:boolean;onClick:()=>void;icon?:typeof Check}){
@@ -352,11 +353,11 @@ export default function Page(){
        <Chip tone={selected.status==='demonstrated'?'success':selected.status==='revisit'||selected.status==='in_progress'?'amber':'quiet'}>{names[selected.status]}</Chip>
        <span className="text-label text-ink-3">{graph.subjects.find(x=>x.id===selected.subjectId)?.name??'Mathematics'}</span>
       </div>
-      <h2 className="text-title font-semibold">{selected.name}</h2>
+      <h2 className="text-title font-semibold"><Tex source={selected.name}/></h2>
      </div>
      <button type="button" onClick={hideSelection} aria-label="Close concept details" className="flex size-11 shrink-0 items-center justify-center rounded-ctl bg-fill-1 text-ink-2"><X size={20}/></button>
     </div>
-    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-headline leading-relaxed text-ink-soft">{selected.blurb}</p>}
+    {selected.blurb&&<p className="mt-3 line-clamp-3 font-math text-headline leading-relaxed text-ink-soft"><Tex source={selected.blurb}/></p>}
     <div className="mt-4 flex flex-wrap items-center gap-2">
      {selected.checkpointRefs.slice(0,3).map(ref=><Chip key={ref.projectSlug+ref.code} tone="quiet">{ref.code}</Chip>)}
      <Chip tone="quiet">{selected.dueCards} due</Chip>
@@ -368,7 +369,7 @@ export default function Page(){
      {selected.checkpointRefs[0]?<Link to={'/p/'+selected.checkpointRefs[0].projectSlug+'/cp/'+selected.checkpointRefs[0].code}
        className="lit flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-btn px-3 text-body font-semibold">
        Open checkpoint<ChevronRight size={18}/></Link>:
-      <Button size="m" className="flex-1" disabled>Not in a checkpoint</Button>}
+      <span role="note" className="flex flex-1 items-center text-label text-ink-3">Not in a checkpoint yet</span>}
      <Link to={'/review/run?concept='+encodeURIComponent(selected.slug)}
       className="ghost flex min-h-[52px] items-center justify-center gap-1 rounded-btn px-4 text-label">
       Review {selected.dueCards}</Link>

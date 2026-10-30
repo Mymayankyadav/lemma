@@ -4,6 +4,7 @@ import renderer from "./render.js";
 export interface RenderOptions {
   macros?: string;
   cloze?: { ord: number; revealed: boolean };
+  inline?: boolean;
 }
 let activeMacros: string | undefined;
 export function renderMarkdown(
@@ -22,7 +23,7 @@ export function renderMarkdown(
       }
     : null;
   const html = renderer
-    .render(source, { cloze })
+    .render(source, { cloze, inline: options.inline })
     .replaceAll(
       '<span class="cz czq">[…]</span>',
       '<span class="cz czq">[ … ]</span>',

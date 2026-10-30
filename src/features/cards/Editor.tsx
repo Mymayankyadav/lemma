@@ -1,3 +1,4 @@
+import {MathPreview} from '../../ui/MathPreview';
 import { useState } from "react";
 import { useProject, useProjects } from "../../data/hooks";
 import type { CardDetail, NoteKind, NoteType } from "../../data/types";
@@ -101,6 +102,7 @@ export function Editor({
           className={`${field} min-h-24`}
         />
       </label>
+      <MathPreview source={front}/>
       <label>
         Back
         <textarea
@@ -109,6 +111,7 @@ export function Editor({
           className={`${field} min-h-24`}
         />
       </label>
+      <MathPreview source={back}/>
       <div className="grid grid-cols-2 gap-3">
         <label>
           Type
