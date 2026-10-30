@@ -174,7 +174,7 @@ as $$
   ),
   project_json as (
     select coalesce(jsonb_agg(item order by item->>'lastActivityAt' desc nulls last, item->>'id'), '[]'::jsonb) as items
-    from library
+    from library where item->>'status' <> 'archived'
   ),
   visible as (
     select item from library where item->>'status' <> 'archived'
