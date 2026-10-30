@@ -110,6 +110,10 @@ test('removed PDF can be selected again from the native file picker',async({page
  await expect(picker).toHaveValue('')
  await expect(page.getByText('sample.pdf')).toBeVisible()
  await expect(page.getByRole('alert')).toHaveCount(0)
+ // Keep the selected source visible in the visual artifact, without a PWA toast overlay.
+ const dismiss=page.getByRole('button',{name:'Dismiss notification'})
+ if(await dismiss.isVisible())await dismiss.click()
+ await page.getByText('sample.pdf').scrollIntoViewIfNeeded()
  await page.screenshot({path:'test-results/screens/new-project-reselected-pdf.png',fullPage:true})
  await page.getByRole('button',{name:'Create project'}).click()
  await expect(page).toHaveURL(/#\/p\/reselected-pdf$/,{timeout:30000})
