@@ -22,13 +22,15 @@ describe('ST-5 bounded live reads',()=>{
   mock.rpc.mockResolvedValue({data:[summary],error:null})
   const rows=await new LiveAdapter().listProjects()
   expect(rows).toEqual([summary])
-  expect(mock.rpc).toHaveBeenCalledExactlyOnceWith('project_summaries')
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('project_summaries')
   expect(mock.getUser).toHaveBeenCalledOnce()
  })
  it('searches server-side and requests no more than fifty cards',async()=>{
   mock.rpc.mockResolvedValue({data:[],error:null})
   expect(await new LiveAdapter().searchCards('x%_','algebra')).toEqual([])
-  expect(mock.rpc).toHaveBeenCalledExactlyOnceWith('search_cards_page',{
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('search_cards_page',{
    p_query:'x%_',p_slug:'algebra',p_limit:50,p_offset:0,
   })
   expect(mock.getUser).toHaveBeenCalledOnce()
