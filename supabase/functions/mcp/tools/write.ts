@@ -96,7 +96,7 @@ async function validatePlanSources(c:Context,p:any,items:any[]):Promise<void>{
   if(!known.has(ref.source))throw Error('Unknown source '+ref.source+' in '+p.slug);
  }
 }
-function validateConceptHierarchy(concepts:any[]):void{
+function validateConceptHierarchy(concepts:any[],existing:Set<string>=new Set()):void{
  const names=new Set<string>();
  for(const x of concepts){
   const name=String(x.name).trim().toLowerCase();
@@ -106,7 +106,7 @@ function validateConceptHierarchy(concepts:any[]):void{
  }
  for(const x of concepts){
   if(x.parent&&x.parent.toLowerCase()===x.name.toLowerCase())throw Error('An idea cannot be its own parent');
-  if(x.parent&&!names.has(x.parent.toLowerCase()))throw Error('Unknown concept parent '+x.parent);
+  if(x.parent&&!names.has(x.parent.toLowerCase())&&!existing.has(x.parent.toLowerCase()))throw Error('Unknown concept parent '+x.parent);
  }
 }
 export async function proposePlan(c:Context,a:any):Promise<string>{
@@ -144,7 +144,8 @@ export async function proposePlanChange(c:Context,a:any):Promise<string>{
  }
  await validatePlanSources(c,p,a.ops);
  for(const idea of a.concepts||[])planningFields(idea);
- validateConceptHierarchy(a.concepts||[]);
+ const knownIdeas=new Set((await scoped(c,'concepts','name').eq('subject_id',p.subject_id)).data?.map((x:any)=>String(x.name).toLowerCase())||[]);
+ validateConceptHierarchy(a.concepts||[],knownIdeas);
  const payload={ops:a.ops,concepts:a.concepts||[],diagnostics:a.diagnostics||[],...(a.book?{book:a.book}:{})};
  await addProposal(c,p,'plan_change',payload,a.reason);
  return 'plan change ('+a.ops.length+' ops) waits for student approval';
