@@ -1,3 +1,4 @@
+import {formatBadgeCount} from '../../lib/text'
 import {useQuery} from '@tanstack/react-query'
 import {getApi} from '../../data'
 import {useDeckTree} from '../../data/hooks'
@@ -35,7 +36,7 @@ export function ReviewOutlook(){
     <p className="mb-2 text-label font-medium text-ink-2">Next seven days</p>
     <div className="grid grid-cols-7 gap-1.5">
      {weekly.map(day=><div key={day.day} className="flex min-w-0 flex-col items-center gap-1">
-      <span className="text-caption tabular-nums text-ink-2">{day.due}</span>
+      <span className="text-caption tabular-nums text-ink-2" title={day.due+' cards due'} aria-label={day.due+' cards due'}>{formatBadgeCount(day.due)}</span>
       <div className="flex h-10 w-full items-end justify-center bg-fill-1">
        <span aria-hidden="true" className="block w-full bg-amber" style={{height:day.due?Math.max(6,day.due/max*40)+'px':'0'}}/>
       </div>
