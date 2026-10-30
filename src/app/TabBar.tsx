@@ -7,7 +7,7 @@ const tabs=[{to:'/',label:'Home',icon:House},{to:'/projects',label:'Projects',ic
 export default function TabBar(){
  const reduce=!!useReducedMotion();
  const {data}=useHome();
- return <nav aria-label="Main navigation" className="glass fixed inset-x-4 bottom-[calc(20px+env(safe-area-inset-bottom))] z-30 mx-auto flex h-16 max-w-[480px] items-center justify-around rounded-slab px-1">
+ return <nav aria-label="Main navigation" className="glass fixed inset-x-4 bottom-[calc(20px+env(safe-area-inset-bottom))] z-30 mx-auto flex h-[var(--tab)] max-w-[480px] items-center justify-around rounded-slab px-1">
  {tabs.map(({to,label,icon:Icon})=><NavLink key={to} to={to} end aria-label={label}
  className={({isActive})=>`relative flex min-h-11 min-w-[64px] flex-1 flex-col items-center justify-center gap-[2px] rounded-ctl ${isActive?'text-amber':'text-ink-3'}`}>
  {({isActive})=><>
