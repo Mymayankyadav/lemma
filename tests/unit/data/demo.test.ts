@@ -309,6 +309,16 @@ describe("demo adapter", () => {
     expect((await api.getProject("real-analysis")).sources[0].title).toBe("Rudin annotated");
   });
 
+  it("lists subjectless drafts safely and keeps their study queues empty", async () => {
+    const api = make();
+    const draft = await api.createProjectDraft({ title: "Algebraic Topology" });
+    const summary = (await api.listProjects()).find(p => p.id === draft.id);
+    expect(summary).toMatchObject({ slug: "algebraic-topology", subject: { name: "Unassigned" }, total: 0, sourcesCount: 0 });
+    expect((await api.getProject(draft.slug)).subject).toMatchObject({ name: "Unassigned" });
+    expect((await api.getHome()).projects.some(p => p.id === draft.id)).toBe(true);
+    expect((await api.getReviewItems({...filter, decks: []})).some(item => item.projectSlug === draft.slug)).toBe(false);
+  });
+
   it("records approved plan revisions and keeps rejected changes out of history", async () => {
     const api = make();
     const initial = await api.listPlanRevisions("real-analysis");
