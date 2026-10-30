@@ -62,3 +62,27 @@ test("new cards can be created in a project", async ({ page }) => {
   await expect(page).toHaveURL(/#\/cards\/\d+$/);
   await expect(page.getByText("What is a metric?")).toBeVisible();
 });
+
+test("new card editor retains focus through a delayed search update", async ({ page }) => {
+  await page.route("https://fonts.googleapis.com/**", (r) =>
+    r.fulfill({ body: "" }),
+  );
+  await page.goto("/lemma/?demo=1#/cards");
+  const search = page.getByLabel("Search cards");
+  await search.fill("no-such-card-query-271");
+  await page.getByRole("button", { name: "New card" }).click();
+  const dialog = page.getByRole("dialog", { name: "New card" });
+  const front = dialog.getByLabel("Front");
+  await front.fill("State");
+  await expect(front).toBeFocused();
+  // The pending search debounce re-renders the parent while the sheet is open.
+  await expect(page.getByText("No cards match")).toBeVisible();
+  await expect(front).toBeFocused();
+  await front.pressSequentially(" the triangle inequality.", { delay: 15 });
+  await expect(front).toHaveValue("State the triangle inequality.");
+  await expect(front).toBeFocused();
+  await page.screenshot({
+    path: "test-results/screens/new-card-focus.png",
+    fullPage: true,
+  });
+});
