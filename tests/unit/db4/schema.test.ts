@@ -26,6 +26,7 @@ describe('DB-4 v3 migration contract', () => {
     expect(migration).toContain('foreign key(user_id,checkpoint_id)')
     expect(migration).toContain('foreign key(user_id,source_id)')
     expect(migration).toContain('create trigger lemma_log_change after insert or update or delete on public.checkpoint_sources')
+    expect(migration).toContain('create trigger z_checkpoint_source_legacy after insert or update of source_id,pages')
     expect(migration).toContain("'''diagnostics'',''checkpoint_sources'']'")
     expect(acceptance).toContain('Cross-project source citation was accepted')
     expect(acceptance).toContain('Checkpoint source was not journalled')
