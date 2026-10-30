@@ -11,6 +11,24 @@ alter table public.projects
 create index projects_owner_system_status on public.projects(user_id,system,status);
 create index projects_owner_pinned on public.projects(user_id,pinned) where pinned;
 
+-- Enforce the library's four-pin limit even when multiple devices race.
+create function public.lemma_limit_pins() returns trigger
+language plpgsql security invoker set search_path = '' as $
+begin
+  if not new.pinned then return new; end if;
+  if tg_op='UPDATE' and old.pinned then return new; end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(new.user_id::text)::bigint);
+  if (select count(*) from public.projects p
+      where p.user_id=new.user_id and p.pinned and p.id<>new.id)>=4 then
+    raise exception 'At most four projects may be pinned';
+  end if;
+  return new;
+end $;
+revoke all on function public.lemma_limit_pins() from public,anon;
+create trigger a_project_pin_limit before insert or update of pinned on public.projects
+  for each row execute function public.lemma_limit_pins();
+
+
 alter table public.checkpoints add column due_on date;
 create index checkpoints_project_due on public.checkpoints(project_id,due_on);
 
