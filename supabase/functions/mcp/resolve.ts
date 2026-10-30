@@ -1,8 +1,9 @@
 import { Context, scoped } from './db.ts';
+import { visibleProjects } from './v3.ts';
 export async function project(c: Context, name?: string): Promise<any> {
   const {data,error}=await scoped(c,'projects').order('last_activity_at',{ascending:false,nullsFirst:false}).limit(100);
   if(error) throw new Error(error.message);
-  const items=data||[];
+  const items=visibleProjects(data||[]);
   if (!name) {
     if (items.length===1) return items[0];
     throw new Error('Specify project. Projects: '+items.map((p:any)=>p.slug).join(', '));

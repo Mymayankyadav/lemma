@@ -3,6 +3,7 @@ import { project, checkpoints, checkpoint, session, source } from '../resolve.ts
 import { settings, packet } from '../packet.ts';
 import { day, ui, display } from '../derive.ts';
 import { cut, capped, date, pageRange, number } from '../text.ts';
+import { sourceLine } from '../v3.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='prompt'){const st=await settings(c),p=a.project?await project(c,a.project):null;return ['OWNER',st.master_prompt||'(no master prompt)',p?.prompt||''].filter(Boolean).join('\n');}
@@ -14,11 +15,24 @@ export async function get(c: Context, a:any):Promise<string>{
   const prereqs=(await all(c,'checkpoint_prereqs')).filter((x:any)=>ids.has(x.checkpoint_id));
   const s=await settings(c);
   const status=(cp:any)=>ui(cp,prereqs.filter((x:any)=>x.checkpoint_id===cp.id).map((x:any)=>x.prereq_id),ids,day(s));
+  if(a.what==='sources'){
+    const {data,error}=await scoped(c,'sources').eq('project_id',p.id)
+      .order('added_at',{ascending:false}).limit(limit);
+    if(error)throw new Error(error.message);
+    return capped((data||[]).map((x:any)=>sourceLine(x)).join('\n')||'No sources yet.',2000);
+  }
+  if(a.what==='plan_revisions'){
+    const {data,error}=await scoped(c,'v_plan_revisions').eq('project_id',p.id)
+      .order('revision',{ascending:false}).limit(limit);
+    if(error)throw new Error(error.message);
+    return capped((data||[]).map((x:any)=>'v'+x.revision+' '+date(x.approved_at)+': '+cut(x.summary,150))
+      .join('\n')||'No approved plan revisions.',2000);
+  }
   if(a.what==='plan'){
     const done=pcs.filter((x:any)=>x.status==='demonstrated').length;
     const lines=['PLAN '+p.slug+' '+done+'/'+pcs.length+' done'];
     for(const cp of pcs){const needs=prereqs.filter((x:any)=>x.checkpoint_id===cp.id).map((x:any)=>ids.get(x.prereq_id)?.code).filter(Boolean);
-      lines.push(cp.code+' '+status(cp)+(status(cp)==='now'?' step '+cp.current_step+'/'+(cp.steps||[]).length:'')+' '+cp.title+(cp.stage?' ['+cp.stage+']':'')+(status(cp)==='locked'?' (needs '+needs.join(', ')+')':''))}
+      lines.push(cp.code+' '+status(cp)+(status(cp)==='now'?' step '+cp.current_step+'/'+(cp.steps||[]).length:'')+' '+cp.title+(cp.stage?' ['+cp.stage+']':'')+(cp.due_on?' due '+cp.due_on:'')+(status(cp)==='locked'?' (needs '+needs.join(', ')+')':''))}
     const planned=(await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan_change').eq('status','pending')).data||[];
     for(const x of planned)for(const op of (x.payload?.ops||[]))if(op.op==='add')lines.push((op.code||'CP?')+' proposed '+op.title);
     return capped(lines.join('\n'),2000);
@@ -34,7 +48,15 @@ export async function get(c: Context, a:any):Promise<string>{
     const ss=(await all(c,'sessions')).filter((x:any)=>x.project_id===p.id);
     const lines=[cp.code+' '+cp.title+' ['+status(cp)+', step '+cp.current_step+'/'+cp.steps.length+']','OBJ '+cp.objective,'CRIT '+cp.criterion,'STEPS '+cp.steps.map((x:string,i:number)=>(i+1)+' '+x+(i+1<cp.current_step?' ✓':i+1===cp.current_step?' ←':'')).join(' | ') ];
     if(cp.stage)lines.push('STAGE '+cp.stage);
-    if(cp.pages)lines.push('PAGES '+(src?.short||'book')+' '+cp.pages);
+    const {data:citations,error:citationError}=await scoped(c,'checkpoint_sources')
+      .eq('checkpoint_id',cp.id);
+    if(citationError)throw new Error(citationError.message);
+    const sourceRows=(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+    for(const cite of citations||[]){
+      const ref=sourceRows.find((x:any)=>x.id===cite.source_id);
+      if(ref)lines.push('PAGES '+ref.short+' '+(cite.pages||'all'));
+    }
+    if(!(citations||[]).length&&cp.pages)lines.push('PAGES '+(src?.short||'book')+' '+cp.pages);
     if(pre.length)lines.push('NEEDS '+pre.join(', '));if(concepts.length)lines.push('IDEAS '+concepts.join(', '));
     if(cp.recheck_due)lines.push('RECHECK due '+cp.recheck_due+': '+(cp.recheck_prompt||''));
     for(const e of events.reverse()){const ssn=ss.find((x:any)=>x.id===e.session_id);lines.push('S'+(ssn?.number||'?')+' '+e.kind+(e.hint_level?' L'+e.hint_level:'')+': '+cut(e.body,140))}
@@ -86,36 +108,43 @@ export async function get(c: Context, a:any):Promise<string>{
       const again=reviewed.filter((r:any)=>conceptForNote.get(noteForCard.get(r.card_id))===concept.id).length;
       const revisiting=statuses.includes('revisit')||errors.some((x:any)=>x.concept_id===concept.id)||again>=2;
       const status=revisiting?'revisit':statuses.length&&statuses.every((x:string)=>x==='done')?'demonstrated':statuses.some((x:string)=>['now','done','revisit'].includes(x))?'in_progress':'not_started';
-      return concept.name+' ['+(concept.topic||'Other')+'] — '+status;
+      return concept.name+' ['+concept.level+(concept.is_star?', key result':'')+(concept.parent_id?', parent '+(concepts.find((x:any)=>x.id===concept.parent_id)?.name||concept.parent_id):'')+'] — '+status;
     }).join('\n'),2000);
   }
   throw new Error('Unknown get what');
 }
 
 export async function readPages(c:Context,a:any):Promise<string>{
-  const p=await project(c,a.project),src=await source(c,p,a.source);
-  if(!src.has_text||src.page_count===0)return 'This PDF has no extractable text (scanned or attached in chat). Ask the user to paste the passage or read the attached PDF.';
-  const labels=pageRange(a.from,a.to);
-  if(a.pdf&&labels.some((x:string)=>!/^\d+$/.test(x)||Number(x)<1))
-    throw new Error('PDF page indexes must be positive integers');
-  let q=scoped(c,'source_pages').eq('source_id',src.id);
-  if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');
-  else q=q.in('label',labels).order('page');
-  const {data,error}=await q;if(error)throw new Error(error.message);
-  if(!data?.length)throw new Error('No pages found. Use get(what=outline) for page indexes.');
-  const parts:string[]=[];
-  for(const row of data.slice(0,5)){
-    const head='=== p.'+(row.label||row.page)+' (pdf '+row.page+') ===\n';
-    const room=12000-parts.join('\n').length-head.length-80;
-    if(room<=0)break;
-    parts.push(head+String(row.body||'').slice(0,room));
-    if(String(row.body||'').length>room){parts.push('[cut, call again from p.'+(Number(row.page)+1)+']');break}
-  }
-  return parts.join('\n').slice(0,12000);
+ const p=await project(c,a.project);
+ const selected=a.source?[await source(c,p,a.source)]:(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+ if(!selected.length)throw Error('No sources in this project');
+ const readable=selected.filter((x:any)=>x.has_text&&x.page_count!==0);
+ if(!readable.length)return 'These PDFs have no extractable text. Ask the student to paste the passage or read the attached PDFs.';
+ const labels=pageRange(a.from,a.to);
+ if(a.pdf&&labels.some((x:string)=>!/^\\d+$/.test(x)||Number(x)<1))
+   throw Error('PDF page indexes must be positive integers');
+ let q=scoped(c,'source_pages').in('source_id',readable.map((x:any)=>x.id));
+ if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');
+ else q=q.in('label',labels).order('page');
+ const {data,error}=await q.limit(40);
+ if(error)throw Error(error.message);
+ if(!data?.length)throw Error('No pages found. Use get(what=outline) for page indexes.');
+ const parts:string[]=[];
+ for(const row of data.slice(0,5)){
+  const src=readable.find((x:any)=>x.id===row.source_id);
+  const head='=== '+(src?.short||'?')+' "'+cut(src?.title||'',50)+'" p.'+(row.label||row.page)+' (pdf '+row.page+') ===\\n';
+  const room=12000-parts.join('\\n').length-head.length-80;
+  if(room<=0)break;
+  parts.push(head+String(row.body||'').slice(0,room));
+  if(String(row.body||'').length>room){parts.push('[cut, call again by source from p.'+(Number(row.page)+1)+']');break}
+ }
+ return parts.join('\\n').slice(0,12000);
 }
 export async function search(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project);
-  const sources=(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+  const allSources=(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+  const sources=a.source?allSources.filter((x:any)=>x.short===a.source):allSources;
+  if(a.source&&!sources.length)throw Error('Unknown source '+a.source+'; choose: '+allSources.map((x:any)=>x.short).join(', '));
   if(!sources.length)return 'No PDFs in this project; check the book attached to chat.';
   const ids=sources.map((x:any)=>x.id);
   const q=scoped(c,'source_pages','source_id,page,label,body').in('source_id',ids).textSearch('tsv',a.query,{type:'websearch',config:'english'}).limit(Math.min(a.limit||5,8));
@@ -125,7 +154,7 @@ export async function search(c:Context,a:any):Promise<string>{
     const src=sources.find((y:any)=>y.id===x.source_id);
     const words=a.query.toLowerCase().split(/\s+/).filter(Boolean);
     const idx=Math.max(0,words.map((w:string)=>x.body.toLowerCase().indexOf(w)).filter((v:number)=>v>=0)[0]||0);
-    return src.short+' p.'+(x.label||x.page)+' (pdf '+x.page+'): …'+cut(x.body.slice(Math.max(0,idx-60),idx+210),210)+'…';
+    return (src?.short||'?')+' "'+cut(src?.title||'',35)+'" p.'+(x.label||x.page)+' (pdf '+x.page+'): …'+cut(x.body.slice(Math.max(0,idx-60),idx+210),210)+'…';
   });
   return capped(lines.join('\n'),1500);
 }
