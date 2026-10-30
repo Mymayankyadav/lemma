@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Plus, Search } from "lucide-react";
 import { useCreateNote, useProjects, useSearchCards } from "../../data/hooks";
@@ -33,6 +33,7 @@ export default function Page() {
     create = useCreateNote(),
     notify = useToast(),
     navigate = useNavigate();
+  const closeCreating = useCallback(() => setCreating(false), []);
   useEffect(() => {
     const timer = setTimeout(() => setQuery(search), 250);
     return () => clearTimeout(timer);
@@ -183,7 +184,7 @@ export default function Page() {
       )}
       <Sheet
         open={creating}
-        onClose={() => setCreating(false)}
+        onClose={closeCreating}
         title="New card"
       >
         <Editor
