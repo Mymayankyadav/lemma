@@ -319,6 +319,11 @@ Notes per task:
 - After PR 3: push a branch `review/themes` with `THEMES=all` so the review workflow commits contact sheets per theme; link them in the PR.
 - Done when: `themes.md` §7.
 
+#### v3 (owner's decisions, 30 Oct 14:48): DB-4, MCP-4, DEMO-2, UI-6a … UI-6e, QA-2
+- Spec: `docs/spec/v3.md`. It overrides every earlier design document: Graph paper by day and at night only (automatic, with an Automatic/Day/Night override), compact, calm, docked tab bar, Metro with schedule colours, the Atlas as a cosmos hierarchy, and sources-first projects (name plus many PDFs, sources appended any time, the tutor fills the rest and appends plans).
+- Start DB-4, UI-6a and DEMO-2 now; then UI-6b, UI-6c, UI-6d, UI-6e and MCP-4; QA-2 last. Issues #337–#345 are the review gaps.
+- The owner's Algebra 1 project was deleted on 30 Oct (undo action A4882); its orphaned ideas are cleaned up by DB-4.
+
 #### UI v2, Euclid (owner's final choice, 30 Oct 10:48): UI-5a … UI-5h, DB-3, MCP-3
 - Spec: `docs/spec/ui-euclid.md` (overrides `design.md`, `themes.md` and `lab.md` where they differ). Choice: Euclid by day and Euclid at night by night (follow the phone), Ascent timeline (Metro kept), Orbits Atlas (Branches, Outline kept), compact, lively; eight worlds selectable.
 - UI-5a first (tokens and components in PR 1, then backgrounds and the layout check); UI-5b … UI-5h in parallel after it; DB-3 now; MCP-3 after DB-3. UI-4a, UI-4b and UI-4c below are superseded: do not start them.
