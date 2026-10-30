@@ -24,7 +24,7 @@ test('suspending a card advances the polygon and resets the next card timer',asy
  await page.getByRole('button',{name:'Grade Good'}).click()
  await expect(page.locator('[data-review-edge="passed"]')).toHaveCount(1)
  await page.getByRole('button',{name:'Close review'}).click()
- await expect(page).toHaveURL(new RegExp('#/review/done
+ await expect(page).toHaveURL(new RegExp('#/review/done$'))
  await expect(page.getByRole('region',{name:'Review statistics'}).getByText('0:02',{exact:true})).toBeVisible()
 })
 ))
