@@ -60,11 +60,13 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  }
  const roots:string[]=[],rootBySubject=new Map<string,string>();
  for(const subject of subjects){
-  const own=[...nodes.values()].find(n=>n.subjectId===subject.id&&n.level==='cluster');
-  const id=own?.id??'atlas:root:'+subject.id;
-  if(own)own.glyph=subject.glyph;
-  else nodes.set(id,synthetic(id,subject.name,subject.id,'cluster',null,subject.glyph));
-  roots.push(id);rootBySubject.set(subject.id,id);
+  // Every field (cluster) is a root; a subject without one gets a root named after it.
+  const own=[...nodes.values()].filter(n=>n.subjectId===subject.id&&n.level==='cluster')
+   .sort((a,b)=>a.name.localeCompare(b.name));
+  for(const field of own){field.glyph=subject.glyph;roots.push(field.id)}
+  const id=own[0]?.id??'atlas:root:'+subject.id;
+  if(!own.length){nodes.set(id,synthetic(id,subject.name,subject.id,'cluster',null,subject.glyph));roots.push(id)}
+  rootBySubject.set(subject.id,id);
  }
  for(const node of [...nodes.values()]){
   if(node.level==='cluster'){node.parentId=null;continue}

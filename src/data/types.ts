@@ -105,7 +105,12 @@ export interface PlanCheckpoint {
 }
 export interface PlanPayload {
  checkpoints: PlanCheckpoint[]
- concepts?: {name: string; topic?: string | null; blurb?: string; prereqs?: string[]; related?: string[]}[]
+ concepts?: ProposedIdea[]
+}
+/** An idea in a plan proposal (MCP-4): nesting by level and parent name, links by name. */
+export interface ProposedIdea {
+ name: string; topic?: string | null; blurb?: string; prereqs?: string[]; related?: string[]
+ level?: ConceptLevel; parent?: string | null; star?: boolean
 }
 export type PlanChangeOp =
  | ({op: 'add'; after?: string} & PlanCheckpoint)
@@ -113,7 +118,7 @@ export type PlanChangeOp =
  | {op: 'remove'; code: string}
  | {op: 'move'; code: string; after: string}
  | {op: 'prereq_add' | 'prereq_remove'; code: string; prereq: string}
-export interface PlanChangePayload { ops: PlanChangeOp[] }
+export interface PlanChangePayload { ops: PlanChangeOp[]; concepts?: ProposedIdea[] }
 export interface Proposal {
  id: string; kind: 'card' | 'card_edit' | 'plan' | 'plan_change'; projectSlug: string; projectGlyph: Glyph
  sessionNumber: number | null; origin: Exclude<Client, never>; reason: string | null; createdAt: IsoDate

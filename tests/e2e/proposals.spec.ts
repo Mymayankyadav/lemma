@@ -115,3 +115,23 @@ test('tapping a checkpoint opens a drawer that steps through the plan',async({pa
  await page.getByRole('button',{name:/^Select CP/}).first().click();
  await expect(page.locator('[data-checkpoint-drawer]')).toBeVisible();
 });
+
+test('the ideas a plan adds fold into clusters and link to the checkpoints that teach them',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/lemma/?demo=1#/proposals?tab=plan');
+ await page.getByRole('link',{name:'See the whole plan'}).click();
+ const ideas=page.getByRole('region',{name:'Ideas in this plan'});
+ await expect(ideas.getByRole('tree',{name:'Ideas in this plan'})).toBeVisible();
+ const all=await ideas.getByRole('treeitem').count();
+ await ideas.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'1',exact:true}).click();
+ expect(await ideas.getByRole('treeitem').count()).toBeLessThan(all);
+ await ideas.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+ await ideas.getByRole('button',{name:/^Separating a point from a compact set, /}).click();
+ const selection=ideas.locator('[data-idea-selection]');
+ await expect(selection).toContainText('Builds on');
+ expect(await ideas.locator('[data-arc-tone="up"]').count()).toBeGreaterThan(0);
+ await ideas.scrollIntoViewIfNeeded();
+ await page.screenshot({path:'test-results/screens/plan-ideas-graph.png'});
+ await selection.getByRole('button',{name:'CP4a'}).click();
+ await expect(page.locator('[data-checkpoint-drawer="CP4a"]')).toBeVisible();
+});

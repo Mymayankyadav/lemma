@@ -61,3 +61,13 @@ describe('Atlas tree',()=>{
   expect(rows.map(r=>r.match)).toEqual([false,false,true]);
  });
 });
+
+describe('Atlas tree with several fields in one subject',()=>{
+ it('keeps every field as a root instead of dropping all but the first',()=>{
+  const two=buildAtlasTree({subjects:[{id:'s',name:'Maths',glyph:'M',hue:'amber',position:0}],links:[],
+   concepts:[{...idea('b-field',null,'galaxy'),subjectId:'s',level:'cluster'},{...idea('a-field',null,'galaxy'),subjectId:'s',level:'cluster'},
+    {...idea('inside',null,'planet'),subjectId:'s',parentId:'b-field'}]});
+  expect(two.roots).toEqual(['a-field','b-field']);
+  expect(two.nodes.get('b-field')!.children).toEqual(['inside']);
+ });
+});

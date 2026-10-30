@@ -774,10 +774,72 @@ data.proposals.push({
           "Check disjointness",
         ],
         prereqs: ["CP4"],
-        concepts: ["Open cover"],
+        concepts: ["Open cover", "Finite subcover argument", "Separating a point from a compact set", "Compact sets are closed"],
         recheck_prompt: "Where is finiteness used?",
       },
       { op: "prereq_add", code: "CP5", prereq: "CP4a" },
+    ],
+    concepts: [
+      {
+        "name": "Compactness arguments",
+        "level": "system",
+        "blurb": "Using finiteness to turn local facts into global ones."
+      },
+      {
+        "name": "Hausdorff separation",
+        "level": "planet",
+        "parent": "Compactness arguments",
+        "blurb": "Distinct points have disjoint neighbourhoods."
+      },
+      {
+        "name": "Finite subcover argument",
+        "level": "planet",
+        "parent": "Compactness arguments",
+        "star": true,
+        "prereqs": [
+          "Open cover"
+        ],
+        "blurb": "Pass from a cover by neighbourhoods to finitely many of them."
+      },
+      {
+        "name": "Choosing finitely many neighbourhoods",
+        "level": "moon",
+        "parent": "Finite subcover argument"
+      },
+      {
+        "name": "Intersecting finitely many open sets",
+        "level": "moon",
+        "parent": "Finite subcover argument",
+        "prereqs": [
+          "Choosing finitely many neighbourhoods"
+        ],
+        "blurb": "A finite intersection of open sets is open; an infinite one need not be."
+      },
+      {
+        "name": "Separating a point from a compact set",
+        "level": "planet",
+        "parent": "Compactness arguments",
+        "prereqs": [
+          "Hausdorff separation",
+          "Finite subcover argument",
+          "Intersecting finitely many open sets"
+        ]
+      },
+      {
+        "name": "Compact sets are closed",
+        "level": "planet",
+        "parent": "Compactness arguments",
+        "prereqs": [
+          "Separating a point from a compact set"
+        ],
+        "related": [
+          "Hausdorff separation"
+        ]
+      },
+      {
+        "name": "Open cover",
+        "level": "planet"
+      }
     ],
   },
   status: "pending",
