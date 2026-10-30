@@ -86,9 +86,9 @@ function WorldNode({node,selected,dim,reduce,showLabel,position,zoomScale,onDown
   </>}
   {status==='not_started'&&<circle cx={x} cy={y} r={selected?6:4.5} fill="var(--obsidian)" stroke="var(--ink-4)" strokeWidth={1.35}/>}
   {selected&&<circle cx={x} cy={y} r={10} fill="none" stroke="var(--amber-hi)" strokeWidth={1} strokeOpacity={0.9}/>}
-  {showLabel&&<text x={x} y={y+23} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={selected?13:11.5}
+  {showLabel&&<text x={x} y={y+23/zoomScale} textAnchor="middle" fontFamily="var(--font-ui)" fontSize={(selected?13:11.5)/zoomScale}
    fontWeight={selected?600:500} fill={selected?'var(--ink)':'var(--ink-2)'}
-   stroke="var(--obsidian)" strokeWidth={3} paintOrder="stroke" pointerEvents="none">{node.name}</text>}
+   stroke="var(--obsidian)" strokeWidth={3/zoomScale} paintOrder="stroke" pointerEvents="none">{node.name}</text>}
  </g>;
 }
 function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:number;active:boolean;onClick:()=>void;icon?:typeof Check}){
