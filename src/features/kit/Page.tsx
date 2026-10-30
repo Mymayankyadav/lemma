@@ -49,7 +49,7 @@ export default function Page(){
  <Section title="Surfaces">
   <Slab lamp><p className="text-label text-ink-3">Slab · soft sheen and lamp</p><h3 className="mt-3 text-title-s font-semibold">Compactness</h3><p className="mt-1 font-math text-ink-soft">Every open cover has a finite subcover.</p></Slab>
   <div className="grid grid-cols-2 gap-3"><Tile>Tile<br/><span className="text-label text-ink-3">Quiet depth</span></Tile><Glass className="rounded-slab p-4">Glass<br/><span className="text-label text-ink-3">Frosted surface</span></Glass></div>
-  <Card stack><p className="mb-2 text-label text-ink-3">Card · stacked</p><MathText source="If $K\\subseteq\\mathbb{R}^n$ is compact, what can be said about every open cover?" variant="card"/></Card>
+  <Card stack><p className="mb-2 text-label text-ink-3">Card · stacked</p><MathText source={"If $K\\subseteq\\mathbb{R}^n$ is compact, what can be said about every open cover?"} variant="card"/></Card>
   <Card><span className="text-label text-ink-3">Card · single</span></Card>
  </Section>
  <Section title="Buttons and controls">
@@ -71,9 +71,9 @@ export default function Page(){
   <div className="flex gap-3"><Glyph subject="∫" active/><Glyph subject="τ" hue="violet"/><Glyph subject="λ" hue="cyan" size={32}/><Glyph subject="∂" hue="rose" size={48}/></div>
  </Section>
  <Section title="Mathematical text">
-  <MathText source="Prove $\\int_0^1 x^2\\,dx=\\frac13$." variant="card"/>
-  <MathText source="For $K\\subseteq\\mathbb{R}^n$, compactness is equivalent to **closed and bounded**." variant="answer"/>
-  <MathText source="The key observation is $\\varepsilon>0$." variant="body"/>
+  <MathText source={"Prove $\\int_0^1 x^2\\,dx=\\frac13$."} variant="card"/>
+  <MathText source={"For $K\\subseteq\\mathbb{R}^n$, compactness is equivalent to **closed and bounded**."} variant="answer"/>
+  <MathText source={"The key observation is $\\varepsilon>0$."} variant="body"/>
   <MathText source="A set is {{c1::compact}} if every open cover has a finite subcover." cloze={{ord:1,revealed:false}}/>
   <MathText source="A set is {{c1::compact}} if every open cover has a finite subcover." cloze={{ord:1,revealed:true}}/>
  </Section>
