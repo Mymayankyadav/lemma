@@ -1,3 +1,4 @@
+import {Tex} from '../../ui/Tex';
 import {useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
@@ -35,7 +36,7 @@ function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:C
   <div className="flex items-center justify-between gap-3">
    <div className="flex min-w-0 flex-col gap-1">
     <span className="text-label font-semibold text-amber">{cp.code} · IN PROGRESS</span>
-    <h3 className="truncate text-title-s font-semibold">{cp.title}</h3>
+    <h3 className="truncate text-title-s font-semibold"><Tex source={cp.title}/></h3>
    </div>
    <Link to={url} aria-label={'Details for '+cp.code} className="flex size-11 items-center justify-center rounded-ctl text-ink-2"><ChevronRight size={20}/></Link>
   </div>
@@ -64,7 +65,7 @@ function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
     {good?<Check size={18} aria-hidden="true"/>:partial?<Pause size={16} aria-hidden="true"/>:<MessageCircle size={17} aria-hidden="true"/>}
    </span>
    <span className="min-w-0 flex-1">
-    <strong className="block truncate text-body-l font-semibold">{s.goal}</strong>
+    <strong className="block truncate text-body-l font-semibold"><Tex source={s.goal}/></strong>
     <span className="mt-1 block text-label text-ink-3">{'S'+s.number+' · '+relativeTime(s.startedAt)+' · '+s.client}</span>
    </span>
    <span className="text-label tabular-nums text-ink-2">{s.minutes===null?s.display:formatMinutes(s.minutes)}</span>
@@ -128,9 +129,9 @@ export default function Page(){
   <header className="flex items-center gap-3">
    <IconButton icon={ArrowLeft} label="Back to projects" onClick={()=>navigate('/projects')}/>
    <div className="min-w-0 flex-1">
-    <h1 aria-label="Project" className="font-[var(--font-display)] text-title-s font-semibold tracking-tight"><button type="button" aria-label={"Switch project from "+project.title} aria-haspopup="dialog" aria-expanded={switcherOpen} onClick={()=>setSwitcherOpen(true)} className="flex min-h-11 max-w-full items-center gap-2 text-left"><span className="min-w-0 break-words">{project.title}</span><ChevronRight size={17} className="shrink-0 text-amber" aria-hidden="true"/></button></h1>
+    <h1 aria-label="Project" className="font-[var(--font-display)] text-title-s font-semibold tracking-tight"><button type="button" aria-label={"Switch project from "+project.title} aria-haspopup="dialog" aria-expanded={switcherOpen} onClick={()=>setSwitcherOpen(true)} className="flex min-h-11 max-w-full items-center gap-2 text-left"><span className="min-w-0 break-words"><Tex source={project.title}/></span><ChevronRight size={17} className="shrink-0 text-amber" aria-hidden="true"/></button></h1>
     <p className="mt-1 flex items-center gap-1.5 truncate text-label text-ink-3">
-     <BookOpen size={14} aria-hidden="true"/>{data.sources[0]?.title??data.subject.name}</p>
+     <BookOpen size={14} aria-hidden="true"/><Tex source={data.sources[0]?.title??data.subject.name}/></p>
    </div>
    <IconButton icon={Waypoints} label="View in Atlas" to="/atlas"/>
   </header>

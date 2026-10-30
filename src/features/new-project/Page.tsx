@@ -1,3 +1,4 @@
+import {MathPreview} from '../../ui/MathPreview';
 import {useCallback,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
@@ -92,6 +93,7 @@ export default function Page(){
      <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
       value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
+     <MathPreview source={name}/>
      <p className="text-label text-ink-3">Path: {slugify(name||'project')}</p>
      <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
     </section>

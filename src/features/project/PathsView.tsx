@@ -1,3 +1,4 @@
+import {Tex} from '../../ui/Tex';
 import {useId,useState} from 'react';
 import {Link} from 'react-router';
 import {ChevronRight} from 'lucide-react';
@@ -61,8 +62,8 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
    <div className="flex min-w-0 items-start gap-3">
     <Glyph subject={subject.glyph} hue={subject.hue} size={32}/>
     <div className="min-w-0 flex-1">
-     <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold">{project.title}</h2>
-     <p className="mt-1 break-words text-label leading-relaxed text-ink-2">{project.goal?.trim()||'Your tutor fills this in'}</p>
+     <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
+     <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
     <strong className="shrink-0 font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
    </div>
@@ -110,7 +111,7 @@ function StageCard({stage,slug,initiallyOpen}:{stage:Stage;slug:string;initially
   <button type="button" aria-expanded={open} aria-controls={id} onClick={()=>setOpen(v=>!v)}
    className="flex min-h-12 w-full items-center gap-2 px-3 py-3 text-left focus-visible:outline-2 focus-visible:outline-amber">
    <ChevronRight size={16} aria-hidden="true" className={'shrink-0 text-ink-3 transition-transform '+(open?'rotate-90':'')}/>
-   <strong className="min-w-0 flex-1 break-words font-[var(--font-display)] text-headline font-semibold">{stage.name}</strong>
+   <strong className="min-w-0 flex-1 break-words font-[var(--font-display)] text-headline font-semibold"><Tex source={stage.name}/></strong>
    <span role="img" aria-label={progress+' percent complete'} className="h-1 w-16 shrink-0 overflow-hidden rounded-[1px] bg-fill-2">
     <span className="block h-full bg-amber" style={{width:progress+'%'}}/>
    </span>
@@ -123,7 +124,7 @@ function StageCard({stage,slug,initiallyOpen}:{stage:Stage;slug:string;initially
      (index?'border-t border-edge':'')}>
     <span aria-hidden="true" className={'size-[14px] shrink-0 rounded-full border-[1.5px] '+marks[cp.ui]}/>
     <span className="w-[46px] shrink-0 rounded-code text-label tabular-nums text-ink-3">{cp.code}</span>
-    <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}>{cp.title}</span>
+    <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}><Tex source={cp.title}/></span>
     <span className={'max-w-[84px] shrink-0 text-right text-caption '+(cp.ui==='revisit'?'text-hard':cp.ui==='proposed'||cp.ui==='now'?'text-amber':'text-ink-3')}>
      {cp.ui==='now'&&cp.stepsTotal>0?cp.currentStep+'/'+cp.stepsTotal:labels[cp.ui]}
     </span>
