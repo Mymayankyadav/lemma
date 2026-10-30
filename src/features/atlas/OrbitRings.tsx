@@ -37,7 +37,7 @@ export function orbitFitPoints(graph:AtlasGraph,nodes:readonly AtlasNode[]):Poin
 }
 function ProgressCircle({ring,scale,subject=false}:{ring:Ring;scale:number;subject?:boolean}){
  const circumference=2*Math.PI*ring.radius;
- return <g data-atlas-ring={ring.id} pointerEvents="none">
+ return <g data-atlas-ring={ring.id} aria-hidden="true" pointerEvents="none">
   <circle cx={ring.x} cy={ring.y} r={ring.radius} fill="var(--amber)" fillOpacity={subject ? 0.025 : 0.015}
    stroke="var(--edge-3)" strokeWidth={1/scale}/>
   <circle cx={ring.x} cy={ring.y} r={ring.radius} fill="none" stroke="var(--amber)" strokeOpacity={subject ? 0.8 : 0.65}
@@ -47,7 +47,7 @@ function ProgressCircle({ring,scale,subject=false}:{ring:Ring;scale:number;subje
 }
 export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:readonly AtlasNode[];scale:number;onFocus?:(subjectId:string,topicId?:string)=>void}){
  const groups=atlasOrbitGroups(graph,nodes);
- return <g aria-hidden="true" data-atlas-orbits="true" pointerEvents="none">
+ return <g data-atlas-orbits="true" pointerEvents="none">
   {groups.map(group=><g key={group.id}>
    <ProgressCircle ring={group} scale={scale} subject/>
    <text x={group.x} y={group.y-group.radius-10/scale} textAnchor="middle"
