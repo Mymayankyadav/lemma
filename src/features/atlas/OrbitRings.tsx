@@ -32,9 +32,9 @@ export function atlasOrbitGroups(graph:AtlasGraph,nodes:readonly AtlasNode[]):Or
 function ProgressCircle({ring,scale,subject=false}:{ring:Ring;scale:number;subject?:boolean}){
  const circumference=2*Math.PI*ring.radius;
  return <g data-atlas-ring={ring.id} pointerEvents="none">
-  <circle cx={ring.x} cy={ring.y} r={ring.radius} fill="var(--amber)" fillOpacity={subject?.025:.015}
+  <circle cx={ring.x} cy={ring.y} r={ring.radius} fill="var(--amber)" fillOpacity={subject ? 0.025 : 0.015}
    stroke="var(--edge-3)" strokeWidth={1/scale}/>
-  <circle cx={ring.x} cy={ring.y} r={ring.radius} fill="none" stroke="var(--amber)" strokeOpacity={subject?.8:.65}
+  <circle cx={ring.x} cy={ring.y} r={ring.radius} fill="none" stroke="var(--amber)" strokeOpacity={subject ? 0.8 : 0.65}
    strokeWidth={(subject?2:1.5)/scale} strokeDasharray={ring.total?circumference*ring.done/ring.total+' '+circumference:circumference+' '+circumference}
    transform={'rotate(-90 '+ring.x+' '+ring.y+')'}/>
  </g>;
