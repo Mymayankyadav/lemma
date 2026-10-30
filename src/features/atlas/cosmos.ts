@@ -70,14 +70,13 @@ export function buildCosmos(graph:AtlasGraph):Cosmos{
  }
  const progress=(id:string):{total:number;done:number}=>{
   const b=bodies.get(id)!;
-  if(!b.children.length){
-   const isIdea=b.level==='planet'||b.level==='moon';
-   b.total=isIdea?1:0;b.done=isIdea&&b.status==='demonstrated'?1:0;
-  }else{
-   const child=b.children.map(progress);
-   b.total=child.reduce((n,v)=>n+v.total,0);b.done=child.reduce((n,v)=>n+v.done,0);
-   if(b.total)b.status=b.done===b.total?'demonstrated':child.some(v=>v.done>0)?'in_progress':'not_started';
-  }
+  // A planet remains an idea when it owns moons; both contribute to progress.
+  const ownIdea=b.level==='planet'||b.level==='moon';
+  const ownDone=ownIdea&&b.status==='demonstrated';
+  const child=b.children.map(progress);
+  b.total=(ownIdea?1:0)+child.reduce((n,v)=>n+v.total,0);
+  b.done=(ownDone?1:0)+child.reduce((n,v)=>n+v.done,0);
+  if(!ownIdea&&b.total)b.status=b.done===b.total?'demonstrated':b.done>0?'in_progress':'not_started';
   return {total:b.total,done:b.done};
  };
  for(const root of roots)progress(root);
