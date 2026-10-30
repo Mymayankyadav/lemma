@@ -6,6 +6,7 @@ declare
   owner_id uuid;
   a uuid := gen_random_uuid();
   b uuid := gen_random_uuid();
+  system_subject uuid := gen_random_uuid();
   p1 uuid := gen_random_uuid();
   p2 uuid := gen_random_uuid();
   src uuid := gen_random_uuid();
@@ -100,6 +101,14 @@ begin
     end if;
   exception when others then
     raise exception 'Valid same-subject Atlas parent failed: %',sqlerrm;
+  end;
+  insert into public.subjects(id,user_id,name,glyph,hue)
+    values(system_subject,owner_id,'zz-selftest-'||token,'S','slate');
+  begin
+    perform public.merge_subjects(system_subject,b);
+    raise exception 'Self-test subject merge was accepted';
+  exception when raise_exception then
+    if sqlerrm='Self-test subject merge was accepted' then raise; end if;
   end;
   if not exists(select 1 from pg_trigger where tgname='a_project_pin_limit') then
     raise exception 'Four-project pin cap trigger missing';
