@@ -56,7 +56,24 @@ export async function setPrompt(c:Context,a:any){const global=a.scope==='all',r=
  const value=a.mode==='clear'?null:a.mode==='replace'?a.text:[r[key],a.text].filter(Boolean).join('\n');
  if((value?.length||0)>(global?2000:1000))throw Error('Prompt exceeds '+(global?2000:1000)+' characters');
  enqueue(c,global?'settings':'projects',global?{user_id:c.userId}:{id:r.id},{[key]:value});return 'saved for '+(global?'all chats':r.slug)+' ('+(value?.length||0)+' chars)';}
-export async function history(c:Context,a:any){const fetched=await scoped(c,'v_history').order('no',{ascending:false}).limit(1000);if(fetched.error)throw Error(fetched.error.message);let acts:any[]=(fetched.data||[]).filter((x:any)=>x.tool!=='heartbeat');if(a.project){const p=await project(c,a.project);const changes=await c.db.from('action_changes').select('action_no,old,new').in('action_no',acts.map(x=>x.no));if(changes.error)throw Error(changes.error.message);const ids=new Set((changes.data||[]).filter((x:any)=>[x.old,x.new].some(v=>v?.project_id===p.id||v?.id===p.id)).map((x:any)=>x.action_no));acts=acts.filter(x=>ids.has(x.no));}
+export async function history(c:Context,a:any){const fetched=await scoped(c,'v_history').order('no',{ascending:false}).limit(1000);if(fetched.error)throw Error(fetched.error.message);let acts:any[]=(fetched.data||[]).filter((x:any)=>x.tool!=='heartbeat');if(a.project){
+  const p=await project(c,a.project),actionNos=acts.map(x=>x.no),ids=new Set<number>();
+  // One action can change many rows. An unpaged PostgREST read silently drops
+  // changes after its row limit (normally 1000), hiding recent project actions.
+  if(actionNos.length){
+   const pageSize=500;
+   for(let offset=0;;offset+=pageSize){
+    const {data,error}=await c.db.from('action_changes').select('action_no,old,new')
+     .in('action_no',actionNos).order('id',{ascending:true}).range(offset,offset+pageSize-1);
+    if(error)throw Error(error.message);
+    const page=data||[];
+    for(const x of page)if([x.old,x.new].some((v:any)=>v?.project_id===p.id||v?.id===p.id))
+     ids.add(Number(x.action_no));
+    if(page.length<pageSize)break;
+   }
+  }
+  acts=acts.filter(x=>ids.has(Number(x.no)));
+ }
  const ordered=acts.sort((a,b)=>b.no-a.no).slice(0,a.limit||10),lines:string[]=[];
  for(let i=0;i<ordered.length;i++){const x=ordered[i];if(x.source==='app'&&['record_review','grade'].includes(x.tool)&&!x.undone_by){let end=i;while(end+1<ordered.length&&ordered[end+1].source==='app'&&['record_review','grade'].includes(ordered[end+1].tool)&&!ordered[end+1].undone_by&&ordered[end+1].created_at.slice(0,10)===x.created_at.slice(0,10))end++;if(end>i){lines.push('A'+ordered[end].no+'–A'+x.no+' app '+(end-i+1)+' reviews');i=end;continue;}}
  lines.push('A'+x.no+' '+x.created_at.slice(0,16).replace('T',' ')+' '+x.source+' '+(x.tool||'app')+': '+x.summary+(x.undone_by?' (undone by A'+x.undone_by+')':''));}
