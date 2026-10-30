@@ -162,7 +162,7 @@ test('Escape exits an ungraded round without recording an answer',async({page})=
  await expect(page.getByRole('region',{name:'Review summary'}).getByText('23',{exact:true})).toBeVisible()
 })
 
-for(const theme of ['euclid','euclid-night'])
+for(const theme of ['graph','graph-night'])
 for(const quiet of [false,true]){
  test(`Euclid complete round and missed-only retry: ${theme}, ${quiet?'reduced':'lively'}`,async({page})=>{
   test.setTimeout(90_000)
@@ -206,4 +206,22 @@ for(const quiet of [false,true]){
   await expect(page.getByRole('button',{name:/Go over the/})).toHaveCount(0)
   expect(errors).toEqual([])
  })
+}
+
+for(const world of ['graph','graph-night'] as const){
+ test(`FIX #343 Mix decks switch has a distinct thumb and track in ${world}`,async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(`./?demo=1&theme=${world}#/review`);
+  const control=page.getByRole('switch',{name:'Mix decks'});
+  await expect(control).toBeVisible();
+  const track=page.locator('.ui-switch-track').first();
+  await expect(track).toHaveAttribute('data-checked','true');
+  const before=await track.evaluate(el=>({track:getComputedStyle(el).backgroundColor,thumb:getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor,border:getComputedStyle(el).borderTopWidth}));
+  expect(before.track).not.toBe(before.thumb);
+  expect(Number.parseFloat(before.border)).toBeGreaterThanOrEqual(1);
+  await page.getByText('Mix decks',{exact:true}).click();
+  await expect(track).toHaveAttribute('data-checked','false');
+  await expect.poll(()=>track.evaluate(el=>getComputedStyle(el).backgroundColor===getComputedStyle(el.querySelector('.ui-switch-thumb')!).backgroundColor)).toBe(true);
+  await page.screenshot({path:`test-results/screens/review/ui6a-mix-decks-${world}.png`,fullPage:true});
+ });
 }

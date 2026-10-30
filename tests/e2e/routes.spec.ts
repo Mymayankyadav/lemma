@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 const routes = [
- ['/', 'Home'], ['/projects', 'Projects'], ['/projects/new', 'New project'],
+ ['/', 'Home'], ['/projects', 'Paths'], ['/projects/new', 'New project'],
  ['/p/real-analysis', 'Project'], ['/p/real-analysis/cp/CP4', 'Checkpoint'],
  ['/s/real-analysis/7', 'Session record'], ['/proposals', 'Approve'],
  ['/proposals/example', 'Plan proposal'], ['/review', 'Review'],
@@ -33,7 +33,7 @@ test('every screen renders in demo mode with correct navigation and no errors', 
 test('demo persists in the tab and explicit live mode gates private screens', async ({page}) => {
  await page.route('https://fonts.googleapis.com/**', route => route.fulfill({body: ''}))
  await page.goto('./?demo=1#/projects')
- await expect(page.getByRole('heading', {name: 'Projects', exact: true})).toBeVisible()
+ await expect(page.getByRole('heading', {name: 'Paths', exact: true})).toBeVisible()
  await page.goto('./#/review')
  await expect(page.getByRole('heading', {name: 'Review', exact: true})).toBeVisible()
  await page.goto('./?demo=0#/projects')

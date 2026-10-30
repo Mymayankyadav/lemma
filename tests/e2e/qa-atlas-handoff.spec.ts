@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 /** QA-1: prove the new Atlas is part of the study loop, not an isolated demo. */
-for(const world of ['euclid','euclid-night'] as const){
+for(const world of ['graph','graph-night'] as const){
  test(`QA-1 Atlas-to-checkpoint handoff: ${world}`,async({page})=>{
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));

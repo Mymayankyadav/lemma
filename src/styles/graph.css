@@ -1,0 +1,86 @@
+/* UI-6a: graph-paper material from docs/spec/v3.md §1 and the Lemma Lab graph worlds.
+   This is deliberately scoped to the final day/night pair. */
+html:is([data-theme="graph"],[data-theme="graph-night"]){
+ --s:.92;
+ --font-display:'Newsreader',Georgia,serif;
+ --font-num:'IBM Plex Mono',ui-monospace,monospace;
+ --font-math:'STIX Two Text',Georgia,serif;
+ --r-hero:6px;--r-slab:6px;--r-sheet:10px;--r-btn:4px;--r-ctl:4px;--r-chip:4px;--r-s:3px;
+ --blur-glass:none;--grad-lamp:none;--grad-sheen:none;--e-lit:none;--e-orb:none;
+ --graph-button-shadow:2px 2px 0 var(--ink);
+}
+html[data-theme="graph-night"]{--graph-button-shadow:2px 2px 0 #05070A}
+html:is([data-theme="graph"],[data-theme="graph-night"]) body{
+ font-size:14px;line-height:1.45;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) :is(h1,h2,h3,h4,.ui-sheet-title){
+ font-family:var(--font-display);font-weight:500;line-height:1.18;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ground{
+ background:var(--bg-css),var(--bg)!important;filter:none;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ground::after{display:none}
+html:is([data-theme="graph"],[data-theme="graph-night"]) :is(.card,.slab,.tile){
+ background:var(--card);border:var(--card-border);box-shadow:var(--card-shadow);
+ border-radius:6px;min-width:0;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-card-quiet{
+ background:var(--card-2);border:1.5px solid var(--line);box-shadow:none;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) :is(.glass,.well){
+ background:var(--card);border:1.5px solid var(--line);box-shadow:none;
+ backdrop-filter:none;-webkit-backdrop-filter:none;border-radius:6px;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) :is(.lit,.ghost,.ui-button,.ui-chip){
+ border-radius:4px;box-shadow:var(--graph-button-shadow);
+ backdrop-filter:none;-webkit-backdrop-filter:none;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .lit{
+ background:var(--accent);color:var(--on-accent);border:1.5px solid var(--ink);
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ghost{
+ background:var(--card);border:1.5px solid var(--ink);
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-button{min-height:44px}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-progress{
+ height:4px;border-radius:1px;background:var(--track);
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-progress>div{
+ background:repeating-linear-gradient(135deg,var(--accent) 0 3px,transparent 3px 5px)!important;
+ border-radius:1px;box-shadow:none;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-glyph{
+ font-family:var(--font-display);
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) :is(input:not([type="checkbox"]),textarea,select){
+ border-radius:4px;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .font-math{font-family:var(--font-math)}
+html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content:not(.w-full){
+ padding-inline:16px;
+}
+
+/* #343: graph-paper switches use a drawn outline and a contrasting paper thumb. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-track{
+ border:1.5px solid var(--ink);border-radius:4px;background:var(--card);
+ box-shadow:2px 2px 0 var(--ink);
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-track[data-checked="true"]{
+ border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--card));
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-thumb{
+ border:1.5px solid var(--ink);border-radius:3px;background:var(--card);box-shadow:none;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-track[data-checked="true"] .ui-switch-thumb{
+ border-color:var(--accent);background:var(--accent);
+}
+
+/* Match the fixed graph 16px gutter: legacy -mx-6 carousels must not escape the viewport. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content [class~="-mx-6"]{
+ margin-inline:-16px;padding-inline:16px;
+}
+
+/* Preserve readable mathematical titles rather than truncating formula fragments. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content .truncate{
+ white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;
+}

@@ -51,7 +51,7 @@ test('home shortcuts navigate to review, proposals and the project path',async({
  await expect(page).toHaveURL(/#\/p\/real-analysis$/)
 })
 
-for(const theme of ['euclid','euclid-night'] as const){
+for(const theme of ['graph','graph-night'] as const){
  test(`UI-5b goal-first Today and keyboard Ascent timeline: ${theme}`,async({page})=>{
   await page.goto(`./?demo=1&theme=${theme}#/`)
   const goals=page.getByRole('region',{name:'Distance to your goals'})

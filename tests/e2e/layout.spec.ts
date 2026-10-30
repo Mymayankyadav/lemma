@@ -78,10 +78,10 @@ async function coveredAtBottom(page:Page):Promise<Issue[]>{
   return r.bottom>navTop+1&&r.top<navTop?[{selector:last.tagName.toLowerCase()+(last.id?'#'+last.id:''),reason:'fixed tab bar covers the last interactive control'}]:[];
  });
 }
-for(const theme of ['euclid','euclid-night'] as const)
-for(const density of ['compact','comfortable'] as const)
+for(const theme of ['graph','graph-night'] as const)
+for(const density of ['compact'] as const)
 for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
- test(`UI-5a layout: ${theme}, ${density}, ${viewport.width}x${viewport.height}`,async({page})=>{
+ test(`UI-6a layout: ${theme}, ${density}, ${viewport.width}x${viewport.height}`,async({page})=>{
   test.setTimeout(120_000);
   await page.setViewportSize(viewport);
   const failures:string[]=[];
@@ -113,16 +113,16 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
  });
 }
 
-test('UI-5a auto-switches Euclid worlds with OS theme and respects a manual choice',async({page})=>{
+test('UI-6a auto-switches graph worlds with OS theme and respects a manual choice',async({page})=>{
  await page.emulateMedia({colorScheme:'light'});
  await page.goto('/lemma/?demo=1&theme=system#/settings');
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.emulateMedia({colorScheme:'dark'});
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid-night');
- await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#17130E');
- await page.getByRole('radio',{name:'Euclid',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
+ await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#13171D');
+ await page.getByRole('radio',{name:/^Day /}).click();
  await page.emulateMedia({colorScheme:'light'});
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.emulateMedia({colorScheme:'dark'});
- await expect(page.locator('html')).toHaveAttribute('data-theme','euclid');
+ await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
 });
