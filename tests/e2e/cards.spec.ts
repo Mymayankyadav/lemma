@@ -1,4 +1,3 @@
-// FIX #291: claim card-filter mobile layout regression before implementation.
 import { test, expect } from "@playwright/test";
 test("search, notes, editing and pause work for a card", async ({ page }) => {
   const errors: string[] = [];
@@ -87,3 +86,53 @@ test("new card editor retains focus through a delayed search update", async ({ p
     fullPage: true,
   });
 });
+
+for (const [width, density] of [
+  [320, "comfortable"],
+  [390, "compact"],
+  [390, "cozy"],
+  [390, "comfortable"],
+] as const) {
+  test(`card filters stay on one scrollable row at ${width}px / ${density}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.route("https://fonts.googleapis.com/**", (r) =>
+      r.fulfill({ body: "" }),
+    );
+    await page.goto(`/lemma/?demo=1&density=${density}#/cards`);
+    const filters = page.getByRole("group", { name: "Card filters" });
+    const project = filters.getByRole("button", { name: "Real Analysis" });
+    await expect(project).toBeVisible();
+    await expect(filters.locator("button")).toHaveCount(6);
+
+    const layout = await filters.evaluate((row) => ({
+      clientWidth: row.clientWidth,
+      scrollWidth: row.scrollWidth,
+      chips: Array.from(row.querySelectorAll("button")).map((button) => ({
+        top: button.getBoundingClientRect().top,
+        height: button.getBoundingClientRect().height,
+        clientWidth: button.clientWidth,
+        scrollWidth: button.scrollWidth,
+        whiteSpace: getComputedStyle(button).whiteSpace,
+        flexShrink: getComputedStyle(button).flexShrink,
+      })),
+    }));
+    expect(layout.scrollWidth).toBeGreaterThan(layout.clientWidth);
+    expect(layout.chips.length).toBe(6);
+    for (const chip of layout.chips) {
+      expect(Math.abs(chip.top - layout.chips[0].top)).toBeLessThan(1);
+      expect(chip.height).toBeGreaterThanOrEqual(28);
+      expect(chip.whiteSpace).toBe("nowrap");
+      expect(chip.flexShrink).toBe("0");
+      expect(chip.scrollWidth).toBeLessThanOrEqual(chip.clientWidth + 1);
+    }
+    await page.screenshot({
+      path: `test-results/screens/cards-filters-${density}-${width}.png`,
+      fullPage: true,
+    });
+    const paused = filters.getByRole("button", { name: "Paused" });
+    await paused.scrollIntoViewIfNeeded();
+    await expect(paused).toBeInViewport();
+    await paused.click();
+    await expect(paused).toHaveAttribute("aria-pressed", "true");
+  });
+}
