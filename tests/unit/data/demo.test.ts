@@ -55,7 +55,12 @@ describe("demo adapter", () => {
     });
     expect(await api.getReviewItems({ ...filter, decks: [] })).toHaveLength(23);
     const atlas = await api.getAtlas();
-    expect(atlas.concepts).toHaveLength(22);
+    expect(atlas.concepts).toHaveLength(82);
+    expect(['cluster','galaxy','system','planet','moon'].map(level =>
+      atlas.concepts.filter(c => c.level === level).length,
+    )).toEqual([3,6,12,46,15]);
+    const ids = new Set(atlas.concepts.map(c => c.id));
+    expect(atlas.concepts.filter(c => c.parentId).every(c => ids.has(c.parentId!))).toBe(true);
     expect(
       atlas.concepts.filter((c) => c.status === "demonstrated"),
     ).toHaveLength(9);

@@ -2,7 +2,7 @@ import { Context, scoped, all } from '../db.ts';
 import { project, checkpoints, checkpoint, session, source } from '../resolve.ts';
 import { settings, packet } from '../packet.ts';
 import { day, ui, display } from '../derive.ts';
-import { cut, capped, date, pageRange, number } from '../text.ts';
+import { cut, capped, date, pageRange, number, validPdfPageIndex } from '../text.ts';
 import { sourceLine } from '../v3.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
@@ -121,7 +121,7 @@ export async function readPages(c:Context,a:any):Promise<string>{
  const readable=selected.filter((x:any)=>x.has_text&&x.page_count!==0);
  if(!readable.length)return 'These PDFs have no extractable text. Ask the student to paste the passage or read the attached PDFs.';
  const labels=pageRange(a.from,a.to);
- if(a.pdf&&labels.some((x:string)=>!/^\\d+$/.test(x)||Number(x)<1))
+ if(a.pdf&&labels.some((x:string)=>!validPdfPageIndex(x)))
    throw Error('PDF page indexes must be positive integers');
  let q=scoped(c,'source_pages').in('source_id',readable.map((x:any)=>x.id));
  if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');

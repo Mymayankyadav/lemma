@@ -22,7 +22,7 @@ declare module 'd3-zoom' {
  export interface ZoomBehavior{
    scaleExtent(range:[number,number]):ZoomBehavior;
    filter(fn:(event:Event)=>boolean):ZoomBehavior;
-   on(name:string,callback:(event:{transform:ZoomTransform})=>void):ZoomBehavior;
+   on(name:string,callback:(event:{transform:ZoomTransform;sourceEvent?:Event})=>void):ZoomBehavior;
    transform(selection:unknown,transform:ZoomTransform):void;
    scaleBy(selection:unknown,scale:number):void;
  }
@@ -30,8 +30,9 @@ declare module 'd3-zoom' {
  export const zoomIdentity:ZoomTransform & {translate(x:number,y:number):typeof zoomIdentity;scale(k:number):typeof zoomIdentity};
 }
 declare module 'd3-selection' {
- export function select(element:Element):{
-   call(behavior:unknown):void;
-   on(name:string,fn:null|((event:Event)=>void)):void;
- };
+ export interface Selection {
+   call(behavior:unknown,...args:unknown[]):Selection;
+   on(name:string,fn:null|((event:Event)=>void)):Selection;
+ }
+ export function select(element:Element):Selection;
 }

@@ -8,6 +8,7 @@ import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
 import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
+import {buildSchedule,scheduleHeadline,scheduleDate,scheduleColor,paceFromDemonstrations,type ScheduledCheckpoint} from '../../lib/schedule';
 
 const DAY=86_400_000;
 type Stage={key:string;name:string;checkpoints:CheckpointView[]};
@@ -38,21 +39,21 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
 }
 
 function goalEstimate(detail:ProjectDetail,events:ReturnType<typeof useInsightData>['data']){
- const now=Date.now(),since=now-28*DAY;
- const ids=new Set((events?.checkpointEvents??[]).filter(e=>e.projectId===detail.project.id
-  &&e.kind==='demonstrated'&&Date.parse(e.at)>=since&&Date.parse(e.at)<=now).map(e=>e.checkpointCode));
- const pace=Math.max(1,ids.size)/4;
+ const now=Date.now();
+ const pace=paceFromDemonstrations(events?.checkpointEvents??[],detail.project.id,now);
  const remaining=Math.max(0,detail.total-detail.done);
  const finish=new Date(now+remaining/pace*7*DAY);
  const target=detail.project.targetDate;
  const spare=target?Math.floor((Date.parse(target+'T23:59:59Z')-finish.getTime())/DAY):null;
- return {pace,finish,spare,baseline:ids.size===0};
+ return {pace,finish,spare,baseline:!(events?.checkpointEvents??[]).some(e=>e.projectId===detail.project.id&&e.kind==='demonstrated'&&Date.parse(e.at)>=now-28*DAY&&Date.parse(e.at)<=now)};
 }
 
 export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'ascent'|'metro'}){
  const insight=useInsightData(30);
  const {project,subject,checkpoints,done,total}=detail;
  const estimate=goalEstimate(detail,insight.data);
+ const schedule=buildSchedule(checkpoints,{targetDate:project.targetDate,pacePerWeek:estimate.pace});
+ const headline=scheduleHeadline(schedule);
  const current=checkpoints.findIndex(cp=>cp.ui==='now');
  const pct=total?Math.round(done/total*100):0;
  const displayDate=(date:Date)=>date.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'});
@@ -65,7 +66,8 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
      <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
-    <strong className="shrink-0 font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
+    <div className="flex shrink-0 flex-col items-end gap-1"><strong className="font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
+     {headline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{headline}</span>}</div>
    </div>
    <section aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
     <strong className="font-[var(--font-display)] text-title-s tabular-nums text-ink">{done}</strong>
@@ -73,8 +75,11 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
     {current>=0&&<span className="ml-auto text-amber">{checkpoints[current].code} now</span>}
    </section>
    <div role="region" aria-label="Project timeline" className="min-w-0">
-    <ProjectTimeline project={{title:project.title,slug:project.slug,done,total}} checkpoints={checkpoints}
-     variant={variant} height={96}/>
+    <ProjectTimeline project={{title:project.title,slug:project.slug,done,total,targetDate:project.targetDate}} checkpoints={checkpoints}
+     variant={variant} pacePerWeek={estimate.pace} height={96}/>
+    {schedule.some(row=>row.dueOn)&&<div aria-label="Schedule legend" className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-2">
+     {(['early','on_time','late'] as const).map(state=><span key={state} className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-[3px] w-5" style={{background:scheduleColor[state]}}/>{state==='on_time'?'On time':state==='early'?'Early':'Late'}</span>)}
+    </div>}
    </div>
    {total>0&&<div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-edge pt-3 text-label leading-relaxed text-ink-2">
     <span>Finish ≈ <time dateTime={estimate.finish.toISOString().slice(0,10)}
@@ -102,7 +107,7 @@ const marks:Record<CheckpointUi,string>={
  locked:'border-dotted border-edge-3 opacity-70',proposed:'border-dashed border-amber'
 };
 
-function StageCard({stage,slug,initiallyOpen}:{stage:Stage;slug:string;initiallyOpen:boolean}){
+function StageCard({stage,slug,initiallyOpen,schedule}:{stage:Stage;slug:string;initiallyOpen:boolean;schedule:Map<string,ScheduledCheckpoint>}){
  const [open,setOpen]=useState(initiallyOpen),id=useId();
  const done=stage.checkpoints.filter(cp=>cp.ui==='done'||cp.ui==='revisit').length;
  const total=stage.checkpoints.filter(cp=>cp.ui!=='proposed').length;
@@ -124,7 +129,8 @@ function StageCard({stage,slug,initiallyOpen}:{stage:Stage;slug:string;initially
      (index?'border-t border-edge':'')}>
     <span aria-hidden="true" className={'size-[14px] shrink-0 rounded-full border-[1.5px] '+marks[cp.ui]}/>
     <span className="w-[46px] shrink-0 rounded-code text-label tabular-nums text-ink-3">{cp.code}</span>
-    <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}><Tex source={cp.title}/></span>
+    <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}><Tex source={cp.title}/>
+     {schedule.get(cp.id)?.dueOn&&<span className="block text-caption text-ink-3">Planned {scheduleDate(schedule.get(cp.id)!.dueOn!)}</span>}</span>
     <span className={'max-w-[84px] shrink-0 text-right text-caption '+(cp.ui==='revisit'?'text-hard':cp.ui==='proposed'||cp.ui==='now'?'text-amber':'text-ink-3')}>
      {cp.ui==='now'&&cp.stepsTotal>0?cp.currentStep+'/'+cp.stepsTotal:labels[cp.ui]}
     </span>
@@ -135,12 +141,13 @@ function StageCard({stage,slug,initiallyOpen}:{stage:Stage;slug:string;initially
 
 export function Stages({detail}:{detail:ProjectDetail}){
  const stages=groupStages(detail.checkpoints),hasCurrent=stages.some(s=>s.checkpoints.some(cp=>cp.ui==='now'));
+ const schedule=new Map(buildSchedule(detail.checkpoints,{targetDate:detail.project.targetDate}).map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
    <h2 className="font-[var(--font-display)] text-title-s italic">Stages</h2>
    <span className="text-label text-ink-3">{stages.length} {stages.length===1?'stage':'stages'}, {detail.total} checkpoints</span>
   </div>
   {stages.map((stage,i)=><StageCard key={detail.project.slug+'/'+stage.key} slug={detail.project.slug}
-   stage={stage} initiallyOpen={stage.checkpoints.some(cp=>cp.ui==='now')||(!hasCurrent&&i===0)}/>)}
+   stage={stage} schedule={schedule} initiallyOpen={stage.checkpoints.some(cp=>cp.ui==='now')||(!hasCurrent&&i===0)}/>)}
  </section>;
 }
