@@ -310,15 +310,20 @@ export default function Page(){
    </div>
   </header>
   {mode==='orbits'&&orbitFocus&&<nav aria-label="Atlas breadcrumb" className="glass absolute left-4 top-[212px] z-10 flex max-w-[calc(100%-32px)] items-center gap-2 overflow-x-auto rounded-ctl border border-edge px-3 py-1.5 text-label">
-   <button type="button" className="min-h-9 shrink-0 text-amber" onClick={()=>{setOrbitFocus(null);handleFit()}}>All</button>
+   <button type="button" className="min-h-11 shrink-0 text-amber" onClick={()=>{setOrbitFocus(null);handleFit()}}>All</button>
    <span aria-hidden="true" className="text-ink-3">›</span>
-   <button type="button" className="min-h-9 shrink-0 text-amber" onClick={()=>focusOrbit(orbitFocus.subjectId)}>
+   <button type="button" className="min-h-11 shrink-0 text-amber" onClick={()=>focusOrbit(orbitFocus.subjectId)}>
     {graph.subjects.find(s=>s.id===orbitFocus.subjectId)?.name}
    </button>
    {orbitFocus.topicId&&<>
     <span aria-hidden="true" className="text-ink-3">›</span>
     <span className="min-w-0 truncate text-ink">{atlasOrbitGroups(graph,nodeList).find(g=>g.id===orbitFocus.subjectId)?.topics.find(t=>t.id===orbitFocus.topicId)?.name}</span>
    </>}
+   {!orbitFocus.topicId&&atlasOrbitGroups(graph,nodeList).find(g=>g.id===orbitFocus.subjectId)?.topics.map(t=><button
+    key={t.id} type="button" data-atlas-topic-focus={t.id}
+    onClick={()=>focusOrbit(orbitFocus.subjectId,t.id)}
+    className="min-h-11 shrink-0 border-l border-edge pl-2 text-amber"
+    aria-label={'Focus topic '+t.name}>{t.name}</button>)}
   </nav>}
   {mode==='orbits'&&nodeList.length>0&&!selected&&<AtlasMinimap nodes={nodeList.map(n=>({...n,...positions[n.id]}))} camera={view}
    width={svg.current?.clientWidth??390} height={svg.current?.clientHeight??844} onNavigate={navigateMinimap}/>}
