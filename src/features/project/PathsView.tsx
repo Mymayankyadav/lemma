@@ -23,12 +23,12 @@ export function groupStages(checkpoints:readonly CheckpointView[]):Stage[]{
  return stages;
 }
 
-export function ProjectChips({detail}:{detail:ProjectDetail}){
+export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?:'project'|'tab'}){
  const projects=useProjects();
- const options=projects.data?.length?projects.data.filter(p=>p.status!=='done'||p.slug===detail.project.slug):
+ const options=projects.data?.length?projects.data:
   [{id:detail.project.id,slug:detail.project.slug,title:detail.project.title,subject:detail.subject}];
  return <nav aria-label="Choose a path" className="flex min-w-0 gap-2 overflow-x-auto pb-1">
-  {options.map(p=><Link key={p.id} to={'/p/'+p.slug} aria-current={p.slug===detail.project.slug?'page':undefined}
+  {options.map(p=><Link key={p.id} to={mode==='tab'?'/projects?project='+encodeURIComponent(p.slug):'/p/'+p.slug} aria-current={p.slug===detail.project.slug?'page':undefined}
    className={'inline-flex min-h-11 shrink-0 items-center gap-2 rounded-chip border px-3 text-label font-medium focus-visible:outline-2 focus-visible:outline-amber '+
     (p.slug===detail.project.slug?'border-amber bg-amber-tint text-amber':'border-edge bg-fill-1 text-ink-2')}>
    <span className="font-math text-headline italic" aria-hidden="true">{p.subject.glyph}</span>{p.title}
