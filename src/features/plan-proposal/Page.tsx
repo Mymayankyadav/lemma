@@ -1,6 +1,6 @@
 import {MathPreview} from '../../ui/MathPreview';
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
   Bot,
   BookOpen,
@@ -157,11 +157,15 @@ function dueLabel(date?: string | null) {
 function CheckpointDrawer({
   nodes,
   code,
+  projectSlug,
+  isChange,
   onOpen,
   onClose,
 }: {
   nodes: Node[];
   code: string;
+  projectSlug: string;
+  isChange: boolean;
   onOpen: (code: string) => void;
   onClose: () => void;
 }) {
@@ -252,6 +256,12 @@ function CheckpointDrawer({
               ))}
             </div>
           </div>
+        )}
+        {isChange && !node.change && (
+          <Link to={`/p/${projectSlug}/cp/${node.code}`}
+            className="flex min-h-11 items-center justify-between rounded-ctl border border-edge px-3 text-label text-ink-2">
+            Unchanged by this proposal. Open {node.code} in the project<ChevronRight size={16} />
+          </Link>
         )}
         {node.recheck && (
           <p className="flex items-start gap-2 text-label italic text-ink-3"><RotateCcw size={14} className="mt-0.5 shrink-0" /><Tex source={node.recheck} /></p>
@@ -477,7 +487,7 @@ export default function Page() {
             </Button>
           </div>
           {drawer && (
-            <CheckpointDrawer nodes={nodes} code={drawer} onOpen={openCheckpoint} onClose={() => setDrawer(null)} />
+            <CheckpointDrawer nodes={nodes} code={drawer} projectSlug={p.projectSlug} isChange={!!p.planChange} onOpen={openCheckpoint} onClose={() => setDrawer(null)} />
           )}
           <Sheet
             open={asking}
