@@ -14,12 +14,12 @@ describe('DB-4 additive contract compatibility',()=>{
    ()=>demo.listPlanRevisions('algebra'),
   ])await expect(operation()).rejects.toMatchObject({code:'not_implemented'})
  })
- it('keeps unimplemented live source and plan operations explicit',async()=>{
+ it('never executes live source writes without configured owner access',async()=>{
   const live:LemmaApi=new LiveAdapter()
   for(const operation of [
    ()=>live.createProjectDraft({title:'New study'}),
    ()=>live.updateSource('source-1',{kind:'notes'}),
    ()=>live.listPlanRevisions('algebra'),
-  ])await expect(operation()).rejects.toMatchObject({code:'not_implemented'})
+  ])await expect(operation()).rejects.toMatchObject({code:'server'})
  })
 })
