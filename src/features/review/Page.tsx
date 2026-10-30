@@ -140,8 +140,9 @@ export default function Page(){
    </section>
    {groupedSessions.length>0&&<section aria-label="From sessions" className="flex flex-col gap-3">
     <h2 className="text-headline font-semibold text-ink-2">From sessions</h2>
-    <div className="flex flex-wrap gap-2">{groupedSessions.map(s=><Chip key={s.id} tone="quiet" size={40}
-     onClick={()=>start(s.id)}>{'S'+s.number+' · '+s.goal.slice(0,22)+' · '+s.count}</Chip>)}</div>
+    <div className="flex flex-wrap gap-2">{groupedSessions.map(s=><Chip key={s.id} tone="quiet" size={40} className="max-w-full min-w-0"
+     onClick={()=>start(s.id)}>
+     <span className="min-w-0 max-w-[min(16rem,60vw)] truncate">{'S'+s.number+' · '+s.goal}</span><span className="tabular-nums text-ink-3">{s.count}</span></Chip>)}</div>
    </section>}
    {selectedCount===0&&<p className="text-label text-ink-3">No cards due in these decks. Choose another deck or return tomorrow.</p>}
    </>

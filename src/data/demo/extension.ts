@@ -3,9 +3,9 @@ import type { DemoStore, DemoSource } from "./model";
 export function enrichDemoStore(data: DemoStore) {
  const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
  const projects = [
-  {id:"project-analysis",targetDate:"@date:84",label:"22 Jan",stages:["Foundations","Compactness and continuity","Major theorems","Connectedness and synthesis"],buckets:[3,6,9,12],dates:[-21,-16,-9,4,11,18,25,32,39,48,62,84],baseSource:"rudin"},
-  {id:"project-linear",targetDate:"@date:70",label:"8 Jan",stages:["Vector-space foundations","Maps and matrices","Eigenstructure","Canonical forms"],buckets:[4,8,11,14],dates:[-38,-32,-26,-20,-14,-8,-2,3,12,19,28,43,57,70],baseSource:"axler"},
-  {id:"project-topology",targetDate:"@date:56",label:"25 Dec",stages:["Foundations","Properties of spaces","Constructions"],buckets:[3,6,9],dates:[-8,2,9,15,22,28,35,45,56],baseSource:"topology-notes"}
+  {id:"project-analysis",targetDate:"@date:84",label:"Final exam",stages:["Foundations","Compactness and continuity","Major theorems","Connectedness and synthesis"],buckets:[3,6,9,12],dates:[-21,-16,-9,4,11,18,25,32,39,48,62,84],baseSource:"rudin"},
+  {id:"project-linear",targetDate:"@date:70",label:"Midterm",stages:["Vector-space foundations","Maps and matrices","Eigenstructure","Canonical forms"],buckets:[4,8,11,14],dates:[-38,-32,-26,-20,-14,-8,-2,3,12,19,28,43,57,70],baseSource:"axler"},
+  {id:"project-topology",targetDate:"@date:56",label:"Qualifier",stages:["Foundations","Properties of spaces","Constructions"],buckets:[3,6,9],dates:[-8,2,9,15,22,28,35,45,56],baseSource:"topology-notes"}
  ];
  for (const cfg of projects) {
   const project=data.projects.find(p=>p.id===cfg.id);

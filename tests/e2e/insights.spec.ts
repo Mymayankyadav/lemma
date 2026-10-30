@@ -55,7 +55,7 @@ for (const world of ['graph','graph-night'] as const) {
     `svg[aria-label^="Reviews by day"] rect[data-review-grade="${grade}"]`
    )?.getAttribute('fill');
    return {
-    tokens:{again:token('--bad'),hard:token('--warn'),good:token('--accent'),easy:token('--good')},
+    tokens:{again:token('--bad'),hard:token('--warn'),good:token('--grade-good'),easy:token('--good')},
     legend:{again:legend('again'),hard:legend('hard'),good:legend('good'),easy:legend('easy')},
     bars:{again:rect('again'),hard:rect('hard'),good:rect('good'),easy:rect('easy')},
    };
@@ -63,7 +63,8 @@ for (const world of ['graph','graph-night'] as const) {
   expect(grades.tokens.good).not.toBe(grades.tokens.easy);
   expect(grades.legend.good).not.toBe(grades.legend.easy);
   expect(grades.legend.again).not.toBe(grades.legend.hard);
-  expect(grades.bars.good).toBe('var(--accent)');
+  expect(new Set(Object.values(grades.legend)).size).toBe(4);
+  expect(grades.bars.good).toBe('var(--grade-good)');
   expect(grades.bars.easy).toBe('var(--good)');
  });
 }

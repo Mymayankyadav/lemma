@@ -22,7 +22,7 @@ import {useCalm} from '../../ui/useCalm';
 
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
-const gradeColors=['var(--bad)','var(--warn)','var(--accent)','var(--good)'] as const;
+const gradeColors=['var(--bad)','var(--warn)','var(--grade-good)','var(--good)'] as const;
 const confidenceOptions=[
  {value:'sure' as const,label:'Sure',icon:CircleCheck},
  {value:'unsure' as const,label:'Unsure',icon:CircleDashed},
