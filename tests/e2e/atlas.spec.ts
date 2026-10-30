@@ -106,6 +106,15 @@ test('Euclid Atlas switches Orbits, Branches and Outline without losing concept 
  const before=await graph.getAttribute('transform');
  await page.getByRole('button',{name:'Move Atlas viewport'}).click({position:{x:83,y:23}});
  await expect.poll(()=>graph.getAttribute('transform')).not.toBe(before);
+ const minimap=page.getByRole('button',{name:'Move Atlas viewport'});
+ const box=await minimap.boundingBox();
+ expect(box).not.toBeNull();
+ const clicked=await graph.getAttribute('transform');
+ await page.mouse.move(box!.x+22,box!.y+22);
+ await page.mouse.down();
+ await page.mouse.move(box!.x+76,box!.y+75,{steps:5});
+ await page.mouse.up();
+ await expect.poll(()=>graph.getAttribute('transform')).not.toBe(clicked);
  await page.screenshot({path:'test-results/screens/atlas-euclid-orbits.png',fullPage:true});
 
  await page.getByRole('button',{name:'Branches'}).click();
