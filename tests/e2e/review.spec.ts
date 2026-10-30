@@ -52,6 +52,7 @@ test('card notes are stored for tutor during a run',async({page})=>{
  await page.keyboard.type('!')
  await expect(editor).toHaveValue('Explain the missing hypothesis!')
  await expect(editor).toBeFocused()
+ await page.screenshot({path:'test-results/screens/review-tutor-note.png',fullPage:true})
  await page.getByRole('button',{name:'Save note'}).click()
  await expect(page.getByText('Note saved for your tutor')).toBeVisible()
 })
