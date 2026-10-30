@@ -1,4 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
+import {Tex} from '../../ui/Tex';
+import {MathPreview} from '../../ui/MathPreview';
 import {Check,FileText,Plus,Trash2} from 'lucide-react';
 import {useAddSource,useDeleteSource,useUpdateSource} from '../../data/hooks';
 import type {IngestProgress,Source,SourceKind} from '../../data/types';
@@ -67,7 +69,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     <div className="flex items-center gap-3">
      <FileText size={20} className="shrink-0 text-amber"/>
      <div className="min-w-0 flex-1">
-      <strong className="block truncate text-body-l">{source.title}</strong>
+      <strong className="block truncate text-body-l"><Tex source={source.title}/></strong>
       <p className="text-label text-ink-3">{source.pageCount??'—'} pages · {new Date(source.addedAt??source.createdAt).toLocaleDateString()} · {source.status}</p>
       {source.planCheckedAt===null&&<span className="text-label font-semibold text-amber">New · not yet used in a plan</span>}
      </div>
@@ -76,6 +78,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     </div>
     {editing===source.id&&<div className="flex flex-col gap-2">
      <label className="text-label text-ink-2">Title<input aria-label="Source title" value={title} onChange={e=>setTitle(e.target.value)} maxLength={150} className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well p-2 text-ink"/></label>
+     <MathPreview source={title}/>
      <label className="text-label text-ink-2">Kind<select aria-label="Source kind" value={kind} onChange={e=>setKind(e.target.value as SourceKind)} className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well p-2 text-ink">{kinds.map(k=><option key={k} value={k}>{k}</option>)}</select></label>
      <div className="flex gap-3"><button type="button" className="min-h-11 text-label text-amber" disabled={update.isPending} onClick={()=>{void save(source)}}>Save</button><button type="button" className="min-h-11 text-label text-ink-2" onClick={()=>setEditing(null)}>Cancel</button></div>
     </div>}

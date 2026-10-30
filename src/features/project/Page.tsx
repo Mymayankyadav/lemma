@@ -40,10 +40,10 @@ function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:C
    </div>
    <Link to={url} aria-label={'Details for '+cp.code} className="flex size-11 items-center justify-center rounded-ctl text-ink-2"><ChevronRight size={20}/></Link>
   </div>
-  {checkpoint.data?.objective&&<p className="mt-3 font-math text-answer italic leading-relaxed text-ink-soft">{checkpoint.data.objective}</p>}
+  {checkpoint.data?.objective&&<p className="mt-3 font-math text-answer italic leading-relaxed text-ink-soft"><Tex source={checkpoint.data.objective}/></p>}
   <div className="mt-4 flex items-center justify-between text-label text-ink-2">
    <span>Step {cp.stepsTotal?Math.min(cp.currentStep,cp.stepsTotal):0} of {cp.stepsTotal}</span>
-   <span className="max-w-[70%] truncate">{step}</span>
+   <span className="max-w-[70%] truncate"><Tex source={step}/></span>
   </div>
   <div className="mt-2"><SegmentBar total={cp.stepsTotal} done={Math.max(0,cp.currentStep-1)} current={cp.currentStep} label={'Steps for '+cp.title}/></div>
   <div className="mt-4 flex flex-wrap gap-2">
@@ -82,7 +82,7 @@ function PlanHistory({slug}:{slug:string}){
   <h3 className="text-title-s font-semibold">Plan history</h3>
   {revisions.data.map(revision=><Tile key={revision.revision} className="p-3">
    <p className="text-body font-semibold">Plan v{revision.revision}</p>
-   <p className="text-label text-ink-3">{new Date(revision.approvedAt).toLocaleDateString()} · {revision.summary}</p>
+   <p className="text-label text-ink-3">{new Date(revision.approvedAt).toLocaleDateString()} · <Tex source={revision.summary}/></p>
   </Tile>)}
  </section>;
 }
@@ -102,7 +102,7 @@ function ProjectSwitcher({open,onClose,current}:{open:boolean;onClose:()=>void;c
      onClick={()=>{onClose();navigate('/p/'+p.slug)}}
      className="flex min-h-12 w-full items-center gap-3 rounded-ctl border border-edge px-3 text-left">
      <span className="text-amber" aria-hidden="true">{p.subject?.glyph??'∫'}</span>
-     <span className="min-w-0 flex-1 break-words text-body">{p.title}</span>
+     <span className="min-w-0 flex-1 break-words text-body"><Tex source={p.title}/></span>
      <span className="text-caption text-ink-3">{p.done}/{p.total}</span>
      <ChevronRight size={16} className="text-ink-3" aria-hidden="true"/>
     </button>)}</div>}

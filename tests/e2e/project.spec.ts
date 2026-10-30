@@ -131,3 +131,18 @@ test('v3 Sources groups PDFs and exposes audited metadata controls',async({page}
  await expect(sources.getByRole('textbox',{name:'Source title'})).toHaveCount(0)
  await page.screenshot({path:'test-results/screens/v3-project-sources.png',fullPage:true})
 })
+
+test('source rename previews and renders mathematical titles instead of raw LaTeX',async({page})=>{
+ await page.goto('./?demo=1#/p/real-analysis?tab=sources')
+ const sources=page.getByRole('region',{name:'Sources'})
+ await sources.getByRole('button',{name:'Edit'}).first().click()
+ const title=sources.getByRole('textbox',{name:'Source title'})
+ await title.fill('Lecture on $\\mathbb{R}^n$')
+ await expect(sources.getByRole('region',{name:'Math preview'}).locator('.katex')).toHaveCount(1)
+ await expect(title).toHaveValue('Lecture on $\\mathbb{R}^n$')
+ await sources.getByRole('button',{name:'Save'}).click()
+ const renamed=sources.locator('strong').filter({hasText:'Lecture on'}).first()
+ await expect(renamed.locator('.katex')).toBeVisible()
+ await expect(renamed).not.toContainText('$\\mathbb')
+ await page.screenshot({path:'test-results/screens/fix-395-source-math.png',fullPage:true})
+})
