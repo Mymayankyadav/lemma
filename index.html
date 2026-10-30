@@ -5,23 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#FAFAF6" />
 <script>
-      /* Resolve graph paper day/night before first paint. */
+      /* Graph paper before first paint, with migration from obsolete worlds. */
       (function(){
-        var colors={"obsidian":"#0D0C11","graph":"#FAFAF6","euclid":"#F1E7D3","euclid-night":"#17130E","scriptorium":"#14110D","astrolabe":"#0B0F17","lamp-compass":"#0D0C11","graph-night":"#13171D"};
-        var value={theme:'system',density:'compact',effects:'calm'};
-        try{var saved=JSON.parse(localStorage.getItem('lemma.ui')||'null');if(saved&&typeof saved==='object')Object.assign(value,saved)}catch(_){}
+        var colors={graph:'#FAFAF6','graph-night':'#13171D'},mode='auto';
+        try{var saved=JSON.parse(localStorage.getItem('lemma.ui')||'null');
+          if(saved&&typeof saved==='object'){
+            if(['auto','day','night'].includes(saved.mode))mode=saved.mode;
+            else if(saved.theme==='graph')mode='day';
+            else if(saved.theme==='graph-night')mode='night';
+          }}catch(_){}
         var query=new URLSearchParams(location.search);
-        ['theme','density','effects'].forEach(function(k){if(query.has(k))value[k]=query.get(k)});
-        if(value.theme!=='system'&&!Object.prototype.hasOwnProperty.call(colors,value.theme))value.theme='system';
-        if(!['compact','cozy','comfortable'].includes(value.density))value.density='compact';
-        if(!['rich','calm'].includes(value.effects))value.effects='calm';
-        var actual=value.theme==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'graph-night':'graph'):value.theme;
+        if(['auto','day','night'].includes(query.get('mode')))mode=query.get('mode');
+        if(query.get('theme')==='graph')mode='day';
+        else if(query.get('theme')==='graph-night')mode='night';
+        else if(query.get('theme')==='system')mode='auto';
+        var actual=mode==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'graph-night':'graph'):mode==='day'?'graph':'graph-night';
         document.documentElement.dataset.theme=actual;
-        document.documentElement.dataset.themePreference=value.theme;
-        document.documentElement.dataset.density=value.density;
-        document.documentElement.dataset.effects=value.effects;
+        document.documentElement.dataset.appearanceMode=mode;
+        document.documentElement.dataset.density='compact';
+        document.documentElement.dataset.effects='calm';
         document.querySelector('meta[name="theme-color"]').setAttribute('content',colors[actual]);
-        try{localStorage.setItem('lemma.ui',JSON.stringify(value))}catch(_){}
+        try{localStorage.setItem('lemma.ui',JSON.stringify({mode:mode}))}catch(_){}
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
