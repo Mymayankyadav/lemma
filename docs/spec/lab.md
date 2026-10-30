@@ -6,9 +6,18 @@ The owner tried the theme lab (UI-3) and asked for more: themes that change how 
 
 Open it locally by wrapping it: `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>` + file + `</body></html>`.
 
+## 0. Owner's choices (30 Oct, 10:42)
+
+- **World: Euclid.** Kept: Obsidian lamp, Graph paper, Euclid. The other nine original worlds are eliminated: do not port them.
+- **New dark worlds** made from those choices, to be judged next (port all five): Euclid at night, Scriptorium, Astrolabe, Lamp and compass, Graph paper at night (§1.1).
+- **Timeline: Ascent** (default). Metro is kept as the alternative. Do not build Number line.
+- **Atlas: Orbits** (default). Branches and Outline are kept.
+- **Text: compact. Motion: lively** (defaults; the owner can still change them).
+- **Day and night** (§1.2): default pairing Euclid by day and Euclid at night by night, off until the owner turns it on.
+
 ## 1. Worlds (replace UI-3 colour themes as the top-level choice)
 
-A world = colour tokens + material + type + background renderer. Port the 12 worlds in the lab's `WORLDS` array exactly (ids, names, token values, radius, border, shadow, blur, fonts, `ds` display scale, `css` background, `draw` renderer):
+A world = colour tokens + material + type + background renderer. Port the worlds the owner kept (§0) from the lab's `WORLDS` array exactly (ids, names, token values, radius, border, shadow, blur, fonts, `ds` display scale, `css` background, `draw` renderer):
 
 | id | Look |
 | --- | --- |
@@ -24,6 +33,22 @@ A world = colour tokens + material + type + background renderer. Port the 12 wor
 | `journal` | a typeset paper: no boxes, rules above sections, small caps, numbered section titles, STIX throughout, running head |
 | `tiles` | frosted glass over Truchet tiles |
 | `nebula` | stars, nebulae and a constellation behind cyan glass |
+
+### 1.1 Dark worlds in the spirit of the owner's picks
+
+| id | Look |
+| --- | --- |
+| `euclid-night` | Euclid's construction in parchment lines on walnut ink; rubric-red accent and red first letters on section titles; Garamond; thin rules, almost no shadow |
+| `scriptorium` | manuscript ruling (double margins, faint lines, prick marks) and Elements I.47 (the Pythagoras windmill) in gold leaf; double-ruled card frames; small-caps headings; outline buttons with an inner rule |
+| `astrolabe` | engraved brass limb with degree scale, almucantars, ecliptic and star pointers on night blue; verdigris accent; round glyph seals; light glass |
+| `lamp-compass` | Obsidian lamp's glass and amber lamp light over Euclid's construction; Garamond titles |
+| `graph-night` | dark grid pad with blue rules, cut-out cards with hard black offset shadows and light borders, coral pencil plot; Newsreader titles; IBM Plex Mono numbers |
+
+Token values, renderers (`euclid`, `ruling`, `astrolabe`, `lampcompass`, `graph`) and material rules are in the lab. All five pass the contrast gate of `themes.md` §2.3.
+
+### 1.2 Day and night pairing
+
+Settings › Appearance › Day and night: a switch "Switch with my phone's light and dark mode", a Day world picker (light worlds plus kept ones) and a Night world picker (dark worlds). When on, the app follows `prefers-color-scheme` live (listen for changes); the ‹ › switcher then changes the slot that is currently showing. Stored in `settings.ui` as `{follow, day, night}`.
 
 Implementation:
 - `src/styles/worlds.ts` holds the array; the generator writes `html[data-world="id"]` blocks (note the `html` prefix: a bare `[data-world]` selector loses to `:root` and the world silently does not apply). Per-world material rules (buttons, bars, cards, headings) are the `[data-world="…"] …` rules in the lab's `<style>`; port them to `src/styles/worlds.css`.
