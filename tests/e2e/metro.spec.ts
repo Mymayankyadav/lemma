@@ -11,7 +11,7 @@ for(const world of ['graph','graph-night'] as const){
   await page.goto('./?demo=1&theme='+world+'#/p/real-analysis')
   const timeline=page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="metro"]')
   await expect(timeline).toBeVisible()
-  await expect(timeline.locator('[data-station-state]')).toHaveCount(12)
+  await expect(timeline.locator('[data-station-state]')).toHaveCount(13)
   await expect(timeline.locator('[data-track-state]').first()).toBeVisible()
   await expect(page.getByLabel('Schedule legend')).toContainText('Early')
   await expect(page.getByLabel('Schedule legend')).toContainText('On time')
