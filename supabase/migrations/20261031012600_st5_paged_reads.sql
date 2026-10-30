@@ -47,7 +47,20 @@ as $$
     'cardsCount', nc.card_count,
     'sessionsCount', sc.session_count,
     'sourcesCount', src.source_count,
-    'sourceTitles', src.titles
+    'sourceTitles', src.titles,
+    -- ST-5/A2: bounded stage groups for Paths' mini Metro, without an N+1
+    -- checkpoint fetch. Missing stages become neutral consecutive groups of 8.
+    'stageProgress', stage_summary.items,
+    'scheduleHeadline', case
+      when cp.total_count = 0 then null
+      when cp.done_count = cp.total_count then 'Complete'
+      when stage_summary.overdue_count > 0
+        then stage_summary.overdue_count::text || ' overdue'
+      when p.target_date < current_date then 'Target passed'
+      when stage_summary.scheduled_count > 0 or p.target_date is not null
+        then 'Dates planned'
+      else null
+    end
   )
   from public.projects p
   left join public.subjects s
@@ -58,6 +71,49 @@ as $$
     from public.checkpoints c
     where c.project_id = p.id and c.user_id = p.user_id
   ) cp
+  cross join lateral (
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'label', coalesce(g.stage, case
+        when g.first_code = g.last_code then g.first_code
+        else g.first_code || '–' || g.last_code end),
+      'firstCode', g.first_code, 'lastCode', g.last_code,
+      'done', g.done_count, 'total', g.total_count,
+      'overdue', g.overdue_count,
+      'schedule', case
+        when g.done_count = g.total_count then 'complete'
+        when g.overdue_count > 0 then 'behind'
+        when g.scheduled_count > 0 then 'dated'
+        else 'unscheduled'
+      end
+    ) order by g.first_position, g.group_key), '[]'::jsonb) as items,
+      coalesce(sum(g.overdue_count), 0)::integer as overdue_count,
+      coalesce(sum(g.scheduled_count), 0)::integer as scheduled_count
+    from (
+      select r.group_key, max(r.stage) as stage,
+        min(r.position) as first_position,
+        (array_agg(r.code order by r.position, r.id))[1] as first_code,
+        (array_agg(r.code order by r.position desc, r.id desc))[1] as last_code,
+        count(*)::integer as total_count,
+        count(*) filter (where r.status = 'demonstrated')::integer as done_count,
+        count(*) filter (where r.due_on is not null)::integer as scheduled_count,
+        count(*) filter (where r.status <> 'demonstrated'
+          and r.due_on < current_date)::integer as overdue_count
+      from (
+        select c.id, c.code, c.position, c.status, c.due_on,
+          nullif(btrim(c.stage), '') as stage,
+          case when nullif(btrim(c.stage), '') is null
+            then 'auto:' || ((row_number() over (
+              partition by (nullif(btrim(c.stage), '') is null)
+              order by c.position, c.id
+            ) - 1) / 8)::text
+            else 'stage:' || btrim(c.stage)
+          end as group_key
+        from public.checkpoints c
+        where c.project_id = p.id and c.user_id = p.user_id
+      ) r
+      group by r.group_key
+    ) g
+  ) stage_summary
   left join lateral (
     select c.id, c.code, c.title, c.current_step, c.steps
     from public.checkpoints c
