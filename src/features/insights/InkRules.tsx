@@ -15,7 +15,8 @@ export function SubjectRules({data,format}: {data:SubjectMinutes[];format:(minut
  const [fullLabel,setFullLabel]=useState<string|null>(null);
  const {top,other,otherMinutes}=summarizeSubjects(data);
  const rows=expanded?[...top,...other]:top;
- const max=Math.max(1,...data.map(row=>row.minutes),otherMinutes);
+ // Compare individual subjects on their own scale; Other is a labelled aggregate.
+ const max=Math.max(1,...top.map(row=>row.minutes));
  return <div role="group" aria-label="Time by subject" className="flex flex-col gap-3">
   {data.length===0?<p className="text-label text-ink-3">No study time recorded yet.</p>:<>
    {rows.map(row=><div key={row.subject.name} className="flex flex-col gap-1">
