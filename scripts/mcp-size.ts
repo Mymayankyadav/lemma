@@ -1,0 +1,17 @@
+import { createMcpHandler } from '../supabase/functions/mcp/deps.ts';
+import { buildServer, TOOL_NAMES } from '../supabase/functions/mcp/server.ts';
+import { parseMcpReply } from '../supabase/functions/mcp/protocol.ts';
+import { INSTRUCTIONS } from '../supabase/functions/mcp/rules.ts';
+const handler=createMcpHandler(()=>buildServer({} as any));
+const options={method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json, text/event-stream'}};
+const init=await handler.fetch(new Request('http://localhost/mcp',{...options,body:JSON.stringify({jsonrpc:'2.0',id:0,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'probe',version:'1'}}})}));
+console.log('init',init.status);
+const session=init.headers.get('Mcp-Session-Id');const headers={...options.headers,...(session?{'Mcp-Session-Id':session}:{})};
+const n=await handler.fetch(new Request('http://localhost/mcp',{...options,headers,body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})}));
+console.log('notified',n.status);
+const res=await handler.fetch(new Request('http://localhost/mcp',{...options,headers,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})}));
+const body=await res.text();console.log('list',res.status,res.headers.get('Content-Type'),body.slice(0,300));
+try{const p=parseMcpReply(body,res.headers.get('Content-Type')||'',1);const list=p.tools;
+console.log('count',list?.length,'missing',TOOL_NAMES.filter(x=>!list.some((t:any)=>t.name===x)));
+console.log('total',JSON.stringify({tools:list}).length,'instructions',INSTRUCTIONS.length);
+for(const t of list)console.log(t.name,JSON.stringify(t).length);}catch(e){console.log('parse error',String(e))}

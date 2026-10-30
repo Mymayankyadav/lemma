@@ -5,33 +5,15 @@ on:
 permissions:
   contents: write
 jobs:
-  shots:
+  probe:
     if: "!contains(github.event.head_commit.message, '[shots]')"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '22', cache: npm }
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx tsx scripts/make-themes.ts
-      - run: npm run build
-      - name: Capture every theme and assemble five-screen sheets
-        env:
-          THEMES: all
-          DENSITY: compact
-          EFFECTS: calm
-        run: |
-          (npx vite preview --port 4173 --strictPort > /tmp/lemma-preview.log 2>&1 &) 
-          sleep 5
-          node scripts/review-shots.mjs
-      - name: Commit contact sheets to the review branch
-        run: |
-          git config user.name "review-bot"
-          git config user.email "review-bot@users.noreply.github.com"
-          git add -f review-shots
-          if ! git diff --cached --quiet; then
-            git commit -m "[shots] all-theme contact sheets"
-            git push
-          fi
+      - uses: denoland/setup-deno@v2
+        with: { deno-version: v2.x }
+      - run: mkdir -p ci-logs && (deno run -A --no-check scripts/mcp-size.ts > ci-logs/size.txt 2>&1; echo "exit $?" >> ci-logs/size.txt) || true
+      - run: |
+          git config user.name review-bot; git config user.email review-bot@users.noreply.github.com
+          git add -f ci-logs && git commit -m "[shots] size" && git push
