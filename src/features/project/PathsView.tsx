@@ -32,7 +32,7 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
   {options.map(p=><Link key={p.id} to={mode==='tab'?'/projects?project='+encodeURIComponent(p.slug):'/p/'+p.slug} aria-current={p.slug===detail.project.slug?'page':undefined}
    className={'inline-flex min-h-11 shrink-0 items-center gap-2 rounded-chip border px-3 text-label font-medium focus-visible:outline-2 focus-visible:outline-amber '+
     (p.slug===detail.project.slug?'border-amber bg-amber-tint text-amber':'border-edge bg-fill-1 text-ink-2')}>
-   <span className="font-math text-headline italic" aria-hidden="true">{p.subject.glyph}</span><Tex source={p.title}/>
+   <span className="font-math text-headline italic" aria-hidden="true">{p.subject.glyph}</span>{p.title}
   </Link>)}
  </nav>;
 }
@@ -63,7 +63,7 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
     <Glyph subject={subject.glyph} hue={subject.hue} size={32}/>
     <div className="min-w-0 flex-1">
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
-     <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal}/></p>
+     <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
     <strong className="shrink-0 font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
    </div>
