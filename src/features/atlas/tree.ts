@@ -205,11 +205,12 @@ export function arcTone(arc:Arc,focus:Focus|null):Tone{
  if(arc.links.some(l=>down(l.fromId)&&focus.down.has(l.toId)))return 'down';
  return 'none';
 }
-export function rowTone(tree:AtlasTree,id:string,focus:Focus|null,selectedId:string|null):Tone{
+/** A row is marked when it is on the chain, or when it is folded and the chain runs inside it. */
+export function rowTone(tree:AtlasTree,id:string,focus:Focus|null,selectedId:string|null,folded=true):Tone{
  if(!focus)return 'none';
  if(id===selectedId)return 'self';
  if(focus.start.has(id))return 'none';
- const inside=[id,...descendants(tree,id)];
+ const inside=folded?[id,...descendants(tree,id)]:[id];
  if(inside.some(x=>focus.up.has(x)))return 'up';
  if(inside.some(x=>focus.down.has(x)))return 'down';
  if(inside.some(x=>focus.related.has(x)))return 'related';

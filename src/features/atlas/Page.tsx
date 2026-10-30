@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {ArrowLeft,ChevronRight,Info,MessageCircle,Search,X} from 'lucide-react';
+import {ArrowLeft,ChevronRight,Info,MessageCircle,RotateCcw,Search,X} from 'lucide-react';
 import {getMode} from '../../data/mode';
 import {useAtlas} from '../../data/hooks';
 import {Tex} from '../../ui/Tex';
@@ -68,7 +68,7 @@ function Row({node,open,tone,match,onToggle,onSelect}:{
  const lead=12+node.depth*INDENT;
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
-  className={'group relative flex items-center border-b border-edge/60 '+(selected?'bg-amber-tint':match?'bg-fill-1':'')}
+  className={'group relative flex items-center shadow-[inset_0_-1px_0_var(--line)] '+(selected?'bg-amber-tint':match?'bg-fill-1':'')}
   style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4}}>
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px bg-edge"
    style={{left:12+d*INDENT+6}}/>)}
@@ -80,7 +80,7 @@ function Row({node,open,tone,match,onToggle,onSelect}:{
   <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
-   <span className={'min-w-0 truncate '+(root?'font-serif text-body-l':parent?'text-body font-semibold':'text-body')}><Tex source={node.name}/></span>
+   <span className={'min-w-0 truncate whitespace-nowrap [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><Tex source={node.name}/></span>
    {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
     {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-1.5 rounded-full bg-[var(--hard)]"/>}
     {node.done}/{node.total}
@@ -146,10 +146,13 @@ export default function Page(){
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
  const recheckCount=useMemo(()=>tree?[...tree.nodes.values()].filter(n=>!n.synthetic&&!n.children.length&&n.status==='revisit').length:0,[tree]);
 
+ const written=useRef<string|null>(null);
  const select=useCallback((id:string|null,openDetails=false)=>{
   setSelectedId(id);setDetails(!!id&&openDetails);
   const next=new URLSearchParams(params),slug=id?tree?.nodes.get(id)?.slug:null;
-  if(slug&&!tree?.nodes.get(id!)?.synthetic)next.set('focus',slug);else next.delete('focus');
+  const real=slug&&!tree?.nodes.get(id!)?.synthetic?slug:null;
+  written.current=real;
+  if(real)next.set('focus',real);else next.delete('focus');
   setParams(next,{replace:true});
  },[params,setParams,tree]);
  const reveal=useCallback((id:string)=>{
@@ -170,15 +173,15 @@ export default function Page(){
   if(selectedId===node.id&&!node.children.length){setDetails(true);return}
   select(selectedId===node.id?null:node.id);
  };
- const handledFocus=useRef(false);
+ const focusSlug=params.get('focus');
  useEffect(()=>{
-  // Honour an incoming ?focus= link once; later selections write the URL themselves.
-  if(!tree||!expanded||handledFocus.current)return;
-  handledFocus.current=true;
-  const slug=params.get('focus');if(!slug)return;
-  const found=[...tree.nodes.values()].find(n=>n.slug===slug);
+  // An incoming ?focus= link (from elsewhere in the app) unfolds to the idea and opens it.
+  // Selections made here record the slug they write, so they never re-trigger this.
+  if(!tree||!expanded||!focusSlug||focusSlug===written.current)return;
+  written.current=focusSlug;
+  const found=[...tree.nodes.values()].find(n=>n.slug===focusSlug);
   if(found){reveal(found.id);setSelectedId(found.id);setDetails(true)}
- },[tree,expanded,params,reveal]);
+ },[tree,expanded,focusSlug,reveal]);
  const depthOf=useMemo(()=>{
   if(!tree||!expanded)return null;
   for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===expanded.size&&[...set].every(x=>expanded.has(x)))return d}
@@ -205,15 +208,15 @@ export default function Page(){
     className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body"/></div>}
    <div className="flex flex-wrap items-center gap-2 pb-2" role="toolbar" aria-label="Atlas view">
     <div role="group" aria-label="Fold to depth" className="flex overflow-hidden rounded-ctl border border-edge">
-     {[1,2,3,99].map(d=><button key={d} type="button" aria-pressed={depthOf===d} onClick={()=>setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}
+     {[1,2,3,99].map(d=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to level '+d} onClick={()=>setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}
       className={'min-h-11 min-w-11 px-2 text-label '+(depthOf===d?'bg-amber-tint text-amber':'text-ink-2')}>{d===99?'All':d}</button>)}
     </div>
     <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
-     className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-3 text-label '+(related?'border-amber-line-2 text-amber':'border-edge text-ink-2')}>
+     className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-amber-line-2 text-amber':'border-edge text-ink-2')}>
      <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
-    {recheckCount>0&&<button type="button" aria-pressed={recheckOnly} onClick={()=>setRecheckOnly(v=>!v)}
-     className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-3 text-label '+(recheckOnly?'border-[var(--hard)] text-[var(--hard)]':'border-edge text-ink-2')}>
-     <span className="size-1.5 rounded-full bg-[var(--hard)]"/>Re-check {recheckCount}</button>}
+    {recheckCount>0&&<button type="button" aria-pressed={recheckOnly} aria-label={'Re-check '+recheckCount} title="Ideas due for a re-check" onClick={()=>setRecheckOnly(v=>!v)}
+     className={'flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-ctl border px-2.5 text-label tabular-nums '+(recheckOnly?'border-[var(--hard)] text-[var(--hard)]':'border-edge text-ink-2')}>
+     <RotateCcw size={14} className="text-[var(--hard)]"/>{recheckCount}</button>}
    </div>
   </header>
   <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24" data-atlas-stage="true">
@@ -221,7 +224,7 @@ export default function Page(){
    :rows.length===0?<p className="px-4 py-10 text-center text-body text-ink-3">{search?'No idea matches “'+search+'”.':'Nothing to re-check.'}</p>
    :<div className="relative" role="tree" aria-label="Ideas and their links">
     {rows.map(row=>{const node=tree.nodes.get(row.id)!;
-     return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId)} match={row.match}
+     return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
     <Wires arcs={arcs} rows={rows.length} focus={focus}/>
    </div>}
