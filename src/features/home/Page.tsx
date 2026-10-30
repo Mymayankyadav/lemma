@@ -174,7 +174,9 @@ export default function Page(){
    body={offline?'Reconnect to resume studying.':'Your study data is safe. Try loading again.'}
    action={{label:'Try again',onClick:()=>{void home.refetch()}}}/>
  </Screen>;
- const projects=home.data.projects;
+ const projects=home.data.projects.filter(p=>!p.system&&p.status!=='archived')
+  .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
+   (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
  return <Screen tabBar className="gap-6">
   <TodayHeader pending={home.data.pendingProposals}/>
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
@@ -210,7 +212,7 @@ export default function Page(){
    <div className="flex flex-col gap-1">
     {projects.slice(0,4).map((p,i)=><ProjectLink key={p.id} project={p} index={i}/>)}
    </div>
-   {projects.length>4&&<Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All projects</Link>}
+   <Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All paths</Link>
    {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
   </section>
   <section aria-label="Last chat" className="flex flex-col gap-3">
