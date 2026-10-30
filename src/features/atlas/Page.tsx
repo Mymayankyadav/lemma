@@ -101,6 +101,7 @@ function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:n
 export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams(),toast=useToast(),reduce=!!useReducedMotion();
  const query=useAtlas(),pin=usePinConcept(),svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior|null>(null);
+ const headerRef=useRef<HTMLElement>(null);
  const [view,setView]=useState<ZoomTransform>({x:0,y:0,k:1});
  const viewRef=useRef(view),userMoved=useRef(false),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),longPressed=useRef<string|null>(null);
  const [positions,setPositions]=useState<Record<string,Point>>({}),[selectedId,setSelectedId]=useState<string|null>(null);
@@ -133,11 +134,19 @@ export default function Page(){
   const target=topicId?group?.topics.find(t=>t.id===topicId):group;
   if(!target)return;
   const bounds=el.getBoundingClientRect();
-  const availableHeight=Math.max(120,bounds.height-340);
-  const k=Math.min(2.2,Math.max(.2,Math.min((bounds.width-48)/(2*target.radius),availableHeight/(2*target.radius))));
+  // A focused ring needs room for its title above and topic labels below.
+  // The fixed filter header and the focus breadcrumb cover the top of the SVG;
+  // centering in the full viewport previously hid the subject title behind them.
+  const headerBottom=(headerRef.current?.getBoundingClientRect().bottom??bounds.top+200)-bounds.top;
+  const visibleTop=Math.max(headerBottom+12,212+56+12);
+  const visibleBottom=Math.max(visibleTop+100,bounds.height-140);
+  const usableHeight=visibleBottom-visibleTop;
+  const k=Math.min(2.2,Math.max(.2,Math.min(
+   (bounds.width-48)/(2*target.radius),(usableHeight-80)/(2*target.radius)
+  )));
   userMoved.current=true;
   zoomRef.current.transform(select(el),zoomIdentity.translate(
-   bounds.width/2-target.x*k,bounds.height*.47-target.y*k
+   bounds.width/2-target.x*k,(visibleTop+visibleBottom)/2-target.y*k
   ).scale(k));
   setOrbitFocus({subjectId,topicId});
  };
@@ -295,7 +304,7 @@ export default function Page(){
   </svg>:!nodeList.length?<div className="absolute inset-0 flex items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty"
    body="Concepts will appear as you develop your study plans."/></div>:null}
   {nodeList.length&&mode!=='orbits'&&<AtlasListViews key={mode} graph={graph} mode={mode} filter={filter} selectedId={selectedId} onSelect={selectNode}/>}
-  <header className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-linear-to-b from-obsidian via-obsidian/85 to-transparent px-5 pb-9 pt-[calc(20px+env(safe-area-inset-top))]">
+  <header ref={headerRef} className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-linear-to-b from-obsidian via-obsidian/85 to-transparent px-5 pb-9 pt-[calc(20px+env(safe-area-inset-top))]">
    <div className="pointer-events-auto flex items-center gap-3">
     <button type="button" onClick={()=>navigate(-1)} aria-label="Back" className="glass flex size-11 items-center justify-center rounded-ctl text-ink-2"><ArrowLeft size={22}/></button>
     <h1 className="min-w-0 flex-1 text-title-s font-semibold tracking-tight">Atlas</h1>
@@ -332,7 +341,7 @@ export default function Page(){
    <button type="button" aria-label="Zoom out" onClick={()=>handleZoom(1/1.35)} className="flex size-11 items-center justify-center rounded-s text-ink"><Minus size={20}/></button>
    <button type="button" aria-label="Fit graph" onClick={handleFit} className="flex size-11 items-center justify-center rounded-s text-amber"><Compass size={19}/></button>
   </div>}
-  <motion.div initial={reduce?false:{y:20,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reduce?.15:.55}}
+  <motion.div data-atlas-details initial={reduce?false:{y:20,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reduce?.15:.55}}
    className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 mx-auto max-w-[650px] rounded-t-sheet border border-edge-2 bg-glass-strong px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-5 shadow-[var(--e-float)] backdrop-blur-[22px]">
    {!selected?<div className="flex min-h-11 items-center justify-center gap-2 text-body text-ink-3">
     <Waypoints size={17} className="text-amber"/>{nodeList.length?'Tap an idea':'Create a plan to grow your Atlas'}

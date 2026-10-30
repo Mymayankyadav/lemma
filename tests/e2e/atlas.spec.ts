@@ -173,3 +173,45 @@ test('Euclid Atlas semantic zoom opens subject and topic breadcrumbs and returns
  await expect(page.getByRole('navigation',{name:'Atlas breadcrumb'})).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
+
+
+for(const world of ['euclid','euclid-night'] as const){
+ test(`Atlas semantic focus keeps labels clear of overlays: ${world}`,async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(`./?demo=1&theme=${world}#/atlas`);
+  const subject=page.locator('[data-atlas-subject-focus]').first();
+  await expect(subject).toBeVisible();
+  await subject.focus();
+  await page.keyboard.press('Enter');
+  const breadcrumb=page.getByRole('navigation',{name:'Atlas breadcrumb'});
+  await expect(breadcrumb).toBeVisible();
+
+  const header=await page.locator('main[aria-label="Atlas"] > header').boundingBox();
+  const crumb=await breadcrumb.boundingBox();
+  const subjectLabel=await subject.locator('text').boundingBox();
+  expect(header).not.toBeNull();
+  expect(crumb).not.toBeNull();
+  expect(subjectLabel).not.toBeNull();
+  expect(subjectLabel!.y).toBeGreaterThan(Math.max(
+   header!.y+header!.height,crumb!.y+crumb!.height
+  )+8);
+  await page.screenshot({path:`test-results/screens/atlas-${world}-subject-focus-clear.png`,fullPage:true});
+
+  const topicButton=breadcrumb.locator('[data-atlas-topic-focus]').first();
+  const topicId=await topicButton.getAttribute('data-atlas-topic-focus');
+  expect(topicId).toBeTruthy();
+  await topicButton.click();
+  await expect(breadcrumb).toContainText('General');
+  const topicLabel=await page.locator('svg [data-atlas-topic-focus]').filter({
+   has:page.locator('text')
+  }).first().locator('text').boundingBox();
+  const details=await page.locator('[data-atlas-details]').boundingBox();
+  const crumbAfter=await breadcrumb.boundingBox();
+  expect(topicLabel).not.toBeNull();
+  expect(details).not.toBeNull();
+  expect(crumbAfter).not.toBeNull();
+  expect(topicLabel!.y).toBeGreaterThan(crumbAfter!.y+crumbAfter!.height+8);
+  expect(topicLabel!.y+topicLabel!.height).toBeLessThan(details!.y-8);
+  await page.screenshot({path:`test-results/screens/atlas-${world}-topic-focus-clear.png`,fullPage:true});
+ });
+}
