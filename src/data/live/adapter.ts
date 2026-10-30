@@ -8,7 +8,7 @@ import { dueToday, studyDayBounds, projectProgress, conceptStatus } from '../../
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError, notImplemented } from '../api'
+import { LemmaError } from '../api'
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
