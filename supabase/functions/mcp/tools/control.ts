@@ -33,6 +33,25 @@ async function idea(c:Context,name:string,subject_id:string){
  const existing=(await all(c,'concepts')).find(matches);
  return existing||insert(c,'concepts',{subject_id,slug:slug(name),name});
 }
+async function ideaLinks(c:Context,row:any,fields:any,replace:boolean){
+ const kinds={prereqs:'prereq',related:'related'} as const;
+ const existing=(await all(c,'concept_links')).filter(x=>x.to_id===row.id);
+ const replacing=new Set(Object.entries(kinds).filter(([field])=>replace&&field in fields).map(([,kind])=>kind));
+ const linked=new Map<string,string>();
+ for(const x of existing){
+  if(replacing.has(x.kind))c.batch!.push({op:'delete',table:'concept_links',where:{from_id:x.from_id,to_id:x.to_id}});
+  else linked.set(x.from_id,x.kind);
+ }
+ for(const [field,kind] of Object.entries(kinds))for(const name of fields[field]||[]){
+  const other=await idea(c,name,row.subject_id);
+  if(other.id===row.id)throw Error('An idea cannot link to itself');
+  const previous=linked.get(other.id);
+  if(previous&&previous!==kind)throw Error('Idea "'+name+'" cannot be both prerequisite and related; clear the previous relationship explicitly');
+  if(previous)continue;
+  linked.set(other.id,kind);
+  c.batch!.push({op:'insert',table:'concept_links',values:{from_id:other.id,to_id:row.id,kind}});
+ }
+}
 export async function setPrompt(c:Context,a:any){const global=a.scope==='all',r=global?await settings(c):await project(c,a.scope),key=global?'master_prompt':'prompt';
  const value=a.mode==='clear'?null:a.mode==='replace'?a.text:[r[key],a.text].filter(Boolean).join('\n');
  if((value?.length||0)>(global?2000:1000))throw Error('Prompt exceeds '+(global?2000:1000)+' characters');
@@ -60,7 +79,7 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
  if(patch.due!==undefined){const due=patch.due==='now'?new Date().toISOString():new Date(patch.due).toISOString();for(const x of (await all(c,'cards')).filter(x=>x.note_id===row.id))enqueue(c,'cards',{id:x.id},{due});delete patch.due;}
  if(patch.after!==undefined){const cps=(await all(c,'checkpoints')).filter(x=>x.project_id===p.id&&x.id!==row.id).sort((a,b)=>a.position-b.position);const i=patch.after===null?-1:cps.findIndex(x=>x.code===patch.after);if(patch.after!==null&&i<0)throw Error('Unknown insertion point');patch.position=i<0?(cps[0]?.position||10)-10:(cps[i].position+(cps[i+1]?.position||cps[i].position+20))/2;delete patch.after;}
  for(const [field,join,left,right] of [['prereqs','checkpoint_prereqs','checkpoint_id','prereq_id'],['ideas','checkpoint_concepts','checkpoint_id','concept_id']] as const){if(table==='checkpoints'&&field in patch){for(const x of (await all(c,join)).filter(x=>x[left]===row.id))c.batch!.push({op:'delete',table:join,where:{[left]:x[left],[right]:x[right]}});const linked=new Set<string>();for(const name of patch[field]){const r=field==='prereqs'?await checkpoint(c,p,name):await idea(c,name,p.subject_id);if(linked.has(r.id))continue;linked.add(r.id);const vals:any={[left]:row.id,[right]:r.id};c.batch!.push({op:'insert',table:join,values:vals});}delete patch[field];}}
- if(table==='concepts')for(const field of ['prereqs','related'])if(field in patch){const kind=field==='prereqs'?'prereq':'related';for(const x of (await all(c,'concept_links')).filter(x=>x.to_id===row.id&&x.kind===kind))c.batch!.push({op:'delete',table:'concept_links',where:{from_id:x.from_id,to_id:x.to_id}});for(const name of patch[field]){const other=await idea(c,name,row.subject_id);c.batch!.push({op:'insert',table:'concept_links',values:{from_id:other.id,to_id:row.id,kind}});}delete patch[field];}
+ if(table==='concepts'){await ideaLinks(c,row,patch,true);delete patch.prereqs;delete patch.related;}
  if(Object.keys(patch).length)enqueue(c,table,pk(table,row),patch);
  return 'edited '+a.target+': '+Object.keys(a.set).join(', ');
 }
@@ -76,7 +95,7 @@ export async function add(c:Context,a:any){const f={...a.fields};const valid=Str
   const extra:any={};for(const k of ['status','current_step','recheck_due','needs_revisit'])if(k in f)extra[k]=f[k];if(Object.keys(extra).length)enqueue(c,'checkpoints',{project_id:p.id,code:f.code},extra);return 'added '+f.code;
  }
  if(a.kind==='subject'){for(const k of Object.keys(f))if(!['name','glyph','hue'].includes(k))throw Error('Valid fields: name, glyph, hue');await insert(c,'subjects',{glyph:f.name?.slice(0,1)||'M',hue:'amber',...f});}
- else if(a.kind==='idea'){const sub=await find(c,'subjects','name',f.subject);const row=await idea(c,f.name,sub.id);if(f.blurb!==undefined)enqueue(c,'concepts',{id:row.id},{blurb:f.blurb});for(const field of ['prereqs','related'])for(const name of f[field]||[]){const other=await idea(c,name,sub.id);c.batch!.push({op:'insert',table:'concept_links',values:{from_id:other.id,to_id:row.id,kind:field==='prereqs'?'prereq':'related'}});}}
+ else if(a.kind==='idea'){const sub=await find(c,'subjects','name',f.subject);const row=await idea(c,f.name,sub.id);if(f.blurb!==undefined)enqueue(c,'concepts',{id:row.id},{blurb:f.blurb});await ideaLinks(c,row,f,false);}
  else if(a.kind==='style'){const key=f.key||slug(f.name).replace(/-/g,'_').slice(0,20);if(!/^[a-z_]{2,20}$/.test(key))throw Error('Style key must contain lowercase letters or underscores');c.batch!.push({op:'insert',table:'styles',values:{user_id:c.userId,key,name:f.name,instructions:f.instructions,icon:'sparkles'}});}
  else if(a.kind==='comment'){const n=await find(c,'notes','no',Number(String(f.card).replace(/^N/i,'')));await insert(c,'card_comments',{note_id:n.id,body:f.body});}
  else if(a.kind==='book'){await insert(c,'sources',{project_id:p.id,title:f.title,short:f.short||slug(f.title).slice(0,20),filename:'attached.pdf',status:'ready',has_text:false,page_count:0});}
