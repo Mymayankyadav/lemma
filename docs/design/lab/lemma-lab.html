@@ -185,6 +185,17 @@ html:not(.lively) .pulse{animation:none}
 [data-world="euclid"] .sec-h h2,[data-world="euclid"] .sheet h3{font-style:italic;font-weight:500}
 [data-world="euclid"] .btn{border-radius:3px;letter-spacing:.02em}
 [data-world="nebula"] .glyph,[data-world="polar"] .glyph{box-shadow:0 0 18px -6px var(--accent)}
+[data-world="euclid-night"] .sec-h h2,[data-world="euclid-night"] .sheet h3,[data-world="lamp-compass"] .sec-h h2,[data-world="astrolabe"] .sec-h h2{font-style:italic;font-weight:500}
+[data-world="euclid-night"] .sec-h h2::first-letter,[data-world="scriptorium"] .sec-h h2::first-letter,[data-world="euclid"] .sec-h h2::first-letter{color:var(--accent)}
+[data-world="scriptorium"] .sec-h h2{font-variant:small-caps;letter-spacing:.06em;font-weight:500;font-size:calc(var(--s) * 17px)}
+[data-world="scriptorium"] .btn{border-radius:2px;background:transparent;color:var(--accent);border:1px solid var(--accent);box-shadow:inset 0 0 0 2px var(--bg),inset 0 0 0 3px color-mix(in srgb,var(--accent) 40%,transparent);font-variant:small-caps;letter-spacing:.05em}
+[data-world="scriptorium"] .glyph{border-radius:2px;border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+[data-world="astrolabe"] .glyph{border-radius:50%;border-color:rgba(184,148,86,.5)}
+[data-world="astrolabe"] .bar{height:4px}
+[data-world="graph-night"] .btn{border:1.5px solid var(--ink);box-shadow:2px 2px 0 #05070A;border-radius:4px}
+[data-world="graph-night"] .bar span{background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.3) 0 2px,transparent 2px 5px)}
+[data-world="graph-night"] .sec-h h2{font-style:italic}
+.newb{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:99px;background:var(--accent);color:var(--on-accent)}
 [data-world="contour"] .card{border-left:0}
 main{counter-reset:sec}
 </style>
@@ -291,7 +302,28 @@ const WORLDS = [
   { id:'nebula', name:'Nebula', mode:'dark', note:'Constellations and nebulae behind cyan glass',
     t:{bg:'#070814',card:'rgba(16,18,38,.55)',card2:'rgba(200,220,255,.05)',line:'rgba(200,220,255,.11)',ink:'#EAF0FF',ink2:'#B8C2DE',ink3:'#8E99B8',accent:'#62CBE6',on:'#04121A',warn:'#FFB86B',bad:'#FF7A8A',good:'#7FE0B0',track:'rgba(200,220,255,.12)',tab:'rgba(14,16,34,.7)'},
     radius:18, border:'1px solid rgba(98,203,230,.16)', shadow:'0 20px 44px -28px rgba(0,0,0,.95)', blur:'blur(18px) saturate(150%)',
-    f:{ui:F.sans,display:F.sans,num:F.sans}, draw:'nebula' }
+    f:{ui:F.sans,display:F.sans,num:F.sans}, draw:'nebula' },
+  { id:'euclid-night', name:'Euclid at night', mode:'dark', isNew:true, note:'Walnut ink, parchment lines, rubric red, Garamond',
+    t:{bg:'#17130E',card:'#211B14',card2:'rgba(237,227,207,.045)',line:'rgba(237,227,207,.14)',ink:'#EDE3CF',ink2:'#CBBDA2',ink3:'#A69780',accent:'#E8705F',on:'#1A0F0B',warn:'#E9A55B',bad:'#F07A7A',good:'#9CC48A',track:'rgba(237,227,207,.10)',tab:'#1E1812'},
+    radius:6, border:'1px solid rgba(237,227,207,.22)', shadow:'0 1px 0 rgba(0,0,0,.4)', blur:'none',
+    f:{ui:F.sans,display:F.gara,num:F.gara}, ds:1.18, draw:'euclid' },
+  { id:'scriptorium', name:'Scriptorium', mode:'dark', isNew:true, note:'Gold leaf, manuscript ruling, Elements I.47, double-ruled frames',
+    t:{bg:'#14110D',card:'#1C1813',card2:'rgba(207,174,91,.05)',line:'rgba(207,174,91,.18)',ink:'#EFE6D2',ink2:'#CDBFA4',ink3:'#A89A80',accent:'#CFAE5B',on:'#1A1408',warn:'#E5975A',bad:'#EA7A6E',good:'#A8C68A',track:'rgba(239,230,210,.10)',tab:'#1A1612'},
+    radius:2, border:'1px solid rgba(207,174,91,.45)', shadow:'inset 0 0 0 3px #1C1813, inset 0 0 0 4px rgba(207,174,91,.26)', blur:'none',
+    f:{ui:F.sans,display:F.gara,num:F.gara}, ds:1.2, draw:'ruling' },
+  { id:'astrolabe', name:'Astrolabe', mode:'dark', isNew:true, note:'Engraved brass rings and verdigris on night blue',
+    t:{bg:'#0B0F17',card:'rgba(20,27,40,.66)',card2:'rgba(200,220,255,.05)',line:'rgba(184,148,86,.22)',ink:'#E9E4D8',ink2:'#C1BBAE',ink3:'#9C978C',accent:'#62C2B2',on:'#06161A',warn:'#E8B06A',bad:'#F08080',good:'#8FD49E',track:'rgba(233,228,216,.10)',tab:'rgba(14,19,30,.8)'},
+    radius:14, border:'1px solid rgba(184,148,86,.38)', shadow:'0 18px 40px -26px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.05)', blur:'blur(10px) saturate(130%)',
+    f:{ui:F.sans,display:F.gara,num:F.gara}, ds:1.16, draw:'astrolabe' },
+  { id:'lamp-compass', name:'Lamp and compass', mode:'dark', isNew:true, note:'Obsidian glass and amber lamp over Euclid constructions',
+    t:{bg:'#0D0C11',card:'rgba(27,26,34,.72)',card2:'rgba(255,255,255,.04)',line:'rgba(255,255,255,.08)',ink:'#F4F0E6',ink2:'#B3AEBB',ink3:'#8C8796',accent:'#F7B538',on:'#1E1405',warn:'#F39A4B',bad:'#F2545B',good:'#4FC88E',track:'rgba(255,255,255,.10)',tab:'rgba(22,21,28,.82)'},
+    radius:14, border:'1px solid rgba(255,255,255,.08)', shadow:'0 18px 40px -24px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.05)', blur:'blur(16px) saturate(140%)',
+    f:{ui:F.sans,display:F.gara,num:F.sans}, ds:1.16, draw:'lampcompass' },
+  { id:'graph-night', name:'Graph paper at night', mode:'dark', isNew:true, note:'Dark grid pad, cut-out cards, coral pencil',
+    t:{bg:'#13171D',card:'#1B2129',card2:'rgba(200,215,235,.04)',line:'rgba(200,215,235,.16)',ink:'#E6ECF4',ink2:'#B7C2D0',ink3:'#93A0B2',accent:'#FF7B6B',on:'#1B0A07',warn:'#F2B05E',bad:'#FF8A8A',good:'#86D39C',track:'rgba(230,236,244,.10)',tab:'#1B2129'},
+    radius:6, border:'1.5px solid #C9D3E0', shadow:'3px 3px 0 #05070A', blur:'none',
+    f:{ui:F.sans,display:F.news,num:F.mono}, ds:1.08, draw:'graph',
+    css:'linear-gradient(rgba(120,160,220,.15) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(90deg,rgba(120,160,220,.15) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(rgba(120,160,220,.06) 1px,transparent 1px) 0 0/12px 12px,linear-gradient(90deg,rgba(120,160,220,.06) 1px,transparent 1px) 0 0/12px 12px' }
 ];
 const WMAP = Object.fromEntries(WORLDS.map(w => [w.id, w]));
 (function injectWorlds(){
@@ -392,10 +424,12 @@ const ideaDone = st => st === 'done' || st === 'revisit';
 /* ---------------- state ---------------- */
 const KEY = 'lemma-lab-v1';
 const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-const DEFAULT = { world: prefersDark ? 'obsidian' : 'graph', keep:{}, fav:{}, tl:'line', tlKeep:{line:true,metro:true,ascent:true}, at:'orbits', atKeep:{orbits:true,branches:true,outline:true}, density:'compact', motion:'calm', proj:'algebra-1', open:{}, filter:'all' };
+const DEFAULT = { follow:false, day:'euclid', night:'euclid-night', lf:'all', world: prefersDark ? 'obsidian' : 'graph', keep:{}, fav:{}, tl:'line', tlKeep:{line:true,metro:true,ascent:true}, at:'orbits', atKeep:{orbits:true,branches:true,outline:true}, density:'compact', motion:'calm', proj:'algebra-1', open:{}, filter:'all' };
 let S = (() => { try { const v = JSON.parse(localStorage.getItem(KEY)); return v ? Object.assign({}, DEFAULT, v) : { ...DEFAULT }; } catch (e) { return { ...DEFAULT }; } })();
 WORLDS.forEach(w => { if (S.keep[w.id] === undefined) S.keep[w.id] = true; });
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+const MQ = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : { matches:false, addEventListener(){} };
+function cur(){ return S.follow ? (MQ.matches ? S.night : S.day) : S.world; }
 function kept(){ const k = WORLDS.filter(w => S.keep[w.id]); return k.length ? k : WORLDS; }
 
 /* ---------------- backgrounds ---------------- */
@@ -495,6 +529,34 @@ const BG = {
     for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; ctx.beginPath(); ctx.arc(fx + fr * Math.cos(a), fy + fr * Math.sin(a), fr, 0, 7); ctx.stroke(); }
     ctx.beginPath(); ctx.arc(fx, fy, fr, 0, 7); ctx.stroke();
   },
+  ruling(ctx, w, h, t){
+    ctx.strokeStyle = rgba(t.accent, .07); ctx.lineWidth = 1;
+    for (const x of [22, 28, w - 28, w - 22]) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    ctx.strokeStyle = rgba(t.ink, .035); for (let y = 40; y < h; y += 28) { ctx.beginPath(); ctx.moveTo(28, y); ctx.lineTo(w - 28, y); ctx.stroke(); ctx.fillStyle = rgba(t.accent, .18); ctx.beginPath(); ctx.arc(12, y, .9, 0, 7); ctx.fill(); }
+    const u = Math.min(w, h) * .075, ax = w * .58, ay = h * .62; const A = [ax, ay], B = [ax + 4 * u, ay], C = [ax, ay - 3 * u];
+    const poly = (pts, a) => { ctx.strokeStyle = rgba(t.accent, a); ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); };
+    ctx.lineWidth = 1.2; poly([A, B, C], .3);
+    poly([A, B, [B[0], B[1] + 4 * u], [A[0], A[1] + 4 * u]], .16); poly([A, C, [C[0] - 3 * u, C[1]], [A[0] - 3 * u, A[1]]], .16); poly([B, C, [C[0] + 3 * u, C[1] - 4 * u], [B[0] + 3 * u, B[1] - 4 * u]], .16);
+    const fx = ax + 1.44 * u, fy = ay - 1.92 * u; ctx.strokeStyle = rgba(t.ink, .1); ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(fx + 3 * u * .6 * 1.5, fy - 4 * u * .6 * 1.5); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = rgba(t.ink, .32); ctx.font = 'italic 16px ' + F.gara; ctx.fillText('A', A[0] - 14, A[1] + 16); ctx.fillText('B', B[0] + 6, B[1] + 16); ctx.fillText('Γ', C[0] - 16, C[1] - 4);
+    ctx.font = 'italic 14px ' + F.gara; ctx.fillStyle = rgba(t.accent, .3); ctx.fillText('Elements I.47', 40, h - 24);
+  },
+  astrolabe(ctx, w, h, t){
+    const cx = w * .64, cy = h * .4, R = Math.min(w, h) * .52, brass = '#B89456';
+    ctx.strokeStyle = rgba(brass, .2); ctx.lineWidth = 1.2; [1, .92, .78, .5, .3].forEach(f => { ctx.beginPath(); ctx.arc(cx, cy, R * f, 0, 7); ctx.stroke(); });
+    for (let d = 0; d < 360; d += 5) { const a = d * Math.PI / 180, l = d % 15 === 0 ? .055 : .03; ctx.strokeStyle = rgba(brass, d % 15 === 0 ? .3 : .18); ctx.beginPath(); ctx.moveTo(cx + R * Math.cos(a), cy + R * Math.sin(a)); ctx.lineTo(cx + R * (1 - l) * Math.cos(a), cy + R * (1 - l) * Math.sin(a)); ctx.stroke(); }
+    ctx.fillStyle = rgba(brass, .32); ctx.font = '12px ' + F.gara; ctx.textAlign = 'center';
+    for (let d = 0; d < 360; d += 30) { const a = (d - 90) * Math.PI / 180; ctx.fillText(String(d), cx + R * .87 * Math.cos(a), cy + R * .87 * Math.sin(a) + 4); }
+    ctx.textAlign = 'start';
+    ctx.strokeStyle = rgba(brass, .09); for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.arc(cx, cy + R * .06 * i, R * (.7 - i * .08), 0, 7); ctx.stroke(); }
+    ctx.strokeStyle = rgba(t.accent, .22); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(cx, cy - R * .18, R * .6, 0, 7); ctx.stroke();
+    [[.3, 1.1], [1.9, .9], [3.4, 1.15], [4.6, .95], [5.6, 1.2]].forEach(([a, f]) => { const x = cx + R * .55 * f * Math.cos(a), y = cy + R * .55 * f * Math.sin(a); ctx.fillStyle = rgba(t.accent, .35); ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 3, y + 3); ctx.lineTo(x - 3, y + 3); ctx.closePath(); ctx.fill(); });
+    ctx.strokeStyle = rgba(brass, .14); ctx.beginPath(); ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+  },
+  lampcompass(ctx, w, h, t){
+    const g = ctx.createRadialGradient(w * .08, -h * .06, 0, w * .08, -h * .06, Math.max(w, h) * .85); g.addColorStop(0, rgba(t.accent, .14)); g.addColorStop(1, rgba(t.accent, 0)); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    BG.euclid(ctx, w, h, t);
+  },
   journal(ctx, w, h, t){
     ctx.fillStyle = rgba(t.ink, .5); ctx.font = '12px ' + F.stix;
     ctx.fillText('LEMMA — A RECORD OF STUDY', 18, 22); const s = 'Vol. 1, No. 30'; ctx.fillText(s, w - 18 - ctx.measureText(s).width, 22);
@@ -523,7 +585,7 @@ function paintBG(canvas, world, cw, ch){
   const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, cw, ch);
   if (world.draw && BG[world.draw]) BG[world.draw](ctx, cw, ch, world.t);
 }
-function drawPageBG(){ const c = $('#bg'); paintBG(c, WMAP[S.world], c.clientWidth, c.clientHeight); }
+function drawPageBG(){ const c = $('#bg'); paintBG(c, WMAP[cur()], c.clientWidth, c.clientHeight); }
 
 /* ---------------- timelines ---------------- */
 function timelineSVG(p, variant, W, H, mini){
@@ -674,17 +736,23 @@ function outlineHTML(){
 }
 function viewLab(){
   const k = WORLDS.filter(w => S.keep[w.id]).length, favs = WORLDS.filter(w => S.fav[w.id]).map(w => w.name);
-  const cards = WORLDS.map(w => `<div class="wcard ${w.id === S.world ? 'cur' : ''} ${S.keep[w.id] ? '' : 'out'}" data-world="${w.id}">
+  const lf = S.lf || 'all'; const shown = WORLDS.filter(w => lf === 'all' || (lf === 'dark' && w.mode === 'dark') || (lf === 'light' && w.mode === 'light') || (lf === 'kept' && S.keep[w.id]) || (lf === 'new' && w.isNew));
+  const cards = shown.map(w => `<div class="wcard ${w.id === cur() ? 'cur' : ''} ${S.keep[w.id] ? '' : 'out'}" data-world="${w.id}">
     <button data-act="world" data-id="${w.id}" style="position:relative;display:block;text-align:left" aria-label="Use ${esc(w.name)}"><span class="bgc"></span><canvas data-prev="${w.id}" width="10" height="10"></canvas>
       <span class="sample"><span class="card" style="display:block"><b>Group actions</b><span style="display:flex;align-items:center;gap:6px;margin-top:5px"><span class="bar" style="flex:1;height:4px"><span style="width:62%;background:var(--accent)"></span></span><span style="font-family:var(--font-num);font-size:10px;color:var(--ink-2)">2/4</span></span></span></span></button>
-    <div class="meta"><span class="nm">${esc(w.name)}</span><label class="keep" style="flex:1"><input type="checkbox" data-act="keep" data-id="${w.id}" ${S.keep[w.id] ? 'checked' : ''}>Keep</label><button class="star" data-act="fav" data-id="${w.id}" aria-pressed="${!!S.fav[w.id]}" aria-label="Favourite ${esc(w.name)}">${S.fav[w.id] ? ICON.star : ICON.starO}</button></div></div>`).join('');
+    <div class="meta"><span class="nm">${w.isNew ? '<span class="newb">NEW</span> ' : ''}${esc(w.name)}</span><label class="keep" style="flex:1"><input type="checkbox" data-act="keep" data-id="${w.id}" ${S.keep[w.id] ? 'checked' : ''}>Keep</label><button class="star" data-act="fav" data-id="${w.id}" aria-pressed="${!!S.fav[w.id]}" aria-label="Favourite ${esc(w.name)}">${S.fav[w.id] ? ICON.star : ICON.starO}</button></div></div>`).join('');
   const tl = [['line', 'Number line', 'Ticks on an axis; stages as labels'], ['metro', 'Metro', 'Stations and coloured stage lines'], ['ascent', 'Ascent', 'Difficulty as elevation; you climb']].map(([id, n, d]) => `<div class="opt"><input type="radio" name="tl" id="tl-${id}" data-act="usetl" data-k="${id}" ${S.tl === id ? 'checked' : ''} style="accent-color:var(--accent);width:18px;height:18px;margin:0"><label class="pv" for="tl-${id}"><b>${n}</b><div class="sub">${d}</div><div style="margin-top:4px">${timelineSVG(PMAP['algebra-1'], id, 240, 30, true)}</div></label><label class="keep"><input type="checkbox" data-act="tlkeep" data-k="${id}" ${S.tlKeep[id] ? 'checked' : ''}>Keep</label></div>`).join('');
   const at = [['orbits', 'Orbits', 'Subjects, topics and ideas as nested orbits; zoom to reveal'], ['branches', 'Branches', 'Collapsible tree you pan like a map'], ['outline', 'Outline', 'Indented list with progress bars']].map(([id, n, d]) => `<div class="opt"><input type="radio" name="at" id="at-${id}" data-act="useat" data-k="${id}" ${S.at === id ? 'checked' : ''} style="accent-color:var(--accent);width:18px;height:18px;margin:0"><label class="pv" for="at-${id}"><b>${n}</b><div class="sub">${d}</div></label><label class="keep"><input type="checkbox" data-act="atkeep" data-k="${id}" ${S.atKeep[id] ? 'checked' : ''}>Keep</label></div>`).join('');
   const segBtns = (key, opts) => opts.map(([v, n]) => `<button aria-pressed="${S[key] === v}" data-act="set" data-key="${key}" data-v="${v}">${n}</button>`).join('');
   const choice = choiceText();
   return `<section class="sec" style="margin-top:0"><div class="sec-h"><h2>Worlds</h2><small>${k} of ${WORLDS.length} kept</small></div>
     <p class="sub" style="margin:0">Each world changes colour, background, materials and type. Untick Keep to drop one from the ‹ › switcher; star your favourites.</p>
+    <div class="chips">${[['all', 'All'], ['dark', 'Dark'], ['light', 'Light'], ['kept', 'Kept'], ['new', 'New']].map(([k2, n]) => `<button class="chip ${lf === k2 ? 'on' : ''}" data-act="lf" data-k="${k2}">${n}</button>`).join('')}</div>
     <div class="wgrid">${cards}</div></section>
+  <section class="sec"><div class="sec-h"><h2>Day and night</h2><small>${S.follow ? (MQ.matches ? 'night now' : 'day now') : 'off'}</small></div>
+    <div class="card stack" style="gap:10px"><label class="keep" style="font-size:13px;color:var(--ink)"><input type="checkbox" data-act="follow" ${S.follow ? 'checked' : ''}>Switch with my phone's light and dark mode</label>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><label class="sub" for="dayw">Day</label><select id="dayw" data-act="dayw" class="chip" style="flex:1;min-width:0">${WORLDS.filter(w => w.mode === 'light' || S.keep[w.id]).map(w => `<option value="${w.id}" ${S.day === w.id ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select>
+    <label class="sub" for="nightw">Night</label><select id="nightw" data-act="nightw" class="chip" style="flex:1;min-width:0">${WORLDS.filter(w => w.mode === 'dark').map(w => `<option value="${w.id}" ${S.night === w.id ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select></div></div></section>
   <section class="sec"><div class="sec-h"><h2>Timeline style</h2><small>Today and Paths</small></div><div class="card">${tl}</div></section>
   <section class="sec"><div class="sec-h"><h2>Atlas style</h2></div><div class="card">${at}</div></section>
   <section class="sec"><div class="sec-h"><h2>Text size</h2></div><div class="seg">${segBtns('density', [['compact', 'Compact'], ['cozy', 'Cozy'], ['comfortable', 'Comfortable']])}</div></section>
@@ -693,9 +761,10 @@ function viewLab(){
     <div class="card stack" style="gap:10px"><p class="choice" id="choice">${esc(choice)}</p><div class="row" style="gap:8px"><button class="btn" data-act="copy" data-text="${esc(choice)}">${ICON.copy}Copy for Claude</button><button class="btn ghost" data-act="reset">Reset</button></div></div></section>`;
 }
 function choiceText(){
-  const w = WMAP[S.world], keptN = WORLDS.filter(x => S.keep[x.id]).map(x => x.name), fav = WORLDS.filter(x => S.fav[x.id]).map(x => x.name);
+  const w = WMAP[cur()], keptN = WORLDS.filter(x => S.keep[x.id]).map(x => x.name), fav = WORLDS.filter(x => S.fav[x.id]).map(x => x.name);
   const tlN = { line:'Number line', metro:'Metro', ascent:'Ascent' }, atN = { orbits:'Orbits', branches:'Branches', outline:'Outline' };
-  return `Lemma design choice. World: ${w.name}. Starred: ${fav.join(', ') || 'none'}. Kept: ${keptN.join(', ')}. Timeline: ${tlN[S.tl]} (kept: ${Object.keys(tlN).filter(k => S.tlKeep[k]).map(k => tlN[k]).join(', ')}). Atlas: ${atN[S.at]} (kept: ${Object.keys(atN).filter(k => S.atKeep[k]).map(k => atN[k]).join(', ')}). Text: ${S.density}. Motion: ${S.motion}.`;
+  const pair = S.follow ? ` Day and night: ${WMAP[S.day].name} by day, ${WMAP[S.night].name} by night.` : '';
+  return `Lemma design choice. World: ${w.name}.${pair} Starred: ${fav.join(', ') || 'none'}. Kept: ${keptN.join(', ')}. Timeline: ${tlN[S.tl]} (kept: ${Object.keys(tlN).filter(k => S.tlKeep[k]).map(k => tlN[k]).join(', ')}). Atlas: ${atN[S.at]} (kept: ${Object.keys(atN).filter(k => S.atKeep[k]).map(k => atN[k]).join(', ')}). Text: ${S.density}. Motion: ${S.motion}.`;
 }
 
 /* ---------------- atlas map engine ---------------- */
@@ -872,7 +941,7 @@ function tapMap(target){
 /* ---------------- app shell ---------------- */
 function applyWorld(){
   const html = document.documentElement; html.dataset.world = S.world; html.dataset.density = S.density; html.classList.toggle('lively', S.motion === 'lively');
-  const w = WMAP[S.world]; $('#wname').textContent = w.name; let mt = $('meta[name="theme-color"]'); if (!mt) { mt = document.createElement('meta'); mt.name = 'theme-color'; document.head.appendChild(mt); } mt.content = w.t.bg;
+  const w = WMAP[cur()]; html.dataset.world = w.id; $('#wname').textContent = w.name; let mt = $('meta[name="theme-color"]'); if (!mt) { mt = document.createElement('meta'); mt.name = 'theme-color'; document.head.appendChild(mt); } mt.content = w.t.bg;
   drawPageBG();
 }
 function tabFromHash(){ const h = (location.hash || '#home').slice(1); return ['home', 'path', 'atlas', 'lab'].includes(h) ? h : 'home'; }
@@ -884,11 +953,12 @@ function render(){
   if (tab === 'atlas') mountAtlas(); else MAP = null;
   if (tab === 'lab') v.querySelectorAll('canvas[data-prev]').forEach(c => paintBG(c, WMAP[c.dataset.prev], c.clientWidth, c.clientHeight));
 }
-function setWorld(id){ S.world = id; save(); applyWorld(); render(); }
+function setWorld(id){ if (S.follow) { if (MQ.matches) S.night = id; else S.day = id; } else S.world = id; save(); applyWorld(); render(); }
+MQ.addEventListener && MQ.addEventListener('change', () => { if (S.follow) { applyWorld(); render(); } });
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return; const a = el.dataset.act;
   if (el.tagName === 'INPUT') return;
-  if (a === 'wprev' || a === 'wnext') { const k = kept(); let i = k.findIndex(w => w.id === S.world); i = (i + (a === 'wnext' ? 1 : -1) + k.length) % k.length; if (i < 0) i = 0; setWorld(k[i].id); toast(k[i].name + ': ' + k[i].note); }
+  if (a === 'wprev' || a === 'wnext') { const k = kept(); let i = k.findIndex(w => w.id === cur()); i = (i + (a === 'wnext' ? 1 : -1) + k.length) % k.length; if (i < 0) i = 0; setWorld(k[i].id); toast(k[i].name + ': ' + k[i].note); }
   else if (a === 'tolab') location.hash = 'lab';
   else if (a === 'world') setWorld(el.dataset.id);
   else if (a === 'fav') { S.fav[el.dataset.id] = !S.fav[el.dataset.id]; save(); render(); }
@@ -907,6 +977,7 @@ document.addEventListener('click', e => {
   else if (a === 'zfit') { if (MAP) { MAP.focus = []; MAP.sel = null; const b = MAP.bounds; camTo({ x:(b.x0 + b.x1) / 2, y:(b.y0 + b.y1) / 2, k:MAP.fitK }); } }
   else if (a === 'crumb') { const i = +el.dataset.i; focusNode(i < 0 ? null : MAP.focus[i]); }
   else if (a === 'set') { S[el.dataset.key] = el.dataset.v; save(); applyWorld(); render(); }
+  else if (a === 'lf') { S.lf = el.dataset.k; save(); render(); }
   else if (a === 'reset') { S = { ...DEFAULT, keep:{}, fav:{}, open:{}, tlKeep:{ line:true, metro:true, ascent:true }, atKeep:{ orbits:true, branches:true, outline:true } }; WORLDS.forEach(w => S.keep[w.id] = true); save(); applyWorld(); render(); toast('Lab reset'); }
 });
 document.addEventListener('change', e => {
@@ -915,6 +986,9 @@ document.addEventListener('change', e => {
   else if (a === 'tlkeep') { S.tlKeep[el.dataset.k] = el.checked; save(); render(); }
   else if (a === 'atkeep') { S.atKeep[el.dataset.k] = el.checked; save(); render(); }
   else if (a === 'usetl') { S.tl = el.dataset.k; save(); render(); }
+  else if (a === 'follow') { S.follow = el.checked; save(); applyWorld(); render(); }
+  else if (a === 'dayw') { S.day = el.value; save(); applyWorld(); render(); }
+  else if (a === 'nightw') { S.night = el.value; save(); applyWorld(); render(); }
   else if (a === 'useat') { S.at = el.dataset.k; save(); render(); }
 });
 $('#scrim').addEventListener('click', closeSheet);
