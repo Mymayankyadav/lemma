@@ -168,7 +168,8 @@ begin
     insert into public.checkpoint_sources(user_id,checkpoint_id,source_id,pages)
       values(new.user_id,new.id,new.source_id,new.pages)
     on conflict (checkpoint_id,source_id) do update
-      set pages=excluded.pages;
+      set pages=excluded.pages
+      where public.checkpoint_sources.pages is distinct from excluded.pages;
   end if;
   return new;
 end $;
