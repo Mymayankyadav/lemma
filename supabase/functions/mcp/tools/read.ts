@@ -5,6 +5,8 @@ import { day, ui, display } from '../derive.ts';
 import { cut, capped, date, pageRange, number } from '../text.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
+  if(a.what==='prompt'){const st=await settings(c),p=a.project?await project(c,a.project):null;return ['OWNER',st.master_prompt||'(no master prompt)',p?.prompt||''].filter(Boolean).join('\n');}
+  if(a.what==='diagnostics'){const p=await project(c,a.project);return (await all(c,'diagnostics')).filter(x=>x.project_id===p.id).map(x=>'D'+x.no+' '+x.kind+' '+x.topic+' ('+x.times+'x, '+x.status+'): '+x.evidence).join('\n')||'No diagnostics.';}
   if(a.what==='projects')return packet(c,{});
   const p=await project(c,a.project);
   const limit=Math.min(a.limit||20,50), pcs=await checkpoints(c,p);

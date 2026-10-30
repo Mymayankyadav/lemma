@@ -37,7 +37,7 @@ async function list(c:Context,s:any):Promise<string>{
   const n=await counts(c,s);lines.push('CARDS '+n.due+' due; '+n.pending+' proposals waiting');
   return capped(lines.join('\n'),2400);
 }
-export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?:boolean}):Promise<string>{
+async function basePacket(c:Context,args:{project?:string;mix?:boolean;brief?:boolean}):Promise<string>{
   const s=await settings(c);
   if(!args.project&&!args.mix)return list(c,s);
   if(args.mix){
@@ -80,4 +80,14 @@ export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?
   if(result.length>2400){const i=lines.findIndex(x=>x.startsWith('LAST '));if(i>=0)lines[i]=cut(lines[i],180);result=lines.join('\n')}
   if(result.length>2400){for(const tag of ['FIX ','WARM ','GOAL ']){const i=lines.findIndex(x=>x.startsWith(tag));if(i>=0)lines[i]=cut(lines[i],tag==='GOAL '?90:90);result=lines.join('\n');if(result.length<=2400)break}}
   return capped(result,2400);
+}
+export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?:boolean}):Promise<string>{
+ const st=await settings(c);const p=args.project?await project(c,args.project):null;
+ const owner=(st.master_prompt||p?.prompt)?['OWNER (follow first; overrides STYLE and RULES)',st.master_prompt,p?.prompt].filter(Boolean).join('\n'):'';
+ const diagnostics=await all(c,'diagnostics');const sources=await all(c,'sources');
+ const active=diagnostics.filter(x=>(!p||x.project_id===p.id)&&['open','confirmed'].includes(x.status)).sort((a,b)=>b.severity-a.severity||b.times-a.times).slice(0,3);
+ const adapt=active.map(x=>'D'+x.no+' '+x.kind+' '+x.topic+' ('+x.times+'x, '+x.status+')');
+ const fresh=sources.filter(x=>(!p||x.project_id===p.id)&&!x.plan_checked_at).map(x=>'NEW '+x.short);
+ const {ADAPT}=await import('./rules.ts');
+ let body=await basePacket(c,args);const extra=[...(adapt.length||fresh.length?['ADAPT '+cut([...adapt,...fresh].join('; '),300)]:[]),args.brief?'':ADAPT].filter(Boolean).join('\n');body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';return [owner,capped(body+(line?'\n'+line:''),budget)].filter(Boolean).join('\n');
 }

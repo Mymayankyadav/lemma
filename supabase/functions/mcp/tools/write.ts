@@ -20,9 +20,8 @@ export async function startSession(c:Context,a:any):Promise<string>{
   if(found)return 'continuing S'+found.number;
   for(const x of data||[])if(now-new Date(x.last_activity_at).getTime()>3*3600000)await update(c,'sessions',x.id,{state:'ended',ended_at:new Date().toISOString(),summary:'Interrupted',goal_met:null});
   // Optimistic compare-and-set avoids assigning the same project-local number twice.
-  const {data:changed,error:casError}=await c.db.from('projects').update({next_session_number:p.next_session_number+1}).eq('user_id',c.userId).eq('id',p.id).eq('next_session_number',p.next_session_number).select('id');
-  if(casError)throw new Error(casError.message);
-  if(!changed?.length)throw new Error('Another session started. Retry start_session.');
+  if(c.batch)c.batch.push({op:'update',table:'projects',where:{id:p.id},expected:{next_session_number:p.next_session_number},values:{next_session_number:p.next_session_number+1}});
+  else await update(c,'projects',p.id,{next_session_number:p.next_session_number+1});
   const s=await insert(c,'sessions',{project_id:p.id,number:p.next_session_number,goal:a.goal,style:a.style||p.style,checkpoint_id:cp?.id||null,client:a.client});
   if(cp && cp.status==='not_started')await update(c,'checkpoints',cp.id,{status:'in_progress',current_step:1});
   return 'started S'+s.number+(cp?' on '+cp.code+' (step '+(cp.current_step||1)+'/'+cp.steps.length+')':'');
@@ -33,7 +32,7 @@ export async function saveProgress(c:Context,a:any):Promise<string>{
   // DB-1 CONTRACT #220 provides an owner-, project-, session-, and checkpoint-scoped
   // Postgres transaction. Never split events and checkpoint updates across REST calls.
   const payload:Record<string,unknown>={};
-  for(const key of ['step','events','misconception','resolved','next_question']){
+  for(const key of ['step','events','misconception','resolved','next_question','diagnostics']){
     if(a[key]!==undefined)payload[key]=a[key];
   }
   const result=await rpc(c,'save_progress',{
@@ -105,7 +104,7 @@ export async function proposePlanChange(c:Context,a:any):Promise<string>{
   if(!(await checkpoints(c,p)).length)throw new Error('No plan yet; use propose_plan');
   const valid=['add','update','remove','move','prereq_add','prereq_remove'];
   if(a.ops.some((x:any)=>!valid.includes(x.op)))throw new Error('Unknown plan operation');
-  await addProposal(c,p,'plan_change',{ops:a.ops},a.reason);
+  await addProposal(c,p,'plan_change',{ops:a.ops,diagnostics:a.diagnostics||[],...(a.book?{book:a.book}:{})},a.reason);
   return 'plan change ('+a.ops.length+' ops) waits for approval';
 }
 export async function createProject(c:Context,a:any):Promise<string>{
