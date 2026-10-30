@@ -74,7 +74,7 @@ test('minimap is isotropic and tracks the true camera viewport within two pixels
  // Infer the miniature affine transform from corresponding root centres rather than
  // estimating root radii from the adaptive 44px SVG hit-target circles.
  const world=await page.locator('[data-level="cluster"]').evaluateAll(elements=>elements.map(node=>{
-  const coords=node.getAttribute('transform')!.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
+  const coords=node.getAttribute('transform')!.match(/-?\d+(?:\.\d+)?(?:e[-+]?\d+)?/gi)!.map(Number);
   return {x:coords[0],y:coords[1]};
  }));
  const dots=await mini.locator('svg circle').evaluateAll(elements=>elements.map(c=>({
