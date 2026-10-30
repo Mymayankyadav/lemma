@@ -6,7 +6,8 @@ import {zoom,zoomIdentity} from 'd3-zoom';
 import type {ZoomBehavior,ZoomTransform} from 'd3-zoom';
 import {ArrowLeft,ChevronRight,Compass,Minus,MoreHorizontal,Plus,Search,X,MessageCircle} from 'lucide-react';
 import {useAtlas} from '../../data/hooks';
-import {MathText} from '../../ui/MathText';
+import {Tex} from '../../ui/Tex';
+import {plainMath} from '../../lib/plain-math';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
@@ -52,7 +53,7 @@ function BodyMark({body,view,selected,dim,onSelect,onEnter}:{
  body:Body;view:Camera;selected:boolean;dim:boolean;onSelect:(id:string)=>void;onEnter:(id:string)=>void;
 }){
  return <g data-body={body.id} data-level={body.level} transform={`translate(${body.x} ${body.y})`}
-  role="button" tabIndex={0} aria-label={body.name+', '+levelLabel(body.level)}
+  role="button" tabIndex={0} aria-label={plainMath(body.name)+', '+levelLabel(body.level)}
   aria-pressed={selected} opacity={dim?.2:1} style={{cursor:'pointer',outline:'none'}}
   onClick={event=>{event.stopPropagation();onSelect(body.id)}}
   onDoubleClick={event=>{event.stopPropagation();if(body.children.length)onEnter(body.id);else onSelect(body.id)}}
@@ -226,7 +227,7 @@ export default function Page(){
    {path.length>0&&<nav aria-label="Atlas breadcrumb" className="flex max-w-full items-center gap-1 overflow-x-auto pb-2 text-label">
     <button type="button" onClick={()=>{setSelection(null);focusNode(null)}} className="shrink-0 text-amber">Universe</button>
     {path.map(b=><span key={b.id} className="flex shrink-0 items-center gap-1"><ChevronRight size={13}/>
-     <button type="button" onClick={()=>{setSelection(null);focusNode(b.id)}} className="max-w-36 truncate" aria-label={'Go to '+b.name}><MathText source={b.name}/></button>
+     <button type="button" onClick={()=>{setSelection(null);focusNode(b.id)}} className="max-w-36 truncate" aria-label={'Go to '+plainMath(b.name)}><Tex source={b.name}/></button>
     </span>)}
    </nav>}
    {searchOpen&&<div className="absolute inset-x-3 top-full z-30 rounded-b-ctl border border-edge-2 bg-raised p-3 shadow-[var(--e-float)]">
@@ -234,7 +235,7 @@ export default function Page(){
      className="min-h-11 w-full rounded-ctl border border-edge bg-obsidian px-3 text-body"/>
     <div className="max-h-60 overflow-auto">{search.trim()&&result.map(b=><button type="button" key={b.id} onClick={()=>selectFromSearch(b)}
      className="flex min-h-11 w-full flex-col justify-center border-b border-edge px-2 text-left">
-     <MathText source={b.name} className="text-body"/><span className="text-caption text-ink-3">{levelLabel(b.level)}</span>
+     <Tex source={b.name} className="text-body"/><span className="text-caption text-ink-3">{levelLabel(b.level)}</span>
     </button>)}</div>
    </div>}
    {menu&&<div className="absolute right-3 top-full z-30 min-w-[190px] rounded-ctl border border-edge-2 bg-raised p-2 shadow-[var(--e-float)]">
@@ -264,7 +265,7 @@ export default function Page(){
     {displayed.filter(showLabel).map(b=><div key={b.id} data-atlas-label={b.id} className={labelClass}
      style={{left:view.x+b.x*view.k,top:view.y+b.y*view.k+Math.max(12,b.radius*view.k)+6,
       display:showLabel(b)?'block':'none'}}>
-     <MathText source={b.name} className="text-label font-semibold"/>
+     <Tex source={b.name} className="text-label font-semibold"/>
      {(b.level==='cluster'||b.level==='galaxy'||b.level==='system')&&<div className="text-caption text-ink-3">{b.done} of {b.total} ideas</div>}
     </div>)}
    </div>
@@ -285,10 +286,10 @@ export default function Page(){
    <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-edge-3"/>
    <div className="flex items-start gap-2">
     <div className="min-w-0 flex-1"><div className="text-caption text-ink-3">{levelLabel(selected.level)} · {statusName[selected.status]}</div>
-     <h2 className="font-serif text-title-s"><MathText source={selected.name}/></h2></div>
+     <h2 className="font-serif text-title-s"><Tex source={selected.name}/></h2></div>
     <button type="button" aria-label="Close concept details" onClick={()=>setSelection(null)} className="flex size-11 shrink-0 items-center justify-center"><X size={20}/></button>
    </div>
-   {selected.blurb&&<MathText source={selected.blurb} className="mt-2 text-body text-ink-soft"/>}
+   {selected.blurb&&<Tex source={selected.blurb} className="mt-2 text-body text-ink-soft"/>}
    {selected.total>0&&<p className="mt-2 text-caption text-ink-3">{selected.done} of {selected.total} ideas demonstrated</p>}
    <div className="mt-2 flex flex-wrap gap-2 text-label text-ink-2">
     {selected.checkpointRefs.map(ref=><Link key={ref.projectSlug+ref.code} className="rounded-s border border-edge px-2 py-2" to={'/p/'+ref.projectSlug+'/cp/'+ref.code}>Checkpoint {ref.code}</Link>)}
@@ -297,13 +298,13 @@ export default function Page(){
    {selected.children.length>0&&<div className="mt-3"><div className="text-caption font-semibold text-ink-3">Explore within</div>
     <div className="grid grid-cols-2 gap-1">{childrenOf(model,selected.id).map(child=><button type="button" key={child.id}
      className="min-h-11 truncate rounded-ctl border border-edge px-2 text-left text-label" onClick={()=>inspect(child.id)}>
-     <MathText source={child.name}/></button>)}</div>
+     <Tex source={child.name}/></button>)}</div>
    </div>}
    {externalLinks.length>0&&<div className="mt-3"><div className="text-caption font-semibold text-ink-3">Connections</div>
     {externalLinks.slice(0,8).map(l=><button key={l.fromId+l.toId} type="button"
      className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-label"
      onClick={()=>{const target=l.other!;focusNode(target.parentId);setSelection(target.id)}}>
-     <span className="shrink-0 text-ink-3">{l.direction}</span><span className="min-w-0 flex-1 truncate"><MathText source={l.other!.name}/></span><ChevronRight size={14}/></button>)}
+     <span className="shrink-0 text-ink-3">{l.direction}</span><span className="min-w-0 flex-1 truncate"><Tex source={l.other!.name}/></span><ChevronRight size={14}/></button>)}
    </div>}
    <Link to={'/review/run?concept='+encodeURIComponent(selected.slug)} className="mt-3 flex min-h-11 items-center justify-center rounded-btn border border-edge-2 text-body">Review {selected.dueCards}</Link>
    <button type="button" className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-btn border border-edge-2 text-body"
