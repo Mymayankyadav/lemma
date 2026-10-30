@@ -17,7 +17,8 @@ import {OrbitRings,orbitFitPoints} from './OrbitRings';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
-import {fitAtlasViewport,layoutAtlas,visibleAtlasLabels} from './graph';
+import {fitAtlasViewport,visibleAtlasLabels} from './graph';
+import {layoutOrbitGraph} from './orbitsLayout';
 import type {AtlasNode,Point} from './graph';
 
 type Filter='all'|'revisit'|'demonstrated';
@@ -108,7 +109,7 @@ export default function Page(){
  const mode:AtlasMode=params.get('view')==='branches'?'branches':params.get('view')==='outline'?'outline':'orbits';
  const changeMode=(next:string)=>{const p=new URLSearchParams(params);if(next==='orbits')p.delete('view');else p.set('view',next);setParams(p,{replace:true})};
  const graph=query.data;
- const layout=useMemo(()=>graph?layoutAtlas(graph):null,[graph]);
+ const layout=useMemo(()=>graph?layoutOrbitGraph(graph):null,[graph]);
  const nodeList=layout?.nodes??[],selected=nodeList.find(n=>n.id===selectedId)??null;
  const byId=layout?.byId;
  const labels=useMemo(()=>visibleAtlasLabels(nodeList.map(n=>({...n,...positions[n.id]})),selectedId),[nodeList,positions,selectedId]);
