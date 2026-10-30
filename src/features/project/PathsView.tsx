@@ -45,7 +45,7 @@ function goalEstimate(detail:ProjectDetail,events:ReturnType<typeof useInsightDa
  const finish=new Date(now+remaining/pace*7*DAY);
  const target=detail.project.targetDate;
  const spare=target?Math.floor((Date.parse(target+'T23:59:59Z')-finish.getTime())/DAY):null;
- return {pace,finish,spare,baseline:ids.size===0};
+ return {pace,finish,spare,baseline:!(events?.checkpointEvents??[]).some(e=>e.projectId===detail.project.id&&e.kind==='demonstrated'&&Date.parse(e.at)>=now-28*DAY&&Date.parse(e.at)<=now)};
 }
 
 export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'ascent'|'metro'}){
