@@ -106,7 +106,21 @@ test('search, details and connection jumps work without test subjects',async({pa
  await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible();
  await expect(page).toHaveURL(/focus=compactness/);
  await expect(page.locator('[data-atlas-details]')).toBeVisible();
- await expect(page.getByRole('link',{name:/Checkpoint CP4/})).toHaveAttribute('href',/#\\/p\\/real-analysis\\/cp\\/CP4/);
+ await expect(page.getByRole('link',{name:/Checkpoint CP4/})).toHaveAttribute('href',new RegExp('p/real-analysis/cp/CP4
+ await page.getByRole('button',{name:'Close concept details'}).click();
+ await expect(page.locator('[data-atlas-details]')).toHaveCount(0);
+ await expect(page).not.toHaveURL(/focus=compactness/);
+});
+
+test('narrow day and night screenshots do not overflow the document',async({page})=>{
+ for(const mode of ['graph','graph-night']){
+  await page.goto(`./?demo=1&theme=${mode}#/atlas`);
+  await expect(page.locator('[data-level="cluster"]')).toHaveCount(3);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.screenshot({path:`test-results/screens/atlas-cosmos-${mode}.png`,fullPage:true});
+ }
+});
+));
  await page.getByRole('button',{name:'Close concept details'}).click();
  await expect(page.locator('[data-atlas-details]')).toHaveCount(0);
  await expect(page).not.toHaveURL(/focus=compactness/);
