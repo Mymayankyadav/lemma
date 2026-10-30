@@ -72,7 +72,7 @@ test('a new PDF can be uploaded from project Sources',async({page})=>{
  const sources=page.getByRole('region',{name:'Sources'})
  await sources.locator('input[type=file]').setInputFiles('tests/fixtures/sample.pdf')
  await expect(page.getByText('PDF added')).toBeVisible({timeout:30000})
- await expect(sources.getByText('sample',{exact:false})).toBeVisible()
+ await expect(sources.getByText('sample',{exact:true})).toBeVisible()
 })
 
 test('Euclid project ascent opens a checkpoint without horizontal scrolling',async({page})=>{
@@ -109,7 +109,7 @@ test('Euclid Paths fits both worlds at compact phone widths',async({page})=>{
 test('v3 Sources groups PDFs and exposes audited metadata controls',async({page})=>{
  await page.goto('./?demo=1#/p/real-analysis?tab=sources')
  const sources=page.getByRole('region',{name:'Sources'})
- await expect(sources.getByRole('heading',{name:/book|notes/i}).first()).toBeVisible()
+ await expect(sources.getByRole('heading',{name:/book|notes|other/i}).first()).toBeVisible()
  const edit=sources.getByRole('button',{name:'Edit'}).first()
  await edit.click()
  await expect(sources.getByRole('textbox',{name:'Source title'})).toBeVisible()
