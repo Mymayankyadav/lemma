@@ -13,7 +13,7 @@ import {Button} from '../../ui/Button';
 import {Segmented} from '../../ui/Segmented';
 import {AtlasListViews} from './AtlasListViews';
 import {AtlasMinimap} from './AtlasMinimap';
-import {OrbitRings,orbitFitPoints} from './OrbitRings';
+import {OrbitRings,orbitFitPoints,atlasOrbitGroups} from './OrbitRings';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
@@ -105,6 +105,7 @@ export default function Page(){
  const viewRef=useRef(view),userMoved=useRef(false),drag=useRef<Drag|null>(null),timer=useRef<ReturnType<typeof setTimeout>|null>(null),longPressed=useRef<string|null>(null);
  const [positions,setPositions]=useState<Record<string,Point>>({}),[selectedId,setSelectedId]=useState<string|null>(null);
  const [filter,setFilter]=useState<Filter>('all'),[menuId,setMenuId]=useState<string|null>(null);
+ const [orbitFocus,setOrbitFocus]=useState<{subjectId:string;topicId?:string}|null>(null);
  const focus=params.get('focus');
  const mode:AtlasMode=params.get('view')==='branches'?'branches':params.get('view')==='outline'?'outline':'orbits';
  const changeMode=(next:string)=>{const p=new URLSearchParams(params);if(next==='orbits')p.delete('view');else p.set('view',next);setParams(p,{replace:true})};
@@ -125,6 +126,21 @@ export default function Page(){
   userMoved.current=false;
   zoomRef.current.transform(select(element),zoomIdentity.translate(t.x,t.y).scale(t.k));
  },[layout,positions,graph]);
+ const focusOrbit=(subjectId:string,topicId?:string)=>{
+  const el=svg.current;
+  if(!el||!zoomRef.current||!graph)return;
+  const group=atlasOrbitGroups(graph,nodeList.map(n=>({...n,...positions[n.id]}))).find(g=>g.id===subjectId);
+  const target=topicId?group?.topics.find(t=>t.id===topicId):group;
+  if(!target)return;
+  const bounds=el.getBoundingClientRect();
+  const availableHeight=Math.max(120,bounds.height-340);
+  const k=Math.min(2.2,Math.max(.2,Math.min((bounds.width-48)/(2*target.radius),availableHeight/(2*target.radius))));
+  userMoved.current=true;
+  zoomRef.current.transform(select(el),zoomIdentity.translate(
+   bounds.width/2-target.x*k,bounds.height*.47-target.y*k
+  ).scale(k));
+  setOrbitFocus({subjectId,topicId});
+ };
  const navigateMinimap=useCallback((point:Point)=>{
   const element=svg.current;
   if(!element||!zoomRef.current)return;
@@ -250,7 +266,7 @@ export default function Page(){
   {nodeList.length&&mode==='orbits'?<svg ref={svg} width="100%" height="100%" role="group"
     aria-label={'Interactive knowledge graph with '+nodeList.length+' concepts. Drag nodes to pin; pinch or use zoom buttons to explore.'}
     className="absolute inset-0 h-full w-full touch-none"
-    onClick={event=>{if(event.target===event.currentTarget)hideSelection()}}>
+    onClick={event=>{if(event.target===event.currentTarget){hideSelection();setOrbitFocus(null)}}}>
    <defs>
     <radialGradient id="atlas-star"><stop offset="0%" stopColor="#FFF1C9"/><stop offset="45%" stopColor="#F7B538"/><stop offset="100%" stopColor="#D98E1C"/></radialGradient>
     <filter id="atlas-glow" x="-160%" y="-160%" width="420%" height="420%"><feGaussianBlur stdDeviation="7"/></filter>
@@ -261,7 +277,7 @@ export default function Page(){
    </defs>
    <motion.g transform={'translate('+view.x+' '+view.y+') scale('+view.k+')'}
     initial={reduce?false:{opacity:0}} animate={{opacity:1}} transition={{duration:reduce?.15:1}}>
-    <OrbitRings graph={graph} nodes={nodeList.map(n=>({...n,...positions[n.id]}))} scale={view.k}/>
+    <OrbitRings graph={graph} nodes={nodeList.map(n=>({...n,...positions[n.id]}))} scale={view.k} onFocus={focusOrbit}/>
     {layout?.edges.map((edge,index)=>{
      const from=byId?.get(edge.fromId),to=byId?.get(edge.toId);
      if(!from||!to)return null;
@@ -293,6 +309,17 @@ export default function Page(){
     <FilterPill label="Demonstrated" count={countDone} active={filter==='demonstrated'} icon={Check} onClick={()=>setFilter('demonstrated')}/>
    </div>
   </header>
+  {mode==='orbits'&&orbitFocus&&<nav aria-label="Atlas breadcrumb" className="glass absolute left-4 top-[212px] z-10 flex max-w-[calc(100%-32px)] items-center gap-2 overflow-x-auto rounded-ctl border border-edge px-3 py-1.5 text-label">
+   <button type="button" className="min-h-9 shrink-0 text-amber" onClick={()=>{setOrbitFocus(null);handleFit()}}>All</button>
+   <span aria-hidden="true" className="text-ink-3">›</span>
+   <button type="button" className="min-h-9 shrink-0 text-amber" onClick={()=>focusOrbit(orbitFocus.subjectId)}>
+    {graph.subjects.find(s=>s.id===orbitFocus.subjectId)?.name}
+   </button>
+   {orbitFocus.topicId&&<>
+    <span aria-hidden="true" className="text-ink-3">›</span>
+    <span className="min-w-0 truncate text-ink">{atlasOrbitGroups(graph,nodeList).find(g=>g.id===orbitFocus.subjectId)?.topics.find(t=>t.id===orbitFocus.topicId)?.name}</span>
+   </>}
+  </nav>}
   {mode==='orbits'&&nodeList.length>0&&!selected&&<AtlasMinimap nodes={nodeList.map(n=>({...n,...positions[n.id]}))} camera={view}
    width={svg.current?.clientWidth??390} height={svg.current?.clientHeight??844} onNavigate={navigateMinimap}/>}
   {mode==='orbits'&&<div className="glass absolute right-4 top-[46%] z-10 flex flex-col gap-0.5 rounded-ctl border border-edge-2 p-1">
