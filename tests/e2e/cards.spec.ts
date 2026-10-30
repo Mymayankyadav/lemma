@@ -155,3 +155,12 @@ for(const world of ['euclid','euclid-night'] as const){
   await page.screenshot({path:`test-results/screens/ui-5g-card-detail-${world}.png`,fullPage:true});
  });
 }
+
+for(const theme of ['euclid','euclid-night'])test(`focused card routes keep floating tools clear: ${theme}`,async({page})=>{
+ for(const route of ['/cards','/cards/31']){
+  await page.goto(`/lemma/?demo=1&theme=${theme}&effects=calm#${route}`)
+  await expect(page.getByRole('heading',{name:route==='/cards'?'Cards':'Card detail',level:1})).toBeVisible()
+  await expect(page.getByRole('button',{name:'Open theme lab'})).toHaveCount(0)
+  await page.screenshot({path:`test-results/screens/review/ui5e-${theme}-${route==='/cards'?'cards':'card-detail'}-clear.png`,fullPage:true})
+ }
+})
