@@ -128,6 +128,7 @@ export default function Page(){
    if(sheetOpen||event.ctrlKey||event.altKey||event.metaKey||
     event.target instanceof HTMLInputElement||event.target instanceof HTMLTextAreaElement)return;
    if(!current || submitting)return;
+   if(event.key==='Escape'){event.preventDefault();close();return}
    if(!revealed){
     if(event.key==='1'||event.key==='2'||event.key==='3'){
      event.preventDefault();reveal(['sure','unsure','guess'][Number(event.key)-1] as Confidence);
