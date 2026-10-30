@@ -120,7 +120,7 @@ export async function proposePlan(c:Context,a:any):Promise<string>{
  for(const idea of a.concepts||[])planningFields(idea);
  validateConceptHierarchy(a.concepts||[]);
  const converted=a.checkpoints.map((x:any,i:number)=>{
-  if(/^(read|review)\\b/i.test(x.criterion.trim()))throw Error('Criterion must be work the student produces');
+  if(/^(read|review)\b/i.test(x.criterion.trim()))throw Error('Criterion must be work the student produces');
   if((x.prereqs||[]).some((n:number)=>n<1||n>i))throw Error('Prerequisites must be earlier checkpoint indexes');
   planningFields(x);
   const citations=x.sources|| (x.pages&&legacySource?[{source:legacySource,pages:x.pages}]:[]);
