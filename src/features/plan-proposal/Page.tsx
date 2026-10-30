@@ -58,23 +58,19 @@ function PlanMap({
       cache.set(code, d);
       return d;
     };
-    const levels = new Map<number, Node[]>();
-    for (const n of nodes) {
-      const d = depth(n.code, new Set());
-      levels.set(d, [...(levels.get(d) ?? []), n]);
-    }
+    // Plan order runs left to right (scroll sideways); prerequisite depth picks the lane.
+    // A long plan stays one short strip instead of a tall column above the list.
     const positions = new Map<string, { x: number; y: number }>();
-    for (const [level, group] of levels)
-      group.forEach((n, i) =>
-        positions.set(n.code, { x: 32 + level * 68, y: 30 + i * 52 }),
-      );
+    let lanes = 0;
+    nodes.forEach((n, i) => {
+      const d = Math.min(3, depth(n.code, new Set()));
+      lanes = Math.max(lanes, d);
+      positions.set(n.code, { x: 30 + i * 54, y: 30 + d * 50 });
+    });
     return {
       positions,
-      width: Math.max(260, 64 + levels.size * 68),
-      height: Math.max(
-        100,
-        60 + Math.max(0, ...[...levels.values()].map((v) => v.length - 1)) * 52,
-      ),
+      width: Math.max(120, 60 + (nodes.length - 1) * 54),
+      height: 62 + lanes * 50,
     };
   }, [nodes]);
   return (
@@ -86,24 +82,26 @@ function PlanMap({
         role="img"
         aria-label="Map of proposed checkpoints and prerequisites"
         viewBox={`0 0 ${layout.width} ${layout.height}`}
-        style={{ minWidth: layout.width, width: "100%" }}
+        width={layout.width}
+        height={layout.height}
+        style={{ maxWidth: "none" }}
       >
         {nodes.flatMap((n) =>
           n.prereqs.map((parent) => {
             const a = layout.positions.get(parent),
               b = layout.positions.get(n.code);
-            return a && b ? (
-              <line
+            if (!a || !b) return null;
+            const lift = a.y === b.y ? Math.min(28, 10 + Math.abs(b.x - a.x) / 8) : 0;
+            return (
+              <path
                 key={`${parent}-${n.code}`}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
+                d={`M${a.x} ${a.y - (lift ? 18 : 0)} Q${(a.x + b.x) / 2} ${Math.min(a.y, b.y) - (lift ? 18 + lift : 0)} ${b.x} ${b.y - (lift ? 18 : 0)}`}
+                fill="none"
                 stroke="var(--amber-line-2)"
                 strokeWidth="1.5"
                 strokeDasharray="3 4"
               />
-            ) : null;
+            );
           }),
         )}
         {nodes.map((n) => {
@@ -460,13 +458,11 @@ export default function Page() {
           )}
           <p className="flex items-center gap-2 text-label text-ink-3">
             <Waypoints size={17} />
-            {p.plan?.concepts?.length ??
-              new Set(
-                p.planChange?.ops.flatMap((op) =>
-                  op.op === "add" ? (op.concepts ?? []) : [],
-                ) ?? [],
-              ).size}{" "}
-            ideas in your Atlas
+            {(() => {
+              const count = p.plan?.concepts?.length ??
+                new Set(p.planChange?.ops.flatMap((op) => op.op === "add" ? (op.concepts ?? []) : []) ?? []).size;
+              return `${count} ${count === 1 ? "idea" : "ideas"} in your Atlas`;
+            })()}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <Button
