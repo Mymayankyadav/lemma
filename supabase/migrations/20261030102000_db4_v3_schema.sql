@@ -19,7 +19,7 @@ create index projects_owner_pinned on public.projects(user_id,pinned) where pinn
 
 -- Enforce the library's four-pin limit even when multiple devices race.
 create function public.lemma_limit_pins() returns trigger
-language plpgsql security invoker set search_path = '' as $
+language plpgsql security invoker set search_path = '' as $$
 begin
   if not new.pinned then return new; end if;
   if tg_op='UPDATE' and old.pinned then return new; end if;
@@ -29,7 +29,7 @@ begin
     raise exception 'At most four projects may be pinned';
   end if;
   return new;
-end $;
+end $$;
 revoke all on function public.lemma_limit_pins() from public,anon;
 create trigger a_project_pin_limit before insert or update of pinned on public.projects
   for each row execute function public.lemma_limit_pins();
@@ -157,7 +157,7 @@ on conflict (checkpoint_id,source_id) do nothing;
 -- Until MCP-4 switches to multi-source writes, keep legacy checkpoint.source_id
 -- and pages in sync with the citation table. Do not overwrite other citations.
 create function public.lemma_checkpoint_source_legacy() returns trigger
-language plpgsql security invoker set search_path = '' as $
+language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op='UPDATE' and old.source_id is distinct from new.source_id
       and old.source_id is not null then
@@ -172,7 +172,7 @@ begin
       where checkpoint_sources.pages is distinct from excluded.pages;
   end if;
   return new;
-end $;
+end $$;
 revoke all on function public.lemma_checkpoint_source_legacy() from public,anon;
 create trigger z_checkpoint_source_legacy after insert or update of source_id,pages
   on public.checkpoints for each row execute function public.lemma_checkpoint_source_legacy();
