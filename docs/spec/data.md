@@ -75,6 +75,8 @@ Primary keys are `id uuid default gen_random_uuid()` unless stated.
 | `last_activity_at` | timestamptz null | any session event or review in this project |
 | `updated_at` | timestamptz | trigger |
 
+> **v3 list contract:** `ProjectSummary.sourceTitles?: string[]` returns the titles of the project's own sources for Paths library search. Both data adapters populate it from sources they already read; the UI must not issue one network request per project to search source names. This is additive and does not expose source page content.
+
 ### 2.4 `sources` (uploaded PDFs)
 
 | Column | Type / default | Notes |
