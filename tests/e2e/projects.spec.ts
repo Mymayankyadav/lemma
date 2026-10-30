@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test'
+import {readFileSync} from 'node:fs'
 
 test.beforeEach(async({page})=>{
  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}))
@@ -60,6 +61,21 @@ test('creates custom subject and accepts a real 3-page PDF',async({page})=>{
  await expect(page).toHaveURL(/#\/p\/topology-exercises$/,{timeout:30000})
  await expect(page.getByText(/Project created/)).toBeVisible()
 })
+test('accepts a real PDF from a mobile provider with generic MIME',async({page})=>{
+ await page.goto('./?demo=1#/projects/new')
+ await page.getByRole('textbox',{name:'Name'}).fill('Mobile PDF')
+ await page.getByRole('textbox',{name:'Goal'}).fill('Study a PDF selected from Android documents.')
+ await page.locator('input[type=file]').setInputFiles({
+  name:'mobile.pdf',mimeType:'application/octet-stream',
+  buffer:readFileSync('tests/fixtures/sample.pdf')
+ })
+ await expect(page.getByText('mobile.pdf')).toBeVisible()
+ await expect(page.getByRole('alert')).toHaveCount(0)
+ await page.screenshot({path:'test-results/screens/new-project-mobile-pdf.png',fullPage:true})
+ await page.getByRole('button',{name:'Create project'}).click()
+ await expect(page).toHaveURL(/#\/p\/mobile-pdf$/,{timeout:30000})
+ await expect(page.getByText(/Project created/)).toBeVisible()
+})
 test('invalid PDF replacement clears the previously selected file',async({page})=>{
  await page.goto('./?demo=1#/projects/new')
  await page.getByRole('textbox',{name:'Name'}).fill('Replace PDF')
@@ -84,6 +100,8 @@ test('rejects non-PDF files without creating a project',async({page})=>{
  await page.locator('input[type=file]').setInputFiles({name:'not-a-pdf.txt',mimeType:'text/plain',buffer:Buffer.from('a text document')})
  await expect(page.getByRole('alert')).toContainText('Choose a PDF')
  await expect(page.getByRole('button',{name:'Create project'})).toBeDisabled()
+ await page.locator('input[type=file]').setInputFiles({name:'fake.pdf',mimeType:'text/plain',buffer:Buffer.from('not a PDF')})
+ await expect(page.getByRole('alert')).toContainText('Choose a PDF')
 })
 
 

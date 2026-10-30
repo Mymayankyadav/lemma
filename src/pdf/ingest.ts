@@ -35,6 +35,17 @@ interface PdfOutline {
   items?: PdfOutline[];
 }
 
+/** Browser document providers sometimes label real PDFs as generic binary files. */
+export function isPdfFile(file: Pick<File, "name" | "type">): boolean {
+  const mime = file.type.toLowerCase();
+  return (
+    mime === "application/pdf" ||
+    mime === "application/x-pdf" ||
+    ((mime === "" || mime === "application/octet-stream" || mime === "binary/octet-stream") &&
+      /\.pdf$/i.test(file.name))
+  );
+}
+
 async function readBytes(file: File): Promise<ArrayBuffer> {
   if (typeof file.arrayBuffer === "function") return file.arrayBuffer();
   return new Promise((resolve, reject) => {
@@ -103,7 +114,7 @@ export async function ingest(
     if (
       file.size === 0 ||
       file.size > 50 * 1024 * 1024 ||
-      (file.type ? file.type !== "application/pdf" : !/\.pdf$/i.test(file.name))
+      !isPdfFile(file)
     )
       throw new LemmaError("invalid", "Choose a PDF under 50 MB");
     onProgress?.({

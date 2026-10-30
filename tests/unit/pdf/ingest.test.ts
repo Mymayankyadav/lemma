@@ -7,7 +7,7 @@ vi.mock("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url", () => ({
     import.meta.url,
   ).href,
 }));
-import { ingest, flattenOutline } from "../../../src/pdf/ingest";
+import { ingest, flattenOutline, isPdfFile } from "../../../src/pdf/ingest";
 import { normalizePageText } from "../../../src/pdf/text";
 import type { IngestProgress } from "../../../src/data/types";
 
@@ -39,7 +39,17 @@ it("reads real PDF text, printed labels, outline page index and split words", as
       .map((p) => p.page),
   ).toEqual([1, 2, 3]);
 });
+it("accepts a real PDF with a generic mobile document-provider MIME", async () => {
+  const bytes = await readFile(new URL("../../fixtures/sample.pdf", import.meta.url));
+  const result = await ingest(new File([bytes], "mobile.pdf", { type: "application/octet-stream" }));
+  expect(result.pageCount).toBe(3);
+  expect(result.pages[1].body).toContain("finite subcover");
+  expect(isPdfFile({ name: "legacy.pdf", type: "application/x-pdf" })).toBe(true);
+  expect(isPdfFile({ name: "not-pdf.pdf", type: "text/plain" })).toBe(false);
+});
 it("rejects unsupported, oversized and corrupt PDFs with a failed phase", async () => {
+  await expect(ingest(new File(["not a PDF"], "fake.pdf", { type: "text/plain" })))
+    .rejects.toMatchObject({ code: "invalid", message: "Choose a PDF under 50 MB" });
   await expect(
     ingest(new File(["hi"], "sample.txt", { type: "text/plain" })),
   ).rejects.toMatchObject({
