@@ -9,43 +9,49 @@ import {Rail} from '../../ui/Rail';
 import {Tile} from '../../ui/Tile';
 import {useToast} from '../../ui/Toast';
 
-type QueueEntry={id:number;file:File;phase:'queued'|'reading'|'uploading'|'saving'|'ready'|'failed';progress:IngestProgress|null;error:string|null};
+type QueueEntry={id:number;file:File|null;name:string;bytes:number;pagesRead:number;phase:'queued'|'reading'|'uploading'|'saving'|'ready'|'failed';progress:IngestProgress|null;error:string|null};
 const kinds:SourceKind[]=['book','notes','slides','problems','syllabus','exam','other'];
 const limit=50*1024*1024;
+const formatSize=(bytes:number)=>bytes>=1024*1024?(bytes/1024/1024).toFixed(1)+' MB':Math.max(1,Math.ceil(bytes/1024))+' KB';
 export function SourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
  const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0);
  const [queue,setQueue]=useState<QueueEntry[]>([]),[tick,setTick]=useState(0),[editing,setEditing]=useState<string|null>(null),
   [title,setTitle]=useState(''),[kind,setKind]=useState<SourceKind>('other'),[confirm,setConfirm]=useState<string|null>(null);
- const patch=(entryId:number,changes:Partial<QueueEntry>)=>setQueue(old=>old.map(x=>x.id===entryId?{...x,...changes}:x));
+ const patch=(entryId:number,changes:Partial<QueueEntry>)=>setQueue(old=>old.map(x=>x.id===entryId?{
+   ...x,...changes,
+   pagesRead:changes.progress?Math.max(x.pagesRead,changes.progress.phase==='reading'||changes.progress.phase==='done'?changes.progress.page:0):x.pagesRead
+  }:x));
  function enqueue(files:FileList|File[]){
   const accepted:QueueEntry[]=[];
   for(const file of Array.from(files)){
    if(!isPdfFile(file)||!file.size||file.size>limit){notify('Choose a nonempty PDF under 50 MB: '+file.name,{tone:'danger'});continue}
-   accepted.push({id:++id.current,file,phase:'queued',progress:null,error:null});
+   accepted.push({id:++id.current,file,name:file.name,bytes:file.size,pagesRead:0,phase:'queued',progress:null,error:null});
   }
   setQueue(old=>[...old,...accepted]);
  }
  useEffect(()=>{
   if(running.current)return;
-  const next=queue.find(x=>x.phase==='queued');
+  const next=queue.find(x=>x.phase==='queued'&&x.file);
   if(!next)return;
+  const file=next.file!;
   running.current=true;
   const upload=async()=>{
    patch(next.id,{phase:'reading',error:null});
    try{
     // SHA-256 catches same-content PDFs with different filenames.
-    const digest=await crypto.subtle.digest('SHA-256',await next.file.arrayBuffer());
+    const digest=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());
     const hash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
     if(sources.some(source=>source.sha256===hash)){
-     patch(next.id,{phase:'failed',error:'Already added'});return;
+     patch(next.id,{phase:'failed',file:null,error:'Already added'});return;
     }
-    await add.mutateAsync({projectId,file:next.file,onProgress:p=>{
+    await add.mutateAsync({projectId,file,onProgress:p=>{
      patch(next.id,{progress:p,phase:p.phase==='done'?'saving':p.phase==='failed'?'failed':p.phase});
     }});
-    patch(next.id,{phase:'ready',error:null});notify('PDF added',{tone:'success'});
+    patch(next.id,{phase:'ready',file:null,error:null});notify('PDF added',{tone:'success'});
    }catch(error){
-    patch(next.id,{phase:'failed',error:error instanceof Error?error.message:'Upload failed'});
+    const message=error instanceof Error?error.message:'Upload failed';
+    patch(next.id,{phase:'failed',file:/Already added/i.test(message)?null:file,error:message});
    }finally{running.current=false;setTick(n=>n+1)}
   };
   void upload();
@@ -97,10 +103,11 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   </div>
   {queue.length>0&&<ul aria-label="Source upload queue" className="flex flex-col gap-2">
    {queue.map(item=><li key={item.id} className="rounded-slab border border-edge bg-raised p-3">
-    <div className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-body">{item.file.name}</span>
-     <span className="text-label text-ink-2">{item.phase==='ready'?<Check size={17} className="text-easy"/>:item.phase}</span></div>
-    {item.progress&&item.phase!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.file.name}/>}
-    {item.error&&<p role="alert" className="text-label text-again">{item.error} <button type="button" className="min-h-11 text-amber" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button></p>}
+    <div className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-body">{item.name}</span>
+     <span aria-label={'Upload status: '+item.phase} className="flex shrink-0 items-center gap-1 text-label text-ink-2">{item.phase==='ready'?<><Check size={17} className="text-easy"/>Ready</>:item.phase}</span></div>
+    <p className="mt-1 text-caption text-ink-3">{formatSize(item.bytes)}{item.progress?.pageCount?' · '+item.pagesRead+'/'+item.progress.pageCount+' pages read':''}</p>
+    {item.progress&&item.phase!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.name}/>}
+    {item.error&&<p role="alert" className="text-label text-again">{item.error} {item.file&&<button type="button" className="min-h-11 text-amber" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button>}</p>}
    </li>)}
   </ul>}
  </section>;
