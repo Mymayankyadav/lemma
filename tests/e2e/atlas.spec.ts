@@ -64,11 +64,11 @@ test('Atlas fits node centres between overlays and avoids overlapping labels', a
  const geometry = await page.locator('[data-node]').evaluateAll(nodes =>
   nodes.map(node => {
    const circle=node.querySelector('circle');
-   const svg=node.ownerSVGElement!;
+   const svg=(node as SVGGElement).ownerSVGElement!;
    const point=svg.createSVGPoint();
    point.x=Number(circle?.getAttribute('cx'));
    point.y=Number(circle?.getAttribute('cy'));
-   const centre=point.matrixTransform(node.getScreenCTM()!);
+   const centre=point.matrixTransform((node as SVGGElement).getScreenCTM()!);
    return {x:centre.x,y:centre.y};
   }));
  expect(geometry).toHaveLength(22);
