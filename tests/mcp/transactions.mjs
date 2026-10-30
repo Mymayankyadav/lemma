@@ -126,3 +126,5 @@ try {
 
 // DB-3 additive schema and reversible stage backfill acceptance.
 await import("./db3.mjs");
+
+await import("./mcp3.mjs");

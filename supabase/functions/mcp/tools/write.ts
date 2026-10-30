@@ -1,3 +1,4 @@
+import { planningFields } from '../planning.ts';
 import { Context, scoped, insert, update, rpc, all } from '../db.ts';
 import { project, checkpoint, checkpoints, session, source } from '../resolve.ts';
 import { day, ladder } from '../derive.ts';
@@ -91,10 +92,12 @@ export async function proposePlan(c:Context,a:any):Promise<string>{
   const {data:sources,error:sourceError}=await scoped(c,'sources','short').eq('project_id',p.id).order('created_at').limit(1);
   if(sourceError)throw new Error(sourceError.message);
   const book=sources?.[0]?.short;
+  for(const idea of a.concepts||[])planningFields(idea);
   const converted=a.checkpoints.map((x:any,i:number)=>{
     if(/^(read|review)\b/i.test(x.criterion.trim()))throw new Error('Criterion must be work the student produces');
     if((x.prereqs||[]).some((n:number)=>n<1||n>i))throw new Error('Prerequisites must be earlier checkpoint indexes');
-    return {code:'CP'+(i+1),title:x.title,objective:x.objective,criterion:x.criterion,steps:x.steps,pages:x.pages,...(x.pages&&book?{source:book}:{}),prereqs:(x.prereqs||[]).map((n:number)=>'CP'+n),concepts:x.concepts||[],recheck_prompt:x.recheck_prompt};
+    planningFields(x);
+    return {...(x.stage!==undefined?{stage:x.stage}:{}),code:'CP'+(i+1),title:x.title,objective:x.objective,criterion:x.criterion,steps:x.steps,pages:x.pages,...(x.pages&&book?{source:book}:{}),prereqs:(x.prereqs||[]).map((n:number)=>'CP'+n),concepts:x.concepts||[],recheck_prompt:x.recheck_prompt};
   });
   await addProposal(c,p,'plan',{checkpoints:converted,concepts:a.concepts||[]},a.reason);
   return 'plan with '+converted.length+' checkpoints waits for approval in Lemma';
@@ -104,10 +107,12 @@ export async function proposePlanChange(c:Context,a:any):Promise<string>{
   if(!(await checkpoints(c,p)).length)throw new Error('No plan yet; use propose_plan');
   const valid=['add','update','remove','move','prereq_add','prereq_remove'];
   if(a.ops.some((x:any)=>!valid.includes(x.op)))throw new Error('Unknown plan operation');
+  for(const op of a.ops)planningFields(op);
   await addProposal(c,p,'plan_change',{ops:a.ops,diagnostics:a.diagnostics||[],...(a.book?{book:a.book}:{})},a.reason);
   return 'plan change ('+a.ops.length+' ops) waits for approval';
 }
 export async function createProject(c:Context,a:any):Promise<string>{
+  planningFields(a);
   const st=await settings(c);
   const styles=await all(c,'styles','key');
   const chosen=a.style ?? st.default_style ?? 'socratic';
@@ -118,7 +123,7 @@ export async function createProject(c:Context,a:any):Promise<string>{
   const existing=await all(c,'projects','slug');
   let base=slug(a.title);if(base.length<2)base='study';
   let unique=base;for(let i=2;existing.some((p:any)=>p.slug===unique);i++)unique=base.slice(0,35)+'-'+i;
-  const p=await insert(c,'projects',{subject_id:subject.id,title:a.title,slug:unique,goal:a.goal,status:'planning',style:chosen});
+  const p=await insert(c,'projects',{subject_id:subject.id,title:a.title,slug:unique,goal:a.goal,status:'planning',style:chosen,target_date:a.target_date??null,target_label:a.target_label??null});
   if(a.book){
     const src=slug(a.book_short||a.book).slice(0,20)||'book';
     await insert(c,'sources',{project_id:p.id,title:a.book,short:src,filename:src+'.pdf',page_count:0,has_text:false,status:'ready'});

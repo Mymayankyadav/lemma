@@ -195,10 +195,10 @@ export default function Page() {
       ) : (
         <>
           <p className="text-label text-ink-3">
-            {project?.subject.glyph ?? "∫"} {project?.title ?? note.projectSlug}{" "}
+            <span aria-hidden="true" className="mr-1 font-math text-card italic text-amber">{project?.subject.glyph ?? "∫"}</span> {project?.title ?? note.projectSlug}{" "}
             {note.checkpointCode && `· ${note.checkpointCode}`} · N{note.noteNo}
           </p>
-          <Slab className="p-6">
+          <Slab as="article" className="p-5" aria-label="Card front and answer">
             <MathText
               source={note.front}
               variant="card"
@@ -208,7 +208,7 @@ export default function Page() {
                   : undefined
               }
             />
-            <div className="my-6 h-px bg-edge" />
+            <div className="my-6 h-px bg-amber" aria-hidden="true" />
             <MathText
               source={note.type === "cloze" ? note.front : note.back}
               variant="answer"
@@ -235,15 +235,15 @@ export default function Page() {
             </div>
           </Slab>
           <Slab className="p-5">
-            <h2 className="mb-4 text-headline font-semibold">Memory</h2>
+            <h2 className="mb-4 text-headline font-medium" style={{fontFamily:"var(--font-display)"}}>Memory</h2>
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <p className="text-label text-ink-3">Next</p>
-                <p className="mt-1 font-semibold">{next(card?.due ?? null)}</p>
+                <p className="mt-1 font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{next(card?.due ?? null)}</p>
               </div>
               <div>
                 <p className="text-label text-ink-3">Stability</p>
-                <p className="mt-1 font-semibold">
+                <p className="mt-1 font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>
                   {card && card.stability > 0
                     ? `${Math.round(card.stability)} d`
                     : "—"}
@@ -251,7 +251,7 @@ export default function Page() {
               </div>
               <div>
                 <p className="text-label text-ink-3">Recall now</p>
-                <p className="mt-1 font-semibold text-amber">
+                <p className="mt-1 font-medium tabular-nums text-amber" style={{fontFamily:"var(--font-num)"}}>
                   {recall === null ? "—" : `${Math.round(recall * 100)}%`}
                 </p>
               </div>
@@ -268,18 +268,18 @@ export default function Page() {
             )}
           </Slab>
           <section>
-            <h2 className="mb-4 text-headline font-semibold">For your tutor</h2>
+            <h2 className="mb-4 text-headline font-medium" style={{fontFamily:"var(--font-display)"}}>For your tutor</h2>
             <div className="flex flex-col gap-3">
               {detail.comments
                 .filter((c) => c.status === "open")
                 .map((c) => (
                   <div
                     key={c.no}
-                    className="rounded-slab border border-amber-line bg-amber-tint p-4"
+                    className="border-l-2 border-amber py-2 pl-4 pr-2"
                   >
-                    <p className="text-body-l">{c.body}</p>
+                    <p className="font-math text-body-l italic">{c.body}</p>
                     <p className="mt-3 text-label text-ink-3">
-                      <span className="mr-2 inline-block size-2 rounded-full bg-amber" />
+                      <span className="mr-2 inline-block size-1.5 rounded-full bg-amber" />
                       Next time you ask to update cards · {age(c.createdAt)}
                     </p>
                     <button
@@ -313,7 +313,7 @@ export default function Page() {
             </div>
           </section>
           <form
-            className="glass flex gap-2 rounded-ctl p-2"
+            className="flex gap-2 rounded-ctl border border-edge bg-well p-2"
             onSubmit={(e) => {
               e.preventDefault();
               void submit();

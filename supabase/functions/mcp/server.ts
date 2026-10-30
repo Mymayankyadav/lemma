@@ -33,7 +33,7 @@ export function buildServer(c:Context):McpServer{
       }catch(err){return {isError:true,content:[{type:'text' as const,text:err instanceof Error?err.message:'Request failed'}]}}
     });
   };
-  register('resume','Start here when the user wants to study, resume, continue or plan. Returns where they stopped, warm-up, rules and style. Omit project to list projects.',z.object({
+  register('resume','Start here to study or plan: position, warm-up, rules and ETA. Omit project to list projects.',z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
   register('get','Read details on demand. what: plan, checkpoint (id CP4), session (id S7), outline, cards (id CP4 or S7), feedback (open card notes), concepts, projects, prompt, diagnostics.',z.object({
@@ -83,23 +83,23 @@ export function buildServer(c:Context):McpServer{
   });
   register('propose_card_edits','Propose fixes to existing cards, e.g. answering card notes from get feedback. The user approves in Lemma.',z.object({edits:z.array(cardEditSchema).min(1).max(10)}),false,(a,ctx)=>proposeCardEdits(ctx,a));
   const planningCp=z.object({
-    title:S().min(1).max(80),objective:S().min(1).max(400),
+    stage:S().max(40).nullable().optional(),title:S().min(1).max(80),objective:S().min(1).max(400),
     criterion:S().min(1).max(400),steps:z.array(S().min(1).max(80)).min(1).max(8),
     pages:S().optional(),prereqs:z.array(z.number().int()).optional(),
     concepts:z.array(S().max(60)).max(4).optional(),
     recheck_prompt:S().max(300).optional()
   });
-  register('propose_plan','Propose the first plan for a project in planning: ordered checkpoints with observable criteria, steps, pages, prerequisites and concepts. The user approves in Lemma.',z.object({
+  register('propose_plan','Propose a first plan: checkpoints with stage, criteria, steps, pages, prerequisites; concepts with topic. User approval required.',z.object({
     project:name,checkpoints:z.array(planningCp).min(3).max(40),
-    concepts:z.array(z.object({name:S().max(60),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
+    concepts:z.array(z.object({name:S().max(60),topic:S().max(40).nullable().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
     reason:S().max(300).optional()
   }),false,(a,ctx)=>proposePlan(ctx,a));
   register('propose_plan_change','Propose changes to an approved plan: add, update, remove, move, prereq_add, prereq_remove. Keep unaffected checkpoints. The user approves in Lemma.',z.object({
     project:name,ops:z.array(z.object({op:z.enum(['add','update','remove','move','prereq_add','prereq_remove'])}).catchall(z.unknown())).min(1).max(20),
     diagnostics:z.array(S().regex(/^D[0-9]+$/)).max(20).optional(),book:S().max(20).optional(),reason:S().min(1).max(300)
   }),false,(a,ctx)=>proposePlanChange(ctx,a));
-  register('create_project','Create a project when the user starts a new subject or goal in chat. Then plan it with propose_plan.',z.object({
-    title:S().min(1).max(80),subject:S().min(1).max(40),
+  register('create_project','Create a project, optionally with target_date (YYYY-MM-DD) and target_label. Then propose_plan.',z.object({
+    target_date:S().nullable().optional(),target_label:S().max(20).nullable().optional(),title:S().min(1).max(80),subject:S().min(1).max(40),
     goal:S().min(1).max(1000),glyph:S().max(2).optional(),
     style:S().optional(),book:S().max(120).optional(),
     book_short:S().max(20).optional()

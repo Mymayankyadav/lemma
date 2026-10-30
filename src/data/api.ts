@@ -37,6 +37,8 @@ export interface LemmaApi {
  updateStyle(key: string, patch: StylePatch): Promise<Style>
  /** Read the resume target, due counts and projects. */
  getHome(): Promise<HomeSummary>
+ /** Count scheduled active cards by study day, today through six days ahead. */
+ getReviewForecast(): Promise<{day: string; due: number}[]>
  /** List subjects in position order. */
  listSubjects(): Promise<Subject[]>
  /** Create a subject. */

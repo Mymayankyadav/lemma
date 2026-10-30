@@ -10,7 +10,7 @@ import type {
   InsightDays,
   ReviewLogEntry,
 } from "../api";
-import { LemmaError } from "../api";
+import { LemmaError, notImplemented } from "../api";
 import type {
   AtlasGraph,
   CardComment,
@@ -110,6 +110,7 @@ export interface DemoOptions {
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
+  async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> { throw notImplemented("getReviewForecast"); }
   private store: DemoStore;
   private readonly now: () => number;
   constructor(options: DemoOptions = {}) {

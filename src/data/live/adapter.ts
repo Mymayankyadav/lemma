@@ -6,11 +6,12 @@ import { dueToday, studyDayBounds, projectProgress, conceptStatus } from '../../
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError } from '../api'
+import { LemmaError, notImplemented } from '../api'
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ async getReviewForecast(): ReturnType<LemmaApi['getReviewForecast']> { throw notImplemented('getReviewForecast') }
  async getAuth(...args: Parameters<LemmaApi['getAuth']>): ReturnType<LemmaApi['getAuth']> {
   const {data,error} = await liveClient().auth.getUser()
   if (error && !/missing|session/i.test(error.message)) fail(error)
@@ -134,7 +135,7 @@ export class LiveAdapter implements LemmaApi {
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
   const [slug]=args,db=liveClient(),uid=await owner(db)
-  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).single()) as Row
+  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).neq('status','archived').single()) as Row
   const [subjects,cps,prereqs,proposalRows,sources,sessionList,settings,due]=await Promise.all([
     rows(db,'subjects',uid),rows(db,'checkpoints',uid),rows(db,'checkpoint_prereqs',uid),
     rows(db,'proposals',uid),rows(db,'sources',uid),this.listSessions(slug),this.getSettings(),
