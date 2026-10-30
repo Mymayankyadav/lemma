@@ -138,3 +138,18 @@ test('Again dashes its polygon side and returns after two other cards',async({pa
  await expect(page.locator('[data-review-edge="missed"]')).toHaveCount(0)
  await page.screenshot({path:'test-results/screens/review-again-polygon.png',fullPage:true})
 })
+
+test('right swipe grades Good after confidence reveal',async({page})=>{
+ await page.getByRole('button',{name:'Start review'}).click()
+ await page.getByRole('button',{name:'Sure',exact:true}).click()
+ const box=await page.locator('[data-card]').first().boundingBox()
+ expect(box).not.toBeNull()
+ const x=box!.x+box!.width/2,y=box!.y+box!.height/2
+ await page.mouse.move(x,y)
+ await page.mouse.down()
+ await page.mouse.move(x+170,y,{steps:12})
+ await page.mouse.up()
+ await expect(page.locator('[data-review-edge="passed"]')).toHaveCount(1)
+ await expect(page.getByRole('button',{name:'Sure',exact:true})).toBeVisible()
+ await page.screenshot({path:'test-results/screens/review-swipe-good.png',fullPage:true})
+})
