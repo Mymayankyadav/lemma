@@ -13,10 +13,11 @@ import {Button} from '../../ui/Button';
 import {Segmented} from '../../ui/Segmented';
 import {AtlasListViews} from './AtlasListViews';
 import {AtlasMinimap} from './AtlasMinimap';
+import {OrbitRings} from './OrbitRings';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
-import {fitAtlasViewport,layoutAtlas,nebula,visibleAtlasLabels} from './graph';
+import {fitAtlasViewport,layoutAtlas,visibleAtlasLabels} from './graph';
 import type {AtlasNode,Point} from './graph';
 
 type Filter='all'|'revisit'|'demonstrated';
@@ -257,17 +258,7 @@ export default function Page(){
    </defs>
    <motion.g transform={'translate('+view.x+' '+view.y+') scale('+view.k+')'}
     initial={reduce?false:{opacity:0}} animate={{opacity:1}} transition={{duration:reduce?.15:1}}>
-    {graph.subjects.map(subject=>{
-     const members=nodeList.filter(node=>node.subjectId===subject.id);
-     const shape=nebula(members.map(n=>positions[n.id]??n));
-     if(!shape)return null;
-     return <g key={subject.id} pointerEvents="none">
-      <path d={shape.path} fill={'url(#nebula-'+subject.id+')'} stroke={'var(--'+subject.hue+')'} strokeOpacity=".32"
-       strokeWidth="1" strokeDasharray="3 6"/>
-      <text x={shape.label.x} y={shape.label.y} fill={'var(--'+subject.hue+')'} fillOpacity=".86"
-       fontSize="12" fontWeight="600" fontFamily="var(--font-ui)">{subject.name}</text>
-     </g>;
-    })}
+    <OrbitRings graph={graph} nodes={nodeList.map(n=>({...n,...positions[n.id]}))} scale={view.k}/>
     {layout?.edges.map((edge,index)=>{
      const from=byId?.get(edge.fromId),to=byId?.get(edge.toId);
      if(!from||!to)return null;
