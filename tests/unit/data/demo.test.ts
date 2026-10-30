@@ -220,6 +220,38 @@ describe("demo adapter", () => {
     await api.setNoteStatus(note.noteNo, "suspended");
     expect((await api.getCard(note.noteNo)).note.status).toBe("suspended");
   });
+  it("can ingest a three-file demo queue through the real PDF parser", async () => {
+    const api = make();
+    const project = (await api.getProject("real-analysis")).project;
+    const bytes = await readFile(
+      new URL("../../fixtures/sample.pdf", import.meta.url),
+    );
+    const names = ["lecture-a.pdf", "lecture-b.pdf", "problem-set.pdf"];
+    const phases: Record<string, string[]> = Object.fromEntries(
+      names.map(name => [name, []]),
+    );
+    const uploads = await Promise.all(names.map(name =>
+      api.addSource(
+        project.id,
+        new File([bytes], name, {type: "application/pdf"}),
+        progress => phases[name].push(progress.phase),
+      ),
+    ));
+    expect(uploads).toHaveLength(3);
+    for (const [index, source] of uploads.entries()) {
+      expect(source).toMatchObject({status: "ready", pageCount: 3, filename: names[index]});
+      expect(phases[names[index]]).toContain("reading");
+      expect(phases[names[index]].at(-1)).toBe("done");
+    }
+    const stored = JSON.parse(await (await api.exportAll()).text()) as DemoStore;
+    for (const source of uploads) {
+      expect(stored.sources.find(s => s.id === source.id)?.pages).toHaveLength(3);
+    }
+    const projectSources = (await api.getProject("real-analysis")).sources;
+    for (const source of uploads) {
+      expect(projectSources.find(s => s.id === source.id)).toMatchObject({status: "ready"});
+    }
+  });
   it("imports real PDF pages even when another operation rolls back during ingestion", async () => {
     const api = make(),
       project = (await api.getProject("real-analysis")).project;
