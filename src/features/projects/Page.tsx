@@ -53,7 +53,10 @@ export default function Page(){
  const slug=(all.find(p=>p.slug===requested)??all.find(p=>p.status==='active')??all[0])?.slug;
  return <Screen tabBar className="gap-5">
   <header className="flex min-h-11 items-center justify-between gap-3">
-   <h1 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h1>
+   <div>
+    <h1 className="sr-only">Projects</h1>
+    <h2 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h2>
+   </div>
    <nav aria-label="Path actions" className="flex gap-2">
     <Link to="/atlas" aria-label="Open Atlas" className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-fill-1 text-ink-2"><Waypoints size={19}/></Link>
     <Link to="/projects/new" aria-label="New project" className="flex min-h-11 items-center gap-2 rounded-ctl border border-amber bg-amber-tint px-3 text-label text-amber"><Plus size={16}/>New</Link>
