@@ -69,7 +69,7 @@ export function fitAtlas(nodes:readonly Point[],w:number,h:number,margin=24){
 
 /** Fit within the unobstructed area between Atlas's header and detail tray. */
 export function fitAtlasViewport(nodes: readonly Point[], width: number, height: number) {
- const top = Math.min(150, height * 0.24);
+ const top = Math.min(205, height * 0.28);
  const bottom = Math.min(132, height * 0.21);
  const availableHeight = Math.max(100, height - top - bottom);
  const fit = fitAtlas(nodes, width, availableHeight, 24);
