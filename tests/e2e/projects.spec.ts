@@ -112,7 +112,7 @@ test('removed PDF can be selected again from the native file picker',async({page
  await expect(page.getByRole('alert')).toHaveCount(0)
  await page.screenshot({path:'test-results/screens/new-project-reselected-pdf.png',fullPage:true})
  await page.getByRole('button',{name:'Create project'}).click()
- await expect(page).toHaveURL(/#\\/p\\/reselected-pdf$/,{timeout:30000})
+ await expect(page).toHaveURL(/#\/p\/reselected-pdf$/,{timeout:30000})
  await expect(page.getByText(/Project created/)).toBeVisible()
 })
 test('rejects non-PDF files without creating a project',async({page})=>{
