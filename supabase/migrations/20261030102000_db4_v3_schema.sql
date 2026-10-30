@@ -268,10 +268,10 @@ begin
       and not exists(select 1 from public.checkpoint_concepts cc join public.concepts c on c.id=cc.concept_id where c.subject_id=s.id);
   if algebra_subject is not null then
     select count(*) into orphan_count from public.concepts where subject_id=algebra_subject;
-    if orphan_count between 1 and 100 then
+    if orphan_count=79 then
       delete from public.concepts where subject_id=algebra_subject;
-    elsif orphan_count>100 then
-      raise notice 'DB-4: unexpected orphan count %, skipping Algebra cleanup',orphan_count;
+    elsif orphan_count>0 then
+      raise notice 'DB-4: orphan count changed from the reviewed 79 to %; skipping cleanup',orphan_count;
     end if;
   end if;
 end $$;
