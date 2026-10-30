@@ -10,7 +10,7 @@ test('Euclid Paths shows goal, stages, current work and checkpoint states',async
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await expect(page.getByRole('heading',{name:'Project',level:1})).toBeVisible()
- await expect(page.getByRole('navigation',{name:'Choose a path'}).getByRole('link',{name:/Real Analysis/})).toHaveAttribute('aria-current','page')
+ await expect(page.getByRole('button',{name:'Switch project from Real Analysis'})).toBeVisible()
  await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Rudin')
  await expect(page.getByRole('region',{name:'Checkpoint progress'})).toContainText('12')
  await expect(page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="ascent"]')).toBeVisible()
@@ -30,18 +30,23 @@ test('Euclid Paths shows goal, stages, current work and checkpoint states',async
  expect(errors).toEqual([])
 })
 
-test('Path chips switch projects and checkpoint rows open sheets',async({page})=>{
- const chips=page.getByRole('navigation',{name:'Choose a path'})
- await chips.getByRole('link',{name:/Linear Algebra/}).click()
+test('Project title opens a searchable recent-project switcher',async({page})=>{
+ await page.getByRole('button',{name:'Switch project from Real Analysis'}).click()
+ const dialog=page.getByRole('dialog',{name:'Switch project'})
+ await expect(dialog.getByRole('button',{name:/Linear Algebra/})).toBeVisible()
+ await dialog.getByRole('button',{name:/Linear Algebra/}).click()
  await expect(page).toHaveURL(/linear-algebra$/)
  await expect(page.getByRole('heading',{name:'Project',level:1})).toContainText('Linear Algebra')
- await chips.getByRole('link',{name:/Real Analysis/}).click()
+ await page.getByRole('button',{name:'Switch project from Linear Algebra'}).click()
+ const search=page.getByRole('dialog',{name:'Switch project'}).getByRole('searchbox',{name:'Find a project'})
+ await search.fill('Real')
+ await expect(page.getByRole('dialog',{name:'Switch project'}).getByRole('button',{name:/Real Analysis/})).toBeVisible()
+ await page.getByRole('dialog',{name:'Switch project'}).getByRole('button',{name:/Real Analysis/}).click()
  await expect(page).toHaveURL(/real-analysis$/)
  await page.getByRole('region',{name:'Stages'}).getByRole('link',{name:/CP4 Compactness, in progress/}).click()
  await expect(page).toHaveURL(/CP4$/)
  await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible()
 })
-
 test('Sessions and Sources tabs preserve the selected tab in URL',async({page})=>{
  await page.getByRole('button',{name:/Sessions/}).click()
  await expect(page).toHaveURL(/tab=sessions/)
