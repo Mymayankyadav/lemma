@@ -8,3 +8,7 @@
 
 /* Preserve the visual and linguistic bond between an inline formula and punctuation. */
 .lemma-math-punct { white-space: nowrap; }
+
+/* Inline rich text can live inside a heading, caption or ordinary sentence. */
+.lemma-tex-inline { display: inline; max-width: 100%; overflow-wrap: anywhere; }
+.lemma-tex-inline .katex { white-space: nowrap; }
