@@ -383,19 +383,11 @@ export class LiveAdapter implements LemmaApi {
   return count
  }
  async getDeckTree(...args: Parameters<LemmaApi['getDeckTree']>): ReturnType<LemmaApi['getDeckTree']> {
-  const [projects,due,checkpoints]=await Promise.all([
-    this.listProjects(),
-    this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false}),
-    (async()=>{const db=liveClient(),uid=await owner(db);return rows(db,'checkpoints',uid)})()
-  ])
-  return projects.map(p=>{
-    const mine=due.filter(c=>c.projectSlug===p.slug)
-    const children=checkpoints.filter(c=>c.project_id===p.id).sort((a,b)=>a.position-b.position)
-      .map(c=>({key:`cp:${p.slug}:${c.code}` as const,label:c.title,glyph:p.subject.glyph,
-        level:1 as const,due:mine.filter(card=>card.checkpointCode===c.code).length,children:[]}))
-    return {key:`project:${p.slug}` as const,label:p.title,glyph:p.subject.glyph,
-      level:0 as const,due:mine.length,children}
-  })
+  const db=liveClient()
+  await owner(db)
+  // ST-5: daily due counts and deck hierarchy are computed in PostgreSQL.
+  // Do not download every review, note, card and checkpoint to open Review.
+  return checked(await db.rpc('deck_tree')) as import('../types').DeckNode[]
  }
  async getReviewItems(...args: Parameters<LemmaApi['getReviewItems']>): ReturnType<LemmaApi['getReviewItems']> {
   const [filter]=args,db=liveClient(),uid=await owner(db)
