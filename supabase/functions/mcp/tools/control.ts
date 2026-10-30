@@ -58,17 +58,21 @@ export async function setPrompt(c:Context,a:any){const global=a.scope==='all',r=
  enqueue(c,global?'settings':'projects',global?{user_id:c.userId}:{id:r.id},{[key]:value});return 'saved for '+(global?'all chats':r.slug)+' ('+(value?.length||0)+' chars)';}
 export async function history(c:Context,a:any){const fetched=await scoped(c,'v_history').order('no',{ascending:false}).limit(1000);if(fetched.error)throw Error(fetched.error.message);let acts:any[]=(fetched.data||[]).filter((x:any)=>x.tool!=='heartbeat');if(a.project){
   const p=await project(c,a.project),actionNos=acts.map(x=>x.no),ids=new Set<number>();
-  // One action can change many rows. An unpaged PostgREST read silently drops
-  // changes after its row limit (normally 1000), hiding recent project actions.
+  // Filter in PostgREST *before* pagination: scanning every owner's change
+  // (and transferring old/new row JSON) can exhaust an Edge request budget.
+  // A project action can change its own row (id) or a child (project_id).
+  const projectFilter=['old','new'].flatMap(side=>[
+   side+'->>project_id.eq.'+p.id,side+'->>id.eq.'+p.id
+  ]).join(',');
   if(actionNos.length){
    const pageSize=500;
    for(let offset=0;;offset+=pageSize){
-    const {data,error}=await c.db.from('action_changes').select('action_no,old,new')
-     .in('action_no',actionNos).order('id',{ascending:true}).range(offset,offset+pageSize-1);
+    const {data,error}=await c.db.from('action_changes').select('action_no')
+     .in('action_no',actionNos).or(projectFilter)
+     .order('id',{ascending:true}).range(offset,offset+pageSize-1);
     if(error)throw Error(error.message);
     const page=data||[];
-    for(const x of page)if([x.old,x.new].some((v:any)=>v?.project_id===p.id||v?.id===p.id))
-     ids.add(Number(x.action_no));
+    for(const x of page)ids.add(Number(x.action_no));
     if(page.length<pageSize)break;
    }
   }
