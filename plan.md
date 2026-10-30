@@ -308,6 +308,17 @@ Notes per task:
 3. Re-run until all checks pass.
 - Done when: a report with every check PASS is merged.
 
+### Owner requests after the first build (30 Oct)
+
+#### UI-3 Themes, density and calm (priority for the app)
+- Depends on: everything merged so far. Owns: `src/styles/**`, `src/ui/**`, `index.html` boot script, `scripts/make-themes.ts`, `scripts/review-shots.mjs`, `.github/workflows/review-shots.yml`, `src/features/settings/Appearance*.tsx`, and size/colour classes in every `src/features/**` file (coordinate: touch only class names there).
+- Read: `docs/spec/themes.md` (all); it overrides sizes, elevations and motion defaults in `design.md`.
+- PR 1 `UI-3 tokens and density`: semantic type and spacing tokens, replace every `text-[Npx]` and hard-coded size; densities compact/cozy/comfortable; default compact.
+- PR 2 `UI-3 themes and lab`: `themes.ts` + generator + `themes.css` with the contrast gate; boot script; Settings › Appearance; floating lab button and sheet.
+- PR 3 `UI-3 calm and space use`: effects calm/rich (default calm) and the layout fixes of `themes.md` §5.
+- After PR 3: push a branch `review/themes` with `THEMES=all` so the review workflow commits contact sheets per theme; link them in the PR.
+- Done when: `themes.md` §7.
+
 ## 9. Milestones (order of work when fewer agents are available)
 
 0. **M0 Chat-first (priority)**: DB-1 and MCP-1 → the owner connects Claude and ChatGPT and studies in chat.
