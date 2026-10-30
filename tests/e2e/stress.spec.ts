@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { stressViolations } from '../../scripts/stress-limits';
 
 type Measurement = {
  route: string; actualRoute: string; profile: string; theme: string; width: number;
@@ -32,7 +33,8 @@ async function measure(page: Page, route: string, profile: string, theme: string
     if (Math.abs(centers[i].y-centers[i-1].y)<10) gaps.push(Math.abs(centers[i].x-centers[i-1].x));
    }
   }
-  const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+  const resources = (performance.getEntriesByType('resource') as PerformanceResourceTiming[])
+   .filter(entry => /\/(rest|functions)\/v1\//.test(entry.name));
   return {
    nodes: document.querySelectorAll('*').length,
    horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
@@ -83,8 +85,9 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   await cdp.detach();
   mkdirSync('test-results/stress',{recursive:true});
   const file = 'test-results/stress/'+profile+'-'+theme+'-'+width+'.json';
-  writeFileSync(file,JSON.stringify(measurements,null,2));
-  await testInfo.attach('stress-measurements',{body:JSON.stringify(measurements,null,2),contentType:'application/json'});
+  const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
+  writeFileSync(file,JSON.stringify(report,null,2));
+  await testInfo.attach('stress-measurements',{body:JSON.stringify(report,null,2),contentType:'application/json'});
   // ST-0 establishes the baseline and route inventory. ST-1…ST-7 enforce
   // the hard thresholds once the known pre-existing scale failures are fixed.
   expect(measurements.map(m=>m.route)).toEqual([...routes]);
