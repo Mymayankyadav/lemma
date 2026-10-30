@@ -37,6 +37,7 @@ for (const [theme, width, height] of [['graph',390,844],['graph-night',360,740]]
    const start = Date.now();
    await page.goto(`/lemma/?demo=${profile}&theme=${theme}#${route}`, {waitUntil:'domcontentloaded',timeout:90_000});
    await expect(page.locator('#main-content')).toBeVisible({timeout:90_000});
+   await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
    await page.waitForTimeout(250);
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start));
    const name = route === '/' ? 'today' : route.replaceAll('/','-').replace(/^-/, '');
