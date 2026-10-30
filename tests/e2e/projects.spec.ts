@@ -39,6 +39,7 @@ test('v3 creates a project from its name alone',async({page})=>{
  await page.getByRole('button',{name:'Create project'}).click()
  await expect(page).toHaveURL(/#\/p\/complex-analysis\?tab=sources$/)
  await expect(page.getByText(/Project created/)).toBeVisible()
+ await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Your tutor fills this in')
 })
 test('v3 accepts multiple real PDFs in one queue and uploads sequentially',async({page})=>{
  await page.goto('./?demo=1#/projects/new')
