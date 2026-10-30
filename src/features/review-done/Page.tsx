@@ -13,6 +13,7 @@ import {Tile} from '../../ui/Tile';
 import {Slab} from '../../ui/Slab';
 import {Button} from '../../ui/Button';
 import {RoundSeal} from './RoundSeal';
+import {prepareSessionNewRound} from './newSession';
 
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
  return <Tile className="flex min-h-[95px] flex-col items-center justify-center gap-1 px-2 py-3 text-center">
@@ -25,6 +26,7 @@ export default function Page(){
  const reduced=!!useReducedMotion(),calm=useCalm(),quiet=reduced||calm;
  const navigate=useNavigate(),answers=useReviewSession(s=>s.answers),filter=useReviewSession(s=>s.filter);
  const settings=useSettings(),[tomorrow,setTomorrow]=useState<number|null>(null);
+ const [newPending,setNewPending]=useState(false),[newMessage,setNewMessage]=useState<string|null>(null);
  const stats=useMemo(()=>summarizeReviewSession(answers.map(a=>({rating:a.rating,confidence:a.confidence,
   durationMs:a.durationMs,stateBefore:a.card.state.state}))),[answers]);
  useEffect(()=>{
@@ -58,7 +60,17 @@ export default function Page(){
   useReviewSession.getState().initialize(cards,settings.data,filter);
   navigate('/review/run');
  }
- const newRemaining=answers.filter(a=>a.card.state.state===0).length>0;
+ async function reviewNewFromSession(){
+  if(!settings.data||!filter.sessionId||newPending)return;
+  setNewPending(true);setNewMessage(null);
+  try{
+   const started=await prepareSessionNewRound(getApi(),settings.data,filter,useReviewSession.getState().initialize);
+   if(!started){setNewMessage('No new cards are due from this session.');return}
+   navigate('/review/run?session='+encodeURIComponent(filter.sessionId)+'&new=1');
+  }catch{
+   setNewMessage('Could not load new cards. Try again.');
+  }finally{setNewPending(false)}
+ }
  return <Screen className="items-center gap-5">
   <div className="mt-4 flex flex-col items-center text-center">
    <RoundSeal order={firstAnswers.map(a=>a.card.cardId)} answers={answers}/>
@@ -86,7 +98,11 @@ export default function Page(){
   <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
    Review more
   </Link>
-  {newRemaining&&filter.sessionId&&<Link to={'/review/run?session='+encodeURIComponent(filter.sessionId)+'&new=1'}
-   className="flex min-h-11 items-center justify-center text-label text-ink-2">Review new cards from this session</Link>}
+  {filter.sessionId&&<div className="flex w-full flex-col items-center gap-2">
+   <Button variant="ghost" disabled={newPending||!settings.data} onClick={()=>{void reviewNewFromSession()}}>
+    {newPending?'Checking new cards…':'Review new cards from this session'}
+   </Button>
+   {newMessage&&<p role="status" className="text-center text-label text-ink-2">{newMessage}</p>}
+  </div>}
  </Screen>;
 }
