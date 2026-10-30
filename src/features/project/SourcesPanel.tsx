@@ -13,7 +13,7 @@ const limit=50*1024*1024;
 export function SourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
  const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0);
- const [queue,setQueue]=useState<QueueEntry[]>([]),[editing,setEditing]=useState<string|null>(null),
+ const [queue,setQueue]=useState<QueueEntry[]>([]),[tick,setTick]=useState(0),[editing,setEditing]=useState<string|null>(null),
   [title,setTitle]=useState(''),[kind,setKind]=useState<SourceKind>('other'),[confirm,setConfirm]=useState<string|null>(null);
  const patch=(entryId:number,changes:Partial<QueueEntry>)=>setQueue(old=>old.map(x=>x.id===entryId?{...x,...changes}:x));
  function enqueue(files:FileList|File[]){
@@ -29,7 +29,6 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   const next=queue.find(x=>x.phase==='queued');
   if(!next)return;
   running.current=true;
-  let cancelled=false;
   const upload=async()=>{
    patch(next.id,{phase:'reading',error:null});
    try{
@@ -40,18 +39,17 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
      patch(next.id,{phase:'failed',error:'Already added'});return;
     }
     await add.mutateAsync({projectId,file:next.file,onProgress:p=>{
-     if(!cancelled)patch(next.id,{progress:p,phase:p.phase==='done'?'saving':p.phase==='failed'?'failed':p.phase});
+     patch(next.id,{progress:p,phase:p.phase==='done'?'saving':p.phase==='failed'?'failed':p.phase});
     }});
-    if(!cancelled){patch(next.id,{phase:'ready',error:null});notify('PDF added',{tone:'success'})}
+    patch(next.id,{phase:'ready',error:null});notify('PDF added',{tone:'success'});
    }catch(error){
-    if(!cancelled)patch(next.id,{phase:'failed',error:error instanceof Error?error.message:'Upload failed'});
-   }finally{running.current=false}
+    patch(next.id,{phase:'failed',error:error instanceof Error?error.message:'Upload failed'});
+   }finally{running.current=false;setTick(n=>n+1)}
   };
   void upload();
-  return()=>{cancelled=true};
- // A single queue entry is consumed at a time. A change of sources does not restart an in-flight upload.
+ // A single queue entry is consumed at a time; tick schedules the next queued file after completion.
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[queue,projectId]);
+ },[queue,projectId,tick]);
  async function save(source:Source){
   try{await update.mutateAsync({id:source.id,patch:{title:title.trim()||source.title,kind}});setEditing(null);notify('Source updated',{tone:'success'})}
   catch(error){notify(error instanceof Error?error.message:'Could not update source',{tone:'danger'})}
