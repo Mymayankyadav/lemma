@@ -75,7 +75,7 @@ function Minimap({model,parentId,view,width,height,onNavigate}:{
   onNavigate({x:(x-projection.x)/projection.k,y:(y-projection.y)/projection.k});
  };
  return <button type="button" aria-label="Move Atlas viewport" data-minimap="true"
-  className="absolute bottom-[86px] right-3 z-10 size-24 touch-none overflow-hidden rounded-ctl border border-edge-2 bg-raised shadow-[var(--e-card)]"
+  className="absolute bottom-3 right-3 z-10 size-24 touch-none overflow-hidden rounded-ctl border border-edge-2 bg-raised shadow-[var(--e-card)]"
   onPointerDown={e=>{drag.current=e.pointerId;e.currentTarget.setPointerCapture(e.pointerId);navigate(e.currentTarget,e.clientX,e.clientY)}}
   onPointerMove={e=>{if(drag.current===e.pointerId)navigate(e.currentTarget,e.clientX,e.clientY)}}
   onPointerUp={e=>{drag.current=null;if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId)}}
@@ -292,7 +292,7 @@ export default function Page(){
    </div>
    {children.length===0&&<div className="pointer-events-none absolute inset-0 flex items-center justify-center text-ink-3">No ideas here</div>}
    {!selected&&children.length>0&&<>
-    <div className="absolute bottom-[86px] right-[114px] z-10 flex flex-col rounded-ctl border border-edge bg-raised shadow-[var(--e-card)]">
+    <div className="absolute bottom-3 right-[114px] z-10 flex flex-col rounded-ctl border border-edge bg-raised shadow-[var(--e-card)]">
      <button type="button" aria-label="Zoom in" onClick={()=>zoomAt(1.4)} className="flex size-11 items-center justify-center"><Plus size={18}/></button>
      <button type="button" aria-label="Zoom out" onClick={()=>zoomAt(1/1.4)} className="flex size-11 items-center justify-center"><Minus size={18}/></button>
      <button type="button" aria-label="Fit graph" onClick={fitUniverse} className="flex size-11 items-center justify-center"><Compass size={18}/></button>

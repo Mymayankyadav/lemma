@@ -11,11 +11,11 @@ test('today desk shows resume, reviews, proposals and projects with no runtime e
  page.on('pageerror',error=>errors.push(error.message))
  page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
  await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible()
- await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible()
+ await expect(page.getByRole('region',{name:'Resume where you stopped'})).toContainText('Compactness, step 2 of 4')
  await expect(page.getByRole('link',{name:/cards due/i}).getByText('23',{exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:/6 proposals to approve/i}).getByText('6',{exact:true})).toBeVisible()
  await expect(page.getByText('to approve')).toBeVisible()
- await expect(page.getByText('Why is a finite subcover enough to separate x from K?')).toBeVisible()
+ await expect(page.getByRole('region',{name:'Resume where you stopped'})).not.toContainText('Why is a finite subcover enough to separate x from K?')
  await expect(page.getByRole('link',{name:/Real Analysis, 3 of 12 checkpoints/i})).toBeVisible()
  await expect(page.getByRole('region',{name:'Projects'}).getByRole('link',{name:/Topology/i})).toBeVisible()
  await expect(page.getByRole('region',{name:'Projects'}).getByRole('link',{name:/Linear Algebra/i})).toBeVisible()
@@ -25,19 +25,24 @@ test('today desk shows resume, reviews, proposals and projects with no runtime e
  expect(errors).toEqual([])
 })
 
-test('Resume copies the exact prompt and offers chat selection',async({page,context})=>{
+test('Last chat is a 56px passive row with a single Copy action',async({page,context})=>{
  await context.grantPermissions(['clipboard-read','clipboard-write'])
- await expect(page.getByRole('button',{name:'Resume',exact:true})).toBeVisible()
- // Open the copy-only menu item to avoid launching an external chat during CI.
- await page.getByRole('button',{name:'Choose chat app or copy prompt'}).click()
- await expect(page.getByRole('menuitem',{name:'Copy prompt'})).toBeVisible()
- await page.getByRole('menuitem',{name:'Copy prompt'}).click()
+ const handoff=page.getByRole('region',{name:'Resume where you stopped'})
+ await expect(handoff).toBeVisible()
+ await expect(handoff).toContainText('Compactness, step 2 of 4')
+ const box=await handoff.boundingBox()
+ expect(box).not.toBeNull()
+ expect(box!.height).toBeLessThanOrEqual(56)
+ await expect(handoff.locator('svg')).toHaveCount(0)
+ await expect(page.getByRole('button',{name:'Resume',exact:true})).toHaveCount(0)
+ await expect(page.getByRole('button',{name:'Choose chat app or copy prompt'})).toHaveCount(0)
+ await handoff.getByRole('button',{name:'Copy resume prompt'}).click()
  await expect(page.getByText('Prompt copied',{exact:true})).toBeVisible()
- const copied=await page.evaluate(()=>navigator.clipboard.readText())
- expect(copied).toBe('Resume Real Analysis')
- await page.getByRole('button',{name:'Choose chat app or copy prompt'}).click()
- await expect(page.getByRole('menuitem',{name:'ChatGPT'})).toBeVisible()
- await page.screenshot({path:'test-results/screens/home-resume-menu.png',fullPage:true})
+ expect(await page.evaluate(()=>navigator.clipboard.readText())).toBe('Resume Real Analysis')
+ for(const label of [/cards due/i,/proposals to approve/i]){
+  await expect(page.getByRole('link',{name:label}).locator('svg')).toHaveCount(0)
+ }
+ await page.screenshot({path:'test-results/screens/home-last-chat.png',fullPage:true})
 })
 
 test('home shortcuts navigate to review, proposals and the project path',async({page})=>{
