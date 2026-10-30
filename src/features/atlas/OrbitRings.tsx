@@ -56,8 +56,8 @@ export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:r
     onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id)}}}
     pointerEvents="all" className="cursor-pointer">
     <rect x={group.x-Math.max(128,group.name.length*10+55)/(2*scale)}
-     y={group.y-group.radius-34/scale} width={Math.max(128,group.name.length*10+55)/scale}
-     height={44/scale} fill="transparent" pointerEvents="all"/>
+     y={group.y-group.radius-41/scale} width={Math.max(128,group.name.length*10+55)/scale}
+     height={58/scale} fill="transparent" pointerEvents="all"/>
     <text x={group.x} y={group.y-group.radius-12/scale} textAnchor="middle"
      pointerEvents="none" fontFamily="var(--font-ui)" fontSize={13/scale} fontWeight="700"
      fill="var(--ink)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">
@@ -72,8 +72,8 @@ export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:r
      onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id,topic.id)}}}
      pointerEvents="all" className="cursor-pointer">
      <rect x={topic.x-Math.max(100,topic.name.length*9+28)/(2*scale)}
-      y={topic.y-topic.radius+9/scale} width={Math.max(100,topic.name.length*9+28)/scale}
-      height={44/scale} fill="transparent" pointerEvents="all"/>
+      y={topic.y-topic.radius+2/scale} width={Math.max(100,topic.name.length*9+28)/scale}
+      height={58/scale} fill="transparent" pointerEvents="all"/>
      <text x={topic.x} y={topic.y-topic.radius+34/scale}
       pointerEvents="none" textAnchor="middle" fontFamily="var(--font-ui)" fontSize={11/scale}
       fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">{topic.name}</text>
