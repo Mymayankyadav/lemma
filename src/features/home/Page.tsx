@@ -187,7 +187,7 @@ export default function Page(){
    <span><strong className="text-amber">Tutor not connected.</strong> Set up the connector in Settings to record study progress.</span>
    <ChevronRight size={18} className="shrink-0 text-amber"/>
   </Link>}
-  <GoalDistance projects={projects} variant={settings.data?.ui?.timeline==='metro'?'metro':'ascent'}/>
+  <GoalDistance projects={projects} variant="metro"/>
   <section aria-label="Cards" className="flex flex-col gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Cards</h2>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
