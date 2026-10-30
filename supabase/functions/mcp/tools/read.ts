@@ -115,29 +115,36 @@ export async function get(c: Context, a:any):Promise<string>{
 }
 
 export async function readPages(c:Context,a:any):Promise<string>{
-  const p=await project(c,a.project),src=await source(c,p,a.source);
-  if(!src.has_text||src.page_count===0)return 'This PDF has no extractable text (scanned or attached in chat). Ask the user to paste the passage or read the attached PDF.';
-  const labels=pageRange(a.from,a.to);
-  if(a.pdf&&labels.some((x:string)=>!/^\d+$/.test(x)||Number(x)<1))
-    throw new Error('PDF page indexes must be positive integers');
-  let q=scoped(c,'source_pages').eq('source_id',src.id);
-  if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');
-  else q=q.in('label',labels).order('page');
-  const {data,error}=await q;if(error)throw new Error(error.message);
-  if(!data?.length)throw new Error('No pages found. Use get(what=outline) for page indexes.');
-  const parts:string[]=[];
-  for(const row of data.slice(0,5)){
-    const head='=== p.'+(row.label||row.page)+' (pdf '+row.page+') ===\n';
-    const room=12000-parts.join('\n').length-head.length-80;
-    if(room<=0)break;
-    parts.push(head+String(row.body||'').slice(0,room));
-    if(String(row.body||'').length>room){parts.push('[cut, call again from p.'+(Number(row.page)+1)+']');break}
-  }
-  return parts.join('\n').slice(0,12000);
+ const p=await project(c,a.project);
+ const selected=a.source?[await source(c,p,a.source)]:(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+ if(!selected.length)throw Error('No sources in this project');
+ const readable=selected.filter((x:any)=>x.has_text&&x.page_count!==0);
+ if(!readable.length)return 'These PDFs have no extractable text. Ask the student to paste the passage or read the attached PDFs.';
+ const labels=pageRange(a.from,a.to);
+ if(a.pdf&&labels.some((x:string)=>!/^\\d+$/.test(x)||Number(x)<1))
+   throw Error('PDF page indexes must be positive integers');
+ let q=scoped(c,'source_pages').in('source_id',readable.map((x:any)=>x.id));
+ if(a.pdf)q=q.gte('page',Number(labels[0])).lte('page',Number(labels[labels.length-1])).order('page');
+ else q=q.in('label',labels).order('page');
+ const {data,error}=await q.limit(40);
+ if(error)throw Error(error.message);
+ if(!data?.length)throw Error('No pages found. Use get(what=outline) for page indexes.');
+ const parts:string[]=[];
+ for(const row of data.slice(0,5)){
+  const src=readable.find((x:any)=>x.id===row.source_id);
+  const head='=== '+(src?.short||'?')+' "'+cut(src?.title||'',50)+'" p.'+(row.label||row.page)+' (pdf '+row.page+') ===\\n';
+  const room=12000-parts.join('\\n').length-head.length-80;
+  if(room<=0)break;
+  parts.push(head+String(row.body||'').slice(0,room));
+  if(String(row.body||'').length>room){parts.push('[cut, call again by source from p.'+(Number(row.page)+1)+']');break}
+ }
+ return parts.join('\\n').slice(0,12000);
 }
 export async function search(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project);
-  const sources=(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+  const allSources=(await scoped(c,'sources').eq('project_id',p.id)).data||[];
+  const sources=a.source?allSources.filter((x:any)=>x.short===a.source):allSources;
+  if(a.source&&!sources.length)throw Error('Unknown source '+a.source+'; choose: '+allSources.map((x:any)=>x.short).join(', '));
   if(!sources.length)return 'No PDFs in this project; check the book attached to chat.';
   const ids=sources.map((x:any)=>x.id);
   const q=scoped(c,'source_pages','source_id,page,label,body').in('source_id',ids).textSearch('tsv',a.query,{type:'websearch',config:'english'}).limit(Math.min(a.limit||5,8));
@@ -147,7 +154,7 @@ export async function search(c:Context,a:any):Promise<string>{
     const src=sources.find((y:any)=>y.id===x.source_id);
     const words=a.query.toLowerCase().split(/\s+/).filter(Boolean);
     const idx=Math.max(0,words.map((w:string)=>x.body.toLowerCase().indexOf(w)).filter((v:number)=>v>=0)[0]||0);
-    return src.short+' p.'+(x.label||x.page)+' (pdf '+x.page+'): …'+cut(x.body.slice(Math.max(0,idx-60),idx+210),210)+'…';
+    return (src?.short||'?')+' "'+cut(src?.title||'',35)+'" p.'+(x.label||x.page)+' (pdf '+x.page+'): …'+cut(x.body.slice(Math.max(0,idx-60),idx+210),210)+'…';
   });
   return capped(lines.join('\n'),1500);
 }
