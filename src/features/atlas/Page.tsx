@@ -23,7 +23,7 @@ function showStatus(body:Body){
 }
 function Geometry({body,scale,selected}:{body:Body;scale:number;selected:boolean}){
  const {radius:r,level,status}=body;
- const outline=showStatus(body)?status==='revisit'?'var(--hard)':'var(--amber)':'var(--ink-2)';
+ const outline=showStatus(body)?status==='revisit'?'var(--hard)':status==='not_started'?'var(--ink-3)':'var(--amber)':'var(--ink-2)';
  const fill=status==='demonstrated'?'var(--amber)':'var(--obsidian)';
  const progress=body.total?body.done/body.total:0;
  const clusterArc=Math.max(r*.7,r-6/scale),smallArc=Math.max(r*.7,r-4/scale);
@@ -97,7 +97,7 @@ export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams(),toast=useToast();
  const query=useAtlas(),graph=query.data;
  const model=useMemo(()=>graph?buildCosmos(graph):null,[graph]);
- const svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior|null>(null);
+ const svg=useRef<SVGSVGElement>(null),zoomRef=useRef<ZoomBehavior|null>(null),flight=useRef<number|null>(null);
  const viewRef=useRef<Camera>({x:0,y:0,k:1}),userMoved=useRef(false);
  const [view,setView]=useState<Camera>(viewRef.current);
  const [size,setSize]=useState({width:390,height:680});
@@ -111,15 +111,29 @@ export default function Page(){
  const selected=selectedId?model?.bodies.get(selectedId):null;
  const path=model?ancestry(model,current?.id??null):[];
  const focusSlug=params.get('focus');
- const focusNode=useCallback((id:string|null,fitCamera=true)=>{
+ const focusNode=useCallback((id:string|null,fitCamera=true,animate=true)=>{
   if(!model)return;
   const node=id?model.bodies.get(id):null;
   setParentId(node?.id??null);
   if(!fitCamera||!svg.current||!zoomRef.current)return;
+  const el=svg.current,behavior=zoomRef.current;
   const nodes=childrenOf(model,node?.id??null);
-  const rect=svg.current.getBoundingClientRect(),camera=fit(area(nodes),rect.width,rect.height);
+  const rect=el.getBoundingClientRect(),camera=fit(area(nodes),rect.width,rect.height);
   userMoved.current=true;
-  select(svg.current).call(zoomRef.current.transform,zoomIdentity.translate(camera.x,camera.y).scale(camera.k));
+  if(flight.current!==null){cancelAnimationFrame(flight.current);flight.current=null}
+  const setCamera=(next:Camera)=>select(el).call(behavior.transform,
+   zoomIdentity.translate(next.x,next.y).scale(next.k));
+  if(!animate||window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+   setCamera(camera);return;
+  }
+  const start={...viewRef.current},began=performance.now();
+  const frame=(now:number)=>{
+   const progress=Math.min(1,(now-began)/220),ease=1-Math.pow(1-progress,3);
+   setCamera({x:start.x+(camera.x-start.x)*ease,y:start.y+(camera.y-start.y)*ease,
+    k:Math.exp(Math.log(start.k)+(Math.log(camera.k)-Math.log(start.k))*ease)});
+   if(progress<1)flight.current=requestAnimationFrame(frame);else flight.current=null;
+  };
+  flight.current=requestAnimationFrame(frame);
  },[model]);
  const setSelection=useCallback((id:string|null)=>{
   setSelectedId(id);
@@ -136,7 +150,7 @@ export default function Page(){
  const zoomAt=useCallback((factor:number)=>{
   if(svg.current&&zoomRef.current)select(svg.current).call(zoomRef.current.scaleBy,factor);
  },[]);
- const fitUniverse=useCallback(()=>{setSelection(null);focusNode(null)},[focusNode,setSelection]);
+ const fitUniverse=useCallback(()=>{setSelection(null);focusNode(null,true,false)},[focusNode,setSelection]);
  useEffect(()=>{
   if(!svg.current||!model)return;
   const el=svg.current;
@@ -147,6 +161,7 @@ export default function Page(){
     const t=event.transform as ZoomTransform;
     const camera={x:t.x,y:t.y,k:t.k};viewRef.current=camera;setView(camera);
     if(event.sourceEvent){
+     if(flight.current!==null){cancelAnimationFrame(flight.current);flight.current=null}
      userMoved.current=true;
      // Semantic zoom changes only the visible level, never the camera.
      if(Date.now()-lastSemantic.current>220){
@@ -183,7 +198,7 @@ export default function Page(){
    const camera=fit(area(childrenOf(model,null)),rect.width,rect.height);
    selection.call(behavior.transform,zoomIdentity.translate(camera.x,camera.y).scale(camera.k));
   }
-  return()=>{resize.disconnect();selection.on('.zoom',null);zoomRef.current=null};
+  return()=>{if(flight.current!==null)cancelAnimationFrame(flight.current);flight.current=null;resize.disconnect();selection.on('.zoom',null);zoomRef.current=null};
  },[model]);
  useEffect(()=>{
   if(!model||!focusSlug)return;
