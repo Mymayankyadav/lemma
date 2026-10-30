@@ -80,10 +80,13 @@ export async function selftest(c:Context):Promise<any>{
     await check('create, list and decide',async()=>{
       const title='zz-selftest extra '+Date.now();
       extraSubjectName='zz-selftest-'+Date.now();
-      const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal'});
+      let invalid='';try{await run('create_project',createProject,{title,subject:extraSubjectName,goal:'Demo goal',style:'Teach with careful examples'});}catch(e){invalid=(e as Error).message;}
+      if(!invalid.includes('Unknown style key')||!invalid.includes('socratic'))throw Error('Invalid style accepted or usable keys missing');
+      if((await scoped(c,'subjects').eq('name',extraSubjectName)).data?.length)throw Error('Rejected style created a subject');
+      const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal',style:'socratic'});
       const slug=r.match(/^created (\S+)/)?.[1];
       if(!slug)throw Error('Project creation failed');
-      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;
+      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;if(newP?.style!=='socratic')throw Error('Valid style not saved');
       const lines=await proposals(c,{project:p.slug});
       if(!lines.includes('P'))throw Error('Pending proposals invisible');
       const {data:pending}=await scoped(c,'proposals').eq('project_id',p.id).eq('status','pending').eq('kind','card').order('no').limit(1);
