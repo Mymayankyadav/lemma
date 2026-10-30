@@ -24,7 +24,7 @@ export function atlasOrbitGroups(graph:AtlasGraph,nodes:readonly AtlasNode[]):Or
    id:subject.id+'|'+name,name,...circleFor(items,27),
    total:items.length,done:items.filter(n=>n.status==='demonstrated').length,
   }));
-  const ring=circleFor(members,Math.max(48,...topics.map(t=>t.radius+8)));
+  const ring=circleFor(members,46);
   return [{id:subject.id,name:subject.name,hue:subject.hue,...ring,topics,
    total:members.length,done:members.filter(n=>n.status==='demonstrated').length}];
  });
