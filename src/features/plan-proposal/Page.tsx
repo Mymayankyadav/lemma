@@ -132,6 +132,7 @@ function PlanMap({
                 }
               }}
             >
+              <circle cx={pos.x} cy={pos.y} r="23" fill="transparent" />
               <circle
                 cx={pos.x}
                 cy={pos.y}
