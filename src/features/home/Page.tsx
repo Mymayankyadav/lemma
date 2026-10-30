@@ -20,6 +20,7 @@ import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {CardFanArt} from '../../ui/art/CardFanArt';
 import type {HomeSummary, ProjectSummary} from '../../data/types';
+import {GoalDistance} from './GoalDistance';
 
 type ChatClient = 'claude' | 'chatgpt';
 
@@ -183,8 +184,11 @@ export default function Page(){
    <span><strong className="text-amber">Tutor not connected.</strong> Set up the connector in Settings to record study progress.</span>
    <ChevronRight size={18} className="shrink-0 text-amber"/>
   </Link>}
-  <ResumeCard home={home.data} client={client} onChoose={chooseChat}/>
-  <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
+  <GoalDistance projects={projects} variant={settings.data?.ui?.timeline==='metro'?'metro':'ascent'}/>
+  <section aria-label="Cards" className="flex flex-col gap-3">
+   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Cards</h2>
+   <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
+  </section>
   <section aria-label="Projects" className="flex flex-col gap-2">
    <div className="flex min-h-11 items-center justify-between">
     <h2 className="text-body-l font-semibold text-ink-2">Projects</h2>
@@ -195,6 +199,10 @@ export default function Page(){
    </div>
    {projects.length>4&&<Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All projects</Link>}
    {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
+  </section>
+  <section aria-label="Last chat" className="flex flex-col gap-3">
+   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Last chat</h2>
+   <ResumeCard home={home.data} client={client} onChoose={chooseChat}/>
   </section>
  </Screen>;
 }
