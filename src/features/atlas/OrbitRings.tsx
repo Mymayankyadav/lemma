@@ -66,9 +66,22 @@ export function OrbitRings({graph,nodes,scale,onFocus}:{graph:AtlasGraph;nodes:r
    </g>
    {group.topics.map(topic=><g key={topic.id}>
     <ProgressCircle ring={topic} scale={scale}/>
-    {topic.radius*scale>=44&&<text x={topic.x} y={topic.y-topic.radius+34/scale}
-     pointerEvents="none" textAnchor="middle" fontFamily="var(--font-ui)" fontSize={11/scale}
-     fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">{topic.name}</text>}
+    {topic.radius*scale>=44&&<g data-atlas-topic-focus={topic.id} role="button" tabIndex={0}
+     aria-label={'Focus '+group.name+' / '+topic.name}
+     onClick={event=>{event.stopPropagation();onFocus?.(group.id,topic.id)}}
+     onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onFocus?.(group.id,topic.id)}}}
+     pointerEvents="all" className="cursor-pointer">
+     {/* The hit area is outside the top of the ring, rather than over an idea.
+         At every camera scale it is at least 48 CSS pixels high. */}
+     <rect x={topic.x-Math.max(104,topic.name.length*10+40)/(2*scale)}
+      y={topic.y-topic.radius-47/scale} width={Math.max(104,topic.name.length*10+40)/scale}
+      height={48/scale} fill="transparent" pointerEvents="all"/>
+     <text x={topic.x} y={topic.y-topic.radius-17/scale} textAnchor="middle"
+      pointerEvents="none" fontFamily="var(--font-ui)" fontSize={12/scale} fontWeight="600"
+      fill="var(--ink-2)" stroke="var(--obsidian)" strokeWidth={3/scale} paintOrder="stroke">
+      {topic.name}
+     </text>
+    </g>}
    </g>)}
   </g>)}
  </g>;
