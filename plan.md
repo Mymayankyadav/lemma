@@ -322,6 +322,13 @@ Notes per task:
 #### UI v2, Euclid (owner's final choice, 30 Oct 10:48): UI-5a … UI-5h, DB-3, MCP-3
 - Spec: `docs/spec/ui-euclid.md` (overrides `design.md`, `themes.md` and `lab.md` where they differ). Choice: Euclid by day and Euclid at night by night (follow the phone), Ascent timeline (Metro kept), Orbits Atlas (Branches, Outline kept), compact, lively; eight worlds selectable.
 - UI-5a first (tokens and components in PR 1, then backgrounds and the layout check); UI-5b … UI-5h in parallel after it; DB-3 now; MCP-3 after DB-3. UI-4a, UI-4b and UI-4c below are superseded: do not start them.
+- **Approved by the owner (30 Oct, 11:06)**: the review round design in `ui-euclid.md` §8.7–8.8 and the icon-first tab bar in §8.0 (Today, Paths, Review, Insights; label only on the active tab). Build them exactly as the lab's Review tab behaves (`docs/design/lab/lemma-lab.html`, functions `viewReview`, `renderRV`, `reveal`, `grade`, `bindSwipe`, `finishRV`).
+
+| Task | Builds | Acceptance (in addition to `ui-euclid.md` §9) |
+| --- | --- | --- |
+| UI-5a | tab bar per §8.0 in `src/app/TabBar.tsx`, plus foundations | four tabs, labels only on the active one, due badge on Review |
+| UI-5e | `src/features/review`, `review-run`, `review-done` per §8.6–8.8, using the real queue (`src/lib/queue`) and FSRS intervals instead of the lab's fixed ones | e2e `review.spec.ts` updated: polygon shows n sides; Sure reveals; Again requeues two cards later and dashes its side; swipe right grades Good; the last answer opens "Q.E.D." with the four tiles and the transcript; "Go over the n missed" starts a round of only those cards; reduced motion shows final frames |
+
 
 #### Lemma Lab round 2 (superseded by UI v2 for UI work): DB-3, MCP-3, UI-4a, UI-4b, UI-4c
 - Spec: `docs/spec/lab.md` (it overrides `design.md` for Home, Atlas, the project timeline and Appearance). Reference prototype: `docs/design/lab/lemma-lab.html`.
