@@ -9,7 +9,7 @@ test('Paths shows goal, active checkpoint, stages and Atlas without errors',asyn
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
  await page.goto('./?demo=1#/projects')
- await expect(page.getByRole('heading',{name:'Paths',level:1})).toBeVisible()
+ await expect(page.getByRole('heading',{name:'Paths',level:2})).toBeVisible()
  await expect(page.getByRole('navigation',{name:'Choose a path'}).getByRole('link',{name:'Real Analysis',exact:true})).toBeVisible()
  await expect(page.getByText('Compactness, step 2')).toBeVisible()
  await expect(page.getByRole('link',{name:/Atlas/i})).toBeVisible()
@@ -19,7 +19,7 @@ test('Paths shows goal, active checkpoint, stages and Atlas without errors',asyn
 test('new-project form retains keyboard focus while editing controlled fields',async({page})=>{
  await page.goto('./?demo=1#/projects/new')
  const backdrop=page.locator('[data-sheet-background]')
- await expect(backdrop.locator('h1')).toHaveText('Paths')
+ await expect(backdrop.locator('h1')).toHaveText('Projects')
  await expect(backdrop.getByText('Compactness, step 2')).toBeVisible()
  await expect(backdrop).toHaveAttribute('inert','')
  const dialog=page.getByRole('dialog',{name:'New project'})
