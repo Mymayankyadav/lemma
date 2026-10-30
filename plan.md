@@ -323,6 +323,7 @@ Notes per task:
 - Spec: `docs/spec/v3.md`. It overrides every earlier design document: Graph paper by day and at night only (automatic, with an Automatic/Day/Night override), compact, calm, docked tab bar, Metro with schedule colours, the Atlas as a cosmos hierarchy, and sources-first projects (name plus many PDFs, sources appended any time, the tutor fills the rest and appends plans).
 - Start DB-4, UI-6a and DEMO-2 now; then UI-6b, UI-6c, UI-6d, UI-6e and MCP-4; QA-2 last. Issues #337–#345 are the review gaps.
 - The owner's Algebra 1 project was deleted on 30 Oct (undo action A4882); its orphaned ideas are cleaned up by DB-4.
+- **30 Oct 22:38, owner:** the cosmos Atlas (UI-6c) is replaced by a foldable outline with links drawn in the margin (`v3.md` §4), and plan review opens each checkpoint in a drawer (`v3.md` §4a). Both shipped together as UI-7.
 
 #### UI v2, Euclid (owner's final choice, 30 Oct 10:48): UI-5a … UI-5h, DB-3, MCP-3
 - Spec: `docs/spec/ui-euclid.md` (overrides `design.md`, `themes.md` and `lab.md` where they differ). Choice: Euclid by day and Euclid at night by night (follow the phone), Ascent timeline (Metro kept), Orbits Atlas (Branches, Outline kept), compact, lively; eight worlds selectable.

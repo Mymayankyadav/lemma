@@ -4,7 +4,10 @@ import { useNavigate, useParams } from "react-router";
 import {
   Bot,
   BookOpen,
-  MessageSquare,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
   Sparkles,
   Target,
   Waypoints,
@@ -27,6 +30,8 @@ import { Sheet } from "../../ui/Sheet";
 import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { useToast } from "../../ui/Toast";
+import { Tex } from "../../ui/Tex";
+import { plainMath } from "../../lib/plain-math";
 
 type Node = ReviewNode;
 function PlanMap({
@@ -123,7 +128,9 @@ function PlanMap({
                 cy={pos.y}
                 r="18"
                 fill={selected === n.code ? "var(--amber)" : "var(--raised)"}
-                stroke="var(--amber-line-2)"
+                stroke={n.change ? "var(--amber)" : "var(--amber-line-2)"}
+                strokeWidth={n.change ? 2 : 1}
+                strokeDasharray={n.change === "added" ? "4 3" : undefined}
               />
               <text
                 x={pos.x}
@@ -142,6 +149,130 @@ function PlanMap({
     </div>
   );
 }
+
+function dueLabel(date?: string | null) {
+  if (!date) return null;
+  const d = new Date(date + "T12:00:00Z");
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+}
+/** Everything one checkpoint covers, one tap from the map or the list; steps through the plan in order. */
+function CheckpointDrawer({
+  nodes,
+  code,
+  onOpen,
+  onClose,
+}: {
+  nodes: Node[];
+  code: string;
+  onOpen: (code: string) => void;
+  onClose: () => void;
+}) {
+  const index = nodes.findIndex((n) => n.code === code),
+    node = nodes[index];
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" && index < nodes.length - 1) onOpen(nodes[index + 1].code);
+      if (e.key === "ArrowLeft" && index > 0) onOpen(nodes[index - 1].code);
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [index, nodes, onOpen]);
+  if (!node) return null;
+  const neededFor = nodes.filter((n) => n.prereqs.includes(node.code));
+  const reading = node.sources?.length
+    ? node.sources.map((s) => s.source + (s.pages ? " pp. " + s.pages : "")).join("; ")
+    : node.source || node.pages
+      ? `${node.source ?? "Book"}${node.pages ? ` pp. ${node.pages}` : ""}`
+      : null;
+  const jump = (target: string) =>
+    nodes.some((n) => n.code === target) ? (
+      <button key={target} type="button" onClick={() => onOpen(target)}
+        className="min-h-11 min-w-11 rounded-s border border-amber-line px-2 text-label font-semibold text-amber">
+        {target}
+      </button>
+    ) : (
+      <span key={target} className="rounded-s border border-edge px-2 py-1 text-label text-ink-3">{target}</span>
+    );
+  return (
+    <Sheet open onClose={onClose} title={`${node.code} · ${plainMath(node.title)}`}>
+      <div data-checkpoint-drawer={node.code} className="flex flex-col gap-4 text-body text-ink-2">
+        <div className="-mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-ink-3">
+          {node.stage && <span>{node.stage}</span>}
+          {dueLabel(node.dueOn) && (
+            <span className="flex items-center gap-1"><CalendarDays size={14} />Planned {dueLabel(node.dueOn)}</span>
+          )}
+          {node.change && (
+            <span className="rounded-s border border-amber-line px-1.5 text-caption text-amber">
+              {node.change === "added" ? "New in this change" : "Changed"}
+            </span>
+          )}
+        </div>
+        {node.objective && <MathText source={node.objective} className="text-ink" />}
+        {node.criterion && (
+          <div className="flex gap-2 rounded-ctl border border-edge bg-well p-3">
+            <Target size={17} className="mt-1 shrink-0 text-amber" />
+            <div className="min-w-0 flex-1">
+              <p className="text-caption font-semibold text-ink-3">Done when</p>
+              <MathText source={node.criterion} className="font-math" />
+            </div>
+          </div>
+        )}
+        {node.steps.length > 0 && (
+          <div>
+            <p className="mb-1 text-caption font-semibold text-ink-3">{node.steps.length} steps</p>
+            <ol className="flex flex-col">
+              {node.steps.map((step, i) => (
+                <li key={i} className="flex min-h-9 items-baseline gap-3 border-b border-edge py-1.5 last:border-0">
+                  <span className="w-5 shrink-0 text-right text-label tabular-nums text-amber">{i + 1}</span>
+                  <Tex source={step} className="min-w-0 flex-1" />
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+        {reading && (
+          <p className="flex items-start gap-2"><BookOpen size={16} className="mt-1 shrink-0" />{reading}</p>
+        )}
+        {(node.prereqs.length > 0 || neededFor.length > 0) && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="mb-1 text-caption font-semibold text-ink-3">Builds on</p>
+              <div className="flex flex-wrap gap-1.5">{node.prereqs.length ? node.prereqs.map(jump) : <span className="text-label text-ink-3">Nothing</span>}</div>
+            </div>
+            <div>
+              <p className="mb-1 text-caption font-semibold text-ink-3">Needed for</p>
+              <div className="flex flex-wrap gap-1.5">{neededFor.length ? neededFor.map((n) => jump(n.code)) : <span className="text-label text-ink-3">Nothing</span>}</div>
+            </div>
+          </div>
+        )}
+        {node.concepts && node.concepts.length > 0 && (
+          <div>
+            <p className="mb-1 text-caption font-semibold text-ink-3">Ideas</p>
+            <div className="flex flex-wrap gap-1.5">
+              {node.concepts.map((c) => (
+                <span key={c} className="rounded-chip border border-edge px-2 py-1 text-label"><Tex source={c} /></span>
+              ))}
+            </div>
+          </div>
+        )}
+        {node.recheck && (
+          <p className="flex items-start gap-2 text-label italic text-ink-3"><RotateCcw size={14} className="mt-0.5 shrink-0" /><Tex source={node.recheck} /></p>
+        )}
+        <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <button type="button" disabled={index === 0} onClick={() => onOpen(nodes[index - 1].code)}
+            className="flex min-h-11 items-center gap-1 rounded-btn border border-edge-2 px-3 text-label disabled:opacity-35">
+            <ChevronLeft size={16} />{index > 0 ? nodes[index - 1].code : "Start"}
+          </button>
+          <span className="text-caption tabular-nums text-ink-3">{index + 1} of {nodes.length}</span>
+          <button type="button" disabled={index === nodes.length - 1} onClick={() => onOpen(nodes[index + 1].code)}
+            className="flex min-h-11 items-center justify-end gap-1 rounded-btn border border-edge-2 px-3 text-label disabled:opacity-35">
+            {index < nodes.length - 1 ? nodes[index + 1].code : "End"}<ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    </Sheet>
+  );
+}
 export default function Page() {
   const { id = "" } = useParams(),
     navigate = useNavigate(),
@@ -152,7 +283,7 @@ export default function Page() {
     reject = useRejectProposal(),
     notify = useToast();
   const [selected, setSelected] = useState(""),
-    [expanded, setExpanded] = useState(false),
+    [drawer, setDrawer] = useState<string | null>(null),
     [asking, setAsking] = useState(false),
     [request, setRequest] = useState(""),
     [slow, setSlow] = useState(false);
@@ -170,6 +301,17 @@ export default function Page() {
     [p, project.data?.checkpoints],
   );
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
+  const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
+  const stages = useMemo(() => {
+    const groups: { name: string; nodes: Node[] }[] = [];
+    for (const n of nodes) {
+      const name = n.stage?.trim() || "Checkpoints";
+      const last = groups[groups.length - 1];
+      if (last && last.name === name) last.nodes.push(n);
+      else groups.push({ name, nodes: [n] });
+    }
+    return groups;
+  }, [nodes]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
     if (!p) return;
@@ -264,50 +406,38 @@ export default function Page() {
             <PlanMap
               nodes={nodes}
               selected={current?.code ?? ""}
-              onSelect={setSelected}
+              onSelect={openCheckpoint}
             />
           )}
-          <div className="flex flex-col gap-2">
-            {(expanded ? nodes : nodes.slice(0, 5)).map((node) => (
-              <Slab key={node.code} className="rounded-slab p-4">
-                <button
-                  type="button"
-                  onClick={() => setSelected(node.code)}
-                  aria-expanded={current?.code === node.code}
-                  className="flex min-h-11 w-full items-center gap-3 text-left"
-                >
-                  <span className="w-[46px] shrink-0 rounded-s border border-amber-line py-1 text-center text-label font-semibold text-amber">
-                    {node.code}
-                  </span>
-                  <span className="min-w-0 flex-1 font-semibold leading-snug">{node.title}{node.stage&&<span className="mt-1 block text-label font-normal text-ink-3">{node.stage}</span>}</span>
-                  <MessageSquare size={17} className="text-ink-3" />
-                </button>
-                {current?.code === node.code && (
-                  <div className="ml-1 mt-3 flex flex-col gap-3 text-body text-ink-2">
-                    <div className="flex gap-2 font-math text-body-l">
-                      <Target size={17} className="mt-1 shrink-0 text-amber" />
-                      <MathText source={node.criterion} className="min-w-0 flex-1"/>
-                    </div>
-                    <p className="flex gap-2">
-                      <BookOpen size={16} className="shrink-0" />
-                      {node.source
-                        ? `${node.source}${node.pages ? ` pp. ${node.pages}` : ""} · `
-                        : ""}
-                      {node.steps.length} steps
-                    </p>
-                  </div>
-                )}
-              </Slab>
+          <section aria-label="Checkpoints" className="flex flex-col gap-4">
+            {stages.map((stage, i) => (
+              <div key={stage.name + i}>
+                <h3 className="mb-1 flex items-baseline justify-between gap-3">
+                  <span className="text-title-s italic" style={{ fontFamily: "var(--font-display)" }}>{stage.name}</span>
+                  <span className="text-caption text-ink-3">{stage.nodes.length}</span>
+                </h3>
+                <Slab className="rounded-slab px-2 py-1">
+                  {stage.nodes.map((node) => (
+                    <button
+                      key={node.code}
+                      type="button"
+                      onClick={() => openCheckpoint(node.code)}
+                      aria-haspopup="dialog"
+                      aria-label={`Open ${node.code} ${plainMath(node.title)}`}
+                      className={"flex min-h-12 w-full items-center gap-3 border-b border-edge px-2 text-left last:border-0 " + (current?.code === node.code && drawer ? "bg-amber-tint" : "")}
+                    >
+                      <span className={"w-[46px] shrink-0 rounded-s border py-0.5 text-center text-label font-semibold text-amber " + (node.change === "added" ? "border-dashed border-amber" : "border-amber-line")}>
+                        {node.code}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate leading-snug"><Tex source={node.title} /></span>
+                      {dueLabel(node.dueOn) && <span className="shrink-0 text-caption tabular-nums text-ink-3">{dueLabel(node.dueOn)}</span>}
+                      <ChevronRight size={16} className="shrink-0 text-ink-3" />
+                    </button>
+                  ))}
+                </Slab>
+              </div>
             ))}
-            {nodes.length > 5 && !expanded && (
-              <button
-                className="min-h-11 text-left text-amber"
-                onClick={() => setExpanded(true)}
-              >
-                {nodes.length - 5} more
-              </button>
-            )}
-          </div>
+          </section>
           {p.planChange && (
             <section aria-label="Plan errata" className="flex flex-col text-body text-ink-2">
               <h3 className="mb-2 text-title-s italic" style={{fontFamily:"var(--font-display)"}}>Proposed amendments</h3>
@@ -350,6 +480,9 @@ export default function Page() {
               Approve plan
             </Button>
           </div>
+          {drawer && (
+            <CheckpointDrawer nodes={nodes} code={drawer} onOpen={openCheckpoint} onClose={() => setDrawer(null)} />
+          )}
           <Sheet
             open={asking}
             onClose={() => setAsking(false)}

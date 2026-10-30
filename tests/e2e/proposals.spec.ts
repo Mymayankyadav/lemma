@@ -96,3 +96,22 @@ test('a blocked tutor handoff keeps the proposed plan pending',async({page})=>{
  await page.goto('/lemma/?demo=1#/proposals?tab=plan');
  await expect(page.getByRole('link',{name:'See the whole plan'})).toBeVisible();
 });
+
+test('tapping a checkpoint opens a drawer that steps through the plan',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/lemma/?demo=1#/proposals?tab=plan');
+ await page.getByRole('link',{name:'See the whole plan'}).click();
+ await expect(page.getByRole('button',{name:'Approve plan'})).toBeVisible();
+ await page.getByRole('region',{name:'Checkpoints'}).getByRole('button').first().click();
+ const drawer=page.locator('[data-checkpoint-drawer]');
+ await expect(drawer).toBeVisible();
+ const first=await drawer.getAttribute('data-checkpoint-drawer');
+ await expect(drawer).toContainText(/1 of \d+/);
+ await page.screenshot({path:'test-results/screens/plan-checkpoint-drawer.png',fullPage:true});
+ await drawer.getByRole('button',{name:/CP/}).last().click();
+ await expect(drawer).not.toHaveAttribute('data-checkpoint-drawer',first!);
+ await page.getByRole('dialog').getByRole('button',{name:'Close'}).click();
+ await expect(drawer).toHaveCount(0);
+ await page.getByRole('button',{name:/^Select CP/}).first().click();
+ await expect(page.locator('[data-checkpoint-drawer]')).toBeVisible();
+});

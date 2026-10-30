@@ -17,7 +17,8 @@ for(const world of ['graph','graph-night'] as const){
   await expect(page.locator('[data-atlas-details]')).toHaveCount(0);
   await page.getByRole('button',{name:'Find an idea'}).click();
   await page.getByRole('textbox',{name:'Find an idea'}).fill('Compactness');
-  await page.getByRole('button',{name:/Compactness/}).first().click();
+  await page.getByRole('button',{name:/^Compactness, /}).click();
+  await page.locator('[data-atlas-peek]').getByRole('button',{name:'Details'}).click();
   await expect(page.getByRole('heading',{name:'Compactness'})).toBeVisible();
   await page.getByRole('link',{name:'Checkpoint CP4'}).click();
   await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4$/);
