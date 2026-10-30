@@ -36,12 +36,12 @@ export async function owner(db: SupabaseClient): Promise<string> {
   return data.user.id
 }
 /** Supabase/PostgREST truncates unpaged selections at the API max (usually 1000). */
-export async function rows(db: SupabaseClient, table: string, uid: string): Promise<Row[]> {
+export async function rows(db: SupabaseClient, table: string, uid: string, includeArchived=false): Promise<Row[]> {
   const output: Row[] = []
   const size = 1000
   for (let start=0; ;start+=size) {
     let query = db.from(table).select('*').eq('user_id', uid)
-    if (table === 'projects') query = query.neq('status', 'archived')
+    if (table === 'projects'&&!includeArchived) query = query.neq('status', 'archived')
     const batch = checked((await query.range(start,start+size-1)) as {
       data: Row[] | null; error: unknown
     })
