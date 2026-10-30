@@ -52,8 +52,8 @@ function star(cx:number,cy:number,r=7){
  }
  return parts.join(' ')+' Z';
 }
-function WorldNode({node,selected,dim,reduce,showLabel,position,onDown,onMove,onUp,onCancel,onSelect}:{
- node:AtlasNode;selected:boolean;dim:boolean;reduce:boolean;showLabel:boolean;position:Point;
+function WorldNode({node,selected,dim,reduce,showLabel,position,zoomScale,onDown,onMove,onUp,onCancel,onSelect}:{
+ node:AtlasNode;selected:boolean;dim:boolean;reduce:boolean;showLabel:boolean;position:Point;zoomScale:number;
  onDown:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
  onMove:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
  onUp:(event:ReactPointerEvent<SVGGElement>,node:AtlasNode)=>void;
@@ -67,7 +67,7 @@ function WorldNode({node,selected,dim,reduce,showLabel,position,onDown,onMove,on
   onPointerDown={e=>onDown(e,node)} onPointerMove={e=>onMove(e,node)} onPointerUp={e=>onUp(e,node)}
   onPointerCancel={onCancel}
   onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onSelect(node.id)}}}>
-  <circle cx={x} cy={y} r={25} fill="transparent" stroke="none"/>
+  <circle cx={x} cy={y} r={22/zoomScale} fill="transparent" stroke="none"/>
   {selected&&<motion.circle cx={x} cy={y} r={22} fill="none" stroke="var(--amber)" strokeOpacity=".4" strokeWidth={1.3}
     animate={reduce?{}:{r:[17,26,17],opacity:[.7,.15,.7]}} transition={{duration:3,repeat:Infinity}}/>}
   {status==='revisit'&&<motion.circle cx={x} cy={y} r={11} fill="none" stroke="var(--amber)"
@@ -87,7 +87,7 @@ function WorldNode({node,selected,dim,reduce,showLabel,position,onDown,onMove,on
 }
 function FilterPill({label,count,active,onClick,icon:Icon}:{label:string;count:number;active:boolean;onClick:()=>void;icon?:typeof Check}){
  return <button type="button" onClick={onClick} aria-pressed={active}
-  className={'flex min-h-10 shrink-0 items-center gap-1.5 rounded-chip border px-3 text-label font-medium backdrop-blur-xl '+
+  className={'flex min-h-11 shrink-0 items-center gap-1.5 rounded-chip border px-3 text-label font-medium backdrop-blur-xl '+
    (active?'border-amber bg-amber text-amber-ink':'border-edge-2 bg-glass text-ink-2')}>
   {Icon&&<Icon size={14} aria-hidden="true"/>}{label} {count}
  </button>;
@@ -266,7 +266,7 @@ export default function Page(){
       pointerEvents="none"/>;
     })}
     {nodeList.map(node=><WorldNode key={node.id} node={node} position={positions[node.id]??node}
-     selected={selectedId===node.id} dim={filtered(node)} reduce={reduce} showLabel={labels.has(node.id)}
+     zoomScale={view.k} selected={selectedId===node.id} dim={filtered(node)} reduce={reduce} showLabel={labels.has(node.id)}
      onSelect={selectNode} onDown={onNodeDown} onMove={onNodeMove} onUp={onNodeUp} onCancel={onNodeCancel}/>)}
    </motion.g>
   </svg>:<div className="absolute inset-0 flex items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty"

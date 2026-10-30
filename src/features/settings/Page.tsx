@@ -234,7 +234,7 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-4 flex items-center gap-1 rounded-ctl bg-well p-2">
-          <span className="min-w-0 flex-1 truncate pl-2 font-mono text-label text-ink-2">
+          <span className="min-w-0 flex-1 break-all pl-2 font-mono text-label text-ink-2">
             {revealed ? s.connectorUrl : masked}
           </span>
           <IconButton

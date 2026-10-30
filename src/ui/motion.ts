@@ -19,3 +19,17 @@ export const pop: Variants = {hidden:{opacity:0,scale:0.8},visible:{opacity:1,sc
 export const reduced: Variants = fade;
 export function variantFor(variants:Variants, reduce:boolean):Variants { return reduce || isCalm() ? fade : variants; }
 export const tabTransition:Transition={duration:0.2,ease:easeOut};
+
+/* UI-5a timing contract. Feature tasks use these for their Euclid-specific gestures. */
+export const euclidTiming={
+ construction:1.4,climber:.7,revealRule:.3,revealAnswer:.25,
+ approvalPen:.28,tab:.2,drill:.28,deal:.48,halo:2.4,drift:38,
+} as const;
+export const euclidTransitions={
+ tab:{duration:euclidTiming.tab,ease:easeInOut},
+ drill:{duration:euclidTiming.drill,ease:easeOut},
+ climber:{duration:euclidTiming.climber,ease:easeInOut},
+ revealRule:{duration:euclidTiming.revealRule,ease:easeInOut},
+ revealAnswer:{duration:euclidTiming.revealAnswer,ease:easeOut},
+ approvalPen:{duration:euclidTiming.approvalPen,ease:easeInOut},
+} as const;
