@@ -29,14 +29,44 @@ export class LiveAdapter implements LemmaApi {
   if(sourceId===targetId)throw new LemmaError('invalid','Choose two different subjects to merge')
   checked(await db.rpc('merge_subjects',{p_source:sourceId,p_target:targetId}))
  }
- async createProjectDraft(..._args: Parameters<LemmaApi['createProjectDraft']>): ReturnType<LemmaApi['createProjectDraft']> {
-  throw notImplemented('createProjectDraft');
+ async createProjectDraft(...args: Parameters<LemmaApi['createProjectDraft']>): ReturnType<LemmaApi['createProjectDraft']> {
+  const [input]=args,db=liveClient(),uid=await owner(db)
+  const title=input.title.trim(),base=slugify(title)
+  if(!title||title.length>100||base.length<2)throw new LemmaError('invalid','Choose a project name between 2 and 100 characters')
+  for(let n=1;n<100;n++){
+   const suffix=n===1?'':'-'+n
+   const slug=base.slice(0,40-suffix.length).replace(/-$/,'')+suffix
+   const result=await db.from('projects').insert({
+    user_id:uid,title,slug,goal:null,subject_id:null,style:'socratic',status:'planning',system:false
+   }).select('*').single()
+   if(!result.error)return projectRow(result.data as Row)
+   if(result.error.code!=='23505')fail(result.error)
+  }
+  throw new LemmaError('conflict','Too many projects have this name')
  }
- async updateSource(..._args: Parameters<LemmaApi['updateSource']>): ReturnType<LemmaApi['updateSource']> {
-  throw notImplemented('updateSource');
+ async updateSource(...args: Parameters<LemmaApi['updateSource']>): ReturnType<LemmaApi['updateSource']> {
+  const [id,patch]=args,db=liveClient(),uid=await owner(db)
+  const changes:Row={}
+  if(patch.title!==undefined){
+   const title=patch.title.trim()
+   if(!title||title.length>150)throw new LemmaError('invalid','Source title must be 1 to 150 characters')
+   changes.title=title
+  }
+  if(patch.kind!==undefined){
+   if(!['book','notes','slides','problems','syllabus','exam','other'].includes(patch.kind))
+    throw new LemmaError('invalid','Invalid source kind')
+   changes.kind=patch.kind
+  }
+  if(!Object.keys(changes).length)
+   return sourceRow(checked(await db.from('sources').select('*').eq('id',id).eq('user_id',uid).single()) as Row)
+  return sourceRow(checked(await db.from('sources').update(changes).eq('id',id).eq('user_id',uid).select('*').single()) as Row)
  }
- async listPlanRevisions(..._args: Parameters<LemmaApi['listPlanRevisions']>): ReturnType<LemmaApi['listPlanRevisions']> {
-  throw notImplemented('listPlanRevisions');
+ async listPlanRevisions(...args: Parameters<LemmaApi['listPlanRevisions']>): ReturnType<LemmaApi['listPlanRevisions']> {
+  const [slug]=args,db=liveClient(),uid=await owner(db)
+  const project=checked(await db.from('projects').select('id').eq('slug',slug).eq('user_id',uid).eq('system',false).single()) as Row
+  const revisions=checked(await db.from('v_plan_revisions').select('revision,approved_at,summary,proposal_id')
+   .eq('user_id',uid).eq('project_id',project.id).order('revision',{ascending:false})) as Row[]
+  return revisions.map(row=>({revision:Number(row.revision),approvedAt:row.approved_at,summary:row.summary,proposalId:row.proposal_id}))
  }
  async getReviewForecast(): ReturnType<LemmaApi['getReviewForecast']> {
   const db=liveClient(),uid=await owner(db)
@@ -203,7 +233,7 @@ export class LiveAdapter implements LemmaApi {
   }
   views.sort((a,b)=>a.position-b.position)
   const progress=projectProgress(views)
-  return {project:projectRow(project),subject:subjectRow(subjects.find(s=>s.id===project.subject_id)!),
+  return {project:projectRow(project),subject:subjectRow(subjects.find(s=>s.id===project.subject_id)??{id:'',name:'Unassigned',glyph:'∫',hue:'slate',position:-1}),
     checkpoints:views,done:progress.done,total:progress.total,
     sources:sources.filter(s=>s.project_id===project.id).map(sourceRow),
     sessions:sessionList,pendingProposals:pending.length}
@@ -250,6 +280,12 @@ export class LiveAdapter implements LemmaApi {
  async addSource(...args: Parameters<LemmaApi['addSource']>): ReturnType<LemmaApi['addSource']> {
   const [projectId,file,onProgress]=args,db=liveClient(),uid=await owner(db)
   checked(await db.from('projects').select('id').eq('user_id',uid).eq('id',projectId).single())
+  // Detect same-content PDFs before extraction or a second storage upload.
+  const digest=await crypto.subtle.digest('SHA-256',await file.arrayBuffer())
+  const sha256=Array.from(new Uint8Array(digest),value=>value.toString(16).padStart(2,'0')).join('')
+  const same=checked(await db.from('sources').select('id').eq('user_id',uid).eq('project_id',projectId)
+   .eq('sha256',sha256).limit(1)) as Row[]
+  if(same.length)throw new LemmaError('conflict','Already added')
   const document=await ingest(file,{onProgress})
   const basename=file.name.replace(/\.pdf$/i,'').trim()||'Untitled PDF'
   const existing=await rows(db,'sources',uid)
@@ -258,7 +294,7 @@ export class LiveAdapter implements LemmaApi {
   let short=base,index=2
   while(used.has(short)){short=base.slice(0,17)+index++}
   const source=checked(await db.from('sources').insert({user_id:uid,project_id:projectId,
-    title:basename.slice(0,120),short,filename:file.name,bytes:file.size,status:'uploading',
+    title:basename.slice(0,120),short,filename:file.name,bytes:file.size,status:'uploading',sha256,
     page_count:document.pageCount,has_text:document.hasText,outline:document.outline
   }).select('*').single()) as Row
   const storagePath=`${uid}/${source.id}.pdf`
@@ -290,10 +326,7 @@ export class LiveAdapter implements LemmaApi {
  async deleteSource(...args: Parameters<LemmaApi['deleteSource']>): ReturnType<LemmaApi['deleteSource']> {
   const [id]=args,db=liveClient(),uid=await owner(db)
   const source=checked(await db.from('sources').select('*').eq('user_id',uid).eq('id',id).single()) as Row
-  if(source.storage_path){
-    const {error}=await db.storage.from('sources').remove([source.storage_path])
-    if(error) fail(error)
-  }
+  // Keep the PDF binary for DB-2 undo; only the audited rows are deleted.
   checked(await db.from('sources').delete().eq('id',id).eq('user_id',uid).select('id').single())
  }
  async listSessions(...args: Parameters<LemmaApi['listSessions']>): ReturnType<LemmaApi['listSessions']> {
