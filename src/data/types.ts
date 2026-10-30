@@ -152,6 +152,17 @@ export interface CardRow {
  noteNo: number; front: string; type: NoteType; kind: NoteKind; projectSlug: string; glyph: Glyph
  checkpointCode: string | null; due: IsoDate | null; status: NoteStatus; openComments: number
 }
+/** ST-5/ST-4: a bounded, server-filtered page of card-library rows. */
+export interface CardSearchFilters {
+ query: string
+ projectSlug?: string
+ checkpointCode?: string
+ state?: SchedulingState
+ noteStatus?: NoteStatus
+ hasOpenComments?: boolean
+ offset?: number
+}
+export interface CardSearchPage { rows: CardRow[]; nextOffset: number | null }
 export interface CardDetail {
  note: {noteId: string; noteNo: number; front: string; back: string; type: NoteType; kind: NoteKind; tags: string[]
  status: NoteStatus; origin: 'user' | Client; projectSlug: string; checkpointCode: string | null
