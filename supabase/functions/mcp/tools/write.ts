@@ -112,6 +112,7 @@ function validateConceptHierarchy(concepts:any[]):void{
 export async function proposePlan(c:Context,a:any):Promise<string>{
  const p=await project(c,a.project);
  if(p.status!=='planning'||(await checkpoints(c,p)).length)throw Error('This project already has a plan; propose changes instead');
+ if(!p.subject_id)throw Error('Set the subject with edit before proposing a plan');
  const {data:sources,error}=await scoped(c,'sources','short').eq('project_id',p.id).order('created_at').limit(1);
  if(error)throw Error(error.message);
  const legacySource=sources?.[0]?.short;
@@ -136,7 +137,11 @@ export async function proposePlanChange(c:Context,a:any):Promise<string>{
  if(!(await checkpoints(c,p)).length)throw Error('No plan yet; use propose_plan');
  const valid=['add','update','remove','move','prereq_add','prereq_remove'];
  if(a.ops.some((x:any)=>!valid.includes(x.op)))throw Error('Unknown plan operation');
- for(const op of a.ops)planningFields(op);
+ for(const op of a.ops){
+  planningFields(op);
+  if(op.op==='add'&&!op.code&&(op.due_on!==undefined||op.sources!==undefined))
+   throw Error('New checkpoints with schedules or source citations must specify an unused code');
+ }
  await validatePlanSources(c,p,a.ops);
  for(const idea of a.concepts||[])planningFields(idea);
  validateConceptHierarchy(a.concepts||[]);
