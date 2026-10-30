@@ -1,22 +1,24 @@
-import {useMemo,useState,type KeyboardEvent, type MouseEvent} from 'react'
+import {useMemo,useState,type KeyboardEvent,type MouseEvent} from 'react'
 import {useNavigate} from 'react-router'
 import type {CheckpointView} from '../../data/types'
+import {buildSchedule,scheduleColor,scheduleDetail,scheduleHeadline} from '../../lib/schedule'
+import {Tex} from '../Tex'
 
 export type TimelineVariant='ascent'|'metro'
-
 export interface ProjectTimelineProps {
- project:{title:string;slug:string;done:number;total:number}
+ project:{title:string;slug:string;done:number;total:number;targetDate?:string|null}
  checkpoints:readonly CheckpointView[]
  variant?:TimelineVariant
  height?:number
  mini?:boolean
+ pacePerWeek?:number
 }
 
-/** Scales the complete plan to the available width, with one keyboard-focusable target.
- * The current checkpoint stays labelled even when a stage contains many steps.
- * Data is never inferred from the number of sessions or from a target date.
+/** The same scheduled checkpoints power Today and the project Metro.
+ * SVG paths are per-station so early/on-time/late remain distinct; keyboard
+ * navigation and the whole-width tap target are preserved from the old timeline.
  */
-export function ProjectTimeline({project,checkpoints,variant='ascent',height=84,mini=false}:ProjectTimelineProps){
+export function ProjectTimeline({project,checkpoints,variant='metro',height=96,mini=false,pacePerWeek}:ProjectTimelineProps){
  const navigate=useNavigate()
  const n=checkpoints.length
  const current=checkpoints.findIndex(cp=>cp.ui==='now')
@@ -25,22 +27,34 @@ export function ProjectTimeline({project,checkpoints,variant='ascent',height=84,
  const currentIndex=current>=0?current:revisit>=0?revisit:Math.max(0,next)
  const [selected,setSelected]=useState<number|null>(null)
  const focusedIndex=selected===null?currentIndex:Math.min(selected,Math.max(0,n-1))
+ const rows=useMemo(()=>buildSchedule(checkpoints,{targetDate:project.targetDate,pacePerWeek}),
+  [checkpoints,project.targetDate,pacePerWeek])
  const selectedCheckpoint=checkpoints[focusedIndex]
+ const headline=scheduleHeadline(rows)
  const geometry=useMemo(()=>{
-  if(n===0)return [] as {x:number;y:number;cp:CheckpointView}[]
+  if(!n)return [] as {x:number;y:number;cp:CheckpointView;index:number;stage:string|null}[]
   const difficulty=checkpoints.map(cp=>Math.max(1,Math.min(4,cp.stepsTotal||1)))
   const total=difficulty.reduce((a,b)=>a+b,0)
   let done=0
-  return checkpoints.map((cp,i)=>{
-   done+=difficulty[i]
-   const x=18+(n===1?.5:i/(n-1))*324
-   const y=variant==='ascent'?75-48*done/total:56-(i%2)*7
-   return {cp,x,y}
+  return checkpoints.map((cp,index)=>{
+   done+=difficulty[index]
+   return {cp,index,x:18+(n===1?.5:index/(n-1))*324,
+    y:variant==='ascent'?75-48*done/total:53,
+    stage:cp.stage?.trim()||null}
   })
  },[checkpoints,n,variant])
- const line=(rows:typeof geometry)=>rows.map((p,i)=>(i?'L':'M')+p.x.toFixed(2)+' '+p.y.toFixed(2)).join(' ')
- const passed=geometry.filter(p=>p.cp.ui==='done'||p.cp.ui==='revisit')
- const lastPassed=passed.length?geometry.indexOf(passed.at(-1)!):-1
+ const groups=useMemo(()=>{
+  const result:{name:string;start:number;end:number}[]=[]
+  geometry.forEach((point,index)=>{
+   const name=point.stage
+   if(!name)return
+   const last=result.at(-1)
+   if(last?.name===name&&last.end===index-1)last.end=index
+   else result.push({name,start:index,end:index})
+  })
+  return result
+ },[geometry])
+ const line=(points:typeof geometry)=>points.map((p,i)=>(i?'L':'M')+p.x.toFixed(2)+' '+p.y.toFixed(2)).join(' ')
  const visit=(index:number)=>{const cp=checkpoints[index];if(cp)navigate('/p/'+project.slug+'/cp/'+encodeURIComponent(cp.code))}
  const click=(event:MouseEvent<HTMLButtonElement>)=>{
   if(!n)return
@@ -58,34 +72,63 @@ export function ProjectTimeline({project,checkpoints,variant='ascent',height=84,
   }
  }
  if(!n)return <p className="text-label text-ink-3">A plan is needed before the timeline can appear.</p>
- const active=geometry[currentIndex]??geometry[0]
- const selectedPoint=geometry[focusedIndex]??active
- return <div data-timeline={variant} className="min-w-0">
+ const selectedPoint=geometry[focusedIndex]??geometry[0]
+ const selectedSchedule=rows[focusedIndex]
+ const detail=selectedSchedule?scheduleDetail(selectedSchedule):null
+ return <div data-timeline={variant} className="min-w-0" data-schedule={headline??'none'}>
   <button type="button" onClick={click} onKeyDown={key}
-   aria-label={project.title+': '+project.done+' of '+project.total+' checkpoints, now '+(selectedCheckpoint?.code??'')+' '+(selectedCheckpoint?.title??'')+'. Arrow keys to browse; Enter to open.'}
+   aria-label={project.title+': '+project.done+' of '+project.total+' checkpoints, now '+(selectedCheckpoint?.code??'')+' '+(selectedCheckpoint?.title??'')+
+    (headline?', '+headline:'')+'. Arrow keys to browse; Enter to open.'}
    className="relative block w-full cursor-pointer rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-amber"
    style={{minHeight:height}}>
    <svg viewBox="0 0 360 96" preserveAspectRatio="none" width="100%" height={height} aria-hidden="true" className="overflow-visible">
-    {variant==='ascent'&&<path d={line(geometry)+' L342 83 L18 83 Z'} fill="var(--card-2)" />}
-    <path d={line(geometry)} stroke="var(--line)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-    {lastPassed>=1&&<path d={line(geometry.slice(0,lastPassed+1))} stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>}
-    {geometry.map(({cp,x,y},i)=>{
-      const isCurrent=i===currentIndex,isDone=cp.ui==='done',isRevisit=cp.ui==='revisit',isProposed=cp.ui==='proposed'
-      return <g key={cp.id}>
-       {isCurrent&&<circle cx={x} cy={y} r="9" fill="none" stroke="var(--accent)" strokeOpacity=".25" strokeWidth="2"/>}
-       <circle cx={x} cy={y} r={isCurrent?4.4:2.4} fill={isDone?'var(--accent)':isProposed?'var(--card)':isRevisit?'var(--warn)':isCurrent?'var(--accent)':'var(--ink-3)'} stroke={isProposed?'var(--accent)':'none'} strokeWidth="1"/>
-       {i===focusedIndex&&selected!==null&&<circle cx={x} cy={y} r="6.5" fill="none" stroke="var(--accent)" strokeWidth="1.4"/>}
-      </g>
+    {variant==='ascent'&&<path d={line(geometry)+' L342 83 L18 83 Z'} fill="var(--card-2)"/>}
+    <path d={line(geometry)} stroke="var(--line)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+    {geometry.slice(1).map((point,i)=>{
+     const previous=geometry[i],row=rows[i+1],state=row.state
+     const gap=point.stage!==previous.stage&&point.stage!==null?4:0
+     const x1=previous.x+gap,x2=point.x-gap
+     const path='M'+x1+' '+previous.y+' L'+x2+' '+point.y
+     return <g key={row.checkpoint.id+'-track'} data-track-state={state}>
+      <path d={path} fill="none" stroke={scheduleColor[state]}
+       strokeWidth={state==='future'?1:2.5} strokeDasharray={state==='late'?'5 4':undefined}
+       strokeOpacity={state==='future'?.4:1}/>
+      {state==='early'&&<path d={'M'+x1+' '+(previous.y+4)+' L'+x2+' '+(point.y+4)}
+       stroke={scheduleColor[state]} strokeWidth="1" fill="none"/>}
+     </g>
     })}
-    <path d={'M 342 12 v 23'} stroke="var(--ink-2)" strokeWidth="1.5" />
-    <path d={'M 343 12 h -12 l 12 7 Z'} fill="var(--accent)"/>
-    {!mini&&<text x={Math.max(35,Math.min(315,selectedPoint.x))} y={Math.max(13,selectedPoint.y-12)} fontSize="11" textAnchor="middle" fill="var(--accent)">{selectedCheckpoint?.code}</text>}
+    {geometry.map(({cp,x,y,index},i)=>{
+     const isCurrent=i===currentIndex,isDone=cp.ui==='done',isRevisit=cp.ui==='revisit'
+     const isProposed=cp.ui==='proposed'
+     const stageEnd=i===n-1||geometry[i+1]?.stage!==cp.stage
+     const row=rows[index]
+     return <g key={cp.id} data-station-state={row.state}>
+      {isCurrent&&<circle cx={x} cy={y} r="9" fill="none" stroke="var(--accent)" strokeOpacity=".35" strokeWidth="2"/>}
+      <circle cx={x} cy={y} r={isCurrent?4.4:stageEnd?4:2.7}
+       fill={isDone?scheduleColor[row.state==='unscheduled'?'on_time':row.state]:isProposed?'var(--card)':isRevisit?'var(--warn)':isCurrent?'var(--accent)':'var(--card)'}
+       stroke={scheduleColor[row.state==='unscheduled'?'future':row.state]} strokeWidth={isDone?0:1.5}/>
+      {i===focusedIndex&&selected!==null&&<circle cx={x} cy={y} r="7" fill="none" stroke="var(--accent)" strokeWidth="1.4"/>}
+     </g>
+    })}
+    {!mini&&<text x={Math.max(35,Math.min(315,selectedPoint.x))} y={Math.max(12,selectedPoint.y-15)}
+     fontSize="11" textAnchor="middle" fill="var(--accent)">{selectedCheckpoint?.code}</text>}
    </svg>
+   {!mini&&variant==='metro'&&groups.map((group,i)=>{
+    const start=geometry[group.start].x,end=geometry[group.end].x
+    if(end-start<72)return null
+    return <span key={group.start} aria-hidden="true"
+     className="pointer-events-none absolute truncate text-center text-caption text-ink-3"
+     style={{left:(start/360*100)+'%',width:((end-start)/360*100)+'%',
+      top:i%2===0?0:height-16,transform:'translateX(-1px)'}}>
+     <Tex source={group.name}/>
+    </span>
+   })}
   </button>
   {!mini&&<p className="mt-1 min-w-0 text-label text-ink-2">
    <span className="font-semibold text-amber">{selectedCheckpoint?.code}</span>{' '}
-   <span className="break-words">{selectedCheckpoint?.title}</span>
+   <span className="break-words"><Tex source={selectedCheckpoint?.title??''}/></span>
    <span className="text-ink-3"> · {Math.round(100*project.done/Math.max(1,project.total))}% complete</span>
+   {detail&&<span className="block text-caption text-ink-2">{detail}</span>}
   </p>}
  </div>
 }
