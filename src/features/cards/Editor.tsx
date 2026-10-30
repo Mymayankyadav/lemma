@@ -101,8 +101,8 @@ export function Editor({
           onChange={(e) => setFront(e.target.value)}
           className={`${field} min-h-24`}
         />
-        <MathPreview source={front}/>
       </label>
+      <MathPreview source={front}/>
       <label>
         Back
         <textarea
@@ -110,8 +110,8 @@ export function Editor({
           onChange={(e) => setBack(e.target.value)}
           className={`${field} min-h-24`}
         />
-        <MathPreview source={back}/>
       </label>
+      <MathPreview source={back}/>
       <div className="grid grid-cols-2 gap-3">
         <label>
           Type
