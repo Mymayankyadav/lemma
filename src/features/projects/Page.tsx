@@ -51,7 +51,7 @@ function ProjectRow({project}:{project:ProjectSummary}){
   <div className="flex items-start gap-2">
    <Link to={'/p/'+project.slug} className="min-w-0 flex-1 rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
     <div className="flex items-center gap-2">
-     <span aria-hidden="true" className="text-title-s text-amber">{project.subject.glyph}</span>
+     <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
      <span className="min-w-0 flex-1 break-words text-body-l font-semibold">{project.title}</span>
      {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
      <ChevronRight size={17} className="shrink-0 text-ink-3" aria-hidden="true"/>
@@ -97,15 +97,15 @@ export default function Page(){
  },[projects.error,projects.refetch,notify]);
  const all=useMemo(()=>(projects.data??[]).filter(project=>!project.system),[projects.data]);
  const visible=useMemo(()=>all.filter(project=>matches(project,filter)&&
-  (!search.trim()||[project.title,project.subject.name].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
+  (!search.trim()||[project.title,project.subject?.name??'Unassigned'].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
  const pinned=visible.filter(project=>project.pinned).slice(0,4);
  const pinnedIds=new Set(pinned.map(project=>project.id));
  const groups=useMemo(()=>{
   const map=new Map<string,{name:string;glyph:string;items:ProjectSummary[]}>();
   for(const project of visible){
    if(pinnedIds.has(project.id))continue;
-   const key=project.subject.id;
-   const group=map.get(key)??{name:project.subject.name,glyph:project.subject.glyph,items:[]};
+   const key=project.subject?.id??'unassigned';
+   const group=map.get(key)??{name:project.subject?.name??'Unassigned',glyph:project.subject?.glyph??'∫',items:[]};
    group.items.push(project);map.set(key,group);
   }
   return [...map.entries()].map(([id,group])=>({id,...group}));
