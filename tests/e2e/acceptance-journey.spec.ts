@@ -55,7 +55,10 @@ test('acceptance 7–9: deck filtering -> confidence-first grading -> undo -> tu
  const summary=page.getByRole('region',{name:'Review summary'})
  await expect(summary.getByText('23',{exact:true})).toBeVisible()
  // Checkbox is accessible by a specific label even though its visual text is hidden.
- await page.getByRole('checkbox',{name:'Include Topology',exact:true}).uncheck()
+ // Check is a visually hidden native input inside a visible label; exercise the label.
+ const topology=page.getByRole('checkbox',{name:'Include Topology',exact:true})
+ await topology.locator('..').click()
+ await expect(topology).not.toBeChecked()
  await expect(summary.getByText('20',{exact:true})).toBeVisible()
  await screenshot(page,'07-decks')
  await page.getByRole('button',{name:'Start review'}).click()
