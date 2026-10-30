@@ -35,6 +35,17 @@ describe('ST-5 bounded live reads',()=>{
   })
   expect(mock.getUser).toHaveBeenCalledOnce()
  })
+ it('preserves the legacy 100-result cap without downloading entire tables',async()=>{
+  const page=Array.from({length:50},(_,i)=>({noteNo:i+1}))
+  mock.rpc.mockResolvedValueOnce({data:page,error:null})
+   .mockResolvedValueOnce({data:[{noteNo:51}],error:null})
+  const result=await new LiveAdapter().searchCards('')
+  expect(result).toHaveLength(51)
+  expect(mock.rpc).toHaveBeenCalledTimes(2)
+  expect(mock.rpc).toHaveBeenNthCalledWith(2,'search_cards_page',{
+   p_query:'',p_slug:null,p_limit:50,p_offset:50,
+  })
+ })
  it('passes a null project filter when searching all projects',async()=>{
   mock.rpc.mockResolvedValue({data:[],error:null})
   await new LiveAdapter().searchCards('theorem')
