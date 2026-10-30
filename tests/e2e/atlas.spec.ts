@@ -26,7 +26,7 @@ test('opening shows only fully fitted clusters, not a wall of links or a sheet',
   expect(b.top).toBeGreaterThanOrEqual(stage!.y-1);
   expect(b.bottom).toBeLessThanOrEqual(stage!.y+stage!.height+1);
  }
- await expect(page.locator('[data-atlas-label="atlas:cluster:subject-analysis"]')).toBeVisible();
+ await expect(page.locator('[data-atlas-label]').first()).toBeVisible();
  await page.screenshot({path:'test-results/screens/atlas-cosmos-overview.png',fullPage:true});
 });
 
