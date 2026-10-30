@@ -342,6 +342,7 @@ describe("demo adapter", () => {
     const subjects = await api.listSubjects();
     const created = await api.createSubject({name: "Algebra II", glyph: "A", hue: "violet"});
     await api.updateSubject(created.id, {name: "Algebraic Structures", position: 0});
+    expect((await api.listSubjects())[0].id).toBe(created.id);
     await expect(api.updateSubject(created.id, {name: subjects[0].name})).rejects.toMatchObject({code: "conflict"});
     await api.mergeSubjects(created.id, subjects[0].id);
     expect((await api.listSubjects()).some(s => s.id === created.id)).toBe(false);
