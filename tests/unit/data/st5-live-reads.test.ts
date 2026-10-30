@@ -26,6 +26,17 @@ describe('ST-5 bounded live reads',()=>{
   expect(mock.rpc).toHaveBeenCalledWith('project_summaries')
   expect(mock.getUser).toHaveBeenCalledOnce()
  })
+ it('loads Today in one RPC without fetching all reviews or sessions',async()=>{
+  const home={resume:{projectSlug:'algebra',projectTitle:'Algebra',glyph:'∫',
+   checkpointCode:'CP4',checkpointTitle:'Groups',step:2,stepsTotal:4,
+   question:'Why?',objective:'Prove a theorem',pausedAt:'2026-10-31T00:00:00Z',
+   sessionNumber:3},due:20,pendingProposals:4,projects:[]}
+  mock.rpc.mockResolvedValue({data:home,error:null})
+  expect(await new LiveAdapter().getHome()).toEqual(home)
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('home_summary')
+  expect(mock.getUser).toHaveBeenCalledOnce()
+ })
  it('searches server-side and requests no more than fifty cards',async()=>{
   mock.rpc.mockResolvedValue({data:[],error:null})
   expect(await new LiveAdapter().searchCards('x%_','algebra')).toEqual([])
