@@ -79,3 +79,8 @@ html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-switch-track[data-c
 html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content [class~="-mx-6"]{
  margin-inline:-16px;padding-inline:16px;
 }
+
+/* Preserve readable mathematical titles rather than truncating formula fragments. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content .truncate{
+ white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;
+}
