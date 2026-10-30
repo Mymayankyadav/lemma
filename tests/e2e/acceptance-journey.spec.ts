@@ -1,6 +1,6 @@
 import {test,expect,type Page} from '@playwright/test'
 
-const demo='/lemma/?demo=1#/'
+const demo='https://mymayankyadav.github.io/lemma/?demo=1#/'
 async function screenshot(page:Page,name:string){
  await page.screenshot({path:'test-results/screens/acceptance-'+name+'.png',fullPage:true})
  // A horizontal scrollbar on the phone means the screen does not fit its viewport.
