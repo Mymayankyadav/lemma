@@ -352,7 +352,7 @@ as $$
     where item->>'status' <> 'archived'
   )
   select jsonb_build_object(
-    'key', 'project:' || l.item->>'slug',
+    'key', 'project:' || (l.item->>'slug'),
     'label', l.item->>'title',
     'glyph', l.item->'subject'->>'glyph',
     'level', 0,
@@ -362,7 +362,7 @@ as $$
   from library l
   cross join lateral (
     select coalesce(jsonb_agg(jsonb_build_object(
-      'key', 'cp:' || l.item->>'slug' || ':' || c.code,
+      'key', 'cp:' || (l.item->>'slug') || ':' || c.code,
       'label', c.title,
       'glyph', l.item->'subject'->>'glyph',
       'level', 1,
