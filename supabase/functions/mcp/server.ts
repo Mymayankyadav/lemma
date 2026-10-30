@@ -33,21 +33,21 @@ export function buildServer(c:Context):McpServer{
       }catch(err){return {isError:true,content:[{type:'text' as const,text:err instanceof Error?err.message:'Request failed'}]}}
     });
   };
-  register('resume',"Resume a project at its exact checkpoint with warm-up and rules; omit project for menu.",z.object({
+  register('resume',"Resume study with checkpoint, warm-up and rules; omit project for menu.",z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
-  register('get',"Read plan, revisions, checkpoint, session, sources, outline, cards, feedback, concepts, projects, prompt or diagnostics.",z.object({
+  register('get',"Read project plans, cards, sources, sessions, feedback and diagnostics.",z.object({
     what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics']),project:optProject,
     id:S().max(20).optional(),limit:z.number().int().min(1).max(50).optional()
   }),true,(a,ctx)=>get(ctx,a));
-  register('read_pages',"Read up to 5 PDF pages by printed labels; pdf=true uses PDF indexes.",z.object({
+  register('read_pages',"Read up to 5 PDF pages by label or index.",z.object({
     project:optProject,source:S().optional(),from:S().min(1).max(12),
     to:S().max(12).optional(),pdf:z.boolean().optional()
   }),true,(a,ctx)=>readPages(ctx,a));
-  register('search',"Search PDF text, optionally scoped to a project or source.",z.object({
+  register('search',"Search project PDF text.",z.object({
     query:S().min(2).max(120),project:optProject,source:S().max(20).optional(),limit:z.number().int().min(1).max(8).optional()
   }),true,(a,ctx)=>search(ctx,a));
-  register('start_session',"Start or resume a checkpoint session; reuse an open session within 3 hours.",z.object({
+  register('start_session',"Start or resume a study session.",z.object({
     project:name,goal:S().min(1).max(200),checkpoint:cp.optional(),
     style:S().optional(),client:z.enum(['claude','chatgpt','other'])
   }),false,(a,ctx)=>startSession(ctx,a));
@@ -57,12 +57,12 @@ export function buildServer(c:Context):McpServer{
     outcome:z.enum(['demonstrated','partial','failed']).optional(),
     hint_level:z.number().int().min(1).max(4).optional(),checkpoint:cp.optional()
   });
-  register('save_progress',"Persist step, events, misconception, diagnostics and next question every ~6 messages.",z.object({
+  register('save_progress',"Save steps, events, diagnostics and next question.",z.object({
     project:name,session:S().min(2),step:z.number().int().min(1).max(8).optional(),
     diagnostics:z.array(z.object({kind:z.enum(['gap','strength','material','pace']),topic:S().min(1).max(120),evidence:S().max(600),severity:z.number().int().min(1).max(3).optional(),confirmed:z.boolean().optional()})).max(8).optional(),events:z.array(event).max(10).optional(),misconception:S().max(120).optional(),
     resolved:S().max(120).optional(),next_question:S().max(300).optional()
   }),false,(a,ctx)=>saveProgress(ctx,a));
-  register('end_session',"Close a session with outcome, summary and optional recheck.",z.object({
+  register('end_session',"Close a session with outcome and summary.",z.object({
     project:name,session:S(),summary:S().min(1).max(600),
     goal_met:z.enum(['yes','partial','no']),recheck_prompt:S().max(300).optional()
   }),false,(a,ctx)=>endSession(ctx,a));
@@ -72,7 +72,7 @@ export function buildServer(c:Context):McpServer{
     checkpoint:cp.optional(),concept:S().max(60).optional(),page:S().max(12).optional(),
     reason:S().max(200).optional()
   });
-  register('propose_cards',"Propose up to 8 cards for approval. Use $...$ for math and {{c1::...}} for cloze; direct only when dictated.",z.object({
+  register('propose_cards',"Suggest cards for approval; direct only if dictated.",z.object({
     project:name,session:S().optional(),cards:z.array(card).min(1).max(8),
     direct:z.boolean().optional()
   }),false,(a,ctx)=>proposeCards(ctx,a));
@@ -81,7 +81,7 @@ export function buildServer(c:Context):McpServer{
     type:z.enum(['basic','cloze','reverse']).optional(),resolves:z.array(z.number().int()).optional(),
     reason:S().max(200)
   });
-  register('propose_card_edits',"Suggest card corrections for student approval, e.g. from feedback.",z.object({edits:z.array(cardEditSchema).min(1).max(10)}),false,(a,ctx)=>proposeCardEdits(ctx,a));
+  register('propose_card_edits',"Suggest corrections to cards for approval.",z.object({edits:z.array(cardEditSchema).min(1).max(10)}),false,(a,ctx)=>proposeCardEdits(ctx,a));
   const planningCp=z.object({
     stage:S().max(40).nullable().optional(),title:S().min(1).max(80),objective:S().min(1).max(400),
     criterion:S().min(1).max(400),steps:z.array(S().min(1).max(80)).min(1).max(8),
@@ -91,34 +91,34 @@ export function buildServer(c:Context):McpServer{
     concepts:z.array(S().max(60)).max(4).optional(),
     recheck_prompt:S().max(300).optional()
   });
-  register('propose_plan',"Propose a staged checkpoint plan and concept hierarchy for approval.",z.object({
+  register('propose_plan',"Suggest a checkpoint plan and concepts for approval.",z.object({
     project:name,checkpoints:z.array(planningCp).min(3).max(40),
     concepts:z.array(z.object({name:S().min(1).max(60),level:z.enum(['cluster','galaxy','system','planet','moon']).optional(),parent:S().max(60).nullable().optional(),star:z.boolean().optional(),topic:S().max(40).nullable().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
     reason:S().max(300).optional()
   }),false,(a,ctx)=>proposePlan(ctx,a));
-  register('propose_plan_change',"Propose checkpoint edits and concept updates for approval; preserve unaffected checkpoints.",z.object({
+  register('propose_plan_change',"Suggest plan edits for approval.",z.object({
     project:name,ops:z.array(z.object({op:z.enum(['add','update','remove','move','prereq_add','prereq_remove'])}).catchall(z.unknown())).min(1).max(20),
     concepts:z.array(z.object({name:S().min(1).max(60),level:z.enum(['cluster','galaxy','system','planet','moon']).optional(),parent:S().max(60).nullable().optional(),star:z.boolean().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
     diagnostics:z.array(S().regex(/^D[0-9]+$/)).max(20).optional(),book:S().max(20).optional(),reason:S().min(1).max(300)
   }),false,(a,ctx)=>proposePlanChange(ctx,a));
-  register('create_project',"Create a sources-first project; PDF bytes are uploaded in Lemma and plans require approval.",z.object({
+  register('create_project',"Create a project; upload PDFs in Lemma and approve plans.",z.object({
     target_date:S().nullable().optional(),target_label:S().max(20).nullable().optional(),title:S().min(1).max(80),subject:S().min(1).max(40).optional(),
     goal:S().min(1).max(1000).optional(),glyph:S().max(2).optional(),
     style:S().optional(),book:S().max(120).optional(),
     book_short:S().max(20).optional()
   }),false,(a,ctx)=>createProject(ctx,a));
-  register('proposals',"List pending proposals by P-number for chat decisions.",z.object({project:optProject}),true,(a,ctx)=>proposals(ctx,a));
-  register('decide',"Approve or reject proposals only on explicit student instruction.",z.object({
+  register('proposals',"List pending proposals by P-number.",z.object({project:optProject}),true,(a,ctx)=>proposals(ctx,a));
+  register('decide',"Approve or reject with explicit student consent.",z.object({
     approve:z.array(z.number().int().positive()).max(30).optional(),
     reject:z.array(z.number().int().positive()).max(30).optional()
   }),false,(a,ctx)=>decide(ctx,a));
-  register('set_prompt',"Save standing instructions globally or per project when asked.",z.object({scope:S(),text:S().max(2000),mode:z.enum(['replace','append','clear']).optional()}),false,(a,ctx)=>setPrompt(ctx,a));
-  register('history',"Show recent action numbers for undo.",z.object({project:optProject,limit:z.number().int().min(1).max(30).optional()}),true,(a,ctx)=>history(ctx,a));
-  register('undo',"Undo an action by A-number; undoing the undo redoes it.",z.object({action:z.number().int().positive(),force:z.boolean().optional()}),false,(a,ctx)=>undo(ctx,a));
-  register('edit',"Edit project, checkpoint, session, card, comment, idea, subject, style, book or settings; undoable.",z.object({target:S(),project:optProject,set:z.record(S(),z.unknown())}),false,(a,ctx)=>edit(ctx,a));
-  register('add',"Add checkpoint, card, subject, idea, style, comment or book; undoable.",z.object({kind:z.enum(['checkpoint','card','subject','idea','style','comment','book']),project:optProject,fields:z.record(S(),z.unknown())}),false,(a,ctx)=>add(ctx,a));
-  register('delete',"Preview or confirm deletion of an entity; undoable.",z.object({target:S(),project:optProject,confirm:z.boolean()}),false,(a,ctx)=>remove(ctx,a));
-  register('review',"Get due cards to quiz in chat, mixed by default.",z.object({project:optProject,count:z.number().int().min(1).max(10).optional(),new:z.boolean().optional()}),true,(a,ctx)=>review(ctx,a));
-  register('grade',"Grade card answers as again, hard, good or easy, optionally with confidence.",z.object({answers:z.array(z.object({card:S(),rating:z.enum(['again','hard','good','easy']),confidence:z.enum(['sure','unsure','guess']).optional()})).min(1).max(10)}),false,(a,ctx)=>grade(ctx,a));
+  register('set_prompt',"Save global or project standing instructions.",z.object({scope:S(),text:S().max(2000),mode:z.enum(['replace','append','clear']).optional()}),false,(a,ctx)=>setPrompt(ctx,a));
+  register('history',"List actions by A-number.",z.object({project:optProject,limit:z.number().int().min(1).max(30).optional()}),true,(a,ctx)=>history(ctx,a));
+  register('undo',"Reverse an action; undo again to redo.",z.object({action:z.number().int().positive(),force:z.boolean().optional()}),false,(a,ctx)=>undo(ctx,a));
+  register('edit',"Edit a record; changes are undoable.",z.object({target:S(),project:optProject,set:z.record(S(),z.unknown())}),false,(a,ctx)=>edit(ctx,a));
+  register('add',"Create a record; undoable.",z.object({kind:z.enum(['checkpoint','card','subject','idea','style','comment','book']),project:optProject,fields:z.record(S(),z.unknown())}),false,(a,ctx)=>add(ctx,a));
+  register('delete',"Preview or confirm deletion; undoable.",z.object({target:S(),project:optProject,confirm:z.boolean()}),false,(a,ctx)=>remove(ctx,a));
+  register('review',"Get due cards for chat review.",z.object({project:optProject,count:z.number().int().min(1).max(10).optional(),new:z.boolean().optional()}),true,(a,ctx)=>review(ctx,a));
+  register('grade',"Grade reviewed cards with optional confidence.",z.object({answers:z.array(z.object({card:S(),rating:z.enum(['again','hard','good','easy']),confidence:z.enum(['sure','unsure','guess']).optional()})).min(1).max(10)}),false,(a,ctx)=>grade(ctx,a));
   return m;
 }
