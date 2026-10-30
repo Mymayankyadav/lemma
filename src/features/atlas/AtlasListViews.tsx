@@ -51,7 +51,7 @@ function Topic({topic,subjectId,mode,filter,selectedId,onSelect,defaultOpen}:{to
 export function AtlasListViews({graph,mode,filter,selectedId,onSelect}:{graph:AtlasGraph;mode:AtlasListMode;filter:AtlasFilter;selectedId:string|null;onSelect:(id:string)=>void}){
  const subjects=atlasHierarchy(graph);
  const [collapsed,setCollapsed]=useState<string[]>([]);
- return <div data-atlas-mode={mode} className="absolute inset-x-0 bottom-0 top-0 overflow-y-auto overscroll-contain px-4 pb-48 pt-48 text-ink">
+ return <div data-atlas-mode={mode} className={"absolute inset-x-0 bottom-0 top-0 overflow-y-auto overscroll-contain px-4 pt-56 text-ink "+(selectedId?"pb-[360px]":"pb-48")}>
   <div className="mx-auto flex max-w-[760px] flex-col gap-4">
    {subjects.map(subject=>{
     const open=!collapsed.includes(subject.id);
