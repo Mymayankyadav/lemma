@@ -503,6 +503,8 @@ Names are fixed; fields use camelCase. Dates are ISO strings. `Glyph` is a 1–2
 | `ReviewItem` | cardId, noteId, noteNo, ord, type, kind, front, back, projectSlug, glyph, checkpointCode, checkpointTitle, sessionNumber, sourceShort, pageLabel, state (`CardState`) |
 | `RecordReviewInput` | cardId, rating (1–4), confidence (`'sure' \| 'unsure' \| 'guess' \| null`), durationMs, next (`CardState`) |
 | `CardRow` | noteNo, front, type, kind, projectSlug, glyph, checkpointCode, due, status, openComments |
+| `CardSearchFilters` | query, projectSlug?, checkpointCode?, state? (`SchedulingState`), noteStatus?, hasOpenComments?, offset?; default offset 0, 50 rows/page |
+| `CardSearchPage` | rows (`CardRow[]`), nextOffset (`number \| null`) |
 | `CardDetail` | note (noteId, noteNo, front, back, type, kind, tags, status, origin, projectSlug, checkpointCode, sessionNumber, sourceShort, pageLabel), cards (`{ord, state: CardState}[]`), history (`{reviewedAt, rating, confidence}[]`), comments (`CardComment[]`) |
 | `CardComment` | no, body, status, createdAt, resolvedAt, resolvedByOrigin |
 | `AtlasGraph` | subjects (`Subject[]`), concepts (`{id, slug, name, blurb, subjectId, status, pinX, pinY, checkpointRefs: {projectSlug, code}[], dueCards}[]`), links (`{fromId, toId, kind}[]`) |
@@ -572,6 +574,7 @@ Both adapters (`src/data/live`, `src/data/demo`) implement every method with ide
 | `recordReview(input)` | `RecordReviewInput` | `{reviewId}` | RPC `record_review` |
 | `undoReview(reviewId)` | | `CardState` | RPC `undo_review` |
 | `searchCards(query, slug?)` | text | `CardRow[]` | front/back `ilike`; max 100 |
+| `searchCardsPage(filter)` | `CardSearchFilters` | `CardSearchPage` | ST-5 additive: owner-scoped, stable newest-first server search, 50 rows per page; optional project, checkpoint, scheduling state, note status, open-comment filters; `nextOffset` is null at the end |
 | `getCard(noteNo)` | | `CardDetail` | |
 | `createNote(input)` | projectSlug, front, back, type, kind, checkpointCode? | `{noteNo}` | owner-made cards skip approval |
 | `updateNote(noteNo, patch)` | front, back, type, kind, tags | void | same ordinal rules as §5.4 card_edit |
@@ -587,7 +590,7 @@ Both adapters (`src/data/live`, `src/data/demo`) implement every method with ide
 
 ## 9. React Query hooks (`src/data/hooks.ts`)
 
-- One hook per read method: `useHome`, `useProjects`, `useProject(slug)`, `useCheckpoint(slug, code)`, `useSessions(slug?)`, `useSession(slug, n)`, `useProposals`, `useProposal(id)`, `useDeckTree`, `useReviewItems(filter)`, `useSearchCards(q, slug?)`, `useCard(noteNo)`, `useAtlas`, `useInsightData(days)`, `useSettings`, `useStyles`, `useSubjects`, `useAuth`.
+- One hook per read method: `useHome`, `useProjects`, `useProject(slug)`, `useCheckpoint(slug, code)`, `useSessions(slug?)`, `useSession(slug, n)`, `useProposals`, `useProposal(id)`, `useDeckTree`, `useReviewItems(filter)`, `useSearchCards(q, slug?)`, `useSearchCardsPage(filter)`, `useCard(noteNo)`, `useAtlas`, `useInsightData(days)`, `useSettings`, `useStyles`, `useSubjects`, `useAuth`.
 - Query keys: `['home']`, `['projects']`, `['project', slug]`, `['checkpoint', slug, code]`, `['sessions', slug ?? 'all']`, `['session', slug, n]`, `['proposals']`, `['proposal', id]`, `['decks']`, `['review-items', filter]`, `['cards', q, slug]`, `['card', noteNo]`, `['atlas']`, `['insights', days]`, `['settings']`, `['styles']`, `['subjects']`, `['auth']`.
 - One mutation hook per write method (`useApproveProposal`, …). After success, invalidate: proposals, home, decks, project and session keys for approvals; card, decks, home after reviews and note edits; settings after settings changes; projects and home after project changes; atlas after plan approvals and pins.
 - `staleTime` 30 s; refetch on window focus (the owner comes back from the chat app and sees new proposals).
