@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reuseSubject, visibleProjects, sourceLine, scheduleHint } from '../../../supabase/functions/mcp/v3.ts'
+import { reuseSubject, visibleProjects, sourceLine, scheduleHint, isPdfPageIndex } from '../../../supabase/functions/mcp/v3.ts'
 import {planningFields} from '../../../supabase/functions/mcp/planning.ts'
 
 const subjects = [
@@ -54,5 +54,17 @@ describe('MCP-4 owner-facing project and subject matching', () => {
     })).toContain('notes-w7 notes "Week 7 notes" 12 pages added 2026-10-30 NEW')
     expect(sourceLine({ short: 'rudin', title: 'Principles', kind: 'book', plan_checked_at: '2026-10-30' }))
       .not.toContain('NEW')
+  })
+})
+
+
+describe('MCP-4 PDF page index regression',()=>{
+  it('accepts decimal indexes in source PDFs and rejects labels or zero',()=>{
+    expect(isPdfPageIndex('1')).toBe(true)
+    expect(isPdfPageIndex('12')).toBe(true)
+    expect(isPdfPageIndex('0')).toBe(false)
+    expect(isPdfPageIndex('iv')).toBe(false)
+    expect(isPdfPageIndex('1a')).toBe(false)
+    expect(isPdfPageIndex('-1')).toBe(false)
   })
 })
