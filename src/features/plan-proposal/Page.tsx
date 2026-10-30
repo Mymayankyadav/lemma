@@ -216,39 +216,39 @@ export default function Page() {
     }
   };
   const askChanges = async () => {
-    if (!p || !request.trim()) return;
+    if (!p || !request.trim() || pending) return;
     const prompt = revisePlanPrompt(
       p.projectSlug.replaceAll("-", " "),
       request.trim(),
     );
+    // A new window must be opened synchronously on a click to avoid popup
+    // blocking. Do not reject the pending plan unless the handoff is viable.
     const target = window.open("about:blank", "_blank");
-    // Pre-open synchronously to avoid popup blocking, but disown this window
-    // before navigating it to an external chat client.
     if (target) target.opener = null;
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      copied = true;
+    } catch {
+      // The pre-opened chat window can still carry the exact prompt.
+    }
+    if (!target && !copied) {
+      notify("Could not copy or open your tutor. Your proposal is still pending.", { tone: "danger" });
+      return;
+    }
     try {
       await reject.mutateAsync(p.id);
-      try {
-        await navigator.clipboard.writeText(prompt);
-        notify("Prompt copied");
-      } catch {
-        notify("Could not copy the prompt; opening chat.");
+      if (target) {
+        target.location.href = chatLink(settings.data?.preferredChat ?? "claude", prompt);
+      } else {
+        notify("Request copied. Paste it into your tutor.");
       }
-      if (target)
-        target.location.href = chatLink(
-          settings.data?.preferredChat ?? "claude",
-          prompt,
-        );
-      else
-        window.open(
-          chatLink(settings.data?.preferredChat ?? "claude", prompt),
-          "_blank",
-          "noopener,noreferrer",
-        );
+      if (copied && target) notify("Request copied for your tutor");
       setAsking(false);
       void navigate("/proposals?tab=plan");
     } catch {
       target?.close();
-      notify("Couldn't request changes.", { tone: "danger" });
+      notify("Couldn't request changes. The proposal remains available.", { tone: "danger" });
     }
   };
   return (
