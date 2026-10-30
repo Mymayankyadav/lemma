@@ -30,6 +30,12 @@ export async function selftest(c:Context):Promise<any>{
   }
   let p:any,sessionCode='S1',planId:string|undefined;
   const run=async(n:string,fn:any,a:any)=>{const tx={...c,batch:[] as any[]};const text=await fn(tx,a);return {...await commitBatch(tx,n,a,text),text};};
+  // A run stopped by the platform's wall-clock limit never reaches its
+  // finally block. Before starting, remove fixtures such runs left behind:
+  // owner-scoped, hidden system projects whose slug and subject name match the
+  // exact self-test pattern, and only when older than 15 minutes so a
+  // concurrent run is never touched. Real projects are never system projects.
+  await sweepStaleFixtures(c);
   try{
     // Protocol preflight is independent of fixtures: fail promptly instead of
     // spending ~140s on database checks before discovering an MCP transport error.
@@ -297,4 +303,25 @@ export async function selftest(c:Context):Promise<any>{
     console.info('[lemma selftest] '+(cleanupFailures.length?'FAIL':'PASS')+' cleanup ('+cleanupMs+'ms)');
   }
   return {ok:steps.length===18&&steps.every(x=>x.ok)&&cleanupFailures.length===0,steps};
+}
+const FIXTURE_PROJECT=/^zz-selftest-(extra-)?\d+$/;
+const FIXTURE_SUBJECT=/^zz-selftest-\d+$/;
+async function sweepStaleFixtures(c:Context):Promise<void>{
+  const before=new Date(Date.now()-15*60*1000).toISOString();
+  try{
+    const projects=await c.db.from('projects').select('id,slug').eq('user_id',c.userId).eq('system',true)
+      .like('slug','zz-selftest-%').lt('created_at',before);
+    for(const row of projects.data??[])if(FIXTURE_PROJECT.test(row.slug))
+      await c.db.from('projects').delete().eq('user_id',c.userId).eq('system',true).eq('id',row.id);
+    const subjects=await c.db.from('subjects').select('id,name').eq('user_id',c.userId)
+      .like('name','zz-selftest-%').lt('created_at',before);
+    for(const row of subjects.data??[]){
+      if(!FIXTURE_SUBJECT.test(row.name))continue;
+      const used=await c.db.from('projects').select('id').eq('user_id',c.userId).eq('subject_id',row.id).limit(1);
+      if(used.error||used.data?.length)continue;
+      await c.db.from('concepts').delete().eq('user_id',c.userId).eq('subject_id',row.id);
+      await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',row.id);
+    }
+    console.info('[lemma selftest] swept stale fixtures');
+  }catch{console.warn('[lemma selftest] stale fixture sweep unavailable')}
 }

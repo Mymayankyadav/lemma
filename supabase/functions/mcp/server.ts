@@ -13,10 +13,33 @@ const optProject=name.optional();
 const noop={readOnlyHint:true};
 const write={readOnlyHint:false,destructiveHint:false,openWorldHint:false};
 export const TOOL_NAMES=['resume','get','read_pages','search','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
+// tools/list is sent with every chat turn (budget 15,000 chars). Advertise
+// the same zod schema without the per-tool "$schema" dialect line (2020-12 is
+// the MCP default) and without the ±2^53-1 bounds zod adds to plain integers.
+// Validation still runs through zod's own ~standard.validate.
+const SAFE_INT=Number.MAX_SAFE_INTEGER;
+function prune(node:any):any{
+  if(Array.isArray(node))return node.map(prune);
+  if(!node||typeof node!=='object')return node;
+  const out:any={};
+  for(const [k,v] of Object.entries(node)){
+    if(k==='$schema')continue;
+    if((k==='maximum'&&v===SAFE_INT)||(k==='minimum'&&v===-SAFE_INT))continue;
+    out[k]=prune(v);
+  }
+  return out;
+}
+export function lean(schema:any):any{
+  const std=schema['~standard'];
+  return {'~standard':{...std,jsonSchema:{
+    input:(o:any)=>prune(std.jsonSchema.input(o)),
+    output:(o:any)=>prune(std.jsonSchema.output(o))
+  }}};
+}
 export function buildServer(c:Context):McpServer{
   const m=new McpServer({name:'lemma',version:'1.0.0'}, {instructions:INSTRUCTIONS});
   const register=(n:string,description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
-    m.registerTool(n,{description,inputSchema:schema,annotations:readOnly?noop:write},async(a:any)=>{
+    m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any)=>{
       try{
         const ctx:Context=readOnly?c:{...c,batch:[]};
         let result=await fn(a,ctx);
