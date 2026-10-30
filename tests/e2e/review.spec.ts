@@ -153,3 +153,11 @@ test('right swipe grades Good after confidence reveal',async({page})=>{
  await expect(page.getByRole('button',{name:'Sure',exact:true})).toBeVisible()
  await page.screenshot({path:'test-results/screens/review-swipe-good.png',fullPage:true})
 })
+
+test('Escape exits an ungraded round without recording an answer',async({page})=>{
+ await page.getByRole('button',{name:'Start review'}).click()
+ await expect(page).toHaveURL(/#\/review\/run$/)
+ await page.keyboard.press('Escape')
+ await expect(page).toHaveURL(/#\/review$/)
+ await expect(page.getByRole('region',{name:'Review summary'}).getByText('23',{exact:true})).toBeVisible()
+})
