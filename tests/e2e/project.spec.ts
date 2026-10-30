@@ -52,3 +52,16 @@ test('a new PDF can be uploaded from project Sources',async({page})=>{
  await expect(page.getByText('PDF added')).toBeVisible({timeout:30000})
  await expect(sources.getByText('sample',{exact:false})).toBeVisible()
 })
+
+test('Euclid project ascent opens a checkpoint without horizontal scrolling',async({page})=>{
+ await page.goto('./?demo=1&theme=euclid-night#/p/real-analysis')
+ const timeline=page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="ascent"]')
+ await expect(timeline).toBeVisible()
+ const button=timeline.getByRole('button')
+ await expect(button).toHaveAttribute('aria-label',/12 checkpoints, now CP4/)
+ await page.screenshot({path:'test-results/screens/review/ui5b-project-euclid-night.png',fullPage:true})
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+ await button.focus()
+ await page.keyboard.press('Enter')
+ await expect(page).toHaveURL(/#\\/p\\/real-analysis\\/cp\\/CP4$/)
+})
