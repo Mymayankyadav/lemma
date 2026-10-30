@@ -1,5 +1,6 @@
 import { writeFileSync, readFileSync } from "node:fs";
 import { mathPrompts } from "../src/data/demo/math-prompts";
+import { enrichDemoStore } from "../src/data/demo/extension";
 import type {
   DemoStore,
   DemoCheckpoint,
@@ -779,6 +780,7 @@ data.proposals.push({
   },
   status: "pending",
 });
+enrichDemoStore(data);
 writeFileSync(
   new URL("../src/data/demo/fixture.json", import.meta.url),
   JSON.stringify(data) + "\n",
