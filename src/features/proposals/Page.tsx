@@ -340,7 +340,7 @@ export default function Page() {
                     {p.projectSlug.replaceAll("-", " ")}
                   </h2>
                   <p className="text-label text-ink-3">
-                    {p.sessionNumber ? `From S${p.sessionNumber}` : "New plan"}
+                    {p.kind === "plan_change" ? "Plan change" : "New plan"}{p.sessionNumber ? ` · From S${p.sessionNumber}` : ""}
                   </p>
                 </div>
               </div>
