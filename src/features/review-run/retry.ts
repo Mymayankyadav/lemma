@@ -16,7 +16,8 @@ export function afterRoundGrade(
  now=Date.now(),
 ):{queue:ReviewQueue;pending:RetryEntry[]} {
  let waiting=pending.map(entry=>({...entry,remaining:entry.remaining-1}))
- let learning=queue.learning
+ // A successful answer completes this card for this round. FSRS still persists its next due time.
+ let learning=queue.learning.filter(item=>item.cardId!==card.cardId)
  if(rating===1){
   // advanceQueue already scheduled the FSRS relearning state; replace its
   // in-round copy rather than reviewing it twice.

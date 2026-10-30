@@ -40,7 +40,9 @@ export async function rows(db: SupabaseClient, table: string, uid: string): Prom
   const output: Row[] = []
   const size = 1000
   for (let start=0; ;start+=size) {
-    const batch = checked((await db.from(table).select('*').eq('user_id', uid).range(start,start+size-1)) as {
+    let query = db.from(table).select('*').eq('user_id', uid)
+    if (table === 'projects') query = query.neq('status', 'archived')
+    const batch = checked((await query.range(start,start+size-1)) as {
       data: Row[] | null; error: unknown
     })
     output.push(...batch)

@@ -6,6 +6,7 @@ import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
+import {Button} from '../../ui/Button';
 import {Check} from '../../ui/Check';
 import {Glyph} from '../../ui/Glyph';
 import {IconButton} from '../../ui/IconButton';
@@ -95,13 +96,13 @@ export default function Page(){
     <div className="flex items-center justify-between gap-4">
      <div>
       <div className="flex items-baseline gap-2">
-       <strong className="text-num-xl font-semibold leading-none tracking-tight tabular-nums">{selectedCount}</strong>
+       <strong className="font-[var(--font-display)] text-num-xl font-semibold leading-none tracking-tight tabular-nums">{selectedCount}</strong>
        <span className="text-answer text-ink-2">due</span>
       </div>
       <p className="mt-2 flex items-center gap-2 text-label text-ink-3"><Clock3 size={16} aria-hidden="true"/>
        {selectedCount>0?'about '+estimated+' min':'All clear for today'}</p>
      </div>
-     <Orb size={76} icon={Play} label="Start review" disabled={!selectedCount} onClick={()=>start()}/>
+     <Button aria-label="Start review" icon={Play} disabled={!selectedCount} onClick={()=>start()}>Start</Button>
     </div>
     <div className="mt-5 border-t border-edge pt-3">
      <div className="flex items-center gap-2"><Shuffle size={18} aria-hidden="true" className="text-amber"/>

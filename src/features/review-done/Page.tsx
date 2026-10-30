@@ -4,7 +4,8 @@ import {CalendarDays,Clock3,RotateCcw,Target} from 'lucide-react';
 import {getApi} from '../../data';
 import {useSettings} from '../../data/hooks';
 import {summarizeReviewSession} from '../../lib/insights';
-import {studyDayBounds} from '../../lib/calendar';
+import {motion,useReducedMotion} from 'motion/react';
+import {useCalm} from '../../ui/useCalm';
 import {formatMinutes} from '../../lib/text';
 import {useReviewSession} from '../review-run/store';
 import {Screen} from '../../ui/Screen';
@@ -21,6 +22,7 @@ function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:s
  </Tile>;
 }
 export default function Page(){
+ const reduced=!!useReducedMotion(),calm=useCalm(),quiet=reduced||calm;
  const navigate=useNavigate(),answers=useReviewSession(s=>s.answers),filter=useReviewSession(s=>s.filter);
  const settings=useSettings(),[tomorrow,setTomorrow]=useState<number|null>(null);
  const stats=useMemo(()=>summarizeReviewSession(answers.map(a=>({rating:a.rating,confidence:a.confidence,
@@ -28,14 +30,8 @@ export default function Page(){
  useEffect(()=>{
   if(!settings.data)return;
   let cancelled=false;
-  const {end}=studyDayBounds(Date.now(),settings.data.timeZone,settings.data.rolloverHour);
-  const nextEnd=studyDayBounds(end,settings.data.timeZone,settings.data.rolloverHour).end;
-  void getApi().searchCards('').then(notes=>{
-   if(cancelled)return;
-   // Search returns at most 100 notes; treat results as a lower bound when capped.
-   const due=notes.filter(note=>note.status==='active'&&note.due
-    &&Date.parse(note.due)>=end&&Date.parse(note.due)<nextEnd).length;
-   setTomorrow(due);
+  void getApi().getReviewForecast().then(days=>{
+   if(!cancelled)setTomorrow(days[1]?.due??0);
   }).catch(()=>undefined);
   return()=>{cancelled=true};
  },[settings.data]);
@@ -48,7 +44,8 @@ export default function Page(){
  const missed=firstAnswers.filter(a=>a.rating===1);
  const sure=firstAnswers.filter(a=>a.confidence==='sure');
  const sureRight=sure.filter(a=>a.rating>1).length;
- const minutes=Math.max(0,Math.ceil(stats.durationMs/60000));
+ const seconds=Math.max(0,Math.floor(stats.durationMs/1000));
+ const roundTime=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
  const recalled=firstAnswers.filter(a=>a.rating>1).length;
  const firstRecall=firstAnswers.length?Math.round(100*recalled/firstAnswers.length)+'%':'—';
  function retryMissed(){
@@ -65,15 +62,15 @@ export default function Page(){
  return <Screen className="items-center gap-5">
   <div className="mt-4 flex flex-col items-center text-center">
    <RoundSeal order={firstAnswers.map(a=>a.card.cardId)} answers={answers}/>
-   <h1 className="mt-1 font-math text-[44px] italic tracking-wide text-amber">
-    <span className="sr-only">Review complete</span><span aria-hidden="true">Q.E.D.</span>
-   </h1>
+   <motion.h1 initial={quiet?false:{letterSpacing:'.4em'}} animate={{letterSpacing:'.02em'}} transition={{duration:quiet?0:.7}} className="mt-1 font-[var(--font-display)] text-[44px] italic text-ink">
+    <span className="sr-only">Review complete</span><span aria-hidden="true"><span className="text-amber">Q</span>.E.D.</span>
+   </motion.h1>
    <p className="mt-2 text-body-l text-ink-2">{firstAnswers.length} {firstAnswers.length===1?'card':'cards'} reviewed, {missed.length} {missed.length===1?'needed':'needed'} another pass.</p>
   </div>
   <section aria-label="Review statistics" className="grid w-full grid-cols-2 gap-2">
-   <Metric icon={Target} label="first try" value={firstRecall}/>
-   <Metric icon={Clock3} label="round time" value={formatMinutes(minutes)}/>
-   <Metric icon={RotateCcw} label="right when sure" value={sure.length?sureRight+'/'+sure.length:'—'}/>
+   <Metric icon={Target} label="recalled on the first try" value={firstRecall}/>
+   <Metric icon={Clock3} label="time for the round" value={roundTime}/>
+   <Metric icon={RotateCcw} label="right when you were sure" value={sure.length?sureRight+'/'+sure.length:'—'}/>
    <Metric icon={CalendarDays} label="due tomorrow" value={tomorrow===null?'—':String(tomorrow)}/>
   </section>
   <section aria-label="Round transcript" className="w-full">

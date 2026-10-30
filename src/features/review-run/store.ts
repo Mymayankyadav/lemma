@@ -43,7 +43,7 @@ export const useReviewSession=create<ReviewState>((set,get)=>({
  startTime:Date.now(),answers:[],lastUndo:null,total:0,roundOrder:[],pendingAgain:[],
  initialize(items,settings,filter){
   const first=nextCard(buildQueue(items,settings),Date.now())
-  set({filter,queue:first.queue,current:first.item,total:items.length,
+  set({filter,queue:first.queue,current:first.item,total:first.queue.total,
    revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],lastUndo:null,
    roundOrder:first.item?[first.item.cardId]:[],pendingAgain:[]})
  },

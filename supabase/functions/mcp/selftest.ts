@@ -2,7 +2,7 @@ import { Context, insert, scoped, rpc, commitBatch } from './db.ts';
 import {setPrompt,history,undo,edit,add,remove,review,grade} from './tools/control.ts';
 import { packet } from './packet.ts';
 import { get, search, readPages } from './tools/read.ts';
-import { proposePlan, startSession, saveProgress, proposeCards, endSession, createProject, proposals, decide } from './tools/write.ts';
+import { proposePlanChange, proposePlan, startSession, saveProgress, proposeCards, endSession, createProject, proposals, decide } from './tools/write.ts';
 import { createMcpHandler } from './deps.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
 export async function selftest(c:Context):Promise<any>{
@@ -28,15 +28,43 @@ export async function selftest(c:Context):Promise<any>{
     await check('planning resume',async()=>{if(!(await packet(c,{project:p.slug})).includes('PLANNING'))throw Error('No planning packet')});
     await check('plan proposal and approval',async()=>{
       await proposePlan(c,{project:p.slug,checkpoints:[
-        {title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
-        {title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},
-        {title:'Applications',objective:'Apply theorem',criterion:'Constructs a correct example',steps:['Find example','Explain'],prereqs:[2]}
-      ]});
+        {stage:'Foundations',title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
+        {stage:'Covers',title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},
+        {stage:'Applications',title:'Applications',objective:'Apply theorem',criterion:'Constructs a correct example',steps:['Find example','Explain'],prereqs:[2]}
+      ],concepts:[{name:'Open cover',topic:'Topology'}]});
       const {data}=await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle();
       if(!data)throw Error('No plan proposal');
+      if((await scoped(c,'checkpoints').eq('project_id',p.id)).data?.length)throw Error('Plan applied before approval');
       planId=data.id;await rpc(c,'approve_proposal',{p_id:planId});
       const {data:active}=await scoped(c,'projects').eq('id',p.id).maybeSingle();
       if(active?.status!=='active')throw Error('Plan not active');
+    });
+    await check('planning metadata, ETA and undo',async()=>{
+      const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
+      const concept=(await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Open cover').single()).data;
+      if(cp.stage!=='Foundations'||concept.topic!=='Topology')throw Error('Approved plan lost stage/topic');
+      const change=await run('propose_plan_change',proposePlanChange,{project:p.slug,reason:'Selftest stages',ops:[
+        {op:'update',code:'CP1',stage:'Revised'},
+        {op:'add',title:'Bridge',objective:'Learn',criterion:'Proves it',steps:['Think'],stage:'Bridge'}]});
+      const prop=(await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan_change').eq('status','pending').single()).data;
+      if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Foundations')throw Error('Change applied before approval');
+      const approved=await run('decide',decide,{approve:[prop.no]});
+      if((await scoped(c,'checkpoints').eq('project_id',p.id).eq('stage','Bridge')).data?.length!==1)throw Error('Added stage missing');
+      if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Revised')throw Error('Updated stage missing');
+      await run('undo',undo,{action:approved.action});
+      if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Foundations')throw Error('Stage undo failed');
+      const edited=await run('edit',edit,{target:p.slug,set:{target_date:'2027-01-15',target_label:'Prelim'}});
+      const packetText=await packet(c,{project:p.slug});
+      if(!packetText.includes('finish ≈')||!packetText.includes('Prelim 15 Jan'))throw Error('ETA/target missing');
+      await run('undo',undo,{action:edited.action});
+      if((await scoped(c,'projects').eq('id',p.id).single()).data.target_date!==null)throw Error('Target undo failed');
+      await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:null}});
+      await run('edit',edit,{target:'idea:Open cover',set:{topic:'Open sets'}});
+      if((await scoped(c,'concepts').eq('id',concept.id).single()).data.topic!=='Open sets')throw Error('Topic edit failed');
+      await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:'Foundations'}});
+      for(const set of [{target_date:'2027-02-30'},{target_label:'x'.repeat(21)}]){
+        let failed=false;try{await run('edit',edit,{target:p.slug,set});}catch{failed=true;}if(!failed)throw Error('Invalid target accepted');
+      }
     });
     await check('study resume bounds',async()=>{
       const s=await packet(c,{project:p.slug});
@@ -83,10 +111,10 @@ export async function selftest(c:Context):Promise<any>{
       let invalid='';try{await run('create_project',createProject,{title,subject:extraSubjectName,goal:'Demo goal',style:'Teach with careful examples'});}catch(e){invalid=(e as Error).message;}
       if(!invalid.includes('Unknown style key')||!invalid.includes('socratic'))throw Error('Invalid style accepted or usable keys missing');
       if((await scoped(c,'subjects').eq('name',extraSubjectName)).data?.length)throw Error('Rejected style created a subject');
-      const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal',style:'socratic'});
+      const r=await createProject(c,{title,subject:extraSubjectName,goal:'Demo goal',style:'socratic',target_date:'2027-01-15',target_label:'Prelim'});
       const slug=r.match(/^created (\S+)/)?.[1];
       if(!slug)throw Error('Project creation failed');
-      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;if(newP?.style!=='socratic')throw Error('Valid style not saved');
+      const {data:newP}=await scoped(c,'projects').eq('slug',slug).maybeSingle();extraId=newP?.id;extraSubjectId=newP?.subject_id;if(!newP?.target_date||newP?.target_label!=='Prelim')throw Error('Create target lost');if(newP?.style!=='socratic')throw Error('Valid style not saved');
       const lines=await proposals(c,{project:p.slug});
       if(!lines.includes('P'))throw Error('Pending proposals invisible');
       const {data:pending}=await scoped(c,'proposals').eq('project_id',p.id).eq('status','pending').eq('kind','card').order('no').limit(1);
@@ -207,5 +235,5 @@ export async function selftest(c:Context):Promise<any>{
     }
     if(extraSubjectId)await c.db.from('subjects').delete().eq('user_id',c.userId).eq('id',extraSubjectId);
   }
-  return {ok:steps.length===17&&steps.every(x=>x.ok),steps};
+  return {ok:steps.length===18&&steps.every(x=>x.ok),steps};
 }

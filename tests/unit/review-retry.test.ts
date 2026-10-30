@@ -30,6 +30,13 @@ describe('Again in-round requeue',()=>{
   expect(dealtA.item?.state.due).toBe(new Date(now).toISOString())
   expect(third.pending).toHaveLength(0)
  })
+ it('finishes a successful card for the round even when FSRS schedules a learning step',()=>{
+  const a=card('a'),persisted=state(now+600000,1)
+  const result=afterRoundGrade(queue([], [card('a',persisted)]),[],a,persisted,3,now)
+  expect(result.queue.learning).toEqual([])
+  expect(nextCard(result.queue,now).item).toBeNull()
+  expect(persisted.due).toBe(new Date(now+600000).toISOString())
+ })
  it('retries immediately if no other cards remain',()=>{
   const a=card('a'),persisted=state(now+600000,3)
   const result=afterRoundGrade(queue([], [card('a',persisted)]),[],a,persisted,1,now)

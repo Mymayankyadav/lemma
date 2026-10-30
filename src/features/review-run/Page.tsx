@@ -1,6 +1,7 @@
+import './review.css';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
-import {AnimatePresence,motion,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
+import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
 import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatus,useUndoReview,useSessions} from '../../data/hooks';
 import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../data/types';
@@ -17,35 +18,38 @@ import {Chip} from '../../ui/Chip';
 import {Sheet} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
+import {useCalm} from '../../ui/useCalm';
 
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
-const dots=['bg-again','bg-hard','bg-good','bg-easy'] as const;
+const gradeColors=['var(--bad)','var(--warn)','var(--accent)','var(--good)'] as const;
 const confidenceOptions=[
  {value:'sure' as const,label:'Sure',icon:CircleCheck},
  {value:'unsure' as const,label:'Unsure',icon:CircleDashed},
  {value:'guess' as const,label:'Guess',icon:CircleHelp},
 ];
-function CardFace({item,revealed,confidence}:{item:ReviewItem;revealed:boolean;confidence:Confidence}){
+function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;revealed:boolean;confidence:Confidence;quiet:boolean;stamp:boolean}){
  const front=item.type==='reverse'&&item.ord===2?item.back:item.front;
  const back=item.type==='reverse'&&item.ord===2?item.front:item.back;
- return <Card stack className="flex flex-col gap-4 rounded-[6px] px-[18px] pb-[26px] pt-4"
+ return <Card stack className="relative flex flex-col gap-4 rounded-[6px] px-[18px] pb-[26px] pt-4"
   style={{minHeight:'min(50vh,400px)',backgroundImage:'repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, var(--line) 28px)'}}>
   <div className="flex items-center justify-between gap-2 border-b border-edge pb-3">
    <span className="text-label uppercase tracking-wide text-ink-3">{item.kind}</span>
    <span className="font-math text-label text-ink-2">N{item.noteNo}</span>
    {revealed&&confidence&&<Chip tone={confidence==='sure'?'amber':'quiet'} size={28}>{confidence}</Chip>}
   </div>
-  <div className="font-math text-[21px] leading-[28px]">
-   <MathText source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined}/>
+  <div className="review-front font-math text-[21px] leading-[28px]">
+   <MathText className="!text-[21px] !leading-[28px]" source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined}/>
   </div>
-  {revealed&&<motion.div initial={{opacity:0,clipPath:'inset(0 100% 0 0)'}} animate={{opacity:1,clipPath:'inset(0 0% 0 0)'}}
-   transition={{duration:0.52}} className="mt-auto font-math text-[18px] leading-[28px]">
-   <motion.div initial={{scaleX:0}} animate={{scaleX:1}} transition={{duration:0.32}}
+  {revealed&&<motion.div initial={quiet?false:{opacity:0,clipPath:'inset(0 100% 0 0)'}} animate={{opacity:1,clipPath:'inset(0 0% 0 0)'}}
+   transition={{duration:quiet?0:0.52,delay:quiet?0:0.32}} className="mt-auto font-math text-[18px] leading-[28px]">
+   <motion.div initial={quiet?false:{scaleX:0}} animate={{scaleX:1}} transition={{duration:quiet?0:0.32}}
     className="mb-5 h-[1.5px] origin-left bg-amber"/>
-   {back?<MathText source={back} variant="answer"/>:item.type==='cloze'?<MathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}}/>:
+   {back?<MathText className="!text-[18px] !leading-[28px]" source={back} variant="answer"/>:item.type==='cloze'?<MathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}}/>:
     <p className="font-math text-title-s text-ink-2">See the highlighted answer above.</p>}
   </motion.div>}
+  {revealed&&<svg aria-hidden="true" viewBox="0 0 36 36" className="pointer-events-none absolute bottom-3 right-3 size-9 text-amber opacity-40"><motion.path d="M4 30 A26 26 0 0 1 30 4" fill="none" stroke="currentColor" initial={quiet?false:{pathLength:0}} animate={{pathLength:1}} transition={{duration:quiet?0:.32}}/></svg>}
+  {stamp&&<motion.span aria-hidden="true" data-proof-stamp className="absolute bottom-4 right-4 font-math text-title text-amber" initial={quiet?false:{opacity:0,scale:1.8,rotate:-15}} animate={{opacity:1,scale:1,rotate:0}} transition={{duration:quiet?0:.12}}>∎</motion.span>}
   <div className="mt-auto flex flex-wrap gap-2 text-ink-3">
    {item.sourceShort&&<Chip tone="quiet" icon={BookOpen}>{item.sourceShort}{item.pageLabel?' p. '+item.pageLabel:''}</Chip>}
    {item.sessionNumber&&<Chip tone="quiet" icon={Clock3}>{'S'+item.sessionNumber}</Chip>}
@@ -54,7 +58,7 @@ function CardFace({item,revealed,confidence}:{item:ReviewItem;revealed:boolean;c
 }
 
 export default function Page(){
- const navigate=useNavigate(),[search]=useSearchParams(),notify=useToast(),reduce=!!useReducedMotion();
+ const navigate=useNavigate(),[search]=useSearchParams(),notify=useToast(),reduced=!!useReducedMotion(),calm=useCalm(),reduce=reduced||calm;
  const settings=useSettings(),sessions=useSessions(),mutate=useRecordReview(),undo=useUndoReview();
  const addComment=useAddComment(),suspend=useSetNoteStatus();
  const current=useReviewSession(s=>s.current),queue=useReviewSession(s=>s.queue);
@@ -69,16 +73,20 @@ export default function Page(){
  // An unsaved note belongs to its review card, never to the next card dealt.
  const [draft,setDraft]=useState<{cardId:string;value:string}|null>(null);
  const note=draft&&current&&draft.cardId===current.cardId?draft.value:'';
- const dragX=useMotionValue(0),rotation=useTransform(dragX,x=>x/22);
+ const dragX=useMotionValue(0),dragY=useMotionValue(0),rotation=useTransform(dragX,x=>x/22);
+ const swipeLabel=useTransform([dragX,dragY],([x,y])=>Number(y)<-60?'Easy':Number(x)>40?'Good':Number(x)<-40?'Again':'');
+ const cardMotion=useAnimationControls();
+ const [stamp,setStamp]=useState(false),[calibrationNote,setCalibrationNote]=useState<string|null>(null);
  const previousCardId=useRef<string|null>(null);
  useEffect(()=>{
-  const cardId=current?.cardId??null;
+  const cardId=current?current.cardId+':'+answers.length:null;
   if(previousCardId.current===cardId)return;
   previousCardId.current=cardId;
-  dragX.set(0);
+  dragX.set(0);dragY.set(0);setStamp(false);
+  void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:reduce?0:.48}});
   setDraft(null);
   setSheetOpen(false);
- },[current?.cardId]);
+ },[current?.cardId,answers.length,reduce]);
  const init=useRef(false);
  const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
  const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
@@ -99,17 +107,27 @@ export default function Page(){
   else {useReviewSession.getState().close();navigate('/review')}
  }
  async function grade(rating:Rating){
-  if(!current||!revealed||!intervals||submitting)return;
+  if(!current||!revealed||!intervals||useReviewSession.getState().submitting)return;
   const durationMs=Math.max(0,Math.min(600000,Date.now()-startTime));
   beginGrade();
   try{
    const result=await mutate.mutateAsync({cardId:current.cardId,rating,confidence,durationMs,
     next:intervals[rating].card});
+   const note=confidence==='sure'&&rating===1?'You were sure, so this one comes back soon':
+    confidence==='guess'&&(rating===3||rating===4)?'A good guess. It will come back a little sooner.':null;
+   setCalibrationNote(note);
+   if(rating>=3)setStamp(true);
+   if(!reduce){
+    if(rating>=3)await cardMotion.start({scale:1,transition:{duration:.12}});
+    const exit=rating===1?{x:0,y:72,scale:.86}:rating===2?{x:-140,y:0,scale:1}:rating===3?{x:0,y:-130,scale:1}:{x:130,y:-170,scale:1};
+    await cardMotion.start({...exit,opacity:0,transition:{duration:.3,ease:'easeIn'}});
+   }
    committed({card:current,reviewId:result.reviewId,rating,confidence,durationMs,
     next:intervals[rating].card,answeredAt:Date.now()});
    try{navigator.vibrate?.(8)}catch{/* not available in every browser */}
    if(!useReviewSession.getState().current)navigate('/review/done');
   }catch(error){
+   setStamp(false);void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:0}});
    cancelGrade();
    notify((error instanceof Error?error.message:'Could not confirm answer')+'. Current card kept.',
     {tone:'danger',action:{label:'Retry',onClick:()=>{if(navigator.onLine)void grade(rating);else notify('Reconnect before retrying',{tone:'danger'})}}});
@@ -171,38 +189,41 @@ export default function Page(){
  return <Screen className="gap-6">
   <h1 className="sr-only">Card review</h1>
   <header className="flex items-center gap-2">
-   <IconButton icon={X} label="Close review" onClick={close}/>
+   <IconButton icon={X} label="Close review" disabled={submitting} onClick={close}/>
    <div className="min-w-0 flex-1">
     <PolygonProgress total={total} order={roundOrder} currentCardId={current.cardId} answers={answers}/>
     <div className="mt-1 flex items-center justify-center gap-1 text-label text-ink-3">
      <span className="font-math italic text-amber">{current.glyph}</span>
-     <span className="truncate">{current.checkpointTitle??current.projectSlug}</span>
+     <span className="truncate">{current.projectSlug.replaceAll('-',' ')} · {current.checkpointCode}</span>
     </div>
    </div>
    <IconButton icon={Undo2} label="Undo last answer" disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
    <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>setSheetOpen(true)}/>
   </header>
   <AnimatePresence mode="wait" initial={false}>
-   <motion.div key={current.cardId} initial={{opacity:0,y:reduce?0:34,scale:reduce?1:0.94}} animate={{opacity:1,y:0,scale:1}}
-    exit={{opacity:0,y:-12}} transition={{duration:reduce?0.15:0.42}}
+   <motion.div key={current.cardId} initial={reduce?false:{opacity:0,y:34,scale:0.94}} animate={cardMotion}
+    exit={{opacity:0,transition:{duration:0}}} transition={{duration:reduce?0:.48}}
     drag={revealed&&!submitting} dragElastic={0.6} dragSnapToOrigin
     dragConstraints={{left:0,right:0,top:0,bottom:0}}
-    style={{x:dragX,rotate:rotation,touchAction:revealed?'none':'auto'}}
+    style={{x:dragX,y:dragY,rotate:rotation,touchAction:revealed?'none':'auto'}}
     onDragEnd={(_,info)=>{
      if(!revealed||submitting)return;
      if(info.offset.x>110)void grade(3);
      else if(info.offset.x< -110)void grade(1);
      else if(info.offset.y< -110)void grade(4);
     }}>
-    <CardFace item={current} revealed={revealed} confidence={confidence}/>
+    <motion.span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 z-10 text-center font-math text-num italic text-amber">{swipeLabel}</motion.span>
+    <CardFace item={current} revealed={revealed} confidence={confidence} quiet={reduce} stamp={stamp}/>
    </motion.div>
   </AnimatePresence>
+  <p className="text-center text-caption text-ink-3">{Math.max(0,total-new Set(answers.map(a=>a.card.cardId)).size-1)} after this</p>
+  {calibrationNote&&<p role="status" className="text-center font-math text-label italic text-ink-2">{calibrationNote}</p>}
   {!revealed?<section aria-label="Confidence" className="flex flex-col gap-3">
-   <p className="text-center text-label text-ink-3">How sure? Tap to reveal</p>
+   <p className="text-center text-label text-ink-3">How sure are you? Tapping reveals the answer.</p>
    <div className="grid grid-cols-3 gap-2">
-    {confidenceOptions.map(({value,label,icon:Icon})=><button type="button" key={value}
+    {confidenceOptions.map(({value,label})=><button type="button" key={value}
       onClick={()=>reveal(value)} className={'flex min-h-[var(--ctl)] items-center justify-center gap-2 rounded-btn border border-edge-2 bg-raised px-2 text-label '+(value==='sure'?'text-amber':'text-ink-soft')}>
-      <Icon size={18} aria-hidden="true"/>{label}</button>)}
+      <span aria-hidden="true" className={'size-3 rounded-full border border-current '+(value==='sure'?'bg-current':value==='guess'?'border-dashed':'')}/>{label}</button>)}
    </div>
    <button type="button" className="min-h-11 text-label text-ink-3 underline-offset-4 hover:underline" onClick={()=>reveal(null)}>Show answer</button>
   </section>:<section aria-label="Grade answer" className="grid grid-cols-4 gap-1.5">
@@ -211,9 +232,9 @@ export default function Page(){
     return <button key={rating} type="button" disabled={submitting}
      onClick={()=>{void grade(rating)}} aria-label={'Grade '+label}
      className={'flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-btn border px-1 disabled:opacity-50 '+
-      (rating===3&&confidence==='sure'?'border-amber-line-2 bg-amber-tint':'border-edge-2 bg-raised')}>
-     <span className="flex items-center gap-1 text-label font-semibold"><span className={'size-1.5 rounded-full '+dots[i]}/>{label}</span>
-     <span className="text-[11px] tabular-nums text-ink-3">{intervals?.[rating].label??'—'}</span>
+      (rating===3?'border-amber bg-amber text-amber-ink'+(confidence==='sure'?' ring-2 ring-amber ring-offset-2 ring-offset-obsidian':''):'border-edge-2 bg-raised')}>
+     <span className="flex items-center gap-1 text-label font-semibold" style={{color:rating===3?'var(--on-accent)':gradeColors[i]}}><span className="size-1.5 rounded-full" style={{background:rating===3?'var(--on-accent)':gradeColors[i]}}/>{label}</span>
+     <span className="text-caption tabular-nums" style={{color:rating===3?'var(--on-accent)':'var(--ink-3)'}}>{intervals?.[rating].label??'—'}</span>
     </button>
    })}
   </section>}

@@ -531,6 +531,7 @@ Both adapters (`src/data/live`, `src/data/demo`) implement every method with ide
 | `listStyles()` | — | `Style[]` | |
 | `updateStyle(key, patch)` | name/instructions | `Style` | |
 | `getHome()` | — | `HomeSummary` | resume target: newest open session (paused or live); else the project with newest activity and its `now` checkpoint |
+| `getReviewForecast()` | — | `{day: string, due: number}[]` | Seven study-day buckets (today first), based on settings timezone and rollover; count every scheduled card (`state > 0`) of active notes in non-archived projects, with overdue cards in today's bucket; no daily limits or search cap. `day` is the study date `YYYY-MM-DD`. UI-5e implements both adapters. |
 | `listSubjects()` | — | `Subject[]` | |
 | `createSubject(input)` | name, glyph, hue | `Subject` | |
 | `listProjects()` | — | `ProjectSummary[]` | ordered by lastActivityAt desc |

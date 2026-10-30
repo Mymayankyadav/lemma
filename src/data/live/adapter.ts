@@ -1,4 +1,5 @@
 import type { LemmaApi } from '../api'
+import {reviewForecast} from '../../lib/review-forecast'
 
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
@@ -11,6 +12,13 @@ import { LemmaError } from '../api'
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ async getReviewForecast(): ReturnType<LemmaApi['getReviewForecast']> {
+  const db=liveClient(),uid=await owner(db)
+  const [settings,notes,projects,cards]=await Promise.all([this.getSettings(),rows(db,'notes',uid),rows(db,'projects',uid),rows(db,'cards',uid)])
+  const projectIds=new Set(projects.filter(p=>p.status!=='archived').map(p=>p.id))
+  const noteIds=new Set(notes.filter(n=>n.status==='active'&&projectIds.has(n.project_id)).map(n=>n.id))
+  return reviewForecast(cards.filter(c=>noteIds.has(c.note_id)).map(c=>({state:Number(c.state),due:c.due})),settings)
+ }
  async getAuth(...args: Parameters<LemmaApi['getAuth']>): ReturnType<LemmaApi['getAuth']> {
   const {data,error} = await liveClient().auth.getUser()
   if (error && !/missing|session/i.test(error.message)) fail(error)
@@ -134,7 +142,7 @@ export class LiveAdapter implements LemmaApi {
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
   const [slug]=args,db=liveClient(),uid=await owner(db)
-  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).single()) as Row
+  const project=checked(await db.from('projects').select('*').eq('slug',slug).eq('user_id',uid).neq('status','archived').single()) as Row
   const [subjects,cps,prereqs,proposalRows,sources,sessionList,settings,due]=await Promise.all([
     rows(db,'subjects',uid),rows(db,'checkpoints',uid),rows(db,'checkpoint_prereqs',uid),
     rows(db,'proposals',uid),rows(db,'sources',uid),this.listSessions(slug),this.getSettings(),
