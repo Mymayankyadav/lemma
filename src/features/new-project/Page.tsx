@@ -140,7 +140,7 @@ export default function Page(){
      <section aria-label="Source" className="flex flex-col gap-3">
       <h3 className="text-[14px] font-semibold text-ink-2">Source (optional)</h3>
       <input ref={fileInput} hidden type="file" accept=".pdf,application/pdf"
-       onChange={e=>selectFile(e.currentTarget.files?.[0])}/>
+       onChange={e=>{const selected=e.currentTarget.files?.[0];e.currentTarget.value='';selectFile(selected)}}/>
       {!file?<button type="button" disabled={saving} onClick={()=>fileInput.current?.click()}
        className="flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-[14px] text-ink-2">
        <FileText size={24} aria-hidden="true" className="text-amber"/>Add a PDF
