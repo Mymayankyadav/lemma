@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowRight,
@@ -56,6 +56,8 @@ export default function Page() {
     [deleting, setDeleting] = useState(false),
     [message, setMessage] = useState(""),
     [slow, setSlow] = useState(false);
+  const closeEditing = useCallback(() => setEditing(false), []);
+  const closeDeleting = useCallback(() => setDeleting(false), []);
   useEffect(() => {
     if (!query.isLoading) {
       setSlow(false);
@@ -339,7 +341,7 @@ export default function Page() {
           </form>
           <Sheet
             open={editing}
-            onClose={() => setEditing(false)}
+            onClose={closeEditing}
             title="Edit card"
           >
             <Editor
@@ -350,7 +352,7 @@ export default function Page() {
           </Sheet>
           <Sheet
             open={deleting}
-            onClose={() => setDeleting(false)}
+            onClose={closeDeleting}
             title="Delete this card?"
           >
             <p className="mb-5 text-ink-2">
