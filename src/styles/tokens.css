@@ -61,3 +61,8 @@ html[data-density="comfortable"] {
   --row: 56px; --ctl: 52px; --tab: 64px;
   --r-hero: 28px; --r-slab: 22px; --r-ctl: 14px;
 }
+
+/* Decorative math glyph scales; labels hidden visually retain accessible names. */
+:root { --type-decor-hero: 180px; --type-decor-tile: 110px; --type-decor-icon: 90px; --type-hidden: 0px; }
+html[data-density="cozy"] { --type-decor-hero: 210px; --type-decor-tile: 130px; --type-decor-icon: 105px; }
+html[data-density="comfortable"] { --type-decor-hero: 250px; --type-decor-tile: 150px; --type-decor-icon: 120px; }

@@ -12,7 +12,7 @@ export default function Page() {
     <section className="flex min-h-[75dvh] flex-col items-center justify-center text-center">
       <span
         aria-hidden="true"
-        className="font-math text-[120px] italic leading-none text-amber drop-shadow-[0_0_24px_var(--amber-line-2)]"
+        className="font-math text-[length:var(--type-decor-icon)] italic leading-none text-amber drop-shadow-[0_0_24px_var(--amber-line-2)]"
       >
         ∫
       </span>

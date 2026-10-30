@@ -19,7 +19,7 @@ import {EmptyState} from '../../ui/EmptyState';
 function Featured({project}:{project:ProjectSummary}){
  const detail=useProject(project.slug);
  return <Slab lamp as="article" className="p-[22px]">
-  <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-14 select-none font-math text-[250px] italic leading-none text-amber opacity-[0.07]">{project.subject.glyph}</span>
+  <span aria-hidden="true" className="pointer-events-none absolute -right-7 -top-14 select-none font-math text-[length:var(--type-decor-hero)] italic leading-none text-amber opacity-[0.07]">{project.subject.glyph}</span>
   <div className="relative z-10 flex items-center justify-between gap-3">
    <div className="flex min-w-0 flex-col gap-1">
     <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={40}/>
@@ -44,7 +44,7 @@ function Featured({project}:{project:ProjectSummary}){
 function ProjectTile({project}:{project:ProjectSummary}){
  return <Link to={'/p/'+project.slug} className="block focus-visible:outline-2 focus-visible:outline-amber">
   <Tile className="relative overflow-hidden px-5 py-4">
-   <span aria-hidden="true" className="pointer-events-none absolute -right-4 -top-6 select-none font-math text-[150px] italic leading-none text-ink opacity-[0.035]">{project.subject.glyph}</span>
+   <span aria-hidden="true" className="pointer-events-none absolute -right-4 -top-6 select-none font-math text-[length:var(--type-decor-tile)] italic leading-none text-ink opacity-[0.035]">{project.subject.glyph}</span>
    <div className="relative flex items-center justify-between gap-3">
     <h3 className="truncate text-title-s font-semibold">{project.title}</h3>
     <span className="text-body tabular-nums text-ink-2">{project.done}/{project.total}</span>
