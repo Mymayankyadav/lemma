@@ -54,7 +54,7 @@ function BodyMark({body,view,selected,dim,onSelect,onEnter}:{
   role="button" tabIndex={0} aria-label={body.name+', '+levelLabel(body.level)}
   aria-pressed={selected} opacity={dim?.2:1} style={{cursor:'pointer',outline:'none'}}
   onClick={event=>{event.stopPropagation();onSelect(body.id)}}
-  onDoubleClick={event=>{event.stopPropagation();onEnter(body.id)}}
+  onDoubleClick={event=>{event.stopPropagation();if(body.children.length)onEnter(body.id);else onSelect(body.id)}}
   onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onSelect(body.id)}}}>
   <circle r={Math.max(body.radius,22/view.k)} fill="transparent" stroke="none" data-hit-area="44"/>
   <Geometry body={body} scale={view.k} selected={selected}/>
@@ -224,7 +224,7 @@ export default function Page(){
    {path.length>0&&<nav aria-label="Atlas breadcrumb" className="flex max-w-full items-center gap-1 overflow-x-auto pb-2 text-label">
     <button type="button" onClick={()=>{setSelection(null);focusNode(null)}} className="shrink-0 text-amber">Universe</button>
     {path.map(b=><span key={b.id} className="flex shrink-0 items-center gap-1"><ChevronRight size={13}/>
-     <button type="button" onClick={()=>{setSelection(null);focusNode(b.id)}} className="max-w-36 truncate" aria-label={'Go to '+b.name}>{b.name}</button>
+     <button type="button" onClick={()=>{setSelection(null);focusNode(b.id)}} className="max-w-36 truncate" aria-label={'Go to '+b.name}><MathText source={b.name}/></button>
     </span>)}
    </nav>}
    {searchOpen&&<div className="absolute inset-x-3 top-full z-30 rounded-b-ctl border border-edge-2 bg-raised p-3 shadow-[var(--e-float)]">
