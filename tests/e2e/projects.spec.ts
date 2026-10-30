@@ -170,3 +170,11 @@ test('Paths matches compact Euclid and Euclid-night without horizontal overflow'
   await page.screenshot({path:'test-results/screens/review/ui5c-paths-tab-'+theme+'.png',fullPage:true})
  }
 })
+
+test('Paths search finds a project by its PDF source title',async({page})=>{
+ await page.goto('./?demo=1#/projects')
+ const search=page.getByRole('searchbox',{name:'Search paths'})
+ await search.fill('Principles of Mathematical Analysis')
+ await expect(page.locator('[data-project-row="real-analysis"]')).toBeVisible()
+ await expect(page.locator('[data-project-row="linear-algebra"]')).toHaveCount(0)
+})
