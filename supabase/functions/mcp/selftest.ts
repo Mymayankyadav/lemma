@@ -31,7 +31,7 @@ export async function selftest(c:Context):Promise<any>{
         {stage:'Foundations',title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
         {stage:'Covers',title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},
         {stage:'Applications',title:'Applications',objective:'Apply theorem',criterion:'Constructs a correct example',steps:['Find example','Explain'],prereqs:[2]}
-      ],concepts:[{name:'Open cover',topic:'Topology'}]});
+      ],concepts:[{name:'Selftest cover '+p.slug,topic:'Topology'}]});
       const {data}=await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle();
       if(!data)throw Error('No plan proposal');
       if((await scoped(c,'checkpoints').eq('project_id',p.id)).data?.length)throw Error('Plan applied before approval');
@@ -41,7 +41,7 @@ export async function selftest(c:Context):Promise<any>{
     });
     await check('planning metadata, ETA and undo',async()=>{
       const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
-      const concept=(await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Open cover').single()).data;
+      const concept=(await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Selftest cover '+p.slug).single()).data;
       if(cp.stage!=='Foundations'||concept.topic!=='Topology')throw Error('Approved plan lost stage/topic');
       const change=await run('propose_plan_change',proposePlanChange,{project:p.slug,reason:'Selftest stages',ops:[
         {op:'update',code:'CP1',stage:'Revised'},
@@ -59,7 +59,7 @@ export async function selftest(c:Context):Promise<any>{
       await run('undo',undo,{action:edited.action});
       if((await scoped(c,'projects').eq('id',p.id).single()).data.target_date!==null)throw Error('Target undo failed');
       await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:null}});
-      await run('edit',edit,{target:'idea:Open cover',set:{topic:'Open sets'}});
+      await run('edit',edit,{target:'idea:Selftest cover '+p.slug,set:{topic:'Open sets'}});
       if((await scoped(c,'concepts').eq('id',concept.id).single()).data.topic!=='Open sets')throw Error('Topic edit failed');
       await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:'Foundations'}});
       for(const set of [{target_date:'2027-02-30'},{target_label:'x'.repeat(21)}]){
