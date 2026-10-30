@@ -41,13 +41,14 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
   <div className="review-front font-math text-[21px] leading-[28px]">
    <MathText className="!text-[21px] !leading-[28px]" source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined}/>
   </div>
-  {revealed&&<motion.div initial={quiet?false:{opacity:0,clipPath:'inset(0 100% 0 0)'}} animate={{opacity:1,clipPath:'inset(0 0% 0 0)'}}
-   transition={{duration:quiet?0:0.52,delay:quiet?0:0.32}} className="mt-auto font-math text-[18px] leading-[28px]">
+  {revealed&&<div className="mt-auto font-math text-[18px] leading-[28px]">
    <motion.div initial={quiet?false:{scaleX:0}} animate={{scaleX:1}} transition={{duration:quiet?0:0.32}}
     className="mb-5 h-[1.5px] origin-left bg-amber"/>
+   <motion.div initial={quiet?false:{opacity:0,clipPath:'inset(0 100% 0 0)'}} animate={{opacity:1,clipPath:'inset(0 0% 0 0)'}} transition={{duration:quiet?0:.52,delay:quiet?0:.32}}>
    {back?<MathText className="!text-[18px] !leading-[28px]" source={back} variant="answer"/>:item.type==='cloze'?<MathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}}/>:
     <p className="font-math text-title-s text-ink-2">See the highlighted answer above.</p>}
-  </motion.div>}
+   </motion.div>
+  </div>}
   {revealed&&<svg aria-hidden="true" viewBox="0 0 36 36" className="pointer-events-none absolute bottom-3 right-3 size-9 text-amber opacity-40"><motion.path d="M4 30 A26 26 0 0 1 30 4" fill="none" stroke="currentColor" initial={quiet?false:{pathLength:0}} animate={{pathLength:1}} transition={{duration:quiet?0:.32}}/></svg>}
   {stamp&&<motion.span aria-hidden="true" data-proof-stamp className="absolute bottom-4 right-4 font-math text-title text-amber" initial={quiet?false:{opacity:0,scale:1.8,rotate:-15}} animate={{opacity:1,scale:1,rotate:0}} transition={{duration:quiet?0:.12}}>∎</motion.span>}
   <div className="mt-auto flex flex-wrap gap-2 text-ink-3">
