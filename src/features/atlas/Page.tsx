@@ -10,6 +10,9 @@ import {useAtlas,usePinConcept} from '../../data/hooks';
 import type {AtlasGraph} from '../../data/types';
 import {useToast} from '../../ui/Toast';
 import {Button} from '../../ui/Button';
+import {Segmented} from '../../ui/Segmented';
+import {AtlasListViews} from './AtlasListViews';
+import {AtlasMinimap} from './AtlasMinimap';
 import {Chip} from '../../ui/Chip';
 import {EmptyState} from '../../ui/EmptyState';
 import {Skeleton} from '../../ui/Skeleton';
@@ -17,6 +20,7 @@ import {fitAtlasViewport,layoutAtlas,nebula,visibleAtlasLabels} from './graph';
 import type {AtlasNode,Point} from './graph';
 
 type Filter='all'|'revisit'|'demonstrated';
+type AtlasMode='orbits'|'branches'|'outline';
 interface Drag{pointerId:number;id:string;startX:number;startY:number;original:Point;moved:boolean}
 const names:Record<AtlasNode['status'],string>={
  demonstrated:'Demonstrated',revisit:'Re-check due',in_progress:'In progress',not_started:'Not started',
@@ -100,6 +104,8 @@ export default function Page(){
  const [positions,setPositions]=useState<Record<string,Point>>({}),[selectedId,setSelectedId]=useState<string|null>(null);
  const [filter,setFilter]=useState<Filter>('all'),[menuId,setMenuId]=useState<string|null>(null);
  const focus=params.get('focus');
+ const mode:AtlasMode=params.get('view')==='branches'?'branches':params.get('view')==='outline'?'outline':'orbits';
+ const changeMode=(next:string)=>{const p=new URLSearchParams(params);if(next==='orbits')p.delete('view');else p.set('view',next);setParams(p,{replace:true})};
  const graph=query.data;
  const layout=useMemo(()=>graph?layoutAtlas(graph):null,[graph]);
  const nodeList=layout?.nodes??[],selected=nodeList.find(n=>n.id===selectedId)??null;
@@ -116,6 +122,13 @@ export default function Page(){
   userMoved.current=false;
   zoomRef.current.transform(select(element),zoomIdentity.translate(t.x,t.y).scale(t.k));
  },[layout,positions]);
+ const navigateMinimap=useCallback((point:Point)=>{
+  const element=svg.current;
+  if(!element||!zoomRef.current)return;
+  const box=element.getBoundingClientRect(),k=viewRef.current.k;
+  userMoved.current=true;
+  zoomRef.current.transform(select(element),zoomIdentity.translate(box.width/2-point.x*k,box.height/2-point.y*k).scale(k));
+ },[]);
  const handleZoom=useCallback((factor:number)=>{
   if(!svg.current||!zoomRef.current)return;
   userMoved.current=true;
@@ -146,9 +159,9 @@ export default function Page(){
   });
   resize.observe(element);
   return()=>{resize.disconnect();selection.on('.zoom',null);zoomRef.current=null};
- },[layout]);
+ },[layout,mode]);
  useEffect(()=>{
-  if(!layout||!focus)return;
+  if(!layout||!focus||mode!=='orbits')return;
   const found=layout.nodes.find(n=>n.slug===focus);
   if(!found)return;
   setSelectedId(found.id);
@@ -156,7 +169,7 @@ export default function Page(){
   if(!el||!zoomRef.current)return;
   const b=el.getBoundingClientRect(),k=Math.min(1.65,Math.max(.75,viewRef.current.k));
   zoomRef.current.transform(select(el),zoomIdentity.translate(b.width/2-found.x*k,b.height*.46-found.y*k).scale(k));
- },[focus,layout]);
+ },[focus,layout,mode]);
  const clearTimer=()=>{if(timer.current){clearTimeout(timer.current);timer.current=null}};
  const selectNode=(id:string)=>{
   setSelectedId(id);setMenuId(null);
@@ -230,7 +243,7 @@ export default function Page(){
    action={{label:'Try again',onClick:()=>{void query.refetch()}}}/></main>;
  return <main className="relative h-dvh min-h-[580px] overflow-hidden bg-obsidian text-ink" aria-label="Atlas">
   <Starfield/>
-  {nodeList.length?<svg ref={svg} width="100%" height="100%" role="group"
+  {nodeList.length&&mode==='orbits'?<svg ref={svg} width="100%" height="100%" role="group"
     aria-label={'Interactive knowledge graph with '+nodeList.length+' concepts. Drag nodes to pin; pinch or use zoom buttons to explore.'}
     className="absolute inset-0 h-full w-full touch-none"
     onClick={event=>{if(event.target===event.currentTarget)hideSelection()}}>
@@ -269,25 +282,30 @@ export default function Page(){
      zoomScale={view.k} selected={selectedId===node.id} dim={filtered(node)} reduce={reduce} showLabel={labels.has(node.id)}
      onSelect={selectNode} onDown={onNodeDown} onMove={onNodeMove} onUp={onNodeUp} onCancel={onNodeCancel}/>)}
    </motion.g>
-  </svg>:<div className="absolute inset-0 flex items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty"
-   body="Concepts will appear as you develop your study plans."/></div>}
+  </svg>:!nodeList.length?<div className="absolute inset-0 flex items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty"
+   body="Concepts will appear as you develop your study plans."/></div>:null}
+  {nodeList.length&&mode!=='orbits'&&<AtlasListViews key={mode} graph={graph} mode={mode} filter={filter} selectedId={selectedId} onSelect={selectNode}/>}
   <header className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-linear-to-b from-obsidian via-obsidian/85 to-transparent px-5 pb-9 pt-[calc(20px+env(safe-area-inset-top))]">
    <div className="pointer-events-auto flex items-center gap-3">
     <button type="button" onClick={()=>navigate(-1)} aria-label="Back" className="glass flex size-11 items-center justify-center rounded-ctl text-ink-2"><ArrowLeft size={22}/></button>
     <h1 className="min-w-0 flex-1 text-title-s font-semibold tracking-tight">Atlas</h1>
     <button type="button" onClick={handleFit} aria-label="Fit all concepts" className="glass flex size-11 items-center justify-center rounded-ctl text-amber"><Waypoints size={22}/></button>
    </div>
-   <div className="pointer-events-auto mt-5 flex gap-2 overflow-x-auto pb-2">
+   <div className="pointer-events-auto mt-3"><Segmented label="Atlas view" value={mode} onChange={changeMode}
+    options={[{value:'orbits',label:'Orbits'},{value:'branches',label:'Branches'},{value:'outline',label:'Outline'}]}/></div>
+   <div className="pointer-events-auto mt-3 flex gap-2 overflow-x-auto pb-2">
     <FilterPill label="All" count={countAll} active={filter==='all'} onClick={()=>setFilter('all')}/>
     <FilterPill label="Revisit" count={countRevisit} active={filter==='revisit'} icon={RotateCcw} onClick={()=>setFilter('revisit')}/>
     <FilterPill label="Demonstrated" count={countDone} active={filter==='demonstrated'} icon={Check} onClick={()=>setFilter('demonstrated')}/>
    </div>
   </header>
-  <div className="glass absolute right-4 top-[46%] z-10 flex flex-col gap-0.5 rounded-ctl border border-edge-2 p-1">
+  {mode==='orbits'&&nodeList.length>0&&!selected&&<AtlasMinimap nodes={nodeList.map(n=>({...n,...positions[n.id]}))} camera={view}
+   width={svg.current?.clientWidth??390} height={svg.current?.clientHeight??844} onNavigate={navigateMinimap}/>}
+  {mode==='orbits'&&<div className="glass absolute right-4 top-[46%] z-10 flex flex-col gap-0.5 rounded-ctl border border-edge-2 p-1">
    <button type="button" aria-label="Zoom in" onClick={()=>handleZoom(1.35)} className="flex size-11 items-center justify-center rounded-s text-ink"><Plus size={20}/></button>
    <button type="button" aria-label="Zoom out" onClick={()=>handleZoom(1/1.35)} className="flex size-11 items-center justify-center rounded-s text-ink"><Minus size={20}/></button>
    <button type="button" aria-label="Fit graph" onClick={handleFit} className="flex size-11 items-center justify-center rounded-s text-amber"><Compass size={19}/></button>
-  </div>
+  </div>}
   <motion.div initial={reduce?false:{y:20,opacity:0}} animate={{y:0,opacity:1}} transition={{duration:reduce?.15:.55}}
    className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 mx-auto max-w-[650px] rounded-t-sheet border border-edge-2 bg-glass-strong px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-5 shadow-[var(--e-float)] backdrop-blur-[22px]">
    {!selected?<div className="flex min-h-11 items-center justify-center gap-2 text-body text-ink-3">
