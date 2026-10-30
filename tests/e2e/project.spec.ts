@@ -99,7 +99,7 @@ test('Euclid Paths fits both worlds at compact phone widths',async({page})=>{
    await page.goto('./?demo=1&theme='+world+'&density='+density+'#/p/real-analysis')
    await expect(page.getByRole('region',{name:'Stages'})).toBeVisible()
    expect(await page.evaluate(()=>document.documentElement.scrollWidth),world+' '+density).toBeLessThanOrEqual(360)
-   const row=page.getByRole('region',{name:'Stages'}).locator('[data-cp-row]').first()
+   const row=page.getByRole('region',{name:'Stages'}).getByRole('article',{name:'Compactness and continuity stage'}).locator('[data-cp-row]').first()
    await expect(row).toBeVisible()
    const metrics=await row.evaluate(el=>({width:el.getBoundingClientRect().width,scroll:el.scrollWidth}))
    expect(metrics.scroll,world+' '+density).toBeLessThanOrEqual(Math.ceil(metrics.width)+1)
