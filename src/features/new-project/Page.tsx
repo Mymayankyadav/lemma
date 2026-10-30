@@ -119,7 +119,7 @@ export default function Page(){
        <div className="min-w-0 flex-1">
         <p className="truncate text-body font-semibold">{item.name}</p>
         <p className="text-label text-ink-3">{bytes(item.size)} · {item.status}{item.progress?.pageCount?' · '+item.progress.page+'/'+item.progress.pageCount+' pages':''}</p>
-        {item.progress&&item.status!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Progress for '+item.file.name}/>}
+        {item.progress&&item.status!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Progress for '+item.name}/>}
         {item.error&&<p role="alert" className="text-label text-again">{item.error}</p>}
        </div>
        {item.status==='ready'?<Check size={18} className="text-easy"/>:
