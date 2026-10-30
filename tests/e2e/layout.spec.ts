@@ -39,7 +39,7 @@ async function audit(page:Page):Promise<Issue[]>{
    if(!visible(el))continue;
    const s=getComputedStyle(el);
    if(['hidden','clip','ellipsis'].includes(s.overflowX)||s.textOverflow==='ellipsis'){
-    if(el.scrollWidth>el.clientWidth+1&&el.textContent?.trim()&&!el.closest('[data-bleed]'))report(el,`hidden text overflow by ${el.scrollWidth-el.clientWidth}px`);
+    if(el.scrollWidth>el.clientWidth+1&&Array.from(el.childNodes).some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent?.trim())&&!el.closest('[data-bleed]'))report(el,`hidden text overflow by ${el.scrollWidth-el.clientWidth}px`);
    }
    if(el.matches('button,a[href],[role="button"]')&&!(el.matches('a')&&s.display==='inline')){
     const r=el.getBoundingClientRect();
