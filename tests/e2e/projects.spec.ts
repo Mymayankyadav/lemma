@@ -27,7 +27,7 @@ test('Paths library groups projects, searches and opens a project without errors
 test('new-project form retains keyboard focus while editing controlled fields',async({page})=>{
  await page.goto('./?demo=1#/projects/new')
  const backdrop=page.locator('[data-sheet-background]')
- await expect(backdrop.locator('h1')).toHaveText('Projects')
+ await expect(backdrop.locator('h1')).toHaveText('Paths')
  await expect(backdrop.getByRole('heading',{name:'Paths'})).toBeVisible()
  await expect(backdrop).toHaveAttribute('inert','')
  const dialog=page.getByRole('dialog',{name:'New project'})
