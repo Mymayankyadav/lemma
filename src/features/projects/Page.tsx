@@ -23,17 +23,17 @@ function Featured({project}:{project:ProjectSummary}){
   <div className="relative z-10 flex items-center justify-between gap-3">
    <div className="flex min-w-0 flex-col gap-1">
     <Glyph subject={project.subject.glyph} hue={project.subject.hue} size={40}/>
-    <Link to={'/p/'+project.slug} className="mt-3 truncate text-[23px] font-semibold tracking-tight">{project.title}</Link>
-    <p className="line-clamp-2 font-math text-[16px] italic leading-snug text-ink-2">{detail.data?.project.goal??'Make steady progress on your learning goal.'}</p>
+    <Link to={'/p/'+project.slug} className="mt-3 truncate text-card font-semibold tracking-tight">{project.title}</Link>
+    <p className="line-clamp-2 font-math text-headline italic leading-snug text-ink-2">{detail.data?.project.goal??'Make steady progress on your learning goal.'}</p>
    </div>
    <ProgressRing value={project.total?project.done/project.total:0} label="Checkpoints complete"/>
   </div>
-  <div className="relative mt-6 flex flex-wrap gap-4 text-[12px] text-ink-3">
+  <div className="relative mt-6 flex flex-wrap gap-4 text-label text-ink-3">
    <span className="flex items-center gap-1.5"><BookOpen size={15} aria-hidden="true"/>{project.sourcesCount} {project.sourcesCount===1?'book':'books'}</span>
    <span className="flex items-center gap-1.5"><Layers size={15} aria-hidden="true"/>{project.cardsCount} cards</span>
    <span className="flex items-center gap-1.5"><MessageCircle size={15} aria-hidden="true"/>{project.sessionsCount} sessions</span>
   </div>
-  <Link to={'/p/'+project.slug} className="relative mt-4 flex min-h-12 items-center gap-2 border-t border-edge pt-3 text-[14px] text-ink-soft">
+  <Link to={'/p/'+project.slug} className="relative mt-4 flex min-h-12 items-center gap-2 border-t border-edge pt-3 text-body text-ink-soft">
    <span aria-hidden="true" className="size-2 rounded-full bg-amber shadow-[0_0_9px_var(--amber)]"/>
    <span className="min-w-0 flex-1 truncate">{project.current?
      project.current.title+', step '+project.current.step:'See your study path'}</span>
@@ -46,11 +46,11 @@ function ProjectTile({project}:{project:ProjectSummary}){
   <Tile className="relative overflow-hidden px-5 py-4">
    <span aria-hidden="true" className="pointer-events-none absolute -right-4 -top-6 select-none font-math text-[150px] italic leading-none text-ink opacity-[0.035]">{project.subject.glyph}</span>
    <div className="relative flex items-center justify-between gap-3">
-    <h3 className="truncate text-[18px] font-semibold">{project.title}</h3>
-    <span className="text-[14px] tabular-nums text-ink-2">{project.done}/{project.total}</span>
+    <h3 className="truncate text-title-s font-semibold">{project.title}</h3>
+    <span className="text-body tabular-nums text-ink-2">{project.done}/{project.total}</span>
    </div>
    <Rail label={project.title+' completion'} value={project.total?project.done/project.total:0} className="my-3"/>
-   <p className="relative truncate text-[13px] text-ink-3">{
+   <p className="relative truncate text-label text-ink-3">{
     project.current?'Next: '+project.current.title:'No active checkpoint'}</p>
   </Tile>
  </Link>;
@@ -63,7 +63,7 @@ function PlanningTile({project}:{project:ProjectSummary}){
   catch{notify('Unable to copy prompt',{tone:'danger'})}
  }
  return <Tile className="p-5">
-  <Link to={'/p/'+project.slug} className="flex items-center gap-2 text-[17px] font-semibold">
+  <Link to={'/p/'+project.slug} className="flex items-center gap-2 text-answer font-semibold">
    <Glyph subject={project.subject.glyph} size={32} hue={project.subject.hue}/>
    <span className="min-w-0 flex-1 truncate">{project.title}</span><ChevronRight size={18} className="text-ink-3"/>
   </Link>
@@ -80,8 +80,8 @@ function AtlasShortcut(){
   <Tile className="relative flex h-[96px] items-center justify-between gap-4 overflow-hidden bg-obsidian-deep px-5">
    <div className="relative z-10 flex items-center gap-3">
     <span className="flex size-11 items-center justify-center rounded-s bg-amber-tint text-amber"><Waypoints size={24} aria-hidden="true"/></span>
-    <div><strong className="text-[18px]">Atlas</strong>
-     <p className="text-[12px] text-ink-3">{ideas} ideas{revisit>0?', '+revisit+' to revisit':''}</p></div>
+    <div><strong className="text-title-s">Atlas</strong>
+     <p className="text-label text-ink-3">{ideas} ideas{revisit>0?', '+revisit+' to revisit':''}</p></div>
    </div>
    <ChevronRight className="relative z-10 text-ink-3" size={18}/>
    <div aria-hidden="true" className="pointer-events-none absolute right-16 top-3 size-24 rounded-full opacity-30" style={{background:'radial-gradient(circle,var(--amber-tint-2),transparent 70%)'}}/>
@@ -109,11 +109,11 @@ export default function Page(){
     {remaining.map(p=><ProjectTile key={p.id} project={p}/>)}
     {planning.map(p=><PlanningTile key={p.id} project={p}/>)}
     {paused.length>0&&<details className="rounded-slab border border-edge p-4">
-     <summary className="cursor-pointer text-[14px] text-ink-2">Paused · {paused.length}</summary>
+     <summary className="cursor-pointer text-body text-ink-2">Paused · {paused.length}</summary>
      <div className="mt-3 flex flex-col gap-3">{paused.map(p=><ProjectTile key={p.id} project={p}/>)}</div>
     </details>}
     {done.length>0&&<details className="rounded-slab border border-edge p-4">
-     <summary className="cursor-pointer text-[14px] text-ink-2">Done · {done.length}</summary>
+     <summary className="cursor-pointer text-body text-ink-2">Done · {done.length}</summary>
      <div className="mt-3 flex flex-col gap-3">{done.map(p=><ProjectTile key={p.id} project={p}/>)}</div>
     </details>}
     <AtlasShortcut/>

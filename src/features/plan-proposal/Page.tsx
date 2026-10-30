@@ -266,10 +266,10 @@ export default function Page() {
       ) : (
         <>
           <div>
-            <h2 className="text-[24px] font-semibold">
+            <h2 className="text-title-s font-semibold">
               {p.kind === "plan" ? "New plan" : "Plan change"}
             </h2>
-            <div className="mt-3 flex items-center gap-3 text-[13px] text-ink-3">
+            <div className="mt-3 flex items-center gap-3 text-label text-ink-3">
               {p.origin === "chatgpt" ? (
                 <Bot size={16} />
               ) : (
@@ -302,15 +302,15 @@ export default function Page() {
                   aria-expanded={current?.code === node.code}
                   className="flex min-h-11 w-full items-center gap-3 text-left"
                 >
-                  <span className="text-[12px] font-semibold text-amber">
+                  <span className="text-label font-semibold text-amber">
                     {node.code}
                   </span>
                   <span className="flex-1 font-semibold">{node.title}</span>
                   <MessageSquare size={17} className="text-ink-3" />
                 </button>
                 {current?.code === node.code && (
-                  <div className="ml-1 mt-3 flex flex-col gap-3 text-[14px] text-ink-2">
-                    <p className="flex gap-2 font-math text-[15px]">
+                  <div className="ml-1 mt-3 flex flex-col gap-3 text-body text-ink-2">
+                    <p className="flex gap-2 font-math text-body-l">
                       <Target size={17} className="shrink-0 text-amber" />
                       {node.criterion}
                     </p>
@@ -335,7 +335,7 @@ export default function Page() {
             )}
           </div>
           {p.planChange && (
-            <div className="flex flex-col gap-2 text-[14px] text-ink-2">
+            <div className="flex flex-col gap-2 text-body text-ink-2">
               {p.planChange.ops
                 .filter((op) => op.op !== "add")
                 .map((op, i) => (
@@ -351,7 +351,7 @@ export default function Page() {
                 ))}
             </div>
           )}
-          <p className="flex items-center gap-2 text-[13px] text-ink-3">
+          <p className="flex items-center gap-2 text-label text-ink-3">
             <Waypoints size={17} />
             {p.plan?.concepts?.length ??
               new Set(
@@ -387,7 +387,7 @@ export default function Page() {
                 className="mt-3 min-h-28 w-full rounded-ctl border border-edge bg-well p-3 text-ink"
               />
             </label>
-            <p className="my-4 text-[13px] text-ink-3">
+            <p className="my-4 text-label text-ink-3">
               This rejects the proposal and opens your tutor with your request.
             </p>
             <Button

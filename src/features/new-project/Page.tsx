@@ -33,13 +33,13 @@ function SubjectCreator({onCreated}:{onCreated:(id:string)=>void}){
   }catch(error){notify(error instanceof Error?error.message:'Could not add subject',{tone:'danger'})}
  }
  return <section aria-label="New subject" className="flex flex-col gap-3 rounded-slab border border-edge-2 bg-raised p-4">
-  <label htmlFor="subject-name" className="text-[13px] text-ink-2">Subject name</label>
+  <label htmlFor="subject-name" className="text-label text-ink-2">Subject name</label>
   <input id="subject-name" maxLength={55} value={name} onChange={e=>setName(e.target.value)} autoComplete="off"
-   className="min-h-12 rounded-ctl border border-edge-2 bg-well p-3 text-[15px] text-ink" placeholder="e.g. Number Theory"/>
-  <p className="text-[12px] text-ink-3">Choose a mathematical symbol</p>
+   className="min-h-12 rounded-ctl border border-edge-2 bg-well p-3 text-body-l text-ink" placeholder="e.g. Number Theory"/>
+  <p className="text-label text-ink-3">Choose a mathematical symbol</p>
   <div className="flex flex-wrap gap-2">{glyphs.map(g=><button type="button" key={g} onClick={()=>setGlyph(g)} aria-label={'Glyph '+g}
-   aria-pressed={glyph===g} className={'flex size-10 items-center justify-center rounded-s font-math text-[23px] italic '+(glyph===g?'bg-amber-tint text-amber ring-1 ring-amber-line-2':'bg-fill-1 text-ink-2')}>{g}</button>)}</div>
-  <p className="text-[12px] text-ink-3">Subject colour</p>
+   aria-pressed={glyph===g} className={'flex size-10 items-center justify-center rounded-s font-math text-card italic '+(glyph===g?'bg-amber-tint text-amber ring-1 ring-amber-line-2':'bg-fill-1 text-ink-2')}>{g}</button>)}</div>
+  <p className="text-label text-ink-3">Subject colour</p>
   <div className="flex gap-3">{hues.map(c=><button type="button" key={c} aria-label={'Colour '+c} aria-pressed={c===hue} onClick={()=>setHue(c)}
    className={'flex size-10 items-center justify-center rounded-chip '+(c===hue?'ring-2 ring-amber ring-offset-2 ring-offset-sheet':'')}>
    <span aria-hidden="true" className="size-6 rounded-full" style={{background:'var(--'+c+')'}}/></button>)}</div>
@@ -112,67 +112,67 @@ export default function Page(){
      action={{label:'Retry',onClick:()=>{void subjects.refetch();void styles.refetch()}}}/>:
     <form onSubmit={e=>{void submit(e)}} className="flex flex-col gap-6">
      <section className="flex flex-col gap-2">
-      <label htmlFor="project-title" className="text-[13px] font-medium text-ink-2">Name</label>
+      <label htmlFor="project-title" className="text-label font-medium text-ink-2">Name</label>
       <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
        value={name} onChange={e=>setName(e.target.value)} disabled={saving||Boolean(created)}
-       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-[16px] text-ink"/>
-      <p className="text-[12px] text-ink-3">Path: {slugify(name||'project')}</p>
+       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
+      <p className="text-label text-ink-3">Path: {slugify(name||'project')}</p>
      </section>
      <section aria-label="Subject" className="flex flex-col gap-3">
-      <h3 className="text-[14px] font-semibold text-ink-2">Subject</h3>
+      <h3 className="text-body font-semibold text-ink-2">Subject</h3>
       <div role="radiogroup" aria-label="Subject" className="flex flex-wrap gap-2">
        {(subjects.data??[]).map(s=><button key={s.id} type="button" role="radio" aria-label={s.name} aria-checked={subjectId===s.id}
-        disabled={saving||Boolean(created)} onClick={()=>setSubjectId(s.id)} className={'flex min-h-11 items-center gap-2 rounded-chip border px-3 text-[13px] '+
+        disabled={saving||Boolean(created)} onClick={()=>setSubjectId(s.id)} className={'flex min-h-11 items-center gap-2 rounded-chip border px-3 text-label '+
          (subjectId===s.id?'border-amber-line-2 bg-amber-tint-2 text-ink':'border-edge bg-fill-1 text-ink-2')}>
         <Glyph subject={s.glyph} hue={s.hue} size={32}/>{s.name}</button>)}
-       <button type="button" className="flex min-h-11 items-center gap-2 rounded-chip border border-dashed border-edge-3 px-3 text-[13px] text-amber"
+       <button type="button" className="flex min-h-11 items-center gap-2 rounded-chip border border-dashed border-edge-3 px-3 text-label text-amber"
         aria-expanded={addingSubject} onClick={()=>setAddingSubject(v=>!v)} disabled={saving||Boolean(created)}><Plus size={18} aria-hidden="true"/>Add subject</button>
       </div>
       {addingSubject&&<SubjectCreator onCreated={id=>{setSubjectId(id);setAddingSubject(false)}}/>}
      </section>
      <section className="flex flex-col gap-2">
-      <label htmlFor="project-goal" className="text-[14px] font-semibold text-ink-2">Goal</label>
+      <label htmlFor="project-goal" className="text-body font-semibold text-ink-2">Goal</label>
       <textarea id="project-goal" rows={3} maxLength={2000} required
        placeholder="What should you be able to do? What do you know already?"
        disabled={saving||Boolean(created)} value={goal} onChange={e=>setGoal(e.target.value)}
-       className="min-h-[98px] w-full rounded-ctl border border-edge-2 bg-well p-3 text-[15px] leading-relaxed text-ink"/>
+       className="min-h-[98px] w-full rounded-ctl border border-edge-2 bg-well p-3 text-body-l leading-relaxed text-ink"/>
      </section>
      <section aria-label="Source" className="flex flex-col gap-3">
-      <h3 className="text-[14px] font-semibold text-ink-2">Source (optional)</h3>
+      <h3 className="text-body font-semibold text-ink-2">Source (optional)</h3>
       <input ref={fileInput} hidden type="file" accept=".pdf,application/pdf"
        onChange={e=>{const selected=e.currentTarget.files?.[0];e.currentTarget.value='';selectFile(selected)}}/>
       {!file?<button type="button" disabled={saving} onClick={()=>fileInput.current?.click()}
-       className="flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-[14px] text-ink-2">
+       className="flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
        <FileText size={24} aria-hidden="true" className="text-amber"/>Add a PDF
-       <span className="text-[12px] text-ink-3">Up to 50 MB</span>
+       <span className="text-label text-ink-3">Up to 50 MB</span>
       </button>:<div className="flex items-center gap-3 rounded-slab border border-edge bg-raised p-3">
        <PageStackArt size={65}/>
        <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-semibold">{file.name}</p>
-        <p className="mt-1 text-[12px] text-ink-3">{progress?.message??'Ready to import'}{progress?.pageCount?' · '+progress.page+'/'+progress.pageCount:''}</p>
+        <p className="truncate text-body font-semibold">{file.name}</p>
+        <p className="mt-1 text-label text-ink-3">{progress?.message??'Ready to import'}{progress?.pageCount?' · '+progress.page+'/'+progress.pageCount:''}</p>
         {progress&&<Rail value={progress.pageCount?progress.page/progress.pageCount:0} label="PDF processing progress" className="mt-2" sheen/>}
        </div>
-       {!saving&&<button type="button" onClick={()=>{setFile(null);setProgress(null);setFileError(null)}} className="min-h-11 text-[12px] text-ink-3">Remove</button>}
+       {!saving&&<button type="button" onClick={()=>{setFile(null);setProgress(null);setFileError(null)}} className="min-h-11 text-label text-ink-3">Remove</button>}
       </div>}
-      {fileError&&<p role="alert" className="flex items-center gap-2 text-[13px] text-again"><AlertTriangle size={15} aria-hidden="true"/>{fileError}</p>}
-      {progress?.phase==='done'&&<p className="flex items-center gap-1.5 text-[13px] text-easy"><Check size={16}/>Contents found</p>}
-      {progress?.phase==='failed'&&<p className="text-[13px] text-ink-3">Try the upload again or remove the PDF and continue.</p>}
+      {fileError&&<p role="alert" className="flex items-center gap-2 text-label text-again"><AlertTriangle size={15} aria-hidden="true"/>{fileError}</p>}
+      {progress?.phase==='done'&&<p className="flex items-center gap-1.5 text-label text-easy"><Check size={16}/>Contents found</p>}
+      {progress?.phase==='failed'&&<p className="text-label text-ink-3">Try the upload again or remove the PDF and continue.</p>}
      </section>
      <section aria-label="Teaching style" className="flex flex-col gap-3">
-      <h3 className="text-[14px] font-semibold text-ink-2">Teaching style</h3>
+      <h3 className="text-body font-semibold text-ink-2">Teaching style</h3>
       <div role="radiogroup" aria-label="Teaching style" className="flex gap-2 overflow-x-auto pb-1">
        {(styles.data??[]).map(s=><button key={s.key} role="radio" aria-checked={style===s.key}
         type="button" onClick={()=>setStyle(s.key)} disabled={saving||Boolean(created)}
-        className={'min-h-11 shrink-0 rounded-chip border px-3 text-[13px] '+
+        className={'min-h-11 shrink-0 rounded-chip border px-3 text-label '+
          (style===s.key?'border-amber-line-2 bg-amber-tint-2 text-amber':'border-edge bg-fill-1 text-ink-2')}>
         {s.name}</button>)}
       </div>
-      <p className="min-h-10 text-[12px] leading-relaxed text-ink-3">{styles.data?.find(s=>s.key===style)?.instructions}</p>
+      <p className="min-h-10 text-label leading-relaxed text-ink-3">{styles.data?.find(s=>s.key===style)?.instructions}</p>
      </section>
      <Button size="xl" loading={saving} disabled={!canSubmit||saving} type="submit" icon={UploadCloud} className="w-full">
       {saving?progress?.message??'Creating project':created?'Retry PDF upload':'Create project'}
      </Button>
-     <div className="flex flex-wrap items-center justify-center gap-2 text-[12px] text-ink-3">
+     <div className="flex flex-wrap items-center justify-center gap-2 text-label text-ink-3">
       Then tell your tutor <Chip tone="quiet" icon={Copy} onClick={()=>{void copyPlanPrompt()}}>{prompt}</Chip>
      </div>
     </form>}

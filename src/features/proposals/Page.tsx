@@ -102,7 +102,7 @@ function PendingCard({
       aria-label="Proposal card, swipe right to approve or left to reject"
     >
       <Card stack className="min-h-[385px] p-6">
-        <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
+        <div className="flex items-center gap-2 text-label font-semibold uppercase tracking-wide text-ink-3">
           <Sparkles size={15} className="text-amber" />
           <span>
             {edit ? `Fix for N${edit.note_no}` : (card?.kind ?? "Card")}
@@ -145,12 +145,12 @@ function PendingCard({
         {edit?.comments
           .filter((c) => edit.resolves?.includes(c.no))
           .map((c) => (
-            <p key={c.no} className="mt-5 text-[13px] text-ink-3">
+            <p key={c.no} className="mt-5 text-label text-ink-3">
               Your note: {c.body}
             </p>
           ))}
         {proposal.reason && (
-          <p className="mt-8 flex items-center gap-2 text-[13px] text-ink-3">
+          <p className="mt-8 flex items-center gap-2 text-label text-ink-3">
             <Sparkles size={15} className="text-amber" />
             {proposal.reason}
           </p>
@@ -242,7 +242,7 @@ export default function Page() {
         cards.some((card) => card.kind === "card") ? (
           <button
             type="button"
-            className="min-h-11 text-[15px] font-semibold text-amber"
+            className="min-h-11 text-body-l font-semibold text-amber"
             onClick={() => setConfirm(true)}
           >
             Approve all
@@ -342,7 +342,7 @@ export default function Page() {
                   <h2 className="font-semibold">
                     {p.projectSlug.replaceAll("-", " ")}
                   </h2>
-                  <p className="text-[12px] text-ink-3">
+                  <p className="text-label text-ink-3">
                     {p.sessionNumber ? `From S${p.sessionNumber}` : "New plan"}
                   </p>
                 </div>
@@ -351,7 +351,7 @@ export default function Page() {
                 {p.planChange?.ops.map((op, i) => (
                   <p
                     key={i}
-                    className="flex items-center gap-2 text-[14px] text-ink-soft"
+                    className="flex items-center gap-2 text-body text-ink-soft"
                   >
                     {op.op === "add" ? (
                       <Plus size={17} className="text-easy" />
@@ -370,14 +370,14 @@ export default function Page() {
                 )}
               </div>
               {p.reason && (
-                <p className="mb-4 flex gap-2 text-[13px] text-ink-3">
+                <p className="mb-4 flex gap-2 text-label text-ink-3">
                   <Sparkles size={15} />
                   {p.reason}
                 </p>
               )}
               <Link
                 to={`/proposals/${p.id}`}
-                className="inline-flex min-h-11 items-center text-[14px] font-semibold text-amber"
+                className="inline-flex min-h-11 items-center text-body font-semibold text-amber"
               >
                 See the whole plan
               </Link>
@@ -450,7 +450,7 @@ export default function Page() {
               className="mt-2 min-h-24 w-full rounded-ctl border border-edge bg-well p-3 text-ink"
             />
           </label>
-          <p className="text-[12px] text-ink-3">Preview</p>
+          <p className="text-label text-ink-3">Preview</p>
           <MathText source={front} variant="card" />
           <MathText source={back} variant="answer" />
           <Button
