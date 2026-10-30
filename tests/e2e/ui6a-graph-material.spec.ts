@@ -1,5 +1,8 @@
 import {test,expect} from '@playwright/test';
 
+// Phone-class DPR retains the intended 1.5 CSS-pixel hairline (3 device pixels).
+test.use({deviceScaleFactor:2});
+
 for(const world of ['graph','graph-night'] as const){
  test(`UI-6a graph-paper material and type in ${world}`,async({page})=>{
   await page.setViewportSize({width:390,height:844});
