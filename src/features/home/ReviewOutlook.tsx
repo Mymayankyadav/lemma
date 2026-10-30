@@ -9,8 +9,11 @@ import {Tex} from '../../ui/Tex'
 export function ReviewOutlook(){
  const decks=useDeckTree()
  const forecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),staleTime:30_000})
- const groups=(decks.data??[]).filter(node=>node.due>0)
- const dueTotal=groups.reduce((sum,node)=>sum+node.due,0)
+ const allGroups=(decks.data??[]).filter(node=>node.due>0).sort((a,b)=>b.due-a.due)
+ const dueTotal=allGroups.reduce((sum,node)=>sum+node.due,0)
+ const top=allGroups.slice(0,4).map(({key,label,due})=>({key,label,due}))
+ const tail=allGroups.slice(4)
+ const groups=tail.length?[...top,{key:'other',label:`Other (${tail.length})`,due:tail.reduce((sum,node)=>sum+node.due,0)}]:top
  const weekly=forecast.data??[]
  const max=Math.max(1,...weekly.map(day=>day.due))
  return <div className="flex min-w-0 flex-col gap-4">
