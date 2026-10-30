@@ -147,7 +147,7 @@ export default function Page() {
   };
   return (
     <Screen
-      className="[&_header_h1]:whitespace-nowrap [&_header_h1]:text-[20px]"
+      className="[&_header_h1]:whitespace-nowrap [&_header_h1]:text-card"
       title="Card detail"
       back="/cards"
       actions={
@@ -194,7 +194,7 @@ export default function Page() {
         </div>
       ) : (
         <>
-          <p className="text-[13px] text-ink-3">
+          <p className="text-label text-ink-3">
             {project?.subject.glyph ?? "∫"} {project?.title ?? note.projectSlug}{" "}
             {note.checkpointCode && `· ${note.checkpointCode}`} · N{note.noteNo}
           </p>
@@ -235,14 +235,14 @@ export default function Page() {
             </div>
           </Slab>
           <Slab className="p-5">
-            <h2 className="mb-4 text-[16px] font-semibold">Memory</h2>
+            <h2 className="mb-4 text-headline font-semibold">Memory</h2>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <p className="text-[12px] text-ink-3">Next</p>
+                <p className="text-label text-ink-3">Next</p>
                 <p className="mt-1 font-semibold">{next(card?.due ?? null)}</p>
               </div>
               <div>
-                <p className="text-[12px] text-ink-3">Stability</p>
+                <p className="text-label text-ink-3">Stability</p>
                 <p className="mt-1 font-semibold">
                   {card && card.stability > 0
                     ? `${Math.round(card.stability)} d`
@@ -250,7 +250,7 @@ export default function Page() {
                 </p>
               </div>
               <div>
-                <p className="text-[12px] text-ink-3">Recall now</p>
+                <p className="text-label text-ink-3">Recall now</p>
                 <p className="mt-1 font-semibold text-amber">
                   {recall === null ? "—" : `${Math.round(recall * 100)}%`}
                 </p>
@@ -268,7 +268,7 @@ export default function Page() {
             )}
           </Slab>
           <section>
-            <h2 className="mb-4 text-[16px] font-semibold">For your tutor</h2>
+            <h2 className="mb-4 text-headline font-semibold">For your tutor</h2>
             <div className="flex flex-col gap-3">
               {detail.comments
                 .filter((c) => c.status === "open")
@@ -277,13 +277,13 @@ export default function Page() {
                     key={c.no}
                     className="rounded-slab border border-amber-line bg-amber-tint p-4"
                   >
-                    <p className="text-[15px]">{c.body}</p>
-                    <p className="mt-3 text-[12px] text-ink-3">
+                    <p className="text-body-l">{c.body}</p>
+                    <p className="mt-3 text-label text-ink-3">
                       <span className="mr-2 inline-block size-2 rounded-full bg-amber" />
                       Next time you ask to update cards · {age(c.createdAt)}
                     </p>
                     <button
-                      className="mt-2 min-h-11 text-[13px] font-semibold text-amber"
+                      className="mt-2 min-h-11 text-label font-semibold text-amber"
                       disabled={dismiss.isPending}
                       onClick={() => void remove(c.no)}
                     >
@@ -295,7 +295,7 @@ export default function Page() {
                 .filter((c) => c.status === "addressed")
                 .map((c) => (
                   <details key={c.no} className="rounded-ctl bg-fill-1 p-4">
-                    <summary className="flex cursor-pointer items-center gap-2 text-[13px] text-ink-2">
+                    <summary className="flex cursor-pointer items-center gap-2 text-label text-ink-2">
                       <Check size={15} className="text-easy" />
                       Addressed
                       {c.resolvedByOrigin ? ` by ${c.resolvedByOrigin}` : ""}
@@ -306,7 +306,7 @@ export default function Page() {
               {!detail.comments.some(
                 (c) => c.status === "open" || c.status === "addressed",
               ) && (
-                <p className="text-[14px] text-ink-3">
+                <p className="text-body text-ink-3">
                   No notes for your tutor yet.
                 </p>
               )}

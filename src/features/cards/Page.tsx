@@ -150,10 +150,10 @@ export default function Page() {
               className="flex min-h-16 items-center gap-3 border-b border-edge py-3"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-math text-[16px]">
+                <span className="block truncate font-math text-headline">
                   {plain(row.front)}
                 </span>
-                <span className="mt-1 block text-[12px] text-ink-3">
+                <span className="mt-1 block text-label text-ink-3">
                   {row.glyph} {row.checkpointCode ?? "No checkpoint"} ·{" "}
                   {row.status === "suspended" ? "Paused" : relative(row.due)}
                 </span>
@@ -169,7 +169,7 @@ export default function Page() {
         </div>
       ) : (
         <div className="py-12 text-center">
-          <h2 className="text-[20px] font-semibold">No cards match</h2>
+          <h2 className="text-card font-semibold">No cards match</h2>
           <Button
             variant="text"
             onClick={() => {
