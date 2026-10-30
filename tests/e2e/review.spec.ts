@@ -1,3 +1,4 @@
+// FIX #281: unsaved tutor-note drafts must not migrate across review cards.
 import {test,expect} from '@playwright/test'
 
 test.beforeEach(async({page})=>{
