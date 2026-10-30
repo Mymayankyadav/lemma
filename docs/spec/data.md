@@ -514,6 +514,19 @@ Additive domain fields are optional during migration: `CheckpointView.stage`, `P
 
 `UiPreferences` is an extensible object with optional `world`, `keep`/`fav` (world ID arrays), `timeline` (`ascent`, `metro`, retained `line`), `timelineKeep`, `atlas` (`orbits`, `branches`, `outline`), `atlasKeep`, `density` (`compact`, `cozy`, `comfortable`), `motion` (`calm`, `lively`), and system-pairing `follow`, `day`, `night`. Retain unknown keys when updating preferences. UI defaults come from `ui-euclid.md`; a null stored object does not override them. This contract adds no API methods and does not claim adapter persistence or live columns before DB-3 ships.
 
+### 7.2 CONTRACT DB-4 — additive v3 data surface
+
+This is the contract for `docs/spec/v3.md` §§2a–6. It is additive until DB-4's migration and the corresponding adapters ship; existing values and methods retain their meanings. New API methods initially throw `LemmaError('not_implemented')` in both adapters.
+
+- Projects may later be pinned and marked `system` (both optional booleans in the client model); archived projects can be represented by `ProjectStatus='archived'`. DB-4 introduces nullable `projects.subject_id` and the sources-first creation path; existing `NewProjectInput` and the existing createProject method remain usable.
+- `UiPreferences.mode?: 'auto' | 'day' | 'night'` supports the two graph-paper worlds. Legacy keys are readable during migration and removed by UI-6a when settings are updated.
+- `CheckpointView.dueOn` and `demonstratedAt` are optional ISO dates. Plan checkpoint wire payloads may carry `due_on` plus `sources: {source,pages?}[]`; the connector validates and persists these after MCP-4.
+- `AtlasGraph.concepts` can contain `level?: 'cluster'|'galaxy'|'system'|'planet'|'moon'`, `parentId?: string|null`, `isStar?: boolean`. Their absence is treated as legacy planet data until DB-4.
+- `Source` may contain `kind` (book, notes, slides, problems, syllabus, exam, other), `sha256`, `position`, `addedAt` and `planCheckedAt`. Read/save progress includes queued/reading/uploading/saving/ready/failed. The existing `addSource` method remains available for serial multi-file queues.
+- `ProjectDetail.planRevisions` optionally reports approved revisions; `PlanRevision` records revision, approvedAt, summary and proposalId.
+- New methods: `updateSubject(id, patch)` (name, glyph, position), `mergeSubjects(sourceId, targetId)` (owner-scoped, logged and undoable), `createProjectDraft({title,sources?})` (name-only flow), `updateSource(id, {title?,kind?})`, `listPlanRevisions(slug)`. Hooks are `useUpdateSubject`, `useMergeSubjects`, `useCreateProjectDraft`, `useUpdateSource`, `usePlanRevisions`. Mutations invalidate project, home, subjects, Atlas and revision caches as applicable.
+- Production schema, project subject nullability and the implementations of these calls are **not** changed by this contract PR. DB-4 must supply and test migrations, owner isolation, undo logging, system-row exclusion and adapters before dependent UI uses these methods.
+
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
 
 Both adapters (`src/data/live`, `src/data/demo`) implement every method with identical behavior. Errors are thrown as `LemmaError {code, message}` with codes `not_found`, `invalid`, `conflict`, `offline`, `auth`, `server`, `not_implemented` (stubs only).
