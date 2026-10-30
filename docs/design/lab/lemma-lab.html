@@ -40,9 +40,9 @@ html.lively #bg{animation:drift 38s ease-in-out infinite alternate}
 .wswitch button{height:34px;min-width:34px;display:grid;place-items:center;border-radius:999px;color:var(--ink-2)}
 .wswitch .wname{padding:0 8px;font-size:calc(var(--s) * 12.5px);font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:42vw}
 /* cards and materials */
-.card{position:relative;background:var(--card);border:var(--card-border);box-shadow:var(--card-shadow);border-radius:var(--radius);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);padding:calc(var(--s) * 14px)}
+.card{position:relative;background:var(--card);border:var(--card-border);box-shadow:var(--card-shadow);border-radius:var(--radius);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);padding:calc(var(--s) * 16px)}
 .stack{display:flex;flex-direction:column;gap:calc(var(--s) * 12px)}
-.sec{display:flex;flex-direction:column;gap:calc(var(--s) * 10px);margin-top:calc(var(--s) * 18px)}
+.sec{display:flex;flex-direction:column;gap:calc(var(--s) * 10px);margin-top:calc(var(--s) * 24px)}
 .sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .sec-h h2{margin:0;font-family:var(--font-display);font-size:calc(var(--s) * 15px * var(--ds));font-weight:600;letter-spacing:-.005em}
 .sec-h small{color:var(--ink-3);font-size:calc(var(--s) * 11.5px)}
@@ -71,13 +71,13 @@ html.lively #bg{animation:drift 38s ease-in-out infinite alternate}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:calc(var(--s) * 11.5px);color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
-.fc{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:48px}
+.fc{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end}
 .fc div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--ink-3)}
 .fc i{display:block;width:100%;max-width:18px;border-radius:4px 4px 2px 2px;background:color-mix(in srgb,var(--accent) 55%,transparent)}
 .fc div:first-child i{background:var(--accent)}
 .sig{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;padding:calc(var(--s) * 10px) 0;border-top:1px solid var(--line)}
 .sig:first-child{border-top:0;padding-top:0}
-.sig .k{flex:none;font-family:var(--font-num);font-size:calc(var(--s) * 11px);font-weight:600;padding:3px 7px;border-radius:6px;border:1px solid var(--line);color:var(--ink-2)}
+.sig .k{flex:none;min-width:46px;text-align:center;font-family:var(--font-num);font-size:calc(var(--s) * 11px);font-weight:600;padding:3px 7px;border-radius:6px;border:1px solid var(--line);color:var(--ink-2)}
 .sig .k.gap{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
 .sig .k.str{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent)}
 .sig .k.new{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
@@ -198,6 +198,19 @@ html:not(.lively) .pulse{animation:none}
 .newb{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:99px;background:var(--accent);color:var(--on-accent)}
 [data-world="contour"] .card{border-left:0}
 main{counter-reset:sec}
+/* Euclid family: classical shapes. Outer radius 6, inner radius 4 or less, straight progress rules, glyphs without tiles. */
+[data-world="euclid"] .chip,[data-world="euclid-night"] .chip{border-radius:4px}
+[data-world="euclid"] .btn,[data-world="euclid-night"] .btn{border-radius:4px}
+[data-world="euclid"] .wswitch,[data-world="euclid-night"] .wswitch{border-radius:6px;box-shadow:none}
+[data-world="euclid"] .wswitch button,[data-world="euclid-night"] .wswitch button{border-radius:4px}
+[data-world="euclid"] .seg,[data-world="euclid-night"] .seg{border-radius:6px}
+[data-world="euclid"] .seg button,[data-world="euclid-night"] .seg button{border-radius:4px}
+[data-world="euclid"] .bar,[data-world="euclid-night"] .bar{border-radius:1px;height:4px}
+[data-world="euclid"] .tabs .tb,[data-world="euclid-night"] .tabs .tb{border-radius:8px}
+[data-world="euclid"] .sheet,[data-world="euclid-night"] .sheet{border-radius:10px 10px 0 0}
+[data-world="euclid"] .glyph,[data-world="euclid-night"] .glyph{background:none;border:0;width:calc(var(--s) * 26px);font-size:calc(var(--s) * 24px);justify-content:start}
+[data-world="euclid"] .zoomer button,[data-world="euclid"] .crumbs button,[data-world="euclid"] .mini,[data-world="euclid-night"] .zoomer button,[data-world="euclid-night"] .crumbs button,[data-world="euclid-night"] .mini{border-radius:4px}
+[data-world="euclid"] .sig .k,[data-world="euclid-night"] .sig .k{border-radius:3px}
 </style>
 
 <canvas id="bg" aria-hidden="true"></canvas>
@@ -334,7 +347,7 @@ const WMAP = Object.fromEntries(WORLDS.map(w => [w.id, w]));
 /* ---------------- demo data ---------------- */
 const TODAY = new Date();
 const PROJECTS = [
-  { id:'algebra-1', title:'Algebra 1', glyph:'≅', book:'Lang, Algebra', goal:'Understand Algebra 1 deeply with Lang and be ready for the prelim', target:'2027-01-15', targetLabel:'Prelim', pace:3.1, last:'S11 paused 2 h ago', now:{code:'CP11', step:2, steps:4, stepTitle:'Orbit–stabilizer'},
+  { id:'algebra-1', title:'Algebra 1', glyph:'≅', book:'Lang, Algebra', goal:'Understand Algebra 1 deeply with Lang and be ready for the prelim', target:'2027-01-15', targetLabel:'Prelim', pace:3.1, last:'S11, 2 h ago', now:{code:'CP11', step:2, steps:4, stepTitle:'Orbit–stabilizer'},
     stages:[
       ['Foundations', [['CP1','Baseline diagnostic','done'],['CP2','Equivalence relations and quotients','done'],['CP3',"Zorn's lemma",'done'],['CP4','Linear algebra review','done'],['CP5','Categories, lightly','revisit']]],
       ['Groups', [['CP6','Groups and homomorphisms','done'],['CP7','Subgroups and cosets','done'],['CP8',"Lagrange's theorem",'done'],['CP9','Normal subgroups and quotients','done'],['CP10','Isomorphism theorems','done'],['CP11','Group actions','now'],['CP12','Class equation','next'],['CP13','Sylow theorems','locked'],['CP14','Solvable groups','locked'],['CP15','Free groups and presentations','locked']]],
@@ -424,7 +437,7 @@ const ideaDone = st => st === 'done' || st === 'revisit';
 /* ---------------- state ---------------- */
 const KEY = 'lemma-lab-v1';
 const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-const DEFAULT = { follow:false, day:'euclid', night:'euclid-night', lf:'all', world: prefersDark ? 'obsidian' : 'graph', keep:{}, fav:{}, tl:'line', tlKeep:{line:true,metro:true,ascent:true}, at:'orbits', atKeep:{orbits:true,branches:true,outline:true}, density:'compact', motion:'calm', proj:'algebra-1', open:{}, filter:'all' };
+const DEFAULT = { follow:true, day:'euclid', night:'euclid-night', lf:'all', world: prefersDark ? 'euclid-night' : 'euclid', keep:{}, fav:{}, tl:'ascent', tlKeep:{line:false,metro:true,ascent:true}, at:'orbits', atKeep:{orbits:true,branches:true,outline:true}, density:'compact', motion:'lively', proj:'algebra-1', open:{}, filter:'all' };
 let S = (() => { try { const v = JSON.parse(localStorage.getItem(KEY)); return v ? Object.assign({}, DEFAULT, v) : { ...DEFAULT }; } catch (e) { return { ...DEFAULT }; } })();
 WORLDS.forEach(w => { if (S.keep[w.id] === undefined) S.keep[w.id] = true; });
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -524,7 +537,7 @@ const BG = {
     ctx.strokeStyle = rgba(t.accent, .22); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.closePath(); ctx.stroke();
     ctx.fillStyle = rgba(t.ink, .38); ctx.font = 'italic 18px ' + F.gara;
     ctx.fillText('A', ax - 16, ay + 18); ctx.fillText('B', bx + 6, by + 18); ctx.fillText('Γ', cx - 4, cy - 10);
-    ctx.font = 'italic 14px ' + F.gara; ctx.fillStyle = rgba(t.ink, .26); ctx.fillText('Elements I.1: on a given finite straight line to construct an equilateral triangle.', 16, h - 22);
+    ctx.font = 'italic 14px ' + F.gara; ctx.fillStyle = rgba(t.ink, .3); ctx.fillText('Elements I.1', (ax + bx) / 2 - 34, ay + 34);
     const fx = w * .82, fy = h * .82, fr = Math.min(w, h) * .09; ctx.strokeStyle = rgba(t.ink, .08);
     for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; ctx.beginPath(); ctx.arc(fx + fr * Math.cos(a), fy + fr * Math.sin(a), fr, 0, 7); ctx.stroke(); }
     ctx.beginPath(); ctx.arc(fx, fy, fr, 0, 7); ctx.stroke();
@@ -597,6 +610,10 @@ function timelineSVG(p, variant, W, H, mini){
   const fs = mini ? 0 : 10.5;
   const ell = (s, px) => { const max = Math.max(2, Math.floor(px / (fs * .56))); return s.length > max ? s.slice(0, max - 1) + '…' : s; };
   let g = '';
+  const curSi = L[cur].si;
+  const stageLabels = yl => stages.map((s, si) => { const nx = stages[si + 1]; const avail = (nx ? x(nx.a) : W - 2) - x(s.a) - 8; const need = s.name.length * fs * .55; const isCur = si === curSi;
+    if (need > avail && !isCur) return ''; const tx = Math.min(x(s.a), W - 2 - Math.min(need, avail + 40));
+    return `<text x="${Math.max(0, tx)}" y="${yl}" font-size="${fs}" fill="${isCur ? 'var(--ink)' : 'var(--ink-3)'}" font-weight="${isCur ? 600 : 400}">${esc(isCur ? ell(s.name, Math.max(avail, 70)) : s.name)}</text>`; }).join('');
   const hit = () => L.map((c, i) => `<rect x="${x(i) - use / (2 * (n - 1 || 1))}" y="0" width="${use / (n - 1 || 1)}" height="${H}" fill="transparent" data-act="cp" data-p="${p.id}" data-code="${c.code}"><title>${esc(c.code + ' ' + c.title)}</title></rect>`).join('');
   const goal = (gx, gy) => mini ? '' : `<g transform="translate(${gx},${gy})"><path d="M0 4V-16" stroke="var(--ink)" stroke-width="1.4"/><path d="M0 -16h11l-3 4 3 4H0z" fill="var(--accent)"/><text x="12" y="-20" text-anchor="end" font-size="10" fill="var(--ink-2)">${esc(p.targetLabel)}</text></g>`;
   const curLabel = (cx, cy) => mini ? '' : `<text x="${clamp(cx, 18, W - 18)}" y="${cy}" text-anchor="middle" font-size="10.5" font-weight="600" fill="var(--ink)" style="font-family:var(--font-num)">${L[cur].code}</text>`;
@@ -612,7 +629,7 @@ function timelineSVG(p, variant, W, H, mini){
     });
     g += `<circle cx="${x(cur)}" cy="${y}" r="${mini ? 7 : 11}" fill="var(--accent)" opacity=".18" class="pulse"/><circle cx="${x(cur)}" cy="${y}" r="${mini ? 3.6 : 5.2}" fill="var(--accent)" stroke="var(--bg)" stroke-width="1.6"/>`;
     g += curLabel(x(cur), y - 17);
-    if (!mini) stages.forEach((s, si) => { const nx = stages[si + 2]; const avail = (nx ? x(nx.a) : W - 4) - x(s.a) - 8; g += `<text x="${x(s.a)}" y="${y + 21 + (si % 2) * 12}" font-size="${fs}" fill="var(--ink-2)">${esc(ell(s.name, avail))}</text>`; });
+    if (!mini) g += stageLabels(y + 22);
     g += goal(W - padR + 16, y);
   } else if (variant === 'metro') {
     const y = mini ? H * .5 : H * .5;
@@ -632,7 +649,7 @@ function timelineSVG(p, variant, W, H, mini){
     if (!mini) { const cs = stages.map(s => (x(s.a) + x(s.b)) / 2); stages.forEach((s, si) => { const cx = cs[si], up = si % 2 === 0; const lft = si >= 2 ? cx - cs[si - 2] : cx * 2, rgt = si + 2 < cs.length ? cs[si + 2] - cx : (W - cx) * 2; const avail = Math.min(lft, rgt) - 8; const tx = clamp(cx, 4 + Math.min(avail, s.name.length * fs * .56) / 2, W - 4 - Math.min(avail, s.name.length * fs * .56) / 2); g += `<text x="${tx}" y="${up ? y - 13 : y + 22}" text-anchor="middle" font-size="${fs}" fill="var(--ink-2)">${esc(ell(s.name, avail))}</text>`; }); }
     g += goal(W - padR + 16, y);
   } else {
-    const base = mini ? H - 4 : H - 30, top = mini ? 4 : 18;
+    const base = mini ? H - 4 : H - 22, top = mini ? 4 : 18;
     const d = L.map((c, i) => c.st === 'proposed' ? .6 : 1 + (hash(p.id + c.code) % 4) + i / n * 2.2);
     const cum = []; d.reduce((s, v, i) => (cum[i] = s + v, s + v), 0);
     const maxc = cum[n - 1]; const yy = i => base - (cum[i] / maxc) * (base - top);
@@ -644,7 +661,7 @@ function timelineSVG(p, variant, W, H, mini){
     L.forEach((c, i) => { if (c.st === 'revisit') g += `<circle cx="${x(i)}" cy="${yy(i)}" r="2.6" fill="var(--bg)" stroke="var(--warn)" stroke-width="1.4"/>`; if (c.first && !mini) g += `<line x1="${x(i)}" y1="${yy(i) + 4}" x2="${x(i)}" y2="${base}" stroke="var(--ink-3)" stroke-opacity=".35" stroke-dasharray="1 3"/>`; });
     g += `<circle cx="${x(cur)}" cy="${yy(cur)}" r="${mini ? 7 : 11}" fill="var(--accent)" opacity=".2" class="pulse"/><circle cx="${x(cur)}" cy="${yy(cur)}" r="${mini ? 3.4 : 5}" fill="var(--accent)" stroke="var(--bg)" stroke-width="1.6"/>`;
     g += curLabel(x(cur), yy(cur) - 14);
-    if (!mini) stages.forEach((s, si) => { const nx = stages[si + 2]; const avail = (nx ? x(nx.a) : W - 4) - x(s.a) - 8; g += `<text x="${x(s.a)}" y="${base + 13 + (si % 2) * 12}" font-size="${fs}" fill="var(--ink-2)">${esc(ell(s.name, avail))}</text>`; });
+    if (!mini) g += stageLabels(base + 15);
     g += goal(x(n - 1) + 3, yy(n - 1) - 2);
   }
   return `<svg class="tl" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(p.title)} path: ${progress(p).done} of ${progress(p).total} checkpoints, now at ${L[cur].code} ${esc(L[cur].title)}">${g}${mini ? '' : hit()}</svg>`;
@@ -689,14 +706,14 @@ function viewHome(){
   const days = ['Today', 'T', 'F', 'S', 'S', 'M', 'T']; const max = Math.max(...CARDS.forecast);
   const fc = CARDS.forecast.map((v, i) => { const d = new Date(TODAY.getTime() + i * 864e5); const lbl = i ? d.toLocaleDateString('en-GB', { weekday:'narrow' }) : 'now'; return `<div><span class="num" style="font-size:10px;color:var(--ink-2)">${v}</span><i style="height:${Math.max(4, v / max * 30)}px"></i>${lbl}</div>`; }).join('');
   const sig = SIGNALS.map((s, i) => `<button class="sig" data-act="signal" data-i="${i}"><span class="k ${s.k === 'gap' ? 'gap' : s.k === 'str' ? 'str' : 'new'}">${s.code}</span><span class="grow"><b>${esc(s.title)}</b><p>${esc(PMAP[s.p].title)}</p></span>${ICON.chev}</button>`).join('');
-  return `<section class="sec" style="margin-top:0"><div class="sec-h"><h2>Distance to your goals</h2><small>tap a tick</small></div>${goals}</section>
+  return `<section class="sec" style="margin-top:0"><div class="sec-h"><h2>Distance to your goals</h2></div>${goals}</section>
   <section class="sec"><div class="sec-h"><h2>Cards</h2><small>${CARDS.newCards} new waiting</small></div>
     <div class="card stack" style="gap:12px"><div class="row"><div class="grow"><div class="big">${due}</div><div class="sub">due today across ${PROJECTS.length} projects</div></div><button class="btn" data-act="toast" data-msg="Review opens in Lemma">Review</button></div>
     <div class="bar" style="height:8px">${seg}</div><div class="legend">${leg}</div>
     <div class="chips"><span class="chip"><b class="num">${CARDS.proposals}</b> to approve</span><span class="chip"><b class="num">${CARDS.notes}</b> note for the tutor</span><span class="chip"><b class="num">${CARDS.newCards}</b> new</span></div>
     <div><div class="sub" style="margin-bottom:6px">Next 7 days</div><div class="fc">${fc}</div></div></div></section>
   <section class="sec"><div class="sec-h"><h2>From your tutor</h2><small>${SIGNALS.length} signals</small></div><div class="card">${sig}</div></section>
-  <section class="sec"><div class="card resume"><span class="faint">${ICON.chat}</span><div class="grow sub">Last chat: ${esc(PROJECTS[0].title)}, ${esc(PROJECTS[0].last)}</div><button class="btn ghost small" data-act="copy" data-text="Resume ${esc(PROJECTS[0].title)}">Copy prompt</button></div></section>`;
+  <section class="sec"><div class="card resume"><span class="faint">${ICON.chat}</span><div class="grow sub">Last chat: ${esc(PROJECTS[0].title)}, ${esc(PROJECTS[0].last)}</div><button class="btn ghost small" data-act="copy" data-text="Resume ${esc(PROJECTS[0].title)}" aria-label="Copy the resume prompt">${ICON.copy}Copy</button></div></section>`;
 }
 function viewPath(){
   const p = PMAP[S.proj], pr = progress(p), W = Math.min(448, $('#view').clientWidth) - 30;

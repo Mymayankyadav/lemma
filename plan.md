@@ -319,7 +319,11 @@ Notes per task:
 - After PR 3: push a branch `review/themes` with `THEMES=all` so the review workflow commits contact sheets per theme; link them in the PR.
 - Done when: `themes.md` §7.
 
-#### Lemma Lab round 2 (owner feedback, 30 Oct): DB-3, MCP-3, UI-4a, UI-4b, UI-4c
+#### UI v2, Euclid (owner's final choice, 30 Oct 10:48): UI-5a … UI-5h, DB-3, MCP-3
+- Spec: `docs/spec/ui-euclid.md` (overrides `design.md`, `themes.md` and `lab.md` where they differ). Choice: Euclid by day and Euclid at night by night (follow the phone), Ascent timeline (Metro kept), Orbits Atlas (Branches, Outline kept), compact, lively; eight worlds selectable.
+- UI-5a first (tokens and components in PR 1, then backgrounds and the layout check); UI-5b … UI-5h in parallel after it; DB-3 now; MCP-3 after DB-3. UI-4a, UI-4b and UI-4c below are superseded: do not start them.
+
+#### Lemma Lab round 2 (superseded by UI v2 for UI work): DB-3, MCP-3, UI-4a, UI-4b, UI-4c
 - Spec: `docs/spec/lab.md` (it overrides `design.md` for Home, Atlas, the project timeline and Appearance). Reference prototype: `docs/design/lab/lemma-lab.html`.
 - Start UI-4a, DB-3 now and in parallel; UI-4b and UI-4c can start on demo data at once and switch to live fields when DB-3 merges; MCP-3 after DB-3.
 
