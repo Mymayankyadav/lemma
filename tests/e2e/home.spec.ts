@@ -58,6 +58,9 @@ for(const theme of ['euclid','euclid-night'] as const){
   const cards=page.getByRole('region',{name:'Cards'})
   await expect(goals).toBeVisible()
   await expect(cards).toBeVisible()
+  await expect(page.locator('[aria-label="Seven-day review forecast"]')).toBeVisible()
+  await expect(page.locator('[aria-label="Seven-day review forecast"] .grid > div')).toHaveCount(7)
+  await expect(page.locator('[aria-label="Due cards by project"]')).toBeVisible()
   const order=await page.evaluate(()=>{
    const a=document.querySelector('[aria-label="Distance to your goals"]')
    const b=document.querySelector('[aria-label="Cards"]')
