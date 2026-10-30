@@ -5,7 +5,7 @@ import {test,expect} from '@playwright/test';
  * Navigate through every primary destination, approve exactly one proposal,
  * and verify that the Home count updates without a reload or implicit approval.
  */
-for (const world of ['euclid','euclid-night'] as const) {
+for (const world of ['graph','graph-night'] as const) {
  test(`QA-1 Euclid cross-screen study loop and explicit approval: ${world}`,async({page})=>{
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));

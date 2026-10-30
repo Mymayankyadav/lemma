@@ -59,7 +59,7 @@ test("editing a proposed card previews and approves the edited content", async (
   });
 });
 
-for(const world of ['euclid','euclid-night'] as const){
+for(const world of ['graph','graph-night'] as const){
  test(`UI-5f approval and errata sheet in ${world}`,async({page})=>{
   await page.setViewportSize({width:360,height:740});
   await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/proposals`);

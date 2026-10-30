@@ -22,7 +22,7 @@ test('Insights renders study statistics and updates when the period changes',asy
  await page.screenshot({path:'test-results/screens/insights.png',fullPage:true});
 });
 
-for(const world of ['euclid','euclid-night'] as const){
+for(const world of ['graph','graph-night'] as const){
  test(`UI-5g ink charts stay legible in ${world}`,async({page})=>{
   await page.setViewportSize({width:360,height:740});
   await page.addInitScript(theme=>localStorage.setItem('lemma.ui',JSON.stringify({theme,density:'compact',effects:'calm'})),world);
