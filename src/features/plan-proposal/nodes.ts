@@ -4,6 +4,10 @@ import type {CheckpointView, PlanChangePayload, PlanPayload} from "../../data/ty
 export interface ReviewNode {
   code: string; title: string; criterion: string; stage?: string;
   steps: string[]; pages?: string; source?: string; prereqs: string[];
+  objective?: string; dueOn?: string | null; concepts?: string[];
+  sources?: {source: string; pages?: string}[]; recheck?: string;
+  /** In a plan change: what this proposal does to the checkpoint. */
+  change?: "added" | "updated";
 }
 
 export function planReviewNodes(
@@ -16,11 +20,13 @@ export function planReviewNodes(
     criterion: cp.criterion || "", stage: cp.stage ?? undefined,
     steps: Array.isArray(cp.steps) ? cp.steps : [], pages: cp.pages, source: cp.source,
     prereqs: Array.isArray(cp.prereqs) ? cp.prereqs : [],
+    objective: cp.objective, dueOn: cp.due_on ?? null, concepts: cp.concepts ?? [],
+    sources: cp.sources ?? [], recheck: cp.recheck_prompt,
   }));
   if (!change) return [];
   const nodes: ReviewNode[] = existing.map(cp => ({
     code: cp.code, title: cp.title, criterion: "", stage: cp.stage ?? undefined,
-    steps: [], prereqs: [],
+    steps: [], prereqs: [], dueOn: cp.dueOn ?? null,
   }));
   const used = new Set(nodes.map(n => n.code.toLowerCase()));
   const reserve = (code: string) => { used.add(code.toLowerCase()); return code; };
@@ -48,6 +54,8 @@ export function planReviewNodes(
         stage: op.stage ?? undefined, steps: Array.isArray(op.steps) ? op.steps : [],
         source: op.source, pages: op.pages,
         prereqs: Array.isArray(op.prereqs) ? op.prereqs : [],
+        objective: op.objective, dueOn: op.due_on ?? null, concepts: op.concepts ?? [],
+        sources: op.sources ?? [], recheck: op.recheck_prompt, change: "added",
       };
       const at = op.after ? nodes.findIndex(n => n.code === op.after) : -1;
       nodes.splice(at >= 0 ? at + 1 : nodes.length, 0, node);
@@ -59,6 +67,9 @@ export function planReviewNodes(
         if (op.stage !== undefined) node.stage = op.stage ?? undefined;
         if (op.steps !== undefined) node.steps = Array.isArray(op.steps) ? op.steps : [];
         if (op.pages !== undefined) node.pages = op.pages;
+        if (op.objective !== undefined) node.objective = op.objective;
+        if (op.recheck_prompt !== undefined) node.recheck = op.recheck_prompt;
+        if (!node.change) node.change = "updated";
       }
     } else if (op.op === "remove") {
       const i = nodes.findIndex(n => n.code === op.code);
@@ -75,6 +86,7 @@ export function planReviewNodes(
       if (!node) continue;
       if (op.op === "prereq_add" && !node.prereqs.includes(op.prereq)) node.prereqs.push(op.prereq);
       if (op.op === "prereq_remove") node.prereqs = node.prereqs.filter(p => p !== op.prereq);
+      if (!node.change) node.change = "updated";
     }
   }
   return nodes;
