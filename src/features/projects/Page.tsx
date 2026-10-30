@@ -8,6 +8,7 @@ import {Screen} from '../../ui/Screen';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
+import {Tex} from '../../ui/Tex';
 
 type Filter='active'|'paused'|'done'|'archived';
 const filters:Filter[]=['active','paused','done'];
@@ -79,18 +80,18 @@ function ProjectRow({project}:{project:ProjectSummary}){
      className="min-w-0 flex-1 rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-amber">
      <span className="flex items-center gap-2">
       <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
-      <span className="min-w-0 flex-1 break-words text-body-l font-semibold">{project.title}</span>
+      <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
       <span className="text-caption text-ink-2">Archived · restore</span>
      </span>
     </button>:
     <Link to={'/p/'+project.slug} className="min-w-0 flex-1 rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
      <div className="flex items-center gap-2">
       <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
-      <span className="min-w-0 flex-1 break-words text-body-l font-semibold">{project.title}</span>
+      <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
       {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
       <ChevronRight size={17} className="shrink-0 text-ink-3" aria-hidden="true"/>
      </div>
-     <div className="mt-1 text-caption text-ink-2">{project.current?'Now '+project.current.code+' '+project.current.title:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
+     <div className="mt-1 text-caption text-ink-2">{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
     </Link>}
    <button type="button" aria-label={'Actions for '+project.title} aria-expanded={menu} aria-haspopup="menu"
     onClick={()=>setMenu(value=>!value)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-edge text-ink-2">
@@ -114,7 +115,7 @@ function ProjectGroup({name,glyph,items,collapsed,onToggle}:{name:string;glyph:s
   <button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
-   <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s">{name}</h2>
+   <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s"><Tex source={name}/></h2>
    <span className="text-caption text-ink-2">{items.length} {items.length===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
   </button>
