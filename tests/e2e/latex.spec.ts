@@ -22,16 +22,12 @@ test('new card editor previews LaTeX and keeps malformed math editable',async({p
  await page.screenshot({path:'test-results/screens/math-new-card-preview.png',fullPage:true});
 });
 
-test('new project name and goal accept live mathematical notation',async({page})=>{
+test('sources-first project name accepts live mathematical notation',async({page})=>{
  await page.goto('/lemma/?demo=1#/projects/new');
  const dialog=page.getByRole('dialog',{name:'New project'});
  const name=dialog.getByRole('textbox',{name:'Name'});
- await name.fill('Topology of $\\mathbb{R}^n$');
+ await name.fill('Topology of $\\\\mathbb{R}^n$');
  await expect(dialog.getByRole('region',{name:'Math preview'}).first().locator('.katex')).toBeVisible();
- const goal=dialog.getByRole('textbox',{name:'Goal'});
- await goal.fill('Understand $H\\mapsto K^H$');
- await expect(dialog.getByRole('region',{name:'Math preview'})).toHaveCount(2);
- await expect(dialog.getByRole('region',{name:'Math preview'}).last().locator('.katex')).toBeVisible();
  await page.screenshot({path:'test-results/screens/math-project-preview.png',fullPage:true});
 });
 
@@ -42,7 +38,7 @@ test('cards retain the real renderer for mathematical questions',async({page})=>
  await expect(row).toBeVisible();
  await row.click();
  await expect(page.getByRole('heading',{name:'Card detail'})).toBeVisible();
- const note=page.getByLabel('Note for your tutor');
+ const note=page.locator('#tutor-note');
  await note.fill('Replace $K/k$ with $H\\mapsto K^H$');
  await expect(page.getByRole('region',{name:'Math preview'}).locator('.katex')).toHaveCount(2);
 });
