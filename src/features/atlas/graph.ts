@@ -69,7 +69,7 @@ export function fitAtlas(nodes:readonly Point[],w:number,h:number,margin=24){
 
 /** Fit within the unobstructed area between Atlas's header and detail tray. */
 export function fitAtlasViewport(nodes: readonly Point[], width: number, height: number) {
- const top = Math.min(150, height * 0.24);
+ const top = Math.min(205, height * 0.28);
  const bottom = Math.min(132, height * 0.21);
  const availableHeight = Math.max(100, height - top - bottom);
  const fit = fitAtlas(nodes, width, availableHeight, 24);
@@ -99,4 +99,28 @@ export function visibleAtlasLabels(nodes: readonly AtlasNode[], selectedId: stri
   occupied.push(rect);
  }
  return visible;
+}
+
+/** At overview scale show a few high-priority ideas per subject; expanding the camera
+ * progressively reveals the rest without overwhelming a phone-sized screen.
+ */
+export function visibleOrbitLabels(nodes:readonly AtlasNode[],selectedId:string|null,scale:number):Set<string>{
+ const result=new Set<string>(),occupied:{left:number;right:number;top:number;bottom:number}[]=[];
+ const counts=new Map<string,number>(),k=Math.max(.2,scale);
+ const priority:Record<AtlasNode['status'],number>={revisit:0,in_progress:1,demonstrated:2,not_started:3};
+ const ordered=[...nodes].sort((a,b)=>Number(b.id===selectedId)-Number(a.id===selectedId)||
+  priority[a.status]-priority[b.status]||a.name.localeCompare(b.name));
+ for(const node of ordered){
+  const selected=node.id===selectedId,count=counts.get(node.subjectId)??0;
+  if(k<.9&&count>=2&&!selected)continue;
+  const width=(node.name.length*(selected?8.4:7.5)+12)/k;
+  const rect={left:node.x-width/2,right:node.x+width/2,
+   top:node.y+9/k,bottom:node.y+34/k};
+  if(!selected&&occupied.some(other=>rect.left<other.right&&rect.right>other.left&&
+   rect.top<other.bottom&&rect.bottom>other.top))continue;
+  result.add(node.id);
+  counts.set(node.subjectId,count+1);
+  occupied.push(rect);
+ }
+ return result;
 }
