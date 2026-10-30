@@ -104,7 +104,6 @@ export function enrichDemoStore(data: DemoStore) {
      planet.level="planet";
      planet.parentId=systemId;
      planet.isStar=pi===0;
-     planet.topic=system.name;
     }
    }
   }
