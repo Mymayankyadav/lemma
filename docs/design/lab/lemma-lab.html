@@ -197,6 +197,59 @@ html:not(.lively) .pulse{animation:none}
 [data-world="graph-night"] .sec-h h2{font-style:italic}
 .newb{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:2px 6px;border-radius:99px;background:var(--accent);color:var(--on-accent)}
 [data-world="contour"] .card{border-left:0}
+/* ---------- review round ---------- */
+.tabs .tb{grid-template-columns:repeat(5,1fr)}
+.tabs a span{display:none}
+.tabs a[aria-current="page"] span{display:block}
+.rv{position:fixed;inset:0;z-index:25;background:var(--bg);overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 10px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 14px) max(16px,env(safe-area-inset-left,0px))}
+.rv-in{max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;gap:12px}
+.rv-top{display:flex;align-items:center;gap:10px}
+.ib{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:6px;border:1px solid var(--line);background:var(--card-2);color:var(--ink-2)}
+.rv-prog{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-num);font-size:13px;color:var(--ink-2)}
+.rv-crumb{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.rv-stage{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding-bottom:18px}
+.ixw{position:relative}
+.deck i{position:absolute;left:10px;right:10px;height:30px;bottom:-7px;border-radius:var(--radius);background:var(--card);border:var(--card-border);opacity:.75}
+.deck i+i{left:20px;right:20px;bottom:-14px;opacity:.45}
+.deckn{position:absolute;right:4px;bottom:-34px;font-size:11.5px;color:var(--ink-3);font-family:var(--font-num)}
+.ixc{position:relative;z-index:2;background:var(--card);border:var(--card-border);border-radius:var(--radius);box-shadow:0 22px 44px -28px rgba(0,0,0,.55);padding:16px 18px 26px;min-height:min(50vh,400px);touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;
+ background-image:repeating-linear-gradient(to bottom,transparent 0 27px,color-mix(in srgb,var(--line) 55%,transparent) 27px 28px);background-position:0 46px}
+.ixc::before{content:"";position:absolute;left:0;right:0;top:44px;height:1.5px;background:var(--accent);opacity:.45}
+.ixc .lbl{display:flex;justify-content:space-between;align-items:baseline;height:28px;font-variant:small-caps;letter-spacing:.05em;font-size:13px;color:var(--ink-3)}
+.ixc .lbl b{font-family:var(--font-display);font-weight:500;color:var(--ink-2)}
+.ixc .front{margin-top:10px;font-family:var(--font-math);font-size:calc(var(--s) * 21px);line-height:28px;color:var(--ink);text-wrap:pretty}
+.ixc .rule{height:1.5px;background:var(--accent);transform-origin:left center;margin:13px 0 13px;opacity:.75}
+.ixc .ans{font-family:var(--font-math);font-size:calc(var(--s) * 18px);line-height:28px;color:var(--ink-2)}
+.ixc .czb{display:inline-block;min-width:3.2em;text-align:center;border-bottom:1.5px solid var(--accent);color:var(--ink-3);line-height:22px}
+.ixc .czr{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);padding:0 .15em;border-radius:2px}
+.ixc .qed{position:absolute;right:16px;bottom:12px;width:11px;height:11px;background:var(--accent);opacity:0}
+.ixc .stamp{position:absolute;top:12px;right:14px;font-family:var(--font-display);font-style:italic;font-size:24px;opacity:0;pointer-events:none}
+.ixc .corner{position:absolute;right:-1px;bottom:-1px;width:74px;height:74px;pointer-events:none;opacity:0}
+.rv-note{min-height:20px;text-align:center;font-size:12.5px;color:var(--ink-2);font-style:italic;font-family:var(--font-display)}
+.conf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.conf button,.grades button{border-radius:4px;border:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.conf button{height:58px;gap:5px;font-size:12.5px;color:var(--ink-2)}
+.conf button:active,.grades button:active{transform:scale(.97)}
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.grades button{height:60px;gap:2px;font-weight:600;font-size:13.5px}
+.grades small{font-family:var(--font-num);font-weight:400;font-size:11.5px;color:var(--ink-3)}
+.grades .g1{color:var(--bad)}.grades .g2{color:var(--warn)}.grades .g4{color:var(--good)}
+.grades .g3{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}.grades .g3 small{color:var(--on-accent);opacity:.8}
+.grades .g3.sure{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--accent)}
+.showa{height:40px;font-size:13px;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--line)}
+.hint{text-align:center;font-size:11.5px;color:var(--ink-3)}
+.qeds{height:100%;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:6px}
+.qeds svg{width:min(250px,64vw);height:auto;overflow:visible}
+.qedt{font-family:var(--font-display);font-style:italic;font-size:44px;line-height:1;letter-spacing:.02em;color:var(--ink)}
+.qedt::first-letter{color:var(--accent)}
+.qsub{font-size:13px;color:var(--ink-2);text-align:center}
+.qgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.qgrid .card{padding:12px 14px}
+.qgrid .v{font-family:var(--font-display);font-size:26px;line-height:1.1;color:var(--ink)}
+.qgrid .k{font-size:11.5px;color:var(--ink-3)}
+.trans{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.trans i{width:12px;height:12px;display:block}
+
 main{counter-reset:sec}
 /* Euclid family: classical shapes. Outer radius 6, inner radius 4 or less, straight progress rules, glyphs without tiles. */
 [data-world="euclid"] .chip,[data-world="euclid-night"] .chip{border-radius:4px}
@@ -227,13 +280,15 @@ main{counter-reset:sec}
   <main id="view"></main>
 </div>
 <nav class="tabs" aria-label="Main"><div class="tb">
-  <a href="#home" data-tab="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Today</a>
-  <a href="#path" data-tab="path"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18"/><circle cx="6" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><path d="M18 7v10"/><path d="M18 7l3 2-3 2"/></svg>Paths</a>
-  <a href="#atlas" data-tab="atlas"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="2.5"/><circle cx="15.5" cy="14.5" r="2"/><circle cx="14" cy="7.5" r="1.2"/></svg>Atlas</a>
-  <a href="#lab" data-tab="lab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/></svg>Lab</a>
+  <a href="#home" data-tab="home" aria-label="Today"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Today</span></a>
+  <a href="#path" data-tab="path" aria-label="Paths"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18"/><circle cx="6" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><path d="M18 7v10"/><path d="M18 7l3 2-3 2"/></svg><span>Paths</span></a>
+  <a href="#review" data-tab="review" aria-label="Review"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="13" rx="1.5"/><path d="M8 4h8M9.5 12.5l2 2 3.5-4"/></svg><span>Review</span></a>
+  <a href="#atlas" data-tab="atlas" aria-label="Atlas"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="2.5"/><circle cx="15.5" cy="14.5" r="2"/><circle cx="14" cy="7.5" r="1.2"/></svg><span>Atlas</span></a>
+  <a href="#lab" data-tab="lab" aria-label="Lab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4.5 18.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3"/><path d="M7 15h10"/></svg><span>Lab</span></a>
 </div></nav>
 <div class="scrim" id="scrim" hidden></div>
 <section class="sheet card" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div><div id="sheet-body"></div></section>
+<div class="rv" id="rv" hidden role="dialog" aria-modal="true" aria-label="Review round"></div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
@@ -708,7 +763,7 @@ function viewHome(){
   const sig = SIGNALS.map((s, i) => `<button class="sig" data-act="signal" data-i="${i}"><span class="k ${s.k === 'gap' ? 'gap' : s.k === 'str' ? 'str' : 'new'}">${s.code}</span><span class="grow"><b>${esc(s.title)}</b><p>${esc(PMAP[s.p].title)}</p></span>${ICON.chev}</button>`).join('');
   return `<section class="sec" style="margin-top:0"><div class="sec-h"><h2>Distance to your goals</h2></div>${goals}</section>
   <section class="sec"><div class="sec-h"><h2>Cards</h2><small>${CARDS.newCards} new waiting</small></div>
-    <div class="card stack" style="gap:12px"><div class="row"><div class="grow"><div class="big">${due}</div><div class="sub">due today across ${PROJECTS.length} projects</div></div><button class="btn" data-act="toast" data-msg="Review opens in Lemma">Review</button></div>
+    <div class="card stack" style="gap:12px"><div class="row"><div class="grow"><div class="big">${due}</div><div class="sub">due today across ${PROJECTS.length} projects</div></div><a class="btn" href="#review">Review</a></div>
     <div class="bar" style="height:8px">${seg}</div><div class="legend">${leg}</div>
     <div class="chips"><span class="chip"><b class="num">${CARDS.proposals}</b> to approve</span><span class="chip"><b class="num">${CARDS.notes}</b> note for the tutor</span><span class="chip"><b class="num">${CARDS.newCards}</b> new</span></div>
     <div><div class="sub" style="margin-bottom:6px">Next 7 days</div><div class="fc">${fc}</div></div></div></section>
@@ -955,18 +1010,159 @@ function tapMap(target){
   else { const n = m.L.nodes.find(x => x.kind === kind && x.id === id); S.coll = S.coll || {}; S.coll[id] = !n.collapsed; save(); const keepY = n.y; const sy = (n.y - m.cam.y) * m.cam.k; m.L = layoutBranches(); m.bounds = { x0:-30, y0:m.L.minY - 30, x1:m.L.maxX, y1:m.L.maxY + 30 }; const nn = m.L.nodes.find(x => x.id === id); m.cam.y = nn.y - sy / m.cam.k; drawMap(); }
 }
 
+/* ---------------- review round ---------------- */
+const RCARDS = [
+  { id:'N31', p:'algebra-1', cp:'CP11', kind:'Definition', front:'State the orbit–stabilizer theorem.', back:'For a finite group <i>G</i> acting on <i>X</i>: &nbsp;|<i>G</i>·<i>x</i>| = [<i>G</i> : <i>G<sub>x</sub></i>].', iv:['1m', '10m', '3d', '7d'] },
+  { id:'N12', p:'real-analysis', cp:'CP4', kind:'Why', front:'Why must <i>U<sub>y</sub></i> and <i>V<sub>y</sub></i> be disjoint when proving that a compact set <i>K</i> in a Hausdorff space is closed?', back:'So the intersection of finitely many <i>V<sub>y</sub></i> is an open set around <i>x</i> that misses <i>K</i>.', iv:['1m', '8m', '2d', '5d'] },
+  { id:'N7', p:'real-analysis', cp:'CP7', kind:'Theorem', cloze:true, front:'A subset of ℝ<sup><i>n</i></sup> is compact if and only if it is {{closed}} and {{bounded}}.', iv:['1m', '12m', '9d', '21d'] },
+  { id:'N40', p:'algebra-1', cp:'CP11', kind:'Counterexample', front:'Give a group action that is transitive but not free.', back:'<i>S</i><sub>3</sub> acting on {1, 2, 3}: one orbit, yet each point is fixed by a transposition.', iv:['1m', '10m', '2d', '6d'] },
+  { id:'N22', p:'linear-algebra', cp:'CP9', kind:'Theorem', front:'When is an operator on a finite-dimensional complex vector space diagonalizable?', back:'Exactly when its minimal polynomial has no repeated roots.', iv:['1m', '9m', '4d', '11d'] },
+  { id:'N26', p:'algebra-1', cp:'CP8', kind:'Theorem', front:"What does Lagrange's theorem say about a subgroup <i>H</i> of a finite group <i>G</i>?", back:'|<i>H</i>| divides |<i>G</i>|, and [<i>G</i> : <i>H</i>] = |<i>G</i>| / |<i>H</i>|.', iv:['1m', '15m', '12d', '28d'] },
+  { id:'N3', p:'topology', cp:'CP2', kind:'Definition', front:'Which three conditions make a collection 𝒯 of subsets of <i>X</i> a topology?', back:'∅ and <i>X</i> lie in 𝒯, and 𝒯 is closed under arbitrary unions and finite intersections.', iv:['1m', '10m', '3d', '8d'] },
+  { id:'N33', p:'algebra-1', cp:'CP12', kind:'Theorem', front:'Write the class equation of a finite group <i>G</i>.', back:'|<i>G</i>| = |<i>Z</i>(<i>G</i>)| + Σ [<i>G</i> : <i>C<sub>G</sub></i>(<i>g<sub>i</sub></i>)], summed over representatives of the non-central classes.', iv:['1m', '6m', '1d', '3d'] }
+];
+let REVIEWED = 0, RV = null;
+const GN = ['', 'Again', 'Hard', 'Good', 'Easy'];
+const lively = () => S.motion === 'lively' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function play(el, kf, o){ if (!el || !el.animate) return { finished: Promise.resolve() }; const d = o.duration || 300; return el.animate(kf, Object.assign({ fill:'both', easing:'cubic-bezier(.2,.8,.2,1)' }, o, { duration: lively() ? d : Math.min(d, 160) })); }
+function viewReview(){
+  const due = Object.values(CARDS.due).reduce((a, b) => a + b, 0) - REVIEWED;
+  const rows = PROJECTS.map(p => `<div class="opt"><span class="glyph">${p.glyph}</span><span class="grow">${esc(p.title)}</span><span class="num" style="color:var(--accent);font-weight:600">${CARDS.due[p.id]}</span><input type="checkbox" checked aria-label="Include ${esc(p.title)}" style="width:18px;height:18px;margin:0;accent-color:var(--accent)"></div>`).join('');
+  return `<section class="sec" style="margin-top:0"><div class="sec-h"><h2>Review</h2><small>${CARDS.newCards} new waiting</small></div>
+    <div class="card stack" style="gap:14px"><div class="row"><div class="grow"><div class="big">${Math.max(0, due)}</div><div class="sub">due today, about ${Math.round(Math.max(0, due) * 25 / 60)} min</div></div>
+      <button class="btn" data-act="rvstart">Start a round</button></div>
+      <div class="row sub"><span class="grow">Mix decks so subjects interleave</span><span class="chip on">On</span></div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Decks</h2><small>this demo round uses 8 cards</small></div><div class="card">${rows}</div></section>
+  <section class="sec"><div class="sec-h"><h2>Gestures</h2></div><div class="card stack" style="gap:8px">
+    <div class="row sub"><span class="chip">● Sure</span><span class="chip">○ Unsure</span><span class="chip">◌ Guess</span><span class="grow">tap one to reveal</span></div>
+    <div class="row sub"><span class="chip">→ Good</span><span class="chip">← Again</span><span class="chip">↑ Easy</span><span class="grow">swipe after reveal</span></div>
+    <div class="row sub"><span class="chip">Space</span><span class="chip">1–4</span><span class="grow">on a keyboard</span></div></div></section>`;
+}
+function startReview(list){
+  RV = { cards:list, queue:list.map((_, i) => i), revealed:false, conf:null, t0:Date.now(), first:{}, firstConf:{}, final:{}, again:{}, shown:0 };
+  const el = $('#rv'); el.hidden = false; document.body.style.overflow = 'hidden'; renderRV(true);
+}
+function closeRV(){ $('#rv').hidden = true; document.body.style.overflow = ''; RV = null; render(); }
+function polySVG(size){
+  const n = RV.cards.length, c = size / 2, r = c - 3; const pts = [...Array(n)].map((_, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [c + r * Math.cos(a), c + r * Math.sin(a)]; });
+  let g = `<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="var(--line)" stroke-width="1"/>`;
+  pts.forEach((p, i) => { const q = pts[(i + 1) % n]; const st = RV.final[i] ? 'done' : RV.again[i] ? 'miss' : 'todo';
+    g += `<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${st === 'done' ? 'var(--accent)' : st === 'miss' ? 'var(--bad)' : 'var(--ink-3)'}" stroke-opacity="${st === 'todo' ? .35 : 1}" stroke-width="${st === 'todo' ? 1 : 2}" ${st === 'miss' ? 'stroke-dasharray="3 2"' : ''} stroke-linecap="round"/>`; });
+  pts.forEach((p, i) => g += `<circle cx="${p[0]}" cy="${p[1]}" r="${RV.queue[0] === i ? 3.2 : 1.8}" fill="${RV.queue[0] === i ? 'var(--accent)' : 'var(--ink-3)'}"/>`);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">${g}</svg>`;
+}
+function clozeHTML(t, revealed){ return t.replace(/\{\{(.+?)\}\}/g, (_, x) => revealed ? `<span class="czr">${x}</span>` : `<span class="czb">[ … ]</span>`); }
+function renderRV(first){
+  const i = RV.queue[0], c = RV.cards[i], p = PMAP[c.p], passed = Object.keys(RV.final).length, left = RV.queue.length;
+  const confB = [['sure', 'Sure', '<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="4.5" fill="currentColor"/></svg>'], ['unsure', 'Unsure', '<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>'], ['guess', 'Guess', '<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.4 2.2"/></svg>']];
+  $('#rv').innerHTML = `<div class="rv-in">
+    <div class="rv-top"><button class="ib" data-act="rvclose" aria-label="End the round"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <div class="rv-prog" aria-label="${passed} of ${RV.cards.length} done">${polySVG(40)}<span>${passed}/${RV.cards.length}</span></div>
+      <button class="ib" data-act="rvnote" aria-label="Note for your tutor"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div>
+    <div class="rv-crumb"><span class="chip"><span style="font-family:var(--font-math);font-style:italic;color:var(--accent)">${p.glyph}</span>${esc(p.title)}</span><span class="chip">${c.cp}</span></div>
+    <div class="rv-stage"><div class="ixw" id="ixw"><div class="deck" aria-hidden="true">${left > 1 ? '<i></i>' : ''}${left > 2 ? '<i></i>' : ''}</div>
+      <article class="ixc" id="ixc"><div class="lbl"><span>${c.kind}</span><b>${c.id}</b></div>
+        <div class="front" id="front">${c.cloze ? clozeHTML(c.front, false) : c.front}</div>
+        <div id="answ" hidden>${c.cloze ? '' : `<div class="rule" id="rule"></div><div class="ans" id="ans">${c.back}</div>`}</div>
+        <span class="stamp" id="stamp"></span><span class="qed" id="qed"></span>
+        <svg class="corner" id="corner" viewBox="0 0 74 74"><path d="M74 14 A60 60 0 0 0 14 74" fill="none" stroke="var(--accent)" stroke-width="1.2"/><circle cx="74" cy="74" r="2.5" fill="var(--accent)"/><path d="M74 74 L30 40" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 3"/></svg>
+      </article><div class="deckn">${left - 1 ? left - 1 + ' after this' : 'last card'}</div></div></div>
+    <div class="rv-note" id="rvnote" aria-live="polite"></div>
+    <div id="ctl">${RV.revealed ? gradesHTML(c) : `<div class="hint" style="margin-bottom:8px">How sure are you? Tapping reveals the answer.</div><div class="conf">${confB.map(([k, n, ic]) => `<button data-act="rvconf" data-k="${k}">${ic}${n}</button>`).join('')}</div><div style="text-align:center"><button class="showa" data-act="rvshow">Show answer</button></div>`}</div></div>`;
+  const card = $('#ixc');
+  if (first || lively()) play(card, [{ transform:'translateY(70px) rotate(1.5deg) scale(.94)', opacity:0 }, { transform:'none', opacity:1 }], { duration:480 });
+  bindSwipe(card);
+}
+function gradesHTML(c){ return `<div class="grades">${[1, 2, 3, 4].map(g => `<button class="g${g} ${g === 3 && RV.conf === 'sure' ? 'sure' : ''}" data-act="rvgrade" data-g="${g}">${GN[g]}<small>${c.iv[g - 1]}</small></button>`).join('')}</div><div class="hint" style="margin-top:8px">or swipe: right Good, left Again, up Easy</div>`; }
+function reveal(conf){
+  if (!RV || RV.revealed) return; RV.revealed = true; RV.conf = conf || null;
+  const c = RV.cards[RV.queue[0]];
+  if (c.cloze) { const f = $('#front'); f.innerHTML = clozeHTML(c.front, true); f.querySelectorAll('.czr').forEach((z, k) => play(z, [{ opacity:0, transform:'translateY(4px)' }, { opacity:1, transform:'none' }], { duration:380, delay:k * 140 })); }
+  else { $('#answ').hidden = false; play($('#rule'), [{ transform:'scaleX(0)' }, { transform:'scaleX(1)' }], { duration:320 }); play($('#ans'), [{ clipPath:'inset(0 100% 0 0)', opacity:.2 }, { clipPath:'inset(0 0 0 0)', opacity:1 }], { duration:520, delay:220, easing:'cubic-bezier(.4,0,.2,1)' }); }
+  if (lively()) play($('#corner'), [{ opacity:0, transform:'scale(.6)', transformOrigin:'100% 100%' }, { opacity:.55, transform:'none', transformOrigin:'100% 100%' }], { duration:600, delay:300 });
+  $('#ctl').innerHTML = gradesHTML(c); play($('#ctl'), [{ opacity:0, transform:'translateY(8px)' }, { opacity:1, transform:'none' }], { duration:260 });
+}
+function grade(g, fromSwipe){
+  if (!RV || !RV.revealed || RV.busy) return; RV.busy = true;
+  const i = RV.queue[0], card = $('#ixc');
+  if (RV.first[i] === undefined) { RV.first[i] = g; RV.firstConf[i] = RV.conf; }
+  let note = '';
+  if (g === 1 && RV.conf === 'sure') note = 'You were sure, so this one comes back soon. Confident errors stick once fixed.';
+  else if (g >= 3 && RV.conf === 'guess') note = 'A good guess. It will come back a little sooner.';
+  if (g >= 3) { const q = $('#qed'); play(q, [{ opacity:0, transform:'scale(2.4)' }, { opacity:1, transform:'scale(1)' }], { duration:260, easing:'cubic-bezier(.3,1.6,.5,1)' }); }
+  const W = card.offsetWidth;
+  const out = { 1:[{ transform:'translateY(55%) scale(.9) rotate(-1.5deg)', opacity:0 }], 2:[{ transform:`translate(${-W * .5}px,-6%) rotate(-7deg)`, opacity:0 }], 3:[{ transform:'translateY(-70%) scale(.92)', opacity:0 }], 4:[{ transform:`translate(${W * .6}px,-60%) rotate(9deg)`, opacity:0 }] }[g];
+  const from = fromSwipe ? { transform:card.style.transform || 'none', opacity:1 } : { transform:'none', opacity:1 };
+  card.style.transform = '';
+  setTimeout(() => {
+    play(card, [from, ...out], { duration:g === 4 ? 460 : 380, easing:'cubic-bezier(.5,0,.75,0)' }).finished.then(() => {
+      RV.queue.shift();
+      if (g === 1) { RV.again[i] = (RV.again[i] || 0) + 1; RV.queue.splice(Math.min(2, RV.queue.length), 0, i); }
+      else RV.final[i] = g;
+      RV.revealed = false; RV.conf = null; RV.busy = false; RV.shown++;
+      if (!RV.queue.length) return finishRV();
+      renderRV(false); if (note) { const n = $('#rvnote'); n.textContent = note; play(n, [{ opacity:0 }, { opacity:1 }], { duration:300 }); setTimeout(() => n && (n.textContent = ''), 3400); }
+    });
+  }, g >= 3 ? 170 : 0);
+}
+function bindSwipe(card){
+  let st = null;
+  card.addEventListener('pointerdown', e => { if (!RV || !RV.revealed) return; st = { x:e.clientX, y:e.clientY }; card.setPointerCapture(e.pointerId); });
+  card.addEventListener('pointermove', e => { if (!st) return; const dx = e.clientX - st.x, dy = e.clientY - st.y; card.style.transform = `translate(${dx}px,${Math.min(dy, 30)}px) rotate(${dx / 22}deg)`;
+    const s = $('#stamp'); const g = dy < -70 && Math.abs(dy) > Math.abs(dx) ? 4 : dx > 60 ? 3 : dx < -60 ? 1 : 0; s.textContent = g ? GN[g] : ''; s.style.opacity = g ? Math.min(1, (Math.max(Math.abs(dx), -dy) - 40) / 60) : 0; s.style.color = g === 1 ? 'var(--bad)' : g === 4 ? 'var(--good)' : 'var(--accent)'; });
+  const end = e => { if (!st) return; const dx = e.clientX - st.x, dy = e.clientY - st.y; st = null; const g = dy < -90 && Math.abs(dy) > Math.abs(dx) ? 4 : dx > 90 ? 3 : dx < -90 ? 1 : 0;
+    if (g) grade(g, true); else { play(card, [{ transform:card.style.transform }, { transform:'none' }], { duration:260 }); card.style.transform = ''; $('#stamp').style.opacity = 0; } };
+  card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
+}
+function finishRV(){
+  const n = RV.cards.length, missed = Object.keys(RV.again).length, firstOk = Object.values(RV.first).filter(g => g > 1).length;
+  const sure = Object.keys(RV.firstConf).filter(i => RV.firstConf[i] === 'sure'), sureOk = sure.filter(i => RV.first[i] > 1).length;
+  const ms = Date.now() - RV.t0, mm = Math.floor(ms / 60000), ss = Math.round(ms / 1000) % 60; REVIEWED += n;
+  const size = 250, c = size / 2, r = 86;
+  const pts = [...Array(n)].map((_, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [c + r * Math.cos(a), c + r * Math.sin(a)]; });
+  const edges = pts.map((p, i) => { const q = pts[(i + 1) % n]; return `<line class="qe" x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${RV.again[i] ? 'var(--bad)' : 'var(--accent)'}" stroke-width="2.2" stroke-linecap="round"/>`; }).join('');
+  const diag = pts.map((p, i) => `<line class="qd" x1="${p[0]}" y1="${p[1]}" x2="${c}" y2="${c}" stroke="var(--ink-3)" stroke-opacity=".35" stroke-width=".8"/>`).join('');
+  const rays = [...Array(32)].map((_, k) => { const a = k * Math.PI / 16; return `<line class="qr" x1="${c + (r + 14) * Math.cos(a)}" y1="${c + (r + 14) * Math.sin(a)}" x2="${c + (r + (k % 2 ? 26 : 38)) * Math.cos(a)}" y2="${c + (r + (k % 2 ? 26 : 38)) * Math.sin(a)}" stroke="var(--accent)" stroke-width="1" stroke-opacity=".6"/>`; }).join('');
+  const verts = pts.map(p => `<circle class="qv" cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--bg)" stroke="var(--accent)" stroke-width="1.6"/>`).join('');
+  const colors = { 1:'var(--bad)', 2:'var(--warn)', 3:'var(--accent)', 4:'var(--good)' };
+  const trans = RV.cards.map((_, i) => `<i title="${GN[RV.first[i]]}" style="background:${colors[RV.first[i]]}"></i>`).join('');
+  $('#rv').innerHTML = `<div class="rv-in"><div class="rv-top"><span style="width:40px"></span><div class="rv-prog"></div><button class="ib" data-act="rvdone" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+   <div class="qeds"><svg viewBox="0 0 ${size} ${size}" role="img" aria-label="Round complete: ${n} cards">${rays}<circle class="qc" cx="${c}" cy="${c}" r="${r}" fill="none" stroke="var(--ink-2)" stroke-width="1"/>${diag}${edges}${verts}<circle class="qp" cx="${c}" cy="${c}" r="3.5" fill="var(--accent)"/></svg>
+   <div class="qedt" id="qedt">Q.E.D.</div><div class="qsub" id="qsub">${n} cards reviewed${missed ? `, ${missed} needed a second pass` : ', none missed'}.</div>
+   <div class="qgrid" id="qgrid"><div class="card"><div class="v">${Math.round(firstOk / n * 100)}%</div><div class="k">recalled on the first try</div></div>
+     <div class="card"><div class="v num">${mm}:${String(ss).padStart(2, '0')}</div><div class="k">minutes for the round</div></div>
+     <div class="card"><div class="v">${sure.length ? sureOk + ' of ' + sure.length : '—'}</div><div class="k">right when you were sure</div></div>
+     <div class="card"><div class="v">${CARDS.forecast[1]}</div><div class="k">due tomorrow</div></div></div>
+   <div class="stack" style="gap:6px;align-items:center" id="qtr"><div class="trans">${trans}</div><div class="hint">each square is a card, coloured by your first answer</div></div>
+   <div class="row" style="gap:8px;margin-top:4px" id="qbtn">${missed ? `<button class="btn ghost" data-act="rvmissed">Go over the ${missed} missed</button>` : ''}<button class="btn" data-act="rvdone">Done</button></div></div></div>`;
+  const svg = $('.qeds svg');
+  if (!lively()) return;
+  svg.querySelectorAll('.qe').forEach((l, k) => { const len = Math.hypot(l.x2.baseVal.value - l.x1.baseVal.value, l.y2.baseVal.value - l.y1.baseVal.value); l.style.strokeDasharray = len; play(l, [{ strokeDashoffset:len }, { strokeDashoffset:0 }], { duration:240, delay:120 + k * 110, easing:'linear' }); });
+  const T = 120 + n * 110 + 120;
+  svg.querySelectorAll('.qv').forEach((v, k) => play(v, [{ transform:'scale(0)', transformOrigin:`${v.cx.baseVal.value}px ${v.cy.baseVal.value}px` }, { transform:'scale(1)', transformOrigin:`${v.cx.baseVal.value}px ${v.cy.baseVal.value}px` }], { duration:220, delay:120 + k * 110 }));
+  const circ = svg.querySelector('.qc'), L = 2 * Math.PI * r; circ.style.strokeDasharray = L; play(circ, [{ strokeDashoffset:L }, { strokeDashoffset:0 }], { duration:700, delay:T, easing:'cubic-bezier(.65,0,.35,1)' });
+  svg.querySelectorAll('.qd').forEach((d, k) => play(d, [{ opacity:0 }, { opacity:1 }], { duration:300, delay:T + 300 + k * 30 }));
+  svg.querySelectorAll('.qr').forEach((ray, k) => play(ray, [{ opacity:0, transform:'scale(.82)', transformOrigin:`${c}px ${c}px` }, { opacity:1, transform:'scale(1.06)', transformOrigin:`${c}px ${c}px`, offset:.6 }, { opacity:.0, transform:'scale(1.16)', transformOrigin:`${c}px ${c}px` }], { duration:1100, delay:T + 650 + (k % 8) * 18 }));
+  play(svg.querySelector('.qp'), [{ transform:'scale(0)', transformOrigin:`${c}px ${c}px` }, { transform:'scale(1.8)', transformOrigin:`${c}px ${c}px`, offset:.6 }, { transform:'scale(1)', transformOrigin:`${c}px ${c}px` }], { duration:600, delay:T + 650 });
+  ['#qedt', '#qsub', '#qgrid', '#qtr', '#qbtn'].forEach((sel, k) => play($(sel), [{ opacity:0, transform:'translateY(10px)' }, { opacity:1, transform:'none' }], { duration:420, delay:T + 760 + k * 110 }));
+  play($('#qedt'), [{ letterSpacing:'.4em' }, { letterSpacing:'.02em' }], { duration:700, delay:T + 760 });
+}
+document.addEventListener('keydown', e => { if (!RV || $('#rv').hidden) return; if (e.key === 'Escape') return closeRV();
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); RV.revealed ? grade(3) : reveal(null); }
+  else if (RV.revealed && '1234'.includes(e.key)) grade(+e.key); });
+
 /* ---------------- app shell ---------------- */
 function applyWorld(){
   const html = document.documentElement; html.dataset.world = S.world; html.dataset.density = S.density; html.classList.toggle('lively', S.motion === 'lively');
   const w = WMAP[cur()]; html.dataset.world = w.id; $('#wname').textContent = w.name; let mt = $('meta[name="theme-color"]'); if (!mt) { mt = document.createElement('meta'); mt.name = 'theme-color'; document.head.appendChild(mt); } mt.content = w.t.bg;
   drawPageBG();
 }
-function tabFromHash(){ const h = (location.hash || '#home').slice(1); return ['home', 'path', 'atlas', 'lab'].includes(h) ? h : 'home'; }
+function tabFromHash(){ const h = (location.hash || '#home').slice(1); return ['home', 'path', 'review', 'atlas', 'lab'].includes(h) ? h : 'home'; }
 function render(){
   const tab = tabFromHash();
   document.querySelectorAll('.tabs a').forEach(a => a.setAttribute('aria-current', a.dataset.tab === tab ? 'page' : 'false'));
   const v = $('#view');
-  v.innerHTML = tab === 'home' ? viewHome() : tab === 'path' ? viewPath() : tab === 'atlas' ? viewAtlas() : viewLab();
+  v.innerHTML = tab === 'home' ? viewHome() : tab === 'path' ? viewPath() : tab === 'review' ? viewReview() : tab === 'atlas' ? viewAtlas() : viewLab();
   if (tab === 'atlas') mountAtlas(); else MAP = null;
   if (tab === 'lab') v.querySelectorAll('canvas[data-prev]').forEach(c => paintBG(c, WMAP[c.dataset.prev], c.clientWidth, c.clientHeight));
 }
@@ -994,6 +1190,13 @@ document.addEventListener('click', e => {
   else if (a === 'zfit') { if (MAP) { MAP.focus = []; MAP.sel = null; const b = MAP.bounds; camTo({ x:(b.x0 + b.x1) / 2, y:(b.y0 + b.y1) / 2, k:MAP.fitK }); } }
   else if (a === 'crumb') { const i = +el.dataset.i; focusNode(i < 0 ? null : MAP.focus[i]); }
   else if (a === 'set') { S[el.dataset.key] = el.dataset.v; save(); applyWorld(); render(); }
+  else if (a === 'rvstart') startReview(RCARDS);
+  else if (a === 'rvconf') reveal(el.dataset.k);
+  else if (a === 'rvshow') reveal(null);
+  else if (a === 'rvgrade') grade(+el.dataset.g);
+  else if (a === 'rvclose' || a === 'rvdone') closeRV();
+  else if (a === 'rvmissed') { const m = RV.cards.filter((_, i) => RV.again[i]); startReview(m); }
+  else if (a === 'rvnote') openSheet(`<h3 id="sheet-title">Note for your tutor</h3><p class="sub">Your tutor reads it the next time you say "update my cards".</p><textarea id="tn" rows="3" style="width:100%;font:inherit;padding:10px;border-radius:4px;border:1px solid var(--line);background:var(--card);color:var(--ink)" placeholder="Too wordy, make the hypotheses a cloze"></textarea><div class="row" style="gap:8px;margin-top:10px"><button class="btn" data-act="toast" data-msg="Saved for your tutor">Save note</button><button class="btn ghost" data-act="close">Cancel</button></div>`);
   else if (a === 'lf') { S.lf = el.dataset.k; save(); render(); }
   else if (a === 'reset') { S = { ...DEFAULT, keep:{}, fav:{}, open:{}, tlKeep:{ line:true, metro:true, ascent:true }, atKeep:{ orbits:true, branches:true, outline:true } }; WORLDS.forEach(w => S.keep[w.id] = true); save(); applyWorld(); render(); toast('Lab reset'); }
 });
