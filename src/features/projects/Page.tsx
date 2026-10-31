@@ -1,8 +1,12 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
 import {useProjects,useUpdateProject} from '../../data/hooks';
+import {getApi} from '../../data';
+import {getMode} from '../../data/mode';
+import {prefetchAtlasForPaths} from './atlasPrefetch';
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
 import {Screen} from '../../ui/Screen';
@@ -109,9 +113,15 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
 }
 
 export default function Page(){
- // Warm the Atlas chunk after Paths mounts, without parsing it on Today.
- // Dynamic import is cached and reused by the Atlas route's React.lazy loader.
- useEffect(()=>{void import('../atlas/Page')},[]);
+ const queryClient=useQueryClient();
+ // Paths is the entry point for Atlas. Warm both its module and the canonical
+ // demo graph query here, without forcing Today to hydrate 8,000 links or
+ // making an extra live-network request. useAtlas shares this query/inflight
+ // promise when a user immediately follows the Atlas link.
+ useEffect(()=>{
+  void import('../atlas/Page');
+  void prefetchAtlasForPaths(queryClient,getMode(),()=>getApi().getAtlas());
+ },[queryClient]);
  const projects=useProjects(),notify=useToast(),[params,setParams]=useSearchParams();
  const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]),[page,setPage]=useState(0);
  const filter=(['active','paused','done','archived'].includes(params.get('status')??'')?params.get('status'):'active') as Filter;
