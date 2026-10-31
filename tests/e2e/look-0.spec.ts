@@ -1,11 +1,12 @@
 import {test,expect} from '@playwright/test'
 
 for(const theme of ['graph','graph-night'] as const)
-for(const profile of ['1','stress'] as const)
+for(const profile of ['1','stress','extreme'] as const)
 for(const width of [360,390] as const){
  test(`LOOK-0 approved colours: ${theme}, ${profile}, ${width}px`,async({page})=>{
+  if(profile==='extreme')test.setTimeout(90_000)
   await page.setViewportSize({width,height:844})
-  await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/`)
+  await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/`,profile==='extreme'?{waitUntil:'domcontentloaded',timeout:90_000}:undefined)
   await expect(page.locator('html')).toHaveAttribute('data-theme',theme)
   await expect(page.locator('#main-content')).not.toBeEmpty()
   const roles=await page.locator('html').evaluate(el=>{
