@@ -156,6 +156,38 @@ export class DemoAdapter implements LemmaApi {
     this.dueTimes.set(value,parsed);
     return parsed;
   }
+  // Home, the deck tree and the ReviewOutlook mount together. A single
+  // exact backlog pass avoids re-reading 30,000 cards under 4x CPU. Expire
+  // precisely at the next future due timestamp (not an arbitrary TTL).
+  private dueSnapshotCache: {
+    createdAt:number;validUntil:number;total:number;
+    projectCounts:Map<string,number>;checkpointCounts:Map<string,number>;
+  }|null=null;
+  private dueSnapshot(){
+    const now=this.now(),cached=this.dueSnapshotCache;
+    if(cached&&now>=cached.createdAt&&now<cached.validUntil)return cached;
+    const activeProjects=new Map(this.store.projects
+      .filter(p=>p.status!=="archived"&&!p.system).map(p=>[p.id,p] as const));
+    const projectCounts=new Map<string,number>(),checkpointCounts=new Map<string,number>();
+    let total=0,nextDue=Infinity;
+    for(const note of this.store.notes){
+      const project=activeProjects.get(note.projectId);
+      if(!project||note.note.status!=="active")continue;
+      for(const card of note.cards){
+        if(card.state.state<=0)continue;
+        const due=this.dueTime(card.state.due);
+        if(due>now){nextDue=Math.min(nextDue,due);continue}
+        if(!Number.isFinite(due))continue;
+        total++;
+        projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
+        if(note.note.checkpointCode){
+          const key=cpKey(project.slug,note.note.checkpointCode);
+          checkpointCounts.set(key,(checkpointCounts.get(key)??0)+1);
+        }
+      }
+    }
+    return this.dueSnapshotCache={createdAt:now,validUntil:nextDue,total,projectCounts,checkpointCounts};
+  }
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
     this.store = hydrateFixture(
@@ -173,9 +205,12 @@ export class DemoAdapter implements LemmaApi {
   private transaction<T>(write: () => T): T {
     const before = clone(this.store);
     try {
-      return write();
+      const result=write();
+      this.dueSnapshotCache=null;
+      return result;
     } catch (error) {
       this.store = before;
+      this.dueSnapshotCache=null;
       throw error;
     }
   }
@@ -952,17 +987,7 @@ export class DemoAdapter implements LemmaApi {
           : null,
       // Today needs a count, not 30,000 hydrated ReviewItem objects.
       // Keep exactly the backlog() predicate (active, owner-visible, due).
-      due: (() => {
-        const active = new Set(this.store.projects
-          .filter(project => !project.system && project.status !== "archived")
-          .map(project => project.id));
-        const now = this.now();
-        return this.store.notes.reduce((count, note) =>
-          count + (note.note.status === "active" && active.has(note.projectId)
-            ? note.cards.filter(card =>
-              card.state.state > 0 && this.dueTime(card.state.due) <= now).length
-            : 0), 0);
-      })(),
+      due: this.dueSnapshot().total,
       pendingProposals: this.store.proposals.filter(
         (p) => p.status === "pending",
       ).length,
@@ -1507,26 +1532,9 @@ export class DemoAdapter implements LemmaApi {
     );
   }
   async getDeckTree(): Promise<DeckNode[]> {
-    // A 4,000-card backlog must remain exact even when the daily queue is
-    // capped at 200. Count card states in one pass instead of creating 30,000
-    // cloned ReviewItems and rescanning all 6,000 checkpoints per project.
     const activeProjects=new Map(this.store.projects
       .filter(p=>p.status!=="archived"&&!p.system).map(p=>[p.id,p] as const));
-    const projectCounts=new Map<string,number>();
-    const checkpointCounts=new Map<string,number>();
-    const now=this.now();
-    for(const note of this.store.notes){
-      const project=activeProjects.get(note.projectId);
-      if(!project||note.note.status!=="active")continue;
-      for(const card of note.cards){
-        if(card.state.state<=0||!(this.dueTime(card.state.due)<=now))continue;
-        projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
-        if(note.note.checkpointCode){
-          const key=cpKey(project.slug,note.note.checkpointCode);
-          checkpointCounts.set(key,(checkpointCounts.get(key)??0)+1);
-        }
-      }
-    }
+    const {projectCounts,checkpointCounts}=this.dueSnapshot();
     const dueCheckpoints=new Map<string,DemoCheckpoint[]>();
     for(const cp of this.store.checkpoints){
       const project=activeProjects.get(cp.projectId);
@@ -1723,6 +1731,7 @@ export class DemoAdapter implements LemmaApi {
     if (!["active", "suspended", "deleted"].includes(status))
       invalid("Unknown note status");
     this.note(noteNo).note.status = status;
+    this.dueSnapshotCache=null;
   }
   async addComment(noteNo: number, body: string): Promise<CardComment> {
     return this.transaction(() => {
