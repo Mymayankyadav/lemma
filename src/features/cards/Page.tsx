@@ -13,6 +13,7 @@ import {Sheet} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
+import {hasMathPreview} from '../../lib/plain-math';
 import {Editor,type EditorValue} from './Editor';
 import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
 
@@ -130,9 +131,9 @@ export default function Page(){
       <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
       <div className="min-w-0 flex-1">
        <div data-card-front="" data-card-front-preview=""
-        className={'min-w-0 max-w-full font-math text-headline leading-snug text-ink '+(row.front.includes('$')?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden')}
-        style={row.front.includes('$')?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}>
-        <span className={row.front.includes('$')?'inline-block min-w-max pr-4':undefined}><Tex source={row.front}/></span>
+        className={'min-w-0 max-w-full font-math text-headline leading-snug text-ink '+(hasMathPreview(row.front)?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden')}
+        style={hasMathPreview(row.front)?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}>
+        <span className={hasMathPreview(row.front)?'inline-block min-w-max pr-4':undefined}><Tex source={row.front}/></span>
        </div>
        <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
         <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
