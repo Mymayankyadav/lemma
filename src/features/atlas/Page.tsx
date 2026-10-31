@@ -99,9 +99,12 @@ export default function Page(){
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
  const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
- // Fixed 44px rows allow windowing without a new dependency. Keep a generous
- // overscan for keyboard focus and scrolling, and preserve total scroll height.
- const viewWindow=atlasWindow(rows.length,scrollTop,viewportHeight);
+ // Keep moderate outlines fully mounted: all fields must remain accessible
+ // even when the third field falls below the first phone viewport. On a large
+ // graph, keep the strict 40-row switch and eight-row keyboard overscan.
+ // This does not disable windowing for stress/extreme (2,500+ ideas).
+ const virtualizeAbove=tree&&tree.nodes.size<=150?150:40;
+ const viewWindow=atlasWindow(rows.length,scrollTop,viewportHeight,virtualizeAbove);
  const {virtual,first,last}=viewWindow;
  const visible=virtual?rows.slice(first,last):rows;
  const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
