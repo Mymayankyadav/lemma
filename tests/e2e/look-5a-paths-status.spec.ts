@@ -21,6 +21,12 @@ for(const profile of ['1','stress','extreme'] as const){
      await expect(single.getByRole('link',{name:/Real Analysis/})).toBeVisible()
      await expect(single.locator('[data-project-row="real-analysis"] .mr-2')).toContainText('Analysis')
     }
+    // LOOK-1c compatibility: counts remain numeric UI roles, and only
+    // multi-project groups expose the shared notebook section heading.
+    await expect(page.locator('[data-project-row] [data-count-role]').first()).toBeVisible()
+    if(profile!=='1'){
+     await expect(page.locator('section[aria-label$=" projects"] .ui-section-heading').first()).toBeVisible()
+    }
     const buttons=group.getByRole('button')
     await expect(buttons).toHaveCount(3)
     const rects=await buttons.evaluateAll(nodes=>nodes.map(node=>{
