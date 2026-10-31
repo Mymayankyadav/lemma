@@ -18,7 +18,6 @@ import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
 import type {HomeSummary, ProjectSummary} from '../../data/types';
 import {GoalDistance} from './GoalDistance';
-import {clip} from '../atlas/Outline';
 import {ReviewOutlook} from './ReviewOutlook';
 
 function TodayHeader({pending}: {pending:number}) {
@@ -64,6 +63,8 @@ function ProjectLink({project}:{project:ProjectSummary}){
   </Link>
  </div>;
 }
+
+const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
 
 /** A passive, one-tap handoff. Fixed-height rows must clip explicitly: the
  * graph theme intentionally overrides Tailwind's truncate utility. */
