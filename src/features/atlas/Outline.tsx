@@ -193,7 +193,8 @@ export function Row({node,open,tone,match,onToggle,onSelect}:{
   <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{node.glyph}</span>}
-   <span style={clip} className={'min-w-0 flex-1 [&_*]:whitespace-nowrap [&_.katex]:text-[16px] '+textStyle}><Tex source={node.name}/></span>
+   <span title={plainMath(node.name)} style={{...clip,overflowX:'auto',textOverflow:'clip',scrollbarWidth:'none'}}
+    className={'min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}><Tex source={node.name}/></span>
    {showProgress&&<span className="flex shrink-0 items-center gap-1.5 pl-1 text-[12px] tabular-nums text-ink-3">
     <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
      <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(node.total?100*node.done/node.total:0)+'%'}}/>
