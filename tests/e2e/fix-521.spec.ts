@@ -65,6 +65,7 @@ for(const width of [390,360] as const)
    const rect=el.getBoundingClientRect();
    const copy=el.querySelector('button[aria-label="Copy resume prompt"]')!.getBoundingClientRect();
    return {fontSize:parseFloat(getComputedStyle(math).fontSize),
+    paddingTop:parseFloat(getComputedStyle(el).paddingTop),
     height:rect.height,copyWidth:copy.width,copyHeight:copy.height,
     overflow:document.documentElement.scrollWidth-innerWidth,
     nowrap:getComputedStyle(meta).whiteSpace,
@@ -72,6 +73,8 @@ for(const width of [390,360] as const)
   });
   expect(metrics.fontSize,'KaTeX in checkpoint metadata').toBeGreaterThanOrEqual(16);
   expect(metrics.height,'Continue row remains compact').toBeLessThanOrEqual(68);
+  // The shared unlayered .slab padding previously overrode Tailwind py-1.
+  expect(metrics.paddingTop,'Continue uses its explicit compact padding').toBeLessThanOrEqual(4);
   expect(metrics.copyWidth).toBeGreaterThanOrEqual(44);
   expect(metrics.copyHeight).toBeGreaterThanOrEqual(44);
   expect(metrics.overflow).toBeLessThanOrEqual(1);
