@@ -27,7 +27,7 @@ Your job each run (do all of it, as much as fits):
    - open (no PR).
 3. Merge everything that can merge:
    - **Merge gate (fail closed; all must hold at the moment you merge):**
-     1. every check run on the PR's current head commit has completed with success, with none queued or in progress (re-read them just before merging);
+     1. **Nonempty exact-head CI set, fail closed:** re-fetch the current PR head SHA, then use GitHub REST check-runs and commit statuses for that exact SHA. Require at least the expected `check` job (which runs npm check + Playwright) and `mcp-sql` job; zero check runs, missing expected jobs, API errors, or any latest check that is queued, in progress, pending, failed, cancelled, skipped, neutral or timed out **block merging**. Every latest exact-head check must be `completed` + `success`, and every reported commit status must be `success`. Re-read immediately before merging; never treat an empty check list as green. `scripts/merge-gate.ts` provides a regression-tested pure decision function (or apply the identical conditions when shell execution is unavailable);
      2. the description contains "Ready to merge" (ticked checklist items do not count on their own);
      3. no unresolved Auditor block: an Auditor comment starting "AUDIT BLOCK" with no later Auditor comment starting "AUDIT CLEAR";
      4. GitHub reports no conflict (`mergeable` true, `mergeable_state` not `dirty`);
