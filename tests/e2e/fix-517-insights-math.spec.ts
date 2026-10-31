@@ -5,6 +5,7 @@ import {expect,test} from '@playwright/test';
 const owner='11111111-1111-1111-1111-111111111111';
 const user={id:owner,email:'math-fixture@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},created_at:'2026-10-01T00:00:00Z'};
 const settings={desired_retention:0.9,new_per_day:20,reviews_per_day:200,learn_steps:'1m 10m',relearn_steps:'10m',rollover_hour:4,max_interval_days:36500,fuzz:true,load_balance:true,learn_ahead_minutes:20,fsrs_weights:null,fsrs_tuned_at:null,macros:'',default_style:'socratic',tutor_rules:null,mix_decks:true,preferred_chat:'claude',connector_secret:'',connector_last_seen_at:null,connector_last_client:null,time_zone:'UTC'};
+const home={resume:null,due:0,pendingProposals:0,projects:[]};
 const insights={
  days:30,reviews:100,right:90,sessions:10,minutes:1000,typicalSession:30,
  reviewDays:[],calibration:[],
@@ -35,7 +36,7 @@ for(const width of [360,390] as const){
   await page.route('**/auth/v1/**',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(user)}));
   await page.route('**/rest/v1/**',r=>{
    const path=new URL(r.request().url()).pathname.replace(/^\/rest\/v1/,'');
-   const value:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:path==='/rpc/insights'?insights:undefined;
+   const value:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:path==='/rpc/insights'?insights:path==='/rpc/home_summary'?home:undefined;
    if(value===undefined){unexpected.push(path);return r.fulfill({status:404,body:'{}'});}
    return r.fulfill({status:200,contentType:'application/json',headers:{'content-range':'0-0/1'},body:JSON.stringify(value)});
   });
