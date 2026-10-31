@@ -68,9 +68,10 @@ export function layoutRoute(
     if(drafts[i].kind==='stage'&&drafts[i+1].kind==='stage'){pair=i;break;}
    if(pair>=0){
     const a=drafts[pair],b=drafts[pair+1];
-    const count=(a.stageEnd-a.stageIndex+1)+(b.stageEnd-b.stageIndex+1);
+    const checkpointCount=stages.slice(a.stageIndex,b.stageEnd+1)
+     .reduce((sum,stage)=>sum+stage.end-stage.start+1,0);
     drafts.splice(pair,2,{kind:'stage',index:a.index,stageIndex:a.stageIndex,
-     stageEnd:b.stageEnd,width:capsuleWidth(count*8),height:4.5,
+     stageEnd:b.stageEnd,width:capsuleWidth(checkpointCount),height:4.5,
      stages:a.stages+b.stages,selected:false});
     continue;
    }
