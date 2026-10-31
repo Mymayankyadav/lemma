@@ -17,6 +17,8 @@ for(const width of [360,390] as const){
   await expect(child).toBeVisible();
   expect((await field.boundingBox())?.height).toBe(56);
   expect((await child.boundingBox())?.height).toBe(44);
+  // A 100× fixture must not mount the entire outline on cold open.
+  expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(60);
   const fold=field.getByRole('button',{name:/^(Fold|Unfold)/});
   expect((await fold.boundingBox())?.width).toBeGreaterThanOrEqual(44);
   expect((await fold.boundingBox())?.height).toBeGreaterThanOrEqual(44);
