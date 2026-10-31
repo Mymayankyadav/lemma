@@ -36,12 +36,13 @@ function checkpoints(n:number,size:number):CheckpointView[]{
   stage:'Stage '+(Math.floor(i/size)+1),
  }));
 }
-async function mount(page:import('@playwright/test').Page,n:number,width:number,theme:string,mode:'today'|'project'){
+async function mount(page:import('@playwright/test').Page,n:number,width:number,theme:string,mode:'today'|'project',selectedIndex?:number,longMath=false){
  const cps=checkpoints(n,n===9?3:15),done=Math.floor(n/2);
+ if(longMath)for(let i=0;i<15;i++)cps[i].stage=String.raw`Compactness and completeness in metric spaces, with theorems about $\mathbb{R}^{n}$ and many proofs`;
  const Route=await loadRoute();
  const html=renderToStaticMarkup(createElement(MemoryRouter,null,
   createElement(Route,{project:{title:'Algebra 1',slug:'algebra-1',done,total:n},
-   checkpoints:cps,mode,initialWidth:width-64})));
+   checkpoints:cps,mode,initialWidth:width-64,initialSelected:selectedIndex})));
  await page.setContent(`<!doctype html><html data-theme="${theme}">
  <head><meta name="viewport" content="width=device-width,initial-scale=1">
  <style>${getCss()}</style></head>
@@ -87,3 +88,38 @@ test('LOOK-3b Today plain Route is one 64px link without rails',async({page})=>{
  await expect(page.locator('[data-route-stage-boundary]')).toHaveCount(2);
  await page.screenshot({path:'test-results/screens/look-3b/today-plain.png',fullPage:true});
 });
+
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test('LOOK-3b current halo remains clear after moving selection '+theme+' '+width+'px',async({page})=>{
+  await page.setViewportSize({width,height:844});
+  for(const n of [16,36]){
+   await mount(page,n,width,theme,'project',3,true);
+   const station=page.locator('[data-station-index="'+Math.floor(n/2)+'"] circle');
+   await expect(station).toHaveCount(1);
+   expect(await station.getAttribute('stroke-width')).toBe('11');
+   const marks=await page.locator('[data-route-mark]').evaluateAll(elements=>
+    elements.map(el=>{
+     const tag=el.tagName.toLowerCase();
+     const stroke=Number(el.getAttribute('stroke-width')??0);
+     const center=tag==='circle'?Number(el.getAttribute('cx')):
+      Number(el.getAttribute('x'))+Number(el.getAttribute('width'))/2;
+     const half=tag==='circle'?Number(el.getAttribute('r'))+stroke/2:
+      Number(el.getAttribute('width'))/2+stroke/2;
+     return {left:center-half,right:center+half};
+    }).sort((a,b)=>a.left-b.left));
+   for(let i=1;i<marks.length;i++)
+    expect(marks[i].left-marks[i-1].right).toBeGreaterThanOrEqual(7.99);
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(0);
+   if(n===36){
+    const left=page.locator('[data-route-folded-stage-label]');
+    await expect(left).toHaveText('Stage 1');
+    const disclosure=page.locator('[data-route-stage-disclosure]');
+    await expect(disclosure).toHaveCount(1);
+    await disclosure.locator('summary').click();
+    await expect(disclosure.locator('.katex')).toHaveCount(1);
+   }
+  }
+  await page.screenshot({path:'test-results/screens/look-3b/halo-'+theme+'-'+width+'.png',fullPage:true});
+ });
+}
