@@ -7,7 +7,13 @@ import Page0 from '../features/home/Page'
 // Preload on a Paths or Atlas entry before React mounts the route. A normal
 // Today entry never evaluates this module until navigation needs it.
 const loadAtlas=()=>import('../features/atlas/Page')
-if(typeof window!=='undefined' && /^#\/(?:projects|atlas)(?:\/|$)/.test(window.location.hash)) void loadAtlas()
+if(typeof window!=='undefined' && /^#\/(?:projects|atlas)(?:\/|$)/.test(window.location.hash)){
+ void loadAtlas()
+ // The direct Atlas entry needs both its outline and mathematical labels.
+ // Warm the independent rich-render chunk in parallel rather than fetching
+ // it only after the Atlas page module evaluates. Today never fetches it.
+ if(location.hash.startsWith('#/atlas')) void import('../lib/render')
+}
 const Page13=lazy(loadAtlas)
 const Page1=lazy(()=>import('../features/projects/Page'))
 const Page2=lazy(()=>import('../features/new-project/Page'))
