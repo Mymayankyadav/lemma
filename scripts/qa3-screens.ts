@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto'
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs'
 import {dirname,resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
+import {inflateSync} from 'node:zlib'
 import {QA3_ROUTES,qa3Cases,qa3ScreenshotName} from './qa3-report'
 
 const SIGNATURE=Buffer.from([137,80,78,71,13,10,26,10])
@@ -38,7 +39,8 @@ export interface ScreenAudit {
  */
 export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:number):PngHeader|null {
  if(bytes.length<57||!bytes.subarray(0,8).equals(SIGNATURE))return null
- let offset=8,width=0,height=0,seenIHDR=false,seenIDAT=false,seenIEND=false
+ let offset=8,width=0,height=0,depth=0,color=0,interlace=0,seenIHDR=false,seenIDAT=false,seenIEND=false
+ const idats:Buffer[]=[]
  while(offset<bytes.length){
   if(offset+12>bytes.length)return null
   const length=bytes.readUInt32BE(offset)
@@ -49,7 +51,7 @@ export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:numbe
   if(!seenIHDR){
    if(type!=='IHDR'||length!==13)return null
    width=bytes.readUInt32BE(data);height=bytes.readUInt32BE(data+4)
-   const depth=bytes[data+8],color=bytes[data+9]
+   depth=bytes[data+8];color=bytes[data+9];interlace=bytes[data+12]
    const validDepth:Record<number,number[]>={0:[1,2,4,8,16],2:[8,16],3:[1,2,4,8],4:[8,16],6:[8,16]}
    if(!validDepth[color]?.includes(depth)||bytes[data+10]!==0||
       bytes[data+11]!==0||bytes[data+12]>1)return null
@@ -58,6 +60,7 @@ export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:numbe
   if(type==='IDAT'){
    if(seenIEND)return null
    seenIDAT=true
+   idats.push(bytes.subarray(data,crcOffset))
   }
   if(type==='IEND'){
    if(length!==0||!seenIDAT||crcOffset+4!==bytes.length)return null
@@ -66,6 +69,23 @@ export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:numbe
   offset=crcOffset+4
  }
  if(!seenIHDR||!seenIDAT||!seenIEND||width<=0||height<=0)return null
+ // CRC-correct arbitrary bytes are not a decodable PNG image. Inflate the
+ // bounded IDAT stream and verify noninterlaced row lengths/filter bytes.
+ const channels:Record<number,number>={0:1,2:3,3:1,4:2,6:4}
+ const rowBytes=Math.ceil(width*channels[color]*depth/8)
+ const maxRaw=32*1024*1024
+ if(!Number.isSafeInteger(rowBytes)||rowBytes<=0)return null
+ if(interlace===0&&(rowBytes+1)*height>maxRaw)return null
+ let raw:Buffer
+ try{raw=inflateSync(Buffer.concat(idats),{maxOutputLength:maxRaw})}
+ catch{return null}
+ if(raw.length===0)return null
+ if(interlace===0){
+  const stride=rowBytes+1
+  if(raw.length!==stride*height)return null
+  for(let y=0;y<height;y++)if(raw[y*stride]>4)return null
+ }
+
  const scale=width/viewportWidth
  if(!Number.isInteger(scale)||scale<1||scale>3||height!==viewportHeight*scale)return null
  return {width,height,scale}
