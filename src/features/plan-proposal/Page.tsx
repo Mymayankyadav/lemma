@@ -21,7 +21,7 @@ import {
 } from "../../data/hooks";
 import {planReviewNodes} from "./nodes";
 import {planIdeasGraph} from "./ideas";
-import {layoutPlanMap, R} from "./planMap";
+import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, R} from "./planMap";
 import {buildAtlasTree} from "../atlas/tree";
 import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
@@ -38,46 +38,106 @@ import { Tex } from "../../ui/Tex";
 import { plainMath } from "../../lib/plain-math";
 
 type Node = ReviewNode;
-/** Checkpoints as a tree spanning out left to right; every prerequisite drawn as a dashed line. */
-function PlanMap({
-  nodes,
-  selected,
-  onSelect,
-}: {
-  nodes: Node[];
-  selected: string;
-  onSelect: (code: string) => void;
-}) {
+/** The owner's approved left-to-right tree. Every prerequisite stays visible as a dashed link. */
+function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:string; onSelect:(code:string)=>void}) {
   const layout = useMemo(() => layoutPlanMap(nodes), [nodes]);
-  const at = useMemo(() => new Map(layout.nodes.map((n) => [n.code, n])), [layout]);
-  const byCode = useMemo(() => new Map(nodes.map((n) => [n.code, n])), [nodes]);
+  const at = useMemo(() => new Map(layout.nodes.map(n => [n.code, n])), [layout]);
+  const byCode = useMemo(() => new Map(nodes.map(n => [n.code, n])), [nodes]);
   return (
-    <div className="overflow-x-auto rounded-slab border border-edge bg-well" aria-label="Checkpoint prerequisites">
-      <svg role="img" aria-label="Map of proposed checkpoints and prerequisites" width={layout.width} height={layout.height}
-        viewBox={`0 0 ${layout.width} ${layout.height}`} style={{ maxWidth: "none" }} className="block">
-        {layout.edges.map((e) => {
+    <div className="overflow-auto rounded-slab border border-edge bg-well" aria-label="Full checkpoint tree">
+      <svg role="group" aria-label="Map of proposed checkpoints and prerequisites" width={layout.width} height={layout.height}
+        viewBox={`0 0 ${layout.width} ${layout.height}`} style={{maxWidth:"none"}} className="block">
+        {layout.edges.map(e => {
           const a = at.get(e.from)!, b = at.get(e.to)!;
-          return <line key={e.from + ">" + e.to} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-            stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4" />;
+          return <line key={e.from+">"+e.to} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+            stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4"/>;
         })}
-        {layout.nodes.map((pos) => {
+        {layout.nodes.map(pos => {
           const n = byCode.get(pos.code)!, on = selected === n.code;
-          return (
-            <g key={n.code} role="button" tabIndex={0} aria-label={`Select ${n.code} ${n.title}`} style={{ cursor: "pointer" }}
+          return <g key={n.code} role="button" tabIndex={0} aria-label={`Select ${n.code} ${plainMath(n.title)}`} style={{cursor:"pointer"}}
               onClick={() => onSelect(n.code)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(n.code); } }}>
-              <circle cx={pos.x} cy={pos.y} r={R + 5} fill="transparent" />
-              <circle cx={pos.x} cy={pos.y} r={R} fill={on ? "var(--amber)" : "var(--raised)"}
-                stroke={n.change ? "var(--amber)" : "var(--amber-line-2)"} strokeWidth={n.change ? 2 : 1}
-                strokeDasharray={n.change === "added" ? "4 3" : undefined} />
-              <text x={pos.x} y={pos.y + 3} textAnchor="middle" fontSize={n.code.length > 4 ? 8 : 9} fontWeight="600"
-                fill={on ? "var(--amber-ink)" : "var(--ink)"}>{n.code}</text>
-            </g>
-          );
+              onKeyDown={e => {if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(n.code)}}}>
+            <circle cx={pos.x} cy={pos.y} r={R+5} fill="transparent"/>
+            <circle cx={pos.x} cy={pos.y} r={R} fill={on?"var(--amber)":"var(--raised)"}
+              stroke={n.change?"var(--amber)":"var(--amber-line-2)"} strokeWidth={n.change?2:1}
+              strokeDasharray={n.change==="added"?"4 3":undefined}/>
+            <text x={pos.x} y={pos.y+3} textAnchor="middle" fontSize={n.code.length>4?12:12} fontWeight="600"
+              fill={on?"var(--amber-ink)":"var(--ink)"}>{n.code}</text>
+          </g>;
         })}
       </svg>
     </div>
   );
+}
+
+/** Large plans show bundled stage dependencies first. A selected stage opens inside its graph row. */
+function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:string;onSelect:(code:string)=>void}) {
+  const large = nodes.length > 16;
+  const [expandedStage, setExpandedStage] = useState<string|null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const groups = useMemo(() => groupPlanStages(nodes), [nodes]);
+  const layout = useMemo(() => layoutStagePlanMap(nodes, expandedStage), [nodes, expandedStage]);
+  const at = useMemo(() => new Map(layout.stages.map(s => [s.id,s])), [layout]);
+  const expanded = groups.find(g => g.id === expandedStage);
+  // Switching between proposals must not retain an unrelated stage selection.
+  useEffect(() => {setExpandedStage(null);setShowAll(false)}, [nodes]);
+  if (!large) return <CheckpointTree nodes={nodes} selected={selected} onSelect={onSelect}/>;
+  return <section aria-label="Checkpoint prerequisites" className="flex min-w-0 flex-col gap-2">
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-caption text-ink-3">Stages · {nodes.length} checkpoints</span>
+      <button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-label text-amber"
+        onClick={() => {setShowAll(v => !v);setExpandedStage(null)}}>
+        {showAll ? "Show stages" : "Expand all"}
+      </button>
+    </div>
+    {showAll ? <CheckpointTree nodes={nodes} selected={selected} onSelect={onSelect}/> : (
+      <div className="min-w-0 overflow-hidden rounded-slab border border-edge bg-well">
+        <svg role="group" aria-label="Stage dependency graph" width="100%"
+          viewBox={`0 0 ${layout.width} ${layout.height}`} className="block">
+          {layout.edges.map(edge => {
+            const from = at.get(edge.from)!, to = at.get(edge.to)!;
+            const mx = (from.x+to.x)/2, my = (from.y+to.y)/2;
+            const offset = from.x===to.x?18:0;
+            return <g key={edge.from+">"+edge.to} aria-label={`${edge.count} prerequisite links from ${from.name} to ${to.name}`}>
+              <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4" />
+              <rect x={mx-13+offset} y={my-10} width="26" height="20" rx="7"
+                fill="var(--raised)" stroke="var(--amber-line-2)" />
+              <text x={mx+offset} y={my+4} fill="var(--ink)" textAnchor="middle" fontSize="12" fontWeight="600">{edge.count}</text>
+            </g>;
+          })}
+          {layout.stages.map(stage => {
+            const on = expandedStage===stage.id;
+            return <g key={stage.id} role="button" tabIndex={0} aria-expanded={on}
+              aria-label={`${stage.name}, ${stage.count} checkpoints. ${on?"Collapse":"Expand"} stage`}
+              onClick={() => setExpandedStage(on?null:stage.id)}
+              onKeyDown={e => {if(e.key==="Enter"||e.key===" "){e.preventDefault();setExpandedStage(on?null:stage.id)}}}
+              style={{cursor:"pointer"}}>
+              <title>{stage.name} · {stage.count} checkpoints</title>
+              <rect x={stage.x-65} y={stage.y-32} width="130" height="64" rx="12"
+                fill={on?"var(--amber-tint)":"var(--raised)"}
+                stroke={on?"var(--amber)":"var(--amber-line-2)"} strokeWidth={on?2:1.5}/>
+              <text x={stage.x} y={stage.y-3} textAnchor="middle" fontSize="12" fontWeight="600"
+                fill="var(--ink)">{stage.name.length>21?stage.name.slice(0,20)+"…":stage.name}</text>
+              <text x={stage.x} y={stage.y+17} textAnchor="middle" fontSize="12" fill="var(--amber)">
+                {stage.count} {stage.count===1?"checkpoint":"checkpoints"}
+              </text>
+            </g>;
+          })}
+          {expanded && layout.expandedY!==null && (
+            <foreignObject x="8" y={layout.expandedY} width="304" height="206">
+              <div className="flex h-full min-w-0 flex-col gap-1 rounded-ctl border border-amber-line bg-raised p-2">
+                <p className="shrink-0 text-label font-semibold text-ink">{expanded.name} · {expanded.nodes.length} checkpoints</p>
+                <div className="min-h-0 flex-1 overflow-auto">
+                  <CheckpointTree nodes={expanded.nodes} selected={selected} onSelect={onSelect}/>
+                </div>
+              </div>
+            </foreignObject>
+          )}
+        </svg>
+      </div>
+    )}
+  </section>;
 }
 
 function dueLabel(date?: string | null) {
@@ -249,16 +309,7 @@ export default function Page() {
     return graph ? buildAtlasTree(graph) : null;
   }, [p, nodes, project.data?.subject?.name]);
   const ideaCount = ideaTree ? [...ideaTree.nodes.values()].filter((n) => !n.synthetic).length : 0;
-  const stages = useMemo(() => {
-    const groups: { name: string; nodes: Node[] }[] = [];
-    for (const n of nodes) {
-      const name = n.stage?.trim() || "Checkpoints";
-      const last = groups[groups.length - 1];
-      if (last && last.name === name) last.nodes.push(n);
-      else groups.push({ name, nodes: [n] });
-    }
-    return groups;
-  }, [nodes]);
+  const stages = useMemo(() => groupPlanStages(nodes), [nodes]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
     if (!p) return;
@@ -357,8 +408,15 @@ export default function Page() {
             />
           )}
           <section aria-label="Checkpoints" className="flex flex-col gap-4">
+            {stages.length>5 && <nav aria-label="Jump to stage" className="flex gap-2 overflow-x-auto pb-2">
+              {stages.map((stage,i) => <button key={stage.id} type="button" title={stage.name}
+                onClick={() => document.getElementById(`plan-stage-${i}`)?.scrollIntoView({behavior:"smooth",block:"start"})}
+                className="min-h-11 min-w-11 max-w-40 shrink-0 truncate rounded-chip border border-edge px-3 text-label text-ink-2">
+                {stage.name}
+              </button>)}
+            </nav>}
             {stages.map((stage, i) => (
-              <div key={stage.name + i}>
+              <div id={`plan-stage-${i}`} key={stage.id} className="scroll-mt-20">
                 <h3 className="mb-1 flex items-baseline justify-between gap-3">
                   <span className="text-title-s italic" style={{ fontFamily: "var(--font-display)" }}>{stage.name}</span>
                   <span className="text-caption text-ink-3">{stage.nodes.length}</span>
