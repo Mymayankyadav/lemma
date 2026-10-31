@@ -10,7 +10,7 @@ export interface ProposalGroup {
 export function groupProposals(rows: readonly Proposal[]): ProposalGroup[] {
  const groups=new Map<string,ProposalGroup>();
  for(const proposal of rows){
-  const checkpoint=proposal.card?.checkpoint ?? null;
+  const checkpoint=proposal.card?.checkpoint ?? proposal.plan?.checkpoints[0]?.code ?? proposal.planChange?.ops.map(op=>'code' in op?op.code:null).find(Boolean) ?? null;
   const code=typeof checkpoint==='string'&&checkpoint.trim()?checkpoint.trim():'General';
   const session=proposal.sessionNumber===null?'No session':`S${proposal.sessionNumber}`;
   const key=JSON.stringify([proposal.projectSlug,session,code]);
