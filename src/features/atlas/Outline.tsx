@@ -34,6 +34,9 @@ interface BundlePlacement {
 /** The gutter has finite area. Never fall back to overlapping badges: replace
  * overflow with one 44px, keyboard-accessible summary containing every count.
  */
+/** Reserve a readable 12px digit run plus left/right padding inside the 16px pill. */
+function bundlePillWidth(count:number):number{return Math.max(22,12+String(count).length*8)}
+
 export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:readonly number[],heightPx?:number):Map<string,BundlePlacement>{
  const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
  const height=heightPx??rows*ROW,x0=8;
@@ -42,7 +45,9 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
   const span=Math.abs(arc.to-arc.from);
   const reach=x0+10+(GUTTER-x0-22)*Math.sqrt(span/longest);
   return {arc,anchorX:reach*.75+x0*.25,anchorY:(y1+y2)/2,
-   radius:Math.max(11.5,6+String(arc.count).length*4)};
+   // The collision circle must contain every corner of the painted rectangle.
+    // The 1px stroke expands its width by 1px; the painted height is 16px.
+    radius:Math.hypot((bundlePillWidth(arc.count)+1)/2,8)};
  }).sort((a,b)=>b.radius-a.radius||a.anchorY-b.anchorY||a.arc.key.localeCompare(b.arc.key));
  const placed:BundlePlacement[]=[],result=new Map<string,BundlePlacement>();
  const findSlot=(radius:number,anchorX:number,anchorY:number):BundlePlacement|null=>{
@@ -169,12 +174,9 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    // The painted pill is 16px high including its 1px SVG stroke:
    // a 15px rect plus half a stroke on each edge. Width grows with digits
    // but stays within the placement radius, preserving 8px clearance.
-   // Placement reserves a radius per bundle. Use that reserved painted
-   // footprint for the pill width: real 12px glyphs vary by font and the
-   // previous digit-count estimate clipped some counts by >6px.
-   // Stay 0.5px inside the reserved radius on both sides so the 8px
-   // badge-to-badge painted-edge clearance is never reduced.
-   const pillWidth=Math.max(16,Math.floor(badge.radius*2-1));
+   // The placement circle encloses the painted pill's corners, not merely
+   // its horizontal half-width. Diagonal pills must retain 8px edge clearance.
+   const pillWidth=bundlePillWidth(arc.count);
    return <g key={'badge:'+arc.key} opacity={opacity} data-atlas-bundle={arc.key}>
     {Math.hypot(badge.x-badge.anchorX,badge.y-badge.anchorY)>3&&
      <path d={'M'+badge.anchorX+' '+badge.anchorY+' L'+badge.x+' '+badge.y}
