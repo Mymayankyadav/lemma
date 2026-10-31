@@ -80,6 +80,20 @@ describe('FIX #507: cold Today stress summary',()=>{
   }finally{parse.mockRestore()}
  },30_000);
 
+ it('counts project cards and due cards in one Today note traversal',async()=>{
+  const api=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const notes=store.notes;
+  let scans=0;
+  Object.defineProperty(store,'notes',{configurable:true,get(){scans++;return notes}});
+  const home=await api.getHome();
+  expect(home.due).toBe(600);
+  expect(home.projects.reduce((sum,p)=>sum+p.cardsCount,0)).toBe(5000);
+  // A separate full notes scan for cardsCount doubles Today startup work.
+  expect(scans).toBe(1);
+ },30_000);
+
  it('reuses one exact due-card scan across Today and DeckTree',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
    ownedFixture:true,now:()=>now,timeZone:'UTC'});
