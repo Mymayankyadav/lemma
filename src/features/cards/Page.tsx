@@ -113,7 +113,7 @@ export default function Page(){
   </div>
   <div className="flex items-center justify-between text-label text-ink-3">
    <span aria-live="polite">{rows.length.toLocaleString()} loaded{cards.hasNextPage?' · more available':''}</span>
-   {(project||checkpoint||state||noteStatus||onlyComments||search)&&<button type="button" className="min-h-11 text-amber" onClick={()=>{
+   {(project||checkpoint||state||noteStatus||onlyComments||search)&&<button type="button" className="min-h-11 text-ink-2 underline-offset-2 hover:underline" onClick={()=>{
     setProject('');setCheckpoint('');setState('');setNoteStatus('');setOnlyComments(false);setSearch('');setQuery('');
    }}>Clear filters</button>}
   </div>
