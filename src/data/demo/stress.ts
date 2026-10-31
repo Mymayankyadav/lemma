@@ -155,6 +155,15 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
   const proposalCount = extreme ? 600 : 150;
   const sessionCount = extreme ? 1000 : 300;
   const subjectCount = extreme ? 40 : 15;
+  // Keep two real mathematical stage names in the stress project so browser
+  // acceptance checks the rendered KaTeX font and recoverable long-name scroll.
+  // The stage count and checkpoint grouping remain exactly fifteen.
+  const stageName=(projectIndex:number,position:number,total:number)=>{
+    const stage=Math.min(15,Math.floor((position-1)*15/total)+1);
+    if(projectIndex===3&&stage===14)return String.raw`Topology of $\mathbb{R}^n$`;
+    if(projectIndex===3&&stage===15)return String.raw`\(\operatorname{verylongmathematicalstageverylongmathematicalstageverylongmathematicalstage}\)`;
+    return `Stage ${stage}`;
+  };
   const baseProject = data.projects[0];
   const baseCheckpoint = data.checkpoints[0];
   const baseNote = data.notes[0];
@@ -195,7 +204,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
         currentStep: n < 4 ? 3 : 0, recheckLevel: 0, recheckDue: null,
         recheckPrompt: `Explain the argument for ${code}`, needsRevisit: false,
         prereqs: n > 1 ? [`CP${n - 1}`] : [], conceptIds: [],
-        stage: pIndex === 0 ? undefined : `Stage ${Math.min(15, Math.floor((n - 1) * 15 / count) + 1)}`,
+        stage: pIndex === 0 ? undefined : stageName(pIndex,n,count),
         dueOn: `@date:${n - 10}`, demonstratedAt: n < 4 ? "@date:-10" : null,
       };
       data.checkpoints.push(cp);
@@ -203,7 +212,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
     if (pIndex > 0) {
       for (const cp of existing) {
         const n = Number(cp.code.replace("CP", ""));
-        cp.stage = `Stage ${Math.min(15, Math.floor((n - 1) * 15 / count) + 1)}`;
+        cp.stage = stageName(pIndex,n,count);
       }
     }
   }
