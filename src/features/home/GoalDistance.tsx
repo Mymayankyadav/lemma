@@ -57,7 +57,7 @@ function GoalCard({project,events}:{project:ProjectSummary;events:Events|undefin
    {finishDisplay&&<>Finish ≈ <span className="text-ink">{finishDisplay}</span></>}
    {targetDisplay&&<> · target <time dateTime={target!}>{targetDisplay}</time></>}
    {estimate.spare!==null&&<span style={{color:estimate.spare<=0?'var(--late)':'var(--ink-3)'}}>
-    {' · '+(estimate.spare>0?estimate.spare+' days spare':Math.abs(estimate.spare)+' days late')}
+    {' · '+(estimate.spare>=0?estimate.spare+' days spare':Math.abs(estimate.spare)+' days late')}
    </span>}
   </p>}
  </Slab>
