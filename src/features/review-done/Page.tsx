@@ -29,6 +29,8 @@ export default function Page(){
  useEffect(()=>{if(answers.length>0)markCompleted()},[answers.length,markCompleted]);
  const settings=useSettings(),[tomorrow,setTomorrow]=useState<number|null>(null);
  const [newPending,setNewPending]=useState(false),[newMessage,setNewMessage]=useState<string|null>(null);
+ const [showRecalled,setShowRecalled]=useState(false);
+ const [showAllMissed,setShowAllMissed]=useState(false);
  const stats=useMemo(()=>summarizeReviewSession(answers.map(a=>({rating:a.rating,confidence:a.confidence,
   durationMs:a.durationMs,stateBefore:a.card.state.state}))),[answers]);
  useEffect(()=>{
@@ -50,7 +52,9 @@ export default function Page(){
  const sureRight=sure.filter(a=>a.rating>1).length;
  const seconds=Math.max(0,Math.floor(stats.durationMs/1000));
  const roundTime=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
- const recalled=firstAnswers.filter(a=>a.rating>1).length;
+ const recalledAnswers=firstAnswers.filter(a=>a.rating>1);
+ const recalled=recalledAnswers.length;
+ const compact=firstAnswers.length>24;
  const firstRecall=firstAnswers.length?Math.round(100*recalled/firstAnswers.length)+'%':'—';
  function retryMissed(){
   if(!settings.data||!missed.length)return;
@@ -89,11 +93,23 @@ export default function Page(){
   </section>
   <section aria-label="Round transcript" className="w-full">
    <h2 className="mb-2 font-math italic text-ink-2">Your round</h2>
-   <div className="flex flex-wrap gap-1.5">{firstAnswers.map(a=><span key={a.card.cardId}
-    title={a.card.projectSlug+' · '+(['','Again','Hard','Good','Easy'][a.rating]??'')}
-    aria-label={a.card.projectSlug+' '+(['','Again','Hard','Good','Easy'][a.rating]??'')}
-    className="size-4 rounded-[2px] border border-edge"
-    style={{background:a.rating===1?'var(--bad)':a.rating===2?'var(--warn)':a.rating===3?'var(--grade-good)':'var(--good)'}}/>)}</div>
+   <div className="flex flex-col gap-3">
+    {missed.length>0&&<div><p className="mb-2 text-label text-ink-3">{missed.length} missed</p>
+     <div className="flex flex-wrap gap-1.5">{missed.slice(0,showAllMissed?undefined:8).map(a=><Link key={a.card.cardId} to={'/cards/'+a.card.noteNo} title={a.card.projectSlug+' · Again'}
+      className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink"
+      aria-label={'Missed card N'+a.card.noteNo}>{'N'+a.card.noteNo}</Link>)}</div>
+     {missed.length>8&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setShowAllMissed(v=>!v)}>
+      {showAllMissed?'Show first 8':(missed.length-8)+' more missed'}
+     </button>}
+    </div>}
+    {recalled>0&&<div>
+     <button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setShowRecalled(v=>!v)}>
+      {recalled} recalled · {compact?(showRecalled?'Hide':'Show cards'):'Full list'}
+     </button>
+     {(showRecalled||!compact)&&<div className="flex flex-wrap gap-1.5">{recalledAnswers.map(a=><Link key={a.card.cardId}
+      title={a.card.projectSlug+' · '+(['','Again','Hard','Good','Easy'][a.rating]??'')} to={'/cards/'+a.card.noteNo} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink-2">{'N'+a.card.noteNo}</Link>)}</div>}
+    </div>}
+   </div>
   </section>
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>

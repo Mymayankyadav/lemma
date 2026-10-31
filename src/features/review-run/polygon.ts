@@ -15,9 +15,10 @@ export function roundEdges(
  cardIds: readonly string[],
  answers: readonly {card:{cardId:string};rating:number}[],
 ): ('pending'|'passed'|'missed')[] {
+ const grades=new Map<string,number>();
+ for(const answer of answers)grades.set(answer.card.cardId,answer.rating);
  return cardIds.map(cardId=>{
-  const grades=answers.filter(answer=>answer.card.cardId===cardId).map(answer=>answer.rating)
-  if (!grades.length) return 'pending'
-  return grades.at(-1)===1?'missed':'passed'
+  const rating=grades.get(cardId);
+  return rating===undefined?'pending':rating===1?'missed':'passed';
  })
 }
