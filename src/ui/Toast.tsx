@@ -11,7 +11,16 @@ const timeouts=new Map<number,ReturnType<typeof setTimeout>>();
 const notify=()=>{for(const listener of listeners)listener()};
 function subscribe(fn:()=>void){listeners.add(fn);return()=>{listeners.delete(fn)}}
 function current(){return snapshot}
-function dismiss(id:number){const timer=timeouts.get(id);if(timer)clearTimeout(timer);timeouts.delete(id);snapshot=snapshot.filter(item=>item.id!==id);notify()}
+function pauseToast(id:number){
+ const timer=timeouts.get(id);
+ if(timer!==undefined)clearTimeout(timer);
+ timeouts.delete(id);
+}
+function dismiss(id:number){pauseToast(id);snapshot=snapshot.filter(item=>item.id!==id);notify()}
+function resumeToast(id:number){
+ pauseToast(id);
+ if(snapshot.some(item=>item.id===id))resumeToast(id);
+}
 export function toast(message:string,options:ToastOptions={}){
  const id=++counter;
  snapshot=[...snapshot.slice(-2),{id,message,...options}];
@@ -38,10 +47,14 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  const messageId='toast-message-'+item.id;
  return <motion.div role="status" initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0.15:0.22}}
  className={`glass pointer-events-auto flex min-h-12 items-center gap-3 rounded-chip px-4 py-2 text-label ${item.tone==='danger'?'text-again':item.tone==='success'?'text-easy':'text-ink'}`}>
- <span ref={messageRef} id={messageId} className={`min-w-0 flex-1 ${expanded?'wrap':'line-clamp-2'}`}><Tex source={item.message}/></span>
+ <span ref={messageRef} id={messageId} className={`min-w-0 flex-1 ${expanded?'wrap max-h-[50vh] overflow-y-auto':'line-clamp-2'}`}><Tex source={item.message}/></span>
  {overflow&&<button type="button" aria-label={expanded?'Collapse notification details':'Show notification details'}
   aria-expanded={expanded} aria-controls={messageId}
-  className="min-h-11 shrink-0 text-amber" onClick={()=>setExpanded(value=>!value)}>{expanded?'Less':'More'}</button>}
+  className="min-h-11 shrink-0 text-amber" onClick={()=>{
+   // A user reading expanded details must not lose them to the 4-second timer.
+   if(expanded){setExpanded(false);resumeToast(item.id)}
+   else{pauseToast(item.id);setExpanded(true)}
+  }}>{expanded?'Less':'More'}</button>}
  {item.action&&<button className="min-h-11 shrink-0 font-semibold text-amber" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><Tex source={item.action.label}/></button>}
  <button type="button" aria-label="Dismiss notification" className="flex size-11 shrink-0 items-center justify-center" onClick={()=>dismiss(item.id)}><X size={16}/></button>
  </motion.div>;
