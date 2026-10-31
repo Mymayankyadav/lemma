@@ -128,3 +128,9 @@ test('FIX #517 duplicate mathematical idea names ask for a subject instead of op
  expect(unexpected).toEqual([]);
  await page.screenshot({path:'test-results/screens/fix-517-duplicate-idea-chooser.png',fullPage:true});
 });
+
+test('FIX #517 legacy slug-only Atlas links still open their idea',async({page})=>{
+ await page.goto('/lemma/?demo=1#/atlas?focus=compactness');
+ await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible();
+ await expect(page.locator('[data-atlas-details]')).toBeVisible();
+});
