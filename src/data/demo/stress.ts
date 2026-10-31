@@ -68,6 +68,47 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     }
   }
 
+  // Audit #461: pressure-test the source list for every project, while materialising
+  // 1,200/3,000 searchable page bodies only in representative PDFs. Other synthetic
+  // sources model scanned/metadata-only PDFs; no fake binary is stored or billed.
+  const sourcesPerProject = extreme ? 100 : 30;
+  const pagesPerPdf = extreme ? 3000 : 1200;
+  const baseSource = data.sources[0];
+  if (!baseSource) throw Error("Stress fixture requires a seeded source");
+  for (const [projectIndex, project] of data.projects.entries()) {
+    const existing = data.sources.filter(source => source.projectId === project.id).length;
+    for (let sourceIndex = existing; sourceIndex < sourcesPerProject; sourceIndex++) {
+      const materialise = (projectIndex === 0 || projectIndex === projectCount - 1)
+        && sourceIndex === existing;
+      const pages = materialise
+        ? Array.from({length: pagesPerPdf}, (_, index) => ({
+            page: index + 1,
+            label: String(index + 1),
+            body: `Synthetic mathematics notes, page ${index + 1}. Prove the stated lemma and cite its hypotheses.`,
+          }))
+        : [];
+      data.sources.push({
+        ...baseSource,
+        id: `stress-source-${projectIndex}-${sourceIndex}`,
+        projectId: project.id,
+        title: `Synthetic source ${sourceIndex + 1} for ${project.title}`,
+        short: `stress-${projectIndex}-${sourceIndex}`,
+        filename: `stress-${projectIndex}-${sourceIndex}.pdf`,
+        kind: "notes",
+        origin: "other",
+        sha256: null,
+        bytes: 0,
+        pageCount: pagesPerPdf,
+        hasText: materialise,
+        status: "ready",
+        outline: [{title: "Synthetic mathematics notes", page: 1, level: 0}],
+        createdAt: `@day:-${sourceIndex % 90}:0.5:0`,
+        pages,
+      });
+    }
+  }
+
+
   for (let i = data.concepts.length; i < ideaCount; i++) {
     const subject = data.subjects[i % data.subjects.length];
     data.concepts.push({
@@ -118,46 +159,6 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
       comments: [],
     };
     data.notes.push(note);
-  }
-
-  // Audit #461: pressure-test the source list for every project, while materialising
-  // 1,200/3,000 searchable page bodies only in representative PDFs. Other synthetic
-  // sources model scanned/metadata-only PDFs; no fake binary is stored or billed.
-  const sourcesPerProject = extreme ? 100 : 30;
-  const pagesPerPdf = extreme ? 3000 : 1200;
-  const baseSource = data.sources[0];
-  if (!baseSource) throw Error("Stress fixture requires a seeded source");
-  for (const [projectIndex, project] of data.projects.entries()) {
-    const existing = data.sources.filter(source => source.projectId === project.id).length;
-    for (let sourceIndex = existing; sourceIndex < sourcesPerProject; sourceIndex++) {
-      const materialise = (projectIndex === 0 || projectIndex === projectCount - 1)
-        && sourceIndex === existing;
-      const pages = materialise
-        ? Array.from({length: pagesPerPdf}, (_, index) => ({
-            page: index + 1,
-            label: String(index + 1),
-            body: `Synthetic mathematics notes, page ${index + 1}. Prove the stated lemma and cite its hypotheses.`,
-          }))
-        : [];
-      data.sources.push({
-        ...baseSource,
-        id: `stress-source-${projectIndex}-${sourceIndex}`,
-        projectId: project.id,
-        title: `Synthetic source ${sourceIndex + 1} for ${project.title}`,
-        short: `stress-${projectIndex}-${sourceIndex}`,
-        filename: `stress-${projectIndex}-${sourceIndex}.pdf`,
-        kind: "notes",
-        origin: "other",
-        sha256: null,
-        bytes: 0,
-        pageCount: pagesPerPdf,
-        hasText: materialise,
-        status: "ready",
-        outline: [{title: "Synthetic mathematics notes", page: 1, level: 0}],
-        createdAt: `@day:-${sourceIndex % 90}:0.5:0`,
-        pages,
-      });
-    }
   }
 
   data.sessions = [];
