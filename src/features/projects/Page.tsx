@@ -93,7 +93,7 @@ function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubj
 }
 
 function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void}){
- return <section aria-label={name+' projects'} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
+ return <section aria-label={name+' projects'} data-group-size={total} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
   {total>1&&<button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-ink-2">{glyph}</span>
