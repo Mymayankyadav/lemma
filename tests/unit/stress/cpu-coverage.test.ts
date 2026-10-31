@@ -5,6 +5,7 @@ import {auditCpuCoverage, type CpuRouteSample} from '../../../scripts/stress-cpu
 const samples=():CpuRouteSample[]=>QA3_ROUTES.map(route=>({
  route, actualRoute:route, profile:'extreme', theme:'graph-night', width:360,
  cpuThrottle:4, durationMs:850, navigationType:'document', ready:true,
+ nodes:400, screenshot:'test-results/screens/stress-cpu/'+route.replaceAll('/','-')+'.png',
 }));
 
 describe('AUDIT #540: fail-closed 4x cold route coverage',()=>{
@@ -28,6 +29,12 @@ describe('AUDIT #540: fail-closed 4x cold route coverage',()=>{
  it('enforces the original 1500ms threshold, not an averaged or relaxed budget',()=>{
   const slow=samples().map(row=>row.route==='/atlas'?{...row,durationMs:1500}:row);
   expect(auditCpuCoverage(slow)).toContain('/atlas: 4x CPU first render >= 1.5s');
+ });
+ it('requires a screenshot and a bounded DOM count for every measured route',()=>{
+  const withoutScreenshot=samples().map(row=>row.route==='/cards'?{...row,screenshot:''}:row);
+  expect(auditCpuCoverage(withoutScreenshot)).toContain('missing 4x cold first-render evidence for /cards');
+  const overDom=samples().map(row=>row.route==='/atlas'?{...row,nodes:1500}:row);
+  expect(auditCpuCoverage(overDom)).toContain('/atlas: 1500 DOM nodes');
  });
  it('rejects missing, NaN and wrong worst-case profile metadata',()=>{
   const malformed=samples().map(row=>row.route==='/kit'?{...row,durationMs:NaN}:row);
