@@ -93,6 +93,8 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   const heading=page.getByRole('heading',{name:'Review complete',level:1})
   await expect(heading).toBeVisible()
   await expect(page.getByText('Review a round to see stats.',{exact:true})).toBeVisible()
+  await expect(page.getByText('0 cards reviewed, 0 needed another pass.',{exact:true})).toHaveCount(0)
+  await expect(page.getByRole('region',{name:'Round transcript'})).toHaveCount(0)
   const metrics=page.getByRole('region',{name:'Review statistics'}).locator('strong')
   await expect(metrics).toHaveCount(4)
   await expect(metrics).toHaveText(['–','–','–','–'])
