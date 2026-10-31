@@ -20,7 +20,11 @@ describe('AUDIT #540: cold 4x matrix and full sharded Playwright coexist',()=>{
   // Four regular shards cover every *other* Playwright test once; the
   // dedicated 2x2x2 matrix covers all 144 cold-route cases exactly once.
   expect(workflow).toContain('--shard=${{ matrix.shard }}/4');
-  expect(workflow).toContain("--grep-invert 'AUDIT #540 cold 4x'");
+  // A # inside a YAML plain scalar starts a comment, even when shell-quoted.
+  // The folded block must preserve the full grep pattern in Actions.
+  expect(workflow).toContain(`      - run: >-
+          npm run e2e -- --shard=\${{ matrix.shard }}/4 --pass-with-no-tests
+          --grep-invert 'AUDIT #540 cold 4x'`);
   expect(workflow).toContain('test "$count" -eq 18');
   expect(workflow).toContain('name: e2e-${{ matrix.shard }}-of-4');
   expect(workflow).toContain('needs: e2e');
