@@ -183,4 +183,21 @@ try {
  assert.deepEqual(otherInsights.subjectMinutes,[])
  console.log('PASS ST-5 bounded Insights aggregates, study metrics and owner isolation')
 
+ // Large library: pagination is capped at 50, ordered consistently, and
+ // does not fetch the remaining 70 rows until requested.
+ await db.exec('reset role')
+ await db.exec("insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) "+
+  "select md5('st5-page-note-'||n::text)::uuid,'"+owner+"','12121212-1212-1212-1212-121212121212',null,1000+n,"+
+  "'Paged card '||n,'Answer','basic','why','active' from generate_series(1,120) n")
+ await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
+ const pageAt=async(offset)=>(await q("select public.search_cards_filtered_page('', 'long-plan', null, null, null, null, "+offset+") item")).map(x=>x.item)
+ const firstPage=await pageAt(0),secondPage=await pageAt(50),thirdPage=await pageAt(100)
+ assert.deepEqual([firstPage.length,secondPage.length,thirdPage.length,(await pageAt(150)).length],[50,50,20,0])
+ assert.equal(firstPage[0].noteNo,1120)
+ assert.equal(firstPage.at(-1).noteNo,1071)
+ assert.equal(secondPage[0].noteNo,1070)
+ assert.equal(thirdPage.at(-1).noteNo,1001)
+ console.log('PASS ST-5 120-card library uses stable bounded 50-row pages')
+
+
 } finally {await db.close()}
