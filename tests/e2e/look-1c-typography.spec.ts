@@ -28,6 +28,11 @@ for(const width of [360,390] as const){
    expect(styles.size).toBe(19);
    expect(styles.line).toBe(23);
    expect(styles.style).toBe('italic');
+   if(name!=='today'){
+    const count=page.locator('[data-count-role]').first();
+    await expect(count).toBeVisible();
+    expect(await count.evaluate(el=>getComputedStyle(el).fontFamily)).toMatch(/Instrument Sans/i);
+   }
    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
    await page.screenshot({path:`test-results/screens/look-1c-${name}-${profile}-${theme}-${width}.png`});
   }
