@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useRef,useState,type KeyboardEvent,type MouseEvent} from 'react';
 import {Link,useNavigate} from 'react-router';
 import type {CheckpointView} from '../../data/types';
-import {buildSchedule,type ScheduledCheckpoint} from '../../lib/schedule';
+import {buildSchedule,scheduleDetail,type ScheduledCheckpoint} from '../../lib/schedule';
 import {plainMath} from '../../lib/plain-math';
 import {Tex} from '../Tex';
 import {currentCheckpointIndex,groupCheckpointStages,worstStageSchedule} from './progress';
@@ -42,6 +42,8 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
   return ()=>observer.disconnect();
  },[]);
  const checkpoint=checkpoints[focused];
+ const plannedOrdinal=checkpoints.slice(0,focused+1).filter(cp=>cp.ui!=='proposed').length;
+ const scheduleText=rows[focused]?scheduleDetail(rows[focused]):null;
  const open=(index=focused)=>{
   const cp=checkpoints[index];
   if(cp)navigate('/p/'+project.slug+'/cp/'+encodeURIComponent(cp.code));
@@ -64,7 +66,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
  if(!n)return <p className="text-label text-ink-3">A plan is needed before the Route can appear.</p>;
  const active=stages[layout.activeStage];
  const stateAt=(index:number)=>rows[index]?.state??'unscheduled';
- const rightFoldedLabel=stages.length+' stages · '+Math.max(0,n-project.done)+' to go';
+ const rightFoldedLabel=stages.length+' stages · '+Math.max(0,project.total-project.done)+' to go';
  // Never clip a tutor-authored formula in the 360px folded SVG. Show the
  // whole name through an accessible disclosure instead of truncating TeX.
  const foldedName=active?.name??'';
@@ -159,10 +161,11 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
    {rightFoldedLabel}
   </text>}
  </svg>;
- const label=plainMath(project.title)+': '+project.done+' of '+n+
+ const label=plainMath(project.title)+': '+project.done+' of '+project.total+
   ' checkpoints, '+(checkpoint?.code??'')+'. Arrow keys select; Enter opens.';
  return <div ref={ref} data-route="" data-route-mode={mode}
-  data-route-layout={layout.mode} className="min-w-0 w-full">
+  data-route-layout={layout.mode} data-route-stage-count={stages.length}
+  className="min-w-0 w-full">
   {mode==='today'?<Link to={'/p/'+project.slug+'/cp/'+encodeURIComponent(checkpoints[current].code)}
    aria-label={plainMath(project.title)+': open current checkpoint '+checkpoints[current].code}
    className="block min-h-[64px] w-full rounded-ctl focus-visible:outline-2 focus-visible:outline-[var(--accent)]">
@@ -172,13 +175,16 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
     className="block min-h-[80px] w-full rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-[var(--accent)]">
     {geometry}
    </button>
-   <div data-route-now="" className="flex min-w-0 items-center gap-2 border-t border-[var(--hair)] pt-2">
+   <div data-route-now="" data-route-due-on={rows[focused]?.dueOn??undefined}
+    data-route-schedule-state={rows[focused]?.state??'unscheduled'}
+    className="flex min-w-0 items-center gap-2 border-t border-[var(--hair)] pt-2">
     <span data-code="" className="shrink-0 font-[var(--font-num)] text-[12px] font-medium tabular-nums text-[var(--accent)]">
      {checkpoint.code}
     </span>
     <span className="min-w-0 flex-1 break-words text-[16px] text-ink"><Tex source={checkpoint.title}/></span>
-    <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{focused+1} of {n}</span>
+    <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{checkpoint.ui==='proposed'?'Proposed · ':''}{plannedOrdinal} of {project.total}</span>
    </div>
+   {scheduleText&&<p data-schedule-detail="" className="mt-1 min-w-0 text-[12px] leading-[18px] text-ink-2">{scheduleText}</p>}
    {discloseStage&&<details data-route-stage-disclosure="" className="mt-2 min-w-0 text-ink">
     <summary className="flex min-h-11 cursor-pointer items-center text-[12px] text-ink-2">Show full stage name</summary>
     <div className="min-w-0 overflow-x-auto break-words pb-2 text-[16px]"><Tex source={foldedName}/></div>
