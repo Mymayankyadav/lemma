@@ -102,7 +102,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   </div>
   {grouped.map(group=><div key={group.kind} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
    <h3 className="text-label font-semibold text-ink-2"><button type="button" aria-expanded={visibleKind(group.kind)} className="flex min-h-11 w-full items-center justify-between gap-2 text-left" onClick={()=>setOpenKind(visibleKind(group.kind)?'none':group.kind)}><span>{group.kind.charAt(0).toUpperCase()+group.kind.slice(1)} · {group.rows.length}</span><span className="text-amber">{visibleKind(group.kind)?'Fold':'Open'}</span></button></h3>
-   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><div key={source.id} className="flex flex-col gap-2 border-t border-[var(--hair)] px-3 py-3">
+   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><div key={source.id} role="group" aria-label={source.title} className="flex flex-col gap-2 border-t border-[var(--hair)] px-3 py-3">
     <div className="flex items-center gap-3">
      <FileText size={20} className="shrink-0 text-amber"/>
      <div className="min-w-0 flex-1">
