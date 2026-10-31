@@ -28,8 +28,20 @@ for(const theme of ['graph','graph-night'] as const){
   const text=status.locator('[id^="toast-message-"]');
   const before=await text.evaluate(node=>({scroll:node.scrollHeight,client:node.clientHeight}));
   expect(before.scroll).toBeGreaterThan(before.client+1);
+  const hitBoxes=async()=>status.getByRole('button').evaluateAll(buttons=>buttons.map(button=>{
+   const rect=button.getBoundingClientRect();return {label:button.getAttribute('aria-label')||button.textContent||'',width:rect.width,height:rect.height};
+  }));
+  for(const hit of await hitBoxes()){
+   expect(hit.width,hit.label+' tap target width').toBeGreaterThanOrEqual(44);
+   expect(hit.height,hit.label+' tap target height').toBeGreaterThanOrEqual(44);
+  }
   await more.click();
   await expect(status.getByRole('button',{name:'Collapse notification details'})).toBeVisible();
+  for(const hit of await hitBoxes()){
+   expect(hit.width,hit.label+' expanded tap width').toBeGreaterThanOrEqual(44);
+   expect(hit.height,hit.label+' expanded tap height').toBeGreaterThanOrEqual(44);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   const after=await text.evaluate(node=>({scroll:node.scrollHeight,client:node.clientHeight}));
   expect(after.client).toBeGreaterThan(before.client);
   expect(after.scroll).toBeLessThanOrEqual(after.client+1);
