@@ -18,6 +18,12 @@ for(const width of [360,390] as const){
     waitUntil:'domcontentloaded',timeout:90_000,
    });
    await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
+   // Wait for the lazy route and its data-backed heading before measuring or
+   // capturing evidence. Otherwise a loading shell can yield blank screenshots
+   // while the decorative SVG alone makes the test appear to pass.
+   const heading=page.locator('#main-content h1').first();
+   await expect(heading).toBeVisible({timeout:30_000});
+   await expect(heading).not.toBeEmpty();
    const sketch=page.locator('[data-graph-sketch]');
    await expect(sketch).toHaveCount(1);
    await expect(sketch).toHaveAttribute('data-graph-sketch',kind);
