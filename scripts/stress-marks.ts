@@ -33,7 +33,10 @@ export function measureSvgMarks(): number | null {
           const ay = a.rect.top + a.rect.height / 2;
           const bx = b.rect.left + b.rect.width / 2;
           const by = b.rect.top + b.rect.height / 2;
-          gap = Math.hypot(ax - bx, ay - by);
+          // getBoundingClientRect is in CSS pixels, including SVG scaling.
+          const radiusA = Math.max(a.rect.width, a.rect.height) / 2;
+          const radiusB = Math.max(b.rect.width, b.rect.height) / 2;
+          gap = Math.max(0, Math.hypot(ax - bx, ay - by) - radiusA - radiusB);
         } else {
           const dx = Math.max(0, a.rect.left - b.rect.right, b.rect.left - a.rect.right);
           const dy = Math.max(0, a.rect.top - b.rect.bottom, b.rect.top - a.rect.bottom);
