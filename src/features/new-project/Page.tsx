@@ -109,11 +109,11 @@ export default function Page(){
       onChange={event=>{if(event.currentTarget.files)enqueue(event.currentTarget.files);event.currentTarget.value=''}}/>
      <button type="button" disabled={saving} onClick={()=>input.current?.click()}
       className="flex min-h-24 items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
-      <Plus size={20} className="text-amber"/>Add PDFs, .tex or .md files
+      <Plus size={20} className="text-ink-2"/>Add PDFs, .tex or .md files
      </button>
      <ul aria-label="Upload queue" className="flex flex-col gap-2">
       {items.map(item=><li key={item.id} className="flex min-w-0 items-start gap-3 rounded-slab border border-edge bg-raised p-3">
-       <FileText size={19} className="mt-1 shrink-0 text-amber" aria-hidden="true"/>
+       <FileText size={19} className="mt-1 shrink-0 text-ink-2" aria-hidden="true"/>
        <div className="min-w-0 flex-1">
         <p className="truncate text-body font-semibold">{item.name}</p>
         <p className="text-label text-ink-3">{bytes(item.size)} · {item.status}{item.progress?.pageCount?' · '+item.progress.page+'/'+item.progress.pageCount+' pages':''}</p>
@@ -130,7 +130,7 @@ export default function Page(){
     <Button size="xl" className="w-full" type="submit" variant={saving||!name.trim()?'ghost':'lit'} disabled={saving||!name.trim()} loading={saving}>
      {saving?'Saving project and sources':created&&remaining?'Retry remaining uploads':'Create project'}
     </Button>
-    <button type="button" className="flex min-h-11 items-center justify-center gap-2 text-label text-amber"
+    <button type="button" className="flex min-h-11 items-center justify-center gap-2 text-label text-ink-2 underline-offset-4 hover:underline focus-visible:underline"
      onClick={()=>{void navigator.clipboard.writeText(planPrompt(name.trim()||'your project')).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy unavailable',{tone:'danger'}))}}>
      <Copy size={15}/>Tell your tutor: {planPrompt(name.trim()||'your project')}
     </button>
