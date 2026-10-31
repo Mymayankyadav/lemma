@@ -31,13 +31,20 @@ for(const width of [360,390] as const){
   await page.getByRole('button',{name:'Start review'}).click()
   await page.getByRole('button',{name:'Sure',exact:true}).click()
   const actual=await page.getByRole('region',{name:'Grade answer'}).evaluate(section=>{
-   const styles=getComputedStyle(document.documentElement)
    const roles=['--danger','--late','--early','--link']
+   const probe=document.createElement('span')
+   probe.style.display='none'
+   document.body.appendChild(probe)
+   const colors=roles.map(role=>{
+    probe.style.color=`var(${role})`
+    return getComputedStyle(probe).color
+   })
+   probe.remove()
    return roles.map((role,index)=>{
     const button=section.querySelectorAll('button')[index]
     const label=button.querySelector('span')!
     const dot=label.querySelector('span')!
-    return {expected:styles.getPropertyValue(role).trim().toLowerCase(),
+    return {role,expected:colors[index],
      label:getComputedStyle(label).color,dot:getComputedStyle(dot).backgroundColor,
      button:getComputedStyle(button).backgroundColor,
      height:button.getBoundingClientRect().height}
@@ -47,7 +54,8 @@ for(const width of [360,390] as const){
   expect(new Set(actual.map(a=>a.dot)).size).toBe(4)
   expect(new Set(actual.map(a=>a.button)).size).toBe(1)
   for(const grade of actual){
-   expect(grade.label).toBe(grade.dot)
+   expect(grade.label).toBe(grade.expected)
+   expect(grade.dot).toBe(grade.expected)
    expect(grade.height).toBeGreaterThanOrEqual(44)
   }
   await page.screenshot({path:`test-results/screens/look-0/review-grades-${theme}-${width}.png`,fullPage:true})
