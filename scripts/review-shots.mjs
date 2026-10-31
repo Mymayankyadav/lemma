@@ -21,6 +21,16 @@ const screens=[
  ['home','#/'],['project','#/p/real-analysis'],['card-review','#/review/run'],
  ['insights','#/insights'],['settings','#/settings'],
 ];
+const v4Headings={
+ 'today':'Home','paths':'Paths','new-project':'New project',
+ 'project-path':'Project','project-sessions':'Project','project-sources':'Project',
+ 'checkpoint':'Checkpoint','session':'Session record','proposals':'Approve',
+ 'plan-change':'Plan proposal','review':'Review','review-run':'Card review',
+ 'review-run-answer':'Card review','review-done':'Review complete',
+ 'cards':'Cards','card':'Card detail','atlas':'Atlas','atlas-selected':'Atlas',
+ 'atlas-details':'Atlas','atlas-all':'Atlas','insights':'Insights',
+ 'settings':'Settings','sign-in':'Sign in',
+};
 /** QA-4 Mini Route is one bar. Segment seams are borders, not data marks:
  * check each grouped segment's own width, not a fictitious gap at its seam.
  */
@@ -127,10 +137,21 @@ try {
       }
       const actual=await phone.locator('html').getAttribute('data-theme');
       if(actual!==theme)throw Error('Unexpected world for '+name+' '+demo);
-      // A shell-only frame is not evidence of a captured route. Require the
-      // destination's visible heading, then let two frames paint before capture.
-      await phone.locator('#main-content h1').first().waitFor({state:'visible'});
+      // A shell-only frame or an error redirect is not route evidence.
+      // Require the exact destination heading, not merely any h1 left behind
+      // by a HashRouter transition, then check the loaded route's key data.
+      const heading=v4Headings[name];
+      if(!heading)throw Error('No QA-4 route heading contract for '+name);
+      await phone.getByRole('heading',{name:heading,level:1,exact:true}).waitFor({state:'visible'});
       if(name==='paths')await checkMiniRoutes(phone,theme+'/'+demo+'/'+width);
+      if(name==='review-run'||name==='review-run-answer')
+       await phone.locator('[data-review-card-scroll]').waitFor({state:'visible'});
+      if(name==='review-done')
+       await phone.getByRole('region',{name:'Review statistics'}).waitFor({state:'visible'});
+      if(name==='plan-change'){
+       await phone.getByRole('region',{name:'Plan errata'}).waitFor({state:'visible'});
+       await phone.getByRole('region',{name:'Ideas in this plan'}).waitFor({state:'visible'});
+      }
       await phone.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await phone.screenshot({path:join(dir,name+'.png'),animations:'disabled'});
       if(['paths','project-path','project-sources','proposals','cards','atlas','insights','settings'].includes(name)){
