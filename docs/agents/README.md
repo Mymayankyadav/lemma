@@ -25,7 +25,7 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
   - There are no "my PR" exceptions: every open PR belongs to the team.
 - **PR description.** It holds a checklist of the spec's acceptance items, a line "Next step: …", and "Ready to merge" once the owner of the lease believes it is complete.
 - **Do not wait for CI.** Push, move on to the next task, and come back later (in the same run or the next) to read the results.
-- **Merging.** Squash-merge only, with green CI on the exact head commit. Being behind main is not a blocker: merge unless GitHub reports a conflict, or files the PR touches have changed on main since its CI ran. Never push to main, never force-push or rebase; bring main in with a merge.
+- **Merging.** Squash-merge only, and only when every check on the exact head commit has completed successfully (never pending), the description says "Ready to merge", and there is no unresolved "AUDIT BLOCK" comment (one with no later "AUDIT CLEAR"). Being behind main is not a blocker: merge unless GitHub reports a conflict, or files the PR touches have changed on main since its CI ran. Never push to main, never force-push or rebase; bring main in with a merge.
 - **Tests.** Never weaken, skip or delete a test to make CI pass. Fix the code.
 - **Shared issues.**
   - "Task board": the Steward rewrites its body each run.

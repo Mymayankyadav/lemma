@@ -26,7 +26,13 @@ Your job each run (do all of it, as much as fits):
    - blocked (a dependency is not merged);
    - open (no PR).
 3. Merge everything that can merge:
-   - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: squash-merge it via REST with the head SHA. PRs are never drafts (see docs/agents/README.md §3). If you meet an old draft that qualifies, list it on the Task board under "Owner action: mark ready for review" instead.
+   - **Merge gate (fail closed; all must hold at the moment you merge):**
+     1. every check run on the PR's current head commit has completed with success, with none queued or in progress (re-read them just before merging);
+     2. the description contains "Ready to merge" (ticked checklist items do not count on their own);
+     3. no unresolved Auditor block: an Auditor comment starting "AUDIT BLOCK" with no later Auditor comment starting "AUDIT CLEAR";
+     4. GitHub reports no conflict (`mergeable` true, `mergeable_state` not `dirty`);
+     5. the lease has expired or is held by you.
+     Then squash-merge via REST with the head SHA. If any condition fails, do not merge; note which one on the Task board. PRs are never drafts (see docs/agents/README.md §3); if you meet an old draft that qualifies, list it on the Task board under "Owner action: mark ready for review" instead.
    - **Being behind main is not a blocker.** main is not protected and does not require up-to-date branches. Merge a green PR even when it is behind, provided GitHub reports no conflict (`mergeable` is true and `mergeable_state` is not `dirty`).
    - **Refresh first only in two cases:**
      - the PR has conflicts (`dirty`); or
@@ -152,7 +158,7 @@ Your job: audit everything new, as much as fits in the run.
      - tools/list stays under 15,000 characters.
    Build and run the ST-0 stress suite on the merged main for anything visual, and look at the screenshots yourself.
 3. Problems:
-   - On a "Ready to merge" PR: post a PR comment listing the blocking findings, and remove "Ready to merge" from the description.
+   - On a "Ready to merge" PR: post a PR comment that starts with "AUDIT BLOCK", listing the blocking findings, and remove "Ready to merge" from the description. When the findings are fixed, post a comment starting "AUDIT CLEAR" (the Steward only merges once the latest Auditor marker is CLEAR or there is none).
    - On merged code: open one issue labelled `audit`, titled "AUDIT <task>: <problem>", with the file and line, the spec reference, the expected and observed result (screenshot or measurement) and a suggested fix. Do not open duplicates.
 4. Verify every fixed `audit` issue on main. Close it with "Verified in <commit>", or reopen it with the reason.
 5. Update the single body of "Audit log" (a table of PR, task, verdict, issues and date). Append to the issue "Agent log": `Auditor <HH:MM IST>: audited #…; findings #…; verified #…`.
