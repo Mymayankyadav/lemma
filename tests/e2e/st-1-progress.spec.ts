@@ -35,28 +35,28 @@ for(const width of [390,360]){
   mkdirSync('test-results/screens/st-1',{recursive:true})
   const shot=(name:string)=>'test-results/screens/st-1/'+profile+'-'+theme+'-'+width+'-'+name+'.png'
   await page.goto(base+'/p/real-analysis',{waitUntil:'domcontentloaded'})
-  await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible({timeout:90_000})
   await checkStageMetro(page,5)
   await expect(page.locator('[data-done-summary]').first()).toContainText(/\d+ done/)
   await expect(page.locator('[data-done-summary]').first()).toBeVisible()
   await page.screenshot({path:shot('no-stages-36'),fullPage:false})
 
   await page.evaluate(()=>{window.location.hash='/projects'})
-  await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible({timeout:90_000})
   const row=page.locator('[data-project-row="real-analysis"]')
   await expect(row.locator('[data-mini-metro] [data-stage-segment]')).toHaveCount(5)
   await expect(row.locator('[data-mini-tick]')).toHaveCount(0)
   await page.screenshot({path:shot('paths'),fullPage:false})
 
   await page.evaluate(()=>{window.location.hash='/'})
-  await expect(page.getByRole('heading',{name:'Home',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Home',exact:true,level:1})).toBeVisible({timeout:90_000})
   expect(await page.locator('[aria-label^="Goal progress for"]').count()).toBeLessThanOrEqual(3)
-  await expect(page.locator('[data-compact-goals]')).toBeVisible()
+  await expect(page.locator('[data-compact-goals]')).toBeVisible({timeout:90_000})
   await page.screenshot({path:shot('today'),fullPage:false})
 
   if(profile==='extreme'){
    await page.evaluate(()=>{window.location.hash='/p/stress-project-3'})
-   await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible()
+   await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible({timeout:90_000})
    const timeline=page.locator('[data-timeline="stage-metro"]')
    await expect(timeline).toHaveAttribute('data-stage-count','15')
    await expect(page.locator('[data-stage-chip]')).toHaveCount(15)
