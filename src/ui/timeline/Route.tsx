@@ -15,15 +15,17 @@ export interface RouteProps{
  pacePerWeek?:number;
  /** Initial measured width for SSR/pre-render; ResizeObserver takes over on mount. */
  initialWidth?:number;
+ /** Optional initial selection, also used to restore a keyboard-navigated Route. */
+ initialSelected?:number;
 }
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 
 /** One 64/80px Route, not a scrollable rail of stage or station buttons. */
-export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360}:RouteProps){
+export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360,initialSelected}:RouteProps){
  const navigate=useNavigate();
  const ref=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(initialWidth);
- const [selected,setSelected]=useState<number|null>(null);
+ const [selected,setSelected]=useState<number|null>(initialSelected??null);
  const n=checkpoints.length,current=currentCheckpointIndex(checkpoints);
  const focused=clamp(selected??current,0,Math.max(0,n-1));
  const stages=useMemo(()=>groupCheckpointStages(checkpoints),[checkpoints]);
