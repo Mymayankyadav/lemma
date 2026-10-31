@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import type {ProjectSummary} from '../../../src/data/types';
-import {MiniStageBar} from '../../../src/ui/timeline/MiniStageBar';
+import {MiniStageBar,miniRouteNotch} from '../../../src/ui/timeline/MiniStageBar';
 import {layoutMiniRoute} from '../../../src/ui/timeline/miniRoute';
 
 const stages=(count:number)=>Array.from({length:count},(_,i)=>({
@@ -36,8 +36,22 @@ describe('LOOK-3a mini Route geometry',()=>{
   expect(html.match(/data-stage-bar=/g)).toHaveLength(1);
   expect(html).not.toContain('data-mini-tick');
   expect(html).not.toContain('var(--bad)');
-  expect(html).not.toContain('var(--accent)');
+  expect(html.match(/data-route-notch=/g)).toHaveLength(1);
+  expect(html).toContain('var(--accent)');
   expect(html).toContain('var(--late)');
+ });
+ it('positions exactly one 2px notch at an end or 8px clear of both ends',()=>{
+  for(const width of [48,120,200,360,390]){
+   expect(miniRouteNotch(0,36,width)).toMatchObject({x:0,edge:'start'});
+   expect(miniRouteNotch(36,36,width)).toMatchObject({x:width,edge:'end'});
+   for(const done of [1,3,18,35]){
+    const notch=miniRouteNotch(done,36,width)!;
+    expect(notch.edge).toBe('middle');
+    expect(notch.x-1).toBeGreaterThanOrEqual(8);
+    expect(width-(notch.x+1)).toBeGreaterThanOrEqual(8);
+   }
+  }
+  expect(miniRouteNotch(0,0,360)).toBeNull();
  });
  it('never allocates a tick or extra mark for a zero-checkpoint plan',()=>{
   expect(layoutMiniRoute([],360)).toEqual([]);
