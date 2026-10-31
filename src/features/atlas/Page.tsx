@@ -11,7 +11,7 @@ import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
-import {ancestors,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 interface Saved{expanded:string[];related:boolean}
@@ -97,7 +97,6 @@ export default function Page(){
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
  const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
- const arcs=useMemo(()=>tree?arcsFor(tree,rows,kinds):[],[tree,rows,kinds]);
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
  const virtual=rows.length>200;
@@ -106,7 +105,20 @@ export default function Page(){
  const visible=virtual?rows.slice(first,last):rows;
  const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
- const arcBudget=useMemo(()=>tree?budgetArcs(tree,rows,open,arcs,focus):{visible:[],hidden:0},[tree,rows,open,arcs,focus]);
+ const arcBudget=useMemo(()=>{
+  if(!tree)return {visible:[],hidden:0};
+  // When every visible branch is unfolded and no idea is selected, the
+  // 60-arc gutter intentionally hides the extreme graph. Count bundles
+  // without constructing 8,000 link arrays or sorting invisible arcs.
+  if(!focus&&tree.links.length>60&&!rows.some(row=>{
+   const node=tree.nodes.get(row.id);
+   return !!node?.children.length&&!open.has(node.id);
+  })){
+   const count=arcCountFor(tree,rows,kinds);
+   if(count>60)return {visible:[],hidden:count};
+  }
+  return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
+ },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
  const recheckCount=useMemo(()=>tree?[...tree.nodes.values()].filter(n=>!n.synthetic&&!n.children.length&&n.status==='revisit').length:0,[tree]);
 
