@@ -33,7 +33,7 @@ function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:Atlas
  return <div className="mt-4">
   <h3 className="mb-1 flex items-center gap-2 text-label font-semibold text-ink-2"><span className="h-[2px] w-4" style={{background:toneColor[tone]}}/>{label} · {items.length}</h3>
   {[...groups].map(([area,members])=><div key={area}>
-   {area&&<p className="mt-2 text-caption font-semibold text-ink-3">{area}</p>}
+   {area&&<p className="mt-2 text-[13.5px] font-semibold text-ink-3"><Tex source={area}/></p>}
    {members.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
     className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
     <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
