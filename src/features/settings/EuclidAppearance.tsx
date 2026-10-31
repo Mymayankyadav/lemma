@@ -47,7 +47,7 @@ export function EuclidAppearance({ui,busy,onChange}:Props){
     aria-label={item.label+' '+item.detail} aria-checked={mode===item.id}
     disabled={busy} onClick={()=>void choose(item.id)}
     className={'min-h-11 min-w-0 border-r border-edge px-2 py-3 text-center last:border-r-0 '+(mode===item.id
-     ?'bg-amber-tint font-semibold text-ink shadow-[inset_0_-3px_0_var(--accent)]'
+     ?'bg-[var(--fill-1)] font-semibold text-ink shadow-[inset_0_-3px_0_var(--ink)]'
      :'text-ink-2')}>
     <span className="text-label">{item.label}</span>
    </button>)}
