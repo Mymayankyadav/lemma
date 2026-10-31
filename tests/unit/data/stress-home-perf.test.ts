@@ -118,6 +118,21 @@ describe('FIX #507: cold Today stress summary',()=>{
   }
  });
 
+ it('expires cached due counts exactly when a future card becomes due',async()=>{
+  const fixture=structuredClone(seed);
+  const target=fixture.notes.find(n=>n.note.status==='active'&&
+   fixture.projects.some(p=>p.id===n.projectId&&p.status!=='archived'&&!p.system)&&n.cards.length>0);
+  expect(target).toBeDefined();
+  target!.cards[0].state.state=2;
+  target!.cards[0].state.due=new Date(now+1000).toISOString();
+  let current=now;
+  const api=new DemoAdapter({fixture,now:()=>current,timeZone:'UTC'});
+  const before=await api.getHome();
+  current=now+2000;
+  const after=await api.getHome();
+  expect(after.due).toBe(before.due+1);
+ });
+
  it('builds the deck tree without recomputing 60 full project summaries',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{deferSessions:true}),
    ownedFixture:true,now:()=>now,timeZone:'UTC'});
