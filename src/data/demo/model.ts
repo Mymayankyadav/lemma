@@ -116,6 +116,9 @@ export interface DemoStore {
   reviews: DemoReview[];
   /** ST-0: simulated server-side historical review count; raw rows stay bounded. */
   stressReviewCount?: number;
+  /** Generated stress notes remain virtual until a card route needs them. */
+  stressNoteCount?: number;
+  stressDueCount?: number;
   /** Browser-only virtual per-project session count (avoids 60k hydrated rows). */
   stressSessionCount?: number;
   /** Duration of one virtual stress session for bounded Insights aggregates. */
