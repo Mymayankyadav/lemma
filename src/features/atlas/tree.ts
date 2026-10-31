@@ -179,6 +179,30 @@ export function arcsFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Lin
  return [...bundles.values()].sort((x,y)=>Math.abs(y.to-y.from)-Math.abs(x.to-x.from));
 }
 
+
+/** Keep the dependency margin readable under thousands of links. A collapsed
+ * branch still summarises its connections; with everything expanded, only
+ * connections relevant to the selected idea remain visible above the cap.
+ * The count reports arcs (bundled visible connections), not raw database links.
+ */
+export function budgetArcs(
+ tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
+ arcs:readonly Arc[],focus:Focus|null,limit=60,
+):{visible:Arc[];hidden:number}{
+ if(arcs.length<=limit)return {visible:[...arcs],hidden:0};
+ const scored=arcs.map((arc,index)=>{
+  const focused=!!focus&&arcTone(arc,focus)!=='none';
+  const folded=[arc.from,arc.to].some(i=>{
+   const node=tree.nodes.get(rows[i]?.id??'');
+   return !!node?.children.length&&!expanded.has(node.id);
+  });
+  return {arc,index,score:focused?2:folded?1:0};
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.index-b.index);
+ const chosen=new Set(scored.slice(0,limit).map(x=>x.arc.key));
+ const visible=arcs.filter(arc=>chosen.has(arc.key));
+ return {visible,hidden:arcs.length-visible.length};
+}
+
 /** Everything the selected idea (or branch) builds on, and everything it opens up. */
 export function focusOn(tree:AtlasTree,id:string):Focus{
  const start=new Set([id,...descendants(tree,id)]);
