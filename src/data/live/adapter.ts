@@ -1,6 +1,5 @@
 import type { LemmaApi } from '../api'
 import { textKind } from '../../pdf/text-source'
-import {reviewForecast} from '../../lib/review-forecast'
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
 import { projectProgress, conceptStatus } from '../../lib/derive'
@@ -8,6 +7,22 @@ import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
 import { LemmaError } from '../api'
+
+type HomeReviewOutlook={
+ decks:import('../types').DeckNode[]
+ forecast:{day:string;due:number}[]
+}
+// Coalesce concurrent Today widgets into one HTTP request, but never cache
+// settled data: grading a card must refresh due counts immediately.
+let outlookPending:{uid:string;promise:Promise<HomeReviewOutlook>}|null=null
+function homeReviewOutlook(db:ReturnType<typeof liveClient>,uid:string):Promise<HomeReviewOutlook>{
+ if(outlookPending?.uid===uid)return outlookPending.promise
+ const promise=Promise.resolve(db.rpc('home_review_outlook')).then(result=>checked(result) as HomeReviewOutlook)
+ outlookPending={uid,promise}
+ const clear=()=>{if(outlookPending?.promise===promise)outlookPending=null}
+ void promise.then(clear,clear)
+ return promise
+}
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
@@ -69,10 +84,7 @@ export class LiveAdapter implements LemmaApi {
  }
  async getReviewForecast(): ReturnType<LemmaApi['getReviewForecast']> {
   const db=liveClient(),uid=await owner(db)
-  const [settings,notes,projects,cards]=await Promise.all([this.getSettings(),rows(db,'notes',uid),rows(db,'projects',uid),rows(db,'cards',uid)])
-  const projectIds=new Set(projects.filter(p=>p.status!=='archived'&&p.system!==true).map(p=>p.id))
-  const noteIds=new Set(notes.filter(n=>n.status==='active'&&projectIds.has(n.project_id)).map(n=>n.id))
-  return reviewForecast(cards.filter(c=>noteIds.has(c.note_id)).map(c=>({state:Number(c.state),due:c.due})),settings)
+  return (await homeReviewOutlook(db,uid)).forecast
  }
  async getAuth(...args: Parameters<LemmaApi['getAuth']>): ReturnType<LemmaApi['getAuth']> {
   const {data,error} = await liveClient().auth.getUser()
@@ -458,11 +470,8 @@ export class LiveAdapter implements LemmaApi {
   return count
  }
  async getDeckTree(...args: Parameters<LemmaApi['getDeckTree']>): ReturnType<LemmaApi['getDeckTree']> {
-  const db=liveClient()
-  await owner(db)
-  // ST-5: daily due counts and deck hierarchy are computed in PostgreSQL.
-  // Do not download every review, note, card and checkpoint to open Review.
-  return checked(await db.rpc('deck_tree')) as import('../types').DeckNode[]
+  const db=liveClient(),uid=await owner(db)
+  return (await homeReviewOutlook(db,uid)).decks
  }
  async getReviewItems(...args: Parameters<LemmaApi['getReviewItems']>): ReturnType<LemmaApi['getReviewItems']> {
   const [filter]=args,db=liveClient()
