@@ -3,6 +3,7 @@ import {Clock,MessageCircle,Layers,Target} from 'lucide-react';
 import {useInsightData,useSettings} from '../../data/hooks';
 import {buildInsights} from '../../lib/insights';
 import {formatCount,formatDurationMinutes} from '../../lib/text';
+import {compactStudyTotal} from './study-total';
 import {Segmented} from '../../ui/Segmented';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
@@ -17,6 +18,7 @@ export default function Page(){
  const query=useInsightData(days),settings=useSettings();
  const values=useMemo(()=>query.data?buildInsights(query.data,days,{timeZone:settings.data?.timeZone??'UTC',rolloverHour:settings.data?.rolloverHour??4}):null,[query.data,days,settings.data?.timeZone,settings.data?.rolloverHour]);
  const legend=[{name:'Again',color:'bg-[var(--bad)]'},{name:'Hard',color:'bg-[var(--warn)]'},{name:'Good',color:'bg-[var(--grade-good)]'},{name:'Easy',color:'bg-[var(--easy)]'}];
+ const studyTotal=values?compactStudyTotal(values.minutes):null;
  return <section className="flex flex-col gap-5 pb-2">
   <h1 className="text-title font-semibold" style={{fontFamily:"var(--font-display)"}}>Insights</h1>
   <Segmented label="Time range" tone="amber" value={String(days)} onChange={value=>setDays(Number(value) as InsightDays)} options={[{value:'7',label:'7 days'},{value:'30',label:'30 days'},{value:'90',label:'90 days'}]}/>
@@ -24,7 +26,7 @@ export default function Page(){
   :query.isError||settings.isError?<div role="alert">Couldn’t load insights. <button className="text-amber" onClick={()=>{void query.refetch();void settings.refetch()}}>Try again</button></div>
   :values&&<>
   <div className="grid grid-cols-3 gap-2.5" aria-label="Study totals">
-   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Clock size={17} className="mb-2 text-amber"/><strong className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{formatDurationMinutes(values.minutes)}</strong><span className="text-xs text-ink-2">studied</span></Tile>
+   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Clock size={17} className="mb-2 text-amber"/><strong data-study-total-visible aria-hidden="true" title={studyTotal?.exact} className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{studyTotal?.short}</strong><span data-study-total-exact className="sr-only">Studied {studyTotal?.exact}</span><span aria-hidden="true" className="text-xs text-ink-2">studied</span></Tile>
    <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><MessageCircle size={17} className="mb-2 text-amber"/><strong className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{formatCount(values.sessions)}</strong><span className="text-xs text-ink-2">sessions</span></Tile>
    <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Layers size={17} className="mb-2 text-amber"/><strong className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{formatCount(values.reviews)}</strong><span className="text-xs text-ink-2">reviews</span></Tile>
   </div>
