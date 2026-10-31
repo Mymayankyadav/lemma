@@ -20,4 +20,10 @@ describe('non-card mathematical content',()=>{
   expect(html).not.toContain('$H');
   expect(renderMarkdown('$x^2$',{inline:true})).toContain('katex-mathml');
  });
+ it('keeps nested TeX braces inside a cloze card preview',()=>{
+  const html=renderMarkdown(String.raw`State {{c1::$\frac{a}{b}$::fraction}}`,{inline:true});
+  expect(html).toContain('class="katex"');
+  expect(html).not.toContain('{{c1::');
+  expect(html).not.toContain('::fraction');
+ });
 });
