@@ -25,6 +25,10 @@ describe('AUDIT #540: cold 4x matrix and full sharded Playwright coexist',()=>{
   expect(workflow).not.toMatch(/--grep-invert/);
   expect(browser).toContain("testDir: './tests/e2e'");
   expect(cold).toContain("testDir: './tests/cpu'");
+  // CPU evidence is strictly first-attempt. Inheriting CI retries=2 hides
+  // over-budget first renders and can cancel 45-minute extreme matrices.
+  // Zero retries strengthens, never relaxes, the 1,500ms cold-render gate.
+  expect(cold).toMatch(/retries:\s*0/);
   expect(existsSync('tests/cpu/stress-cpu.spec.ts')).toBe(true);
   expect(existsSync('tests/e2e/stress-cpu.spec.ts')).toBe(false);
   expect(workflow).toContain('test "$count" -eq 18');
