@@ -57,6 +57,12 @@ test('LOOK-4c seven physical lanes disclose an eighth overlapping connection',as
  await expect(overflow).toHaveAttribute('open','');
  await expect(overflow.locator('li')).toHaveCount(1);
  await expect(overflow.locator('li')).toContainText('Rows 8–16');
+ // Hidden links retain a visible, noninteractive port on both affected rows.
+ const ports=page.locator('[data-atlas-hidden-port]');
+ await expect(ports).toHaveCount(2);
+ await expect(page.locator('[data-atlas-hidden-port="out"]')).toHaveAttribute('data-atlas-row','7');
+ await expect(page.locator('[data-atlas-hidden-port="in"]')).toHaveAttribute('data-atlas-row','15');
+ for(const port of await ports.all())expect(await port.getAttribute('aria-hidden')).toBeNull();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
  await page.screenshot({path:'test-results/screens/look-4c-dense-lanes-360.png'});
 });
