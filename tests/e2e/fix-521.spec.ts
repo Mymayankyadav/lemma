@@ -80,5 +80,8 @@ for(const width of [390,360] as const)
   expect(metrics.overflow).toBeLessThanOrEqual(1);
   expect(metrics.nowrap).toBe('nowrap');
   expect(metrics.mathText).toContain('π');
+  // Capture the actual Continue row, not the top of the long Today page:
+  // otherwise the artifact cannot be visually audited for clipping/KaTeX.
+  await row.screenshot({path:'test-results/screens/fix-521-math-row-'+profile+'-'+theme+'-'+width+'.png'});
   await page.screenshot({path:'test-results/screens/fix-521-math-'+profile+'-'+theme+'-'+width+'.png'});
  });
