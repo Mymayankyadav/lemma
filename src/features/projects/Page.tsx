@@ -17,20 +17,18 @@ const INITIAL_PROJECT_ROWS=16;
 const active=(status:ProjectStatus)=>status==='active'||status==='planning';
 const matches=(project:ProjectSummary,filter:Filter)=>filter==='active'?active(project.status):project.status===filter;
 const newest=(a:ProjectSummary,b:ProjectSummary)=>(Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0);
-const pct=(project:ProjectSummary)=>project.total?Math.round(100*project.done/project.total):0;
 
 function MiniMetro({project}:{project:ProjectSummary}){
- const percent=pct(project);
  return <div className="flex min-w-0 items-center gap-2">
   <MiniStageBar project={project}/>
-  <span className="flex shrink-0 flex-col items-end font-[var(--font-num)] text-caption tabular-nums text-ink-2">
-   <span>{percent}%</span>
+  <span className="flex shrink-0 flex-col items-end font-[var(--font-ui)] text-caption tabular-nums text-ink-2">
+   <span>{project.done} of {project.total}</span>
    {project.scheduleHeadline&&<span data-schedule-chip="" className="whitespace-nowrap text-[12px]">{project.scheduleHeadline}</span>}
   </span>
  </div>;
 }
 
-function ProjectRow({project}:{project:ProjectSummary}){
+function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubject?:boolean}){
  const update=useUpdateProject(),projects=useProjects(),notify=useToast(),[menu,setMenu]=useState(false);
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const longPressed=useRef(false);
@@ -53,7 +51,7 @@ function ProjectRow({project}:{project:ProjectSummary}){
   catch(error){notify(error instanceof Error?error.message:'Unable to update project',{tone:'danger'})}
  }
  useEffect(()=>()=>clear(),[]);
- return <article className="rounded-slab border border-edge bg-[var(--card)] p-3" data-project-row={project.slug}
+ return <article className="px-3 py-3 hover:bg-[var(--paper-2)]" data-project-row={project.slug}
   onContextMenu={event=>{event.preventDefault();setMenu(true)}}
   onPointerDown={event=>{longPressed.current=false;if(event.pointerType!=='mouse'){clear();hold.current=setTimeout(()=>{longPressed.current=true;setMenu(true)},550)}}}
   onClickCapture={event=>{if(longPressed.current){event.preventDefault();event.stopPropagation();longPressed.current=false}}}
@@ -73,9 +71,8 @@ function ProjectRow({project}:{project:ProjectSummary}){
       <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
       <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
       {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
-      <ChevronRight size={17} className="shrink-0 text-ink-3" aria-hidden="true"/>
      </div>
-     <div className="mt-1 text-caption text-ink-2">{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
+     <div className="mt-1 text-caption text-ink-2">{showSubject&&<span className="mr-2">{project.subject?.name??"Unassigned"} ·</span>}{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
     </Link>}
    <button type="button" aria-label={'Actions for '+project.title} aria-expanded={menu} aria-haspopup="menu"
     onClick={()=>setMenu(value=>!value)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-edge text-ink-2">
@@ -95,15 +92,15 @@ function ProjectRow({project}:{project:ProjectSummary}){
 }
 
 function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void}){
- return <section aria-label={name+' projects'} className="space-y-2">
-  <button type="button" aria-expanded={!collapsed} onClick={onToggle}
+ return <section aria-label={name+' projects'} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
+  {total>1&&<button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
    <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s"><Tex source={name}/></h2>
    <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
-  </button>
-  {!collapsed&&<div className="space-y-2">{items.map(project=><ProjectRow key={project.id} project={project}/>)}</div>}
+  </button>}
+  {(total===1||!collapsed)&&<div className="divide-y divide-[var(--hair)]">{items.map(project=><ProjectRow key={project.id} project={project} showSubject={total===1}/>)}</div>}
  </section>;
 }
 

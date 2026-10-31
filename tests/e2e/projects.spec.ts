@@ -113,9 +113,10 @@ test('Paths status filters, collapsed groups and project actions work',async({pa
  await page.goto('./?demo=1&theme=graph#/projects')
  const analysis=page.getByRole('region',{name:'Analysis projects'})
  await expect(analysis.getByRole('link',{name:/Real Analysis/})).toBeVisible()
- await analysis.locator(':scope > button').click()
- await expect(analysis.getByRole('link',{name:/Real Analysis/})).toBeHidden()
- await analysis.getByRole('button',{name:/Analysis/}).click()
+ // LOOK-5a: a one-project subject is a row with a subject meta line,
+ // not a redundant collapsible heading.
+ await expect(analysis.locator(':scope > button')).toHaveCount(0)
+ await expect(analysis.getByRole('link',{name:/Real Analysis/})).toBeVisible()
  const row=page.locator('[data-project-row="real-analysis"]')
  await row.getByRole('button',{name:'Actions for Real Analysis'}).click()
  await expect(row.getByRole('menu',{name:'Manage Real Analysis'})).toBeVisible()
@@ -126,6 +127,27 @@ test('Paths status filters, collapsed groups and project actions work',async({pa
  await page.getByRole('group',{name:'Project status'}).getByRole('button',{name:'active'}).click()
  await expect(page.locator('[data-project-row="real-analysis"]')).toHaveCount(0)
 })
+test('Paths retains collapse and reopen controls for subjects with multiple projects',async({page})=>{
+ test.setTimeout(90_000)
+ await page.goto('./?demo=extreme&theme=graph#/projects')
+ // The 60-project fixture has two projects in its first subject. This is
+ // the case in which LOOK-5a must retain the interactive group heading.
+ const header=page.locator('section[aria-label$=" projects"] > button').first()
+ await expect(header).toBeVisible()
+ const group=header.locator('..')
+ const rows=group.locator('[data-project-row]')
+ const count=await rows.count()
+ expect(count).toBeGreaterThan(1)
+ await expect(header).toHaveAttribute('aria-expanded','true')
+ await header.click()
+ await expect(header).toHaveAttribute('aria-expanded','false')
+ await expect(rows).toHaveCount(0)
+ await header.click()
+ await expect(header).toHaveAttribute('aria-expanded','true')
+ await expect(rows).toHaveCount(count)
+ await page.screenshot({path:'test-results/screens/paths-multi-project-collapse.png',fullPage:true})
+})
+
 test('Paths matches compact Euclid and Euclid-night without horizontal overflow',async({page})=>{
  await page.setViewportSize({width:360,height:740})
  for(const theme of ['graph','graph-night']){
