@@ -109,7 +109,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
 
 export default function Page(){
  const projects=useProjects(),notify=useToast(),[params,setParams]=useSearchParams();
- const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]),[shown,setShown]=useState(INITIAL_PROJECT_ROWS);
+ const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]),[page,setPage]=useState(0);
  const filter=(['active','paused','done','archived'].includes(params.get('status')??'')?params.get('status'):'active') as Filter;
  useEffect(()=>{
   if(projects.error)notify("Couldn't load your paths.",{tone:'danger',action:{label:'Try again',onClick:()=>{void projects.refetch()}}});
@@ -129,20 +129,23 @@ export default function Page(){
   }
   return [...map.entries()].map(([id,group])=>({id,...group})).sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
  },[visible,pinnedIds]);
- // Preserve the real per-subject totals, but mount at most N rows across ALL
- // groups. Search still considers the full dataset; Show more reveals the rest.
+ // Page the entire subject-grouped list, not each group independently.
+ // Even after repeated Next clicks only 16 rows (including pinned) are mounted.
+ const pageSize=Math.max(1,INITIAL_PROJECT_ROWS-pinned.length);
+ const totalUnpinned=visible.length-pinned.length;
  const groups=useMemo(()=>{
-  let remaining=Math.max(0,shown-pinned.length);
+  let skip=page*pageSize,remaining=pageSize;
   return allGroups.flatMap(group=>{
    if(!remaining)return [];
-   const items=group.items.slice(0,remaining);
-   remaining-=items.length;
+   if(skip>=group.items.length){skip-=group.items.length;return []}
+   const items=group.items.slice(skip,skip+remaining);
+   skip=0;remaining-=items.length;
    return items.length?[{...group,items,total:group.items.length}]:[];
   });
- },[allGroups,shown,pinned.length]);
- const displayed=pinned.length+groups.reduce((total,group)=>total+group.items.length,0);
+ },[allGroups,page,pageSize]);
+ const pageEnd=Math.min(totalUnpinned,(page+1)*pageSize);
  const toggle=(id:string)=>setCollapsed(items=>items.includes(id)?items.filter(item=>item!==id):[...items,id]);
- const choose=(next:Filter)=>{setShown(INITIAL_PROJECT_ROWS);const p=new URLSearchParams(params);if(next==='active')p.delete('status');else p.set('status',next);setParams(p)};
+ const choose=(next:Filter)=>{setPage(0);const p=new URLSearchParams(params);if(next==='active')p.delete('status');else p.set('status',next);setParams(p)};
  return <Screen tabBar className="gap-4">
   <header className="flex min-h-11 items-center justify-between gap-3">
    <h1 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h1>
@@ -154,9 +157,9 @@ export default function Page(){
   <label className="flex min-h-11 items-center gap-2 rounded-ctl border border-edge bg-[var(--card)] px-3">
    <Search size={17} aria-hidden="true" className="text-ink-3"/>
    <span className="sr-only">Search paths</span>
-   <input type="search" aria-label="Search paths" placeholder="Find a project or subject" value={search} onChange={event=>{setSearch(event.target.value);setShown(INITIAL_PROJECT_ROWS)}}
+   <input type="search" aria-label="Search paths" placeholder="Find a project or subject" value={search} onChange={event=>{setSearch(event.target.value);setPage(0)}}
     className="min-w-0 flex-1 bg-transparent py-3 text-body text-ink outline-none"/>
-   {search&&<button type="button" aria-label="Clear search" onClick={()=>{setSearch('');setShown(INITIAL_PROJECT_ROWS)}} className="flex size-11 items-center justify-center"><X size={17}/></button>}
+   {search&&<button type="button" aria-label="Clear search" onClick={()=>{setSearch('');setPage(0)}} className="flex size-11 items-center justify-center"><X size={17}/></button>}
   </label>
   <div role="group" aria-label="Project status" className="grid grid-cols-3 gap-2">
    {filters.map(value=><button key={value} type="button" aria-pressed={filter===value} onClick={()=>choose(value)}
@@ -174,10 +177,17 @@ export default function Page(){
     {pinned.length>0&&<ProjectGroup name="Pinned" glyph="★" items={pinned} total={pinned.length} collapsed={collapsed.includes('pinned')} onToggle={()=>toggle('pinned')}/>}
     {groups.map(group=><ProjectGroup key={group.id} name={group.name} glyph={group.glyph} items={group.items} total={group.total}
      collapsed={collapsed.includes(group.id)} onToggle={()=>toggle(group.id)}/>)}
-    {displayed<visible.length&&<button type="button" onClick={()=>setShown(count=>count+INITIAL_PROJECT_ROWS)}
-     className="flex min-h-11 w-full items-center justify-center rounded-ctl border border-edge bg-fill-1 px-4 text-label text-amber">
-     Show next {Math.min(INITIAL_PROJECT_ROWS,visible.length-displayed)} projects · {displayed} of {visible.length} shown
-    </button>}
+    {totalUnpinned>pageSize&&<nav aria-label="Project pages" className="flex flex-wrap items-center justify-between gap-2">
+     {page>0&&<button type="button" onClick={()=>setPage(index=>Math.max(0,index-1))}
+      className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-4 text-label text-amber">
+      Show previous projects
+     </button>}
+     <span className="text-caption text-ink-2">Page {page+1} of {Math.ceil(totalUnpinned/pageSize)}</span>
+     {pageEnd<totalUnpinned&&<button type="button" onClick={()=>setPage(index=>index+1)}
+      className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-4 text-label text-amber">
+      Show next {Math.min(pageSize,totalUnpinned-pageEnd)} projects
+     </button>}
+    </nav>}
    </div>}
   <button type="button" onClick={()=>choose(filter==='archived'?'active':'archived')} aria-pressed={filter==='archived'}
    className="flex min-h-11 w-full items-center justify-between border-t border-edge text-left text-label text-ink-2">
