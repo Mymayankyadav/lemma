@@ -316,9 +316,10 @@ export class LiveAdapter implements LemmaApi {
   if(!Number.isSafeInteger(page)||page<1)throw new LemmaError('invalid','Invalid PDF page')
   const db=liveClient(),uid=await owner(db)
   const src=checked(await db.from('sources').select('id').eq('id',sourceId).eq('user_id',uid).single()) as Row
-  const data=checked(await db.from('source_pages')
+  const {data,error}=await db.from('source_pages')
    .select('source_id,page,label,body,transcribed_by,confidence')
-   .eq('user_id',uid).eq('source_id',src.id).eq('page',page).maybeSingle()) as Row|null
+   .eq('user_id',uid).eq('source_id',src.id).eq('page',page).maybeSingle()
+  if(error)fail(error)
   return data?{sourceId:data.source_id,page:data.page,label:data.label??null,body:data.body??'',
    transcribedBy:data.transcribed_by??null,confidence:data.confidence??null}:null
  }
