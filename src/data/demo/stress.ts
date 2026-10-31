@@ -126,7 +126,26 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
       ...baseSession, id: `stress-session-${i}`, projectId: project.id,
       number: Math.floor(i / projectCount) + 1, checkpointCode: `CP${(i % 36) + 1}`,
       goal: `Study session ${i + 1}`, startedAt: `@day:-${i % 90}:0.3:0`,
-      lastActivityAt: `@day:-${i % 90}:0.6:0`, events: [],
+      lastActivityAt: `@day:-${i % 90}:0.6:0`,
+      // Keep one real heavy session at S7 of the primary project, without
+      // multiplying event memory across all 1,000 sessions.
+      events: i === projectCount * 6
+        ? Array.from({length: extreme ? 400 : 150},(_,n)=>{
+          const phase=n % 12;
+          const kind=phase<9?'hint':phase===9?'attempt':phase===10?'evidence':'recheck';
+          return {
+            id:n+1,kind,
+            body:kind==='hint'?`Hint ${n+1}: isolate the essential hypothesis.`
+              :kind==='attempt'?`Attempt ${n+1}: justify each implication.`
+              :kind==='evidence'?`Evidence ${n+1}: a complete argument is recorded.`
+              :`Recheck ${n+1}: repeat without referring to the hint.`,
+            outcome:kind==='evidence'?'demonstrated':null,
+            hintLevel:kind==='hint'?Math.min(20,phase+1):null,
+            checkpointCode:`CP${(i % 36)+1}`,
+            createdAt:new Date(Date.UTC(2026,9,31,0,n)).toISOString(),
+          } as const;
+        })
+        : [],
     });
   }
   data.proposals = [];
