@@ -183,15 +183,19 @@ export class DemoAdapter implements LemmaApi {
   private dueSnapshotCache: {
     createdAt:number;validUntil:number;total:number;
     projectCounts:Map<string,number>;checkpointCounts:Map<string,number>;
+    cardCounts:Map<string,number>;
   }|null=null;
   private dueSnapshot(){
     const now=this.now(),cached=this.dueSnapshotCache;
     if(cached&&now>=cached.createdAt&&now<cached.validUntil)return cached;
     const activeProjects=new Map(this.store.projects
       .filter(p=>p.status!=="archived"&&!p.system).map(p=>[p.id,p] as const));
-    const projectCounts=new Map<string,number>(),checkpointCounts=new Map<string,number>();
+    const projectCounts=new Map<string,number>(),checkpointCounts=new Map<string,number>(),cardCounts=new Map<string,number>();
     let total=0,nextDue=Infinity;
     for(const note of this.store.notes){
+      // Project summaries count suspended cards too, but not deleted notes.
+      if(note.note.status!=="deleted")
+        cardCounts.set(note.projectId,(cardCounts.get(note.projectId)??0)+note.cards.length);
       const project=activeProjects.get(note.projectId);
       if(!project||note.note.status!=="active")continue;
       for(const card of note.cards){
@@ -207,7 +211,7 @@ export class DemoAdapter implements LemmaApi {
         }
       }
     }
-    return this.dueSnapshotCache={createdAt:now,validUntil:nextDue,total,projectCounts,checkpointCounts};
+    return this.dueSnapshotCache={createdAt:now,validUntil:nextDue,total,projectCounts,checkpointCounts,cardCounts};
   }
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
@@ -673,14 +677,12 @@ export class DemoAdapter implements LemmaApi {
     // ST-0: scanning 30,000 cards and 6,000 checkpoints separately for each
     // of 60 projects creates millions of redundant reads on the cold Today.
     const index:SummaryIndex={
-      checkpoints:new Map(),cards:new Map(),sessions:new Map(),sourceTitles:new Map(),
+      checkpoints:new Map(),cards:this.dueSnapshot().cardCounts,sessions:new Map(),sourceTitles:new Map(),
     };
     for(const cp of this.store.checkpoints){
       const rows=index.checkpoints.get(cp.projectId)??[];
       rows.push(cp);index.checkpoints.set(cp.projectId,rows);
     }
-    for(const note of this.store.notes)if(note.note.status!=="deleted")
-      index.cards.set(note.projectId,(index.cards.get(note.projectId)??0)+note.cards.length);
     for(const session of this.store.sessions)if(session.state==="ended")
       index.sessions.set(session.projectId,(index.sessions.get(session.projectId)??0)+1);
     for(const source of this.store.sources){
