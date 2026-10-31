@@ -49,6 +49,11 @@ describe('LOOK-3b accessible Route component',()=>{
   expect(html).toContain('stroke="var(--late)"');
   expect(html).toContain('stroke-dasharray="5 4"');
  });
+ it('labels the merged far-future capsule on a long plan',()=>{
+  const html=render(600,'project');
+  expect(html).toContain('data-route-folded-label');
+  expect(html).toMatch(/\+\d+ stages/);
+ });
  it('makes Today a single link to the current checkpoint, with no station buttons',()=>{
   const html=render(36,'today',false);
   expect(html).toContain('data-route-mode="today"');
