@@ -1,5 +1,6 @@
 // Node 22; no dependencies. Set MCP_URL in the environment; do not print it.
 import assert from 'node:assert/strict';
+import { formatSelftestHttpFailure } from './smoke-diagnostics.mjs';
 const url=process.env.MCP_URL;
 if(!url)throw Error('MCP_URL environment variable is required');
 const names=['resume','get','read_pages','search','save_pages','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
@@ -38,10 +39,25 @@ for(const part of [1,2]){
     console.error('FAIL selftest part '+part+' request ('+kind+') after '+(Date.now()-started)+'ms');
     throw new Error('MCP selftest request failed (endpoint redacted)');
   }
-  const self=await res.json();
+  // A gateway can return HTML/plain text or a generic 503 with no steps.
+  // Keep diagnostic output strictly to status, MIME class and elapsed time:
+  // the URL contains the connector secret and response bodies may contain data.
+  const diagnostic=()=>formatSelftestHttpFailure({
+    part,status:res.status,contentType:res.headers.get('Content-Type'),
+    elapsedMs:Date.now()-started,
+  });
+  let self;
+  try {
+    self=await res.json();
+  } catch {
+    throw new Error(formatSelftestHttpFailure({
+      part,status:res.status,contentType:res.headers.get('Content-Type'),
+      elapsedMs:Date.now()-started,parseFailure:true,
+    }));
+  }
   console.log('Selftest part '+part+' in '+(Date.now()-started)+'ms; '+(self.steps?.length||0)+' steps');
   for(const step of self.steps||[])console.log((step.ok?'PASS':'FAIL')+' '+step.name+' ('+step.ms+'ms)'+(step.ok?'':' — '+step.detail));
-  assert.equal(res.ok,true,'selftest part '+part+' HTTP error');
+  assert.equal(res.ok,true,diagnostic());
   assert.equal(self.ok,true,'selftest part '+part+' did not pass');
   assert.equal(self.steps?.length,self.expected,'selftest part '+part+' did not complete all checks and cleanup');
 }
