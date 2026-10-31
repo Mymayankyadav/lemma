@@ -37,10 +37,11 @@ function createStressAdapter(profile: 'stress' | 'extreme'): LemmaApi {
  // Diagnostic-only User Timing entries distinguish 5k/30k fixture creation
  // from date hydration. They do not alter readiness or any hard CPU budget.
  const start = performance.now()
- // Only Today can postpone the 2,500-idea/8,000-link graph; a direct Atlas
- // or Paths cold load retains the full graph for fast subsequent navigation.
- const initialToday=typeof location!=='undefined'&&(!location.hash||location.hash==='#/')
- const fixture = makeStressStore(demoSeedFixture, profile, {deferSessions:true,deferNotes:true,deferAtlas:initialToday,deferSources:initialToday})
+ // Every cold route begins with the same complete virtual fixture. Atlas,
+ // Sources and Cards materialize only when their own route reads them, so
+ // direct Paths/Review/Settings loads do not eagerly allocate 8k links and
+ // 6k sources unrelated to their first meaningful paint.
+ const fixture = makeStressStore(demoSeedFixture, profile, {deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true})
  const generated = performance.now()
  const adapter = new DemoAdapter({fixture,ownedFixture:true})
  const hydrated = performance.now()
