@@ -102,6 +102,7 @@ export function Editor({
           className={`${field} min-h-24`}
         />
       </label>
+      {front.length>300&&<p role="status" className="text-label text-amber">Long front ({front.length} characters). Consider splitting this into one idea per card.</p>}
       <MathPreview source={front}/>
       <label>
         Back
@@ -111,6 +112,7 @@ export function Editor({
           className={`${field} min-h-24`}
         />
       </label>
+      {back.length>1200&&<p role="status" className="text-label text-amber">Long back ({back.length} characters). Consider splitting the explanation into smaller cards.</p>}
       <MathPreview source={back}/>
       <div className="grid grid-cols-2 gap-3">
         <label>
