@@ -9,7 +9,7 @@ export function currentMiniRouteOrdinal(code:string|null|undefined,
  const current=code?.trim()
  if(current){
   let before=0
-  const parts=(s:string)=>/^(.*?)(\\d+)$/.exec(s)
+  const parts=(s:string)=>/^(.*?)(\d+)$/.exec(s)
   for(const stage of stages){
    const count=Math.max(0,stage.total)
    if(count>0){
@@ -25,7 +25,7 @@ export function currentMiniRouteOrdinal(code:string|null|undefined,
    before+=count
   }
   // Older summaries may not carry stage codes; CPn still gives a safe index.
-  const cp=/^CP(\\d+)$/i.exec(current)
+  const cp=/^CP(\d+)$/i.exec(current)
   if(cp&&Number(cp[1])>=1&&Number(cp[1])<=total)return Number(cp[1])-.5
  }
  return Math.max(0,Math.min(total,done>=total?total:done+.5))
@@ -35,7 +35,7 @@ export function currentMiniRouteOrdinal(code:string|null|undefined,
  * Map through the actual grouped segment widths, not total-completion ratio.
  */
 export function miniRouteNotch(position:number,total:number,width:number,
- segments?:readonly ReturnType<typeof layoutMiniRoute>[number][]){
+ segments?:ReadonlyArray<ReturnType<typeof layoutMiniRoute>[number]>){
  if(total<=0||width<=0)return null
  const ordinal=Math.max(0,Math.min(total,position))
  let ratio=ordinal/total
