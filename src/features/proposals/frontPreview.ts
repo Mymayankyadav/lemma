@@ -23,7 +23,7 @@ export function firstProposalFrontLine(source: string): string {
   }
 
   // TeX often wraps a card front in a named display environment rather than
-  // $ delimiters. A preview of the opening \begin line alone is blank.
+  // $$ delimiters. A preview of the opening \begin line alone is blank.
   const environment = /^\\begin\{(equation\*?|align\*?|gather\*?|multline\*?)\}$/.exec(first)?.[1];
   if (environment) {
     const closing = "\\end{" + environment + "}";
@@ -34,7 +34,7 @@ export function firstProposalFrontLine(source: string): string {
     return oneLine ? "$" + oneLine + "$" : "Mathematical expression";
   }
 
-  if (first.startsWith("$") && first.endsWith("$") && first.length > 4) {
+  if (first.startsWith("$$") && first.endsWith("$$") && first.length > 4) {
     return "$" + first.slice(2, -2).trim() + "$";
   }
   if (first.startsWith("\\[") && first.endsWith("\\]") && first.length > 4) {
