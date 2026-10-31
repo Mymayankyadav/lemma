@@ -133,6 +133,7 @@ export default function Page(){
  // Even after repeated Next clicks only 16 rows (including pinned) are mounted.
  const pageSize=Math.max(1,INITIAL_PROJECT_ROWS-pinned.length);
  const totalUnpinned=visible.length-pinned.length;
+ useEffect(()=>setPage(index=>Math.min(index,Math.max(0,Math.ceil(totalUnpinned/pageSize)-1))),[totalUnpinned,pageSize]);
  const groups=useMemo(()=>{
   let skip=page*pageSize,remaining=pageSize;
   return allGroups.flatMap(group=>{
