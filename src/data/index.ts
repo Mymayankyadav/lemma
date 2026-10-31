@@ -1,11 +1,18 @@
 import type { LemmaApi } from './api'
+import type { DemoStore } from './demo/model'
 import { DemoAdapter } from './demo/adapter'
+import { makeStressStore } from './demo/stress'
+import fixtureText from './demo/fixture.json?raw'
 import { LiveAdapter } from './live/adapter'
-import { getMode } from './mode'
-const adapters: Partial<Record<'live' | 'demo', LemmaApi>> = {}
+import { getMode, getDemoProfile } from './mode'
+const adapters: Partial<Record<'live' | 'default' | 'stress' | 'extreme', LemmaApi>> = {}
 export function getApi(): LemmaApi {
- const mode = getMode()
- return adapters[mode] ??= mode === 'demo' ? new DemoAdapter() : new LiveAdapter()
+ if (getMode() === 'live') return adapters.live ??= new LiveAdapter()
+ const profile = getDemoProfile()
+ if (profile === 'default') return adapters.default ??= new DemoAdapter()
+ return adapters[profile] ??= new DemoAdapter({
+  fixture: makeStressStore(JSON.parse(fixtureText) as DemoStore, profile),
+ })
 }
 export * from './types'
 export * from './api'
