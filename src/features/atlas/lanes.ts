@@ -25,8 +25,8 @@ export function atlasLanePath(x:number,fromY:number,toY:number):string{
  * track over the same vertical interval. Bounded to seven tracks in 84px.
  */
 export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[]):Map<string,AtlasLane>{
- const sorted=[...arcs].sort((a,b)=>
-  Math.abs(b.to-b.from)-Math.abs(a.to-a.from)||a.key.localeCompare(b.key));
+ const physicalSpan=(arc:Arc)=>Math.abs((centers?.[arc.to]??arc.to*ROW+ROW/2)-(centers?.[arc.from]??arc.from*ROW+ROW/2));
+ const sorted=[...arcs].sort((a,b)=>physicalSpan(b)-physicalSpan(a)||a.key.localeCompare(b.key));
  const placed:{arc:Arc;x:number;low:number;high:number}[]=[];
  const result=new Map<string,AtlasLane>();
  for(const arc of sorted){
