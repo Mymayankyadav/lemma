@@ -24,15 +24,22 @@ describe('QA-4 approved screenshot inventory',()=>{
    'atlas-all':'atlas-all',
   });
  });
- it('runs PR captures with a read-only token and isolates publishing to review branches',()=>{
-  const workflow=readFileSync('.github/workflows/review-shots.yml','utf8');
-  expect(workflow).toContain("  pull_request:");
-  expect(workflow).toContain("  workflow_dispatch:");
-  expect(workflow).toContain("  contents: read");
-  expect(workflow).toContain("  publish:");
-  expect(workflow).toContain("    if: github.event_name == 'push'");
-  expect(workflow).toContain("      contents: write");
-  expect(workflow).toContain("V4_MATRIX: ${{ github.event_name == 'push' && '0' || '1' }}");
-  expect(workflow).toContain('npx tsx scripts/qa4-screens.ts');
+ it('keeps PR screenshot checks free of skipped write jobs and publishes only on review branches',()=>{
+  const pr=readFileSync('.github/workflows/review-shots.yml','utf8');
+  const publish=readFileSync('.github/workflows/review-shots-publish.yml','utf8');
+  expect(pr).toContain('  pull_request:');
+  expect(pr).toContain('  workflow_dispatch:');
+  expect(pr).toContain('  contents: read');
+  expect(pr).not.toMatch(/^  publish:/m);
+  expect(pr).not.toContain('contents: write');
+  expect(pr).not.toContain("branches: ['review/**']");
+  expect(pr).toContain("V4_MATRIX: '1'");
+  expect(pr).toContain('npx tsx scripts/qa4-screens.ts');
+  expect(publish).toContain("branches: ['review/**']");
+  expect(publish).toContain('  contents: write');
+  expect(publish).toContain('    if: "!contains(github.event.head_commit.message, \'[shots]\')"');
+  expect(publish).toContain('node scripts/review-shots.mjs');
+  expect(publish).toContain('git push');
+  expect(publish).not.toContain('pull_request:');
  });
 });
