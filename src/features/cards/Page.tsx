@@ -139,7 +139,7 @@ export default function Page(){
   </div>
   <div className="flex items-center justify-between text-label text-ink-3">
    <span aria-live="polite">{rows.length.toLocaleString()} loaded{cards.hasNextPage?' · more available':''}</span>
-   {(project||checkpoint||state||noteStatus||onlyComments||search)&&<button type="button" className="min-h-11 text-amber" onClick={()=>{
+   {(project||checkpoint||state||noteStatus||onlyComments||search)&&<button type="button" className="min-h-11 text-ink-2 underline-offset-2 hover:underline" onClick={()=>{
     setProject('');setCheckpoint('');setState('');setNoteStatus('');setOnlyComments(false);setSearch('');setQuery('');
    }}>Clear filters</button>}
   </div>
@@ -154,7 +154,7 @@ export default function Page(){
      {visible.map(row=><Link key={row.noteNo} to={'/cards/'+row.noteNo} data-card-row
       className="flex min-w-0 items-center gap-3 overflow-hidden border-b border-edge px-2 py-2 focus-visible:outline-2 focus-visible:outline-amber"
       style={{height:ROW_HEIGHT}}>
-      <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
+      <span aria-hidden="true" data-card-subject-glyph className="w-6 shrink-0 text-center font-math text-card italic text-ink-2">{row.glyph}</span>
       <div className="min-w-0 flex-1">
        <div data-card-front="" data-card-front-preview=""
         className={'min-w-0 max-w-full font-math text-headline leading-snug text-ink '+(hasMathPreview(row.front)?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden')}
@@ -164,7 +164,7 @@ export default function Page(){
        <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
         <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
         <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
-        {row.openComments>0&&<span className="text-amber">{row.openComments} notes</span>}
+        {row.openComments>0&&<span data-card-open-comments className="text-ink-2">{row.openComments} notes</span>}
        </span>
       </div>
      </Link>)}
