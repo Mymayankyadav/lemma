@@ -1,6 +1,5 @@
 import {useMemo,useState} from 'react';
-import {Link} from 'react-router';
-import {Clock,MessageCircle,Layers,Target,RotateCcw,Waypoints} from 'lucide-react';
+import {Clock,MessageCircle,Layers,Target} from 'lucide-react';
 import {useInsightData,useSettings} from '../../data/hooks';
 import {buildInsights} from '../../lib/insights';
 import {formatCount,formatDurationMinutes} from '../../lib/text';
@@ -8,7 +7,7 @@ import {Segmented} from '../../ui/Segmented';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
 import {InkRecall} from './InkRecall';
-import {CalibrationRules,SubjectRules} from './InkRules';
+import {CalibrationRules,SubjectRules,MostRevisitedLink} from './InkRules';
 import {StackedBars} from '../../ui/charts/StackedBars';
 import {GroupedBars} from '../../ui/charts/GroupedBars';
 import type {InsightDays} from '../../data/api';
@@ -41,9 +40,7 @@ export default function Page(){
   <Slab className="flex flex-col gap-3 p-4"><h2 className="text-title-s font-medium" style={{fontFamily:"var(--font-display)"}}>Checkpoints</h2><GroupedBars data={values.checkpointWeeks}/></Slab>
   <div className="grid grid-cols-2 gap-3">
    <Tile><Target size={20} className="mb-3 text-amber"/><span className="block text-label text-ink-2">Typical session</span><strong className="text-xl">{values.typicalSession===null?'—':formatDurationMinutes(Math.round(values.typicalSession))}</strong></Tile>
-   <Link to={values.mostRevisited?.conceptName?`/atlas?focus=${encodeURIComponent(values.mostRevisited.conceptName.toLowerCase().replace(/[^a-z0-9]+/g,'-'))}`:'/atlas'} className="tile">
-    <div className="mb-3 flex items-center justify-between text-amber"><RotateCcw size={20}/><Waypoints size={16}/></div><span className="block text-label text-ink-2">Most revisited</span><strong className="text-headline">{values.mostRevisited?.conceptName||values.mostRevisited?.label||'No repeats yet'}</strong>
-   </Link>
+   <MostRevisitedLink conceptName={values.mostRevisited?.conceptName} label={values.mostRevisited?.label}/>
   </div>
   </>}
  </section>;
