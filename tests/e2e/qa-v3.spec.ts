@@ -52,7 +52,9 @@ for(const world of ['graph','graph-night'] as const){
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible()
   await expect(page.locator('[data-level="cluster"]')).toHaveCount(3)
   await expect(page.locator('[data-atlas-details]')).toHaveCount(0)
-  await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'2',exact:true}).click()
+  const areas=page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'Areas',exact:true})
+  await areas.click()
+  await expect(areas).toHaveAttribute('aria-pressed','true')
   await capturePhone(page,world,'atlas')
 
   await page.goto(base+'/projects/new')
