@@ -6,16 +6,11 @@ import {stressViolations,type StressMeasurement} from './stress-limits';
  */
 export type PendingStressGate={issue:number;failure:string;routes:readonly string[]};
 export const unfinishedStressGates:readonly PendingStressGate[]=[
- {issue:506,failure:'text below 12px',routes:['/','/insights','/kit']}, // chart labels; global tokens fixed in #508
- {issue:485,failure:'maths below 16px',routes:['/atlas']}, // Atlas breadcrumb
- {issue:510,failure:'tap target below 44px',routes:['/p/real-analysis']}, // Sources controls
  {issue:489,failure:'marks closer than 8px',routes:[
   '/','/projects','/p/real-analysis','/p/real-analysis/cp/CP4',
   '/proposals/proposal-6','/review','/review/run','/review/done',
   '/cards','/cards/31','/atlas','/insights','/kit'
  ]}, // count marks in charts, timeline, cards and Atlas
- {issue:433,failure:'1500 DOM nodes',routes:['/cards','/cards/31','/review','/review/run']}, // ST-4
- {issue:433,failure:'4x CPU first render >= 1.5s',routes:['/']}, // ST-4 extreme fixture
 ];
 
 /** Fail on any untracked hard-budget breach, and fail closed for QA-3 release.
