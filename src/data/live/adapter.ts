@@ -322,6 +322,23 @@ export class LiveAdapter implements LemmaApi {
   return data?{sourceId:data.source_id,page:data.page,label:data.label??null,body:data.body??'',
    transcribedBy:data.transcribed_by??null,confidence:data.confidence??null}:null
  }
+ async getTranscribedPagesForExport(sourceId:string):Promise<import('../types').TranscribedSourcePage[]>{
+  const db=liveClient(),uid=await owner(db)
+  checked(await db.from('sources').select('id').eq('id',sourceId).eq('user_id',uid).single())
+  const result:import('../types').TranscribedSourcePage[]=[]
+  for(let offset=0;;offset+=100){
+   const rows=checked(await db.from('source_pages')
+    .select('source_id,page,label,body,transcribed_by,confidence')
+    .eq('user_id',uid).eq('source_id',sourceId).not('transcribed_at','is',null)
+    .order('page').range(offset,offset+99)) as Row[]
+   for(const row of rows)result.push({
+    sourceId:row.source_id,page:row.page,label:row.label??null,
+    body:row.body??'',transcribedBy:row.transcribed_by??null,confidence:row.confidence??null,
+   })
+   if(rows.length<100)break
+  }
+  return result
+ }
  async updateSourcePage(sourceId:string,page:number,patch:{body?:string;confidence?:'high'|'check'}):Promise<import('../types').TranscribedSourcePage>{
   if(!Number.isSafeInteger(page)||page<1)throw new LemmaError('invalid','Invalid PDF page')
   const db=liveClient(),uid=await owner(db)
