@@ -11,6 +11,8 @@ for(const profile of ['stress','extreme'] as const)
     // not the literal TeX command. Target the known stress card without hiding maths.
     const row=page.locator('a[href="#/cards/6"]');
     await expect(row).toBeVisible();
+    await expect(page.locator('[data-card-virtual-list]')).toBeVisible();
+    expect(await page.locator('[data-card-row]').count()).toBeLessThanOrEqual(50);
     await expect(row.locator('.katex')).toBeVisible();
     await expect(row.getByRole('math')).toContainText('longexpression');
     await expect(row.locator('.katex-html')).not.toContainText('operatorname');
