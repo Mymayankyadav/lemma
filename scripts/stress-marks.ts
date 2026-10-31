@@ -8,7 +8,7 @@ export function measureSvgMarks(): number | null {
   let best = 8;
   let sawPair = false;
   for (const svg of document.querySelectorAll("svg")) {
-    const marks = Array.from(svg.querySelectorAll<SVGGraphicsElement>("[data-stress-mark]"))
+    const marks = Array.from(svg.querySelectorAll<SVGGraphicsElement>("[data-stress-mark], [data-atlas-bundle-circle]"))
       .map(el => ({ el, rect: el.getBoundingClientRect() }))
       .filter(({ el, rect }) => {
         const style = getComputedStyle(el);
