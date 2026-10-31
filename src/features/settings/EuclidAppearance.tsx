@@ -1,4 +1,5 @@
 import {useEffect,useState} from 'react';
+import type {KeyboardEvent} from 'react';
 import type {UiPreferences} from '../../data/types';
 import {getMode} from '../../data/mode';
 import {applyAppearance,readAppearance} from '../../styles/appearance';
@@ -38,14 +39,33 @@ export function EuclidAppearance({ui,busy,onChange}:Props){
    applyAppearance({mode:previous});
   }
  };
+ // ARIA radio groups use one Tab stop; arrow keys select and focus the next
+ // option, wrapping at the ends. Home/End jump to the first/last option.
+ const onRadioKeyDown=(event:KeyboardEvent<HTMLButtonElement>,index:number)=>{
+  if(busy)return;
+  const last=modes.length-1;
+  let next:number;
+  switch(event.key){
+   case 'ArrowRight':case 'ArrowDown':next=(index+1)%modes.length;break;
+   case 'ArrowLeft':case 'ArrowUp':next=(index+last)%modes.length;break;
+   case 'Home':next=0;break;
+   case 'End':next=last;break;
+   default:return;
+  }
+  event.preventDefault();
+  const options=event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+  options?.[next]?.focus();
+  void choose(modes[next].id);
+ };
  return <section aria-label="Appearance" className="space-y-3">
   <h2 className="text-title-s font-semibold">Appearance</h2>
   <p className="text-label text-ink-2">Two graph-paper worlds. Text is compact and motion stays calm.</p>
   <div role="radiogroup" aria-label="Appearance mode" data-appearance-segmented="true"
    className="grid grid-cols-3 overflow-hidden rounded-ctl border border-edge bg-[var(--paper)]">
-   {modes.map(item=><button key={item.id} type="button" role="radio"
+   {modes.map((item,index)=><button key={item.id} type="button" role="radio"
     aria-label={item.label+' '+item.detail} aria-checked={mode===item.id}
-    disabled={busy} onClick={()=>void choose(item.id)}
+    tabIndex={mode===item.id?0:-1}
+    disabled={busy} onClick={()=>void choose(item.id)} onKeyDown={event=>onRadioKeyDown(event,index)}
     className={'min-h-11 min-w-0 border-r border-edge px-2 py-3 text-center last:border-r-0 '+(mode===item.id
      ?'bg-[var(--fill-1)] font-semibold text-ink shadow-[inset_0_-3px_0_var(--ink)]'
      :'text-ink-2')}>
