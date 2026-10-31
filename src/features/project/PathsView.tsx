@@ -1,10 +1,11 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {Tex} from '../../ui/Tex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
 import {ChevronRight} from 'lucide-react';
 import {useInsightData,useProjects} from '../../data/hooks';
 import type {CheckpointUi,CheckpointView,ProjectDetail} from '../../data/types';
-import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
+import {Route} from '../../ui/timeline/Route';
 import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
@@ -29,7 +30,7 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
  </nav>;
 }
 
-export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'ascent'|'metro'}){
+export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'metro'}){
  const insight=useInsightData(30);
  const {project,subject,checkpoints,done,total}=detail;
  const {estimate,rows:schedule}=scheduleForProject(detail,insight.data?.checkpointEvents);
@@ -46,17 +47,17 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
      <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
-    <div className="flex shrink-0 flex-col items-end gap-1"><strong className="font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
+    <div className="flex shrink-0 flex-col items-end gap-1"><strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-amber">{pct}%</strong>
      {headline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{headline}</span>}</div>
    </div>
    <section aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
-    <strong className="font-[var(--font-display)] text-title-s tabular-nums text-ink">{done}</strong>
+    <strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-ink">{done}</strong>
     <span>of {total} checkpoints done</span>
     {current>=0&&<span className="ml-auto text-amber">{checkpoints[current].code} now</span>}
    </section>
    <div role="region" aria-label="Project timeline" className="min-w-0">
-    <ProjectTimeline project={{title:project.title,slug:project.slug,done,total,targetDate:project.targetDate}} checkpoints={checkpoints}
-     variant={variant} pacePerWeek={estimate.pace??undefined} scheduleRows={schedule} height={96}/>
+    <Route project={{title:project.title,slug:project.slug,done,total,targetDate:project.targetDate}} checkpoints={checkpoints}
+     mode="project" pacePerWeek={estimate.pace??undefined} scheduleRows={schedule}/>
     {schedule.some(row=>row.dueOn)&&<div aria-label="Schedule legend" className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-2">
      {(['early','on_time','late'] as const).map(state=><span key={state} className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-[3px] w-5" style={{background:scheduleColor[state]}}/>{state==='on_time'?'On time':state==='early'?'Early':'Late'}</span>)}
     </div>}
@@ -138,7 +139,7 @@ export function Stages({detail}:{detail:ProjectDetail}){
  const schedule=new Map(rows.map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-   <h2 className="font-[var(--font-display)] text-title-s italic">Stages</h2>
+   <SectionHeading>Stages</SectionHeading>
    <span className="text-label text-ink-3">{stages.length} {stages.length===1?'stage':'stages'}, {detail.total} checkpoints</span>
   </div>
   {stages.length>5&&<nav aria-label="Jump to stage" className="flex min-w-0 gap-2 overflow-x-auto pb-1" data-stage-jumps="">
