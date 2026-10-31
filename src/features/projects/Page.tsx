@@ -72,7 +72,7 @@ function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubj
       <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
       {project.pinned&&<span className="shrink-0 text-caption text-ink-2">Pinned</span>}
      </div>
-     <div className="mt-1 text-caption text-ink-2">{showSubject&&<span className="mr-2"><Tex source={project.subject?.name??"Unassigned"}/> ·</span>}{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
+     <div className="mt-1 text-caption text-ink-2 [&_.katex]:text-[16px]">{showSubject&&<span className="mr-2"><Tex source={project.subject?.name??"Unassigned"}/> ·</span>}{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
     </Link>}
    <button type="button" aria-label={'Actions for '+project.title} aria-expanded={menu} aria-haspopup="menu"
     onClick={()=>setMenu(value=>!value)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-edge text-ink-2">
