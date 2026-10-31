@@ -7,10 +7,10 @@ const routes=[
 ] as const;
 
 for(const theme of ['graph','graph-night'] as const)
-for(const profile of ['1','stress'] as const)
+for(const profile of ['1','stress','extreme'] as const)
 for(const width of [360,390] as const){
  test(`LOOK-2 letterhead ${theme} ${profile} ${width}px`,async({page})=>{
-  test.setTimeout(120_000);
+  test.setTimeout(profile==='extreme'?180_000:120_000);
   const height=width===360?740:844;
   await page.setViewportSize({width,height});
   for(const [route,kind] of routes){
