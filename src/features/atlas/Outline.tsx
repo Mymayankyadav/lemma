@@ -164,14 +164,17 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    if(!badge)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
    const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
+   // The visible SVG rect itself is a 16px pill (not a 15px fill with a
+   // 1px stroke). Leave at least 6px of horizontal text breathing room.
+   const pillWidth=Math.max(16,String(arc.count).length*8+8);
    return <g key={'badge:'+arc.key} opacity={opacity} data-atlas-bundle={arc.key}>
     {Math.hypot(badge.x-badge.anchorX,badge.y-badge.anchorY)>3&&
      <path d={'M'+badge.anchorX+' '+badge.anchorY+' L'+badge.x+' '+badge.y}
       stroke={toneColor[tone]} strokeWidth="1" strokeDasharray="2 2" fill="none"/>}
     <g transform={'translate('+badge.x+' '+badge.y+')'}>
      <rect data-atlas-bundle-pill="true" data-atlas-bundle-circle="true"
-      x={-Math.max(16,String(arc.count).length*7+8)/2+0.5} y="-7.5"
-      width={Math.max(16,String(arc.count).length*7+8)-1} height="15" rx="7.5"
+      x={-pillWidth/2} y="-8"
+      width={pillWidth} height="16" rx="8"
       fill="var(--paper)" stroke={toneColor[tone]} strokeWidth="1"/>
      <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
     </g>
