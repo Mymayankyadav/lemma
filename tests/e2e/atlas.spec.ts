@@ -75,3 +75,20 @@ for(const mode of ['graph','graph-night'] as const){
   await page.screenshot({path:`test-results/screens/atlas-tree-${mode}.png`,fullPage:true});
  });
 }
+
+
+for(const theme of ['graph','graph-night'] as const){
+ test('ST-3 extreme Atlas windows rows and bounds arcs at 360px in '+theme,async({page})=>{
+  await page.setViewportSize({width:360,height:740});
+  await page.goto(`./?demo=extreme&theme=${theme}#/atlas`);
+  await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
+  await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+  await expect(page.getByRole('dialog',{name:'Unfold every idea?'})).toBeVisible();
+  await page.getByRole('button',{name:'Unfold all'}).click();
+  await expect.poll(()=>page.locator('[data-atlas-row]').count()).toBeLessThan(100);
+  expect(await page.locator('[data-atlas-wires] [data-arc-kind]').count()).toBeLessThanOrEqual(60);
+  await expect(page.getByRole('status')).toContainText(/links hidden/);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await page.screenshot({path:`test-results/screens/stress/st-3-extreme-${theme}-360.png`});
+ });
+}
