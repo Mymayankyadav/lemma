@@ -250,7 +250,7 @@ describe('FIX #507: cold Today stress summary',()=>{
 
  it('keeps the browser stress adapter on the deferred-card path',()=>{
   const entry=readFileSync('src/data/index.ts','utf8');
-  expect(entry).toContain('{deferSessions:true,deferNotes:true,deferAtlas:initialToday,deferSources:initialToday}');
+  expect(entry).toContain('{deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true}');
   expect(entry).toContain('deferAtlas:');
  });
 
@@ -280,7 +280,7 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBeUndefined();
  },30_000);
 
- it('keeps 6,000 extreme source records virtual on cold Today, then materializes them for Paths',async()=>{
+ it('keeps 6,000 source records virtual for Paths counts, then materializes exact sources on demand',async()=>{
   const fixture=makeStressStore(seed,'extreme',{
    deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
   });
@@ -295,6 +295,13 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(Object.getOwnPropertyDescriptor(store,'sources')?.get).toBeTypeOf('function');
   const projects=await api.listProjects();
   expect(projects.every(p=>p.sourcesCount===100)).toBe(true);
+  expect(projects.find(p=>p.slug==='stress-project-3')?.sourceTitles)
+   .toContain('Source 100: mathematical notes and proofs');
+  // Paths needs only exact source counts/titles; a source-specific route must
+  // still hydrate every actual source record with its original dates/pages.
+  expect(Object.getOwnPropertyDescriptor(store,'sources')?.get).toBeTypeOf('function');
+  const project=projects.find(p=>p.slug==='stress-project-3')!;
+  expect((await api.getSourceTranscriptionStats(project.id)).length).toBe(100);
   expect(Object.getOwnPropertyDescriptor(store,'sources')?.get).toBeUndefined();
   expect(store.sources.length).toBeGreaterThanOrEqual(6000);
   expect(store.sources.find(p=>p.id==='stress-source-3-99')?.createdAt).not.toMatch(/^@/);
@@ -304,9 +311,10 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(store.sources).toEqual((full as unknown as {store:DemoStore}).store.sources);
  },30_000);
 
- it('configures source deferral only for the initial Today document',()=>{
+ it('configures demand-driven source deferral for every cold document',()=>{
   const entry=readFileSync('src/data/index.ts','utf8');
-  expect(entry).toContain('deferSources:initialToday');
+  expect(entry).toContain('deferSources:true');
+  expect(entry).not.toContain('deferSources:initialToday');
  });
 
 });
