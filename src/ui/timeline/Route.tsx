@@ -181,7 +181,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
    </div>
    {discloseStage&&<details data-route-stage-disclosure="" className="mt-2 min-w-0 text-ink">
     <summary className="flex min-h-11 cursor-pointer items-center text-[12px] text-ink-2">Show full stage name</summary>
-    <div className="min-w-0 break-words pb-2 text-[16px]"><Tex source={foldedName}/></div>
+    <div className="min-w-0 overflow-x-auto break-words pb-2 text-[16px]"><Tex source={foldedName}/></div>
    </details>}
    <div data-route-controls="" className="mt-2 flex items-center justify-end gap-2">
     <button type="button" aria-label="Previous checkpoint" disabled={focused===0}
