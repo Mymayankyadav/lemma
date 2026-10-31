@@ -17,7 +17,7 @@ describe('FIX-546b bounded Card detail pagination contract',()=>{
   fixture.reviews=Array.from({length:42},(_,i)=>({
    id:i+10000,cardId:card.id,projectId:note.projectId,
    reviewedAt:new Date(Date.UTC(2026,9,30)-Math.floor(i/2)*3600000).toISOString(),
-   rating:3 as const,stateBefore:2,confidence:'sure' as const,durationMs:1000,
+   rating:3 as const,stateBefore:2 as const,confidence:'sure' as const,durationMs:1000,
    prev:structuredClone(card.state),undoneAt:null,
   }))
   note.comments=Array.from({length:42},(_,i)=>({
