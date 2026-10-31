@@ -284,8 +284,9 @@ export class DemoAdapter implements LemmaApi {
         return hydrated;
       }});
     }
-    if(options.ownedFixture&&this.store.stressSourceTarget!==undefined){
-      const store=this.store,sourceTarget=store.stressSourceTarget;
+    const sourceTarget=this.store.stressSourceTarget;
+    if(options.ownedFixture&&sourceTarget!==undefined){
+      const store=this.store;
       // Today only needs exact source titles/counts, not 6,000 source objects
       // and their hydrated dates. Keep the authored seed sources untouched.
       const titles=new Map<string,string[]>();
