@@ -40,7 +40,9 @@ for(const matrix of CPU_CASES){
     .toBeVisible({timeout:90_000});
    // A heading and >40 text characters can be visible on an empty skeleton.
    // Wait for the route's actual S/X data and paint BEFORE stopping the clock.
+   let ready=false;
    await assertRouteLoaded(page,route,matrix.profile,12_000);
+   ready=true;
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    const durationMs=Date.now()-start;
@@ -54,7 +56,7 @@ for(const matrix of CPU_CASES){
     route,actualRoute:await page.evaluate(()=>location.hash.slice(1)),
     profile:matrix.profile,theme:matrix.theme,width:matrix.width,
     cpuThrottle:4,durationMs,navigationType:navigationType==='navigate'?'document':navigationType,
-    ready:true,nodes,screenshot,
+    ready,nodes,screenshot,
    });
   }
   await cdp.detach();
