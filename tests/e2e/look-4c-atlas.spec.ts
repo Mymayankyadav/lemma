@@ -76,6 +76,15 @@ for(const width of [360,390] as const){
   const tree=page.getByRole('tree',{name:'Ideas and their links'});
   await expect(tree).toBeVisible();
   await expect(page.locator('[data-atlas-wires] [data-arc-kind]')).toHaveCount(7);
+  // Nine-pixel center spacing only satisfies the strict 8px *painted-edge*
+  // clearance when each stroke is no wider than one CSS pixel.
+  const strokes=await page.locator('[data-atlas-wires] [data-arc-kind]').evaluateAll(elements=>elements.map(el=>({
+   x:Number(el.getAttribute('data-atlas-lane')),
+   width:parseFloat(getComputedStyle(el.querySelector('path')!).strokeWidth),
+  })));
+  for(let i=0;i<strokes.length;i++)for(let j=i+1;j<strokes.length;j++)
+   expect(Math.abs(strokes[i].x-strokes[j].x)-(strokes[i].width+strokes[j].width)/2)
+    .toBeGreaterThanOrEqual(8);
   const ports=page.locator('[data-atlas-hidden-port]');
   await expect(ports).toHaveCount(2);
   await expect(page.locator('[data-atlas-hidden-port="out"]')).toHaveAttribute('data-atlas-row','7');
