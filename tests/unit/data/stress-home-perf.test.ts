@@ -60,10 +60,22 @@ describe('FIX #507: cold Today stress summary',()=>{
   // Project counts must stay exact when summary scans are replaced with
   // per-project indexes; the 30,000 cards are distributed evenly.
   expect(baseline).toMatchObject({cardsCount:500,sessionsCount:1000,sourcesCount:100});
+  // Current stress fixture materialises 1,000 sessions PER project, not only
+  // on the baseline project. Preserve that scale when summaries are indexed.
   expect(home.projects.find(p=>p.slug==='stress-project-3'))
-   .toMatchObject({cardsCount:500,sessionsCount:0,sourcesCount:100});
+   .toMatchObject({cardsCount:500,sessionsCount:1000,sourcesCount:100});
   // This is an unthrottled adapter-only guard. The separate ST-0 browser gate
   // retains its stricter 1,500ms end-to-end limit under actual 4x CPU.
   expect(elapsed).toBeLessThan(1500);
+ },30_000);
+
+ it('keeps session counts scoped to their own project after the 60-project fixture grows',async()=>{
+  const fixture=makeStressStore(seed,'stress');
+  const other=fixture.projects.find(p=>p.slug==='stress-project-3')!;
+  fixture.sessions=fixture.sessions.filter(s=>s.projectId!==other.id);
+  const api=new DemoAdapter({fixture,now:()=>now,timeZone:'UTC'});
+  const projects=await api.listProjects();
+  expect(projects.find(p=>p.id===other.id)?.sessionsCount).toBe(0);
+  expect(projects.find(p=>p.id===seed.projects[0].id)?.sessionsCount).toBe(300);
  },30_000);
 });
