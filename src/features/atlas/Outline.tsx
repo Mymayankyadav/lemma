@@ -52,7 +52,9 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
   const clampX=(x:number)=>Math.max(minX,Math.min(maxX,x));
   const xs=[anchorX,minX,maxX,GUTTER/2,(minX+GUTTER/2)/2,(maxX+GUTTER/2)/2]
    .map(clampX).filter((x,i,array)=>array.findIndex(other=>Math.abs(x-other)<.1)===i);
-  const maxSteps=Math.ceil(height/4)+2;
+  // Bound candidate work for a 2,500-row virtual outline; beyond this density
+  // the +N summary is preferable to scanning the entire document height.
+  const maxSteps=Math.min(Math.ceil(height/4)+2,items.length*20+20);
   for(let step=0;step<=maxSteps;step++){
    const offset=step===0?0:Math.ceil(step/2)*4*(step%2?1:-1);
    const y=anchorY+offset;
