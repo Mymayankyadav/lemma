@@ -112,6 +112,14 @@ export interface DemoOptions {
   timeZone?: string;
   fixture?: DemoStore;
 }
+/** Reuse one pass across the large stress fixture when summarising every
+ * project. Single-project reads keep the same standalone summary semantics. */
+interface SummaryIndex {
+  checkpoints: Map<string,DemoCheckpoint[]>;
+  cards: Map<string,number>;
+  sessions: Map<string,number>;
+  sourceTitles: Map<string,string[]>;
+}
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
@@ -310,8 +318,9 @@ export class DemoAdapter implements LemmaApi {
   private displaySubject(id: string): Subject {
     return id ? this.subject(id) : { id: "", name: "Unassigned", glyph: "·", hue: "slate", position: 999 };
   }
-  private summary(p: DemoProject): ProjectSummary {
-    const cps = this.store.checkpoints.filter(cp => cp.projectId === p.id);
+  private summary(p: DemoProject, index?: SummaryIndex): ProjectSummary {
+    const cps = index ? index.checkpoints.get(p.id) ?? [] :
+      this.store.checkpoints.filter(cp => cp.projectId === p.id);
     // Summary progress needs only demonstrated/proposed status, not the full
     // recursive prerequisite UI and daily due-card queue for each checkpoint.
     // checkpointUi() maps every demonstrated checkpoint to done or revisit;
@@ -343,16 +352,15 @@ export class DemoAdapter implements LemmaApi {
           }
         : null,
       lastActivityAt: p.lastActivityAt,
-      cardsCount: this.store.notes
-        .filter((n) => n.projectId === p.id && n.note.status !== "deleted")
-        .reduce((n, note) => n + note.cards.length, 0),
-      sessionsCount: this.store.sessions.filter(
-        (s) => s.projectId === p.id && s.state === "ended",
-      ).length,
-      sourcesCount: this.store.sources.filter((s) => s.projectId === p.id)
-        .length,
-      sourceTitles: this.store.sources.filter((s) => s.projectId === p.id)
-        .map((source) => source.title),
+      cardsCount: index ? index.cards.get(p.id) ?? 0 :
+        this.store.notes.filter(n => n.projectId === p.id && n.note.status !== "deleted")
+          .reduce((n,note) => n + note.cards.length,0),
+      sessionsCount: index ? index.sessions.get(p.id) ?? 0 :
+        this.store.sessions.filter(s => s.projectId === p.id && s.state === "ended").length,
+      sourcesCount: index ? index.sourceTitles.get(p.id)?.length ?? 0 :
+        this.store.sources.filter(s => s.projectId === p.id).length,
+      sourceTitles: index ? [...(index.sourceTitles.get(p.id) ?? [])] :
+        this.store.sources.filter(s => s.projectId === p.id).map(source => source.title),
     };
   }
   async getAuth() {
@@ -537,9 +545,26 @@ export class DemoAdapter implements LemmaApi {
     });
   }
   async listProjects() {
+    // ST-0: scanning 30,000 cards and 6,000 checkpoints separately for each
+    // of 60 projects creates millions of redundant reads on the cold Today.
+    const index:SummaryIndex={
+      checkpoints:new Map(),cards:new Map(),sessions:new Map(),sourceTitles:new Map(),
+    };
+    for(const cp of this.store.checkpoints){
+      const rows=index.checkpoints.get(cp.projectId)??[];
+      rows.push(cp);index.checkpoints.set(cp.projectId,rows);
+    }
+    for(const note of this.store.notes)if(note.note.status!=="deleted")
+      index.cards.set(note.projectId,(index.cards.get(note.projectId)??0)+note.cards.length);
+    for(const session of this.store.sessions)if(session.state==="ended")
+      index.sessions.set(session.projectId,(index.sessions.get(session.projectId)??0)+1);
+    for(const source of this.store.sources){
+      const titles=index.sourceTitles.get(source.projectId)??[];
+      titles.push(source.title);index.sourceTitles.set(source.projectId,titles);
+    }
     return this.store.projects
       .filter(p => !p.system)
-      .map(p => this.summary(p))
+      .map(p => this.summary(p,index))
       .sort(
         (a, b) =>
           Date.parse(b.lastActivityAt ?? "1970-01-01") -
