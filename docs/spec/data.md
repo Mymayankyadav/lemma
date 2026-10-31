@@ -545,6 +545,7 @@ Audit #546 / ST-4 D7 requires a Card detail screen to load at most 20 recent rev
 - Every query is explicitly filtered by `user_id` and by the selected note/card IDs; RLS remains enabled. A missing note or an invalid cursor returns a typed `LemmaError`. The demo adapter applies the same order and page limit in memory.
 - React Query keys are `['card-history-page', noteNo, cursor ?? null]` and `['card-comments-page', noteNo, cursor ?? null]`. Both hooks retain the 30-second stale time. Existing `useCard` is unchanged. Review/undo invalidates `card-history-page`; comment add/dismiss invalidates `card-comments-page` (in addition to existing card keys).
 - This contract introduces `notImplemented` stubs in both adapters; no screen may call them until FIX-546b supplies the implementations, 20/21-row paging tests, X-like network budget tests and bounded chart data.
+- **CONTRACT-546c (additive, audit boundary):** `CardDetail` may include `historyNextCursor?: string | null` and `commentsNextCursor?: string | null`. These are the exact 21-row probe continuations for the initial 20-row `history` and `comments` arrays returned by `getCard`. `null` means no older rows, even when exactly 20 were returned; absence is supported for legacy adapters and treated as no continuation. UI never infers continuation from array length and reuses these cursors to avoid a duplicate first-page query. FIX-546b implements the fields in both adapters; no new method, schema change, write or migration is needed.
 
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
 
