@@ -7,7 +7,8 @@ export interface RouteMark{
 type Draft=Omit<RouteMark,'x'>;
 export interface RouteLayout{mode:'plain'|'folded';marks:RouteMark[];activeStage:number}
 const STATION_RADIUS=3.6;
-const CURRENT_RADIUS=5.5;
+// Reserve the full 11px translucent halo, not just the 5.5px red core.
+const CURRENT_RADIUS=11;
 const CLEARANCE=8;
 const EDGE=12;
 const capsuleWidth=(checkpoints:number)=>Math.max(4,Math.min(20,4*Math.sqrt(Math.max(1,checkpoints))));
