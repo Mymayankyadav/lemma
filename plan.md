@@ -319,6 +319,11 @@ Notes per task:
 - After PR 3: push a branch `review/themes` with `THEMES=all` so the review workflow commits contact sheets per theme; link them in the PR.
 - Done when: `themes.md` §7.
 
+#### Tutor transcriptions (owner, 31 Oct 08:38): DB-5, MCP-6, UI-8
+- Spec: `docs/spec/transcribe.md`. The connector cannot push PDFs or page text today: kind `book` only makes an empty record. The tutor will transcribe handwritten notes or scanned pages attached in chat into Markdown with LaTeX using a new `save_pages` tool. It writes either into an uploaded scan's pages or into a new text-only source, in batches of up to 10 pages, undoable, with who transcribed it and a "check" flag for doubtful pages.
+- The app shows transcription progress, a page viewer with the original beside it, edit and "mark checked", and export as .tex or .md.
+- Order: DB-5 → MCP-6 → UI-8, which can run alongside the stress tasks. This also covers the "scanned PDFs have no text" gap from 30 Oct, with no paid OCR service.
+
 #### Stress (owner, 31 Oct 00:24): ST-0 … ST-7, MCP-5, QA-3, the next plan
 - Spec: `docs/spec/stress.md`. Every UI element is fed 10–100× realistic data (36–100 checkpoints, 2,500 ideas, 30,000 cards, 4,000 due, 1,500-character card faces, 10×10 matrices, 60 projects) to find where it stops doing its job. Each element keeps its job by changing form above a measured switch point: the stage Metro, segmented progress bars, folded lists, scrolling card faces with a sticky grade bar, a full-screen maths view, a daily review share, and server-side aggregates.
 - Trigger: the owner's Algebra 1 (36 checkpoints, no stages) turned the Paths bar into a barcode and the project Metro into overlapping rings.
