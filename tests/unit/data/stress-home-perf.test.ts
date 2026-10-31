@@ -4,12 +4,23 @@ import {performance} from 'node:perf_hooks';
 import {describe,expect,it} from 'vitest';
 import {DemoAdapter} from '../../../src/data/demo/adapter';
 import {makeStressStore} from '../../../src/data/demo/stress';
+import {hydrateFixture} from '../../../src/data/demo/hydrate';
 import type {DemoStore} from '../../../src/data/demo/model';
 
 const seed=JSON.parse(readFileSync('src/data/demo/fixture.json','utf8')) as DemoStore;
 const now=Date.parse('2026-10-31T12:00:00Z');
 
 describe('FIX #507: cold Today stress summary',()=>{
+ it('hydrates a private copy and preserves the original fixture tokens',()=>{
+  const input=structuredClone(seed);
+  const original=JSON.stringify(input);
+  const hydrated=hydrateFixture(input,now,'UTC');
+  expect(JSON.stringify(input)).toBe(original);
+  expect(hydrated).not.toBe(input);
+  expect(hydrated.notes[0].cards[0].state.due).not.toMatch(/^@/);
+  hydrated.notes[0].note.front='Changed only in the hydrated copy';
+  expect(input.notes[0].note.front).not.toBe('Changed only in the hydrated copy');
+ });
  it('derives the extreme project and due summaries without per-card/per-checkpoint quadratic scans',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme'),now:()=>now,timeZone:'UTC'});
   const started=performance.now();
