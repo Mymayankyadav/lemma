@@ -70,6 +70,14 @@ const payloads:Record<string,unknown>={
  '/settings':settings,
 }
 const maxTransfer=200*1024
+const withinBudget=(calls:{bytes:number}[],maxCalls:number)=>calls.length<=maxCalls &&
+ calls.reduce((sum,call)=>sum+call.bytes,0)<=maxTransfer
+
+test('FIX-484b cold budget rejects four requests and aggregate over 200kB',()=>{
+ expect(withinBudget(Array.from({length:4},()=>({bytes:1000})),3)).toBe(false)
+ expect(withinBudget([{bytes:150*1024},{bytes:100*1024}],3)).toBe(false)
+ expect(withinBudget([{bytes:50*1024},{bytes:50*1024},{bytes:50*1024}],3)).toBe(true)
+})
 const token=([
  Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),
  Buffer.from(JSON.stringify({
@@ -124,11 +132,11 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
   await expect(page.getByRole('heading',{name:'Home'})).toBeVisible()
   await expect(page.getByRole('link',{name:/4000 cards due/})).toBeVisible()
   await expect(page.locator('[aria-label="Seven-day review forecast"]')).toBeVisible()
-  const today=requests.filter(r=>r.path!=='/rpc/bootstrap')
-  expect(today.length,'Today must make actual intercepted REST calls').toBeGreaterThan(0)
-  expect(today.length,'Today request budget').toBeLessThanOrEqual(3)
+  const today=[...requests]
+  expect(today.length,'Cold Today must make actual intercepted REST calls').toBeGreaterThan(0)
+  expect(today.filter(r=>r.path==='/rpc/bootstrap')).toHaveLength(1)
   expect(today.filter(r=>r.path==='/rpc/home_summary')).toHaveLength(1)
-  expect(today.every(r=>r.bytes<=maxTransfer),'Today response budget').toBe(true)
+  expect(withinBudget(today,3),'Cold Today total request and transfer budget').toBe(true)
   await page.screenshot({path:'test-results/screens/fix-484b-'+theme+'-'+viewport.width+'-today.png'})
 
   const offset=requests.length
