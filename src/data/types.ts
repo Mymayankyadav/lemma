@@ -39,7 +39,17 @@ export interface Settings {
 }
 export interface Style { key: string; name: string; icon: string; instructions: string; position: number }
 export interface Subject { id: string; name: string; glyph: Glyph; hue: Hue; position: number }
+/** Bounded server-computed segment for the Paths mini Metro (ST-5/ST-1). */
+export interface ProjectStageProgress {
+ label: string; firstCode: string; lastCode: string
+ done: number; total: number; overdue: number
+ schedule: 'complete' | 'behind' | 'dated' | 'unscheduled'
+}
 export interface ProjectSummary {
+ /** Optional until both demo/live adapters supply the ST-5 stage aggregate. */
+ stageProgress?: ProjectStageProgress[]
+ /** Date-grounded headline, null when there is no schedule evidence. */
+ scheduleHeadline?: string | null
  pinned?: boolean; system?: boolean
  targetDate?: IsoDate | null; targetLabel?: string | null
  id: string; slug: string; title: string; subject: Subject; status: ProjectStatus; done: number; total: number
@@ -142,6 +152,17 @@ export interface CardRow {
  noteNo: number; front: string; type: NoteType; kind: NoteKind; projectSlug: string; glyph: Glyph
  checkpointCode: string | null; due: IsoDate | null; status: NoteStatus; openComments: number
 }
+/** ST-5/ST-4: a bounded, server-filtered page of card-library rows. */
+export interface CardSearchFilters {
+ query: string
+ projectSlug?: string
+ checkpointCode?: string
+ state?: SchedulingState
+ noteStatus?: NoteStatus
+ hasOpenComments?: boolean
+ offset?: number
+}
+export interface CardSearchPage { rows: CardRow[]; nextOffset: number | null }
 export interface CardDetail {
  note: {noteId: string; noteNo: number; front: string; back: string; type: NoteType; kind: NoteKind; tags: string[]
  status: NoteStatus; origin: 'user' | Client; projectSlug: string; checkpointCode: string | null
@@ -160,7 +181,19 @@ export interface AtlasGraph {
  checkpointRefs: {projectSlug: string; code: string}[]; dueCards: number}[]
  links: {fromId: string; toId: string; kind: 'prereq' | 'related'}[]
 }
+/** Bounded owner-scoped Insights RPC payload; demo may continue using raw rows. */
+export interface InsightAggregate {
+ days: number; reviews: number; right: number
+ reviewDays: {date: IsoDate; count: number; again: number; hard: number; good: number; easy: number; right: number}[]
+ calibration: {confidence: Exclude<Confidence, null>; total: number; right: number}[]
+ sessions: number; minutes: number; typicalSession: number | null
+ subjectMinutes: {subject: Subject; minutes: number}[]
+ checkpointDays: {date: IsoDate; demonstrated: number; rechecked: number}[]
+ mostRevisited: {label: string; times: number; conceptName: string | null} | null
+}
 export interface InsightData {
+ /** ST-5: server aggregate, supplied instead of unbounded raw rows in live mode. */
+ aggregate?: InsightAggregate
  reviews: {reviewedAt: IsoDate; rating: Rating; stateBefore: SchedulingState; confidence: Confidence; durationMs: number; projectId: string}[]
  sessions: {startedAt: IsoDate; minutes: number; projectId: string; goalMet: GoalMet}[]
  checkpointEvents: {at: IsoDate; kind: 'demonstrated' | 'recheck_ok' | 'recheck_fail'; checkpointCode: string; projectId: string}[]
