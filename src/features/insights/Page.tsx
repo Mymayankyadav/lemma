@@ -40,7 +40,7 @@ export default function Page(){
   </Slab>
   <Slab className="flex flex-col gap-3 p-4"><SectionHeading>When you said</SectionHeading><CalibrationRules data={values.calibration}/>{values.calibrationMessage&&<p className="border-l-2 border-[var(--ink-2)] pl-3 font-math text-label italic text-ink-2">{values.calibrationMessage}</p>}</Slab>
   <Slab className="flex flex-col gap-3 p-4"><SectionHeading>Time by subject</SectionHeading><SubjectRules data={values.subjects} format={formatDurationMinutes}/></Slab>
-  <Slab className="flex flex-col gap-3 p-4"><SectionHeading>Checkpoints</SectionHeading><GroupedBars data={values.checkpointWeeks}/></Slab>
+  <Slab className="flex flex-col gap-3 p-4"><SectionHeading>Checkpoints</SectionHeading><GroupedBars data={values.checkpointWeeks} tone="ink"/></Slab>
   <div className="grid grid-cols-2 gap-3">
    <Tile><Target size={20} className="mb-3 text-ink-2"/><span className="block text-label text-ink-2">Typical session</span><strong className="text-xl">{values.typicalSession===null?'—':formatDurationMinutes(Math.round(values.typicalSession))}</strong></Tile>
    <MostRevisitedLink conceptName={values.mostRevisited?.conceptName} label={values.mostRevisited?.label}/>

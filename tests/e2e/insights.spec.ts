@@ -104,6 +104,7 @@ for (const theme of ['graph','graph-night'] as const) {
      subjectGlyph:colour(document.querySelector('[aria-label="Time by subject"] button span[aria-hidden="true"]')),
      subjectBar:getComputedStyle(document.querySelector('[aria-label="Time by subject"] .h-full')!).backgroundColor,
      calibrationBar:getComputedStyle(document.querySelector('[aria-label^="Answer confidence calibration"] .h-full')!).backgroundColor,
+     checkpointsBar:svg('svg[aria-label^="Checkpoints by week"] rect[fill]','fill'),
      mostRevisitedIcons:[...document.querySelectorAll('a[aria-label^="Most revisited:"] svg')].map(icon=>getComputedStyle(icon).color),
     };
    });
@@ -112,6 +113,7 @@ for (const theme of ['graph','graph-night'] as const) {
    expect(colours.subjectGlyph).toBe(colours.secondary);
    expect(colours.subjectBar).toBe(colours.secondary);
    expect(colours.calibrationBar).toBe(colours.secondary);
+   expect(colours.checkpointsBar).toBe(colours.secondary);
    expect(colours.mostRevisitedIcons).toEqual([colours.secondary,colours.secondary]);
    expect(colours.recallNumber).toBe(colours.ink);
    await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:'30 days'})).toHaveAttribute('aria-pressed','true');
