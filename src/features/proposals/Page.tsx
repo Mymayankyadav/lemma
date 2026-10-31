@@ -296,7 +296,7 @@ export default function Page() {
              <p className="text-label text-ink-3">{Math.min(cardPage*20+1,cards.length)}–{Math.min((cardPage+1)*20,cards.length)} of {cards.length} card proposals · grouped by session and checkpoint</p>
              {cardGroups.map(group=><Slab key={group.key} className="flex flex-col gap-2 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-               <div className="min-w-0"><h2 className="text-body font-semibold">{projectLabel(group.project)}</h2><p className="text-caption text-ink-3">{group.label} · {group.proposals.length} cards</p></div>
+               <div className="min-w-0"><h2 className="text-body font-semibold">{projectLabel(group.project)}</h2><p className="text-caption text-ink-3">{group.label} · {group.proposals.length} {group.proposals.length === 1 ? "card" : "cards"}</p></div>
                {group.proposals.some(p=>p.kind==="card")&&<button type="button" disabled={pending} className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-amber disabled:opacity-50" onClick={()=>{setBatch(allCardGroups.find(g=>g.key===group.key)??group);setConfirm(true)}}>
                 Approve all from {group.label}
                </button>}
