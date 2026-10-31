@@ -1787,6 +1787,12 @@ export class DemoAdapter implements LemmaApi {
       confidence:item.confidence??null,transcribedBy:item.transcribedBy??null
     }:null;
   }
+  async getTranscribedPagesForExport(sourceId:string):Promise<import('../types').TranscribedSourcePage[]>{
+    const source=found(this.store.sources.find(s=>s.id===sourceId),'Source');
+    return source.pages.filter(p=>!!p.transcribedAt||!!p.transcribedBy).sort((a,b)=>a.page-b.page)
+      .map(p=>({sourceId:source.id,page:p.page,label:p.label??null,body:p.body,
+        transcribedBy:p.transcribedBy??null,confidence:p.confidence??null}));
+  }
   async updateSourcePage(sourceId:string,page:number,patch:{body?:string;confidence?:'high'|'check'}):Promise<import('../types').TranscribedSourcePage>{
     return this.transaction(()=>{
       const source=found(this.store.sources.find(s=>s.id===sourceId),'Source');
