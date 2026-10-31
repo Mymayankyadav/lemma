@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
@@ -262,7 +263,7 @@ export default function Page() {
         </button>
       </Slab>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Apps</h2>
+        <SectionHeading className="mb-3">Apps</SectionHeading>
         <Slab className="divide-y divide-edge px-4">
           <div className="flex min-h-[68px] items-center gap-3">
             <Sparkles className="text-amber" size={20} />
@@ -307,7 +308,7 @@ export default function Page() {
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Say this to start</h2>
+        <SectionHeading className="mb-3">Say this to start</SectionHeading>
         <div className="flex flex-wrap gap-2">
           {home.data?.resume && (
             <Chip
@@ -335,7 +336,7 @@ export default function Page() {
         </div>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Teaching style</h2>
+        <SectionHeading className="mb-3">Teaching style</SectionHeading>
         <div
           role="radiogroup"
           aria-label="Teaching style"
@@ -366,7 +367,7 @@ export default function Page() {
         </button>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Memory</h2>
+        <SectionHeading className="mb-3">Memory</SectionHeading>
         <Slab className="p-5">
           <div className="flex justify-between">
             <label htmlFor="retention" className="font-semibold">
@@ -441,7 +442,7 @@ export default function Page() {
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">More</h2>
+        <SectionHeading className="mb-3">More</SectionHeading>
         <div className="flex flex-col gap-2">
           <Button
             variant="ghost"
