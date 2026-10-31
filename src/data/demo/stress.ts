@@ -1,5 +1,77 @@
 import type { DemoStore, DemoCheckpoint, DemoNote } from "./model";
 
+import type {InsightAggregate,Subject} from "../types";
+import {DAY} from "../../lib/calendar";
+import {studyDayBounds} from "../../lib/derive";
+
+/**
+ * Represent the 50k/300k stored-review pressure using the same bounded daily
+ * aggregate shape as the live ST-5 RPC. Materialising 300k review objects in a
+ * browser demo would defeat the 4x CPU and transfer budgets, while the real UI
+ * only consumes the 7/30/90-day aggregates. Each daily bucket is deterministic,
+ * conserves its review/rating counts, and is independent of the browser locale.
+ */
+export function makeStressInsightAggregate(
+ data:DemoStore, days:7|30|90, now:number, timeZone:string, rolloverHour:number,
+):InsightAggregate|null {
+ const total=data.stressReviewCount??null;
+ if(total===null)return null;
+ const end=studyDayBounds(now,timeZone,rolloverHour).index;
+ const first=end-89;
+ const full=Array.from({length:90},(_,i)=>{
+  const count=Math.floor(total/90)+(i<total%90?1:0);
+  const again=Math.floor(count*.14),hard=Math.floor(count*.20),good=Math.floor(count*.48);
+  return {date:new Date((first+i)*DAY).toISOString().slice(0,10),
+   count,again,hard,good,easy:count-again-hard-good,right:count-again};
+ });
+ const reviewDays=full.slice(-days);
+ const reviews=reviewDays.reduce((n,row)=>n+row.count,0);
+ const right=reviewDays.reduce((n,row)=>n+row.right,0);
+ const sure=Math.floor(reviews*.45),unsure=Math.floor(reviews*.35),guess=reviews-sure-unsure;
+ const sureRight=Math.min(sure,Math.floor(sure*.94));
+ const unsureRight=Math.min(unsure,Math.floor(unsure*.83));
+ const calibration:InsightAggregate['calibration']=[
+  {confidence:'sure',total:sure,right:sureRight},
+  {confidence:'unsure',total:unsure,right:unsureRight},
+  {confidence:'guess',total:guess,right:right-sureRight-unsureRight},
+ ];
+ const start=end-days+1;
+ const inWindow=(at:string)=>{
+  const timestamp=Date.parse(at);
+  return Number.isFinite(timestamp)&&timestamp<=now&&studyDayBounds(timestamp,timeZone,rolloverHour).index>=start;
+ };
+ const sessions=data.sessions.filter(s=>inWindow(s.startedAt));
+ const minutes=sessions.reduce((n,s)=>n+s.minutes,0);
+ const sortedMinutes=sessions.map(s=>s.minutes).sort((a,b)=>a-b);
+ const middle=Math.floor(sortedMinutes.length/2);
+ const typicalSession=sortedMinutes.length
+  ?sortedMinutes.length%2?sortedMinutes[middle]:(sortedMinutes[middle-1]+sortedMinutes[middle])/2
+  :null;
+ const bySubject=new Map<string,{subject:Subject;minutes:number}>();
+ const projectById=new Map(data.projects.map(p=>[p.id,p]));
+ const subjectById=new Map(data.subjects.map(s=>[s.id,s]));
+ for(const session of sessions){
+  const subject=subjectById.get(projectById.get(session.projectId)?.subjectId??'');
+  if(!subject)continue;
+  const entry=bySubject.get(subject.id)??{subject,minutes:0};
+  entry.minutes+=session.minutes;bySubject.set(subject.id,entry);
+ }
+ const checkpointDays=Array.from({length:28},(_,i)=>{
+  const index=end-27+i;
+  const events=data.checkpointEvents.filter(e=>Number.isFinite(Date.parse(e.at))&&
+   studyDayBounds(Date.parse(e.at),timeZone,rolloverHour).index===index);
+  return {date:new Date(index*DAY).toISOString().slice(0,10),
+   demonstrated:events.filter(e=>e.kind==='demonstrated').length,
+   rechecked:events.filter(e=>e.kind!=='demonstrated').length};
+ });
+ const most=data.misconceptions.reduce<(typeof data.misconceptions)[number]|null>(
+  (best,item)=>!best||item.times>best.times?item:best,null);
+ return {days,reviews,right,reviewDays,calibration,sessions:sessions.length,minutes,typicalSession,
+  subjectMinutes:[...bySubject.values()],checkpointDays,
+  mostRevisited:most?{label:most.label,times:most.times,
+   conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
+}
+
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
 export type StressProfile = "stress" | "extreme";
 
@@ -98,7 +170,9 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
   const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
   data.notes = [];
+  // ST-5-style bounded server aggregate represents the stored review pressure.
   data.reviews = [];
+  data.stressReviewCount = extreme ? 300000 : 50000;
   for (let i = 0; i < cardCount; i++) {
     const project = data.projects[i % data.projects.length];
     const no = i + 1;
