@@ -2,10 +2,10 @@ import {test,expect} from '@playwright/test';
 
 /** LOOK-9a: no false primary action in demo or before a project name exists. */
 for(const theme of ['graph','graph-night'] as const)
-for(const profile of ['1','stress'] as const)
+for(const profile of ['1','stress','extreme'] as const)
 for(const width of [360,390] as const){
  test(`LOOK-9a sign-in and project creation ${theme} ${profile} ${width}px`,async({page})=>{
-  test.setTimeout(120_000);
+  test.setTimeout(profile==='extreme'?180_000:120_000);
   await page.setViewportSize({width,height:width===360?740:844});
   await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/sign-in`,{waitUntil:'domcontentloaded'});
   await expect(page.getByText('Sign-in is available in live mode.')).toBeVisible();
