@@ -24,9 +24,11 @@ export function ReviewOutlook(){
     {groups.map((group,i)=><span key={group.key} style={{width:(100*group.due/Math.max(1,dueTotal))+'%',background:'var(--accent)',opacity:Math.max(.3,1-i*.15)}}/>)}
    </div>
    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-    {groups.map((group,i)=><span key={group.key} className="inline-flex items-center gap-1.5 text-label text-ink-2">
+    {groups.map((group,i)=><span key={group.key} className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-label text-ink-2"
+     aria-label={group.label+': '+group.due+' due'}>
      <span aria-hidden="true" className="size-2 shrink-0 rounded-[1px]" style={{background:'var(--accent)',opacity:Math.max(.3,1-i*.15)}}/>
-     <Tex source={group.label}/> <span className="tabular-nums text-ink-3">{group.due}</span>
+     <span className="clip-1" title={group.label} data-due-group-name><Tex source={group.label}/></span>
+     <span className="shrink-0 tabular-nums text-ink-3">{formatBadgeCount(group.due)}</span>
     </span>)}
    </div>
   </div>}
