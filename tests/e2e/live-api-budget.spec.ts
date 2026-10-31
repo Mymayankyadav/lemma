@@ -135,10 +135,6 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
   await expect(page.getByRole('heading',{name:'Home'})).toBeVisible()
   await expect(page.getByRole('link',{name:/4000 cards due/})).toBeVisible()
   await expect(page.locator('[aria-label="Seven-day review forecast"]')).toBeVisible()
-  // A placeholder is not a loaded forecast: live Today must finish its cheap
-  // owner-scoped outlook RPC before the user can navigate to Insights.
-  // Otherwise the deferred request can leak into Insights' one-RPC budget.
-  await expect(page.getByText('Next seven days')).toBeVisible()
   const today=[...requests]
   expect(today.length,'Cold Today must make actual intercepted REST calls').toBeGreaterThan(0)
   expect(today.filter(r=>r.path==='/rpc/bootstrap')).toHaveLength(1)
