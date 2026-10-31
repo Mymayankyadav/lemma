@@ -59,6 +59,12 @@ describe('QA-3b screenshot structural gate',()=>{
   expect(pngHeader(envelope(360,740),390,844)).toBeNull()
   expect(pngHeader(Buffer.alloc(128),390,844)).toBeNull()
   expect(pngHeader(envelope(390,844).subarray(0,100),390,844)).toBeNull()
+  // Valid CRCs and chunk order are insufficient if IDAT is not zlib data.
+  const ihdr=Buffer.alloc(13)
+  ihdr.writeUInt32BE(390,0);ihdr.writeUInt32BE(844,4);ihdr[8]=1
+  const invalidZlib=Buffer.concat([signature,chunk('IHDR',ihdr),
+   chunk('IDAT',Buffer.from([1,2,3,4])),chunk('IEND',Buffer.alloc(0))])
+  expect(pngHeader(invalidZlib,390,844)).toBeNull()
   const corrupted=envelope(390,844)
   corrupted[55]^=1 // damage IDAT payload without updating its CRC
   expect(pngHeader(corrupted,390,844)).toBeNull()
