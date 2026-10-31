@@ -123,4 +123,15 @@ describe('QA-3b screenshot structural gate',()=>{
    expect(report.warnings.some(w=>w.includes(source)&&w.includes(target))).toBe(true)
   }finally{rmSync(dir,{recursive:true,force:true})}
  })
+
+ it('rejects a CRC-correct but undecodable Adam7 interlaced PNG',()=>{
+  // Playwright Chromium captures are non-interlaced. A one-byte inflated IDAT
+  // cannot encode the seven Adam7 passes of a 390x844 grayscale image.
+  const ihdr=Buffer.alloc(13)
+  ihdr.writeUInt32BE(390,0);ihdr.writeUInt32BE(844,4)
+  ihdr[8]=1;ihdr[9]=0;ihdr[12]=1
+  const forged=Buffer.concat([signature,chunk('IHDR',ihdr),
+   chunk('IDAT',deflateSync(Buffer.from([0]))),chunk('IEND',Buffer.alloc(0))])
+  expect(pngHeader(forged,390,844)).toBeNull()
+ })
 })
