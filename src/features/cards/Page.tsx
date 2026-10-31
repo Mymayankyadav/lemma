@@ -43,6 +43,7 @@ export default function Page(){
  useEffect(()=>{
   const element=filterScroller.current;if(!element)return;
   updateFilterFade();
+  if(typeof ResizeObserver==='undefined')return;
   const observer=new ResizeObserver(updateFilterFade);
   observer.observe(element);
   return ()=>observer.disconnect();
