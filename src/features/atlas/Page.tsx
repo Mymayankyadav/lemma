@@ -102,12 +102,12 @@ export default function Page(){
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
  const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
- // Preserve FIX #519b's moderate-outline accessibility exception:
- // a normal (≤150-node) tree keeps all Fields mounted for keyboard traversal.
- // Large stress/X trees still virtualize above 40 rows with eight-row
- // overscan, using variable-height offsets instead of fixed 44px arithmetic.
- const virtualizeAbove=tree&&tree.nodes.size<=150?150:40;
- const virtual=rows.length>virtualizeAbove;
+ // Window all outlines above 40 rows, including the normal 82-row demo.
+ // FIX #519b additionally requires every Field in a moderate (≤150-node)
+ // outline to remain keyboard/screen-reader reachable. Mount only those
+ // off-window Field rows at their true absolute offsets, rather than
+ // disabling virtualization for every child in the moderate outline.
+ const virtual=rows.length>40;
  const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
  const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
  const visible=virtual?rows.slice(first,last):rows;
@@ -115,6 +115,8 @@ export default function Page(){
  // original row leaves the mounted window. Derive its identity from logical
  // row offsets, never from the overscan row's nearest (often Topic) ancestor.
  const fieldRows=useMemo(()=>rows.flatMap((row,index)=>tree?.nodes.get(row.id)?.level==='cluster'?[index]:[]),[rows,tree]);
+ const accessibleFields=virtual&&tree&&tree.nodes.size<=150
+  ?fieldRows.filter(index=>index<first||index>=last):[];
  const activeFieldIndex=fieldRows.filter(index=>geometry.offsets[index]<=scrollTop).at(-1)??-1;
  const activeField=virtual&&activeFieldIndex>=0?tree?.nodes.get(rows[activeFieldIndex].id):null;
  const nextFieldIndex=fieldRows.find(index=>index>activeFieldIndex);
@@ -248,6 +250,16 @@ export default function Page(){
      return <Row key={row.id} node={node} sticky={!virtual} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match} focused={!!focus}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
     </div>
+    {accessibleFields.map(index=>{
+     const node=tree.nodes.get(rows[index].id)!;
+     return <div key={'accessible-field:'+node.id} className="absolute inset-x-0"
+      style={{top:geometry.offsets[index]}}>
+      <Row node={node} sticky={false} open={!!filter||open.has(node.id)}
+       tone={rowTone(tree,node.id,focus,selectedId,!filter&&!open.has(node.id))}
+       match={rows[index].match} focused={!!focus}
+       onToggle={()=>{if(!filter)toggle(node.id)}} onSelect={()=>onRow(node)}/>
+     </div>;
+    })}
     {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
