@@ -14,7 +14,7 @@ import {studyDayBounds} from "../../lib/derive";
 export function makeStressInsightAggregate(
  data:DemoStore, days:7|30|90, now:number, timeZone:string, rolloverHour:number,
 ):InsightAggregate|null {
- const total=data.seed===2026103101?50000:data.seed===2026103102?300000:null;
+ const total=data.stressReviewCount??null;
  if(total===null)return null;
  const end=studyDayBounds(now,timeZone,rolloverHour).index;
  const first=end-89;
@@ -170,7 +170,9 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
   const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
   data.notes = [];
+  // ST-5-style bounded server aggregate represents the stored review pressure.
   data.reviews = [];
+  data.stressReviewCount = extreme ? 300000 : 50000;
   for (let i = 0; i < cardCount; i++) {
     const project = data.projects[i % data.projects.length];
     const no = i + 1;
