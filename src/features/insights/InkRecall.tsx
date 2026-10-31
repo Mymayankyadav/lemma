@@ -22,13 +22,13 @@ export function InkRecall({data,target}: {data: RecallPoint[]; target: number}) 
   </pattern></defs>
   {[0,.25,.5,.75,1].map(tick=><g key={tick}>
    <line x1={left} x2={right} y1={y(tick)} y2={y(tick)} stroke="var(--line)" strokeWidth=".8"/>
-   <text x={left-7} y={y(tick)+3} textAnchor="end" fill="var(--ink-3)" fontSize="10">{Math.round(tick*100)}%</text>
+   <text x={left-7} y={y(tick)+3} textAnchor="end" fill="var(--ink-3)" fontSize="12">{Math.round(tick*100)}%</text>
   </g>)}
   <line x1={left} x2={right} y1={y(target)} y2={y(target)} stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="4 4"/>
   {shade&&<path d={shade} fill={`url(#${id})`}/>}
   {stroke&&<path d={stroke} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round"/>}
   {last&&<circle cx={x(last.index)} cy={y(last.value??0)} r="3.5" fill="var(--accent)"/>}
-  <text x={left} y="141" fill="var(--ink-3)" fontSize="10">{data[0]?.label||''}</text>
-  <text x={right} y="141" textAnchor="end" fill="var(--ink-3)" fontSize="10">{data[data.length-1]?.label||''}</text>
+  <text x={left} y="141" fill="var(--ink-3)" fontSize="12">{data[0]?.label||''}</text>
+  <text x={right} y="141" textAnchor="end" fill="var(--ink-3)" fontSize="12">{data[data.length-1]?.label||''}</text>
  </svg>;
 }
