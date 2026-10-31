@@ -14,6 +14,6 @@ describe('ST-4 project filters preserve mathematical titles',()=>{
   expect(option).toContain('(a/b)');
   expect(option).toContain('𝔽');
   expect(option).not.toContain('$');
-  expect(option).not.toContain('\\\\');
+  expect(option).not.toContain('\\');
  });
 });
