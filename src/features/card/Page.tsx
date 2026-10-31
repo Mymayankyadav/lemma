@@ -82,8 +82,9 @@ export default function Page() {
   const rawComments=commentPage?.rows??detail?.comments??[];
   const visibleComments=rawComments.filter(c=>c.status==='open'||c.status==='addressed');
   const visibleReviews=reviewPage?.rows??detail?.history??[];
-  const moreComments=commentPage?Boolean(commentPage.nextCursor):rawComments.length===20;
-  const moreReviews=reviewPage?Boolean(reviewPage.nextCursor):visibleReviews.length===20;
+  // A full 20-row page is not evidence that a 21st row exists.
+  const moreComments=Boolean(commentPage?commentPage.nextCursor:detail?.commentsNextCursor);
+  const moreReviews=Boolean(reviewPage?reviewPage.nextCursor:detail?.historyNextCursor);
   useEffect(()=>{
     setCommentPage(null);setReviewPage(null);
     setCommentCursors([]);setReviewCursors([]);
@@ -92,7 +93,7 @@ export default function Page() {
     if(pageBusy)return;
     setPageBusy(true);
     try{
-      const current=reviewPage??await getApi().getCardHistoryPage(number);
+      const current=reviewPage??{rows:detail?.history??[],nextCursor:detail?.historyNextCursor??null};
       if(!current.nextCursor){setReviewPage(current);return;}
       const next=await getApi().getCardHistoryPage(number,current.nextCursor);
       setReviewCursors(v=>[...v,current.nextCursor!]);
@@ -115,7 +116,7 @@ export default function Page() {
     if(pageBusy)return;
     setPageBusy(true);
     try{
-      const current=commentPage??await getApi().getCardCommentsPage(number);
+      const current=commentPage??{rows:detail?.comments??[],nextCursor:detail?.commentsNextCursor??null};
       if(!current.nextCursor){setCommentPage(current);return;}
       const next=await getApi().getCardCommentsPage(number,current.nextCursor);
       setCommentCursors(v=>[...v,current.nextCursor!]);
