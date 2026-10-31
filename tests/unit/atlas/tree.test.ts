@@ -20,6 +20,16 @@ const graph:AtlasGraph={
  ],
 };
 
+describe('LOOK-4b cold Atlas tree identity cache',()=>{
+ it('does not rebuild an unchanged query graph on StrictMode's repeated render',()=>{
+  const first=buildAtlasTree(graph);
+  expect(buildAtlasTree(graph)).toBe(first);
+  // A new immutable query snapshot must produce a new derived tree.
+  const updated:AtlasGraph={...graph,concepts:graph.concepts.map(c=>({...c}))};
+  expect(buildAtlasTree(updated)).not.toBe(first);
+ });
+});
+
 describe('Atlas tree',()=>{
  const tree=buildAtlasTree(graph);
  it('nests ideas under one root per subject and hides self-test data',()=>{
