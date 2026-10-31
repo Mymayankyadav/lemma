@@ -44,7 +44,7 @@ const token=[
 
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const)
-for(const recordCount of [20,1001] as const){
+for(const recordCount of [19,20,21,1001] as const){
  test('FIX-546b live bounded HTTP '+recordCount+' '+theme+' '+width,async({page})=>{
   test.setTimeout(120_000)
   await page.setViewportSize({width,height:width===360?740:844})
@@ -95,22 +95,22 @@ for(const recordCount of [20,1001] as const){
   })
   await page.goto('/lemma/?demo=0&theme='+theme+'#/cards/12')
   await expect(page.getByRole('heading',{name:'Card detail',level:1})).toBeVisible()
-  await expect(page.locator('[data-review-row]')).toHaveCount(20)
-  await expect(page.locator('[data-comment-row]')).toHaveCount(20)
-  if(recordCount===20){
+  await expect(page.locator('[data-review-row]')).toHaveCount(Math.min(20,recordCount))
+  await expect(page.locator('[data-comment-row]')).toHaveCount(Math.min(20,recordCount))
+  if(recordCount<=20){
    await expect(page.getByRole('button',{name:'More reviews'})).toHaveCount(0)
    await expect(page.getByRole('button',{name:'More comments'})).toHaveCount(0)
   }else{
    await page.getByRole('button',{name:'More reviews'}).click()
-   await expect(page.locator('[data-review-row]')).toHaveCount(20)
+   await expect(page.locator('[data-review-row]')).toHaveCount(Math.min(20,recordCount-20))
    await expect(page.getByRole('button',{name:'Newer reviews'})).toBeVisible()
    await page.getByRole('button',{name:'More comments'}).click()
-   await expect(page.locator('[data-comment-row]')).toHaveCount(20)
+   await expect(page.locator('[data-comment-row]')).toHaveCount(Math.min(20,recordCount-20))
    await expect(page.getByRole('button',{name:'Newer comments'})).toBeVisible()
   }
 
   const bounded=calls.filter(c=>c.table==='reviews'||c.table==='card_comments')
-  expect(bounded.map(c=>c.table).sort()).toEqual(recordCount===20
+  expect(bounded.map(c=>c.table).sort()).toEqual(recordCount<=20
    ?['card_comments','reviews']
    :['card_comments','card_comments','reviews','reviews'])
   expect(bounded.reduce((sum,c)=>sum+c.bytes,0)).toBeLessThan(200*1024)
