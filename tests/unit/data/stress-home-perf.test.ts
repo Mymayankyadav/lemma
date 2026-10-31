@@ -21,6 +21,18 @@ describe('FIX #507: cold Today stress summary',()=>{
   hydrated.notes[0].note.front='Changed only in the hydrated copy';
   expect(input.notes[0].note.front).not.toBe('Changed only in the hydrated copy');
  });
+ it('keeps exact 4,000-card deck counts without materialising every ReviewItem',async()=>{
+  const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme'),now:()=>now,timeZone:'UTC'});
+  const started=performance.now();
+  const decks=await api.getDeckTree();
+  const elapsed=performance.now()-started;
+  expect(decks).toHaveLength(60);
+  expect(decks.reduce((sum,deck)=>sum+deck.due,0)).toBe(4000);
+  for(const deck of decks)
+   expect(deck.children.reduce((sum,child)=>sum+child.due,0)).toBe(deck.due);
+  expect(elapsed).toBeLessThan(1500);
+ },30_000);
+
  it('derives the extreme project and due summaries without per-card/per-checkpoint quadratic scans',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme'),now:()=>now,timeZone:'UTC'});
   const started=performance.now();
