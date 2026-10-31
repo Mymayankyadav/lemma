@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {SectionHeading} from '../../ui/SectionHeading';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
 import {useProjects,useUpdateProject} from '../../data/hooks';
@@ -23,7 +24,7 @@ function MiniMetro({project}:{project:ProjectSummary}){
  const percent=pct(project);
  return <div className="flex min-w-0 items-center gap-2">
   <MiniStageBar project={project}/>
-  <span className="flex shrink-0 flex-col items-end font-[var(--font-num)] text-caption tabular-nums text-ink-2">
+  <span className="flex shrink-0 flex-col items-end font-[var(--font-ui)] text-caption tabular-nums text-ink-2">
    <span>{percent}%</span>
    {project.scheduleHeadline&&<span data-schedule-chip="" className="whitespace-nowrap text-[12px]">{project.scheduleHeadline}</span>}
   </span>
@@ -99,7 +100,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
   <button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
-   <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s"><Tex source={name}/></h2>
+   <SectionHeading className="min-w-0 flex-1 break-words"><Tex source={name}/></SectionHeading>
    <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
   </button>
