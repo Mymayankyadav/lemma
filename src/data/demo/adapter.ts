@@ -264,7 +264,7 @@ export class DemoAdapter implements LemmaApi {
       state: clone(card.state),
     };
   }
-  private allItems() {
+  private allItems(include?: (state: CardState) => boolean) {
     // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
     // identities once instead of scanning all checkpoints for every card.
     const projects = new Map<string, DemoProject>(this.store.projects
@@ -279,7 +279,8 @@ export class DemoAdapter implements LemmaApi {
         const cp = n.note.checkpointCode
           ? checkpoints.get(cpKey(n.projectId, n.note.checkpointCode)) ?? null
           : null;
-        return n.cards.map(card => this.item(n, card, project, cp));
+        return n.cards.filter(card => !include || include(card.state))
+          .map(card => this.item(n, card, project, cp));
       });
   }
   /** The due badge and deck counts represent the full backlog, not the daily queue. */
@@ -288,18 +289,22 @@ export class DemoAdapter implements LemmaApi {
     return this.allItems().filter(item => item.state.state > 0 && Date.parse(item.state.due) <= now);
   }
   private eligible(): ReviewItem[] {
-    const start = studyDayBounds(
+    const {start,end} = studyDayBounds(
       this.now(),
       this.store.settings.timeZone,
       this.store.settings.rolloverHour,
-    ).start;
+    );
     const today = this.store.reviews.filter(
       (r) =>
         !r.undoneAt &&
         Date.parse(r.reviewedAt) >= start &&
         Date.parse(r.reviewedAt) <= this.now(),
     );
-    return dueToday(this.allItems(), this.store.settings, {
+    // dueToday never selects a future scheduled card. Avoid constructing
+    // 26,000 cloned ReviewItems only to discard them in the 30k-card fixture.
+    // Keep every new card, plus every due/learning card before study-day end.
+    return dueToday(this.allItems(state => state.state === 0 ||
+      this.dueTime(state.due) < end), this.store.settings, {
       now: this.now(),
       answeredToday: today.length,
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
