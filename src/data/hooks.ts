@@ -138,10 +138,10 @@ export function useApproveAllCards() {
  return useWrite((api, _value: void) => api.approveAllCards(), ['proposals', 'proposal', 'home', 'decks', 'project', 'projects', 'session', 'sessions', 'atlas', 'cards', 'card'])
 }
 export function useRecordReview() {
- return useWrite((api, value: Parameters<LemmaApi['recordReview']>[0]) => api.recordReview(value), ['card', 'cards', 'decks', 'home', 'insights', 'review-log'])
+ return useWrite((api, value: Parameters<LemmaApi['recordReview']>[0]) => api.recordReview(value), ['card', 'cards', 'card-history-page', 'decks', 'home', 'insights', 'review-log'])
 }
 export function useUndoReview() {
- return useWrite((api, value: Parameters<LemmaApi['undoReview']>[0]) => api.undoReview(value), ['card', 'cards', 'decks', 'home', 'insights', 'review-log'])
+ return useWrite((api, value: Parameters<LemmaApi['undoReview']>[0]) => api.undoReview(value), ['card', 'cards', 'card-history-page', 'decks', 'home', 'insights', 'review-log'])
 }
 export function useCreateNote() {
  return useWrite((api, value: Parameters<LemmaApi['createNote']>[0]) => api.createNote(value), ['card', 'cards', 'decks', 'home', 'projects', 'project'])
@@ -153,10 +153,10 @@ export function useSetNoteStatus() {
  return useWrite((api, value: { noteNo: Parameters<LemmaApi['setNoteStatus']>[0]; status: Parameters<LemmaApi['setNoteStatus']>[1] }) => api.setNoteStatus(value.noteNo, value.status), ['card', 'cards', 'decks', 'home'])
 }
 export function useAddComment() {
- return useWrite((api, value: { noteNo: Parameters<LemmaApi['addComment']>[0]; body: Parameters<LemmaApi['addComment']>[1] }) => api.addComment(value.noteNo, value.body), ['card', 'cards'])
+ return useWrite((api, value: { noteNo: Parameters<LemmaApi['addComment']>[0]; body: Parameters<LemmaApi['addComment']>[1] }) => api.addComment(value.noteNo, value.body), ['card', 'cards', 'card-comments-page'])
 }
 export function useDismissComment() {
- return useWrite((api, value: Parameters<LemmaApi['dismissComment']>[0]) => api.dismissComment(value), ['card', 'cards'])
+ return useWrite((api, value: Parameters<LemmaApi['dismissComment']>[0]) => api.dismissComment(value), ['card', 'cards', 'card-comments-page'])
 }
 export function useResolveMisconception() {
  return useWrite((api, value: Parameters<LemmaApi['resolveMisconception']>[0]) => api.resolveMisconception(value), ['atlas', 'session', 'project'])
