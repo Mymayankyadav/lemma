@@ -30,7 +30,8 @@ export function enforceStressBudgets(
 ):void{
  for(const gate of pending){
   if(!Number.isSafeInteger(gate.issue)||gate.issue<=0||
-     !gate.failure.trim()||!gate.routes.length)
+     !gate.failure.trim()||!gate.routes.length||
+     gate.routes.some(route=>route==='*'||!route.startsWith('/')))
    throw Error('invalid pending stress gate: '+JSON.stringify(gate));
  }
  const errors:string[]=[];
