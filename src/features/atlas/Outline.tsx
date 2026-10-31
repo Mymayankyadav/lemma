@@ -183,7 +183,7 @@ export function Row({node,open,tone,match,focused=false,onToggle,onSelect}:{
   style={{height,paddingLeft:lead,paddingRight:GUTTER+4,
    borderTop:root||area?'1px solid var(--hair)':undefined,
    backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined,
-   opacity:focused&&tone==='none'?.42:1}}>
+   opacity:focused&&tone==='none'?0.42:1}}>
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px"
    style={{left:12+indentation(d)+6,background:'color-mix(in srgb,var(--ink) 6%,transparent)'}}/>)}
   {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
