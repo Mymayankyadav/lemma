@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {budgetArcs,initialExpanded,visibleRows,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
+import {arcCountFor,arcsFor,budgetArcs,initialExpanded,visibleRows,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
 
 // FIX #519: the first render must already use the effective expanded set.
 // Waiting for an effect used to construct and draw the 8,000-link Atlas twice
@@ -39,4 +39,17 @@ it('keeps long arcs first and preserves hidden counts without drawing 8,000 arcs
  const large=Array.from({length:100},(_,i)=>({...arcs[0],key:'arc-'+i}));
  expect(budgetArcs(tree,rows,new Set(['field']),large,null,60))
   .toEqual({visible:[],hidden:100});
+});
+
+it('counts bundled arcs exactly when the unfocused graph is hidden',()=>{
+ const graph={...tree,links:[
+  {fromId:'field',toId:'idea',kind:'prereq'},
+  {fromId:'field',toId:'idea',kind:'prereq'},
+  {fromId:'idea',toId:'field',kind:'related'},
+  {fromId:'field',toId:'idea',kind:'related'},
+ ]} as unknown as AtlasTree;
+ const rows=visibleRows(graph,new Set(['field']));
+ const kinds=new Set(['prereq','related'] as const);
+ expect(arcCountFor(graph,rows,kinds)).toBe(arcsFor(graph,rows,kinds).length);
+ expect(arcCountFor(graph,rows,kinds)).toBe(2);
 });
