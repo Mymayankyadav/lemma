@@ -138,7 +138,9 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   // would add CP4a to its project timeline. Put the genuine plan-change
   // payload on the last stress project instead, which has matching CP codes.
   const stressPlanProposal = structuredClone(planProposal);
-  stressPlanProposal.projectSlug = data.projects[projectCount - 1].slug;
+  const proposalProject = data.projects[projectCount - 1];
+  stressPlanProposal.projectSlug = proposalProject.slug;
+  stressPlanProposal.projectGlyph = data.subjects.find(s => s.id === proposalProject.subjectId)?.glyph ?? stressPlanProposal.projectGlyph;
   data.proposals = [stressPlanProposal];
   for (let i = 1; i < proposalCount; i++) {
     const project = data.projects[i % data.projects.length];
