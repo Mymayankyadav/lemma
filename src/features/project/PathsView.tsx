@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {Tex} from '../../ui/Tex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
@@ -138,7 +139,7 @@ export function Stages({detail}:{detail:ProjectDetail}){
  const schedule=new Map(rows.map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-   <h2 className="font-[var(--font-display)] text-title-s italic">Stages</h2>
+   <SectionHeading>Stages</SectionHeading>
    <span className="text-label text-ink-3">{stages.length} {stages.length===1?'stage':'stages'}, {detail.total} checkpoints</span>
   </div>
   {stages.length>5&&<nav aria-label="Jump to stage" className="flex min-w-0 gap-2 overflow-x-auto pb-1" data-stage-jumps="">
