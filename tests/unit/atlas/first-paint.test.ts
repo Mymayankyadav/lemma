@@ -87,6 +87,13 @@ describe('FIX #519b cold Atlas viewport budget',()=>{
  it('keeps small outlines fully accessible without virtualization',()=>{
   expect(atlasWindow(40,0,740)).toEqual({virtual:false,first:0,last:40,height:undefined});
  });
+ it('keeps exactly 150 ordinary rows accessible but virtualizes row 151',()=>{
+  expect(atlasWindow(150,0,740,150)).toEqual({virtual:false,first:0,last:150,height:undefined});
+  const next=atlasWindow(151,0,740,150);
+  expect(next.virtual).toBe(true);
+  expect(next.last-next.first).toBeLessThanOrEqual(Math.ceil(740/44)+8);
+  expect(next.height).toBe(151*44);
+ });
  it('keeps a moderate Atlas fully navigable but still virtualizes 2,500 rows',()=>{
   // The ordinary three-field demo has enough expanded rows to put a field
   // below the first phone viewport. All fields must remain in the tree DOM.
