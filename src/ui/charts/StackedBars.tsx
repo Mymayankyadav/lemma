@@ -19,7 +19,7 @@ export function StackedBars({data,width=316,height=120,title='Reviews by day',cl
  {parts.map(([key,color])=>{const count=d[key],base=offset;offset+=count;const topY=y(offset),bottomY=y(base),barHeight=Math.max(0,bottomY-topY);
  return count>0?<motion.rect key={key} data-review-grade={key} x={x(String(i))||0} width={Math.max(1,x.bandwidth())} fill={color} rx={1.5}
  initial={reduce?false:{y:bottom,height:0}} animate={{y:topY,height:barHeight}} transition={{duration:0.55,delay:reduce?0:i*(data.length>16?0.018:0.06)}}/>:null})}
- {(i%labelEvery===0)&&<text x={(x(String(i))||0)+x.bandwidth()/2} y={h-5} fontSize="12" textAnchor="middle" fill="var(--ink-3)">{d.label}</text>}
+ {(i%labelEvery===0)&&<text x={(x(String(i))||0)+x.bandwidth()/2} y={h-5} fontSize="14" textAnchor="middle" fill="var(--ink-3)">{d.label}</text>}
  </g>})}</svg>;
 }
 export default StackedBars;
