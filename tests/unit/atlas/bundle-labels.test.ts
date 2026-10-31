@@ -1,5 +1,7 @@
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it} from 'vitest';
-import {GUTTER,ROW,OVERFLOW_BUNDLE_KEY,layoutBundleLabels} from '../../../src/features/atlas/Outline';
+import {GUTTER,ROW,OVERFLOW_BUNDLE_KEY,Wires,layoutBundleLabels} from '../../../src/features/atlas/Outline';
 import type {Arc} from '../../../src/features/atlas/tree';
 
 const arcs:Arc[]=[
@@ -45,6 +47,12 @@ describe('FIX #483 density fallback',()=>{
   expect(dense).toHaveLength(20);
   const positions=layoutBundleLabels(dense,5);
   const summary=positions.get(OVERFLOW_BUNDLE_KEY);
+  const markup=renderToStaticMarkup(createElement(Wires,{arcs:dense,rows:5,focus:null}));
+  expect(markup).toContain('data-atlas-hidden-bundles="true"');
+  expect(markup).toContain('Show '+(summary?.hiddenKeys?.length??0)+' hidden Atlas link bundles');
+  for(const key of summary?.hiddenKeys??[]){const arc=dense.find(a=>a.key===key)!;
+   expect(markup).toContain('rows '+(arc.from+1)+'–'+(arc.to+1)+': '+arc.count+' links');
+  }
   expect(summary,'congested five-row gutter must switch to a summary').toBeDefined();
   expect(summary?.hiddenKeys?.length).toBeGreaterThan(0);
   const visible=[...positions].filter(([key])=>key!==OVERFLOW_BUNDLE_KEY);
