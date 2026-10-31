@@ -1,217 +1,134 @@
-import {
-  getDocument,
-  GlobalWorkerOptions,
-  PasswordException,
-} from "pdfjs-dist/legacy/build/pdf.mjs";
-import type { PDFDocumentProxy, PDFDocumentLoadingTask } from "pdfjs-dist";
-import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { LemmaError } from "../data/api";
 import type { IngestProgress } from "../data/types";
-import { normalizePageText } from "./text";
+import { parsePdf, isPdfFile } from "./parse";
+import type { IngestOptions, IngestResult } from "./parse";
 import { readTextSource, textKind } from "./text-source";
 
-GlobalWorkerOptions.workerSrc = workerUrl;
-export interface IngestedPage {
-  page: number;
-  label: string;
-  body: string;
-}
-export interface OutlineItem {
-  title: string;
-  page: number;
-  level: number;
-}
-export interface IngestResult {
-  pageCount: number;
-  pages: IngestedPage[];
-  outline: OutlineItem[];
-  hasText: boolean;
-}
-export interface IngestOptions {
-  onProgress?: (progress: IngestProgress) => void;
-}
-interface PdfOutline {
-  title: string;
-  dest: string | unknown[] | null;
-  items?: PdfOutline[];
+export { flattenOutline, isPdfFile } from "./parse";
+export type { IngestedPage, OutlineItem, IngestOptions, IngestResult } from "./parse";
+
+/** Source picker accepts PDFs, LaTeX and Markdown without weakening MIME checks. */
+export function isSourceFile(file:Pick<File,"name"|"type">):boolean{
+ return isPdfFile(file)||textKind(file)!==null;
 }
 
-/** Browser document providers sometimes label real PDFs as generic binary files. */
-export function isPdfFile(file: Pick<File, "name" | "type">): boolean {
-  const mime = file.type.toLowerCase();
-  return (
-    mime === "application/pdf" ||
-    mime === "application/x-pdf" ||
-    ((mime === "" || mime === "application/octet-stream" || mime === "binary/octet-stream") &&
-      /\.pdf$/i.test(file.name))
-  );
+/** A file's active extraction can be cancelled without changing the existing addSource API. */
+const activeReaders = new WeakMap<File, () => void>();
+const cancelledFiles = new WeakSet<File>();
+export function cancelIngest(file: File): void {
+ cancelledFiles.add(file);
+ activeReaders.get(file)?.();
+}
+export function resetIngestCancellation(file: File): void {
+ cancelledFiles.delete(file);
+}
+function cancelled(): LemmaError {
+ return new LemmaError("invalid", "PDF reading cancelled");
 }
 
-async function readBytes(file: File): Promise<ArrayBuffer> {
-  if (typeof file.arrayBuffer === "function") return file.arrayBuffer();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as ArrayBuffer);
-    reader.onerror = () =>
-      reject(reader.error ?? new Error("File read failed"));
-    reader.readAsArrayBuffer(file);
-  });
-}
-async function outlinePage(
-  document: PDFDocumentProxy,
-  dest: PdfOutline["dest"],
-): Promise<number | null> {
-  try {
-    const target =
-      typeof dest === "string" ? await document.getDestination(dest) : dest;
-    if (!target?.length) return null;
-    const ref: unknown = target[0];
-    let index: number;
-    if (typeof ref === "number" && Number.isInteger(ref)) index = ref;
-    else if (
-      ref &&
-      typeof ref === "object" &&
-      "num" in ref &&
-      "gen" in ref &&
-      typeof ref.num === "number" &&
-      typeof ref.gen === "number"
-    )
-      index = await document.getPageIndex({ num: ref.num, gen: ref.gen });
-    else return null;
-    return index >= 0 && index < document.numPages ? index + 1 : null;
-  } catch {
-    return null;
-  } // A broken bookmark does not discard readable pages.
-}
-export async function flattenOutline(
-  document: PDFDocumentProxy,
-  roots: readonly PdfOutline[],
-): Promise<OutlineItem[]> {
-  const result: OutlineItem[] = [],
-    stack = roots.map((node) => ({ node, level: 0 })).reverse();
-  while (stack.length) {
-    const { node, level } = stack.pop()!;
-    const page = await outlinePage(document, node.dest);
-    if (page !== null)
-      result.push({
-        title: node.title.replace(/\s+/g, " ").trim(),
-        page,
-        level,
-      });
-    for (const child of [...(node.items ?? [])].reverse())
-      stack.push({ node: child, level: level + 1 });
+/** Parsing and text extraction run off the UI thread in browsers. Node tests use the same parser inline. */
+export async function ingest(file: File, options: IngestOptions = {}): Promise<IngestResult> {
+ if (cancelledFiles.has(file) || options.signal?.aborted) throw cancelled();
+ const kind=textKind(file);
+ if(kind){
+  const controller=new AbortController();
+  const abort=()=>controller.abort();
+  activeReaders.set(file,abort);
+  options.signal?.addEventListener("abort",abort,{once:true});
+  try{
+   if(file.size===0||file.size>50*1024*1024)
+    throw new LemmaError("invalid","Choose a nonempty file under 50 MB");
+   options.onProgress?.({phase:"reading",page:0,pageCount:0,message:"Reading text"});
+   const result=await readTextSource(file,kind);
+   if(controller.signal.aborted||cancelledFiles.has(file))throw cancelled();
+   if(!result.hasText)throw new LemmaError("invalid","This file has no text");
+   options.onProgress?.({phase:"done",page:result.pageCount,pageCount:result.pageCount,message:`${result.pageCount} sections read`});
+   return result;
+  }finally{
+   options.signal?.removeEventListener("abort",abort);
+   activeReaders.delete(file);
   }
-  return result;
-}
-/** A source the app can read: a PDF, or a LaTeX (.tex) or Markdown (.md) file. */
-export function isSourceFile(file: Pick<File, "name" | "type">): boolean {
-  return isPdfFile(file) || textKind(file) !== null;
-}
-/** Read a local PDF, .tex or .md file. Adapters own uploads and source_pages persistence. */
-export async function ingest(
-  file: File,
-  { onProgress }: IngestOptions = {},
-): Promise<IngestResult> {
-  let task: PDFDocumentLoadingTask | undefined,
-    pageCount = 0,
-    page = 0;
-  const kind = textKind(file);
-  if (kind) {
-    if (file.size === 0 || file.size > 50 * 1024 * 1024)
-      throw new LemmaError("invalid", "Choose a nonempty file under 50 MB");
-    onProgress?.({ phase: "reading", page: 0, pageCount: 0, message: "Reading text" });
-    const result = await readTextSource(file, kind);
-    if (!result.hasText) throw new LemmaError("invalid", "This file has no text");
-    onProgress?.({ phase: "done", page: result.pageCount, pageCount: result.pageCount, message: `${result.pageCount} sections read` });
-    return result;
-  }
+ }
+ if (typeof window === "undefined" || typeof Worker === "undefined") {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options.signal?.addEventListener("abort", abort, { once: true });
+  activeReaders.set(file, abort);
   try {
-    if (
-      file.size === 0 ||
-      file.size > 50 * 1024 * 1024 ||
-      !isPdfFile(file)
-    )
-      throw new LemmaError("invalid", "Choose a PDF under 50 MB");
-    onProgress?.({
-      phase: "reading",
-      page,
-      pageCount,
-      message: "Reading pages",
-    });
-    task = getDocument({
-      data: new Uint8Array(await readBytes(file)),
-      useSystemFonts: true,
-    });
-    const document = await task.promise;
-    pageCount = document.numPages;
-    onProgress?.({
-      phase: "reading",
-      page,
-      pageCount,
-      message: "Reading pages",
-    });
-    const labels = await document.getPageLabels(),
-      pages: IngestedPage[] = [];
-    for (page = 1; page <= pageCount; page++) {
-      const pdfPage = await document.getPage(page);
-      try {
-        const content = await pdfPage.getTextContent();
-        pages.push({
-          page,
-          label: labels?.[page - 1] ?? String(page),
-          body: normalizePageText(
-            content.items.filter(
-              (item): item is Extract<typeof item, { str: string }> =>
-                "str" in item,
-            ),
-          ),
-        });
-      } finally {
-        pdfPage.cleanup();
-      }
-      onProgress?.({
-        phase: "reading",
-        page,
-        pageCount,
-        message: "Reading pages",
-      });
-    }
-    const outline = await flattenOutline(
-      document,
-      (await document.getOutline()) ?? [],
-    );
-    const result = {
-      pageCount,
-      pages,
-      outline,
-      hasText:
-        pages.reduce((total, p) => total + p.body.length, 0) / pageCount >= 30,
-    };
-    onProgress?.({
-      phase: "done",
-      page: pageCount,
-      pageCount,
-      message: `${pageCount}/${pageCount} pages read`,
-    });
-    return result;
-  } catch (error) {
-    const failure =
-      error instanceof LemmaError
-        ? error
-        : new LemmaError(
-            "invalid",
-            error instanceof PasswordException
-              ? "This PDF is password-protected"
-              : "Couldn't read this PDF",
-          );
-    onProgress?.({
-      phase: "failed",
-      page: Math.min(page, pageCount),
-      pageCount,
-      message: failure.message,
-    });
-    throw failure;
+   return await parsePdf(file, { onProgress: options.onProgress, signal: controller.signal });
   } finally {
-    await task?.destroy().catch(() => undefined);
+   options.signal?.removeEventListener("abort", abort);
+   activeReaders.delete(file);
   }
+ }
+ return new Promise<IngestResult>((resolve, reject) => {
+  let worker: Worker | null = null;
+  let settled = false;
+  let fallbackStarted = false;
+  let watchdog: ReturnType<typeof setTimeout> | undefined;
+  const controller = new AbortController();
+
+  const cleanup = () => {
+   clearTimeout(watchdog);
+   worker?.terminate();
+   activeReaders.delete(file);
+   options.signal?.removeEventListener("abort", onAbort);
+  };
+  const finish = (result?: IngestResult, error?: Error) => {
+   if (settled) return;
+   settled = true;
+   cleanup();
+   if (error) reject(error);
+   else resolve(result!);
+  };
+  const onAbort = () => {
+   controller.abort();
+   finish(undefined, cancelled());
+  };
+  // A browser may block module-worker loading or PDF.js's nested worker.
+  // Recover from that failure without silently dropping a queued PDF.
+  // Normal successful extraction always happens off the UI thread.
+  const fallback = () => {
+   if (settled || fallbackStarted) return;
+   fallbackStarted = true;
+   clearTimeout(watchdog);
+   worker?.terminate();
+   void parsePdf(file, {
+    onProgress: options.onProgress,
+    signal: controller.signal,
+   }).then(result => finish(result)).catch(error =>
+    finish(undefined, error instanceof Error ? error : new LemmaError("invalid", "Couldn't read this PDF")));
+  };
+  const armWatchdog = () => {
+   clearTimeout(watchdog);
+   // Watch for a worker that fails silently before reporting its first page.
+   watchdog = setTimeout(fallback, 7000);
+  };
+  activeReaders.set(file, onAbort);
+  options.signal?.addEventListener("abort", onAbort, { once: true });
+  if (cancelledFiles.has(file) || options.signal?.aborted) { onAbort(); return; }
+
+  try {
+   worker = new Worker(new URL("./reader.worker.ts", import.meta.url), { type: "module" });
+   worker.onmessage = (event: MessageEvent<
+    {type: "progress";progress: IngestProgress} | {type: "result";result: IngestResult} | {type: "error";message: string}
+   >) => {
+    if (settled || fallbackStarted) return;
+    const message = event.data;
+    if (message.type === "progress") {
+     armWatchdog();
+     options.onProgress?.(message.progress);
+    } else if (message.type === "result") {
+     finish(message.result);
+    } else {
+     fallback();
+    }
+   };
+   worker.onerror = () => fallback();
+   worker.postMessage({ file });
+   armWatchdog();
+  } catch {
+   fallback();
+  }
+ });
 }
