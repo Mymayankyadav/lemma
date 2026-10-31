@@ -86,7 +86,7 @@ html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content .truncate
 }
 
 /* LOOK-1a: v4 quiet notebook surfaces and six-role typography foundation. */
-html:is([data-theme="graph"],[data-theme="graph-night"]) h1{
+html:is([data-theme="graph"],[data-theme="graph-night"]) :is(h1,.ui-display-title){
  font-family:var(--font-display);font-size:28px;line-height:31px;font-weight:500;
 }
 html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-section-heading{
