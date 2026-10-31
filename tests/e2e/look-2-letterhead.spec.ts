@@ -23,7 +23,8 @@ for(const width of [360,390] as const){
    // Wait for the lazy route and its data-backed heading before measuring or
    // capturing evidence. Otherwise a loading shell can yield blank screenshots
    // while the decorative SVG alone makes the test appear to pass.
-   const heading=page.locator('#main-content h1').first();
+   const headingName=route==='/'?'Home':route==='/projects'?'Paths':route==='/p/real-analysis'?'Project':route==='/review'?'Review':route==='/insights'?'Insights':'Settings';
+   const heading=page.getByRole('heading',{name:headingName,level:1,exact:true}).first();
    await expect(heading).toBeVisible({timeout:30_000});
    await expect(heading).not.toBeEmpty();
    // A heading can appear while the route still shows data skeletons. Wait
@@ -71,8 +72,8 @@ for(const width of [360,390] as const){
    // scrollTo(0,0) starts an animation and the next viewport assertion sees
    // the previous route's 600px scroll (often 1080px after hash navigation).
    await page.evaluate(()=>{
-    document.documentElement.style.scrollBehavior='auto';
-    document.body.style.scrollBehavior='auto';
+    document.documentElement.style.setProperty('scroll-behavior','auto','important');
+    document.body.style.setProperty('scroll-behavior','auto','important');
     window.scrollTo(0,0);
    });
    await heading.scrollIntoViewIfNeeded();
@@ -153,6 +154,14 @@ for(const width of [360,390] as const){
    });
    expect(scrolled.y).toBeGreaterThanOrEqual(590);
    expect(scrolled.bottom).toBeLessThanOrEqual(0);
+   // Remove the artificial height before the next same-document hash route.
+   // Otherwise scroll anchoring can retain the prior 600–1080px offset and
+   // a stale heading may be scrolled into view despite the new route loading.
+   await page.evaluate(()=>{
+    document.querySelector('[data-look-2-spacer]')?.remove();
+    window.scrollTo(0,0);
+   });
+   await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeLessThanOrEqual(1);
   }
  });
 }
