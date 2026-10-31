@@ -11,7 +11,7 @@ export function getApi(): LemmaApi {
  const profile = getDemoProfile()
  if (profile === 'default') return adapters.default ??= new DemoAdapter()
  return adapters[profile] ??= new DemoAdapter({
-  fixture: makeStressStore(JSON.parse(fixtureText) as DemoStore, profile),
+  fixture: makeStressStore(JSON.parse(fixtureText) as DemoStore, profile, {deferSessions:true}),
  })
 }
 export * from './types'

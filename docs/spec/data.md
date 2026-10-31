@@ -535,6 +535,18 @@ This is the contract for `docs/spec/v3.md` §§2a–6. It is additive until DB-4
 - New methods: `updateSubject(id, patch)` (name, glyph, position), `mergeSubjects(sourceId, targetId)` (owner-scoped, logged and undoable), `createProjectDraft({title,sources?})` (name-only flow), `updateSource(id, {title?,kind?})`, `listPlanRevisions(slug)`. Hooks are `useUpdateSubject`, `useMergeSubjects`, `useCreateProjectDraft`, `useUpdateSource`, `usePlanRevisions`. Mutations invalidate project, home, subjects, Atlas and revision caches as applicable.
 - Production schema, project subject nullability and the implementations of these calls are **not** changed by this contract PR. DB-4 must supply and test migrations, owner isolation, undo logging, system-row exclusion and adapters before dependent UI uses these methods.
 
+### 7.3 CONTRACT-546 — bounded Card detail history (additive)
+
+Audit #546 / ST-4 D7 requires a Card detail screen to load at most 20 recent reviews and 20 recent comments at a time, rather than downloading every owner row and slicing in the browser. This contract adds two independent cursor reads; it does **not** remove or rename any field in `CardDetail` or change the existing `getCard` inputs; CONTRACT-546c adds optional initial-page cursor metadata to its return value. FIX-546a first scopes the initial note query; FIX-546b implements these reads and the bounded stability-chart summary.
+
+- `CardHistoryPage`: `rows: CardDetail['history']`, `nextCursor: string | null`. `getCardHistoryPage(noteNo, cursor?)` returns at most 20 non-undone reviews for cards of that note, newest first.
+- `CardCommentsPage`: `rows: CardComment[]`, `nextCursor: string | null`. `getCardCommentsPage(noteNo, cursor?)` returns at most 20 comments for the note, newest first, including status and resolution metadata.
+- A cursor is opaque to UI code. Each implementation orders by timestamp descending and unique row ID descending, and encodes both keys in the continuation cursor; ties must not duplicate or skip rows. Query at most 21 rows to decide whether to return `nextCursor`. No offset paging or whole-table fetches.
+- Every query is explicitly filtered by `user_id` and by the selected note/card IDs; RLS remains enabled. A missing note or an invalid cursor returns a typed `LemmaError`. The demo adapter applies the same order and page limit in memory.
+- React Query keys are `['card-history-page', noteNo, cursor ?? null]` and `['card-comments-page', noteNo, cursor ?? null]`. Both hooks retain the 30-second stale time. Existing `useCard` is unchanged. Review/undo invalidates `card-history-page`; comment add/dismiss invalidates `card-comments-page` (in addition to existing card keys).
+- This contract introduces `notImplemented` stubs in both adapters; no screen may call them until FIX-546b supplies the implementations, 20/21-row paging tests, X-like network budget tests and bounded chart data.
+- **CONTRACT-546c (additive, audit boundary):** `CardDetail` may include `historyNextCursor?: string | null` and `commentsNextCursor?: string | null`. These are the exact 21-row probe continuations for the initial 20-row `history` and `comments` arrays returned by `getCard`. `null` means no older rows, even when exactly 20 were returned; absence is supported for legacy adapters and treated as no continuation. UI never infers continuation from array length and reuses these cursors to avoid a duplicate first-page query. FIX-546b implements the fields in both adapters; no new method, schema change, write or migration is needed.
+
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
 
 Both adapters (`src/data/live`, `src/data/demo`) implement every method with identical behavior. Errors are thrown as `LemmaError {code, message}` with codes `not_found`, `invalid`, `conflict`, `offline`, `auth`, `server`, `not_implemented` (stubs only).
@@ -576,6 +588,8 @@ Both adapters (`src/data/live`, `src/data/demo`) implement every method with ide
 | `searchCards(query, slug?)` | text | `CardRow[]` | front/back `ilike`; max 100 |
 | `searchCardsPage(filter)` | `CardSearchFilters` | `CardSearchPage` | ST-5 additive: owner-scoped, stable newest-first server search, 50 rows per page; optional project, checkpoint, scheduling state, note status, open-comment filters; `nextOffset` is null at the end |
 | `getCard(noteNo)` | | `CardDetail` | |
+| `getCardHistoryPage(noteNo, cursor?)` | note number, opaque cursor | `CardHistoryPage` | CONTRACT-546: 20 reviews newest-first, 21-row probe, owner/note scope; FIX-546b implements |
+| `getCardCommentsPage(noteNo, cursor?)` | note number, opaque cursor | `CardCommentsPage` | CONTRACT-546: 20 comments newest-first, 21-row probe, owner/note scope; FIX-546b implements |
 | `createNote(input)` | projectSlug, front, back, type, kind, checkpointCode? | `{noteNo}` | owner-made cards skip approval |
 | `updateNote(noteNo, patch)` | front, back, type, kind, tags | void | same ordinal rules as §5.4 card_edit |
 | `setNoteStatus(noteNo, status)` | active, suspended, deleted | void | |
@@ -590,6 +604,7 @@ Both adapters (`src/data/live`, `src/data/demo`) implement every method with ide
 
 ## 9. React Query hooks (`src/data/hooks.ts`)
 
+- CONTRACT-546 adds `useCardHistoryPage(noteNo, cursor?)` and `useCardCommentsPage(noteNo, cursor?)` with per-card/per-cursor keys; both throw `not_implemented` until FIX-546b supplies adapters.
 - One hook per read method: `useHome`, `useProjects`, `useProject(slug)`, `useCheckpoint(slug, code)`, `useSessions(slug?)`, `useSession(slug, n)`, `useProposals`, `useProposal(id)`, `useDeckTree`, `useReviewItems(filter)`, `useSearchCards(q, slug?)`, `useSearchCardsPage(filter)`, `useCard(noteNo)`, `useAtlas`, `useInsightData(days)`, `useSettings`, `useStyles`, `useSubjects`, `useAuth`.
 - Query keys: `['home']`, `['projects']`, `['project', slug]`, `['checkpoint', slug, code]`, `['sessions', slug ?? 'all']`, `['session', slug, n]`, `['proposals']`, `['proposal', id]`, `['decks']`, `['review-items', filter]`, `['cards', q, slug]`, `['card', noteNo]`, `['atlas']`, `['insights', days]`, `['settings']`, `['styles']`, `['subjects']`, `['auth']`.
 - One mutation hook per write method (`useApproveProposal`, …). After success, invalidate: proposals, home, decks, project and session keys for approvals; card, decks, home after reviews and note edits; settings after settings changes; projects and home after project changes; atlas after plan approvals and pins.

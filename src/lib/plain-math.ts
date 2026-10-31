@@ -17,7 +17,8 @@ const subscript: Record<string,string>={0:'₀',1:'₁',2:'₂',3:'₃',4:'₄',
 const raised=(text:string,alphabet:Record<string,string>)=>Array.from(text).map(ch=>alphabet[ch]||ch).join('');
 export function plainMath(source:string):string{
   return source
-    .replace(/\\mathbb\{([^}]*)\}/g,(_,name:string)=>Array.from(name).map(ch=>blackboard[ch]||ch).join(''))
+    .replace(/\\mathbb(?:\{([^}]*)\}|\s*([A-Za-z]))/g,(_,braced:string|undefined,single:string|undefined)=>
+      Array.from(braced??single??'').map(ch=>blackboard[ch]||ch).join(''))
     .replace(/\\(?:mathcal|mathrm|mathbf|operatorname|text)\{([^}]*)\}/g,'$1')
     .replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,'($1/$2)')
     .replace(/\\([A-Za-z]+)/g,(_,cmd:string)=>symbols[cmd]??cmd)
@@ -29,4 +30,13 @@ export function plainMath(source:string):string{
     .replace(/_([A-Za-z0-9])/g,(_,value:string)=>raised(value,subscript))
     .replace(/\$\$?|\u005c\(|\u005c\)|\u005c\[|\u005c\]/g,'')
     .replace(/[\\$]/g,'');
+}
+
+
+/** Detect math before choosing the Cards list preview's recoverable scroll mode.
+ * The renderer supports dollar, \(inline\), and \[display\] delimiters.
+ * Literal escaped dollars in ordinary prose do not trigger math layout.
+ */
+export function hasMathPreview(source:string):boolean{
+ return /(^|[^\\])\$/.test(source)||source.includes('\\(')||source.includes('\\[');
 }

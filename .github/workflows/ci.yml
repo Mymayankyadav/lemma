@@ -12,9 +12,27 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # ST-0's full 8-case extreme/stress acceptance can exceed 15 minutes.
-    # Keep all tests and hard assertions; give the suite time to finish.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  # Each Playwright case runs exactly once; separate runners keep the growing
+  # S/X × Graph day/night suite below the 30-minute per-job limit. All four
+  # check runs must succeed, in addition to check, mcp-sql and qa3-screens.
+  e2e:
+    name: e2e-${{ matrix.shard }}-of-4
+    runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,14 +41,47 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run check
-      # Phase 0 adds the harness before screen specs land in P0-B.
-      - run: npm run e2e -- --pass-with-no-tests
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens-shard-${{ matrix.shard }}
+          path: test-results/screens/
+          if-no-files-found: error
+          retention-days: 14
+
+  # Do not validate an incomplete shard: the 144 ST-0 PNG envelopes are
+  # checked only after every shard succeeds and all artifacts are combined.
+  qa3-screens:
+    needs: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: screens-shard-*
+          path: test-results/screens/
+          merge-multiple: true
+      - name: Validate QA-3b screenshot PNG envelopes
+        run: npx tsx scripts/qa3-screens.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa3-screenshot-structure
+          path: test-results/qa3/screenshot-structure.md
           if-no-files-found: ignore
           retention-days: 14
       - uses: actions/upload-artifact@v4

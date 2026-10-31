@@ -376,17 +376,23 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
   }
   return {ok:steps.length===PART_STEPS[part]&&steps.every(x=>x.ok)&&cleanupFailures.length===0,part,expected:PART_STEPS[part],steps};
 }
+// A previous invocation may have died at the platform's wall-clock limit.
+// Never let recovery of an unbounded backlog consume the next selftest's
+ // entire 150-second budget before its first recorded check.
+const MAX_STALE_SWEEP_ROWS = 4;
 const FIXTURE_PROJECT=/^zz-selftest-(extra-)?\d+$/;
 const FIXTURE_SUBJECT=/^zz-selftest-\d+$/;
 async function sweepStaleFixtures(c:Context):Promise<void>{
   const before=new Date(Date.now()-15*60*1000).toISOString();
   try{
     const projects=await c.db.from('projects').select('id,slug').eq('user_id',c.userId).eq('system',true)
-      .like('slug','zz-selftest-%').lt('created_at',before);
+      .like('slug','zz-selftest-%').lt('created_at',before)
+      .order('created_at',{ascending:true}).limit(MAX_STALE_SWEEP_ROWS);
     for(const row of projects.data??[])if(FIXTURE_PROJECT.test(row.slug))
       await c.db.from('projects').delete().eq('user_id',c.userId).eq('system',true).eq('id',row.id);
     const subjects=await c.db.from('subjects').select('id,name').eq('user_id',c.userId)
-      .like('name','zz-selftest-%').lt('created_at',before);
+      .like('name','zz-selftest-%').lt('created_at',before)
+      .order('created_at',{ascending:true}).limit(MAX_STALE_SWEEP_ROWS);
     for(const row of subjects.data??[]){
       if(!FIXTURE_SUBJECT.test(row.name))continue;
       const used=await c.db.from('projects').select('id').eq('user_id',c.userId).eq('subject_id',row.id).limit(1);

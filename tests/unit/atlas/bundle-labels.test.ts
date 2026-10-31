@@ -26,7 +26,7 @@ describe('FIX #483 Atlas bundle label placement',()=>{
   for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){
    const a=labels[i],b=labels[j];
    const edgeGap=Math.hypot(a.x-b.x,a.y-b.y)-a.radius-b.radius;
-   expect(edgeGap).toBeGreaterThanOrEqual(8-1e-6);
+   expect(edgeGap).toBeGreaterThanOrEqual(8);
   }
  });
  it('is stable regardless of arc paint order and does not hide counts',()=>{
@@ -77,7 +77,7 @@ describe('FIX #483 density fallback',()=>{
   }
   for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++){
    const a=labels[i],b=labels[j];
-   expect(Math.hypot(a.x-b.x,a.y-b.y)-a.radius-b.radius).toBeGreaterThanOrEqual(8-1e-6);
+   expect(Math.hypot(a.x-b.x,a.y-b.y)-a.radius-b.radius).toBeGreaterThanOrEqual(8);
   }
  });
 });

@@ -14,6 +14,7 @@ import {CalibrationBars} from '../../ui/charts/CalibrationBars';
 import {useState} from 'react';
 import {ArrowRight,BookOpen,Check as Tick,Lightbulb,Play,Plus,Settings,Sparkles} from 'lucide-react';
 import {Screen} from '../../ui/Screen';
+import {SectionHeading} from '../../ui/SectionHeading';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
 import {Card} from '../../ui/Card';
@@ -38,7 +39,7 @@ import {useToast} from '../../ui/Toast';
 const statuses=['done','revisit','now','next','locked','proposed'] as const;
 const keys=[{key:'Space',label:'Reveal'},{key:'1',label:'Again'},{key:'4',label:'Easy'}];
 function Section({title,children}:{title:string;children:React.ReactNode}){
- return <section aria-label={title} className="flex flex-col gap-4"><h2 className="text-headline font-semibold">{title}</h2>{children}</section>;
+ return <section aria-label={title} className="flex flex-col gap-4"><SectionHeading>{title}</SectionHeading>{children}</section>;
 }
 export default function Page(){
  const [mode,setMode]=useState('study'),[switchOn,setSwitchOn]=useState(true),[checked,setChecked]=useState(true),[mixed,setMixed]=useState<boolean|'mixed'>('mixed'),[sheetOpen,setSheetOpen]=useState(false);
@@ -50,6 +51,23 @@ export default function Page(){
   <div className="grid grid-cols-2 gap-3"><Tile>Tile<br/><span className="text-label text-ink-3">Quiet depth</span></Tile><Glass className="rounded-slab p-4">Glass<br/><span className="text-label text-ink-3">Frosted surface</span></Glass></div>
   <Card stack><p className="mb-2 text-label text-ink-3">Card · stacked</p><MathText source={"If $K\\subseteq\\mathbb{R}^n$ is compact, what can be said about every open cover?"} variant="card"/></Card>
   <Card><span className="text-label text-ink-3">Card · single</span></Card>
+  {/* Real mounted nested-paper specimen: one material surface with semantic
+      inner groups, not another stack of paper cards. */}
+  <Card as="article" aria-label="Nested paper example" className="p-4">
+   <h3 className="text-body-l font-semibold">A proof on one sheet</h3>
+   <Slab as="section" aria-label="Nested proof group" className="mt-3 p-3">
+    <p className="text-label text-ink-2">Assume a compact metric space.</p>
+    <Tile as="article" aria-label="Nested proof detail" className="mt-2 p-3">
+     <Card as="section" aria-label="Nested conclusion" className="p-2">
+      <p className="text-body">Every open cover admits a finite subcover.</p>
+      <button type="button" onClick={()=>notify('Nested proof selected',{tone:'success'})}
+       className="mt-2 min-h-11 rounded-ctl border border-edge px-3 text-label">
+       Inspect proof
+      </button>
+     </Card>
+    </Tile>
+   </Slab>
+  </Card>
  </Section>
  <Section title="Buttons and controls">
   <div className="flex flex-wrap gap-3"><Button size="m" icon={Play} onClick={()=>notify('Ready to study',{tone:'success'})}>Start</Button><Button variant="ghost">Secondary</Button><Button variant="danger">Reject</Button><Button variant="text" icon={ArrowRight}>Details</Button></div>

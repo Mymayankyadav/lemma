@@ -61,7 +61,9 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
    const y=anchorY+offset;
    if(y<minY||y>maxY)continue;
    for(const x of xs){
-    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+8))
+    // SVG circles have a 1px stroke (0.5px per edge), so reserve 9px
+    // between geometric radii to guarantee >=8 CSS px between painted marks.
+    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+9))
      return {x,y,radius,anchorX,anchorY};
    }
   }

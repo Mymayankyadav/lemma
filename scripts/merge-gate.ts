@@ -31,7 +31,14 @@ export interface MergeGateResult {
 }
 
 const denied = (reason: string): MergeGateResult => ({ ok: false, reason });
-const DEFAULT_REQUIRED_CHECKS = ["check", "mcp-sql"] as const;
+// FIX #573: after Playwright moved out of check, absence of even one
+// shard or the merged 144-PNG QA gate must block the Steward. Merely checking
+// every reported job is not enough: GitHub may omit a missing check run.
+const DEFAULT_REQUIRED_CHECKS = [
+  "check", "mcp-sql",
+  "e2e-1-of-4", "e2e-2-of-4", "e2e-3-of-4", "e2e-4-of-4",
+  "qa3-screens",
+] as const;
 
 /** Reject missing, pending, cancelled, skipped, failed, or blocked CI. */
 export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
@@ -58,7 +65,8 @@ export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
   }
   if (!latest.size) return denied("No exact-head check runs; fail closed");
 
-  const required = input.requiredChecks ?? DEFAULT_REQUIRED_CHECKS;
+  // Callers may add checks, but cannot override away the canonical seven.
+  const required = [...new Set([...DEFAULT_REQUIRED_CHECKS, ...(input.requiredChecks ?? [])])];
   if (!required.length) return denied("Expected CI check set is empty");
   for (const name of required)
     if (!latest.has(name)) return denied(`Missing expected exact-head check: ${name}`);

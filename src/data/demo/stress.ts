@@ -1,4 +1,4 @@
-import type { DemoStore, DemoCheckpoint, DemoNote, DemoSource } from "./model";
+import type { DemoStore, DemoCheckpoint, DemoNote, DemoSession, DemoSource } from "./model";
 
 import type {InsightAggregate,Subject} from "../types";
 import {DAY} from "../../lib/calendar";
@@ -40,11 +40,19 @@ export function makeStressInsightAggregate(
   const timestamp=Date.parse(at);
   return Number.isFinite(timestamp)&&timestamp<=now&&studyDayBounds(timestamp,timeZone,rolloverHour).index>=start;
  };
- const sessions=data.sessions.filter(s=>inWindow(s.startedAt));
- const minutes=sessions.reduce((n,s)=>n+s.minutes,0);
- const sortedMinutes=sessions.map(s=>s.minutes).sort((a,b)=>a-b);
+ // Representative stored histories must not double-count the virtual aggregate.
+ const virtualCount=data.stressSessionCount??0;
+ const sessions=virtualCount?[]:data.sessions.filter(s=>inWindow(s.startedAt));
+ // Deferred browser fixtures keep only a per-project count. Derive the same
+ // 90-day synthetic session aggregates without allocating every history row.
+ const perProjectInWindow=virtualCount
+  ?Math.floor(virtualCount/90)*days+Math.min(days,virtualCount%90):0;
+ const totalSessions=virtualCount?perProjectInWindow*data.projects.length:sessions.length;
+ const baseMinutes=virtualCount?(data.stressSessionMinutes??0):0;
+ const minutes=virtualCount?totalSessions*baseMinutes:sessions.reduce((n,s)=>n+s.minutes,0);
+ const sortedMinutes=virtualCount?[]:sessions.map(s=>s.minutes).sort((a,b)=>a-b);
  const middle=Math.floor(sortedMinutes.length/2);
- const typicalSession=sortedMinutes.length
+ const typicalSession=virtualCount?baseMinutes:sortedMinutes.length
   ?sortedMinutes.length%2?sortedMinutes[middle]:(sortedMinutes[middle-1]+sortedMinutes[middle])/2
   :null;
  const bySubject=new Map<string,{subject:Subject;minutes:number}>();
@@ -56,6 +64,12 @@ export function makeStressInsightAggregate(
   const entry=bySubject.get(subject.id)??{subject,minutes:0};
   entry.minutes+=session.minutes;bySubject.set(subject.id,entry);
  }
+ if(virtualCount)for(const project of data.projects){
+  const subject=subjectById.get(project.subjectId);
+  if(!subject)continue;
+  const entry=bySubject.get(subject.id)??{subject,minutes:0};
+  entry.minutes+=perProjectInWindow*baseMinutes;bySubject.set(subject.id,entry);
+ }
  const checkpointDays=Array.from({length:28},(_,i)=>{
   const index=end-27+i;
   const events=data.checkpointEvents.filter(e=>Number.isFinite(Date.parse(e.at))&&
@@ -66,13 +80,44 @@ export function makeStressInsightAggregate(
  });
  const most=data.misconceptions.reduce<(typeof data.misconceptions)[number]|null>(
   (best,item)=>!best||item.times>best.times?item:best,null);
- return {days,reviews,right,reviewDays,calibration,sessions:sessions.length,minutes,typicalSession,
+ return {days,reviews,right,reviewDays,calibration,sessions:totalSessions,minutes,typicalSession,
   subjectMinutes:[...bySubject.values()],checkpointDays,
   mostRevisited:most?{label:most.label,times:most.times,
    conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
 }
 
-/** Lazily serve the 1,200/3,000-page representative stress PDF without allocating page arrays. */
+/** Materialise a single 150/400-event reasoning history only when a session is opened.
+ * ST-6's nine-hint runs remain foldable; attempts/evidence/rechecks remain visible.
+ */
+export function stressSessionEvents(session: Pick<DemoSession, "id" | "checkpointCode"> & Partial<Pick<DemoSession, "startedAt" | "lastActivityAt">>, count: number): DemoSession["events"] {
+  const match = /^stress-session-(\d+)-(\d+)$/.exec(session.id);
+  if (!match || !Number.isSafeInteger(count) || count < 0) return [];
+  const projectIndex = Number(match[1]), number = Number(match[2]);
+  const start = Date.parse(session.startedAt ?? ""), end = Date.parse(session.lastActivityAt ?? "");
+  const hydrated = Number.isFinite(start) && Number.isFinite(end) && end >= start;
+  // Authored @day tokens resolve on hydration; on-demand virtual sessions already
+  // carry ISO bounds. Both paths put every event inside its ended session.
+  const offset = (number - 1) % 90;
+  return Array.from({length: count}, (_, index) => {
+    const progress = (index + 1) / (count + 1);
+    const createdAt = hydrated
+      ? new Date(start + (end - start) * progress).toISOString()
+      : `@day:-${offset}:${(0.3 + 0.3 * progress).toFixed(10)}:0`;
+    const phase = index % 12;
+    const kind = phase < 9 ? "hint" as const : phase === 9 ? "attempt" as const
+      : phase === 10 ? "evidence" as const : "recheck" as const;
+    return {
+      id: (projectIndex * 1000 + number) * count + index + 1,
+      kind,
+      body: `${kind === "hint" ? "Hint" : kind === "attempt" ? "Attempt" : kind === "evidence" ? "Evidence" : "Recheck"} ${index + 1}: justify each inference using the hypotheses of the lemma.`,
+      outcome: kind === "evidence" ? "demonstrated" as const : kind === "attempt" ? "partial" as const : null,
+      hintLevel: kind === "hint" ? phase + 1 : null,
+      checkpointCode: session.checkpointCode,
+      createdAt,
+    };
+  });
+}
+
 export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pageCount">, page: number) {
   if (!source.id.startsWith("stress-source-") || !source.hasText
       || !Number.isSafeInteger(page) || page < 1 || page > (source.pageCount ?? 0)) return null;
@@ -84,7 +129,7 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
 export type StressProfile = "stress" | "extreme";
 
-export function makeStressStore(original: DemoStore, profile: StressProfile): DemoStore {
+export function makeStressStore(original: DemoStore, profile: StressProfile, options: {deferSessions?: boolean} = {}): DemoStore {
   const data = structuredClone(original);
   const extreme = profile === "extreme";
   const projectCount = extreme ? 60 : 15;
@@ -96,6 +141,15 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   const proposalCount = extreme ? 600 : 150;
   const sessionCount = extreme ? 1000 : 300;
   const subjectCount = extreme ? 40 : 15;
+  // Keep two real mathematical stage names in the stress project so browser
+  // acceptance checks the rendered KaTeX font and recoverable long-name scroll.
+  // The stage count and checkpoint grouping remain exactly fifteen.
+  const stageName=(projectIndex:number,position:number,total:number)=>{
+    const stage=Math.min(15,Math.floor((position-1)*15/total)+1);
+    if(projectIndex===3&&stage===14)return String.raw`Topology of $\mathbb{R}^n$`;
+    if(projectIndex===3&&stage===15)return String.raw`\(\operatorname{verylongmathematicalstageverylongmathematicalstageverylongmathematicalstage}\)`;
+    return `Stage ${stage}`;
+  };
   const baseProject = data.projects[0];
   const baseCheckpoint = data.checkpoints[0];
   const baseNote = data.notes[0];
@@ -136,7 +190,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
         currentStep: n < 4 ? 3 : 0, recheckLevel: 0, recheckDue: null,
         recheckPrompt: `Explain the argument for ${code}`, needsRevisit: false,
         prereqs: n > 1 ? [`CP${n - 1}`] : [], conceptIds: [],
-        stage: pIndex === 0 ? undefined : `Stage ${Math.min(15, Math.floor((n - 1) * 15 / count) + 1)}`,
+        stage: pIndex === 0 ? undefined : stageName(pIndex,n,count),
         dueOn: `@date:${n - 10}`, demonstratedAt: n < 4 ? "@date:-10" : null,
       };
       data.checkpoints.push(cp);
@@ -144,7 +198,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     if (pIndex > 0) {
       for (const cp of existing) {
         const n = Number(cp.code.replace("CP", ""));
-        cp.stage = `Stage ${Math.min(15, Math.floor((n - 1) * 15 / count) + 1)}`;
+        cp.stage = stageName(pIndex,n,count);
       }
     }
   }
@@ -230,34 +284,49 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     };
     data.notes.push(note);
   }
+  const eventCount = extreme ? 400 : 150;
   data.sessions = [];
-  for (let i = 0; i < sessionCount; i++) {
-    const project = baseProject;
-    data.sessions.push({
-      ...baseSession, id: `stress-session-${i}`, projectId: project.id,
-      number: i + 1, checkpointCode: `CP${(i % 36) + 1}`,
-      goal: `Study session ${i + 1}`, startedAt: `@day:-${i % 90}:0.3:0`,
-      lastActivityAt: `@day:-${i % 90}:0.6:0`,
-      // Keep one real heavy session at S7 of the primary project, without
-      // multiplying event memory across all 1,000 sessions.
-      events: i === 6
-        ? Array.from({length: extreme ? 400 : 150},(_,n)=>{
-          const phase=n % 12;
-          const kind=phase<9?'hint':phase===9?'attempt':phase===10?'evidence':'recheck';
-          return {
-            id:n+1,kind,
-            body:kind==='hint'?`Hint ${n+1}: isolate the essential hypothesis.`
-              :kind==='attempt'?`Attempt ${n+1}: justify each implication.`
-              :kind==='evidence'?`Evidence ${n+1}: a complete argument is recorded.`
-              :`Recheck ${n+1}: repeat without referring to the hint.`,
-            outcome:kind==='evidence'?'demonstrated':null,
-            hintLevel:kind==='hint'?Math.min(20,phase+1):null,
-            checkpointCode:`CP${(i % 36)+1}`,
-            createdAt:new Date(Date.UTC(2026,9,31,0,n)).toISOString(),
-          } as const;
-        })
-        : [],
-    });
+  // The browser virtualises sessions so unrelated routes never hydrate 60,000
+  // records. The default generator remains fully materialised for fixture tests.
+  if (options.deferSessions) {
+    data.stressSessionCount = sessionCount;
+    data.stressSessionMinutes = baseSession.minutes;
+    // Keep two real long histories for ST-6 visual acceptance; all other
+    // sessions remain virtual and do not inflate unrelated route startup.
+    for (const [projectIndex, number] of [[0,7],[projectCount-1,1]] as const) {
+      const project = data.projects[projectIndex];
+      const id = `stress-session-${projectIndex}-${number}`;
+      const checkpointCode = `CP${((number-1)%36)+1}`;
+      data.sessions.push({
+        ...baseSession, id, projectId:project.id, number, checkpointCode,
+        goal:`Study session ${number} for ${project.title}`, state:"ended",
+        startedAt:`@day:-${(number-1)%90}:0.3:0`,
+        lastActivityAt:`@day:-${(number-1)%90}:0.6:0`,
+        events:stressSessionEvents({id,checkpointCode},eventCount),
+      });
+    }
+  }
+  else for (const [projectIndex, project] of data.projects.entries()) {
+    for (let index = 0; index < sessionCount; index++) {
+      const number = index + 1;
+      const fullHistory = (projectIndex === 0 && number === 7)
+        || (projectIndex === projectCount - 1 && number === 1);
+      const sessionId = `stress-session-${projectIndex}-${number}`;
+      const checkpointCode = `CP${(index % 36) + 1}`;
+      const events = fullHistory ? stressSessionEvents({id: sessionId, checkpointCode}, eventCount) : [];
+      data.sessions.push({
+        ...baseSession,
+        id: sessionId,
+        projectId: project.id,
+        number,
+        checkpointCode,
+        goal: `Study session ${number} for ${project.title}`,
+        state: "ended",
+        startedAt: `@day:-${index % 90}:0.3:0`,
+        lastActivityAt: `@day:-${index % 90}:0.6:0`,
+        events,
+      });
+    }
   }
   // Keep a real plan-change proposal at the route exercised by the ST-0
   // matrix. Previously the generated IDs replaced proposal-6, so the route
