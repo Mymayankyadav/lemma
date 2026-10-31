@@ -18,5 +18,11 @@ for (const [profile, theme, width, height] of [
     expect(overflow).toBeLessThanOrEqual(1);
     mkdirSync('test-results/screens/stress', {recursive:true});
     await page.screenshot({path:`test-results/screens/stress/session-events-${profile}-${theme}-${width}.png`, fullPage:false});
+    // Session 8 is not materialised in the fixture: this exercises the lazy
+    // event provider and confirms that every logical session is navigable.
+    await page.evaluate(() => { location.hash = '/s/real-analysis/8'; });
+    const reasoning = page.getByRole('region', {name:'Reasoning'});
+    await expect(reasoning.getByRole('button', {name:/9 hints/}).first()).toBeVisible({timeout:90_000});
+    await page.screenshot({path:`test-results/screens/stress/session-lazy-${profile}-${theme}-${width}.png`, fullPage:false});
   });
 }
