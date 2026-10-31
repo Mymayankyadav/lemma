@@ -200,4 +200,28 @@ try {
  console.log('PASS ST-5 120-card library uses stable bounded 50-row pages')
 
 
+ // ST-5/E1 extreme-library acceptance: even with 60 active projects and
+ // 100 checkpoints each, Today and Insights must transfer < 200 kB.
+ // Build the fixture in the isolated PostgreSQL database, never production.
+ await db.exec('reset role')
+ await db.exec([
+  "insert into public.projects(id,user_id,subject_id,slug,title,status,pinned,system,last_activity_at) select md5('st5-scale-project-'||n)::uuid,'"+owner+"','22222222-2222-2222-2222-222222222222','scale-'||n,'Scale project '||n,'active',false,false,now() from generate_series(1,58) n;",
+  "insert into public.checkpoints(id,user_id,project_id,code,title,position,status,current_step,steps,objective) select md5('st5-scale-checkpoint-'||p.n||'-'||c.n)::uuid,'"+owner+"',md5('st5-scale-project-'||p.n)::uuid,'CP'||c.n,'Checkpoint '||c.n,c.n,'not_started',0,jsonb_build_array('Read'),'Study' from generate_series(1,58) p(n) cross join generate_series(1,100) c(n);"
+ ].join('\n'))
+ await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
+ const scaleSummaries=(await q('select public.project_summaries() item')).map(x=>x.item)
+ assert.equal(scaleSummaries.filter(x=>x.status==='active').length,60)
+ assert.ok(scaleSummaries.every(x=>x.stageProgress.length<=13))
+ const scaleHome=(await q('select public.home_summary() result'))[0].result
+ assert.equal(scaleHome.projects.length,60)
+ assert.ok(Buffer.byteLength(JSON.stringify(scaleHome),'utf8')<200000,
+  'Today aggregate must transfer under 200 kB')
+ assert.ok(!scaleHome.projects.some(x=>'sourceTitles' in x),
+  'Today excludes source-title arrays')
+ const scaleInsights=(await q('select public.insights(90) result'))[0].result
+ assert.ok(Buffer.byteLength(JSON.stringify(scaleInsights),'utf8')<200000,
+  'Insights aggregate must transfer under 200 kB')
+ console.log('PASS ST-5 60-project/5,900-checkpoint aggregate transfer budgets')
+
+
 } finally {await db.close()}
