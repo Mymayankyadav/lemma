@@ -6,7 +6,7 @@ import type {ProjectSummary} from '../../data/types'
 export function shouldUseFastGoals(projects:readonly ProjectSummary[]):boolean{
  let active=0
  for(const project of projects){
-  if((project.status==='active'||project.status==='planning')&&++active>4)return true
+  if(project.status==='active'&&++active>4)return true
  }
  return false
 }
