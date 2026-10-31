@@ -6,6 +6,7 @@ import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
 import {relativeTime,formatCount} from '../../lib/text';
 import {plainMath} from '../../lib/plain-math';
+import {resumeSpoken} from './resumeSpoken';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
@@ -78,7 +79,7 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
  const status=resume.pausedAt?relativeTime(resume.pausedAt):null;
  const description=resume.checkpointTitle??'Ready to study';
  const step=resume.stepsTotal>0?' · step '+Math.min(Math.max(1,resume.step),resume.stepsTotal)+' of '+resume.stepsTotal:'';
- const spoken=resume.projectTitle+'. '+description+step.replace(' · step',', step')+(status?'. Paused '+status:'');
+ const spoken=resumeSpoken(resume.projectTitle,description,step,status);
  return <Slab as="section" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-3 px-3 py-2">
   <span className="sr-only">{spoken}</span>
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
