@@ -1,4 +1,7 @@
 import {describe,expect,it} from 'vitest';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {Row} from '../../../src/features/atlas/Outline';
 import {arcCountFor,arcsFor,budgetArcs,initialExpanded,visibleRows,isPlainAtlasLabel,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
 
 // FIX #519: the first render must already use the effective expanded set.
@@ -95,4 +98,15 @@ it('uses a safe plain-label fast path without bypassing mathematics',()=>{
  expect(isPlainAtlasLabel(String.raw`Topology of $\\mathbb{R}^n$`)).toBe(false);
  expect(isPlainAtlasLabel('**Important**')).toBe(false);
  expect(isPlainAtlasLabel('<img src=x>')).toBe(false);
+});
+
+it('renders plain Atlas rows without Markdown while preserving real KaTeX rows',()=>{
+ const node=tree.nodes.get('idea')!;
+ const props={node,open:false,tone:'none' as const,match:false,onToggle:()=>{},onSelect:()=>{}};
+ const plain=renderToStaticMarkup(createElement(Row,{...props,node:{...node,name:'Idea 123: Definition'}}));
+ expect(plain).toContain('Idea 123: Definition');
+ expect(plain).not.toContain('lemma-tex-inline');
+ const math=renderToStaticMarkup(createElement(Row,{...props,node:{...node,name:String.raw`Topology of $\\mathbb{R}^n$`}}));
+ expect(math).toContain('class="katex"');
+ expect(math).not.toContain('Topology of $');
 });
