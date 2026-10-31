@@ -15,7 +15,7 @@ for (const theme of ["graph", "graph-night"] as const) {
       await expect(preview.locator("li").first()).toContainText("Why must");
       // Demo proposal #1 contains $U_y$; the old raw-text preview has no KaTeX.
       await expect(preview.locator("li").first().locator(".katex")).toHaveCount(2);
-      await expect(preview.locator("li").first().locator(".katex-html")).toBeVisible();
+      await expect(preview.locator("li").first().locator(".katex-html").first()).toBeVisible();
       const metrics = await page.evaluate(() => ({
         overflow: document.documentElement.scrollWidth - innerWidth,
       }));
