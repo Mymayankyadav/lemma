@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useRef,useState,type KeyboardEvent,type MouseEvent} from 'react';
 import {Link,useNavigate} from 'react-router';
 import type {CheckpointView} from '../../data/types';
-import {buildSchedule,type ScheduledCheckpoint} from '../../lib/schedule';
+import {buildSchedule,scheduleDetail,type ScheduledCheckpoint} from '../../lib/schedule';
 import {plainMath} from '../../lib/plain-math';
 import {Tex} from '../Tex';
 import {currentCheckpointIndex,groupCheckpointStages,worstStageSchedule} from './progress';
@@ -42,6 +42,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
   return ()=>observer.disconnect();
  },[]);
  const checkpoint=checkpoints[focused];
+ const scheduleText=rows[focused]?scheduleDetail(rows[focused]):null;
  const open=(index=focused)=>{
   const cp=checkpoints[index];
   if(cp)navigate('/p/'+project.slug+'/cp/'+encodeURIComponent(cp.code));
@@ -182,6 +183,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
     <span className="min-w-0 flex-1 break-words text-[16px] text-ink"><Tex source={checkpoint.title}/></span>
     <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{focused+1} of {n}</span>
    </div>
+   {scheduleText&&<p data-schedule-detail="" className="mt-1 min-w-0 text-[12px] leading-[18px] text-ink-2">{scheduleText}</p>}
    {discloseStage&&<details data-route-stage-disclosure="" className="mt-2 min-w-0 text-ink">
     <summary className="flex min-h-11 cursor-pointer items-center text-[12px] text-ink-2">Show full stage name</summary>
     <div className="min-w-0 overflow-x-auto break-words pb-2 text-[16px]"><Tex source={foldedName}/></div>
