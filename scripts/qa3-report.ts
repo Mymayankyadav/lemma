@@ -40,7 +40,7 @@ export const QA3_ROUTE_READINESS: Record<(typeof QA3_ROUTES)[number], {heading:s
  '/atlas':{heading:'Atlas',landmark:'[data-atlas-row]'},
  '/insights':{heading:'Insights',landmark:'h2:has-text("Reviews by")'},
  '/settings':{heading:'Settings',landmark:'h2:has-text("Teaching style")'},
- '/sign-in':{heading:'Sign in',landmark:'button:has-text("Continue with Google")'},
+ '/sign-in':{heading:'Sign in',landmark:'p:has-text("Sign-in is available in live mode.")'},
  '/kit':{heading:'Component kit',landmark:'h2:has-text("Surfaces")'},
 };
 
