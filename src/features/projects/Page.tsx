@@ -108,6 +108,9 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
 }
 
 export default function Page(){
+ // Warm the Atlas chunk after Paths mounts, without parsing it on Today.
+ // Dynamic import is cached and reused by the Atlas route's React.lazy loader.
+ useEffect(()=>{void import('../atlas/Page')},[]);
  const projects=useProjects(),notify=useToast(),[params,setParams]=useSearchParams();
  const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]),[page,setPage]=useState(0);
  const filter=(['active','paused','done','archived'].includes(params.get('status')??'')?params.get('status'):'active') as Filter;
