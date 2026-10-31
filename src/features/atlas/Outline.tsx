@@ -166,8 +166,9 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    if(!badge)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
    const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
-   // The visible SVG rect itself is a 16px pill (not a 15px fill with a
-   // 1px stroke). Leave at least 6px of horizontal text breathing room.
+   // The painted pill is 16px high including its 1px SVG stroke:
+   // a 15px rect plus half a stroke on each edge. Width grows with digits
+   // but stays within the placement radius, preserving 8px clearance.
    // Placement reserves a radius per bundle. Use that reserved painted
    // footprint for the pill width: real 12px glyphs vary by font and the
    // previous digit-count estimate clipped some counts by >6px.
@@ -180,8 +181,8 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
       stroke={toneColor[tone]} strokeWidth="1" strokeDasharray="2 2" fill="none"/>}
     <g transform={'translate('+badge.x+' '+badge.y+')'}>
      <rect data-atlas-bundle-pill="true" data-atlas-bundle-circle="true"
-      x={-pillWidth/2} y="-8"
-      width={pillWidth} height="16" rx="8"
+      x={-pillWidth/2} y="-7.5"
+      width={pillWidth} height="15" rx="7.5"
       fill="var(--paper)" stroke={toneColor[tone]} strokeWidth="1"/>
      <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
     </g>
