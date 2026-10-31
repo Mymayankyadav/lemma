@@ -26,8 +26,9 @@ describe('ST-0 deterministic stress data', () => {
    expect(planProposal?.kind).toBe('plan_change');
    expect(planProposal?.planChange?.ops.length).toBeGreaterThan(0);
    expect(planProposal?.projectSlug).toBe(data.projects[projects - 1].slug);
-   expect(data.sessions).toHaveLength(sessions);
+   expect(data.sessions).toHaveLength(sessions * projects);
    expect(data.sessions.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(sessions);
+   expect(data.sessions.filter(s=>s.projectId===data.projects[projects-1].id)).toHaveLength(sessions);
    expect(data.sources.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(profile==='stress'?30:100);
    // Every project carries the same F2 source-list pressure; no single-project
    // shortcut may make the 60-project library look artificially cheap.

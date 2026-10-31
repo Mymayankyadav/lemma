@@ -60,7 +60,9 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
    const y=anchorY+offset;
    if(y<minY||y>maxY)continue;
    for(const x of xs){
-    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+8))
+    // Painted circles have a 1px stroke: reserve 9px geometric clearance
+    // to guarantee >=8 CSS px between visible edges.
+    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+9))
      return {x,y,radius,anchorX,anchorY};
    }
   }
