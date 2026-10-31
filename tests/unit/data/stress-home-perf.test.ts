@@ -24,6 +24,17 @@ describe('FIX #507: cold Today stress summary',()=>{
   }finally{formatter.mockRestore()}
  },30_000);
 
+ it('reuses the parsed seed for repeated default demo adapters',()=>{
+  const parse=vi.spyOn(JSON,'parse');
+  try{
+   const first=new DemoAdapter({now:()=>now,timeZone:'UTC'});
+   const second=new DemoAdapter({now:()=>now,timeZone:'UTC'});
+   expect(first).not.toBe(second);
+   // hydrateFixture clones the seed, so no new JSON parse is needed.
+   expect(parse).not.toHaveBeenCalled();
+  }finally{parse.mockRestore()}
+ });
+
  it('hydrates a private copy and preserves the original fixture tokens',()=>{
   const input=structuredClone(seed);
   const original=JSON.stringify(input);
