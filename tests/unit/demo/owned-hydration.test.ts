@@ -52,4 +52,26 @@ describe('stress fixture ownership', () => {
     expect(result.notes[2]).toEqual(reference.notes[2]);
     expect(result.notes.at(-1)).toEqual(reference.notes.at(-1));
   });
+  it('hydrates extreme checkpoint and source timestamps without recursively walking every generated record', () => {
+    const input=()=>makeStressStore(JSON.parse(fixtureText) as DemoStore,'extreme',{
+      deferNotes:true,deferSessions:true,deferAtlas:true,
+    });
+    const expected=hydrateFixture(input(),now,'UTC');
+    const owned=input();
+    const entries=vi.spyOn(Object,'entries');
+    let actual:DemoStore;
+    let visited:number;
+    try {
+      actual=hydrateFixture(owned,now,'UTC',{takeOwnership:true});
+      visited=entries.mock.calls.length;
+    } finally {
+      entries.mockRestore();
+    }
+    // The 60x100 checkpoints and 60x100 sources remain complete, including
+    // hydrated dates, but their immutable strings/arrays need no deep walk.
+    expect(visited).toBeLessThan(5000);
+    expect(actual.checkpoints).toEqual(expected.checkpoints);
+    expect(actual.sources).toEqual(expected.sources);
+  });
+
 });
