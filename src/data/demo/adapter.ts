@@ -70,6 +70,7 @@ import legacyRender from "../../lib/render/render.js";
 import { slugify } from "../../lib/text";
 import { DAY } from "../../lib/calendar";
 import {reviewForecast} from "../../lib/review-forecast";
+import {makeStressInsightAggregate} from "./stress";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const invalid = (message: string): never => {
@@ -1630,6 +1631,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async getInsightData(days: InsightDays): Promise<InsightData> {
     if (![7, 30, 90].includes(days)) invalid("Invalid insight range");
+    const aggregate = makeStressInsightAggregate(this.store,days,this.now(),this.store.settings.timeZone,this.store.settings.rolloverHour);
     const bounds = studyDayBounds(
         this.now(),
         this.store.settings.timeZone,
@@ -1645,6 +1647,7 @@ export class DemoAdapter implements LemmaApi {
           this.store.settings.rolloverHour,
         ) >= start;
     return {
+      ...(aggregate ? {aggregate} : {}),
       reviews: this.store.reviews
         .filter((r) => !r.undoneAt && within(r.reviewedAt))
         .map(({ id, cardId, prev, undoneAt, ...r }) => clone(r)),
