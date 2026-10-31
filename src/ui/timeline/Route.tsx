@@ -72,7 +72,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek}:RouteP
   preserveAspectRatio="none" width="100%" height={height} aria-hidden="true"
   className="block w-full overflow-hidden">
   {marks.slice(1).map((mark,i)=>{
-   const previous=marks[i],state=stateAt(mark.index);
+   const previous=marks[i],state=mark.kind==='stage'?stageStatus(mark).schedule:stateAt(mark.index);
    const from=previous.x+previous.width/2,to=mark.x-mark.width/2;
    const late=state==='late',early=state==='early',future=state==='future';
    return <g key={'track-'+i} data-track-state={state}>
