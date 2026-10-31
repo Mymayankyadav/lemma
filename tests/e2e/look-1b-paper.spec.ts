@@ -43,7 +43,8 @@ for(const width of [360,390] as const){
   await expect(outer).toContainText('Every open cover admits a finite subcover.');
   const groups=outer.locator('[data-paper-group]');
   await expect(groups).toHaveCount(3);
-  await expect(outer.locator('[data-card]')).toHaveCount(1);
+  expect(await outer.getAttribute('data-card')).not.toBeNull();
+  await expect(outer.locator('[data-card]')).toHaveCount(0);
   const styles=await groups.evaluateAll(nodes=>nodes.map(el=>{
    const css=getComputedStyle(el);
    return {background:css.backgroundColor,shadow:css.boxShadow,
