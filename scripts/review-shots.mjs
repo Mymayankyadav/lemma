@@ -1,5 +1,6 @@
-/* Review phones at 390×844; create five-screen contact sheets without image dependencies.
- * THEMES=all DENSITY=compact EFFECTS=calm node scripts/review-shots.mjs
+/* v4 Graph day/night contact sheets; keep the screenshot runner usable while
+ * the full route × profile × width × world acceptance gate is built.
+ * THEMES=all node scripts/review-shots.mjs
  */
 import {chromium} from 'playwright';
 import {mkdirSync,readFileSync} from 'node:fs';
@@ -8,8 +9,8 @@ import {join} from 'node:path';
 const base=(process.env.BASE_URL||'http://localhost:4173/lemma/').replace(/\/$/,'')+'/';
 const themeCss=readFileSync('src/styles/themes.css','utf8');
 const known=[...themeCss.matchAll(/html\[data-theme="([^"]+)"\]/g)].map(m=>m[1]);
-if(known.length!==15)throw new Error('Expected all 15 generated themes');
-const request=process.env.THEMES||'obsidian';
+if(known.length!==2||!known.includes('graph')||!known.includes('graph-night'))throw new Error('Expected approved Graph day/night themes');
+const request=process.env.THEMES||'all';
 const chosen=request==='all'?known:request.split(',').map(t=>t.trim()).filter(Boolean);
 if(!chosen.length||chosen.some(t=>!known.includes(t)))throw new Error('Unknown theme in THEMES='+request);
 const density=process.env.DENSITY||'compact';
