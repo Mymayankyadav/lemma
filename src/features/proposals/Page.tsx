@@ -81,7 +81,7 @@ function ProposalFrontLine({source}:{source:string}){
    className="block w-full overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
    style={moreRight?{maskImage:"linear-gradient(to right, black calc(100% - 24px), transparent)"}:undefined}
    title={moreLeft||moreRight?"Scroll sideways to read the full first line":undefined}>
-   <Tex source={firstLine} className="inline-block min-w-max !whitespace-nowrap [&_.katex]:!text-[16px]"/>
+   <Tex source={firstLine} className="!inline-block !min-w-max !max-w-none !whitespace-nowrap ![overflow-wrap:normal] [&_.katex]:!text-[16px]"/>
   </span>
   {(moreLeft||moreRight)&&<span data-proposal-front-cue="" aria-hidden="true"
    className={"pointer-events-none absolute top-1/2 -translate-y-1/2 text-label text-ink-2 "+(moreRight?"right-0":"left-0")}>
