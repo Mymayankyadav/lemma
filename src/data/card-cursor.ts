@@ -4,11 +4,14 @@ export type CardPageKind = 'reviews' | 'comments'
 export interface CardPageKey { at: string; id: string }
 
 const invalid = () => new LemmaError('invalid', 'Invalid Card detail page cursor')
-const keyPattern = /^(?:[0-9]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+export const numericCardPageId = /^[0-9]+$/
+export const uuidCardPageId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const validId = (kind: CardPageKind, id: string) =>
+  numericCardPageId.test(id) || (kind === 'comments' && uuidCardPageId.test(id))
 
 /** Opaque, note-bound keyset cursor; never an offset or a client-supplied SQL fragment. */
 export function encodeCardPageCursor(kind: CardPageKind, noteNo: number, key: CardPageKey): string {
-  if (!Number.isSafeInteger(noteNo) || noteNo < 1 || !Number.isFinite(Date.parse(key.at)) || !keyPattern.test(key.id))
+  if (!Number.isSafeInteger(noteNo) || noteNo < 1 || !Number.isFinite(Date.parse(key.at)) || !validId(kind,key.id))
     throw invalid()
   return btoa(JSON.stringify({v: 1, kind, noteNo, at: key.at, id: key.id}))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -24,7 +27,7 @@ export function decodeCardPageCursor(cursor: string | undefined, kind: CardPageK
     if (value.v !== 1 || value.kind !== kind || value.noteNo !== noteNo ||
       typeof value.at !== 'string' || typeof value.id !== 'string' ||
       !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(value.at) ||
-      !Number.isFinite(Date.parse(value.at)) || !keyPattern.test(value.id))
+      !Number.isFinite(Date.parse(value.at)) || !validId(kind,value.id))
       throw invalid()
     return {at: value.at, id: value.id}
   } catch {
