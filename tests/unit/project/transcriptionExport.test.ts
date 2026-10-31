@@ -29,13 +29,13 @@ describe('transcribed source export',()=>{
  });
  it('preserves backslash-delimited inline and display maths alongside dollar maths',()=>{
   const mixed:TranscribedSourcePage[]=[{
-    sourceId:'s',page:1,label:'1',
-    body:String.raw`Let \\(x^2\\) be positive; \\[\\frac{1}{2}\\] and $a+b$ are maths. A & B.`,
-    transcribedBy:'claude',confidence:'high'
+   sourceId:'s',page:1,label:'1',
+   body:String.raw`Let \(x^2\) be positive; \[\frac{1}{2}\] and $a+b$ are maths. A & B.`,
+   transcribedBy:'claude',confidence:'high'
   }];
   const tex=sourceTex('Math',mixed);
-  expect(tex).toContain(String.raw`\\(x^2\\)`);
-  expect(tex).toContain(String.raw`\\[\\frac{1}{2}\\]`);
+  expect(tex).toContain(String.raw`\(x^2\)`);
+  expect(tex).toContain(String.raw`\[\frac{1}{2}\]`);
   expect(tex).toContain('$a+b
   const before=pages.map(p=>p.body);
   sourceMarkdown('Notes',pages);sourceTex('Notes',pages);
@@ -44,8 +44,8 @@ describe('transcribed source export',()=>{
 });
 );
   expect(tex).toContain('A \\& B.');
-  expect(tex).not.toContain(String.raw`\\textbackslash{}(x`);
-  expect(tex).not.toContain(String.raw`\\textbackslash{}[\\frac`);
+  expect(tex).not.toContain(String.raw`\textbackslash{}(x`);
+  expect(tex).not.toContain(String.raw`\textbackslash{}[\frac`);
  });
  it('leaves page bodies unmodified during export',()=>{
   const before=pages.map(p=>p.body);
