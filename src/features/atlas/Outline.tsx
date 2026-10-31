@@ -3,6 +3,7 @@ import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
 import {arcTone} from './tree';
+import {atlasRowHeight} from './rowGeometry';
 
 /** Shared pieces of the collapsible idea graph: used by the Atlas and by plan review. */
 export const ROW=44,GUTTER=84,INDENT=16;
@@ -33,11 +34,11 @@ interface BundlePlacement {
 /** The gutter has finite area. Never fall back to overlapping badges: replace
  * overflow with one 44px, keyboard-accessible summary containing every count.
  */
-export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,BundlePlacement>{
+export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:readonly number[],heightPx?:number):Map<string,BundlePlacement>{
  const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
- const height=rows*ROW,x0=8;
+ const height=heightPx??rows*ROW,x0=8;
  const items=arcs.filter(arc=>arc.count>1).map(arc=>{
-  const y1=arc.from*ROW+ROW/2,y2=arc.to*ROW+ROW/2;
+  const y1=centers?.[arc.from]??arc.from*ROW+ROW/2,y2=centers?.[arc.to]??arc.to*ROW+ROW/2;
   const span=Math.abs(arc.to-arc.from);
   const reach=x0+10+(GUTTER-x0-22)*Math.sqrt(span/longest);
   return {arc,anchorX:reach*.75+x0*.25,anchorY:(y1+y2)/2,
@@ -91,7 +92,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
 }
 
 /** Links drawn as nested arcs in a right-hand gutter, like a proof's dependency marks in a margin. */
-export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null}){
+export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number;focus:Focus|null;centers?:readonly number[];heightPx?:number}){
  // Deterministic demo-only browser fixture for the finite 84px gutter. It is
  // never enabled in live mode; CI exercises the real rendered keyboard control.
  if(typeof window!=='undefined'){
@@ -101,20 +102,20 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
    for(let from=0;from<5;from++)for(let to=from+1;to<5;to++)
     for(const kind of ['prereq','related'] as const)
      dense.push({key:kind+':'+from+':'+to,from,to,kind,count:2,links:[]});
-   arcs=dense;rows=5;focus=null;
+   arcs=dense;rows=5;focus=null;centers=undefined;heightPx=undefined;
   }
  }
  const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
  const x0=8;
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
- const badges=layoutBundleLabels(arcs,rows);
+ const badges=layoutBundleLabels(arcs,rows,centers,heightPx);
  const overflow=badges.get(OVERFLOW_BUNDLE_KEY);
- return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={rows*ROW}
+ return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={heightPx??rows*ROW}
   className="pointer-events-none absolute right-0 top-0 overflow-visible">
   <defs>{(['none','up','down'] as Tone[]).map(t=><marker key={t} id={'atlas-arrow-'+t} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
    <path d="M1 1L7 4L1 7" fill="none" stroke={toneColor[t]} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></marker>)}</defs>
   {ordered.map(arc=>{
-   const y1=arc.from*ROW+ROW/2,y2=arc.to*ROW+ROW/2,span=Math.abs(arc.to-arc.from);
+   const y1=centers?.[arc.from]??arc.from*ROW+ROW/2,y2=centers?.[arc.to]??arc.to*ROW+ROW/2,span=Math.abs(arc.to-arc.from);
    const reach=x0+10+(GUTTER-x0-22)*Math.sqrt(span/longest);
    const tone=arcTone(arc,focus),lit=tone!=='none';
    const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
@@ -161,33 +162,46 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
  </>;
 }
 
+/** Distinct hierarchy without shortening any interactive target. The full
+ * mathematical name stays in the button's accessible label and details sheet.
+ */
 export function Row({node,open,tone,match,onToggle,onSelect}:{
  node:AtlasNode;open:boolean;tone:Tone;match:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
- const parent=node.children.length>0,root=node.depth===0,selected=tone==='self';
- // Preserve room for names on 360px phones beyond the third nesting level.
+ const parent=node.children.length>0,root=node.level==='cluster',area=node.level==='galaxy';
+ const selected=tone==='self',height=atlasRowHeight(node.level);
  const indentation=(depth:number)=>Math.min(depth,3)*INDENT+Math.max(0,depth-3)*8;
  const lead=12+indentation(node.depth);
+ const textStyle=node.level==='cluster'?'font-serif italic text-[21px] leading-[24px] font-medium':
+  area?'text-[13.5px] leading-[18px] font-semibold tracking-[0.05em] [font-variant:small-caps]':
+  node.level==='system'?'text-[15px] leading-5 font-semibold':
+  node.level==='moon'?'text-[13.5px] leading-[18px] text-ink-2':'text-[15px] leading-[22px]';
+ const showProgress=root||area;
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
-  className={'group relative flex items-center shadow-[inset_0_-1px_0_var(--line)] '+(selected?'bg-amber-tint':match?'bg-fill-1':'')}
-  style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4}}>
-  {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px bg-edge"
-   style={{left:12+indentation(d)+6}}/>)}
-  {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-0 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
+  className={'group relative flex items-center bg-[var(--paper)] '+(root?'sticky top-0 z-10 ':'')+(match?'bg-fill-1':'')}
+  style={{height,paddingLeft:lead,paddingRight:GUTTER+4,
+   borderTop:root||area?'1px solid var(--hair)':undefined,
+   backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined}}>
+  {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px"
+   style={{left:12+indentation(d)+6,background:'color-mix(in srgb,var(--ink) 6%,transparent)'}}/>)}
+  {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
   {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+plainMath(node.name)} onClick={onToggle}
    className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2">
    <ChevronRight size={16} style={{transform:open?'rotate(90deg)':'none',transition:'transform 140ms ease'}}/>
   </button>:<span className="flex size-7 shrink-0 items-center justify-center"><StatusMark node={node}/></span>}
   <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
-   {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
-   <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><Tex source={node.name}/></span>
-   {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
-    {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-1.5 rounded-full bg-[var(--hard)]"/>}
-    {node.done}/{node.total}
+   {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{node.glyph}</span>}
+   <span style={clip} className={'min-w-0 flex-1 [&_*]:whitespace-nowrap [&_.katex]:text-[16px] '+textStyle}><Tex source={node.name}/></span>
+   {showProgress&&<span className="flex shrink-0 items-center gap-1.5 pl-1 text-[12px] tabular-nums text-ink-3">
+    <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
+     <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(node.total?100*node.done/node.total:0)+'%'}}/>
+    </span>
+    <span>{node.done}/{node.total}</span>
    </span>}
+   {!showProgress&&parent&&<span className="ml-auto shrink-0 text-[12px] tabular-nums text-ink-3">{node.total}</span>}
+   {node.revisit>0&&parent&&<span aria-label={node.revisit+' to re-check'} className="size-3 shrink-0 rounded-full bg-[var(--late)]"/>}
   </button>
  </div>;
 }
-
