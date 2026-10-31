@@ -1,10 +1,12 @@
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
-import {ChevronRight, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
+import {ChevronRight, Copy, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
 import {relativeTime,formatCount} from '../../lib/text';
+import {plainMath} from '../../lib/plain-math';
+import {resumeSpoken} from './resumeSpoken';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
@@ -64,25 +66,35 @@ function ProjectLink({project}:{project:ProjectSummary}){
  </div>;
 }
 
-/** A passive 56px handoff, not an in-app tutor launcher. */
+const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
+
+/** A passive, one-tap handoff. Fixed-height rows must clip explicitly: the
+ * graph theme intentionally overrides Tailwind's truncate utility. */
 function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)=>void}){
  const resume=home.resume;
- if(!resume)return <Slab className="flex min-h-14 items-center justify-between gap-3 px-3 py-2">
-  <span className="min-w-0 truncate text-label text-ink-2">No chat yet. Start a path to begin.</span>
+ if(!resume)return <Slab className="flex min-h-16 items-center justify-between gap-3 px-3 py-2">
+  <span className="min-w-0 text-label text-ink-2" style={clip}>No chat yet. Start a path to begin.</span>
   <Link to="/projects/new" className="flex min-h-11 shrink-0 items-center text-label font-semibold text-amber">New path</Link>
  </Slab>;
  const status=resume.pausedAt?relativeTime(resume.pausedAt):null;
  const description=resume.checkpointTitle??'Ready to study';
- const step=resume.stepsTotal>0?', step '+Math.min(Math.max(1,resume.step),resume.stepsTotal)+' of '+resume.stepsTotal:'';
- return <Slab as="section" aria-label="Resume where you stopped" className="flex h-14 min-w-0 items-center gap-3 px-3">
-  <span aria-hidden="true" className="w-5 shrink-0 text-center font-math text-headline text-amber">{resume.glyph}</span>
-  <div className="min-w-0 flex-1">
-   <p className="truncate text-body font-medium text-ink"><Tex source={description}/>{step}</p>
-   <p className="truncate text-caption text-ink-3"><Tex source={resume.projectTitle}/>{status?' · paused '+status:''}</p>
+ const step=resume.stepsTotal>0?' · step '+Math.min(Math.max(1,resume.step),resume.stepsTotal)+' of '+resume.stepsTotal:'';
+ const spoken=resumeSpoken(resume.projectTitle,description,step,status);
+ return <Slab as="section" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-2" style={{padding:'4px 12px'}}>
+  <span className="sr-only">{spoken}</span>
+  <Glyph subject={resume.glyph} hue="slate" size={32}/>
+  <div aria-hidden="true" className="min-w-0 flex-1">
+   <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><Tex source={resume.projectTitle}/>{step}</p>
+   <p data-resume-meta="" title={(status?'Paused '+status+' · ':'')+plainMath(description)}
+    style={{...clip,fontSize:'13.5px',height:'24px',lineHeight:'24px'}} className="mt-1 text-caption text-ink-3">
+    {/* KaTeX uses 1.21em; 13.5px metadata yields >=16px actual mathematics.
+        Styling .katex at 16px via a nested utility loses to KaTeX's own rule. */}
+    <span>{status?'Paused '+status+' · ':''}</span><Tex source={description}/>
+   </p>
   </div>
   <button type="button" onClick={()=>onCopy(resume.projectTitle)} aria-label="Copy resume prompt"
-   className="flex min-h-11 shrink-0 items-center rounded-ctl px-3 text-label font-medium text-amber hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
-   Copy
+   className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-ctl px-2 text-label font-medium text-ink-2 hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
+   <Copy size={16} aria-hidden="true"/>Copy
   </button>
  </Slab>;
 }
@@ -166,8 +178,8 @@ export default function Page(){
    <Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All paths</Link>
    {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
   </section>
-  <section aria-label="Last chat" className="flex flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Last chat</h2>
+  <section aria-label="Continue" className="flex flex-col gap-3">
+   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Continue</h2>
    <ResumeCard home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
   </section>
  </Screen>;
