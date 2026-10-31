@@ -85,6 +85,16 @@ describe('QA-3a stress evidence', () => {
     }
   });
 
+  it('rejects a baseline that silently disables the 4x CPU first-render check', () => {
+    const files = evidence();
+    const filename = qa3Cases()[0].filename;
+    const rows = files[filename] as Record<string, unknown>[];
+    rows[0] = { ...rows[0], cpuThrottle: 1 };
+    const report = analyzeQa3(files);
+    expect(report.status).toBe('INCOMPLETE');
+    expect(report.errors.some(e => e.includes('not measured under 4x CPU'))).toBe(true);
+  });
+
   it('recomputes hard violations and assigns failures to affected elements', () => {
     const files = evidence();
     const filename = qa3Cases()[0].filename;
