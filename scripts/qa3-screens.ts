@@ -46,6 +46,11 @@ export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:numbe
   const length=bytes.readUInt32BE(offset)
   if(length>bytes.length-offset-12)return null
   const type=bytes.toString('ascii',offset+4,offset+8)
+  // Unknown critical chunks cannot be decoded safely by a PNG reader;
+  // ancillary chunks may be ignored, but the reserved bit must be zero.
+  if(!/^[A-Za-z]{4}$/.test(type)||type[2]!==type[2].toUpperCase()||
+     (type[0]===type[0].toUpperCase()&&
+      !['IHDR','PLTE','IDAT','IEND'].includes(type)))return null
   const data=offset+8,crcOffset=data+length
   if(bytes.readUInt32BE(crcOffset)!==crc32(bytes.subarray(offset+4,crcOffset)))return null
   if(!seenIHDR){
