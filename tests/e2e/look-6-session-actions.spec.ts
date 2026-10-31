@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const){
@@ -22,8 +23,25 @@ for(const width of [360,390] as const){
    expect(box?.height??0).toBeGreaterThanOrEqual(44);
    expect(box?.width??0).toBeGreaterThanOrEqual(44);
   }
+  // Secondary actions must use quiet ink, never the red-pencil primary accent.
+  const ink=await page.evaluate(()=>{
+   const probe=document.createElement('span');
+   probe.style.color='var(--ink-2)';
+   document.body.appendChild(probe);
+   const value=getComputedStyle(probe).color;
+   probe.remove();
+   return value;
+  });
+  for(const control of [
+   actions.getByRole('button',{name:'Copy session summary'}),
+   actions.getByRole('link',{name:'Review'}),
+   actions.getByRole('button',{name:'Pages'}),
+  ])expect(await control.evaluate(el=>getComputedStyle(el).color)).toBe(ink);
+  mkdirSync('test-results/screens/look-6a',{recursive:true});
+  await page.screenshot({path:`test-results/screens/look-6a/session-actions-${theme}-${width}.png`});
   await actions.getByRole('button',{name:'Pages'}).click();
   await expect(page.getByRole('dialog',{name:'Session pages'})).toBeVisible();
+  await page.screenshot({path:`test-results/screens/look-6a/session-pages-${theme}-${width}.png`});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
  });
 }
