@@ -53,3 +53,28 @@ it('counts bundled arcs exactly when the unfocused graph is hidden',()=>{
  expect(arcCountFor(graph,rows,kinds)).toBe(arcsFor(graph,rows,kinds).length);
  expect(arcCountFor(graph,rows,kinds)).toBe(2);
 });
+
+// Regression for reopened #519: a 100-row first paint must not mount all
+// 100 KaTeX/Markdown row subtrees before the first interactive Atlas frame.
+// The complete 44px scroll extent and keyboard overscan remain available.
+import {atlasWindow} from '../../../src/features/atlas/window';
+
+describe('FIX #519b cold Atlas viewport budget',()=>{
+ it('bounds the initial 100-row render to the visible viewport plus overscan',()=>{
+  const window=atlasWindow(100,0,740);
+  expect(window.virtual).toBe(true);
+  expect(window.first).toBe(0);
+  expect(window.last-window.first).toBeLessThanOrEqual(Math.ceil(740/44)+8);
+  expect(window.height).toBe(100*44);
+ });
+ it('keeps the bottom row reachable and the full scroll extent',()=>{
+  const window=atlasWindow(2500,2500*44-740,740);
+  expect(window.virtual).toBe(true);
+  expect(window.last).toBe(2500);
+  expect(window.first).toBeLessThan(2500-1);
+  expect(window.height).toBe(2500*44);
+ });
+ it('keeps small outlines fully accessible without virtualization',()=>{
+  expect(atlasWindow(40,0,740)).toEqual({virtual:false,first:0,last:40,height:undefined});
+ });
+});
