@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
-import {useDeckTree,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
+import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
 import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
 import {Screen} from '../../ui/Screen';
@@ -35,7 +35,7 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 
 export default function Page(){
  const navigate=useNavigate(),notify=useToast();
- const decks=useDeckTree(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
+ const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
  const update=useUpdateSettings();
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
  const activeCatchUp=catchUpUntil>Date.now();
@@ -113,7 +113,9 @@ export default function Page(){
    dueItems;
   const chosen=(onlyNew?selection.filter(c=>c.state.state===0):selection).slice(0,settings.data.reviewsPerDay||200);
   if(!chosen.length)return notify('No cards due in this selection');
-  useReviewSession.getState().initialize(chosen,settings.data,filter);
+  const target=home.data?.resume;
+  useReviewSession.getState().initialize(chosen,settings.data,filter,
+   target?{projectSlug:target.projectSlug,checkpointCode:target.checkpointCode}:undefined);
   const qs=new URLSearchParams();
   if(sessionId)qs.set('session',sessionId);
   if(onlyNew)qs.set('new','1');
