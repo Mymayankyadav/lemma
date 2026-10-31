@@ -20,7 +20,7 @@ for(const [width,height] of [[360,740],[390,844]] as const){
    // the real catch-up control so this regression actually exercises a
    // 400+-card round, rather than falsely claiming X coverage at 200 cards.
    await page.getByRole('button',{name:/Catch-up plan/}).click()
-   await expect(start).toContainText(/Start [4-9]\\d\\d/,{timeout:90_000})
+   await expect(start).toContainText(/Start [4-9]\d\d/,{timeout:90_000})
   }
   await start.click()
   const progress=page.getByRole('progressbar',{name:'Review progress'})
