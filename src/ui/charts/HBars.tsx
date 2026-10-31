@@ -8,10 +8,10 @@ export function HBars({data,width=316,height,title='Time by subject',className='
  const x=scaleLinear().domain([0,max]).range([0,bar]);
  return <svg role="img" aria-label={`${title}: ${data.map(d=>d.label+' '+(d.display||d.value)).join(', ')}.`} width="100%" viewBox={`0 0 ${w} ${h}`} className={className} style={{maxWidth:w}}>
  {data.map((d,i)=>{const y=10+i*43;return <g key={i}>
- <text x={8} y={y+14} fill="var(--ink-2)" fontSize="12">{d.glyph?d.glyph+' ':''}{d.label.slice(0,13)}</text>
+ <text x={8} y={y+14} fill="var(--ink-2)" fontSize="14">{d.glyph?d.glyph+' ':''}{d.label.slice(0,13)}</text>
  <rect x={left} y={y+2} width={bar} height="12" rx="6" fill="var(--fill-2)"/>
  <motion.rect x={left} y={y+2} height="12" rx="6" fill="var(--amber)" initial={reduce?false:{width:0}} animate={{width:x(Math.max(0,d.value))}} transition={{duration:0.85,delay:reduce?0:i*0.1}}/>
- <text x={w-5} y={y+14} fill="var(--ink-2)" textAnchor="end" fontSize="12">{d.display||d.value}</text>
+ <text x={w-5} y={y+14} fill="var(--ink-2)" textAnchor="end" fontSize="14">{d.display||d.value}</text>
  </g>})}</svg>;
 }
 export default HBars;
