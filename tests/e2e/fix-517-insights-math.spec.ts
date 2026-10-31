@@ -61,6 +61,7 @@ for(const width of [360,390] as const){
 test('FIX #517 Atlas opens a named idea even when its incoming slug is lossy',async({page})=>{
  await page.goto('/lemma/?demo=1#/atlas?focus=lossy-math-slug&name=Uniform%20continuity');
  await expect(page.getByRole('heading',{name:'Atlas'})).toBeVisible();
- await expect(page.locator('[data-atlas-details="true"]')).toBeVisible();
- await expect(page.locator('[data-atlas-details="true"]')).toContainText('Uniform continuity');
+ const dialog=page.getByRole('dialog',{name:'Uniform continuity'});
+ await expect(dialog).toBeVisible();
+ await expect(dialog.locator('[data-atlas-details="true"]')).toBeVisible();
 });
