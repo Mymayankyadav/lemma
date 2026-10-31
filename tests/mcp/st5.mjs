@@ -112,8 +112,8 @@ try {
  assert.equal(deck.length,1)
  assert.equal(deck[0].key,'project:algebra')
  assert.equal(deck[0].due,2)
- assert.deepEqual(deck[0].children.map(x=>x.key),['cp:algebra:CP1','cp:algebra:CP2','cp:algebra:CP3'])
- assert.deepEqual(deck[0].children.map(x=>x.due),[0,1,0])
+ assert.deepEqual(deck[0].children.map(x=>x.key),['cp:algebra:CP2'])
+ assert.deepEqual(deck[0].children.map(x=>x.due),[1])
  console.log('PASS ST-5 deck hierarchy, daily due counts and unassigned notes')
 
  await db.exec('reset role')
@@ -218,6 +218,15 @@ try {
   'Today aggregate must transfer under 200 kB')
  assert.ok(!scaleHome.projects.some(x=>'sourceTitles' in x),
   'Today excludes source-title arrays')
+ // A project may have 100 checkpoints but zero due. The deck RPC must
+ // return only due checkpoint children, not download the entire plan tree.
+ const scaleDeck=(await q('select public.deck_tree() item')).map(x=>x.item)
+ assert.equal(scaleDeck.length,60)
+ assert.ok(scaleDeck.every(p=>p.children.every(c=>c.due>0)))
+ assert.ok(scaleDeck.filter(p=>p.key.startsWith('project:scale-'))
+  .every(p=>p.children.length===0))
+ assert.ok(Buffer.byteLength(JSON.stringify(scaleDeck),'utf8')<200000,
+  'Review deck tree must remain bounded for 60 projects / 6,000 checkpoints')
  const scaleInsights=(await q('select public.insights(90) result'))[0].result
  assert.ok(Buffer.byteLength(JSON.stringify(scaleInsights),'utf8')<200000,
   'Insights aggregate must transfer under 200 kB')
