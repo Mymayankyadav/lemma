@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { evaluateMergeGate } from "../../../scripts/merge-gate";
 
@@ -66,5 +67,22 @@ describe("Steward exact-head merge gate (audit #493)", () => {
   it("uses the newest attempt of a named check and still checks all other jobs", () => {
     expect(evaluateMergeGate({ ...ready, checkRuns: [{ ...ok("check", 1), conclusion: "failure" }, ok("check", 2), ok("mcp-sql")] }).ok).toBe(true);
     expect(evaluateMergeGate({ ...ready, checkRuns: [ok("check"), ok("mcp-sql"), { ...ok("extra"), conclusion: "failure" }] }).ok).toBe(false);
+  });
+});
+
+
+describe("documented Steward policy cannot regress silently", () => {
+  it("requires expected nonempty CI and chronological Auditor clearance in the canonical prompt", () => {
+    const prompts = readFileSync("docs/agents/prompts.md", "utf8");
+    const steward = prompts.split("## 2. Fixer")[0];
+    expect(steward).toContain("Nonempty exact-head CI set, fail closed");
+    expect(steward).toContain("`check`");
+    expect(steward).toContain("`mcp-sql`");
+    expect(steward).toContain("zero check runs");
+    expect(steward).toContain("AUDIT BLOCK");
+    expect(steward).toContain("AUDIT CLEAR");
+    const handbook = readFileSync("docs/agents/README.md", "utf8");
+    expect(handbook).toContain("nonempty");
+    expect(handbook).toContain("scripts/merge-gate.ts");
   });
 });
