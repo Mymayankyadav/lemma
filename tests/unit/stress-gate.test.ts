@@ -49,5 +49,8 @@ describe('FIX #507 hard-budget CI gate',()=>{
   expect(()=>enforceStressBudgets([{...base,smallMath:1}],{
    pending:[{issue:0,failure:'maths below 16px',routes:['/atlas']}]
   })).toThrow(/invalid pending stress gate/);
+  expect(()=>enforceStressBudgets([{...base,smallMath:1}],{
+   pending:[{issue:485,failure:'maths below 16px',routes:['*']}]
+  })).toThrow(/invalid pending stress gate/);
  });
 });
