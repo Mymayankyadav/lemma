@@ -11,6 +11,13 @@ for(const width of [360,390] as const){
   await expect(page.locator('#main-content')).toBeVisible();
   // A nested component is a semantic group, not a second paper card.
   await expect(page.locator(':is(.card,.slab,.tile) :is(.card,.slab,.tile)')).toHaveCount(0);
+  const nestedStyles=await page.locator('[data-paper-group]').evaluateAll(nodes=>nodes.map(el=>({
+   background:getComputedStyle(el).backgroundColor,shadow:getComputedStyle(el).boxShadow,
+  })));
+  for(const style of nestedStyles){
+   expect(style.background).toBe('rgba(0, 0, 0, 0)');
+   expect(style.shadow).toBe('none');
+  }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({path:`test-results/screens/look-1b-${profile}-${theme}-${width}.png`});
  });
