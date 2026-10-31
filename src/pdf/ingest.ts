@@ -1,6 +1,6 @@
 import { LemmaError } from "../data/api";
 import type { IngestProgress } from "../data/types";
-import { parsePdf } from "./parse";
+import { parsePdf, isPdfFile } from "./parse";
 import type { IngestOptions, IngestResult } from "./parse";
 import { readTextSource, textKind } from "./text-source";
 
