@@ -10,12 +10,10 @@ import { Sheet } from "../../ui/Sheet";
 import { Skeleton } from "../../ui/Skeleton";
 import { useToast } from "../../ui/Toast";
 import { Editor, type EditorValue } from "./Editor";
-function plain(text: string) {
-  return text
-    .replace(/\{\{c\d+::([^}:]+)(?:::[^}]+)?\}\}/g, "$1")
-    .replace(/[#$*_`\\{}]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+import { Tex } from "../../ui/Tex";
+/** Reveal cloze answers in the compact preview without destroying LaTeX. */
+function previewFront(text: string) {
+  return text.replace(/\{\{c\d+::([^}:]+)(?:::[^}]+)?\}\}/g, "$1");
 }
 function relative(due: string | null) {
   if (!due) return "New";
@@ -155,8 +153,8 @@ export default function Page() {
             >
               <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 font-math text-headline leading-snug text-ink">
-                  {plain(row.front)}
+                <span data-card-front="" className="line-clamp-2 min-w-0 overflow-hidden font-math text-headline leading-snug text-ink">
+                  <Tex source={previewFront(row.front)} />
                 </span>
                 <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
                   <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
