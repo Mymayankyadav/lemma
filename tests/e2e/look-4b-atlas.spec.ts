@@ -141,7 +141,7 @@ for(const width of [360,390] as const){
   await expect(tree).toBeVisible();
   await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
   await page.getByRole('button',{name:'Unfold all'}).click();
-  const formula=katex.renderToString(String.raw`\\mathbb{R}^{n}\\cong\\sum_{k=1}^{n}k`,{throwOnError:false});
+  const formula=katex.renderToString(String.raw`\mathbb{R}^{n}\cong\sum_{k=1}^{n}k`,{throwOnError:false});
   for(const level of ['galaxy','system','planet','moon']){
    const row=tree.locator(`[data-level="${level}"]`).first();
    await expect(row).toBeVisible();
