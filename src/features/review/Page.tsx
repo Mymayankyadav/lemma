@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {Clock3,Play,Search,Shuffle} from 'lucide-react';
+import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
 import {useDeckTree,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
 import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
@@ -38,11 +38,20 @@ export default function Page(){
  const decks=useDeckTree(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
  const update=useUpdateSettings();
  const [selected,setSelected]=useState<Set<string>|null>(null);
+ const [expandedProjects,setExpandedProjects]=useState<Set<string>>(()=>new Set());
+ const [showAll,setShowAll]=useState<Set<string>>(()=>new Set());
+ const [deckSearch,setDeckSearch]=useState('');
+ const toggle=(key:string,more=false)=>{
+  const setter=more?setShowAll:setExpandedProjects;
+  setter(previous=>{const next=new Set(previous);if(next.has(key))next.delete(key);else next.add(key);return next});
+ };
  const enabled=useMemo(()=>selected??new Set([
   ...(decks.data??[]).filter(n=>n.due>0).map(n=>n.key),
   ...(decks.data??[]).flatMap(n=>n.children.filter(c=>c.due>0).map(c=>c.key))
  ]),[decks.data,selected]);
- const nodes=decks.data??[];
+ const nodes=(decks.data??[]).filter(n=>n.due>0||n.children.some(c=>c.due>0));
+ const visibleNodes=nodes.filter(n=>!deckSearch||n.label.toLowerCase().includes(deckSearch.toLowerCase())||
+   n.children.some(c=>c.label.toLowerCase().includes(deckSearch.toLowerCase())));
  const dueItems=useMemo(()=>reviewEligible(cards.data??[],nodes,enabled),[cards.data,nodes,enabled]);
  const selectedCount=dueItems.length;
  const estimated=estimatedReviewMinutes(selectedCount,insights.data?.reviews??[]);
@@ -116,8 +125,16 @@ export default function Page(){
    </Slab>
    <section aria-label="Decks" className="flex flex-col gap-1">
     <h2 className="mb-2 text-headline font-semibold text-ink-2">Decks</h2>
-    {nodes.map(node=>{
+    {nodes.length>8&&<label className="mb-2 flex min-h-11 items-center gap-2 rounded-ctl border border-edge bg-well px-3 text-ink-3">
+     <Search size={17}/><span className="sr-only">Search decks</span>
+     <input value={deckSearch} onChange={e=>setDeckSearch(e.target.value)} placeholder="Find project or checkpoint"
+      className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none"/>
+    </label>}
+    {visibleNodes.map(node=>{
      const children=node.children.filter(c=>c.due>0);
+     const opened=expandedProjects.has(node.key)||!!deckSearch;
+     const candidates=deckSearch?children.filter(c=>node.label.toLowerCase().includes(deckSearch.toLowerCase())||c.label.toLowerCase().includes(deckSearch.toLowerCase())):children;
+     const shown=showAll.has(node.key)?candidates:candidates.slice(0,5);
      const selection=children.length?children.map(c=>enabled.has(c.key)):[enabled.has(node.key)];
      const checked=selection.every(Boolean)?true:selection.some(Boolean)?'mixed':false;
      return <div key={node.key} className="border-b border-edge/70 pb-2">
@@ -125,16 +142,24 @@ export default function Page(){
        <span className="[&>label]:text-[length:var(--type-hidden)]"><Check checked={node.due===0?false:checked} disabled={node.due===0} label={'Include '+node.label}
         onChange={value=>setProject(node,value)}/></span>
        <Glyph size={32} subject={node.glyph}/>
-       <span className="min-w-0 flex-1 truncate text-headline font-medium">{node.label}</span>
+       <button type="button" aria-label={(opened?'Collapse ':'Expand ')+node.label} aria-expanded={opened}
+        className="flex min-h-11 min-w-11 flex-1 items-center gap-2 text-left"
+        onClick={()=>toggle(node.key)}>
+        <span className="min-w-0 flex-1 truncate text-headline font-medium">{node.label}</span>
+        {opened?<ChevronDown className="shrink-0" size={18}/>:<ChevronRight className="shrink-0" size={18}/>}
+       </button>
        <span className={'text-body-l tabular-nums '+(node.due?'text-amber':'text-ink-3')}>{node.due}</span>
       </div>
-      {children.map(child=><div key={child.key} className="ml-7 flex min-h-11 items-center gap-2">
+      {opened&&shown.map(child=><div key={child.key} className="ml-7 flex min-h-11 items-center gap-2">
        <span className="[&>label]:text-[length:var(--type-hidden)]"><Check size={20} checked={enabled.has(child.key)} label={'Include '+child.label}
         onChange={v=>setCheckpoint(node,child,v)}/></span>
        <span className="shrink-0 text-label font-semibold text-ink-3">{child.key.split(':').at(-1)}</span>
        <span className="min-w-0 flex-1 truncate text-body text-ink-soft">{child.label}</span>
        <span className="text-body tabular-nums text-amber">{child.due}</span>
       </div>)}
+      {opened&&candidates.length>5&&<button type="button" className="ml-7 min-h-11 text-label font-semibold text-amber" onClick={()=>toggle(node.key,true)}>
+       {showAll.has(node.key)?'Show first 5':(candidates.length-5)+' more checkpoints'}
+      </button>}
      </div>;
     })}
    </section>
