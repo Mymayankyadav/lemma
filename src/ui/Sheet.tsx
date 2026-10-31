@@ -4,7 +4,7 @@ import {createPortal} from 'react-dom';
 import {motion,AnimatePresence,useReducedMotion} from 'motion/react';
 import {X} from 'lucide-react';
 import {sheet,fade,variantFor} from './motion';
-export interface SheetProps{open:boolean;onClose:()=>void;title?:string;children:ReactNode}
+export interface SheetProps{open:boolean;onClose:()=>void;title?:ReactNode;children:ReactNode}
 export function Sheet({open,onClose,title,children}:SheetProps){
  const labelId=useId(),reduce=!!useReducedMotion(),panel=useRef<HTMLDivElement>(null);
  // Keep the latest close handler without restarting the focus trap on every render.

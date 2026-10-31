@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {Clock3,Play,Search,Shuffle} from 'lucide-react';
-import {useDeckTree,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
+import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
+import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
 import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
 import {Screen} from '../../ui/Screen';
@@ -35,17 +35,59 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 
 export default function Page(){
  const navigate=useNavigate(),notify=useToast();
- const decks=useDeckTree(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
+ const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
  const update=useUpdateSettings();
+ const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
+ const activeCatchUp=catchUpUntil>Date.now();
+ useEffect(()=>{
+  if(!catchUpUntil||catchUpUntil>Date.now()||!settings.data)return;
+  const previous=Number(localStorage.getItem('lemma.catch-up-original')||200);
+  localStorage.removeItem('lemma.catch-up-until');localStorage.removeItem('lemma.catch-up-original');
+  setCatchUpUntil(0);
+  if(settings.data.reviewsPerDay!==previous)update.mutate({reviewsPerDay:previous});
+ },[catchUpUntil,settings.data?.reviewsPerDay]);
+ function enableCatchUp(totalDue:number){
+  if(!settings.data||activeCatchUp)return;
+  const prior=settings.data.reviewsPerDay||200;
+  const target=Math.max(prior,Math.ceil(totalDue/7));
+  localStorage.setItem('lemma.catch-up-original',String(prior));
+  const until=Date.now()+7*86400000;
+  localStorage.setItem('lemma.catch-up-until',String(until));
+  setCatchUpUntil(until);
+  update.mutate({reviewsPerDay:target},{
+   onSuccess:()=>{void cards.refetch();notify('Catch-up target set for seven days')},
+   onError:()=>{localStorage.removeItem('lemma.catch-up-until');localStorage.removeItem('lemma.catch-up-original');setCatchUpUntil(0);notify('Could not set catch-up target',{tone:'danger'})}
+  });
+ }
  const [selected,setSelected]=useState<Set<string>|null>(null);
+ const [expandedProjects,setExpandedProjects]=useState<Set<string>>(()=>new Set());
+ const [showAll,setShowAll]=useState<Set<string>>(()=>new Set());
+ const [deckSearch,setDeckSearch]=useState('');
+ const toggle=(key:string,more=false)=>{
+  const setter=more?setShowAll:setExpandedProjects;
+  setter(previous=>{const next=new Set(previous);if(next.has(key))next.delete(key);else next.add(key);return next});
+ };
  const enabled=useMemo(()=>selected??new Set([
   ...(decks.data??[]).filter(n=>n.due>0).map(n=>n.key),
   ...(decks.data??[]).flatMap(n=>n.children.filter(c=>c.due>0).map(c=>c.key))
  ]),[decks.data,selected]);
- const nodes=decks.data??[];
+ const nodes=(decks.data??[]).filter(n=>n.due>0||n.children.some(c=>c.due>0));
+ const visibleNodes=nodes.filter(n=>!deckSearch||n.label.toLowerCase().includes(deckSearch.toLowerCase())||
+   n.children.some(c=>c.label.toLowerCase().includes(deckSearch.toLowerCase())));
  const dueItems=useMemo(()=>reviewEligible(cards.data??[],nodes,enabled),[cards.data,nodes,enabled]);
  const selectedCount=dueItems.length;
- const estimated=estimatedReviewMinutes(selectedCount,insights.data?.reviews??[]);
+ const totalDue=nodes.reduce((sum,project)=>{
+  const children=project.children.filter(c=>c.due>0);
+  const counted=children.reduce((n,c)=>n+c.due,0);
+  return sum+(enabled.has(project.key)?Math.max(0,project.due-counted):0)
+   +children.reduce((n,c)=>n+(enabled.has(c.key)?c.due:0),0);
+ },0);
+ const todayShare=Math.min(selectedCount,Math.max(1,settings.data?.reviewsPerDay??200));
+ const overdue=Math.max(0,totalDue-todayShare);
+ const spreadDays=Math.ceil(overdue/Math.max(1,settings.data?.reviewsPerDay??200));
+ // Without reliable timed review history, estimate 4.5 seconds per quick recall.
+ const history=insights.data?.reviews??[];
+ const estimated=history.length?estimatedReviewMinutes(todayShare,history):Math.max(1,Math.ceil(todayShare*4.5/60));
  const groupedSessions=useMemo(()=>{
   return (sessions.data??[]).map(s=>({
    ...s,count:dueItems.filter(c=>c.projectSlug===s.projectSlug&&c.sessionNumber===s.number).length
@@ -74,9 +116,11 @@ export default function Page(){
   const selection=sessionId?
    dueItems.filter(c=>c.projectSlug===fromSession?.projectSlug&&c.sessionNumber===fromSession?.number):
    dueItems;
-  const chosen=onlyNew?selection.filter(c=>c.state.state===0):selection;
+  const chosen=(onlyNew?selection.filter(c=>c.state.state===0):selection).slice(0,settings.data.reviewsPerDay||200);
   if(!chosen.length)return notify('No cards due in this selection');
-  useReviewSession.getState().initialize(chosen,settings.data,filter);
+  const target=home.data?.resume;
+  useReviewSession.getState().initialize(chosen,settings.data,filter,
+   target?{projectSlug:target.projectSlug,checkpointCode:target.checkpointCode}:undefined);
   const qs=new URLSearchParams();
   if(sessionId)qs.set('session',sessionId);
   if(onlyNew)qs.set('new','1');
@@ -96,14 +140,21 @@ export default function Page(){
     <div className="flex items-center justify-between gap-4">
      <div>
       <div className="flex items-baseline gap-2">
-       <strong className="font-[var(--font-display)] text-num-xl font-semibold leading-none tracking-tight tabular-nums">{selectedCount}</strong>
+       <strong className="font-[var(--font-display)] text-num-xl font-semibold leading-none tracking-tight tabular-nums">{totalDue.toLocaleString()}</strong>
        <span className="text-answer text-ink-2">due</span>
       </div>
       <p className="mt-2 flex items-center gap-2 text-label text-ink-3"><Clock3 size={16} aria-hidden="true"/>
-       {selectedCount>0?'about '+estimated+' min':'All clear for today'}</p>
+       {selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
      </div>
-     <Button aria-label="Start review" icon={Play} disabled={!selectedCount} onClick={()=>start()}>Start</Button>
+     <Button aria-label="Start review" icon={Play} disabled={!todayShare} onClick={()=>start()}>Start {todayShare}</Button>
     </div>
+    {overdue>0&&<div className="mt-4 text-label text-ink-2">
+      <p>{overdue.toLocaleString()} overdue · spread over {spreadDays} {spreadDays===1?'day':'days'}</p>
+      <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber"
+       onClick={()=>enableCatchUp(totalDue)} disabled={activeCatchUp||update.isPending}>
+       {activeCatchUp?'Catch-up active · restores your target after seven days':'Catch-up plan · raise daily share for a week'}
+      </button>
+     </div>}
     <div className="mt-5 border-t border-edge pt-3">
      <div className="flex items-center gap-2"><Shuffle size={18} aria-hidden="true" className="text-amber"/>
       <div className="flex-1">
@@ -116,8 +167,16 @@ export default function Page(){
    </Slab>
    <section aria-label="Decks" className="flex flex-col gap-1">
     <h2 className="mb-2 text-headline font-semibold text-ink-2">Decks</h2>
-    {nodes.map(node=>{
+    {nodes.length>8&&<label className="mb-2 flex min-h-11 items-center gap-2 rounded-ctl border border-edge bg-well px-3 text-ink-3">
+     <Search size={17}/><span className="sr-only">Search decks</span>
+     <input value={deckSearch} onChange={e=>setDeckSearch(e.target.value)} placeholder="Find project or checkpoint"
+      className="min-w-0 flex-1 bg-transparent text-body text-ink outline-none"/>
+    </label>}
+    {visibleNodes.map(node=>{
      const children=node.children.filter(c=>c.due>0);
+     const opened=expandedProjects.has(node.key)||!!deckSearch;
+     const candidates=deckSearch?children.filter(c=>node.label.toLowerCase().includes(deckSearch.toLowerCase())||c.label.toLowerCase().includes(deckSearch.toLowerCase())):children;
+     const shown=showAll.has(node.key)?candidates:candidates.slice(0,5);
      const selection=children.length?children.map(c=>enabled.has(c.key)):[enabled.has(node.key)];
      const checked=selection.every(Boolean)?true:selection.some(Boolean)?'mixed':false;
      return <div key={node.key} className="border-b border-edge/70 pb-2">
@@ -125,16 +184,24 @@ export default function Page(){
        <span className="[&>label]:text-[length:var(--type-hidden)]"><Check checked={node.due===0?false:checked} disabled={node.due===0} label={'Include '+node.label}
         onChange={value=>setProject(node,value)}/></span>
        <Glyph size={32} subject={node.glyph}/>
-       <span className="min-w-0 flex-1 truncate text-headline font-medium">{node.label}</span>
+       <button type="button" aria-label={(opened?'Collapse ':'Expand ')+node.label} aria-expanded={opened}
+        className="flex min-h-11 min-w-11 flex-1 items-center gap-2 text-left"
+        onClick={()=>toggle(node.key)}>
+        <span className="min-w-0 flex-1 truncate text-headline font-medium">{node.label}</span>
+        {opened?<ChevronDown className="shrink-0" size={18}/>:<ChevronRight className="shrink-0" size={18}/>}
+       </button>
        <span className={'text-body-l tabular-nums '+(node.due?'text-amber':'text-ink-3')}>{node.due}</span>
       </div>
-      {children.map(child=><div key={child.key} className="ml-7 flex min-h-11 items-center gap-2">
+      {opened&&shown.map(child=><div key={child.key} className="ml-7 flex min-h-11 items-center gap-2">
        <span className="[&>label]:text-[length:var(--type-hidden)]"><Check size={20} checked={enabled.has(child.key)} label={'Include '+child.label}
         onChange={v=>setCheckpoint(node,child,v)}/></span>
        <span className="shrink-0 text-label font-semibold text-ink-3">{child.key.split(':').at(-1)}</span>
        <span className="min-w-0 flex-1 truncate text-body text-ink-soft">{child.label}</span>
        <span className="text-body tabular-nums text-amber">{child.due}</span>
       </div>)}
+      {opened&&candidates.length>5&&<button type="button" className="ml-7 min-h-11 text-label font-semibold text-amber" onClick={()=>toggle(node.key,true)}>
+       {showAll.has(node.key)?'Show first 5':(candidates.length-5)+' more checkpoints'}
+      </button>}
      </div>;
     })}
    </section>
