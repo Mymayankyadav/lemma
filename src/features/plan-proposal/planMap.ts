@@ -52,3 +52,61 @@ export function layoutPlanMap(nodes: readonly ReviewNode[]): PlanMapLayout {
     for (const p of new Set(n.prereqs)) if (byCode.has(p) && p !== n.code) edges.push({from: p, to: n.code});
   return {nodes: placed, edges, width: PAD * 2 + Math.max(0, columns.length - 1) * COL, height: PAD * 2 + (tallest - 1) * ROW};
 }
+
+/** Keep the owner's named stages; create neutral eight-checkpoint stages for legacy flat plans. */
+export interface PlanStage {id: string; name: string; nodes: ReviewNode[]}
+export function groupPlanStages(nodes: readonly ReviewNode[]): PlanStage[] {
+  const hasNames = nodes.some(n => !!n.stage?.trim());
+  const stages: PlanStage[] = [];
+  for (const node of nodes) {
+    const name = node.stage?.trim() || (hasNames ? "Unstaged" : `CP${Math.floor(stages.reduce((sum, s) => sum + s.nodes.length, 0) / 8) * 8 + 1}`);
+    const last = stages[stages.length - 1];
+    if (last && last.name === name && (hasNames || last.nodes.length < 8)) {
+      last.nodes.push(node);
+    } else {
+      stages.push({id: `stage-${stages.length}`, name, nodes: [node]});
+    }
+  }
+  if (!hasNames) for (const s of stages) {
+    s.name = `${s.nodes[0].code}–${s.nodes[s.nodes.length - 1].code}`;
+  }
+  return stages;
+}
+
+export interface StageMapNode {id: string; name: string; count: number; x: number; y: number}
+export interface StageMapEdge {from: string; to: string; count: number}
+export interface StageMapLayout {
+  stages: StageMapNode[];
+  edges: StageMapEdge[];
+  width: number;
+  height: number;
+  /** The expanded checkpoint tree occupies this gap between stage rows. */
+  expandedY: number | null;
+}
+const STAGE_WIDTH = 320, STAGE_COLS = [82, 238], STAGE_ROW = 96, STAGE_DETAIL = 216;
+/** Bundles every cross-stage prerequisite, including fan-out and skipped-stage links. */
+export function layoutStagePlanMap(nodes: readonly ReviewNode[], expandedId: string | null = null): StageMapLayout {
+  const groups = groupPlanStages(nodes);
+  const byCheckpoint = new Map(groups.flatMap(g => g.nodes.map(n => [n.code, g.id] as const)));
+  const counts = new Map<string, StageMapEdge>();
+  for (const group of groups) for (const node of group.nodes) {
+    for (const prereq of new Set(node.prereqs)) {
+      const from = byCheckpoint.get(prereq);
+      if (!from || from === group.id || prereq === node.code) continue;
+      const key = from + ">" + group.id;
+      const edge = counts.get(key);
+      if (edge) edge.count++;
+      else counts.set(key, {from, to: group.id, count: 1});
+    }
+  }
+  const expandedIndex = groups.findIndex(g => g.id === expandedId);
+  const expandedRow = expandedIndex < 0 ? -1 : Math.floor(expandedIndex / 2);
+  const stages = groups.map((g, i) => {
+    const row = Math.floor(i / 2);
+    return {id:g.id, name:g.name, count:g.nodes.length, x:STAGE_COLS[i%2],
+      y:48 + row * STAGE_ROW + (expandedRow >= 0 && row > expandedRow ? STAGE_DETAIL : 0)};
+  });
+  return {stages, edges:[...counts.values()], width:STAGE_WIDTH,
+    height:Math.ceil(groups.length/2)*STAGE_ROW + (expandedRow >= 0 ? STAGE_DETAIL : 0) + 8,
+    expandedY:expandedRow < 0 ? null : 48 + expandedRow * STAGE_ROW + 40};
+}
