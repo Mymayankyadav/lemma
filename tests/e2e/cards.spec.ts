@@ -60,7 +60,7 @@ test("new cards can be created in a project", async ({ page }) => {
   await dialog.getByLabel("Checkpoint").selectOption("CP1");
   await dialog.getByRole("button", { name: "Create card" }).click();
   await expect(page).toHaveURL(/#\/cards\/\d+$/);
-  await expect(page.getByText("What is a metric?")).toBeVisible();
+  await expect(page.getByRole("article", { name: "Card front and answer" }).getByText("What is a metric?")).toBeVisible();
 });
 
 test("new card editor retains focus through a delayed search update", async ({ page }) => {

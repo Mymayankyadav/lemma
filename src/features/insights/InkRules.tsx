@@ -1,4 +1,8 @@
 import {useState} from 'react';
+import {Link} from 'react-router';
+import {RotateCcw,Waypoints} from 'lucide-react';
+import {Tex} from '../../ui/Tex';
+import {plainMath} from '../../lib/plain-math';
 import type {Calibration} from '../../lib/insights';
 
 export interface SubjectMinutes {subject:{name:string;glyph:string};minutes:number}
@@ -21,10 +25,11 @@ export function SubjectRules({data,format}: {data:SubjectMinutes[];format:(minut
   {data.length===0?<p className="text-label text-ink-3">No study time recorded yet.</p>:<>
    {rows.map(row=><div key={row.subject.name} className="flex flex-col gap-1">
     <div className="flex min-w-0 items-center justify-between gap-3 text-label">
-     <button type="button" title={row.subject.name} aria-label={row.subject.name} onClick={()=>setFullLabel(fullLabel===row.subject.name?null:row.subject.name)}
+     <button type="button" title={plainMath(row.subject.name)} aria-label={plainMath(row.subject.name)} onClick={()=>setFullLabel(fullLabel===row.subject.name?null:row.subject.name)}
       className={`flex min-h-11 min-w-0 flex-1 items-center text-left text-ink-2 ${fullLabel===row.subject.name?'break-words':'overflow-hidden'}`}>
       <span aria-hidden="true" className="mr-2 shrink-0 font-math italic text-amber">{row.subject.glyph}</span>
-      <span className={fullLabel===row.subject.name?'min-w-0 break-words':'clip-1'}>{row.subject.name}</span>
+      <span className={fullLabel===row.subject.name?'min-w-0 max-w-full overflow-x-auto break-words text-body':'min-w-0 clip-1 text-body'}
+       style={fullLabel===row.subject.name?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}><Tex source={row.subject.name}/></span>
      </button>
      <span className="shrink-0 tabular-nums text-ink-2">{format(row.minutes)}</span>
     </div>
@@ -44,6 +49,23 @@ export function SubjectRules({data,format}: {data:SubjectMinutes[];format:(minut
    </div>}
   </>}
  </div>;
+}
+
+
+/** Preserve the exact concept name for Atlas fallback lookup: a mathematical
+ * name cannot reliably be reconstructed from a lossy ASCII slug. */
+export function MostRevisitedLink({conceptName,label}:{conceptName?:string|null;label?:string|null}){
+ const name=conceptName||label||'No repeats yet';
+ const params=new URLSearchParams();
+ if(conceptName){
+  params.set('focus',conceptName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''));
+  params.set('name',conceptName);
+ }
+ return <Link to={conceptName?'/atlas?'+params.toString():'/atlas'} className="tile" aria-label={'Most revisited: '+plainMath(name)}>
+  <div className="mb-3 flex items-center justify-between text-amber"><RotateCcw size={20}/><Waypoints size={16}/></div>
+  <span className="block text-label text-ink-2">Most revisited</span>
+  <strong className="block min-w-0 max-w-full overflow-x-auto break-words text-headline" title={plainMath(name)} style={{maskImage:"linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)"}}><Tex source={name}/></strong>
+ </Link>;
 }
 
 export function CalibrationRules({data}: {data:Calibration[]}) {
