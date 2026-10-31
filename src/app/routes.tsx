@@ -1,11 +1,8 @@
 import {Suspense,lazy} from "react";
 import RouteError, {RouteFallback} from "./RouteError";
-// Keep Today and latency-critical Atlas eager. Other screens load on navigation
-// so 4× CPU cold starts avoid parsing PDF, review and chart modules before use.
+// Today stays eager, but Atlas is preloaded only on a Paths/Atlas entry.\n// This keeps its heavy outline module out of cold Today while preserving\n// a warm, responsive Atlas transition from the Paths screen.
 import Page0 from '../features/home/Page'
-// Atlas has a stricter 1000ms direct-entry 4× CPU budget; keep its first
-// interactive outline in the entry chunk instead of adding a lazy fetch.
-import Page13 from '../features/atlas/Page'
+// Preload on a Paths or Atlas entry before React mounts the route. A normal\n// Today entry never evaluates this module until navigation needs it.\nconst loadAtlas=()=>import('../features/atlas/Page')\nif(typeof window!=='undefined' && /^#\\/(?:projects|atlas)(?:\\/|$)/.test(window.location.hash)) void loadAtlas()\nconst Page13=lazy(loadAtlas)
 const Page1=lazy(()=>import('../features/projects/Page'))
 const Page2=lazy(()=>import('../features/new-project/Page'))
 const Page3=lazy(()=>import('../features/project/Page'))
