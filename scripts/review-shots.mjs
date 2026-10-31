@@ -37,7 +37,10 @@ const v4Headings={
 async function checkMiniRoutes(page,scene){
  const bars=page.locator('[data-mini-route]');
  await bars.first().waitFor({state:'visible'});
- const errors=await bars.evaluateAll(nodes=>nodes.flatMap((bar,index)=>{
+ const errors=await bars.evaluateAll(nodes=>nodes.filter(bar=>{
+  const rect=bar.getBoundingClientRect(),style=getComputedStyle(bar);
+  return rect.width>0&&rect.height>0&&style.display!=='none'&&style.visibility!=='hidden';
+ }).flatMap((bar,index)=>{
   const track=bar.querySelector('[data-stage-bar]');
   if(!track)return ['bar '+index+' missing stage track'];
   const segments=[...track.querySelectorAll('[data-stage-segment]')];
