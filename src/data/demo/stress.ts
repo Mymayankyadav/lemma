@@ -134,7 +134,12 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   // showed an error while the all-route test still passed.
   const planProposal = original.proposals.find(p => p.id === "proposal-6" && p.kind === "plan_change");
   if (!planProposal) throw Error("Stress fixture requires proposal-6 plan change");
-  data.proposals = [structuredClone(planProposal)];
+  // Keep the 36-checkpoint no-stage baseline exact: a pending amendment
+  // would add CP4a to its project timeline. Put the genuine plan-change
+  // payload on the last stress project instead, which has matching CP codes.
+  const stressPlanProposal = structuredClone(planProposal);
+  stressPlanProposal.projectSlug = data.projects[projectCount - 1].slug;
+  data.proposals = [stressPlanProposal];
   for (let i = 1; i < proposalCount; i++) {
     const project = data.projects[i % data.projects.length];
     data.proposals.push({
