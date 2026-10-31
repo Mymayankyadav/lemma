@@ -22,11 +22,14 @@ const spanWidth=(marks:readonly Draft[])=>marks.reduce((sum,m)=>sum+m.width,0)+
  */
 export function layoutRoute(
  stages:readonly RouteStageSpan[],total:number,selectedIndex:number,containerWidth:number,
+ currentIndex=selectedIndex,
 ):RouteLayout{
  const n=Math.max(0,Math.floor(total));
  if(!n)return {mode:'plain',marks:[],activeStage:0};
  const width=Math.max(44,containerWidth);
  const selected=Math.max(0,Math.min(n-1,selectedIndex));
+ const current=Math.max(0,Math.min(n-1,currentIndex));
+ const currentStage=Math.max(0,stages.findIndex(s=>s.start<=current&&s.end>=current));
  const activeStage=Math.max(0,stages.findIndex(s=>s.start<=selected&&s.end>=selected));
  const plain=n<=Math.floor(width/22);
  const drafts:Draft[]=[];
@@ -34,8 +37,8 @@ export function layoutRoute(
   for(let i=0;i<n;i++)drafts.push({
    kind:'station',index:i,stageIndex:Math.max(0,stages.findIndex(s=>s.start<=i&&s.end>=i)),
    stageEnd:Math.max(0,stages.findIndex(s=>s.start<=i&&s.end>=i)),
-   width:i===selected?CURRENT_RADIUS*2:STATION_RADIUS*2,
-   height:i===selected?CURRENT_RADIUS*2:STATION_RADIUS*2,
+   width:i===current?CURRENT_RADIUS*2:i===selected?10:STATION_RADIUS*2,
+   height:i===current?CURRENT_RADIUS*2:i===selected?10:STATION_RADIUS*2,
    stages:0,selected:i===selected,
   });
  }else{
@@ -46,10 +49,14 @@ export function layoutRoute(
     const to=Math.min(stage.end,selected+4);
     for(let i=from;i<=to;i++)drafts.push({
      kind:'station',index:i,stageIndex:s,stageEnd:s,
-     width:i===selected?CURRENT_RADIUS*2:STATION_RADIUS*2,
-     height:i===selected?CURRENT_RADIUS*2:STATION_RADIUS*2,
+     width:i===current?CURRENT_RADIUS*2:i===selected?10:STATION_RADIUS*2,
+     height:i===current?CURRENT_RADIUS*2:i===selected?10:STATION_RADIUS*2,
      stages:0,selected:i===selected,
     });
+   }else if(s===currentStage){
+    // The now-halo remains a visible station even after selecting another stage.
+    drafts.push({kind:'station',index:current,stageIndex:s,stageEnd:s,
+     width:CURRENT_RADIUS*2,height:CURRENT_RADIUS*2,stages:0,selected:false});
    }else drafts.push({
     kind:'stage',index:stage.start,stageIndex:s,stageEnd:s,
     width:capsuleWidth(stage.end-stage.start+1),height:4.5,
@@ -76,7 +83,7 @@ export function layoutRoute(
     continue;
    }
    const stationChoices=drafts.map((mark,i)=>({mark,i}))
-    .filter(v=>v.mark.kind==='station'&&!v.mark.selected)
+    .filter(v=>v.mark.kind==='station'&&!v.mark.selected&&v.mark.index!==current)
     .sort((a,b)=>Math.abs(b.mark.index-selected)-Math.abs(a.mark.index-selected));
    if(!stationChoices.length)break;
    drafts.splice(stationChoices[0].i,1);
