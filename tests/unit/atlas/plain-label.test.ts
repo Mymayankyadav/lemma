@@ -7,7 +7,7 @@ describe('LOOK-4b Atlas cold-render label safety',()=>{
    expect(isPlainAtlasLabel(label)).toBe(true);
  });
  it('retains the full Tex parser for mathematical or markup-rich names',()=>{
-  for(const label of [String.raw`$L^p$`,String.raw`\\mathbb{R}^n`,'<script>alert(1)</script>','**Bold**','x_y'])
+  for(const label of [String.raw`$L^p$`,String.raw`\mathbb{R}^n`,'<script>alert(1)</script>','**Bold**','x_y'])
    expect(isPlainAtlasLabel(label)).toBe(false);
  });
 });
