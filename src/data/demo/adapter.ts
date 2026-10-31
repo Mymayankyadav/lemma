@@ -111,6 +111,8 @@ export interface DemoOptions {
   now?: () => number;
   timeZone?: string;
   fixture?: DemoStore;
+  /** Only set for a freshly generated private store, never a shared fixture. */
+  ownedFixture?: boolean;
 }
 /** Reuse one pass across the large stress fixture when summarising every
  * project. Single-project reads keep the same standalone summary semantics. */
@@ -138,6 +140,7 @@ export class DemoAdapter implements LemmaApi {
       options.timeZone ??
         Intl.DateTimeFormat().resolvedOptions().timeZone ??
         "UTC",
+      { takeOwnership: options.ownedFixture === true },
     );
   }
   private iso() {
