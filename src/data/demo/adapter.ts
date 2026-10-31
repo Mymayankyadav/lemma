@@ -60,7 +60,6 @@ import {
   checkpointUi,
   conceptStatus,
   dueToday,
-  projectProgress,
   sessionDisplay,
   studyDayBounds,
   studyDay,
@@ -205,15 +204,12 @@ export class DemoAdapter implements LemmaApi {
       ),
     );
   }
-  private item(note: DemoNote, card: DemoNote["cards"][number]): ReviewItem {
-    const project = this.projectById(note.projectId),
-      cp = note.note.checkpointCode
-        ? this.store.checkpoints.find(
-            (cp) =>
-              cp.projectId === project.id &&
-              cp.code === note.note.checkpointCode,
-          )
-        : null;
+  private item(
+    note: DemoNote,
+    card: DemoNote["cards"][number],
+    project: DemoProject,
+    cp: DemoCheckpoint | null,
+  ): ReviewItem {
     return {
       cardId: card.id,
       noteId: note.note.noteId,
@@ -234,10 +230,21 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   private allItems() {
-    const active = new Set(this.store.projects.filter(p => p.status !== "archived" && !p.system).map(p => p.id));
+    // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
+    // identities once instead of scanning all checkpoints for every card.
+    const projects = new Map(this.store.projects
+      .filter(p => p.status !== "archived" && !p.system).map(p => [p.id, p]));
+    const checkpoints = new Map(this.store.checkpoints
+      .map(cp => [cpKey(cp.projectId, cp.code), cp]));
     return this.store.notes
-      .filter((n) => n.note.status === "active" && active.has(n.projectId))
-      .flatMap((n) => n.cards.map((c) => this.item(n, c)));
+      .filter(n => n.note.status === "active" && projects.has(n.projectId))
+      .flatMap(n => {
+        const project = projects.get(n.projectId)!;
+        const cp = n.note.checkpointCode
+          ? checkpoints.get(cpKey(n.projectId, n.note.checkpointCode)) ?? null
+          : null;
+        return n.cards.map(card => this.item(n, card, project, cp));
+      });
   }
   /** The due badge and deck counts represent the full backlog, not the daily queue. */
   private backlog(): ReviewItem[] {
@@ -302,11 +309,18 @@ export class DemoAdapter implements LemmaApi {
   private displaySubject(id: string): Subject {
     return id ? this.subject(id) : { id: "", name: "Unassigned", glyph: "·", hue: "slate", position: 999 };
   }
-  private summary(p: DemoProject, eligible = this.eligible()): ProjectSummary {
-    const cps = this.store.checkpoints.filter((cp) => cp.projectId === p.id),
-      views = cps.map((cp) => this.cpView(cp, eligible)),
-      progress = projectProgress(views),
-      current = cps.find((cp) => cp.status === "in_progress");
+  private summary(p: DemoProject): ProjectSummary {
+    const cps = this.store.checkpoints.filter(cp => cp.projectId === p.id);
+    // Summary progress needs only demonstrated/proposed status, not the full
+    // recursive prerequisite UI and daily due-card queue for each checkpoint.
+    // checkpointUi() maps every demonstrated checkpoint to done or revisit;
+    // both count as done, and proposed checkpoints are excluded.
+    const approved = cps.filter(cp => !cp.proposed);
+    const progress = {
+      done: approved.filter(cp => cp.status === "demonstrated").length,
+      total: approved.length,
+    };
+    const current = cps.find(cp => cp.status === "in_progress");
     return {
       id: p.id,
       slug: p.slug,
@@ -522,10 +536,9 @@ export class DemoAdapter implements LemmaApi {
     });
   }
   async listProjects() {
-    const eligible = this.eligible();
     return this.store.projects
       .filter(p => !p.system)
-      .map((p) => this.summary(p, eligible))
+      .map(p => this.summary(p))
       .sort(
         (a, b) =>
           Date.parse(b.lastActivityAt ?? "1970-01-01") -
@@ -736,7 +749,7 @@ export class DemoAdapter implements LemmaApi {
   async getProject(slug: string): Promise<ProjectDetail> {
     const p = this.project(slug),
       eligible = this.eligible(),
-      summary = this.summary(p, eligible);
+      summary = this.summary(p);
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
@@ -844,7 +857,19 @@ export class DemoAdapter implements LemmaApi {
               sessionNumber: open?.number ?? null,
             }
           : null,
-      due: this.backlog().length,
+      // Today needs a count, not 30,000 hydrated ReviewItem objects.
+      // Keep exactly the backlog() predicate (active, owner-visible, due).
+      due: (() => {
+        const active = new Set(this.store.projects
+          .filter(project => !project.system && project.status !== "archived")
+          .map(project => project.id));
+        const now = this.now();
+        return this.store.notes.reduce((count, note) =>
+          count + (note.note.status === "active" && active.has(note.projectId)
+            ? note.cards.filter(card =>
+              card.state.state > 0 && Date.parse(card.state.due) <= now).length
+            : 0), 0);
+      })(),
       pendingProposals: this.store.proposals.filter(
         (p) => p.status === "pending",
       ).length,
