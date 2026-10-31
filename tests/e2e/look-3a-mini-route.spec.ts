@@ -88,6 +88,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   const expected=miniRouteNotch(currentMiniRouteOrdinal('CP9',uneven,done),36,200,groups)!.x;
   const completed=miniRouteNotch(done>=36?36:done+.5,36,200,groups)!.x;
   expect(notchX).toBeCloseTo(expected,1);
+  expect(notchX).toBeCloseTo(56.0556,1);
   expect(Math.abs(notchX-completed)).toBeGreaterThan(20);
   const notchBox=await mismatch.locator('[data-route-notch]').boundingBox();
   expect(notchBox?.width).toBeCloseTo(2,0);
