@@ -19,7 +19,7 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   await expect(page.getByRole('heading',{name:'Cards',exact:true})).toBeVisible();
   // The seeded plain Algebra project also matches the text; select the exact
   // newly created mathematical project rather than the first matching chip.
-  const chip=page.getByRole('group',{name:'Card filters'}).locator('[data-project-slug="'+projectSlug+'"]');
+  const chip=page.getByRole('group',{name:'Card filters'}).locator('[data-project-slug="'+projectSlug+'"] button');
   await expect(chip).toBeVisible();
   await expect(chip.locator('.katex')).toHaveCount(1);
   const option=page.getByLabel('Filter project').locator('option').filter({hasText:'Algebra'});
