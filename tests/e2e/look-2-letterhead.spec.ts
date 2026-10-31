@@ -14,6 +14,8 @@ for(const width of [360,390] as const){
   const height=width===360?740:844;
   await page.setViewportSize({width,height});
   for(const [route,kind] of routes){
+   // Each route must start without the previous route's temporary scroll fixture.
+   await expect(page.locator('[data-look-2-spacer]')).toHaveCount(0);
    await page.goto(`/lemma/?demo=${profile}&theme=${theme}#${route}`,{
     waitUntil:'domcontentloaded',timeout:90_000,
    });
