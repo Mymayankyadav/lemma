@@ -18,6 +18,12 @@ describe('Continue accessible math description',()=>{
   expect(spoken).toContain(', step 2 of 5');
   expect(spoken).toContain('Paused 2 h ago');
  });
+ it('reads common approximate relations as symbols, not command names',()=>{
+  const spoken=resumeSpoken('Analysis',String.raw`$f\simeq g$ and $a\approx b$`,'',null);
+  expect(spoken).toContain('f≃g');
+  expect(spoken).toContain('a≈b');
+  expect(spoken).not.toMatch(/\\(?:simeq|approx)/);
+ });
  it('retains the existing plain-text step and pause wording',()=>{
   expect(resumeSpoken('Real Analysis','Compactness',' · step 2 of 4','2 h ago'))
    .toBe('Real Analysis. Compactness, step 2 of 4. Paused 2 h ago');
