@@ -41,4 +41,25 @@ describe('FIX #519: Atlas linked due-card counts without rich global queue',()=>
    expect(allItems).not.toHaveBeenCalled();
   }finally{allItems.mockRestore()}
  },30_000);
+ it('copies 2,500 flat ideas and 8,000 links without per-record structuredClone',async()=>{
+  const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{deferSessions:true}),
+   now:()=>now,timeZone:'UTC'});
+  const cloned=vi.spyOn(globalThis,'structuredClone');
+  let graph;
+  try{
+   graph=await api.getAtlas();
+   expect(graph.concepts.length).toBeGreaterThan(2_000);
+   expect(graph.links.length).toBeGreaterThan(7_000);
+   // A structuredClone call per idea adds thousands of synchronous clone
+   // boundaries to the strict 4x CPU first Atlas transition.
+   expect(cloned.mock.calls.length).toBeLessThan(100);
+  }finally{cloned.mockRestore()}
+  const originalName=graph!.concepts[0].name,originalKind=graph!.links[0].kind;
+  graph!.concepts[0].name='Mutated view only';
+  graph!.links[0].kind=originalKind==='prereq'?'related':'prereq';
+  const again=await api.getAtlas();
+  expect(again.concepts[0].name).toBe(originalName);
+  expect(again.links[0].kind).toBe(originalKind);
+ },30_000);
+
 });
