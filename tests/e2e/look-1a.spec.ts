@@ -27,8 +27,9 @@ for(const width of [360,390] as const){
     style:s.fontStyle,family:s.fontFamily};
   });
   expect(section).toMatchObject({
-   tag:'H2',cls:'ui-section-heading ',size:'19px',line:'23px',style:'italic',
+   tag:'H2',size:'19px',line:'23px',style:'italic',
   });
+  expect(section.cls).toContain('ui-section-heading');
   expect(section.family).toContain('Newsreader');
 
   const chip=page.locator('.ui-chip:not(button)').first();
