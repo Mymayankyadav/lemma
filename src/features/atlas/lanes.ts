@@ -33,16 +33,14 @@ export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[])
   const fromY=centers?.[arc.from]??arc.from*ROW+ROW/2;
   const toY=centers?.[arc.to]??arc.to*ROW+ROW/2;
   const low=Math.min(fromY,toY),high=Math.max(fromY,toY);
-  const shared=placed.find(p=>p.arc.from===arc.from||p.arc.to===arc.to);
-  let x=shared?.x;
-  if(x===undefined){
-   let best=Infinity;
-   for(const lane of LANES){
-    const collisions=placed.filter(p=>p.x===lane&&low<=p.high&&high>=p.low).length;
-    if(collisions<best){best=collisions;x=lane;if(best===0)break}
-   }
-  }
-  x??=LANES[LANES.length-1];
+  // An overlapping, unrelated wire must NEVER reuse a lane: with eight
+  // independent overlapping intervals and only seven 9px tracks, the eighth
+  // becomes an explicit overflow disclosure instead of an unreadable rope.
+  const sharesTrunk=(p:typeof placed[number])=>p.arc.from===arc.from||p.arc.to===arc.to;
+  const fits=(lane:number)=>placed.every(p=>p.x!==lane||high<p.low||low>p.high||sharesTrunk(p));
+  const shared=placed.find(p=>sharesTrunk(p)&&fits(p.x));
+  const x=shared?.x??LANES.find(fits);
+  if(x===undefined)continue;
   placed.push({arc,x,low,high});
   result.set(arc.key,{x,fromY,toY,d:atlasLanePath(x,fromY,toY)});
  }
