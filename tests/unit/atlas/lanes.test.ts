@@ -29,27 +29,25 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   expect(paths.get('two-rows')?.x).toBe(74);
   expect(paths.get('three-rows')?.x).toBe(65);
  });
- it('never paints eight unrelated overlapping intervals onto seven 9px lanes',()=>{
+ it('draws eight unrelated overlapping intervals on eight 9px lanes',()=>{
   const arcs=Array.from({length:8},(_,i)=>arc('dense-'+i,i,i+8));
   const centers=Array.from({length:16},(_,i)=>i*44+22);
   const result=layoutAtlasLanes(arcs,centers);
-  // One connection must be disclosed by the caller rather than overpainting
-  // a second independent interval on an occupied vertical track.
-  expect(result.size).toBe(7);
-  expect(new Set([...result.values()].map(lane=>lane.x)).size).toBe(7);
-  expect(result.has('dense-7')).toBe(false);
+  expect(result.size).toBe(8);
+  expect(new Set([...result.values()].map(lane=>lane.x)).size).toBe(8);
+  expect(result.has('dense-7')).toBe(true);
  });
  it('prioritizes a selected shortest chain link when capacity is exhausted',()=>{
-  const arcs=Array.from({length:8},(_,i)=>arc('dense-'+i,i,i+8));
-  const centers=Array.from({length:16},(_,i)=>i*44+22);
-  const selected=new Set(['dense-7']);
+  const arcs=Array.from({length:9},(_,i)=>arc('dense-'+i,i,i+9));
+  const centers=Array.from({length:18},(_,i)=>i*44+22);
+  const selected=new Set(['dense-8']);
   const result=layoutAtlasLanes(arcs,centers,selected);
-  expect(result.size).toBe(7);
-  expect(result.has('dense-7')).toBe(true);
+  expect(result.size).toBe(8);
+  expect(result.has('dense-8')).toBe(true);
   // No selected link may be dropped merely because an unrelated link was
   // physically longer; a genuinely over-capacity selected chain still needs
   // a separate spec resolution, never a false Ready-to-merge claim.
-  expect(result.has('dense-6')).toBe(false);
+  expect(result.has('dense-7')).toBe(false);
  });
  it('allows a shared endpoint trunk but not an unrelated overlap on its track',()=>{
   const arcs=[arc('a',0,9),arc('b',0,8),arc('c',1,10)];
