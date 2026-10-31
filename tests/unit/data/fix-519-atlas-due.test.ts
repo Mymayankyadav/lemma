@@ -27,6 +27,10 @@ describe('FIX #519: Atlas linked due-card counts without rich global queue',()=>
  for(const profile of ['stress','extreme'] as const)
  it(`${profile} Atlas does not construct all rich card items to count linked cards`,async()=>{
   const fixture=makeStressStore(seed,profile,{deferSessions:true});
+  // Synthetic S/X cards default to unlinked ideas; link one real card to
+  // reproduce the owner's mixed 30k-card + Atlas-note case. Otherwise the
+  // old full-queue code is never entered and this test passes falsely.
+  fixture.notes[0].conceptId=fixture.concepts[0].id;
   expect(fixture.notes).toHaveLength(profile==='extreme'?30_000:5_000);
   const api=new DemoAdapter({fixture,now:()=>now,timeZone:'UTC'});
   const allItems=vi.spyOn(api as unknown as {allItems:()=>ReviewItem[]},'allItems');
