@@ -5,13 +5,8 @@ import {stressViolations,type StressMeasurement} from './stress-limits';
  * verifies the corresponding fix on merged main. An unknown violation fails CI.
  */
 export type PendingStressGate={issue:number;failure:string;routes:readonly string[]};
-export const unfinishedStressGates:readonly PendingStressGate[]=[
- {issue:489,failure:'marks closer than 8px',routes:[
-  '/','/projects','/p/real-analysis','/p/real-analysis/cp/CP4',
-  '/proposals/proposal-6','/review','/review/run','/review/done',
-  '/cards','/cards/31','/atlas','/insights','/kit'
- ]}, // count marks in charts, timeline, cards and Atlas
-];
+export const unfinishedStressGates:readonly PendingStressGate[]=[]; // All known temporary exceptions were Auditor-closed.
+
 
 /** Fail on any untracked hard-budget breach, and fail closed for QA-3 release.
  * The baseline may defer only exact named failures/route pairs while related
