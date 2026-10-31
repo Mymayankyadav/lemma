@@ -150,7 +150,10 @@ export default function Page() {
               <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
               <span className="min-w-0 flex-1">
                 <span data-card-front=""
-                  className={`min-w-0 max-w-full font-math text-headline leading-snug text-ink ${row.front.includes('
+                  className={"min-w-0 max-w-full font-math text-headline leading-snug text-ink "+(row.front.includes("$")?"block overflow-x-auto whitespace-nowrap":"line-clamp-2 overflow-hidden")}
+                  style={row.front.includes("$")?{maskImage:"linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)"}:undefined}>
+                  <span className={row.front.includes("$")?"inline-block min-w-max pr-4":undefined}><Tex source={row.front} /></span>
+                </span>
                 <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
                   <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
                   <span>{row.status === "suspended" ? "Paused" : relative(row.due)}</span>
