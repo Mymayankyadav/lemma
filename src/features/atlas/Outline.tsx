@@ -12,14 +12,14 @@ export const ROW=44,GUTTER=84,INDENT=16;
 export const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
 export const STORE='lemma.atlas.v2';
 export const statusName={demonstrated:'Demonstrated',revisit:'Re-check due',in_progress:'In progress',not_started:'Not started'};
-export const toneColor:Record<Tone,string>={up:'var(--grade-good)',down:'var(--accent)',related:'var(--hard)',self:'var(--accent)',none:'var(--ink-3)'};
+export const toneColor:Record<Tone,string>={up:'var(--link)',down:'var(--accent)',related:'var(--ink-3)',self:'var(--accent)',none:'var(--ink-3)'};
 
 export function StatusMark({node}:{node:AtlasNode}){
  const s=node.status;
  return <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0">
-  {s==='demonstrated'&&<circle cx="7" cy="7" r="5" fill="var(--accent)"/>}
-  {s==='in_progress'&&<><circle cx="7" cy="7" r="5" fill="none" stroke="var(--accent)" strokeWidth="1.6"/><path d="M7 2a5 5 0 0 1 0 10z" fill="var(--accent)"/></>}
-  {s==='revisit'&&<circle cx="7" cy="7" r="5" fill="none" stroke="var(--hard)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/>}
+  {s==='demonstrated'&&<circle cx="7" cy="7" r="6" fill="var(--ink-2)"/>}
+  {s==='in_progress'&&<><circle cx="7" cy="7" r="5.4" fill="none" stroke="var(--ink-2)" strokeWidth="1.6"/><path d="M7 1.6a5.4 5.4 0 0 1 0 10.8z" fill="var(--ink-2)"/></>}
+  {s==='revisit'&&<circle cx="7" cy="7" r="5.4" fill="none" stroke="var(--late)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/>}
   {s==='not_started'&&<circle cx="7" cy="7" r="4.6" fill="none" stroke="var(--ink-3)" strokeWidth="1.2"/>}
  </svg>;
 }
