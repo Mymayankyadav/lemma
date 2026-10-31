@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import type {ProjectSummary} from '../../../src/data/types';
-import {MiniStageBar,miniRouteNotch} from '../../../src/ui/timeline/MiniStageBar';
+import {MiniStageBar,miniRouteNotch,currentMiniRouteOrdinal} from '../../../src/ui/timeline/MiniStageBar';
 import {layoutMiniRoute} from '../../../src/ui/timeline/miniRoute';
 
 const stages=(count:number)=>Array.from({length:count},(_,i)=>({
@@ -65,6 +65,25 @@ describe('LOOK-3a mini Route geometry',()=>{
    }
   }
   expect(miniRouteNotch(0,0,360)).toBeNull();
+ });
+ it('places the notch at the actual current checkpoint across nonuniform stages and rechecks',()=>{
+  const uneven=[
+   {label:'S1',firstCode:'CP1',lastCode:'CP2',total:2,done:2,overdue:0,schedule:'complete' as const},
+   {label:'S2',firstCode:'CP3',lastCode:'CP10',total:8,done:1,overdue:0,schedule:'dated' as const},
+   {label:'S3',firstCode:'CP11',lastCode:'CP36',total:26,done:0,overdue:0,schedule:'unscheduled' as const},
+  ];
+  const layout=layoutMiniRoute(uneven,200);
+  const current=currentMiniRouteOrdinal('CP9',uneven,3);
+  expect(current).toBeCloseTo(8.5);
+  const currentNotch=miniRouteNotch(current,36,200,layout)!;
+  const completionNotch=miniRouteNotch(3.5,36,200,layout)!;
+  expect(currentNotch.x).toBeGreaterThan(completionNotch.x+20);
+  expect(currentNotch.x).not.toBeCloseTo(200*current/36,0);
+  expect(miniRouteNotch(currentMiniRouteOrdinal('CP9',uneven,36),36,200,layout)?.x)
+   .toBeCloseTo(currentNotch.x);
+  expect(currentMiniRouteOrdinal('unknown',uneven,3)).toBe(3.5);
+  expect(currentMiniRouteOrdinal('CP1',uneven,3)).toBe(.5);
+  expect(currentMiniRouteOrdinal('CP36',uneven,3)).toBe(35.5);
  });
  it('never allocates a tick or extra mark for a zero-checkpoint plan',()=>{
   expect(layoutMiniRoute([],360)).toEqual([]);
