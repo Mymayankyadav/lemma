@@ -47,13 +47,16 @@ test('AUDIT #540 all 18 routes cold-render at 4x CPU, extreme/night/360px',async
   }
   const durationMs=Date.now()-start;
   const nodes=await page.locator('*').count();
+  const navigationType=await page.evaluate(()=>
+   (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined)?.type??'unknown');
   const screenshot='test-results/screens/stress-cpu/'+
    (route==='/'?'today':route.replaceAll('/','-').replace(/^-/,''))+'.png';
   await page.screenshot({path:screenshot,fullPage:false,timeout:30_000});
   samples.push({
    route,actualRoute:await page.evaluate(()=>location.hash.slice(1)),
    profile:'extreme',theme:'graph-night',width:360,
-   cpuThrottle:4,durationMs,navigationType:'document',ready:true,nodes,screenshot,
+   cpuThrottle:4,durationMs,navigationType:navigationType==='navigate'?'document':navigationType,
+   ready:true,nodes,screenshot,
   });
  }
  await cdp.detach();
