@@ -309,25 +309,16 @@ export class LiveAdapter implements LemmaApi {
   checked(await db.from('sources').delete().eq('id',id).eq('user_id',uid).select('id').single())
  }
  async getSourceTranscriptionStats(projectId:string):Promise<import('../types').SourceTranscriptionStat[]> {
-  const db=liveClient(),uid=await owner(db)
-  const sources=checked(await db.from('sources').select('id').eq('user_id',uid).eq('project_id',projectId)) as Row[]
-  if(!sources.length)return []
-  const counts=new Map<string,{sourceId:string;transcribed:number;needsCheck:number}>()
-  const ids=sources.map(row=>row.id as string)
-  // Fetch provenance metadata only: never download 400 page bodies to count them.
-  for(let offset=0;;offset+=1000){
-   const pageRows=checked(await db.from('source_pages').select('source_id,confidence')
-    .eq('user_id',uid).in('source_id',ids).not('transcribed_at','is',null)
-    .order('source_id').order('page').range(offset,offset+999)) as Row[]
-   for(const row of pageRows){
-    const stat=counts.get(row.source_id)??{sourceId:row.source_id,transcribed:0,needsCheck:0}
-    stat.transcribed++
-    if(row.confidence==='check')stat.needsCheck++
-    counts.set(row.source_id,stat)
-   }
-   if(pageRows.length<1000)break
-  }
-  return [...counts.values()]
+  const db=liveClient()
+  await owner(db)
+  // The SQL aggregate returns at most one row per source, regardless of PDF page count.
+  // It filters auth.uid() and joins pages on user_id under invoker RLS.
+  const rows=checked(await db.rpc('source_transcription_stats',{p_project_id:projectId})) as Row[]
+  return rows.map(row=>({
+   sourceId:row.source_id as string,
+   transcribed:Number(row.transcribed),
+   needsCheck:Number(row.needs_check),
+  }))
  }
  async getSourcePage(sourceId:string,page:number):Promise<import('../types').TranscribedSourcePage|null>{
   if(!Number.isSafeInteger(page)||page<1)throw new LemmaError('invalid','Invalid PDF page')
