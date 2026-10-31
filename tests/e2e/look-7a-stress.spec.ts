@@ -15,11 +15,19 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/review`,{waitUntil:'domcontentloaded',timeout:90_000})
   const start=page.getByRole('button',{name:'Start review'})
   await expect(start).toBeEnabled({timeout:90_000})
+  if(profile==='extreme'){
+   // The ordinary daily limit is 200 even when 4,000 cards are due. Activate
+   // the real catch-up control so this regression actually exercises a
+   // 400+-card round, rather than falsely claiming X coverage at 200 cards.
+   await page.getByRole('button',{name:/Catch-up plan/}).click()
+   await expect(start).toContainText(/Start [4-9]\\d\\d/,{timeout:90_000})
+  }
   await start.click()
   const progress=page.getByRole('progressbar',{name:'Review progress'})
   await expect(progress).toBeVisible({timeout:90_000})
   const total=Number(await progress.getAttribute('aria-valuemax'))
-  expect(total,'nonempty S/X review round').toBeGreaterThan(0)
+  expect(total,'actual S/X review round, not merely a 200-card default cap')
+   .toBeGreaterThanOrEqual(profile==='extreme'?400:150)
   await expect(progress).toHaveAttribute('aria-valuenow','0')
   await expect(page.locator('[data-review-vertex], [data-review-edge]')).toHaveCount(0)
   const geometry=await page.evaluate(()=>{
