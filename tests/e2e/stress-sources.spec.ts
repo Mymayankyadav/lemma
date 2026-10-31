@@ -1,10 +1,14 @@
 import {test, expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
-for (const [profile, theme, width, height, sourceCount, pageCount] of [
-  ['stress', 'graph', 390, 844, 30, 1200],
-  ['extreme', 'graph-night', 360, 740, 100, 3000],
-] as const) {
+// Every source-page stress profile must remain usable in both Graph worlds
+// and at both supported phone widths, not only the two diagonal cases.
+for (const [profile, sourceCount, pageCount] of [
+  ['stress', 30, 1200],
+  ['extreme', 100, 3000],
+] as const)
+for (const theme of ['graph', 'graph-night'] as const)
+for (const [width, height] of [[390, 844], [360, 740]] as const) {
   test(`ST-0 Sources fixture: ${profile} has ${sourceCount} sources and ${pageCount}-page navigation`, async ({page}) => {
     test.setTimeout(180_000);
     await page.setViewportSize({width, height});
