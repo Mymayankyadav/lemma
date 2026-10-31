@@ -39,7 +39,7 @@ export interface ScreenAudit {
  */
 export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:number):PngHeader|null {
  if(bytes.length<57||!bytes.subarray(0,8).equals(SIGNATURE))return null
- let offset=8,width=0,height=0,depth=0,color=0,interlace=0,seenIHDR=false,seenIDAT=false,seenIEND=false
+ let offset=8,width=0,height=0,depth=0,color=0,interlace=0,seenIHDR=false,seenPLTE=false,seenIDAT=false,endedIDAT=false,seenIEND=false
  const idats:Buffer[]=[]
  while(offset<bytes.length){
   if(offset+12>bytes.length)return null
@@ -57,8 +57,19 @@ export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:numbe
       bytes[data+11]!==0||interlace!==0)return null
    seenIHDR=true
   }else if(type==='IHDR')return null
+  if(type==='PLTE'){
+   // Indexed-colour images are undecodable without a palette. A PNG palette
+   // must precede IDAT, contain 1..256 RGB triples and fit the bit depth.
+   // Grayscale images forbid PLTE; duplicate/late palettes are invalid.
+   const entries=length/3
+   if(seenPLTE||seenIDAT||seenIEND||color===0||color===4||
+      length===0||length%3!==0||length>768||
+      (color===3&&entries>2**depth))return null
+   seenPLTE=true
+  }
+  if(seenIDAT&&type!=='IDAT')endedIDAT=true
   if(type==='IDAT'){
-   if(seenIEND)return null
+   if(seenIEND||endedIDAT||(color===3&&!seenPLTE))return null
    seenIDAT=true
    idats.push(bytes.subarray(data,crcOffset))
   }
