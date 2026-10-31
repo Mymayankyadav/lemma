@@ -6,7 +6,7 @@ vi.mock('../../../src/data/live/client',()=>({
  liveClient:()=>({from:mock.from,auth:{getUser:mock.getUser}}),
 }));
 
-type Query={table:string;filters:{kind:string;key:string;value:unknown}[];limit:number|null;range:[number,number]|null};
+type Query={table:string;filters:{kind:string;key:string;value:unknown}[];limit:number|null;range:[number,number]|null;orders:string[]};
 const requests:Query[]=[];
 const fixtures:Record<string,Record<string,unknown>[]> = {
  notes:[{id:'n1',no:12,user_id:'owner-1',project_id:'p1',checkpoint_id:'cp1',session_id:'s1',
@@ -41,7 +41,7 @@ describe('FIX-546a live Card detail scoped queries',()=>{
   mock.from.mockReset();
   mock.getUser.mockReset().mockResolvedValue({data:{user:{id:'owner-1'}},error:null});
   mock.from.mockImplementation((table:string)=>{
-   const request:Query={table,filters:[],limit:null,range:null};requests.push(request);
+   const request:Query={table,filters:[],limit:null,range:null,orders:[]};requests.push(request);
    const q={
     select:(_columns:string)=>q,
     eq:(key:string,value:unknown)=>{request.filters.push({kind:'eq',key,value});return q;},
@@ -49,6 +49,7 @@ describe('FIX-546a live Card detail scoped queries',()=>{
     in:(key:string,value:unknown)=>{request.filters.push({kind:'in',key,value});return q;},
     limit:(n:number)=>{request.limit=n;return q;},
     range:(start:number,end:number)=>{request.range=[start,end];return q;},
+    order:(key:string,_options:unknown)=>{request.orders.push(key);return q;},
     single:async()=>({data:filtered()[0]??null,error:null}),
     then:(onFulfilled:(value:unknown)=>unknown,onRejected?:(error:unknown)=>unknown)=>
      Promise.resolve({data:filtered(),error:null}).then(onFulfilled,onRejected),
@@ -123,6 +124,7 @@ describe('FIX-546a live Card detail scoped queries',()=>{
    const reviewQueries=requests.filter(q=>q.table==='reviews');
    expect(reviewQueries).toHaveLength(2);
    expect(reviewQueries.map(q=>q.range)).toEqual([[0,999],[1000,1999]]);
+   expect(reviewQueries.every(q=>q.orders.join(',')==='reviewed_at,id')).toBe(true);
    for(const q of reviewQueries){
     expect(q.filters).toContainEqual({kind:'eq',key:'user_id',value:'owner-1'});
     expect(q.filters).toContainEqual({kind:'in',key:'card_id',value:['c1']});
