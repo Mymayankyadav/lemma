@@ -300,7 +300,7 @@ export default function Page() {
                 Approve all from {group.label}
                </button>}
               </div>
-              <div className="flex flex-wrap gap-1.5">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`min-h-11 rounded-ctl border px-3 text-label ${active.id===p.id?"border-amber text-amber":"border-edge text-ink-2"}`}>{p.kind==="card_edit"?"Fix":"Card"} · {p.card?.front.slice(0,24)??`N${p.cardEdit?.note_no}`}</button>)}</div>
+              <div className="flex flex-wrap gap-1.5">{group.proposals.map((p,i)=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`min-h-11 rounded-ctl border px-3 text-label ${active.id===p.id?"border-amber text-amber":"border-edge text-ink-2"}`}>{p.kind==="card_edit"?`Fix N${p.cardEdit?.note_no}`:`Card ${i+1}`}</button>)}</div>
              </Slab>)}
              <div className="flex gap-2">
               {cardPage>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n-1)}>Previous 20</button>}
