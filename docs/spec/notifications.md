@@ -1,6 +1,6 @@
 # Notifications: Lemma reaches you, kindly (Planner, 31 Oct 2026)
 
-**Status: awaiting owner.** No agent starts a NOTIF task until the owner approves the PR "PLAN notifications" and it merges (`docs/agents/README.md` §2). This spec moves "push notifications" and "daily reminder notifications" out of "Not in v1" (`product.md` §5, `plan.md` §11). §9 lists the owner decisions it changes.
+**Status: owner-requested 31 Oct 23:33 IST; Auditor audits first.** The owner asked for this plan on 31 Oct 2026 at 23:33 IST. The Auditor audits it against the owner's decisions (`docs/agents/README.md` §4), the hard stress budgets and `v4-look.md`. Only after a CLEAR comment on the PR does the Steward merge it, and then Fixer and Builder agents start the NOTIF tasks. The three decision changes in §9 and the open questions are the Planner's proposed defaults; the owner may override any of them in a reply on the PR or in the issue "Planner log", and an override wins. This spec moves "push notifications" and "daily reminder notifications" out of "Not in v1" (`product.md` §5, `plan.md` §11). §9 lists the owner decisions it changes.
 
 It works for the web app (installed PWA or browser) on its own. The Android app (`android.md`) reuses it unchanged: a Trusted Web Activity shows these same Web Push notifications as Android app notifications.
 
@@ -517,7 +517,7 @@ Web Push (`_shared/webpush.ts`):
 
 ## 7. Tasks
 
-Order: NOTIF-0, NOTIF-1 and NOTIF-2 in parallel → NOTIF-3 → NOTIF-4; NOTIF-5 after NOTIF-0; NOTIF-6 after NOTIF-0, NOTIF-5 and LOOK-9; NOTIF-7 after NOTIF-0 and LOOK-7; QA-5 last. **All are awaiting owner.**
+Order: NOTIF-0, NOTIF-1 and NOTIF-2 in parallel → NOTIF-3 → NOTIF-4; NOTIF-5 after NOTIF-0; NOTIF-6 after NOTIF-0, NOTIF-5 and LOOK-9; NOTIF-7 after NOTIF-0 and LOOK-7; QA-5 last. **All are pending the Auditor's audit of this plan.** NOTIF-4's live deployment also needs the owner's one-time steps in §10.
 
 Every UI task attaches screenshots: day and night, 360 and 390 px, default and S profiles.
 
