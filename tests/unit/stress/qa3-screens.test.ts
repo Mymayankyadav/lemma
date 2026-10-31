@@ -124,6 +124,22 @@ describe('QA-3b screenshot structural gate',()=>{
   }finally{rmSync(dir,{recursive:true,force:true})}
  })
 
+ it('requires a valid PLTE before IDAT for indexed-colour PNGs',()=>{
+  const ihdr=Buffer.alloc(13)
+  ihdr.writeUInt32BE(390,0);ihdr.writeUInt32BE(844,4)
+  ihdr[8]=1;ihdr[9]=3 // indexed 1-bit; max two palette entries
+  const raw=Buffer.alloc((Math.ceil(390/8)+1)*844)
+  const idat=chunk('IDAT',deflateSync(raw))
+  const end=chunk('IEND',Buffer.alloc(0))
+  const palette=chunk('PLTE',Buffer.from([0,0,0,255,255,255]))
+  expect(pngHeader(Buffer.concat([signature,chunk('IHDR',ihdr),idat,end]),390,844)).toBeNull()
+  expect(pngHeader(Buffer.concat([signature,chunk('IHDR',ihdr),palette,idat,end]),390,844))
+   .toMatchObject({width:390,height:844,scale:1})
+  expect(pngHeader(Buffer.concat([signature,chunk('IHDR',ihdr),idat,palette,end]),390,844)).toBeNull()
+  expect(pngHeader(Buffer.concat([signature,chunk('IHDR',ihdr),
+   chunk('PLTE',Buffer.from([0,0])),idat,end]),390,844)).toBeNull()
+  expect(pngHeader(Buffer.concat([signature,chunk('IHDR',ihdr),palette,palette,idat,end]),390,844)).toBeNull()
+ });
  it('rejects a CRC-correct but undecodable Adam7 interlaced PNG',()=>{
   // Playwright Chromium captures are non-interlaced. A one-byte inflated IDAT
   // cannot encode the seven Adam7 passes of a 390x844 grayscale image.
