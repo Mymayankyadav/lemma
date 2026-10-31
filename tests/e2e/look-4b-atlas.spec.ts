@@ -125,10 +125,12 @@ test('LOOK-4b preserves all moderate Fields while extreme outlines remain window
  // All three Fields remain mounted and keyboard-accessible, but the 82
  // logical children cannot bypass the shared 60-row DOM budget.
  await expect(tree.locator('[data-level="cluster"]')).toHaveCount(3);
+ const fieldOrder=await tree.locator('[data-level="cluster"]').allTextContents();
  expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(60);
  const stage=page.locator('[data-atlas-stage]');
  await stage.evaluate(el=>{el.scrollTop=el.scrollHeight*.7;el.dispatchEvent(new Event('scroll',{bubbles:true}))});
  await expect(tree.locator('[data-level="cluster"]')).toHaveCount(3);
+ expect(await tree.locator('[data-level="cluster"]').allTextContents()).toEqual(fieldOrder);
  expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(60);
 });
 
