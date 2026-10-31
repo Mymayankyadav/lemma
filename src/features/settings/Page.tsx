@@ -250,12 +250,12 @@ export default function Page() {
           <IconButton
             icon={Copy}
             label="Copy connector address"
-            tone="amber"
+            tone="plain"
             onClick={() => void copy(s.connectorUrl)}
           />
         </div>
         <button
-          className="mt-3 min-h-11 text-label font-semibold text-amber"
+          className="mt-3 min-h-11 text-label font-semibold text-ink-2"
           onClick={() => setSheet("rotate")}
         >
           Make a new address
@@ -354,7 +354,7 @@ export default function Page() {
           ))}
         </div>
         <button
-          className="mt-3 min-h-11 text-body font-semibold text-amber"
+          className="mt-3 min-h-11 text-body font-semibold text-ink-2"
           onClick={() => {
             setRules(s.tutorRules ?? "");
             setSheet("rules");
