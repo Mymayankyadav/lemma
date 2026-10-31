@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { stressViolations } from '../../scripts/stress-limits';
+import { enforceStressBudgets } from '../../scripts/stress-gate';
 
 type Measurement = {
  route: string; actualRoute: string; profile: string; theme: string; width: number;
@@ -117,10 +118,12 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
   writeFileSync(file,JSON.stringify(report,null,2));
   await testInfo.attach('stress-measurements',{body:JSON.stringify(report,null,2),contentType:'application/json'});
-  // ST-0 establishes the baseline and route inventory. ST-1…ST-7 enforce
-  // the hard thresholds once the known pre-existing scale failures are fixed.
+  // Enforce every completed hard budget. Unfinished scopes have an explicit
+  // audit-issue exception in stress-gate.ts; an unknown failure is red CI.
+  // QA-3 release uses release:true and rejects ALL remaining exceptions.
   expect(measurements.map(m=>m.route)).toEqual([...routes]);
   expect(measurements.every(m=>m.nodes>0 && Number.isFinite(m.durationMs))).toBe(true);
   expect(measurements[0].cpuThrottle).toBe(4);
+  enforceStressBudgets(measurements);
  });
 }
