@@ -13,7 +13,7 @@ describe('Euclid Paths stage grouping',()=>{
    cp('CP1','Foundations','done'),cp('CP2','Foundations','now'),
    cp('CP3','Proofs'),cp('CP4',null),cp('CP5',null)
   ]);
-  expect(groups.map(group=>group.name)).toEqual(['Foundations','Proofs','CP4–CP5']);
+  expect(groups.map(group=>group.name)).toEqual(['Foundations','Proofs','CP4–5']);
   expect(groups.map(group=>group.checkpoints.map(item=>item.code)))
    .toEqual([['CP1','CP2'],['CP3'],['CP4','CP5']]);
  });
