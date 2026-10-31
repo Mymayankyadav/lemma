@@ -12,6 +12,7 @@ import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
+import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
@@ -100,9 +101,10 @@ export default function Page(){
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
+ const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
  const virtual=rows.length>200;
- const first=virtual?Math.max(0,Math.floor(scrollTop/44)-12):0;
- const last=virtual?Math.min(rows.length,Math.ceil((scrollTop+viewportHeight)/44)+12):rows.length;
+ const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-12):0;
+ const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+13):rows.length;
  const visible=virtual?rows.slice(first,last):rows;
  const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
@@ -142,7 +144,8 @@ export default function Page(){
   const targetRows=visibleRows(tree,expandedPath);
   const targetIndex=targetRows.findIndex(row=>row.id===id);
   if(targetIndex>=0&&targetRows.length>200&&scroller.current){
-   scroller.current.scrollTop=Math.max(0,targetIndex*44-scroller.current.clientHeight/2);
+   const targetGeometry=buildAtlasRowGeometry(targetRows.map(row=>tree.nodes.get(row.id)?.level??'planet'));
+   scroller.current.scrollTop=Math.max(0,targetGeometry.offsets[targetIndex]-scroller.current.clientHeight/2);
    setScrollTop(scroller.current.scrollTop);
   }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -209,18 +212,18 @@ export default function Page(){
      <RotateCcw size={14} className="text-[var(--hard)]"/>{recheckCount}</button>}
    </div>
   </header>
-  <div ref={scroller} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24" data-atlas-stage="true">
+  <div ref={scroller} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--paper)] pb-24" data-atlas-stage="true">
    {tree.roots.length===0?<div className="flex h-full items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty" body="Ideas appear here as your plans grow."/></div>
    :rows.length===0?<p className="px-4 py-10 text-center text-body text-ink-3">{search?'No idea matches “'+search+'”.':'Nothing to re-check.'}</p>
    :<>
     {stickyParent&&<div className="sticky top-0 z-10 h-0 pointer-events-none" aria-label="Current branch"><div className="flex h-11 items-center border-b border-edge bg-raised/95 px-3 text-label font-semibold text-ink-2"><span className="truncate">{plainMath(tree.nodes.get(stickyParent)?.name??'')}</span></div></div>}
-    <div className="relative" role="tree" aria-label="Ideas and their links" style={virtual?{height:rows.length*44}:undefined}>
-    <div style={virtual?{position:"absolute",top:first*44,left:0,right:0}:undefined}>
+    <div className="relative" role="tree" aria-label="Ideas and their links" style={virtual?{height:geometry.totalHeight}:undefined}>
+    <div style={virtual?{position:"absolute",top:geometry.offsets[first],left:0,right:0}:undefined}>
     {visible.map(row=>{const node=tree.nodes.get(row.id)!;
      return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
     </div>
-    {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>}
+    {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">
