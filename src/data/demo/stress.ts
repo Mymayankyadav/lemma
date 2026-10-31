@@ -243,6 +243,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     };
     data.notes.push(note);
   }
+  const eventCount = extreme ? 400 : 150;
   data.sessions = [];
   for (const [projectIndex, project] of data.projects.entries()) {
     for (let index = 0; index < sessionCount; index++) {
