@@ -1,0 +1,32 @@
+import {test, expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
+
+for (const [profile, theme, width, height, sourceCount, pageCount] of [
+  ['stress', 'graph', 390, 844, 30, 1200],
+  ['extreme', 'graph-night', 360, 740, 100, 3000],
+] as const) {
+  test(`ST-0 Sources fixture: ${profile} has ${sourceCount} sources and ${pageCount}-page navigation`, async ({page}) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({width, height});
+    await page.route('https://fonts.googleapis.com/**', route => route.fulfill({body:''}));
+    await page.route('https://fonts.gstatic.com/**', route => route.fulfill({body:''}));
+    await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/p/real-analysis?tab=sources`, {waitUntil:'domcontentloaded', timeout:90_000});
+    const sources = page.getByRole('region', {name:'Sources'});
+    // SourcesPanel is a section, not a region until an accessible name is present.
+    await expect(sources.getByRole('group', {name:'Source storage'})).toContainText(`${sourceCount} sources`, {timeout:90_000});
+    const source = sources.getByText(/^Synthetic source/).first();
+    await expect(source).toBeVisible();
+    const tile = source.locator('xpath=ancestor::*[contains(concat(" ",normalize-space(@class)," ")," tile ")][1]');
+    await tile.getByRole('button', {name:'View pages'}).click();
+    const viewer = tile.getByRole('region', {name:/Page transcription for Synthetic source/});
+    await expect(viewer).toBeVisible();
+    await expect(viewer).toContainText(`of ${pageCount}`);
+    await expect(viewer).toContainText('Synthetic mathematics notes, page 1');
+    await viewer.getByRole('spinbutton', {name:'PDF page number'}).fill(String(pageCount));
+    await expect(viewer).toContainText(`Synthetic mathematics notes, page ${pageCount}`);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    mkdirSync('test-results/screens/stress', {recursive:true});
+    await page.screenshot({path:`test-results/screens/stress/source-pages-${profile}-${theme}-${width}.png`, fullPage:false});
+  });
+}
