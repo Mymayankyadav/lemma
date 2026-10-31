@@ -57,21 +57,38 @@ function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:C
  </Slab>;
 }
 function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
+ const [visible,setVisible]=useState(20);
  if(!sessions.length)return <EmptyState art="inbox" title="No sessions yet" body="Resume a checkpoint in your tutor to start an evidence trail."/>;
- return <div className="flex flex-col gap-2">{sessions.map(s=>{
-  const good=s.goalMet==='yes',partial=s.goalMet==='partial';
-  return <Link to={'/s/'+slug+'/'+s.number} key={s.id} className="flex min-h-[70px] items-center gap-3 rounded-slab bg-raised px-4">
-   <span className={'flex size-9 shrink-0 items-center justify-center rounded-s '+(good?'bg-success-tint text-easy':partial?'bg-amber-tint text-amber':'bg-fill-2 text-ink-3')}>
-    {good?<Check size={18} aria-hidden="true"/>:partial?<Pause size={16} aria-hidden="true"/>:<MessageCircle size={17} aria-hidden="true"/>}
-   </span>
-   <span className="min-w-0 flex-1">
-    <strong className="block truncate text-body-l font-semibold"><Tex source={s.goal}/></strong>
-    <span className="mt-1 block text-label text-ink-3">{'S'+s.number+' · '+relativeTime(s.startedAt)+' · '+s.client}</span>
-   </span>
-   <span className="text-label tabular-nums text-ink-2">{s.minutes===null?s.display:formatMinutes(s.minutes)}</span>
-   <ChevronRight size={16} className="text-ink-3"/>
-  </Link>;
- })}</div>;
+ const sorted=[...sessions].sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)||b.number-a.number);
+ const rows=sorted.slice(0,visible);
+ const months=new Map<string,SessionSummary[]>();
+ for(const session of rows){
+  const key=new Date(session.startedAt).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const bucket=months.get(key)??[];
+  bucket.push(session);
+  months.set(key,bucket);
+ }
+ return <section aria-label="Sessions" className="flex flex-col gap-4">
+  <p className="text-label text-ink-3">Latest {rows.length} of {sessions.length} sessions</p>
+  {[...months.entries()].map(([month,items])=><div key={month} className="flex flex-col gap-2">
+   <h3 className="text-label font-semibold uppercase tracking-wider text-ink-2">{month}</h3>
+   {items.map(s=>{
+    const good=s.goalMet==='yes',partial=s.goalMet==='partial';
+    return <Link to={'/s/'+slug+'/'+s.number} key={s.id} className="flex min-h-[70px] items-center gap-3 rounded-slab bg-raised px-4">
+     <span className={'flex size-9 shrink-0 items-center justify-center rounded-s '+(good?'bg-success-tint text-easy':partial?'bg-amber-tint text-amber':'bg-fill-2 text-ink-3')}>
+      {good?<Check size={18} aria-hidden="true"/>:partial?<Pause size={16} aria-hidden="true"/>:<MessageCircle size={17} aria-hidden="true"/>}
+     </span>
+     <span className="min-w-0 flex-1">
+      <strong className="block truncate text-body-l font-semibold"><Tex source={s.goal}/></strong>
+      <span className="mt-1 block text-label text-ink-3">{'S'+s.number+' · '+relativeTime(s.startedAt)+' · '+s.client}</span>
+     </span>
+     <span className="shrink-0 text-label tabular-nums text-ink-2">{s.minutes===null?s.display:formatMinutes(s.minutes)}</span>
+     <ChevronRight size={16} className="shrink-0 text-ink-3"/>
+    </Link>;
+   })}
+  </div>)}
+  {visible<sorted.length&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-4 text-body font-semibold text-amber" onClick={()=>setVisible(v=>v+20)}>More sessions · {sorted.length-visible} remaining</button>}
+ </section>;
 }
 function PlanHistory({slug}:{slug:string}){
  const revisions=usePlanRevisions(slug);
