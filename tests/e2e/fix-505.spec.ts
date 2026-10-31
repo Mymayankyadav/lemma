@@ -21,6 +21,7 @@ for(const width of [360,390] as const){
    {hash:'/proposals',heading:'Approve'},
   ];
   let informative=0;
+  mkdirSync('test-results/screens/fix-505',{recursive:true});
   for(const route of routes){
    await page.evaluate(hash=>{location.hash=hash},route.hash);
    await expect(page.getByRole('heading',{name:route.heading,level:1,exact:true})).toBeVisible({timeout:90_000});
@@ -41,9 +42,9 @@ for(const width of [360,390] as const){
    informative+=result.count;
    expect(result.bad,'undersized labels on '+route.hash).toEqual([]);
    expect(result.overflow,'horizontal overflow on '+route.hash).toBeLessThanOrEqual(1);
+   const screen=route.hash==='/atlas'?'atlas':route.hash.includes('tab=sources')?'sources':route.hash==='/insights'?'insights':route.hash==='/review'?'review':null;
+   if(screen)await page.screenshot({path:'test-results/screens/fix-505/'+profile+'-'+theme+'-'+width+'-'+screen+'.png'});
   }
   expect(informative,'test must exercise real informative labels').toBeGreaterThan(0);
-  mkdirSync('test-results/screens/fix-505',{recursive:true});
-  await page.screenshot({path:'test-results/screens/fix-505/'+profile+'-'+theme+'-'+width+'.png'});
  });
 }
