@@ -77,7 +77,7 @@ export default function Page(){
       </li>:run.events.map((event,i)=><ReasoningEvent key={event.id} event={event} index={run.start+i}/>);
      })}
     </ol>{visibleRuns<runs.length&&<button type="button" onClick={()=>setVisibleRuns(n=>n+40)} className="min-h-11 rounded-ctl border border-edge px-4 text-label font-semibold text-amber">More reasoning · {runs.length-visibleRuns} groups remaining</button>}</>:<p className="text-body text-ink-3">No reasoning events recorded for this session.</p>}
-   </section>
+   </section>}
    {!viewCards&&!!session.misconceptions.filter(m=>!m.resolvedAt).length&&<section className="flex flex-col gap-3"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Things to revisit</h2>{session.misconceptions.filter(m=>!m.resolvedAt).map(m=><div key={m.id} className="flex flex-wrap items-center gap-3 border-l-2 border-amber py-2 pl-3"><TriangleAlert className="text-amber" size={18}/><span className="min-w-0 flex-1 text-body-l"><Tex source={m.label}/></span><Chip tone="amber">{m.times}×</Chip><button disabled={resolve.isPending} className="min-h-11 rounded-ctl px-2 text-label font-semibold text-amber" onClick={()=>resolve.mutate(m.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Couldn’t save. Try again.',{tone:'danger'})})}>Resolved</button></div>)}</section>}
    {!!session.cards.length&&<section aria-label="Session cards" className="flex flex-col gap-2"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Cards</h2>
     <Link to={`/s/${slug}/${number}?cards=1`} className="flex min-h-14 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 text-body text-amber">
