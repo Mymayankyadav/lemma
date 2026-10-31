@@ -12,7 +12,7 @@ for (const width of [360, 390] as const) {
     await expect(viewer.getByText("Demo source page 1.")).toBeVisible();
     await viewer.getByRole("button", { name: "Edit page" }).click();
     const editor = viewer.getByRole("textbox", { name: "Edit page transcription" });
-    await editor.fill(String.raw`Prove $x^2+1>0$ and \\(x\\in\\mathbb{R}\\)`);
+    await editor.fill(String.raw`Prove $x^2+1>0$ and \(x\in\mathbb{R}\)`);
     const preview = viewer.getByRole("region", { name: "Math preview" });
     await expect(preview.locator(".katex")).toHaveCount(2);
     await editor.fill("Incomplete $x^2");
