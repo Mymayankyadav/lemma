@@ -22,7 +22,9 @@ async function measure(page: Page, route: string, profile: string, theme: string
   const elements = Array.from(document.querySelectorAll('*')).filter(visible);
   const undersizedText = elements.filter(e => {
    const s = getComputedStyle(e);
-   return e.children.length === 0 && !!e.textContent?.trim() && parseFloat(s.fontSize) < 12;
+   // KaTeX scriptstyle glyphs are part of one mathematical expression;
+   // the expression itself is checked separately against the 16px maths floor.
+   return !e.closest('.katex') && e.children.length === 0 && !!e.textContent?.trim() && parseFloat(s.fontSize) < 12;
   });
   const smallText = undersizedText.length;
   // Diagnostic evidence only: retain the exact hard-budget measurement.
