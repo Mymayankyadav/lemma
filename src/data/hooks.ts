@@ -44,6 +44,12 @@ export function useSearchCardsPage(...args: Parameters<LemmaApi['searchCardsPage
 export function useCard(...args: Parameters<LemmaApi['getCard']>) {
  return useQuery({ ...queryDefaults, queryKey: ['card', args[0]], queryFn: () => getApi().getCard(args[0]) })
 }
+export function useCardHistoryPage(...args: Parameters<LemmaApi['getCardHistoryPage']>) {
+ return useQuery({ ...queryDefaults, queryKey: ['card-history-page', args[0], args[1] ?? null], queryFn: () => getApi().getCardHistoryPage(args[0], args[1]) })
+}
+export function useCardCommentsPage(...args: Parameters<LemmaApi['getCardCommentsPage']>) {
+ return useQuery({ ...queryDefaults, queryKey: ['card-comments-page', args[0], args[1] ?? null], queryFn: () => getApi().getCardCommentsPage(args[0], args[1]) })
+}
 export function useAtlas(...args: Parameters<LemmaApi['getAtlas']>) {
  return useQuery({ ...queryDefaults, queryKey: ['atlas'], queryFn: () => getApi().getAtlas() })
 }
