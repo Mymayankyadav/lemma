@@ -26,7 +26,7 @@ Your job each run (do all of it, as much as fits):
    - blocked (a dependency is not merged);
    - open (no PR).
 3. Merge everything that can merge:
-   - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: mark it ready (`POST /repos/{o}/{r}/pulls/{n}/ccr/ready_for_review`) and squash-merge with the head SHA.
+   - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: if it is a draft, mark it ready using the GitHub web UI or the supported GraphQL `markPullRequestReadyForReview` mutation (there is **no REST endpoint** for this). If this runtime is REST-only, do not attempt a fake endpoint: leave a `Needs ready-for-review transition` comment and skip merging that draft. Once the PR is actually ready, squash-merge via REST with the expected head SHA.
    - If a green PR is only behind main, merge main into its branch (no force-push or rebase), push, and leave it for the next run. Do not wait for CI.
    - Merge as many PRs as qualify. Never merge red or pending CI.
 4. If main's CI, the Pages deploy, the Supabase deploy or the post-deploy MCP check is red, open or refresh "FIX main: <job>" with the annotations, and list it first under Next up.
