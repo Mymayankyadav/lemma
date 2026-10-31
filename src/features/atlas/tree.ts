@@ -165,10 +165,31 @@ export function representative(tree:AtlasTree,index:ReadonlyMap<string,number>,i
 /** Links between visible rows. Links inside one folded branch disappear; parallel links bundle. */
 export function arcsFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Link['kind']>):Arc[]{
  const index=new Map(rows.map((r,i)=>[r.id,i]));
+ // Resolve each idea's nearest visible ancestor once. In a 2,500-idea
+ // Atlas with 8,000 links, walking and allocating a visited Set for both
+ // endpoints of every link needlessly repeats the same ancestry work.
+ // Cache misses as well as hits; the index is scoped to this exact row set.
+ const representatives=new Map<string,number|null>();
+ const resolve=(id:string):number|null=>{
+  if(representatives.has(id))return representatives.get(id)!;
+  const path:string[]=[],seen=new Set<string>();
+  let current:string|null=id;
+  let found:number|null=null;
+  while(current&&!seen.has(current)){
+   if(representatives.has(current)){found=representatives.get(current)!;break}
+   seen.add(current);
+   path.push(current);
+   const at=index.get(current);
+   if(at!==undefined){found=at;break}
+   current=tree.nodes.get(current)?.parentId??null;
+  }
+  for(const node of path)representatives.set(node,found);
+  return found;
+ };
  const bundles=new Map<string,Arc>();
  for(const link of tree.links){
   if(!kinds.has(link.kind))continue;
-  const from=representative(tree,index,link.fromId),to=representative(tree,index,link.toId);
+  const from=resolve(link.fromId),to=resolve(link.toId);
   if(from===null||to===null||from===to)continue;
   const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
   const key=link.kind+':'+a+':'+b;
