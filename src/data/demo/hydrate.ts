@@ -45,6 +45,15 @@ export function hydrateFixture(
     return value;
   };
   const store = walk(source) as DemoStore;
+  // One synthetic, explicitly labelled demo transcription makes the real
+  // edit/preview path testable without changing the generated fixture JSON or
+  // implying the named source was actually transcribed.
+  const sample = store.sources.find(item => item.id === "source-rudin")?.pages.find(item => item.page === 1);
+  if (sample && !sample.transcribedBy) {
+    sample.transcribedBy = "claude";
+    sample.transcribedAt = new Date(now - DAY).toISOString();
+    sample.confidence = "check";
+  }
   // Stress profiles represent historical reviews as a bounded server-style aggregate.
   // Preserve their authored card states instead of replaying 300k virtual rows.
   if (store.reviews.length === 0) return store;

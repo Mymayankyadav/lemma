@@ -4,6 +4,7 @@ import type {Source,SourceTranscriptionStat} from '../../data/types';
 import {getApi} from '../../data';
 import {useSourcePage,useSourcePdfUrl,useUpdateSourcePage} from '../../data/hooks';
 import {MathText} from '../../ui/MathText';
+import {MathPreview} from '../../ui/MathPreview';
 import {useToast} from '../../ui/Toast';
 import {sourceMarkdown,sourceTex} from './transcriptionExport';
 
@@ -101,6 +102,7 @@ export function SourceTranscriptionView({source,stat}:{
       :editing?<div className="flex flex-col gap-2">
         <textarea aria-label="Edit page transcription" maxLength={8000} rows={10} value={draft}
          onChange={e=>setDraft(e.target.value)} className="w-full rounded-ctl border border-edge bg-raised p-2 text-ink"/>
+        <MathPreview source={draft} className="min-w-0 max-w-full overflow-x-auto" />
         <div className="flex flex-wrap gap-3">
          <button type="button" disabled={edit.isPending} onClick={()=>void save({body:draft})}
           className="min-h-11 text-amber">Save page</button>

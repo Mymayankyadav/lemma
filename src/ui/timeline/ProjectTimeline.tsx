@@ -124,8 +124,9 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
      className={'relative flex min-h-11 min-w-14 shrink-0 flex-col justify-center overflow-hidden rounded-ctl border px-1 text-left focus-visible:outline-2 focus-visible:outline-amber '+
       (active?'border-amber bg-amber-tint':'border-edge bg-fill-1')}
      style={{flexGrow:stage.checkpoints.length,flexBasis:0}}>
-     <span data-stage-name="" className="block w-full min-w-0 overflow-x-auto whitespace-nowrap text-[16px] font-semibold leading-5 text-ink"
-      title={plainMath(stage.name)}><Tex source={stage.name}/></span>
+     {/* The compact identifier stays unique even when 15 stages share a 360px rail.
+         The selected stage's full mathematical name appears below the rail. */}
+     <span data-stage-name="" className="block w-full text-center text-[16px] font-semibold leading-5 text-ink">S{i+1}</span>
      <span className="text-[12px] tabular-nums text-ink-2">{done}/{count}</span>
      <span className="absolute inset-x-0 bottom-0 h-[3px] bg-[var(--line)]">
       <span className="block h-full" style={{width:count?done/count*100+'%':'0%',
@@ -133,6 +134,13 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
      </span>
     </button>
    })}
+  </div>
+  <div data-stage-full-name="" className="relative mt-1 min-w-0 overflow-hidden rounded-ctl border border-edge bg-fill-1">
+   <div aria-label={'Full name of stage '+(activeStageIndex+1)} className="min-h-11 overflow-x-auto whitespace-nowrap px-3 py-2 text-[16px] leading-7 text-ink">
+    <span className="mr-2 font-semibold text-amber">Stage {activeStageIndex+1}:</span>
+    <Tex source={activeStage.name}/>
+   </div>
+   <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-5 bg-gradient-to-l from-[var(--fill-1)] to-transparent"/>
   </div>
   <div role="group" aria-label={'Checkpoints in '+plainMath(activeStage.name)}
    onKeyDown={event=>{
