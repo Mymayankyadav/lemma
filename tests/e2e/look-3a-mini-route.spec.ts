@@ -3,7 +3,22 @@ import {mkdirSync} from 'node:fs';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import type {ProjectSummary} from '../../src/data/types';
-import {MiniStageBar,miniRouteNotch,currentMiniRouteOrdinal} from '../../src/ui/timeline/MiniStageBar';
+import {miniRouteNotch,currentMiniRouteOrdinal} from '../../src/ui/timeline/MiniStageBar';
+import {createServer,type ViteDevServer} from 'vite';
+
+// Load production JSX through Vite SSR. Playwright's test transform produces
+// __pw_type descriptors for JSX, which ReactDOMServer cannot render directly.
+type MiniStageBarType=typeof import('../../src/ui/timeline/MiniStageBar').MiniStageBar;
+let viteServer:ViteDevServer|undefined;
+let miniStageBar:MiniStageBarType|undefined;
+async function loadMiniStageBar():Promise<MiniStageBarType>{
+ if(!miniStageBar){
+  viteServer=await createServer({server:{middlewareMode:true},appType:'custom'});
+  miniStageBar=(await viteServer.ssrLoadModule('/src/ui/timeline/MiniStageBar.tsx')).MiniStageBar as MiniStageBarType;
+ }
+ return miniStageBar;
+}
+test.afterAll(async()=>{await viteServer?.close()});
 import {layoutMiniRoute} from '../../src/ui/timeline/miniRoute';
 
 for(const profile of ['stress','extreme'] as const)
@@ -74,6 +89,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   const synthetic={total:36,done,stageProgress:uneven,
    current:{code:'CP9',title:'Recheck',step:1,stepsTotal:1},
   } as ProjectSummary;
+  const MiniStageBar=await loadMiniStageBar();
   const markup=renderToStaticMarkup(createElement(MiniStageBar,{project:synthetic}));
   await page.evaluate(html=>{
    const host=document.createElement('div');
