@@ -239,8 +239,8 @@ export default function Page(){
       </span>
      </div>
     </div>}
-    <div className="relative" role="tree" aria-label="Ideas and their links" data-atlas-field-count={tree.roots.length} data-atlas-row-count={rows.length} style={virtual?{height:geometry.totalHeight}:undefined}>
-    <div style={virtual?{position:"absolute",top:geometry.offsets[first],left:0,right:0}:undefined}>
+    <div className="relative flow-root" role="tree" aria-label="Ideas and their links" data-atlas-field-count={tree.roots.length} data-atlas-row-count={rows.length} style={virtual?{height:geometry.totalHeight}:undefined}>
+    <div className="flow-root" style={virtual?{position:"absolute",top:geometry.offsets[first],left:0,right:0}:undefined}>
     {visible.map(row=>{const node=tree.nodes.get(row.id)!;
      return <Row key={row.id} node={node} sticky={!virtual} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match} focused={!!focus}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
