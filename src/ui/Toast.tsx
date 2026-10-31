@@ -19,13 +19,13 @@ function pauseToast(id:number){
 function dismiss(id:number){pauseToast(id);snapshot=snapshot.filter(item=>item.id!==id);notify()}
 function resumeToast(id:number){
  pauseToast(id);
- if(snapshot.some(item=>item.id===id))resumeToast(id);
+ if(snapshot.some(item=>item.id===id))timeouts.set(id,setTimeout(()=>dismiss(id),4000));
 }
 export function toast(message:string,options:ToastOptions={}){
  const id=++counter;
  snapshot=[...snapshot.slice(-2),{id,message,...options}];
  notify();
- timeouts.set(id,setTimeout(()=>dismiss(id),4000));
+ resumeToast(id);
  return ()=>dismiss(id);
 }
 export function useToast(){return toast}
