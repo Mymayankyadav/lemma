@@ -108,14 +108,14 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    }
    arcs=dense;rows=5;focus=null;centers=undefined;heightPx=undefined;
   }else if(['stress','extreme'].includes(query.get('demo')??'')&&query.get('atlasDenseLanes')==='1'&&window.location.hash.startsWith('#/atlas')){
-   // Eight unrelated overlapping spans cannot fit seven 9px lanes. Keep the
+   // Nine unrelated overlapping spans cannot fit eight 9px lanes. Keep the
    // fixture independent of the backend and prove the overflow is disclosed.
-   arcs=Array.from({length:8},(_,i)=>({key:'dense-lane:'+i,from:i,to:i+8,kind:'prereq' as const,count:1,links:[]}));
-   rows=16;focus=null;centers=undefined;heightPx=undefined;
+   arcs=Array.from({length:9},(_,i)=>({key:'dense-lane:'+i,from:i,to:i+9,kind:'prereq' as const,count:1,links:[]}));
+   rows=18;focus=null;centers=undefined;heightPx=undefined;
    if(query.get('atlasDenseLanesFocus')==='1'){
-    // The shortest eighth arc belongs to the selected prerequisite chain;
+    // The shortest ninth arc belongs to the selected prerequisite chain;
     // it must win a physical lane before unrelated long connections.
-    arcs[7].links=[{fromId:'supplier',toId:'selected',kind:'prereq'}];
+    arcs[8].links=[{fromId:'supplier',toId:'selected',kind:'prereq'}];
     focus={start:new Set(['selected']),up:new Set(['supplier']),down:new Set(),related:new Set()};
    }
   }
