@@ -166,7 +166,12 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
    // The visible SVG rect itself is a 16px pill (not a 15px fill with a
    // 1px stroke). Leave at least 6px of horizontal text breathing room.
-   const pillWidth=Math.max(16,String(arc.count).length*8+8);
+   // Placement reserves a radius per bundle. Use that reserved painted
+   // footprint for the pill width: real 12px glyphs vary by font and the
+   // previous digit-count estimate clipped some counts by >6px.
+   // Stay 0.5px inside the reserved radius on both sides so the 8px
+   // badge-to-badge painted-edge clearance is never reduced.
+   const pillWidth=Math.max(16,Math.floor(badge.radius*2-1));
    return <g key={'badge:'+arc.key} opacity={opacity} data-atlas-bundle={arc.key}>
     {Math.hypot(badge.x-badge.anchorX,badge.y-badge.anchorY)>3&&
      <path d={'M'+badge.anchorX+' '+badge.anchorY+' L'+badge.x+' '+badge.y}
