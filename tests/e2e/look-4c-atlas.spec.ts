@@ -50,7 +50,7 @@ test('LOOK-4c seven physical lanes disclose an eighth overlapping connection',as
  const overflow=page.locator('[data-atlas-lane-overflow]');
  const summary=overflow.locator('summary');
  await expect(summary).toBeVisible();
- await expect(summary).toHaveAccessibleName('Show 1 hidden Atlas connections');
+ await expect(summary).toHaveAccessibleName('Show 1 hidden Atlas links');
  expect((await summary.boundingBox())?.height).toBeGreaterThanOrEqual(44);
  await summary.focus();
  await page.keyboard.press('Enter');
