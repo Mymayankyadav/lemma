@@ -144,6 +144,7 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
   {overflow&&<details data-atlas-hidden-bundles="true" className="absolute z-20"
    style={{right:GUTTER-overflow.x-22,top:overflow.y-22}}>
    <summary data-atlas-overflow-count="true" aria-label={`Show ${overflow.hiddenKeys?.length??0} hidden Atlas link bundles`}
+    style={{outlineOffset:-3}} // Keep the entire 2px keyboard ring inside the 44px hit target at the phone edge.
     className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full border border-edge-2 bg-raised text-body font-semibold text-ink [&::-webkit-details-marker]:hidden">
     +{overflow.hiddenKeys?.length??0}
    </summary>
