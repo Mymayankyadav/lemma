@@ -33,7 +33,7 @@ The daily loop that must always work:
 | 6 | FSRS-6 engine from the old repo, run in the browser | Already verified against ts-fsrs |
 | 7 | React + Vite + TypeScript + Tailwind 4 + motion; GitHub Pages with hash routes; PWA | Familiar to every coding model; free hosting |
 | 8 | Demo mode with a fixed dataset | Lets screens be built in parallel and tested with no login |
-| 9 | Dark only, Amber on Obsidian | Owner approved the canvas |
+| 9 | **Superseded**: Dark only, Amber on Obsidian | Historical canvas decision. Current owner-approved look is Graph day and Graph night, with `docs/spec/v4-look.md` overriding `docs/spec/v3.md` wherever they differ (31 Oct 2026). |
 | 10 | Mix decks on by default; confidence before reveal is optional and reveals in one tap | Interleaving and calibration evidence |
 
 ## 3. Architecture
