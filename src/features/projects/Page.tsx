@@ -1,8 +1,8 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
-import {useInsightData,useProject,useProjects,useUpdateProject} from '../../data/hooks';
-import {buildSchedule,scheduleHeadline,scheduleColor,paceFromDemonstrations} from '../../lib/schedule';
+import {useProjects,useUpdateProject} from '../../data/hooks';
+import {MiniStageBar} from '../../ui/timeline/MiniStageBar';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
 import {Screen} from '../../ui/Screen';
 import {Skeleton} from '../../ui/Skeleton';
@@ -18,30 +18,12 @@ const newest=(a:ProjectSummary,b:ProjectSummary)=>(Date.parse(b.lastActivityAt??
 const pct=(project:ProjectSummary)=>project.total?Math.round(100*project.done/project.total):0;
 
 function MiniMetro({project}:{project:ProjectSummary}){
- const detail=useProject(project.slug),insight=useInsightData(30);
  const percent=pct(project);
- // Same pace as Today and the project page, so every screen states the same delay.
- const pacePerWeek=insight.data?paceFromDemonstrations(insight.data.checkpointEvents,project.id):undefined;
- const schedule=detail.data?buildSchedule(detail.data.checkpoints,{targetDate:project.targetDate,pacePerWeek}):[];
- const headline=scheduleHeadline(schedule);
- const n=schedule.length;
  return <div className="flex min-w-0 items-center gap-2">
-  <div role="img" aria-label={percent+' percent complete'+(headline?', '+headline:'')}
-   className="relative h-6 min-w-12 flex-1" data-mini-metro>
-   <span className="absolute inset-x-0 top-[11px] h-[2px] bg-[var(--line)]"/>
-   {n?schedule.slice(1).map((row,index)=><span key={row.checkpoint.id} data-track-state={row.state}
-    className="absolute top-[10px] h-[3px]" style={{
-     left:((index+.5)/n*100)+'%',width:(100/n)+'%',
-     background:scheduleColor[row.state],
-     opacity:row.state==='future'?.4:1,
-     backgroundImage:row.state==='late'?'repeating-linear-gradient(90deg,transparent 0 5px,var(--card) 5px 8px)':undefined
-    }}/>):<span className="absolute left-0 top-[11px] h-[2px] bg-[var(--accent)]" style={{width:percent+'%'}}/>}
-   {(n?schedule:[0,1,2,3,4]).map((row,index)=><span key={typeof row==='number'?row:row.checkpoint.id}
-    aria-hidden="true" className="absolute top-[8px] h-2 w-[2px] bg-[var(--ink-3)]"
-    style={{left:(n?((index+.5)/n*100):index*25)+'%'}}/>)}
-  </div>
+  <MiniStageBar project={project}/>
   <span className="flex shrink-0 flex-col items-end font-[var(--font-num)] text-caption tabular-nums text-ink-2">
-   <span>{percent}%</span>{headline&&<span data-schedule-chip="" className="whitespace-nowrap text-[10px]">{headline}</span>}
+   <span>{percent}%</span>
+   {project.scheduleHeadline&&<span data-schedule-chip="" className="whitespace-nowrap text-[12px]">{project.scheduleHeadline}</span>}
   </span>
  </div>;
 }
