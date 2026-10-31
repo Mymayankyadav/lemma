@@ -1,45 +1,50 @@
 import {describe,expect,it} from 'vitest';
 import {QA3_ROUTES} from '../../../scripts/qa3-report';
-import {auditCpuCoverage, type CpuRouteSample} from '../../../scripts/stress-cpu-coverage';
+import {CPU_CASES,auditCpuCoverage,type CpuRouteSample} from '../../../scripts/stress-cpu-coverage';
 
-const samples=():CpuRouteSample[]=>QA3_ROUTES.map(route=>({
- route, actualRoute:route, profile:'extreme', theme:'graph-night', width:360,
- cpuThrottle:4, durationMs:850, navigationType:'document', ready:true,
- nodes:400, screenshot:'test-results/screens/stress-cpu/'+route.replaceAll('/','-')+'.png',
-}));
+const samples=():CpuRouteSample[]=>CPU_CASES.flatMap(c=>QA3_ROUTES.map(route=>({
+ route,actualRoute:route,profile:c.profile,theme:c.theme,width:c.width,
+ cpuThrottle:4,durationMs:850,navigationType:'document',ready:true,
+ nodes:400,screenshot:'test-results/screens/stress-cpu/'+route.replaceAll('/','-')+'.png',
+})));
 
-describe('AUDIT #540: fail-closed 4x cold route coverage',()=>{
- it('requires a cold 4x first render for every visual route',()=>{
+describe('AUDIT #540: fail-closed 4x cold-route coverage',()=>{
+ it('requires all 144 matrix cells, not just Today or one worst-case profile',()=>{
+  expect(samples()).toHaveLength(144);
   expect(auditCpuCoverage(samples())).toEqual([]);
  });
- it('rejects the old 1x-only route evidence even when Today is 4x',()=>{
-  const rows=samples().map((row,index)=>({...row,cpuThrottle:index===0?4:1}));
-  expect(auditCpuCoverage(rows)).toContain('missing 4x cold first-render evidence for /projects');
+ it('rejects the old 1x-only route evidence in any matrix',()=>{
+  const rows=samples().map(row=>row.route==='/'?row:{...row,cpuThrottle:1});
+  expect(auditCpuCoverage(rows)).toContain('missing 4x cold first-render evidence for stress/graph/360 /projects');
+  expect(auditCpuCoverage(rows)).toContain('missing 4x cold first-render evidence for extreme/graph-night/390 /projects');
  });
- it('rejects a missing route, duplicate, cached hash transition and stale screen',()=>{
-  const missing=samples().slice(1);
-  expect(auditCpuCoverage(missing)).toContain('missing 4x cold first-render evidence for /');
-  const duplicate=[...samples(),samples()[0]];
-  expect(auditCpuCoverage(duplicate)).toContain('duplicate 4x route /');
-  const cached=samples().map(row=>row.route==='/cards'?{...row,navigationType:'hash' as const}:row);
-  expect(auditCpuCoverage(cached)).toContain('missing 4x cold first-render evidence for /cards');
-  const stale=samples().map(row=>row.route==='/atlas'?{...row,actualRoute:'/cards'}:row);
-  expect(auditCpuCoverage(stale)).toContain('missing 4x cold first-render evidence for /atlas');
+ it('rejects missing, duplicate, cached-hash and stale-route evidence',()=>{
+  expect(auditCpuCoverage(samples().slice(1))).toContain('missing 4x cold first-render evidence for stress/graph/360 /');
+  expect(auditCpuCoverage([...samples(),samples()[0]])).toContain('duplicate 4x route stress/graph/360 /');
+  const cached=samples().map(row=>row.route==='/cards'&&row.profile==='stress'&&row.theme==='graph'&&row.width===360
+   ?{...row,navigationType:'hash'}:row);
+  expect(auditCpuCoverage(cached)).toContain('missing 4x cold first-render evidence for stress/graph/360 /cards');
+  const stale=samples().map(row=>row.route==='/atlas'&&row.profile==='extreme'&&row.theme==='graph-night'&&row.width===390
+   ?{...row,actualRoute:'/cards'}:row);
+  expect(auditCpuCoverage(stale)).toContain('missing 4x cold first-render evidence for extreme/graph-night/390 /atlas');
  });
- it('enforces the original 1500ms threshold, not an averaged or relaxed budget',()=>{
-  const slow=samples().map(row=>row.route==='/atlas'?{...row,durationMs:1500}:row);
-  expect(auditCpuCoverage(slow)).toContain('/atlas: 4x CPU first render >= 1.5s');
+ it('keeps the strict 1500ms and 1500-node ceilings',()=>{
+  const slow=samples().map(row=>row.route==='/atlas'&&row.profile==='extreme'&&row.theme==='graph-night'&&row.width===360
+   ?{...row,durationMs:1500}:row);
+  expect(auditCpuCoverage(slow)).toContain('/atlas [extreme/graph-night/360]: 4x CPU first render >= 1.5s');
+  const overDom=samples().map(row=>row.route==='/atlas'&&row.profile==='extreme'&&row.theme==='graph-night'&&row.width===360
+   ?{...row,nodes:1500}:row);
+  expect(auditCpuCoverage(overDom)).toContain('/atlas [extreme/graph-night/360]: 1500 DOM nodes');
  });
- it('requires a screenshot and a bounded DOM count for every measured route',()=>{
-  const withoutScreenshot=samples().map(row=>row.route==='/cards'?{...row,screenshot:''}:row);
-  expect(auditCpuCoverage(withoutScreenshot)).toContain('missing 4x cold first-render evidence for /cards');
-  const overDom=samples().map(row=>row.route==='/atlas'?{...row,nodes:1500}:row);
-  expect(auditCpuCoverage(overDom)).toContain('/atlas: 1500 DOM nodes');
- });
- it('rejects missing, NaN and wrong worst-case profile metadata',()=>{
-  const malformed=samples().map(row=>row.route==='/kit'?{...row,durationMs:NaN}:row);
-  expect(auditCpuCoverage(malformed)).toContain('missing 4x cold first-render evidence for /kit');
-  const easy=samples().map(row=>row.route==='/kit'?{...row,profile:'stress'}:row);
-  expect(auditCpuCoverage(easy)).toContain('missing 4x cold first-render evidence for /kit');
+ it('rejects missing screenshots, NaN and wrong matrix metadata',()=>{
+  const missing=samples().map(row=>row.route==='/kit'&&row.profile==='stress'&&row.theme==='graph'&&row.width===360
+   ?{...row,screenshot:''}:row);
+  expect(auditCpuCoverage(missing)).toContain('missing 4x cold first-render evidence for stress/graph/360 /kit');
+  const malformed=samples().map(row=>row.route==='/kit'&&row.profile==='stress'&&row.theme==='graph'&&row.width===360
+   ?{...row,durationMs:NaN}:row);
+  expect(auditCpuCoverage(malformed)).toContain('missing 4x cold first-render evidence for stress/graph/360 /kit');
+  const wrong=samples().map(row=>row.route==='/kit'&&row.profile==='stress'&&row.theme==='graph'&&row.width===360
+   ?{...row,profile:'unknown'}:row);
+  expect(auditCpuCoverage(wrong)).toContain('unknown 4x matrix for /kit');
  });
 });
