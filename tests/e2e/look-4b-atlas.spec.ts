@@ -128,7 +128,11 @@ test('LOOK-4b preserves all moderate Fields while extreme outlines remain window
  const fieldOrder=await tree.locator('[data-level="cluster"]').allTextContents();
  expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(60);
  const stage=page.locator('[data-atlas-stage]');
+ const focusedField=tree.locator('[data-level="cluster"]').last().getByRole('button').last();
+ await focusedField.focus();
+ await expect(focusedField).toBeFocused();
  await stage.evaluate(el=>{el.scrollTop=el.scrollHeight*.7;el.dispatchEvent(new Event('scroll',{bubbles:true}))});
+ await expect(focusedField).toBeFocused();
  await expect(tree.locator('[data-level="cluster"]')).toHaveCount(3);
  expect(await tree.locator('[data-level="cluster"]').allTextContents()).toEqual(fieldOrder);
  expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(60);
