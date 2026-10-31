@@ -43,6 +43,7 @@ try {
   await db.exec('alter table public.'+name+' enable row level security; create policy owner_read on public.'+name+' for select to authenticated using(user_id=(select auth.uid()));')
  }
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031012600_st5_paged_reads.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261031124500_home_review_outlook.sql',import.meta.url),'utf8'))
  await db.exec([
   "insert into public.subjects values ('22222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111','Algebra','∫','amber',0),('66666666-6666-6666-6666-666666666666','99999999-9999-9999-9999-999999999999','Private','X','slate',0);",
   "insert into public.projects values ('33333333-3333-3333-3333-333333333333','11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','algebra','Algebra','active',true,false,'2027-01-01','Exam',now()),('44444444-4444-4444-4444-444444444444','11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','archive','Archive','archived',false,false,null,null,now()-interval '1 day'),('55555555-5555-5555-5555-555555555555','11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','system','System','active',false,true,null,null,now()),('66666666-6666-6666-6666-666666666666','99999999-9999-9999-9999-999999999999','66666666-6666-6666-6666-666666666666','private','Private','active',false,false,null,null,now());",
@@ -60,6 +61,12 @@ try {
   "insert into public.proposals values('dddddddd-dddd-dddd-dddd-dddddddddddd','11111111-1111-1111-1111-111111111111','pending');"
  ].join('\n'))
  await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
+ const outlook=(await q('select public.home_review_outlook() as data'))[0].data
+ assert.equal(outlook.forecast.length,7,'forecast is seven bounded days')
+ assert.equal(outlook.decks.length,2,'deck tree contains only owner projects')
+ assert.equal(outlook.forecast[0].due,1,'due review card counts on today')
+ assert.equal(outlook.forecast.reduce((n,d)=>n+d.due,0),1,'new and private cards excluded')
+ console.log('PASS FIX-484b one owner-scoped review outlook RPC with seven-day forecast')
  const summaries=(await q('select public.project_summaries() item')).map(x=>x.item)
  assert.equal(summaries.length,2)
  const project=summaries.find(x=>x.slug==='algebra')
