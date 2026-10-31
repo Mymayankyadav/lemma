@@ -172,7 +172,7 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
   {!mini&&<p className="mt-1 min-w-0 text-label text-ink-2">
    <span className="font-semibold text-amber">{selectedCheckpoint.code}</span>{' '}
    <span className="break-words"><Tex source={selectedCheckpoint.title}/></span>
-   {detail&&<span className="block text-caption text-ink-2">{detail}</span>}
+   {detail&&<span data-schedule-detail="" className="block text-caption text-ink-2">{detail}</span>}
   </p>}
  </div>
  return <div ref={widthRef} data-timeline={variant} className="min-w-0" data-schedule={headline??'none'}>
@@ -233,7 +233,7 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
   {!mini&&<p className="mt-1 min-w-0 text-label text-ink-2">
    <span className="font-semibold text-amber">{selectedCheckpoint?.code}</span>{' '}
    <span className="break-words"><Tex source={selectedCheckpoint?.title??''}/></span>
-   {detail&&<span className="block text-caption text-ink-2">{detail}</span>}
+   {detail&&<span data-schedule-detail="" className="block text-caption text-ink-2">{detail}</span>}
   </p>}
  </div>
 }
