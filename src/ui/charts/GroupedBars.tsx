@@ -11,7 +11,7 @@ export function GroupedBars({data,width=316,height=132,title='Checkpoints by wee
  return <svg role="img" aria-label={`${title}: ${data.map(d=>d.label+': '+d.demonstrated+' demonstrated, '+d.rechecked+' rechecked').join('; ')}.`} width="100%" viewBox={`0 0 ${w} ${h}`} className={className} style={{maxWidth:w}}>
  <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="var(--edge-3)"/>
  {data.map((d,i)=><g key={i}>{([['demonstrated','var(--amber)'],['rechecked','var(--ink-3)']] as const).map(([key,color],j)=>{
- const height=Math.max(0,bottom-y(d[key]));return <motion.rect key={key} x={(groups(String(i))||0)+bw*j} rx="2" fill={color} initial={reduce?false:{height:0,y:bottom}} animate={{height,y:y(d[key])}} width={Math.max(2,bw-2)} transition={{duration:0.6,delay:reduce?0:i*0.1}}/>
+ const height=Math.max(0,bottom-y(d[key]));return <motion.rect data-stress-mark="" key={key} x={(groups(String(i))||0)+bw*j} rx="2" fill={color} initial={reduce?false:{height:0,y:bottom}} animate={{height,y:y(d[key])}} width={Math.max(2,bw-2)} transition={{duration:0.6,delay:reduce?0:i*0.1}}/>
  })}
  <text x={(groups(String(i))||0)+groups.bandwidth()/2} y={h-5} fontSize="10" textAnchor="middle" fill="var(--ink-3)">{d.label}</text>
  </g>)}</svg>;
