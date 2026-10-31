@@ -92,11 +92,11 @@ export default function Page(){
      {summary.display==='ended'?'Start studying':'Resume session'}
     </Button>
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-     <button type="button" aria-label="Copy session summary" className="inline-flex min-h-11 items-center gap-2 text-label font-semibold text-amber" onClick={()=>void copy(session.summaryText||summary.goal)}>
+     <button type="button" aria-label="Copy session summary" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 text-label font-semibold text-amber" onClick={()=>void copy(session.summaryText||summary.goal)}>
       <Copy size={16} aria-hidden="true"/>Copy
      </button>
-     {proposalCount>0&&<Link to="/proposals" className="inline-flex min-h-11 items-center text-label font-semibold text-amber">Review</Link>}
-     {session.pages&&<button type="button" className="inline-flex min-h-11 items-center gap-2 text-label font-semibold text-amber" onClick={()=>setPagesOpen(true)}>
+     {proposalCount>0&&<Link to="/proposals" className="inline-flex min-h-11 min-w-11 items-center justify-center text-label font-semibold text-amber">Review</Link>}
+     {session.pages&&<button type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 text-label font-semibold text-amber" onClick={()=>setPagesOpen(true)}>
       Pages
      </button>}
     </div>
