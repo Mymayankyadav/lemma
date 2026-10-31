@@ -14,6 +14,7 @@ import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
+import {atlasFoldDepth} from './depthOf';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
@@ -221,12 +222,7 @@ export default function Page(){
    setAmbiguousIds([]);setSearching(true);setSearch(focusName??focusSlug??'');
   }
  },[tree,focusId,focusSlug,focusName,reveal]);
- const depthOf=useMemo(()=>{
-  if(!tree)return null;
-  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===open.size&&[...set].every(x=>open.has(x)))return d}
-  const all=[...tree.nodes.values()].filter(n=>n.children.length);
-  return all.every(n=>open.has(n.id))?99:null;
- },[tree,open]);
+ const depthOf=useMemo(()=>tree?atlasFoldDepth(tree,open):null,[tree,open]);
  const near=selected&&tree?neighbours(tree,selected.id):null;
 
  if(query.isPending)return <main aria-label="Atlas" className="h-dvh p-4"><Skeleton h={52}/><div className="mt-5"><Skeleton h="65%"/></div></main>;
