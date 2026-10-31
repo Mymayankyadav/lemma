@@ -81,7 +81,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
       title: `Source ${i + 1}: mathematical notes and proofs`,
       short: `stresssrc${i}`, filename: `source-${i + 1}.pdf`,
       kind: sourceKinds[i % sourceKinds.length], position: i,
-      pageCount: i % 3 === 0 ? 3000 : 1200,
+      pageCount: extreme ? 3000 : 1200,
       status: "ready", hasText: false, outline: [], pages: [],
       sha256: null, createdAt: `@day:-${i % 60}:0.5:0`,
       addedAt: `@day:-${i % 60}:0.5:0`, planCheckedAt: null,
