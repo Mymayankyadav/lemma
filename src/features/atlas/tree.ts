@@ -90,7 +90,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const rank=prerequisiteRank(nodes.keys(),links);
  // Child ordering may compare the same idea dozens of times. Parse its
  // checkpoint code once, not during every comparison in each sibling sort.
- const checkpointRanks=new Map([...nodes].map(([id,node])=>[id,checkpointNumber(node)]));
+ const checkpointRanks=new Map<string,number>([...nodes].map(([id,node]):[string,number]=>[id,checkpointNumber(node)]));
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
   const kids=n.children.map(c=>summarise(c,depth+1));
