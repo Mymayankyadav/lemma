@@ -33,8 +33,14 @@ for(const theme of ['graph','graph-night'] as const){
   const after=await text.evaluate(node=>({scroll:node.scrollHeight,client:node.clientHeight}));
   expect(after.client).toBeGreaterThan(before.client);
   expect(after.scroll).toBeLessThanOrEqual(after.client+1);
+  await expect(text).toHaveCSS('overflow-y','auto');
   await page.screenshot({path:`test-results/screens/st-7-toast-360-${theme}.png`});
+  // Expanded notifications must stay available beyond their original 4-second
+  // lifetime. After collapsing, ordinary automatic dismissal resumes.
+  await page.waitForTimeout(4300);
+  await expect(status.getByRole('button',{name:'Collapse notification details'})).toBeVisible();
   await status.getByRole('button',{name:'Collapse notification details'}).click();
   await expect(status.getByRole('button',{name:'Show notification details'})).toBeVisible();
+  await expect(status).toHaveCount(0,{timeout:6000});
  });
 }
