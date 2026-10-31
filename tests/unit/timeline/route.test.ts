@@ -11,7 +11,7 @@ const checkpoints=(n:number,staged=true):CheckpointView[]=>
   id:'cp-'+i,code:'CP'+(i+1),title:'Checkpoint '+(i+1),
   position:i,ui:i===3?'now':i<3?'done':'next',
   currentStep:0,stepsTotal:1,recheckDue:null,dueCards:0,
-  stage:staged?'Stage '+(Math.floor(i/8)+1):null,
+  stage:staged?'Stage '+(Math.floor(i/(n===9?3:8))+1):null,
  }));
 const project=(n:number)=>({title:'Algebra 1',slug:'algebra-1',done:3,total:n});
 const render=(n:number,mode:'today'|'project',staged=true)=>
