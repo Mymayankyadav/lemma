@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import katex from 'katex';
 
 for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
@@ -46,11 +47,10 @@ test('LOOK-4b long mathematical row names remain scrollable without viewport ove
  await page.goto('./?demo=1&theme=graph-night#/atlas');
  const row=page.locator('[data-level="cluster"]').first();
  const name=row.getByRole('button').last().locator('span[title]').first();
- await name.evaluate(el=>{
-  const renderer=(window as typeof window&{katex?:{renderToString:(source:string,options?:{throwOnError:boolean})=>string}}).katex;
-  if(!renderer)throw Error('KaTeX unavailable');
-  el.innerHTML=renderer.renderToString(String.raw`\sum_{n=1}^{100}\frac{1}{n^2}+\int_{0}^{1}\frac{dx}{1+x^2}+\mathbb{R}^{100}`,{throwOnError:false});
- });
+ // The app bundles KaTeX as an ES module; it does not expose window.katex.
+ // Render genuine KaTeX markup in the test runner, then measure it in Chromium.
+ const mathHtml=katex.renderToString(String.raw`\sum_{n=1}^{100}\frac{1}{n^2}+\int_{0}^{1}\frac{dx}{1+x^2}+\mathbb{R}^{100}`,{throwOnError:false});
+ await name.evaluate((el,html)=>{el.innerHTML=html},mathHtml);
  const metrics=await name.evaluate(el=>{
   el.scrollLeft=el.scrollWidth;
   return {scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scrollLeft:el.scrollLeft,
