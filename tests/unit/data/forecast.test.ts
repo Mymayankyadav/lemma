@@ -44,3 +44,35 @@ it('forecasts from a one-pass iterable without requiring a materialized array',(
  }
  expect(reviewForecast(cards(),{timeZone:'UTC',rolloverHour:4},now)[0].due).toBe(2);
 });
+
+
+it('reuses the Home due scan for forecast and refreshes day buckets at rollover',async()=>{
+ const fixture=JSON.parse(fixtureText) as DemoStore
+ fixture.reviews=[]
+ const template=structuredClone(fixture.notes[0])
+ fixture.notes=[1,4].map((days,i)=>({
+  ...structuredClone(template),
+  projectId:fixture.projects[0].id,
+  note:{...template.note,noteId:'forecast-'+i,noteNo:i+1,status:'active' as const},
+  cards:[{...template.cards[0],id:'forecast-card-'+i,state:{
+   ...template.cards[0].state,state:2,due:'@due:'+days,
+  }}],
+ }))
+ const now={value:Date.parse('2026-10-31T12:00:00Z')}
+ const api=new DemoAdapter({fixture,now:()=>now.value,timeZone:'UTC'})
+ await api.getHome() // already computed all due/card counts for Today
+ const store=(api as unknown as {store:DemoStore}).store
+ let redundantScans=0
+ store.notes=new Proxy(store.notes,{
+  get(target,key,receiver){
+   if(key===Symbol.iterator)redundantScans++
+   return Reflect.get(target,key,receiver)
+  },
+ })
+ const expected=()=>reviewForecast(store.notes.flatMap(note=>note.cards.map(c=>c.state)),store.settings,now.value)
+ expect(await api.getReviewForecast()).toEqual(expected())
+ expect(redundantScans).toBe(0) // must reuse Home's pass, not re-walk every card
+ now.value+=86_400_000
+ expect(await api.getReviewForecast()).toEqual(expected()) // day boundary invalidates cache
+ expect((await api.getReviewForecast())[0].due).toBe(1)
+})
