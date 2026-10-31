@@ -65,7 +65,7 @@ describe('FIX-546a live Card detail scoped queries',()=>{
      if(f.kind==='is')rows=rows.filter(row=>row[f.key]===f.value);
     }
     if(request.orders.length)rows.sort((a,b)=>{for(const key of request.orders){const x=a[key],y=b[key];const cmp=key==='id'&&/^\d+$/.test(String(x))&&/^\d+$/.test(String(y)) ? (BigInt(String(x))>BigInt(String(y))?1:BigInt(String(x))<BigInt(String(y))?-1:0) : String(x).localeCompare(String(y));if(cmp)return -cmp;}return 0;});
-    if(request.or){const m=request.or.match(/^(reviewed_at|created_at)\.lt\.(.+),and\(\1\.eq\.(.+),id\.lt\.(.+)\)$/);if(!m)throw Error('unexpected keyset '+request.or);rows=rows.filter(row=>String(row[m[1]])<m[2]||(String(row[m[1]])===m[3]&&BigInt(String(row.id))<BigInt(m[4])));}
+    if(request.or){const m=request.or.match(/^(reviewed_at|created_at)\.lt\.(.+),and\(\1\.eq\.(.+),id\.lt\.(.+)\)$/);if(!m)throw Error('unexpected keyset '+request.or);rows=rows.filter(row=>String(row[m[1]])<m[2]||(String(row[m[1]])===m[3]&&(/^[0-9]+$/.test(String(row.id))?BigInt(String(row.id))<BigInt(m[4]):String(row.id).localeCompare(m[4])<0)));}
     if(request.range)rows=rows.slice(request.range[0],request.range[1]+1);
     return request.limit===null?rows:rows.slice(0,request.limit);
    }
@@ -146,5 +146,32 @@ describe('FIX-546a live Card detail scoped queries',()=>{
    fixtures.reviews=original;
   }
  });;
+
+ it('paginates 1,001 owner-scoped comments using timestamp and UUID ties without offset scans',async()=>{
+  const original=fixtures.card_comments;
+  try{
+   fixtures.card_comments=Array.from({length:1001},(_,i)=>({
+    id:'00000000-0000-4000-8000-'+String(i+1).padStart(12,'0'),
+    no:i+1,user_id:'owner-1',note_id:'n1',body:'Note '+i,status:'open',
+    created_at:new Date(Date.UTC(2026,9,31)-Math.floor(i/2)*3600000).toISOString(),
+    resolved_at:null,resolved_by_proposal:null,
+   }));
+   const api=new LiveAdapter();
+   const first=await api.getCardCommentsPage(12);
+   expect(first.rows).toHaveLength(20);
+   expect(first.nextCursor).not.toBeNull();
+   const second=await api.getCardCommentsPage(12,first.nextCursor!);
+   expect(second.rows).toHaveLength(20);
+   expect(new Set([...first.rows,...second.rows].map(c=>c.no)).size).toBe(40);
+   const queries=requests.filter(q=>q.table==='card_comments');
+   expect(queries).toHaveLength(2);
+   expect(queries.every(q=>q.limit===21&&q.range===null)).toBe(true);
+   expect(queries[1].or).toContain('created_at.lt.');
+   for(const q of queries){
+    expect(q.filters).toContainEqual({kind:'eq',key:'user_id',value:'owner-1'});
+    expect(q.filters).toContainEqual({kind:'eq',key:'note_id',value:'n1'});
+   }
+  }finally{fixtures.card_comments=original;}
+ });
 
 });
