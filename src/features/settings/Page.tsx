@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
@@ -225,9 +226,9 @@ export default function Page() {
         <div className="flex items-center gap-4">
           <PlugArt connected={connected} size={92} />
           <div>
-            <h2 className="font-semibold">
+            <h3 className="text-[16px] leading-5 font-semibold" style={{fontFamily:"var(--font-ui)",fontWeight:600,lineHeight:"20px"}}>
               {connected ? "Connected" : "Not connected yet"}
-            </h2>
+            </h3>
             <p className="mt-1 text-label text-ink-3">
               {s.connectorLastSeenAt
                 ? `Last call ${elapsed(s.connectorLastSeenAt)}${s.connectorLastClient ? `, ${s.connectorLastClient === "claude" ? "Claude" : s.connectorLastClient === "chatgpt" ? "ChatGPT" : s.connectorLastClient}` : ""}`
@@ -262,7 +263,7 @@ export default function Page() {
         </button>
       </Slab>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Apps</h2>
+        <SectionHeading className="mb-3">Apps</SectionHeading>
         <Slab className="divide-y divide-edge px-4">
           <div className="flex min-h-[68px] items-center gap-3">
             <Sparkles className="text-amber" size={20} />
@@ -307,7 +308,7 @@ export default function Page() {
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Say this to start</h2>
+        <SectionHeading className="mb-3">Say this to start</SectionHeading>
         <div className="flex flex-wrap gap-2">
           {home.data?.resume && (
             <Chip
@@ -335,7 +336,7 @@ export default function Page() {
         </div>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Teaching style</h2>
+        <SectionHeading className="mb-3">Teaching style</SectionHeading>
         <div
           role="radiogroup"
           aria-label="Teaching style"
@@ -366,7 +367,7 @@ export default function Page() {
         </button>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Memory</h2>
+        <SectionHeading className="mb-3">Memory</SectionHeading>
         <Slab className="p-5">
           <div className="flex justify-between">
             <label htmlFor="retention" className="font-semibold">
@@ -441,7 +442,7 @@ export default function Page() {
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">More</h2>
+        <SectionHeading className="mb-3">More</SectionHeading>
         <div className="flex flex-col gap-2">
           <Button
             variant="ghost"

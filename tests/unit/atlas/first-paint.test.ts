@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
-import {arcCountFor,arcsFor,budgetArcs,initialExpanded,visibleRows,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
+import type {AtlasGraph} from '../../../src/data/types';
+import {arcCountFor,arcsFor,budgetArcs,buildAtlasTree,initialExpanded,visibleRows,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
 
 // FIX #519: the first render must already use the effective expanded set.
 // Waiting for an effect used to construct and draw the 8,000-link Atlas twice
@@ -53,3 +54,25 @@ it('counts bundled arcs exactly when the unfocused graph is hidden',()=>{
  expect(arcCountFor(graph,rows,kinds)).toBe(arcsFor(graph,rows,kinds).length);
  expect(arcCountFor(graph,rows,kinds)).toBe(2);
 });
+
+// FIX #519: the count-only 8k-link first-paint path must retain exact
+// directional prerequisite and symmetric related bundling after optimization.
+it('counts 8,000 mixed dense links exactly without materializing arc bundles',()=>{
+ const ids=Array.from({length:160},(_,i)=>'idea-'+i);
+ const graph:AtlasGraph={
+  subjects:[{id:'math',name:'Mathematics',glyph:'∫',hue:'amber',position:0}],
+  concepts:ids.map(id=>({id,slug:id,name:id,subjectId:'math',level:'planet' as const,
+   parentId:null,blurb:null,pinX:null,pinY:null,status:'not_started' as const,
+   checkpointRefs:[],dueCards:0})),
+  links:Array.from({length:8000},(_,i)=>({
+   fromId:ids[i%ids.length],toId:ids[(i*31+7)%ids.length],
+   kind:i%3===0?'related' as const:'prereq' as const,
+  })),
+ };
+ const dense=buildAtlasTree(graph);
+ const rows=visibleRows(dense,new Set(dense.roots));
+ const kinds=new Set<'prereq'|'related'>(['prereq','related']);
+ const expected=arcsFor(dense,rows,kinds).length;
+ expect(expected).toBeGreaterThan(100);
+ expect(arcCountFor(dense,rows,kinds)).toBe(expected);
+},30_000);
