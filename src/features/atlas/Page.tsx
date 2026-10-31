@@ -74,9 +74,9 @@ export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams();
  const query=useAtlas(),graph=query.data;
  const tree=useMemo(()=>graph?buildAtlasTree(graph):null,[graph]);
- const saved=useRef(load());
+ const [saved]=useState(load);
  const [expanded,setExpanded]=useState<Set<string>|null>(null);
- const [related,setRelated]=useState(saved.current?.related??false);
+ const [related,setRelated]=useState(saved?.related??false);
  const [selectedId,setSelectedId]=useState<string|null>(null),[details,setDetails]=useState(false);
  const [searching,setSearching]=useState(false),[search,setSearch]=useState(''),[recheckOnly,setRecheckOnly]=useState(false);
  const [confirmAll,setConfirmAll]=useState(false);
@@ -91,7 +91,7 @@ export default function Page(){
  // Resolve saved/default folds synchronously. A null override means the
  // user has not changed them yet; do not schedule a redundant state update
  // that would reconcile thousands of tree rows on the next frame.
- const initialOpen=useMemo(()=>tree?initialExpanded(tree,saved.current?.expanded):new Set<string>(),[tree]);
+ const initialOpen=useMemo(()=>tree?initialExpanded(tree,saved?.expanded):new Set<string>(),[tree]);
  const open=expanded??initialOpen;
  useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
