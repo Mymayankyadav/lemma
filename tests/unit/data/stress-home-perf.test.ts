@@ -251,6 +251,7 @@ describe('FIX #507: cold Today stress summary',()=>{
  it('keeps the browser stress adapter on the deferred-card path',()=>{
   const entry=readFileSync('src/data/index.ts','utf8');
   expect(entry).toContain('{deferSessions:true,deferNotes:true}');
+  expect(entry).toContain('deferAtlas:');
  });
 
  it('builds Atlas from virtual stress ideas and links without allocating unlinked cards',async()=>{
@@ -261,6 +262,22 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(graph.concepts.length).toBeGreaterThanOrEqual(2500);
   expect(graph.links.length).toBeGreaterThanOrEqual(8000);
   expect(Object.getOwnPropertyDescriptor(store,'notes')?.get).toBeTypeOf('function');
+ },30_000);
+
+ it('defers 2,500 ideas and 8,000 links on initial Today, but materializes an exact Atlas on demand',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{deferSessions:true,deferNotes:true,deferAtlas:true});
+  expect(fixture.concepts.length).toBeLessThan(2500);
+  expect(fixture.links.length).toBeLessThan(8000);
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  await api.getHome();
+  await api.getDeckTree();
+  expect(Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBeTypeOf('function');
+  expect(Object.getOwnPropertyDescriptor(store,'links')?.get).toBeTypeOf('function');
+  const atlas=await api.getAtlas();
+  expect(atlas.concepts.length).toBeGreaterThanOrEqual(2500);
+  expect(atlas.links.length).toBeGreaterThanOrEqual(8000);
+  expect(Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBeUndefined();
  },30_000);
 
 });
