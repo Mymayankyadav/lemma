@@ -3,7 +3,7 @@ import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
 import {arcTone} from './tree';
-import {atlasRowHeight} from './rowGeometry';
+import {atlasRowGap,atlasRowHeight} from './rowGeometry';
 
 /** Shared pieces of the collapsible idea graph: used by the Atlas and by plan review. */
 export const ROW=44,GUTTER=84,INDENT=16;
@@ -180,7 +180,7 @@ export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onS
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
   className={'group relative flex items-center bg-[var(--paper)] '+(root&&sticky?'sticky top-0 z-10 ':'')+(match?'bg-fill-1':'')}
-  style={{height,paddingLeft:lead,paddingRight:GUTTER+4,
+  style={{height,marginTop:atlasRowGap(node.level),paddingLeft:lead,paddingRight:GUTTER+4,
    // Inset rule keeps the 44px button's painted hitbox intact (border-box lost 1px).
    boxShadow:root||area?'inset 0 1px var(--hair)':undefined,
    backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined,
