@@ -69,3 +69,59 @@ for (const world of ['graph','graph-night'] as const) {
   expect(grades.bars.easy).toBe('var(--easy)');
  });
 }
+
+
+// FIX #590: passive Insights marks must not borrow the red pencil reserved for
+// the active tab and selected time-range control (v4-look §2a).
+for (const theme of ['graph','graph-night'] as const) {
+ for (const width of [360,390]) {
+  test(`FIX #590 passive Insights marks use ink in ${theme} at ${width}px`,async({page})=>{
+   await page.setViewportSize({width,height:844});
+   await page.goto(`/lemma/?demo=1&theme=${theme}#/insights`);
+   await expect(page.getByRole('img',{name:/Recall over time/})).toBeVisible();
+   await expect(page.locator('[aria-label="Study totals"] svg')).toHaveCount(3);
+   const colours=await page.evaluate(()=>{
+    const probe=(value:string)=>{
+     const element=document.createElement('span');
+     element.style.color=`var(${value})`;
+     document.body.appendChild(element);
+     const colour=getComputedStyle(element).color;
+     element.remove();
+     return colour;
+    };
+    const colour=(element:Element|undefined|null)=>getComputedStyle(element!).color;
+    const tile=[...document.querySelectorAll('.tile')].find(el=>el.textContent?.includes('Typical session'));
+    const recallHeading=[...document.querySelectorAll('h2,h3')].find(el=>el.textContent?.trim()==='Recall');
+    const svg=(selector:string,property:'stroke'|'fill')=>getComputedStyle(document.querySelector(selector)!).getPropertyValue(property);
+    return {
+     accent:probe('--accent'),ink:probe('--ink'),secondary:probe('--ink-2'),
+     icons:[...document.querySelectorAll('[aria-label="Study totals"] svg')].map(icon=>getComputedStyle(icon).color),
+     typicalIcon:colour(tile?.querySelector('svg')),
+     recallNumber:colour(recallHeading?.parentElement?.querySelector('strong')),
+     trend:svg('svg[aria-label^="Recall over time"] path[stroke]','stroke'),
+     endpoint:svg('svg[aria-label^="Recall over time"] circle','fill'),
+     hatching:svg('svg[aria-label^="Recall over time"] pattern line','stroke'),
+     subjectGlyph:colour(document.querySelector('[aria-label="Time by subject"] button span[aria-hidden="true"]')),
+     subjectBar:getComputedStyle(document.querySelector('[aria-label="Time by subject"] .h-full')!).backgroundColor,
+     calibrationBar:getComputedStyle(document.querySelector('[aria-label^="Answer confidence calibration"] .h-full')!).backgroundColor,
+     checkpointsBar:svg('svg[aria-label^="Checkpoints by week"] rect[fill]','fill'),
+     mostRevisitedIcons:[...document.querySelectorAll('a[aria-label^="Most revisited:"] svg')].map(icon=>getComputedStyle(icon).color),
+    };
+   });
+   expect(colours.icons).toEqual([colours.secondary,colours.secondary,colours.secondary]);
+   expect(colours.typicalIcon).toBe(colours.secondary);
+   expect(colours.subjectGlyph).toBe(colours.secondary);
+   expect(colours.subjectBar).toBe(colours.secondary);
+   expect(colours.calibrationBar).toBe(colours.secondary);
+   expect(colours.checkpointsBar).toBe(colours.secondary);
+   expect(colours.mostRevisitedIcons).toEqual([colours.secondary,colours.secondary]);
+   expect(colours.recallNumber).toBe(colours.ink);
+   await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:'30 days'})).toHaveAttribute('aria-pressed','true');
+   for(const key of ['trend','endpoint','hatching'] as const){
+    expect(colours[key]).toBe(colours.secondary);
+    expect(colours[key]).not.toBe(colours.accent);
+   }
+   await page.screenshot({path:`test-results/screens/fix-590-insights-${theme}-${width}.png`,fullPage:true});
+  });
+ }
+}
