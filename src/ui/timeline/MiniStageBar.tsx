@@ -73,9 +73,14 @@ export function MiniStageBar({project}:{project:ProjectSummary}){
     lastCode:'CP'+(i*8+count),total:count,done:Math.max(0,Math.min(count,project.done-i*8)),
     overdue:0,schedule:'unscheduled' as const}
   })
- const segments=layoutMiniRoute(stages,width)
  const stageTotal=stages.reduce((sum,stage)=>sum+Math.max(0,stage.total),0)
  const currentOrdinal=currentMiniRouteOrdinal(project.current?.code,stages,project.done)
+ let stageOffset=0,currentStage=stages.length-1
+ for(let i=0;i<stages.length;i++){
+  stageOffset+=Math.max(0,stages[i].total)
+  if(currentOrdinal<stageOffset){currentStage=i;break}
+ }
+ const segments=layoutMiniRoute(stages,width,currentStage)
  const notch=miniRouteNotch(currentOrdinal,stageTotal,width,segments)
  const color:Record<ProjectStageProgress['schedule'],string>={
   complete:'var(--ink-2)',behind:'var(--late)',
