@@ -66,7 +66,7 @@ function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onCl
    {node.children.length>0&&<NeighbourList label="Inside" items={node.children.map(id=>tree.nodes.get(id)!)} tone="none" onTrace={onTrace} tree={tree}/>}
    {node.checkpointRefs.length>0&&<div className="mt-4 flex flex-wrap gap-2">
     {node.checkpointRefs.map(ref=><Link key={ref.projectSlug+ref.code} to={'/p/'+ref.projectSlug+'/cp/'+ref.code}
-     className="flex min-h-11 items-center rounded-ctl border border-edge-2 px-3 text-label">Checkpoint {ref.code}</Link>)}
+     className="inline-flex min-h-11 min-w-11 items-center text-label text-ink-2 underline decoration-[var(--ink-3)] underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-amber focus-visible:outline-offset-2">Checkpoint {ref.code}</Link>)}
    </div>}
    <div className="mt-5 grid grid-cols-2 gap-2">
     <button type="button" className="flex min-h-11 items-center justify-center gap-2 rounded-btn bg-[var(--accent)] px-3 text-body font-semibold text-[var(--paper)]"
