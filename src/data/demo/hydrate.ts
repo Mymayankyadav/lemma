@@ -13,6 +13,10 @@ export function hydrateFixture(
   source.settings.timeZone = timeZone;
   const clock = studyClock(source.settings.rolloverHour, timeZone),
     today = clock.dayIndex(now);
+  // A 30,000-card stress fixture repeats a handful of @due/@day tokens.
+  // Cache their resolved civil timestamps instead of doing hundreds of
+  // thousands of Intl.formatToParts calls for identical study days.
+  const tokenCache=new Map<string,string>();
   const walk = (value: unknown): unknown => {
     // The caller's fixture was already cloned above. Walk that private copy
     // in place instead of allocating a second 30,000-card object graph.
@@ -25,17 +29,23 @@ export function hydrateFixture(
       for (const [key, item] of Object.entries(record)) record[key] = walk(item);
       return record;
     }
-    if (typeof value !== "string") return value;
+    if (typeof value !== "string" || !value.startsWith("@")) return value;
+    const cached=tokenCache.get(value);
+    if(cached!==undefined)return cached;
+    const remember=(resolved:string)=>{
+      tokenCache.set(value,resolved);
+      return resolved;
+    };
     if (value.startsWith("@now:"))
-      return new Date(now + Number(value.split(":")[1]) * 60000).toISOString();
+      return remember(new Date(now + Number(value.split(":")[1]) * 60000).toISOString());
     if (value.startsWith("@due:"))
-      return new Date(
+      return remember(new Date(
         clock.dayStart(today + Number(value.split(":")[1])),
-      ).toISOString();
+      ).toISOString());
     if (value.startsWith("@date:"))
-      return new Date((today + Number(value.split(":")[1])) * DAY)
+      return remember(new Date((today + Number(value.split(":")[1])) * DAY)
         .toISOString()
-        .slice(0, 10);
+        .slice(0, 10));
     if (value.startsWith("@day:")) {
       const [, offset, fraction, minutes] = value.split(":"),
         index = today + Number(offset),
@@ -44,9 +54,9 @@ export function hydrateFixture(
         index === today
           ? Math.max(0, now - start)
           : clock.dayStart(index + 1) - start;
-      return new Date(
+      return remember(new Date(
         start + Number(fraction) * span + Number(minutes ?? 0) * 60000,
-      ).toISOString();
+      ).toISOString());
     }
     return value;
   };
