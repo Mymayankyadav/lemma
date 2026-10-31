@@ -15,6 +15,7 @@ for(const width of [360,390] as const){
   const routes=[
    {hash:'/atlas',heading:'Atlas'},
    {hash:'/p/real-analysis',heading:'Project'},
+   {hash:'/p/real-analysis?tab=sources',heading:'Project'},
    {hash:'/insights',heading:'Insights'},
    {hash:'/review',heading:'Review'},
    {hash:'/proposals',heading:'Approve'},
@@ -23,6 +24,7 @@ for(const width of [360,390] as const){
   for(const route of routes){
    await page.evaluate(hash=>{location.hash=hash},route.hash);
    await expect(page.getByRole('heading',{name:route.heading,level:1,exact:true})).toBeVisible({timeout:90_000});
+   if(route.hash.includes('tab=sources'))await expect(page.getByRole('region',{name:'Sources'})).toBeVisible();
    const result=await page.evaluate(()=>{
     const labels=[...document.querySelectorAll<HTMLElement>('.text-caption,.text-micro')];
     const visible=labels.filter(el=>{
