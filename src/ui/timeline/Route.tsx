@@ -160,7 +160,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
    {rightFoldedLabel}
   </text>}
  </svg>;
- const label=plainMath(project.title)+': '+project.done+' of '+n+
+ const label=plainMath(project.title)+': '+project.done+' of '+project.total+
   ' checkpoints, '+(checkpoint?.code??'')+'. Arrow keys select; Enter opens.';
  return <div ref={ref} data-route="" data-route-mode={mode}
   data-route-layout={layout.mode} data-route-stage-count={stages.length}
