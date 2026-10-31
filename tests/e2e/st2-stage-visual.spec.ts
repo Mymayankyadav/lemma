@@ -59,7 +59,7 @@ createRoot(document.getElementById("root")!).render(<Preview/>);
 test.describe.configure({mode:"serial"});
 test.beforeAll(async()=>{
   writeFileSync(source,preview);
-  writeFileSync(html,`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get('theme')||'graph';document.documentElement.dataset.density='compact';document.documentElement.dataset.effects='calm';</script></head><body><div id="root"></div><script type="module" src="/lemma/src/st2-visual-preview.tsx"></script></body></html>`);
+  writeFileSync(html,`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get('theme')||'graph';document.documentElement.dataset.density='compact';document.documentElement.dataset.effects='calm';</script></head><body><div id="root"></div><script type="module" src="/src/st2-visual-preview.tsx"></script></body></html>`);
   server=spawn(process.execPath,["node_modules/vite/bin/vite.js","--host","127.0.0.1","--port","4174","--strictPort"],{stdio:"ignore"});
   let ready=false;
   for(let attempt=0;attempt<80;attempt++){
