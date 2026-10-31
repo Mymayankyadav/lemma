@@ -1,4 +1,4 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import type {AtlasGraph} from '../../../src/data/types';
 import {arcsFor,arcTone,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,neighbours,visibleRows} from '../../../src/features/atlas/tree';
 
@@ -86,4 +86,23 @@ describe('Proposed plan synthetic checkpoint topics',()=>{
    Array.from({length:40},(_,i)=>'Taught in CP'+(i+1)),
   );
  });
+});
+
+describe('FIX #519 extreme Atlas sibling ordering cost',()=>{
+ it('reuses a locale collator across 2,500 siblings without changing their order',()=>{
+  const concepts=Array.from({length:2500},(_,i)=>({
+   ...idea('bulk-'+i,null,'planet'),topic:'Bulk',name:'Idea '+i,
+  }));
+  const locale=vi.spyOn(String.prototype,'localeCompare');
+  try{
+   const tree=buildAtlasTree({subjects:graph.subjects.slice(0,1),concepts,links:[]});
+   const parent=tree.nodes.get('atlas:topic:analysis:bulk')!;
+   expect(parent.children).toHaveLength(2500);
+   const names=parent.children.map(id=>tree.nodes.get(id)!.name);
+   expect(names).toEqual([...names].sort(new Intl.Collator().compare));
+   // Recreating ICU locale comparison for each of thousands of sort pairs
+   // delays the strict extreme Atlas 4x CPU first paint.
+   expect(locale.mock.calls.length).toBeLessThan(100);
+  }finally{locale.mockRestore()}
+ },30_000);
 });

@@ -66,6 +66,18 @@ describe('LOOK-3b accessible Route component',()=>{
   expect(html).not.toContain('<text x="12" y="68" fill="var(--ink)" font-size="12" font-weight="600">'+longName);
   expect(html).toContain('mathbb');
  });
+ it('keeps proposed checkpoints navigable without inflating planned counts or losing schedule text',()=>{
+  const cps=checkpoints(12);
+  cps[3].dueOn='2026-11-12';
+  cps.splice(4,0,{...cps[4],id:'cp-proposed',code:'CP4a',ui:'proposed',title:'Proposed bridge'});
+  const html=renderToStaticMarkup(createElement(MemoryRouter,null,
+   createElement(Route,{project:{...project(12),targetDate:'2026-12-01'},
+    checkpoints:cps,mode:'project'})));
+  expect(html).toContain('3 of 12 checkpoints, CP4');
+  expect(html).toContain('4 of 12');
+  expect(html).toContain('data-schedule-detail');
+  expect(html).toContain('Planned 12 Nov');
+ });
  it('makes Today a single link to the current checkpoint, with no station buttons',()=>{
   const html=render(36,'today',false);
   expect(html).toContain('data-route-mode="today"');
