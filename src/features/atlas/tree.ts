@@ -23,6 +23,12 @@ const LEVELS:ConceptLevel[]=['cluster','galaxy','system','planet','moon'];
 // Reuse the ICU collation object across thousands of extreme sibling-sort pairs.
 // Intl.Collator's default ordering matches String.localeCompare's defaults.
 const compareNames=new Intl.Collator().compare;
+/** React StrictMode evaluates useMemo calculations twice in development. Reuse
+ * the derived tree for an unchanged immutable query snapshot, rather than
+ * sorting and aggregating 2,500 ideas twice on the cold 4x CPU route.
+ * A new query data object receives a new tree; weak keys avoid retention.
+ */
+const derivedAtlasTrees=new WeakMap<AtlasGraph,AtlasTree>();
 const isTest=(s:string)=>/zz[-_ ]?selftest|^self[-_ ]test$|^system[-_]test/i.test(s);
 export const levelName:Record<ConceptLevel,string>={cluster:'Field',galaxy:'Area',system:'Topic',planet:'Idea',moon:'Detail'};
 /** A safe literal label needs no Markdown parser, KaTeX tree or sanitizer.
@@ -115,6 +121,8 @@ function taughtCheckpoint(node:AtlasNode):number|null{
 }
 
 export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
+ const cached=derivedAtlasTrees.get(graph);
+ if(cached)return cached;
  const subjects=[...graph.subjects].filter(s=>!isTest(s.name)&&!isTest(s.id))
   .sort((a,b)=>a.position-b.position||compareNames(a.name,b.name));
  const permitted=new Set(subjects.map(s=>s.id)),nodes=new Map<string,AtlasNode>();
@@ -187,7 +195,9 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   return n;
  };
  for(const root of roots)summarise(root,0);
- return {roots,nodes,links};
+ const result={roots,nodes,links};
+ derivedAtlasTrees.set(graph,result);
+ return result;
 }
 
 export function ancestors(tree:AtlasTree,id:string):string[]{
