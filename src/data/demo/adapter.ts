@@ -232,10 +232,11 @@ export class DemoAdapter implements LemmaApi {
   private allItems() {
     // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
     // identities once instead of scanning all checkpoints for every card.
-    const projects = new Map(this.store.projects
-      .filter(p => p.status !== "archived" && !p.system).map(p => [p.id, p]));
-    const checkpoints = new Map(this.store.checkpoints
-      .map(cp => [cpKey(cp.projectId, cp.code), cp]));
+    const projects = new Map<string, DemoProject>(this.store.projects
+      .filter(p => p.status !== "archived" && !p.system)
+      .map(p => [p.id, p] as const));
+    const checkpoints = new Map<string, DemoCheckpoint>(this.store.checkpoints
+      .map(cp => [cpKey(cp.projectId, cp.code), cp] as const));
     return this.store.notes
       .filter(n => n.note.status === "active" && projects.has(n.projectId))
       .flatMap(n => {
