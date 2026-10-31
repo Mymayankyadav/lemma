@@ -27,7 +27,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     minWidth:Math.min(...segments.map(segment=>segment.getBoundingClientRect().width)),
     count:segments.length,
     ticks:bar.querySelectorAll('[data-mini-tick]').length,
-    extraMarks:bar.querySelectorAll('[data-mini-metro] > span').length,
+    extraMarks:[...bar.children].filter(child=>child!==track).length,
    };
   }));
   expect(metrics.length).toBeGreaterThan(0);
@@ -40,7 +40,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/look-3a',{recursive:true});
   const path='test-results/screens/look-3a/paths-'+profile+'-'+theme+'-'+width+'.png';
-  await page.screenshot({path,fullPage:true});
+  await page.screenshot({path});
   await testInfo.attach('mini-route-geometry',{body:JSON.stringify(metrics,null,2),contentType:'application/json'});
  });
 }
