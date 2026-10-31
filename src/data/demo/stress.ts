@@ -1,4 +1,4 @@
-import type { DemoStore, DemoCheckpoint, DemoNote } from "./model";
+import type { DemoStore, DemoCheckpoint, DemoNote, DemoSource } from "./model";
 
 import type {InsightAggregate,Subject} from "../types";
 import {DAY} from "../../lib/calendar";
@@ -70,6 +70,14 @@ export function makeStressInsightAggregate(
   subjectMinutes:[...bySubject.values()],checkpointDays,
   mostRevisited:most?{label:most.label,times:most.times,
    conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
+}
+
+/** Lazily serve the 1,200/3,000-page representative stress PDF without allocating page arrays. */
+export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pageCount">, page: number) {
+  if (!source.id.startsWith("stress-source-") || !source.hasText
+      || !Number.isSafeInteger(page) || page < 1 || page > (source.pageCount ?? 0)) return null;
+  return {page, label: String(page),
+    body: `Synthetic mathematics notes, page ${page}. Prove the stated lemma and cite its hypotheses.`};
 }
 
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
@@ -153,56 +161,17 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   for (const [projectIndex,project] of data.projects.entries()) {
     const existing = existingByProject.get(project.id)??0;
     for (let i=existing;i<sourceTarget;i++) {
+      const representative=(projectIndex===0||projectIndex===projectCount-1)&&i===existing;
       data.sources.push({
         ...firstSource,
         id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
         title: `Source ${i+1}: mathematical notes and proofs`,
         short: `stresssrc${i}`, filename:`source-${i+1}.pdf`,
-        kind:sourceKinds[i%sourceKinds.length],position:i,
+        kind:representative?"notes":sourceKinds[i%sourceKinds.length],position:i,
         pageCount:extreme?3000:1200,
-        status:"ready",hasText:false,outline:[],pages:[],
+        status:"ready",hasText:representative,outline:[],pages:[],
         sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
         addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
-      });
-    }
-  }
-
-  // Audit #461: pressure-test the source list for every project, while materialising
-  // 1,200/3,000 searchable page bodies only in representative PDFs. Other synthetic
-  // sources model scanned/metadata-only PDFs; no fake binary is stored or billed.
-  const sourcesPerProject = extreme ? 100 : 30;
-  const pagesPerPdf = extreme ? 3000 : 1200;
-  const baseSource = data.sources[0];
-  if (!baseSource) throw Error("Stress fixture requires a seeded source");
-  for (const [projectIndex, project] of data.projects.entries()) {
-    const existing = data.sources.filter(source => source.projectId === project.id).length;
-    for (let sourceIndex = existing; sourceIndex < sourcesPerProject; sourceIndex++) {
-      const materialise = (projectIndex === 0 || projectIndex === projectCount - 1)
-        && sourceIndex === existing;
-      const pages = materialise
-        ? Array.from({length: pagesPerPdf}, (_, index) => ({
-            page: index + 1,
-            label: String(index + 1),
-            body: `Synthetic mathematics notes, page ${index + 1}. Prove the stated lemma and cite its hypotheses.`,
-          }))
-        : [];
-      data.sources.push({
-        ...baseSource,
-        id: `stress-source-${projectIndex}-${sourceIndex}`,
-        projectId: project.id,
-        title: `Synthetic source ${sourceIndex + 1} for ${project.title}`,
-        short: `stress-${projectIndex}-${sourceIndex}`,
-        filename: `stress-${projectIndex}-${sourceIndex}.pdf`,
-        kind: "notes",
-        origin: "other",
-        sha256: null,
-        bytes: 0,
-        pageCount: pagesPerPdf,
-        hasText: materialise,
-        status: "ready",
-        outline: [{title: "Synthetic mathematics notes", page: 1, level: 0}],
-        createdAt: `@day:-${sourceIndex % 90}:0.5:0`,
-        pages,
       });
     }
   }

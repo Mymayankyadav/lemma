@@ -17,11 +17,11 @@ for (const [profile, theme, width, height, sourceCount, pageCount] of [
     // ST-6 folds large source groups; open Notes when the fold control exists.
     const notesFold = sources.getByRole('button', {name:/notes ·/i});
     if (await notesFold.count()) await notesFold.click();
-    const source = sources.getByText(/^Synthetic source/).first();
+    const source = sources.getByText('Source 5: mathematical notes and proofs');
     await expect(source).toBeVisible();
     const tile = source.locator('xpath=ancestor::*[contains(concat(" ",normalize-space(@class)," ")," tile ")][1]');
     await tile.getByRole('button', {name:'View pages'}).click();
-    const viewer = tile.getByRole('region', {name:/Page transcription for Synthetic source/});
+    const viewer = tile.getByRole('region', {name:/Page transcription for Source 5/});
     await expect(viewer).toBeVisible();
     await expect(viewer).toContainText(`of ${pageCount}`);
     await expect(viewer).toContainText('Synthetic mathematics notes, page 1');

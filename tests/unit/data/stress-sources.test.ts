@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {makeStressStore} from '../../../src/data/demo/stress';
+import {makeStressStore, stressSourcePage} from '../../../src/data/demo/stress';
 import type {DemoStore} from '../../../src/data/demo/model';
 
 const seed = JSON.parse(readFileSync('src/data/demo/fixture.json', 'utf8')) as DemoStore;
@@ -17,10 +17,11 @@ describe('ST-0 sources at scale (audit #461)', () => {
     const sources = data.sources.filter(source => source.projectId === project.id);
     expect(sources).toHaveLength(sourcesPerProject);
     expect(sources.some(source => source.pageCount === pagesPerPdf)).toBe(true);
-    const representative = sources.find(source => source.pages.length === pagesPerPdf);
-    expect(representative?.pages[0]?.page).toBe(1);
-    expect(representative?.pages.at(-1)?.page).toBe(pagesPerPdf);
-    expect(representative?.pages.at(-1)?.body).toContain('Synthetic mathematics notes');
+    const representative = sources.find(source => source.id.startsWith('stress-source-') && source.hasText);
+    expect(representative?.pages).toHaveLength(0);
+    expect(representative && stressSourcePage(representative, 1)?.page).toBe(1);
+    expect(representative && stressSourcePage(representative, pagesPerPdf)?.body).toContain('Synthetic mathematics notes');
+    expect(representative && stressSourcePage(representative, pagesPerPdf + 1)).toBeNull();
    }
    expect(new Set(data.sources.map(source => source.id)).size).toBe(data.sources.length);
    expect(data.sources.every(source => data.projects.some(project => project.id === source.projectId))).toBe(true);
