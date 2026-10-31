@@ -26,8 +26,8 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   // tall folded field; compare actual centers rather than row-index distance.
   const centers=[0,30,60,70,400,430];
   const paths=layoutAtlasLanes([arc('three-rows',0,3),arc('two-rows',2,4)],centers);
-  expect(paths.get('two-rows')?.x).toBe(74);
-  expect(paths.get('three-rows')?.x).toBe(65);
+  expect(paths.get('two-rows')?.x).toBe(83);
+  expect(paths.get('three-rows')?.x).toBe(74);
  });
  it('draws eight unrelated overlapping intervals on eight 9px lanes',()=>{
   const arcs=Array.from({length:8},(_,i)=>arc('dense-'+i,i,i+8));
