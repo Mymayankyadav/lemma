@@ -7,7 +7,9 @@ export interface AtlasLane{
  d:string;
 }
 const X0=8;
-const LANES=[74,65,56,47,38,29,20] as const;
+// The outermost center at x=83 leaves 0.5px for a 1px stroke inside
+// the 84px gutter; eight independent 9px-spaced tracks fit without overlap.
+const LANES=[83,74,65,56,47,38,29,20] as const;
 const ROW=44;
 
 /** A notebook-margin wire: two horizontal strokes and a vertical lane, with
@@ -22,7 +24,7 @@ export function atlasLanePath(x:number,fromY:number,toY:number):string{
 
 /** Longest connections receive the outer lanes. Where several links share an
  * endpoint, reuse its lane as a trunk; otherwise prefer an unoccupied 9px
- * track over the same vertical interval. Bounded to seven tracks in 84px.
+ * track over the same vertical interval. Bounded to eight tracks in 84px.
  */
 export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[],priorityKeys?:ReadonlySet<string>):Map<string,AtlasLane>{
  const physicalSpan=(arc:Arc)=>Math.abs((centers?.[arc.to]??arc.to*ROW+ROW/2)-(centers?.[arc.from]??arc.from*ROW+ROW/2));
@@ -36,8 +38,8 @@ export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[],
   const fromY=centers?.[arc.from]??arc.from*ROW+ROW/2;
   const toY=centers?.[arc.to]??arc.to*ROW+ROW/2;
   const low=Math.min(fromY,toY),high=Math.max(fromY,toY);
-  // An overlapping, unrelated wire must NEVER reuse a lane: with eight
-  // independent overlapping intervals and only seven 9px tracks, the eighth
+  // An overlapping, unrelated wire must NEVER reuse a lane: with nine
+  // independent overlapping intervals and only eight 9px tracks, the ninth
   // becomes an explicit overflow disclosure instead of an unreadable rope.
   const sharesTrunk=(p:typeof placed[number])=>p.arc.from===arc.from||p.arc.to===arc.to;
   const fits=(lane:number)=>placed.every(p=>p.x!==lane||high<p.low||low>p.high||sharesTrunk(p));
