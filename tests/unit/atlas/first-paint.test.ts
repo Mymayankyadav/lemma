@@ -1,4 +1,5 @@
 import {describe,expect,it} from 'vitest';
+import type {AtlasGraph} from '../../../src/data/types';
 import {arcCountFor,arcsFor,budgetArcs,buildAtlasTree,initialExpanded,visibleRows,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
 
 // FIX #519: the first render must already use the effective expanded set.
@@ -58,7 +59,7 @@ it('counts bundled arcs exactly when the unfocused graph is hidden',()=>{
 // directional prerequisite and symmetric related bundling after optimization.
 it('counts 8,000 mixed dense links exactly without materializing arc bundles',()=>{
  const ids=Array.from({length:160},(_,i)=>'idea-'+i);
- const graph={
+ const graph:AtlasGraph={
   subjects:[{id:'math',name:'Mathematics',glyph:'∫',hue:'amber',position:0}],
   concepts:ids.map(id=>({id,slug:id,name:id,subjectId:'math',level:'planet' as const,
    parentId:null,blurb:null,pinX:null,pinY:null,status:'not_started' as const,
