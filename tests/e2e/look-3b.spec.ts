@@ -9,8 +9,11 @@ import {Route} from '../../src/ui/timeline/Route';
 
 /** Isolated component visual audit. Interactive mounted-route/4x CPU tests
  * remain a LOOK-3c gate; SSR screenshots cannot substitute for those. */
-const css=readdirSync('dist/assets').filter(name=>name.endsWith('.css'))
- .map(name=>readFileSync(join('dist/assets',name),'utf8')).join('\n');
+let cachedCss:string|undefined;
+function getCss(){
+ return cachedCss??=readdirSync('dist/assets').filter(name=>name.endsWith('.css'))
+  .map(name=>readFileSync(join('dist/assets',name),'utf8')).join('\n');
+}
 function checkpoints(n:number,size:number):CheckpointView[]{
  const current=Math.floor(n/2);
  return Array.from({length:n},(_,i)=>({
