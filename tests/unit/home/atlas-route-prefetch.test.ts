@@ -1,6 +1,6 @@
 // @vitest-environment node
 import {readFileSync} from 'node:fs'
-import {describe,expect,it} from 'vitest'
+import {describe,expect,it,test} from 'vitest'
 
 // Atlas is an important fast navigation target from Paths, but a static
 // Atlas import on the Today entry inflates its strict 4x CPU cold-start cost.
