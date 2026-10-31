@@ -177,6 +177,19 @@ export default function Page(){
   if(selectedId===node.id&&!node.children.length){setDetails(true);return}
   select(selectedId===node.id?null:node.id);
  };
+ // Keep the DOM order of the virtual window and its always-accessible
+ // Field headings identical to logical outline order, even after deep scroll.
+ const renderAccessibleField=(index:number)=>{
+  if(!tree)return null;
+  const node=tree.nodes.get(rows[index].id)!;
+  return <div key={'accessible-field:'+node.id} className="absolute inset-x-0"
+   style={{top:geometry.offsets[index]}}>
+   <Row node={node} sticky={false} open={!!filter||open.has(node.id)}
+    tone={rowTone(tree,node.id,focus,selectedId,!filter&&!open.has(node.id))}
+    match={rows[index].match} focused={!!focus}
+    onToggle={()=>{if(!filter)toggle(node.id)}} onSelect={()=>onRow(node)}/>
+  </div>;
+ };
  const focusSlug=params.get('focus');
  const seen=useRef<string|null>(null);
  useEffect(()=>{
@@ -245,21 +258,13 @@ export default function Page(){
      </div>
     </div>}
     <div className="relative flow-root" role="tree" aria-label="Ideas and their links" data-atlas-field-count={tree.roots.length} data-atlas-row-count={rows.length} style={virtual?{height:geometry.totalHeight}:undefined}>
+    {accessibleFields.filter(index=>index<first).map(renderAccessibleField)}
     <div className="flow-root" style={virtual?{position:"absolute",top:geometry.offsets[first],left:0,right:0}:undefined}>
     {visible.map(row=>{const node=tree.nodes.get(row.id)!;
      return <Row key={row.id} node={node} sticky={!virtual} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match} focused={!!focus}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
     </div>
-    {accessibleFields.map(index=>{
-     const node=tree.nodes.get(rows[index].id)!;
-     return <div key={'accessible-field:'+node.id} className="absolute inset-x-0"
-      style={{top:geometry.offsets[index]}}>
-      <Row node={node} sticky={false} open={!!filter||open.has(node.id)}
-       tone={rowTone(tree,node.id,focus,selectedId,!filter&&!open.has(node.id))}
-       match={rows[index].match} focused={!!focus}
-       onToggle={()=>{if(!filter)toggle(node.id)}} onSelect={()=>onRow(node)}/>
-     </div>;
-    })}
+    {accessibleFields.filter(index=>index>=last).map(renderAccessibleField)}
     {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
