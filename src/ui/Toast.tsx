@@ -50,12 +50,12 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  <span ref={messageRef} id={messageId} className={`min-w-0 flex-1 ${expanded?'wrap max-h-[50vh] overflow-y-auto':'line-clamp-2'}`}><Tex source={item.message}/></span>
  {overflow&&<button type="button" aria-label={expanded?'Collapse notification details':'Show notification details'}
   aria-expanded={expanded} aria-controls={messageId}
-  className="min-h-11 shrink-0 text-amber" onClick={()=>{
+  className="flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1 text-amber" onClick={()=>{
    // A user reading expanded details must not lose them to the 4-second timer.
    if(expanded){setExpanded(false);resumeToast(item.id)}
    else{pauseToast(item.id);setExpanded(true)}
   }}>{expanded?'Less':'More'}</button>}
- {item.action&&<button className="min-h-11 shrink-0 font-semibold text-amber" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><Tex source={item.action.label}/></button>}
+ {item.action&&<button className="flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1 font-semibold text-amber" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><Tex source={item.action.label}/></button>}
  <button type="button" aria-label="Dismiss notification" className="flex size-11 shrink-0 items-center justify-center" onClick={()=>dismiss(item.id)}><X size={16}/></button>
  </motion.div>;
 }
