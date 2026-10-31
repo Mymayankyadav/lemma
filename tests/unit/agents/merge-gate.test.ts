@@ -54,11 +54,11 @@ describe("Steward exact-head merge gate (audit #493)", () => {
   });
 
   it("never merges a major plan PR still awaiting explicit owner approval", () => {
-    const pending = { ...ready, body: "Owner approval needed\\nReady to merge" };
+    const pending = { ...ready, body: "Owner approval needed\nReady to merge" };
     const verdict = evaluateMergeGate(pending);
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toMatch(/owner approval/i);
-    expect(evaluateMergeGate({ ...ready, body: "owner approval needed\\nReady to merge" }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...ready, body: "owner approval needed\nReady to merge" }).ok).toBe(false);
   });
 
   it("requires a standalone Ready marker, not a mere mention", () => {
