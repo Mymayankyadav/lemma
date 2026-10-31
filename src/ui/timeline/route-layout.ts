@@ -47,7 +47,10 @@ export function layoutRoute(
    if(s===activeStage){
     const from=Math.max(stage.start,selected-4);
     const to=Math.min(stage.end,selected+4);
-    for(let i=from;i<=to;i++)drafts.push({
+    const indices=Array.from({length:to-from+1},(_,i)=>from+i);
+    if(s===currentStage&&!indices.includes(current))indices.push(current);
+    indices.sort((a,b)=>a-b);
+    for(const i of indices)drafts.push({
      kind:'station',index:i,stageIndex:s,stageEnd:s,
      width:i===current?CURRENT_RADIUS*2:i===selected?10:STATION_RADIUS*2,
      height:i===current?CURRENT_RADIUS*2:i===selected?10:STATION_RADIUS*2,
