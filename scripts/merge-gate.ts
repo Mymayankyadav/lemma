@@ -39,7 +39,7 @@ export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
   if (!input.leaseEligible) return denied("Lease is held by another active agent");
   // Planner PLAN drops require an explicit owner decision; a stale or
   // accidental Ready marker must never override the pending-approval guard.
-  if (/^\s*(?:\*\*)?Owner approval needed(?:\*\*)?(?:\s*[:—-].*)?\s*$/im.test(input.body))
+  if (/Owner approval needed/i.test(input.body))
     return denied("Owner approval needed before merging");
   if (!/^Ready to merge\s*$/m.test(input.body))
     return denied("No standalone Ready to merge marker");
