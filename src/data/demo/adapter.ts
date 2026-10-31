@@ -73,7 +73,8 @@ import {reviewForecast} from "../../lib/review-forecast";
 import {makeStressInsightAggregate, stressSessionEvents, stressSourcePage} from "./stress";
 
 // One parse per module, not once per each of the 1,000 virtual sessions.
-const stressSessionTemplate = (JSON.parse(fixtureText) as DemoStore).sessions[0];
+export const demoSeedFixture = JSON.parse(fixtureText) as DemoStore;
+const stressSessionTemplate = demoSeedFixture.sessions[0];
 
 const clone = <T>(value: T): T => structuredClone(value);
 const invalid = (message: string): never => {
@@ -158,7 +159,7 @@ export class DemoAdapter implements LemmaApi {
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
     this.store = hydrateFixture(
-      options.fixture ?? (JSON.parse(fixtureText) as DemoStore),
+      options.fixture ?? demoSeedFixture,
       this.now(),
       options.timeZone ??
         Intl.DateTimeFormat().resolvedOptions().timeZone ??
