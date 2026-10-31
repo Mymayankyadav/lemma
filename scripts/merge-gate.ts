@@ -65,7 +65,8 @@ export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
   }
   if (!latest.size) return denied("No exact-head check runs; fail closed");
 
-  const required = input.requiredChecks ?? DEFAULT_REQUIRED_CHECKS;
+  // Callers may add checks, but cannot override away the canonical seven.
+  const required = [...new Set([...DEFAULT_REQUIRED_CHECKS, ...(input.requiredChecks ?? [])])];
   if (!required.length) return denied("Expected CI check set is empty");
   for (const name of required)
     if (!latest.has(name)) return denied(`Missing expected exact-head check: ${name}`);
