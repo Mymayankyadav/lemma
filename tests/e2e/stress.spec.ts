@@ -106,6 +106,10 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await expect(page.locator('#main-content')).toBeVisible({timeout:90_000});
    await expect(page.getByRole('heading', {name:routeHeadings[route], exact:true, level:1})).toBeVisible({timeout:90_000});
    await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
+   // Cold Today must paint an actual project Route, not merely a heading and
+   // 40 characters of fallback/skeleton text. Code splitting may improve
+   // startup, but the strict 4× timer must include the meaningful goal card.
+   if(route==='/')await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible({timeout:90_000});
    // A heading and 40 characters also matched the missing-proposal error.
    // Check that the actual plan change, its amendments and idea tree loaded.
    if (route === '/proposals/proposal-6') {
