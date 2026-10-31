@@ -5,6 +5,7 @@ import {GroupedBars} from '../../../src/ui/charts/GroupedBars'
 import {HBars} from '../../../src/ui/charts/HBars'
 import {LineArea} from '../../../src/ui/charts/LineArea'
 import {InkRecall} from '../../../src/features/insights/InkRecall'
+import {CalibrationBars} from '../../../src/ui/charts/CalibrationBars'
 
 function labels(html:string){
  const host=document.createElement('div')
@@ -38,6 +39,7 @@ describe('FIX #506 chart labels',()=>{
  })
  it('keeps subject values, recall targets, axes and dates at readable size',()=>{
   readable(renderToStaticMarkup(<HBars data={[{label:'Algebra',value:120,display:'2 h'}]}/>))
+  readable(renderToStaticMarkup(<CalibrationBars data={[{label:'sure',total:100,right:80,rate:0.8}]}/>))
   readable(renderToStaticMarkup(<LineArea data={[
    {label:'30 days ago',value:0.84},{label:'Today',value:0.92},
   ]}/>))
