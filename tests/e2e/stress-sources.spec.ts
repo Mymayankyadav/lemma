@@ -14,6 +14,9 @@ for (const [profile, theme, width, height, sourceCount, pageCount] of [
     const sources = page.getByRole('region', {name:'Sources'});
     // SourcesPanel is a section, not a region until an accessible name is present.
     await expect(sources.getByRole('group', {name:'Source storage'})).toContainText(`${sourceCount} sources`, {timeout:90_000});
+    // ST-6 folds large source groups; open Notes when the fold control exists.
+    const notesFold = sources.getByRole('button', {name:/notes ·/i});
+    if (await notesFold.count()) await notesFold.click();
     const source = sources.getByText(/^Synthetic source/).first();
     await expect(source).toBeVisible();
     const tile = source.locator('xpath=ancestor::*[contains(concat(" ",normalize-space(@class)," ")," tile ")][1]');
