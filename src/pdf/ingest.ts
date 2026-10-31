@@ -2,9 +2,15 @@ import { LemmaError } from "../data/api";
 import type { IngestProgress } from "../data/types";
 import { parsePdf } from "./parse";
 import type { IngestOptions, IngestResult } from "./parse";
+import { readTextSource, textKind } from "./text-source";
 
 export { flattenOutline, isPdfFile } from "./parse";
 export type { IngestedPage, OutlineItem, IngestOptions, IngestResult } from "./parse";
+
+/** Source picker accepts PDFs, LaTeX and Markdown without weakening MIME checks. */
+export function isSourceFile(file:Pick<File,"name"|"type">):boolean{
+ return isPdfFile(file)||textKind(file)!==null;
+}
 
 /** A file's active extraction can be cancelled without changing the existing addSource API. */
 const activeReaders = new WeakMap<File, () => void>();
@@ -23,6 +29,26 @@ function cancelled(): LemmaError {
 /** Parsing and text extraction run off the UI thread in browsers. Node tests use the same parser inline. */
 export async function ingest(file: File, options: IngestOptions = {}): Promise<IngestResult> {
  if (cancelledFiles.has(file) || options.signal?.aborted) throw cancelled();
+ const kind=textKind(file);
+ if(kind){
+  const controller=new AbortController();
+  const abort=()=>controller.abort();
+  activeReaders.set(file,abort);
+  options.signal?.addEventListener("abort",abort,{once:true});
+  try{
+   if(file.size===0||file.size>50*1024*1024)
+    throw new LemmaError("invalid","Choose a nonempty file under 50 MB");
+   options.onProgress?.({phase:"reading",page:0,pageCount:0,message:"Reading text"});
+   const result=await readTextSource(file,kind);
+   if(controller.signal.aborted||cancelledFiles.has(file))throw cancelled();
+   if(!result.hasText)throw new LemmaError("invalid","This file has no text");
+   options.onProgress?.({phase:"done",page:result.pageCount,pageCount:result.pageCount,message:`${result.pageCount} sections read`});
+   return result;
+  }finally{
+   options.signal?.removeEventListener("abort",abort);
+   activeReaders.delete(file);
+  }
+ }
  if (typeof window === "undefined" || typeof Worker === "undefined") {
   const controller = new AbortController();
   const abort = () => controller.abort();
