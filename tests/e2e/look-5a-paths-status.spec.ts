@@ -5,7 +5,7 @@ test.beforeEach(async({page})=>{
  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}))
 })
 
-for(const profile of ['stress','extreme'] as const){
+for(const profile of ['1','stress','extreme'] as const){
  for(const theme of ['graph','graph-night'] as const){
   for(const width of [360,390] as const){
    test(`LOOK-5a Paths segmented status ${profile} ${theme} ${width}px`,async({page})=>{
@@ -15,6 +15,12 @@ for(const profile of ['stress','extreme'] as const){
     const group=page.getByRole('group',{name:'Project status'})
     await expect(group).toBeVisible()
     await expect(group).toHaveAttribute('data-status-segments','')
+    if(profile==='1'){
+     const single=page.getByRole('region',{name:'Analysis projects'})
+     await expect(single.locator(':scope > button')).toHaveCount(0)
+     await expect(single.getByRole('link',{name:/Real Analysis/})).toBeVisible()
+     await expect(single.getByText('Analysis',{exact:false})).toBeVisible()
+    }
     const buttons=group.getByRole('button')
     await expect(buttons).toHaveCount(3)
     const rects=await buttons.evaluateAll(nodes=>nodes.map(node=>{
