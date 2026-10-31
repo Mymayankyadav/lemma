@@ -41,12 +41,15 @@ export function EuclidAppearance({ui,busy,onChange}:Props){
  return <section aria-label="Appearance" className="space-y-3">
   <h2 className="text-title-s font-semibold">Appearance</h2>
   <p className="text-label text-ink-2">Two graph-paper worlds. Text is compact and motion stays calm.</p>
-  <div role="radiogroup" aria-label="Appearance mode" className="grid grid-cols-3 gap-2">
-   {modes.map(item=><button key={item.id} type="button" role="radio" aria-checked={mode===item.id}
+  <div role="radiogroup" aria-label="Appearance mode" data-appearance-segmented="true"
+   className="grid grid-cols-3 overflow-hidden rounded-ctl border border-edge bg-[var(--paper)]">
+   {modes.map(item=><button key={item.id} type="button" role="radio"
+    aria-label={item.label+' '+item.detail} aria-checked={mode===item.id}
     disabled={busy} onClick={()=>void choose(item.id)}
-    className={'min-h-16 rounded-ctl border px-2 py-3 text-center '+(mode===item.id?'border-amber bg-amber-tint text-ink':'border-edge bg-well text-ink-2')}>
-    <span className="block text-label font-semibold">{item.label}</span>
-    <span className="mt-1 block text-caption">{item.detail}</span>
+    className={'min-h-11 min-w-0 border-r border-edge px-2 py-3 text-center last:border-r-0 '+(mode===item.id
+     ?'bg-amber-tint font-semibold text-ink shadow-[inset_0_-3px_0_var(--accent)]'
+     :'text-ink-2')}>
+    <span className="text-label">{item.label}</span>
    </button>)}
   </div>
  </section>;
