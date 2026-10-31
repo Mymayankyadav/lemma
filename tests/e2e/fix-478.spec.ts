@@ -17,6 +17,10 @@ for (const theme of ['graph','graph-night'] as const) {
    });
    await expect(sources.getByRole('list',{name:'Source upload queue'}).getByLabel('Upload status: ready')).toBeVisible({timeout:30000});
    await expect.poll(async()=>Number((await meter.locator('span').first().textContent())?.match(/\d+/)?.[0])).toBe(sourceCount+1);
+   await sources.locator('input[type=file]').setInputFiles({
+    name:'outline.md',mimeType:'text/markdown',buffer:Buffer.from('# Outline\n\nText-only Markdown source.'),
+   });
+   await expect.poll(async()=>Number((await meter.locator('span').first().textContent())?.match(/\d+/)?.[0])).toBe(sourceCount+2);
    await expect(meter).toContainText('At least 0 KB / 1 GB');
    await expect(meter.getByRole('progressbar',{name:'PDF storage used'})).toHaveAttribute('aria-valuetext','At least 0 KB of 1 GB');
    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
