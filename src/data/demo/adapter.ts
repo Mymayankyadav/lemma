@@ -71,7 +71,7 @@ import legacyRender from "../../lib/render/render.js";
 import { slugify } from "../../lib/text";
 import { DAY } from "../../lib/calendar";
 import {reviewForecast} from "../../lib/review-forecast";
-import {makeStressInsightAggregate} from "./stress";
+import {makeStressInsightAggregate,stressSourcePage} from "./stress";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const invalid = (message: string): never => {
@@ -1855,7 +1855,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async getSourcePage(sourceId:string,page:number):Promise<import('../types').TranscribedSourcePage|null>{
     const source=found(this.store.sources.find(s=>s.id===sourceId),'Source');
-    const item=source.pages.find(p=>p.page===page);
+    const item=source.pages.find(p=>p.page===page) ?? stressSourcePage(source,page);
     return item?{
       sourceId:source.id,page:item.page,label:item.label??null,body:item.body,
       confidence:item.confidence??null,transcribedBy:item.transcribedBy??null
