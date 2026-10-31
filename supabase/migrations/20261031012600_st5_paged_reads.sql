@@ -428,6 +428,10 @@ as $$
     from public.checkpoints c
     left join counts cnt on cnt.project_id = c.project_id and cnt.checkpoint_id = c.id
     where c.user_id = (select auth.uid()) and c.project_id = (l.item->>'id')::uuid
+      -- Only due checkpoints belong in the deck picker. Returning all 100
+      -- checkpoints for each of 60 projects would recreate the whole-table
+      -- download that ST-5 replaces; orphan cards remain at project level.
+      and coalesce(cnt.due, 0) > 0
   ) cp
   cross join lateral (
     select count(*)::integer as due from selected s
