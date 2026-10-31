@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {plainMath} from '../../../src/lib/plain-math';
+import {plainMath,hasMathPreview} from '../../../src/lib/plain-math';
 import {renderMarkdown} from '../../../src/lib/render';
 
 describe('non-card mathematical content',()=>{
@@ -25,5 +25,13 @@ describe('non-card mathematical content',()=>{
   expect(html).toContain('class="katex"');
   expect(html).not.toContain('{{c1::');
   expect(html).not.toContain('::fraction');
+ });
+
+ it('recognizes all supported TeX delimiters for unclipped card previews',()=>{
+  expect(hasMathPreview('$\\operatorname{verylongexpression}$')).toBe(true);
+  expect(hasMathPreview('$$\\sum_{n=1}^{100}n$$')).toBe(true);
+  expect(hasMathPreview('\\(\\operatorname{verylongexpression}\\)')).toBe(true);
+  expect(hasMathPreview('\\[\\operatorname{verylongexpression}\\]')).toBe(true);
+  expect(hasMathPreview('Plain text without a formula')).toBe(false);
  });
 });
