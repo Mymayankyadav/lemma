@@ -158,3 +158,23 @@ export function useResolveMisconception() {
 export function usePinConcept() {
  return useWrite((api, value: { id: Parameters<LemmaApi['pinConcept']>[0]; x: Parameters<LemmaApi['pinConcept']>[1]; y: Parameters<LemmaApi['pinConcept']>[2] }) => api.pinConcept(value.id, value.x, value.y), ['atlas'])
 }
+
+
+export function useSourceTranscriptionStats(projectId:string){
+ return useQuery({...queryDefaults,queryKey:['source-transcript-stats',projectId],
+  queryFn:()=>getApi().getSourceTranscriptionStats(projectId),enabled:!!projectId})
+}
+export function useSourcePage(sourceId:string,page:number){
+ return useQuery({...queryDefaults,queryKey:['source-transcript-page',sourceId,page],
+  queryFn:()=>getApi().getSourcePage(sourceId,page),enabled:!!sourceId&&page>=1})
+}
+export function useSourcePdfUrl(sourceId:string){
+ return useQuery({...queryDefaults,queryKey:['source-pdf-url',sourceId],
+  queryFn:()=>getApi().getSourcePdfUrl(sourceId),enabled:!!sourceId,
+  staleTime:240_000})
+}
+export function useUpdateSourcePage(){
+ return useWrite((api,value:{sourceId:string;page:number;patch:{body?:string;confidence?:'high'|'check'}})=>
+  api.updateSourcePage(value.sourceId,value.page,value.patch),
+  ['source-transcript-page','source-transcript-stats'])
+}
