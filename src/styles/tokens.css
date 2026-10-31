@@ -32,7 +32,7 @@
 /* UI-3: --amber* is the current theme accent and --obsidian* the background.
    Defaults are compact; the html density attribute overrides these semantic sizes. */
 :root {
-  --type-micro: 10px; --type-caption: 11px; --type-label: 12px;
+  --type-micro: 12px; --type-caption: 12px; --type-label: 12px;
   --type-body: 14px; --type-body-l: 15px; --type-headline: 16px;
   --type-title-s: 18px; --type-title: 21px;
   --type-num-l: 26px; --type-num-xl: 40px;
@@ -42,7 +42,7 @@
   --r-hero: 20px; --r-slab: 16px; --r-ctl: 12px;
 }
 html[data-density="cozy"] {
-  --type-micro: 10.5px; --type-caption: 11.5px; --type-label: 12.5px;
+  --type-micro: 12px; --type-caption: 12.5px; --type-label: 12.5px;
   --type-body: 14.5px; --type-body-l: 15.5px; --type-headline: 17.5px;
   --type-title-s: 21px; --type-title: 24px;
   --type-num-l: 32px; --type-num-xl: 52px;
@@ -52,7 +52,7 @@ html[data-density="cozy"] {
   --r-hero: 24px; --r-slab: 19px; --r-ctl: 13px;
 }
 html[data-density="comfortable"] {
-  --type-micro: 11px; --type-caption: 12px; --type-label: 13px;
+  --type-micro: 12px; --type-caption: 13px; --type-label: 13px;
   --type-body: 15px; --type-body-l: 16px; --type-headline: 19px;
   --type-title-s: 24px; --type-title: 28px;
   --type-num-l: 38px; --type-num-xl: 64px;

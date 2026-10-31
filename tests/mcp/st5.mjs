@@ -43,6 +43,8 @@ try {
   await db.exec('alter table public.'+name+' enable row level security; create policy owner_read on public.'+name+' for select to authenticated using(user_id=(select auth.uid()));')
  }
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031012600_st5_paged_reads.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261031142000_fix_524_deleted_cards_page.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261031124500_home_review_outlook.sql',import.meta.url),'utf8'))
  await db.exec([
   "insert into public.subjects values ('22222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111','Algebra','∫','amber',0),('66666666-6666-6666-6666-666666666666','99999999-9999-9999-9999-999999999999','Private','X','slate',0);",
   "insert into public.projects values ('33333333-3333-3333-3333-333333333333','11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','algebra','Algebra','active',true,false,'2027-01-01','Exam',now()),('44444444-4444-4444-4444-444444444444','11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','archive','Archive','archived',false,false,null,null,now()-interval '1 day'),('55555555-5555-5555-5555-555555555555','11111111-1111-1111-1111-111111111111','22222222-2222-2222-2222-222222222222','system','System','active',false,true,null,null,now()),('66666666-6666-6666-6666-666666666666','99999999-9999-9999-9999-999999999999','66666666-6666-6666-6666-666666666666','private','Private','active',false,false,null,null,now());",
@@ -60,6 +62,12 @@ try {
   "insert into public.proposals values('dddddddd-dddd-dddd-dddd-dddddddddddd','11111111-1111-1111-1111-111111111111','pending');"
  ].join('\n'))
  await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
+ const outlook=(await q('select public.home_review_outlook() as data'))[0].data
+ assert.equal(outlook.forecast.length,7,'forecast is seven bounded days')
+ assert.equal(outlook.decks.length,1,'deck tree excludes archived, system and foreign projects')
+ assert.equal(outlook.forecast[0].due,1,'due review card counts on today')
+ assert.equal(outlook.forecast.reduce((n,d)=>n+d.due,0),1,'new and private cards excluded')
+ console.log('PASS FIX-484b one owner-scoped review outlook RPC with seven-day forecast')
  const summaries=(await q('select public.project_summaries() item')).map(x=>x.item)
  assert.equal(summaries.length,2)
  const project=summaries.find(x=>x.slug==='algebra')
@@ -160,6 +168,9 @@ try {
  const privateHome=(await q('select public.home_summary() result'))[0].result
  assert.deepEqual(privateHome.projects.map(x=>x.slug),['private'])
  assert.equal(privateHome.pendingProposals,0);assert.equal(privateHome.due,1)
+ const privateOutlook=(await q('select public.home_review_outlook() as data'))[0].data
+ assert.deepEqual(privateOutlook.decks.map(x=>x.key),['project:private'],
+  'cross-owner outlook must not expose the other owner deck')
  console.log('PASS ST-5 review caps and cross-owner isolation')
 
  // Scale regression: 100 unstaged checkpoints must produce 13 bounded groups,
@@ -234,6 +245,41 @@ try {
  assert.equal(secondPage[0].noteNo,1070)
  assert.equal(thirdPage.at(-1).noteNo,1001)
  console.log('PASS ST-5 120-card library uses stable bounded 50-row pages')
+ // AUDIT #524 regression-first: soft-deleted notes must never occupy default
+ // pages; suspended notes remain visible in All. The 55 tombstones outnumber
+ // a full page, so filtering after LIMIT/OFFSET would yield sparse pages.
+ await db.exec('reset role')
+ await db.exec("insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) "+
+  "select md5('st5-deleted-note-'||n::text)::uuid,'"+owner+"','12121212-1212-1212-1212-121212121212',null,2000+n,"+
+  "'Deleted card '||n,'Hidden','basic','why','deleted' from generate_series(1,55) n")
+ await db.exec("insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) "+
+  "values(md5('st5-suspended-note')::uuid,'"+owner+"','12121212-1212-1212-1212-121212121212',null,2100,"+
+  "'Suspended card','Retained','basic','why','suspended')")
+ await db.exec('set role authenticated')
+ const defaultDense=[await pageAt(0),await pageAt(50),await pageAt(100)]
+ assert.deepEqual(defaultDense.map(page=>page.length),[50,50,21],
+  'default All must filter deleted notes before paging')
+ assert.equal(defaultDense[0][0].noteNo,2100,
+  'suspended notes remain visible in All')
+ assert.equal(defaultDense[0][1].noteNo,1120)
+ assert.equal(defaultDense[1][0].noteNo,1071)
+ assert.equal(defaultDense[2].at(-1).noteNo,1001)
+ assert.ok(defaultDense.flat().every(note=>note.status!=='deleted'))
+ const deletedPage=async(offset)=>(await filtered("'','long-plan',null,null,'deleted',null,"+offset)).map(x=>x.item)
+ assert.deepEqual([(await deletedPage(0)).length,(await deletedPage(50)).length],[50,5])
+ assert.ok((await deletedPage(0)).every(note=>note.status==='deleted'))
+ assert.deepEqual((await filtered("'Deleted card','long-plan',null,null,null,null,0")).map(x=>x.item),[])
+ assert.deepEqual((await filtered("'','long-plan',null,null,'suspended',null,0")).map(x=>x.item.noteNo),[2100])
+ assert.equal((await filtered("'','long-plan',null,null,'active',null,0")).length,50)
+ assert.equal((await filtered("'','long-plan',null,null,'active',null,100")).length,20)
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ assert.deepEqual((await deletedPage(0)).map(x=>x.noteNo),[])
+ await db.exec("select set_config('test.uid','"+owner+"',false)")
+ console.log('PASS AUDIT #524 deleted-note exclusion, dense 50-row paging and explicit status isolation')
+
+
+
+
 
 
  // ST-5/E1 extreme-library acceptance: even with 60 active projects and
@@ -263,6 +309,10 @@ try {
   .every(p=>p.children.length===0))
  assert.ok(Buffer.byteLength(JSON.stringify(scaleDeck),'utf8')<200000,
   'Review deck tree must remain bounded for 60 projects / 6,000 checkpoints')
+ const scaleOutlook=(await q('select public.home_review_outlook() as data'))[0].data
+ assert.equal(scaleOutlook.forecast.length,7)
+ assert.ok(Buffer.byteLength(JSON.stringify(scaleOutlook),'utf8')<200000,
+  'Today outlook aggregate must remain under 200 kB at 60 projects / 6,000 checkpoints')
  const scaleQueue=(await q("select public.review_items(array[]::text[],null,null,true,false) item")).map(x=>x.item)
  assert.ok(scaleQueue.length<=1, 'Review queue respects the daily quota')
  assert.ok(Buffer.byteLength(JSON.stringify(scaleQueue),'utf8')<200000,
