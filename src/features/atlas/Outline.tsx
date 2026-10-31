@@ -90,6 +90,18 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
 
 /** Links drawn as nested arcs in a right-hand gutter, like a proof's dependency marks in a margin. */
 export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null}){
+ // Deterministic demo-only browser fixture for the finite 84px gutter. It is
+ // never enabled in live mode; CI exercises the real rendered keyboard control.
+ if(typeof window!=='undefined'){
+  const query=new URLSearchParams(window.location.search);
+  if(query.get('demo')==='stress'&&query.get('atlasDenseFixture')==='1'&&window.location.hash.startsWith('#/atlas')){
+   const dense:Arc[]=[];
+   for(let from=0;from<5;from++)for(let to=from+1;to<5;to++)
+    for(const kind of ['prereq','related'] as const)
+     dense.push({key:kind+':'+from+':'+to,from,to,kind,count:2,links:[]});
+   arcs=dense;rows=5;focus=null;
+  }
+ }
  const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
  const x0=8;
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
