@@ -1502,8 +1502,32 @@ export class DemoAdapter implements LemmaApi {
         openComments: n.comments.filter((c) => c.status === "open").length,
       }));
   }
-  async searchCardsPage(..._args: Parameters<LemmaApi['searchCardsPage']>): ReturnType<LemmaApi['searchCardsPage']> {
-    throw notImplemented('searchCardsPage');
+  async searchCardsPage(...args: Parameters<LemmaApi['searchCardsPage']>): ReturnType<LemmaApi['searchCardsPage']> {
+    const [filter]=args,needle=filter.query.trim().toLowerCase(),offset=filter.offset??0;
+    if(!Number.isSafeInteger(offset)||offset<0)invalid('Card page offset must be nonnegative');
+    const rows:CardRow[]=[];
+    let matched=0,hasMore=false;
+    // The deterministic store is ordered by note number. Stop after 51 matches:
+    // a 30,000-card stress library never creates thousands of rendered rows.
+    for(const n of this.store.notes){
+      const note=n.note;
+      if(note.status==='deleted'&&filter.noteStatus!=='deleted')continue;
+      if(filter.projectSlug&&note.projectSlug!==filter.projectSlug)continue;
+      if(filter.checkpointCode&&note.checkpointCode!==filter.checkpointCode)continue;
+      if(filter.noteStatus&&note.status!==filter.noteStatus)continue;
+      const open=n.comments.filter(c=>c.status==='open').length;
+      if(filter.hasOpenComments&&open===0)continue;
+      if(filter.state!==undefined&&!n.cards.some(c=>c.state.state===filter.state))continue;
+      if(needle&&!note.front.toLowerCase().includes(needle)&&!note.back.toLowerCase().includes(needle))continue;
+      if(matched++<offset)continue;
+      if(rows.length===50){hasMore=true;break;}
+      rows.push({noteNo:note.noteNo,front:note.front,type:note.type,kind:note.kind,
+       projectSlug:note.projectSlug,glyph:this.subject(this.projectById(n.projectId).subjectId).glyph,
+       checkpointCode:note.checkpointCode,
+       due:n.cards.length?new Date(Math.min(...n.cards.map(c=>Date.parse(c.state.due)))).toISOString():null,
+       status:note.status,openComments:open});
+    }
+    return {rows,nextOffset:hasMore?offset+50:null};
   }
   async getCard(noteNo: number): Promise<CardDetail> {
     const n = this.note(noteNo);
