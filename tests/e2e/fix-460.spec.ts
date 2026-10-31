@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 for(const [profile,total,width] of [['stress',50000,390],['extreme',300000,360]] as const)
 for(const theme of ['graph','graph-night'] as const){
@@ -17,5 +18,7 @@ for(const theme of ['graph','graph-night'] as const){
   const size=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,nodes:document.querySelectorAll('*').length}));
   expect(size.overflow).toBeLessThanOrEqual(0);
   expect(size.nodes).toBeLessThan(1500);
+  mkdirSync('test-results/screens/fix-460',{recursive:true});
+  await page.screenshot({path:'test-results/screens/fix-460/'+profile+'-'+theme+'-'+width+'.png'});
  });
 }
