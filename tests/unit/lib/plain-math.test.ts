@@ -9,7 +9,28 @@ describe('non-card mathematical content',()=>{
   expect(plainMath('A $\\subseteq$ B; $x_1\\in\\mathbb{C}$'))
    .toBe('A ⊆ B; x₁∈ℂ');
   expect(plainMath('From \\(x^2\\) to \\[\\alpha\\]')).toBe('From x² to α');
-  expect(plainMath('$\\unknown{a}$')).not.toMatch(/[\\$]/);
+  expect(plainMath('$\\unknown{a}
+ });
+ it('renders inline LaTeX without wrapping it in block paragraphs',()=>{
+  const html=renderMarkdown('Galois $H\\mapsto K^H$',{inline:true});
+  expect(html).toContain('class="katex"');
+  expect(html).not.toContain('<p>');
+  expect(html).not.toContain('$H');
+  expect(renderMarkdown('$x^2$',{inline:true})).toContain('katex-mathml');
+ });
+});
+)).not.toMatch(/[\\$]/);
+  expect(plainMath('Algebra $\\mathbb{F}_p$ and $\\ell^p
+ });
+ it('renders inline LaTeX without wrapping it in block paragraphs',()=>{
+  const html=renderMarkdown('Galois $H\\mapsto K^H$',{inline:true});
+  expect(html).toContain('class="katex"');
+  expect(html).not.toContain('<p>');
+  expect(html).not.toContain('$H');
+  expect(renderMarkdown('$x^2$',{inline:true})).toContain('katex-mathml');
+ });
+});
+)).toBe('Algebra 𝔽ₚ and ℓᵖ');
  });
  it('renders inline LaTeX without wrapping it in block paragraphs',()=>{
   const html=renderMarkdown('Galois $H\\mapsto K^H$',{inline:true});
