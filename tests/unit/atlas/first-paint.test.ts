@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {arcCountFor,arcsFor,budgetArcs,initialExpanded,visibleRows,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
+import {arcCountFor,arcsFor,budgetArcs,initialExpanded,visibleRows,isPlainAtlasLabel,type Arc,type AtlasTree} from '../../../src/features/atlas/tree';
 
 // FIX #519: the first render must already use the effective expanded set.
 // Waiting for an effect used to construct and draw the 8,000-link Atlas twice
@@ -84,4 +84,15 @@ describe('FIX #519b cold Atlas viewport budget',()=>{
  it('keeps small outlines fully accessible without virtualization',()=>{
   expect(atlasWindow(40,0,740)).toEqual({virtual:false,first:0,last:40,height:undefined});
  });
+});
+
+// Atlas's extreme first paint is mostly ordinary names ("Idea 123: Definition").
+// These must avoid full Markdown/KaTeX parsing, but real TeX and Markdown must
+// still use the rich renderer and never appear as raw source.
+it('uses a safe plain-label fast path without bypassing mathematics',()=>{
+ expect(isPlainAtlasLabel('Idea 123: Definition')).toBe(true);
+ expect(isPlainAtlasLabel('Mathematics project 12')).toBe(true);
+ expect(isPlainAtlasLabel(String.raw`Topology of $\\mathbb{R}^n$`)).toBe(false);
+ expect(isPlainAtlasLabel('**Important**')).toBe(false);
+ expect(isPlainAtlasLabel('<img src=x>')).toBe(false);
 });
