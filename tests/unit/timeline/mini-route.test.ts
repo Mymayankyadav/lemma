@@ -81,6 +81,8 @@ describe('LOOK-3a mini Route geometry',()=>{
   expect(current).toBeCloseTo(8.5);
   const currentNotch=miniRouteNotch(current,36,200,layout)!;
   const completionNotch=miniRouteNotch(3.5,36,200,layout)!;
+  // Independently calculated from 8px minima and 2:8:26 stage weights.
+  expect(currentNotch.x).toBeCloseTo(56.0556,1);
   expect(currentNotch.x).toBeGreaterThan(completionNotch.x+20);
   expect(currentNotch.x).not.toBeCloseTo(200*current/36,0);
   expect(miniRouteNotch(currentMiniRouteOrdinal('CP9',uneven,36),36,200,layout)?.x)
