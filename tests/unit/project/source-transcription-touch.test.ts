@@ -3,7 +3,7 @@ import {describe,expect,it} from 'vitest';
 
 // Audit #510: page-transcription actions are part of the Sources surface too.
 // Guard all compact text controls, not just the source-row editor controls.
-const source=readFileSync(new URL('../../../src/features/project/SourceTranscriptionView.tsx',import.meta.url),'utf8');
+const source=readFileSync('src/features/project/SourceTranscriptionView.tsx','utf8');
 const buttons=[...source.matchAll(/<button\b[\s\S]*?<\/button>/g)].map(match=>match[0]);
 
 describe('FIX #510 page-transcription touch targets',()=>{
