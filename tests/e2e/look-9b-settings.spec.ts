@@ -47,8 +47,15 @@ for(const width of [360,390] as const){
   await actions.scrollIntoViewIfNeeded();
   await expect(actions.getByRole('button')).toHaveCount(3);
   await expect(actions.getByRole('button').last()).toHaveText('Sign out');
-  const danger=await actions.getByRole('button').last().evaluate(el=>getComputedStyle(el).color);
-  expect(danger).toBeTruthy();
+  const danger=await actions.getByRole('button').last().evaluate(el=>{
+   const sample=document.createElement('span');
+   sample.style.color='var(--danger)';
+   document.body.appendChild(sample);
+   const expected=getComputedStyle(sample).color;
+   sample.remove();
+   return {actual:getComputedStyle(el).color,expected};
+  });
+  expect(danger.actual).toBe(danger.expected);
   for(const action of await actions.getByRole('button').all())
    expect((await action.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
@@ -65,4 +72,18 @@ test('LOOK-9b segmented appearance updates one selected option',async({page})=>{
  await appearance.getByRole('radio',{name:/^Day /}).click();
  await expect(appearance.getByRole('radio',{name:/^Day /})).toHaveAttribute('aria-checked','true');
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+});
+
+test('LOOK-9b teaching styles are mutually exclusive and selectable',async({page})=>{
+ await page.goto('./?demo=1#/settings');
+ const styles=page.getByRole('radiogroup',{name:'Teaching style'});
+ await expect(styles).toBeVisible();
+ const choices=styles.getByRole('radio');
+ const first=choices.first(),last=choices.last();
+ await first.click();
+ await expect(first).toHaveAttribute('aria-checked','true');
+ await expect(styles.getByRole('radio',{checked:true})).toHaveCount(1);
+ await last.click();
+ await expect(last).toHaveAttribute('aria-checked','true');
+ await expect(styles.getByRole('radio',{checked:true})).toHaveCount(1);
 });
