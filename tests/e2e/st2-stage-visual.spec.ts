@@ -94,6 +94,10 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     await expect(stageLabels).toHaveCount(count);
     await expect(stageLabels.first().locator('.katex')).toBeVisible();
     await expect(stageLabels.nth(1).locator('.katex')).toBeVisible();
+    expect(await stageLabels.evaluateAll(nodes=>nodes.slice(0,2).every(node=>{
+      const math=node.querySelector('.katex');
+      return !!math && parseFloat(getComputedStyle(math).fontSize)>=16;
+    }))).toBe(true);
     await expect(stageLabels.first()).not.toContainText('$');
     const labelFits=await stageLabels.evaluateAll(nodes=>nodes.every(node=>{
       const box=node.getBoundingClientRect();
