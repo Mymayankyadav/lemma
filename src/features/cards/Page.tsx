@@ -130,72 +130,9 @@ export default function Page(){
       <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
       <div className="min-w-0 flex-1">
        <div data-card-front="" data-card-front-preview=""
-        className={'min-w-0 max-w-full font-math text-headline leading-snug text-ink '+(row.front.includes('
-       <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
-        <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
-        <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
-        {row.openComments>0&&<span className="text-amber">{row.openComments} notes</span>}
-       </span>
-      </div>
-     </Link>)}
-     <div style={{height:(rows.length-last)*ROW_HEIGHT}} aria-hidden="true"/>
-    </div>:
-    <div className="py-12 text-center"><h2 className="text-card font-semibold">No cards match</h2>
-     <Button variant="text" onClick={()=>{setSearch('');setProject('');setState('');setNoteStatus('');setCheckpoint('');setOnlyComments(false)}}>Clear filters</Button>
-    </div>}
-  {cards.hasNextPage&&<Button variant="ghost" disabled={cards.isFetchingNextPage} onClick={()=>void cards.fetchNextPage()}>
-   {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
-  </Button>}
-  <Sheet open={creating} onClose={closeCreating} title="New card">
-   <Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>
-  </Sheet>
- </Screen>;
-}
-)?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden')}
-        style={row.front.includes('
-       <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
-        <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
-        <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
-        {row.openComments>0&&<span className="text-amber">{row.openComments} notes</span>}
-       </span>
-      </div>
-     </Link>)}
-     <div style={{height:(rows.length-last)*ROW_HEIGHT}} aria-hidden="true"/>
-    </div>:
-    <div className="py-12 text-center"><h2 className="text-card font-semibold">No cards match</h2>
-     <Button variant="text" onClick={()=>{setSearch('');setProject('');setState('');setNoteStatus('');setCheckpoint('');setOnlyComments(false)}}>Clear filters</Button>
-    </div>}
-  {cards.hasNextPage&&<Button variant="ghost" disabled={cards.isFetchingNextPage} onClick={()=>void cards.fetchNextPage()}>
-   {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
-  </Button>}
-  <Sheet open={creating} onClose={closeCreating} title="New card">
-   <Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>
-  </Sheet>
- </Screen>;
-}
-)?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}>
-        <span className={row.front.includes('
-       <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
-        <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
-        <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
-        {row.openComments>0&&<span className="text-amber">{row.openComments} notes</span>}
-       </span>
-      </div>
-     </Link>)}
-     <div style={{height:(rows.length-last)*ROW_HEIGHT}} aria-hidden="true"/>
-    </div>:
-    <div className="py-12 text-center"><h2 className="text-card font-semibold">No cards match</h2>
-     <Button variant="text" onClick={()=>{setSearch('');setProject('');setState('');setNoteStatus('');setCheckpoint('');setOnlyComments(false)}}>Clear filters</Button>
-    </div>}
-  {cards.hasNextPage&&<Button variant="ghost" disabled={cards.isFetchingNextPage} onClick={()=>void cards.fetchNextPage()}>
-   {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
-  </Button>}
-  <Sheet open={creating} onClose={closeCreating} title="New card">
-   <Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>
-  </Sheet>
- </Screen>;
-}
-)?'inline-block min-w-max pr-4':undefined}><Tex source={row.front}/></span>
+        className={'min-w-0 max-w-full font-math text-headline leading-snug text-ink '+(row.front.includes('$')?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden')}
+        style={row.front.includes('$')?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}>
+        <span className={row.front.includes('$')?'inline-block min-w-max pr-4':undefined}><Tex source={row.front}/></span>
        </div>
        <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
         <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
