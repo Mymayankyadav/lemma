@@ -7,7 +7,7 @@ vi.mock("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url", () => ({
     import.meta.url,
   ).href,
 }));
-import { ingest, flattenOutline, isPdfFile } from "../../../src/pdf/ingest";
+import { ingest, flattenOutline, isPdfFile, cancelIngest, resetIngestCancellation } from "../../../src/pdf/ingest";
 import { normalizePageText } from "../../../src/pdf/text";
 import type { IngestProgress } from "../../../src/data/types";
 
@@ -108,4 +108,15 @@ it("resolves named, numeric and nested destinations while skipping broken bookma
     { title: "Part", page: 3, level: 1 },
     { title: "Readable child", page: 1, level: 1 },
   ]);
+});
+
+it("cancels reading between pages without saving an incomplete extraction", async () => {
+  const bytes=await readFile(new URL("../../fixtures/sample.pdf",import.meta.url));
+  const file=new File([bytes],"cancel.pdf",{type:"application/pdf"});
+  await expect(ingest(file,{onProgress:p=>{
+    if(p.phase==="reading"&&p.page===1)cancelIngest(file);
+  }})).rejects.toMatchObject({code:"invalid",message:"PDF reading cancelled"});
+  resetIngestCancellation(file);
+  const complete=await ingest(file);
+  expect(complete.pageCount).toBe(3);
 });
