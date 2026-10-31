@@ -60,8 +60,10 @@ test('LOOK-3c project Route keyboard stepper crosses stages and opens the select
  await route.getByRole('button',{name:'Next checkpoint'}).click();
  // Proposed CP4a remains reachable; the stepper must not skip it.
  await expect(route.locator('[data-route-now]')).toContainText('CP4a');
+ await expect(route.locator('[data-route-now]')).toContainText('Proposed · 4 of 12');
  await route.getByRole('button',{name:'Next checkpoint'}).click();
  await expect(route.locator('[data-route-now]')).toContainText('CP5');
+ await expect(route.locator('[data-route-now]')).toContainText('5 of 12');
  await route.getByRole('button',{name:'Previous checkpoint'}).click();
  await expect(route.locator('[data-route-now]')).toContainText('CP4a');
  await route.getByRole('button',{name:'Previous checkpoint'}).click();
