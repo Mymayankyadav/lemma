@@ -291,13 +291,17 @@ export class DemoAdapter implements LemmaApi {
     const template = stressSessionTemplate;
     const checkpointCode = `CP${((number - 1) % 36) + 1}`;
     const offset = (number - 1) % 90;
-    const today = this.stressDayStart ??= studyDayBounds(this.now(), this.store.settings.timeZone, this.store.settings.rolloverHour).start;
+    const now = this.now();
+    const today = this.stressDayStart ??= studyDayBounds(now, this.store.settings.timeZone, this.store.settings.rolloverHour).start;
     const start = today - offset * DAY;
+    // The current study day may be only minutes old; never place a synthetic
+    // completed session in the future. Match the original @day 0.3/0.6 tokens.
+    const span = offset === 0 ? Math.max(0, now - start) : DAY;
     return {
       ...template, id: `stress-session-${projectIndex}-${number}`, projectId: project.id,
       number, checkpointCode, goal: `Study session ${number} for ${project.title}`,
-      state: "ended", startedAt: new Date(start + 30 * 60_000).toISOString(),
-      lastActivityAt: new Date(start + 60 * 60_000).toISOString(), events: [],
+      state: "ended", startedAt: new Date(start + span * 0.3).toISOString(),
+      lastActivityAt: new Date(start + span * 0.6).toISOString(), events: [],
     };
   }
   private sessionsForProject(project: DemoProject): DemoSession[] {
