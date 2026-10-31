@@ -44,6 +44,7 @@ describe('FIX #507 hard-budget CI gate',()=>{
    expect(item.issue).toBeGreaterThan(0);
    expect(item.failure.length).toBeGreaterThan(0);
    expect(item.routes.length).toBeGreaterThan(0);
+   expect(item.routes,'no wildcard exceptions: each deferred failure must name finite routes').not.toContain('*');
   }
   expect(()=>enforceStressBudgets([{...base,smallMath:1}],{
    pending:[{issue:0,failure:'maths below 16px',routes:['/atlas']}]
