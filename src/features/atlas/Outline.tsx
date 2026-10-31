@@ -182,7 +182,9 @@ export function Row({node,open,tone,match,onToggle,onSelect}:{
   <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
-   <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}>{isPlainAtlasLabel(node.name)?node.name:<Tex source={node.name}/>}</span>
+   <span title={plainMath(node.name)}
+    style={{overflowX:'auto',overflowY:'hidden',whiteSpace:'nowrap',scrollbarWidth:'none'}}
+    className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}>{isPlainAtlasLabel(node.name)?node.name:<Tex source={node.name}/>}</span>
    {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
     {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-1.5 rounded-full bg-[var(--hard)]"/>}
     {node.done}/{node.total}
