@@ -137,6 +137,10 @@ export function analyzeQa3(files: Record<string, unknown>): Qa3Report {
         continue;
       }
       seen.add(row.route);
+      if (row.route === '/' && row.cpuThrottle < 4) {
+        errors.push(matrix.filename + ': first render not measured under 4x CPU throttle');
+        continue;
+      }
       if (row.actualRoute !== row.route) {
         errors.push(matrix.filename + ': stale route ' + row.route +
           ' (rendered ' + row.actualRoute + ')');
