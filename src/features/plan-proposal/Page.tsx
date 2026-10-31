@@ -310,6 +310,9 @@ export default function Page() {
     () => planChangeMapNodes(nodes,p?.planChange ?? null,project.data?.checkpoints ?? []),
     [nodes,p?.planChange,project.data?.checkpoints],
   );
+  const removedPrerequisites = p?.planChange?.ops.flatMap(op =>
+    op.op === "prereq_remove" ? [op.prereq + " → " + op.code] : [],
+  ) ?? [];
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
   const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
   const ideaTree = useMemo(() => {
@@ -413,6 +416,11 @@ export default function Page() {
           {p.planChange && mapNodes.length > 0 && (
             <p className="text-caption text-ink-2" data-change-map-count="">
               Change context · {mapNodes.length} of {nodes.length} checkpoints shown. Full plan below.
+            </p>
+          )}
+          {removedPrerequisites.length > 0 && (
+            <p className="text-caption text-ink-2" data-removed-prerequisite="">
+              Removed prerequisite: {removedPrerequisites.join(", ")}. These links are no longer active and are not drawn.
             </p>
           )}
           {mapNodes.length > 0 ? (
