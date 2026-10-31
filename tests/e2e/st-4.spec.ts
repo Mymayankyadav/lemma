@@ -77,3 +77,44 @@ test('ST-4 long aligned and matrix maths expand without horizontal page overflow
  await expect(page.getByRole('button',{name:'Show all 10 lines'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
 });
+
+
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test('ST-4 virtual card rows typeset fraction and inline maths: '+theme+' '+width,async({page})=>{
+  test.setTimeout(120_000);
+  await page.setViewportSize({width,height:width===360?740:844});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+  await page.goto('/lemma/?demo=1&theme='+theme+'#/cards');
+  await page.getByRole('button',{name:'New card'}).click();
+  const editor=page.getByRole('dialog',{name:'New card'});
+  await editor.getByLabel('Front').fill('Fraction preview: $\\frac{a}{b}$ and $x^2$');
+  await editor.getByLabel('Back').fill('A fraction and a square.');
+  await editor.getByLabel('Project').selectOption('real-analysis');
+  await editor.getByLabel('Checkpoint').selectOption('CP1');
+  await editor.getByRole('button',{name:'Create card'}).click();
+  await expect(page).toHaveURL(/#\/cards\/\d+$/);
+  // Hash navigation preserves the in-memory demo card created above.
+  await page.evaluate(()=>{window.location.hash='/cards'});
+  await expect(page.getByRole('heading',{name:'Cards',exact:true})).toBeVisible();
+  await page.getByLabel('Search cards').fill('Fraction preview:');
+  const row=page.locator('[data-card-row]').filter({hasText:'Fraction preview:'}).first();
+  await expect(row).toBeVisible();
+  const preview=row.locator('[data-card-front-preview]');
+  await expect(preview.locator('.katex')).toHaveCount(2);
+  await expect(preview.locator('.katex .mfrac')).toHaveCount(1);
+  const bounds=await preview.evaluate(el=>{
+   const rect=el.getBoundingClientRect();
+   const row=el.closest('[data-card-row]')!.getBoundingClientRect();
+   return {width:rect.width,rowWidth:row.width,height:rect.height,rowHeight:row.height,
+    mathSizes:[...el.querySelectorAll('.katex')].map(k=>parseFloat(getComputedStyle(k).fontSize))};
+  });
+  expect(bounds.width).toBeLessThanOrEqual(bounds.rowWidth);
+  expect(bounds.height).toBeLessThanOrEqual(bounds.rowHeight);
+  expect(bounds.mathSizes.every(size=>size>=16)).toBe(true);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  expect(await page.locator('[data-card-row]').count()).toBeLessThanOrEqual(24);
+  await page.screenshot({path:'test-results/screens/stress/st-4-math-preview-'+theme+'-'+width+'.png'});
+ });
+}
