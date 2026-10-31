@@ -28,7 +28,7 @@ for(const width of [360,390] as const){
   }
   const range=page.getByRole('group',{name:'Time range'});
   await expect(range).toBeVisible();
-  for(const days of ['7 days','90 days']){
+  for(const days of ['7 days','30 days','90 days']){
    await page.getByRole('button',{name:days}).click();
    await expect(page.getByRole('heading',{name:days==='90 days'?'Reviews by week':'Reviews by day',level:2})).toHaveClass(/ui-section-heading/);
   }
