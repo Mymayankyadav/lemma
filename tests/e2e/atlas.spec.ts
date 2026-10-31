@@ -83,6 +83,8 @@ for(const theme of ['graph','graph-night'] as const){
   await page.goto(`./?demo=extreme&theme=${theme}#/atlas`);
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
   await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+  await expect(page.getByRole('dialog',{name:'Unfold every idea?'})).toBeVisible();
+  await page.getByRole('button',{name:'Unfold all'}).click();
   await expect.poll(()=>page.locator('[data-atlas-row]').count()).toBeLessThan(100);
   expect(await page.locator('[data-atlas-wires] [data-arc-kind]').count()).toBeLessThanOrEqual(60);
   await expect(page.getByRole('status')).toContainText(/links hidden/);
