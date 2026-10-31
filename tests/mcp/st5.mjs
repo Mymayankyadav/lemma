@@ -155,6 +155,7 @@ try {
  await db.exec("update public.settings set reviews_per_day=1,new_per_day=0 where user_id='"+owner+"'")
  await db.exec('set role authenticated')
  assert.equal((await q('select public.home_summary() result'))[0].result.due,1)
+ assert.equal((await review("array[]::text[],null,null,true,false")).length,1)
  await db.exec("select set_config('test.uid','"+other+"',false)")
  const privateHome=(await q('select public.home_summary() result'))[0].result
  assert.deepEqual(privateHome.projects.map(x=>x.slug),['private'])
