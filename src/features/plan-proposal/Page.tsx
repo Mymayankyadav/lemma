@@ -114,16 +114,16 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
               onKeyDown={e => {if(e.key==="Enter"||e.key===" "){e.preventDefault();setExpandedStage(on?null:stage.id)}}}
               style={{cursor:"pointer"}}>
               <title>{plainMath(stage.name)} · {stage.count} checkpoints</title>
-              <rect x={stage.x-65} y={stage.y-32} width="130" height="64" rx="12"
+              <rect x={stage.x-65} y={stage.y-44} width="130" height="88" rx="12"
                 fill={on?"var(--amber-tint)":"var(--raised)"}
                 stroke={on?"var(--amber)":"var(--amber-line-2)"} strokeWidth={on?2:1.5}/>
-              <foreignObject data-stage-label="" x={stage.x-60} y={stage.y-24} width="120" height="48">
+              <foreignObject data-stage-label="" x={stage.x-60} y={stage.y-38} width="120" height="54">
                 <div className="flex h-full w-full items-center overflow-x-auto overflow-y-hidden whitespace-nowrap px-1 text-center text-[16px] leading-10 text-ink"
                   title={plainMath(stage.name)}>
                   <Tex source={stage.name} className="mx-auto" />
                 </div>
               </foreignObject>
-              <text x={stage.x} y={stage.y+17} textAnchor="middle" fontSize="12" fill="var(--amber)">
+              <text x={stage.x} y={stage.y+33} textAnchor="middle" fontSize="12" fill="var(--amber)">
                 {stage.count} {stage.count===1?"checkpoint":"checkpoints"}
               </text>
             </g>;
