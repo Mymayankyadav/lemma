@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 const url=process.env.MCP_URL;
 if(!url)throw Error('MCP_URL environment variable is required');
-const names=['resume','get','read_pages','search','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
+const names=['resume','get','read_pages','search','save_pages','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
 const readTools=new Set(['resume','get','read_pages','search','proposals','history','review']);
 let seq=0;
 let sessionId;
