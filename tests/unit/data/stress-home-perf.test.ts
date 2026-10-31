@@ -78,4 +78,13 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(projects.find(p=>p.id===other.id)?.sessionsCount).toBe(0);
   expect(projects.find(p=>p.id===seed.projects[0].id)?.sessionsCount).toBe(300);
  },30_000);
+
+ it('preserves per-project virtual session totals without allocating 60,000 sessions',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{deferSessions:true});
+  expect(fixture.sessions).toHaveLength(2);
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const home=await api.getHome();
+  expect(home.projects.find(p=>p.id===seed.projects[0].id)?.sessionsCount).toBe(1000);
+  expect(home.projects.find(p=>p.slug==='stress-project-3')?.sessionsCount).toBe(1000);
+ },30_000);
 });
