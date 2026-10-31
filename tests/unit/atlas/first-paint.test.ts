@@ -49,7 +49,7 @@ it('counts bundled arcs exactly when the unfocused graph is hidden',()=>{
   {fromId:'field',toId:'idea',kind:'related'},
  ]} as unknown as AtlasTree;
  const rows=visibleRows(graph,new Set(['field']));
- const kinds=new Set(['prereq','related'] as const);
+ const kinds=new Set<AtlasTree['links'][number]['kind']>(['prereq','related']);
  expect(arcCountFor(graph,rows,kinds)).toBe(arcsFor(graph,rows,kinds).length);
  expect(arcCountFor(graph,rows,kinds)).toBe(2);
 });
