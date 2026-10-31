@@ -5,6 +5,7 @@ import {cut} from './text.ts';
 import { INSTRUCTIONS } from './rules.ts';
 import { packet } from './packet.ts';
 import { get, readPages, search } from './tools/read.ts';
+import { savePages } from './tools/transcribe.ts';
 import { startSession, saveProgress, endSession, proposeCards, proposeCardEdits, proposePlan, proposePlanChange, createProject, proposals, decide } from './tools/write.ts';
 const S=z.string;
 const name=S().min(1).max(60);
@@ -12,7 +13,7 @@ const cp=S().max(20);
 const optProject=name.optional();
 const noop={readOnlyHint:true};
 const write={readOnlyHint:false,destructiveHint:false,openWorldHint:false};
-export const TOOL_NAMES=['resume','get','read_pages','search','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
+export const TOOL_NAMES=['resume','get','read_pages','search','save_pages','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
 // tools/list is sent with every chat turn (budget 15,000 chars). Advertise
 // the same zod schema without the per-tool "$schema" dialect line (2020-12 is
 // the MCP default) and without the ±2^53-1 bounds zod adds to plain integers.
@@ -70,6 +71,14 @@ export function buildServer(c:Context):McpServer{
   register('search',"Search project PDF text.",z.object({
     query:S().min(2).max(120),project:optProject,source:S().max(20).optional(),limit:z.number().int().min(1).max(8).optional()
   }),true,(a,ctx)=>search(ctx,a));
+  register('save_pages',"Save up to 10 exact Markdown/LaTeX transcriptions; undoable.",z.object({
+    project:name,source:S().max(20).optional(),title:S().max(120).optional(),
+    kind:z.enum(['book','notes','slides','problems','syllabus','exam','other']).optional(),
+    pages:z.array(z.object({page:z.number().int().min(1).max(100000),
+      label:S().max(12).optional(),text:S().min(1).max(8000),
+      confidence:z.enum(['high','check']).optional()})).min(1).max(10),
+    replace:z.boolean().optional(),client:z.enum(['claude','chatgpt']).optional()
+  }),false,(a,ctx)=>savePages(ctx,a));
   register('start_session',"Start or resume a study session.",z.object({
     project:name,goal:S().min(1).max(200),checkpoint:cp.optional(),
     style:S().optional(),client:z.enum(['claude','chatgpt','other'])
