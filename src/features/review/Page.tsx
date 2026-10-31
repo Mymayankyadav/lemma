@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
@@ -166,7 +167,7 @@ export default function Page(){
     </div>
    </Slab>
    <section aria-label="Decks" className="flex flex-col gap-1">
-    <h2 className="mb-2 text-headline font-semibold text-ink-2">Decks</h2>
+    <SectionHeading className="mb-2 text-ink">Decks</SectionHeading>
     {nodes.length>8&&<label className="mb-2 flex min-h-11 items-center gap-2 rounded-ctl border border-edge bg-well px-3 text-ink-3">
      <Search size={17}/><span className="sr-only">Search decks</span>
      <input value={deckSearch} onChange={e=>setDeckSearch(e.target.value)} placeholder="Find project or checkpoint"
@@ -206,7 +207,7 @@ export default function Page(){
     })}
    </section>
    {groupedSessions.length>0&&<section aria-label="From sessions" className="flex flex-col gap-3">
-    <h2 className="text-headline font-semibold text-ink-2">From sessions</h2>
+    <SectionHeading className="text-ink">From sessions</SectionHeading>
     <div className="flex flex-wrap gap-2">{groupedSessions.map(s=><Chip key={s.id} tone="quiet" size={40} className="max-w-full min-w-0"
      onClick={()=>start(s.id)}>
      <span className="min-w-0 max-w-[min(16rem,60vw)] truncate">{'S'+s.number+' · '+s.goal}</span><span className="tabular-nums text-ink-3">{s.count}</span></Chip>)}</div>
