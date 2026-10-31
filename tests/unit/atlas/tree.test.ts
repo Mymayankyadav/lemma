@@ -72,6 +72,24 @@ describe('Atlas tree',()=>{
  });
 });
 
+describe('LOOK-4b sorted Atlas child fast path',()=>{
+ it('produces identical child order from already sorted and reverse-ordered immutable graphs',()=>{
+  const concepts=Array.from({length:80},(_,i)=>({
+   ...idea('ordered-'+i,null,'planet'),
+   name:'Idea '+String(i).padStart(3,'0'),
+  }));
+  const source:AtlasGraph={subjects:graph.subjects.slice(0,1),concepts,links:[]};
+  const sorted=buildAtlasTree(source);
+  const reversed=buildAtlasTree({...source,concepts:[...concepts].reverse()});
+  const root='atlas:root:analysis';
+  const expected=sorted.nodes.get(root)!.children;
+  expect(expected).toHaveLength(80);
+  expect(reversed.nodes.get(root)!.children).toEqual(expected);
+  expect(expected[0]).toBe('ordered-0');
+  expect(expected[79]).toBe('ordered-79');
+ });
+});
+
 describe('Atlas tree with several fields in one subject',()=>{
  it('keeps every field as a root instead of dropping all but the first',()=>{
   const two=buildAtlasTree({subjects:[{id:'s',name:'Maths',glyph:'M',hue:'amber',position:0}],links:[],
