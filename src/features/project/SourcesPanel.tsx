@@ -97,20 +97,20 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
    <div role="progressbar" aria-label="PDF storage used" aria-valuemin={0} aria-valuemax={100}
     aria-valuenow={Math.round(storagePct)} aria-valuetext={(unknownSizes?'At least ':'')+formatSize(storageBytes)+' of 1 GB'}
     className="h-1.5 overflow-hidden rounded-full bg-fill-2">
-    <div className="h-full rounded-full bg-amber" style={{width:storagePct+'%'}}/>
+    <div data-source-storage-fill className="h-full rounded-full bg-[var(--ink-2)]" style={{width:storagePct+'%'}}/>
    </div>
   </div>
   {grouped.map(group=><div key={group.kind} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
-   <h3 className="text-label font-semibold text-ink-2"><button type="button" aria-expanded={visibleKind(group.kind)} className="flex min-h-11 w-full items-center justify-between gap-2 text-left" onClick={()=>setOpenKind(visibleKind(group.kind)?'none':group.kind)}><span>{group.kind.charAt(0).toUpperCase()+group.kind.slice(1)} · {group.rows.length}</span><span className="text-amber">{visibleKind(group.kind)?'Fold':'Open'}</span></button></h3>
-   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><div key={source.id} role="group" aria-label={source.title} className="flex flex-col gap-2 border-t border-[var(--hair)] px-3 py-3">
+   <h3 className="text-label font-semibold text-ink-2"><button type="button" aria-expanded={visibleKind(group.kind)} className="flex min-h-11 w-full items-center justify-between gap-2 text-left" onClick={()=>setOpenKind(visibleKind(group.kind)?'none':group.kind)}><span>{group.kind.charAt(0).toUpperCase()+group.kind.slice(1)} · {group.rows.length}</span><span data-source-fold className="text-ink-2">{visibleKind(group.kind)?'Fold':'Open'}</span></button></h3>
+   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><div key={source.id} data-source-row role="group" aria-label={source.title} className="flex flex-col gap-2 border-t border-[var(--hair)] px-3 py-3">
     <div className="flex items-center gap-3">
-     <FileText size={20} className="shrink-0 text-amber"/>
+     <FileText data-source-icon size={20} className="shrink-0 text-ink-2"/>
      <div className="min-w-0 flex-1">
       <strong className="block truncate text-body-l"><Tex source={source.title}/></strong>
       <p className="text-label text-ink-3">{source.pageCount??'—'} pages · {new Date(source.addedAt??source.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · {source.status}</p>
-      {source.planCheckedAt===null&&<span className="text-label font-semibold text-amber">New · not yet used in a plan</span>}
+      {source.planCheckedAt===null&&<span data-source-new className="text-label font-semibold text-ink-2">New · not yet used in a plan</span>}
      </div>
-     <button type="button" className="min-h-11 min-w-11 px-2 text-label text-amber" onClick={()=>{setEditing(source.id);setTitle(source.title);setKind(source.kind??'other');setConfirm(null)}}>Edit</button>
+     <button type="button" data-source-edit className="min-h-11 min-w-11 px-2 text-label text-ink-2" onClick={()=>{setEditing(source.id);setTitle(source.title);setKind(source.kind??'other');setConfirm(null)}}>Edit</button>
      <button type="button" aria-label={'Delete '+source.title} className="flex size-11 items-center justify-center text-ink-3" onClick={()=>{setConfirm(source.id);setEditing(null)}}><Trash2 size={17}/></button>
     </div>
     {editing===source.id&&<div className="flex flex-col gap-2">
@@ -127,9 +127,9 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     <SourceTranscriptionView source={source} stat={summary.get(source.id)}/>
    </div>)}
   {visibleKind(group.kind)&&group.rows.length>10&&<div className="flex items-center justify-between gap-2 text-label text-ink-3">
-   <button type="button" disabled={!(sourcePages[group.kind]??0)} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:Math.max(0,(p[group.kind]??0)-1)}))}>Previous</button>
+   <button type="button" disabled={!(sourcePages[group.kind]??0)} data-source-page className="min-h-11 px-3 text-ink-2 disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:Math.max(0,(p[group.kind]??0)-1)}))}>Previous</button>
    <span>{Math.min(group.rows.length,(sourcePages[group.kind]??0)*10+1)}–{Math.min(group.rows.length,((sourcePages[group.kind]??0)+1)*10)} of {group.rows.length}</span>
-   <button type="button" disabled={((sourcePages[group.kind]??0)+1)*10>=group.rows.length} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:(p[group.kind]??0)+1}))}>More</button>
+   <button type="button" disabled={((sourcePages[group.kind]??0)+1)*10>=group.rows.length} data-source-page className="min-h-11 px-3 text-ink-2 disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:(p[group.kind]??0)+1}))}>More</button>
   </div>}
   </div>)}
   <input ref={picker} hidden type="file" multiple accept=".pdf,application/pdf,.tex,.latex,.ltx,application/x-tex,text/x-tex,.md,.markdown,text/markdown" onChange={e=>{if(e.currentTarget.files)enqueue(e.currentTarget.files);e.currentTarget.value=''}}/>
@@ -143,10 +143,10 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     <div className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-body">{item.name}</span>
      <span aria-label={'Upload status: '+item.phase} className="flex shrink-0 items-center gap-1 text-label text-ink-2">{item.phase==='ready'?<><Check size={17} className="text-easy"/>Ready</>:item.phase}</span></div>
     <p className="mt-1 text-caption text-ink-3">{formatSize(item.bytes)}{item.progress?.pageCount?' · '+item.pagesRead+'/'+item.progress.pageCount+' pages read':''}</p>
-    {(item.phase==='queued'||item.phase==='reading')&&<button type="button" className="min-h-11 px-3 text-label font-semibold text-amber" onClick={()=>cancel(item)}>Cancel reading</button>}
-    {item.progress?.pageCount&&item.progress.pageCount>1200&&<p role="alert" className="mt-1 text-label text-amber">This PDF has {item.progress.pageCount} pages. Reading may be slow; consider splitting it by chapter.</p>}
+    {(item.phase==='queued'||item.phase==='reading')&&<button type="button" className="min-h-11 px-3 text-label font-semibold text-ink-2" onClick={()=>cancel(item)}>Cancel reading</button>}
+    {item.progress?.pageCount&&item.progress.pageCount>1200&&<p role="alert" className="mt-1 text-label text-[var(--late)]">This PDF has {item.progress.pageCount} pages. Reading may be slow; consider splitting it by chapter.</p>}
     {item.progress&&item.phase!=='ready'&&item.phase!=='cancelled'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.name}/>}
-    {item.error&&<p role="alert" className="text-label text-again">{item.error} {item.file&&<button type="button" className="min-h-11 min-w-11 px-2 text-amber" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button>}</p>}
+    {item.error&&<p role="alert" className="text-label text-again">{item.error} {item.file&&<button type="button" className="min-h-11 min-w-11 px-2 text-ink-2" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button>}</p>}
    </li>)}
   {queue.length>visibleQueue.length&&<p className="text-label text-ink-3">{queue.length-visibleQueue.length} earlier queue entries hidden.</p>}
   </ul>}
