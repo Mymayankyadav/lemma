@@ -1,3 +1,6 @@
+import {readFileSync} from "node:fs";
+import type {DemoStore} from "../../../src/data/demo/model";
+import {makeStressStore} from "../../../src/data/demo/stress";
 import {describe,expect,it} from "vitest";
 import type {ReviewNode} from "../../../src/features/plan-proposal/nodes";
 import {groupPlanStages,layoutPlanMap,layoutStagePlanMap} from "../../../src/features/plan-proposal/planMap";
@@ -59,4 +62,29 @@ describe("ST-2 stage graph at scale",()=>{
     expect(groups.map(s=>s.nodes.length)).toEqual([8,8,8,8,4]);
     expect(groups.map(s=>s.name)).toEqual(["CP1–CP8","CP9–CP16","CP17–CP24","CP25–CP32","CP33–CP36"]);
   });
+});
+
+describe("ST-2 stage layouts on deterministic ST-0 profiles",()=>{
+  const original = JSON.parse(readFileSync("src/data/demo/fixture.json","utf8")) as DemoStore;
+  for (const profile of ["stress","extreme"] as const) {
+    it(`${profile} preserves the full plan and bounds the stage overview`,()=>{
+      const data=makeStressStore(original,profile);
+      const flatProject=data.projects[0];
+      const flat=data.checkpoints.filter(c=>c.projectId===flatProject.id)
+        .map(c=>({code:c.code,title:c.title,criterion:c.criterion,steps:c.steps,
+          prereqs:c.prereqs,stage:c.stage}));
+      expect(flat).toHaveLength(36);
+      expect(groupPlanStages(flat)).toHaveLength(5);
+      expect(layoutStagePlanMap(flat).width).toBe(320);
+      const staged=data.checkpoints.filter(c=>c.projectId===data.projects[3].id)
+        .map(c=>({code:c.code,title:c.title,criterion:c.criterion,steps:c.steps,
+          prereqs:c.prereqs,stage:c.stage}));
+      const overview=layoutStagePlanMap(staged);
+      expect(staged.length).toBe(profile==="stress"?40:100);
+      expect(overview.stages).toHaveLength(15);
+      expect(overview.edges.length).toBeGreaterThan(0);
+      expect(overview.width).toBe(320);
+      expect(overview.stages.every(s=>s.x>=65&&s.x<=255)).toBe(true);
+    });
+  }
 });
