@@ -56,6 +56,7 @@ import type {
 } from "./model";
 import fixtureText from "./fixture.json?raw";
 import { hydrateFixture } from "./hydrate";
+import {stressSourcePage} from "./stress";
 import {
   checkpointUi,
   conceptStatus,
@@ -1824,7 +1825,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async getSourcePage(sourceId:string,page:number):Promise<import('../types').TranscribedSourcePage|null>{
     const source=found(this.store.sources.find(s=>s.id===sourceId),'Source');
-    const item=source.pages.find(p=>p.page===page);
+    const item=source.pages.find(p=>p.page===page) ?? stressSourcePage(source,page);
     return item?{
       sourceId:source.id,page:item.page,label:item.label??null,body:item.body,
       confidence:item.confidence??null,transcribedBy:item.transcribedBy??null
