@@ -17,7 +17,7 @@ type HomeReviewOutlook={
 let outlookPending:{uid:string;promise:Promise<HomeReviewOutlook>}|null=null
 function homeReviewOutlook(db:ReturnType<typeof liveClient>,uid:string):Promise<HomeReviewOutlook>{
  if(outlookPending?.uid===uid)return outlookPending.promise
- const promise=db.rpc('home_review_outlook').then(result=>checked(result) as HomeReviewOutlook)
+ const promise=Promise.resolve(db.rpc('home_review_outlook')).then(result=>checked(result) as HomeReviewOutlook)
  outlookPending={uid,promise}
  const clear=()=>{if(outlookPending?.promise===promise)outlookPending=null}
  void promise.then(clear,clear)
