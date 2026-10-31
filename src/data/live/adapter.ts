@@ -6,7 +6,7 @@ import { projectProgress, conceptStatus } from '../../lib/derive'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError } from '../api'
+import { LemmaError, notImplemented } from '../api'
 
 type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
@@ -27,6 +27,13 @@ function homeReviewOutlook(db:ReturnType<typeof liveClient>,uid:string):Promise<
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ /** CONTRACT-546: FIX-546b replaces these with owner-scoped cursor queries. */
+ async getCardHistoryPage(..._args: Parameters<LemmaApi['getCardHistoryPage']>): ReturnType<LemmaApi['getCardHistoryPage']> {
+  throw notImplemented('getCardHistoryPage')
+ }
+ async getCardCommentsPage(..._args: Parameters<LemmaApi['getCardCommentsPage']>): ReturnType<LemmaApi['getCardCommentsPage']> {
+  throw notImplemented('getCardCommentsPage')
+ }
  /** DB-4 implementation supplies these APIs; legacy adapters stay unchanged until then. */
  async updateSubject(...args: Parameters<LemmaApi['updateSubject']>): ReturnType<LemmaApi['updateSubject']> {
   const [id,patch]=args,db=liveClient(),uid=await owner(db)
@@ -527,24 +534,59 @@ export class LiveAdapter implements LemmaApi {
  async getCard(...args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> {
   const [no]=args,db=liveClient(),uid=await owner(db)
   const note=checked(await db.from('notes').select('*').eq('user_id',uid).eq('no',no).single()) as Row
-  const [projects,cps,sessions,sources,cards,reviews,comments,proposals]=await Promise.all([
-    rows(db,'projects',uid),rows(db,'checkpoints',uid),rows(db,'sessions',uid),rows(db,'sources',uid),
-    rows(db,'cards',uid),rows(db,'reviews',uid),rows(db,'card_comments',uid),rows(db,'proposals',uid)
+  // Fetch metadata only for this note. Do not scan eight entire owner tables.
+  // Keep full per-note history until FIX-546b adds cursor-backed More controls.
+  const [projectResult,cpResult,sessionResult,sourceResult,cardResult]=await Promise.all([
+    db.from('projects').select('id,slug').eq('user_id',uid).eq('id',note.project_id).neq('status','archived').limit(1),
+    note.checkpoint_id
+      ? db.from('checkpoints').select('id,code').eq('user_id',uid).eq('id',note.checkpoint_id).limit(1)
+      : Promise.resolve({data:[],error:null}),
+    note.session_id
+      ? db.from('sessions').select('id,number').eq('user_id',uid).eq('id',note.session_id).limit(1)
+      : Promise.resolve({data:[],error:null}),
+    note.source_id
+      ? db.from('sources').select('id,short').eq('user_id',uid).eq('id',note.source_id).limit(1)
+      : Promise.resolve({data:[],error:null}),
+    db.from('cards').select('*').eq('user_id',uid).eq('note_id',note.id),
   ])
-  const project=projects.find(x=>x.id===note.project_id)
-  const cardRows=cards.filter(c=>c.note_id===note.id)
-  const cardIds=new Set(cardRows.map(c=>c.id))
+  const project=(checked(projectResult) as Row[])[0]
+  const cps=checked(cpResult) as Row[],sessions=checked(sessionResult) as Row[]
+  const sources=checked(sourceResult) as Row[]
+  const cardRows=checked(cardResult) as Row[]
+  const cardIds=cardRows.map(c=>c.id)
+  // Preserve the existing full-history Show all contract until FIX-546b
+  // introduces cursor paging. Each 1,000-row page is scoped to this note.
+  const scopedPages=async(table:'reviews'|'card_comments'):Promise<Row[]>=>{
+    const result:Row[]=[]
+    for(let offset=0;;offset+=1000){
+      const base=db.from(table).select('*').eq('user_id',uid)
+      const query=table==='reviews'
+        ? base.in('card_id',cardIds).order('reviewed_at',{ascending:false}).order('id',{ascending:false})
+        : base.eq('note_id',note.id).order('no',{ascending:false})
+      const batch=checked(await query.range(offset,offset+999)) as Row[]
+      result.push(...batch)
+      if(batch.length<1000)return result
+    }
+  }
+  const [reviews,comments]=await Promise.all([
+    cardIds.length?scopedPages('reviews'):Promise.resolve([] as Row[]),
+    scopedPages('card_comments'),
+  ])
+  const proposalIds=[...new Set(comments.map(c=>c.resolved_by_proposal).filter((id):id is string=>typeof id==='string'))]
+  const proposals=proposalIds.length
+    ? checked(await db.from('proposals').select('id,origin').eq('user_id',uid).in('id',proposalIds)) as Row[]
+    : []
   const proposalMap=new Map(proposals.map(p=>[p.id,p]))
   return {note:{noteId:note.id,noteNo:Number(note.no),front:note.front,back:note.back,type:note.type,
     kind:note.kind,tags:note.tags??[],status:note.status,origin:note.origin,
-    projectSlug:project?.slug??'',checkpointCode:cps.find(c=>c.id===note.checkpoint_id)?.code??null,
-    sessionNumber:sessions.find(s=>s.id===note.session_id)?.number??null,
-    sourceShort:sources.find(s=>s.id===note.source_id)?.short??null,pageLabel:note.page_label},
+    projectSlug:project?.slug??'',checkpointCode:cps[0]?.code??null,
+    sessionNumber:sessions[0]?.number??null,
+    sourceShort:sources[0]?.short??null,pageLabel:note.page_label},
     cards:cardRows.map(c=>({ord:c.ord,state:cardState(c)})).sort((a,b)=>a.ord-b.ord),
-    history:reviews.filter(r=>cardIds.has(r.card_id)&&!r.undone_at)
+    history:reviews.filter(r=>!r.undone_at)
       .sort((a,b)=>b.reviewed_at.localeCompare(a.reviewed_at))
       .map(r=>({reviewedAt:r.reviewed_at,rating:r.rating,confidence:r.confidence})),
-    comments:comments.filter(c=>c.note_id===note.id).sort((a,b)=>b.no-a.no)
+    comments:comments.sort((a,b)=>b.no-a.no)
       .map(c=>commentRow(c,proposalMap.get(c.resolved_by_proposal)?.origin??null))}
  }
  async createNote(...args: Parameters<LemmaApi['createNote']>): ReturnType<LemmaApi['createNote']> {

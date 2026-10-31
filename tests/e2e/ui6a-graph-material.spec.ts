@@ -16,7 +16,12 @@ for(const world of ['graph','graph-night'] as const){
    const card=getComputedStyle(element);
    const ground=getComputedStyle(document.querySelector('.ground')!);
    const title=getComputedStyle(document.querySelector('h1')!);
-   return {border:card.borderTopWidth,borderColor:card.borderTopColor,
+   const edgeProbe=document.createElement('span');
+   edgeProbe.style.border='1px solid var(--edge)';
+   document.body.appendChild(edgeProbe);
+   const edgeColor=getComputedStyle(edgeProbe).borderTopColor;
+   edgeProbe.remove();
+   return {border:card.borderTopWidth,borderColor:card.borderTopColor,edgeColor,
     borderToken:getComputedStyle(document.documentElement).getPropertyValue('--card-border').trim(),
     radius:card.borderTopLeftRadius,shadow:card.boxShadow,
     background:ground.backgroundImage,font:title.fontFamily};
@@ -24,7 +29,10 @@ for(const world of ['graph','graph-night'] as const){
   // Chromium snaps fractional borders to device pixels; the token keeps the exact 1.5px design value.
   expect(material.borderToken).toContain('1.5px solid');
   expect(Number.parseFloat(material.border)).toBeGreaterThanOrEqual(1);
-  expect(material.borderColor).toBe(world==='graph'?'rgb(27, 42, 65)':'rgb(201, 211, 224)');
+  // Owner-approved v4 overrides the old 1.5px bright night border with a
+  // 1px dim --edge hairline; day keeps its original graph-paper material.
+  expect(material.borderColor).toBe(world==='graph'?'rgb(27, 42, 65)':material.edgeColor);
+  if(world==='graph-night')expect(material.border).toBe('1px');
   expect(material.radius).toBe('6px');
   expect(material.shadow).toContain('3px 3px 0px');
   expect(material.background).toContain('linear-gradient');
