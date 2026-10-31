@@ -12,16 +12,15 @@ type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
  forecast:{day:string;due:number}[]
 }
-// Coalesce concurrent Today widgets into one HTTP request. The one-second
-// cache is deliberately short so reviews invalidate without stale due counts.
-let outlookCache:{uid:string;until:number;promise:Promise<HomeReviewOutlook>}|null=null
+// Coalesce concurrent Today widgets into one HTTP request, but never cache
+// settled data: grading a card must refresh due counts immediately.
+let outlookPending:{uid:string;promise:Promise<HomeReviewOutlook>}|null=null
 function homeReviewOutlook(db:ReturnType<typeof liveClient>,uid:string):Promise<HomeReviewOutlook>{
- if(outlookCache?.uid===uid&&Date.now()<outlookCache.until)return outlookCache.promise
+ if(outlookPending?.uid===uid)return outlookPending.promise
  const promise=db.rpc('home_review_outlook').then(result=>checked(result) as HomeReviewOutlook)
- outlookCache={uid,until:Date.now()+1000,promise}
- void promise.then(()=>undefined,()=>{
-  if(outlookCache?.promise===promise)outlookCache=null
- })
+ outlookPending={uid,promise}
+ const clear=()=>{if(outlookPending?.promise===promise)outlookPending=null}
+ void promise.then(clear,clear)
  return promise
 }
 
