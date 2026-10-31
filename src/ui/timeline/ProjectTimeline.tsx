@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router'
 import type {CheckpointView} from '../../data/types'
 import {buildSchedule,scheduleColor,scheduleDetail,scheduleHeadline} from '../../lib/schedule'
 import {Tex} from '../Tex'
+import {plainMath} from '../../lib/plain-math'
 import {currentCheckpointIndex,groupCheckpointStages,worstStageSchedule} from './progress'
 
 export type TimelineVariant='ascent'|'metro'
@@ -119,11 +120,12 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
     return <button key={stage.key} type="button" data-stage-button={i} aria-pressed={active}
      onClick={()=>setSelected(stage.start<=focusedIndex&&stage.end>=focusedIndex?focusedIndex:
       Math.max(stage.start,stage.checkpoints.findIndex(cp=>cp.ui==='now'||cp.ui==='next')+stage.start))}
-     title={stage.name+': '+done+' of '+count+' complete'} aria-label={stage.name+': '+done+' of '+count+' checkpoints complete'}
+     title={plainMath(stage.name)+': '+done+' of '+count+' complete'} aria-label={plainMath(stage.name)+': '+done+' of '+count+' checkpoints complete'}
      className={'relative flex min-h-11 min-w-14 shrink-0 flex-col justify-center overflow-hidden rounded-ctl border px-1 text-left focus-visible:outline-2 focus-visible:outline-amber '+
       (active?'border-amber bg-amber-tint':'border-edge bg-fill-1')}
      style={{flexGrow:stage.checkpoints.length,flexBasis:0}}>
-     <span className="text-[12px] font-semibold leading-4 text-ink" style={{whiteSpace:"nowrap"}}>{stage.name.length>7?'Stage '+(i+1):stage.name}</span>
+     <span data-stage-name="" className="block w-full min-w-0 overflow-x-auto whitespace-nowrap text-[16px] font-semibold leading-5 text-ink"
+      title={plainMath(stage.name)}><Tex source={stage.name}/></span>
      <span className="text-[12px] tabular-nums text-ink-2">{done}/{count}</span>
      <span className="absolute inset-x-0 bottom-0 h-[3px] bg-[var(--line)]">
       <span className="block h-full" style={{width:count?done/count*100+'%':'0%',
@@ -132,7 +134,7 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
     </button>
    })}
   </div>
-  <div role="group" aria-label={'Checkpoints in '+activeStage.name}
+  <div role="group" aria-label={'Checkpoints in '+plainMath(activeStage.name)}
    onKeyDown={event=>{
     if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
      event.preventDefault();move(event.key==='ArrowRight'?1:-1)
