@@ -46,7 +46,25 @@ describe('ST-5 bounded live reads',()=>{
   expect(mock.rpc).toHaveBeenCalledWith('deck_tree')
   expect(mock.getUser).toHaveBeenCalledOnce()
  })
- it('searches server-side and requests no more than fifty cards',async()=>{
+ it('fetches the quota-capped Review queue with one RPC, not whole-table reads',async()=>{
+  const queue=[{cardId:'c1',noteId:'n1',noteNo:12,ord:0,
+   type:'basic',kind:'theorem',front:'Why?',back:'Because',
+   projectSlug:'algebra',glyph:'∫',checkpointCode:'CP2',
+   checkpointTitle:'Groups',sessionNumber:null,sourceShort:null,
+   pageLabel:null,state:{state:2,due:'2026-10-31T00:00:00Z',
+    stability:3,difficulty:5,lastReview:null,step:0,reps:1,lapses:0}}]
+  mock.rpc.mockResolvedValue({data:queue,error:null})
+  const filter={decks:['cp:algebra:CP2'],sessionId:null,conceptSlug:null,
+   includeNew:true,newOnly:false}
+  expect(await new LiveAdapter().getReviewItems(filter)).toEqual(queue)
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('review_items',{
+   p_decks:filter.decks,p_session_id:null,p_concept_slug:null,
+   p_include_new:true,p_new_only:false,
+  })
+  expect(mock.getUser).toHaveBeenCalledOnce()
+ })
+  it('searches server-side and requests no more than fifty cards',async()=>{
   mock.rpc.mockResolvedValue({data:[],error:null})
   expect(await new LiveAdapter().searchCards('x%_','algebra')).toEqual([])
   expect(mock.rpc).toHaveBeenCalledOnce()
