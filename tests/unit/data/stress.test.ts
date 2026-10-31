@@ -25,6 +25,17 @@ describe('ST-0 deterministic stress data', () => {
    expect(data.sessions).toHaveLength(sessions);
    expect(data.sessions.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(sessions);
    expect(data.sources.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(profile==='stress'?30:100);
+   const sourceShelf=data.sources.filter(s=>s.projectId===data.projects[0].id);
+   expect(new Set(sourceShelf.map(s=>s.id)).size).toBe(sourceShelf.length);
+   expect(new Set(sourceShelf.map(s=>s.short)).size).toBe(sourceShelf.length);
+   const stressPdfs=sourceShelf.filter(s=>s.id.startsWith('stress-source-'));
+   expect(stressPdfs.length).toBeGreaterThan(0);
+   expect(stressPdfs.some(s=>s.pageCount===3000)).toBe(true);
+   expect(stressPdfs.some(s=>s.pageCount===1200)).toBe(true);
+   // Large PDFs are represented by metadata until a page is requested. Never
+   // allocate 100 * 3,000 fake page bodies in the in-memory stress fixture.
+   expect(stressPdfs.every(s=>s.pages.length===0)).toBe(true);
+   expect(stressPdfs.every(s=>s.status==='ready')).toBe(true);
    const longSession=data.sessions.find(s=>s.projectId===data.projects[0].id&&s.number===7);
    expect(longSession?.events).toHaveLength(profile==='stress'?150:400);
    expect(longSession?.events.some(e=>e.kind==='attempt')).toBe(true);
