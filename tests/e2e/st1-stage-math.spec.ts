@@ -36,6 +36,10 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   const labels=rail.locator("[data-stage-name]");
   await expect(labels).toHaveCount(3);
   for(let i=0;i<3;i++)await expect(labels.nth(i).locator(".katex")).toBeVisible();
+  expect(await labels.evaluateAll(nodes=>nodes.every(node=>{
+   const math=node.querySelector(".katex");
+   return !!math&&parseFloat(getComputedStyle(math).fontSize)>=16;
+  }))).toBe(true);
   await expect(labels.first()).not.toContainText("$");
   const buttons=rail.locator("[data-stage-button]");
   expect(await buttons.evaluateAll(nodes=>nodes.every(node=>{
