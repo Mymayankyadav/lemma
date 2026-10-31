@@ -35,6 +35,7 @@ import type {
 } from "../../lib/optimizer.worker";
 import { Button } from "../../ui/Button";
 import { EuclidAppearance } from "./EuclidAppearance";
+import { ConnectorAddress } from "./ConnectorAddress";
 import { SubjectsPanel } from "./SubjectsPanel";
 import { Chip } from "../../ui/Chip";
 import { IconButton } from "../../ui/IconButton";
@@ -60,7 +61,7 @@ function StyleIcon({ name }: { name: string }) {
     <Icon
       aria-hidden="true"
       size={19}
-      className="mr-2 inline-block text-amber"
+      className="shrink-0 text-ink-2"
     />
   );
 }
@@ -237,9 +238,7 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-4 flex items-center gap-1 rounded-ctl bg-well p-2">
-          <span className="min-w-0 flex-1 break-all pl-2 font-mono text-label text-ink-2">
-            {revealed ? s.connectorUrl : masked}
-          </span>
+          <ConnectorAddress value={revealed ? s.connectorUrl : masked} />
           <IconButton
             icon={revealed ? EyeOff : Eye}
             label={
@@ -337,11 +336,8 @@ export default function Page() {
       </section>
       <section>
         <SectionHeading className="mb-3">Teaching style</SectionHeading>
-        <div
-          role="radiogroup"
-          aria-label="Teaching style"
-          className="grid grid-cols-2 gap-3"
-        >
+        <div role="radiogroup" aria-label="Teaching style" data-teaching-style-list="true"
+          className="divide-y divide-edge rounded-slab border border-edge bg-[var(--paper)]">
           {styles.data?.map((style) => (
             <button
               role="radio"
@@ -349,10 +345,11 @@ export default function Page() {
               key={style.key}
               disabled={busy}
               onClick={() => void save({ defaultStyle: style.key })}
-              className={`min-h-[70px] rounded-slab border p-4 text-left ${s.defaultStyle === style.key ? "border-amber-line-2 bg-amber-tint" : "border-edge bg-tile"}`}
+              className={`flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left text-body ${s.defaultStyle === style.key ? "bg-amber-tint font-semibold text-ink" : "text-ink-2"}`}
             >
               <StyleIcon name={style.icon} />
-              {style.name}
+              <span className="min-w-0 flex-1">{style.name}</span>
+              {s.defaultStyle === style.key && <Check size={18} className="shrink-0 text-ink" aria-hidden="true" />}
             </button>
           ))}
         </div>
@@ -443,26 +440,19 @@ export default function Page() {
       </section>
       <section>
         <SectionHeading className="mb-3">More</SectionHeading>
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setMacros(s.macros);
-              setSheet("macros");
-            }}
-          >
+        <div data-settings-actions="true" className="divide-y divide-edge rounded-slab border border-edge bg-[var(--paper)]">
+          <button type="button" className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-body text-ink"
+            onClick={() => { setMacros(s.macros); setSheet("macros"); }}>
+            <PencilLine size={18} className="shrink-0 text-ink-2" aria-hidden="true" />
             Math shortcuts
-          </Button>
-          <Button
-            variant="ghost"
-            icon={Download}
-            onClick={() => void download()}
-          >
+          </button>
+          <button type="button" className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-body text-ink"
+            onClick={() => void download()}>
+            <Download size={18} className="shrink-0 text-ink-2" aria-hidden="true" />
             Download a backup
-          </Button>
-          <Button
-            variant="danger"
-            disabled={signOut.isPending}
+          </button>
+          <button type="button" disabled={signOut.isPending}
+            className="flex min-h-14 w-full items-center px-4 text-left text-body font-semibold text-[var(--danger)]"
             onClick={async () => {
               try {
                 await signOut.mutateAsync();
@@ -470,10 +460,9 @@ export default function Page() {
               } catch {
                 notify("Couldn't sign out.", { tone: "danger" });
               }
-            }}
-          >
+            }}>
             Sign out
-          </Button>
+          </button>
         </div>
       </section>
       <p className="text-label text-ink-3">
