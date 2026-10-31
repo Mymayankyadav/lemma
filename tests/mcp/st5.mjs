@@ -141,7 +141,14 @@ try {
  await db.exec("select set_config('test.uid','"+other+"',false)")
  assert.deepEqual((await review("array[]::text[],null,null,true,false")).map(x=>x.item.noteNo),[14])
  await db.exec("select set_config('test.uid','"+owner+"',false)")
- console.log('PASS ST-5 bounded Review queue, filters, state and owner isolation')
+ // Two scheduled siblings from one note must yield one review item.
+ await db.exec('reset role')
+ await db.exec("insert into public.cards(id,user_id,note_id,state,due) values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6','"+owner+"','88888888-8888-8888-8888-888888888881',2,now()-interval '2 hours')")
+ await db.exec('set role authenticated')
+ const siblingSafe=(await review("array[]::text[],null,null,true,false")).map(x=>x.item)
+ assert.deepEqual(siblingSafe.map(x=>x.noteNo),[12,13])
+ assert.equal(siblingSafe.filter(x=>x.noteNo===12).length,1)
+  console.log('PASS ST-5 bounded Review queue, filters, state and owner isolation')
 
 
  await db.exec('reset role')
