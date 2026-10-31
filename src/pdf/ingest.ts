@@ -8,6 +8,7 @@ import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { LemmaError } from "../data/api";
 import type { IngestProgress } from "../data/types";
 import { normalizePageText } from "./text";
+import { readTextSource, textKind } from "./text-source";
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 export interface IngestedPage {
@@ -102,7 +103,11 @@ export async function flattenOutline(
   }
   return result;
 }
-/** Read a local PDF only. Adapters own uploads and source_pages persistence. */
+/** A source the app can read: a PDF, or a LaTeX (.tex) or Markdown (.md) file. */
+export function isSourceFile(file: Pick<File, "name" | "type">): boolean {
+  return isPdfFile(file) || textKind(file) !== null;
+}
+/** Read a local PDF, .tex or .md file. Adapters own uploads and source_pages persistence. */
 export async function ingest(
   file: File,
   { onProgress }: IngestOptions = {},
@@ -110,6 +115,16 @@ export async function ingest(
   let task: PDFDocumentLoadingTask | undefined,
     pageCount = 0,
     page = 0;
+  const kind = textKind(file);
+  if (kind) {
+    if (file.size === 0 || file.size > 50 * 1024 * 1024)
+      throw new LemmaError("invalid", "Choose a nonempty file under 50 MB");
+    onProgress?.({ phase: "reading", page: 0, pageCount: 0, message: "Reading text" });
+    const result = await readTextSource(file, kind);
+    if (!result.hasText) throw new LemmaError("invalid", "This file has no text");
+    onProgress?.({ phase: "done", page: result.pageCount, pageCount: result.pageCount, message: `${result.pageCount} sections read` });
+    return result;
+  }
   try {
     if (
       file.size === 0 ||

@@ -1685,7 +1685,7 @@ export class DemoAdapter implements LemmaApi {
     if (this.store.sources.some(source => source.projectId === projectId &&
         source.sha256 === sha256 && source.status !== "failed"))
       conflict("Already added: this PDF is in the project");
-    const title = (file.name.replace(/\.pdf$/i, "") || "Source").slice(0, 120),
+    const title = (file.name.replace(/\.(pdf|tex|latex|ltx|md|markdown)$/i, "") || "Source").slice(0, 120),
       base = (
         title
           .split(/\s+/)[0]

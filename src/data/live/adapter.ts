@@ -1,4 +1,5 @@
 import type { LemmaApi } from '../api'
+import { textKind } from '../../pdf/text-source'
 import {reviewForecast} from '../../lib/review-forecast'
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
@@ -247,7 +248,9 @@ export class LiveAdapter implements LemmaApi {
    .eq('sha256',sha256).limit(1)) as Row[]
   if(same.length)throw new LemmaError('conflict','Already added')
   const document=await ingest(file,{onProgress})
-  const basename=file.name.replace(/\.pdf$/i,'').trim()||'Untitled PDF'
+  // .tex and .md sources are stored as their text only (the storage bucket holds PDFs).
+  const textOnly=textKind(file)!==null
+  const basename=file.name.replace(/\.(pdf|tex|latex|ltx|md|markdown)$/i,'').trim()||'Untitled source'
   const existing=await rows(db,'sources',uid)
   const used=new Set(existing.filter(s=>s.project_id===projectId).map(s=>s.short))
   const base=slugify(basename).replace(/-/g,'').slice(0,17)||'source'
@@ -261,10 +264,12 @@ export class LiveAdapter implements LemmaApi {
   const progress=(phase:'uploading'|'saving'|'done'|'failed',page:number,message:string)=>
     onProgress({phase,page,pageCount:document.pageCount,message})
   try {
-    progress('uploading',0,'Uploading original PDF')
-    const {error:uploadError}=await db.storage.from('sources').upload(storagePath,file,{upsert:false,contentType:'application/pdf'})
-    if(uploadError) fail(uploadError)
-    checked(await db.from('sources').update({storage_path:storagePath,status:'extracting'})
+    if(!textOnly){
+      progress('uploading',0,'Uploading original PDF')
+      const {error:uploadError}=await db.storage.from('sources').upload(storagePath,file,{upsert:false,contentType:'application/pdf'})
+      if(uploadError) fail(uploadError)
+    }
+    checked(await db.from('sources').update({storage_path:textOnly?null:storagePath,status:'extracting'})
       .eq('id',source.id).eq('user_id',uid).select('id').single())
     for(let i=0;i<document.pages.length;i+=50){
       const slice=document.pages.slice(i,i+50).map(p=>({...p,body:p.body.slice(0,20000),source_id:source.id,user_id:uid}))
@@ -279,7 +284,7 @@ export class LiveAdapter implements LemmaApi {
   }catch(error){
     // An incomplete upload is not a usable source. Clean up only this attempt,
     // allowing the queue's Retry action to reuse the same content fingerprint.
-    await db.storage.from('sources').remove([storagePath]).catch(()=>undefined)
+    if(!textOnly)await db.storage.from('sources').remove([storagePath]).catch(()=>undefined)
     await db.from('sources').delete().eq('id',source.id).eq('user_id',uid)
     progress('failed',0,'Source upload failed')
     throw error
