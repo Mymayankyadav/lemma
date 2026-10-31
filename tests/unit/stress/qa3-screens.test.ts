@@ -2,22 +2,47 @@ import {describe,it,expect} from 'vitest'
 import {mkdtempSync,writeFileSync,rmSync,unlinkSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
+import {deflateSync} from 'node:zlib'
 import {auditQa3Screens,pngHeader,renderScreenAudit} from '../../../scripts/qa3-screens'
 import {qa3Cases,QA3_ROUTES,qa3ScreenshotName} from '../../../scripts/qa3-report'
 
 const signature=Buffer.from([137,80,78,71,13,10,26,10])
-const iend=Buffer.from([0,0,0,0,73,69,78,68,174,66,96,130])
-function envelope(width:number,height:number,nonce=0){
- const bytes=Buffer.alloc(128)
- signature.copy(bytes,0)
- bytes.writeUInt32BE(13,8)
- bytes.write('IHDR',12,'ascii')
- bytes.writeUInt32BE(width,16)
- bytes.writeUInt32BE(height,20)
- bytes.writeUInt32BE(nonce,36)
- iend.copy(bytes,bytes.length-12)
+const table=Uint32Array.from({length:256},(_,n)=>{
+ let c=n
+ for(let i=0;i<8;i++)c=c&1?0xedb88320^(c>>>1):c>>>1
+ return c>>>0
+})
+function crc32(bytes:Buffer){
+ let c=0xffffffff
+ for(const value of bytes)c=table[(c^value)&255]^(c>>>8)
+ return (c^0xffffffff)>>>0
+}
+function chunk(type:string,data:Buffer){
+ const bytes=Buffer.alloc(12+data.length)
+ bytes.writeUInt32BE(data.length,0)
+ bytes.write(type,4,'ascii')
+ data.copy(bytes,8)
+ bytes.writeUInt32BE(crc32(bytes.subarray(4,8+data.length)),8+data.length)
  return bytes
 }
+/** A genuine grayscale 1-bit PNG: every scanline has filter=0 and zlib data. */
+function envelope(width:number,height:number,nonce=0){
+ const ihdr=Buffer.alloc(13)
+ ihdr.writeUInt32BE(width,0);ihdr.writeUInt32BE(height,4)
+ ihdr[8]=1;ihdr[9]=0
+ const stride=Math.ceil(width/8)+1,raw=Buffer.alloc(stride*height)
+ raw[1]=nonce&255
+ raw[2]=(nonce>>>8)&255
+ return Buffer.concat([signature,chunk('IHDR',ihdr),chunk('IDAT',deflateSync(raw)),chunk('IEND',Buffer.alloc(0))])
+}
+function forgedEnvelope(width:number,height:number){
+ const bytes=Buffer.alloc(128)
+ signature.copy(bytes,0);bytes.writeUInt32BE(13,8);bytes.write('IHDR',12,'ascii')
+ bytes.writeUInt32BE(width,16);bytes.writeUInt32BE(height,20)
+ Buffer.from([0,0,0,0,73,69,78,68,174,66,96,130]).copy(bytes,bytes.length-12)
+ return bytes
+}
+
 function fixture(){
  const dir=mkdtempSync(join(tmpdir(),'lemma-qa3-screens-'))
  let n=0
@@ -34,6 +59,11 @@ describe('QA-3b screenshot structural gate',()=>{
   expect(pngHeader(envelope(360,740),390,844)).toBeNull()
   expect(pngHeader(Buffer.alloc(128),390,844)).toBeNull()
   expect(pngHeader(envelope(390,844).subarray(0,100),390,844)).toBeNull()
+  const corrupted=envelope(390,844)
+  corrupted[55]^=1 // damage IDAT payload without updating its CRC
+  expect(pngHeader(corrupted,390,844)).toBeNull()
+  const truncated=envelope(390,844)
+  expect(pngHeader(truncated.subarray(0,truncated.length-1),390,844)).toBeNull()
  })
  it('checks all 144 expected S/X world and viewport captures',()=>{
   const dir=fixture()
@@ -75,7 +105,7 @@ describe('QA-3b screenshot structural gate',()=>{
 
  it('rejects a forged IHDR/IEND envelope without an IDAT chunk',()=>{
   // This was the old positive fixture: signature and tail alone are not PNG.
-  expect(pngHeader(envelope(390,844),390,844)).toBeNull()
+  expect(pngHeader(forgedEnvelope(390,844),390,844)).toBeNull()
  })
  it('warns when an identical capture is reused across different matrices',()=>{
   const dir=fixture()
