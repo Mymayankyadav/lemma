@@ -65,7 +65,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
  if(!n)return <p className="text-label text-ink-3">A plan is needed before the Route can appear.</p>;
  const active=stages[layout.activeStage];
  const stateAt=(index:number)=>rows[index]?.state??'unscheduled';
- const rightFoldedLabel=stages.length+' stages · '+Math.max(0,n-project.done)+' to go';
+ const rightFoldedLabel=stages.length+' stages · '+Math.max(0,project.total-project.done)+' to go';
  // Never clip a tutor-authored formula in the 360px folded SVG. Show the
  // whole name through an accessible disclosure instead of truncating TeX.
  const foldedName=active?.name??'';
