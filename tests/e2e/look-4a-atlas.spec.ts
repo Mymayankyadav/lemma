@@ -38,3 +38,18 @@ test('LOOK-4a details prioritize quiz and omit redundant level tags',async({page
  await expect(details.getByText(/^Detail ·/)).toHaveCount(0);
  await expect(details.getByText(/Builds on · \d+/)).toBeVisible();
 });
+
+test('LOOK-4a mathematical breadcrumbs navigate to their ancestor with a 44px target',async({page})=>{
+ await page.setViewportSize({width:360,height:740});
+ await page.goto('./?demo=1&theme=graph-night#/atlas?focus=compactness');
+ const details=page.getByRole('dialog',{name:'Compactness'});
+ await expect(details).toBeVisible();
+ const crumb=details.locator('[aria-label="Idea path"] button').first();
+ await expect(crumb).toBeVisible();
+ const box=await crumb.boundingBox();
+ expect(box?.height).toBeGreaterThanOrEqual(44);
+ expect(box?.width).toBeGreaterThanOrEqual(44);
+ await crumb.click();
+ await expect(details).toHaveCount(0);
+ await expect(page.locator('[data-tone="self"]')).toHaveCount(1);
+});
