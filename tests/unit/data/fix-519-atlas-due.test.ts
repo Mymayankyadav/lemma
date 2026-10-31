@@ -45,7 +45,7 @@ describe('FIX #519: Atlas linked due-card counts without rich global queue',()=>
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{deferSessions:true}),
    now:()=>now,timeZone:'UTC'});
   const cloned=vi.spyOn(globalThis,'structuredClone');
-  let graph;
+  let graph:Awaited<ReturnType<DemoAdapter['getAtlas']>>;
   try{
    graph=await api.getAtlas();
    expect(graph.concepts.length).toBeGreaterThan(2_000);
