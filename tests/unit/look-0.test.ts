@@ -32,7 +32,7 @@ function deltaE2000(h1:string,h2:string):number{
  const hm=cp1*cp2===0?hp1+hp2:Math.abs(hp1-hp2)>180?(hp1+hp2+360)/2%360:(hp1+hp2)/2
  const cos=(d:number)=>Math.cos(d*pi/180)
  const t=1-.17*cos(hm-30)+.24*cos(2*hm)+.32*cos(3*hm+6)-.20*cos(4*hm-63)
- const dt=30*Math.exp(-((hm-275)/25)**2)
+ const dt=30*Math.exp(-(((hm-275)/25)**2))
  const rc=2*Math.sqrt(cm**7/(cm**7+25**7))
  const sl=1+.015*(lm-50)**2/Math.sqrt(20+(lm-50)**2),sc=1+.045*cm,sh=1+.015*cm*t
  const rt=-Math.sin(2*dt*pi/180)*rc
