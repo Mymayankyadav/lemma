@@ -1,5 +1,11 @@
 name: Review screenshots
 on:
+  pull_request:
+    paths:
+      - 'scripts/review-shots.mjs'
+      - 'scripts/v4-capture-inventory.json'
+      - '.github/workflows/review-shots.yml'
+  workflow_dispatch:
   push:
     branches: ['review/**']
 permissions:
@@ -22,11 +28,21 @@ jobs:
           THEMES: all
           DENSITY: compact
           EFFECTS: calm
+          V4_MATRIX: ${{ github.event_name == 'push' && '0' || '1' }}
         run: |
           (npx vite preview --port 4173 --strictPort > /tmp/lemma-preview.log 2>&1 &) 
           sleep 5
           node scripts/review-shots.mjs
+      - name: Upload v4 route and interaction screenshots for independent review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-review-screens
+          path: review-shots/
+          if-no-files-found: error
+          retention-days: 14
       - name: Commit contact sheets to the review branch
+        if: github.event_name == 'push'
         run: |
           git config user.name "review-bot"
           git config user.email "review-bot@users.noreply.github.com"
