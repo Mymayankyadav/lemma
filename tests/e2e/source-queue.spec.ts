@@ -55,11 +55,13 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   await sources.getByRole('button',{name:'Edit',exact:true}).first().click();
   await assertTarget(sources.getByRole('button',{name:'Save',exact:true}));
   await assertTarget(sources.getByRole('button',{name:'Cancel',exact:true}));
+  await page.screenshot({path:'test-results/screens/fix-510-edit-'+theme+'-'+width+'.png'});
   await sources.getByRole('button',{name:'Cancel',exact:true}).click();
   await sources.getByRole('button',{name:/^Delete Principles of Mathematical Analysis$/}).click();
   const confirm=sources.getByRole('group',{name:/^Confirm deletion of Principles of Mathematical Analysis$/});
   await assertTarget(confirm.getByRole('button',{name:'Delete',exact:true}));
   await assertTarget(confirm.getByRole('button',{name:'Cancel',exact:true}));
+  await page.screenshot({path:'test-results/screens/fix-510-delete-'+theme+'-'+width+'.png'});
   await confirm.getByRole('button',{name:'Cancel',exact:true}).click();
 
   // A nonempty but whitespace-only Markdown source fails extraction and remains retryable.
@@ -69,6 +71,8 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   const failed=sources.getByRole('list',{name:'Source upload queue'}).getByRole('listitem').filter({hasText:'empty-510.md'});
   await expect(failed.getByRole('button',{name:'Retry'})).toBeVisible({timeout:30_000});
   await assertTarget(failed.getByRole('button',{name:'Retry'}));
+  await failed.getByRole('button',{name:'Retry'}).scrollIntoViewIfNeeded();
+  await page.screenshot({path:'test-results/screens/fix-510-retry-'+theme+'-'+width+'.png'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({path:'test-results/screens/fix-510-'+theme+'-'+width+'.png'});
  });
