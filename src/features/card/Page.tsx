@@ -1,4 +1,6 @@
 import {MathPreview} from '../../ui/MathPreview';
+import {getApi} from "../../data";
+import {useQuery} from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -56,8 +58,8 @@ export default function Page() {
   const [editing, setEditing] = useState(false),
     [deleting, setDeleting] = useState(false),
     [message, setMessage] = useState(""),
-    [allComments,setAllComments] = useState(false),
-    [allReviews,setAllReviews] = useState(false),
+    [commentCursors,setCommentCursors] = useState<string[]>([]),
+    [reviewCursors,setReviewCursors] = useState<string[]>([]),
     [slow, setSlow] = useState(false);
   const closeEditing = useCallback(() => setEditing(false), []);
   const closeDeleting = useCallback(() => setDeleting(false), []);
@@ -73,14 +75,67 @@ export default function Page() {
     note = detail?.note,
     project = projects.data?.find((p) => p.slug === note?.projectSlug),
     card = detail?.cards[0]?.state;
-  const visibleComments = useMemo(() => [...(detail?.comments??[])]
-    .filter(c=>c.status==='open'||c.status==='addressed')
-    .sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))
-    .slice(0,allComments?undefined:20),[detail?.comments,allComments]);
-  const visibleReviews = useMemo(() => [...(detail?.history??[])]
-    .sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt))
-    .slice(0,allReviews?undefined:20),[detail?.history,allReviews]);
-  const totalComments = detail?.comments.filter(c=>c.status==='open'||c.status==='addressed').length??0;
+  // Only the selected cursor page is observed. React Query owns the 30-second
+  // cache, so returning to an already visited page never downloads it again.
+  const reviewCursor = reviewCursors.at(-1) ?? null;
+  const commentCursor = commentCursors.at(-1) ?? null;
+  const reviewQuery = useQuery({
+    queryKey: ['card-history-page', number, reviewCursor],
+    queryFn: () => getApi().getCardHistoryPage(number, reviewCursor!),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    enabled: reviewCursor !== null,
+  });
+  const commentQuery = useQuery({
+    queryKey: ['card-comments-page', number, commentCursor],
+    queryFn: () => getApi().getCardCommentsPage(number, commentCursor!),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    enabled: commentCursor !== null,
+  });
+  const reviewPage = reviewCursor === null ? null : reviewQuery.data;
+  const commentPage = commentCursor === null ? null : commentQuery.data;
+  const pageBusy = reviewQuery.isFetching || commentQuery.isFetching;
+  const rawComments = commentCursor === null
+    ? detail?.comments ?? [] : commentPage?.rows ?? [];
+  const visibleComments = rawComments.filter(c => c.status === 'open' || c.status === 'addressed');
+  const visibleReviews = reviewCursor === null
+    ? detail?.history ?? [] : reviewPage?.rows ?? [];
+  // The initial 21-row probe supplies the first continuation without a second request.
+  const moreComments = Boolean(commentCursor === null
+    ? detail?.commentsNextCursor : commentPage?.nextCursor);
+  const moreReviews = Boolean(reviewCursor === null
+    ? detail?.historyNextCursor : reviewPage?.nextCursor);
+  useEffect(() => {
+    setCommentCursors([]);
+    setReviewCursors([]);
+  }, [number]);
+  useEffect(() => {
+    if (reviewQuery.isError) notify("Couldn't load older reviews.", {tone: "danger"});
+  }, [reviewQuery.errorUpdatedAt, reviewQuery.isError, notify]);
+  useEffect(() => {
+    if (commentQuery.isError) notify("Couldn't load older comments.", {tone: "danger"});
+  }, [commentQuery.errorUpdatedAt, commentQuery.isError, notify]);
+  const olderReviews = () => {
+    if (pageBusy) return;
+    const cursor = reviewCursor === null
+      ? detail?.historyNextCursor : reviewPage?.nextCursor;
+    if (cursor) setReviewCursors(v => [...v, cursor]);
+  };
+  const newerReviews = () => {
+    if (pageBusy) return;
+    setReviewCursors(v => v.slice(0, -1));
+  };
+  const olderComments = () => {
+    if (pageBusy) return;
+    const cursor = commentCursor === null
+      ? detail?.commentsNextCursor : commentPage?.nextCursor;
+    if (cursor) setCommentCursors(v => [...v, cursor]);
+  };
+  const newerComments = () => {
+    if (pageBusy) return;
+    setCommentCursors(v => v.slice(0, -1));
+  };
   const chart = useMemo(() => {
     const history = [...(detail?.history ?? [])].sort(
       (a, b) => Date.parse(a.reviewedAt) - Date.parse(b.reviewedAt),
@@ -288,6 +343,7 @@ export default function Page() {
                 .map((c) => (
                   <div
                     key={c.no}
+                    data-comment-row
                     className="border-l-2 border-amber py-2 pl-4 pr-2"
                   >
                     <p className="font-math text-body-l italic">{c.body}</p>
@@ -307,7 +363,7 @@ export default function Page() {
               {visibleComments
                 .filter((c) => c.status === "addressed")
                 .map((c) => (
-                  <details key={c.no} className="rounded-ctl bg-fill-1 p-4">
+                  <details key={c.no} data-comment-row className="rounded-ctl bg-fill-1 p-4">
                     <summary className="flex cursor-pointer items-center gap-2 text-label text-ink-2">
                       <Check size={15} className="text-easy" />
                       Addressed
@@ -316,29 +372,41 @@ export default function Page() {
                     <p className="mt-3 text-ink-3">{c.body}</p>
                   </details>
                 ))}
-              {!detail.comments.some(
-                (c) => c.status === "open" || c.status === "addressed",
-              ) && (
-                <p className="text-body text-ink-3">
-                  No notes for your tutor yet.
+              {!visibleComments.length && (
+                <p className="text-body text-ink-3" role={commentCursor !== null && commentQuery.isPending ? "status" : undefined}>
+                  {commentCursor !== null && commentQuery.isPending
+                    ? "Loading comments…" : "No active notes on this page."}
                 </p>
               )}
-              {totalComments>20&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setAllComments(v=>!v)}>
-               {allComments?'Show latest 20':'More comments ('+(totalComments-20)+')'}
-              </button>}
+              {commentCursor !== null && commentQuery.isError && (
+                <button type="button" className="min-h-11 text-label font-semibold text-amber"
+                  onClick={() => void commentQuery.refetch()}>Try loading comments again</button>
+              )}
+              <div className="flex flex-wrap gap-3">
+               {commentCursors.length>0&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void newerComments()}>Newer comments</button>}
+               {moreComments&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void olderComments()}>More comments</button>}
+              </div>
             </div>
           </section>
           <section aria-label="Review history">
            <h2 className="mb-3 text-headline font-medium">Recent reviews</h2>
-           {visibleReviews.map((r,i)=><div key={r.reviewedAt+':'+i} className="flex min-h-11 items-center justify-between gap-3 border-b border-edge py-2 text-body">
+           {visibleReviews.map((r,i)=><div key={r.reviewedAt+':'+i} data-review-row className="flex min-h-11 items-center justify-between gap-3 border-b border-edge py-2 text-body">
             <span className="text-ink-2">{new Date(r.reviewedAt).toLocaleDateString()}</span>
             <span className="text-amber">{['','Again','Hard','Good','Easy'][r.rating]??'Reviewed'}</span>
             <span className="text-ink-3">{r.confidence??'—'}</span>
            </div>)}
-           {!detail.history.length&&<p className="text-label text-ink-3">No reviews yet.</p>}
-           {detail.history.length>20&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setAllReviews(v=>!v)}>
-            {allReviews?'Show latest 20':'More reviews ('+(detail.history.length-20)+')'}
-           </button>}
+           {!visibleReviews.length&&<p className="text-label text-ink-3"
+            role={reviewCursor !== null && reviewQuery.isPending ? "status" : undefined}>
+            {reviewCursor !== null && reviewQuery.isPending ? "Loading reviews…" : "No reviews yet."}
+           </p>}
+           {reviewCursor !== null && reviewQuery.isError && (
+            <button type="button" className="min-h-11 text-label font-semibold text-amber"
+             onClick={() => void reviewQuery.refetch()}>Try loading reviews again</button>
+           )}
+           <div className="flex flex-wrap gap-3">
+            {reviewCursors.length>0&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void newerReviews()}>Newer reviews</button>}
+            {moreReviews&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void olderReviews()}>More reviews</button>}
+           </div>
           </section>
           <form
             className="flex gap-2 rounded-ctl border border-edge bg-well p-2"
