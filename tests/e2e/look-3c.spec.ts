@@ -87,6 +87,32 @@ for(const width of [360,390] as const){
   expect(rect!.height).toBeLessThanOrEqual(210);
   await expect(goal.locator('[data-goal-now]')).toContainText('CP4');
   await expect(goal.locator('[data-schedule-chip]')).toBeVisible();
+  await expect(goal.locator('[data-goal-footnote]')).toBeVisible();
+  const dock=page.getByRole('navigation',{name:'Main navigation'});
+  await expect(dock).toBeVisible();
+  // Fixed tabs are not part of scrollIntoViewIfNeeded's visibility model.
+  // The goal must be scrollable fully above them, including the CP4 row and
+  // the finish/target footnote, not merely short enough in its own box.
+  await goal.evaluate(el=>el.scrollIntoView({block:'end',behavior:'auto'}));
+  await expect.poll(async()=>{
+   const card=await goal.boundingBox(),nav=await dock.boundingBox();
+   return card&&nav?nav.y-(card.y+card.height):-1;
+  }).toBeGreaterThanOrEqual(8);
+  const nav=await dock.boundingBox();
+  expect(nav).not.toBeNull();
+  for(const selector of ['[data-goal-now]','[data-goal-footnote]']){
+   const part=goal.locator(selector),box=await part.boundingBox();
+   expect(box,selector).not.toBeNull();
+   expect(box!.y,selector).toBeGreaterThanOrEqual(0);
+   expect(box!.y+box!.height,selector).toBeLessThanOrEqual(nav!.y-8);
+   // Hit-test the visible content: a fixed dock or other overlay must not
+   // intercept its pixels even when the DOM reports it as "visible".
+   const unobscured=await page.evaluate(({x,y})=>
+    !!document.elementFromPoint(x,y)?.closest('[data-goal-card]'),{
+     x:box!.x+box!.width/2,y:box!.y+box!.height/2,
+    });
+   expect(unobscured,selector+' obscured').toBe(true);
+  }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(0);
   await goal.screenshot({path:'test-results/screens/look-3c/goal-'+theme+'-'+width+'.png'});
  });
