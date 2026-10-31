@@ -37,4 +37,16 @@ describe("FIX #489 all visible count marks are checked spatially", () => {
     setRect("c", 10, 10, 6, 6);
     expect(measureSvgMarks()).toBe(8); // Budget-capped at 8px.
   });
+
+  it("measures circle edge clearance, not centre distance", () => {
+    document.body.innerHTML = '<svg><circle id="a" data-stress-mark/><circle id="b" data-stress-mark/></svg>';
+    setRect("a", 10, 10, 10, 10); // centre (15,15), radius 5
+    setRect("b", 18, 10, 10, 10); // centre 8px away: 2px overlap
+    expect(measureSvgMarks()).toBe(0);
+    setRect("b", 24, 10, 10, 10); // centre 14px away: 4px edge gap
+    expect(measureSvgMarks()).toBe(4);
+    setRect("b", 28, 10, 10, 10); // centre 18px away: exactly 8px
+    expect(measureSvgMarks()).toBe(8);
+  });
+
 });
