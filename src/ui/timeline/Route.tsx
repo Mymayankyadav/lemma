@@ -107,7 +107,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek}:RouteP
      stroke={isCurrent?'var(--accent)':mark.index===focused?'var(--ink)':
       revisit?'var(--late)':done?'var(--ink-2)':'var(--ink-3)'}
      strokeWidth={isCurrent?11:done?0:mark.index===focused?2.5:1.5}
-     strokeOpacity={isCurrent?.16:1} paintOrder="stroke fill"
+     strokeOpacity={isCurrent?0.16:1} paintOrder="stroke fill"
      strokeDasharray={revisit?'3 2':undefined}/>
    </g>;
   })}
