@@ -74,6 +74,12 @@ mkdirSync('review-shots/sheets',{recursive:true});
 const browser=await chromium.launch();
 try {
  const phone=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,colorScheme:'dark'});
+ if(process.env.V4_MATRIX==='1'){
+  // Atlas fold depth is persisted. Without a reset, later idle screenshots
+  // can already be fully unfolded, falsely duplicating the All interaction.
+  // This runs before every navigation, not after the screenshot is taken.
+  await phone.addInitScript(()=>{try{localStorage.removeItem('lemma.atlas.v2')}catch{}});
+ }
  const sheet=await browser.newPage({viewport:{width:1950,height:888},deviceScaleFactor:2,colorScheme:'dark'});
  for(const theme of chosen){
   mkdirSync(join('review-shots',theme),{recursive:true});
