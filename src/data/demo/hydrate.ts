@@ -14,11 +14,17 @@ export function hydrateFixture(
   const clock = studyClock(source.settings.rolloverHour, timeZone),
     today = clock.dayIndex(now);
   const walk = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(walk);
-    if (value && typeof value === "object")
-      return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [key, walk(item)]),
-      );
+    // The caller's fixture was already cloned above. Walk that private copy
+    // in place instead of allocating a second 30,000-card object graph.
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) value[i] = walk(value[i]);
+      return value;
+    }
+    if (value && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      for (const [key, item] of Object.entries(record)) record[key] = walk(item);
+      return record;
+    }
     if (typeof value !== "string") return value;
     if (value.startsWith("@now:"))
       return new Date(now + Number(value.split(":")[1]) * 60000).toISOString();
