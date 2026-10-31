@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {mkdtempSync,writeFileSync,rmSync} from 'node:fs'
+import {mkdtempSync,writeFileSync,rmSync,unlinkSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {auditQa3Screens,pngHeader,renderScreenAudit} from '../../../scripts/qa3-screens'
@@ -57,6 +57,8 @@ describe('QA-3b screenshot structural gate',()=>{
    expect(wrong.errors.some(e=>e.includes(name))).toBe(true)
    writeFileSync(join(dir,name),Buffer.alloc(200))
    expect(auditQa3Screens(dir).errors.some(e=>e.includes('Invalid PNG'))).toBe(true)
+   unlinkSync(join(dir,name))
+   expect(auditQa3Screens(dir).errors.some(e=>e.includes('Missing screenshot: '+name))).toBe(true)
   }finally{rmSync(dir,{recursive:true,force:true})}
  })
  it('warns on identical screenshots of distinct routes without falsely passing visual review',()=>{
