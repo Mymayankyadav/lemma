@@ -42,6 +42,16 @@ New tool `save_pages` (write, undoable, owner-scoped), taking `{project, source?
 - **Export:** "Download as .tex" and "Download as .md" for any transcribed source. One file per source, pages separated by `% page n`.
 - **Tell your tutor:** on a scan with no text, the button copies "Transcribe my scanned notes '<title>' pages 1–10 into Lemma".
 
+## 2b. Uploading .tex and .md files (UI-8b)
+
+- The new-project and Sources pickers accept `.tex`, `.latex`, `.ltx` and `.md`/`.markdown`, alongside PDFs, with the same 50 MB limit. Other text files are still rejected.
+- The file is read in the browser (`src/pdf/text-source.ts`) and split into pages:
+  - **LaTeX:** the preamble before `\begin{document}` is dropped. Pages split at `\chapter` and `\section` (starred too), and subsections stay inside their section.
+  - **Markdown:** pages split at `#` and `##` headings, never inside code fences.
+  - Sections longer than 8,000 characters are split at blank lines.
+  - The section titles become the source's outline.
+- The text is stored as `source_pages` (`has_text` true) and no file is stored, because the bucket holds PDFs only. `read_pages`, `search`, citations and plans then work on it like PDF pages. The tutor can also send the same content through `save_pages` (§1).
+
 ## 3. Acceptance
 
 - In a chat, attaching 3 photos of handwritten notes and asking "save these to Lemma" creates a source of kind notes with 3 pages, found by `search` and readable by `read_pages`.
@@ -49,3 +59,4 @@ New tool `save_pages` (write, undoable, owner-scoped), taking `{project, source?
 - `undo` of a save restores the previous text, or removes the source when the save created it.
 - The exported .tex compiles with a standard preamble (`amsmath`, `amssymb`).
 - Stress (ST-0 profile X): a 400-page transcribed source keeps search under 1 s, and the page viewer pages without loading all 400 pages.
+- Uploading a `.tex` with three sections creates a source with three pages and an outline; `search` finds a word from the second section.
