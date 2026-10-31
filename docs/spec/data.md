@@ -543,7 +543,7 @@ Audit #546 / ST-4 D7 requires a Card detail screen to load at most 20 recent rev
 - `CardCommentsPage`: `rows: CardComment[]`, `nextCursor: string | null`. `getCardCommentsPage(noteNo, cursor?)` returns at most 20 comments for the note, newest first, including status and resolution metadata.
 - A cursor is opaque to UI code. Each implementation orders by timestamp descending and unique row ID descending, and encodes both keys in the continuation cursor; ties must not duplicate or skip rows. Query at most 21 rows to decide whether to return `nextCursor`. No offset paging or whole-table fetches.
 - Every query is explicitly filtered by `user_id` and by the selected note/card IDs; RLS remains enabled. A missing note or an invalid cursor returns a typed `LemmaError`. The demo adapter applies the same order and page limit in memory.
-- React Query keys are `['card-history-page', noteNo, cursor ?? null]` and `['card-comments-page', noteNo, cursor ?? null]`. Both hooks retain the 30-second stale time. Existing `useCard` is unchanged.
+- React Query keys are `['card-history-page', noteNo, cursor ?? null]` and `['card-comments-page', noteNo, cursor ?? null]`. Both hooks retain the 30-second stale time. Existing `useCard` is unchanged. Review/undo invalidates `card-history-page`; comment add/dismiss invalidates `card-comments-page` (in addition to existing card keys).
 - This contract introduces `notImplemented` stubs in both adapters; no screen may call them until FIX-546b supplies the implementations, 20/21-row paging tests, X-like network budget tests and bounded chart data.
 
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
