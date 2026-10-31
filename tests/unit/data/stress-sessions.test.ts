@@ -49,7 +49,10 @@ describe('deferred browser stress sessions', () => {
   expect(detail.events.some(event=>event.kind==='evidence')).toBe(true);
   const lazy=await api.getSession(last.slug,8);
   expect(lazy.events).toHaveLength(400);
-  const checkpoint=await api.getCheckpoint(first.slug,'CP7');
+  // Checkpoint view scans due cards; keep this assertion focused on virtual
+  // evidence rather than making the unit test benchmark all 30k review cards.
+  const checkpointApi=new DemoAdapter({fixture:{...data,notes:data.notes.slice(0,12)},now:()=>Date.UTC(2026,9,31,12)});
+  const checkpoint=await checkpointApi.getCheckpoint(first.slug,'CP7');
   expect(checkpoint.events.some(event=>event.kind==='evidence')).toBe(true);
   const insights=await api.getInsightData(7);
   expect(insights.aggregate?.sessions).toBeGreaterThan(0);
