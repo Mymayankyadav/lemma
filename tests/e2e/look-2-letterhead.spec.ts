@@ -50,6 +50,13 @@ for(const width of [360,390] as const){
    // Reset before taking visual evidence: otherwise the next screenshot shows
    // only the empty lower page even though all landmarks are mounted.
    await page.evaluate(()=>window.scrollTo(0,0));
+   await heading.scrollIntoViewIfNeeded();
+   // The heading must be physically inside the viewport, not merely
+   // "visible" in the DOM (which permits an offscreen element).
+   await expect.poll(()=>heading.evaluate(el=>{
+    const rect=el.getBoundingClientRect();
+    return rect.width>0&&rect.height>0&&rect.top>=0&&rect.bottom<=innerHeight&&rect.left>=0&&rect.right<=innerWidth;
+   }),{timeout:30_000}).toBe(true);
    await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeLessThanOrEqual(1);
    const sketch=page.locator('[data-graph-sketch]');
    await expect(sketch).toHaveCount(1);
@@ -105,6 +112,7 @@ for(const width of [360,390] as const){
    expect(Number(geometry.opacity)).toBeCloseTo(theme==='graph'?.12:.13,3);
    await page.screenshot({
     path:`test-results/screens/look-2/${kind}-${route.replaceAll('/','-')||'home'}-${theme}-${profile}-${width}.png`,
+    animations:'disabled',
    });
    // A temporary, non-app spacer guarantees a scrollable document even on
    // short screens, so the assertion cannot pass vacuously at scrollY=0.
