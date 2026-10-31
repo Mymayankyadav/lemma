@@ -19,6 +19,8 @@ describe('FIX-546b Card detail cursor security and keyset ordering',()=>{
  it('rejects UUID review IDs but allows demo numeric and live UUID comment IDs',()=>{
   const uuid='00000000-0000-4000-8000-000000000001'
   expect(()=>encodeCardPageCursor('reviews',1,{at,id:uuid})).toThrowError(/Invalid Card detail/)
+  const forged=btoa(JSON.stringify({v:1,kind:'reviews',noteNo:1,at,id:uuid}))
+  expect(()=>decodeCardPageCursor(forged,'reviews',1)).toThrowError(/Invalid Card detail/)
   expect(decodeCardPageCursor(encodeCardPageCursor('comments',1,{at,id:uuid}),'comments',1)).toEqual({at,id:uuid})
   expect(decodeCardPageCursor(encodeCardPageCursor('comments',1,{at,id:'17'}),'comments',1)).toEqual({at,id:'17'})
  })
