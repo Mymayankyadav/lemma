@@ -1,7 +1,7 @@
-import {lazy, Suspense, useEffect, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {Link} from 'react-router';
-import {getMode} from '../../data/mode';
+import {getMode,getDemoProfile} from '../../data/mode';
 import {ChevronRight, Copy, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
@@ -51,6 +51,31 @@ function LoadingDesk(){
   <div className="grid grid-cols-2 gap-3"><Skeleton h={100} radius={22}/><Skeleton h={100} radius={22}/></div>
   <Skeleton w="38%" h={22}/><Skeleton h={56}/><Skeleton h={56}/>
  </Screen>;
+}
+
+/** The 5k/30k stress desk keeps its full seven-day forecast, but only
+ * evaluates the deck tree and rich labels when the reader reaches Cards.
+ * The ordinary demo/live desk preserves its eager forecast behavior. */
+function ForecastOnDemand(){
+ const deferred=getMode()==='demo'&&getDemoProfile()!=='default';
+ const [mounted,setMounted]=useState(!deferred);
+ const target=useRef<HTMLDivElement>(null);
+ useEffect(()=>{
+  if(mounted)return;
+  if(typeof IntersectionObserver==='undefined'){setMounted(true);return}
+  const observer=new IntersectionObserver(entries=>{
+   if(entries.some(entry=>entry.isIntersecting)){
+    setMounted(true);
+    observer.disconnect();
+   }
+  },{threshold:0.25});
+  if(target.current)observer.observe(target.current);
+  return ()=>observer.disconnect();
+ },[mounted]);
+ const loading=<div aria-label="Seven-day review forecast" role="status" className="min-h-20"><Skeleton h={80}/></div>;
+ return <div ref={target} data-forecast-on-demand="">
+  {mounted?<Suspense fallback={loading}><ReviewOutlook/></Suspense>:loading}
+ </div>;
 }
 
 function ProjectLink({project}:{project:ProjectSummary}){
@@ -159,9 +184,7 @@ export default function Page(){
   <section aria-label="Cards" className="flex flex-col gap-3">
    <SectionHeading className="text-ink">Cards</SectionHeading>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
-   <Suspense fallback={<div aria-label="Seven-day review forecast" className="min-h-20" role="status"><Skeleton h={80}/></div>}>
-    <ReviewOutlook/>
-   </Suspense>
+   <ForecastOnDemand/>
   </section>
   <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
    <SectionHeading className="text-ink">From your tutor</SectionHeading>
