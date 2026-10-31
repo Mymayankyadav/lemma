@@ -1,6 +1,9 @@
 import {useState} from 'react'
+import {useQuery} from '@tanstack/react-query'
+import {getApi} from '../../data'
+import {getMode} from '../../data/mode'
 import {Link} from 'react-router'
-import {useProject,useInsightData} from '../../data/hooks'
+import {useProject} from '../../data/hooks'
 import type {ProjectSummary,InsightData} from '../../data/types'
 import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline'
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar'
@@ -106,7 +109,10 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
 export function GoalDistance({projects,variant='metro'}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
  const active=projects.filter(project=>project.status==='active').sort(urgency)
  const [showRest,setShowRest]=useState(false)
- const insight=useInsightData(30)
+ // Live Insights returns aggregate charts, not checkpoint event rows; avoid
+ // an unnecessary Today request. Demo keeps the existing measured-pace fixture.
+ const insight=useQuery({queryKey:['insights',30],queryFn:()=>getApi().getInsightData(30),
+  enabled:getMode()==='demo'})
  const featured=active.slice(0,3),rest=active.slice(3)
  const behindCount=rest.filter(behind).length
  return <section aria-label="Distance to your goals" className="flex min-w-0 flex-col gap-3">
