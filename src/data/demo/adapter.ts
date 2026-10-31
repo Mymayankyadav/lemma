@@ -777,19 +777,24 @@ export class DemoAdapter implements LemmaApi {
   async listProjects(withDueCounts=false) {
     // ST-0: scanning 30,000 cards and 6,000 checkpoints separately for each
     // of 60 projects creates millions of redundant reads on the cold Today.
+    // Direct Paths needs exact card counts but not 30,000 rich notes.
+    // The private generated fixture represents every synthetic card in its
+    // due snapshot; ordinary mutable stores keep their exact notes scan.
+    const virtualCards=this.virtualStressDue!==null&&
+      typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
     const index:SummaryIndex={
-      checkpoints:new Map(),cards:withDueCounts?this.dueSnapshot().cardCounts:new Map(),sessions:new Map(),sourceTitles:new Map(),
+      checkpoints:new Map(),cards:withDueCounts||virtualCards?this.dueSnapshot().cardCounts:new Map(),sessions:new Map(),sourceTitles:new Map(),
     };
     for(const cp of this.store.checkpoints){
       const rows=index.checkpoints.get(cp.projectId)??[];
       rows.push(cp);index.checkpoints.set(cp.projectId,rows);
     }
     // A standalone Projects read should not pay for due-card scheduling.
-    if(!withDueCounts)for(const note of this.store.notes)if(note.note.status!=="deleted")
+    if(!withDueCounts&&!virtualCards)for(const note of this.store.notes)if(note.note.status!=="deleted")
       index.cards.set(note.projectId,(index.cards.get(note.projectId)??0)+note.cards.length);
     for(const session of this.store.sessions)if(session.state==="ended")
       index.sessions.set(session.projectId,(index.sessions.get(session.projectId)??0)+1);
-    const virtualSources=withDueCounts&&this.stressSourceSeedTitles&&
+    const virtualSources=this.stressSourceSeedTitles&&
       typeof Object.getOwnPropertyDescriptor(this.store,'sources')?.get==='function';
     if(virtualSources){
       // The generated source titles follow a deterministic per-project index.
