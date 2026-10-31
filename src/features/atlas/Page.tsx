@@ -115,7 +115,7 @@ export default function Page(){
  const activeFieldIndex=fieldRows.filter(index=>geometry.offsets[index]<=scrollTop).at(-1)??-1;
  const activeField=virtual&&activeFieldIndex>=0?tree?.nodes.get(rows[activeFieldIndex].id):null;
  const nextFieldIndex=fieldRows.find(index=>index>activeFieldIndex);
- const stickyField=activeField&&scrollTop>=geometry.offsets[activeFieldIndex]+56?activeField:null;
+ const stickyField=activeField&&scrollTop>geometry.offsets[activeFieldIndex]?activeField:null;
  const stickyPush=nextFieldIndex===undefined?0:Math.min(0,geometry.offsets[nextFieldIndex]-scrollTop-56);
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
  const arcBudget=useMemo(()=>{
