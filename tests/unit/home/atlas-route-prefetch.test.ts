@@ -22,3 +22,12 @@ test('direct Atlas entry warms the rich math chunk without loading it on Today',
  expect(routes).toContain("import('../lib/render')")
  expect(routes).toContain("if(typeof window!=='undefined'")
 })
+
+// The C2 4x CPU clock begins after Paths becomes usable. Preloading only the
+// Atlas page leaves its separate KaTeX/Markdown chunk on the critical path.
+// This is a real prefetch contract, not a relaxation of the 1000ms budget.
+test('Paths entry also warms Atlas mathematical rendering before navigation',()=>{
+ const routes=readFileSync('src/app/routes.tsx','utf8')
+ expect(routes).toContain("if(/^#\\/(?:projects|atlas)(?:\\/|$)/.test(location.hash))")
+ expect(routes).toContain("import('../lib/render')")
+})
