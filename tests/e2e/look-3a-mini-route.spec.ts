@@ -21,6 +21,9 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   }).map(bar=>{
    const segments=[...bar.querySelectorAll('[data-stage-segment]')];
    const track=bar.querySelector('[data-stage-bar]')!;
+   const notches=[...bar.querySelectorAll('[data-route-notch]')];
+   const notch=notches[0]?.getBoundingClientRect();
+   const trackRect=track.getBoundingClientRect();
    return {
     width:track.getBoundingClientRect().width,
     totalWidth:segments.reduce((sum,segment)=>sum+segment.getBoundingClientRect().width,0),
@@ -28,6 +31,12 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     count:segments.length,
     ticks:bar.querySelectorAll('[data-mini-tick]').length,
     extraMarks:[...bar.children].filter(child=>child!==track).length,
+    notchCount:notches.length,
+    notchWidth:notch?.width??0,notchHeight:notch?.height??0,
+    notchLeft:notch?notch.left-trackRect.left:0,
+    notchRight:notch?trackRect.right-notch.right:0,
+    notchColor:notches[0]?getComputedStyle(notches[0]).backgroundColor:'',
+    barColor:getComputedStyle(track).backgroundColor,
    };
   }));
   expect(metrics.length).toBeGreaterThan(0);
@@ -35,7 +44,14 @@ for(const [width,height] of [[390,844],[360,740]] as const){
    expect(m.minWidth,'stage capsule minimum width').toBeGreaterThanOrEqual(7.99);
    expect(m.totalWidth,'all groups fit on one bar').toBeLessThanOrEqual(m.width+1);
    expect(m.ticks,'no individual checkpoint ticks').toBe(0);
-   expect(m.extraMarks,'no standalone marker outside bar').toBe(0);
+   expect(m.extraMarks,'exactly one current notch outside bar').toBe(1);
+   expect(m.notchCount,'one current-position notch').toBe(1);
+   expect(m.notchWidth).toBeCloseTo(2,0);
+   expect(m.notchHeight).toBeCloseTo(12,0);
+   expect(m.notchColor).not.toBe(m.barColor);
+   expect((m.notchLeft>=7.99&&m.notchRight>=7.99)||
+    (m.notchLeft>=-0.1&&m.notchLeft<=0.1)||
+    (m.notchRight>=-0.1&&m.notchRight<=0.1)).toBe(true);
   }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/look-3a',{recursive:true});
