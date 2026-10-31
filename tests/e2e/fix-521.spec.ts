@@ -13,6 +13,8 @@ for(const profile of ['stress','extreme'] as const)
     const meta=row.locator('[data-resume-meta]');
     await expect(title).toBeVisible();
     await expect(meta).toBeVisible();
+    expect((await title.getAttribute('title'))?.length).toBeGreaterThan(0);
+    expect((await meta.getAttribute('title'))?.length).toBeGreaterThan(0);
     await meta.locator('.lemma-tex-inline').evaluate(el=>{
       el.textContent='A very long mathematical checkpoint title that cannot be allowed to wrap or escape the paper card at phone width';
     });
