@@ -8,6 +8,8 @@ type Measurement = {
  nodes: number; horizontalOverflow: number; smallText: number; smallMath: number;
  smallTargets: number; minCircleGap: number | null; durationMs: number;
  requestCount: number; transferBytes: number; cpuThrottle: number;
+ smallTextSamples: {size:string;inMath:boolean;html:string}[];
+ closeCircleSamples: {gap:number;svg:string}[];
 };
 
 /** Record all hard-limit violations before downstream ST-1…ST-7 make them pass. */
@@ -18,20 +20,33 @@ async function measure(page: Page, route: string, profile: string, theme: string
    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
   };
   const elements = Array.from(document.querySelectorAll('*')).filter(visible);
-  const smallText = elements.filter(e => {
+  const undersizedText = elements.filter(e => {
    const s = getComputedStyle(e);
    return e.children.length === 0 && !!e.textContent?.trim() && parseFloat(s.fontSize) < 12;
-  }).length;
+  });
+  const smallText = undersizedText.length;
+  // Diagnostic evidence only: retain the exact hard-budget measurement.
+  const smallTextSamples = undersizedText.slice(0,6).map(e => ({
+   size: getComputedStyle(e).fontSize,
+   inMath: !!e.closest('.katex'),
+   html: e.outerHTML.slice(0,180),
+  }));
   const smallMath = elements.filter(e => e.classList.contains('katex') && parseFloat(getComputedStyle(e).fontSize) < 16).length;
   const smallTargets = elements.filter(e => e.matches('button,a[href],[role="button"]') && (e.getBoundingClientRect().width < 44 || e.getBoundingClientRect().height < 44)).length;
   const gaps: number[] = [];
+  const closeCircleSamples: {gap:number;svg:string}[] = [];
   for (const svg of document.querySelectorAll('svg')) {
    const centers = Array.from(svg.querySelectorAll('circle')).map(circle => {
     const r = circle.getBoundingClientRect();
     return {x:r.x+r.width/2, y:r.y+r.height/2, width:r.width};
    }).filter(c => c.width > 0 && c.width < 30);
    for (let i=1;i<centers.length;i++) {
-    if (Math.abs(centers[i].y-centers[i-1].y)<10) gaps.push(Math.abs(centers[i].x-centers[i-1].x));
+    if (Math.abs(centers[i].y-centers[i-1].y)<10) {
+     const gap=Math.abs(centers[i].x-centers[i-1].x);
+     gaps.push(gap);
+     if(gap<8 && closeCircleSamples.length<6)
+      closeCircleSamples.push({gap,svg:svg.outerHTML.slice(0,180)});
+    }
    }
   }
   const resources = (performance.getEntriesByType('resource') as PerformanceResourceTiming[])
@@ -41,6 +56,7 @@ async function measure(page: Page, route: string, profile: string, theme: string
    horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
    smallText, smallMath, smallTargets,
    minCircleGap: gaps.length ? Math.min(...gaps) : null,
+   smallTextSamples,closeCircleSamples,
    requestCount: resources.length,
    transferBytes: resources.reduce((total,entry)=>total+entry.transferSize,0),
   };
@@ -116,6 +132,12 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   mkdirSync('test-results/stress',{recursive:true});
   const file = 'test-results/stress/'+profile+'-'+theme+'-'+width+'.json';
   const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
+  // Log bounded concrete examples when the strict gate is red; never mask a failure.
+  for(const row of report.filter(row=>row.violations.length)){
+   if(row.violations.some(v=>v==='text below 12px'||v==='marks closer than 8px'))
+    console.info('ST-0 offender samples',JSON.stringify({route:row.route,profile,theme,width,
+     text:row.smallTextSamples,marks:row.closeCircleSamples}));
+  }
   writeFileSync(file,JSON.stringify(report,null,2));
   await testInfo.attach('stress-measurements',{body:JSON.stringify(report,null,2),contentType:'application/json'});
   // Enforce every completed hard budget. Unfinished scopes have an explicit
