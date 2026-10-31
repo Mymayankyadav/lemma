@@ -54,10 +54,24 @@ try {
      const dir=join('review-shots','v4',theme,demo,width+'px');
      mkdirSync(dir,{recursive:true});
      for(const {name,route,action} of routes){
-      const url=base+'?demo='+demo+'&theme='+encodeURIComponent(theme)+route;
+      // Review-run and Review-done require an initialized review session.
+      // Deep-linking to those routes in a fresh browser yields an empty/redirect
+      // state rather than the owner's actual card and completed-round screens.
+      const reviewScene=['review-run','review-run-answer','review-done'].includes(name);
+      const entry=reviewScene?'#/review':route;
+      const url=base+'?demo='+demo+'&theme='+encodeURIComponent(theme)+entry;
       await phone.goto(url,{waitUntil:'domcontentloaded'});
       await phone.locator('#main-content').waitFor({state:'visible'});
-      await phone.waitForTimeout(400);
+      if(reviewScene){
+       await phone.getByRole('button',{name:'Start review'}).click();
+       await phone.getByRole('heading',{name:'Card review',level:1}).waitFor({state:'visible'});
+       if(name==='review-done'){
+        await phone.getByRole('button',{name:'Sure',exact:true}).click();
+        await phone.getByRole('button',{name:'Grade Good'}).click();
+        await phone.getByRole('button',{name:'Close review'}).click();
+        await phone.getByRole('heading',{name:'Review complete',level:1}).waitFor({state:'visible'});
+       }
+      }
       // Interaction variants are separate scenes, not copies of the idle route.
       if(action==='show-answer'){
        await phone.getByRole('button',{name:'Show answer'}).click();
@@ -77,6 +91,10 @@ try {
       }
       const actual=await phone.locator('html').getAttribute('data-theme');
       if(actual!==theme)throw Error('Unexpected world for '+name+' '+demo);
+      // A shell-only frame is not evidence of a captured route. Require the
+      // destination's visible heading, then let two frames paint before capture.
+      await phone.locator('#main-content h1').first().waitFor({state:'visible'});
+      await phone.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await phone.screenshot({path:join(dir,name+'.png'),animations:'disabled'});
       if(['paths','project-path','project-sources','proposals','cards','atlas','insights','settings'].includes(name)){
        await phone.screenshot({path:join(dir,name+'-full.png'),animations:'disabled',fullPage:true});
