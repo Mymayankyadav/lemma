@@ -14,6 +14,7 @@ import {CalibrationBars} from '../../ui/charts/CalibrationBars';
 import {useState} from 'react';
 import {ArrowRight,BookOpen,Check as Tick,Lightbulb,Play,Plus,Settings,Sparkles} from 'lucide-react';
 import {Screen} from '../../ui/Screen';
+import {SectionHeading} from '../../ui/SectionHeading';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
 import {Card} from '../../ui/Card';
@@ -38,7 +39,7 @@ import {useToast} from '../../ui/Toast';
 const statuses=['done','revisit','now','next','locked','proposed'] as const;
 const keys=[{key:'Space',label:'Reveal'},{key:'1',label:'Again'},{key:'4',label:'Easy'}];
 function Section({title,children}:{title:string;children:React.ReactNode}){
- return <section aria-label={title} className="flex flex-col gap-4"><h2 className="text-headline font-semibold">{title}</h2>{children}</section>;
+ return <section aria-label={title} className="flex flex-col gap-4"><SectionHeading>{title}</SectionHeading>{children}</section>;
 }
 export default function Page(){
  const [mode,setMode]=useState('study'),[switchOn,setSwitchOn]=useState(true),[checked,setChecked]=useState(true),[mixed,setMixed]=useState<boolean|'mixed'>('mixed'),[sheetOpen,setSheetOpen]=useState(false);
