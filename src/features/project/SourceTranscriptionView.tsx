@@ -64,14 +64,14 @@ export function SourceTranscriptionView({source,stat}:{
    </span>}
   </div>
   <div className="flex flex-wrap items-center gap-3">
-   {hasPages&&<button type="button" className="min-h-11 text-amber" aria-expanded={open}
+   {hasPages&&<button type="button" className="min-h-11 min-w-11 px-2 text-amber" aria-expanded={open}
      onClick={()=>setOpen(v=>!v)}>{open?'Hide transcription':'View pages'}</button>}
    {label>0&&<button type="button" disabled={exporting} onClick={()=>void exportPages('md')}
-     className="flex min-h-11 items-center gap-1 text-amber"><Download size={15}/>Download as .md</button>}
+     className="flex min-h-11 min-w-11 items-center gap-1 px-2 text-amber"><Download size={15}/>Download as .md</button>}
    {label>0&&<button type="button" disabled={exporting} onClick={()=>void exportPages('tex')}
-     className="flex min-h-11 items-center gap-1 text-amber"><Download size={15}/>Download as .tex</button>}
+     className="flex min-h-11 min-w-11 items-center gap-1 px-2 text-amber"><Download size={15}/>Download as .tex</button>}
    {!source.hasText&&<button type="button" onClick={()=>void tellTutor()}
-     className="min-h-11 text-amber">Tell your tutor</button>}
+     className="min-h-11 min-w-11 px-2 text-amber">Tell your tutor</button>}
   </div>
   {open&&<section role="region" aria-label={'Page transcription for '+source.title} className="flex min-w-0 flex-col gap-3 rounded-ctl border border-edge bg-well p-3">
    <div className="flex items-center justify-between gap-2">
@@ -97,7 +97,7 @@ export function SourceTranscriptionView({source,stat}:{
       Transcription {current.data?.confidence==='check'&&
        <span className="inline-flex items-center gap-1 text-amber"><span className="size-2 rounded-full bg-amber"/>Check</span>}
      </p>
-     {current.isLoading?<p>Loading page…</p>:current.isError?<p role="alert">Could not load page. <button type="button" className="text-amber" onClick={()=>void current.refetch()}>Retry</button></p>
+     {current.isLoading?<p>Loading page…</p>:current.isError?<p role="alert">Could not load page. <button type="button" className="min-h-11 min-w-11 px-2 text-amber" onClick={()=>void current.refetch()}>Retry</button></p>
       :!current.data?.body?<p className="text-ink-3">This page has not been transcribed yet.</p>
       :editing?<div className="flex flex-col gap-2">
         <textarea aria-label="Edit page transcription" maxLength={8000} rows={10} value={draft}
@@ -105,17 +105,17 @@ export function SourceTranscriptionView({source,stat}:{
         <MathPreview source={draft} className="min-w-0 max-w-full overflow-x-auto" />
         <div className="flex flex-wrap gap-3">
          <button type="button" disabled={edit.isPending} onClick={()=>void save({body:draft})}
-          className="min-h-11 text-amber">Save page</button>
-         <button type="button" onClick={()=>setEditing(false)} className="min-h-11 text-ink-2">Cancel</button>
+          className="min-h-11 min-w-11 px-2 text-amber">Save page</button>
+         <button type="button" onClick={()=>setEditing(false)} className="min-h-11 min-w-11 px-2 text-ink-2">Cancel</button>
         </div>
        </div>:
         <div className="max-h-96 overflow-auto rounded-s bg-raised p-3"><MathText source={current.data.body}/></div>}
      {current.data?.body&&transcribed&&!editing&&<div className="mt-2 flex flex-wrap gap-3">
       <button type="button" onClick={()=>setEditing(true)}
-       className="flex min-h-11 items-center gap-1 text-amber"><PenLine size={15}/>Edit page</button>
+       className="flex min-h-11 min-w-11 items-center gap-1 px-2 text-amber"><PenLine size={15}/>Edit page</button>
       {current.data.confidence==='check'&&<button type="button" disabled={edit.isPending}
        onClick={()=>void save({confidence:'high'})}
-       className="flex min-h-11 items-center gap-1 text-amber"><Check size={15}/>Mark checked</button>}
+       className="flex min-h-11 min-w-11 items-center gap-1 px-2 text-amber"><Check size={15}/>Mark checked</button>}
      </div>}
     </div>
    </div>
