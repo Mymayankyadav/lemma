@@ -53,4 +53,20 @@ describe('FIX #507 hard-budget CI gate',()=>{
    pending:[{issue:485,failure:'maths below 16px',routes:['*']}]
   })).toThrow(/invalid pending stress gate/);
  });
+
+ it('does not exempt already merged and Auditor-closed stress fixes',()=>{
+  // Closed #506/#485/#510 and merged ST-4 #433 must not silently forgive
+  // regressions in chart text, Atlas maths, Sources taps or Cards DOM.
+  for(const issue of [506,485,510,433])
+   expect(unfinishedStressGates.some(g=>g.issue===issue),
+    'stale stress exemption for #'+issue).toBe(false);
+  const examples:StressMeasurement[]=[
+   {...base,route:'/insights',smallText:1},
+   {...base,route:'/atlas',smallMath:1},
+   {...base,route:'/p/real-analysis',smallTargets:1},
+   {...base,route:'/cards',nodes:1500},
+  ];
+  for(const example of examples)
+   expect(()=>enforceStressBudgets([example])).toThrow(/stress budget failed/);
+ });
 });
