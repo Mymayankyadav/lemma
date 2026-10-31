@@ -83,3 +83,47 @@ test('FIX #517 Atlas manual deselection clears stale named deep-link metadata',a
  await expect(page.getByRole('dialog',{name:'Uniform continuity'})).toHaveCount(0);
  await page.screenshot({path:'test-results/screens/fix-517-atlas-deselection.png',fullPage:true});
 });
+
+test('FIX #517 duplicate mathematical idea names ask for a subject instead of opening the wrong idea',async({page})=>{
+ await page.setViewportSize({width:360,height:740});
+ await page.addInitScript(({token,user,expiresAt})=>{
+  localStorage.setItem('sb-yemqnhnztlbyxmjxidis-auth-token',JSON.stringify({
+   access_token:token,refresh_token:'fixture-refresh',token_type:'bearer',expires_in:3600,expires_at:expiresAt,user,
+  }));
+ },{token,user,expiresAt:Math.floor(Date.now()/1000)+3600});
+ await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
+ await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
+ await page.route('**/auth/v1/**',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(user)}));
+ const name=String.raw`Uniform $\ell^p$ convergence`;
+ const subjects=[
+  {id:'subject-analysis',name:'Analysis',glyph:'A',hue:'amber',position:0},
+  {id:'subject-topology',name:'Topology',glyph:'T',hue:'slate',position:1},
+ ];
+ const concepts=subjects.map((subject,i)=>({
+  id:'concept-'+i,slug:'uniform-continuity',name,subject_id:subject.id,
+  level:'planet',parent_id:null,topic:null,blurb:null,is_star:false,pin_x:null,pin_y:null,
+ }));
+ const unexpected:string[]=[];
+ await page.route('**/rest/v1/**',r=>{
+  const path=new URL(r.request().url()).pathname.replace(/^\/rest\/v1/,'');
+  const data:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:
+   path==='/subjects'?subjects:path==='/concepts'?concepts:
+   path==='/rpc/review_items'?[]:
+   ['/concept_links','/checkpoint_concepts','/checkpoints','/projects','/checkpoint_prereqs',
+    '/misconceptions','/notes','/cards','/reviews'].includes(path)?[]:undefined;
+  if(data===undefined){unexpected.push(path);return r.fulfill({status:404,body:'{}'});}
+  return r.fulfill({status:200,contentType:'application/json',
+   headers:{'content-range':'0-0/1'},body:JSON.stringify(data)});
+ });
+ await page.goto('/lemma/?demo=0#/atlas?focus=uniform-l-p-convergence&name='+encodeURIComponent(name));
+ const chooser=page.getByRole('dialog',{name:'Choose an idea'});
+ await expect(chooser).toBeVisible();
+ await expect(chooser.getByRole('button',{name:/in Analysis/})).toBeVisible();
+ await expect(chooser.getByRole('button',{name:/in Topology/})).toBeVisible();
+ await expect(page.locator('[data-atlas-details]')).toHaveCount(0);
+ await chooser.getByRole('button',{name:/in Topology/}).click();
+ await expect(page).toHaveURL(/id=concept-1/);
+ await expect(page.locator('[data-atlas-details]')).toBeVisible();
+ expect(unexpected).toEqual([]);
+ await page.screenshot({path:'test-results/screens/fix-517-duplicate-idea-chooser.png',fullPage:true});
+});
