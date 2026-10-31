@@ -129,8 +129,13 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
       lastActivityAt: `@day:-${i % 90}:0.6:0`, events: [],
     });
   }
-  data.proposals = [];
-  for (let i = 0; i < proposalCount; i++) {
+  // Keep a real plan-change proposal at the route exercised by the ST-0
+  // matrix. Previously the generated IDs replaced proposal-6, so the route
+  // showed an error while the all-route test still passed.
+  const planProposal = original.proposals.find(p => p.id === "proposal-6" && p.kind === "plan_change");
+  if (!planProposal) throw Error("Stress fixture requires proposal-6 plan change");
+  data.proposals = [structuredClone(planProposal)];
+  for (let i = 1; i < proposalCount; i++) {
     const project = data.projects[i % data.projects.length];
     data.proposals.push({
       ...baseProposal, id: `stress-proposal-${i}`, projectSlug: project.slug,
