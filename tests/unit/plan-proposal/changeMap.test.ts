@@ -29,6 +29,12 @@ describe("LOOK-8b plan-change checkpoint map context",()=>{
   expect(map.find(n=>n.code==="CP10")?.prereqs).toEqual(["CP6"]);
   expect(layoutPlanMap(map).edges.map(e=>e.from+">"+e.to).sort()).toEqual(["CP1>CP6","CP6>CP10"]);
  });
+ it("retains a nonadjacent removed-prerequisite endpoint without drawing the deleted edge",()=>{
+  const nodes=original.map(n=>n.code==="CP6"?{...n,change:"updated" as const}:n);
+  const map=planChangeMapNodes(nodes,change([{op:"prereq_remove",code:"CP6",prereq:"CP1"}]));
+  expect(codes(map)).toEqual(["CP1","CP5","CP6","CP7"]);
+  expect(layoutPlanMap(map).edges).toEqual([]);
+ });
  it("keeps moved checkpoints and the insertion neighbour in view",()=>{
   const moved=[...original.filter(n=>n.code!=="CP6")];
   moved.splice(moved.findIndex(n=>n.code==="CP10")+1,0,cp(6));
