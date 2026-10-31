@@ -13,7 +13,8 @@ describe('FIX #579: compact but exact study duration',()=>{
   expect(compactStudyTotal(1000*1440).short).toBe('1k d');
  });
  it('handles sub-day, zero and invalid totals',()=>{
-  expect(compactStudyTotal(125)).toEqual({short:'2 h',exact:'2 hours, 5 minutes'});
+  expect(compactStudyTotal(125)).toEqual({short:'2 h 5 m',exact:'2 hours, 5 minutes'});
+  expect(compactStudyTotal(1120)).toEqual({short:'18 h 40 m',exact:'18 hours, 40 minutes'});
   expect(compactStudyTotal(0)).toEqual({short:'0 m',exact:'0 minutes'});
   expect(compactStudyTotal(Number.NaN)).toEqual({short:'—',exact:'Study time unavailable'});
  });
