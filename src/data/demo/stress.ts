@@ -1,4 +1,4 @@
-import type { DemoStore, DemoCheckpoint, DemoNote } from "./model";
+import type { DemoStore, DemoCheckpoint, DemoNote, DemoSession } from "./model";
 
 import type {InsightAggregate,Subject} from "../types";
 import {DAY} from "../../lib/calendar";
@@ -70,6 +70,29 @@ export function makeStressInsightAggregate(
   subjectMinutes:[...bySubject.values()],checkpointDays,
   mostRevisited:most?{label:most.label,times:most.times,
    conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
+}
+
+/** Materialise a single 150/400-event reasoning history only when a session is opened.
+ * ST-6's nine-hint runs remain foldable; attempts/evidence/rechecks remain visible.
+ */
+export function stressSessionEvents(session: Pick<DemoSession, "id" | "checkpointCode">, count: number): DemoSession["events"] {
+  const match = /^stress-session-(\\d+)-(\\d+)$/.exec(session.id);
+  if (!match || !Number.isSafeInteger(count) || count < 0) return [];
+  const projectIndex = Number(match[1]), number = Number(match[2]);
+  return Array.from({length: count}, (_, index) => {
+    const phase = index % 12;
+    const kind = phase < 9 ? "hint" as const : phase === 9 ? "attempt" as const
+      : phase === 10 ? "evidence" as const : "recheck" as const;
+    return {
+      id: (projectIndex * 1000 + number) * count + index + 1,
+      kind,
+      body: `${kind === "hint" ? "Hint" : kind === "attempt" ? "Attempt" : kind === "evidence" ? "Evidence" : "Recheck"} ${index + 1}: justify each inference using the hypotheses of the lemma.`,
+      outcome: kind === "evidence" ? "demonstrated" as const : kind === "attempt" ? "partial" as const : null,
+      hintLevel: kind === "hint" ? phase + 1 : null,
+      checkpointCode: session.checkpointCode,
+      createdAt: new Date(Date.UTC(2026, 9, 31, 0, index)).toISOString(),
+    };
+  });
 }
 
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
@@ -225,38 +248,21 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   // and a second project's first session. The remaining sessions exercise list
   // pagination without allocating millions of repetitive event objects.
   const eventCount = extreme ? 400 : 150;
-  // ST-6 acceptance expects foldable nine-hint runs followed by visible evidence steps.
-  const eventKind = (index: number) => {
-    const phase = index % 12;
-    return phase < 9 ? "hint" as const : phase === 9 ? "attempt" as const
-      : phase === 10 ? "evidence" as const : "recheck" as const;
-  };
   data.sessions = [];
   for (const [projectIndex, project] of data.projects.entries()) {
     for (let index = 0; index < sessionCount; index++) {
       const number = index + 1;
       const fullHistory = (projectIndex === 0 && number === 7)
         || (projectIndex === projectCount - 1 && number === 1);
-      const events = fullHistory
-        ? Array.from({length: eventCount}, (_, eventIndex) => {
-            const kind = eventKind(eventIndex);
-            return {
-              id: projectIndex * sessionCount * eventCount + index * eventCount + eventIndex + 1,
-              kind,
-              body: `Reasoning step ${eventIndex + 1}: justify the inference using the hypotheses of the lemma.`,
-              outcome: kind === "evidence" ? "demonstrated" as const : kind === "attempt" ? "partial" as const : null,
-              hintLevel: kind === "hint" ? (eventIndex % 12) + 1 : null,
-              checkpointCode: `CP${(index % 36) + 1}`,
-              createdAt: `@day:-${index % 90}:0.5:0`,
-            };
-          })
-        : [];
+      const sessionId = `stress-session-${projectIndex}-${number}`;
+      const checkpointCode = `CP${(index % 36) + 1}`;
+      const events = fullHistory ? stressSessionEvents({id: sessionId, checkpointCode}, eventCount) : [];
       data.sessions.push({
         ...baseSession,
-        id: `stress-session-${projectIndex}-${number}`,
+        id: sessionId,
         projectId: project.id,
         number,
-        checkpointCode: `CP${(index % 36) + 1}`,
+        checkpointCode,
         goal: `Study session ${number} for ${project.title}`,
         state: "ended",
         startedAt: `@day:-${index % 90}:0.3:0`,

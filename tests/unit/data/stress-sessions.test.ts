@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {makeStressStore} from '../../../src/data/demo/stress';
+import {makeStressStore, stressSessionEvents} from '../../../src/data/demo/stress';
 import type {DemoStore} from '../../../src/data/demo/model';
 
 const seed = JSON.parse(readFileSync('src/data/demo/fixture.json', 'utf8')) as DemoStore;
@@ -25,6 +25,10 @@ describe('ST-0 session history at scale (audit #462)', () => {
    expect(detail?.events[10]?.kind).toBe('evidence');
    expect(detail?.events[11]?.kind).toBe('recheck');
    expect(new Set(detail?.events.map(event => event.id)).size).toBe(eventsPerSession);
+   const lazy = data.sessions.find(session => session.projectId === last.id && session.number === 8);
+   expect(lazy?.events).toHaveLength(0);
+   expect(lazy && stressSessionEvents(lazy, eventsPerSession)).toHaveLength(eventsPerSession);
+   expect(lazy && stressSessionEvents(lazy, eventsPerSession)[9]?.kind).toBe('attempt');
   });
  }
 });

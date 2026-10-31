@@ -70,7 +70,7 @@ import legacyRender from "../../lib/render/render.js";
 import { slugify } from "../../lib/text";
 import { DAY } from "../../lib/calendar";
 import {reviewForecast} from "../../lib/review-forecast";
-import {makeStressInsightAggregate} from "./stress";
+import {makeStressInsightAggregate, stressSessionEvents} from "./stress";
 
 const clone = <T>(value: T): T => structuredClone(value);
 const invalid = (message: string): never => {
@@ -877,7 +877,8 @@ export class DemoAdapter implements LemmaApi {
       summaryText: s.summaryText,
       resumeQuestion: s.resumeQuestion,
       resumeStep: s.resumeStep,
-      events: clone(s.events),
+      events: clone(s.events.length ? s.events : s.id.startsWith("stress-session-")
+        ? stressSessionEvents(s, this.store.seed === 2026103102 ? 400 : 150) : []),
       misconceptions: clone(
         this.store.misconceptions.filter((m) => m.projectId === p.id),
       ),
