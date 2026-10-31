@@ -8,7 +8,7 @@ for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const){
  test('FIX #536 stage jumps keep 44px targets '+theme+' '+width,async({page})=>{
   await page.setViewportSize({width,height:740});
-  await page.goto('/lemma/?demo=stress&theme='+theme+'#/p/stress-project-1');
+  await page.goto('/lemma/?demo=stress&theme='+theme+'#/p/stress-project-3');
   const nav=page.locator('[data-stage-jumps]');
   await expect(nav).toBeVisible();
   const chips=nav.locator('[data-stage-chip]');
