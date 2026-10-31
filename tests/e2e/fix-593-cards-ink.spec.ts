@@ -41,6 +41,11 @@ for(const profile of ['stress','extreme'] as const)
     expect(noteColor).toBe(colors.ink);
     expect(noteColor).not.toBe(colors.accent);
 
+    // Clear filters is a secondary action, not the screen's red primary.
+    const clear=page.getByRole('button',{name:'Clear filters'});
+    await expect(clear).toBeVisible();
+    expect(await clear.evaluate(el=>getComputedStyle(el).color)).toBe(colors.ink);
+
     const layout=await page.evaluate(()=>{
      const rows=[...document.querySelectorAll<HTMLElement>('[data-card-row]')];
      return {overflow:document.documentElement.scrollWidth-innerWidth,
