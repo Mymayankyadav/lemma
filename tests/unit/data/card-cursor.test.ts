@@ -16,6 +16,12 @@ describe('FIX-546b Card detail cursor security and keyset ordering',()=>{
   const forged=btoa(JSON.stringify({v:1,kind:'reviews',noteNo:1,at, id:'1);delete.from.notes'}))
   expect(()=>decodeCardPageCursor(forged,'reviews',1)).toThrowError(/Invalid Card detail/)
  })
+ it('rejects UUID review IDs but allows demo numeric and live UUID comment IDs',()=>{
+  const uuid='00000000-0000-4000-8000-000000000001'
+  expect(()=>encodeCardPageCursor('reviews',1,{at,id:uuid})).toThrowError(/Invalid Card detail/)
+  expect(decodeCardPageCursor(encodeCardPageCursor('comments',1,{at,id:uuid}),'comments',1)).toEqual({at,id:uuid})
+  expect(decodeCardPageCursor(encodeCardPageCursor('comments',1,{at,id:'17'}),'comments',1)).toEqual({at,id:'17'})
+ })
  it('sorts tied bigint identities without JS precision loss',()=>{
   const key={at,id:'9007199254740993'}
   expect(olderThanKey({at,id:'9007199254740992'},key)).toBe(true)
