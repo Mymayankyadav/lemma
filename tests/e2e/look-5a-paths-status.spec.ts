@@ -21,11 +21,25 @@ for(const profile of ['1','stress','extreme'] as const){
      await expect(single.getByRole('link',{name:/Real Analysis/})).toBeVisible()
      await expect(single.locator('[data-project-row="real-analysis"] .mr-2')).toContainText('Analysis')
     }
-    // LOOK-1c compatibility: counts remain numeric UI roles, and only
-    // multi-project groups expose the shared notebook section heading.
+    // Grouping changes form, not information: a singleton suppresses its
+    // redundant heading but keeps the subject in row metadata. Every group
+    // with multiple projects must retain the notebook heading and fold button.
     await expect(page.locator('[data-project-row] [data-count-role]').first()).toBeVisible()
-    if(profile!=='1'){
-     await expect(page.locator('section[aria-label$=" projects"] .ui-section-heading').first()).toBeVisible()
+    const sections=page.locator('section[aria-label$=" projects"][data-group-size]')
+    await expect(sections.first()).toBeVisible()
+    for(let i=0;i<await sections.count();i++){
+     const section=sections.nth(i)
+     const size=Number(await section.getAttribute('data-group-size'))
+     expect(size).toBeGreaterThan(0)
+     const heading=section.locator(':scope > button .ui-section-heading')
+     if(size===1){
+      await expect(section.locator(':scope > button')).toHaveCount(0)
+      await expect(heading).toHaveCount(0)
+      await expect(section.locator('[data-project-row] .mr-2').first()).toBeVisible()
+     }else{
+      await expect(heading).toBeVisible()
+      await expect(section.locator(':scope > button')).toHaveAttribute('aria-expanded','true')
+     }
     }
     const buttons=group.getByRole('button')
     await expect(buttons).toHaveCount(3)
