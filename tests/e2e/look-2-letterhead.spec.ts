@@ -65,7 +65,14 @@ for(const width of [360,390] as const){
    // Hash-route navigation can retain the prior route's 600px test scroll.
    // Reset before taking visual evidence: otherwise the next screenshot shows
    // only the empty lower page even though all landmarks are mounted.
-   await page.evaluate(()=>window.scrollTo(0,0));
+   // Disable CSS smooth scrolling for this test-only reset. Otherwise
+   // scrollTo(0,0) starts an animation and the next viewport assertion sees
+   // the previous route's 600px scroll (often 1080px after hash navigation).
+   await page.evaluate(()=>{
+    document.documentElement.style.scrollBehavior='auto';
+    document.body.style.scrollBehavior='auto';
+    window.scrollTo(0,0);
+   });
    await heading.scrollIntoViewIfNeeded();
    // The heading must be physically inside the viewport, not merely
    // "visible" in the DOM (which permits an offscreen element).
