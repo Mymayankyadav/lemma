@@ -69,7 +69,7 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
  </Slab>
 }
 
-export function GoalDistance({projects,variant='metro'}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
+export function GoalDistance({projects}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
  const active=projects.filter(project=>project.status==='active').sort(urgency)
  const [showRest,setShowRest]=useState(false)
  // Live Insights returns aggregate charts, not checkpoint event rows; avoid
@@ -88,7 +88,7 @@ export function GoalDistance({projects,variant='metro'}:{projects:ProjectSummary
     {featured.map(project=>project.total>14?
      <SummaryGoalCard key={project.id} project={project} events={insight.data?.checkpointEvents}/>:
      <Suspense key={project.id} fallback={<Skeleton h={200}/>}> 
-      <GoalCard project={project} variant={variant} events={insight.data?.checkpointEvents}/>
+      <GoalCard project={project} events={insight.data?.checkpointEvents}/>
      </Suspense>)}
     {rest.length>0&&<div className="min-w-0 rounded-slab border border-edge bg-[var(--card)] p-2" data-compact-goals="">
      <p className="px-2 py-2 text-label font-semibold text-ink-2">
