@@ -44,7 +44,7 @@ function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:st
   const at = useMemo(() => new Map(layout.nodes.map(n => [n.code, n])), [layout]);
   const byCode = useMemo(() => new Map(nodes.map(n => [n.code, n])), [nodes]);
   return (
-    <div className="overflow-auto rounded-slab border border-edge bg-well" aria-label="Full checkpoint tree">
+    <div className="overflow-auto rounded-slab border border-edge bg-well" aria-label="Checkpoint prerequisites">
       <svg role="group" aria-label="Map of proposed checkpoints and prerequisites" width={layout.width} height={layout.height}
         viewBox={`0 0 ${layout.width} ${layout.height}`} style={{maxWidth:"none"}} className="block">
         {layout.edges.map(e => {
