@@ -640,3 +640,16 @@ The old schema from the retired plan is still in the project (19 tables in `publ
 \DeclareMathOperator*{\argmin}{arg\,min}
 ```
 (Carried over from the owner's previous profile.)
+
+## 13. Transcribed-source page viewer API (CONTRACT UI-8)
+
+Additive interface for `docs/spec/transcribe.md` §2–3. `Source.origin` identifies whether the source was created by the user, Claude, ChatGPT or another client. `TranscribedSourcePage` holds a single one-based page number, label, exact Markdown/LaTeX `body`, `transcribedBy` and `confidence`. `SourceTranscriptionStat` holds the transcribed and unchecked counts without loading page bodies.
+
+- `getSourceTranscriptionStats(projectId)` returns owner-scoped per-source progress for the Sources tab.
+- `getSourcePage(sourceId,page)` reads **one** page, or `null` for a page not yet transcribed. It must never fetch all 400 pages for a viewer navigation.
+- `getTranscribedPagesForExport(sourceId)` reads all transcribed pages only on explicit download; results are in page order.
+- `updateSourcePage(sourceId,page,{body?,confidence?})` edits exactly one owner-owned transcribed page; the existing audit action trigger makes edits undoable. `confidence: 'high'` marks a checked page.
+- `getSourcePdfUrl(sourceId)` returns a short-lived signed original-PDF URL or `null` for a text-only source; no permanent public storage link.
+- Hooks `useSourceTranscriptionStats`, `useSourcePage`, `useSourcePdfUrl` and `useUpdateSourcePage` use bounded cache keys; page writes invalidate page/count caches.
+
+The interface contract contains only additive changes and `notImplemented` adapter stubs. **UI-8** supplies the implementations and screens in its own PR. All reads/writes are owner-scoped and keep source text private.
