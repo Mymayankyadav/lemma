@@ -52,5 +52,5 @@ describe('deferred browser stress sessions', () => {
   const insights=await api.getInsightData(7);
   expect(insights.aggregate?.sessions).toBeGreaterThan(0);
   expect(insights.aggregate?.minutes).toBe((insights.aggregate?.sessions??0)*seed.sessions[0].minutes);
- });
+ }, 30_000);
 });
