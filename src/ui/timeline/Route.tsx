@@ -100,13 +100,15 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek}:RouteP
    const isCurrent=mark.index===current,done=cp.ui==='done',revisit=cp.ui==='revisit';
    const radius=isCurrent?5.5:done?3.6:3.4;
    return <g key={cp.id} data-station-index={mark.index} data-station-state={state}>
-    {isCurrent&&<circle cx={mark.x} cy="24" r="11" fill="var(--accent)" fillOpacity=".16"/>}
+    {/* One SVG mark: the translucent 11px halo is its stroke, not a
+        second overlapping circle that would corrupt ST-0 mark spacing. */}
     <circle data-route-mark="station" cx={mark.x} cy="24" r={radius}
      fill={isCurrent?'var(--accent)':done?'var(--ink-2)':'var(--paper)'}
-     stroke={revisit?'var(--late)':isCurrent?'var(--accent)':done?'var(--ink-2)':'var(--ink-3)'}
-     strokeWidth={done?0:1.5} strokeDasharray={revisit?'3 2':undefined}/>
-    {mark.index===focused&&focused!==current&&<circle cx={mark.x} cy="24" r="8"
-     fill="none" stroke="var(--ink)" strokeWidth="1"/>}
+     stroke={isCurrent?'var(--accent)':mark.index===focused?'var(--ink)':
+      revisit?'var(--late)':done?'var(--ink-2)':'var(--ink-3)'}
+     strokeWidth={isCurrent?11:done?0:mark.index===focused?2.5:1.5}
+     strokeOpacity={isCurrent?.16:1} paintOrder="stroke fill"
+     strokeDasharray={revisit?'3 2':undefined}/>
    </g>;
   })}
   {layout.mode==='plain'&&stages.map((stage,i)=>{
