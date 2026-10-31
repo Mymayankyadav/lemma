@@ -43,6 +43,25 @@ for(const width of [360,390] as const){
   for(const choice of await choices.all()){
    expect((await choice.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   }
+  // v4 §2a: target-recall percentage is passive ink; only the slider's
+  // selected control may use the red pencil.
+  const retentionColours=await page.evaluate(()=>{
+   const probe=(token:string)=>{
+    const element=document.createElement('span');
+    element.style.color=`var(${token})`;
+    document.body.appendChild(element);
+    const value=getComputedStyle(element).color;
+    element.remove();
+    return value;
+   };
+   const label=document.querySelector('label[for="retention"] + span')!;
+   const slider=document.querySelector<HTMLInputElement>('#retention')!;
+   return {label:getComputedStyle(label).color,ink:probe('--ink'),
+    accent:probe('--accent'),slider:getComputedStyle(slider).accentColor};
+  });
+  expect(retentionColours.label).toBe(retentionColours.ink);
+  expect(retentionColours.label).not.toBe(retentionColours.accent);
+  expect(retentionColours.slider).toBe(retentionColours.accent);
   const actions=page.locator('[data-settings-actions]');
   await actions.scrollIntoViewIfNeeded();
   await expect(actions.getByRole('button')).toHaveCount(2);
