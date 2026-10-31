@@ -1520,16 +1520,18 @@ export class DemoAdapter implements LemmaApi {
       const rows=dueCheckpoints.get(cp.projectId)??[];
       rows.push(cp);dueCheckpoints.set(cp.projectId,rows);
     }
-    return (await this.listProjects()).filter(p=>p.status!=="archived").map(p=>({
+    // The deck tree needs project identity and glyph only; re-running
+    // listProjects here re-scans every card, source and checkpoint on Today.
+    return this.store.projects.filter(p=>!p.system&&p.status!=="archived").map(p=>({
       key:`project:${p.slug}` as const,
       label:p.title,
-      glyph:p.subject.glyph,
+      glyph:this.displaySubject(p.subjectId).glyph,
       level:0 as const,
       due:projectCounts.get(p.slug)??0,
       children:(dueCheckpoints.get(p.id)??[]).map(cp=>({
         key:`cp:${p.slug}:${cp.code}` as const,
         label:cp.title,
-        glyph:p.subject.glyph,
+        glyph:this.displaySubject(p.subjectId).glyph,
         level:1 as const,
         due:checkpointCounts.get(cpKey(p.slug,cp.code))??0,
         children:[],
