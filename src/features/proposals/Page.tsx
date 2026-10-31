@@ -438,7 +438,7 @@ export default function Page() {
       )}
       <Sheet open={confirm} onClose={()=>setConfirm(false)} title={`Approve ${batch?.proposals.filter(p=>p.kind==="card").length??0} from ${batch?.label??"group"}?`}>
         <p className="mb-3 text-ink-2">Preview the cards from this session and checkpoint. A six-second Undo window appears before anything is saved.</p>
-        <ul className="mb-4 max-h-56 overflow-y-auto text-label text-ink-2">{batch?.proposals.filter(p=>p.kind==="card").slice(0,10).map(p=><li key={p.id} className="border-b border-edge py-2">{p.card?.front.slice(0,150)}</li>)}</ul>
+        <ul className="mb-4 max-h-56 min-w-0 overflow-y-auto text-ink-2">{batch?.proposals.filter(p=>p.kind==="card").slice(0,10).map(p=><li key={p.id} className="min-w-0 max-w-full overflow-x-auto border-b border-edge py-2"><MathText source={p.card?.front??""} variant="body" className="min-w-0 max-w-full text-base" /></li>)}</ul>
         {(batch?.proposals.filter(p=>p.kind==="card").length??0)>10&&<p className="mb-3 text-label text-ink-3">Showing 10 of {batch?.proposals.filter(p=>p.kind==="card").length} cards in this batch.</p>}
         <div className="grid grid-cols-2 gap-3"><Button variant="ghost" onClick={()=>setConfirm(false)}>Cancel</Button>
          <Button disabled={pending || !batch?.proposals.some(p=>p.kind==="card")} onClick={()=>{

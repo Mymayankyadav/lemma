@@ -37,10 +37,21 @@ function texSections(body: string): Section[] {
 
 function mdSections(text: string): Section[] {
   const marks: { at: number; title: string; level: number }[] = [];
-  let inFence = false, offset = 0;
+  let fence: { marker: string; length: number } | null = null, offset = 0;
   for (const line of text.split("\n")) {
-    if (/^\s*```/.test(line)) inFence = !inFence;
-    const m = !inFence && /^(#{1,2})\s+(.+?)\s*#*\s*$/.exec(line);
+    // CommonMark fences may use backticks or tildes. A closer must use the
+    // same character and at least the opener's length, with no info string.
+    const match = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+    if (match) {
+      const marker = match[1][0];
+      if (fence === null && (marker !== "`" || !match[2].includes("`"))) {
+        fence = { marker, length: match[1].length };
+      } else if (fence !== null && marker === fence.marker &&
+                 match[1].length >= fence.length && /^[ \t]*$/.test(match[2])) {
+        fence = null;
+      }
+    }
+    const m = fence === null && /^(#{1,2})\s+(.+?)\s*#*\s*$/.exec(line);
     if (m) marks.push({ at: offset, title: m[2], level: m[1].length - 1 });
     offset += line.length + 1;
   }

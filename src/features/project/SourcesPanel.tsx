@@ -82,8 +82,12 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
  }
  const grouped=kinds.map(value=>({kind:value,rows:sources.filter(s=>(s.kind??'other')===value).sort((a,b)=>Date.parse(b.addedAt??b.createdAt)-Date.parse(a.addedAt??a.createdAt))})).filter(g=>g.rows.length);
  const visibleKind=(value:SourceKind)=>sources.length<=10?(openKind===null||openKind===value):(openKind??grouped[0]?.kind)===value;
- const sized=sources.filter(source=>typeof source.bytes==='number'&&Number.isFinite(source.bytes)&&source.bytes>=0);
- const storageBytes=sized.reduce((total,source)=>total+source.bytes!,0),unknownSizes=sources.length-sized.length;
+ // The 1 GB quota is for stored PDF binaries, not .tex/.md page text in Postgres.
+ // Source.bytes records the original upload size for both kinds; only PDFs
+ // consume the storage bucket. Keep unknown PDF sizes explicit.
+ const pdfSources=sources.filter(source=>/\.pdf$/i.test(source.filename));
+ const sized=pdfSources.filter(source=>typeof source.bytes==='number'&&Number.isFinite(source.bytes)&&source.bytes>=0);
+ const storageBytes=sized.reduce((total,source)=>total+source.bytes!,0),unknownSizes=pdfSources.length-sized.length;
  const storagePct=Math.min(100,storageBytes/storageLimit*100);
  const visibleQueue=visibleUploadQueue(queue);
  return <section aria-label="Sources" className="flex flex-col gap-4">
