@@ -27,14 +27,20 @@ Your job each run (do all of it, as much as fits):
    - open (no PR).
 3. Merge everything that can merge:
    - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: squash-merge it via REST with the head SHA. PRs are never drafts (see docs/agents/README.md §3). If you meet an old draft that qualifies, list it on the Task board under "Owner action: mark ready for review" instead.
-   - If a green PR is only behind main, merge main into its branch (no force-push or rebase), push, and leave it for the next run. Do not wait for CI.
+   - **Being behind main is not a blocker.** main is not protected and does not require up-to-date branches. Merge a green PR even when it is behind, provided GitHub reports no conflict (`mergeable` is true and `mergeable_state` is not `dirty`).
+   - **Refresh first only in two cases:**
+     - the PR has conflicts (`dirty`); or
+     - files it changes were also changed on main since its CI ran, which risks a semantic break.
+     In those cases, update the branch with `PUT /repos/{o}/{r}/pulls/{n}/update-branch` (or merge main in), and come back to it later in this same run: poll its checks every few minutes and merge it as soon as it is green. Do not leave it for the next hour.
+   - Merge PRs one after another in the same run. After each merge, re-check the next PR's mergeability; don't refresh PRs that don't need it.
+   - After your merges, check main's CI. If it goes red, open "FIX main: <job>" naming the PR most likely responsible (or revert that PR with a new "REVERT #n" PR if the fix isn't obvious).
    - Merge as many PRs as qualify. Never merge red or pending CI.
 4. If main's CI, the Pages deploy, the Supabase deploy or the post-deploy MCP check is red, open or refresh "FIX main: <job>" with the annotations, and list it first under Next up.
 5. Rewrite the single body of the issue "Task board" (create it if missing):
    - a table of task, spec, depends on, PR, CI, state, owner and lease, last commit, next action;
    - a "Next up" list (open and stalled tasks in dependency order, red ones marked for the Fixer);
    - a line "Unclaimed now: …".
-6. Append to the issue "Agent log": `Steward <HH:MM IST>: merged #…; behind-main updated #…; next up …`.
+6. Append to the issue "Agent log": `Steward <HH:MM IST>: merged #…; refreshed (conflict/overlap) #…; next up …`.
 
 Rules:
 - Never push to main. Never force-push.

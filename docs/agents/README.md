@@ -8,7 +8,7 @@ Five scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh s
 
 | Role | Runs (IST) | Does |
 | --- | --- | --- |
-| Steward | :00 | Builds the task board from `plan.md`; merges every green, complete PR; refreshes branches that are behind main; flags a red main |
+| Steward | :00 | Builds the task board from `plan.md`; merges every green, complete PR, even if it is behind main, unless it conflicts or overlaps recent changes; flags a red main |
 | Fixer | :15 | Turns every red PR green, fixes `FIX main` and `audit` issues, fixes bugs; works several in parallel |
 | Builder | :30 | Writes as much code as possible across 3–5 tasks in parallel; takes over any stalled PR |
 | Auditor | :45 | Audits every merged and "Ready to merge" PR against the specs and the owner's intent; files `audit` issues; verifies fixes |
@@ -25,7 +25,7 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
   - There are no "my PR" exceptions: every open PR belongs to the team.
 - **PR description.** It holds a checklist of the spec's acceptance items, a line "Next step: …", and "Ready to merge" once the owner of the lease believes it is complete.
 - **Do not wait for CI.** Push, move on to the next task, and come back later (in the same run or the next) to read the results.
-- **Merging.** Squash-merge only, with green CI on the exact head commit. Never push to main, never force-push or rebase; bring main in with a merge.
+- **Merging.** Squash-merge only, with green CI on the exact head commit. Being behind main is not a blocker: merge unless GitHub reports a conflict, or files the PR touches have changed on main since its CI ran. Never push to main, never force-push or rebase; bring main in with a merge.
 - **Tests.** Never weaken, skip or delete a test to make CI pass. Fix the code.
 - **Shared issues.**
   - "Task board": the Steward rewrites its body each run.
