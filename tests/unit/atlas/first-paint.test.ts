@@ -87,6 +87,15 @@ describe('FIX #519b cold Atlas viewport budget',()=>{
  it('keeps small outlines fully accessible without virtualization',()=>{
   expect(atlasWindow(40,0,740)).toEqual({virtual:false,first:0,last:40,height:undefined});
  });
+ it('keeps a moderate Atlas fully navigable but still virtualizes 2,500 rows',()=>{
+  // The ordinary three-field demo has enough expanded rows to put a field
+  // below the first phone viewport. All fields must remain in the tree DOM.
+  expect(atlasWindow(110,0,740,150)).toEqual({virtual:false,first:0,last:110,height:undefined});
+  const huge=atlasWindow(2500,0,740,150);
+  expect(huge.virtual).toBe(true);
+  expect(huge.last-huge.first).toBeLessThanOrEqual(Math.ceil(740/44)+8);
+  expect(huge.height).toBe(2500*44);
+ });
 });
 
 // Atlas's extreme first paint is mostly ordinary names ("Idea 123: Definition").
