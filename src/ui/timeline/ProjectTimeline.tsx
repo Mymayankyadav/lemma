@@ -134,7 +134,7 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
     </button>
    })}
   </div>
-  <div role="group" aria-label={'Checkpoints in '+activeStage.name}
+  <div role="group" aria-label={'Checkpoints in '+plainMath(activeStage.name)}
    onKeyDown={event=>{
     if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
      event.preventDefault();move(event.key==='ArrowRight'?1:-1)
