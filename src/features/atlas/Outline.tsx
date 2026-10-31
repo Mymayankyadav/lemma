@@ -185,7 +185,6 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
      <rect data-atlas-bundle-pill="true" data-atlas-bundle-circle="true"
       x={-pillWidth/2} y="-8"
       width={pillWidth} height="16" rx="8"
-      // Clip the outside half of the stroke to keep exactly 16 painted px.
       style={{clipPath:'inset(0)'}}
       fill="var(--paper)" stroke={toneColor[tone]} strokeWidth="1"/>
      <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
