@@ -118,3 +118,41 @@ for(const width of [360,390] as const){
   await page.screenshot({path:'test-results/screens/stress/st-4-math-preview-'+theme+'-'+width+'.png'});
  });
 }
+
+
+// D6 acceptance: measure the interactive list transition under 4x CPU.
+// Loading the deterministic 30,000-card fixture happens before timing.
+for(const theme of ['graph','graph-night'] as const)
+for(const [width,height] of [[360,740],[390,844]] as const){
+ test('ST-4 extreme cards open under 1s at 4x CPU: '+theme+' '+width,async({page})=>{
+  test.setTimeout(120_000);
+  await page.setViewportSize({width,height});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+  await page.goto('/lemma/?demo=extreme&theme='+theme+'#/projects',{waitUntil:'domcontentloaded',timeout:90_000});
+  await expect(page.getByRole('heading',{name:'Paths',level:1})).toBeVisible({timeout:90_000});
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
+  try{
+   await page.evaluate(()=>{
+    (window as typeof window&{__cardsStart:number}).__cardsStart=performance.now();
+    location.hash='/cards';
+   });
+   await page.waitForFunction(()=>document.querySelectorAll('[data-card-row]').length>0,null,{timeout:90_000});
+   const metrics=await page.evaluate(()=>({
+    durationMs:performance.now()-(window as typeof window&{__cardsStart:number}).__cardsStart,
+    nodes:document.querySelectorAll('*').length,
+    rows:document.querySelectorAll('[data-card-row]').length,
+    overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth),
+   }));
+   expect(metrics.durationMs,'Card list first interactive render at 4x CPU').toBeLessThan(1000);
+   expect(metrics.nodes,'Card list DOM budget').toBeLessThan(1500);
+   expect(metrics.rows).toBeLessThanOrEqual(24);
+   expect(metrics.overflow,'Card list horizontal overflow').toBeLessThanOrEqual(1);
+   await page.screenshot({path:'test-results/screens/stress/st-4-4x-cards-'+theme+'-'+width+'.png'});
+  }finally{
+   await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
+   await cdp.detach();
+  }
+ });
+}
