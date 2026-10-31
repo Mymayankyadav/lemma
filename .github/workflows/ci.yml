@@ -54,6 +54,8 @@ jobs:
         run: npm install --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13
       - name: Verify DB-2 action log, undo and owner isolation
         run: node tests/mcp/db2.mjs
+      - name: Verify ST-5 owner-scoped aggregate and paging SQL
+        run: node tests/mcp/st5.mjs
       - name: Verify DB-5 transcription provenance and reversible pages
         run: node tests/mcp/db5.mjs
       - name: Verify MCP-2 atomic transactions when available

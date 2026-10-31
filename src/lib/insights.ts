@@ -1,4 +1,4 @@
-import type { Confidence, InsightData, Rating } from "../data/types";
+import type { Confidence, InsightAggregate, InsightData, Rating } from "../data/types";
 import type { InsightDays } from "../data/api";
 import { DAY, studyClock } from "./calendar";
 export interface InsightOptions {
@@ -96,11 +96,70 @@ export function estimatedReviewMinutes(
     : 25_000;
   return Math.ceil((Math.max(0, count) * average) / 60_000);
 }
+/** Shape the bounded SQL aggregates into the same chart model as demo/raw mode.
+ * The RPC already applies the owner's timezone and study-day rollover; do
+ * not reinterpret its YYYY-MM-DD buckets in the browser's local timezone.
+ */
+function buildAggregateInsights(data: InsightAggregate, days: InsightDays) {
+  const reviewDays = data.reviewDays;
+  const buckets = (size: number) =>
+    Array.from({ length: Math.ceil(reviewDays.length / size) }, (_, i) => {
+      const group = reviewDays.slice(i * size, (i + 1) * size);
+      const sum = (key: "count" | "right" | "again" | "hard" | "good" | "easy") =>
+        group.reduce((total, day) => total + day[key], 0);
+      const count = sum("count");
+      return {
+        date: group[0]?.date ?? "",
+        endDate: group[group.length - 1]?.date ?? "",
+        count,
+        recall: count ? sum("right") / count : null,
+        again: sum("again"),
+        hard: sum("hard"),
+        good: sum("good"),
+        easy: sum("easy"),
+      };
+    });
+  const confidence: Calibration[] = (["sure", "unsure", "guess"] as const).map(
+    (kind) => {
+      const row = data.calibration.find((item) => item.confidence === kind);
+      const total = row?.total ?? 0;
+      const right = row?.right ?? 0;
+      return { confidence: kind, total, right, rate: total ? right / total : null };
+    },
+  );
+  const checkpointDays = data.checkpointDays.slice(-28);
+  const checkpointWeeks = Array.from({ length: 4 }, (_, i) => {
+    const group = checkpointDays.slice(i * 7, (i + 1) * 7);
+    return {
+      label: i === 3 ? "This week" : `W${i + 1}`,
+      date: group[0]?.date ?? "",
+      demonstrated: group.reduce((total, day) => total + day.demonstrated, 0),
+      rechecked: group.reduce((total, day) => total + day.rechecked, 0),
+    };
+  });
+  return {
+    days,
+    minutes: data.minutes,
+    sessions: data.sessions,
+    reviews: data.reviews,
+    recall: data.reviews ? data.right / data.reviews : null,
+    recallBuckets: buckets(days === 7 ? 1 : 7),
+    reviewBuckets: buckets(days === 90 ? 7 : 1),
+    calibration: confidence,
+    calibrationMessage: calibrationMessage(confidence),
+    subjects: [...data.subjectMinutes].sort((a, b) => b.minutes - a.minutes),
+    checkpointWeeks,
+    typicalSession: data.typicalSession,
+    mostRevisited: data.mostRevisited,
+  };
+}
+
 export function buildInsights(
   data: InsightData,
   days: InsightDays,
   options: InsightOptions = {},
 ) {
+  if (data.aggregate) return buildAggregateInsights(data.aggregate, days);
   const now = options.now ?? Date.now(),
     clock = studyClock(options.rolloverHour ?? 4, options.timeZone ?? "UTC");
   const endIndex = clock.dayIndex(now),
