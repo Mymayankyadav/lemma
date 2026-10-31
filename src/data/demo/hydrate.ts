@@ -8,8 +8,12 @@ export function hydrateFixture(
   input: DemoStore,
   now: number,
   timeZone: string,
+  { takeOwnership = false }: { takeOwnership?: boolean } = {},
 ): DemoStore {
-  const source = structuredClone(input);
+  // Generated stress stores are private to one adapter. Avoid cloning the
+  // entire 30,000-card graph again on the 4x-CPU cold-start path. Callers
+  // supplying reusable fixtures still receive the original copy semantics.
+  const source = takeOwnership ? input : structuredClone(input);
   source.settings.timeZone = timeZone;
   const clock = studyClock(source.settings.rolloverHour, timeZone),
     today = clock.dayIndex(now);
