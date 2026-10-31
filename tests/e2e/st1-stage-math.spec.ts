@@ -35,13 +35,20 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   await expect(rail).toBeVisible();
   const labels=rail.locator("[data-stage-name]");
   await expect(labels).toHaveCount(3);
-  for(let i=0;i<3;i++)await expect(labels.nth(i).locator(".katex")).toBeVisible();
-  expect(await labels.evaluateAll(nodes=>nodes.every(node=>{
-   const math=node.querySelector(".katex");
-   return !!math&&parseFloat(getComputedStyle(math).fontSize)>=16;
-  }))).toBe(true);
-  await expect(labels.first()).not.toContainText("$");
   const buttons=rail.locator("[data-stage-button]");
+  // The compact S1/S2/S3 identifiers must stay distinct on a narrow phone;
+  // the selected full stage name must still render real, readable LaTeX.
+  const full=page.locator("[data-stage-full-name]");
+  for(let i=0;i<3;i++){
+   await expect(labels.nth(i)).toHaveText("S"+(i+1));
+   await buttons.nth(i).click();
+   await expect(buttons.nth(i)).toHaveAttribute("aria-pressed","true");
+   await expect(full.locator(".katex")).toBeVisible();
+   expect(await full.locator(".katex").evaluate(node=>
+    Number.parseFloat(getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(16);
+   await expect(full).not.toContainText("$");
+  }
+  expect(new Set(await labels.allTextContents()).size).toBe(3);
   expect(await buttons.evaluateAll(nodes=>nodes.every(node=>{
    const r=node.getBoundingClientRect();return r.width>=44&&r.height>=44;
   }))).toBe(true);
