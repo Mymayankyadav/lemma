@@ -199,7 +199,7 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
      const row=rows[index]
      return <g key={cp.id} data-station-state={row.state}>
       {isCurrent&&<circle cx={x} cy={y} r="9" fill="none" stroke="var(--accent)" strokeOpacity=".35" strokeWidth="2"/>}
-      <circle cx={x} cy={y} r={isCurrent?4.4:stageEnd?4:2.7}
+      <circle data-stress-mark="" cx={x} cy={y} r={isCurrent?4.4:stageEnd?4:2.7}
        fill={isDone?scheduleColor[row.state==='unscheduled'?'on_time':row.state]:isProposed?'var(--card)':isRevisit?'var(--warn)':isCurrent?'var(--accent)':'var(--card)'}
        stroke={scheduleColor[row.state==='unscheduled'?'future':row.state]} strokeWidth={isDone?0:1.5}/>
       {i===focusedIndex&&selected!==null&&<circle cx={x} cy={y} r="7" fill="none" stroke="var(--accent)" strokeWidth="1.4"/>}
