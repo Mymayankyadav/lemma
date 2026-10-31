@@ -1,6 +1,10 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
+// C2 is a hard first-attempt 4× CPU budget. Global CI retries must not
+// turn an over-budget transition into a green performance acceptance.
+test.describe.configure({retries:0});
+
 // Measure a real extreme-profile Atlas route transition, not a screenshot
 // counter or an unthrottled Today route. Initial 30k-card fixture load is
 // outside this interactive Atlas budget; the fixture remains mounted.
