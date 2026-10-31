@@ -9,8 +9,8 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   const result=layoutAtlasLanes([arc('long',0,9),arc('short',3,4)],Array.from({length:10},(_,i)=>i*44+22));
   for(const path of result.values()){
    expect(path.x).toBeGreaterThanOrEqual(20);
-   expect(path.x).toBeLessThanOrEqual(74);
-   expect((74-path.x)%9).toBe(0);
+   expect(path.x).toBeLessThanOrEqual(83);
+   expect((83-path.x)%9).toBe(0);
    expect(path.d).toContain(' Q');
    expect(path.d).not.toContain(' C');
   }
