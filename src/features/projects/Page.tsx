@@ -25,7 +25,7 @@ function MiniMetro({project}:{project:ProjectSummary}){
  return <div className="flex min-w-0 items-center gap-2">
   <MiniStageBar project={project}/>
   <span className="flex shrink-0 flex-col items-end font-[var(--font-ui)] text-caption tabular-nums text-ink-2">
-   <span>{percent}%</span>
+   <span data-count-role="">{percent}%</span>
    {project.scheduleHeadline&&<span data-schedule-chip="" className="whitespace-nowrap text-[12px]">{project.scheduleHeadline}</span>}
   </span>
  </div>;
@@ -101,7 +101,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
    <SectionHeading className="min-w-0 flex-1 break-words"><Tex source={name}/></SectionHeading>
-   <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
+   <span data-count-role="" className="font-[var(--font-ui)] text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
   </button>
   {!collapsed&&<div className="space-y-2">{items.map(project=><ProjectRow key={project.id} project={project}/>)}</div>}
