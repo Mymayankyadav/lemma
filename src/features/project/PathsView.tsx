@@ -4,7 +4,7 @@ import {Link} from 'react-router';
 import {ChevronRight} from 'lucide-react';
 import {useInsightData,useProjects} from '../../data/hooks';
 import type {CheckpointUi,CheckpointView,ProjectDetail} from '../../data/types';
-import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
+import {Route} from '../../ui/timeline/Route';
 import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
@@ -29,7 +29,7 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
  </nav>;
 }
 
-export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'ascent'|'metro'}){
+export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'metro'}){
  const insight=useInsightData(30);
  const {project,subject,checkpoints,done,total}=detail;
  const {estimate,rows:schedule}=scheduleForProject(detail,insight.data?.checkpointEvents);
@@ -55,8 +55,8 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
     {current>=0&&<span className="ml-auto text-amber">{checkpoints[current].code} now</span>}
    </section>
    <div role="region" aria-label="Project timeline" className="min-w-0">
-    <ProjectTimeline project={{title:project.title,slug:project.slug,done,total,targetDate:project.targetDate}} checkpoints={checkpoints}
-     variant={variant} pacePerWeek={estimate.pace??undefined} scheduleRows={schedule} height={96}/>
+    <Route project={{title:project.title,slug:project.slug,done,total,targetDate:project.targetDate}} checkpoints={checkpoints}
+     mode="project" pacePerWeek={estimate.pace??undefined} scheduleRows={schedule}/>
     {schedule.some(row=>row.dueOn)&&<div aria-label="Schedule legend" className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-2">
      {(['early','on_time','late'] as const).map(state=><span key={state} className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-[3px] w-5" style={{background:scheduleColor[state]}}/>{state==='on_time'?'On time':state==='early'?'Early':'Late'}</span>)}
     </div>}

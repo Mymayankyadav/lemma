@@ -31,24 +31,30 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   const errors:string[]=[];
   page.on("pageerror",e=>errors.push(e.message));
   await page.goto("http://127.0.0.1:4175/lemma/st1-stage-math-preview.html?theme="+theme);
-  const rail=page.locator("[data-stage-rail]");
-  await expect(rail).toBeVisible();
-  const labels=rail.locator("[data-stage-name]");
-  await expect(labels).toHaveCount(3);
-  const buttons=rail.locator("[data-stage-button]");
-  // The compact S1/S2/S3 identifiers must stay distinct on a narrow phone;
-  // the selected full stage name must still render real, readable LaTeX.
-  const full=page.locator("[data-stage-full-name]");
+  const route=page.locator('[data-route-mode="project"]');
+  await expect(route).toBeVisible();
+  await expect(route).toHaveAttribute('data-route-layout','folded');
+  await expect(route).toHaveAttribute('data-route-stage-count','3');
+  await expect(route.locator('[data-stage-rail],[data-expanded-stations]')).toHaveCount(0);
+  const label=route.locator('[data-route-folded-stage-label]');
+  const disclosure=route.locator('[data-route-stage-disclosure]');
   for(let i=0;i<3;i++){
-   await expect(labels.nth(i)).toHaveText("S"+(i+1));
-   await buttons.nth(i).click();
-   await expect(buttons.nth(i)).toHaveAttribute("aria-pressed","true");
-   await expect(full.locator(".katex")).toBeVisible();
-   expect(await full.locator(".katex").evaluate(node=>
+   await expect(label).toHaveText('Stage '+(i+1));
+   await expect(disclosure).toBeVisible();
+   if(!(await disclosure.evaluate(node=>node.hasAttribute('open'))))
+    await disclosure.locator('summary').click();
+   await expect(disclosure.locator('.katex')).toBeVisible();
+   expect(await disclosure.locator('.katex').evaluate(node=>
     Number.parseFloat(getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(16);
-   await expect(full).not.toContainText("$");
+   await expect(disclosure).not.toContainText('$');
+   if(i<2){
+    const current=i===0?4:15;
+    const next=i===0?15:30;
+    for(let cp=current;cp<next;cp++)
+     await route.getByRole('button',{name:'Next checkpoint'}).click();
+   }
   }
-  expect(new Set(await labels.allTextContents()).size).toBe(3);
+  const buttons=route.locator('[data-route-controls] button');
   expect(await buttons.evaluateAll(nodes=>nodes.every(node=>{
    const r=node.getBoundingClientRect();return r.width>=44&&r.height>=44;
   }))).toBe(true);
