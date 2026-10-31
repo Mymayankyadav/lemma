@@ -34,6 +34,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { useToast } from "../../ui/Toast";
 import { groupProposals, pageProposals, type ProposalGroup } from "./groups";
+import { firstProposalFrontLine } from "./frontPreview";
 
 function describe(op: PlanChangeOp) {
   switch (op.op) {
@@ -59,7 +60,7 @@ const projectLabel=(slug:string)=>slug.replaceAll('-', ' ').replace(/\b[a-z]/g,l
 function ProposalFrontLine({source}:{source:string}){
  const scroller=useRef<HTMLSpanElement>(null);
  const [moreLeft,setMoreLeft]=useState(false),[moreRight,setMoreRight]=useState(false);
- const firstLine=source.split(/\r?\n/).find(line=>line.trim())?.trim()??source;
+ const firstLine=firstProposalFrontLine(source);
  const measure=()=>{
   const el=scroller.current;
   if(!el)return;
