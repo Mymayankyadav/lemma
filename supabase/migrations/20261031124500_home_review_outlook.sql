@@ -13,8 +13,8 @@ as $$
     where s.user_id = (select auth.uid())
   ),
   calendar as (
-    select (p.today + n)::date as day
-    from prefs p cross join generate_series(0,6) n
+    select (p.today + g.day_offset)::date as day
+    from prefs p cross join generate_series(0,6) as g(day_offset)
   ),
   scheduled as (
     select greatest(
