@@ -23,6 +23,10 @@ export function planIdeasGraph(
     for (const name of node.concepts ?? [])
       if (name.trim() && !byKey.has(key(name))) byKey.set(key(name), {name});
   if (!byKey.size) return null;
+  // A flat tutor proposal has no meaningful Atlas outline. Group by the first
+  // checkpoint that teaches each idea, keeping links and all checkpoint refs.
+  // "planet" without parents is not a hierarchy either (legacy proposals).
+  const flat = !raw.some(idea => idea.parent?.trim() || (idea.level && idea.level !== "planet"));
   const id = (name: string) => "idea:" + key(name);
   const refs = new Map<string, {projectSlug: string; code: string}[]>();
   for (const node of nodes)
@@ -35,7 +39,9 @@ export function planIdeasGraph(
     id: "idea:" + k, slug: k.replace(/[^a-z0-9]+/g, "-"), name: idea.name.trim(),
     level: LEVELS.includes(idea.level as ConceptLevel) ? idea.level : "planet",
     parentId: idea.parent && byKey.has(key(idea.parent)) && key(idea.parent) !== k ? id(idea.parent) : null,
-    isStar: !!idea.star, topic: idea.topic ?? null, blurb: idea.blurb ?? null, subjectId: "plan",
+    isStar: !!idea.star,
+    topic: flat ? (refs.get(k)?.[0] ? `Taught in ${refs.get(k)![0].code}` : "Not yet assigned to a checkpoint") : idea.topic ?? null,
+    blurb: idea.blurb ?? null, subjectId: "plan",
     status: "not_started", pinX: null, pinY: null, checkpointRefs: refs.get(k) ?? [], dueCards: 0,
   }));
   const links: AtlasGraph["links"] = [], seen = new Set<string>();
