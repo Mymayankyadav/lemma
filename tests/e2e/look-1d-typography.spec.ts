@@ -30,8 +30,14 @@ for(const width of [360,390] as const){
    if(screen==='settings'){
     const status=page.getByRole('heading',{name:/^(Connected|Not connected yet)$/,level:3});
     await expect(status).toBeVisible();
-    const size=await status.evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
-    expect(size).toBe(16);
+    const cardStyle=await status.evaluate(el=>{
+     const css=getComputedStyle(el);
+     return {size:parseFloat(css.fontSize),font:css.fontFamily,weight:css.fontWeight,line:parseFloat(css.lineHeight)};
+    });
+    expect(cardStyle.size).toBe(16);
+    expect(cardStyle.font).toMatch(/Instrument Sans/i);
+    expect(cardStyle.weight).toBe('600');
+    expect(cardStyle.line).toBe(20);
    }
    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
    await page.screenshot({path:`test-results/screens/look-1d-${screen}-${profile}-${theme}-${width}.png`});
