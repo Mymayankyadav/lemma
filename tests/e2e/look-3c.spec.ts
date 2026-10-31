@@ -58,3 +58,20 @@ test('LOOK-3c project Route keyboard stepper crosses stages and opens the select
  await page.keyboard.press('Enter');
  await expect(page).toHaveURL(/\/cp\/CP5/);
 });
+
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test('LOOK-3c compact Today goal stays within 210px '+theme+' '+width,async({page})=>{
+  await page.setViewportSize({width,height:width===360?740:844});
+  await page.goto('./?demo=1&theme='+theme+'#/');
+  const goal=page.getByRole('article',{name:/Goal progress for Real Analysis/});
+  await expect(goal.locator('[data-route-mode="today"]')).toBeVisible();
+  const rect=await goal.boundingBox();
+  expect(rect).not.toBeNull();
+  expect(rect!.height).toBeLessThanOrEqual(210);
+  await expect(goal.locator('[data-goal-now]')).toContainText('CP4');
+  await expect(goal.locator('[data-schedule-chip]')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(0);
+  await goal.screenshot({path:'test-results/screens/look-3c/goal-'+theme+'-'+width+'.png'});
+ });
+}
