@@ -7,7 +7,7 @@ import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
 import { LemmaError } from '../api'
-import { decodeCardPageCursor, encodeCardPageCursor } from '../card-cursor'
+import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
 
 type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
@@ -48,6 +48,9 @@ export class LiveAdapter implements LemmaApi {
  async getCardCommentsPage(...args: Parameters<LemmaApi['getCardCommentsPage']>): ReturnType<LemmaApi['getCardCommentsPage']> {
   const [no,cursor]=args,db=liveClient(),uid=await owner(db)
   const key=decodeCardPageCursor(cursor,'comments',no)
+  // Demo comments use numeric no values; live comments have UUID primary keys.
+  // Reject a demo/forged cursor before it reaches the UUID PostgREST comparator.
+  if(key && !uuidCardPageId.test(key.id))throw new LemmaError('invalid','Invalid Card detail page cursor')
   const note=checked(await db.from('notes').select('id').eq('user_id',uid).eq('no',no).single()) as Row
   let query=db.from('card_comments').select('id,no,body,status,created_at,resolved_at,resolved_by_proposal')
    .eq('user_id',uid).eq('note_id',note.id)
