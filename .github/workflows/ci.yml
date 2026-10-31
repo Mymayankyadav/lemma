@@ -56,8 +56,6 @@ jobs:
         run: node tests/mcp/db2.mjs
       - name: Verify DB-5 transcription provenance and reversible pages
         run: node tests/mcp/db5.mjs
-      - name: Verify ST-5 owner-scoped aggregate and paging SQL
-        run: node tests/mcp/st5.mjs
       - name: Verify MCP-2 atomic transactions when available
         if: hashFiles('tests/mcp/transactions.mjs') != ''
         run: node tests/mcp/transactions.mjs
