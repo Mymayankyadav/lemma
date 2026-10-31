@@ -69,8 +69,7 @@ import { filterReviewItems } from "../../lib/queue";
 import { parseSteps } from "../../lib/fsrs";
 import {clozeOrds} from "./cloze";
 import { slugify } from "../../lib/text";
-import { DAY } from "../../lib/calendar";
-import {reviewForecast} from "../../lib/review-forecast";
+import { DAY, studyClock } from "../../lib/calendar";
 import {makeStressInsightAggregate, stressSessionEvents, stressSourcePage} from "./stress";
 
 // One parse per module, not once per each of the 1,000 virtual sessions.
@@ -152,15 +151,9 @@ export class DemoAdapter implements LemmaApi {
       ?encodeCardPageCursor('comments',no,{at:visible[19].createdAt,id:String(visible[19].no)}):null};
   }
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
-    const ids=new Set(this.store.projects.filter(p=>p.status!=="archived"&&!p.system).map(p=>p.id));
-    const notes=this.store.notes;
-    function* scheduledStates(){
-      for(const note of notes){
-        if(note.note.status!=="active"||!ids.has(note.projectId))continue;
-        for(const card of note.cards)yield card.state;
-      }
-    }
-    return reviewForecast(scheduledStates(),this.store.settings,this.now());
+    // Home, DeckTree and the seven-day forecast share one exact due-card pass.
+    // Return a copy so a consumer cannot mutate the cached daily buckets.
+    return this.dueSnapshot().forecastDays.map(day=>({...day}));
   }
   private store: DemoStore;
   private readonly now: () => number;
@@ -183,7 +176,7 @@ export class DemoAdapter implements LemmaApi {
   private dueSnapshotCache: {
     createdAt:number;validUntil:number;total:number;
     projectCounts:Map<string,number>;checkpointCounts:Map<string,number>;
-    cardCounts:Map<string,number>;
+    cardCounts:Map<string,number>;forecastDays:{day:string;due:number}[];
   }|null=null;
   private dueSnapshot(){
     const now=this.now(),cached=this.dueSnapshotCache;
@@ -191,6 +184,12 @@ export class DemoAdapter implements LemmaApi {
     const activeProjects=new Map(this.store.projects
       .filter(p=>p.status!=="archived"&&!p.system).map(p=>[p.id,p] as const));
     const projectCounts=new Map<string,number>(),checkpointCounts=new Map<string,number>(),cardCounts=new Map<string,number>();
+    const clock=studyClock(this.store.settings.rolloverHour,this.store.settings.timeZone);
+    const today=clock.dayIndex(now);
+    const forecastDays=Array.from({length:7},(_,i)=>({
+      day:new Date((today+i)*DAY).toISOString().slice(0,10),due:0,
+    }));
+    const offsetByDue=new Map<string,number>();
     let total=0,nextDue=Infinity;
     for(const note of this.store.notes){
       // Project summaries count suspended cards too, but not deleted notes.
@@ -201,8 +200,16 @@ export class DemoAdapter implements LemmaApi {
       for(const card of note.cards){
         if(card.state.state<=0)continue;
         const due=this.dueTime(card.state.due);
-        if(due>now){nextDue=Math.min(nextDue,due);continue}
         if(!Number.isFinite(due))continue;
+        // Forecast semantics match reviewForecast: overdue cards go in day 0,
+        // future cards in their civil study-day bucket, including DST days.
+        let offset=offsetByDue.get(card.state.due);
+        if(offset===undefined){
+          offset=Math.max(0,clock.dayIndex(due)-today);
+          offsetByDue.set(card.state.due,offset);
+        }
+        if(offset<forecastDays.length)forecastDays[offset].due++;
+        if(due>now){nextDue=Math.min(nextDue,due);continue}
         total++;
         projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
         if(note.note.checkpointCode){
@@ -211,7 +218,11 @@ export class DemoAdapter implements LemmaApi {
         }
       }
     }
-    return this.dueSnapshotCache={createdAt:now,validUntil:nextDue,total,projectCounts,checkpointCounts,cardCounts};
+    // Due counts expire at the next due timestamp; forecast buckets also
+    // change at the next civil study-day rollover, even with no new due card.
+    const validUntil=Math.min(nextDue,clock.dayStart(today+1));
+    return this.dueSnapshotCache={createdAt:now,validUntil,total,
+      projectCounts,checkpointCounts,cardCounts,forecastDays};
   }
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
