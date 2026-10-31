@@ -24,6 +24,15 @@ for(const width of [360,390] as const){
    const heading=page.locator('#main-content h1').first();
    await expect(heading).toBeVisible({timeout:30_000});
    await expect(heading).not.toBeEmpty();
+   // A heading can appear while the route still shows data skeletons. Wait
+   // for a real screen landmark so every screenshot is useful visual evidence.
+   const ready=route==='/'?page.getByRole('article',{name:/Goal progress for/}).first()
+    :route==='/projects'?page.locator('[data-project-row]').first()
+    :route==='/p/real-analysis'?page.getByRole('region',{name:'Project timeline'})
+    :route==='/review'?page.getByRole('heading',{name:'Decks'})
+    :route==='/insights'?page.getByRole('heading',{name:'Recall'})
+    :page.getByRole('heading',{name:'Apps'});
+   await expect(ready).toBeVisible({timeout:30_000});
    const sketch=page.locator('[data-graph-sketch]');
    await expect(sketch).toHaveCount(1);
    await expect(sketch).toHaveAttribute('data-graph-sketch',kind);
