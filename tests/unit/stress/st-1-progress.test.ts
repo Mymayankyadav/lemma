@@ -14,7 +14,7 @@ describe('ST-1 stage progress at scale',()=>{
  it('groups the actual 36-checkpoint no-stage case into groups of eight',()=>{
   const stages=groupCheckpointStages(checkpoints(36))
   expect(stages.map(stage=>[stage.name,stage.checkpoints.length])).toEqual([
-   ['CP1–CP8',8],['CP9–CP16',8],['CP17–CP24',8],['CP25–CP32',8],['CP33–CP36',4]
+   ['CP1–8',8],['CP9–16',8],['CP17–24',8],['CP25–32',8],['CP33–36',4]
   ])
   expect(stages.flatMap(stage=>stage.checkpoints.map(cp=>cp.code))).toHaveLength(36)
  })
@@ -29,8 +29,8 @@ describe('ST-1 stage progress at scale',()=>{
   const cps=checkpoints(24,3)
   cps.slice(8,19).forEach(cp=>{cp.stage=null})
   const stages=groupCheckpointStages(cps)
-  expect(stages.some(stage=>stage.name==='CP9–CP16')).toBe(true)
-  expect(stages.some(stage=>stage.name==='CP17–CP19')).toBe(true)
+  expect(stages.some(stage=>stage.name==='CP9–16')).toBe(true)
+  expect(stages.some(stage=>stage.name==='CP17–19')).toBe(true)
   expect(stages.reduce((sum,stage)=>sum+stage.checkpoints.length,0)).toBe(24)
  })
  it('reports the least favourable checkpoint schedule for a stage',()=>{
