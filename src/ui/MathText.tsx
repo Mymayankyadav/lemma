@@ -55,7 +55,7 @@ export function MathText({source,variant='body',cloze,className='',interactiveMa
   const old=document.body.style.overflow;document.body.style.overflow='hidden';
   return ()=>{document.removeEventListener('keydown',key);document.body.style.overflow=old};
  },[mathHtml]);
- const distance=(touches:TouchList)=>Math.hypot(
+ const distance=(touches:React.TouchList)=>Math.hypot(
   touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY
  );
  const zoomTo=(value:number)=>setZoom(Math.max(1,Math.min(4,value)));
