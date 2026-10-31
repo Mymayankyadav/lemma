@@ -74,6 +74,13 @@ describe('FIX #519b cold Atlas viewport budget',()=>{
   expect(window.first).toBeLessThan(2500-1);
   expect(window.height).toBe(2500*44);
  });
+ it('clamps a stale deep scroll position when folding to a shorter outline',()=>{
+  const window=atlasWindow(50,2500*44,740);
+  expect(window.virtual).toBe(true);
+  expect(window.first).toBeLessThan(50);
+  expect(window.last).toBe(50);
+  expect(window.last-window.first).toBeGreaterThan(0);
+ });
  it('keeps small outlines fully accessible without virtualization',()=>{
   expect(atlasWindow(40,0,740)).toEqual({virtual:false,first:0,last:40,height:undefined});
  });
