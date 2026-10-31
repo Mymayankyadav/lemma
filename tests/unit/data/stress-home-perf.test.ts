@@ -74,6 +74,17 @@ describe('FIX #507: cold Today stress summary',()=>{
   }finally{summaries.mockRestore()}
  },30_000);
 
+ it('preserves most-recent-project-first deck ordering without full summary recomputation',async()=>{
+  const fixture=makeStressStore(seed,'stress',{deferSessions:true});
+  fixture.projects[0].lastActivityAt='@day:-30:0.5:0';
+  fixture.projects[1].lastActivityAt='@day:0:0.5:0';
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const expected=(await api.listProjects()).filter(p=>p.status!=='archived')
+   .map(p=>'project:'+p.slug);
+  const decks=await api.getDeckTree();
+  expect(decks.map(deck=>deck.key)).toEqual(expected);
+ },30_000);
+
  it('keeps exact 4,000-card deck counts without materialising every ReviewItem',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme'),now:()=>now,timeZone:'UTC'});
   const started=performance.now();
