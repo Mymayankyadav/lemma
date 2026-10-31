@@ -199,7 +199,7 @@ describe('QA-3b screenshot structural gate',()=>{
   const dir=fixture()
   try{
    const matrix=qa3Cases()[0]
-   const manifest=join(dir,matrix.filename.replace(/\\.json$/,'-readiness.json'))
+   const manifest=join(dir,matrix.filename.replace(/\.json$/,'-readiness.json'))
    if(existsSync(manifest))unlinkSync(manifest)
    const report=auditQa3Screens(dir)
    expect(report.status).toBe('FAIL')
