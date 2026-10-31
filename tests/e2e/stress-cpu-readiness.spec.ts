@@ -42,3 +42,13 @@ test('AUDIT #540 recognizes the real Plan errata section, not only explicit role
  await page.setContent('<main id="main-content"><section aria-label="Plan errata"><h2>Plan change</h2><section aria-label="Ideas in this plan">Ideas loaded</section></section></main>');
  await assertRouteLoaded(page,'/proposals/proposal-6','stress',250);
 });
+
+test('AUDIT #540 recognizes real demo sign-in content without a live-only OAuth button',async({page})=>{
+ await page.setContent('<main id="main-content"><h1>Sign in</h1><p>Sign-in is available in live mode.</p></main>');
+ await assertRouteLoaded(page,'/sign-in','stress',250);
+});
+
+test('AUDIT #540 rejects a heading-only sign-in shell',async({page})=>{
+ await page.setContent('<main id="main-content"><h1>Sign in</h1></main>');
+ await expect(assertRouteLoaded(page,'/sign-in','stress',200)).rejects.toThrow();
+});
