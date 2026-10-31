@@ -86,7 +86,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     const svg=map.getByRole("group",{name:"Stage dependency graph"});
     await expect(svg).toBeVisible();
     const count=profile==="stress"?7:15;
-    await expect(svg.locator('g[role="button"]')).toHaveCount(count);
+    await expect(svg.locator(':scope > g[role="button"]')).toHaveCount(count);
     const size=await map.boundingBox();
     expect(size).not.toBeNull();
     expect(size!.width).toBeLessThanOrEqual(width);
@@ -101,9 +101,9 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     mkdirSync("test-results/screens/st2",{recursive:true});
     const name=profile+"-"+theme+"-"+width;
     await map.screenshot({path:"test-results/screens/st2/"+name+"-collapsed.png"});
-    await svg.locator('g[role="button"]').first().click();
+    await svg.locator(':scope > g[role="button"]').first().click();
     await expect(map.locator("foreignObject")).toHaveCount(1);
-    await expect(svg.locator('g[role="button"]')).toHaveCount(count);
+    await expect(svg.locator(':scope > g[role="button"]')).toHaveCount(count);
     await map.screenshot({path:"test-results/screens/st2/"+name+"-expanded.png"});
     await map.getByRole("button",{name:"Expand all"}).click();
     await expect(map.getByRole("group",{name:"Map of proposed checkpoints and prerequisites"})).toBeVisible();
