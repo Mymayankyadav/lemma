@@ -79,7 +79,13 @@ export interface CheckpointDetail {
  sourceShort: string | null; prereqs: string[]; concepts: {slug: string; name: string}[]
  recheckPrompt: string | null; events: SessionEvent[]; cardsCount: number; sessions: SessionSummary[]
 }
+export interface TranscribedSourcePage {
+ sourceId:string;page:number;label:string|null;body:string;
+ transcribedBy:'claude'|'chatgpt'|null;confidence:'high'|'check'|null;
+}
+export interface SourceTranscriptionStat {sourceId:string;transcribed:number;needsCheck:number}
 export interface Source {
+ origin?:'user'|'claude'|'chatgpt'|'other'|null;
  kind?: SourceKind; sha256?: string | null; position?: number; addedAt?: IsoDate; planCheckedAt?: IsoDate | null
  id: string; projectId: string; title: string; short: string; filename: string; bytes?: number | null; pageCount: number | null
  status: 'queued' | 'reading' | 'uploading' | 'saving' | 'extracting' | 'ready' | 'failed'; hasText: boolean

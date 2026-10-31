@@ -1685,7 +1685,7 @@ export class DemoAdapter implements LemmaApi {
     if (this.store.sources.some(source => source.projectId === projectId &&
         source.sha256 === sha256 && source.status !== "failed"))
       conflict("Already added: this PDF is in the project");
-    const title = (file.name.replace(/\.pdf$/i, "") || "Source").slice(0, 120),
+    const title = (file.name.replace(/\.(pdf|tex|latex|ltx|md|markdown)$/i, "") || "Source").slice(0, 120),
       base = (
         title
           .split(/\s+/)[0]
@@ -1771,6 +1771,50 @@ export class DemoAdapter implements LemmaApi {
       }
       throw error;
     }
+  }
+  async getSourceTranscriptionStats(projectId:string):Promise<import('../types').SourceTranscriptionStat[]>{
+    this.projectById(projectId);
+    return this.store.sources.filter(s=>s.projectId===projectId).map(s=>({
+      sourceId:s.id,transcribed:s.pages.filter(p=>!!p.transcribedAt||!!p.transcribedBy).length,
+      needsCheck:s.pages.filter(p=>p.confidence==='check').length
+    }));
+  }
+  async getSourcePage(sourceId:string,page:number):Promise<import('../types').TranscribedSourcePage|null>{
+    const source=found(this.store.sources.find(s=>s.id===sourceId),'Source');
+    const item=source.pages.find(p=>p.page===page);
+    return item?{
+      sourceId:source.id,page:item.page,label:item.label??null,body:item.body,
+      confidence:item.confidence??null,transcribedBy:item.transcribedBy??null
+    }:null;
+  }
+  async getTranscribedPagesForExport(sourceId:string):Promise<import('../types').TranscribedSourcePage[]>{
+    const source=found(this.store.sources.find(s=>s.id===sourceId),'Source');
+    return source.pages.filter(p=>!!p.transcribedAt||!!p.transcribedBy).sort((a,b)=>a.page-b.page)
+      .map(p=>({sourceId:source.id,page:p.page,label:p.label??null,body:p.body,
+        transcribedBy:p.transcribedBy??null,confidence:p.confidence??null}));
+  }
+  async updateSourcePage(sourceId:string,page:number,patch:{body?:string;confidence?:'high'|'check'}):Promise<import('../types').TranscribedSourcePage>{
+    return this.transaction(()=>{
+      const source=found(this.store.sources.find(s=>s.id===sourceId),'Source');
+      const item=found(source.pages.find(p=>p.page===page),'Page');
+      if(!item.transcribedAt&&!item.transcribedBy)invalid('This page has no transcription to edit');
+      if(patch.body!==undefined){
+        if(!patch.body.trim()||patch.body.length>8000||/<\/?[a-z][a-z0-9]*\b[^>]*>/i.test(patch.body)||/<!--/.test(patch.body))
+          invalid('Transcriptions must contain 1–8,000 Markdown/LaTeX characters, without HTML');
+        item.body=patch.body;
+      }
+      if(patch.confidence!==undefined){
+        if(!['high','check'].includes(patch.confidence))invalid('Invalid confidence');
+        item.confidence=patch.confidence;
+      }
+      return {sourceId:source.id,page:item.page,label:item.label??null,body:item.body,
+        confidence:item.confidence??null,transcribedBy:item.transcribedBy??null};
+    });
+  }
+  async getSourcePdfUrl(sourceId:string):Promise<string|null>{
+    found(this.store.sources.find(s=>s.id===sourceId),'Source');
+    // Uploaded demo files are not persisted in storage; don't manufacture a URL.
+    return null;
   }
   async deleteSource(id: string) {
     this.transaction(() => {

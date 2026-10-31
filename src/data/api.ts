@@ -1,4 +1,4 @@
-import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardSearchFilters, CardSearchPage, CardDetail, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
+import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, TranscribedSourcePage, SourceTranscriptionStat, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardSearchFilters, CardSearchPage, CardDetail, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
 
 export type LemmaErrorCode = 'not_found' | 'invalid' | 'conflict' | 'offline' | 'auth' | 'server' | 'not_implemented'
 export class LemmaError extends Error {
@@ -69,6 +69,16 @@ export interface LemmaApi {
  updateSource(id: string, patch: SourcePatch): Promise<Source>
  /** Delete a source, its extracted pages and stored PDF. */
  deleteSource(id: string): Promise<void>
+ /** Get transcription counts without loading whole page text. */
+ getSourceTranscriptionStats(projectId:string):Promise<SourceTranscriptionStat[]>
+ /** Load exactly one PDF page rather than all pages of a long scan. */
+ getSourcePage(sourceId:string,page:number):Promise<TranscribedSourcePage|null>
+ /** Export reads all transcribed pages only when the owner explicitly requests a download. */
+ getTranscribedPagesForExport(sourceId:string):Promise<TranscribedSourcePage[]>
+ /** Owner edits or verifies a transcribed page (changes are logged for undo). */
+ updateSourcePage(sourceId:string,page:number,patch:{body?:string;confidence?:'high'|'check'}):Promise<TranscribedSourcePage>
+ /** Short-lived URL for the owner's original PDF, when present. */
+ getSourcePdfUrl(sourceId:string):Promise<string|null>
  /** List sessions, optionally for one project. */
  listSessions(slug?: string): Promise<SessionSummary[]>
  /** Read a session record. */

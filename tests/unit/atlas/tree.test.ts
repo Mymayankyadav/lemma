@@ -71,3 +71,19 @@ describe('Atlas tree with several fields in one subject',()=>{
   expect(two.nodes.get('b-field')!.children).toEqual(['inside']);
  });
 });
+
+
+describe('Proposed plan synthetic checkpoint topics',()=>{
+ it('keeps groups in numeric CP order beyond CP9, without changing ordinary Atlas ordering',()=>{
+  const concepts=Array.from({length:40},(_,i)=>({
+   ...idea('flat-idea-'+(i+1),null,'planet'),
+   topic:'Taught in CP'+(i+1),
+   checkpointRefs:[{projectSlug:'analysis',code:'CP'+(i+1)}],
+  }));
+  const tree=buildAtlasTree({subjects:graph.subjects.slice(0,1),concepts,links:[]});
+  const root=tree.nodes.get('atlas:root:analysis')!;
+  expect(root.children.map(id=>tree.nodes.get(id)!.name)).toEqual(
+   Array.from({length:40},(_,i)=>'Taught in CP'+(i+1)),
+  );
+ });
+});
