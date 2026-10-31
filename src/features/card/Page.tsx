@@ -373,9 +373,14 @@ export default function Page() {
                   </details>
                 ))}
               {!visibleComments.length && (
-                <p className="text-body text-ink-3">
-                  No active notes on this page.
+                <p className="text-body text-ink-3" role={commentCursor !== null && commentQuery.isPending ? "status" : undefined}>
+                  {commentCursor !== null && commentQuery.isPending
+                    ? "Loading comments…" : "No active notes on this page."}
                 </p>
+              )}
+              {commentCursor !== null && commentQuery.isError && (
+                <button type="button" className="min-h-11 text-label font-semibold text-amber"
+                  onClick={() => void commentQuery.refetch()}>Try loading comments again</button>
               )}
               <div className="flex flex-wrap gap-3">
                {commentCursors.length>0&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void newerComments()}>Newer comments</button>}
@@ -390,7 +395,14 @@ export default function Page() {
             <span className="text-amber">{['','Again','Hard','Good','Easy'][r.rating]??'Reviewed'}</span>
             <span className="text-ink-3">{r.confidence??'—'}</span>
            </div>)}
-           {!visibleReviews.length&&<p className="text-label text-ink-3">No reviews yet.</p>}
+           {!visibleReviews.length&&<p className="text-label text-ink-3"
+            role={reviewCursor !== null && reviewQuery.isPending ? "status" : undefined}>
+            {reviewCursor !== null && reviewQuery.isPending ? "Loading reviews…" : "No reviews yet."}
+           </p>}
+           {reviewCursor !== null && reviewQuery.isError && (
+            <button type="button" className="min-h-11 text-label font-semibold text-amber"
+             onClick={() => void reviewQuery.refetch()}>Try loading reviews again</button>
+           )}
            <div className="flex flex-wrap gap-3">
             {reviewCursors.length>0&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void newerReviews()}>Newer reviews</button>}
             {moreReviews&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void olderReviews()}>More reviews</button>}
