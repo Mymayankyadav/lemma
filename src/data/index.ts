@@ -20,6 +20,9 @@ function loadLive(): Promise<LemmaApi> {
 const lazyLive: LemmaApi = new Proxy({ mode: 'live' } as LemmaApi, {
   get(target, property) {
     if (property === 'mode') return target.mode
+    // Never expose Promise-like properties: Promise.resolve(api) must not
+    // mistake the adapter for a thenable and invoke a nonexistent API method.
+    if (property === 'then' || property === 'catch' || property === 'finally') return undefined
     if (typeof property !== 'string') return undefined
     return (...args: unknown[]) => loadLive().then(adapter => {
       const method = adapter[property as keyof LemmaApi]
