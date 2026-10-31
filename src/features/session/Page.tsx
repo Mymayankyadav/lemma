@@ -13,6 +13,7 @@ import {Sheet} from '../../ui/Sheet';
 import {MathText} from '../../ui/MathText';
 import {useToast} from '../../ui/Toast';
 import type {EventKind,GoalMet,SessionEvent} from '../../data/types';
+import {reasoningRuns} from './runs';
 const icons:Record<EventKind,typeof Lightbulb>={pretest:BookMarked,attempt:Target,hint:Lightbulb,explanation:BookOpen,misconception:TriangleAlert,evidence:CheckCircle,recheck:History,note:MessageCircle};
 const name:Record<EventKind,string>={pretest:'Warm-up',attempt:'Attempt',hint:'Hint',explanation:'Explanation',misconception:'Misconception',evidence:'Evidence',recheck:'Recheck',note:'Note'};
 const goalText:Record<Exclude<GoalMet,null>,string>={yes:'Goal met',partial:'Partly met',no:'Not yet met'};
@@ -30,16 +31,6 @@ function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
    <div className={event.kind==='misconception'?'mt-2 border-l-2 border-amber pl-3 italic':'mt-1.5'}><MathText source={event.body} className="text-body text-ink-2"/></div>
    {event.outcome&&<Chip size={28} tone={event.outcome==='demonstrated'?'success':event.outcome==='failed'?'danger':'amber'}>{event.outcome}</Chip>}
   </div></motion.li>;
-}
-/** Consecutive routine events collapse; attempts, evidence and rechecks never do. */
-export function reasoningRuns(events:readonly SessionEvent[]){
- const runs:{kind:EventKind;start:number;events:SessionEvent[]}[]=[];
- for(let i=0;i<events.length;i++){
-  const event=events[i],last=runs[runs.length-1];
-  if(last?.kind===event.kind && !['attempt','evidence','recheck'].includes(event.kind))last.events.push(event);
-  else runs.push({kind:event.kind,start:i,events:[event]});
- }
- return runs;
 }
 export default function Page(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings();
