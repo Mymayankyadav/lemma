@@ -64,3 +64,52 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   await page.screenshot({path:prefix+'-done.png'})
  })
 }
+
+/** A Review done route can be opened before any answer exists. Every statistic
+ * must communicate "unavailable", not a fabricated zero or tomorrow forecast.
+ * This regression also waits for the actual route animation to settle before
+ * capturing visual evidence, rather than treating visibility as full opacity.
+ */
+for(const profile of ['stress','extreme'] as const)
+for(const theme of ['graph','graph-night'] as const)
+for(const [width,height] of [[360,740],[390,844]] as const){
+ test(`LOOK-7a empty Review done is honest: ${profile} ${theme} ${width}px`,async({page})=>{
+  test.setTimeout(90_000)
+  await page.setViewportSize({width,height})
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}))
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}))
+  await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/review/done`,{waitUntil:'domcontentloaded'})
+  const heading=page.getByRole('heading',{name:'Review complete',level:1})
+  await expect(heading).toBeVisible()
+  await expect(page.getByText('Review a round to see stats.',{exact:true})).toBeVisible()
+  const metrics=page.getByRole('region',{name:'Review statistics'}).locator('strong')
+  await expect(metrics).toHaveCount(4)
+  await expect(metrics).toHaveText(['–','–','–','–'])
+  const colours=await metrics.evaluateAll(elements=>elements.map(value=>{
+   const probe=document.createElement('span')
+   probe.style.color='var(--ink-4)'
+   value.parentElement!.appendChild(probe)
+   const actual=getComputedStyle(value).color
+   const expected=getComputedStyle(probe).color
+   probe.remove()
+   return {actual,expected}
+  }))
+  for(const {actual,expected} of colours)expect(actual,'unavailable stat must use --ink-4').toBe(expected)
+  await expect(page.locator('[data-round-edge], [data-seal-ray]')).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Done'})).toBeVisible()
+  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
+  // Screen and AppShell both animate opacity; a visible node can still be
+  // partly transparent. Inspect the settled final frame instead.
+  await expect.poll(()=>heading.evaluate(element=>{
+   let node:HTMLElement|null=element
+   let opacity=1
+   while(node&&node.id!=='main-content'){
+    opacity=Math.min(opacity,Number(getComputedStyle(node).opacity))
+    node=node.parentElement
+   }
+   return opacity
+  })).toBeGreaterThanOrEqual(0.99)
+  mkdirSync('test-results/screens/look-7a',{recursive:true})
+  await page.screenshot({path:`test-results/screens/look-7a/empty-${profile}-${theme}-${width}.png`})
+ })
+}
