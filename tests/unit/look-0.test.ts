@@ -6,7 +6,7 @@ const css=readFileSync('src/styles/themes.css','utf8')
 function tokens(theme:'graph'|'graph-night'):Record<string,string>{
  const block=css.match(new RegExp('html\\[data-theme="'+theme+'"\\] \\{([\\s\\S]*?)\\n\\}'))?.[1]
  if(!block)throw new Error('Missing theme '+theme)
- return Object.fromEntries([...block.matchAll(/(--[\\w-]+):\\s*([^;]+);/g)].map(([,key,value])=>[key,value.trim()]))
+ return Object.fromEntries([...block.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map(([,key,value])=>[key,value.trim()]))
 }
 function lab(hex:string):[number,number,number]{
  const c=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4)
@@ -41,7 +41,7 @@ function deltaE2000(h1:string,h2:string):number{
 }
 describe('LOOK-0 approved graph worlds',()=>{
  it('generates only day and night, with every role present',()=>{
-  expect([...css.matchAll(/html\\[data-theme="([^"]+)"\\]/g)].map(x=>x[1])).toEqual(['graph','graph-night'])
+  expect([...css.matchAll(/html\[data-theme="([^"]+)"\]/g)].map(x=>x[1])).toEqual(['graph','graph-night'])
   for(const theme of ['graph','graph-night'] as const){
    const t=tokens(theme)
    for(const key of ['--accent','--late','--danger','--early','--link','--paper','--paper-2','--hair','--edge','--ink','--ink-2','--ink-3','--ink-4'])expect(t[key],theme+' '+key).toBeTruthy()
