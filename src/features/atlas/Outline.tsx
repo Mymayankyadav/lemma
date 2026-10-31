@@ -118,12 +118,24 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
  const lanes=layoutAtlasLanes(arcs,centers);
  const hiddenLanes=ordered.filter(arc=>!lanes.has(arc.key));
  const hiddenLinkCount=hiddenLanes.reduce((total,arc)=>total+arc.count,0);
+ // Even when a physical lane cannot be allocated, the two affected rows
+ // retain noninteractive in/out ports. The details disclosure lists the link.
+ const hiddenPorts=new Map<string,{row:number;direction:'in'|'out';y:number}>();
+ for(const arc of hiddenLanes){
+  for(const [row,direction] of [[arc.from,'out'],[arc.to,'in']] as const){
+   const key=row+':'+direction;
+   if(!hiddenPorts.has(key))hiddenPorts.set(key,{row,direction,y:(centers?.[row]??row*ROW+ROW/2)+(direction==='in'?5:-5)});
+  }
+ }
  const badges=layoutBundleLabels(arcs.filter(arc=>lanes.has(arc.key)),rows,centers,heightPx);
  const overflow=badges.get(OVERFLOW_BUNDLE_KEY);
  return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={heightPx??rows*ROW}
   className="pointer-events-none absolute right-0 top-0 overflow-visible">
   <defs>{(['none','up','down'] as Tone[]).map(t=><marker key={t} id={'atlas-arrow-'+t} viewBox="0 0 6 6" refX="5.5" refY="3" markerWidth="6" markerHeight="6" orient="auto" markerUnits="userSpaceOnUse">
    <path d="M0 0L6 3L0 6Z" fill={toneColor[t]}/></marker>)}</defs>
+  {[...hiddenPorts.values()].map(port=><path key={'port:'+port.row+':'+port.direction}
+   data-atlas-hidden-port={port.direction} data-atlas-row={port.row}
+   d={'M2 '+port.y+' H8'} fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round"/>)}
   {ordered.map(arc=>{
    const lane=lanes.get(arc.key);
    if(!lane)return null;
