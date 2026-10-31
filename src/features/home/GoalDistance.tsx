@@ -1,7 +1,7 @@
 import {lazy,Suspense,useState} from 'react'
 import {useQuery} from '@tanstack/react-query'
 import {getApi} from '../../data'
-import {getMode} from '../../data/mode'
+import {getMode,getDemoProfile} from '../../data/mode'
 import {Link} from 'react-router'
 import type {ProjectSummary,InsightData} from '../../data/types'
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar'
@@ -72,10 +72,12 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
 export function GoalDistance({projects}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
  const active=projects.filter(project=>project.status==='active').sort(urgency)
  const [showRest,setShowRest]=useState(false)
- // Live Insights returns aggregate charts, not checkpoint event rows; avoid
- // an unnecessary Today request. Demo keeps the existing measured-pace fixture.
+ // Live and S/X stress Insights return bounded aggregates with no checkpoint
+ // events. Querying them on cold Today cannot improve goal pace, but competes
+ // with the first meaningful Route paint under 4x CPU. The small default demo
+ // retains its actual checkpoint-event pace calculation.
  const insight=useQuery({queryKey:['insights',30],queryFn:()=>getApi().getInsightData(30),
-  enabled:getMode()==='demo'})
+  enabled:getMode()==='demo'&&getDemoProfile()==='default'})
  const featured=active.slice(0,3),rest=active.slice(3)
  const behindCount=rest.filter(behind).length
  return <section aria-label="Distance to your goals" className="flex min-w-0 flex-col gap-3">
