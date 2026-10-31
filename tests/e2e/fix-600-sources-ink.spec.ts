@@ -39,7 +39,7 @@ for(const width of [360,390] as const){
    expect(color).toBe(tokens.ink);
    expect(color).not.toBe(tokens.accent);
   }
-  const newLabels=sources.locator('[data-source-new]');
+  const newLabels=sources.locator('[data-source-new]:visible');
   if(await newLabels.count()){
    const label=newLabels.first();
    await expect(label).toBeVisible();
@@ -60,11 +60,17 @@ for(const width of [360,390] as const){
   await expect(save).toBeVisible();
   expect(await save.evaluate(node=>getComputedStyle(node).color)).toBe(tokens.accent);
   expect(await cancel.evaluate(node=>getComputedStyle(node).color)).toBe(tokens.ink);
-  for(const control of [sources.locator('[data-source-fold]').first(),edit,save,cancel]){
+  for(const control of [sources.locator('[data-source-fold]').first().locator('..'),edit,save,cancel]){
    const box=await control.boundingBox();
    expect(box?.height??0).toBeGreaterThanOrEqual(44);
    expect(box?.width??0).toBeGreaterThanOrEqual(44);
   }
+  for(const informative of [row.locator('strong').first(),row.locator('p').first(),edit]){
+   const fontSize=await informative.evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
+   expect(fontSize).toBeGreaterThanOrEqual(12);
+  }
+  const math=row.locator('.katex').first();
+  if(await math.count())expect(await math.evaluate(node=>parseFloat(getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(16);
   const metrics=await page.evaluate(()=>({
    overflow:document.documentElement.scrollWidth-innerWidth,
    nodes:document.querySelectorAll('*').length,
