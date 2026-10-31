@@ -5,6 +5,9 @@ import type {ConceptLevel} from '../../data/types';
  * coordinate system, including after folding or filtering.
  */
 export const atlasRowHeight=(level:ConceptLevel):number=>level==='cluster'?56:44;
+/** Notebook breathing room is outside the interactive target, never part of
+ * its 56/44px hit area. The virtual geometry includes the space explicitly. */
+export const atlasRowGap=(level:ConceptLevel):number=>level==='cluster'||level==='galaxy'?8:0;
 
 export interface AtlasRowGeometry{
  offsets:number[];
@@ -14,9 +17,9 @@ export interface AtlasRowGeometry{
 export function buildAtlasRowGeometry(levels:readonly ConceptLevel[]):AtlasRowGeometry{
  const offsets=[0],centers:number[]=[];
  for(const level of levels){
-  const height=atlasRowHeight(level);
-  centers.push(offsets[offsets.length-1]+height/2);
-  offsets.push(offsets[offsets.length-1]+height);
+  const height=atlasRowHeight(level),gap=atlasRowGap(level);
+  centers.push(offsets[offsets.length-1]+gap+height/2);
+  offsets.push(offsets[offsets.length-1]+gap+height);
  }
  return {offsets,centers,totalHeight:offsets[offsets.length-1]};
 }
