@@ -4,12 +4,23 @@ import {test,expect} from '@playwright/test';
 for(const theme of ['graph','graph-night'] as const){
  test(`ST-7 toast with an action reveals short-but-overflowing text at 360px (${theme})`,async({page})=>{
   await page.setViewportSize({width:360,height:740});
+  const message='The proposed changes could not be saved because the connection was interrupted. Please try again.';
+  // Playwright runs Vite preview (a production build), so source-module imports
+  // are unavailable. Replace only the kit's toast fixture in its served JS;
+  // this exercises the real toast and action without a production test hook.
+  let fixturePatched=false;
+  await page.route('**/assets/*.js',async route=>{
+   const response=await route.fetch();
+   const body=await response.text();
+   if(body.includes('Prompt copied')){
+    fixturePatched=true;
+    await route.fulfill({response,body:body.replaceAll('Prompt copied',message)});
+   }else await route.fulfill({response});
+  });
   await page.goto(`/lemma/?demo=1&theme=${theme}#/kit`);
   await expect(page.getByRole('heading',{name:'Component kit'})).toBeVisible();
-  const message='The proposed changes could not be saved because the connection was interrupted. Please try again.';
-  // The kit runs on Vite's development server; exercise the real exported toast
-  // without adding production-only test hooks or changing another task's screen.
-  await page.addScriptTag({type:'module',content:`import {toast} from '/lemma/src/ui/Toast.tsx'; toast(${JSON.stringify(message)}, {action:{label:'Undo',onClick:()=>{}}});`});
+  await page.getByRole('button',{name:'Show toast with action'}).click();
+  expect(fixturePatched).toBe(true);
   const status=page.getByRole('status').filter({hasText:message});
   await expect(status).toBeVisible();
   const more=status.getByRole('button',{name:'Show notification details'});
