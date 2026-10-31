@@ -22,9 +22,9 @@ test('opens as an outline with each field and the path to current work unfolded'
 
 test('folding a branch keeps its links by re-attaching them to the branch',async({page})=>{
  const fold=page.getByRole('group',{name:'Fold to depth'});
- await fold.getByRole('button',{name:'1',exact:true}).click();
+ await fold.getByRole('button',{name:'Fields',exact:true}).click();
  await expect(page.getByRole('treeitem')).toHaveCount(3);
- await fold.getByRole('button',{name:'2',exact:true}).click();
+ await fold.getByRole('button',{name:'Areas',exact:true}).click();
  const areas=await page.getByRole('treeitem').count();
  expect(areas).toBeGreaterThan(3);
  // Links between areas of different fields are still drawn while everything inside them is folded.

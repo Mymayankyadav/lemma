@@ -20,6 +20,9 @@ export interface Arc{key:string; from:number; to:number; kind:Link['kind']; coun
 export interface Focus{start:Set<string>; up:Set<string>; down:Set<string>; related:Set<string>}
 
 const LEVELS:ConceptLevel[]=['cluster','galaxy','system','planet','moon'];
+// Reuse the ICU collation object across thousands of extreme sibling-sort pairs.
+// Intl.Collator's default ordering matches String.localeCompare's defaults.
+const compareNames=new Intl.Collator().compare;
 const isTest=(s:string)=>/zz[-_ ]?selftest|^self[-_ ]test$|^system[-_]test/i.test(s);
 export const levelName:Record<ConceptLevel,string>={cluster:'Field',galaxy:'Area',system:'Topic',planet:'Idea',moon:'Detail'};
 /** A safe literal label needs no Markdown parser, KaTeX tree or sanitizer.
@@ -29,6 +32,7 @@ export const levelName:Record<ConceptLevel,string>={cluster:'Field',galaxy:'Area
 export function isPlainAtlasLabel(source:string):boolean{
  return /^[A-Za-z0-9][A-Za-z0-9 ,.:;!?()'+-]*$/.test(source);
 }
+
 
 
 function synthetic(id:string,name:string,subjectId:string,level:ConceptLevel,parentId:string|null,glyph:string|null):AtlasNode{
@@ -68,7 +72,7 @@ function taughtCheckpoint(node:AtlasNode):number|null{
 
 export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const subjects=[...graph.subjects].filter(s=>!isTest(s.name)&&!isTest(s.id))
-  .sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
+  .sort((a,b)=>a.position-b.position||compareNames(a.name,b.name));
  const permitted=new Set(subjects.map(s=>s.id)),nodes=new Map<string,AtlasNode>();
  const clustersBySubject=new Map<string,AtlasNode[]>();
  for(const c of graph.concepts){
@@ -85,7 +89,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const roots:string[]=[],rootBySubject=new Map<string,string>();
  for(const subject of subjects){
   // Group roots while building nodes instead of rescanning all ideas for each field.
-  const own=(clustersBySubject.get(subject.id)??[]).sort((a,b)=>a.name.localeCompare(b.name));
+  const own=(clustersBySubject.get(subject.id)??[]).sort((a,b)=>compareNames(a.name,b.name));
   for(const field of own){field.glyph=subject.glyph;roots.push(field.id)}
   const id=own[0]?.id??'atlas:root:'+subject.id;
   if(!own.length){nodes.set(id,synthetic(id,subject.name,subject.id,'cluster',null,subject.glyph));roots.push(id)}
@@ -108,8 +112,11 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const rank=prerequisiteRank(nodes.keys(),links);
  // Child ordering may compare the same idea dozens of times. Parse its
  // checkpoint code once, not during every comparison in each sibling sort.
- const checkpointRanks=new Map<string,number>([...nodes].map(([id,node]):[string,number]=>[id,checkpointNumber(node)]));
- const taughtRanks=new Map<string,number|null>([...nodes].map(([id,node]):[string,number|null]=>[id,taughtCheckpoint(node)]));
+ const checkpointRanks=new Map<string,number>(),taughtRanks=new Map<string,number|null>();
+ for(const [id,node] of nodes){
+  checkpointRanks.set(id,checkpointNumber(node));
+  taughtRanks.set(id,taughtCheckpoint(node));
+ }
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
   const kids=n.children.map(c=>summarise(c,depth+1));
@@ -118,7 +125,9 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   n.done=(own&&n.status==='demonstrated'?1:0)+kids.reduce((s,k)=>s+k.done,0);
   n.revisit=(own&&n.status==='revisit'?1:0)+kids.reduce((s,k)=>s+k.revisit,0);
   n.due=n.dueCards+kids.reduce((s,k)=>s+k.due,0);
-  n.rank=Math.min(rank.get(id)??Number.MAX_SAFE_INTEGER,...kids.map(k=>k.rank));
+  let minRank=rank.get(id)??Number.MAX_SAFE_INTEGER;
+  for(const child of kids)if(child.rank<minRank)minRank=child.rank;
+  n.rank=minRank;
   if(n.synthetic||!own){
    n.status=n.revisit?'revisit':n.total&&n.done===n.total?'demonstrated':
     n.done>0||kids.some(k=>k.status==='in_progress')?'in_progress':n.status;
@@ -129,7 +138,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
    const taughtX=taughtRanks.get(a)??null,taughtY=taughtRanks.get(b)??null;
    // A proposed plan must read CP1, CP2, …, CP10, never CP1, CP10, CP2.
    if(taughtX!==null&&taughtY!==null&&taughtX!==taughtY)return taughtX-taughtY;
-   return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
+   return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||compareNames(x.name,y.name)||compareNames(x.id,y.id);
   });
   return n;
  };
@@ -248,11 +257,11 @@ export function arcCountFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet
  const cached=new Map<string,number|null>();
  const resolve=(id:string):number|null=>{
   if(cached.has(id))return cached.get(id)!;
-  const path:string[]=[],seen=new Set<string>();
+  const path:string[]=[];
   let current:string|null=id,found:number|null=null;
-  while(current&&!seen.has(current)){
+  while(current&&!path.includes(current)){
    if(cached.has(current)){found=cached.get(current)!;break}
-   seen.add(current);path.push(current);
+   path.push(current);
    const at=index.get(current);
    if(at!==undefined){found=at;break}
    current=tree.nodes.get(current)?.parentId??null;
@@ -260,17 +269,20 @@ export function arcCountFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet
   for(const node of path)cached.set(node,found);
   return found;
  };
- const keys=new Set<string>();
+ // This count-only first-paint path does not need Arc objects or string keys.
+ // Encode (source row, target row, kind) injectively as a safe integer; a
+ // fallback retains exact behavior for an unrealistically large row inventory.
+ const width=rows.length,packed=width<2**26;
+ const keys=new Set<number|string>();
  for(const link of tree.links){
   if(!kinds.has(link.kind))continue;
   const from=resolve(link.fromId),to=resolve(link.toId);
   if(from===null||to===null||from===to)continue;
   const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
-  keys.add(link.kind+':'+a+':'+b);
+  keys.add(packed?(a*width+b)*2+(link.kind==='related'?1:0):link.kind+':'+a+':'+b);
  }
  return keys.size;
 }
-
 
 /** Keep the dependency margin readable under thousands of links. A collapsed
  * branch still summarises its connections; with everything expanded, only
@@ -344,7 +356,7 @@ export function rowTone(tree:AtlasTree,id:string,focus:Focus|null,selectedId:str
 /** Direct neighbours for the details sheet. */
 export function neighbours(tree:AtlasTree,id:string){
  const own=new Set([id,...descendants(tree,id)]);
- const pick=(ids:string[])=>[...new Set(ids)].map(x=>tree.nodes.get(x)!).filter(Boolean).sort((a,b)=>a.rank-b.rank||a.name.localeCompare(b.name));
+ const pick=(ids:string[])=>[...new Set(ids)].map(x=>tree.nodes.get(x)!).filter(Boolean).sort((a,b)=>a.rank-b.rank||compareNames(a.name,b.name));
  return {
   needs:pick(tree.links.filter(l=>l.kind==='prereq'&&own.has(l.toId)&&!own.has(l.fromId)).map(l=>l.fromId)),
   unlocks:pick(tree.links.filter(l=>l.kind==='prereq'&&own.has(l.fromId)&&!own.has(l.toId)).map(l=>l.toId)),

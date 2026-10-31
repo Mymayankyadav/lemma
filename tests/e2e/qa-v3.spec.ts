@@ -27,7 +27,7 @@ for(const world of ['graph','graph-night'] as const){
 
   await page.goto(base+'/')
   await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible()
-  await expect(page.getByRole('region',{name:'Distance to your goals'}).locator('[data-timeline="metro"]').first()).toBeVisible()
+  await expect(page.getByRole('region',{name:'Distance to your goals'}).locator('[data-route]').first()).toBeVisible()
   await expect(page.getByRole('navigation',{name:'Main navigation'}).getByRole('link')).toHaveCount(4)
   await capturePhone(page,world,'today')
 
@@ -42,8 +42,9 @@ for(const world of ['graph','graph-night'] as const){
   await capturePhone(page,world,'paths')
 
   await page.goto(base+'/p/real-analysis')
-  const metro=page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="metro"]')
+  const metro=page.getByRole('region',{name:'Project timeline'}).locator('[data-route-mode="project"]')
   await expect(metro.locator('[data-station-state]')).toHaveCount(13)
+  await expect(metro.locator('[data-stage-rail],[data-expanded-stations]')).toHaveCount(0)
   await expect(page.getByLabel('Schedule legend')).toContainText('Late')
   await capturePhone(page,world,'project')
 
@@ -51,7 +52,9 @@ for(const world of ['graph','graph-night'] as const){
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible()
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toHaveAttribute('data-atlas-field-count','3')
   await expect(page.locator('[data-atlas-details]')).toHaveCount(0)
-  await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'2',exact:true}).click()
+  const areas=page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'Areas',exact:true})
+  await areas.click()
+  await expect(areas).toHaveAttribute('aria-pressed','true')
   await capturePhone(page,world,'atlas')
 
   await page.goto(base+'/projects/new')

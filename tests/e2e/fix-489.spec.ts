@@ -53,8 +53,12 @@ for (const width of [360, 390] as const) {
     await page.setViewportSize({ width, height: width === 360 ? 740 : 844 });
     await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/atlas`);
     await expect(page.getByRole("tree", { name: "Ideas and their links" })).toBeVisible();
-    await page.getByRole("group", { name: "Fold to depth" })
-      .getByRole("button", { name: "2", exact: true }).click();
+    // LOOK-4a renamed numeric depth 2 to the accessible Areas control;
+    // keep testing the same depth-2 bundle spacing, not a stale label.
+    const depthTwo = page.getByRole("group", { name: "Fold to depth" })
+      .getByRole("button", { name: "Areas", exact: true });
+    await depthTwo.click();
+    await expect(depthTwo).toHaveAttribute("aria-pressed", "true");
     const circles = page.locator("[data-atlas-bundle-circle]");
     await expect.poll(() => circles.count()).toBeGreaterThan(1);
     const gap = await page.evaluate(measureSvgMarks);

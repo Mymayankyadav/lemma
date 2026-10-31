@@ -12,7 +12,8 @@ import type {
   SubjectPatch,
   SourcePatch,
 } from "../api";
-import { LemmaError, notImplemented } from "../api";
+import { LemmaError } from "../api";
+import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
 import type {
   AtlasGraph,
   CardComment,
@@ -119,12 +120,25 @@ export interface DemoOptions {
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
-  /** CONTRACT-546: FIX-546b adds bounded demo pagination. */
-  async getCardHistoryPage(..._args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
-    throw notImplemented("getCardHistoryPage");
+  async getCardHistoryPage(...args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
+    const [no,cursor]=args,n=this.note(no),key=decodeCardPageCursor(cursor,'reviews',no);
+    const ids=new Set(n.cards.map(c=>c.id));
+    const page=this.store.reviews.filter(r=>ids.has(r.cardId)&&!r.undoneAt)
+      .sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt)||b.id-a.id)
+      .filter(r=>!key||olderThanKey({at:r.reviewedAt,id:String(r.id)},key))
+      .slice(0,21);
+    const visible=page.slice(0,20);
+    return {rows:visible.map(r=>({reviewedAt:r.reviewedAt,rating:r.rating,confidence:r.confidence})),
+      nextCursor:page.length>20?encodeCardPageCursor('reviews',no,{at:visible[19].reviewedAt,id:String(visible[19].id)}):null};
   }
-  async getCardCommentsPage(..._args: Parameters<LemmaApi["getCardCommentsPage"]>): ReturnType<LemmaApi["getCardCommentsPage"]> {
-    throw notImplemented("getCardCommentsPage");
+  async getCardCommentsPage(...args: Parameters<LemmaApi["getCardCommentsPage"]>): ReturnType<LemmaApi["getCardCommentsPage"]> {
+    const [no,cursor]=args,n=this.note(no),key=decodeCardPageCursor(cursor,'comments',no);
+    const page=[...n.comments].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||b.no-a.no)
+      .filter(c=>!key||olderThanKey({at:c.createdAt,id:String(c.no)},key))
+      .slice(0,21);
+    const visible=page.slice(0,20);
+    return {rows:clone(visible),nextCursor:page.length>20
+      ?encodeCardPageCursor('comments',no,{at:visible[19].createdAt,id:String(visible[19].no)}):null};
   }
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
     const ids=new Set(this.store.projects.filter(p=>p.status!=="archived"&&!p.system).map(p=>p.id));
@@ -1591,20 +1605,13 @@ export class DemoAdapter implements LemmaApi {
     return {rows,nextOffset:hasMore?offset+50:null};
   }
   async getCard(noteNo: number): Promise<CardDetail> {
-    const n = this.note(noteNo);
-    return {
-      note: clone(n.note),
-      cards: n.cards.map((c) => ({ ord: c.ord, state: clone(c.state) })),
-      history: this.store.reviews
-        .filter((r) => n.cards.some((c) => c.id === r.cardId) && !r.undoneAt)
-        .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt))
-        .map((r) => ({
-          reviewedAt: r.reviewedAt,
-          rating: r.rating,
-          confidence: r.confidence,
-        })),
-      comments: clone(n.comments),
-    };
+    const n=this.note(noteNo);
+    const [history,comments]=await Promise.all([
+      this.getCardHistoryPage(noteNo),this.getCardCommentsPage(noteNo)
+    ]);
+    return {note:clone(n.note),cards:n.cards.map(c=>({ord:c.ord,state:clone(c.state)})),
+      history:history.rows,comments:comments.rows,
+      historyNextCursor:history.nextCursor,commentsNextCursor:comments.nextCursor};
   }
   async createNote(input: CreateNoteInput) {
     return this.transaction(() => ({
@@ -1689,9 +1696,36 @@ export class DemoAdapter implements LemmaApi {
     for (const ids of cardIdsByConcept.values())
       for (const id of ids) linkedCardIds.add(id);
     const dueByCard = new Map<string, number>();
-    if (linkedCardIds.size) for (const item of this.eligible())
-      if (linkedCardIds.has(item.cardId))
-        dueByCard.set(item.cardId, (dueByCard.get(item.cardId) ?? 0) + 1);
+    if (linkedCardIds.size) {
+      // The Atlas only needs card IDs, not 30,000 rich ReviewItem objects.
+      // allItems() resolves each note's project/checkpoint and clones state;
+      // on the extreme fixture that work dominates the 4x CPU transition.
+      // Keep the exact dueToday selection order, sibling deduplication and
+      // daily quotas, but feed it lightweight state references instead.
+      const now = this.now();
+      const start = studyDayBounds(now, this.store.settings.timeZone,
+        this.store.settings.rolloverHour).start;
+      const active = new Set(this.store.projects
+        .filter(p => p.status !== "archived" && !p.system).map(p => p.id));
+      const candidates: {cardId:string;noteId:string;state:CardState}[] = [];
+      for (const note of this.store.notes) {
+        if (note.note.status !== "active" || !active.has(note.projectId)) continue;
+        for (const card of note.cards)
+          candidates.push({cardId:card.id,noteId:note.note.noteId,state:card.state});
+      }
+      let answeredToday = 0, newAnsweredToday = 0;
+      for (const review of this.store.reviews) {
+        if (review.undoneAt) continue;
+        const at = Date.parse(review.reviewedAt);
+        if (at < start || at > now) continue;
+        answeredToday++;
+        if (review.stateBefore === 0) newAnsweredToday++;
+      }
+      for (const item of dueToday(candidates, this.store.settings,
+        {now, answeredToday, newAnsweredToday}))
+        if (linkedCardIds.has(item.cardId))
+          dueByCard.set(item.cardId, (dueByCard.get(item.cardId) ?? 0) + 1);
+    }
     const reviewsByCard = new Map<string, DemoReview[]>();
     if (linkedCardIds.size) for (const review of this.store.reviews) {
       if (review.undoneAt || !linkedCardIds.has(review.cardId)) continue;
@@ -1716,7 +1750,9 @@ export class DemoAdapter implements LemmaApi {
           if (history) reviews.push(...history);
         }
         return {
-          ...clone(c),
+          // DemoConcept contains only primitive fields; a shallow copy is
+          // independent and avoids thousands of structuredClone calls at 4x CPU.
+          ...c,
           status: conceptStatus(
             checkpoints.map(cp => this.cpUi(cp)),
             unresolved.has(c.id), reviews, now,
@@ -1728,7 +1764,9 @@ export class DemoAdapter implements LemmaApi {
           dueCards,
         };
       }),
-      links: clone(this.store.links),
+      // Atlas links also contain only primitive fields; copy each record so
+      // callers cannot mutate the underlying demo store.
+      links: this.store.links.map(link => ({...link})),
     };
   }
   async pinConcept(id: string, x: number | null, y: number | null) {
