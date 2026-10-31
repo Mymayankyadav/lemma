@@ -1,4 +1,4 @@
-import {formatCount} from '../../lib/text';
+import {formatCount,formatDurationMinutes} from '../../lib/text';
 
 /** Compact *visible* value for narrow Insights tiles, with a lossless
  * screen-reader equivalent. Never use the abbreviated value as the stored
@@ -18,7 +18,6 @@ export function compactStudyTotal(minutes:number):{short:string;exact:string}{
  const short=days>=1000
   ? String(Math.round(days/100)/10)+'k d'
   : days?formatCount(days)+' d'
-  : hours?formatCount(hours)+' h'
-  : total+' m';
+  : formatDurationMinutes(total);
  return {short,exact};
 }
