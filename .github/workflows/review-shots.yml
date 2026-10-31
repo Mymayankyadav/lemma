@@ -4,6 +4,8 @@ on:
     paths:
       - 'scripts/review-shots.mjs'
       - 'scripts/v4-capture-inventory.json'
+      - 'scripts/qa4-screens.ts'
+      - 'tests/unit/qa4/**'
       - '.github/workflows/review-shots.yml'
       - '.github/workflows/review-shots-publish.yml'
   workflow_dispatch:
