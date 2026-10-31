@@ -6,7 +6,7 @@ interface RoundSealProps {order:readonly string[];answers:readonly AnswerLike[]}
 /** One edge per reviewed card; a circle/semicircles represent one/two-card rounds. */
 export function RoundSeal({order,answers}:RoundSealProps){
  const reduced=!!useReducedMotion(),calm=useCalm(),quiet=reduced||calm
- const n=order.length,points=regularPolygon(Math.max(1,n),84,84,58)
+ const n=order.length,compact=n>24,points=compact?[]:regularPolygon(Math.max(1,n),84,84,58)
  const step=Math.min(.11,1.2/Math.max(1,n)),finish=.12+n*step+.24
  const firstGrades=new Map<string,number>()
  for(const answer of answers)if(!firstGrades.has(answer.card.cardId))firstGrades.set(answer.card.cardId,answer.rating)
@@ -29,11 +29,11 @@ export function RoundSeal({order,answers}:RoundSealProps){
   {points.map((p,i)=><motion.line key={'radius'+i} data-seal-radius x1={84} y1={84} x2={p.x} y2={p.y}
    stroke="var(--ink-3)" strokeWidth=".8" initial={quiet?false:{opacity:0}} animate={{opacity:.35}}
    transition={{duration:quiet?0:.3,delay:quiet?0:finish+.3+i*step/3}}/>)}
-  {order.map((id,i)=><motion.path key={id} data-round-edge={firstGrades.get(id)===1?'missed':'passed'} d={edge(i)} fill="none"
+  {(compact?Array.from({length:12},(_,i)=>order[Math.min(n-1,Math.floor(i*n/12))]):order).map((id,i)=><motion.path key={id} data-round-edge={firstGrades.get(id)===1?'missed':'passed'} d={compact?`M ${84+58*Math.cos(-Math.PI/2+2*Math.PI*i/12+.03)} ${84+58*Math.sin(-Math.PI/2+2*Math.PI*i/12+.03)} A 58 58 0 0 1 ${84+58*Math.cos(-Math.PI/2+2*Math.PI*(i+1)/12-.03)} ${84+58*Math.sin(-Math.PI/2+2*Math.PI*(i+1)/12-.03)}`:edge(i)} fill="none"
    stroke={firstGrades.get(id)===1?'var(--bad)':'var(--accent)'} strokeWidth="2"
    initial={quiet?false:{pathLength:0}} animate={{pathLength:1}}
    transition={{duration:quiet?0:.24,delay:quiet?0:.12+i*step}}/>)}
-  {order.map((id,i)=><motion.circle key={id} cx={points[i].x} cy={points[i].y} r="2.5" fill="var(--bg)" stroke="var(--accent)"
+  {!compact&&order.map((id,i)=><motion.circle key={id} cx={points[i].x} cy={points[i].y} r="2.5" fill="var(--bg)" stroke="var(--accent)"
    initial={quiet?false:{scale:0}} animate={{scale:1}} style={{transformOrigin:`${points[i].x}px ${points[i].y}px`}}
    transition={{duration:quiet?0:.22,delay:quiet?0:.12+i*step}}/>)}
   <motion.circle cx="84" cy="84" r="3" fill="var(--accent)" style={{transformOrigin:'84px 84px'}}

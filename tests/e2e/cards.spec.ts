@@ -142,6 +142,9 @@ for(const world of ['graph','graph-night'] as const){
   await page.setViewportSize({width:360,height:740});
   await page.addInitScript(theme=>localStorage.setItem('lemma.ui',JSON.stringify({theme,density:'compact',effects:'calm'})),world);
   await page.goto('/lemma/?demo=1#/cards');
+  // ST-4 intentionally pages newest-first: find the legacy fixture by search,
+  // rather than assuming its card appears in the first 50 unfiltered rows.
+  await page.getByLabel('Search cards').fill('Heine');
   const row=page.getByRole('link',{name:/Heine/});
   await expect(row).toBeVisible();
   await expect(row.locator('span').filter({hasText:/CP/}).first()).toBeVisible();
