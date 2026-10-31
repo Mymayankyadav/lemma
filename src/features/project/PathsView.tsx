@@ -146,7 +146,7 @@ export function Stages({detail}:{detail:ProjectDetail}){
     aria-pressed={openStage===i} onClick={()=>setOpenStage(i)}
     className={'min-h-11 min-w-11 max-w-44 shrink-0 truncate rounded-chip border px-3 text-label '+
      (openStage===i?'border-amber bg-amber-tint text-amber':'border-edge bg-fill-1 text-ink-2')}>
-    {i+1}. {stage.name}
+    {i+1}. <Tex source={stage.name}/>
    </button>)}
   </nav>}
   {stages.map((stage,i)=><StageCard key={detail.project.slug+'/'+stage.key} slug={detail.project.slug}
