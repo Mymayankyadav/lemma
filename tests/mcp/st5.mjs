@@ -261,6 +261,8 @@ try {
  assert.ok((await deletedPage(0)).every(note=>note.status==='deleted'))
  assert.deepEqual((await filtered("'Deleted card','long-plan',null,null,null,null,0")).map(x=>x.item),[])
  assert.deepEqual((await filtered("'','long-plan',null,null,'suspended',null,0")).map(x=>x.item.noteNo),[2100])
+ assert.equal((await filtered("'','long-plan',null,null,'active',null,0")).length,50)
+ assert.equal((await filtered("'','long-plan',null,null,'active',null,100")).length,20)
  await db.exec("select set_config('test.uid','"+other+"',false)")
  assert.deepEqual((await deletedPage(0)).map(x=>x.noteNo),[])
  await db.exec("select set_config('test.uid','"+owner+"',false)")
