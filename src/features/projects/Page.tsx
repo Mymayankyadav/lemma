@@ -61,18 +61,18 @@ function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubj
     <button type="button" onClick={()=>setMenu(true)} aria-label={'Restore options for '+project.title}
      className="min-w-0 flex-1 rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-amber">
      <span className="flex items-center gap-2">
-      <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
+      <span aria-hidden="true" className="text-title-s text-ink-2">{project.subject?.glyph??'∫'}</span>
       <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
       <span className="text-caption text-ink-2">Archived · restore</span>
      </span>
     </button>:
     <Link to={'/p/'+project.slug} className="min-w-0 flex-1 rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
      <div className="flex items-center gap-2">
-      <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
+      <span aria-hidden="true" className="text-title-s text-ink-2">{project.subject?.glyph??'∫'}</span>
       <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
-      {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
+      {project.pinned&&<span className="shrink-0 text-caption text-ink-2">Pinned</span>}
      </div>
-     <div className="mt-1 text-caption text-ink-2">{showSubject&&<span className="mr-2">{project.subject?.name??"Unassigned"} ·</span>}{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
+     <div className="mt-1 text-caption text-ink-2">{showSubject&&<span className="mr-2"><Tex source={project.subject?.name??"Unassigned"}/> ·</span>}{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
     </Link>}
    <button type="button" aria-label={'Actions for '+project.title} aria-expanded={menu} aria-haspopup="menu"
     onClick={()=>setMenu(value=>!value)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-edge text-ink-2">
@@ -95,7 +95,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
  return <section aria-label={name+' projects'} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
   {total>1&&<button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
-   <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
+   <span aria-hidden="true" className="text-title-s text-ink-2">{glyph}</span>
    <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s"><Tex source={name}/></h2>
    <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
