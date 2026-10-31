@@ -1610,7 +1610,8 @@ export class DemoAdapter implements LemmaApi {
       this.getCardHistoryPage(noteNo),this.getCardCommentsPage(noteNo)
     ]);
     return {note:clone(n.note),cards:n.cards.map(c=>({ord:c.ord,state:clone(c.state)})),
-      history:history.rows,comments:comments.rows};
+      history:history.rows,comments:comments.rows,
+      historyNextCursor:history.nextCursor,commentsNextCursor:comments.nextCursor};
   }
   async createNote(input: CreateNoteInput) {
     return this.transaction(() => ({
