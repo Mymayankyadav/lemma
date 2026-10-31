@@ -102,9 +102,9 @@ export default function Page(){
     </div>}
     {recalled>0&&<div>
      <button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setShowRecalled(v=>!v)}>
-      {recalled} recalled · {compact?(showRecalled?'Hide':'Show cards'):'Show cards'}
+      {recalled} recalled · {compact?(showRecalled?'Hide':'Show cards'):'Full list'}
      </button>
-     {showRecalled&&<div className="flex flex-wrap gap-1.5">{recalledAnswers.map(a=><Link key={a.card.cardId}
+     {(showRecalled||!compact)&&<div className="flex flex-wrap gap-1.5">{recalledAnswers.map(a=><Link key={a.card.cardId}
       title={a.card.projectSlug+' · '+(['','Again','Hard','Good','Easy'][a.rating]??'')} to={'/cards/'+a.card.noteNo} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink-2">{'N'+a.card.noteNo}</Link>)}</div>}
     </div>}
    </div>
