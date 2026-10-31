@@ -44,7 +44,7 @@ for(const profile of ['stress','extreme'] as const)
     const front=width===360?'\\('+expression+'\\)':'\\['+expression+'\\]';
     await page.getByRole('textbox',{name:'Front'}).fill(front);
     await page.getByRole('textbox',{name:'Back'}).fill('Explain this expression');
-    await page.getByRole('combobox',{name:'Project'}).selectOption({index:1});
+    await page.locator('select[required]').selectOption({index:1});
     await page.getByRole('button',{name:'Create card'}).click();
     await expect(page).toHaveURL(/#\/cards\/\d+/);
     await page.evaluate(()=>{location.hash='#/cards';});
