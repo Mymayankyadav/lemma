@@ -10,7 +10,13 @@ for (const profile of ["stress", "extreme"] as const) {
         await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/`);
         const goals = page.getByRole("region", { name: "Distance to your goals" });
         await expect(goals).toBeVisible();
-        await expect(goals.getByRole("link", { name: "All paths" })).toBeVisible();
+        const allPaths = goals.getByRole("link", { name: "All paths" });
+        await expect(allPaths).toBeVisible();
+        const navigationColor = await allPaths.evaluate((element) => getComputedStyle(element).color);
+        const accentColor = await allPaths.evaluate((element) => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim());
+        // Secondary navigation must not consume the red primary-action token.
+        expect(navigationColor).not.toBe(accentColor);
+        expect((await allPaths.boundingBox())?.height).toBeGreaterThanOrEqual(44);
         await expect(goals.getByRole("article", { name: /Goal progress for/ })).toHaveCount(3);
         await expect(page.getByRole("region", { name: "Projects", exact: true })).toHaveCount(0);
         await expect(page.getByRole("region", { name: "Continue" })).toBeVisible();
