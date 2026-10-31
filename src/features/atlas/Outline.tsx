@@ -129,12 +129,12 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
   {overflow&&<details data-atlas-hidden-bundles="true" className="absolute z-20"
    style={{right:GUTTER-overflow.x-22,top:overflow.y-22}}>
    <summary data-atlas-overflow-count="true" aria-label={`Show ${overflow.hiddenKeys?.length??0} hidden Atlas link bundles`}
-    className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full border border-edge-2 bg-raised text-label font-semibold text-ink [&::-webkit-details-marker]:hidden">
+    className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full border border-edge-2 bg-raised text-body font-semibold text-ink [&::-webkit-details-marker]:hidden">
     +{overflow.hiddenKeys?.length??0}
    </summary>
    <div className="absolute right-0 top-11 max-h-60 w-[min(280px,calc(100vw-24px))] overflow-y-auto rounded-ctl border border-edge-2 bg-raised p-3 shadow-[var(--e-float)]">
     <p className="mb-2 text-body font-semibold">Other bundled connections</p>
-    <ul className="space-y-1 text-label text-ink-2">
+    <ul className="space-y-1 text-body text-ink-2">
      {(overflow.hiddenKeys??[]).map(key=>{
       const arc=arcs.find(item=>item.key===key);
       return arc?<li key={key}>{arc.kind==='prereq'?'Prerequisite':'Related'} rows {arc.from+1}–{arc.to+1}: {arc.count} links</li>:null;
