@@ -56,7 +56,7 @@ for (const world of ['graph','graph-night'] as const) {
     `svg[aria-label^="Reviews by day"] rect[data-review-grade="${grade}"]`
    )?.getAttribute('fill');
    return {
-    tokens:{again:token('--bad'),hard:token('--warn'),good:token('--grade-good'),easy:token('--good')},
+    tokens:{again:token('--bad'),hard:token('--warn'),good:token('--grade-good'),easy:token('--easy')},
     legend:{again:legend('again'),hard:legend('hard'),good:legend('good'),easy:legend('easy')},
     bars:{again:rect('again'),hard:rect('hard'),good:rect('good'),easy:rect('easy')},
    };
