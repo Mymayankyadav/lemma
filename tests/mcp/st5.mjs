@@ -31,6 +31,14 @@ try {
   'grant usage on schema public to authenticated;',
   'grant select on all tables in schema public to authenticated;'
  ].join('\n'))
+ // The review_items RPC returns the existing ReviewItem/CardState contract.
+ // Keep the isolated schema faithful to those columns before loading SQL.
+ await db.exec([
+  'alter table public.notes add column session_id uuid, add column source_id uuid, add column concept_id uuid, add column page_label text;',
+  'alter table public.cards add column ord integer default 0, add column stability real default 0, add column difficulty real default 0, add column last_review timestamptz, add column step integer default 0, add column reps integer default 0, add column lapses integer default 0;',
+  'alter table public.sources add column short text;',
+  'alter table public.concepts add column slug text;'
+ ].join('\n'))
  for(const name of ['subjects','projects','checkpoints','checkpoint_prereqs','notes','cards','sessions','sources','card_comments','settings','reviews','proposals','session_events','concepts','misconceptions']){
   await db.exec('alter table public.'+name+' enable row level security; create policy owner_read on public.'+name+' for select to authenticated using(user_id=(select auth.uid()));')
  }
@@ -43,10 +51,10 @@ try {
    "('77777777-7777-7777-7777-777777777772','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','CP2','Groups',2,'in_progress',2,'[\"Read\",\"Prove\",\"Practice\"]','Prove closure'),"+
    "('77777777-7777-7777-7777-777777777773','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','CP3','Rings',3,'not_started',0,'[\"Read\"]','Study rings');",
   "insert into public.checkpoint_prereqs values('11111111-1111-1111-1111-111111111111','77777777-7777-7777-7777-777777777773','77777777-7777-7777-7777-777777777772');",
-  "insert into public.sources values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','Textbook',0);",
+  "insert into public.sources(id,user_id,project_id,title,position) values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','Textbook',0);",
   "insert into public.sessions(id,user_id,project_id,checkpoint_id,number,resume_step,resume_question,last_activity_at,state) values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','77777777-7777-7777-7777-777777777772',3,2,'Why closure?',now(),'open');",
-  "insert into public.notes values('88888888-8888-8888-8888-888888888881','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','77777777-7777-7777-7777-777777777772',12,'A % literal','Back with _ literal','basic','theorem','active'),('88888888-8888-8888-8888-888888888882','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333',null,13,'Fresh note','Answer','basic','why','active'),('88888888-8888-8888-8888-888888888883','99999999-9999-9999-9999-999999999999','66666666-6666-6666-6666-666666666666',null,14,'Private %','Hidden','basic','why','active');",
-  "insert into public.cards values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1','11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888881',2,now()-interval '1 hour'),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2','11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888882',0,now()),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3','99999999-9999-9999-9999-999999999999','88888888-8888-8888-8888-888888888883',2,now()-interval '1 hour');",
+  "insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) values('88888888-8888-8888-8888-888888888881','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333','77777777-7777-7777-7777-777777777772',12,'A % literal','Back with _ literal','basic','theorem','active'),('88888888-8888-8888-8888-888888888882','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333',null,13,'Fresh note','Answer','basic','why','active'),('88888888-8888-8888-8888-888888888883','99999999-9999-9999-9999-999999999999','66666666-6666-6666-6666-666666666666',null,14,'Private %','Hidden','basic','why','active');",
+  "insert into public.cards(id,user_id,note_id,state,due) values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1','11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888881',2,now()-interval '1 hour'),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2','11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888882',0,now()),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3','99999999-9999-9999-9999-999999999999','88888888-8888-8888-8888-888888888883',2,now()-interval '1 hour');",
   "insert into public.card_comments values('cccccccc-cccc-cccc-cccc-cccccccccccc','11111111-1111-1111-1111-111111111111','88888888-8888-8888-8888-888888888881','open');",
   "insert into public.settings values('11111111-1111-1111-1111-111111111111',200,20,'UTC',4),('99999999-9999-9999-9999-999999999999',200,20,'UTC',4);",
   "insert into public.proposals values('dddddddd-dddd-dddd-dddd-dddddddddddd','11111111-1111-1111-1111-111111111111','pending');"
@@ -115,6 +123,26 @@ try {
  assert.deepEqual(deck[0].children.map(x=>x.key),['cp:algebra:CP2'])
  assert.deepEqual(deck[0].children.map(x=>x.due),[1])
  console.log('PASS ST-5 deck hierarchy, daily due counts and unassigned notes')
+ // Review must fetch only the selected daily queue, not the 30,000-card
+ // library or historical review rows. Filters apply after daily quotas.
+ const review=async(args)=>q('select public.review_items('+args+') item')
+ const queue=(await review("array[]::text[],null,null,true,false")).map(x=>x.item)
+ assert.deepEqual(queue.map(x=>x.noteNo),[12,13])
+ assert.equal(queue[0].projectSlug,'algebra')
+ assert.equal(queue[0].checkpointCode,'CP2')
+ assert.equal(queue[0].state.state,2)
+ assert.equal(queue[0].state.step,0)
+ assert.equal(queue[1].state.state,0)
+ assert.equal(queue[0].front,'A % literal')
+ assert.deepEqual((await review("array['cp:algebra:CP2'],null,null,true,false")).map(x=>x.item.noteNo),[12])
+ assert.deepEqual((await review("array[]::text[],null,null,false,false")).map(x=>x.item.noteNo),[12])
+ assert.deepEqual((await review("array[]::text[],null,null,true,true")).map(x=>x.item.noteNo),[13])
+ assert.deepEqual((await review("array[]::text[],null,'missing',true,false")).map(x=>x.item.noteNo),[])
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ assert.deepEqual((await review("array[]::text[],null,null,true,false")).map(x=>x.item.noteNo),[14])
+ await db.exec("select set_config('test.uid','"+owner+"',false)")
+ console.log('PASS ST-5 bounded Review queue, filters, state and owner isolation')
+
 
  await db.exec('reset role')
  await db.exec("update public.settings set reviews_per_day=1,new_per_day=0 where user_id='"+owner+"'")
@@ -155,7 +183,7 @@ try {
   "insert into public.sessions(id,user_id,project_id,checkpoint_id,number,resume_step,resume_question,last_activity_at,state,started_at,minutes) values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1','11111111-1111-1111-1111-111111111111','33333333-3333-3333-3333-333333333333',null,4,null,null,now(),'ended',now()-interval '10 minutes',45);",
   "insert into public.reviews values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4','11111111-1111-1111-1111-111111111111',2,null,now()-interval '10 minutes',3,'sure',1800),('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5','99999999-9999-9999-9999-999999999999',2,null,now()-interval '10 minutes',1,'guess',2000);",
   "insert into public.session_events values('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee','11111111-1111-1111-1111-111111111111','evidence','demonstrated',now()-interval '10 minutes');",
-  "insert into public.concepts values('ffffffff-ffff-ffff-ffff-ffffffffffff','11111111-1111-1111-1111-111111111111','Groups');",
+  "insert into public.concepts(id,user_id,name) values('ffffffff-ffff-ffff-ffff-ffffffffffff','11111111-1111-1111-1111-111111111111','Groups');",
   "insert into public.misconceptions values('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeef','11111111-1111-1111-1111-111111111111','ffffffff-ffff-ffff-ffff-ffffffffffff','Closure',3);"
  ].join('\n'))
  await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
@@ -227,7 +255,11 @@ try {
   .every(p=>p.children.length===0))
  assert.ok(Buffer.byteLength(JSON.stringify(scaleDeck),'utf8')<200000,
   'Review deck tree must remain bounded for 60 projects / 6,000 checkpoints')
- const scaleInsights=(await q('select public.insights(90) result'))[0].result
+ const scaleQueue=(await q("select public.review_items(array[]::text[],null,null,true,false) item")).map(x=>x.item)
+ assert.ok(scaleQueue.length<=1, 'Review queue respects the daily quota')
+ assert.ok(Buffer.byteLength(JSON.stringify(scaleQueue),'utf8')<200000,
+  'Review queue must not transfer 30,000 card bodies')
+  const scaleInsights=(await q('select public.insights(90) result'))[0].result
  assert.ok(Buffer.byteLength(JSON.stringify(scaleInsights),'utf8')<200000,
   'Insights aggregate must transfer under 200 kB')
  console.log('PASS ST-5 60-project/5,900-checkpoint aggregate transfer budgets')
