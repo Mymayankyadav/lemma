@@ -1,0 +1,47 @@
+import {describe,expect,it} from 'vitest';
+import {enforceStressBudgets,unfinishedStressGates} from '../../scripts/stress-gate';
+import type {StressMeasurement} from '../../scripts/stress-limits';
+
+const base:StressMeasurement={
+ route:'/atlas',nodes:1200,horizontalOverflow:0,smallText:0,smallMath:0,
+ smallTargets:0,minCircleGap:8,durationMs:500,cpuThrottle:1,
+ requestCount:0,transferBytes:0,
+};
+
+describe('FIX #507 hard-budget CI gate',()=>{
+ it('fails on every hard-budget counterexample without an explicitly documented open issue',()=>{
+  const failures:Partial<StressMeasurement>[]=[
+   {smallText:1},{smallMath:1},{smallTargets:1},{minCircleGap:0},
+   {nodes:1500},{horizontalOverflow:2},
+   {durationMs:1500,cpuThrottle:4},
+  ];
+  for(const violation of failures){
+   expect(()=>enforceStressBudgets([{...base,...violation}],{pending:[]}))
+    .toThrow(/stress budget failed/);
+  }
+ });
+ it('only defers an exact failure/route pair to a named issue',()=>{
+  const pending=[{issue:485,failure:'maths below 16px',routes:['/atlas']}] as const;
+  expect(()=>enforceStressBudgets([{...base,smallMath:1}],{pending})).not.toThrow();
+  expect(()=>enforceStressBudgets([{...base,route:'/cards',smallMath:1}],{pending}))
+   .toThrow(/maths below 16px/);
+  expect(()=>enforceStressBudgets([{...base,smallMath:1,smallTargets:1}],{pending}))
+   .toThrow(/tap target below 44px/);
+ });
+ it('fails QA-3 release even when a known issue is temporarily deferred in the baseline',()=>{
+  const pending=[{issue:485,failure:'maths below 16px',routes:['/atlas']}] as const;
+  expect(()=>enforceStressBudgets([{...base,smallMath:1}],{pending,release:true}))
+   .toThrow(/#485/);
+ });
+ it('rejects silent/unnumbered exceptions and has a finite issue-linked pending list',()=>{
+  expect(unfinishedStressGates.length).toBeGreaterThan(0);
+  for(const item of unfinishedStressGates){
+   expect(item.issue).toBeGreaterThan(0);
+   expect(item.failure.length).toBeGreaterThan(0);
+   expect(item.routes.length).toBeGreaterThan(0);
+  }
+  expect(()=>enforceStressBudgets([{...base,smallMath:1}],{
+   pending:[{issue:0,failure:'maths below 16px',routes:['/atlas']}]
+  })).toThrow(/invalid pending stress gate/);
+ });
+});
