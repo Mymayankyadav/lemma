@@ -64,7 +64,7 @@ Rules:
 | Meta | Instrument Sans 500 | 13 / 18, `--ink-2` | secondary lines; footnotes 12 px `--ink-3` |
 | Code | IBM Plex Mono 500 | 12, tabular | checkpoint codes (CP4), card numbers (N1) only |
 
-Durations and counts use Instrument Sans with tabular figures ("18 h 40 min", "3 of 36", "Due now"). Uppercase is used only for Atlas Area labels (small caps, 11 px, 0.05 em). Remove EB Garamond from the font URL in `index.html`. Maths stays STIX/KaTeX ≥ 16 px (stress.md §1).
+Durations and counts use Instrument Sans with tabular figures ("18 h 40 min", "3 of 36", "Due now"). Uppercase is used only for Atlas Area labels (small caps, 12 px, 0.05 em). The hard stress budgets of stress.md §1.2 hold everywhere: no informative text under 12 px, and no maths under 16 px. Remove EB Garamond from the font URL in `index.html`. Maths stays STIX/KaTeX ≥ 16 px (stress.md §1).
 
 ### 2d. The drawing becomes a letterhead
 
@@ -116,7 +116,7 @@ The Route is 64 px tall. The track sits at y = 24 and labels sit on a baseline a
   - Every other stage is a **capsule** on the same line:
     - done stage: 6 px filled `--ink-2`, tinted `--late` if it finished late;
     - future stage: a 4.5 px outline in `--ink-4`.
-  - Capsule widths are ∝ √count with 7 px gaps, so marks are never closer than 8 px (stress.md §1.2).
+  - Capsule widths are ∝ √count (minimum 4 px), with **at least 8 px edge clearance** between any two marks: capsule to capsule, capsule to station, and station to station (stress.md §1.2). If 15 or more stages cannot fit at 8 px clearance, the farthest future stages merge into one capsule labelled "+n stages".
   - Labels:
     - the current stage name under its start (`--ink` 600);
     - "5 done" at the left when there is room;
@@ -125,15 +125,16 @@ The Route is 64 px tall. The track sits at y = 24 and labels sit on a baseline a
   - Keep neutral groups of 8.
   - Label only the current one ("CP9–16"); the others are unlabelled capsules.
   - Never draw "Stage" as a name.
-- **Interaction:**
-  - The whole Route is one control, 64 px tall.
-  - Tapping a capsule unfolds that stage (180 ms width transition; none with reduced motion).
-  - Tapping a station selects it and updates the now-line; a second tap opens the checkpoint sheet.
-  - ← and → move station by station across stages, unfolding as they go.
-  - Every station is reachable with ≥ 44 px targets: the band is 64 px tall, and in the unfolded stage stations are about 24 px apart or more, so a tap picks the nearest station.
+- **Interaction:** every interactive element is at least 44 × 44 px. Stations and capsules are never separate tap targets.
+  - **On Today:** the whole Route (64 px tall, full card width) is one link to the current checkpoint's sheet. There is no station browsing on Today.
+  - **On the project page:** the Route is one 80 px-tall control.
+    - A tap selects the nearest station, or unfolds the tapped stage (180 ms width transition; none with reduced motion). This is a convenience only.
+    - The now-line carries **‹ and › stepper buttons, 44 × 44 px**, which reach every station in plan order across stages, unfolding as they go.
+    - ← and → do the same from the keyboard; Enter or a 44 px **Open** button opens the checkpoint sheet.
+  - The Mini Route is not interactive: its row is the target.
 - **Now-line** under the Route: `CP4` (code style, accent), the title (Tex), and "3 of 36" right-aligned in `--ink-3`.
 - **Mini Route** for Paths rows, Today's "n more" list and the project switcher:
-  - one 6 px capsule per stage, 2 px gaps, filled by done;
+  - one 6 px capsule per stage, 2 px gaps, filled by done; each segment is at least 8 px wide, and if they do not fit, neighbouring future stages merge (stress.md A2);
   - a 2 × 12 px accent notch at the current checkpoint;
   - never ticks.
 - **Project page:** the same Route at 80 px, with every stage name shown (two lines allowed) and a legend listing only the states present.
@@ -163,17 +164,18 @@ Owner decisions kept: a foldable outline, prerequisite links in a right-hand mar
 **Target:**
 
 1. **Paper sheet.** The outline sits on `--paper` (full bleed), with no grid behind the rows. The margin becomes a notebook margin: a 1 px `--accent` rule at 35 % on its left edge.
-2. **Levels look different** (rows are no longer all 44 px):
+2. **Levels look different through type, not through shorter rows.** Every interactive row is at least 44 px tall (stress.md §1.2). Hierarchy comes from type, indent and an 8 px non-interactive space above each Area and Field:
 
 | Level | Row | Style | Right side |
 | --- | --- | --- | --- |
 | Field | 56 px, sticky | subject glyph in accent (STIX 22) + Newsreader italic 21 | 44 px progress bar + "2/21" |
-| Area | 40 px | small caps 11 px, 0.05 em, `--ink-2` | progress bar + count |
+| Area | 44 px | small caps 12 px, 0.05 em, `--ink-2` | progress bar + count |
 | Topic | 44 px | Instrument Sans 15/600 + chevron | count only |
-| Idea | 42 px | 15/400 + status disc | — |
-| Detail | 34 px | 13 px `--ink-2`, one extra indent | — |
+| Idea | 44 px | 15/400 + status disc | — |
+| Detail | 44 px | 13 px `--ink-2`, one extra indent | — |
 
    - Hairlines only before Areas and Fields.
+   - Fold chevrons keep their 44 × 44 px button (`size-11`), and the select target is the rest of the row. Neither is smaller than 44 px or overlaps another target.
    - Guide lines stay, at 6 %.
    - Status discs stay, at 12 px. Re-check keeps its amber, now named `--late`, and a branch shows a `--late` dot when something inside needs a re-check.
 3. **Links become lanes, not bows:**
@@ -183,8 +185,9 @@ Owner decisions kept: a foldable outline, prerequisite links in a right-hand mar
    - Links that share an endpoint share a lane, so a selected idea reads as two clean trunks: **builds on** (`--link`, upwards) and **opens up** (`--accent`, downwards).
    - Bundle counts become 16 px pills with 12 px text (supersedes #483 / PR #488).
 4. **Change form at scale** (stress principle):
-   - With ≤ 40 visible links, draw them all at 35 % `--ink-3`.
-   - Above that, draw none and show a small in/out port tick on each row that has links, plus the caption "Tap an idea to trace its links".
+   - With ≤ 60 visible links, draw them all at 35 % `--ink-3`.
+   - Above 60, follow stress.md C1: draw only links that touch a folded branch or the selection, never more than 60, and show "312 links hidden — fold or select an idea".
+   - Rows whose links are hidden show a small in/out port tick. It is not interactive: the row itself is the target.
    - Selection always draws the full chain.
 5. **Selection:**
    - the row gets an accent tint at 12 % and a 3 px bar *inside* the row (x = 4);
@@ -194,6 +197,7 @@ Owner decisions kept: a foldable outline, prerequisite links in a right-hand mar
    - one segmented control "Fields · Areas · Topics · All";
    - a "Related" toggle pill with a visible on state;
    - "Re-check n" as a `--late` pill, only when n > 0.
+   - Every toolbar control has a hit area of at least 44 × 44 px, without overlapping its neighbours. Pills may be drawn smaller inside it.
    - Header: "Atlas" (display), then "82 ideas · 24 links · 9 demonstrated".
 7. **Details sheet:**
    - typeset title and path (#485), with tappable crumbs;
@@ -327,16 +331,16 @@ Add to `plan.md` §8 as "v4 look (owner, 31 Oct 13:08)". One PR per task (split 
 | Task | Depends on | Owns | Scope and acceptance |
 | --- | --- | --- | --- |
 | LOOK-0 Tokens | — | `scripts/make-themes.ts`, `src/styles/themes.css`, `tokens.css`, `src/lib/schedule.ts` (`scheduleColor`), `docs/agents/README.md` §4 | §2a tokens and the §8 decision changes. **Accept:** `--accent`, `--late` and `--danger` differ pairwise by ΔE2000 ≥ 20 in both worlds (the §2a values give 24–51); the legend shows three distinct colours. |
-| LOOK-1 Surfaces and type | LOOK-0 | `src/styles/graph.css`, `src/ui/{Chip,IconButton,Segmented,Switch,Card,Slab,Tile,Button}.tsx`, new `src/ui/SectionHeading.tsx`, `index.html` | §2b, §2c. **Accept:** an e2e check finds no `.card`/`.slab`/`.tile` inside another, no box-shadow on non-interactive elements, every section heading via `SectionHeading`, no Plex Mono outside `[data-code]`, and no EB Garamond request. |
+| LOOK-1 Surfaces and type | LOOK-0 | `src/styles/graph.css`, `src/ui/{Chip,IconButton,Segmented,Switch,Card,Slab,Tile,Button}.tsx`, new `src/ui/SectionHeading.tsx`, `index.html` | §2b, §2c. **Accept:** an e2e check finds no `.card`/`.slab`/`.tile` inside another, no box-shadow on non-interactive elements, every section heading via `SectionHeading`, no Plex Mono outside `[data-code]`, no informative text under 12 px, and no EB Garamond request. |
 | LOOK-2 Letterhead | LOOK-1 | `src/ui/backgrounds/graph/GraphSketch.tsx`, `src/ui/Ground.tsx` | §2d and night grid opacity. **Accept:** on every screen, after scrolling 600 px the curve is out of view; no curve pixel overlaps a heading, chart or row (layout check). |
-| LOOK-3 Route | LOOK-0 | `src/ui/timeline/*`, `src/features/home/GoalDistance.tsx`, `src/features/projects/Page.tsx` (rows), project hero | §3. **Accept:** at 9, 36 (no stages), 40 × 15 and 100 × 15 checkpoints: one line, no horizontal scroll, no clipped glyph (`scrollWidth ≤ clientWidth` on every text node), marks ≥ 8 px apart, current code visible, every station reachable by tap and arrow keys; goal card ≤ 210 px; Today with 3 goals + Review + Tutor ≤ 2 screens at 390 × 844. |
-| LOOK-4 Atlas | LOOK-1 | `src/features/atlas/*` | §4. **Accept:** levels have distinct heights and styles; links as lanes; at 600 ideas ports and the caption show, and selection draws the chain; bundle pills ≥ 12 px; no grid behind rows. Closes #483 and #485 if still open. |
+| LOOK-3 Route | LOOK-0 | `src/ui/timeline/*`, `src/features/home/GoalDistance.tsx`, `src/features/projects/Page.tsx` (rows), project hero | §3. **Accept:** at 9, 36 (no stages), 40 × 15 and 100 × 15 checkpoints: one line, no horizontal scroll, no clipped glyph (`scrollWidth ≤ clientWidth` on every text node), marks ≥ 8 px edge clearance (measured in the browser for S and X at 360 and 390), current code visible, every station reachable through the 44 × 44 px steppers and the arrow keys, no interactive element under 44 × 44 px; goal card ≤ 210 px; Today with 3 goals + Review + Tutor ≤ 2 screens at 390 × 844. |
+| LOOK-4 Atlas | LOOK-1 | `src/features/atlas/*` | §4. **Accept:** levels have distinct type; every interactive row and chevron ≥ 44 × 44 px (Playwright bounding boxes); Area labels and bundle pills ≥ 12 px; links as lanes; in profile X with "All", never more than 60 links drawn and the hidden-links caption shows; selection draws the chain; no grid behind rows; first render < 1 s at 4× CPU with < 1,500 DOM nodes (stress.md C2). Closes #483 and #485 if still open. |
 | LOOK-5 Today and Paths | LOOK-3 | `src/features/home/*`, `src/features/projects/*` | §5 Today (including "Bottom of Today") and Paths. The Continue row overflow can land early as a `FIX` PR. |
 | LOOK-6 Project family | LOOK-3 | `src/features/project/*`, `src/features/checkpoint/*`, `src/features/session/*` | §5 Project, Checkpoint sheet (including the days-late mismatch), Session, Sources. |
 | LOOK-7 Review, cards, insights | LOOK-1 | `src/features/{review,review-run,review-done,cards,card,insights}/*`, `src/ui/charts/*` | §5, including the cards-list LaTeX bug and `plainMath` `\mathbb R`. |
 | LOOK-8 Approve and plan review | LOOK-4 | `src/features/{proposals,plan-proposal}/*` | §5 Approve, Plan proposal. |
 | LOOK-9 Settings and the rest | LOOK-1 | `src/features/{settings,sign-in,new-project}/*`, `src/app/*`, `vite.config.ts` | §5 Settings, Sign in, New project, Everywhere. |
-| QA-4 Visual acceptance | LOOK-1 … 9 | `scripts/review-shots.mjs`, `.github/workflows/review-shots.yml`, `docs/acceptance/` | Fix `review-shots.mjs`: it still requires 15 themes and throws on today's two. Capture **every** route (list in `docs/design/v4/capture-routes.md`) × day/night × default/S. Compare with `docs/design/v4/` and file one issue per deviation. |
+| QA-4 Visual acceptance | LOOK-1 … 9 | `scripts/review-shots.mjs`, `.github/workflows/review-shots.yml`, `docs/acceptance/` | Fix `review-shots.mjs`: it still requires 15 themes and throws on today's two. Capture **every** route (list in `docs/design/v4/capture-routes.md`) × day/night × default/S. Compare with `docs/design/v4/` and file one issue per deviation. **Hard gate, not just images:** re-run `tests/e2e/stress.spec.ts` on every route in both profiles and both worlds at 360 and 390. It must pass: marks ≥ 8 px apart, tap targets ≥ 44 px, text ≥ 12 px, maths ≥ 16 px, no horizontal overflow, < 1,500 DOM nodes per screen, first render < 1.5 s at 4× CPU, and request count and transfer size within the E1 budgets (stress.md §3, QA-3). A beautiful screenshot cannot pass QA-4 on its own. |
 
 **Start now in parallel:** LOOK-0, then LOOK-1, LOOK-3 and LOOK-4 (the three the owner sees first). The two bugs in LOOK-6 and LOOK-7 (days-late mismatch, cards-list LaTeX) may land early as `FIX` PRs.
 
@@ -350,6 +354,7 @@ Add to `plan.md` §8 as "v4 look (owner, 31 Oct 13:08)". One PR per task (split 
 - Every section heading is the same style.
 - No drawing behind data.
 - No clipped glyphs anywhere at 360 px, in both profiles.
+- The stress budgets still pass on every screen, in both profiles and both worlds (QA-4): text ≥ 12 px, maths ≥ 16 px, tap targets ≥ 44 × 44 px, marks ≥ 8 px apart, < 1,500 DOM nodes, render < 1.5 s at 4× CPU, and E1 request and byte limits. No look change may trade a budget for appearance; an exception needs the owner.
 
 ## 8. Owner decisions this changes (approved 31 Oct, 13:59)
 
@@ -358,8 +363,8 @@ Add to `plan.md` §8 as "v4 look (owner, 31 Oct 13:08)". One PR per task (split 
 | Schedule colours (v3 §3) | late = `--bad` (red), on time = `--accent` (red) | late = `--late` (ochre, dashed), on time = ink |
 | Background curve placement (v3 §1b) | fixed, lower right, with italic label | letterhead at the top, scrolls away, no label |
 | Card material at night (v3 §1) | 1.5 px light ink border + offset shadow on cards, chips and buttons | cards: 1 px dim edge + dark offset shadow; chips flat; shadow only on buttons |
-| Atlas rows (v3 §4) | all rows 44 px | 56 / 40 / 44 / 42 / 34 px by level |
-| Atlas links at scale (v3 §4) | always drawn (a rope at 600 ideas) | all drawn at ≤ 40 links; ports + selection above |
+| Atlas rows (v3 §4) | all rows 44 px, same style | Fields 56 px; every other row 44 px with a distinct type per level |
+| Atlas links at scale (v3 §4) | always drawn (a rope at 600 ideas) | all drawn at ≤ 60 links; above that, stress.md C1 plus ports and selection |
 | Goal-card percentage (Today) | red percentage + headline | one schedule chip; "3 of 36" in ink |
 
 Everything else in `docs/agents/README.md` §4 stands: graph paper only, automatic day/night, compact text, calm motion, a docked icon-first tab bar, LaTeX everywhere, the Metro idea (now the Route), the Atlas outline, plan-review drawers and sources-first projects.

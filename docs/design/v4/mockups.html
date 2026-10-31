@@ -78,31 +78,31 @@ body{background:#0B0D11;font-family:var(--sans);color:var(--ink);padding:24px;di
 .spark i{width:8px;background:var(--ink-3);border-radius:2px 2px 0 0;opacity:.7}
 .spark i.today{background:var(--accent);opacity:1}
 .tabbar{position:absolute;left:0;right:0;bottom:0;height:60px;background:var(--paper);border-top:1px solid var(--edge);display:flex;justify-content:space-around;align-items:center}
-.tab{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink-3);font:600 11px var(--sans);min-width:60px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink-3);font:600 12px var(--sans);min-width:60px}
 .tab svg{width:22px;height:22px}
 .tab.on{color:var(--accent)}
 /* Atlas */
 .atlas{margin:0 -16px;background:var(--paper);border-top:1px solid var(--edge);position:relative}
 .tool{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--hair)}
 .seg{display:flex;background:var(--paper-2);border-radius:6px;padding:2px}
-.seg span{font:600 12px var(--sans);color:var(--ink-3);padding:6px 9px;border-radius:4px}
+.seg span{font:600 12px var(--sans);color:var(--ink-3);padding:0 8px;height:40px;line-height:40px;border-radius:4px}
 .seg span.on{background:var(--bg);color:var(--ink);box-shadow:0 0 0 1px var(--edge)}
-.toggle{font:600 12px var(--sans);color:var(--ink-2);padding:6px 10px;border-radius:999px;background:var(--paper-2)}
+.toggle{white-space:nowrap;font:600 12px var(--sans);color:var(--ink-2);padding:0 11px;height:36px;line-height:36px;border-radius:999px;background:var(--paper-2)}
 .toggle.warn{color:var(--late);background:color-mix(in srgb,var(--late) 12%,transparent)}
 .tree{position:relative}
 .margin{position:absolute;top:0;bottom:0;right:0;width:84px;border-left:1px solid color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--bg) 40%,transparent)}
 .n{position:relative;display:flex;align-items:center;gap:10px;padding-right:96px}
 .n .guide{position:absolute;top:0;bottom:0;width:1px;background:var(--hair)}
-.n.field{height:56px;padding-left:16px}
+.n.field{height:56px;padding-left:16px;margin-top:8px}
 .n.field .nm{font:italic 500 21px var(--display)}
 .n.field .g{font:italic 22px 'STIX Two Text',serif;color:var(--accent)}
-.n.area{height:40px;padding-left:16px}
-.n.area .nm{font:600 11px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.n.area{height:44px;padding-left:16px;margin-top:8px}
+.n.area .nm{font:600 12px var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .n.topic{height:44px;padding-left:30px}
 .n.topic .nm{font:600 15px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.n.idea{height:42px;padding-left:44px}
+.n.idea{height:44px;padding-left:44px}
 .n.idea .nm{font:400 15px var(--sans);color:var(--ink)}
-.n.detail{height:34px;padding-left:66px}
+.n.detail{height:44px;padding-left:66px}
 .n.detail .nm{font:400 13px var(--sans);color:var(--ink-2)}
 .prog{margin-left:auto;display:flex;align-items:center;gap:8px;font:500 12px var(--mono);color:var(--ink-3)}
 .prog .bar{width:44px;height:4px;border-radius:2px;background:var(--paper-2);overflow:hidden}
@@ -271,7 +271,7 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n);
 function draw(svg){
  const d=JSON.parse(svg.dataset.route), W=svg.getBoundingClientRect().width, H=64, y=24;
  const scope=svg.closest('.day')?'.day':null;
- const total=d.stages.reduce((a,b)=>a+b,0), gap=7, NS='http://www.w3.org/2000/svg';
+ const total=d.stages.reduce((a,b)=>a+b,0), gap=8, NS='http://www.w3.org/2000/svg';
  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e};
  const v=n=>`var(${n})`;
  let segs=[];
@@ -279,25 +279,34 @@ function draw(svg){
   let x=8; const step=(W-16)/(total-1); let idx=0;
   d.stages.forEach((c,s)=>{segs.push({s,x0:8+idx*step,x1:8+(idx+c-1)*step,expanded:true,count:c,start:idx});idx+=c});
  } else {
-  const n=d.stages.length, curW=Math.min(W*0.56, d.stages[d.cur]*26), rest=W-16-curW-gap*(n-1);
-  const others=d.stages.reduce((a,c,i)=>i===d.cur?a:a+Math.sqrt(c),0);
+  // groups: merge finished stages (and then far future ones) until every capsule is >= 4px with 8px clearance
+  let groups=d.stages.map((c,s)=>({s,count:c,members:[s]}));
+  const curW=Math.min(W*0.56, d.stages[d.cur]*26);
+  const fits=g=>{const k=g.length-1, rest=W-16-curW-gap*(g.length-1);const o=g.filter(x=>x.s!==d.cur);return o.length===0||rest/o.length>=6};
+  if(!fits(groups)&&d.cur>1){const done=groups.slice(0,d.cur);groups=[{s:0,count:done.reduce((a,x)=>a+x.count,0),members:done.map(x=>x.s),merged:true},...groups.slice(d.cur)];}
+  while(!fits(groups)&&groups.length>3){const a=groups.pop(),b=groups.pop();groups.push({s:b.s,count:a.count+b.count,members:[...b.members,...a.members],merged:true,future:true});}
+  const n=groups.length, rest=W-16-curW-gap*(n-1);
+  const others=groups.reduce((a,g)=>g.members.includes(d.cur)?a:a+Math.sqrt(g.count),0);
   let x=8;
-  d.stages.forEach((c,s)=>{const w=s===d.cur?curW:rest*Math.sqrt(c)/others;segs.push({s,x0:x,x1:x+w,expanded:s===d.cur,count:c});x+=w+gap});
+  groups.forEach(g=>{const isCur=g.members.length===1&&g.members[0]===d.cur;const w=isCur?curW:rest*Math.sqrt(g.count)/others;
+   const done=g.members.reduce((a,m)=>a+d.done[m],0);
+   segs.push({s:isCur?d.cur:(g.members[0]<d.cur?-1:999),x0:x,x1:x+w,expanded:isCur,count:g.count,doneOverride:done,members:g.members});x+=w+gap});
  }
  // track
  segs.forEach((g,i)=>{
-  const done=d.done[g.s], full=done===g.count, past=g.s<d.cur, future=g.s>d.cur;
+  const done=g.doneOverride??d.done[g.s], full=done===g.count, past=g.s<d.cur, future=g.s>d.cur;
   if(!g.expanded){
    if(past||full){el('rect',{x:g.x0,y:y-3,width:Math.max(2,g.x1-g.x0),height:6,rx:3,fill:d.late&&g.s===d.cur-1?v('--late'):v('--ink-2'),opacity:.9});
     if(d.early&&past)el('line',{x1:g.x0,x2:g.x1,y1:y+7,y2:y+7,stroke:v('--early'),'stroke-width':1.5});}
    else el('rect',{x:g.x0+.75,y:y-2.25,width:Math.max(2,g.x1-g.x0-1.5),height:4.5,rx:2.25,fill:'none',stroke:v('--ink-4'),'stroke-width':1.5});
   } else {
-   const k=g.count, step=k>1?(g.x1-g.x0)/(k-1):0, cs=g.s===d.cur?d.curStation:(done);
-   for(let j=0;j<k-1;j++){const xa=g.x0+j*step, xb=xa+step, isDone=j<done;
+   const inset=total<=14?0:7, gx0=g.x0+inset, gx1=g.x1-inset;
+   const k=g.count, step=k>1?(gx1-gx0)/(k-1):0, cs=g.s===d.cur?d.curStation:(done);
+   for(let j=0;j<k-1;j++){const xa=gx0+j*step, xb=xa+step, isDone=j<done;
     const late=d.late&&g.s===d.cur&&j===cs-1;
     el('line',{x1:xa,x2:xb,y1:y,y2:y,stroke:late?v('--late'):isDone||(g.s<d.cur)?v('--ink-2'):v('--ink-4'),'stroke-width':isDone||g.s<d.cur?2.5:1.5,'stroke-dasharray':late?'5 4':(isDone||g.s<d.cur)?'':'1 4','stroke-linecap':'round'});}
-   if(d.early&&g.s<d.cur)el('line',{x1:g.x0,x2:g.x1,y1:y+6,y2:y+6,stroke:v('--early'),'stroke-width':1.2});
-   for(let j=0;j<k;j++){const x=g.x0+j*step, isCur=g.s===d.cur&&j===cs, isDone=j<done||g.s<d.cur;
+   if(d.early&&g.s<d.cur)el('line',{x1:gx0,x2:gx1,y1:y+6,y2:y+6,stroke:v('--early'),'stroke-width':1.2});
+   for(let j=0;j<k;j++){const x=gx0+j*step, isCur=g.s===d.cur&&j===cs, isDone=j<done||g.s<d.cur;
     if(isCur){el('circle',{cx:x,cy:y,r:11,fill:v('--accent'),opacity:.16});el('circle',{cx:x,cy:y,r:5.5,fill:v('--accent')});}
     else el('circle',{cx:x,cy:y,r:isDone?3.6:3.4,fill:isDone?v('--ink-2'):v('--paper'),stroke:isDone?'none':v('--ink-3'),'stroke-width':1.4});}
   }
@@ -305,14 +314,14 @@ function draw(svg){
   if(i>0&&total<=14){const xm=(segs[i-1].x1+g.x0)/2; el('line',{x1:xm,x2:xm,y1:y-9,y2:y+9,stroke:v('--ink-4'),'stroke-width':1});}
  });
  // labels under
- const curSeg=segs[d.cur];
+ const curSeg=segs.find(g=>g.expanded)||segs[d.cur];
  const lab=(x,txt,anchor,color,weight)=>{const t=el('text',{x,y:y+28,'text-anchor':anchor,fill:color,'font-family':'Instrument Sans','font-size':12,'font-weight':weight||500});t.textContent=txt;return t};
  if(total<=14){segs.forEach(g=>{if(d.labels[g.s])lab(g.x0,d.labels[g.s],'start',g.s===d.cur?v('--ink'):v('--ink-3'),g.s===d.cur?600:500)});}
  else {
   if(d.labels[d.cur]) lab(curSeg.x0,d.labels[d.cur],'start',v('--ink'),600); else lab(curSeg.x0,'Stage '+(d.cur+1),'start',v('--ink'),600);
-  const after=segs.slice(d.cur+1); const remaining=after.reduce((a,g)=>a+g.count,0);
-  if(after.length)lab(W-8,after.length+' stages · '+remaining+' to go','end',v('--ink-3'));
-  const before=segs.slice(0,d.cur); if(before.length&&curSeg.x0>60)lab(8,before.length+' done','start',v('--ink-3'));
+  const afterSt=d.stages.slice(d.cur+1); const remaining=afterSt.reduce((a,c)=>a+c,0);
+  if(afterSt.length)lab(W-8,afterSt.length+' stages · '+remaining+' to go','end',v('--ink-3'));
+  if(d.cur>0&&curSeg.x0>60)lab(8,d.cur+' done','start',v('--ink-3'));
  }
  // current code above
  const k=curSeg.count, step=k>1?(curSeg.x1-curSeg.x0)/(k-1):0, cx=curSeg.x0+step*d.curStation;
