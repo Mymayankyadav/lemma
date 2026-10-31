@@ -66,6 +66,14 @@ describe('deferred browser stress sessions', () => {
   const {DemoAdapter}=await import('../../../src/data/demo/adapter');
   const api=new DemoAdapter({fixture:data,now:()=>Date.UTC(2026,9,31,12)});
   const first=data.projects[0],last=data.projects[data.projects.length-1];
+  // The independently merged #479 PDF-page fixture must survive the session
+  // virtualization merge; neither feature may erase the other's demo data.
+  const source=data.sources.find(item=>item.id.startsWith('stress-source-')&&item.hasText);
+  expect(source).toBeDefined();
+  const lastPage=source?.pageCount??0;
+  expect(lastPage).toBe(3000);
+  expect((await api.getSourcePage(source!.id,lastPage))?.body).toContain('Synthetic mathematics notes');
+  expect(await api.getSourcePage(source!.id,lastPage+1)).toBeNull();
   expect(await api.listSessions(first.slug)).toHaveLength(1000);
   expect(await api.listSessions(last.slug)).toHaveLength(1000);
   const detail=await api.getSession(first.slug,7);
