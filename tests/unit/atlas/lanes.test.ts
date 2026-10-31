@@ -21,6 +21,14 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   expect(paths.get('one')?.x).toBe(paths.get('two')?.x);
   expect(paths.get('one')?.fromY).toBe(paths.get('two')?.fromY);
  });
+ it('assigns the outer lane to the physically longer span when row heights vary',()=>{
+  // Three short rows can be physically closer than two rows separated by a
+  // tall folded field; compare actual centers rather than row-index distance.
+  const centers=[0,30,60,70,400,430];
+  const paths=layoutAtlasLanes([arc('three-rows',0,3),arc('two-rows',2,4)],centers);
+  expect(paths.get('two-rows')?.x).toBe(74);
+  expect(paths.get('three-rows')?.x).toBe(65);
+ });
  it('is stable across paint order and supports variable field row centers',()=>{
   const arcs=[arc('a',0,5),arc('b',1,4),arc('c',3,6)];
   const centers=[28,78,122,166,210,254,298];
