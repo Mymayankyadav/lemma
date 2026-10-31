@@ -48,6 +48,7 @@ for(const width of [360,390] as const){
   test.setTimeout(120_000)
   await page.setViewportSize({width,height:width===360?740:844})
   await page.emulateMedia({colorScheme:theme==='graph-night'?'dark':'light'})
+  const browserZone=await page.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone)
   await page.addInitScript(({token,user,expiresAt})=>{
    localStorage.setItem('sb-yemqnhnztlbyxmjxidis-auth-token',JSON.stringify({
     access_token:token,refresh_token:'fixture-refresh',
@@ -73,7 +74,7 @@ for(const width of [360,390] as const){
    const single=req.headers()['accept']?.includes('application/vnd.pgrst.object+json')
    const pageNumber=url.searchParams.has('or')?1:0
    const rows=table==='reviews'?reviews:comments
-   const payload:unknown=table==='rpc/bootstrap'||table==='settings'?settings:
+   const payload:unknown=table==='rpc/bootstrap'||table==='settings'?{...settings,time_zone:browserZone}:
     table==='rpc/project_summaries'?[]:
     table==='notes'?note:
     table==='projects'?[{id:'p1',slug:'algebra'}]:
