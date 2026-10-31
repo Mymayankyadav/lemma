@@ -71,7 +71,7 @@ function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:st
 }
 
 /** Large plans show bundled stage dependencies first. A selected stage opens inside its graph row. */
-function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:string;onSelect:(code:string)=>void}) {
+export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:string;onSelect:(code:string)=>void}) {
   const large = nodes.length > 16;
   const [expandedStage, setExpandedStage] = useState<string|null>(null);
   const [showAll, setShowAll] = useState(false);
