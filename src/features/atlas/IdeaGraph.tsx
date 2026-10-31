@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {X} from 'lucide-react';
 import {Tex} from '../../ui/Tex';
 import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
-import {ancestors,arcsFor,expandedToDepth,focusOn,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,neighbours,rowTone,visibleRows} from './tree';
 import {Row,StatusMark,Wires,toneColor} from './Outline';
 
 /**
@@ -23,6 +23,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  const arcs=useMemo(()=>arcsFor(tree,rows,kinds),[tree,rows,kinds]);
  const focus=useMemo(()=>selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
+ const arcBudget=useMemo(()=>budgetArcs(tree,rows,expanded,arcs,focus),[tree,rows,expanded,arcs,focus]);
  const selected=selectedId?tree.nodes.get(selectedId)??null:null;
  const near=selected?neighbours(tree,selected.id):null;
  const depth=useMemo(()=>{
@@ -69,8 +70,9 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
     return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false}
      onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id)}}/>})}
-   <Wires arcs={arcs} rows={rows.length} focus={focus}/>
+   <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>
   </div>
+  {arcBudget.hidden>0&&<p role="status" className="text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
  </div>;
 }
 export default IdeaGraph;

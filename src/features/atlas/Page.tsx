@@ -11,7 +11,7 @@ import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
-import {ancestors,arcsFor,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcsFor,budgetArcs,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 interface Saved{expanded:string[];related:boolean}
@@ -20,24 +20,42 @@ function load():Saved|null{
 }
 function save(value:Saved){try{localStorage.setItem(STORE,JSON.stringify(value))}catch{/* per-viewer convenience only */}}
 
+function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:AtlasNode[];tone:Tone;onTrace:(id:string)=>void;tree:AtlasTree}){
+ const [expanded,setExpanded]=useState(false);
+ if(!items.length)return null;
+ const visible=expanded?items:items.slice(0,8);
+ const groups=new Map<string,AtlasNode[]>();
+ for(const item of visible){
+  const area=label==='Opens up'?ancestors(tree,item.id).map(id=>tree.nodes.get(id)).find(n=>n?.level==='galaxy')?.name??'Other ideas':'';
+  groups.set(area,[...(groups.get(area)??[]),item]);
+ }
+ return <div className="mt-4">
+  <h3 className="mb-1 flex items-center gap-2 text-caption font-semibold text-ink-3"><span className="h-[2px] w-4" style={{background:toneColor[tone]}}/>{label}</h3>
+  {[...groups].map(([area,members])=><div key={area}>
+   {area&&<p className="mt-2 text-caption font-semibold text-ink-3">{area}</p>}
+   {members.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
+    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
+    <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
+    <span className="shrink-0 text-caption text-ink-3">{levelName[item.level]}</span><ChevronRight size={14} className="text-ink-3"/></button>)}
+  </div>)}
+  {items.length>8&&<button type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}
+   className="min-h-11 w-full rounded-ctl border border-edge px-3 text-left text-label text-amber">
+   {expanded?'Show fewer':`Show all ${items.length}`}
+  </button>}
+ </div>;
+}
+
 function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onClose:()=>void;onTrace:(id:string)=>void}){
  const toast=useToast(),near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
- const List=({label,items,tone}:{label:string;items:AtlasNode[];tone:Tone})=>items.length?<div className="mt-4">
-  <h3 className="mb-1 flex items-center gap-2 text-caption font-semibold text-ink-3"><span className="h-[2px] w-4" style={{background:toneColor[tone]}}/>{label}</h3>
-  {items.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
-   className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
-   <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
-   <span className="shrink-0 text-caption text-ink-3">{levelName[item.level]}</span><ChevronRight size={14} className="text-ink-3"/></button>)}
- </div>:null;
  return <Sheet open onClose={onClose} title={plainMath(node.name)}>
   <div data-atlas-details="true">
    {path.length>0&&<p className="-mt-3 mb-2 truncate text-caption text-ink-3">{path.map(p=>plainMath(p.name)).join(' › ')}</p>}
    <p className="text-label text-ink-2">{levelName[node.level]} · {statusName[node.status]}{node.total>1?` · ${node.done} of ${node.total} ideas demonstrated`:''}</p>
    {node.blurb&&<Tex source={node.blurb} className="mt-3 block text-body text-ink-soft"/>}
-   <List label="Builds on" items={near.needs} tone="up"/>
-   <List label="Opens up" items={near.unlocks} tone="down"/>
-   <List label="Related" items={near.related} tone="related"/>
-   {node.children.length>0&&<List label="Inside" items={node.children.map(id=>tree.nodes.get(id)!)} tone="none"/>}
+   <NeighbourList label="Builds on" items={near.needs} tone="up" onTrace={onTrace} tree={tree}/>
+   <NeighbourList label="Opens up" items={near.unlocks} tone="down" onTrace={onTrace} tree={tree}/>
+   <NeighbourList label="Related" items={near.related} tone="related" onTrace={onTrace} tree={tree}/>
+   {node.children.length>0&&<NeighbourList label="Inside" items={node.children.map(id=>tree.nodes.get(id)!)} tone="none" onTrace={onTrace} tree={tree}/>}
    {node.checkpointRefs.length>0&&<div className="mt-4 flex flex-wrap gap-2">
     {node.checkpointRefs.map(ref=><Link key={ref.projectSlug+ref.code} to={'/p/'+ref.projectSlug+'/cp/'+ref.code}
      className="flex min-h-11 items-center rounded-ctl border border-edge-2 px-3 text-label">Checkpoint {ref.code}</Link>)}
@@ -61,7 +79,15 @@ export default function Page(){
  const [related,setRelated]=useState(saved.current?.related??false);
  const [selectedId,setSelectedId]=useState<string|null>(null),[details,setDetails]=useState(false);
  const [searching,setSearching]=useState(false),[search,setSearch]=useState(''),[recheckOnly,setRecheckOnly]=useState(false);
+ const [confirmAll,setConfirmAll]=useState(false);
  const scroller=useRef<HTMLDivElement>(null);
+ const [scrollTop,setScrollTop]=useState(0),[viewportHeight,setViewportHeight]=useState(740);
+ useEffect(()=>{
+  const el=scroller.current;if(!el)return;
+  const update=()=>setViewportHeight(el.clientHeight);
+  update();const observer=new ResizeObserver(update);observer.observe(el);
+  return ()=>observer.disconnect();
+ },[query.isPending]);
  useEffect(()=>{
   if(!tree||expanded)return;
   const stored=saved.current?.expanded.filter(id=>tree.nodes.has(id));
@@ -73,7 +99,15 @@ export default function Page(){
  const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  const arcs=useMemo(()=>tree?arcsFor(tree,rows,kinds):[],[tree,rows,kinds]);
+ // Fixed 44px rows allow windowing without a new dependency. Keep a generous
+ // overscan for keyboard focus and scrolling, and preserve total scroll height.
+ const virtual=rows.length>200;
+ const first=virtual?Math.max(0,Math.floor(scrollTop/44)-12):0;
+ const last=virtual?Math.min(rows.length,Math.ceil((scrollTop+viewportHeight)/44)+12):rows.length;
+ const visible=virtual?rows.slice(first,last):rows;
+ const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
+ const arcBudget=useMemo(()=>tree?budgetArcs(tree,rows,open,arcs,focus):{visible:[],hidden:0},[tree,rows,open,arcs,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
  const recheckCount=useMemo(()=>tree?[...tree.nodes.values()].filter(n=>!n.synthetic&&!n.children.length&&n.status==='revisit').length:0,[tree]);
 
@@ -90,11 +124,20 @@ export default function Page(){
   if(!tree)return;
   setSearch('');setSearching(false);setRecheckOnly(false);
   setExpanded(prev=>new Set([...(prev??[]),...ancestors(tree,id)]));
+  // Scroll to the target's absolute row before asking the windowed list for
+  // its element; otherwise a distant idea does not exist in the DOM yet.
+  const expandedPath=new Set([...open,...ancestors(tree,id)]);
+  const targetRows=visibleRows(tree,expandedPath);
+  const targetIndex=targetRows.findIndex(row=>row.id===id);
+  if(targetIndex>=0&&targetRows.length>200&&scroller.current){
+   scroller.current.scrollTop=Math.max(0,targetIndex*44-scroller.current.clientHeight/2);
+   setScrollTop(scroller.current.scrollTop);
+  }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
    const el=scroller.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`);
    el?.scrollIntoView({block:'center',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }));
- },[tree]);
+ },[tree,open]);
  const trace=(id:string)=>{reveal(id);select(id,false)};
  const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev??[]);if(next.has(id))next.delete(id);else next.add(id);return next});
  const onRow=(node:AtlasNode)=>{
@@ -143,7 +186,7 @@ export default function Page(){
     className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body"/></div>}
    <div className="flex flex-wrap items-center gap-2 pb-2" role="toolbar" aria-label="Atlas view">
     <div role="group" aria-label="Fold to depth" className="flex overflow-hidden rounded-ctl border border-edge">
-     {[1,2,3,99].map(d=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to level '+d} onClick={()=>setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}
+     {[1,2,3,99].map(d=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to level '+d} onClick={()=>{if(d===99&&ideas>300){setConfirmAll(true);return}setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}}
       className={'min-h-11 min-w-11 px-2 text-label '+(depthOf===d?'bg-amber-tint text-amber':'text-ink-2')}>{d===99?'All':d}</button>)}
     </div>
     <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
@@ -154,15 +197,20 @@ export default function Page(){
      <RotateCcw size={14} className="text-[var(--hard)]"/>{recheckCount}</button>}
    </div>
   </header>
-  <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24" data-atlas-stage="true">
+  <div ref={scroller} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24" data-atlas-stage="true">
    {tree.roots.length===0?<div className="flex h-full items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty" body="Ideas appear here as your plans grow."/></div>
    :rows.length===0?<p className="px-4 py-10 text-center text-body text-ink-3">{search?'No idea matches “'+search+'”.':'Nothing to re-check.'}</p>
-   :<div className="relative" role="tree" aria-label="Ideas and their links">
-    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
+   :<>
+    {stickyParent&&<div className="sticky top-0 z-10 h-0 pointer-events-none" aria-label="Current branch"><div className="flex h-11 items-center border-b border-edge bg-raised/95 px-3 text-label font-semibold text-ink-2"><span className="truncate">{plainMath(tree.nodes.get(stickyParent)?.name??'')}</span></div></div>}
+    <div className="relative" role="tree" aria-label="Ideas and their links" style={virtual?{height:rows.length*44}:undefined}>
+    <div style={virtual?{position:"absolute",top:first*44,left:0,right:0}:undefined}>
+    {visible.map(row=>{const node=tree.nodes.get(row.id)!;
      return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
-    <Wires arcs={arcs} rows={rows.length} focus={focus}/>
-   </div>}
+    </div>
+    <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>
+   </div></>}
+   {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">
     <span className="flex items-center gap-1.5"><svg width="22" height="8" aria-hidden="true"><path d="M1 4H19M15 1L19 4L15 7" fill="none" stroke="var(--ink-3)" strokeWidth="1.3"/></svg>needed for</span>
     <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 bg-[var(--grade-good)]"/>builds on</span>
@@ -182,5 +230,12 @@ export default function Page(){
    <button type="button" aria-label="Clear selection" onClick={()=>select(null)} className="flex size-11 items-center justify-center rounded-ctl text-ink-2"><X size={18}/></button>
   </div>}
   {selected&&details&&<Details tree={tree} node={selected} onClose={()=>setDetails(false)} onTrace={trace}/>}
+  <Sheet open={confirmAll} onClose={()=>setConfirmAll(false)} title="Unfold every idea?">
+   <p className="text-body text-ink-2">This Atlas contains {ideas} ideas. Showing every branch may be slower; folded groups keep the connections readable.</p>
+   <div className="mt-4 flex gap-2">
+    <button type="button" onClick={()=>setConfirmAll(false)} className="min-h-11 flex-1 rounded-btn border border-edge px-3 text-body">Keep folded</button>
+    <button type="button" onClick={()=>{setExpanded(new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)));setConfirmAll(false)}} className="min-h-11 flex-1 rounded-btn border border-amber-line px-3 text-body text-amber">Unfold all</button>
+   </div>
+  </Sheet>
  </main>;
 }

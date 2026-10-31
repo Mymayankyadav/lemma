@@ -4,7 +4,7 @@ import {getMode} from '../../data/mode';
 import {ChevronRight, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
-import {relativeTime} from '../../lib/text';
+import {relativeTime,formatCount} from '../../lib/text';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
@@ -91,13 +91,13 @@ function SummaryTiles({due,pending}:{due:number;pending:number}){
  return <div className="grid grid-cols-2 gap-3">
   <Link to="/review" aria-label={due+' cards due. Start reviewing'} className="focus-visible:outline-2 focus-visible:outline-amber">
    <Tile className="relative flex h-[var(--summary-tile)] flex-col justify-between overflow-hidden p-[var(--pad-tile)]">
-    <span className="text-num-l font-semibold leading-none tracking-tight tabular-nums">{due}</span>
+    <span className="text-[clamp(0.9rem,4vw,1.6rem)] font-semibold leading-none tracking-tight tabular-nums">{formatCount(due)}</span>
     <span className="text-label text-ink-2">{due===0?'all clear':'cards due'}</span>
    </Tile>
   </Link>
   <Link to="/proposals" aria-label={pending+' proposals to approve'} className="focus-visible:outline-2 focus-visible:outline-amber">
    <Tile className="relative flex h-[var(--summary-tile)] flex-col justify-between overflow-hidden p-[var(--pad-tile)]">
-    <span className="text-num-l font-semibold leading-none tracking-tight tabular-nums">{pending}</span>
+    <span className="text-[clamp(0.9rem,4vw,1.6rem)] font-semibold leading-none tracking-tight tabular-nums">{formatCount(pending)}</span>
     <span className="text-label text-ink-2">{pending===0?'inbox clear':'to approve'}</span>
    </Tile>
   </Link>
