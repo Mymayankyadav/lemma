@@ -12,13 +12,10 @@ import {Screen} from '../../ui/Screen';
 import {Sheet} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
+import {Tex} from '../../ui/Tex';
 import {Editor,type EditorValue} from './Editor';
 
 const ROW_HEIGHT=92,OVERSCAN=6;
-function plain(text:string){
- return text.replace(/\{\{c\d+::([^}:]+)(?:::[^}]+)?\}\}/g,'$1')
-  .replace(/[#$*_`\\{}]/g,'').replace(/\s+/g,' ').trim();
-}
 function relative(due:string|null){
  if(!due)return 'New';
  const days=Math.ceil((Date.parse(due)-Date.now())/86400000);
@@ -129,7 +126,7 @@ export default function Page(){
       style={{height:ROW_HEIGHT}}>
       <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
       <span className="min-w-0 flex-1">
-       <span className="line-clamp-2 font-math text-headline leading-snug text-ink">{plain(row.front)}</span>
+       <div data-card-front-preview className="line-clamp-2 min-w-0 max-w-full overflow-hidden font-math text-headline leading-snug text-ink"><Tex source={row.front}/></div>
        <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
         <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
         <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
