@@ -1,8 +1,11 @@
 import {Suspense,lazy} from "react";
 import RouteError, {RouteFallback} from "./RouteError";
-// Keep Today eager; all other screens load on navigation so 4× CPU cold
-// starts do not parse Atlas, PDF, review and chart modules before Home is usable.
+// Keep Today and latency-critical Atlas eager. Other screens load on navigation
+// so 4× CPU cold starts avoid parsing PDF, review and chart modules before use.
 import Page0 from '../features/home/Page'
+// Atlas has a stricter 1000ms direct-entry 4× CPU budget; keep its first
+// interactive outline in the entry chunk instead of adding a lazy fetch.
+import Page13 from '../features/atlas/Page'
 const Page1=lazy(()=>import('../features/projects/Page'))
 const Page2=lazy(()=>import('../features/new-project/Page'))
 const Page3=lazy(()=>import('../features/project/Page'))
@@ -15,7 +18,6 @@ const Page9=lazy(()=>import('../features/review-run/Page'))
 const Page10=lazy(()=>import('../features/review-done/Page'))
 const Page11=lazy(()=>import('../features/cards/Page'))
 const Page12=lazy(()=>import('../features/card/Page'))
-const Page13=lazy(()=>import('../features/atlas/Page'))
 const Page14=lazy(()=>import('../features/insights/Page'))
 const Page15=lazy(()=>import('../features/settings/Page'))
 const Page16=lazy(()=>import('../features/sign-in/Page'))
