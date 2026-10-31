@@ -2,6 +2,14 @@ import {useEffect,useRef,useState} from 'react'
 import type {ProjectSummary,ProjectStageProgress} from '../../data/types'
 import {layoutMiniRoute} from './miniRoute'
 
+/** A single 2x12px now-notch; inner marks keep 8px clearance from both ends. */
+export function miniRouteNotch(done:number,total:number,width:number){
+ if(total<=0||width<=0)return null
+ const ratio=Math.max(0,Math.min(1,done/total))
+ const x=ratio===0?0:ratio===1?width:Math.max(9,Math.min(width-9,width*ratio))
+ return {x,percent:x/width*100,edge:ratio===0?'start':ratio===1?'end':'middle'} as const
+}
+
 /** A bounded summary renders one bar; no checkpoint-level ticks or tiny targets. */
 export function MiniStageBar({project}:{project:ProjectSummary}){
  const bar=useRef<HTMLDivElement>(null),[width,setWidth]=useState(200)
@@ -21,6 +29,7 @@ export function MiniStageBar({project}:{project:ProjectSummary}){
     overdue:0,schedule:'unscheduled' as const}
   })
  const segments=layoutMiniRoute(stages,width)
+ const notch=miniRouteNotch(project.done,total,width)
  const color:Record<ProjectStageProgress['schedule'],string>={
   complete:'var(--ink-2)',behind:'var(--late)',
   dated:'var(--ink-2)',unscheduled:'var(--ink-3)',
@@ -42,5 +51,9 @@ export function MiniStageBar({project}:{project:ProjectSummary}){
     }}/>
    </span>)}
   </div>
+  {notch&&<span data-route-notch="" data-notch-x={notch.x} aria-hidden="true"
+   className="pointer-events-none absolute top-[6px] h-[12px] w-[2px] bg-[var(--accent)]"
+   style={{left:notch.percent+'%',transform:notch.edge==='start'?'none':
+    notch.edge==='end'?'translateX(-100%)':'translateX(-50%)'}}/>}
  </div>
 }
