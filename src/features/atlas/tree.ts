@@ -43,10 +43,28 @@ function prerequisiteRank(ids:Iterable<string>,links:readonly Link[]):Map<string
   if(bucket)bucket.push(link.fromId);
   else needs.set(link.toId,[link.fromId]);
  }
- const rank=new Map<string,number>(),active=new Set<string>();
+ // The usual Atlas DAG arrives in prerequisite order. Rank it in one
+ // forward pass without allocating a DFS frame or active-set entry per idea.
+ // If any dependency is not already ranked (reverse order, cycle or missing
+ // ancestor), restart with the exact iterative DFS fallback below.
+ const ordered=[...ids],rank=new Map<string,number>();
+ let inOrder=true;
+ for(const id of ordered){
+  let max=-1;
+  for(const dependency of needs.get(id)??[]){
+   const value=rank.get(dependency);
+   if(value===undefined){inOrder=false;break}
+   if(value>max)max=value;
+  }
+  if(!inOrder)break;
+  rank.set(id,max+1);
+ }
+ if(inOrder)return rank;
+ rank.clear();
+ const active=new Set<string>();
  type Frame={id:string;dependencies:readonly string[];next:number;max:number};
  const stack:Frame[]=[];
- for(const root of ids){
+ for(const root of ordered){
   if(rank.has(root))continue;
   active.add(root);
   stack.push({id:root,dependencies:needs.get(root)??[],next:0,max:-1});
