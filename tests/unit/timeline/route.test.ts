@@ -57,15 +57,7 @@ describe('LOOK-3b accessible Route component',()=>{
  it('recovers long and mathematical stage names without clipped SVG labels',()=>{
   const cps=checkpoints(600);
   const longName='A very long tutor-authored stage about compactness and completeness of metric spaces, with proofs';
-  cps.forEach((cp,i)=>{if(i<8)cp.stage=longName+' $\\\\mathbb{R}^n
-  const html=render(36,'today',false);
-  expect(html).toContain('data-route-mode="today"');
-  expect(html).toContain('href="/p/algebra-1/cp/CP4"');
-  expect(html).not.toContain('Previous checkpoint');
-  expect(html).not.toContain('data-stage-rail');
- });
-});
-;});
+  cps.forEach((cp,i)=>{if(i<8)cp.stage=longName+' $\\mathbb{R}^n$';});
   const html=renderToStaticMarkup(createElement(MemoryRouter,null,
    createElement(Route,{project:project(600),checkpoints:cps,mode:'project',initialWidth:296})));
   expect(html).toContain('data-route-stage-disclosure');
