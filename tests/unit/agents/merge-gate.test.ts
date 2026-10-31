@@ -104,6 +104,9 @@ describe("documented Steward policy cannot regress silently", () => {
     expect(steward).toContain("Nonempty exact-head CI set, fail closed");
     expect(steward).toContain("`check`");
     expect(steward).toContain("`mcp-sql`");
+    for (const job of ["e2e-1-of-4", "e2e-2-of-4", "e2e-3-of-4", "e2e-4-of-4", "qa3-screens"]) {
+      expect(steward).toContain("`" + job + "`");
+    }
     expect(steward).toContain("zero check runs");
     expect(steward).toContain("AUDIT BLOCK");
     expect(steward).toContain("AUDIT CLEAR");
