@@ -21,6 +21,7 @@ for (const [profile, theme, width, height] of [
     // Session 8 is not materialised in the fixture: this exercises the lazy
     // event provider and confirms that every logical session is navigable.
     await page.evaluate(() => { location.hash = '/s/real-analysis/8'; });
+    await expect(page.getByRole('heading', {name:'Session 8', exact:true})).toBeVisible({timeout:90_000});
     const reasoning = page.getByRole('region', {name:'Reasoning'});
     await expect(reasoning.getByRole('button', {name:/9 hints/}).first()).toBeVisible({timeout:90_000});
     await page.screenshot({path:`test-results/screens/stress/session-lazy-${profile}-${theme}-${width}.png`, fullPage:false});
