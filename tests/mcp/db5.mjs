@@ -104,6 +104,8 @@ try{
  await db.exec(`select set_config('test.uid','${other}',false);set role authenticated`);
  assert.equal((await q('select count(*)::int n from public.sources'))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.source_pages'))[0].n,0);
+ assert.deepEqual(await q('select * from public.source_transcription_stats($1)',[project]),[],
+  'other users must never see owner transcription counters');
  assert.equal((await q('update public.source_pages set body=\'foreign\' where source_id=$1 returning page',[scan.id])).length,0);
  await db.exec('reset role');
  console.log('PASS DB-5 owner RLS preserved');
