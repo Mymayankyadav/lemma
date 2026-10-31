@@ -9,3 +9,14 @@ export function validateTranscription(page:TranscribedPage):void{
  if(/<\/?[a-z][a-z0-9]*\b[^>]*>/i.test(page.text)||/<!--|-->|<script\b/i.test(page.text))
   throw Error('Transcriptions use Markdown and LaTeX, not raw HTML');
 }
+
+/** Validate the entire batch before any owner-scoped database operation. */
+export function validateTranscriptionBatch(pages:readonly TranscribedPage[]):void{
+ if(!Array.isArray(pages)||!pages.length||pages.length>10)throw Error('Save 1–10 pages per call');
+ const unique=new Set<number>();
+ for(const page of pages){
+  validateTranscription(page);
+  if(unique.has(page.page))throw Error('Duplicate page '+page.page);
+  unique.add(page.page);
+ }
+}
