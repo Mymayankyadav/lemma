@@ -80,7 +80,7 @@ export function GoalDistance({projects,variant='metro'}:{projects:ProjectSummary
      </p>
      {rest.slice(0,showRest?rest.length:3).map(project=><div key={project.id}
       className="flex min-h-11 items-center gap-2 border-t border-edge px-2 py-1" data-compact-goal={project.slug}>
-      <Link className="min-w-0 flex-[2] truncate text-label text-ink" to={'/p/'+project.slug}><Tex source={project.title}/></Link>
+      <Link className="flex min-h-11 min-w-0 flex-[2] items-center truncate text-label text-ink" to={'/p/'+project.slug}><Tex source={project.title}/></Link>
       <MiniStageBar project={project}/>
       <span className="w-9 shrink-0 text-right text-caption tabular-nums text-ink-2">{project.total?Math.round(project.done/project.total*100):0}%</span>
      </div>)}
