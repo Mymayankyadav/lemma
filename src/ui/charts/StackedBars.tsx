@@ -15,7 +15,7 @@ export function StackedBars({data,width=316,height=120,title='Reviews by day',cl
  const x=scaleBand().domain(data.map((_,i)=>String(i))).range([left,right]).padding(0.5);
  const y=scaleLinear().domain([0,max]).range([bottom,top]);
  // Labels need >=12px; omit intermediate ticks instead of shrinking them.
- const labelEvery=Math.max(1,Math.ceil(data.length/Math.max(1,Math.floor((right-left)/38))));
+ const labelEvery=Math.max(1,Math.ceil(data.length/Math.max(1,Math.floor((Math.max(120,width)-15)/38))));
  return <div className="w-full min-w-0 overflow-x-auto"><svg role="img" aria-label={`${title}: ${data.length} periods and ${data.reduce((n,d)=>n+d.again+d.hard+d.good+d.easy,0)} reviews.`} className={className} width={w} viewBox={`0 0 ${w} ${h}`}>
  <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="var(--edge-3)"/>
  {data.map((d,i)=>{let offset=0;return <g key={i}>
