@@ -113,19 +113,19 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
       <p className="text-label text-ink-3">{source.pageCount??'—'} pages · {new Date(source.addedAt??source.createdAt).toLocaleDateString()} · {source.status}</p>
       {source.planCheckedAt===null&&<span className="text-label font-semibold text-amber">New · not yet used in a plan</span>}
      </div>
-     <button type="button" className="min-h-11 px-2 text-label text-amber" onClick={()=>{setEditing(source.id);setTitle(source.title);setKind(source.kind??'other');setConfirm(null)}}>Edit</button>
+     <button type="button" className="min-h-11 min-w-11 px-2 text-label text-amber" onClick={()=>{setEditing(source.id);setTitle(source.title);setKind(source.kind??'other');setConfirm(null)}}>Edit</button>
      <button type="button" aria-label={'Delete '+source.title} className="flex size-11 items-center justify-center text-ink-3" onClick={()=>{setConfirm(source.id);setEditing(null)}}><Trash2 size={17}/></button>
     </div>
     {editing===source.id&&<div className="flex flex-col gap-2">
      <label className="text-label text-ink-2">Title<input aria-label="Source title" value={title} onChange={e=>setTitle(e.target.value)} maxLength={150} className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well p-2 text-ink"/></label>
      <MathPreview source={title}/>
      <label className="text-label text-ink-2">Kind<select aria-label="Source kind" value={kind} onChange={e=>setKind(e.target.value as SourceKind)} className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well p-2 text-ink">{kinds.map(k=><option key={k} value={k}>{k}</option>)}</select></label>
-     <div className="flex gap-3"><button type="button" className="min-h-11 text-label text-amber" disabled={update.isPending} onClick={()=>{void save(source)}}>Save</button><button type="button" className="min-h-11 text-label text-ink-2" onClick={()=>setEditing(null)}>Cancel</button></div>
+     <div className="flex gap-3"><button type="button" className="min-h-11 min-w-11 px-2 text-label text-amber" disabled={update.isPending} onClick={()=>{void save(source)}}>Save</button><button type="button" className="min-h-11 min-w-11 px-2 text-label text-ink-2" onClick={()=>setEditing(null)}>Cancel</button></div>
     </div>}
-    {confirm===source.id&&<div role="group" aria-label={'Confirm deletion of '+source.title} className="flex items-center gap-3">
-     <span className="text-label text-ink-2">Delete this source and its pages?</span>
-     <button type="button" className="min-h-11 text-label text-again" disabled={remove.isPending} onClick={()=>{void erase(source)}}>Delete</button>
-     <button type="button" className="min-h-11 text-label text-ink-2" onClick={()=>setConfirm(null)}>Cancel</button>
+    {confirm===source.id&&<div role="group" aria-label={'Confirm deletion of '+source.title} className="flex flex-wrap items-center gap-2">
+     <span className="min-w-0 flex-1 basis-40 text-label text-ink-2">Delete this source and its pages?</span>
+     <button type="button" className="min-h-11 min-w-11 px-2 text-label text-again" disabled={remove.isPending} onClick={()=>{void erase(source)}}>Delete</button>
+     <button type="button" className="min-h-11 min-w-11 px-2 text-label text-ink-2" onClick={()=>setConfirm(null)}>Cancel</button>
     </div>}
     <SourceTranscriptionView source={source} stat={summary.get(source.id)}/>
    </Tile>)}
@@ -149,7 +149,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     {(item.phase==='queued'||item.phase==='reading')&&<button type="button" className="min-h-11 px-3 text-label font-semibold text-amber" onClick={()=>cancel(item)}>Cancel reading</button>}
     {item.progress?.pageCount&&item.progress.pageCount>1200&&<p role="alert" className="mt-1 text-label text-amber">This PDF has {item.progress.pageCount} pages. Reading may be slow; consider splitting it by chapter.</p>}
     {item.progress&&item.phase!=='ready'&&item.phase!=='cancelled'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.name}/>}
-    {item.error&&<p role="alert" className="text-label text-again">{item.error} {item.file&&<button type="button" className="min-h-11 text-amber" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button>}</p>}
+    {item.error&&<p role="alert" className="text-label text-again">{item.error} {item.file&&<button type="button" className="min-h-11 min-w-11 px-2 text-amber" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button>}</p>}
    </li>)}
   {queue.length>visibleQueue.length&&<p className="text-label text-ink-3">{queue.length-visibleQueue.length} earlier queue entries hidden.</p>}
   </ul>}
