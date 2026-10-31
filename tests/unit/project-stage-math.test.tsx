@@ -27,7 +27,10 @@ describe('project stage jump navigation',()=>{
   expect(navigation?.querySelectorAll('[data-stage-chip]')).toHaveLength(6);
   expect(firstChip?.querySelector('.katex')).not.toBeNull();
   expect(firstChip?.textContent).toContain('Topology of');
-  expect(firstChip?.textContent).not.toContain('\\mathbb');
-  expect(firstChip?.textContent).not.toContain('$');
+  // KaTeX keeps the original TeX in an invisible MathML annotation.
+  // Inspect the visible HTML rendering rather than that accessibility metadata.
+  const visibleMath=firstChip?.querySelector('.katex-html')?.textContent;
+  expect(visibleMath).toContain('R');
+  expect(visibleMath).not.toContain('\\mathbb');
  });
 });
