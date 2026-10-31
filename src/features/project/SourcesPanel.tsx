@@ -8,7 +8,6 @@ import type {IngestProgress,Source,SourceKind} from '../../data/types';
 import {cancelIngest,isSourceFile,resetIngestCancellation} from '../../pdf/ingest';
 import {Rail} from '../../ui/Rail';
 import {visibleUploadQueue} from './uploadQueue';
-import {Tile} from '../../ui/Tile';
 import {useToast} from '../../ui/Toast';
 
 type QueueEntry={id:number;file:File|null;name:string;bytes:number;pagesRead:number;phase:'queued'|'reading'|'uploading'|'saving'|'ready'|'failed'|'cancelled';progress:IngestProgress|null;error:string|null};
@@ -101,9 +100,9 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     <div className="h-full rounded-full bg-amber" style={{width:storagePct+'%'}}/>
    </div>
   </div>
-  {grouped.map(group=><div key={group.kind} className="flex flex-col gap-2">
+  {grouped.map(group=><div key={group.kind} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
    <h3 className="text-label font-semibold text-ink-2"><button type="button" aria-expanded={visibleKind(group.kind)} className="flex min-h-11 w-full items-center justify-between gap-2 text-left" onClick={()=>setOpenKind(visibleKind(group.kind)?'none':group.kind)}><span>{group.kind.charAt(0).toUpperCase()+group.kind.slice(1)} · {group.rows.length}</span><span className="text-amber">{visibleKind(group.kind)?'Fold':'Open'}</span></button></h3>
-   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
+   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><div key={source.id} className="flex flex-col gap-2 border-t border-[var(--hair)] px-3 py-3">
     <div className="flex items-center gap-3">
      <FileText size={20} className="shrink-0 text-amber"/>
      <div className="min-w-0 flex-1">
@@ -126,7 +125,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
      <button type="button" className="min-h-11 min-w-11 px-2 text-label text-ink-2" onClick={()=>setConfirm(null)}>Cancel</button>
     </div>}
     <SourceTranscriptionView source={source} stat={summary.get(source.id)}/>
-   </Tile>)}
+   </div>)}
   {visibleKind(group.kind)&&group.rows.length>10&&<div className="flex items-center justify-between gap-2 text-label text-ink-3">
    <button type="button" disabled={!(sourcePages[group.kind]??0)} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:Math.max(0,(p[group.kind]??0)-1)}))}>Previous</button>
    <span>{Math.min(group.rows.length,(sourcePages[group.kind]??0)*10+1)}–{Math.min(group.rows.length,((sourcePages[group.kind]??0)+1)*10)} of {group.rows.length}</span>
