@@ -24,6 +24,13 @@ for(const width of [360,390] as const){
   await name.fill('Real Analysis');
   await expect(submit).toBeEnabled();
   await expect(submit).toHaveClass(/lit/);
+  // Red pencil belongs to the primary action, not a secondary copy prompt or
+  // decorative upload glyph. Both must use neutral ink in day and night.
+  const prompt=page.getByRole('button',{name:/Tell your tutor:/});
+  await expect(prompt).toHaveClass(/text-ink-2/);
+  await expect(prompt).not.toHaveClass(/text-amber/);
+  const addFiles=page.getByRole('button',{name:/Add PDFs/});
+  await expect(addFiles.locator('svg')).toHaveClass(/text-ink-2/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({path:`test-results/screens/look-9a/new-project-${theme}-${profile}-${width}.png`});
  });
