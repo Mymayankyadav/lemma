@@ -11,6 +11,26 @@ const seed=JSON.parse(readFileSync('src/data/demo/fixture.json','utf8')) as Demo
 const now=Date.parse('2026-10-31T12:00:00Z');
 
 describe('FIX #507: cold Today stress summary',()=>{
+ it('does not deep-clone seed histories discarded by the 5k/30k stress generator',()=>{
+  const cloned=vi.spyOn(globalThis,'structuredClone');
+  try{
+   const data=makeStressStore(seed,'stress',{deferSessions:true});
+   const source=cloned.mock.calls.map(([value])=>value).find(value=>
+    value&&typeof value==='object'&&'projects' in value&&'reviews' in value&&'notes' in value) as DemoStore;
+   expect(source).toBeDefined();
+   // The stress generator discards all seed reviews, all but one template
+   // note/session, and the seed diagnostics. They must not be cloned first.
+   expect(source.reviews).toHaveLength(0);
+   expect(source.notes).toHaveLength(1);
+   expect(source.sessions).toHaveLength(1);
+   expect(source.misconceptions).toHaveLength(0);
+   expect(source.checkpointEvents).toHaveLength(0);
+   // This is a real 5,000-card fixture, not a smaller stress profile.
+   expect(data.notes).toHaveLength(5000);
+   expect(data.stressReviewCount).toBe(50000);
+  }finally{cloned.mockRestore()}
+ },30_000);
+
  it('memoizes repeated civil-day fixture tokens in the 30,000-card stress profile',()=>{
   const input=makeStressStore(seed,'extreme');
   const formatter=vi.spyOn(Intl.DateTimeFormat.prototype,'formatToParts');
