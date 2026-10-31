@@ -14,7 +14,9 @@ for(const width of [360,390] as const){
   await expect(actions.getByRole('button',{name:'Copy session summary'})).toBeVisible();
   await expect(actions.getByRole('link',{name:'Review'})).toHaveAttribute('href','#/proposals');
   await expect(actions.getByRole('button',{name:'Pages'})).toBeVisible();
-  await expect(actions.locator('.tile,.lit')).toHaveCount(0);
+  await expect(actions.locator('.lit')).toHaveCount(1);
+  await expect(actions.locator('.tile')).toHaveCount(0);
+  await expect(actions.getByRole('link',{name:'Review'})).not.toHaveClass(/lit|tile/);
   for(const target of await actions.locator('button,a[href]').all()){
    const box=await target.boundingBox();
    expect(box?.height??0).toBeGreaterThanOrEqual(44);
