@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { visibleUploadQueue } from "../../../src/features/project/SourcesPanel";
+import { visibleUploadQueue } from "../../../src/features/project/uploadQueue";
 
 const entry = (id: number, phase: "queued" | "reading" | "uploading" | "saving" | "ready" | "failed" | "cancelled" = "queued") => ({
   id, file: null, name: `batch-${id}.pdf`, bytes: 1, pagesRead: 0, phase, progress: null, error: null,
