@@ -36,13 +36,7 @@ describe('transcribed source export',()=>{
   const tex=sourceTex('Math',mixed);
   expect(tex).toContain(String.raw`\(x^2\)`);
   expect(tex).toContain(String.raw`\[\frac{1}{2}\]`);
-  expect(tex).toContain('$a+b
-  const before=pages.map(p=>p.body);
-  sourceMarkdown('Notes',pages);sourceTex('Notes',pages);
-  expect(pages.map(p=>p.body)).toEqual(before);
- });
-});
-);
+  expect(tex).toContain('$a+b$');
   expect(tex).toContain('A \\& B.');
   expect(tex).not.toContain(String.raw`\textbackslash{}(x`);
   expect(tex).not.toContain(String.raw`\textbackslash{}[\frac`);
