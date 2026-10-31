@@ -135,6 +135,10 @@ export function planChangeMapNodes(
     if(op.op==="move"){
       if(index.has(op.code))changed.add(op.code);
       add(op.after);
+    }else if(op.op==="prereq_remove"||op.op==="prereq_add"){
+      // A removed edge is absent from the post-change node.prereqs. Retain
+      // its other endpoint as context without re-adding the deleted edge.
+      add(op.prereq);
     }else if(op.op==="remove"){
       const removed=existing.findIndex(cp=>cp.code===op.code);
       if(removed<0)continue;
