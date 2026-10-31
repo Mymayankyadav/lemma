@@ -84,7 +84,7 @@ export default function Page(){
     <span className="sr-only">Review complete</span><span aria-hidden="true">Q.E.D<span className="text-amber">.</span></span>
    </motion.h1>
    {!firstAnswers.length&&<p className="mt-2 text-body text-ink-3">Review a round to see stats.</p>}
-   <p className="mt-2 text-body-l text-ink-2">{firstAnswers.length} {firstAnswers.length===1?'card':'cards'} reviewed, {missed.length} {missed.length===1?'needed':'needed'} another pass.</p>
+   {firstAnswers.length>0&&<p className="mt-2 text-body-l text-ink-2">{firstAnswers.length} {firstAnswers.length===1?'card':'cards'} reviewed, {missed.length} {missed.length===1?'needed':'needed'} another pass.</p>}
   </div>
   <section aria-label="Review statistics" className="grid w-full grid-cols-2 gap-2">
    <Metric icon={Target} label="recalled on the first try" value={firstRecall}/>
@@ -92,7 +92,7 @@ export default function Page(){
    <Metric icon={RotateCcw} label="right when you were sure" value={sure.length?sureRight+'/'+sure.length:'–'}/>
    <Metric icon={CalendarDays} label="due tomorrow" value={firstAnswers.length&&tomorrow!==null?String(tomorrow):'–'}/>
   </section>
-  <section aria-label="Round transcript" className="w-full">
+  {firstAnswers.length>0&&<section aria-label="Round transcript" className="w-full">
    <h2 className="mb-2 font-math italic text-ink-2">Your round</h2>
    <div className="flex flex-col gap-3">
     {missed.length>0&&<div><p className="mb-2 text-label text-ink-3">{missed.length} missed</p>
@@ -111,7 +111,7 @@ export default function Page(){
       title={a.card.projectSlug+' · '+(['','Again','Hard','Good','Easy'][a.rating]??'')} to={'/cards/'+a.card.noteNo} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink-2">{'N'+a.card.noteNo}</Link>)}</div>}
     </div>}
    </div>
-  </section>
+  </section>}
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>
   <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
