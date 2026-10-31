@@ -33,14 +33,23 @@ const lazyLive: LemmaApi = new Proxy({ mode: 'live' } as LemmaApi, {
 })
 
 const adapters: Partial<Record<'live' | 'default' | 'stress' | 'extreme', LemmaApi>> = {}
+function createStressAdapter(profile: 'stress' | 'extreme'): LemmaApi {
+ // Diagnostic-only User Timing entries distinguish 5k/30k fixture creation
+ // from date hydration. They do not alter readiness or any hard CPU budget.
+ const start = performance.now()
+ const fixture = makeStressStore(demoSeedFixture, profile, {deferSessions:true})
+ const generated = performance.now()
+ const adapter = new DemoAdapter({fixture,ownedFixture:true})
+ const hydrated = performance.now()
+ performance.measure('lemma-stress-fixture-generate',{start,end:generated})
+ performance.measure('lemma-stress-fixture-hydrate',{start:generated,end:hydrated})
+ return adapter
+}
 export function getApi(): LemmaApi {
  if (getMode() === 'live') return adapters.live ??= lazyLive
  const profile = getDemoProfile()
  if (profile === 'default') return adapters.default ??= new DemoAdapter()
- return adapters[profile] ??= new DemoAdapter({
-  fixture: makeStressStore(demoSeedFixture, profile, {deferSessions:true}),
-  ownedFixture: true,
- })
+ return adapters[profile] ??= createStressAdapter(profile)
 }
 export * from './types'
 export * from './api'
