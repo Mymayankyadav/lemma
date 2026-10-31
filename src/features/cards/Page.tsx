@@ -113,7 +113,7 @@ export default function Page() {
             onClick={() => setFilter(p.slug)}
           >
             <span aria-hidden="true" className="shrink-0">{p.subject.glyph}</span>
-            <span className="whitespace-nowrap">{p.title}</span>
+            <span className="whitespace-nowrap"><Tex source={p.title} /></span>
           </Chip>
         ))}
         <Chip className="shrink-0 whitespace-nowrap" selected={filter === "notes"} onClick={() => setFilter("notes")}>
