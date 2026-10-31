@@ -21,7 +21,7 @@ import {
 } from "../../data/hooks";
 import {planReviewNodes} from "./nodes";
 import {planIdeasGraph} from "./ideas";
-import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, R} from "./planMap";
+import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, planChangeMapNodes, R} from "./planMap";
 import {buildAtlasTree} from "../atlas/tree";
 import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
@@ -304,6 +304,12 @@ export default function Page() {
     () => planReviewNodes(p?.plan ?? null, p?.planChange ?? null, project.data?.checkpoints ?? []),
     [p, project.data?.checkpoints],
   );
+  // Only the map is contextual for a plan change. The list, drawer and ideas
+  // graph below continue to use every surviving checkpoint.
+  const mapNodes = useMemo(
+    () => planChangeMapNodes(nodes,p?.planChange ?? null,project.data?.checkpoints ?? []),
+    [nodes,p?.planChange,project.data?.checkpoints],
+  );
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
   const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
   const ideaTree = useMemo(() => {
@@ -404,13 +410,20 @@ export default function Page() {
               </span>
             </div>
           </div>
-          {nodes.length > 0 && (
+          {p.planChange && mapNodes.length > 0 && (
+            <p className="text-caption text-ink-2" data-change-map-count="">
+              Change context · {mapNodes.length} of {nodes.length} checkpoints shown. Full plan below.
+            </p>
+          )}
+          {mapNodes.length > 0 ? (
             <PlanMap
-              nodes={nodes}
+              nodes={mapNodes}
               selected={drawer ?? ""}
               onSelect={openCheckpoint}
             />
-          )}
+          ) : p.planChange ? (
+            <p className="text-label text-ink-2">No checkpoint changes in this proposal. Review the ideas below.</p>
+          ) : null}
           <section aria-label="Checkpoints" className="flex flex-col gap-4">
             {stages.length>5 && <nav aria-label="Jump to stage" className="flex gap-2 overflow-x-auto pb-2">
               {stages.map((stage,i) => <button key={stage.id} type="button" title={plainMath(stage.name)}
