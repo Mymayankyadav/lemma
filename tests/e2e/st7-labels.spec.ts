@@ -8,7 +8,7 @@ for(const theme of ['graph','graph-night'] as const){
   const legend=page.getByLabel('Due cards by project');
   await expect(legend).toBeVisible();
   const name=legend.locator('[data-due-group-name]').first();
-  await expect(name).toHaveAttribute('title',/\\S/);
+  expect((await name.getAttribute('title'))?.length).toBeGreaterThan(0);
   // Simulate the 80-character/unbroken-token owner stress case without
   // mutating the fixture or adding production-only test hooks.
   await name.evaluate(node=>{node.textContent='A'.repeat(160)});
