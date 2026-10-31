@@ -33,6 +33,11 @@ for(const width of [360,390] as const){
     :route==='/insights'?page.getByRole('heading',{name:'Recall'})
     :page.getByRole('heading',{name:'Apps'});
    await expect(ready).toBeVisible({timeout:30_000});
+   // Hash-route navigation can retain the prior route's 600px test scroll.
+   // Reset before taking visual evidence: otherwise the next screenshot shows
+   // only the empty lower page even though all landmarks are mounted.
+   await page.evaluate(()=>window.scrollTo(0,0));
+   await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBeLessThanOrEqual(1);
    const sketch=page.locator('[data-graph-sketch]');
    await expect(sketch).toHaveCount(1);
    await expect(sketch).toHaveAttribute('data-graph-sketch',kind);
