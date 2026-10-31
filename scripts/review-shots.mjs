@@ -108,7 +108,11 @@ try {
       // state rather than the owner's actual card and completed-round screens.
       const reviewScene=['review-run','review-run-answer','review-done'].includes(name);
       const entry=reviewScene?'#/review':route;
-      const url=base+'?demo='+demo+'&theme='+encodeURIComponent(theme)+entry;
+      // Atlas interaction scenes share #/atlas. A same-URL goto can reuse
+      // the existing document and leave the Details sheet covering "All".
+      // A distinct harmless query key forces a fresh route mount per scene.
+      const url=base+'?demo='+demo+'&theme='+encodeURIComponent(theme)+
+       '&capture='+encodeURIComponent(name)+entry;
       await phone.goto(url,{waitUntil:'domcontentloaded'});
       await phone.locator('#main-content').waitFor({state:'visible'});
       if(reviewScene){
