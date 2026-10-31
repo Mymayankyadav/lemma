@@ -49,4 +49,13 @@ describe("FIX #489 all visible count marks are checked spatially", () => {
     expect(measureSvgMarks()).toBe(8);
   });
 
+  it("includes Atlas bundle-count circles without requiring a duplicate marker", () => {
+    document.body.innerHTML = '<svg><circle id="a" data-atlas-bundle-circle/><circle id="b" data-atlas-bundle-circle/></svg>';
+    setRect("a", 10, 10, 20, 20);
+    setRect("b", 18, 10, 20, 20);
+    expect(measureSvgMarks()).toBe(0);
+    setRect("b", 46, 10, 20, 20);
+    expect(measureSvgMarks()).toBe(8);
+  });
+
 });
