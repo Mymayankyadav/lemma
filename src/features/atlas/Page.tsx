@@ -20,16 +20,24 @@ function load():Saved|null{
 }
 function save(value:Saved){try{localStorage.setItem(STORE,JSON.stringify(value))}catch{/* per-viewer convenience only */}}
 
-function NeighbourList({label,items,tone,onTrace}:{label:string;items:AtlasNode[];tone:Tone;onTrace:(id:string)=>void}){
+function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:AtlasNode[];tone:Tone;onTrace:(id:string)=>void;tree:AtlasTree}){
  const [expanded,setExpanded]=useState(false);
  if(!items.length)return null;
  const visible=expanded?items:items.slice(0,8);
+ const groups=new Map<string,AtlasNode[]>();
+ for(const item of visible){
+  const area=label==='Opens up'?ancestors(tree,item.id).map(id=>tree.nodes.get(id)).find(n=>n?.level==='galaxy')?.name??'Other ideas':'';
+  groups.set(area,[...(groups.get(area)??[]),item]);
+ }
  return <div className="mt-4">
   <h3 className="mb-1 flex items-center gap-2 text-caption font-semibold text-ink-3"><span className="h-[2px] w-4" style={{background:toneColor[tone]}}/>{label}</h3>
-  {visible.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
-   className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
-   <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
-   <span className="shrink-0 text-caption text-ink-3">{levelName[item.level]}</span><ChevronRight size={14} className="text-ink-3"/></button>)}
+  {[...groups].map(([area,members])=><div key={area}>
+   {area&&<p className="mt-2 text-caption font-semibold text-ink-3">{area}</p>}
+   {members.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
+    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
+    <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
+    <span className="shrink-0 text-caption text-ink-3">{levelName[item.level]}</span><ChevronRight size={14} className="text-ink-3"/></button>)}
+  </div>)}
   {items.length>8&&<button type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}
    className="min-h-11 w-full rounded-ctl border border-edge px-3 text-left text-label text-amber">
    {expanded?'Show fewer':`Show all ${items.length}`}
@@ -44,10 +52,10 @@ function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onCl
    {path.length>0&&<p className="-mt-3 mb-2 truncate text-caption text-ink-3">{path.map(p=>plainMath(p.name)).join(' › ')}</p>}
    <p className="text-label text-ink-2">{levelName[node.level]} · {statusName[node.status]}{node.total>1?` · ${node.done} of ${node.total} ideas demonstrated`:''}</p>
    {node.blurb&&<Tex source={node.blurb} className="mt-3 block text-body text-ink-soft"/>}
-   <NeighbourList label="Builds on" items={near.needs} tone="up" onTrace={onTrace}/>
-   <NeighbourList label="Opens up" items={near.unlocks} tone="down" onTrace={onTrace}/>
-   <NeighbourList label="Related" items={near.related} tone="related" onTrace={onTrace}/>
-   {node.children.length>0&&<NeighbourList label="Inside" items={node.children.map(id=>tree.nodes.get(id)!)} tone="none" onTrace={onTrace}/>}
+   <NeighbourList label="Builds on" items={near.needs} tone="up" onTrace={onTrace} tree={tree}/>
+   <NeighbourList label="Opens up" items={near.unlocks} tone="down" onTrace={onTrace} tree={tree}/>
+   <NeighbourList label="Related" items={near.related} tone="related" onTrace={onTrace} tree={tree}/>
+   {node.children.length>0&&<NeighbourList label="Inside" items={node.children.map(id=>tree.nodes.get(id)!)} tone="none" onTrace={onTrace} tree={tree}/>}
    {node.checkpointRefs.length>0&&<div className="mt-4 flex flex-wrap gap-2">
     {node.checkpointRefs.map(ref=><Link key={ref.projectSlug+ref.code} to={'/p/'+ref.projectSlug+'/cp/'+ref.code}
      className="flex min-h-11 items-center rounded-ctl border border-edge-2 px-3 text-label">Checkpoint {ref.code}</Link>)}
