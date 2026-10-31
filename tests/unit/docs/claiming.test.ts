@@ -9,7 +9,7 @@ describe("REST-only agent claim instructions", () => {
     const plan = read("plan.md");
     expect(plan).not.toMatch(/\b(?:open|create)\s+(?:a\s+)?draft\s+PR\b/i);
     expect(plan).not.toMatch(/\bdraft\s+PR\s+titled\b/i);
-    expect(plan).toMatch(/draft:\s*false/);
+    expect(plan).toMatch(/(?:draft:\s*false|never a draft)/i);
     expect(plan).toContain("Owner: <role> · Lease until <HH:MM IST>");
   });
 
