@@ -41,8 +41,23 @@ for(const matrix of CPU_CASES){
    // A heading and >40 text characters can be visible on an empty skeleton.
    // Wait for the route's actual S/X data and paint BEFORE stopping the clock.
    let ready=false;
-   await assertRouteLoaded(page,route,matrix.profile,12_000);
-   ready=true;
+   try {
+    await assertRouteLoaded(page,route,matrix.profile,12_000);
+    ready=true;
+   } catch (error) {
+    // A failed cold route must identify the precise fixture and loaded state;
+    // otherwise a cancelled long matrix hides the first actionable failure.
+    const diagnostic=await page.evaluate(()=>({
+     route:location.hash.slice(1),
+     skeletons:document.querySelectorAll('.animate-pulse.bg-fill-2').length,
+     cardRows:document.querySelectorAll('[data-card-row]').length,
+     mainText:document.querySelector('#main-content')?.textContent?.slice(0,180)??'',
+    })).catch(()=>null);
+    console.error('[AUDIT #540 cold 4x route failure]',JSON.stringify({
+     ...matrix,route,elapsedMs:Date.now()-start,diagnostic,
+    }));
+    throw error;
+   }
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    const durationMs=Date.now()-start;
@@ -52,6 +67,9 @@ for(const matrix of CPU_CASES){
    const screenshot='test-results/screens/stress-cpu/'+matrix.profile+'-'+matrix.theme+'-'+matrix.width+'-'+
     (route==='/'?'today':route.replaceAll('/','-').replace(/^-/,''))+'.png';
    await page.screenshot({path:screenshot,fullPage:false,timeout:30_000});
+   console.info('[AUDIT #540 cold 4x route]',JSON.stringify({
+    ...matrix,route,durationMs,nodes,navigationType,
+   }));
    samples.push({
     route,actualRoute:await page.evaluate(()=>location.hash.slice(1)),
     profile:matrix.profile,theme:matrix.theme,width:matrix.width,
