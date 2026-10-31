@@ -12,7 +12,8 @@ import type {
   SubjectPatch,
   SourcePatch,
 } from "../api";
-import { LemmaError, notImplemented } from "../api";
+import { LemmaError } from "../api";
+import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
 import type {
   AtlasGraph,
   CardComment,
@@ -130,11 +131,25 @@ interface SummaryIndex {
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
   /** CONTRACT-546: bounded history pagination remains fail-closed until FIX-546b lands. */
-  async getCardHistoryPage(..._args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
-    throw notImplemented("getCardHistoryPage");
+  async getCardHistoryPage(...args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
+    const [no,cursor]=args,n=this.note(no),key=decodeCardPageCursor(cursor,'reviews',no);
+    const ids=new Set(n.cards.map(c=>c.id));
+    const page=this.store.reviews.filter(r=>ids.has(r.cardId)&&!r.undoneAt)
+      .sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt)||b.id-a.id)
+      .filter(r=>!key||olderThanKey({at:r.reviewedAt,id:String(r.id)},key))
+      .slice(0,21);
+    const visible=page.slice(0,20);
+    return {rows:visible.map(r=>({reviewedAt:r.reviewedAt,rating:r.rating,confidence:r.confidence})),
+      nextCursor:page.length>20?encodeCardPageCursor('reviews',no,{at:visible[19].reviewedAt,id:String(visible[19].id)}):null};
   }
-  async getCardCommentsPage(..._args: Parameters<LemmaApi["getCardCommentsPage"]>): ReturnType<LemmaApi["getCardCommentsPage"]> {
-    throw notImplemented("getCardCommentsPage");
+  async getCardCommentsPage(...args: Parameters<LemmaApi["getCardCommentsPage"]>): ReturnType<LemmaApi["getCardCommentsPage"]> {
+    const [no,cursor]=args,n=this.note(no),key=decodeCardPageCursor(cursor,'comments',no);
+    const page=[...n.comments].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||b.no-a.no)
+      .filter(c=>!key||olderThanKey({at:c.createdAt,id:String(c.no)},key))
+      .slice(0,21);
+    const visible=page.slice(0,20);
+    return {rows:clone(visible),nextCursor:page.length>20
+      ?encodeCardPageCursor('comments',no,{at:visible[19].createdAt,id:String(visible[19].no)}):null};
   }
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
     const ids=new Set(this.store.projects.filter(p=>p.status!=="archived"&&!p.system).map(p=>p.id));
@@ -1703,20 +1718,13 @@ export class DemoAdapter implements LemmaApi {
     return {rows,nextOffset:hasMore?offset+50:null};
   }
   async getCard(noteNo: number): Promise<CardDetail> {
-    const n = this.note(noteNo);
-    return {
-      note: clone(n.note),
-      cards: n.cards.map((c) => ({ ord: c.ord, state: clone(c.state) })),
-      history: this.store.reviews
-        .filter((r) => n.cards.some((c) => c.id === r.cardId) && !r.undoneAt)
-        .sort((a, b) => Date.parse(b.reviewedAt) - Date.parse(a.reviewedAt))
-        .map((r) => ({
-          reviewedAt: r.reviewedAt,
-          rating: r.rating,
-          confidence: r.confidence,
-        })),
-      comments: clone(n.comments),
-    };
+    const n=this.note(noteNo);
+    const [history,comments]=await Promise.all([
+      this.getCardHistoryPage(noteNo),this.getCardCommentsPage(noteNo)
+    ]);
+    return {note:clone(n.note),cards:n.cards.map(c=>({ord:c.ord,state:clone(c.state)})),
+      history:history.rows,comments:comments.rows,
+      historyNextCursor:history.nextCursor,commentsNextCursor:comments.nextCursor};
   }
   async createNote(input: CreateNoteInput) {
     return this.transaction(() => ({
