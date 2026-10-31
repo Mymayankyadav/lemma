@@ -15,6 +15,15 @@ for (const theme of ["graph", "graph-night"] as const) {
       await expect(groups.getByText("S12 / CP9 · 1 card", { exact: true })).toBeVisible();
       const choices = groups.getByRole("group", { name: "Cards in this proposal group" });
       await expect(choices.first().getByRole("button").first()).toBeVisible();
+      const batchAction = groups.getByRole("button", { name: /Approve all from/ }).first();
+      await expect(batchAction).toBeVisible();
+      const primaryAction = page.getByRole("button", { name: "Approve card" });
+      const batchColor = await batchAction.evaluate((element) => getComputedStyle(element).color);
+      const primaryColor = await primaryAction.evaluate((element) => getComputedStyle(element).backgroundColor);
+      // Batch is a quiet secondary action; red belongs to the current card's
+      // primary Approve button, not every proposal-group control.
+      expect(batchColor).not.toBe(primaryColor);
+      expect((await batchAction.boundingBox())?.height).toBeGreaterThanOrEqual(44);
       expect(await page.evaluate(() => document.documentElement.scrollWidth))
         .toBeLessThanOrEqual(width + 1);
       await page.screenshot({
