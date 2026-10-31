@@ -70,7 +70,7 @@ import { parseSteps } from "../../lib/fsrs";
 import {clozeOrds} from "./cloze";
 import { slugify } from "../../lib/text";
 import { DAY, studyClock } from "../../lib/calendar";
-import {makeStressInsightAggregate, stressSessionEvents, stressSourcePage} from "./stress";
+import {makeStressInsightAggregate, makeStressNotes, stressSessionEvents, stressSourcePage} from "./stress";
 
 // One parse per module, not once per each of the 1,000 virtual sessions.
 export const demoSeedFixture = JSON.parse(fixtureText) as DemoStore;
@@ -158,6 +158,7 @@ export class DemoAdapter implements LemmaApi {
   private store: DemoStore;
   private readonly now: () => number;
   private stressDayStart: number | undefined;
+  private virtualStressDue: {overdue:number;future:number}|null=null;
   // Due dates are immutable ISO values until a card is edited; keying by the
   // timestamp string preserves correctness after edits without invalidation.
   // The 30k-card fixture repeats two dates, so cold Today and DeckTree should
@@ -189,6 +190,31 @@ export class DemoAdapter implements LemmaApi {
     const forecastDays=Array.from({length:7},(_,i)=>({
       day:new Date((today+i)*DAY).toISOString().slice(0,10),due:0,
     }));
+    // A generated private S/X store represents all 5k/30k cards exactly,
+    // but Today and DeckTree need counts, not the entire note object graph.
+    // Materialize actual notes only when a card route requests them.
+    const virtual=this.virtualStressDue;
+    if(virtual&&Object.getOwnPropertyDescriptor(this.store,'notes')?.get){
+      const count=this.store.stressNoteCount??0,dueCount=this.store.stressDueCount??0;
+      const projects=this.store.projects,active=activeProjects;
+      const offsets=[virtual.overdue,virtual.future].map(due=>Math.max(0,clock.dayIndex(due)-today));
+      let total=0,nextDue=Infinity;
+      for(let i=0;i<count;i++){
+        const project=projects[i%projects.length];
+        cardCounts.set(project.id,(cardCounts.get(project.id)??0)+1);
+        if(!active.has(project.id))continue;
+        const early=i<dueCount,due=early?virtual.overdue:virtual.future;
+        const offset=offsets[early?0:1];
+        if(offset<forecastDays.length)forecastDays[offset].due++;
+        if(due>now){nextDue=Math.min(nextDue,due);continue}
+        total++;
+        projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
+        const key=cpKey(project.slug,`CP${(i%36)+1}`);
+        checkpointCounts.set(key,(checkpointCounts.get(key)??0)+1);
+      }
+      return this.dueSnapshotCache={createdAt:now,validUntil:Math.min(nextDue,clock.dayStart(today+1)),
+        total,projectCounts,checkpointCounts,cardCounts,forecastDays};
+    }
     const offsetByDue=new Map<string,number>();
     let total=0,nextDue=Infinity;
     for(const note of this.store.notes){
@@ -234,6 +260,27 @@ export class DemoAdapter implements LemmaApi {
         "UTC",
       { takeOwnership: options.ownedFixture === true },
     );
+    if(options.ownedFixture&&this.store.stressNoteCount!==undefined){
+      const store=this.store,template=demoSeedFixture.notes[0];
+      if(!template)throw Error('Missing stress card template');
+      const count=store.stressNoteCount,dueCount=store.stressDueCount??0;
+      const clock=studyClock(store.settings.rolloverHour,store.settings.timeZone);
+      const today=clock.dayIndex(this.now());
+      this.virtualStressDue={overdue:clock.dayStart(today-1),future:clock.dayStart(today+14)};
+      // Capture the original object before installing the getter: spreading a
+      // lazy store from inside its own getter would recursively materialize it.
+      const original={...store};
+      Object.defineProperty(store,'notes',{configurable:true,enumerable:true,get:()=>{
+        const notes=makeStressNotes(template,store.projects,count,dueCount);
+        const hydrated=hydrateFixture({...original,notes,projects:[],subjects:[],
+          checkpoints:[],sources:[],sessions:[],concepts:[],links:[],
+          proposals:[],reviews:[]},this.now(),store.settings.timeZone,
+          {takeOwnership:true}).notes;
+        Object.defineProperty(store,'notes',{value:hydrated,writable:true,
+          enumerable:true,configurable:true});
+        return hydrated;
+      }});
+    }
   }
   private iso() {
     return new Date(this.now()).toISOString();
