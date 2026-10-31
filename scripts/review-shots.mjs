@@ -47,26 +47,34 @@ try {
   // Optional complete v4 route/profile/width audit; use V4_MATRIX=1 for the
   // approved capture inventory, without changing legacy five-panel sheets.
   if(process.env.V4_MATRIX==='1'){
-   const routes=[
-    ['today','#/'],['paths','#/projects'],['new-project','#/projects/new'],
-    ['project-path','#/p/real-analysis'],['project-sessions','#/p/real-analysis?tab=sessions'],
-    ['project-sources','#/p/real-analysis?tab=sources'],['checkpoint','#/p/real-analysis/cp/CP4'],
-    ['session','#/s/real-analysis/7'],['proposals','#/proposals'],
-    ['plan-change','#/proposals/proposal-6'],['review','#/review'],
-    ['review-run','#/review/run'],['review-done','#/review/done'],
-    ['cards','#/cards'],['card','#/cards/1'],['atlas','#/atlas'],
-    ['insights','#/insights'],['settings','#/settings'],['sign-in','#/sign-in'],
-   ];
+   const routes=JSON.parse(readFileSync(new URL('./v4-capture-inventory.json',import.meta.url),'utf8'));
    for(const demo of ['1','stress']){
     for(const [width,height] of [[360,780],[390,844]]){
      await phone.setViewportSize({width,height});
      const dir=join('review-shots','v4',theme,demo,width+'px');
      mkdirSync(dir,{recursive:true});
-     for(const [name,route] of routes){
+     for(const {name,route,action} of routes){
       const url=base+'?demo='+demo+'&theme='+encodeURIComponent(theme)+route;
       await phone.goto(url,{waitUntil:'domcontentloaded'});
       await phone.locator('#main-content').waitFor({state:'visible'});
       await phone.waitForTimeout(400);
+      // Interaction variants are separate scenes, not copies of the idle route.
+      if(action==='show-answer'){
+       await phone.getByRole('button',{name:'Show answer'}).click();
+      }else if(action==='atlas-select'||action==='atlas-details'){
+       await phone.getByRole('button',{name:'Find an idea'}).click();
+       await phone.getByRole('textbox',{name:'Find an idea'}).fill('Compactness');
+       await phone.getByRole('button',{name:/^Compactness, /}).first().click();
+       await phone.locator('[data-atlas-peek]').waitFor({state:'visible'});
+       if(action==='atlas-details'){
+        await phone.locator('[data-atlas-peek]').getByRole('button',{name:'Details'}).click();
+        await phone.getByRole('dialog',{name:'Compactness'}).waitFor({state:'visible'});
+       }
+      }else if(action==='atlas-all'){
+       await phone.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+       const confirmation=phone.getByRole('dialog',{name:'Unfold every idea?'});
+       if(await confirmation.isVisible())await confirmation.getByRole('button',{name:'Unfold all'}).click();
+      }
       const actual=await phone.locator('html').getAttribute('data-theme');
       if(actual!==theme)throw Error('Unexpected world for '+name+' '+demo);
       await phone.screenshot({path:join(dir,name+'.png'),animations:'disabled'});
