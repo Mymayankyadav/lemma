@@ -20,8 +20,8 @@ describe('Continue accessible math description',()=>{
  });
  it('reads common approximate relations as symbols, not command names',()=>{
   const spoken=resumeSpoken('Analysis',String.raw`$f\simeq g$ and $a\approx b$`,'',null);
-  expect(spoken).toContain('f≃g');
-  expect(spoken).toContain('a≈b');
+  expect(spoken).toContain('f≃ g');
+  expect(spoken).toContain('a≈ b');
   expect(spoken).not.toMatch(/\\(?:simeq|approx)/);
  });
  it('retains the existing plain-text step and pause wording',()=>{
