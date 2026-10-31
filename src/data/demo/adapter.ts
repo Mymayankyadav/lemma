@@ -309,6 +309,16 @@ export class DemoAdapter implements LemmaApi {
       {length:this.store.stressSessionCount}, (_,i) => this.virtualStressSession(project,i+1));
     return this.store.sessions.filter(s => s.projectId === project.id);
   }
+  /** Preserve checkpoint evidence from the two representative long histories. */
+  private stressCheckpointEvents(project: DemoProject, code: string): DemoSession["events"] {
+    if (!this.store.stressSessionCount) return [];
+    const index = this.store.projects.findIndex(p => p.id === project.id);
+    const number = index === 0 && code === "CP7" ? 7
+      : index === this.store.projects.length - 1 && code === "CP1" ? 1 : null;
+    if (!number) return [];
+    return stressSessionEvents(this.virtualStressSession(project, number),
+      this.store.seed === 2026103102 ? 400 : 150);
+  }
   private sessionSummary(s: DemoSession): SessionSummary {
     return {
       id: s.id,
@@ -809,9 +819,9 @@ export class DemoAdapter implements LemmaApi {
       }),
       recheckPrompt: cp.recheckPrompt,
       events: clone(
-        this.store.sessions
+        [...this.store.sessions
           .filter((s) => s.projectId === project.id)
-          .flatMap((s) => s.events)
+          .flatMap((s) => s.events), ...this.stressCheckpointEvents(project, code)]
           .filter((e) => e.checkpointCode === code)
           .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
           .slice(0, 20),
@@ -1332,7 +1342,7 @@ export class DemoAdapter implements LemmaApi {
                 (s) =>
                   s.projectId === project.id &&
                   s.events.some((e) => e.checkpointCode === cp.code),
-              )
+              ) || this.stressCheckpointEvents(project, cp.code).length > 0
             )
               conflict("Only an untouched checkpoint can be removed");
             this.store.checkpoints = this.store.checkpoints.filter(

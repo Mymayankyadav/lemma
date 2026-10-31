@@ -49,6 +49,8 @@ describe('deferred browser stress sessions', () => {
   expect(detail.events.some(event=>event.kind==='evidence')).toBe(true);
   const lazy=await api.getSession(last.slug,8);
   expect(lazy.events).toHaveLength(400);
+  const checkpoint=await api.getCheckpoint(first.slug,'CP7');
+  expect(checkpoint.events.some(event=>event.kind==='evidence')).toBe(true);
   const insights=await api.getInsightData(7);
   expect(insights.aggregate?.sessions).toBeGreaterThan(0);
   expect(insights.aggregate?.minutes).toBe((insights.aggregate?.sessions??0)*seed.sessions[0].minutes);
