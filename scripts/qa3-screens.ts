@@ -7,7 +7,7 @@ import {readFileSync,writeFileSync,mkdirSync} from 'node:fs'
 import {dirname,resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
 import {inflateSync} from 'node:zlib'
-import {QA3_ROUTES,qa3Cases,qa3ScreenshotName} from './qa3-report'
+import {QA3_ROUTES,QA3_ROUTE_READINESS,qa3Cases,qa3ScreenshotName} from './qa3-report'
 
 const SIGNATURE=Buffer.from([137,80,78,71,13,10,26,10])
 
@@ -111,6 +111,7 @@ export function auditQa3Screens(directory:string):ScreenAudit {
  const errors:string[]=[],warnings:string[]=[]
  let checked=0
  const hashes=new Map<string,string>()
+ const imageHashes=new Map<string,string>()
  const cases=qa3Cases(),expected=cases.length*QA3_ROUTES.length
  for(const matrix of cases){
   const viewportHeight=matrix.width===390?844:740
@@ -123,10 +124,46 @@ export function auditQa3Screens(directory:string):ScreenAudit {
    if(!header){errors.push('Invalid PNG envelope or viewport size: '+name);continue}
    checked++
    const hash=createHash('sha256').update(bytes).digest('hex')
+   imageHashes.set(name,hash)
    const earlier=hashes.get(hash)
    if(earlier&&earlier!==name)warnings.push('Identical captures for '+earlier+' and '+name+' across the full matrix; inspect for stale navigation')
    else hashes.set(hash,name)
   }
+ }
+ // FIX #586: a valid PNG of the Graph shell is not a valid screenshot of the
+ // route. Every matrix needs a producer-written, data-backed readiness record
+ // for each route, tied to the exact screenshot bytes by SHA-256.
+ for(const matrix of cases){
+  const manifestName=matrix.profile+'-'+matrix.theme+'-'+matrix.width+'-readiness.json'
+  let manifest:unknown
+  try{manifest=JSON.parse(readFileSync(resolve(directory,manifestName),'utf8'))}
+  catch{errors.push('Missing or invalid readiness manifest: '+manifestName);continue}
+  if(!Array.isArray(manifest)){
+   errors.push('Malformed readiness manifest (expected array): '+manifestName)
+   continue
+  }
+  const seen=new Set<string>()
+  for(const row of manifest){
+   if(!row||typeof row!=='object'||Array.isArray(row)||typeof row.route!=='string'||
+      !Object.prototype.hasOwnProperty.call(QA3_ROUTE_READINESS,row.route)){
+    errors.push('Invalid readiness route in '+manifestName)
+    continue
+   }
+   const route=row.route as (typeof QA3_ROUTES)[number]
+   if(seen.has(route)){errors.push('Duplicate readiness route '+route+' in '+manifestName);continue}
+   seen.add(route)
+   const contract=QA3_ROUTE_READINESS[route]
+   const screenshot=qa3ScreenshotName(matrix,route)
+   const hash=imageHashes.get(screenshot)
+   if(row.profile!==matrix.profile||row.theme!==matrix.theme||row.width!==matrix.width||
+      row.actualRoute!==route||row.ready!==true||row.heading!==contract.heading||
+      row.landmark!==contract.landmark||row.screenshot!==screenshot||
+      !hash||row.sha256!==hash){
+    errors.push('Stale, unready or mismatched screenshot readiness: '+manifestName+' '+route)
+   }
+  }
+  for(const route of QA3_ROUTES)if(!seen.has(route))
+   errors.push('Missing readiness route '+route+' in '+manifestName)
  }
  return {status:errors.length?'FAIL':'PASS',expected,checked,errors,warnings}
 }
@@ -135,7 +172,7 @@ export function renderScreenAudit(report:ScreenAudit):string {
  return [
   '# QA-3b screenshot structural evidence','',
   '**Structural status: '+report.status+'** · '+report.checked+'/'+report.expected+' captures inspected.','',
-  'This verifies PNG chunk boundaries, CRCs, mandatory IDAT/IEND and viewport dimensions only. It does **not** establish pixel-level legibility, behavior, accessibility, live API budgets or visual acceptance.','',
+  'This verifies PNG chunk boundaries, CRCs, mandatory IDAT/IEND, viewport dimensions, and route-specific data-backed readiness manifests tied to exact PNG hashes. It does **not** establish pixel-level legibility, behavior, accessibility, live API budgets or visual acceptance.','',
   '## Errors',...(report.errors.length?report.errors.map(e=>'- '+e):['None.']),
   '','## Review warnings',...(report.warnings.length?report.warnings.map(e=>'- '+e):['None.']),''
  ].join('\n')

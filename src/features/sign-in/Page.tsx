@@ -15,11 +15,9 @@ export default function Page() {
       <div aria-hidden="true" className="mt-4 h-px w-24 bg-amber-line"/>
       <h1 className="mt-6 text-title-s font-medium italic" style={{fontFamily:'var(--font-display)'}}>Sign in</h1>
       <p className="mt-2 font-math text-answer text-ink-2">Your mathematical study record.</p>
-      <Button
+      {getMode() !== "demo" && <Button
         className="mt-8 w-full max-w-sm"
-        disabled={
-          signIn.isPending || getMode() === "demo"
-        }
+        disabled={signIn.isPending}
         onClick={async () => {
           try {
             sessionStorage.setItem("lemma:sign-in-return", from);
@@ -30,7 +28,7 @@ export default function Page() {
         }}
       >
         Continue with Google
-      </Button>
+      </Button>}
       {getMode() === "demo" && (
         <p className="mt-4 text-label text-ink-3">
           Sign-in is available in live mode.

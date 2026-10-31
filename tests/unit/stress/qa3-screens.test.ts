@@ -1,10 +1,11 @@
 import {describe,it,expect} from 'vitest'
-import {mkdtempSync,writeFileSync,rmSync,unlinkSync} from 'node:fs'
+import {mkdtempSync,writeFileSync,readFileSync,rmSync,unlinkSync,existsSync} from 'node:fs'
+import {createHash} from 'node:crypto'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {deflateSync} from 'node:zlib'
 import {auditQa3Screens,pngHeader,renderScreenAudit} from '../../../scripts/qa3-screens'
-import {qa3Cases,QA3_ROUTES,qa3ScreenshotName} from '../../../scripts/qa3-report'
+import {qa3Cases,QA3_ROUTES,QA3_ROUTE_READINESS,qa3ScreenshotName} from '../../../scripts/qa3-report'
 
 const signature=Buffer.from([137,80,78,71,13,10,26,10])
 const table=Uint32Array.from({length:256},(_,n)=>{
@@ -43,15 +44,63 @@ function forgedEnvelope(width:number,height:number){
  return bytes
 }
 
+function manifestPath(dir:string,matrix:ReturnType<typeof qa3Cases>[number]){
+ return join(dir,matrix.profile+'-'+matrix.theme+'-'+matrix.width+'-readiness.json')
+}
+function hash(bytes:Buffer){return createHash('sha256').update(bytes).digest('hex')}
 function fixture(){
  const dir=mkdtempSync(join(tmpdir(),'lemma-qa3-screens-'))
  let n=0
- for(const matrix of qa3Cases())for(const route of QA3_ROUTES){
-  const height=matrix.width===390?844:740
-  writeFileSync(join(dir,qa3ScreenshotName(matrix,route)),envelope(matrix.width*2,height*2,++n))
+ for(const matrix of qa3Cases()){
+  const evidence=[]
+  for(const route of QA3_ROUTES){
+   const height=matrix.width===390?844:740
+   const screenshot=qa3ScreenshotName(matrix,route)
+   const png=envelope(matrix.width*2,height*2,++n)
+   writeFileSync(join(dir,screenshot),png)
+   evidence.push({
+    route,actualRoute:route,profile:matrix.profile,theme:matrix.theme,
+    width:matrix.width,heading:QA3_ROUTE_READINESS[route].heading,
+    landmark:QA3_ROUTE_READINESS[route].landmark,
+    screenshot,sha256:hash(png),ready:true,
+   })
+  }
+  writeFileSync(manifestPath(dir,matrix),JSON.stringify(evidence))
  }
  return dir
 }
+function updateManifestHash(dir:string,matrix:ReturnType<typeof qa3Cases>[number],route:(typeof QA3_ROUTES)[number]){
+ const path=manifestPath(dir,matrix)
+ const evidence=JSON.parse(readFileSync(path,'utf8')) as Array<{route:string;sha256:string}>
+ const row=evidence.find(item=>item.route===route)
+ if(!row)throw Error('Missing test fixture readiness route '+route)
+ row.sha256=hash(readFileSync(join(dir,qa3ScreenshotName(matrix,route))))
+ writeFileSync(path,JSON.stringify(evidence))
+}
+describe('FIX #586 viewport anchors for visually hidden route headings',()=>{
+ it('uses a real route control or data landmark when the semantic h1 is screen-reader-only',()=>{
+  const anchors:Record<string,string>={
+   '/projects/new':'#project-title',
+   '/p/real-analysis/cp/CP4':'section[aria-label="Checkpoint steps"]',
+   '/s/real-analysis/7':'section[aria-label="Reasoning"]',
+   '/review/run':'[data-review-card-scroll]',
+  };
+  for(const [route,anchor] of Object.entries(anchors)){
+   expect(QA3_ROUTE_READINESS[route as keyof typeof QA3_ROUTE_READINESS].viewportAnchor).toBe(anchor);
+  }
+ });
+});
+
+describe('FIX #586 sign-in readiness under the approved v4 demo flow',()=>{
+ it('waits for the demo-mode explanation, not a Google button absent from demo',()=>{
+  // LOOK-9a removes the misleading disabled sign-in action in demo mode.
+  // The screenshot matrix always runs in demo; its readiness must remain
+  // tied to visible page content after that approved UI change merges.
+  expect(QA3_ROUTE_READINESS['/sign-in'].landmark)
+   .toBe('p:has-text("Sign-in is available in live mode.")');
+ });
+});
+
 describe('QA-3b screenshot structural gate',()=>{
  it('accepts 1×/2×/3× matching PNG envelopes and rejects malformed dimensions',()=>{
   for(const scale of [1,2,3])expect(pngHeader(envelope(390*scale,844*scale),390,844)?.scale).toBe(scale)
@@ -103,6 +152,7 @@ describe('QA-3b screenshot structural gate',()=>{
    const matrix=qa3Cases()[0]
    const a=qa3ScreenshotName(matrix,'/'),b=qa3ScreenshotName(matrix,'/projects')
    writeFileSync(join(dir,b),envelope(matrix.width*2,(matrix.width===390?844:740)*2,1))
+   updateManifestHash(dir,matrix,'/projects')
    const report=auditQa3Screens(dir)
    expect(report.status).toBe('PASS')
    expect(report.warnings.some(w=>w.includes(a)&&w.includes(b))).toBe(true)
@@ -119,6 +169,7 @@ describe('QA-3b screenshot structural gate',()=>{
    const cases=qa3Cases(),a=cases[0],b=cases.find(c=>c.width===a.width&&c.filename!==a.filename)!
    const source=qa3ScreenshotName(a,'/'),target=qa3ScreenshotName(b,'/projects')
    writeFileSync(join(dir,target),envelope(a.width*2,(a.width===390?844:740)*2,1))
+   updateManifestHash(dir,b,'/projects')
    const report=auditQa3Screens(dir)
    expect(report.warnings.some(w=>w.includes(source)&&w.includes(target))).toBe(true)
   }finally{rmSync(dir,{recursive:true,force:true})}
@@ -166,5 +217,42 @@ describe('QA-3b screenshot structural gate',()=>{
   const forged=Buffer.concat([signature,chunk('IHDR',ihdr),
    chunk('IDAT',deflateSync(Buffer.from([0]))),chunk('IEND',Buffer.alloc(0))])
   expect(pngHeader(forged,390,844)).toBeNull()
+ })
+
+ it('rejects screenshots without the corresponding data-backed route readiness manifest',()=>{
+  const dir=fixture()
+  try{
+   const matrix=qa3Cases()[0]
+   const manifest=join(dir,matrix.filename.replace(/\.json$/,'-readiness.json'))
+   if(existsSync(manifest))unlinkSync(manifest)
+   const report=auditQa3Screens(dir)
+   expect(report.status).toBe('FAIL')
+   expect(report.errors.some(e=>e.includes('readiness manifest')&&e.includes(matrix.profile))).toBe(true)
+  }finally{rmSync(dir,{recursive:true,force:true})}
+ })
+
+ it('rejects a structurally valid but stale screenshot even when the manifest claims ready',()=>{
+  const dir=fixture()
+  try{
+   const matrix=qa3Cases()[0],screenshot=qa3ScreenshotName(matrix,'/projects')
+   writeFileSync(join(dir,screenshot),envelope(matrix.width*2,844*2,207))
+   const report=auditQa3Screens(dir)
+   expect(report.status).toBe('FAIL')
+   expect(report.errors.some(e=>e.includes('mismatched screenshot readiness')&&e.includes('/projects'))).toBe(true)
+  }finally{rmSync(dir,{recursive:true,force:true})}
+ })
+ it('rejects a manifest with an unready route or missing data-backed landmark',()=>{
+  const dir=fixture()
+  try{
+   const matrix=qa3Cases()[0],path=manifestPath(dir,matrix)
+   const evidence=JSON.parse(readFileSync(path,'utf8')) as Array<{route:string;ready:boolean;landmark:string}>
+   const row=evidence.find(item=>item.route==='/cards')!
+   row.ready=false
+   row.landmark='#main-content'
+   writeFileSync(path,JSON.stringify(evidence))
+   const report=auditQa3Screens(dir)
+   expect(report.status).toBe('FAIL')
+   expect(report.errors.some(e=>e.includes('mismatched screenshot readiness')&&e.includes('/cards'))).toBe(true)
+  }finally{rmSync(dir,{recursive:true,force:true})}
  })
 })
