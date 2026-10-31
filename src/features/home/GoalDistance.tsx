@@ -5,7 +5,7 @@ import {getMode} from '../../data/mode'
 import {Link} from 'react-router'
 import {useProject} from '../../data/hooks'
 import type {ProjectSummary,InsightData} from '../../data/types'
-import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline'
+import {Route} from '../../ui/timeline/Route'
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar'
 import {estimateFinish} from '../../ui/timeline/progress'
 import {Slab} from '../../ui/Slab'
@@ -25,7 +25,7 @@ const urgency=(a:ProjectSummary,b:ProjectSummary)=>{
  return (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0)
 }
 
-function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'ascent'|'metro';events:Events|undefined}){
+function GoalCard({project,events}:{project:ProjectSummary;events:Events|undefined}){
  const detail=useProject(project.slug)
  const pct=project.total?Math.round(100*project.done/project.total):0
  const estimate=estimateFinish({projectId:project.id,total:project.total,done:project.done,
@@ -47,7 +47,7 @@ function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'asce
     {status&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{status}</span>}</div>
   </div>
   {detail.isPending?<Skeleton h={85}/>:detail.data?.checkpoints.length?
-   <ProjectTimeline project={project} checkpoints={detail.data.checkpoints} variant={variant} pacePerWeek={estimate.pace??undefined} height={80}/>:
+   <Route project={project} checkpoints={detail.data.checkpoints} mode="today" pacePerWeek={estimate.pace??undefined}/>:
    <p className="text-label text-ink-3">No checkpoints yet. Ask your tutor to create a plan.</p>}
   {estimate.finish&&<p className="flex flex-wrap gap-x-1.5 gap-y-0.5 text-label leading-snug text-ink-2">
    <span>Finish ≈ <strong className="text-ink">{estimate.finish.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})}</strong></span>
@@ -106,7 +106,7 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
  </Slab>
 }
 
-export function GoalDistance({projects,variant='metro'}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
+export function GoalDistance({projects}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
  const active=projects.filter(project=>project.status==='active').sort(urgency)
  const [showRest,setShowRest]=useState(false)
  // Live Insights returns aggregate charts, not checkpoint event rows; avoid
@@ -124,7 +124,7 @@ export function GoalDistance({projects,variant='metro'}:{projects:ProjectSummary
    <>
     {featured.map(project=>project.total>14?
      <SummaryGoalCard key={project.id} project={project} events={insight.data?.checkpointEvents}/>:
-     <GoalCard key={project.id} project={project} variant={variant} events={insight.data?.checkpointEvents}/>)}
+     <GoalCard key={project.id} project={project} events={insight.data?.checkpointEvents}/>)}
     {rest.length>0&&<div className="min-w-0 rounded-slab border border-edge bg-[var(--card)] p-2" data-compact-goals="">
      <p className="px-2 py-2 text-label font-semibold text-ink-2">
       {rest.length} more · {rest.length-behindCount} on schedule, {behindCount} behind
