@@ -27,6 +27,7 @@ describe('LOOK-1b one paper layer',()=>{
   const outer=host.querySelector('.card');
   expect(outer).not.toBeNull();
   expect(outer?.querySelector('.card,.slab,.tile')).toBeNull();
+  expect(host.querySelectorAll('[data-card]')).toHaveLength(1);
   expect(outer?.querySelectorAll('[data-paper-group]')).toHaveLength(3);
   expect(host.querySelector('article[aria-label="Outer paper"]')).not.toBeNull();
   expect(host.querySelector('section[aria-label="First group"]')).not.toBeNull();
