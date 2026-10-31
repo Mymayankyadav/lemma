@@ -17,7 +17,7 @@ import {Chip} from '../../ui/Chip';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
-import {Tex} from '../../ui/Tex';
+import {FastHomeTex} from './FastHomeTex'
 import type {HomeSummary, ProjectSummary} from '../../data/types';
 
 
@@ -58,7 +58,7 @@ function ProjectLink({project}:{project:ProjectSummary}){
    className="group grid min-h-[var(--row)] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <span className="flex min-w-0 flex-col gap-1">
-    <span className="truncate text-headline font-medium"><Tex source={project.title}/></span>
+    <span className="truncate text-headline font-medium"><FastHomeTex source={project.title}/></span>
     <Rail label={project.title+' progress'} value={project.total?project.done/project.total:0}/>
    </span>
    <span className="flex items-center gap-1 text-body tabular-nums text-ink-2">
@@ -86,12 +86,12 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
   <span className="sr-only">{spoken}</span>
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
   <div aria-hidden="true" className="min-w-0 flex-1">
-   <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><Tex source={resume.projectTitle}/>{step}</p>
+   <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><FastHomeTex source={resume.projectTitle}/>{step}</p>
    <p data-resume-meta="" title={(status?'Paused '+status+' · ':'')+plainMath(description)}
     style={{...clip,fontSize:'13.5px',height:'24px',lineHeight:'24px'}} className="mt-1 text-caption text-ink-3">
     {/* KaTeX uses 1.21em; 13.5px metadata yields >=16px actual mathematics.
         Styling .katex at 16px via a nested utility loses to KaTeX's own rule. */}
-    <span>{status?'Paused '+status+' · ':''}</span><Tex source={description}/>
+    <span>{status?'Paused '+status+' · ':''}</span><FastHomeTex source={description}/>
    </p>
   </div>
   <button type="button" onClick={()=>onCopy(resume.projectTitle)} aria-label="Copy resume prompt"
