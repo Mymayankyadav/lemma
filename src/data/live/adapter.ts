@@ -1,14 +1,12 @@
 import type { LemmaApi } from '../api'
 import {reviewForecast} from '../../lib/review-forecast'
-import {summaryMetadata,ownerProjects,resumableProjects} from './project-summary'
-
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
-import { dueToday, studyDayBounds, projectProgress, conceptStatus } from '../../lib/derive'
+import { projectProgress, conceptStatus } from '../../lib/derive'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError, notImplemented } from '../api'
+import { LemmaError } from '../api'
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
@@ -138,24 +136,11 @@ export class LiveAdapter implements LemmaApi {
   return styleRow(checked(await db.from('styles').update(toDb(patch)).eq('user_id',uid).eq('key',key).select('*').single()) as Row)
  }
  async getHome(...args: Parameters<LemmaApi['getHome']>): ReturnType<LemmaApi['getHome']> {
-  const [projects,sessions,proposals,due]=await Promise.all([
-    this.listProjects(),this.listSessions(),this.listProposals(),
-    this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false})
-  ])
-  const visible=resumableProjects(projects)
-  const active=sessions.filter(s=>s.display!=='ended'&&visible.some(p=>p.slug===s.projectSlug))
-   .sort((a,b)=>b.lastActivityAt.localeCompare(a.lastActivityAt))[0]
-  const p=active?visible.find(x=>x.slug===active.projectSlug):visible[0]
-  const detail=p?await this.getProject(p.slug):null
-  const current=detail?.checkpoints.find(x=>x.code===active?.checkpointCode)
-    ??detail?.checkpoints.find(x=>x.ui==='now')
-  const session=active?await this.getSession(active.projectSlug,active.number):null
-  return {resume:p?{projectSlug:p.slug,projectTitle:p.title,glyph:p.subject.glyph,
-      checkpointCode:current?.code??null,checkpointTitle:current?.title??null,
-      step:session?.resumeStep??current?.currentStep??0,stepsTotal:current?.stepsTotal??0,
-      question:session?.resumeQuestion??null,objective:current?((await this.getCheckpoint(p.slug,current.code)).objective):null,
-      pausedAt:active?.lastActivityAt??p.lastActivityAt,sessionNumber:active?.number??null}:null,
-    due:due.length,pendingProposals:proposals.length,projects:visible}
+  const db=liveClient()
+  await owner(db)
+  // ST-5: a single owner-scoped RPC computes Today, the active resume target,
+  // pending count and the daily review quota without downloading full tables.
+  return checked(await db.rpc('home_summary')) as import('../types').HomeSummary
  }
  async listSubjects(...args: Parameters<LemmaApi['listSubjects']>): ReturnType<LemmaApi['listSubjects']> {
   const db=liveClient(),uid=await owner(db)
@@ -167,37 +152,11 @@ export class LiveAdapter implements LemmaApi {
   return subjectRow(checked(await db.from('subjects').insert({...input,user_id:uid,position:existing.length}).select('*').single()) as Row)
  }
  async listProjects(...args: Parameters<LemmaApi['listProjects']>): ReturnType<LemmaApi['listProjects']> {
-  const db=liveClient(),uid=await owner(db)
-  const [projects,subjects,cps,notes,sessions,sources,prereqs,cards,settings]=await Promise.all([
-    rows(db,'projects',uid,true),rows(db,'subjects',uid),rows(db,'checkpoints',uid),
-    rows(db,'notes',uid),rows(db,'sessions',uid),rows(db,'sources',uid),rows(db,'checkpoint_prereqs',uid),
-    rows(db,'cards',uid),this.getSettings()
-  ])
-  const subjectMap=new Map(subjects.map(s=>[s.id,subjectRow(s)]))
-  const cpMap=new Map(cps.map(c=>[c.id,c]))
-  const today=studyDay(Date.now(),settings.timeZone,settings.rolloverHour)
-  const views=new Map<string,CheckpointView>()
-  const visiting=new Set<string>()
-  const getView=(c:Row): CheckpointView=>{
-    if(views.has(c.id)) return views.get(c.id)!
-    if(visiting.has(c.id)) throw new LemmaError('invalid','Checkpoint prerequisite cycle')
-    visiting.add(c.id)
-    const pre=prereqs.filter(p=>p.checkpoint_id===c.id).map(p=>cpMap.get(p.prereq_id)).filter(Boolean) as Row[]
-    const view=checkpointRow(c,pre.map(getView),today)
-    views.set(c.id,view);visiting.delete(c.id);return view
-  }
-  return ownerProjects(projects.map(p=>{
-    const checkpoints=cps.filter(c=>c.project_id===p.id).sort((a,b)=>a.position-b.position).map(getView)
-    const counts=projectProgress(checkpoints)
-    const current=checkpoints.find(c=>c.ui==='now')??checkpoints.find(c=>c.ui==='next')
-    return {id:p.id,slug:p.slug,title:p.title,...summaryMetadata(p,subjectMap),status:p.status,
-      done:counts.done,total:counts.total,
-      current:current?{code:current.code,title:current.title,step:current.currentStep,stepsTotal:current.stepsTotal}:null,
-      lastActivityAt:p.last_activity_at,cardsCount:cards.filter(c=>notes.some(n=>n.id===c.note_id&&n.project_id===p.id&&n.status==='active')).length,
-      sessionsCount:sessions.filter(s=>s.project_id===p.id&&s.state==='ended').length,
-      sourcesCount:sources.filter(s=>s.project_id===p.id).length,
-       sourceTitles:sources.filter(s=>s.project_id===p.id).map(s=>String(s.title))} satisfies ProjectSummary
-  })).sort((a,b)=>(b.lastActivityAt??'').localeCompare(a.lastActivityAt??''))
+  const db=liveClient()
+  await owner(db)
+  // ST-5: one owner-scoped summary RPC replaces full-table downloads of
+  // projects, checkpoints, prerequisites, notes, cards, sessions and sources.
+  return checked(await db.rpc('project_summaries')) as ProjectSummary[]
  }
  async getProject(...args: Parameters<LemmaApi['getProject']>): ReturnType<LemmaApi['getProject']> {
   const [slug]=args,db=liveClient(),uid=await owner(db)
@@ -424,56 +383,23 @@ export class LiveAdapter implements LemmaApi {
   return count
  }
  async getDeckTree(...args: Parameters<LemmaApi['getDeckTree']>): ReturnType<LemmaApi['getDeckTree']> {
-  const [projects,due,checkpoints]=await Promise.all([
-    this.listProjects(),
-    this.getReviewItems({decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false}),
-    (async()=>{const db=liveClient(),uid=await owner(db);return rows(db,'checkpoints',uid)})()
-  ])
-  return projects.map(p=>{
-    const mine=due.filter(c=>c.projectSlug===p.slug)
-    const children=checkpoints.filter(c=>c.project_id===p.id).sort((a,b)=>a.position-b.position)
-      .map(c=>({key:`cp:${p.slug}:${c.code}` as const,label:c.title,glyph:p.subject.glyph,
-        level:1 as const,due:mine.filter(card=>card.checkpointCode===c.code).length,children:[]}))
-    return {key:`project:${p.slug}` as const,label:p.title,glyph:p.subject.glyph,
-      level:0 as const,due:mine.length,children}
-  })
+  const db=liveClient()
+  await owner(db)
+  // ST-5: daily due counts and deck hierarchy are computed in PostgreSQL.
+  // Do not download every review, note, card and checkpoint to open Review.
+  return checked(await db.rpc('deck_tree')) as import('../types').DeckNode[]
  }
  async getReviewItems(...args: Parameters<LemmaApi['getReviewItems']>): ReturnType<LemmaApi['getReviewItems']> {
-  const [filter]=args,db=liveClient(),uid=await owner(db)
-  const [cards,notes,projects,subjects,cps,sessions,sources,settings,reviews,concepts]=await Promise.all([
-    rows(db,'cards',uid),rows(db,'notes',uid),rows(db,'projects',uid),rows(db,'subjects',uid),
-    rows(db,'checkpoints',uid),rows(db,'sessions',uid),rows(db,'sources',uid),
-    this.getSettings(),rows(db,'reviews',uid),rows(db,'concepts',uid)
-  ])
-  const projectsById=new Map(projects.filter(p=>p.status!=='archived'&&p.system!==true).map(p=>[p.id,p]))
-  const notesById=new Map(notes.filter(n=>n.status==='active'&&projectsById.has(n.project_id)).map(n=>[n.id,n]))
-  const subjectsById=new Map(subjects.map(s=>[s.id,s]))
-  const cpById=new Map(cps.map(c=>[c.id,c]))
-  const sessionsById=new Map(sessions.map(s=>[s.id,s]))
-  const sourceById=new Map(sources.map(s=>[s.id,s]))
-  const all:ReviewItem[]=cards.filter(c=>notesById.has(c.note_id)).map(c=>{
-    const n=notesById.get(c.note_id)!, p=projectsById.get(n.project_id)!, cp=cpById.get(n.checkpoint_id)
-    return {cardId:c.id,noteId:n.id,noteNo:Number(n.no),ord:c.ord,type:n.type,kind:n.kind,
-      front:n.front,back:n.back,projectSlug:p?.slug??'',glyph:subjectsById.get(p?.subject_id)?.glyph??'∫',
-      checkpointCode:cp?.code??null,checkpointTitle:cp?.title??null,
-      sessionNumber:sessionsById.get(n.session_id)?.number??null,
-      sourceShort:sourceById.get(n.source_id)?.short??null,pageLabel:n.page_label??null,state:cardState(c)}
-  })
-  const {start}=studyDayBounds(Date.now(),settings.timeZone,settings.rolloverHour)
-  const answered=reviews.filter(r=>r.reviewed_at>=new Date(start).toISOString()&&!r.undone_at)
-  const due=dueToday(all,settings,{answeredToday:answered.length,newAnsweredToday:answered.filter(r=>r.state_before===0).length})
-  const selected=due.filter(c=>{
-    if(filter.newOnly&&c.state.state!==0)return false
-    if(!filter.includeNew&&c.state.state===0)return false
-    if(filter.decks.length&&!filter.decks.some(d=>d===`project:${c.projectSlug}`||d===`cp:${c.projectSlug}:${c.checkpointCode}`))return false
-    if(filter.sessionId && notesById.get(c.noteId)?.session_id!==filter.sessionId)return false
-    if(filter.conceptSlug){
-      const n=notesById.get(c.noteId)
-      if(concepts.find(x=>x.id===n?.concept_id)?.slug!==filter.conceptSlug)return false
-    }
-    return true
-  })
-  return selected
+  const [filter]=args,db=liveClient()
+  await owner(db)
+  // Daily quotas, sibling deduplication and filters run in PostgreSQL before
+  // returning card bodies. A 30,000-card library must not trigger whole-table
+  // downloads of cards, notes, reviews, sources or session histories.
+  return checked(await db.rpc('review_items',{
+   p_decks:filter.decks,p_session_id:filter.sessionId,
+   p_concept_slug:filter.conceptSlug,p_include_new:filter.includeNew,
+   p_new_only:filter.newOnly,
+  })) as ReviewItem[]
  }
  async recordReview(...args: Parameters<LemmaApi['recordReview']>): ReturnType<LemmaApi['recordReview']> {
   const [input]=args,db=liveClient()
@@ -488,27 +414,31 @@ export class LiveAdapter implements LemmaApi {
   return cardState(checked(await db.rpc('undo_review',{p_review:id})) as Row)
  }
  async searchCards(...args: Parameters<LemmaApi['searchCards']>): ReturnType<LemmaApi['searchCards']> {
-  const [query,slug]=args,db=liveClient(),uid=await owner(db)
-  const [notes,projects,subjects,cps,cards,comments]=await Promise.all([
-    rows(db,'notes',uid),rows(db,'projects',uid),rows(db,'subjects',uid),
-    rows(db,'checkpoints',uid),rows(db,'cards',uid),rows(db,'card_comments',uid)
-  ])
-  const term=query.trim().toLocaleLowerCase()
-  const matches=notes.filter(n=>{
-    const p=projects.find(p=>p.id===n.project_id)
-    return p && (!slug||p.slug===slug) && (!term||[n.front,n.back].some(text=>String(text).toLocaleLowerCase().includes(term)))
-  }).slice(0,100)
-  return matches.map(n=>{
-    const project=projects.find(p=>p.id===n.project_id)!,subject=subjects.find(s=>s.id===project.subject_id)
-    const cp=cps.find(c=>c.id===n.checkpoint_id)
-    return {noteNo:Number(n.no),front:n.front,type:n.type,kind:n.kind,
-      projectSlug:project.slug,glyph:subject?.glyph??'∫',checkpointCode:cp?.code??null,
-      due:cards.filter(c=>c.note_id===n.id).sort((a,b)=>a.due.localeCompare(b.due))[0]?.due??null,
-      status:n.status,openComments:comments.filter(c=>c.note_id===n.id&&c.status==='open').length}
-  })
+  const [query,slug]=args,db=liveClient()
+  await owner(db)
+  // ST-5: the database searches and returns only one bounded page. Never fetch
+  // every note/card/comment into the browser for a simple search.
+  const pageArgs={p_query:query,p_slug:slug??null,p_limit:50}
+  const first=checked(await db.rpc('search_cards_page',{...pageArgs,p_offset:0})) as import('../types').CardRow[]
+  // Preserve the existing 100-result search contract until a separate
+  // additive pagination contract lets the UI request later pages.
+  if(first.length<50)return first
+  const second=checked(await db.rpc('search_cards_page',{...pageArgs,p_offset:50})) as import('../types').CardRow[]
+  return [...first,...second]
  }
- async searchCardsPage(..._args: Parameters<LemmaApi['searchCardsPage']>): ReturnType<LemmaApi['searchCardsPage']> {
-  throw notImplemented('searchCardsPage')
+ async searchCardsPage(...args: Parameters<LemmaApi['searchCardsPage']>): ReturnType<LemmaApi['searchCardsPage']> {
+  const [filter]=args,db=liveClient()
+  await owner(db)
+  const offset=filter.offset??0
+  if(!Number.isSafeInteger(offset)||offset<0)
+   throw new LemmaError('invalid','Card page offset must be a nonnegative integer')
+  const page=checked(await db.rpc('search_cards_filtered_page',{
+   p_query:filter.query,p_slug:filter.projectSlug??null,
+   p_checkpoint:filter.checkpointCode??null,p_state:filter.state??null,
+   p_note_status:filter.noteStatus??null,
+   p_has_open_comments:filter.hasOpenComments??null,p_offset:offset,
+  })) as import('../types').CardRow[]
+  return {rows:page,nextOffset:page.length===50?offset+50:null}
  }
  async getCard(...args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> {
   const [no]=args,db=liveClient(),uid=await owner(db)
@@ -638,29 +568,12 @@ export class LiveAdapter implements LemmaApi {
     .map(r=>({cardId:r.card_id,reviewedAt:r.reviewed_at,rating:r.rating}))
  }
  async getInsightData(...args: Parameters<LemmaApi['getInsightData']>): ReturnType<LemmaApi['getInsightData']> {
-  const [days]=args,db=liveClient(),uid=await owner(db)
-  const cutoff=new Date(Date.now()-days*86_400_000).toISOString()
-  const [reviews,cards,notes,projects,subjects,sessions,events,cps,misconceptions,concepts]=await Promise.all([
-    rows(db,'reviews',uid),rows(db,'cards',uid),rows(db,'notes',uid),rows(db,'projects',uid),
-    rows(db,'subjects',uid),rows(db,'sessions',uid),rows(db,'session_events',uid),
-    rows(db,'checkpoints',uid),rows(db,'misconceptions',uid),rows(db,'concepts',uid)
-  ])
-  const cardById=new Map(cards.map(c=>[c.id,c]))
-  const noteById=new Map(notes.map(n=>[n.id,n]))
-  const cpsById=new Map(cps.map(c=>[c.id,c]))
-  const sessionsById=new Map(sessions.map(s=>[s.id,s]))
-  return {reviews:reviews.filter(r=>r.reviewed_at>=cutoff&&!r.undone_at).map(r=>({
-      reviewedAt:r.reviewed_at,rating:r.rating,stateBefore:r.state_before,confidence:r.confidence,
-      durationMs:r.duration_ms,projectId:noteById.get(cardById.get(r.card_id)?.note_id)?.project_id??''
-    })),sessions:sessions.filter(s=>s.started_at>=cutoff&&s.state==='ended').map(s=>({
-      startedAt:s.started_at,minutes:s.minutes??0,projectId:s.project_id,goalMet:s.goal_met
-    })),checkpointEvents:events.filter(e=>e.created_at>=cutoff && (e.kind==='evidence'||e.kind==='recheck') && e.outcome)
-      .map(e=>{const cp=cpsById.get(e.checkpoint_id)
-        return {at:e.created_at,kind:e.kind==='evidence'&&e.outcome==='demonstrated'?'demonstrated':
-          e.outcome==='demonstrated'?'recheck_ok':'recheck_fail',
-          checkpointCode:cp?.code??'',projectId:cp?.project_id??sessionsById.get(e.session_id)?.project_id??''}
-      }),projects:projects.map(p=>({id:p.id,title:p.title,subject:subjectRow(subjects.find(s=>s.id===p.subject_id)!)})),
-    misconceptions:misconceptions.map(m=>({label:m.label,times:m.times,conceptName:concepts.find(c=>c.id===m.concept_id)?.name??null}))} as import('../types').InsightData
+  const [days]=args,db=liveClient()
+  await owner(db)
+  // ST-5: aggregate in PostgreSQL. Never transfer every review, session,
+  // card and checkpoint event just to draw bounded Insights charts.
+  const aggregate=checked(await db.rpc('insights',{p_days:days})) as import('../types').InsightAggregate
+  return {aggregate,reviews:[],sessions:[],checkpointEvents:[],projects:[],misconceptions:[]}
  }
  async exportAll(...args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> {
   const db=liveClient(),uid=await owner(db)
