@@ -34,6 +34,15 @@ describe('QA-3a stress evidence', () => {
     expect(renderQa3Markdown(report)).toContain('does not certify');
   });
 
+  it('does not certify live API budgets from zero-request demo measurements', () => {
+    const report = analyzeQa3(evidence());
+    expect(report.status).toBe('PASS'); // UI-only generic budgets still pass
+    expect(report.apiBudget).toBe('NOT ASSESSED');
+    const markdown = renderQa3Markdown(report);
+    expect(markdown).toContain('Live API budget: NOT ASSESSED');
+    expect(markdown).toContain('demo adapter');
+  });
+
   it('rejects a missing matrix file and reports incomplete evidence', () => {
     const files = evidence();
     delete files[qa3Cases()[0].filename];

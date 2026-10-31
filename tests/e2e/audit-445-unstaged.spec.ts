@@ -57,7 +57,10 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   await map.screenshot({path:prefix+"-collapsed.png"});
   await stages.first().click();
   await expect(stages.first()).toHaveAttribute("aria-expanded","true");
-  await expect(map.locator("foreignObject")).toHaveCount(1);
+  // Five persistent stage-name overlays remain, plus exactly one expanded checkpoint panel.
+  // Count these separately: an unscoped foreignObject selector mistakes labels for panels.
+  await expect(map.locator("foreignObject[data-stage-label]")).toHaveCount(5);
+  await expect(map.locator("foreignObject[data-expanded-stage]")).toHaveCount(1);
   await map.screenshot({path:prefix+"-expanded.png"});
   await map.getByRole("button",{name:"Expand all"}).click();
   const expanded=map.getByRole("group",{name:"Map of proposed checkpoints and prerequisites"});
