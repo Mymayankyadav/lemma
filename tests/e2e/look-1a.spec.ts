@@ -46,11 +46,17 @@ for(const width of [360,390] as const){
 
   const card=page.locator('.card').first();
   const paper=await card.evaluate(el=>{
-   const s=getComputedStyle(el);
-   return {border:s.borderTopWidth,shadow:s.boxShadow};
+   const s=getComputedStyle(el),root=getComputedStyle(document.documentElement);
+   return {border:s.borderTopWidth,shadow:s.boxShadow,
+    borderToken:root.getPropertyValue('--card-border').trim()};
   });
-  expect(paper.border).toBe(theme==='graph-night'?'1px':'1.5px');
-  if(theme==='graph-night')expect(paper.shadow).toContain('3px 3px');
+  // Chromium snaps fractional borders to device pixels (also covered by the
+  // existing UI-6a regression). Assert the exact day design token instead.
+  expect(paper.borderToken).toContain('1.5px solid');
+  if(theme==='graph-night'){
+   expect(paper.border).toBe('1px');
+   expect(paper.shadow).toContain('3px 3px');
+  }else expect(Number.parseFloat(paper.border)).toBeGreaterThanOrEqual(1);
 
   const icon=page.locator('.ui-icon-button').first();
   const target=await icon.boundingBox();
