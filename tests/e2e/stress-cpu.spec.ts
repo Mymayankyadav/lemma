@@ -36,6 +36,8 @@ for(const matrix of CPU_CASES){
    await page.goto('/lemma/?demo='+matrix.profile+'&theme='+matrix.theme+'#'+route,{
     waitUntil:'domcontentloaded',timeout:90_000,
    });
+   // A query label is not proof that the intended Graph world rendered.
+   await expect(page.locator('html')).toHaveAttribute('data-theme',matrix.theme,{timeout:90_000});
    await expect(page.getByRole('heading',{name:headings[route],exact:true,level:1}))
     .toBeVisible({timeout:90_000});
    // A heading and >40 text characters can be visible on an empty skeleton.
