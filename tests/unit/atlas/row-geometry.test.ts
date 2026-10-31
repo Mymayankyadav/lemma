@@ -1,4 +1,8 @@
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,expect,it} from 'vitest';
+import {Wires} from '../../../src/features/atlas/Outline';
+import type {Arc} from '../../../src/features/atlas/tree';
 import {atlasRowAt,atlasRowHeight,buildAtlasRowGeometry} from '../../../src/features/atlas/rowGeometry';
 
 describe('LOOK-4b Atlas variable row geometry',()=>{
@@ -23,5 +27,15 @@ describe('LOOK-4b Atlas variable row geometry',()=>{
   const geometry=buildAtlasRowGeometry(Array.from({length:2500},(_,i)=>i%500===0?'cluster':'planet'));
   expect(geometry.totalHeight).toBe(2500*44+5*12);
   expect(atlasRowAt(geometry.offsets,geometry.totalHeight-1)).toBe(2499);
+ });
+ it('anchors rendered dependency wires to actual variable-height row centers',()=>{
+  const arcs:Arc[]=[{key:'a',from:0,to:2,kind:'prereq',count:1,links:[]}];
+  const geometry=buildAtlasRowGeometry(['cluster','galaxy','planet']);
+  const markup=renderToStaticMarkup(createElement(Wires,{
+   arcs,rows:3,focus:null,centers:geometry.centers,heightPx:geometry.totalHeight,
+  }));
+  expect(markup).toContain('height="144"');
+  expect(markup).toContain('M8 28 C');
+  expect(markup).toContain(' 122');
  });
 });
