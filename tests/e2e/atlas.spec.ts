@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import * as katex from 'katex';
 
 test.beforeEach(async({page})=>{
  await page.setViewportSize({width:390,height:844});
@@ -106,12 +107,14 @@ for(const width of [360,390] as const){
   await expect(dialog).toBeVisible();
   const path=dialog.locator('[aria-label="Idea path"]');
   await expect(path).toBeVisible();
-  // Replace only the path's text payload, not its CSS classes or layout.
-  await path.evaluate(el=>{
+  // Inject real KaTeX-rendered fraction/sum markup into the existing details
+  // breadcrumb, retaining the component's CSS and responsive layout.
+  const rendered=katex.renderToString(String.raw`\\frac{1}{2}+\\sum_{n=1}^{4}n`,{throwOnError:true});
+  await path.evaluate((el,html)=>{
    const tex=el.querySelector('.lemma-tex-inline');
    if(!tex)throw Error('Atlas details path has no Tex renderer');
-   tex.innerHTML='<span class="katex">\\\\frac{1}{2} + \\\\sum_{n=1}^{4} n</span>';
-  });
+   tex.innerHTML=html;
+  },rendered);
   const plainPx=await path.evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
   const mathPx=await path.locator('.katex').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
   expect(plainPx,'breadcrumb plain-text font').toBeGreaterThanOrEqual(12);
