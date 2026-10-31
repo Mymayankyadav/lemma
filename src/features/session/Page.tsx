@@ -14,6 +14,7 @@ import {MathText} from '../../ui/MathText';
 import {useToast} from '../../ui/Toast';
 import type {EventKind,GoalMet,SessionEvent} from '../../data/types';
 import {reasoningRuns} from './runs';
+import {sessionCardSummary} from './counts';
 const icons:Record<EventKind,typeof Lightbulb>={pretest:BookMarked,attempt:Target,hint:Lightbulb,explanation:BookOpen,misconception:TriangleAlert,evidence:CheckCircle,recheck:History,note:MessageCircle};
 const name:Record<EventKind,string>={pretest:'Warm-up',attempt:'Attempt',hint:'Hint',explanation:'Explanation',misconception:'Misconception',evidence:'Evidence',recheck:'Recheck',note:'Note'};
 const goalText:Record<Exclude<GoalMet,null>,string>={yes:'Goal met',partial:'Partly met',no:'Not yet met'};
@@ -81,7 +82,7 @@ export default function Page(){
    {!viewCards&&!!session.misconceptions.filter(m=>!m.resolvedAt).length&&<section className="flex flex-col gap-3"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Things to revisit</h2>{session.misconceptions.filter(m=>!m.resolvedAt).map(m=><div key={m.id} className="flex flex-wrap items-center gap-3 border-l-2 border-amber py-2 pl-3"><TriangleAlert className="text-amber" size={18}/><span className="min-w-0 flex-1 text-body-l"><Tex source={m.label}/></span><Chip tone="amber">{m.times}×</Chip><button disabled={resolve.isPending} className="min-h-11 rounded-ctl px-2 text-label font-semibold text-amber" onClick={()=>resolve.mutate(m.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Couldn’t save. Try again.',{tone:'danger'})})}>Resolved</button></div>)}</section>}
    {!!session.cards.length&&<section aria-label="Session cards" className="flex flex-col gap-2"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Cards</h2>
     <Link to={`/s/${slug}/${number}?cards=1`} className="flex min-h-14 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 text-body text-amber">
-     <span>{session.cards.length} cards · {session.cards.filter(card=>card.state==='pending').length} waiting</span><ArrowRight size={18} className="shrink-0"/>
+     <span>{sessionCardSummary(session.cards.length,session.cards.filter(card=>card.state==='pending').length)}</span><ArrowRight size={18} className="shrink-0"/>
     </Link></section>}
    {proposalCount>0&&<p className="text-label text-ink-2" aria-label="Pending session proposals">
     {session.pendingProposals.cards} {session.pendingProposals.cards===1?'card':'cards'} ·
@@ -92,11 +93,11 @@ export default function Page(){
      {summary.display==='ended'?'Start studying':'Resume session'}
     </Button>
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-     <button type="button" aria-label="Copy session summary" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 text-label font-semibold text-amber" onClick={()=>void copy(session.summaryText||summary.goal)}>
+     <button type="button" aria-label="Copy session summary" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 text-label font-semibold text-ink-2" onClick={()=>void copy(session.summaryText||summary.goal)}>
       <Copy size={16} aria-hidden="true"/>Copy
      </button>
-     {proposalCount>0&&<Link to="/proposals" className="inline-flex min-h-11 min-w-11 items-center justify-center text-label font-semibold text-amber">Review</Link>}
-     {session.pages&&<button type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 text-label font-semibold text-amber" onClick={()=>setPagesOpen(true)}>
+     {proposalCount>0&&<Link to="/proposals" className="inline-flex min-h-11 min-w-11 items-center justify-center text-label font-semibold text-ink-2">Review</Link>}
+     {session.pages&&<button type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 text-label font-semibold text-ink-2" onClick={()=>setPagesOpen(true)}>
       Pages
      </button>}
     </div>
