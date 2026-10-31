@@ -72,6 +72,13 @@ export default function Page(){
  const [selectedId,setSelectedId]=useState<string|null>(null),[details,setDetails]=useState(false);
  const [searching,setSearching]=useState(false),[search,setSearch]=useState(''),[recheckOnly,setRecheckOnly]=useState(false);
  const scroller=useRef<HTMLDivElement>(null);
+ const [scrollTop,setScrollTop]=useState(0),[viewportHeight,setViewportHeight]=useState(740);
+ useEffect(()=>{
+  const el=scroller.current;if(!el)return;
+  const update=()=>setViewportHeight(el.clientHeight);
+  update();const observer=new ResizeObserver(update);observer.observe(el);
+  return ()=>observer.disconnect();
+ },[query.isPending]);
  useEffect(()=>{
   if(!tree||expanded)return;
   const stored=saved.current?.expanded.filter(id=>tree.nodes.has(id));
@@ -83,6 +90,12 @@ export default function Page(){
  const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  const arcs=useMemo(()=>tree?arcsFor(tree,rows,kinds):[],[tree,rows,kinds]);
+ // Fixed 44px rows allow windowing without a new dependency. Keep a generous
+ // overscan for keyboard focus and scrolling, and preserve total scroll height.
+ const virtual=rows.length>200;
+ const first=virtual?Math.max(0,Math.floor(scrollTop/44)-12):0;
+ const last=virtual?Math.min(rows.length,Math.ceil((scrollTop+viewportHeight)/44)+12):rows.length;
+ const visible=virtual?rows.slice(first,last):rows;
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
  const arcBudget=useMemo(()=>tree?budgetArcs(tree,rows,open,arcs,focus):{visible:[],hidden:0},[tree,rows,open,arcs,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
@@ -101,11 +114,20 @@ export default function Page(){
   if(!tree)return;
   setSearch('');setSearching(false);setRecheckOnly(false);
   setExpanded(prev=>new Set([...(prev??[]),...ancestors(tree,id)]));
+  // Scroll to the target's absolute row before asking the windowed list for
+  // its element; otherwise a distant idea does not exist in the DOM yet.
+  const expandedPath=new Set([...open,...ancestors(tree,id)]);
+  const targetRows=visibleRows(tree,expandedPath);
+  const targetIndex=targetRows.findIndex(row=>row.id===id);
+  if(targetIndex>=0&&targetRows.length>200&&scroller.current){
+   scroller.current.scrollTop=Math.max(0,targetIndex*44-scroller.current.clientHeight/2);
+   setScrollTop(scroller.current.scrollTop);
+  }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
    const el=scroller.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`);
    el?.scrollIntoView({block:'center',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }));
- },[tree]);
+ },[tree,open]);
  const trace=(id:string)=>{reveal(id);select(id,false)};
  const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev??[]);if(next.has(id))next.delete(id);else next.add(id);return next});
  const onRow=(node:AtlasNode)=>{
@@ -165,13 +187,15 @@ export default function Page(){
      <RotateCcw size={14} className="text-[var(--hard)]"/>{recheckCount}</button>}
    </div>
   </header>
-  <div ref={scroller} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24" data-atlas-stage="true">
+  <div ref={scroller} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24" data-atlas-stage="true">
    {tree.roots.length===0?<div className="flex h-full items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty" body="Ideas appear here as your plans grow."/></div>
    :rows.length===0?<p className="px-4 py-10 text-center text-body text-ink-3">{search?'No idea matches “'+search+'”.':'Nothing to re-check.'}</p>
-   :<div className="relative" role="tree" aria-label="Ideas and their links">
-    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
+   :<div className="relative" role="tree" aria-label="Ideas and their links" style={virtual?{height:rows.length*44}:undefined}>
+    <div style={virtual?{position:"absolute",top:first*44,left:0,right:0}:undefined}>
+    {visible.map(row=>{const node=tree.nodes.get(row.id)!;
      return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
+    </div>
     <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>
    </div>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
