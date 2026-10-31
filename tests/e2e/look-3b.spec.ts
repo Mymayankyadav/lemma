@@ -58,12 +58,23 @@ for(const width of [360,390] as const){
   const n=profile==='extreme'?1500:600;
   await mount(page,n,width,theme,'project');
   await expect(page.locator('[data-route]')).toHaveAttribute('data-route-layout','folded');
+  // Measure the painted edges, not just SVG geometry: the 11px current
+  // halo and stage strokes count toward the strict 8px separation budget.
   const marks=await page.locator('[data-route-mark]').evaluateAll(els=>
-   els.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right}})
-    .sort((a,b)=>a.left-b.left));
+   els.map(el=>{
+    const tag=el.tagName.toLowerCase();
+    const stroke=Number(el.getAttribute('stroke-width')??0);
+    const center=tag==='circle'?Number(el.getAttribute('cx')):
+     Number(el.getAttribute('x'))+Number(el.getAttribute('width'))/2;
+    const half=tag==='circle'?Number(el.getAttribute('r'))+stroke/2:
+     Number(el.getAttribute('width'))/2+stroke/2;
+    return {left:center-half,right:center+half};
+   }).sort((a,b)=>a.left-b.left));
   expect(marks.length).toBeGreaterThan(2);
+  expect(marks[0].left).toBeGreaterThanOrEqual(0);
+  expect(marks.at(-1)!.right).toBeLessThanOrEqual(width-64);
   for(let i=1;i<marks.length;i++)
-   expect(marks[i].left-marks[i-1].right).toBeGreaterThanOrEqual(7.5);
+   expect(marks[i].left-marks[i-1].right).toBeGreaterThanOrEqual(7.99);
   for(const label of ['Previous checkpoint','Next checkpoint','Open checkpoint']){
    const rect=await page.getByRole('button',{name:label}).boundingBox();
    expect(rect).not.toBeNull();
