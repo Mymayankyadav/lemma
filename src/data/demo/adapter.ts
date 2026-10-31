@@ -1523,7 +1523,9 @@ export class DemoAdapter implements LemmaApi {
     }
     // The deck tree needs project identity and glyph only; re-running
     // listProjects here re-scans every card, source and checkpoint on Today.
-    return this.store.projects.filter(p=>!p.system&&p.status!=="archived").map(p=>({
+    return this.store.projects.filter(p=>!p.system&&p.status!=="archived")
+      .sort((a,b)=>Date.parse(b.lastActivityAt??"1970-01-01")-Date.parse(a.lastActivityAt??"1970-01-01"))
+      .map(p=>({
       key:`project:${p.slug}` as const,
       label:p.title,
       glyph:this.displaySubject(p.subjectId).glyph,
