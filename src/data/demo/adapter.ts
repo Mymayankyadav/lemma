@@ -1859,7 +1859,14 @@ export class DemoAdapter implements LemmaApi {
       }
     }
     const cardIdsByConcept = new Map<string, Set<string>>();
-    for (const note of this.store.notes) {
+    // The generated S/X notes all have conceptId:null. Their 30k objects are
+    // irrelevant to Atlas, and a direct cold Atlas must not force allocation.
+    // If a user adds a concept-linked note, its array grows beyond the seeded
+    // count and the normal exact scan automatically resumes.
+    const syntheticUnlinked=this.virtualStressDue!==null&&(
+      !!Object.getOwnPropertyDescriptor(this.store,'notes')?.get||
+      this.store.notes.length===this.store.stressNoteCount);
+    if(!syntheticUnlinked)for (const note of this.store.notes) {
       if (!note.conceptId) continue;
       const ids = cardIdsByConcept.get(note.conceptId) ?? new Set<string>();
       for (const card of note.cards) ids.add(card.id);
