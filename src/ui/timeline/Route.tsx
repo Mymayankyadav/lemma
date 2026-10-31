@@ -70,6 +70,8 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
   return {allDone,schedule};
  };
  const marks=layout.marks;
+ const mergedFuture=[...marks].reverse().find(mark=>mark.kind==='stage'&&
+  mark.stages>1&&mark.stageIndex>layout.activeStage);
  const geometry=<svg data-route-track="" viewBox={`0 0 ${width} ${height}`}
   preserveAspectRatio="none" width="100%" height={height} aria-hidden="true"
   className="block w-full overflow-hidden">
@@ -133,6 +135,10 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
    return <text key={stage.key} x={first.x} y={height-12} fill={i===layout.activeStage?'var(--ink)':'var(--ink-3)'}
     fontSize="12" fontWeight={i===layout.activeStage?600:400}>{name}</text>;
   })}
+  {mergedFuture&&<text data-route-folded-label="" x={clamp(mergedFuture.x,44,width-44)}
+   y={height-27} textAnchor="middle" fill="var(--ink-3)" fontSize="12">
+   +{mergedFuture.stages} stages
+  </text>}
   {layout.mode==='folded'&&active&&<text x="12" y={height-12}
    fill="var(--ink)" fontSize="12" fontWeight="600">
    {plainMath(active.name)}
