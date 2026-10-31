@@ -19,8 +19,9 @@ import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
 import type {HomeSummary, ProjectSummary} from '../../data/types';
-const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
 import {ReviewOutlook} from './ReviewOutlook';
+
+const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
 
 function TodayHeader({pending}: {pending:number}) {
  const today=new Date();
