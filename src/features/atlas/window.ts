@@ -10,7 +10,12 @@ export interface AtlasWindow {virtual:boolean;first:number;last:number;height?:n
 export function atlasWindow(count:number,scrollTop:number,viewportHeight:number):AtlasWindow{
  const virtual=count>VIRTUALIZE_ABOVE;
  if(!virtual)return {virtual:false,first:0,last:count,height:undefined};
- const top=Math.max(0,Math.floor(Math.max(0,scrollTop)/ROW_HEIGHT)-OVERSCAN);
- const bottom=Math.min(count,Math.ceil((Math.max(0,scrollTop)+Math.max(0,viewportHeight))/ROW_HEIGHT)+OVERSCAN);
+ // A fold can shrink 2,500 rows to 50 while the scroll element still
+ // reports its previous position for one React render. Clamp immediately so
+ // that first paint never becomes an empty virtual slice.
+ const viewport=Math.max(0,viewportHeight);
+ const position=Math.min(Math.max(0,scrollTop),Math.max(0,count*ROW_HEIGHT-viewport));
+ const top=Math.max(0,Math.floor(position/ROW_HEIGHT)-OVERSCAN);
+ const bottom=Math.min(count,Math.ceil((position+viewport)/ROW_HEIGHT)+OVERSCAN);
  return {virtual:true,first:top,last:Math.max(top,bottom),height:count*ROW_HEIGHT};
 }
