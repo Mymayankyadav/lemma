@@ -77,6 +77,20 @@ function updateManifestHash(dir:string,matrix:ReturnType<typeof qa3Cases>[number
  row.sha256=hash(readFileSync(join(dir,qa3ScreenshotName(matrix,route))))
  writeFileSync(path,JSON.stringify(evidence))
 }
+describe('FIX #586 viewport anchors for visually hidden route headings',()=>{
+ it('uses a real route control or data landmark when the semantic h1 is screen-reader-only',()=>{
+  const anchors:Record<string,string>={
+   '/projects/new':'#project-title',
+   '/p/real-analysis/cp/CP4':'section[aria-label="Checkpoint steps"]',
+   '/s/real-analysis/7':'section[aria-label="Reasoning"]',
+   '/review/run':'[data-review-card-scroll]',
+  };
+  for(const [route,anchor] of Object.entries(anchors)){
+   expect(QA3_ROUTE_READINESS[route as keyof typeof QA3_ROUTE_READINESS].viewportAnchor).toBe(anchor);
+  }
+ });
+});
+
 describe('FIX #586 sign-in readiness under the approved v4 demo flow',()=>{
  it('waits for the demo-mode explanation, not a Google button absent from demo',()=>{
   // LOOK-9a removes the misleading disabled sign-in action in demo mode.
