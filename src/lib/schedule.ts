@@ -102,7 +102,10 @@ export function paceFromDemonstrations(events:readonly {projectId:string;checkpo
   &&Date.parse(event.at)>=since&&Date.parse(event.at)<=now).map(event=>event.checkpointCode))
  return Math.max(1,completed.size)/4
 }
+/** v4-look.md §2a: red is reserved for the current location/primary action.
+ * Late is ochre, on-time ink; track dash/double-rule geometry is owned by LOOK-3.
+ */
 export const scheduleColor:Record<ScheduleState,string>={
- early:'var(--good)',on_time:'var(--accent)',late:'var(--bad, var(--again))',
- future:'var(--ink-3)',unscheduled:'var(--line)'
+ early:'var(--early)',on_time:'var(--ink-2)',late:'var(--late)',
+ future:'var(--ink-4)',unscheduled:'var(--hair)'
 }

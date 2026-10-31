@@ -4,8 +4,8 @@ import type {ChartSize} from './types';
 export interface StackedBarDatum{label:string;again:number;hard:number;good:number;easy:number}
 export interface StackedBarsProps extends ChartSize{data:StackedBarDatum[]}
 // Use the semantic review colours in both light and dark worlds.
-// --good is the success green (Easy); a Good review uses --grade-good.
-const parts=[['again','var(--bad)'],['hard','var(--warn)'],['good','var(--grade-good)'],['easy','var(--good)']] as const;
+// v4 roles: Good uses green --grade-good; Easy uses distinct blue --easy.
+const parts=[['again','var(--bad)'],['hard','var(--warn)'],['good','var(--grade-good)'],['easy','var(--easy)']] as const;
 export function StackedBars({data,width=316,height=120,title='Reviews by day',className=''}:StackedBarsProps){
  const reduce=!!useReducedMotion(),w=Math.max(120,width),h=Math.max(70,height),top=8,bottom=h-23,left=8,right=w-7;
  const max=Math.max(1,...data.map(d=>d.again+d.hard+d.good+d.easy));
