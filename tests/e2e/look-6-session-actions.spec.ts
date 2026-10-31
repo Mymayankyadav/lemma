@@ -1,14 +1,16 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
+for(const profile of ['1','stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const){
- test('LOOK-6 Session keeps one primary action and quiet text actions '+theme+' '+width,async({page})=>{
+ test('LOOK-6 Session keeps one primary action and quiet text actions '+profile+' '+theme+' '+width,async({page})=>{
+  test.setTimeout(180_000);
   await page.setViewportSize({width,height:844});
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
-  await page.goto('./?demo=1&theme='+theme+'#/s/real-analysis/7');
-  await expect(page.getByRole('heading',{name:'Session record',level:1})).toBeVisible();
+  await page.goto('./?demo='+profile+'&theme='+theme+'#/s/real-analysis/7',{waitUntil:'domcontentloaded',timeout:90_000});
+  await expect(page.getByRole('heading',{name:'Session record',level:1})).toBeVisible({timeout:90_000});
   const actions=page.getByRole('group',{name:'Session actions'});
   await expect(actions).toBeVisible();
   await expect(actions.getByRole('button',{name:'Start studying'})).toHaveCount(1);
@@ -38,10 +40,10 @@ for(const width of [360,390] as const){
    actions.getByRole('button',{name:'Pages'}),
   ])expect(await control.evaluate(el=>getComputedStyle(el).color)).toBe(ink);
   mkdirSync('test-results/screens/look-6a',{recursive:true});
-  await page.screenshot({path:`test-results/screens/look-6a/session-actions-${theme}-${width}.png`});
+  await page.screenshot({path:`test-results/screens/look-6a/session-actions-${profile}-${theme}-${width}.png`});
   await actions.getByRole('button',{name:'Pages'}).click();
   await expect(page.getByRole('dialog',{name:'Session pages'})).toBeVisible();
-  await page.screenshot({path:`test-results/screens/look-6a/session-pages-${theme}-${width}.png`});
+  await page.screenshot({path:`test-results/screens/look-6a/session-pages-${profile}-${theme}-${width}.png`});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
  });
 }
