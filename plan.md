@@ -325,7 +325,8 @@ Notes per task:
 #### Tutor transcriptions (owner, 31 Oct 08:38): DB-5, MCP-6, UI-8
 - Spec: `docs/spec/transcribe.md`. The connector cannot push PDFs or page text today: kind `book` only makes an empty record. The tutor will transcribe handwritten notes or scanned pages attached in chat into Markdown with LaTeX using a new `save_pages` tool. It writes either into an uploaded scan's pages or into a new text-only source, in batches of up to 10 pages, undoable, with who transcribed it and a "check" flag for doubtful pages.
 - The app shows transcription progress, a page viewer with the original beside it, edit and "mark checked", and export as .tex or .md.
-- Order: DB-5 → MCP-6 → UI-8, which can run alongside the stress tasks. This also covers the "scanned PDFs have no text" gap from 30 Oct, with no paid OCR service.
+- Order: DB-5 → MCP-6 → UI-8, which can run alongside the stress tasks.
+- **UI-8b (31 Oct 11:05, owner):** upload `.tex` and `.md` files directly as sources (`transcribe.md` §2b). Built in the PR "UI-8b". This also covers the "scanned PDFs have no text" gap from 30 Oct, with no paid OCR service.
 
 #### Stress (owner, 31 Oct 00:24): ST-0 … ST-7, MCP-5, QA-3, the next plan
 - Spec: `docs/spec/stress.md`. Every UI element is fed 10–100× realistic data (36–100 checkpoints, 2,500 ideas, 30,000 cards, 4,000 due, 1,500-character card faces, 10×10 matrices, 60 projects) to find where it stops doing its job. Each element keeps its job by changing form above a measured switch point: the stage Metro, segmented progress bars, folded lists, scrolling card faces with a sticky grade bar, a full-screen maths view, a daily review share, and server-side aggregates.
@@ -375,6 +376,7 @@ Status on 29 Oct 2026, 21:30 IST:
 | `MCP_URL` secret | After MCP-1 is live: copy the address from Lemma › Settings into a repository secret. |
 | Connect Claude and ChatGPT | After MCP-1: `connector.md` §10. |
 | Install on the phone | Open the site, Share › Add to Home Screen. |
+| Draft PR ready-for-review handoff (only in REST-only runtimes) | When a PR says `Needs ready-for-review transition`, open that draft in GitHub and select **Ready for review**, or have a GraphQL-capable agent call `markPullRequestReadyForReview`. GitHub REST has no ready-for-review endpoint. The Steward may squash-merge only after the transition and exact-head green CI. |
 
 ## 11. Later (not in v1)
 

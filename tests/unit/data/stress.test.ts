@@ -22,7 +22,35 @@ describe('ST-0 deterministic stress data', () => {
    expect(data.settings.reviewsPerDay).toBeLessThanOrEqual(2000);
    expect(data.settings.newPerDay).toBeLessThanOrEqual(200);
    expect(data.proposals).toHaveLength(proposals);
+   const planProposal = data.proposals.find(p => p.id === 'proposal-6');
+   expect(planProposal?.kind).toBe('plan_change');
+   expect(planProposal?.planChange?.ops.length).toBeGreaterThan(0);
+   expect(planProposal?.projectSlug).toBe(data.projects[projects - 1].slug);
    expect(data.sessions).toHaveLength(sessions);
+   expect(data.sessions.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(sessions);
+   expect(data.sources.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(profile==='stress'?30:100);
+   // Every project carries the same F2 source-list pressure; no single-project
+   // shortcut may make the 60-project library look artificially cheap.
+   const sourcesByProject=new Map<string,number>();
+   for(const source of data.sources)
+    sourcesByProject.set(source.projectId,(sourcesByProject.get(source.projectId)??0)+1);
+   expect(data.projects.every(p=>sourcesByProject.get(p.id)===(profile==='stress'?30:100))).toBe(true);
+   expect(new Set(data.sources.map(s=>s.id)).size).toBe(data.sources.length);
+   const sourceShelf=data.sources.filter(s=>s.projectId===data.projects[0].id);
+   expect(new Set(sourceShelf.map(s=>s.id)).size).toBe(sourceShelf.length);
+   expect(new Set(sourceShelf.map(s=>s.short)).size).toBe(sourceShelf.length);
+   const stressPdfs=sourceShelf.filter(s=>s.id.startsWith('stress-source-'));
+   expect(stressPdfs.length).toBeGreaterThan(0);
+   expect(stressPdfs.every(s=>s.pageCount===(profile==='stress'?1200:3000))).toBe(true);
+   // Large PDFs are represented by metadata until a page is requested. Never
+   // allocate 100 * 3,000 fake page bodies in the in-memory stress fixture.
+   expect(stressPdfs.every(s=>s.pages.length===0)).toBe(true);
+   expect(stressPdfs.every(s=>s.status==='ready')).toBe(true);
+   const longSession=data.sessions.find(s=>s.projectId===data.projects[0].id&&s.number===7);
+   expect(longSession?.events).toHaveLength(profile==='stress'?150:400);
+   expect(longSession?.events.some(e=>e.kind==='attempt')).toBe(true);
+   expect(longSession?.events.some(e=>e.kind==='evidence')).toBe(true);
+   expect(longSession?.events.some(e=>e.kind==='recheck')).toBe(true);
    const projectIds = new Set(data.projects.map(p => p.id));
    const conceptIds = new Set(data.concepts.map(c => c.id));
    expect(projectIds.size).toBe(projects);

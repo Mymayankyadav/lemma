@@ -48,6 +48,13 @@ function checkpointNumber(node:AtlasNode):number{
  return numbers.length?Math.min(...numbers):Number.MAX_SAFE_INTEGER;
 }
 
+/** Proposed flat ideas are synthetic topics named after the teaching checkpoint. */
+function taughtCheckpoint(node:AtlasNode):number|null{
+ if(!node.synthetic)return null;
+ const match=/^Taught in CP(\d+)$/i.exec(node.name);
+ return match?Number(match[1]):null;
+}
+
 export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const subjects=[...graph.subjects].filter(s=>!isTest(s.name)&&!isTest(s.id))
   .sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
@@ -107,6 +114,9 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
   n.children.sort((a,b)=>{
    const x=nodes.get(a)!,y=nodes.get(b)!;
+   const taughtX=taughtCheckpoint(x),taughtY=taughtCheckpoint(y);
+   // A proposed plan must read CP1, CP2, …, CP10, never CP1, CP10, CP2.
+   if(taughtX!==null&&taughtY!==null&&taughtX!==taughtY)return taughtX-taughtY;
    return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
   });
   return n;

@@ -1,4 +1,5 @@
 import type { LemmaApi } from '../api'
+import { textKind } from '../../pdf/text-source'
 import {reviewForecast} from '../../lib/review-forecast'
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
@@ -247,7 +248,9 @@ export class LiveAdapter implements LemmaApi {
    .eq('sha256',sha256).limit(1)) as Row[]
   if(same.length)throw new LemmaError('conflict','Already added')
   const document=await ingest(file,{onProgress})
-  const basename=file.name.replace(/\.pdf$/i,'').trim()||'Untitled PDF'
+  // .tex and .md sources are stored as their text only (the storage bucket holds PDFs).
+  const textOnly=textKind(file)!==null
+  const basename=file.name.replace(/\.(pdf|tex|latex|ltx|md|markdown)$/i,'').trim()||'Untitled source'
   const existing=await rows(db,'sources',uid)
   const used=new Set(existing.filter(s=>s.project_id===projectId).map(s=>s.short))
   const base=slugify(basename).replace(/-/g,'').slice(0,17)||'source'
@@ -261,10 +264,12 @@ export class LiveAdapter implements LemmaApi {
   const progress=(phase:'uploading'|'saving'|'done'|'failed',page:number,message:string)=>
     onProgress({phase,page,pageCount:document.pageCount,message})
   try {
-    progress('uploading',0,'Uploading original PDF')
-    const {error:uploadError}=await db.storage.from('sources').upload(storagePath,file,{upsert:false,contentType:'application/pdf'})
-    if(uploadError) fail(uploadError)
-    checked(await db.from('sources').update({storage_path:storagePath,status:'extracting'})
+    if(!textOnly){
+      progress('uploading',0,'Uploading original PDF')
+      const {error:uploadError}=await db.storage.from('sources').upload(storagePath,file,{upsert:false,contentType:'application/pdf'})
+      if(uploadError) fail(uploadError)
+    }
+    checked(await db.from('sources').update({storage_path:textOnly?null:storagePath,status:'extracting'})
       .eq('id',source.id).eq('user_id',uid).select('id').single())
     for(let i=0;i<document.pages.length;i+=50){
       const slice=document.pages.slice(i,i+50).map(p=>({...p,body:p.body.slice(0,20000),source_id:source.id,user_id:uid}))
@@ -279,7 +284,7 @@ export class LiveAdapter implements LemmaApi {
   }catch(error){
     // An incomplete upload is not a usable source. Clean up only this attempt,
     // allowing the queue's Retry action to reuse the same content fingerprint.
-    await db.storage.from('sources').remove([storagePath]).catch(()=>undefined)
+    if(!textOnly)await db.storage.from('sources').remove([storagePath]).catch(()=>undefined)
     await db.from('sources').delete().eq('id',source.id).eq('user_id',uid)
     progress('failed',0,'Source upload failed')
     throw error
@@ -290,6 +295,85 @@ export class LiveAdapter implements LemmaApi {
   const source=checked(await db.from('sources').select('*').eq('user_id',uid).eq('id',id).single()) as Row
   // Keep the PDF binary for DB-2 undo; only the audited rows are deleted.
   checked(await db.from('sources').delete().eq('id',id).eq('user_id',uid).select('id').single())
+ }
+ async getSourceTranscriptionStats(projectId:string):Promise<import('../types').SourceTranscriptionStat[]> {
+  const db=liveClient(),uid=await owner(db)
+  const sources=checked(await db.from('sources').select('id').eq('user_id',uid).eq('project_id',projectId)) as Row[]
+  if(!sources.length)return []
+  const counts=new Map<string,{sourceId:string;transcribed:number;needsCheck:number}>()
+  const ids=sources.map(row=>row.id as string)
+  // Fetch provenance metadata only: never download 400 page bodies to count them.
+  for(let offset=0;;offset+=1000){
+   const pageRows=checked(await db.from('source_pages').select('source_id,confidence')
+    .eq('user_id',uid).in('source_id',ids).not('transcribed_at','is',null)
+    .order('source_id').order('page').range(offset,offset+999)) as Row[]
+   for(const row of pageRows){
+    const stat=counts.get(row.source_id)??{sourceId:row.source_id,transcribed:0,needsCheck:0}
+    stat.transcribed++
+    if(row.confidence==='check')stat.needsCheck++
+    counts.set(row.source_id,stat)
+   }
+   if(pageRows.length<1000)break
+  }
+  return [...counts.values()]
+ }
+ async getSourcePage(sourceId:string,page:number):Promise<import('../types').TranscribedSourcePage|null>{
+  if(!Number.isSafeInteger(page)||page<1)throw new LemmaError('invalid','Invalid PDF page')
+  const db=liveClient(),uid=await owner(db)
+  const src=checked(await db.from('sources').select('id').eq('id',sourceId).eq('user_id',uid).single()) as Row
+  const {data,error}=await db.from('source_pages')
+   .select('source_id,page,label,body,transcribed_by,confidence')
+   .eq('user_id',uid).eq('source_id',src.id).eq('page',page).maybeSingle()
+  if(error)fail(error)
+  return data?{sourceId:data.source_id,page:data.page,label:data.label??null,body:data.body??'',
+   transcribedBy:data.transcribed_by??null,confidence:data.confidence??null}:null
+ }
+ async getTranscribedPagesForExport(sourceId:string):Promise<import('../types').TranscribedSourcePage[]>{
+  const db=liveClient(),uid=await owner(db)
+  checked(await db.from('sources').select('id').eq('id',sourceId).eq('user_id',uid).single())
+  const result:import('../types').TranscribedSourcePage[]=[]
+  for(let offset=0;;offset+=100){
+   const rows=checked(await db.from('source_pages')
+    .select('source_id,page,label,body,transcribed_by,confidence')
+    .eq('user_id',uid).eq('source_id',sourceId).not('transcribed_at','is',null)
+    .order('page').range(offset,offset+99)) as Row[]
+   for(const row of rows)result.push({
+    sourceId:row.source_id,page:row.page,label:row.label??null,
+    body:row.body??'',transcribedBy:row.transcribed_by??null,confidence:row.confidence??null,
+   })
+   if(rows.length<100)break
+  }
+  return result
+ }
+ async updateSourcePage(sourceId:string,page:number,patch:{body?:string;confidence?:'high'|'check'}):Promise<import('../types').TranscribedSourcePage>{
+  if(!Number.isSafeInteger(page)||page<1)throw new LemmaError('invalid','Invalid PDF page')
+  const db=liveClient(),uid=await owner(db)
+  const source=checked(await db.from('sources').select('id').eq('user_id',uid).eq('id',sourceId).single()) as Row
+  const changes:Row={}
+  if(patch.body!==undefined){
+   if(patch.body.length>8000||!patch.body.trim()||/<\/?[a-z][a-z0-9]*\b[^>]*>/i.test(patch.body)||/<!--/.test(patch.body))
+    throw new LemmaError('invalid','Transcriptions must be 1–8,000 characters of Markdown/LaTeX, without raw HTML')
+   changes.body=patch.body
+  }
+  if(patch.confidence!==undefined){
+   if(patch.confidence!=='high'&&patch.confidence!=='check')throw new LemmaError('invalid','Unknown confidence')
+   changes.confidence=patch.confidence
+  }
+  if(!Object.keys(changes).length)throw new LemmaError('invalid','No page change requested')
+  const data=checked(await db.from('source_pages').update(changes)
+   .eq('user_id',uid).eq('source_id',source.id).eq('page',page)
+   .not('transcribed_at','is',null)
+   .select('source_id,page,label,body,transcribed_by,confidence').single()) as Row
+  return {sourceId:data.source_id,page:data.page,label:data.label??null,body:data.body??'',
+   transcribedBy:data.transcribed_by??null,confidence:data.confidence??null}
+ }
+ async getSourcePdfUrl(sourceId:string):Promise<string|null>{
+  const db=liveClient(),uid=await owner(db)
+  const src=checked(await db.from('sources').select('storage_path').eq('user_id',uid).eq('id',sourceId).single()) as Row
+  if(!src.storage_path)return null
+  const {data,error}=await db.storage.from('sources').createSignedUrl(src.storage_path,300)
+  if(error)fail(error)
+  return data.signedUrl
  }
  async listSessions(...args: Parameters<LemmaApi['listSessions']>): ReturnType<LemmaApi['listSessions']> {
   const [slug]=args, db=liveClient(),uid=await owner(db)

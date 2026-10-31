@@ -95,7 +95,7 @@ export interface DemoSource extends Source {
   addedAt?: string;
   planCheckedAt?: string | null;
   position?: number;
-  pages: { page: number; label: string; body: string }[];
+  pages: { page: number; label: string; body: string; transcribedBy?:'claude'|'chatgpt'|null; transcribedAt?:string|null; confidence?:'high'|'check'|null }[];
   error?: string | null;
 }
 export interface DemoProposal extends Proposal {
@@ -114,6 +114,8 @@ export interface DemoStore {
   sessions: DemoSession[];
   notes: DemoNote[];
   reviews: DemoReview[];
+  /** ST-0: simulated server-side historical review count; raw rows stay bounded. */
+  stressReviewCount?: number;
   proposals: DemoProposal[];
   concepts: DemoConcept[];
   links: AtlasGraph["links"];

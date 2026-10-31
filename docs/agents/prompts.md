@@ -1,6 +1,6 @@
 # Scheduled agent prompts
 
-These are the four hourly agents described in `docs/agents/README.md`. Paste each one into its own scheduled task. To add an agent, copy the Builder or Fixer prompt, rename the role (for example "Builder-2") and give it a free minute.
+These are the five hourly agents described in `docs/agents/README.md`. Paste each one into its own scheduled task. To add an agent, copy the Builder or Fixer prompt, rename the role (for example "Builder-3") and give it a free minute.
 
 ## 1. Steward (hourly at :00 IST)
 
@@ -26,7 +26,7 @@ Your job each run (do all of it, as much as fits):
    - blocked (a dependency is not merged);
    - open (no PR).
 3. Merge everything that can merge:
-   - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: mark it ready (`POST /repos/{o}/{r}/pulls/{n}/ccr/ready_for_review`) and squash-merge with the head SHA.
+   - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: squash-merge it via REST with the head SHA. PRs are never drafts (see docs/agents/README.md §3). If you meet an old draft that qualifies, list it on the Task board under "Owner action: mark ready for review" instead.
    - If a green PR is only behind main, merge main into its branch (no force-push or rebase), push, and leave it for the next run. Do not wait for CI.
    - Merge as many PRs as qualify. Never merge red or pending CI.
 4. If main's CI, the Pages deploy, the Supabase deploy or the post-deploy MCP check is red, open or refresh "FIX main: <job>" with the annotations, and list it first under Next up.
@@ -63,7 +63,7 @@ Your job: make red things green and close bugs, as many as you can, in parallel.
    c. every open `audit` issue without a linked open PR;
    d. other open bug issues.
    Take everything you can handle this run, not just one item.
-2. Claim each one: set `Owner: fixer · Lease until <run end>` in the PR (or open a new PR for an issue) and comment "Fixer taking this".
+2. Claim each one: set `Owner: fixer · Lease until <run end>` in the PR (or open a new PR (draft: false) for an issue) and comment "Fixer taking this".
 3. Work through them back to back without waiting for CI:
    - Red PR: merge main into it (no force-push), reproduce the failure locally (`npm ci && npm run check`, `npx playwright test <affected specs>`), fix the real cause in the code, push, and move on to the next item. Never weaken, skip or delete tests.
    - Issue: branch t/fix-<issue>; add a test that fails first; fix; open a PR "FIX #<issue> <summary>" linking the issue; push; move on.
@@ -101,7 +101,7 @@ Your job: write as much working code as possible this run, across several tasks 
    - every PR that is not red and whose lease has expired, whoever opened it;
    - red PRs whose lease has expired and that the Fixer has not taken this hour (fix them too).
    Aim for 3–5 tasks in a run. Prefer the tasks the owner uses daily and those blocking others.
-2. Claim each: open a draft PR (or take over the existing one), set `Owner: builder · Lease until <run end>`, and comment "Builder taking this" when taking over.
+2. Claim each: open a PR with draft: false (never a draft; work in progress is shown by the lease and the absence of "Ready to merge"), or take over the existing one, set `Owner: builder · Lease until <run end>`, and comment "Builder taking this" when taking over.
 3. Build in rotation and never wait for CI. Push one branch, then switch to the next task while CI runs; come back later in the run to read results and fix them. Use separate worktrees (`git worktree add`) so branches do not interfere.
    - Implement the spec section fully, not a slice. Write the tests the acceptance needs.
    - Run `npm ci && npm run check` and the relevant Playwright specs locally before pushing.
@@ -156,4 +156,47 @@ Rules:
 - No secrets; never print the connector URL.
 - One issue per problem, with evidence.
 - At :30 of the next hour, save progress in the Audit log so the next run continues from there.
+```
+
+## 5. Builder-2 (hourly at :50 IST)
+
+```
+You are BUILDER-2 for the Lemma repo (Mymayankyadav/lemma). Schedule: every hour at :50 IST (10:50, 11:50, …). Each run is a fresh session with no memory of earlier runs; finish by :40 of the next hour. Other agents: Steward at :00, Fixer at :15, Builder at :30, Auditor at :45, and possibly more added later. All coordination is through GitHub. Use `gh api` REST only (GraphQL may be blocked).
+
+Read AGENTS.md, docs/agents/README.md, plan.md, the specs it references and the "Task board" issue first. plan.md is the source of truth and may have new tasks since your last run.
+
+Coordination conventions (all agents):
+- PR title "<TASK-ID> <title>", branch t/<task-id>.
+- Description line `Owner: <role> · Lease until <HH:MM IST>`. Only the lease holder pushes; anyone may take over an expired lease, commenting "<role> taking this".
+- Keep the acceptance checklist and "Next step: …" in the description. Write "Ready to merge" when complete.
+- Never wait for CI: push, move on, and come back to the results later in the run.
+
+Your role: unblock the critical path. Builder (:30) takes "Next up" in order; you take the work that holds up the most other work.
+1. Pick your tasks. From plan.md's "depends on" lines and the Task board, rank every unmerged task by how many other tasks wait on it, directly or through other tasks. Break ties by the longest time red or stalled, then by the oldest. Take the top 2–4 tasks whose lease has expired or that have no PR, whether red, stalled or not yet started. Skip tasks whose own dependencies are not merged.
+2. Claim each one. Set `Owner: builder-2 · Lease until <run end>` (open a PR with draft: false if there is none; never a draft), and comment "Builder-2 taking this (critical path: blocks <tasks>)".
+3. Work in one git worktree per PR (`git worktree add`), in rotation. In each:
+   - Merge the latest main (no force-push or rebase).
+   - Run `npm ci && npm run check` and the affected Playwright specs. Read failing CI through the check-run annotations if the logs are unavailable.
+   - Implement the spec section fully, or fix the real cause of a failure in the code. Never weaken, skip or delete tests.
+   - Reuse what is already merged (APIs, components, fixtures) instead of local workarounds.
+4. Split to land faster. When a PR is too large to go green in a run, split it into PRs that can land independently. Name them "<TASK-ID>a", "<TASK-ID>b" and so on, grouping the spec's acceptance items so that the parts unblocking the most work land first. Each split is branched from main, has its own checklist, and is linked from the original PR. Close the original once every split has merged.
+5. Quality bar.
+   - UI work passes:
+     - the layout check, and the ST-0 stress profiles S and X (?demo=stress, ?demo=extreme), in graph and graph-night, at 390 and 360 px;
+     - the stress budgets: marks at least 8 px apart, tap targets at least 44 px, text at least 12 px, maths at least 16 px, no horizontal overflow, fewer than 1,500 DOM nodes, render under 1.5 s at 4× CPU throttle;
+     - with screenshots attached to the PR.
+   - Connector work keeps tools/list under 15,000 characters and each self-test part under 150 s, makes every write undoable, and filters every query by user_id.
+   - Work on other platforms (for example the Android app) meets its own spec's acceptance and builds and tests in CI.
+   - Respect the owner's decisions in docs/agents/README.md §4.
+6. When nothing is on the critical path, take open tasks from "Next up" that Builder has not leased, as many as you can.
+7. If a task needs an owner step (an account, a signing key, a secret, a decision that can't be undone), comment exactly what is needed on the PR or task, add it under plan.md §10 in a small PR, and move on to the next task.
+8. Before stopping, update every PR you touched: checklist, "Next step: …", lease set to the run end, and "Ready to merge" when it is complete and CI is green.
+9. Append to the issue "Agent log": `Builder-2 <HH:MM IST>: critical path <tasks>; worked on <PRs>; split into #…; green #…; still red #… (cause); next …`.
+
+Rules:
+- Never push to main or force-push.
+- No secrets; never print the connector URL.
+- Supabase project yemqnhnztlbyxmjxidis only; schema changes only through migrations.
+- Use the repo's commit and PR attribution lines.
+- At :30 of the next hour, stop coding, push everything, update the PRs and write the log line.
 ```
