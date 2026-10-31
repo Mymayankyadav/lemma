@@ -98,7 +98,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
             const from = at.get(edge.from)!, to = at.get(edge.to)!;
             const mx = (from.x+to.x)/2, my = (from.y+to.y)/2;
             const offset = from.x===to.x?18:0;
-            return <g key={edge.from+">"+edge.to} aria-label={`${edge.count} prerequisite links from ${from.name} to ${to.name}`}>
+            return <g key={edge.from+">"+edge.to} aria-label={`${edge.count} prerequisite links from ${plainMath(from.name)} to ${plainMath(to.name)}`}>
               <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
                 stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4" />
               <rect x={mx-13+offset} y={my-10} width="26" height="20" rx="7"
