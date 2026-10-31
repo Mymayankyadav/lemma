@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import * as katex from 'katex';
 
 test.beforeEach(async({page})=>{
  await page.setViewportSize({width:390,height:844});
@@ -90,5 +91,35 @@ for(const theme of ['graph','graph-night'] as const){
   await expect(page.getByRole('status')).toContainText(/links hidden/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
   await page.screenshot({path:`test-results/screens/stress/st-3-extreme-${theme}-360.png`});
+ });
+}
+
+
+// Audit #485: KaTeX in a details breadcrumb must be readable at its actual
+// computed CSS size. Existing SSR tests cover real LaTeX-to-KaTeX rendering;
+// the injected .katex span here isolates the responsive breadcrumb typography.
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test('FIX #485 Atlas mathematical breadcrumb minimum sizes '+theme+' '+width+'px',async({page})=>{
+  await page.setViewportSize({width,height:width===360?740:844});
+  await page.goto('./?demo=1&theme='+theme+'#/atlas?focus=compactness');
+  const dialog=page.getByRole('dialog',{name:'Compactness'});
+  await expect(dialog).toBeVisible();
+  const path=dialog.locator('[aria-label="Idea path"]');
+  await expect(path).toBeVisible();
+  // Inject real KaTeX-rendered fraction/sum markup into the existing details
+  // breadcrumb, retaining the component's CSS and responsive layout.
+  const rendered=katex.renderToString(String.raw`\frac{1}{2}+\sum_{n=1}^{4}n`,{throwOnError:true});
+  await path.evaluate((el,html)=>{
+   const tex=el.querySelector('.lemma-tex-inline');
+   if(!tex)throw Error('Atlas details path has no Tex renderer');
+   tex.innerHTML=html;
+  },rendered);
+  const plainPx=await path.evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  const mathPx=await path.locator('.katex').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  expect(plainPx,'breadcrumb plain-text font').toBeGreaterThanOrEqual(12);
+  expect(mathPx,'breadcrumb mathematical font').toBeGreaterThanOrEqual(16);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({path:'test-results/screens/fix-485-breadcrumb-'+theme+'-'+width+'.png'});
  });
 }

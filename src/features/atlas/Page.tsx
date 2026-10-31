@@ -5,6 +5,7 @@ import {getMode} from '../../data/mode';
 import {useAtlas} from '../../data/hooks';
 import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
+import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {Sheet} from '../../ui/Sheet';
@@ -48,9 +49,9 @@ function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:Atlas
 
 function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onClose:()=>void;onTrace:(id:string)=>void}){
  const toast=useToast(),near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
- return <Sheet open onClose={onClose} title={plainMath(node.name)}>
+ return <Sheet open onClose={onClose} title={<AtlasDetailsTitle name={node.name}/>}>
   <div data-atlas-details="true">
-   {path.length>0&&<p className="-mt-3 mb-2 truncate text-caption text-ink-3">{path.map(p=>plainMath(p.name)).join(' › ')}</p>}
+   {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)}/>}
    <p className="text-label text-ink-2">{levelName[node.level]} · {statusName[node.status]}{node.total>1?` · ${node.done} of ${node.total} ideas demonstrated`:''}</p>
    {node.blurb&&<Tex source={node.blurb} className="mt-3 block text-body text-ink-soft"/>}
    <NeighbourList label="Builds on" items={near.needs} tone="up" onTrace={onTrace} tree={tree}/>
