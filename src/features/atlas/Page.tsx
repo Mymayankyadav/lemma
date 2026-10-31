@@ -110,13 +110,21 @@ export default function Page(){
  const virtual=rows.length>40;
  const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
  const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
- const visible=virtual?rows.slice(first,last):rows;
  // A virtual Field must remain a genuine 56px visual heading even after its
  // original row leaves the mounted window. Derive its identity from logical
  // row offsets, never from the overscan row's nearest (often Topic) ancestor.
  const fieldRows=useMemo(()=>rows.flatMap((row,index)=>tree?.nodes.get(row.id)?.level==='cluster'?[index]:[]),[rows,tree]);
- const accessibleFields=virtual&&tree&&tree.nodes.size<=150
-  ?fieldRows.filter(index=>index<first||index>=last):[];
+ // One sorted, keyed absolute row list keeps moderate Fields permanently
+ // mounted, in logical screen-reader order, even as the viewport moves.
+ // Unlike switching a Field between separate offscreen/window containers,
+ // reconciliation never unmounts its focused 44px keyboard control.
+ const mountedIndices=useMemo(()=>{
+  if(!virtual)return [];
+  const indices=new Set<number>();
+  for(let index=first;index<last;index++)indices.add(index);
+  if(tree&&tree.nodes.size<=150)for(const index of fieldRows)indices.add(index);
+  return [...indices].sort((a,b)=>a-b);
+ },[virtual,first,last,fieldRows,tree]);
  const activeFieldIndex=fieldRows.filter(index=>geometry.offsets[index]<=scrollTop).at(-1)??-1;
  const activeField=virtual&&activeFieldIndex>=0?tree?.nodes.get(rows[activeFieldIndex].id):null;
  const nextFieldIndex=fieldRows.find(index=>index>activeFieldIndex);
@@ -177,18 +185,14 @@ export default function Page(){
   if(selectedId===node.id&&!node.children.length){setDetails(true);return}
   select(selectedId===node.id?null:node.id);
  };
- // Keep the DOM order of the virtual window and its always-accessible
- // Field headings identical to logical outline order, even after deep scroll.
- const renderAccessibleField=(index:number)=>{
+ const renderRow=(row:typeof rows[number],sticky:boolean)=>{
   if(!tree)return null;
-  const node=tree.nodes.get(rows[index].id)!;
-  return <div key={'accessible-field:'+node.id} className="absolute inset-x-0"
-   style={{top:geometry.offsets[index]}}>
-   <Row node={node} sticky={false} open={!!filter||open.has(node.id)}
-    tone={rowTone(tree,node.id,focus,selectedId,!filter&&!open.has(node.id))}
-    match={rows[index].match} focused={!!focus}
-    onToggle={()=>{if(!filter)toggle(node.id)}} onSelect={()=>onRow(node)}/>
-  </div>;
+  const node=tree.nodes.get(row.id)!;
+  return <Row key={row.id} node={node} sticky={sticky}
+   open={!!filter||open.has(row.id)}
+   tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))}
+   match={row.match} focused={!!focus}
+   onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>;
  };
  const focusSlug=params.get('focus');
  const seen=useRef<string|null>(null);
@@ -258,13 +262,10 @@ export default function Page(){
      </div>
     </div>}
     <div className="relative flow-root" role="tree" aria-label="Ideas and their links" data-atlas-field-count={tree.roots.length} data-atlas-row-count={rows.length} style={virtual?{height:geometry.totalHeight}:undefined}>
-    {accessibleFields.filter(index=>index<first).map(renderAccessibleField)}
-    <div className="flow-root" style={virtual?{position:"absolute",top:geometry.offsets[first],left:0,right:0}:undefined}>
-    {visible.map(row=>{const node=tree.nodes.get(row.id)!;
-     return <Row key={row.id} node={node} sticky={!virtual} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match} focused={!!focus}
-      onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
-    </div>
-    {accessibleFields.filter(index=>index>=last).map(renderAccessibleField)}
+    {virtual?mountedIndices.map(index=><div key={rows[index].id}
+     className="absolute inset-x-0 flow-root" style={{top:geometry.offsets[index]}}>
+     {renderRow(rows[index],false)}
+    </div>):rows.map(row=>renderRow(row,true))}
     {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
