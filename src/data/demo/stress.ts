@@ -108,7 +108,6 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     }
   }
 
-
   for (let i = data.concepts.length; i < ideaCount; i++) {
     const subject = data.subjects[i % data.subjects.length];
     data.concepts.push({
@@ -160,7 +159,6 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     };
     data.notes.push(note);
   }
-
   data.sessions = [];
   for (let i = 0; i < sessionCount; i++) {
     const project = data.projects[i % data.projects.length];
