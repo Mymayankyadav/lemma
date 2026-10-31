@@ -175,6 +175,8 @@ export interface CardDetail {
  sessionNumber: number | null; sourceShort: string | null; pageLabel: string | null}
  cards: {ord: number; state: CardState}[]
  history: {reviewedAt: IsoDate; rating: Rating; confidence: Confidence}[]; comments: CardComment[]
+ /** Server-probed continuation for initial 20-row pages; a full page does not imply more. */
+ historyNextCursor?: string | null; commentsNextCursor?: string | null
 }
 /** ST-4 D7: each server-filtered history request returns at most 20 rows.
  * The opaque cursor encodes a stable (timestamp,id) continuation; never an offset.
