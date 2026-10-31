@@ -39,7 +39,10 @@ jobs:
         if: always()
         with:
           name: screens
-          path: test-results/screens/
+          path: |
+            test-results/screens/
+            test-results/stress-cpu/
+            test-results/qa3/
           if-no-files-found: ignore
           retention-days: 14
   mcp-sql:
