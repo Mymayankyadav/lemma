@@ -1,9 +1,10 @@
 import {test,expect} from '@playwright/test';
 
 // ST-7 I2: whether a toast needs More depends on rendered lines, not length.
-for(const theme of ['graph','graph-night'] as const){
- test(`ST-7 toast with an action reveals short-but-overflowing text at 360px (${theme})`,async({page})=>{
-  await page.setViewportSize({width:360,height:740});
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test(`ST-7 toast with an action reveals short-but-overflowing text at ${width}px (${theme})`,async({page})=>{
+  await page.setViewportSize({width,height:width===360?740:844});
   const message='The proposed changes could not be saved because the connection was interrupted. Please try again.';
   // Playwright runs Vite preview (a production build), so source-module imports
   // are unavailable. Replace only the kit's toast fixture in its served JS;
@@ -46,7 +47,7 @@ for(const theme of ['graph','graph-night'] as const){
   expect(after.client).toBeGreaterThan(before.client);
   expect(after.scroll).toBeLessThanOrEqual(after.client+1);
   await expect(text).toHaveCSS('overflow-y','auto');
-  await page.screenshot({path:`test-results/screens/st-7-toast-360-${theme}.png`});
+  await page.screenshot({path:`test-results/screens/st-7-toast-${width}-${theme}.png`});
   // Expanded notifications must stay available beyond their original 4-second
   // lifetime. After collapsing, ordinary automatic dismissal resumes.
   await page.waitForTimeout(4300);
