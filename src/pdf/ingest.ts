@@ -36,10 +36,15 @@ export async function ingest(file: File, options: IngestOptions = {}): Promise<I
   }
  }
  return new Promise<IngestResult>((resolve, reject) => {
-  const worker = new Worker(new URL("./reader.worker.ts", import.meta.url), { type: "module" });
+  let worker: Worker | null = null;
   let settled = false;
+  let fallbackStarted = false;
+  let watchdog: ReturnType<typeof setTimeout> | undefined;
+  const controller = new AbortController();
+
   const cleanup = () => {
-   worker.terminate();
+   clearTimeout(watchdog);
+   worker?.terminate();
    activeReaders.delete(file);
    options.signal?.removeEventListener("abort", onAbort);
   };
@@ -50,19 +55,54 @@ export async function ingest(file: File, options: IngestOptions = {}): Promise<I
    if (error) reject(error);
    else resolve(result!);
   };
-  const onAbort = () => finish(undefined, cancelled());
+  const onAbort = () => {
+   controller.abort();
+   finish(undefined, cancelled());
+  };
+  // A browser may block module-worker loading or PDF.js's nested worker.
+  // Recover from that failure without silently dropping a queued PDF.
+  // Normal successful extraction always happens off the UI thread.
+  const fallback = () => {
+   if (settled || fallbackStarted) return;
+   fallbackStarted = true;
+   clearTimeout(watchdog);
+   worker?.terminate();
+   void parsePdf(file, {
+    onProgress: options.onProgress,
+    signal: controller.signal,
+   }).then(result => finish(result)).catch(error =>
+    finish(undefined, error instanceof Error ? error : new LemmaError("invalid", "Couldn't read this PDF")));
+  };
+  const armWatchdog = () => {
+   clearTimeout(watchdog);
+   // Watch for a worker that fails silently before reporting its first page.
+   watchdog = setTimeout(fallback, 7000);
+  };
   activeReaders.set(file, onAbort);
   options.signal?.addEventListener("abort", onAbort, { once: true });
-  worker.onmessage = (event: MessageEvent<
-   {type: "progress";progress: IngestProgress} | {type: "result";result: IngestResult} | {type: "error";message: string}
-  >) => {
-   const message = event.data;
-   if (message.type === "progress") options.onProgress?.(message.progress);
-   else if (message.type === "result") finish(message.result);
-   else finish(undefined, new LemmaError("invalid", message.message));
-  };
-  worker.onerror = () => finish(undefined, new LemmaError("invalid", "Couldn't read this PDF"));
   if (cancelledFiles.has(file) || options.signal?.aborted) { onAbort(); return; }
-  worker.postMessage({ file });
+
+  try {
+   worker = new Worker(new URL("./reader.worker.ts", import.meta.url), { type: "module" });
+   worker.onmessage = (event: MessageEvent<
+    {type: "progress";progress: IngestProgress} | {type: "result";result: IngestResult} | {type: "error";message: string}
+   >) => {
+    if (settled || fallbackStarted) return;
+    const message = event.data;
+    if (message.type === "progress") {
+     armWatchdog();
+     options.onProgress?.(message.progress);
+    } else if (message.type === "result") {
+     finish(message.result);
+    } else {
+     fallback();
+    }
+   };
+   worker.onerror = () => fallback();
+   worker.postMessage({ file });
+   armWatchdog();
+  } catch {
+   fallback();
+  }
  });
 }
