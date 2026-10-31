@@ -61,7 +61,7 @@ for(const theme of ['graph','graph-night'] as const)for(const width of [360,390]
   const visible=page.locator('[data-atlas-bundle-count]');
   expect(await hidden.count()+await visible.count()).toBe(20);
   expect(await hidden.count()).toBeGreaterThan(0);
-  expect((await hidden.allTextContents()).every(t=>/rows \\d+–\\d+: 2 links/.test(t))).toBe(true);
+  expect((await hidden.allTextContents()).every(t=>/rows \d+–\d+: 2 links/.test(t))).toBe(true);
   const fontSizes=await hidden.evaluateAll(items=>items.map(el=>parseFloat(getComputedStyle(el).fontSize)));
   expect(fontSizes.every(size=>size>=12)).toBe(true);
   const boxes=await page.locator('[data-atlas-bundle-circle], [data-atlas-overflow-count]').evaluateAll(els=>els.map(el=>{
