@@ -63,7 +63,7 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
    </section>
    <div role="region" aria-label="Project timeline" className="min-w-0">
     <ProjectTimeline project={{title:project.title,slug:project.slug,done,total,targetDate:project.targetDate}} checkpoints={checkpoints}
-     variant={variant} pacePerWeek={estimate.pace} height={96}/>
+     variant={variant} pacePerWeek={estimate.pace??undefined} height={96}/>
     {schedule.some(row=>row.dueOn)&&<div aria-label="Schedule legend" className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-2">
      {(['early','on_time','late'] as const).map(state=><span key={state} className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-[3px] w-5" style={{background:scheduleColor[state]}}/>{state==='on_time'?'On time':state==='early'?'Early':'Late'}</span>)}
     </div>}
