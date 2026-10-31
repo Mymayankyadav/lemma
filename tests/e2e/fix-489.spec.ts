@@ -42,3 +42,26 @@ for (const width of [360, 390] as const) {
     await page.screenshot({ path: `test-results/screens/fix-489/${theme}-${width}.png` });
   });
 }
+
+
+// Integration with FIX #483: the Atlas must expose its actual informative
+// bundle circles to the shared ST-0 spacing metric, not just synthetic marks.
+for (const profile of ["stress", "extreme"] as const)
+for (const theme of ["graph", "graph-night"] as const)
+for (const width of [360, 390] as const) {
+  test(`FIX #489 Atlas bundle spacing ${profile} ${theme} ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 360 ? 740 : 844 });
+    await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/atlas`);
+    await expect(page.getByRole("tree", { name: "Ideas and their links" })).toBeVisible();
+    await page.getByRole("group", { name: "Fold to depth" })
+      .getByRole("button", { name: "2", exact: true }).click();
+    const circles = page.locator("[data-atlas-bundle-circle]");
+    await expect.poll(() => circles.count()).toBeGreaterThan(1);
+    const gap = await page.evaluate(measureSvgMarks);
+    expect(gap, "real Atlas count badges must be included and spaced >=8px").not.toBeNull();
+    expect(gap!).toBeGreaterThanOrEqual(7.5);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    mkdirSync("test-results/screens/fix-489", { recursive: true });
+    await page.screenshot({ path: `test-results/screens/fix-489/atlas-${profile}-${theme}-${width}.png` });
+  });
+}
