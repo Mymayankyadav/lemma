@@ -5,10 +5,23 @@ import {MemoryRouter} from 'react-router';
 import {readdirSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import type {CheckpointView} from '../../src/data/types';
-import {Route} from '../../src/ui/timeline/Route';
+import {createServer,type ViteDevServer} from 'vite';
+import type {Route as RouteType} from '../../src/ui/timeline/Route';
 
 /** Isolated component visual audit. Interactive mounted-route/4x CPU tests
  * remain a LOOK-3c gate; SSR screenshots cannot substitute for those. */
+let viteServer:ViteDevServer|undefined;
+let routeComponent:typeof RouteType|undefined;
+async function loadRoute(){
+ if(!routeComponent){
+  // Vite's SSR loader handles Tex's CSS import; Playwright's Node transform
+  // cannot parse a production .css module directly.
+  viteServer=await createServer({server:{middlewareMode:true},appType:'custom'});
+  routeComponent=(await viteServer.ssrLoadModule('/src/ui/timeline/Route.tsx')).Route as typeof RouteType;
+ }
+ return routeComponent;
+}
+test.afterAll(async()=>{await viteServer?.close();});
 let cachedCss:string|undefined;
 function getCss(){
  return cachedCss??=readdirSync('dist/assets').filter(name=>name.endsWith('.css'))
@@ -25,6 +38,7 @@ function checkpoints(n:number,size:number):CheckpointView[]{
 }
 async function mount(page:import('@playwright/test').Page,n:number,width:number,theme:string,mode:'today'|'project'){
  const cps=checkpoints(n,n===9?3:15),done=Math.floor(n/2);
+ const Route=await loadRoute();
  const html=renderToStaticMarkup(createElement(MemoryRouter,null,
   createElement(Route,{project:{title:'Algebra 1',slug:'algebra-1',done,total:n},
    checkpoints:cps,mode,initialWidth:width-64})));
