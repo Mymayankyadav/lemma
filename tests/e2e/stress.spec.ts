@@ -42,12 +42,12 @@ async function measure(page: Page, route: string, profile: string, theme: string
    nodes: document.querySelectorAll('*').length,
    horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
    smallText, smallMath, smallTargets,
-   smallTextSamples,closeCircleSamples:[],
+   smallTextSamples, closeCircleSamples: [],
    requestCount: resources.length,
    transferBytes: resources.reduce((total,entry)=>total+entry.transferSize,0),
   };
  });
- const minCircleGap=await page.evaluate(measureSvgMarks);
+ const minCircleGap = await page.evaluate(measureSvgMarks); // Compatibility field: now all tagged SVG count marks.
  return {route, actualRoute: await page.evaluate(()=>location.hash.slice(1)), profile, theme, width, durationMs, cpuThrottle, ...result, minCircleGap};
 }
 
@@ -136,9 +136,8 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   }
   writeFileSync(file,JSON.stringify(report,null,2));
   await testInfo.attach('stress-measurements',{body:JSON.stringify(report,null,2),contentType:'application/json'});
-  // Enforce every completed hard budget. Unfinished scopes have an explicit
-  // audit-issue exception in stress-gate.ts; an unknown failure is red CI.
-  // QA-3 release uses release:true and rejects ALL remaining exceptions.
+  // ST-0 establishes the baseline and route inventory. ST-1…ST-7 enforce
+  // the hard thresholds once the known pre-existing scale failures are fixed.
   expect(measurements.map(m=>m.route)).toEqual([...routes]);
   expect(measurements.every(m=>m.nodes>0 && Number.isFinite(m.durationMs))).toBe(true);
   expect(measurements[0].cpuThrottle).toBe(4);

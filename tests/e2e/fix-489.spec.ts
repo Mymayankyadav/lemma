@@ -59,7 +59,7 @@ for (const width of [360, 390] as const) {
     await expect.poll(() => circles.count()).toBeGreaterThan(1);
     const gap = await page.evaluate(measureSvgMarks);
     expect(gap, "real Atlas count badges must be included and spaced >=8px").not.toBeNull();
-    expect(gap!).toBeGreaterThanOrEqual(7.5);
+    expect(gap!).toBeGreaterThanOrEqual(8);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("test-results/screens/fix-489", { recursive: true });
     await page.screenshot({ path: `test-results/screens/fix-489/atlas-${profile}-${theme}-${width}.png` });
