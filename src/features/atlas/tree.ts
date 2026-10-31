@@ -232,6 +232,38 @@ export function arcsFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Lin
 }
 
 
+/** Count distinct visible bundles without allocating thousands of Arc objects.
+ * A fully unfolded, unfocused extreme Atlas draws no arcs above the gutter cap;
+ * the only visible result is the exact number hidden. */
+export function arcCountFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Link['kind']>):number{
+ const index=new Map(rows.map((row,i)=>[row.id,i]));
+ const cached=new Map<string,number|null>();
+ const resolve=(id:string):number|null=>{
+  if(cached.has(id))return cached.get(id)!;
+  const path:string[]=[],seen=new Set<string>();
+  let current:string|null=id,found:number|null=null;
+  while(current&&!seen.has(current)){
+   if(cached.has(current)){found=cached.get(current)!;break}
+   seen.add(current);path.push(current);
+   const at=index.get(current);
+   if(at!==undefined){found=at;break}
+   current=tree.nodes.get(current)?.parentId??null;
+  }
+  for(const node of path)cached.set(node,found);
+  return found;
+ };
+ const keys=new Set<string>();
+ for(const link of tree.links){
+  if(!kinds.has(link.kind))continue;
+  const from=resolve(link.fromId),to=resolve(link.toId);
+  if(from===null||to===null||from===to)continue;
+  const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
+  keys.add(link.kind+':'+a+':'+b);
+ }
+ return keys.size;
+}
+
+
 /** Keep the dependency margin readable under thousands of links. A collapsed
  * branch still summarises its connections; with everything expanded, only
  * connections relevant to the selected idea remain visible above the cap.
