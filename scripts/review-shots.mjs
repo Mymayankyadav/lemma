@@ -44,5 +44,39 @@ try {
   await sheet.setContent('<!doctype html><html><body style="display:flex;align-items:start;margin:0;width:1950px;background:#19191D">'+cells+'</body></html>',{waitUntil:'load'});
   await sheet.screenshot({path:join('review-shots','sheets',theme+'.png'),animations:'disabled',fullPage:true});
   console.log('Sheet',theme);
+  // Optional complete v4 route/profile/width audit; use V4_MATRIX=1 for the
+  // approved capture inventory, without changing legacy five-panel sheets.
+  if(process.env.V4_MATRIX==='1'){
+   const routes=[
+    ['today','#/'],['paths','#/projects'],['new-project','#/projects/new'],
+    ['project-path','#/p/real-analysis'],['project-sessions','#/p/real-analysis?tab=sessions'],
+    ['project-sources','#/p/real-analysis?tab=sources'],['checkpoint','#/p/real-analysis/cp/CP4'],
+    ['session','#/s/real-analysis/7'],['proposals','#/proposals'],
+    ['plan-change','#/proposals/proposal-6'],['review','#/review'],
+    ['review-run','#/review/run'],['review-done','#/review/done'],
+    ['cards','#/cards'],['card','#/cards/1'],['atlas','#/atlas'],
+    ['insights','#/insights'],['settings','#/settings'],['sign-in','#/sign-in'],
+   ];
+   for(const demo of ['1','stress']){
+    for(const [width,height] of [[360,780],[390,844]]){
+     await phone.setViewportSize({width,height});
+     const dir=join('review-shots','v4',theme,demo,width+'px');
+     mkdirSync(dir,{recursive:true});
+     for(const [name,route] of routes){
+      const url=base+'?demo='+demo+'&theme='+encodeURIComponent(theme)+route;
+      await phone.goto(url,{waitUntil:'domcontentloaded'});
+      await phone.locator('#main-content').waitFor({state:'visible'});
+      await phone.waitForTimeout(400);
+      const actual=await phone.locator('html').getAttribute('data-theme');
+      if(actual!==theme)throw Error('Unexpected world for '+name+' '+demo);
+      await phone.screenshot({path:join(dir,name+'.png'),animations:'disabled'});
+      if(['paths','project-path','project-sources','proposals','cards','atlas','insights','settings'].includes(name)){
+       await phone.screenshot({path:join(dir,name+'-full.png'),animations:'disabled',fullPage:true});
+      }
+     }
+     console.log('v4 route matrix captured',theme,demo,width);
+    }
+   }
+  }
  }
 } finally {await browser.close();}
