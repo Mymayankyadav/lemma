@@ -280,4 +280,29 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBeUndefined();
  },30_000);
 
+ it('keeps 6,000 extreme source records virtual on cold Today, then materializes them for Paths',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  });
+  expect(fixture.sources.length).toBeLessThan(6000);
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const home=await api.getHome();
+  expect(home.projects).toHaveLength(60);
+  expect(home.projects.every(p=>p.sourcesCount===100)).toBe(true);
+  expect(home.projects.find(p=>p.slug==='stress-project-3')?.sourceTitles)
+   .toContain('Source 100: mathematical notes and proofs');
+  expect(Object.getOwnPropertyDescriptor(store,'sources')?.get).toBeTypeOf('function');
+  const projects=await api.listProjects();
+  expect(projects.every(p=>p.sourcesCount===100)).toBe(true);
+  expect(Object.getOwnPropertyDescriptor(store,'sources')?.get).toBeUndefined();
+  expect(store.sources.length).toBeGreaterThanOrEqual(6000);
+  expect(store.sources.find(p=>p.id==='stress-source-3-99')?.createdAt).not.toMatch(/^@/);
+ },30_000);
+
+ it('configures source deferral only for the initial Today document',()=>{
+  const entry=readFileSync('src/data/index.ts','utf8');
+  expect(entry).toContain('deferSources:initialToday');
+ });
+
 });
