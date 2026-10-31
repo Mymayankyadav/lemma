@@ -40,11 +40,22 @@ describe('ST-5 bounded live reads',()=>{
  it('loads the Review deck tree in one RPC without whole-table downloads',async()=>{
   const tree=[{key:'project:algebra',label:'Algebra',glyph:'∫',level:0,due:3,
    children:[{key:'cp:algebra:CP1',label:'Groups',glyph:'∫',level:1,due:3,children:[]}]}]
-  mock.rpc.mockResolvedValue({data:tree,error:null})
+  mock.rpc.mockResolvedValue({data:{decks:tree,forecast:[]},error:null})
   expect(await new LiveAdapter().getDeckTree()).toEqual(tree)
   expect(mock.rpc).toHaveBeenCalledOnce()
-  expect(mock.rpc).toHaveBeenCalledWith('deck_tree')
+  expect(mock.rpc).toHaveBeenCalledWith('home_review_outlook')
   expect(mock.getUser).toHaveBeenCalledOnce()
+ })
+ it('coalesces concurrent Today deck and forecast reads into one RPC',async()=>{
+  const decks=[{key:'project:algebra',label:'Algebra',glyph:'∫',level:0,due:3,children:[]}]
+  const forecast=Array.from({length:7},(_,i)=>({day:'2026-11-0'+(i+1),due:i===0?3:0}))
+  mock.rpc.mockResolvedValue({data:{decks,forecast},error:null})
+  const adapter=new LiveAdapter()
+  const [tree,days]=await Promise.all([adapter.getDeckTree(),adapter.getReviewForecast()])
+  expect(tree).toEqual(decks)
+  expect(days).toEqual(forecast)
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('home_review_outlook')
  })
  it('fetches the quota-capped Review queue with one RPC, not whole-table reads',async()=>{
   const queue=[{cardId:'c1',noteId:'n1',noteNo:12,ord:0,

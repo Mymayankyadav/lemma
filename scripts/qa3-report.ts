@@ -56,6 +56,8 @@ export type Qa3Element = {
 };
 export type Qa3Report = {
   status: 'PASS' | 'FAIL' | 'INCOMPLETE';
+  /** Demo adapter has no live Supabase traffic; a zero count is not API evidence. */
+  apiBudget: 'NOT ASSESSED';
   filesExpected: number;
   filesValid: number;
   routesExpected: number;
@@ -194,7 +196,7 @@ export function analyzeQa3(
   const status = errors.length || validRows.length !== cases.length * QA3_ROUTES.length
     ? 'INCOMPLETE' : findings.length ? 'FAIL' : 'PASS';
   return {
-    status, filesExpected: cases.length, filesValid,
+    status, apiBudget: 'NOT ASSESSED', filesExpected: cases.length, filesValid,
     routesExpected: cases.length * QA3_ROUTES.length,
     routesValid: validRows.length,
     screenshotsExpected: cases.length * QA3_ROUTES.length,
@@ -207,7 +209,8 @@ export function renderQa3Markdown(report: Qa3Report): string {
   const lines = [
     '# QA-3a — ST-0 stress budget evidence',
     '',
-    '**Generic budget status: ' + report.status + '**',
+    '**Generic UI budget status: ' + report.status + '**',
+    '**Live API budget: ' + report.apiBudget + '** — the demo adapter performs no Supabase requests; zero requests do not demonstrate the live 3-request/1-request or 200 kB limits.',
     '',
     'Matrix: ' + report.filesValid + '/' + report.filesExpected +
       ' files; ' + report.routesValid + '/' + report.routesExpected + ' route measurements.',
@@ -216,7 +219,8 @@ export function renderQa3Markdown(report: Qa3Report): string {
       ' (presence only; visual review is still required).',
     '',
     'This report covers only the generic ST-0 hard budgets (layout, tap targets,',
-    'type sizes, DOM count, render time when CPU throttled, and API budgets).',
+    'type sizes, DOM count and render time when CPU throttled).',
+    'The live Today/Insights request and transfer budgets require separate authenticated or faithfully intercepted-network evidence in QA-3b.',
     '**It does not certify the A–I behavioral acceptance or screenshot review.**',
     'Those remain QA-3b gates after the dependent feature PRs merge.',
     '',
