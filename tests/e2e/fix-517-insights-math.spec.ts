@@ -59,7 +59,7 @@ for(const width of [360,390] as const){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   expect(unexpected).toEqual([]);
   await revisited.scrollIntoViewIfNeeded();
-  await page.screenshot({path:'test-results/screens/fix-517-insights-'+profile+'-'+theme+'-'+width+'.png'});
+  await page.screenshot({path:'test-results/screens/fix-517-insights-'+profile+'-'+theme+'-'+width+'.png',fullPage:true});
  });
 }
 
