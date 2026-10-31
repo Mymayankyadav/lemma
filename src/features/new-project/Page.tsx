@@ -5,7 +5,7 @@ import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
 import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
 import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
-import {isPdfFile} from '../../pdf/ingest';
+import {isSourceFile} from '../../pdf/ingest';
 import {slugify} from '../../lib/text';
 import ProjectsPage from '../projects/Page';
 import {Sheet} from '../../ui/Sheet';
@@ -16,7 +16,7 @@ import {useToast} from '../../ui/Toast';
 type UploadState='queued'|'reading'|'uploading'|'saving'|'ready'|'failed';
 type QueueItem={id:number;file:File|null;name:string;size:number;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
 const MAX_PDF_BYTES=50*1024*1024;
-const validPdf=(file:File)=>isPdfFile(file)&&file.size>0&&file.size<=MAX_PDF_BYTES;
+const validPdf=(file:File)=>isSourceFile(file)&&file.size>0&&file.size<=MAX_PDF_BYTES;
 const bytes=(size:number)=>size>=1048576?(size/1048576).toFixed(1)+' MB':Math.ceil(size/1024)+' KB';
 async function fingerprint(file:File):Promise<string>{
  const digest=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());
@@ -36,7 +36,7 @@ export default function Page(){
    accepted.push({id:++nextId.current,file,name:file.name,size:file.size,status:'queued',progress:null,error:null,sha256:null});
   }
   setItems(previous=>[...previous,...accepted]);
-  setError(invalid.length?'PDFs must be nonempty and at most 50 MB: '+invalid.join(', '):null);
+  setError(invalid.length?'Sources must be PDF, .tex or .md files, nonempty and at most 50 MB: '+invalid.join(', '):null);
  }
  function patch(id:number,change:Partial<QueueItem>){
   setItems(previous=>previous.map(item=>item.id===id?{...item,...change}:item));
@@ -105,13 +105,13 @@ export default function Page(){
      onDrop={event=>{event.preventDefault();if(!saving)enqueue(event.dataTransfer.files)}}>
      <div className="flex items-center justify-between gap-2">
       <h3 className="text-body font-semibold text-ink-2">Sources (optional)</h3>
-      <span className="text-label text-ink-3">PDF · 50 MB each</span>
+      <span className="text-label text-ink-3">PDF, .tex, .md · 50 MB each</span>
      </div>
-     <input ref={input} hidden type="file" multiple accept=".pdf,application/pdf"
+     <input ref={input} hidden type="file" multiple accept=".pdf,application/pdf,.tex,.latex,.ltx,application/x-tex,text/x-tex,.md,.markdown,text/markdown"
       onChange={event=>{if(event.currentTarget.files)enqueue(event.currentTarget.files);event.currentTarget.value=''}}/>
      <button type="button" disabled={saving} onClick={()=>input.current?.click()}
       className="flex min-h-24 items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
-      <Plus size={20} className="text-amber"/>Add PDFs or drop them here
+      <Plus size={20} className="text-amber"/>Add PDFs, .tex or .md files
      </button>
      <ul aria-label="Upload queue" className="flex flex-col gap-2">
       {items.map(item=><li key={item.id} className="flex min-w-0 items-start gap-3 rounded-slab border border-edge bg-raised p-3">
