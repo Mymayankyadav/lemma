@@ -75,7 +75,25 @@ export function hydrateFixture(
     }
     return value;
   };
+  // The generated S/X note records contain no date tokens except card due
+  // and lastReview. Keep their full real 5k/30k content, but avoid recursively
+  // visiting four nested objects per note under 4x CPU. This is limited to
+  // freshly generated private stress fixtures; normal fixtures still receive
+  // the complete recursive walk and immutable input semantics.
+  const stressNotes = takeOwnership && source.stressReviewCount !== undefined &&
+    source.reviews.length === 0 ? source.notes : null;
+  if (stressNotes) source.notes = [];
   const store = walk(source) as DemoStore;
+  if (stressNotes) {
+    store.notes = stressNotes;
+    for (const note of stressNotes) {
+      for (const card of note.cards) {
+        card.state.due = walk(card.state.due) as string;
+        if (card.state.lastReview !== null)
+          card.state.lastReview = walk(card.state.lastReview) as string;
+      }
+    }
+  }
   // One synthetic, explicitly labelled demo transcription makes the real
   // edit/preview path testable without changing the generated fixture JSON or
   // implying the named source was actually transcribed.
