@@ -195,7 +195,7 @@ function CheckpointDrawer({
     <Sheet open onClose={onClose} title={`${node.code} · ${plainMath(node.title)}`}>
       <div data-checkpoint-drawer={node.code} className="flex flex-col gap-4 text-body text-ink-2">
         <div className="-mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-ink-3">
-          {node.stage && <span><Tex source={node.stage} /></span>}
+          {node.stage && <span className="text-[16px]"><Tex source={node.stage} /></span>}
           {dueLabel(node.dueOn) && (
             <span className="flex items-center gap-1"><CalendarDays size={14} />Planned {dueLabel(node.dueOn)}</span>
           )}
@@ -415,7 +415,7 @@ export default function Page() {
             {stages.length>5 && <nav aria-label="Jump to stage" className="flex gap-2 overflow-x-auto pb-2">
               {stages.map((stage,i) => <button key={stage.id} type="button" title={plainMath(stage.name)}
                 onClick={() => document.getElementById(`plan-stage-${i}`)?.scrollIntoView({behavior:"smooth",block:"start"})}
-                className="min-h-11 min-w-11 max-w-40 shrink-0 overflow-x-auto whitespace-nowrap rounded-chip border border-edge px-3 text-label text-ink-2">
+                className="min-h-11 min-w-11 max-w-40 shrink-0 overflow-x-auto whitespace-nowrap rounded-chip border border-edge px-3 text-[16px] text-ink-2">
                 <Tex source={stage.name} />
               </button>)}
             </nav>}
