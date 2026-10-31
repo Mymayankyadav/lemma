@@ -76,7 +76,12 @@ export default function Page(){
    n.children.some(c=>c.label.toLowerCase().includes(deckSearch.toLowerCase())));
  const dueItems=useMemo(()=>reviewEligible(cards.data??[],nodes,enabled),[cards.data,nodes,enabled]);
  const selectedCount=dueItems.length;
- const totalDue=nodes.reduce((n,project)=>n+project.due,0);
+ const totalDue=nodes.reduce((sum,project)=>{
+  const children=project.children.filter(c=>c.due>0);
+  const counted=children.reduce((n,c)=>n+c.due,0);
+  return sum+(enabled.has(project.key)?Math.max(0,project.due-counted):0)
+   +children.reduce((n,c)=>n+(enabled.has(c.key)?c.due:0),0);
+ },0);
  const todayShare=Math.min(selectedCount,Math.max(1,settings.data?.reviewsPerDay??200));
  const overdue=Math.max(0,totalDue-todayShare);
  const spreadDays=Math.ceil(overdue/Math.max(1,settings.data?.reviewsPerDay??200));
