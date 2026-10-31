@@ -14,7 +14,7 @@ for(const profile of ['stress','extreme'] as const){
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
   // The full counts must stay readable at 360px, not clipped mid-word.
   const summary=page.locator('[data-atlas-summary]');
-  await expect(summary).toContainText(/\\d+ ideas · \\d+ links · \\d+ demonstrated/);
+  await expect(summary).toContainText(/\d+ ideas · \d+ links · \d+ demonstrated/);
   const summarySize=await summary.evaluate(element=>({
    scrollWidth:element.scrollWidth,clientWidth:element.clientWidth,
    scrollHeight:element.scrollHeight,clientHeight:element.clientHeight,
