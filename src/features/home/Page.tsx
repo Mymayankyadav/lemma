@@ -21,6 +21,8 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {FastHomeTex} from './FastHomeTex'
+import {FastGoalDistance} from './FastGoalDistance'
+import {shouldUseFastGoals} from './fastGoalPolicy'
 import {shouldDeferForecast} from './forecastPolicy'
 import type {HomeSummary, ProjectSummary} from '../../data/types';
 
@@ -188,9 +190,11 @@ export default function Page(){
    <span><strong className="text-amber">Tutor not connected.</strong> Set up the connector in Settings to record study progress.</span>
    <ChevronRight size={18} className="shrink-0 text-amber"/>
   </Link>}
-  <Suspense fallback={<section aria-label="Distance to your goals" className="min-h-[160px]"><Skeleton h={160}/></section>}>
-   <GoalDistance projects={projects} variant="metro"/>
-  </Suspense>
+  {shouldUseFastGoals(projects)
+   ? <FastGoalDistance projects={projects}/>
+   : <Suspense fallback={<section aria-label="Distance to your goals" className="min-h-[160px]"><Skeleton h={160}/></section>}>
+      <GoalDistance projects={projects} variant="metro"/>
+     </Suspense>}
   <section aria-label="Cards" className="flex flex-col gap-3">
    <SectionHeading className="text-ink">Cards</SectionHeading>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
