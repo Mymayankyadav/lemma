@@ -99,9 +99,13 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
   const query=new URLSearchParams(window.location.search);
   if(query.get('demo')==='stress'&&query.get('atlasDenseFixture')==='1'&&window.location.hash.startsWith('#/atlas')){
    const dense:Arc[]=[];
-   for(let from=0;from<5;from++)for(let to=from+1;to<5;to++)
-    for(const kind of ['prereq','related'] as const)
-     dense.push({key:kind+':'+from+':'+to,from,to,kind,count:2,links:[]});
+   // Twenty same-source bundles legitimately share one trunk. This
+   // isolates the finite badge-placement budget from the separate eight
+   // unrelated-lane collision fixture below.
+   for(let i=0;i<20;i++){
+    const kind=i%2?'related' as const:'prereq' as const;
+    dense.push({key:kind+':'+i,from:0,to:1+i%4,kind,count:2,links:[]});
+   }
    arcs=dense;rows=5;focus=null;centers=undefined;heightPx=undefined;
   }else if(query.get('demo')==='stress'&&query.get('atlasDenseLanes')==='1'&&window.location.hash.startsWith('#/atlas')){
    // Eight unrelated overlapping spans cannot fit seven 9px lanes. Keep the
