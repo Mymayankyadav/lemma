@@ -16,6 +16,9 @@ for (const profile of ['stress','extreme'] as const) {
     expect(sizes.every(size=>size>=12)).toBe(true);
     const radii=await labels.evaluateAll(elements=>elements.map(element=>Number(element.previousElementSibling?.getAttribute('r'))));
     expect(radii.every(radius=>radius>=11)).toBe(true);
+    const fits=await labels.evaluateAll(elements=>elements.every(element=>
+     Number(element.previousElementSibling?.getAttribute('r'))>=Math.max(11.5,6+(element.textContent?.trim().length??0)*4)));
+    expect(fits).toBe(true);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.screenshot({path:`test-results/screens/stress/fix-483-${profile}-${theme}-${width}.png`});
    });
