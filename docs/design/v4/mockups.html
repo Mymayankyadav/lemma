@@ -68,9 +68,10 @@ body{background:#0B0D11;font-family:var(--sans);color:var(--ink);padding:24px;di
 .rule{height:1px;background:var(--hair);margin:2px 0}
 .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--hair)}
 .row:last-child{border-bottom:none}
-.minibar{flex:1;display:flex;gap:2px;height:6px;position:relative}
-.minibar i{display:block;height:6px;border-radius:3px;background:var(--paper-2);overflow:hidden;position:relative}
-.minibar i b{position:absolute;inset:0 auto 0 0;background:var(--ink-2);border-radius:3px}
+.minibar{flex:1;display:flex;height:6px;position:relative;border-radius:3px;background:var(--paper-2)}
+.minibar i{display:block;height:6px;min-width:8px;overflow:hidden;position:relative;border-right:2px solid var(--paper)}
+.minibar i:first-child{border-radius:3px 0 0 3px}.minibar i:last-of-type{border-right:none;border-radius:0 3px 3px 0}
+.minibar i b{position:absolute;inset:0 auto 0 0;background:var(--ink-2)}
 .minibar .notch{position:absolute;top:-3px;width:2px;height:12px;background:var(--accent);border-radius:1px}
 .review{display:flex;align-items:center;gap:14px;padding:14px 16px}
 .big{font:500 30px/1 var(--display)}
@@ -83,10 +84,11 @@ body{background:#0B0D11;font-family:var(--sans);color:var(--ink);padding:24px;di
 .tab.on{color:var(--accent)}
 /* Atlas */
 .atlas{margin:0 -16px;background:var(--paper);border-top:1px solid var(--edge);position:relative}
-.tool{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--hair)}
-.seg{display:flex;background:var(--paper-2);border-radius:6px;padding:2px}
-.seg span{font:600 12px var(--sans);color:var(--ink-3);padding:0 8px;height:40px;line-height:40px;border-radius:4px}
+.tool{display:flex;gap:8px;align-items:center;padding:6px 16px;border-bottom:1px solid var(--hair)}
+.seg{display:flex;background:var(--paper-2);border-radius:6px;padding:0}
+.seg span{font:600 12px var(--sans);color:var(--ink-3);padding:0 8px;height:44px;line-height:44px;border-radius:5px;min-width:44px;text-align:center}
 .seg span.on{background:var(--bg);color:var(--ink);box-shadow:0 0 0 1px var(--edge)}
+.hit{display:inline-flex;align-items:center;min-height:44px;min-width:44px}
 .toggle{white-space:nowrap;font:600 12px var(--sans);color:var(--ink-2);padding:0 11px;height:36px;line-height:36px;border-radius:999px;background:var(--paper-2)}
 .toggle.warn{color:var(--late);background:color-mix(in srgb,var(--late) 12%,transparent)}
 .tree{position:relative}
@@ -184,9 +186,9 @@ body{background:#0B0D11;font-family:var(--sans);color:var(--ink);padding:24px;di
  <div class="sec"><h2 class="t-section">Paths</h2><span class="link">All paths</span></div>
  <article class="paper" style="padding:4px 16px">
   <div class="row"><span class="glyph" style="width:28px;height:28px;font-size:17px">∫</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><span class="t-title" style="font-size:15px">Real Analysis</span><span class="t-meta" style="color:var(--ink-3);font-variant-numeric:tabular-nums">3 of 36</span></div>
-   <div style="margin-top:8px" class="minibar" data-mini='[[8,3],[8,0],[8,0],[8,0],[4,0]]' data-cur="3"></div></div></div>
+   <div style="margin-top:8px" class="minibar" data-mini-route data-mini='[[8,3],[8,0],[8,0],[8,0],[4,0]]' data-cur="3"></div></div></div>
   <div class="row"><span class="glyph" style="width:28px;height:28px;font-size:17px">λ</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><span class="t-title" style="font-size:15px">Linear Algebra</span><span class="t-meta" style="color:var(--ink-3);font-variant-numeric:tabular-nums">8 of 14</span></div>
-   <div style="margin-top:8px" class="minibar" data-mini='[[3,3],[3,3],[4,2],[4,0]]' data-cur="8"></div></div></div>
+   <div style="margin-top:8px" class="minibar" data-mini-route data-mini='[[3,3],[3,3],[4,2],[4,0]]' data-cur="8"></div></div></div>
  </article>
 </div></div>
 
@@ -196,10 +198,10 @@ body{background:#0B0D11;font-family:var(--sans);color:var(--ink);padding:24px;di
  <div class="hdr" style="padding-bottom:12px"><div><h1 class="t-display">Atlas</h1><p class="t-meta" style="margin-top:4px">82 ideas · 24 links · 9 demonstrated</p></div>
   <div class="icons"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></span></div></div>
  <div class="atlas">
-  <div class="tool"><div class="seg"><span>Fields</span><span class="on">Areas</span><span>Topics</span><span>All</span></div><span class="toggle">Related</span><span class="toggle warn">Re-check 1</span></div>
+  <div class="tool"><div class="seg"><span>Fields</span><span class="on">Areas</span><span>Topics</span><span>All</span></div><span class="hit"><span class="toggle">Related</span></span><span class="hit"><span class="toggle warn">Re-check 1</span></span></div>
   <div class="tree" id="tree"></div>
  </div>
- <div class="paper peek"><div style="flex:1"><div class="t-title">Compactness</div><div class="t-foot" style="margin-top:2px"><span style="color:var(--link)">builds on 7</span> · <span style="color:var(--accent)">opens up 4</span></div></div><span class="btn" style="height:40px">Details</span></div>
+ <div class="paper peek"><div style="flex:1"><div class="t-title">Compactness</div><div class="t-foot" style="margin-top:2px"><span style="color:var(--link)">builds on 7</span> · <span style="color:var(--accent)">opens up 4</span></div></div><span class="btn" style="height:44px">Details</span></div>
  <div class="tabbar">
   <span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></span>
   <span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 6h7l2 2h9v11H3z"/></svg></span>
@@ -221,7 +223,7 @@ body{background:#0B0D11;font-family:var(--sans);color:var(--ink);padding:24px;di
  <article class="paper goal"><svg class="route" data-route='{"stages":[7,7,6,7,7,6,7,7,6,7,7,6,7,7,6],"done":[7,7,6,7,7,2,0,0,0,0,0,0,0,0,0],"cur":5,"curStation":2,"labels":[],"late":true}'></svg>
   <div class="nowline"><span class="t-meta"><b>CP37</b>Uniform continuity</span><span class="t-meta" style="color:var(--ink-3);font-variant-numeric:tabular-nums">36 of 100</span></div></article>
  <p class="t-foot" style="margin:14px 0 6px">Mini route (Paths rows, compact lists)</p>
- <article class="paper" style="padding:14px 16px"><div class="minibar" data-mini='[[7,7],[7,7],[6,6],[7,7],[7,7],[6,2],[7,0],[7,0],[6,0],[7,0],[7,0],[6,0],[7,0],[7,0],[6,0]]' data-cur="36"></div></article>
+ <article class="paper" style="padding:14px 16px"><div class="minibar" data-mini-route data-mini='[[7,7],[7,7],[6,6],[7,7],[7,7],[6,2],[7,0],[7,0],[6,0],[7,0],[7,0],[6,0],[7,0],[7,0],[6,0]]' data-cur="36"></div></article>
 </div></div>
 
 

@@ -133,10 +133,13 @@ The Route is 64 px tall. The track sits at y = 24 and labels sit on a baseline a
     - ← and → do the same from the keyboard; Enter or a 44 px **Open** button opens the checkpoint sheet.
   - The Mini Route is not interactive: its row is the target.
 - **Now-line** under the Route: `CP4` (code style, accent), the title (Tex), and "3 of 36" right-aligned in `--ink-3`.
-- **Mini Route** for Paths rows, Today's "n more" list and the project switcher:
-  - one 6 px capsule per stage, 2 px gaps, filled by done; each segment is at least 8 px wide, and if they do not fit, neighbouring future stages merge (stress.md A2);
-  - a 2 × 12 px accent notch at the current checkpoint;
-  - never ticks.
+- **Mini Route** for Paths rows, Today's "n more" list and the project switcher (`[data-mini-route]`):
+  - **One continuous bar, one mark:** 6 px high, full row width, radius 3 px, on `--paper-2`.
+  - Stages are *segments inside* the bar, sized by checkpoint count and filled by done. Each segment is at least 8 px wide.
+  - Segments are divided by 2 px seams in the card colour. Seams are not marks and are not measured as gaps: the bar is measured as one mark.
+  - If segments cannot all be 8 px wide, neighbouring future stages merge into one segment (stress.md A2).
+  - The only other mark is the current notch (2 × 12 px, `--accent`), drawn at least 8 px clear of the bar's ends or else on them.
+  - No ticks, ever.
 - **Project page:** the same Route at 80 px, with every stage name shown (two lines allowed) and a legend listing only the states present.
 
 ### 3c. Delete
@@ -197,7 +200,7 @@ Owner decisions kept: a foldable outline, prerequisite links in a right-hand mar
    - one segmented control "Fields · Areas · Topics · All";
    - a "Related" toggle pill with a visible on state;
    - "Re-check n" as a `--late` pill, only when n > 0.
-   - Every toolbar control has a hit area of at least 44 × 44 px, without overlapping its neighbours. Pills may be drawn smaller inside it.
+   - Every toolbar control has a hit area of at least 44 × 44 px, without overlapping its neighbours. Pills may be drawn smaller inside it. The peek's **Details** button is 44 px tall.
    - Header: "Atlas" (display), then "82 ideas · 24 links · 9 demonstrated".
 7. **Details sheet:**
    - typeset title and path (#485), with tappable crumbs;
@@ -340,7 +343,7 @@ Add to `plan.md` §8 as "v4 look (owner, 31 Oct 13:08)". One PR per task (split 
 | LOOK-7 Review, cards, insights | LOOK-1 | `src/features/{review,review-run,review-done,cards,card,insights}/*`, `src/ui/charts/*` | §5, including the cards-list LaTeX bug and `plainMath` `\mathbb R`. |
 | LOOK-8 Approve and plan review | LOOK-4 | `src/features/{proposals,plan-proposal}/*` | §5 Approve, Plan proposal. |
 | LOOK-9 Settings and the rest | LOOK-1 | `src/features/{settings,sign-in,new-project}/*`, `src/app/*`, `vite.config.ts` | §5 Settings, Sign in, New project, Everywhere. |
-| QA-4 Visual acceptance | LOOK-1 … 9 | `scripts/review-shots.mjs`, `.github/workflows/review-shots.yml`, `docs/acceptance/` | Fix `review-shots.mjs`: it still requires 15 themes and throws on today's two. Capture **every** route (list in `docs/design/v4/capture-routes.md`) × day/night × default/S. Compare with `docs/design/v4/` and file one issue per deviation. **Hard gate, not just images:** re-run `tests/e2e/stress.spec.ts` on every route in both profiles and both worlds at 360 and 390. It must pass: marks ≥ 8 px apart, tap targets ≥ 44 px, text ≥ 12 px, maths ≥ 16 px, no horizontal overflow, < 1,500 DOM nodes per screen, first render < 1.5 s at 4× CPU, and request count and transfer size within the E1 budgets (stress.md §3, QA-3). A beautiful screenshot cannot pass QA-4 on its own. |
+| QA-4 Visual acceptance | LOOK-1 … 9 | `scripts/review-shots.mjs`, `.github/workflows/review-shots.yml`, `docs/acceptance/` | Fix `review-shots.mjs`: it still requires 15 themes and throws on today's two. Measure each Mini Route as one bar (`[data-mini-route]`): every segment ≥ 8 px wide, seams excluded from the mark-spacing check. Capture **every** route (list in `docs/design/v4/capture-routes.md`) × day/night × default/S. Compare with `docs/design/v4/` and file one issue per deviation. **Hard gate, not just images:** re-run `tests/e2e/stress.spec.ts` on every route in both profiles and both worlds at 360 and 390. It must pass: marks ≥ 8 px apart, tap targets ≥ 44 px, text ≥ 12 px, maths ≥ 16 px, no horizontal overflow, < 1,500 DOM nodes per screen, first render < 1.5 s at 4× CPU, and request count and transfer size within the E1 budgets (stress.md §3, QA-3). A beautiful screenshot cannot pass QA-4 on its own. |
 
 **Start now in parallel:** LOOK-0, then LOOK-1, LOOK-3 and LOOK-4 (the three the owner sees first). The two bugs in LOOK-6 and LOOK-7 (days-late mismatch, cards-list LaTeX) may land early as `FIX` PRs.
 
