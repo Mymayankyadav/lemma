@@ -1,6 +1,6 @@
 import {Tex} from '../../ui/Tex';
 import {useCallback,useState} from 'react';
-import {Link,useParams} from 'react-router';
+import {Link,useParams,useSearchParams} from 'react-router';
 import {BookOpen,Calendar,CheckCircle,Clock,Copy,History,Inbox,MessageCircle,MoreHorizontal,Target,TriangleAlert,XCircle,Lightbulb,BookMarked,Sparkles,Bot,Check,ArrowRight} from 'lucide-react';
 import {motion,useReducedMotion} from 'motion/react';
 import {useProject,useSession,useSettings,useResolveMisconception} from '../../data/hooks';
@@ -34,6 +34,8 @@ function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
 }
 export default function Page(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings();
+ const [params]=useSearchParams(),viewCards=params.get('cards')==='1';
+ const [cardPage,setCardPage]=useState(0);
  const resolve=useResolveMisconception(),notify=useToast(),[menu,setMenu]=useState(false),[pagesOpen,setPagesOpen]=useState(false),[expanded,setExpanded]=useState<number[]>([]),[visibleRuns,setVisibleRuns]=useState(40);
  const session=query.data,summary=session?.summary;
  const runs=reasoningRuns(session?.events??[]);
@@ -51,7 +53,17 @@ export default function Page(){
     {summary.checkpointCode&&<Chip>{summary.checkpointCode}</Chip>}</div>
    </Slab>
    {session.summaryText&&<Slab className="flex flex-col gap-2"><h2 className="text-answer font-semibold">Summary</h2><MathText source={session.summaryText} className="text-body-l"/></Slab>}
-   <section aria-label="Reasoning" className="flex flex-col gap-4"><h2 className="text-headline font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Reasoning</h2>
+   {viewCards&&<section aria-label="Cards from this session" className="flex flex-col gap-3">
+    <Link to={`/s/${slug}/${number}`} className="inline-flex min-h-11 items-center text-label font-semibold text-amber">Back to reasoning</Link>
+    <h2 className="text-title-s font-semibold">Cards from S{number}</h2>
+    <p className="text-label text-ink-3">{Math.min(cardPage*20+1,session.cards.length)}–{Math.min((cardPage+1)*20,session.cards.length)} of {session.cards.length}</p>
+    {session.cards.slice(cardPage*20,(cardPage+1)*20).map((card,i)=><Link key={card.noteNo+'-'+i} to={card.state==='pending'?'/proposals':`/cards/${card.noteNo}`} className="flex min-h-14 items-center gap-3 rounded-ctl border border-edge bg-raised px-3">
+     <span className="min-w-0 flex-1 line-clamp-2 font-math text-body"><MathText source={card.front}/></span>
+     <span className="shrink-0 text-label text-ink-3">{card.state==='pending'?'Waiting':`N${card.noteNo}`}</span><ArrowRight size={17} className="shrink-0"/>
+    </Link>)}
+    <div className="flex gap-2">{cardPage>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-amber" onClick={()=>setCardPage(p=>p-1)}>Previous 20</button>}{(cardPage+1)*20<session.cards.length&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-amber" onClick={()=>setCardPage(p=>p+1)}>More cards</button>}</div>
+   </section>}
+   {!viewCards&&<section aria-label="Reasoning" className="flex flex-col gap-4"><h2 className="text-headline font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Reasoning</h2>
     {session.events.length?<><ol className="relative before:absolute before:bottom-5 before:left-5 before:top-4 before:w-px before:bg-linear-to-b before:from-edge-2 before:to-amber/60">
      {runs.slice(0,visibleRuns).map(run=>{
       const fold=run.events.length>=3;
@@ -66,9 +78,9 @@ export default function Page(){
      })}
     </ol>{visibleRuns<runs.length&&<button type="button" onClick={()=>setVisibleRuns(n=>n+40)} className="min-h-11 rounded-ctl border border-edge px-4 text-label font-semibold text-amber">More reasoning · {runs.length-visibleRuns} groups remaining</button>}</>:<p className="text-body text-ink-3">No reasoning events recorded for this session.</p>}
    </section>
-   {!!session.misconceptions.filter(m=>!m.resolvedAt).length&&<section className="flex flex-col gap-3"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Things to revisit</h2>{session.misconceptions.filter(m=>!m.resolvedAt).map(m=><div key={m.id} className="flex flex-wrap items-center gap-3 border-l-2 border-amber py-2 pl-3"><TriangleAlert className="text-amber" size={18}/><span className="min-w-0 flex-1 text-body-l"><Tex source={m.label}/></span><Chip tone="amber">{m.times}×</Chip><button disabled={resolve.isPending} className="min-h-11 rounded-ctl px-2 text-label font-semibold text-amber" onClick={()=>resolve.mutate(m.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Couldn’t save. Try again.',{tone:'danger'})})}>Resolved</button></div>)}</section>}
+   {!viewCards&&!!session.misconceptions.filter(m=>!m.resolvedAt).length&&<section className="flex flex-col gap-3"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Things to revisit</h2>{session.misconceptions.filter(m=>!m.resolvedAt).map(m=><div key={m.id} className="flex flex-wrap items-center gap-3 border-l-2 border-amber py-2 pl-3"><TriangleAlert className="text-amber" size={18}/><span className="min-w-0 flex-1 text-body-l"><Tex source={m.label}/></span><Chip tone="amber">{m.times}×</Chip><button disabled={resolve.isPending} className="min-h-11 rounded-ctl px-2 text-label font-semibold text-amber" onClick={()=>resolve.mutate(m.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Couldn’t save. Try again.',{tone:'danger'})})}>Resolved</button></div>)}</section>}
    {!!session.cards.length&&<section aria-label="Session cards" className="flex flex-col gap-2"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Cards</h2>
-    <Link to={`/cards?project=${encodeURIComponent(slug)}&session=${number}`} className="flex min-h-14 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 text-body text-amber">
+    <Link to={`/s/${slug}/${number}?cards=1`} className="flex min-h-14 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 text-body text-amber">
      <span>{session.cards.length} cards · {session.cards.filter(card=>card.state==='pending').length} waiting</span><ArrowRight size={18} className="shrink-0"/>
     </Link></section>}
    {proposalCount>0&&<Slab className="flex flex-wrap items-center gap-3"><Inbox className="text-amber" size={23}/><div className="min-w-0 flex-1"><h2 className="font-semibold">{session.pendingProposals.cards} cards, {session.pendingProposals.planChanges} plan changes</h2><p className="text-label text-ink-2">Waiting for you</p></div><Link className="lit inline-flex min-h-11 items-center rounded-ctl px-4 text-sm font-semibold" to="/proposals">Review</Link></Slab>}
