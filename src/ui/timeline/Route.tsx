@@ -141,13 +141,15 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek}:RouteP
     {geometry}
    </button>
    <div data-route-now="" className="flex min-w-0 items-center gap-2 border-t border-[var(--hair)] pt-2">
-    <button type="button" aria-label="Previous checkpoint" disabled={focused===0}
-     onClick={()=>move(-1)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-[var(--edge)] text-ink disabled:opacity-30">‹</button>
     <span data-code="" className="shrink-0 font-[var(--font-num)] text-[12px] font-medium tabular-nums text-[var(--accent)]">
      {checkpoint.code}
     </span>
     <span className="min-w-0 flex-1 break-words text-[16px] text-ink"><Tex source={checkpoint.title}/></span>
     <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{focused+1} of {n}</span>
+   </div>
+   <div data-route-controls="" className="mt-2 flex items-center justify-end gap-2">
+    <button type="button" aria-label="Previous checkpoint" disabled={focused===0}
+     onClick={()=>move(-1)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-[var(--edge)] text-ink disabled:opacity-30">‹</button>
     <button type="button" aria-label="Next checkpoint" disabled={focused===n-1}
      onClick={()=>move(1)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-[var(--edge)] text-ink disabled:opacity-30">›</button>
     <button type="button" aria-label="Open checkpoint" onClick={()=>open()}
