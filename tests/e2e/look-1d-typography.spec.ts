@@ -40,6 +40,7 @@ for(const width of [360,390] as const){
     expect(cardStyle.line).toBe(20);
    }
    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+   await section.scrollIntoViewIfNeeded();
    await page.screenshot({path:`test-results/screens/look-1d-${screen}-${profile}-${theme}-${width}.png`});
   }
  });
