@@ -31,7 +31,10 @@ function synthetic(id:string,name:string,subjectId:string,level:ConceptLevel,par
 /** Longest prerequisite chain ending at each idea; cycles are cut where they close. */
 function prerequisiteRank(ids:Iterable<string>,links:readonly Link[]):Map<string,number>{
  const needs=new Map<string,string[]>();
- for(const l of links)if(l.kind==='prereq')needs.set(l.toId,[...needs.get(l.toId)??[],l.fromId]);
+ for(const l of links)if(l.kind==='prereq'){
+  const bucket=needs.get(l.toId)??[];
+  bucket.push(l.fromId);needs.set(l.toId,bucket);
+ }
  const rank=new Map<string,number>(),active=new Set<string>();
  const visit=(id:string):number=>{
   if(rank.has(id))return rank.get(id)!;
@@ -59,17 +62,22 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const subjects=[...graph.subjects].filter(s=>!isTest(s.name)&&!isTest(s.id))
   .sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
  const permitted=new Set(subjects.map(s=>s.id)),nodes=new Map<string,AtlasNode>();
+ const clustersBySubject=new Map<string,AtlasNode[]>();
  for(const c of graph.concepts){
   if(!permitted.has(c.subjectId)||isTest(c.id)||isTest(c.name))continue;
   const level:ConceptLevel=LEVELS.includes(c.level as ConceptLevel)?c.level!:'planet';
-  nodes.set(c.id,{...c,level,parentId:c.parentId??null,children:[],depth:0,synthetic:false,glyph:null,
-   total:0,done:0,revisit:0,due:0,rank:0});
+  const node:AtlasNode={...c,level,parentId:c.parentId??null,children:[],depth:0,synthetic:false,glyph:null,
+   total:0,done:0,revisit:0,due:0,rank:0};
+  nodes.set(c.id,node);
+  if(level==='cluster'){
+   const own=clustersBySubject.get(c.subjectId)??[];
+   own.push(node);clustersBySubject.set(c.subjectId,own);
+  }
  }
  const roots:string[]=[],rootBySubject=new Map<string,string>();
  for(const subject of subjects){
-  // Every field (cluster) is a root; a subject without one gets a root named after it.
-  const own=[...nodes.values()].filter(n=>n.subjectId===subject.id&&n.level==='cluster')
-   .sort((a,b)=>a.name.localeCompare(b.name));
+  // Group roots while building nodes instead of rescanning all ideas for each field.
+  const own=(clustersBySubject.get(subject.id)??[]).sort((a,b)=>a.name.localeCompare(b.name));
   for(const field of own){field.glyph=subject.glyph;roots.push(field.id)}
   const id=own[0]?.id??'atlas:root:'+subject.id;
   if(!own.length){nodes.set(id,synthetic(id,subject.name,subject.id,'cluster',null,subject.glyph));roots.push(id)}
@@ -90,6 +98,10 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  for(const node of nodes.values())if(node.parentId)nodes.get(node.parentId)?.children.push(node.id);
  const links=graph.links.filter(l=>l.fromId!==l.toId&&nodes.has(l.fromId)&&nodes.has(l.toId));
  const rank=prerequisiteRank(nodes.keys(),links);
+ // Child ordering may compare the same idea dozens of times. Parse its
+ // checkpoint code once, not during every comparison in each sibling sort.
+ const checkpointRanks=new Map<string,number>([...nodes].map(([id,node]):[string,number]=>[id,checkpointNumber(node)]));
+ const taughtRanks=new Map<string,number|null>([...nodes].map(([id,node]):[string,number|null]=>[id,taughtCheckpoint(node)]));
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
   const kids=n.children.map(c=>summarise(c,depth+1));
@@ -106,10 +118,10 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
   n.children.sort((a,b)=>{
    const x=nodes.get(a)!,y=nodes.get(b)!;
-   const taughtX=taughtCheckpoint(x),taughtY=taughtCheckpoint(y);
+   const taughtX=taughtRanks.get(a)??null,taughtY=taughtRanks.get(b)??null;
    // A proposed plan must read CP1, CP2, …, CP10, never CP1, CP10, CP2.
    if(taughtX!==null&&taughtY!==null&&taughtX!==taughtY)return taughtX-taughtY;
-   return x.rank-y.rank||checkpointNumber(x)-checkpointNumber(y)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
+   return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
   });
   return n;
  };
@@ -132,6 +144,14 @@ export function descendants(tree:AtlasTree,id:string):string[]{
 export function expandedToDepth(tree:AtlasTree,depth:number):Set<string>{
  return new Set([...tree.nodes.values()].filter(n=>n.children.length&&n.depth<depth-1).map(n=>n.id));
 }
+/** Resolve saved/default folds before the first tree render. An effect-only
+ * initialization made the extreme Atlas calculate 8,000 links twice under
+ * 4× CPU throttling: once for the closed roots, then for the actual view. */
+export function initialExpanded(tree:AtlasTree,stored?:readonly string[]|null):Set<string>{
+ const valid=stored?.filter(id=>tree.nodes.has(id));
+ return valid?.length?new Set(valid):defaultExpanded(tree);
+}
+
 /** First visit: open each field one level and unfold the path to anything in progress or due. */
 export function defaultExpanded(tree:AtlasTree):Set<string>{
  const open=new Set(tree.roots);
@@ -175,18 +195,72 @@ export function representative(tree:AtlasTree,index:ReadonlyMap<string,number>,i
 /** Links between visible rows. Links inside one folded branch disappear; parallel links bundle. */
 export function arcsFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Link['kind']>):Arc[]{
  const index=new Map(rows.map((r,i)=>[r.id,i]));
+ // Resolve each idea's nearest visible ancestor once. In a 2,500-idea
+ // Atlas with 8,000 links, walking and allocating a visited Set for both
+ // endpoints of every link needlessly repeats the same ancestry work.
+ // Cache misses as well as hits; the index is scoped to this exact row set.
+ const representatives=new Map<string,number|null>();
+ const resolve=(id:string):number|null=>{
+  if(representatives.has(id))return representatives.get(id)!;
+  const path:string[]=[],seen=new Set<string>();
+  let current:string|null=id;
+  let found:number|null=null;
+  while(current&&!seen.has(current)){
+   if(representatives.has(current)){found=representatives.get(current)!;break}
+   seen.add(current);
+   path.push(current);
+   const at=index.get(current);
+   if(at!==undefined){found=at;break}
+   current=tree.nodes.get(current)?.parentId??null;
+  }
+  for(const node of path)representatives.set(node,found);
+  return found;
+ };
  const bundles=new Map<string,Arc>();
  for(const link of tree.links){
   if(!kinds.has(link.kind))continue;
-  const from=representative(tree,index,link.fromId),to=representative(tree,index,link.toId);
+  const from=resolve(link.fromId),to=resolve(link.toId);
   if(from===null||to===null||from===to)continue;
   const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
   const key=link.kind+':'+a+':'+b;
   const arc=bundles.get(key)??{key,from:a,to:b,kind:link.kind,count:0,links:[]};
   arc.count++;arc.links.push(link);bundles.set(key,arc);
  }
- // Short arcs are drawn last so they sit on top of the long ones they nest inside.
- return [...bundles.values()].sort((x,y)=>Math.abs(y.to-y.from)-Math.abs(x.to-x.from));
+ // Do not sort every arc here. Extreme profiles have up to 8,000 links,
+ // but the gutter renders at most 60 arcs. Sort only the retained arcs.
+ return [...bundles.values()];
+}
+
+
+/** Count distinct visible bundles without allocating thousands of Arc objects.
+ * A fully unfolded, unfocused extreme Atlas draws no arcs above the gutter cap;
+ * the only visible result is the exact number hidden. */
+export function arcCountFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Link['kind']>):number{
+ const index=new Map(rows.map((row,i)=>[row.id,i]));
+ const cached=new Map<string,number|null>();
+ const resolve=(id:string):number|null=>{
+  if(cached.has(id))return cached.get(id)!;
+  const path:string[]=[],seen=new Set<string>();
+  let current:string|null=id,found:number|null=null;
+  while(current&&!seen.has(current)){
+   if(cached.has(current)){found=cached.get(current)!;break}
+   seen.add(current);path.push(current);
+   const at=index.get(current);
+   if(at!==undefined){found=at;break}
+   current=tree.nodes.get(current)?.parentId??null;
+  }
+  for(const node of path)cached.set(node,found);
+  return found;
+ };
+ const keys=new Set<string>();
+ for(const link of tree.links){
+  if(!kinds.has(link.kind))continue;
+  const from=resolve(link.fromId),to=resolve(link.toId);
+  if(from===null||to===null||from===to)continue;
+  const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
+  keys.add(link.kind+':'+a+':'+b);
+ }
+ return keys.size;
 }
 
 
@@ -199,7 +273,14 @@ export function budgetArcs(
  tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
  arcs:readonly Arc[],focus:Focus|null,limit=60,
 ):{visible:Arc[];hidden:number}{
- if(arcs.length<=limit)return {visible:[...arcs],hidden:0};
+ const bySpan=(a:Arc,b:Arc)=>Math.abs(b.to-b.from)-Math.abs(a.to-a.from);
+ if(arcs.length<=limit)return {visible:[...arcs].sort(bySpan),hidden:0};
+ // With no selected idea and no folded branches, all arcs are intentionally
+ // hidden. Avoid allocating and sorting thousands of scored candidates.
+ if(!focus&&!rows.some(row=>{
+  const node=tree.nodes.get(row.id);
+  return !!node?.children.length&&!expanded.has(node.id);
+ }))return {visible:[],hidden:arcs.length};
  const scored=arcs.map((arc,index)=>{
   const focused=!!focus&&arcTone(arc,focus)!=='none';
   const folded=[arc.from,arc.to].some(i=>{
@@ -207,9 +288,9 @@ export function budgetArcs(
    return !!node?.children.length&&!expanded.has(node.id);
   });
   return {arc,index,score:focused?2:folded?1:0};
- }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.index-b.index);
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||bySpan(a.arc,b.arc)||a.index-b.index);
  const chosen=new Set(scored.slice(0,limit).map(x=>x.arc.key));
- const visible=arcs.filter(arc=>chosen.has(arc.key));
+ const visible=arcs.filter(arc=>chosen.has(arc.key)).sort(bySpan);
  return {visible,hidden:arcs.length-visible.length};
 }
 

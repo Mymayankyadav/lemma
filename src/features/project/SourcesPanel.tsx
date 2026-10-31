@@ -7,6 +7,7 @@ import {SourceTranscriptionView} from './SourceTranscriptionView';
 import type {IngestProgress,Source,SourceKind} from '../../data/types';
 import {cancelIngest,isSourceFile,resetIngestCancellation} from '../../pdf/ingest';
 import {Rail} from '../../ui/Rail';
+import {visibleUploadQueue} from './uploadQueue';
 import {Tile} from '../../ui/Tile';
 import {useToast} from '../../ui/Toast';
 
@@ -81,9 +82,14 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
  }
  const grouped=kinds.map(value=>({kind:value,rows:sources.filter(s=>(s.kind??'other')===value).sort((a,b)=>Date.parse(b.addedAt??b.createdAt)-Date.parse(a.addedAt??a.createdAt))})).filter(g=>g.rows.length);
  const visibleKind=(value:SourceKind)=>sources.length<=10?(openKind===null||openKind===value):(openKind??grouped[0]?.kind)===value;
- const sized=sources.filter(source=>typeof source.bytes==='number'&&Number.isFinite(source.bytes)&&source.bytes>=0);
- const storageBytes=sized.reduce((total,source)=>total+source.bytes!,0),unknownSizes=sources.length-sized.length;
+ // The 1 GB quota is for stored PDF binaries, not .tex/.md page text in Postgres.
+ // Source.bytes records the original upload size for both kinds; only PDFs
+ // consume the storage bucket. Keep unknown PDF sizes explicit.
+ const pdfSources=sources.filter(source=>/\.pdf$/i.test(source.filename));
+ const sized=pdfSources.filter(source=>typeof source.bytes==='number'&&Number.isFinite(source.bytes)&&source.bytes>=0);
+ const storageBytes=sized.reduce((total,source)=>total+source.bytes!,0),unknownSizes=pdfSources.length-sized.length;
  const storagePct=Math.min(100,storageBytes/storageLimit*100);
+ const visibleQueue=visibleUploadQueue(queue);
  return <section aria-label="Sources" className="flex flex-col gap-4">
   <div role="group" aria-label="Source storage" className="flex flex-col gap-1.5">
    <div className="flex items-center justify-between gap-2 text-label text-ink-3">
@@ -136,7 +142,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
    </button>
   </div>
   {queue.length>0&&<ul aria-label="Source upload queue" className="flex flex-col gap-2">
-   {queue.slice(-20).map(item=><li key={item.id} className="rounded-slab border border-edge bg-raised p-3">
+   {visibleQueue.map(item=><li key={item.id} className="rounded-slab border border-edge bg-raised p-3">
     <div className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-body">{item.name}</span>
      <span aria-label={'Upload status: '+item.phase} className="flex shrink-0 items-center gap-1 text-label text-ink-2">{item.phase==='ready'?<><Check size={17} className="text-easy"/>Ready</>:item.phase}</span></div>
     <p className="mt-1 text-caption text-ink-3">{formatSize(item.bytes)}{item.progress?.pageCount?' · '+item.pagesRead+'/'+item.progress.pageCount+' pages read':''}</p>
@@ -145,7 +151,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     {item.progress&&item.phase!=='ready'&&item.phase!=='cancelled'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.name}/>}
     {item.error&&<p role="alert" className="text-label text-again">{item.error} {item.file&&<button type="button" className="min-h-11 text-amber" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button>}</p>}
    </li>)}
-  {queue.length>20&&<p className="text-label text-ink-3">{queue.length-20} earlier queue entries hidden.</p>}
+  {queue.length>visibleQueue.length&&<p className="text-label text-ink-3">{queue.length-visibleQueue.length} earlier queue entries hidden.</p>}
   </ul>}
  </section>;
 }

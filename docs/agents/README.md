@@ -4,7 +4,7 @@ This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent c
 
 ## 1. The team
 
-Five scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh session with no memory). They coordinate only through GitHub. Their full prompts are in `docs/agents/prompts.md`. **Every agent reads its own section of `docs/agents/prompts.md` at the start of each run; where it differs from the prompt pasted into its schedule, the repo version wins.** That way rule changes reach the agents without anyone re-pasting prompts.
+Five scheduled agents run hourly (ChatGPT scheduled tasks) and a Planner runs every 12 hours (a Claude scheduled task); each run is a fresh session with no memory. They coordinate only through GitHub. Their full prompts are in `docs/agents/prompts.md`. **Every agent reads its own section of `docs/agents/prompts.md` at the start of each run; where it differs from the prompt pasted into its schedule, the repo version wins.** That way rule changes reach the agents without anyone re-pasting prompts.
 
 | Role | Runs (IST) | Does |
 | --- | --- | --- |
@@ -12,6 +12,7 @@ Five scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh s
 | Fixer | :15 | Turns every red PR green, fixes `FIX main` and `audit` issues, fixes bugs; works several in parallel |
 | Builder | :30 | Writes as much code as possible across 3–5 tasks in parallel; takes over any stalled PR |
 | Auditor | :45 | Audits every merged and "Ready to merge" PR against the specs and the owner's intent; files `audit` issues; verifies fixes |
+| Planner | every 12 h (about 08:40 and 20:40) | Plans major feature drops, UI and aesthetic changes, the Android app and notifications; writes specs in `docs/spec/` and task sections in `plan.md` through "PLAN …" PRs; never writes app code |
 | Builder-2 | :50 | Unblocks the critical path: takes the 2–4 tasks that hold up the most other work (red, stalled or unstarted), splits large PRs so the most important parts land first |
 
 More agents can be added at any time: copy the Builder or Fixer prompt, give it a new role name (for example "Builder-3") and a different minute. The lease convention below stops agents from colliding.
@@ -25,7 +26,7 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
   - There are no "my PR" exceptions: every open PR belongs to the team.
 - **PR description.** It holds a checklist of the spec's acceptance items, a line "Next step: …", and "Ready to merge" once the owner of the lease believes it is complete.
 - **Do not wait for CI.** Push, move on to the next task, and come back later (in the same run or the next) to read the results.
-- **Merging.** Squash-merge only, and only when every check on the exact head commit has completed successfully (never pending), the description says "Ready to merge", and there is no unresolved "AUDIT BLOCK" comment (one with no later "AUDIT CLEAR"). Being behind main is not a blocker: merge unless GitHub reports a conflict, or files the PR touches have changed on main since its CI ran. Never push to main, never force-push or rebase; bring main in with a merge.
+- **Merging.** Squash-merge only. **Fail closed:** use GitHub REST on the exact current PR head SHA; require a **nonempty** set of completed-success checks including the expected `check` (npm check + Playwright) and `mcp-sql` jobs. Missing checks, failed API reads, queued/in-progress/pending, cancelled, skipped, neutral, timed-out or failed checks block the merge. Every reported commit status must also be successful. The description must have a standalone "Ready to merge" line, the lease must be eligible, and no unresolved "AUDIT BLOCK" may remain (only a later "AUDIT CLEAR" lifts it). `scripts/merge-gate.ts` contains regression-tested decision logic for this rule; re-read checks and blockers immediately before merging. Being behind main is not a blocker unless GitHub reports a conflict or overlapping changed files. Never push to main, force-push or rebase; bring main in with a merge.
 - **Auditor blocks.** The Auditor blocks a PR with a comment starting "AUDIT BLOCK" (listing the findings) and lifts it with a later comment starting "AUDIT CLEAR". The Steward never merges while the latest of the two is a block.
 - **Tests.** Never weaken, skip or delete a test to make CI pass. Fix the code.
 - **Shared issues.**
@@ -34,6 +35,11 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
   - "Agent log": every run appends one line.
   - Issues labelled `audit` are the Auditor's findings. The Fixer fixes them and the Auditor closes them.
 - **Adding work.** Add a section to `plan.md` with task IDs, spec references and "depends on". The Steward puts it on the board and the Builder starts it.
+- **Planner PRs and owner approval.** The Planner opens "PLAN <name>: …" PRs (docs/spec/ and plan.md only).
+  - A major drop says "Owner approval needed" in its description, and its tasks are marked "awaiting owner" in plan.md.
+  - **No agent picks a task marked "awaiting owner", and no agent other than the owner writes "Ready to merge" on a PR that says "Owner approval needed".** The Steward never merges a PR whose description still says "Owner approval needed".
+  - The owner approves by replacing "Owner approval needed" with "Ready to merge". After it merges, the "awaiting owner" marks are removed and the tasks join the board like any other.
+  - Small Planner refinements say "Ready to merge" and merge normally.
 
 ## 3. Ground rules (from AGENTS.md, repeated because they matter)
 
@@ -49,6 +55,14 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
 ## 4. Owner's decisions to protect (do not regress)
 
 - **Look:** Graph paper only, day and night, chosen automatically from the device, with an Automatic/Day/Night override. Compact text, calm motion, a docked tab bar with icon-first tabs and a label on the active tab only. No other themes or appearance controls. A simple graph-paper background with one curve per screen (Atlas and card review: grid only).
+- **v4 look (owner, 31 Oct 13:59):** `docs/spec/v4-look.md` is approved, including its §8 decision changes:
+  - red is reserved for "you are here", the primary action and real danger;
+  - lateness is ochre and dashed;
+  - the background curve is a letterhead that scrolls away;
+  - checkpoints are one Route line at any size;
+  - Atlas levels differ, and links are drawn as lanes.
+
+  It overrides `v3.md` where they differ. Do not reintroduce button rails, boxes inside boxes, or red for lateness.
 - **LaTeX everywhere:** every displayed text and every input renders LaTeX (`$…$`, `$$…$$`).
 - **Metro timeline** with schedule colours between stations (early, on time, late). Above about 14 checkpoints it becomes a stage Metro (stress.md A1).
 - **Atlas** (v3.md §4): a foldable outline of ideas (Field › Area › Topic › Idea › Detail) with prerequisite links drawn as arcs in a right-hand margin.
