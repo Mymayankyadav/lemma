@@ -54,6 +54,19 @@ const routes = [
  '/review/run', '/review/done', '/cards', '/cards/31', '/atlas',
  '/insights', '/settings', '/sign-in', '/kit',
 ] as const;
+// Require the new route's own heading before measuring. The previous route
+// remains mounted briefly during HashRouter transitions, so checking only that
+// #main-content has text can capture stale screens under heavy stress data.
+const routeHeadings: Record<(typeof routes)[number], string> = {
+ '/': 'Home', '/projects': 'Paths', '/projects/new': 'New project',
+ '/p/real-analysis': 'Project', '/p/real-analysis/cp/CP4': 'Checkpoint',
+ '/s/real-analysis/7': 'Session record', '/proposals': 'Approve',
+ '/proposals/proposal-6': 'Plan proposal', '/review': 'Review',
+ '/review/run': 'Card review', '/review/done': 'Review complete',
+ '/cards': 'Cards', '/cards/31': 'Card detail', '/atlas': 'Atlas',
+ '/insights': 'Insights', '/settings': 'Settings',
+ '/sign-in': 'Sign in', '/kit': 'Component kit',
+};
 for (const profile of ['stress', 'extreme'] as const)
 for (const theme of ['graph', 'graph-night'] as const)
 for (const [width, height] of [[390, 844], [360, 740]] as const) {
@@ -80,6 +93,7 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
     await page.evaluate(nextRoute => {window.location.hash=nextRoute},route);
    }
    await expect(page.locator('#main-content')).toBeVisible({timeout:90_000});
+   await expect(page.getByRole('heading', {name:routeHeadings[route], exact:true, level:1})).toBeVisible({timeout:90_000});
    await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
    await page.waitForTimeout(150);
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
