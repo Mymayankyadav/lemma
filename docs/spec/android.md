@@ -1,6 +1,6 @@
 # Lemma on Android (Planner, 31 Oct 2026)
 
-**Status: awaiting owner.** No agent starts an AND task until the owner approves the PR "PLAN android" and it merges (`docs/agents/README.md` §2). AND-9 also needs the owner to change decision §2 #1 ("online-first, no offline sync"). Approving this plan alone does not start AND-9.
+**Status: owner-requested 31 Oct 23:33 IST; Auditor audits first.** The owner asked for this plan on 31 Oct 2026 at 23:33 IST. The Auditor audits it against the owner's decisions (`docs/agents/README.md` §4), the hard stress budgets and `v4-look.md`. Only after a CLEAR comment on the PR does the Steward merge it, and then Fixer and Builder agents start AND-1 … AND-8. The owner's one-time steps in §8 (Play Console, upload key, fingerprints, asset-links repo) gate the live parts. **AND-9 stays blocked:** it also needs the owner to change decision §2 #1 ("online-first, no offline sync"), which this request does not do.
 
 Visual truth: `v4-look.md`, then `v3.md`, then `stress.md`. Notifications are specified in `notifications.md`, and this spec only adds what is specific to Android.
 
