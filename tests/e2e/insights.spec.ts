@@ -66,6 +66,6 @@ for (const world of ['graph','graph-night'] as const) {
   expect(grades.legend.again).not.toBe(grades.legend.hard);
   expect(new Set(Object.values(grades.legend)).size).toBe(4);
   expect(grades.bars.good).toBe('var(--grade-good)');
-  expect(grades.bars.easy).toBe('var(--good)');
+  expect(grades.bars.easy).toBe('var(--easy)');
  });
 }
