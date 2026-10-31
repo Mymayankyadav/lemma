@@ -41,6 +41,11 @@ Source: [stress.md §3](../spec/stress.md), [QA-3a reporter](qa3.md), and the ow
 
 [ST-4 exact-head CI #41187725047](https://github.com/Mymayankyadav/lemma/actions/runs/41187725047) and [screens artifact #13037109553](https://github.com/Mymayankyadav/lemma/actions/runs/41187725047/artifacts/13037109553) were downloaded and inspected. Twelve extreme screenshots (Cards list, long card face, Review hub × Graph/day/night × 360/390) showed the expected 4,000 due / 200 today / 3,800 overdue split, bounded visible card rows, readable internal card scrolling and sticky grading controls, without obvious horizontal clipping. This is supplemental visual inspection, not final A–I acceptance; the Auditor separately issued CLEAR on #433.
 
+
+## Preliminary 144-screenshot structural check (not final acceptance)
+
+The ST-4 #433 exact-head screens artifact #13037109553 contains all 144 ST-0 S/X × graph/graph-night × 360/390 screenshots. An independent ZIP/header/hash pass found 72 PNGs at 720×1480 and 72 at 780×1688 (all 2× expected viewport dimensions), valid PNG end markers and no duplicate image hashes within any 18-route matrix. This is **structural evidence only** from the ST-4 head, not proof that every screen is legible or that final-main QA-3b passes. The new `scripts/qa3-screens.ts` gate and its unit tests make this repeatable on the final head.
+
 ## Release decision
 
 **INCOMPLETE** until the acceptance matrix has nine explicit PASS verdicts, all required hard budgets pass on exact-head CI, live E1 network evidence is recorded, screenshots are reviewed, and the Auditor clears the final PR.
