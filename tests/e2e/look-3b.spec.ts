@@ -6,14 +6,23 @@ import {readdirSync,readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import type {CheckpointView} from '../../src/data/types';
 import {createServer,type ViteDevServer} from 'vite';
+import {JSDOM} from 'jsdom';
+import createDOMPurify from 'dompurify';
 import type {Route as RouteType} from '../../src/ui/timeline/Route';
 
 /** Isolated component visual audit. Interactive mounted-route/4x CPU tests
  * remain a LOOK-3c gate; SSR screenshots cannot substitute for those. */
 let viteServer:ViteDevServer|undefined;
 let routeComponent:typeof RouteType|undefined;
+let sanitizerDOM:JSDOM|undefined;
 async function loadRoute(){
  if(!routeComponent){
+  // Node imports DOMPurify as a factory, not a browser-bound sanitizer.
+  // Bind the *real* DOMPurify sanitizer to jsdom for SSR; never bypass or
+  // stub HTML sanitization in a mathematical-TeX acceptance test.
+  sanitizerDOM=new JSDOM('<!doctype html><html><body></body></html>');
+  const purifier=createDOMPurify(sanitizerDOM.window as unknown as Window);
+  Object.assign(createDOMPurify,{sanitize:purifier.sanitize.bind(purifier)});
   // Vite's SSR loader handles Tex's CSS import; Playwright's Node transform
   // cannot parse a production .css module directly.
   viteServer=await createServer({server:{middlewareMode:true},appType:'custom'});
@@ -21,7 +30,7 @@ async function loadRoute(){
  }
  return routeComponent;
 }
-test.afterAll(async()=>{await viteServer?.close();});
+test.afterAll(async()=>{await viteServer?.close();sanitizerDOM?.window.close();});
 let cachedCss:string|undefined;
 function getCss(){
  return cachedCss??=readdirSync('dist/assets').filter(name=>name.endsWith('.css'))
