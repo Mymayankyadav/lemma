@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate} from 'react-router';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {Plus,Search} from 'lucide-react';
@@ -15,9 +15,10 @@ import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
 import {hasMathPreview} from '../../lib/plain-math';
 import {canRenderPlainCardFront} from './plainCardFront';
-import {Editor,type EditorValue} from './Editor';
+import type {EditorValue} from './Editor';
 import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
 
+const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
 const ROW_HEIGHT=92,OVERSCAN=6;
 function relative(due:string|null){
  if(!due)return 'New';
@@ -152,7 +153,7 @@ export default function Page(){
    {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
   </Button>}
   <Sheet open={creating} onClose={closeCreating} title="New card">
-   <Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>
+   <Suspense fallback={<Skeleton h={180}/>}>{creating&&<Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>}</Suspense>
   </Sheet>
  </Screen>;
 }
