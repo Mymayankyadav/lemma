@@ -93,7 +93,7 @@ export default function Page(){
    <h2 className="mb-2 font-math italic text-ink-2">Your round</h2>
    <div className="flex flex-col gap-3">
     {missed.length>0&&<div><p className="mb-2 text-label text-ink-3">{missed.length} missed</p>
-     <div className="flex flex-wrap gap-1.5">{missed.slice(0,showAllMissed?undefined:8).map(a=><Link key={a.card.cardId} to={'/cards/'+a.card.noteNo}
+     <div className="flex flex-wrap gap-1.5">{missed.slice(0,showAllMissed?undefined:8).map(a=><Link key={a.card.cardId} to={'/cards/'+a.card.noteNo} title={a.card.projectSlug+' · Again'}
       className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink"
       aria-label={'Missed card N'+a.card.noteNo}>{'N'+a.card.noteNo}</Link>)}</div>
      {missed.length>8&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setShowAllMissed(v=>!v)}>
