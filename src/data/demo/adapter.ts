@@ -240,7 +240,7 @@ export class DemoAdapter implements LemmaApi {
   /** The due badge and deck counts represent the full backlog, not the daily queue. */
   private backlog(): ReviewItem[] {
     const now = this.now();
-    return this.allItems().filter(item => Date.parse(item.state.due) <= now);
+    return this.allItems().filter(item => item.state.state > 0 && Date.parse(item.state.due) <= now);
   }
   private eligible(): ReviewItem[] {
     const start = studyDayBounds(
