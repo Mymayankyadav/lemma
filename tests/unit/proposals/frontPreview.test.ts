@@ -24,6 +24,15 @@ describe("LOOK-8a mathematical proposal-front first line", () => {
       .toBe("$a=b$");
   });
 
+  it("extracts an equation from standard TeX display environments, not a blank wrapper", () => {
+    expect(firstProposalFrontLine("\\begin{equation}\n\\int_0^1 x^2\\,dx\n\\end{equation}\nExplain"))
+      .toBe("$\\int_0^1 x^2\\,dx$");
+    expect(firstProposalFrontLine("\\begin{align*}\na &= b\\\\\nc &= d\n\\end{align*}"))
+      .toBe("$a = b$");
+    expect(firstProposalFrontLine("\\begin{equation*}\n\\end{equation*}"))
+      .toBe("Mathematical expression");
+  });
+
   it("has a meaningful nonblank fallback for empty display environments", () => {
     expect(firstProposalFrontLine("$$\n$$")).toBe("Mathematical expression");
     expect(firstProposalFrontLine(" \n ")).toBe("");
