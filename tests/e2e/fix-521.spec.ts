@@ -13,6 +13,7 @@ for(const profile of ['stress','extreme'] as const)
     const meta=row.locator('[data-resume-meta]');
     await expect(title).toBeVisible();
     await expect(meta).toBeVisible();
+    await expect(row.locator('.sr-only')).toContainText(/, step [0-9]+ of [0-9]+/);
     expect((await title.getAttribute('title'))?.length).toBeGreaterThan(0);
     expect((await meta.getAttribute('title'))?.length).toBeGreaterThan(0);
     await meta.locator('.lemma-tex-inline').evaluate(el=>{
