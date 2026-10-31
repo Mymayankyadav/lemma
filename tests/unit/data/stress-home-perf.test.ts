@@ -21,6 +21,11 @@ describe('FIX #507: cold Today stress summary',()=>{
   const baseline=home.projects.find(p=>p.id===seed.projects[0].id);
   expect(baseline).toMatchObject({done:3,total:36});
   expect(home.projects.find(p=>p.slug==='stress-project-3')).toMatchObject({done:3,total:100});
+  // Project counts must stay exact when summary scans are replaced with
+  // per-project indexes; the 30,000 cards are distributed evenly.
+  expect(baseline).toMatchObject({cardsCount:500,sessionsCount:1000,sourcesCount:100});
+  expect(home.projects.find(p=>p.slug==='stress-project-3'))
+   .toMatchObject({cardsCount:500,sessionsCount:0,sourcesCount:100});
   // This is an unthrottled adapter-only guard. The separate ST-0 browser gate
   // retains its stricter 1,500ms end-to-end limit under actual 4x CPU.
   expect(elapsed).toBeLessThan(1500);
