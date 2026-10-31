@@ -173,7 +173,7 @@ export function Row({node,open,tone,match,focused=false,onToggle,onSelect}:{
   className={'group relative flex items-center '+(match?'bg-fill-1':'')}
   style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4,
    backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined,
-   opacity:focused&&tone==='none'?.42:1}}>
+   opacity:focused&&tone==='none'?0.42:1}}>
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px bg-edge"
    style={{left:12+indentation(d)+6}}/>)}
   {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
