@@ -16,7 +16,6 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import {
-  useApproveAllCards,
   useApproveProposal,
   useProposals,
   useRejectProposal,
@@ -33,6 +32,7 @@ import { Sheet } from "../../ui/Sheet";
 import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { useToast } from "../../ui/Toast";
+import { groupProposals, pageProposals, type ProposalGroup } from "./groups";
 
 function describe(op: PlanChangeOp) {
   switch (op.op) {
@@ -176,17 +176,21 @@ export default function Page() {
   const query = useProposals(),
     approve = useApproveProposal(),
     reject = useRejectProposal(),
-    approveAll = useApproveAllCards(),
     notify = useToast();
   const [params, setParams] = useSearchParams(),
     tab = params.get("tab") === "plan" ? "plan" : "cards";
-  const [confirm, setConfirm] = useState(false),
+  const [batch, setBatch] = useState<ProposalGroup | null>(null),
+    [staged, setStaged] = useState<{ ids: string[]; label: string } | null>(null),
+    [selected, setSelected] = useState<string | null>(null),
+    [visibleCards, setVisibleCards] = useState(20),
+    [visiblePlans, setVisiblePlans] = useState(20),
+    [confirm, setConfirm] = useState(false),
     [editing, setEditing] = useState(false),
     [front, setFront] = useState(""),
     [back, setBack] = useState(""),
     [slow, setSlow] = useState(false),
     [completed, setCompleted] = useState(0);
-  const pending = approve.isPending || reject.isPending || approveAll.isPending;
+  const pending = approve.isPending || reject.isPending || !!staged;
   useEffect(() => {
     if (!query.isLoading) {
       setSlow(false);
@@ -209,7 +213,27 @@ export default function Page() {
     plans = proposals.filter(
       (p) => p.kind === "plan" || p.kind === "plan_change",
     ),
-    active = cards[0];
+    active = cards.find(p=>p.id===selected)??cards[0],
+    cardGroups = groupProposals(pageProposals(cards,visibleCards)),
+    planGroups = groupProposals(pageProposals(plans,visiblePlans));
+  useEffect(()=>{
+    if(!staged)return;
+    const timer=window.setTimeout(()=>{
+      const ids=staged.ids;
+      setStaged(null);
+      void (async()=>{
+        let succeeded=0;
+        for(const id of ids){
+          try{await approve.mutateAsync({id});succeeded++}
+          catch{break}
+        }
+        if(succeeded===ids.length)notify(`${succeeded} cards approved`,{tone:"success"});
+        else notify(`${succeeded} approved; ${ids.length-succeeded} not saved. Refresh before retrying.`,{tone:"danger"});
+        void query.refetch();
+      })();
+    },6000);
+    return ()=>window.clearTimeout(timer);
+  },[staged]);
   const commit = async (
     p: Proposal,
     accept: boolean,
@@ -234,21 +258,7 @@ export default function Page() {
     setEditing(true);
   };
   return (
-    <Screen
-      title="Approve"
-      back="/"
-      actions={
-        cards.some((card) => card.kind === "card") ? (
-          <button
-            type="button"
-            className="min-h-11 text-body-l font-semibold text-amber"
-            onClick={() => setConfirm(true)}
-          >
-            Approve all
-          </button>
-        ) : undefined
-      }
-    >
+    <Screen title="Approve" back="/"    >
       <Segmented
         label="Proposal types"
         value={tab}
@@ -262,6 +272,10 @@ export default function Page() {
           { value: "plan", label: "Plan", count: plans.length },
         ]}
       />
+      {staged&&<div role="status" className="flex min-h-14 items-center gap-2 rounded-ctl border border-amber-line bg-fill-1 px-3 text-label">
+       <span className="min-w-0 flex-1">{staged.ids.length} from {staged.label} queued · saving in 6 s</span>
+       <button type="button" className="min-h-11 shrink-0 px-3 font-semibold text-amber" onClick={()=>{setStaged(null);notify("Batch approval cancelled")}}>Undo</button>
+      </div>}
       {query.isLoading ? (
         slow ? (
           <div className="flex flex-col gap-4">
@@ -276,6 +290,19 @@ export default function Page() {
       ) : tab === "cards" ? (
         active ? (
           <>
+            <section aria-label="Proposal groups" className="flex flex-col gap-3">
+             <p className="text-label text-ink-3">{Math.min(visibleCards,cards.length)} of {cards.length} card proposals · grouped by session and checkpoint</p>
+             {cardGroups.map(group=><Slab key={group.key} className="flex flex-col gap-2 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+               <div className="min-w-0"><h2 className="text-body font-semibold">{group.label} · {group.proposals.length}</h2><p className="truncate text-caption text-ink-3">{group.project.replaceAll("-", " ")}</p></div>
+               {group.proposals.some(p=>p.kind==="card")&&<button type="button" disabled={pending} className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-amber disabled:opacity-50" onClick={()=>{setBatch(group);setConfirm(true)}}>
+                Approve all from {group.label}
+               </button>}
+              </div>
+              <div className="flex flex-wrap gap-1.5">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`min-h-11 rounded-ctl border px-3 text-label ${active.id===p.id?"border-amber text-amber":"border-edge text-ink-2"}`}>{p.kind==="card_edit"?"Fix":"Card"} · {p.card?.front.slice(0,24)??`N${p.cardEdit?.note_no}`}</button>)}</div>
+             </Slab>)}
+             {visibleCards<cards.length&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setVisibleCards(n=>n+20)}>More proposals · {cards.length-visibleCards} remaining</button>}
+            </section>
             <PendingCard
               key={active.id}
               proposal={active}
@@ -331,7 +358,7 @@ export default function Page() {
         )
       ) : plans.length ? (
         <div className="flex flex-col gap-4">
-          {plans.map((p) => (
+          {planGroups.map(group=><section key={group.key} className="flex flex-col gap-3"><h2 className="text-label font-semibold text-ink-2">{group.project.replaceAll("-", " ")} · {group.label} · {group.proposals.length}</h2>{group.proposals.map((p) => (
             <Slab key={p.id} className="p-5">
               <div className="flex items-center gap-3">
                 <Glyph subject={p.projectGlyph} size={40} />
@@ -391,7 +418,8 @@ export default function Page() {
                 </Button>
               </div>
             </Slab>
-          ))}
+          ))}</section>)}
+          {visiblePlans<plans.length&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setVisiblePlans(n=>n+20)}>More plan proposals · {plans.length-visiblePlans} remaining</button>}
         </div>
       ) : (
         <EmptyState
@@ -400,34 +428,15 @@ export default function Page() {
           body="New plans and changes will appear here."
         />
       )}
-      <Sheet
-        open={confirm}
-        onClose={() => setConfirm(false)}
-        title={`Approve ${cards.filter((p) => p.kind === "card").length} cards?`}
-      >
-        <p className="mb-5 text-ink-2">
-          These cards will join your review queue.
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <Button variant="ghost" onClick={() => setConfirm(false)}>
-            Cancel
-          </Button>
-          <Button
-            disabled={pending}
-            onClick={async () => {
-              try {
-                const n = await approveAll.mutateAsync();
-                setConfirm(false);
-                notify(`${n} cards approved`);
-              } catch {
-                notify("Couldn't confirm approvals. Refresh before retrying.", { tone: "danger",
-                  action: {label:"Refresh",onClick:()=>{void query.refetch()}} });
-              }
-            }}
-          >
-            Approve
-          </Button>
-        </div>
+      <Sheet open={confirm} onClose={()=>setConfirm(false)} title={`Approve ${batch?.proposals.filter(p=>p.kind==="card").length??0} from ${batch?.label??"group"}?`}>
+        <p className="mb-3 text-ink-2">Preview the cards from this session and checkpoint. A six-second Undo window appears before anything is saved.</p>
+        <ul className="mb-4 max-h-56 overflow-y-auto text-label text-ink-2">{batch?.proposals.filter(p=>p.kind==="card").map(p=><li key={p.id} className="border-b border-edge py-2">{p.card?.front.slice(0,150)}</li>)}</ul>
+        <div className="grid grid-cols-2 gap-3"><Button variant="ghost" onClick={()=>setConfirm(false)}>Cancel</Button>
+         <Button disabled={pending || !batch?.proposals.some(p=>p.kind==="card")} onClick={()=>{
+          if(!batch)return;
+          setStaged({ids:batch.proposals.filter(p=>p.kind==="card").map(p=>p.id),label:batch.label});
+          setBatch(null);setConfirm(false);
+         }}>Queue approvals</Button></div>
       </Sheet>
       <Sheet open={editing} onClose={() => setEditing(false)} title="Edit card">
         <div className="flex flex-col gap-4">
