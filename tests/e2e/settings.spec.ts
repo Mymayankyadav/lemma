@@ -55,7 +55,9 @@ for(const world of ['graph','graph-night'] as const){
   await page.setViewportSize({width:360,height:740});
   await page.goto(`/lemma/?demo=1&theme=${world}#/sign-in`);
   await expect(page.getByRole('heading',{name:'Sign in'})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Continue with Google'})).toBeDisabled();
+  // v4 §5: demo sign-in is informational, not a disabled red action.
+  await expect(page.getByRole('button',{name:'Continue with Google'})).toHaveCount(0);
+  await expect(page.getByText('Sign-in is available in live mode.')).toBeVisible();
   await page.screenshot({path:`test-results/screens/review/ui6a-sign-in-${world}.png`,fullPage:true});
  });
 }
