@@ -8,7 +8,7 @@ import {pathToFileURL} from 'node:url'
 import {pngHeader} from './qa3-screens'
 
 type Scene={name:string;route:string;action?:string}
-export const V4_SCENES=JSON.parse(readFileSync(new URL('./v4-capture-inventory.json',import.meta.url),'utf8')) as Scene[]
+export const V4_SCENES=JSON.parse(readFileSync(resolve('scripts/v4-capture-inventory.json'),'utf8')) as Scene[]
 export const V4_FULL=['paths','project-path','project-sources','proposals','cards','atlas','insights','settings'] as const
 const SIGNATURE=Buffer.from([137,80,78,71,13,10,26,10])
 export interface V4ScreenAudit {status:'PASS'|'FAIL';expected:number;checked:number;fullExpected:number;fullChecked:number;errors:string[];warnings:string[]}
