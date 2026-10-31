@@ -28,6 +28,19 @@ describe('LOOK-3a mini Route geometry',()=>{
   expect(result.some(s=>s.groupedCount>1)).toBe(true);
   expect(result.some(s=>s.schedule==='behind')).toBe(true);
  });
+ it('folds future stages first without hiding the current stage',()=>{
+  const input=Array.from({length:100},(_,i)=>({
+   label:'S'+i,total:1,done:i<4?1:0,schedule:'unscheduled' as const,
+  }));
+  const result=layoutMiniRoute(input,48);
+  expect(result.map(s=>s.label)).toEqual(['S0','S1','S2','S3','S4','S5–S99']);
+  expect(result.at(-1)?.groupedCount).toBe(95);
+  expect(result.reduce((sum,s)=>sum+s.total,0)).toBe(100);
+  const nearEnd=input.map((s,i)=>({...s,done:i<95?1:0}));
+  const endResult=layoutMiniRoute(nearEnd,48);
+  expect(endResult.some(s=>s.label==='S95'&&s.groupedCount===1)).toBe(true);
+  expect(endResult.reduce((sum,s)=>sum+s.total,0)).toBe(100);
+ });
  it('renders a single progress bar without checkpoint ticks or danger-red lateness',()=>{
   const html=renderToStaticMarkup(createElement(MiniStageBar,{project:{
    total:36,done:3,stageProgress:stages(15),scheduleHeadline:'6 days behind',
