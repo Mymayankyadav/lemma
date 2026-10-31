@@ -31,4 +31,14 @@ describe('Atlas deep-link identity',()=>{
   expect(resolveAtlasDeepLink(nodes,{id:null,slug:'compactness',name:null}))
    .toEqual({kind:'found',id:'third'});
  });
+ it('does not trust a derived slug even when it happens to match the wrong subject',()=>{
+  const withDifferentSlugs=[
+   {...nodes[0],slug:'uniform-l-p-convergence'},
+   {...nodes[1],slug:'stored-functional-analysis-slug'},
+  ];
+  expect(resolveAtlasDeepLink(withDifferentSlugs,{id:null,slug:'uniform-l-p-convergence',name}))
+   .toEqual({kind:'ambiguous',ids:['first','second']});
+  expect(resolveAtlasDeepLink(withDifferentSlugs,{id:'second',slug:'uniform-l-p-convergence',name}))
+   .toEqual({kind:'found',id:'second'});
+ });
 });
