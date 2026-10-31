@@ -125,14 +125,14 @@ export default function Page(){
       className="flex min-w-0 items-center gap-3 overflow-hidden border-b border-edge px-2 py-2 focus-visible:outline-2 focus-visible:outline-amber"
       style={{height:ROW_HEIGHT}}>
       <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
-      <span className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1">
        <div data-card-front-preview className="line-clamp-2 min-w-0 max-w-full overflow-hidden font-math text-headline leading-snug text-ink"><Tex source={row.front}/></div>
        <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
         <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
         <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
         {row.openComments>0&&<span className="text-amber">{row.openComments} notes</span>}
        </span>
-      </span>
+      </div>
      </Link>)}
      <div style={{height:(rows.length-last)*ROW_HEIGHT}} aria-hidden="true"/>
     </div>:
