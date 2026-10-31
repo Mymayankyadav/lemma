@@ -226,8 +226,9 @@ export function arcsFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Lin
   const arc=bundles.get(key)??{key,from:a,to:b,kind:link.kind,count:0,links:[]};
   arc.count++;arc.links.push(link);bundles.set(key,arc);
  }
- // Short arcs are drawn last so they sit on top of the long ones they nest inside.
- return [...bundles.values()].sort((x,y)=>Math.abs(y.to-y.from)-Math.abs(x.to-x.from));
+ // Do not sort every arc here. Extreme profiles have up to 8,000 links,
+ // but the gutter renders at most 60 arcs. Sort only the retained arcs.
+ return [...bundles.values()];
 }
 
 
@@ -240,7 +241,14 @@ export function budgetArcs(
  tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
  arcs:readonly Arc[],focus:Focus|null,limit=60,
 ):{visible:Arc[];hidden:number}{
- if(arcs.length<=limit)return {visible:[...arcs],hidden:0};
+ const bySpan=(a:Arc,b:Arc)=>Math.abs(b.to-b.from)-Math.abs(a.to-a.from);
+ if(arcs.length<=limit)return {visible:[...arcs].sort(bySpan),hidden:0};
+ // With no selected idea and no folded branches, all arcs are intentionally
+ // hidden. Avoid allocating and sorting thousands of scored candidates.
+ if(!focus&&!rows.some(row=>{
+  const node=tree.nodes.get(row.id);
+  return !!node?.children.length&&!expanded.has(node.id);
+ }))return {visible:[],hidden:arcs.length};
  const scored=arcs.map((arc,index)=>{
   const focused=!!focus&&arcTone(arc,focus)!=='none';
   const folded=[arc.from,arc.to].some(i=>{
@@ -248,9 +256,9 @@ export function budgetArcs(
    return !!node?.children.length&&!expanded.has(node.id);
   });
   return {arc,index,score:focused?2:folded?1:0};
- }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.index-b.index);
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||bySpan(a.arc,b.arc)||a.index-b.index);
  const chosen=new Set(scored.slice(0,limit).map(x=>x.arc.key));
- const visible=arcs.filter(arc=>chosen.has(arc.key));
+ const visible=arcs.filter(arc=>chosen.has(arc.key)).sort(bySpan);
  return {visible,hidden:arcs.length-visible.length};
 }
 
