@@ -11,6 +11,11 @@ for(const width of [390,360] as const){
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}))
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}))
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/')
+  await expect(page.getByRole('heading',{name:'Home'})).toBeVisible({timeout:90_000})
+  await page.screenshot({path:'test-results/screens/fix-509-today-'+profile+'-'+theme+'-'+width+'.png'})
+  // Today may use the bounded summary Metro after FIX-484b; the project
+  // page always keeps the interactive stage Metro and its full labels.
+  await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/p/real-analysis')
   const metro=page.locator('[data-timeline="stage-metro"]').first()
   await expect(metro).toBeVisible({timeout:90_000})
   const stages=metro.locator('[data-stage-button]')
@@ -30,6 +35,6 @@ for(const width of [390,360] as const){
   })))
   expect(targets.every(r=>r.width>=44&&r.height>=44)).toBe(true)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
-  await page.screenshot({path:'test-results/screens/fix-509-'+profile+'-'+theme+'-'+width+'.png'})
+  await page.screenshot({path:'test-results/screens/fix-509-project-'+profile+'-'+theme+'-'+width+'.png'})
  })
 }
