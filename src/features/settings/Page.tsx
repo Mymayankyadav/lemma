@@ -451,19 +451,19 @@ export default function Page() {
             <Download size={18} className="shrink-0 text-ink-2" aria-hidden="true" />
             Download a backup
           </button>
-          <button type="button" disabled={signOut.isPending}
-            className="flex min-h-14 w-full items-center px-4 text-left text-body font-semibold text-[var(--danger)]"
-            onClick={async () => {
-              try {
-                await signOut.mutateAsync();
-                if (getMode() !== "demo") void navigate("/sign-in");
-              } catch {
-                notify("Couldn't sign out.", { tone: "danger" });
-              }
-            }}>
-            Sign out
-          </button>
         </div>
+        <button type="button" data-sign-out="true" disabled={signOut.isPending}
+          className="mt-3 flex min-h-11 items-center text-left text-body font-semibold text-[var(--danger)] underline-offset-4 hover:underline focus-visible:underline"
+          onClick={async () => {
+            try {
+              await signOut.mutateAsync();
+              if (getMode() !== "demo") void navigate("/sign-in");
+            } catch {
+              notify("Couldn't sign out.", { tone: "danger" });
+            }
+          }}>
+          Sign out
+        </button>
       </section>
       <p className="text-label text-ink-3">
         Lemma · {getMode() === "demo" ? "Demo data" : "Your study record"}
