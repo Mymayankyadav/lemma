@@ -1,6 +1,6 @@
-import type {CheckpointView} from '../../data/types'
+import type {CheckpointView,ProjectDetail} from '../../data/types'
 import type {ScheduledCheckpoint,ScheduleState} from '../../lib/schedule'
-import {paceFromDemonstrations} from '../../lib/schedule'
+import {buildSchedule,paceFromDemonstrations} from '../../lib/schedule'
 
 export interface ProgressStage {
  key:string; name:string; start:number; end:number; checkpoints:CheckpointView[]
@@ -77,4 +77,25 @@ export function estimateFinish(input:{
  }
  if(remaining===0)return {pace:0,finish:new Date(now),source:'plan',spare:null}
  return {pace:null,finish:null,source:'none',spare:null}
+}
+
+/** Single projection source for the project hero, stage list and checkpoint sheet.
+ * A fresh plan uses its own dates; the sheet must not independently fall back
+ * to the historical .25-checkpoints/week baseline.
+ */
+export function scheduleForProject(
+ detail:Pick<ProjectDetail,'project'|'checkpoints'|'done'|'total'>,
+ events:readonly CompletionEvent[]=[],
+ now=Date.now(),
+){
+ const estimate=estimateFinish({
+  projectId:detail.project.id,total:detail.total,done:detail.done,
+  targetDate:detail.project.targetDate,events,
+  dueDates:detail.checkpoints.filter(cp=>cp.ui!=='done'&&cp.ui!=='revisit').map(cp=>cp.dueOn),
+  now,
+ });
+ const rows=buildSchedule(detail.checkpoints,{
+  targetDate:detail.project.targetDate,pacePerWeek:estimate.pace??undefined,now:new Date(now),
+ });
+ return {estimate,rows};
 }

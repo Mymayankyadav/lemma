@@ -125,6 +125,16 @@ describe('ST-5 bounded live reads',()=>{
    p_note_status:null,p_has_open_comments:null,p_offset:0,
   })
  })
+ it('requests soft-deleted notes only when explicitly filtered',async()=>{
+  const deleted={noteNo:2001,status:'deleted',front:'Removed proof'}
+  mock.rpc.mockResolvedValue({data:[deleted],error:null})
+  const result=await new LiveAdapter().searchCardsPage({query:'',noteStatus:'deleted'})
+  expect(result).toEqual({rows:[deleted],nextOffset:null})
+  expect(mock.rpc).toHaveBeenCalledWith('search_cards_filtered_page',{
+   p_query:'',p_slug:null,p_checkpoint:null,p_state:null,
+   p_note_status:'deleted',p_has_open_comments:null,p_offset:0,
+  })
+ })
  it('rejects invalid card page offsets before issuing a database request',async()=>{
   await expect(new LiveAdapter().searchCardsPage({query:'',offset:-1}))
    .rejects.toMatchObject({code:'invalid'})
