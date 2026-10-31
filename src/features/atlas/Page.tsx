@@ -102,9 +102,12 @@ export default function Page(){
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
  const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
- // Match the cold Atlas C2 fix (#553): start viewport-bounded rendering
- // above 40 rows, with eight rows of overscan in the variable-height geometry.
- const virtual=rows.length>40;
+ // Preserve FIX #519b's moderate-outline accessibility exception:
+ // a normal (≤150-node) tree keeps all Fields mounted for keyboard traversal.
+ // Large stress/X trees still virtualize above 40 rows with eight-row
+ // overscan, using variable-height offsets instead of fixed 44px arithmetic.
+ const virtualizeAbove=tree&&tree.nodes.size<=150?150:40;
+ const virtual=rows.length>virtualizeAbove;
  const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
  const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
  const visible=virtual?rows.slice(first,last):rows;
