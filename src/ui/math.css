@@ -12,3 +12,34 @@
 /* Inline rich text can live inside a heading, caption or ordinary sentence. */
 .lemma-tex-inline { display: inline; max-width: 100%; overflow-wrap: anywhere; }
 .lemma-tex-inline .katex { white-space: nowrap; }
+
+/* ST-4: content is scrollable instead of making the card or page wider. */
+.lemma-math { min-width:0; overflow-wrap:anywhere; }
+.lemma-math .katex-display { max-width:100%; min-width:0; font-size:max(16px,1em); }
+.lemma-math .katex:not(.katex-display .katex) { max-width:100%; display:inline-block; overflow-x:auto; vertical-align:middle; }
+.lemma-math-frame { position:relative; max-width:100%; min-width:0; padding-right:32px; }
+.lemma-math-frame .katex-display {
+ max-width:100%; overflow-x:auto; overscroll-behavior-x:contain;
+ mask-image:linear-gradient(to right,black calc(100% - 20px),transparent);
+}
+.lemma-math-expand {
+ position:absolute; z-index:1; top:0; right:0; display:flex;
+ width:44px; height:44px; align-items:center; justify-content:center;
+ color:var(--accent); background:var(--raised); border:1px solid var(--line);
+ border-radius:var(--r-s); font-size:24px;
+}
+.lemma-math-modal { position:fixed; z-index:80; inset:0; display:flex; flex-direction:column;
+ background:var(--obsidian); color:var(--ink); }
+.lemma-math-modal-toolbar { display:flex; min-height:60px; align-items:center; gap:8px;
+ padding:8px 12px; border-bottom:1px solid var(--line); }
+.lemma-math-modal-toolbar span { flex:1; min-width:0; }
+.lemma-math-modal-button { min-width:44px; min-height:44px; border:1px solid var(--line);
+ border-radius:var(--r-s); font-size:23px; }
+.lemma-math-modal-content { flex:1; overflow:auto; padding:24px; touch-action:pan-x pan-y; }
+.lemma-math-modal-formula { font-family:var(--font-math); min-width:max-content;
+ width:max-content; font-size:max(21px,1em); transform-origin:top left; }
+.lemma-math-modal-formula .katex-display { overflow:visible; text-align:left; }
+@media (orientation:landscape) {
+ .lemma-math-modal-toolbar { min-height:48px; }
+ .lemma-math-modal-content { padding:16px 28px; }
+}
