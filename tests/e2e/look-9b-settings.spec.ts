@@ -45,9 +45,13 @@ for(const width of [360,390] as const){
   }
   const actions=page.locator('[data-settings-actions]');
   await actions.scrollIntoViewIfNeeded();
-  await expect(actions.getByRole('button')).toHaveCount(3);
-  await expect(actions.getByRole('button').last()).toHaveText('Sign out');
-  const danger=await actions.getByRole('button').last().evaluate(el=>{
+  await expect(actions.getByRole('button')).toHaveCount(2);
+  const signOut=page.getByRole('button',{name:'Sign out'});
+  await expect(signOut).toHaveAttribute('data-sign-out','true');
+  await expect(signOut).toBeVisible();
+  // The destructive action is text outside the bordered paper action list.
+  expect(await signOut.evaluate(el=>el.closest('[data-settings-actions]'))).toBeNull();
+  const danger=await signOut.evaluate(el=>{
    const sample=document.createElement('span');
    sample.style.color='var(--danger)';
    document.body.appendChild(sample);
@@ -72,6 +76,24 @@ test('LOOK-9b segmented appearance updates one selected option',async({page})=>{
  await appearance.getByRole('radio',{name:/^Day /}).click();
  await expect(appearance.getByRole('radio',{name:/^Day /})).toHaveAttribute('aria-checked','true');
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+});
+
+test('LOOK-9b appearance segmented control supports arrow and Home/End navigation',async({page})=>{
+ await page.goto('./?demo=1#/settings');
+ const group=page.getByRole('radiogroup',{name:'Appearance mode'});
+ const options=group.getByRole('radio');
+ await options.first().focus();
+ await options.first().press('ArrowRight');
+ await expect(options.nth(1)).toHaveAttribute('aria-checked','true');
+ await expect(options.nth(1)).toBeFocused();
+ await options.nth(1).press('End');
+ await expect(options.last()).toHaveAttribute('aria-checked','true');
+ await expect(options.last()).toBeFocused();
+ await options.last().press('ArrowRight');
+ await expect(options.first()).toHaveAttribute('aria-checked','true');
+ await options.first().press('Home');
+ await expect(options.first()).toBeFocused();
+ await expect(group.getByRole('radio',{checked:true})).toHaveCount(1);
 });
 
 test('LOOK-9b teaching styles are mutually exclusive and selectable',async({page})=>{
