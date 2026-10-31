@@ -18,6 +18,9 @@ for(const width of [360,390] as const){
   const changed=map.getByRole("button",{name:/^Select CP/});
   const full=page.getByRole("region",{name:"Checkpoints"}).getByRole("button",{name:/^Open CP/});
   await expect(full.first()).toBeVisible();
+  // The proposal may load before the approved project plan. Wait for its
+  // actual existing checkpoints instead of passing on a transient two-node map.
+  await expect.poll(()=>full.count(),{timeout:90_000}).toBeGreaterThan(10);
   const shown=await changed.count(),total=await full.count();
   expect(shown).toBeGreaterThanOrEqual(3);
   expect(shown).toBeLessThan(total);
