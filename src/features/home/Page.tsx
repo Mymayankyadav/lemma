@@ -171,8 +171,8 @@ export default function Page(){
    <Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All paths</Link>
    {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
   </section>
-  <section aria-label="Last chat" className="flex flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Last chat</h2>
+  <section aria-label="Continue" className="flex flex-col gap-3">
+   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Continue</h2>
    <ResumeCard home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
   </section>
  </Screen>;
