@@ -28,7 +28,8 @@ export function SubjectRules({data,format}: {data:SubjectMinutes[];format:(minut
      <button type="button" title={plainMath(row.subject.name)} aria-label={plainMath(row.subject.name)} onClick={()=>setFullLabel(fullLabel===row.subject.name?null:row.subject.name)}
       className={`flex min-h-11 min-w-0 flex-1 items-center text-left text-ink-2 ${fullLabel===row.subject.name?'break-words':'overflow-hidden'}`}>
       <span aria-hidden="true" className="mr-2 shrink-0 font-math italic text-amber">{row.subject.glyph}</span>
-      <span className={fullLabel===row.subject.name?'min-w-0 break-words':'clip-1'}><Tex source={row.subject.name}/></span>
+      <span className={fullLabel===row.subject.name?'min-w-0 max-w-full overflow-x-auto break-words':'min-w-0 clip-1'}
+       style={fullLabel===row.subject.name?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}><Tex source={row.subject.name}/></span>
      </button>
      <span className="shrink-0 tabular-nums text-ink-2">{format(row.minutes)}</span>
     </div>
@@ -63,7 +64,7 @@ export function MostRevisitedLink({conceptName,label}:{conceptName?:string|null;
  return <Link to={conceptName?'/atlas?'+params.toString():'/atlas'} className="tile" aria-label={'Most revisited: '+plainMath(name)}>
   <div className="mb-3 flex items-center justify-between text-amber"><RotateCcw size={20}/><Waypoints size={16}/></div>
   <span className="block text-label text-ink-2">Most revisited</span>
-  <strong className="block min-w-0 break-words text-headline"><Tex source={name}/></strong>
+  <strong className="block min-w-0 max-w-full overflow-x-auto break-words text-headline" title={plainMath(name)} style={{maskImage:"linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)"}}><Tex source={name}/></strong>
  </Link>;
 }
 
