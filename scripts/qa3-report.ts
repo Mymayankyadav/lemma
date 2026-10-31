@@ -88,7 +88,7 @@ function validRow(value: unknown): value is Qa3Row {
   if (!object(value)) return false;
   if (typeof value.route !== 'string' || typeof value.actualRoute !== 'string') return false;
   if (typeof value.profile !== 'string' || typeof value.theme !== 'string') return false;
-  if (!Number.isInteger(value.width)) return false;
+  if (typeof value.width !== 'number' || !Number.isInteger(value.width)) return false;
   if (!numericKeys.every(key => typeof value[key] === 'number' &&
     Number.isFinite(value[key]) && (value[key] as number) >= 0)) return false;
   if (value.nodes === 0 || value.cpuThrottle === 0) return false;
