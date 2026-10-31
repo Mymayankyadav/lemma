@@ -58,7 +58,8 @@ export function estimateFinish(input:{
  const remaining=Math.max(0,total-done)
  const observations=events.filter(event=>event.projectId===projectId&&event.kind==='demonstrated'&&
   Number.isFinite(Date.parse(event.at))&&Date.parse(event.at)<=now)
- const hasHistory=observations.some(event=>Date.parse(event.at)<=now-28*DAY)
+ const hasHistory=observations.some(event=>Date.parse(event.at)<=now-28*DAY)&&
+  observations.some(event=>Date.parse(event.at)>now-28*DAY)
  const targetMs=(date:string|null|undefined)=>date&&/^\d{4}-\d{2}-\d{2}/.test(date)
   ?Date.parse(date.slice(0,10)+'T12:00:00Z'):NaN
  if(hasHistory){
@@ -69,7 +70,7 @@ export function estimateFinish(input:{
  }
  const dates=dueDates.map(date=>targetMs(date)).filter((value):value is number=>Number.isFinite(value))
  const target=targetMs(targetDate)
- const planEnd=dates.length?Math.max(...dates):target
+ const planEnd=Math.max(...dates,...(Number.isFinite(target)?[target]:[]),Number.NEGATIVE_INFINITY)
  if(Number.isFinite(planEnd)&&planEnd>now){
   const pace=remaining>0?Math.max(.01,remaining*7*DAY/(planEnd-now)):0
   return {pace,finish:new Date(planEnd),source:'plan',spare:Number.isFinite(target)?Math.floor((target-planEnd)/DAY):null}
