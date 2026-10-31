@@ -98,9 +98,12 @@ for(const width of [360,390] as const){
   await page.getByRole('button',{name:'More reviews'}).click()
   await expect(page.locator('[data-review-row]')).toHaveCount(20)
   await expect(page.getByRole('button',{name:'Newer reviews'})).toBeVisible()
+  await page.getByRole('button',{name:'More comments'}).click()
+  await expect(page.locator('[data-comment-row]')).toHaveCount(20)
+  await expect(page.getByRole('button',{name:'Newer comments'})).toBeVisible()
 
   const bounded=calls.filter(c=>c.table==='reviews'||c.table==='card_comments')
-  expect(bounded.map(c=>c.table).sort()).toEqual(['card_comments','reviews','reviews','reviews'])
+  expect(bounded.map(c=>c.table).sort()).toEqual(['card_comments','card_comments','card_comments','reviews','reviews','reviews'])
   expect(bounded.reduce((sum,c)=>sum+c.bytes,0)).toBeLessThan(200*1024)
   for(const call of bounded){
    const url=new URL(call.url)
@@ -112,6 +115,7 @@ for(const width of [360,390] as const){
    expect(call.bytes).toBeLessThan(100*1024)
   }
   expect(bounded.filter(c=>c.table==='reviews')[2].url).toContain('or=')
+  expect(bounded.filter(c=>c.table==='card_comments')[2].url).toContain('or=')
   expect(calls.filter(c=>c.table==='cards').every(c=>
    new URL(c.url).searchParams.get('note_id')==='eq.n1')).toBe(true)
   expect(unexpected).toEqual([])
