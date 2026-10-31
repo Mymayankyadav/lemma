@@ -22,7 +22,19 @@ export function firstProposalFrontLine(source: string): string {
     return oneLine ? "$" + oneLine + "$" : "Mathematical expression";
   }
 
-  if (first.startsWith("$$") && first.endsWith("$$") && first.length > 4) {
+  // TeX often wraps a card front in a named display environment rather than
+  // $ delimiters. A preview of the opening \begin line alone is blank.
+  const environment = /^\\begin\{(equation\*?|align\*?|gather\*?|multline\*?)\}$/.exec(first)?.[1];
+  if (environment) {
+    const closing = "\\end{" + environment + "}";
+    const end = lines.indexOf(closing, 1);
+    const body = lines.slice(1, end < 0 ? undefined : end);
+    const equation = body.find(line => !/^\\(?:begin|end|label|tag|notag)\b/.test(line));
+    const oneLine = equation?.replace(/\\\\\s*$/, "").replace(/&/g, "").trim();
+    return oneLine ? "$" + oneLine + "$" : "Mathematical expression";
+  }
+
+  if (first.startsWith("$") && first.endsWith("$") && first.length > 4) {
     return "$" + first.slice(2, -2).trim() + "$";
   }
   if (first.startsWith("\\[") && first.endsWith("\\]") && first.length > 4) {
