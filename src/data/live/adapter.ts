@@ -554,8 +554,8 @@ export class LiveAdapter implements LemmaApi {
     for(let offset=0;;offset+=1000){
       const base=db.from(table).select('*').eq('user_id',uid)
       const query=table==='reviews'
-        ? base.in('card_id',cardIds)
-        : base.eq('note_id',note.id)
+        ? base.in('card_id',cardIds).order('reviewed_at',{ascending:false}).order('id',{ascending:false})
+        : base.eq('note_id',note.id).order('no',{ascending:false})
       const batch=checked(await query.range(offset,offset+999)) as Row[]
       result.push(...batch)
       if(batch.length<1000)return result
