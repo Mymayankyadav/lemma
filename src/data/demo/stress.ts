@@ -148,6 +148,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
         filename: `stress-${projectIndex}-${sourceIndex}.pdf`,
         kind: "notes",
         origin: "other",
+        sha256: null,
         bytes: 0,
         pageCount: pagesPerPdf,
         hasText: materialise,
