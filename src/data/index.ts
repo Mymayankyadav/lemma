@@ -40,7 +40,7 @@ function createStressAdapter(profile: 'stress' | 'extreme'): LemmaApi {
  // Only Today can postpone the 2,500-idea/8,000-link graph; a direct Atlas
  // or Paths cold load retains the full graph for fast subsequent navigation.
  const initialToday=typeof location!=='undefined'&&(!location.hash||location.hash==='#/')
- const fixture = makeStressStore(demoSeedFixture, profile, {deferSessions:true,deferNotes:true,deferAtlas:initialToday})
+ const fixture = makeStressStore(demoSeedFixture, profile, {deferSessions:true,deferNotes:true,deferAtlas:initialToday,deferSources:initialToday})
  const generated = performance.now()
  const adapter = new DemoAdapter({fixture,ownedFixture:true})
  const hydrated = performance.now()
