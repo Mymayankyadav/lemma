@@ -291,6 +291,11 @@ export class LiveAdapter implements LemmaApi {
   // Keep the PDF binary for DB-2 undo; only the audited rows are deleted.
   checked(await db.from('sources').delete().eq('id',id).eq('user_id',uid).select('id').single())
  }
+ async getSourceTranscriptionStats(_projectId:string):Promise<import('../types').SourceTranscriptionStat[]>{throw new LemmaError('not_implemented','UI-8 transcription stats pending')}
+ async getSourcePage(_sourceId:string,_page:number):Promise<import('../types').TranscribedSourcePage|null>{throw new LemmaError('not_implemented','UI-8 single-page reader pending')}
+ async getTranscribedPagesForExport(_sourceId:string):Promise<import('../types').TranscribedSourcePage[]>{throw new LemmaError('not_implemented','UI-8 transcription export pending')}
+ async updateSourcePage(_sourceId:string,_page:number,_patch:{body?:string;confidence?:'high'|'check'}):Promise<import('../types').TranscribedSourcePage>{throw new LemmaError('not_implemented','UI-8 transcription edit pending')}
+ async getSourcePdfUrl(_sourceId:string):Promise<string|null>{throw new LemmaError('not_implemented','UI-8 PDF viewer pending')}
  async listSessions(...args: Parameters<LemmaApi['listSessions']>): ReturnType<LemmaApi['listSessions']> {
   const [slug]=args, db=liveClient(),uid=await owner(db)
   const [projects,cps,sessions]=await Promise.all([rows(db,'projects',uid),rows(db,'checkpoints',uid),rows(db,'sessions',uid)])
