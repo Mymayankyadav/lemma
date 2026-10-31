@@ -19,7 +19,7 @@ for(const profile of ['1','stress','extreme'] as const){
      const single=page.getByRole('region',{name:'Analysis projects'})
      await expect(single.locator(':scope > button')).toHaveCount(0)
      await expect(single.getByRole('link',{name:/Real Analysis/})).toBeVisible()
-     await expect(single.getByText('Analysis',{exact:false})).toBeVisible()
+     await expect(single.locator('[data-project-row="real-analysis"] .mr-2')).toContainText('Analysis')
     }
     const buttons=group.getByRole('button')
     await expect(buttons).toHaveCount(3)
