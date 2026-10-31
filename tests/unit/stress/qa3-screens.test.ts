@@ -51,7 +51,7 @@ describe('QA-3b screenshot structural gate',()=>{
   const dir=fixture()
   try{
    const cases=qa3Cases(),name=qa3ScreenshotName(cases[0],'/')
-   writeFileSync(join(dir,name),envelope(390,844))
+   writeFileSync(join(dir,name),envelope(360,740))
    const wrong=auditQa3Screens(dir)
    expect(wrong.status).toBe('FAIL')
    expect(wrong.errors.some(e=>e.includes(name))).toBe(true)
