@@ -127,7 +127,7 @@ export default function Page(){
      </ul>
     </section>
     {error&&<p role="alert" className="flex gap-2 text-label text-again"><AlertTriangle size={16}/>{error}</p>}
-    <Button size="xl" className="w-full" type="submit" disabled={saving||!name.trim()} loading={saving}>
+    <Button size="xl" className="w-full" type="submit" variant={saving||!name.trim()?'ghost':'lit'} disabled={saving||!name.trim()} loading={saving}>
      {saving?'Saving project and sources':created&&remaining?'Retry remaining uploads':'Create project'}
     </Button>
     <button type="button" className="flex min-h-11 items-center justify-center gap-2 text-label text-amber"
