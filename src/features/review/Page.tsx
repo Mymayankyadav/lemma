@@ -37,6 +37,28 @@ export default function Page(){
  const navigate=useNavigate(),notify=useToast();
  const decks=useDeckTree(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
  const update=useUpdateSettings();
+ const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
+ const activeCatchUp=catchUpUntil>Date.now();
+ useEffect(()=>{
+  if(!catchUpUntil||catchUpUntil>Date.now()||!settings.data)return;
+  const previous=Number(localStorage.getItem('lemma.catch-up-original')||200);
+  localStorage.removeItem('lemma.catch-up-until');localStorage.removeItem('lemma.catch-up-original');
+  setCatchUpUntil(0);
+  if(settings.data.reviewsPerDay!==previous)update.mutate({reviewsPerDay:previous});
+ },[catchUpUntil,settings.data?.reviewsPerDay]);
+ function enableCatchUp(totalDue:number){
+  if(!settings.data||activeCatchUp)return;
+  const prior=settings.data.reviewsPerDay||200;
+  const target=Math.max(prior,Math.ceil(totalDue/7));
+  localStorage.setItem('lemma.catch-up-original',String(prior));
+  const until=Date.now()+7*86400000;
+  localStorage.setItem('lemma.catch-up-until',String(until));
+  setCatchUpUntil(until);
+  update.mutate({reviewsPerDay:target},{
+   onSuccess:()=>{void cards.refetch();notify('Catch-up target set for seven days')},
+   onError:()=>{localStorage.removeItem('lemma.catch-up-until');localStorage.removeItem('lemma.catch-up-original');setCatchUpUntil(0);notify('Could not set catch-up target',{tone:'danger'})}
+  });
+ }
  const [selected,setSelected]=useState<Set<string>|null>(null);
  const [expandedProjects,setExpandedProjects]=useState<Set<string>>(()=>new Set());
  const [showAll,setShowAll]=useState<Set<string>>(()=>new Set());
@@ -54,7 +76,13 @@ export default function Page(){
    n.children.some(c=>c.label.toLowerCase().includes(deckSearch.toLowerCase())));
  const dueItems=useMemo(()=>reviewEligible(cards.data??[],nodes,enabled),[cards.data,nodes,enabled]);
  const selectedCount=dueItems.length;
- const estimated=estimatedReviewMinutes(selectedCount,insights.data?.reviews??[]);
+ const totalDue=nodes.reduce((n,project)=>n+project.due,0);
+ const todayShare=Math.min(selectedCount,Math.max(1,settings.data?.reviewsPerDay??200));
+ const overdue=Math.max(0,totalDue-todayShare);
+ const spreadDays=Math.ceil(overdue/Math.max(1,settings.data?.reviewsPerDay??200));
+ // Without reliable timed review history, estimate 4.5 seconds per quick recall.
+ const history=insights.data?.reviews??[];
+ const estimated=history.length?estimatedReviewMinutes(todayShare,history):Math.max(1,Math.ceil(todayShare*4.5/60));
  const groupedSessions=useMemo(()=>{
   return (sessions.data??[]).map(s=>({
    ...s,count:dueItems.filter(c=>c.projectSlug===s.projectSlug&&c.sessionNumber===s.number).length
@@ -83,7 +111,7 @@ export default function Page(){
   const selection=sessionId?
    dueItems.filter(c=>c.projectSlug===fromSession?.projectSlug&&c.sessionNumber===fromSession?.number):
    dueItems;
-  const chosen=onlyNew?selection.filter(c=>c.state.state===0):selection;
+  const chosen=(onlyNew?selection.filter(c=>c.state.state===0):selection).slice(0,settings.data.reviewsPerDay||200);
   if(!chosen.length)return notify('No cards due in this selection');
   useReviewSession.getState().initialize(chosen,settings.data,filter);
   const qs=new URLSearchParams();
@@ -105,14 +133,21 @@ export default function Page(){
     <div className="flex items-center justify-between gap-4">
      <div>
       <div className="flex items-baseline gap-2">
-       <strong className="font-[var(--font-display)] text-num-xl font-semibold leading-none tracking-tight tabular-nums">{selectedCount}</strong>
+       <strong className="font-[var(--font-display)] text-num-xl font-semibold leading-none tracking-tight tabular-nums">{totalDue.toLocaleString()}</strong>
        <span className="text-answer text-ink-2">due</span>
       </div>
       <p className="mt-2 flex items-center gap-2 text-label text-ink-3"><Clock3 size={16} aria-hidden="true"/>
-       {selectedCount>0?'about '+estimated+' min':'All clear for today'}</p>
+       {selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
      </div>
-     <Button aria-label="Start review" icon={Play} disabled={!selectedCount} onClick={()=>start()}>Start</Button>
+     <Button aria-label="Start review" icon={Play} disabled={!todayShare} onClick={()=>start()}>Start {todayShare}</Button>
     </div>
+    {overdue>0&&<div className="mt-4 text-label text-ink-2">
+      <p>{overdue.toLocaleString()} overdue · spread over {spreadDays} {spreadDays===1?'day':'days'}</p>
+      <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber"
+       onClick={()=>enableCatchUp(totalDue)} disabled={activeCatchUp||update.isPending}>
+       {activeCatchUp?'Catch-up active · restores your target after seven days':'Catch-up plan · raise daily share for a week'}
+      </button>
+     </div>}
     <div className="mt-5 border-t border-edge pt-3">
      <div className="flex items-center gap-2"><Shuffle size={18} aria-hidden="true" className="text-amber"/>
       <div className="flex-1">
