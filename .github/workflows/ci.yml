@@ -27,7 +27,8 @@ jobs:
       # Phase 0 adds the harness before screen specs land in P0-B.
       # All eight cold 4x matrices execute in the separate required job below.
       # The regular Playwright job still runs every other test.
-      - run: npm run e2e -- --pass-with-no-tests --grep-invert '^AUDIT #540 cold 4x'
+      - run: |
+          npm run e2e -- --pass-with-no-tests --grep-invert '^AUDIT #540 cold 4x'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
