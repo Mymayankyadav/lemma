@@ -55,6 +55,27 @@ describe('LOOK-3b one-line Route geometry',()=>{
   expect(capsules).toHaveLength(2);
   expect(capsules[1].width).toBeGreaterThan(capsules[0].width);
  });
+ it('reserves the actual current halo when keyboard selection moves elsewhere',()=>{
+  for(const width of [360,390]){
+   for(const [total,size,current,selected] of [[16,4,3,8],[36,8,3,26],[600,15,3,317],[1500,15,10,750]]){
+    const r=layoutRoute(stages(total,size),total,selected,width,current);
+    const actual=r.marks.find(m=>m.kind==='station'&&m.index===current);
+    const focus=r.marks.find(m=>m.kind==='station'&&m.index===selected);
+    expect(actual).toBeDefined();
+    expect(focus).toBeDefined();
+    expect(actual!.width).toBeGreaterThanOrEqual(22);
+    for(let i=1;i<r.marks.length;i++){
+     const previous=r.marks[i-1],next=r.marks[i];
+     const visibleGap=next.x-next.width/2-(previous.x+previous.width/2);
+     expect(visibleGap).toBeGreaterThanOrEqual(8-0.01);
+    }
+    for(const m of r.marks){
+     expect(m.x-m.width/2).toBeGreaterThanOrEqual(0);
+     expect(m.x+m.width/2).toBeLessThanOrEqual(width);
+    }
+   }
+  }
+ });
  it('never draws a station rail when there are no checkpoints',()=>{
   expect(layoutRoute([],0,0,360)).toEqual({mode:'plain',marks:[],activeStage:0});
  });
