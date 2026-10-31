@@ -9,7 +9,7 @@ on:
   push:
     branches: ['review/**']
 permissions:
-  contents: write
+  contents: read
 jobs:
   shots:
     if: "!contains(github.event.head_commit.message, '[shots]')"
@@ -44,8 +44,21 @@ jobs:
           path: review-shots/
           if-no-files-found: error
           retention-days: 14
+  # A PR's screenshot job has a read-only token. Only an explicit push to
+  # review/** can publish generated contact sheets, in a separate write job.
+  publish:
+    if: github.event_name == 'push'
+    needs: shots
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v4-review-screens
+          path: review-shots/
       - name: Commit contact sheets to the review branch
-        if: github.event_name == 'push'
         run: |
           git config user.name "review-bot"
           git config user.email "review-bot@users.noreply.github.com"
