@@ -21,6 +21,25 @@ for(const width of [360,390] as const){
    expect(rect.width).toBeGreaterThanOrEqual(44);
    expect(rect.height).toBeGreaterThanOrEqual(44);
   }
+  // Graph's global .truncate override must not spill a long mathematical
+  // stage label across neighboring 44px controls. Unit tests supply actual
+  // KaTeX; here we exercise the rendered CSS under both Graph worlds.
+  const label=nav.locator('[data-stage-chip="0"] [data-stage-chip-label]');
+  await expect(label).toBeVisible();
+  await label.evaluate(el=>{const span=document.createElement('span');span.textContent='verylongmathematicalstage'.repeat(12);el.appendChild(span);});
+  const geometry=await label.evaluate(el=>{
+   const css=getComputedStyle(el),chip=el.closest('[data-stage-chip]')!.getBoundingClientRect();
+   return {overflowX:css.overflowX,whiteSpace:css.whiteSpace,mask:css.maskImage,
+    content:el.scrollWidth,frame:el.clientWidth,chipWidth:chip.width};
+  });
+  expect(geometry.overflowX).toBe('auto');
+  expect(geometry.whiteSpace).toBe('nowrap');
+  expect(geometry.mask).toContain('linear-gradient');
+  expect(geometry.content).toBeGreaterThan(geometry.frame+8);
+  expect(geometry.chipWidth).toBeLessThanOrEqual(176);
+  await label.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+  expect(await label.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/fix-536',{recursive:true});
   await page.screenshot({path:'test-results/screens/fix-536/'+theme+'-'+width+'.png',fullPage:false});
  });
