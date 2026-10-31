@@ -57,10 +57,11 @@ function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:C
  </Slab>;
 }
 function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
- const [visible,setVisible]=useState(20);
+ const [page,setPage]=useState(0);
  if(!sessions.length)return <EmptyState art="inbox" title="No sessions yet" body="Resume a checkpoint in your tutor to start an evidence trail."/>;
  const sorted=[...sessions].sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)||b.number-a.number);
- const rows=sorted.slice(0,visible);
+ const offset=page*20;
+ const rows=sorted.slice(offset,offset+20);
  const months=new Map<string,SessionSummary[]>();
  for(const session of rows){
   const key=new Date(session.startedAt).toLocaleDateString(undefined,{month:'long',year:'numeric'});
@@ -69,7 +70,7 @@ function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
   months.set(key,bucket);
  }
  return <section aria-label="Sessions" className="flex flex-col gap-4">
-  <p className="text-label text-ink-3">Latest {rows.length} of {sessions.length} sessions</p>
+  <p className="text-label text-ink-3">Sessions {offset+1}–{offset+rows.length} of {sessions.length}</p>
   {[...months.entries()].map(([month,items])=><div key={month} className="flex flex-col gap-2">
    <h3 className="text-label font-semibold uppercase tracking-wider text-ink-2">{month}</h3>
    {items.map(s=>{
@@ -87,7 +88,10 @@ function Sessions({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
     </Link>;
    })}
   </div>)}
-  {visible<sorted.length&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-4 text-body font-semibold text-amber" onClick={()=>setVisible(v=>v+20)}>More sessions · {sorted.length-visible} remaining</button>}
+  <div className="flex gap-3">
+   {page>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-4 text-body font-semibold text-amber" onClick={()=>setPage(n=>n-1)}>Previous 20</button>}
+   {offset+20<sorted.length&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-4 text-body font-semibold text-amber" onClick={()=>setPage(n=>n+1)}>More sessions · {sorted.length-offset-20} remaining</button>}
+  </div>
  </section>;
 }
 function PlanHistory({slug}:{slug:string}){
