@@ -57,6 +57,11 @@ const insights={
 const payloads:Record<string,unknown>={
  '/rpc/bootstrap':settings,
  '/rpc/home_summary':home,
+ '/rpc/home_review_outlook':{
+  decks:[{key:'project:math-0',label:'Mathematics project 1',glyph:'∫',
+   level:0,due:4000,children:[]}],
+  forecast:Array.from({length:7},(_,i)=>({day:date(-i),due:i===0?4000:200})),
+ },
  '/rpc/insights':insights,
  '/settings':settings,
 }
@@ -126,14 +131,10 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
   await expect(page.getByRole('heading',{name:'Insights'})).toBeVisible()
   await expect(page.locator('[aria-label="Study totals"]')).toBeVisible()
   const insightCalls=requests.slice(offset)
-  const aggregateCalls=requests.filter(r=>r.path==='/rpc/insights')
-  // Today prefetches the same 30-day aggregate; Insights should reuse it,
-  // not issue a second request. This still proves a nonzero real HTTP read.
-  expect(aggregateCalls,'one actual Insights aggregate HTTP request').toHaveLength(1)
-  expect(insightCalls.length,'Insights navigation adds at most one request').toBeLessThanOrEqual(1)
-  expect(insightCalls.every(r=>r.path==='/rpc/insights')).toBe(true)
-  expect(aggregateCalls[0].bytes).toBeGreaterThan(0)
-  expect(aggregateCalls[0].bytes,'Insights response budget').toBeLessThanOrEqual(maxTransfer)
+  expect(insightCalls,'Insights must make one actual aggregate HTTP request').toHaveLength(1)
+  expect(insightCalls[0].path).toBe('/rpc/insights')
+  expect(insightCalls[0].bytes).toBeGreaterThan(0)
+  expect(insightCalls[0].bytes,'Insights response budget').toBeLessThanOrEqual(maxTransfer)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth))
    .toBeLessThanOrEqual(1)
   await page.screenshot({path:'test-results/screens/fix-484b-'+theme+'-'+viewport.width+'-insights.png'})
