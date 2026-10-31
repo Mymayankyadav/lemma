@@ -38,14 +38,14 @@ test('LOOK-4c dense bundle pills are 16px high and preserve the 44px overflow di
  expect((await disclosure.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 });
 
-test('LOOK-4c seven physical lanes disclose an eighth overlapping connection',async({page})=>{
+test('LOOK-4c eight physical lanes disclose a ninth overlapping connection',async({page})=>{
  await page.setViewportSize({width:360,height:740});
  await page.goto('./?demo=stress&atlasDenseLanes=1&theme=graph-night#/atlas');
  await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
  const paths=page.locator('[data-atlas-wires] [data-arc-kind]');
- await expect(paths).toHaveCount(7);
+ await expect(paths).toHaveCount(8);
  const xs=await paths.evaluateAll(elements=>elements.map(el=>Number(el.getAttribute('data-atlas-lane'))));
- expect(new Set(xs).size).toBe(7);
+ expect(new Set(xs).size).toBe(8);
  for(const x of xs)expect((74-x)%9).toBe(0);
  const overflow=page.locator('[data-atlas-lane-overflow]');
  const summary=overflow.locator('summary');
@@ -56,12 +56,12 @@ test('LOOK-4c seven physical lanes disclose an eighth overlapping connection',as
  await page.keyboard.press('Enter');
  await expect(overflow).toHaveAttribute('open','');
  await expect(overflow.locator('li')).toHaveCount(1);
- await expect(overflow.locator('li')).toContainText('Rows 8–16');
+ await expect(overflow.locator('li')).toContainText('Rows 9–18');
  // Hidden links retain a visible, noninteractive port on both affected rows.
  const ports=page.locator('[data-atlas-hidden-port]');
  await expect(ports).toHaveCount(2);
- await expect(page.locator('[data-atlas-hidden-port="out"]')).toHaveAttribute('data-atlas-row','7');
- await expect(page.locator('[data-atlas-hidden-port="in"]')).toHaveAttribute('data-atlas-row','15');
+ await expect(page.locator('[data-atlas-hidden-port="out"]')).toHaveAttribute('data-atlas-row','8');
+ await expect(page.locator('[data-atlas-hidden-port="in"]')).toHaveAttribute('data-atlas-row','17');
  for(const port of await ports.all())expect(await port.getAttribute('aria-hidden')).toBeNull();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
  await page.screenshot({path:'test-results/screens/look-4c-dense-lanes-360.png'});
@@ -75,7 +75,7 @@ for(const width of [360,390] as const){
   await page.goto(`./?demo=${profile}&atlasDenseLanes=1&theme=${theme}#/atlas`);
   const tree=page.getByRole('tree',{name:'Ideas and their links'});
   await expect(tree).toBeVisible();
-  await expect(page.locator('[data-atlas-wires] [data-arc-kind]')).toHaveCount(7);
+  await expect(page.locator('[data-atlas-wires] [data-arc-kind]')).toHaveCount(8);
   // Nine-pixel center spacing only satisfies the strict 8px *painted-edge*
   // clearance when each stroke is no wider than one CSS pixel.
   const strokes=await page.locator('[data-atlas-wires] [data-arc-kind]').evaluateAll(elements=>elements.map(el=>({
@@ -87,8 +87,8 @@ for(const width of [360,390] as const){
     .toBeGreaterThanOrEqual(8);
   const ports=page.locator('[data-atlas-hidden-port]');
   await expect(ports).toHaveCount(2);
-  await expect(page.locator('[data-atlas-hidden-port="out"]')).toHaveAttribute('data-atlas-row','7');
-  await expect(page.locator('[data-atlas-hidden-port="in"]')).toHaveAttribute('data-atlas-row','15');
+  await expect(page.locator('[data-atlas-hidden-port="out"]')).toHaveAttribute('data-atlas-row','8');
+  await expect(page.locator('[data-atlas-hidden-port="in"]')).toHaveAttribute('data-atlas-row','17');
   const disclosure=page.locator('[data-atlas-lane-overflow] summary');
   await expect(disclosure).toHaveAccessibleName('Show 1 hidden Atlas links');
   expect((await disclosure.boundingBox())?.height).toBeGreaterThanOrEqual(44);
@@ -97,7 +97,7 @@ for(const width of [360,390] as const){
   await page.goto(`./?demo=${profile}&atlasDenseLanes=1&atlasDenseLanesFocus=1&theme=${theme}#/atlas`);
   const selected=page.locator('[data-atlas-wires] [data-arc-tone="up"]');
   await expect(selected).toHaveCount(1);
-  await expect(selected).toHaveAttribute('data-atlas-lane','74');
+  await expect(selected).toHaveAttribute('data-atlas-lane','83');
   expect(await selected.locator('path').evaluate(el=>parseFloat(getComputedStyle(el).strokeWidth))).toBeLessThanOrEqual(1);
   await expect(page.locator('[data-atlas-lane-overflow] summary')).toHaveAccessibleName('Show 1 hidden Atlas links');
   await page.screenshot({path:`test-results/screens/look-4c-selected-priority-${profile}-${theme}-${width}.png`});
