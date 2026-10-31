@@ -2,7 +2,7 @@ import {ChevronRight} from 'lucide-react';
 import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
-import {arcTone} from './tree';
+import {arcTone,isPlainAtlasLabel} from './tree';
 import {atlasRowGap,atlasRowHeight} from './rowGeometry';
 
 /** Shared pieces of the collapsible idea graph: used by the Atlas and by plan review. */
@@ -196,7 +196,7 @@ export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onS
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{node.glyph}</span>}
    <span title={plainMath(node.name)} style={{...clip,overflowX:'auto',textOverflow:'clip',scrollbarWidth:'none'}}
-    className={'min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}><Tex source={node.name}/></span>
+    className={'min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}>{isPlainAtlasLabel(node.name)?node.name:<Tex source={node.name}/>}</span>
    {showProgress&&<span className="flex shrink-0 items-center gap-1.5 pl-1 text-[12px] tabular-nums text-ink-3">
     <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
      <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(node.total?100*node.done/node.total:0)+'%'}}/>
