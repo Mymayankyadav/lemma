@@ -116,6 +116,12 @@ for(const width of [360,390] as const){
   }
   expect(bounded.filter(c=>c.table==='reviews')[2].url).toContain('or=')
   expect(bounded.filter(c=>c.table==='card_comments')[2].url).toContain('or=')
+  for(const table of ['notes','cards','projects','reviews','card_comments']){
+   const scoped=calls.filter(c=>c.table===table)
+   expect(scoped.length,table+' must have a live HTTP read').toBeGreaterThan(0)
+   expect(scoped.every(c=>new URL(c.url).searchParams.get('user_id')==='eq.'+owner),
+    table+' must be owner-scoped').toBe(true)
+  }
   expect(calls.filter(c=>c.table==='cards').every(c=>
    new URL(c.url).searchParams.get('note_id')==='eq.n1')).toBe(true)
   expect(unexpected).toEqual([])
