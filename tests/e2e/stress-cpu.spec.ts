@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {QA3_ROUTES} from '../../scripts/qa3-report';
 import {CPU_CASES,auditCpuMatrix,type CpuRouteSample} from '../../scripts/stress-cpu-coverage';
+import {assertRouteLoaded} from './stress-cpu-readiness';
 
 /** AUDIT #540: all 144 S/X x Graph day/night x phone-width x visual-route
  * cells use a NEW DOCUMENT at 4x CPU. The existing ST-0 1x hash-navigation
@@ -37,16 +38,11 @@ for(const matrix of CPU_CASES){
    });
    await expect(page.getByRole('heading',{name:headings[route],exact:true,level:1}))
     .toBeVisible({timeout:90_000});
-   await page.waitForFunction(()=>(document.querySelector('#main-content')?.textContent?.trim().length??0)>40,
-    null,{timeout:90_000});
-   if(route==='/proposals/proposal-6'){
-    await expect(page.getByRole('heading',{name:'Plan change',exact:true,level:2})).toBeVisible();
-    await expect(page.getByRole('region',{name:'Plan errata'})).toBeVisible();
-    await expect(page.getByRole('region',{name:'Ideas in this plan'})).toBeVisible();
-    await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
-   }
-   // Match ST-0's settle window so deferred route content is counted.
-   await page.waitForTimeout(150);
+   // A heading and >40 text characters can be visible on an empty skeleton.
+   // Wait for the route's actual S/X data and paint BEFORE stopping the clock.
+   await assertRouteLoaded(page,route,matrix.profile,12_000);
+   await page.evaluate(()=>new Promise<void>(resolve=>
+    requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    const durationMs=Date.now()-start;
    const nodes=await page.locator('*').count();
    const navigationType=await page.evaluate(()=>
