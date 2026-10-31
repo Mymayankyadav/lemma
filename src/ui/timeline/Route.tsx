@@ -30,7 +30,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
  const rows=useMemo(()=>scheduleRows??buildSchedule(checkpoints,{
   targetDate:project.targetDate,pacePerWeek,
  }),[scheduleRows,checkpoints,project.targetDate,pacePerWeek]);
- const layout=useMemo(()=>layoutRoute(stages,n,focused,width),[stages,n,focused,width]);
+ const layout=useMemo(()=>layoutRoute(stages,n,focused,width,current),[stages,n,focused,width,current]);
  const height=mode==='today'?64:80;
  useEffect(()=>{
   const node=ref.current;
@@ -62,6 +62,15 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
  if(!n)return <p className="text-label text-ink-3">A plan is needed before the Route can appear.</p>;
  const active=stages[layout.activeStage];
  const stateAt=(index:number)=>rows[index]?.state??'unscheduled';
+ const rightFoldedLabel=stages.length+' stages · '+Math.max(0,n-project.done)+' to go';
+ // Never clip a tutor-authored formula in the 360px folded SVG. Show the
+ // whole name through an accessible disclosure instead of truncating TeX.
+ const foldedName=active?.name??'';
+ const foldedPlain=plainMath(foldedName);
+ const foldedAvailable=Math.max(0,width-40-rightFoldedLabel.length*7-20);
+ const discloseStage=layout.mode==='folded'&&!!active&&
+  (/[\\\\$]/.test(foldedName)||foldedPlain.length*7>foldedAvailable);
+ const shortStageLabel=discloseStage?'Stage '+(layout.activeStage+1):foldedPlain;
  const stageStatus=(mark:RouteMark)=>{
   const span=stages.slice(mark.stageIndex,mark.stageEnd+1);
   const start=span[0]?.start??0,end=span.at(-1)?.end??start;
@@ -139,13 +148,13 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
    y={height-27} textAnchor="middle" fill="var(--ink-3)" fontSize="12">
    +{mergedFuture.stages} stages
   </text>}
-  {layout.mode==='folded'&&active&&<text x="12" y={height-12}
+  {layout.mode==='folded'&&active&&<text data-route-folded-stage-label="" x="12" y={height-12}
    fill="var(--ink)" fontSize="12" fontWeight="600">
-   {plainMath(active.name)}
+   {shortStageLabel}
   </text>}
   {layout.mode==='folded'&&<text x={width-12} y={height-12}
    textAnchor="end" fill="var(--ink-3)" fontSize="12">
-   {stages.length} stages · {Math.max(0,n-project.done)} to go
+   {rightFoldedLabel}
   </text>}
  </svg>;
  const label=plainMath(project.title)+': '+project.done+' of '+n+
@@ -168,6 +177,10 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
     <span className="min-w-0 flex-1 break-words text-[16px] text-ink"><Tex source={checkpoint.title}/></span>
     <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{focused+1} of {n}</span>
    </div>
+   {discloseStage&&<details data-route-stage-disclosure="" className="mt-2 min-w-0 text-ink">
+    <summary className="flex min-h-11 cursor-pointer items-center text-[12px] text-ink-2">Show full stage name</summary>
+    <div className="min-w-0 break-words pb-2 text-[16px]"><Tex source={foldedName}/></div>
+   </details>}
    <div data-route-controls="" className="mt-2 flex items-center justify-end gap-2">
     <button type="button" aria-label="Previous checkpoint" disabled={focused===0}
      onClick={()=>move(-1)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-[var(--edge)] text-ink disabled:opacity-30">‹</button>
