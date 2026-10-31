@@ -40,6 +40,7 @@ for(const width of [360,390] as const){
    actions.getByRole('button',{name:'Pages'}),
   ])expect(await control.evaluate(el=>getComputedStyle(el).color)).toBe(ink);
   mkdirSync('test-results/screens/look-6a',{recursive:true});
+  await actions.scrollIntoViewIfNeeded();
   await page.screenshot({path:`test-results/screens/look-6a/session-actions-${profile}-${theme}-${width}.png`});
   await actions.getByRole('button',{name:'Pages'}).click();
   await expect(page.getByRole('dialog',{name:'Session pages'})).toBeVisible();
