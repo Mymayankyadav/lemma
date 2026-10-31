@@ -55,7 +55,7 @@ it('reuses the Home due scan for forecast and refreshes day buckets at rollover'
   projectId:fixture.projects[0].id,
   note:{...template.note,noteId:'forecast-'+i,noteNo:i+1,status:'active' as const},
   cards:[{...template.cards[0],id:'forecast-card-'+i,state:{
-   ...template.cards[0].state,state:2,due:'@due:'+days,
+   ...template.cards[0].state,state:2 as const,due:'@due:'+days,
   }}],
  }))
  const now={value:Date.parse('2026-10-31T12:00:00Z')}
