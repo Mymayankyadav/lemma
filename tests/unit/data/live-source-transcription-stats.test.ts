@@ -28,7 +28,8 @@ describe('FIX #475 bounded source transcription statistics',()=>{
   expect(stats).toHaveLength(100)
   expect(stats[0]).toEqual({sourceId:'source-0',transcribed:3000,needsCheck:300})
   expect(stats[99]).toEqual({sourceId:'source-99',transcribed:0,needsCheck:0})
-  expect(mock.rpc).toHaveBeenCalledExactlyOnceWith(
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith(
    'source_transcription_stats',{p_project_id:'project-1'})
   expect(mock.getUser).toHaveBeenCalledOnce()
   expect(mock.from).not.toHaveBeenCalled()
