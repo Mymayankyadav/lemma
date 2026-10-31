@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import katex from 'katex';
 
 // LOOK-4a is independently mergeable: Atlas controls and details, without
 // changing the link renderer or the virtual row geometry.
@@ -70,3 +71,26 @@ test('LOOK-4a mathematical breadcrumbs navigate to their ancestor with a 44px ta
  await expect(details).toHaveCount(0);
  await expect(page.locator('[data-tone="self"]')).toHaveCount(1);
 });
+
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test(`LOOK-4a mathematical Area headings keep KaTeX >=16px ${theme} ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:740});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+  await page.goto(`./?demo=1&theme=${theme}#/atlas?focus=compactness`);
+  const details=page.getByRole('dialog',{name:'Compactness'});
+  await expect(details).toBeVisible();
+  const area=details.locator('[data-atlas-area-heading]').first();
+  await expect(area).toBeVisible();
+  // The mounted Details group uses the real Tex wrapper; substitute a tutor-
+  // authored mathematical Area title without changing persistent demo data.
+  const math=katex.renderToString(String.raw`\\mathbb{R}^n`,{throwOnError:true});
+  await area.locator('.lemma-tex-inline').evaluate((element,html)=>{element.innerHTML=html},math);
+  const size=await area.locator('.katex').evaluate(element=>parseFloat(getComputedStyle(element).fontSize));
+  expect(size,'mathematical Area heading must be >=16px').toBeGreaterThanOrEqual(16);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  const box=await area.boundingBox();
+  expect((box?.x??0)+(box?.width??0)).toBeLessThanOrEqual(width+1);
+ });
+}
