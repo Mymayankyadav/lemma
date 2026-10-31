@@ -51,6 +51,9 @@ for(const width of [360,390] as const){
   await expect(subject).toBeVisible();
   await expect(subjects.locator('button')).toHaveCount(7); // six visible subjects plus Other
   await expect(subject.locator('.katex')).toHaveCount(1);
+  // Stress §1: the mathematical expression must be at least 16 CSS px,
+  // even when the surrounding subject metadata uses a compact label role.
+  expect(await subject.locator('.katex').evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
   await subject.click();
   await expect(subject.locator('.katex')).toHaveCount(1);
   const revisited=page.locator('a[aria-label^="Most revisited:"]');
