@@ -4,7 +4,7 @@ This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent c
 
 ## 1. The team
 
-Five scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh session with no memory). They coordinate only through GitHub. Their full prompts are in `docs/agents/prompts.md`. **Every agent reads its own section of `docs/agents/prompts.md` at the start of each run; where it differs from the prompt pasted into its schedule, the repo version wins.** That way rule changes reach the agents without anyone re-pasting prompts.
+Five scheduled agents run hourly (ChatGPT scheduled tasks) and a Planner runs every 12 hours (a Claude scheduled task); each run is a fresh session with no memory. They coordinate only through GitHub. Their full prompts are in `docs/agents/prompts.md`. **Every agent reads its own section of `docs/agents/prompts.md` at the start of each run; where it differs from the prompt pasted into its schedule, the repo version wins.** That way rule changes reach the agents without anyone re-pasting prompts.
 
 | Role | Runs (IST) | Does |
 | --- | --- | --- |
@@ -12,6 +12,7 @@ Five scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh s
 | Fixer | :15 | Turns every red PR green, fixes `FIX main` and `audit` issues, fixes bugs; works several in parallel |
 | Builder | :30 | Writes as much code as possible across 3–5 tasks in parallel; takes over any stalled PR |
 | Auditor | :45 | Audits every merged and "Ready to merge" PR against the specs and the owner's intent; files `audit` issues; verifies fixes |
+| Planner | every 12 h (about 08:40 and 20:40) | Plans major feature drops, UI and aesthetic changes, the Android app and notifications; writes specs in `docs/spec/` and task sections in `plan.md` through "PLAN …" PRs; never writes app code |
 | Builder-2 | :50 | Unblocks the critical path: takes the 2–4 tasks that hold up the most other work (red, stalled or unstarted), splits large PRs so the most important parts land first |
 
 More agents can be added at any time: copy the Builder or Fixer prompt, give it a new role name (for example "Builder-3") and a different minute. The lease convention below stops agents from colliding.
@@ -34,6 +35,11 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
   - "Agent log": every run appends one line.
   - Issues labelled `audit` are the Auditor's findings. The Fixer fixes them and the Auditor closes them.
 - **Adding work.** Add a section to `plan.md` with task IDs, spec references and "depends on". The Steward puts it on the board and the Builder starts it.
+- **Planner PRs and owner approval.** The Planner opens "PLAN <name>: …" PRs (docs/spec/ and plan.md only).
+  - A major drop says "Owner approval needed" in its description, and its tasks are marked "awaiting owner" in plan.md.
+  - **No agent picks a task marked "awaiting owner", and no agent other than the owner writes "Ready to merge" on a PR that says "Owner approval needed".** The Steward never merges a PR whose description still says "Owner approval needed".
+  - The owner approves by replacing "Owner approval needed" with "Ready to merge". After it merges, the "awaiting owner" marks are removed and the tasks join the board like any other.
+  - Small Planner refinements say "Ready to merge" and merge normally.
 
 ## 3. Ground rules (from AGENTS.md, repeated because they matter)
 
