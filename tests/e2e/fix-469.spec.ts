@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const){
@@ -29,5 +30,7 @@ for(const width of [360,390] as const){
   expect(metrics.badgeSize).toBeGreaterThanOrEqual(12);
   for(const rect of metrics.targets){expect(rect.width).toBeGreaterThanOrEqual(44);expect(rect.height).toBeGreaterThanOrEqual(44);}
   expect(metrics.overflow).toBeLessThanOrEqual(0);
+  mkdirSync('test-results/screens/fix-469',{recursive:true});
+  await page.screenshot({path:'test-results/screens/fix-469/'+theme+'-'+width+'.png'});
  });
 }
