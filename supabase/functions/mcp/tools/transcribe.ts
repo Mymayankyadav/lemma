@@ -2,19 +2,7 @@ import {Context,scoped,insert,update} from '../db.ts';
 import {project,source} from '../resolve.ts';
 import {settings} from '../packet.ts';
 import {slug} from '../text.ts';
-
-type Page = {page:number;label?:string;text:string;confidence?:'high'|'check'};
-
-/** Preserve the tutor's exact Markdown/LaTeX. Never silently strip a dubious symbol. */
-export function validateTranscription(page:Page):void{
- if(!Number.isSafeInteger(page.page)||page.page<1||page.page>100000)throw Error('Page must be a positive PDF page number');
- if(typeof page.text!=='string'||page.text.length<1||page.text.length>8000)throw Error('Each page needs 1–8,000 characters of transcription');
- if(page.label!==undefined&&(typeof page.label!=='string'||page.label.length>12))throw Error('Page label exceeds 12 characters');
- if(page.confidence!==undefined&&!['high','check'].includes(page.confidence))throw Error('Confidence must be high or check');
- // Keep LaTeX angle inequalities, but do not accept HTML tags or scripts.
- if(/<\/?[a-z][a-z0-9]*\b[^>]*>/i.test(page.text)||/<!--|-->|<script\b/i.test(page.text))
-  throw Error('Transcriptions use Markdown and LaTeX, not raw HTML');
-}
+import {validateTranscription,type TranscribedPage as Page} from '../transcribe-validation.ts';
 
 export async function savePages(c:Context,a:{
  project:string;source?:string;title?:string;kind?:string;
