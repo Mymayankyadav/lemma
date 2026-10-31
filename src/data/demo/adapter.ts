@@ -263,7 +263,7 @@ export class DemoAdapter implements LemmaApi {
     if(options.ownedFixture&&this.store.stressNoteCount!==undefined){
       const store=this.store,template=demoSeedFixture.notes[0];
       if(!template)throw Error('Missing stress card template');
-      const count=store.stressNoteCount,dueCount=store.stressDueCount??0;
+      const count=store.stressNoteCount??0,dueCount=store.stressDueCount??0;
       const clock=studyClock(store.settings.rolloverHour,store.settings.timeZone);
       const today=clock.dayIndex(this.now());
       this.virtualStressDue={overdue:clock.dayStart(today-1),future:clock.dayStart(today+14)};
