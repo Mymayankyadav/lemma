@@ -16,7 +16,8 @@
 /* ST-4: content is scrollable instead of making the card or page wider. */
 .lemma-math { min-width:0; overflow-wrap:anywhere; }
 .lemma-math .katex-display { max-width:100%; min-width:0; font-size:max(16px,1em); }
-.lemma-math .katex:not(.katex-display .katex) { max-width:100%; display:inline-block; overflow-x:auto; vertical-align:middle; }
+/* Only card-sized MathText needs a scroll container. Inline <Tex> labels in Atlas/chips must stay cheap. */
+.lemma-math:not(.lemma-tex-inline) .katex:not(.katex-display .katex) { max-width:100%; display:inline-block; overflow-x:auto; vertical-align:middle; }
 .lemma-math-frame { position:relative; max-width:100%; min-width:0; padding-right:32px; }
 .lemma-math-frame .katex-display {
  max-width:100%; overflow-x:auto; overscroll-behavior-x:contain;

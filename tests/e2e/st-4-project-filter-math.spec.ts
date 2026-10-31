@@ -30,6 +30,9 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   expect(metrics.height).toBeGreaterThanOrEqual(44);
   expect(metrics.width).toBeGreaterThanOrEqual(44);
   expect(metrics.mathSizes.every(size=>size>=16)).toBe(true);
+  // Inline mathematical labels must not inherit card-only overflow scrollers.
+  const inlineOverflow=await chip.locator('.katex').first().evaluate(el=>getComputedStyle(el).overflowX);
+  expect(inlineOverflow).not.toBe('auto');
   expect(metrics.overflow).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/stress',{recursive:true});
   await page.screenshot({path:`test-results/screens/stress/st-4-math-project-${theme}-${width}.png`});
