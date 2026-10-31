@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { stressViolations } from '../../scripts/stress-limits';
 import { enforceStressBudgets } from '../../scripts/stress-gate';
+import { measureSvgMarks } from '../../scripts/stress-marks';
 
 type Measurement = {
  route: string; actualRoute: string; profile: string; theme: string; width: number;
@@ -35,35 +36,19 @@ async function measure(page: Page, route: string, profile: string, theme: string
   }));
   const smallMath = elements.filter(e => e.classList.contains('katex') && parseFloat(getComputedStyle(e).fontSize) < 16).length;
   const smallTargets = elements.filter(e => e.matches('button,a[href],[role="button"]') && (e.getBoundingClientRect().width < 44 || e.getBoundingClientRect().height < 44)).length;
-  const gaps: number[] = [];
-  const closeCircleSamples: {gap:number;svg:string}[] = [];
-  for (const svg of document.querySelectorAll('svg')) {
-   const centers = Array.from(svg.querySelectorAll('circle')).map(circle => {
-    const r = circle.getBoundingClientRect();
-    return {x:r.x+r.width/2, y:r.y+r.height/2, width:r.width};
-   }).filter(c => c.width > 0 && c.width < 30);
-   for (let i=1;i<centers.length;i++) {
-    if (Math.abs(centers[i].y-centers[i-1].y)<10) {
-     const gap=Math.abs(centers[i].x-centers[i-1].x);
-     gaps.push(gap);
-     if(gap<8 && closeCircleSamples.length<6)
-      closeCircleSamples.push({gap,svg:svg.outerHTML.slice(0,180)});
-    }
-   }
-  }
   const resources = (performance.getEntriesByType('resource') as PerformanceResourceTiming[])
    .filter(entry => /\/(rest|functions)\/v1\//.test(entry.name));
   return {
    nodes: document.querySelectorAll('*').length,
    horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
    smallText, smallMath, smallTargets,
-   minCircleGap: gaps.length ? Math.min(...gaps) : null,
-   smallTextSamples,closeCircleSamples,
+   smallTextSamples,closeCircleSamples:[],
    requestCount: resources.length,
    transferBytes: resources.reduce((total,entry)=>total+entry.transferSize,0),
   };
  });
- return {route, actualRoute: await page.evaluate(()=>location.hash.slice(1)), profile, theme, width, durationMs, cpuThrottle, ...result};
+ const minCircleGap=await page.evaluate(measureSvgMarks);
+ return {route, actualRoute: await page.evaluate(()=>location.hash.slice(1)), profile, theme, width, durationMs, cpuThrottle, ...result, minCircleGap};
 }
 
 test('ST-0 counts small informative text but not KaTeX internal script glyphs',async({page})=>{
