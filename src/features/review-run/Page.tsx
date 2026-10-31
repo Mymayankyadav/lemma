@@ -22,7 +22,7 @@ import {useCalm} from '../../ui/useCalm';
 
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
-const gradeColors=['var(--bad)','var(--warn)','var(--grade-good)','var(--good)'] as const;
+const gradeColors=['var(--danger)','var(--late)','var(--early)','var(--link)'] as const;
 const confidenceOptions=[
  {value:'sure' as const,label:'Sure',icon:CircleCheck},
  {value:'unsure' as const,label:'Unsure',icon:CircleDashed},
@@ -270,10 +270,9 @@ export default function Page(){
     const rating=(i+1) as Rating;
     return <button key={rating} type="button" disabled={submitting}
      onClick={()=>{void grade(rating)}} aria-label={'Grade '+label}
-     className={'flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-btn border px-1 disabled:opacity-50 '+
-      (rating===3?'border-amber bg-amber text-amber-ink'+(confidence==='sure'?' ring-2 ring-amber ring-offset-2 ring-offset-obsidian':''):'border-edge-2 bg-raised')}>
-     <span className="flex items-center gap-1 text-label font-semibold" style={{color:rating===3?'var(--on-accent)':gradeColors[i]}}><span className="size-1.5 rounded-full" style={{background:rating===3?'var(--on-accent)':gradeColors[i]}}/>{label}</span>
-     <span className="text-caption tabular-nums" style={{color:rating===3?'var(--on-accent)':'var(--ink-3)'}}>{intervals?.[rating].label??'—'}</span>
+     className="flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-btn border border-edge-2 bg-raised px-1 disabled:opacity-50">
+     <span className="flex items-center gap-1 text-label font-semibold" style={{color:gradeColors[i]}}><span className="size-1.5 rounded-full" style={{background:gradeColors[i]}}/>{label}</span>
+     <span className="text-caption tabular-nums text-ink-3">{intervals?.[rating].label??'—'}</span>
     </button>
    })}
   </section>}
