@@ -43,8 +43,10 @@ describe('FIX #522 checkpoint and Metro schedule parity',()=>{
   const markup=renderToStaticMarkup(createElement(MemoryRouter,null,
    createElement(ProjectTimeline,{project:{title:'Analysis',slug:'analysis',done:0,total:1,
     targetDate:'2035-01-05'},checkpoints:[cp],pacePerWeek:.25,scheduleRows:authoritative})));
-  // The v4 Route carries the authoritative due date and state without
-  // reintroducing the old Metro's redundant visible schedule-detail row.
+  // Both human-readable schedule detail and underlying authoritative metadata
+  // must agree; checking only data attributes would weaken FIX #522 parity.
+  expect(markup).toContain(expected!);
+  expect(markup).toContain('data-schedule-detail');
   expect(markup).toContain('data-route-due-on="'+authoritative[0].dueOn+'"');
   expect(markup).toContain('data-route-schedule-state="'+authoritative[0].state+'"');
   expect(markup).toContain('data-station-state="'+authoritative[0].state+'"');
