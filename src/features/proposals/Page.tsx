@@ -26,6 +26,7 @@ import { Card } from "../../ui/Card";
 import { EmptyState } from "../../ui/EmptyState";
 import { Glyph } from "../../ui/Glyph";
 import { MathText } from "../../ui/MathText";
+import { Tex } from "../../ui/Tex";
 import { Screen } from "../../ui/Screen";
 import { Segmented } from "../../ui/Segmented";
 import { Sheet } from "../../ui/Sheet";
@@ -51,6 +52,44 @@ function describe(op: PlanChangeOp) {
   }
 }
 const projectLabel=(slug:string)=>slug.replaceAll('-', ' ').replace(/\b[a-z]/g,letter=>letter.toUpperCase());
+
+/** One readable line, never a vertically clipped half-formula. Long fronts can
+ * be revealed horizontally; selecting the row still opens the full card.
+ */
+function ProposalFrontLine({source}:{source:string}){
+ const scroller=useRef<HTMLSpanElement>(null);
+ const [moreLeft,setMoreLeft]=useState(false),[moreRight,setMoreRight]=useState(false);
+ const firstLine=source.split(/\r?\n/).find(line=>line.trim())?.trim()??source;
+ const measure=()=>{
+  const el=scroller.current;
+  if(!el)return;
+  const overflow=el.scrollWidth>el.clientWidth+1;
+  setMoreLeft(overflow&&el.scrollLeft>1);
+  setMoreRight(overflow&&el.scrollLeft+el.clientWidth<el.scrollWidth-1);
+ };
+ useEffect(()=>{
+  measure();
+  const el=scroller.current;
+  if(!el||typeof ResizeObserver==="undefined")return;
+  const observer=new ResizeObserver(measure);
+  observer.observe(el);
+  if(el.firstElementChild)observer.observe(el.firstElementChild);
+  return ()=>observer.disconnect();
+ },[firstLine]);
+ return <span className="relative block min-w-0 flex-1">
+  <span ref={scroller} data-proposal-front-scroll="" onScroll={measure}
+   className="block w-full overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+   style={moreRight?{maskImage:"linear-gradient(to right, black calc(100% - 24px), transparent)"}:undefined}
+   title={moreLeft||moreRight?"Scroll sideways to read the full first line":undefined}>
+   <Tex source={firstLine} className="inline-block min-w-max !whitespace-nowrap [&_.katex]:!text-[16px]"/>
+  </span>
+  {(moreLeft||moreRight)&&<span data-proposal-front-cue="" aria-hidden="true"
+   className={"pointer-events-none absolute top-1/2 -translate-y-1/2 text-label text-ink-2 "+(moreRight?"right-0":"left-0")}>
+   {moreRight?"›":"‹"}
+  </span>}
+ </span>;
+}
+
 function PendingCard({
   proposal,
   busy,
@@ -301,7 +340,7 @@ export default function Page() {
                 Approve all from {group.label}
                </button>}
               </div>
-              <div role="group" aria-label="Cards in this proposal group" className="flex flex-col divide-y divide-[var(--hair)]">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`flex min-h-11 w-full items-center gap-3 px-2 py-2 text-left text-body ${active.id===p.id?"bg-[var(--paper-2)] text-ink":"text-ink-2"}`}><span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">{active.id===p.id&&<Check size={17} />}</span><div className="min-w-0 flex-1 overflow-hidden"><MathText source={p.card?.front??p.cardEdit?.front??("Fix N"+(p.cardEdit?.note_no??""))} variant="body" className="max-h-6 overflow-hidden"/></div></button>)}</div>
+              <div role="group" aria-label="Cards in this proposal group" className="flex flex-col divide-y divide-[var(--hair)]">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`flex min-h-11 w-full items-center gap-3 px-2 py-2 text-left text-body ${active.id===p.id?"bg-[var(--paper-2)] text-ink":"text-ink-2"}`}><span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">{active.id===p.id&&<Check size={17} />}</span><ProposalFrontLine source={p.card?.front??p.cardEdit?.front??("Fix N"+(p.cardEdit?.note_no??""))}/></button>)}</div>
              </Slab>)}
              <div className="flex gap-2">
               {cardPage>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n-1)}>Previous 20</button>}
