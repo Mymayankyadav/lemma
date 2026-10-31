@@ -24,13 +24,14 @@ export function StatusMark({node}:{node:AtlasNode}){
 }
 
 /** Links drawn as nested arcs in a right-hand gutter, like a proof's dependency marks in a margin. */
+export const OVERFLOW_BUNDLE_KEY='atlas:overflow-bundles';
 interface BundlePlacement {
  x:number;y:number;radius:number;anchorX:number;anchorY:number;
+ /** When space runs out, every suppressed count remains available in the summary. */
+ hiddenKeys?:string[];
 }
-/** Lay out labels separately from the arcs: two links with different endpoints
- * can share an identical midpoint, even though arcsFor already bundles
- * identical links. Keep every count readable with at least 8px between discs.
- * A short leader joins any displaced count back to its original arc.
+/** The gutter has finite area. Never fall back to overlapping badges: replace
+ * overflow with one 44px, keyboard-accessible summary containing every count.
  */
 export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,BundlePlacement>{
  const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
@@ -43,30 +44,45 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
    radius:Math.max(11.5,6+String(arc.count).length*4)};
  }).sort((a,b)=>b.radius-a.radius||a.anchorY-b.anchorY||a.arc.key.localeCompare(b.arc.key));
  const placed:BundlePlacement[]=[],result=new Map<string,BundlePlacement>();
- for(const item of items){
-  const {radius,anchorX,anchorY}=item;
+ const findSlot=(radius:number,anchorX:number,anchorY:number):BundlePlacement|null=>{
   const minX=radius+2,maxX=GUTTER-radius-2;
   const minY=radius+2,maxY=height-radius-2;
+  if(maxX<minX||maxY<minY)return null;
   const clampX=(x:number)=>Math.max(minX,Math.min(maxX,x));
   const xs=[anchorX,minX,maxX,GUTTER/2,(minX+GUTTER/2)/2,(maxX+GUTTER/2)/2]
    .map(clampX).filter((x,i,array)=>array.findIndex(other=>Math.abs(x-other)<.1)===i);
-  let chosen:BundlePlacement|null=null;
-  // Search near the arc first. Only congested bundles pay for more candidates.
-  const maxSteps=Math.min(Math.ceil(height/4)+2,items.length*20+20);
-  for(let step=0;step<=maxSteps&&!chosen;step++){
+  const maxSteps=Math.ceil(height/4)+2;
+  for(let step=0;step<=maxSteps;step++){
    const offset=step===0?0:Math.ceil(step/2)*4*(step%2?1:-1);
    const y=anchorY+offset;
    if(y<minY||y>maxY)continue;
    for(const x of xs){
-    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+8)){
-     chosen={x,y,radius,anchorX,anchorY};break;
-    }
+    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+8))
+     return {x,y,radius,anchorX,anchorY};
    }
   }
-  // If an unusually tiny outline has no free slot, preserve the count and
-  // its original anchor rather than silently hiding a prerequisite bundle.
-  const label=chosen??{x:clampX(anchorX),y:Math.max(minY,Math.min(maxY,anchorY)),radius,anchorX,anchorY};
-  placed.push(label);result.set(item.arc.key,label);
+  return null;
+ };
+ const hiddenKeys:string[]=[];
+ for(const item of items){
+  const label=findSlot(item.radius,item.anchorX,item.anchorY);
+  if(label){placed.push(label);result.set(item.arc.key,label)}
+  else hiddenKeys.push(item.arc.key);
+ }
+ if(hiddenKeys.length){
+  // Reserve a 44px tap target. Remove individual badges if necessary until
+  // the summary itself has the same eight-pixel clearance as every other mark.
+  let summary=findSlot(22,GUTTER/2,height/2);
+  while(!summary&&placed.length){
+   const removed=placed.pop()!;
+   const key=[...result].find(([,value])=>value===removed)?.[0];
+   if(key){result.delete(key);hiddenKeys.push(key)}
+   summary=findSlot(22,GUTTER/2,height/2);
+  }
+  if(summary){
+   summary.hiddenKeys=hiddenKeys.sort();
+   result.set(OVERFLOW_BUNDLE_KEY,summary);
+  }
  }
  return result;
 }
@@ -77,7 +93,8 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
  const x0=8;
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
  const badges=layoutBundleLabels(arcs,rows);
- return <svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={rows*ROW}
+ const overflow=badges.get(OVERFLOW_BUNDLE_KEY);
+ return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={rows*ROW}
   className="pointer-events-none absolute right-0 top-0 overflow-visible">
   <defs>{(['none','up','down'] as Tone[]).map(t=><marker key={t} id={'atlas-arrow-'+t} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
    <path d="M1 1L7 4L1 7" fill="none" stroke={toneColor[t]} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></marker>)}</defs>
@@ -94,7 +111,8 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
    </g>;
   })}
   {ordered.filter(arc=>arc.count>1).map(arc=>{
-   const badge=badges.get(arc.key)!;
+   const badge=badges.get(arc.key);
+   if(!badge)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
    const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
    return <g key={'badge:'+arc.key} opacity={opacity} data-atlas-bundle={arc.key}>
@@ -107,7 +125,24 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
     </g>
    </g>;
   })}
- </svg>;
+ </svg>
+  {overflow&&<details data-atlas-hidden-bundles="true" className="absolute z-20"
+   style={{right:GUTTER-overflow.x-22,top:overflow.y-22}}>
+   <summary data-atlas-overflow-count="true" aria-label={`Show ${overflow.hiddenKeys?.length??0} hidden Atlas link bundles`}
+    className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full border border-edge-2 bg-raised text-label font-semibold text-ink [&::-webkit-details-marker]:hidden">
+    +{overflow.hiddenKeys?.length??0}
+   </summary>
+   <div className="absolute right-0 top-11 max-h-60 w-[min(280px,calc(100vw-24px))] overflow-y-auto rounded-ctl border border-edge-2 bg-raised p-3 shadow-[var(--e-float)]">
+    <p className="mb-2 text-body font-semibold">Other bundled connections</p>
+    <ul className="space-y-1 text-label text-ink-2">
+     {(overflow.hiddenKeys??[]).map(key=>{
+      const arc=arcs.find(item=>item.key===key);
+      return arc?<li key={key}>{arc.kind==='prereq'?'Prerequisite':'Related'} rows {arc.from+1}–{arc.to+1}: {arc.count} links</li>:null;
+     })}
+    </ul>
+   </div>
+  </details>}
+ </>;
 }
 
 export function Row({node,open,tone,match,onToggle,onSelect}:{
