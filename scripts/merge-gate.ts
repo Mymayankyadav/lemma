@@ -37,6 +37,10 @@ const DEFAULT_REQUIRED_CHECKS = ["check", "mcp-sql"] as const;
 export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
   if (input.draft) return denied("Draft PR cannot be merged by REST-only agents");
   if (!input.leaseEligible) return denied("Lease is held by another active agent");
+  // Planner PLAN drops require an explicit owner decision; a stale or
+  // accidental Ready marker must never override the pending-approval guard.
+  if (/Owner approval needed/i.test(input.body))
+    return denied("Owner approval needed before merging");
   if (!/^Ready to merge\s*$/m.test(input.body))
     return denied("No standalone Ready to merge marker");
   if (!input.mergeable || input.mergeableState === "dirty")
