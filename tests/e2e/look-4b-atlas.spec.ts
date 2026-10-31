@@ -110,3 +110,16 @@ for(const width of [360,390] as const){
   await page.screenshot({path:`test-results/screens/look-4b-sticky-${profile}-${theme}-${width}.png`});
  });
 }
+
+test('LOOK-4b preserves all moderate Fields while extreme outlines remain windowed',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('./?demo=1&theme=graph#/atlas');
+ const tree=page.getByRole('tree',{name:'Ideas and their links'});
+ await expect(tree).toBeVisible();
+ // FIX #519b's moderate-outline exception keeps the third Field available
+ // to screen readers and keyboard users even below the first viewport.
+ await expect(tree.locator('[data-level="cluster"]')).toHaveCount(3);
+ await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+ await expect(tree.locator('[data-level="cluster"]')).toHaveCount(3);
+ expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(150);
+});
