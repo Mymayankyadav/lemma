@@ -19,6 +19,7 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {FastHomeTex} from './FastHomeTex'
+import {shouldDeferForecast} from './forecastPolicy'
 import type {HomeSummary, ProjectSummary} from '../../data/types';
 
 
@@ -186,7 +187,7 @@ export default function Page(){
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
    {/* Live uses one bounded server RPC for the outlook, so load it immediately.
        Only large in-browser demo stores need to defer the expensive local scan. */}
-   <ForecastOnDemand defer={getMode()==='demo'&&projects.length>4}/>
+   <ForecastOnDemand defer={shouldDeferForecast(projects.length,getMode())}/>
   </section>
   <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
    <SectionHeading className="text-ink">From your tutor</SectionHeading>
