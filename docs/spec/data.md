@@ -537,7 +537,7 @@ This is the contract for `docs/spec/v3.md` §§2a–6. It is additive until DB-4
 
 ### 7.3 CONTRACT-546 — bounded Card detail history (additive)
 
-Audit #546 / ST-4 D7 requires a Card detail screen to load at most 20 recent reviews and 20 recent comments at a time, rather than downloading every owner row and slicing in the browser. This contract adds two independent cursor reads; it does **not** remove or rename any field in `CardDetail` or change the existing `getCard` method. FIX-546a first scopes the initial note query; FIX-546b implements these reads and the bounded stability-chart summary.
+Audit #546 / ST-4 D7 requires a Card detail screen to load at most 20 recent reviews and 20 recent comments at a time, rather than downloading every owner row and slicing in the browser. This contract adds two independent cursor reads; it does **not** remove or rename any field in `CardDetail` or change the existing `getCard` inputs; CONTRACT-546c adds optional initial-page cursor metadata to its return value. FIX-546a first scopes the initial note query; FIX-546b implements these reads and the bounded stability-chart summary.
 
 - `CardHistoryPage`: `rows: CardDetail['history']`, `nextCursor: string | null`. `getCardHistoryPage(noteNo, cursor?)` returns at most 20 non-undone reviews for cards of that note, newest first.
 - `CardCommentsPage`: `rows: CardComment[]`, `nextCursor: string | null`. `getCardCommentsPage(noteNo, cursor?)` returns at most 20 comments for the note, newest first, including status and resolution metadata.
