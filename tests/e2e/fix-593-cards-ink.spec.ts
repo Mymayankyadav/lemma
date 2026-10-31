@@ -15,13 +15,16 @@ for(const profile of ['stress','extreme'] as const)
     const glyph=row.locator('[data-card-subject-glyph]');
     await expect(glyph).toBeVisible();
     const colors=await glyph.evaluate(element=>{
-     const probe=document.createElement('span');
-     probe.style.color='var(--ink-2)';
-     document.body.appendChild(probe);
-     const ink=getComputedStyle(probe).color;
-     probe.style.color='var(--accent)';
-     const accent=getComputedStyle(probe).color;
-     probe.remove();
+     // Use two simultaneous probes. Reusing one node for both variables can
+     // read a stale computed color under Chromium's style recalculation.
+     const inkProbe=document.createElement('span');
+     const accentProbe=document.createElement('span');
+     inkProbe.style.color='var(--ink-2)';
+     accentProbe.style.color='var(--accent)';
+     document.body.append(inkProbe,accentProbe);
+     const ink=getComputedStyle(inkProbe).color;
+     const accent=getComputedStyle(accentProbe).color;
+     inkProbe.remove();accentProbe.remove();
      return {actual:getComputedStyle(element).color,ink,accent,
       size:parseFloat(getComputedStyle(element).fontSize)};
     });
