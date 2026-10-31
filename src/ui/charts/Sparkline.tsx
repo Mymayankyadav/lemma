@@ -15,7 +15,7 @@ export function Sparkline({data,width=316,height=64,title='Card interval growth'
  <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop stopColor="var(--amber)" stopOpacity=".24"/><stop offset="1" stopColor="var(--amber)" stopOpacity="0"/></linearGradient></defs>
  {areaPath&&<path d={areaPath} fill={`url(#${id})`}/>}
  {curve&&<motion.path d={curve} stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" fill="none" initial={reduce?false:{pathLength:0}} animate={{pathLength:1}} transition={{duration:1.2}}/>}
- {rows.map((p,i)=><circle key={i} cx={x(p.i)} cy={y(p.value)} r="3" fill={p.rating?tones[p.rating]:'var(--amber-hi)'}/>)}
+ {rows.map((p,i)=><circle data-stress-mark="" key={i} cx={x(p.i)} cy={y(p.value)} r="3" fill={p.rating?tones[p.rating]:'var(--amber-hi)'}/>)}
  </svg>;
 }
 export default Sparkline;
