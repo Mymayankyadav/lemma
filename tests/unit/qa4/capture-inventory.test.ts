@@ -41,6 +41,8 @@ describe('QA-4 approved screenshot inventory',()=>{
   expect(publish).toContain('  contents: write');
   expect(publish).toContain('    if: "!contains(github.event.head_commit.message, \'[shots]\')"');
   expect(publish).toContain('node scripts/review-shots.mjs');
+  expect(publish).toContain('actions/upload-artifact@v4');
+  expect(publish).toContain('name: v4-review-screens');
   expect(publish).toContain('git push');
   expect(publish).not.toContain('pull_request:');
  });
