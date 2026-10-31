@@ -131,7 +131,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
           {expanded && layout.expandedY!==null && (
             <foreignObject data-expanded-stage="" x="8" y={layout.expandedY} width="304" height="206">
               <div className="flex h-full min-w-0 flex-col gap-1 rounded-ctl border border-amber-line bg-raised p-2">
-                <p className="shrink-0 text-label font-semibold text-ink"><Tex source={expanded.name} /> · {expanded.nodes.length} checkpoints</p>
+                <p className="min-w-0 shrink-0 overflow-x-auto whitespace-nowrap text-[16px] font-semibold text-ink"><Tex source={expanded.name} /> · {expanded.nodes.length} checkpoints</p>
                 <div className="min-h-0 flex-1 overflow-auto">
                   <CheckpointTree nodes={expanded.nodes} selected={selected} onSelect={onSelect}/>
                 </div>
@@ -413,16 +413,16 @@ export default function Page() {
           )}
           <section aria-label="Checkpoints" className="flex flex-col gap-4">
             {stages.length>5 && <nav aria-label="Jump to stage" className="flex gap-2 overflow-x-auto pb-2">
-              {stages.map((stage,i) => <button key={stage.id} type="button" title={stage.name}
+              {stages.map((stage,i) => <button key={stage.id} type="button" title={plainMath(stage.name)}
                 onClick={() => document.getElementById(`plan-stage-${i}`)?.scrollIntoView({behavior:"smooth",block:"start"})}
-                className="min-h-11 min-w-11 max-w-40 shrink-0 truncate rounded-chip border border-edge px-3 text-label text-ink-2">
+                className="min-h-11 min-w-11 max-w-40 shrink-0 overflow-x-auto whitespace-nowrap rounded-chip border border-edge px-3 text-label text-ink-2">
                 <Tex source={stage.name} />
               </button>)}
             </nav>}
             {stages.map((stage, i) => (
               <div id={`plan-stage-${i}`} key={stage.id} className="scroll-mt-20">
                 <h3 className="mb-1 flex items-baseline justify-between gap-3">
-                  <span className="text-title-s italic" style={{ fontFamily: "var(--font-display)" }}><Tex source={stage.name} /></span>
+                  <span className="min-w-0 overflow-x-auto text-title-s italic" style={{ fontFamily: "var(--font-display)" }}><Tex source={stage.name} /></span>
                   <span className="text-caption text-ink-3">{stage.nodes.length}</span>
                 </h3>
                 <Slab className="rounded-slab px-2 py-1">
