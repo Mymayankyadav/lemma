@@ -144,6 +144,14 @@ export function descendants(tree:AtlasTree,id:string):string[]{
 export function expandedToDepth(tree:AtlasTree,depth:number):Set<string>{
  return new Set([...tree.nodes.values()].filter(n=>n.children.length&&n.depth<depth-1).map(n=>n.id));
 }
+/** Resolve saved/default folds before the first tree render. An effect-only
+ * initialization made the extreme Atlas calculate 8,000 links twice under
+ * 4× CPU throttling: once for the closed roots, then for the actual view. */
+export function initialExpanded(tree:AtlasTree,stored?:readonly string[]|null):Set<string>{
+ const valid=stored?.filter(id=>tree.nodes.has(id));
+ return valid?.length?new Set(valid):defaultExpanded(tree);
+}
+
 /** First visit: open each field one level and unfold the path to anything in progress or due. */
 export function defaultExpanded(tree:AtlasTree):Set<string>{
  const open=new Set(tree.roots);
@@ -218,8 +226,41 @@ export function arcsFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Lin
   const arc=bundles.get(key)??{key,from:a,to:b,kind:link.kind,count:0,links:[]};
   arc.count++;arc.links.push(link);bundles.set(key,arc);
  }
- // Short arcs are drawn last so they sit on top of the long ones they nest inside.
- return [...bundles.values()].sort((x,y)=>Math.abs(y.to-y.from)-Math.abs(x.to-x.from));
+ // Do not sort every arc here. Extreme profiles have up to 8,000 links,
+ // but the gutter renders at most 60 arcs. Sort only the retained arcs.
+ return [...bundles.values()];
+}
+
+
+/** Count distinct visible bundles without allocating thousands of Arc objects.
+ * A fully unfolded, unfocused extreme Atlas draws no arcs above the gutter cap;
+ * the only visible result is the exact number hidden. */
+export function arcCountFor(tree:AtlasTree,rows:readonly Row[],kinds:ReadonlySet<Link['kind']>):number{
+ const index=new Map(rows.map((row,i)=>[row.id,i]));
+ const cached=new Map<string,number|null>();
+ const resolve=(id:string):number|null=>{
+  if(cached.has(id))return cached.get(id)!;
+  const path:string[]=[],seen=new Set<string>();
+  let current:string|null=id,found:number|null=null;
+  while(current&&!seen.has(current)){
+   if(cached.has(current)){found=cached.get(current)!;break}
+   seen.add(current);path.push(current);
+   const at=index.get(current);
+   if(at!==undefined){found=at;break}
+   current=tree.nodes.get(current)?.parentId??null;
+  }
+  for(const node of path)cached.set(node,found);
+  return found;
+ };
+ const keys=new Set<string>();
+ for(const link of tree.links){
+  if(!kinds.has(link.kind))continue;
+  const from=resolve(link.fromId),to=resolve(link.toId);
+  if(from===null||to===null||from===to)continue;
+  const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
+  keys.add(link.kind+':'+a+':'+b);
+ }
+ return keys.size;
 }
 
 
@@ -232,7 +273,14 @@ export function budgetArcs(
  tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
  arcs:readonly Arc[],focus:Focus|null,limit=60,
 ):{visible:Arc[];hidden:number}{
- if(arcs.length<=limit)return {visible:[...arcs],hidden:0};
+ const bySpan=(a:Arc,b:Arc)=>Math.abs(b.to-b.from)-Math.abs(a.to-a.from);
+ if(arcs.length<=limit)return {visible:[...arcs].sort(bySpan),hidden:0};
+ // With no selected idea and no folded branches, all arcs are intentionally
+ // hidden. Avoid allocating and sorting thousands of scored candidates.
+ if(!focus&&!rows.some(row=>{
+  const node=tree.nodes.get(row.id);
+  return !!node?.children.length&&!expanded.has(node.id);
+ }))return {visible:[],hidden:arcs.length};
  const scored=arcs.map((arc,index)=>{
   const focused=!!focus&&arcTone(arc,focus)!=='none';
   const folded=[arc.from,arc.to].some(i=>{
@@ -240,9 +288,9 @@ export function budgetArcs(
    return !!node?.children.length&&!expanded.has(node.id);
   });
   return {arc,index,score:focused?2:folded?1:0};
- }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.index-b.index);
+ }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||bySpan(a.arc,b.arc)||a.index-b.index);
  const chosen=new Set(scored.slice(0,limit).map(x=>x.arc.key));
- const visible=arcs.filter(arc=>chosen.has(arc.key));
+ const visible=arcs.filter(arc=>chosen.has(arc.key)).sort(bySpan);
  return {visible,hidden:arcs.length-visible.length};
 }
 

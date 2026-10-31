@@ -4,7 +4,8 @@ import {BookOpen,Check,ChevronRight,Circle,Clock3,HelpCircle,Layers,MessageCircl
 import {useCheckpoint,useInsightData,useProject,useSettings} from '../../data/hooks';
 import type {CheckpointView} from '../../data/types';
 import {chatLink,studyPrompt} from '../../lib/chat';
-import {buildSchedule,paceFromDemonstrations,scheduleDetail} from '../../lib/schedule';
+import {scheduleDetail} from '../../lib/schedule';
+import {scheduleForProject} from '../../ui/timeline/progress';
 import ProjectPage from '../project/Page';
 import {Sheet} from '../../ui/Sheet';
 import {Chip} from '../../ui/Chip';
@@ -29,8 +30,7 @@ export default function Page(){
   window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
  }
  const detail=query.data,view=detail?.view;
- const pace=paceFromDemonstrations(insight.data?.checkpointEvents??[],project.data?.project.id??'');
- const schedule=project.data?buildSchedule(project.data.checkpoints,{targetDate:project.data.project.targetDate,pacePerWeek:pace}):[];
+ const schedule=project.data?scheduleForProject(project.data,insight.data?.checkpointEvents).rows:[];
  const scheduled=schedule.find(row=>row.checkpoint.code===view?.code);
  const scheduleText=scheduled?scheduleDetail(scheduled):null;
  return <>

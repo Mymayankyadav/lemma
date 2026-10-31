@@ -56,6 +56,8 @@ export default function Page() {
   const [editing, setEditing] = useState(false),
     [deleting, setDeleting] = useState(false),
     [message, setMessage] = useState(""),
+    [allComments,setAllComments] = useState(false),
+    [allReviews,setAllReviews] = useState(false),
     [slow, setSlow] = useState(false);
   const closeEditing = useCallback(() => setEditing(false), []);
   const closeDeleting = useCallback(() => setDeleting(false), []);
@@ -71,6 +73,14 @@ export default function Page() {
     note = detail?.note,
     project = projects.data?.find((p) => p.slug === note?.projectSlug),
     card = detail?.cards[0]?.state;
+  const visibleComments = useMemo(() => [...(detail?.comments??[])]
+    .filter(c=>c.status==='open'||c.status==='addressed')
+    .sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))
+    .slice(0,allComments?undefined:20),[detail?.comments,allComments]);
+  const visibleReviews = useMemo(() => [...(detail?.history??[])]
+    .sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt))
+    .slice(0,allReviews?undefined:20),[detail?.history,allReviews]);
+  const totalComments = detail?.comments.filter(c=>c.status==='open'||c.status==='addressed').length??0;
   const chart = useMemo(() => {
     const history = [...(detail?.history ?? [])].sort(
       (a, b) => Date.parse(a.reviewedAt) - Date.parse(b.reviewedAt),
@@ -203,6 +213,7 @@ export default function Page() {
             <MathText
               source={note.front}
               variant="card"
+              interactiveMath
               cloze={
                 note.type === "cloze"
                   ? { ord: detail.cards[0]?.ord ?? 1, revealed: false }
@@ -213,6 +224,7 @@ export default function Page() {
             <MathText
               source={note.type === "cloze" ? note.front : note.back}
               variant="answer"
+              interactiveMath
               cloze={
                 note.type === "cloze"
                   ? { ord: detail.cards[0]?.ord ?? 1, revealed: true }
@@ -271,7 +283,7 @@ export default function Page() {
           <section>
             <h2 className="mb-4 text-headline font-medium" style={{fontFamily:"var(--font-display)"}}>For your tutor</h2>
             <div className="flex flex-col gap-3">
-              {detail.comments
+              {visibleComments
                 .filter((c) => c.status === "open")
                 .map((c) => (
                   <div
@@ -292,7 +304,7 @@ export default function Page() {
                     </button>
                   </div>
                 ))}
-              {detail.comments
+              {visibleComments
                 .filter((c) => c.status === "addressed")
                 .map((c) => (
                   <details key={c.no} className="rounded-ctl bg-fill-1 p-4">
@@ -311,7 +323,22 @@ export default function Page() {
                   No notes for your tutor yet.
                 </p>
               )}
+              {totalComments>20&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setAllComments(v=>!v)}>
+               {allComments?'Show latest 20':'More comments ('+(totalComments-20)+')'}
+              </button>}
             </div>
+          </section>
+          <section aria-label="Review history">
+           <h2 className="mb-3 text-headline font-medium">Recent reviews</h2>
+           {visibleReviews.map((r,i)=><div key={r.reviewedAt+':'+i} className="flex min-h-11 items-center justify-between gap-3 border-b border-edge py-2 text-body">
+            <span className="text-ink-2">{new Date(r.reviewedAt).toLocaleDateString()}</span>
+            <span className="text-amber">{['','Again','Hard','Good','Easy'][r.rating]??'Reviewed'}</span>
+            <span className="text-ink-3">{r.confidence??'—'}</span>
+           </div>)}
+           {!detail.history.length&&<p className="text-label text-ink-3">No reviews yet.</p>}
+           {detail.history.length>20&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setAllReviews(v=>!v)}>
+            {allReviews?'Show latest 20':'More reviews ('+(detail.history.length-20)+')'}
+           </button>}
           </section>
           <form
             className="flex gap-2 rounded-ctl border border-edge bg-well p-2"

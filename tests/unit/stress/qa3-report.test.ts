@@ -6,12 +6,12 @@ import {
 function evidence(): Record<string, unknown> {
   const files: Record<string, unknown> = {};
   for (const { profile, theme, width, filename } of qa3Cases()) {
-    files[filename] = QA3_ROUTES.map((route, index) => ({
+    files[filename] = QA3_ROUTES.map(route => ({
       route, actualRoute: route, profile, theme, width,
       nodes: 400, horizontalOverflow: 0, smallText: 0, smallMath: 0,
       smallTargets: 0, minCircleGap: null,
       durationMs: 200, requestCount: 0, transferBytes: 0,
-      cpuThrottle: index === 0 ? 4 : 1,
+      cpuThrottle: 4,
       violations: ['stale producer value is not trusted'],
     }));
   }
@@ -102,6 +102,18 @@ describe('QA-3a stress evidence', () => {
     const report = analyzeQa3(files);
     expect(report.status).toBe('INCOMPLETE');
     expect(report.errors.some(e => e.includes('not measured under 4x CPU'))).toBe(true);
+  });
+
+  it('fails closed when a non-Today route has only 1x CPU evidence', () => {
+    const files = evidence();
+    const filename = qa3Cases()[0].filename;
+    const rows = files[filename] as Record<string, unknown>[];
+    rows[1] = { ...rows[1], cpuThrottle: 1 };
+    const report = analyzeQa3(files);
+    expect(report.status).toBe('INCOMPLETE');
+    expect(report.filesValid).toBe(7);
+    expect(report.errors).toContain(filename + ': route /projects not measured under 4x CPU throttle');
+    expect(report.elements.find(e => e.code === 'I')?.status).toBe('INCOMPLETE');
   });
 
   it('recomputes hard violations and assigns failures to affected elements', () => {
