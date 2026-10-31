@@ -7,8 +7,11 @@ const OVERSCAN=8;
 
 export interface AtlasWindow {virtual:boolean;first:number;last:number;height?:number}
 
-export function atlasWindow(count:number,scrollTop:number,viewportHeight:number):AtlasWindow{
- const virtual=count>VIRTUALIZE_ABOVE;
+/** The page may keep a moderate outline mounted for complete keyboard and
+ * screen-reader traversal. The default remains the strict 40-row cold-render
+ * threshold for large graphs; never raise it for stress/extreme graphs. */
+export function atlasWindow(count:number,scrollTop:number,viewportHeight:number,virtualizeAbove=VIRTUALIZE_ABOVE):AtlasWindow{
+ const virtual=count>virtualizeAbove;
  if(!virtual)return {virtual:false,first:0,last:count,height:undefined};
  // A fold can shrink 2,500 rows to 50 while the scroll element still
  // reports its previous position for one React render. Clamp immediately so
