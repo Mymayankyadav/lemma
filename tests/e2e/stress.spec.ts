@@ -115,9 +115,18 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await expect(page.getByText('Session unavailable.')).toHaveCount(0,{timeout:90_000});
    // A loaded landmark below a retained scroll position still yields a blank
    // viewport. Reset to the route letterhead and prove its heading is painted.
-   await page.evaluate(()=>window.scrollTo(0,0));
-   await expect(page.getByRole('heading',{name:readiness.heading,exact:true,level:1}))
-    .toBeInViewport({ratio:0.05,timeout:90_000});
+   // Visually hidden semantic h1 elements are not a screenshot anchor. Use
+   // the route's loaded form/control instead; keep the semantic heading check
+   // above and require actual painted content in the captured viewport.
+   const anchor=readiness.viewportAnchor
+    ?page.locator(readiness.viewportAnchor).first()
+    :page.getByRole('heading',{name:readiness.heading,exact:true,level:1});
+   await page.evaluate(()=>{
+    document.documentElement.style.setProperty('scroll-behavior','auto','important');
+    window.scrollTo(0,0);
+   });
+   await anchor.scrollIntoViewIfNeeded({timeout:90_000});
+   await expect(anchor).toBeInViewport({ratio:0.05,timeout:90_000});
    // React Router and Screen use finite Motion fades. A visible DOM heading
    // can still be visually blank while an ancestor is at opacity 0.
    await page.waitForFunction(()=>{
