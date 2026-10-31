@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
@@ -140,12 +141,12 @@ export default function Page(){
   </Link>}
   <GoalDistance projects={projects} variant="metro"/>
   <section aria-label="Cards" className="flex flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Cards</h2>
+   <SectionHeading className="text-ink">Cards</SectionHeading>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
    <ReviewOutlook/>
   </section>
   <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">From your tutor</h2>
+   <SectionHeading className="text-ink">From your tutor</SectionHeading>
    <Link to="/proposals" aria-label="Review tutor suggestions"
     className="flex min-h-11 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 py-3 text-label text-ink-2">
     <span className="min-w-0 break-words">
@@ -157,7 +158,7 @@ export default function Page(){
   </section>
   <section aria-label="Projects" className="flex flex-col gap-2">
    <div className="flex min-h-11 items-center justify-between">
-    <h2 className="text-body-l font-semibold text-ink-2">Projects</h2>
+    <SectionHeading className="text-ink">Projects</SectionHeading>
     <IconButton tone="plain" icon={Plus} label="New project" to="/projects/new" className="text-amber"/>
    </div>
    <div className="flex flex-col gap-1">
@@ -167,7 +168,7 @@ export default function Page(){
    {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
   </section>
   <section aria-label="Last chat" className="flex flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Last chat</h2>
+   <SectionHeading className="text-ink">Last chat</SectionHeading>
    <ResumeCard home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
   </section>
  </Screen>;
