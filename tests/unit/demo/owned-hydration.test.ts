@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import fixtureText from '../../../src/data/demo/fixture.json?raw';
 import { DemoAdapter } from '../../../src/data/demo/adapter';
 import { hydrateFixture } from '../../../src/data/demo/hydrate';
@@ -29,5 +29,27 @@ describe('stress fixture ownership', () => {
     const home = await adapter.getHome();
     expect(home.projects).toHaveLength(15);
     expect(home.due).toBe(600);
+  });
+
+  it('avoids a recursive walk of 5,000 generated note graphs while preserving their card dates', () => {
+    const fixture = makeStressStore(JSON.parse(fixtureText) as DemoStore, 'stress');
+    const reference = hydrateFixture(fixture, now, 'UTC');
+    const owned = makeStressStore(JSON.parse(fixtureText) as DemoStore, 'stress');
+    const entries = vi.spyOn(Object, 'entries');
+    let result: DemoStore;
+    let visited: number;
+    try {
+      result = hydrateFixture(owned, now, 'UTC', { takeOwnership: true });
+      visited = entries.mock.calls.length;
+    } finally {
+      entries.mockRestore();
+    }
+    // S contains thousands of non-card records, but no need to visit every
+    // generated note, card and state when only two date tokens need resolving.
+    expect(visited).toBeLessThan(9000);
+    expect(result.notes.length).toBe(reference.notes.length);
+    expect(result.notes[0]).toEqual(reference.notes[0]);
+    expect(result.notes[2]).toEqual(reference.notes[2]);
+    expect(result.notes.at(-1)).toEqual(reference.notes.at(-1));
   });
 });
