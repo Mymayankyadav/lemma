@@ -1,29 +1,35 @@
+import {useState} from 'react'
 import {Link} from 'react-router'
 import {useProject,useInsightData} from '../../data/hooks'
 import type {ProjectSummary,InsightData} from '../../data/types'
 import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline'
+import {MiniStageBar} from '../../ui/timeline/MiniStageBar'
+import {estimateFinish} from '../../ui/timeline/progress'
 import {Slab} from '../../ui/Slab'
 import {Glyph} from '../../ui/Glyph'
 import {Skeleton} from '../../ui/Skeleton'
 import {Tex} from '../../ui/Tex'
-import {buildSchedule,scheduleHeadline,paceFromDemonstrations} from '../../lib/schedule'
+import {buildSchedule,scheduleHeadline} from '../../lib/schedule'
 
-const DAY=86_400_000
-function goalEstimate(project:ProjectSummary,events:InsightData['checkpointEvents'],now=Date.now()){
- const pace=paceFromDemonstrations(events,project.id,now)
- const finish=new Date(now+Math.max(0,project.total-project.done)/pace*7*DAY)
- const day=finish.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})
- const target=project.targetDate
- const spare=target?Math.floor((Date.parse(target+'T23:59:59Z')-finish.getTime())/DAY):null
- return {pace,day,spare,baseline:!events.some(e=>e.projectId===project.id&&e.kind==='demonstrated'&&Date.parse(e.at)>=now-28*DAY&&Date.parse(e.at)<=now)}
+type Events=InsightData['checkpointEvents']
+const behind=(project:ProjectSummary)=>/behind/i.test(project.scheduleHeadline??'')||
+ (!!project.targetDate&&Date.parse(project.targetDate)<Date.now()&&project.done<project.total)
+const urgency=(a:ProjectSummary,b:ProjectSummary)=>{
+ const schedule=Number(behind(b))-Number(behind(a))
+ if(schedule)return schedule
+ const target=(p:ProjectSummary)=>p.targetDate?Date.parse(p.targetDate):Number.POSITIVE_INFINITY
+ if(target(a)!==target(b))return target(a)-target(b)
+ return (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0)
 }
-function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'ascent'|'metro';events:InsightData['checkpointEvents']|undefined}){
+
+function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'ascent'|'metro';events:Events|undefined}){
  const detail=useProject(project.slug)
  const pct=project.total?Math.round(100*project.done/project.total):0
- const estimate=events&&project.total>0?goalEstimate(project,events):null
+ const estimate=estimateFinish({projectId:project.id,total:project.total,done:project.done,
+  targetDate:project.targetDate,events,dueDates:detail.data?.checkpoints.filter(cp=>cp.ui!=='done'&&cp.ui!=='revisit').map(cp=>cp.dueOn)})
  const target=project.targetDate
- const schedule=detail.data?buildSchedule(detail.data.checkpoints,{targetDate:target,pacePerWeek:estimate?.pace}):[]
- const status=scheduleHeadline(schedule)
+ const schedule=detail.data?buildSchedule(detail.data.checkpoints,{targetDate:target,pacePerWeek:estimate.pace??undefined}):[]
+ const status=project.scheduleHeadline??scheduleHeadline(schedule)
  const targetDisplay=target?new Date(target+'T12:00:00').toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}):null
  return <Slab as="article" aria-label={'Goal progress for '+project.title} className="flex min-w-0 flex-col gap-3 p-4">
   <div className="flex min-w-0 items-start gap-3">
@@ -38,11 +44,11 @@ function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'asce
     {status&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{status}</span>}</div>
   </div>
   {detail.isPending?<Skeleton h={85}/>:detail.data?.checkpoints.length?
-   <ProjectTimeline project={project} checkpoints={detail.data.checkpoints} variant={variant} pacePerWeek={estimate?.pace} height={80}/>:
+   <ProjectTimeline project={project} checkpoints={detail.data.checkpoints} variant={variant} pacePerWeek={estimate.pace??undefined} height={80}/>:
    <p className="text-label text-ink-3">No checkpoints yet. Ask your tutor to create a plan.</p>}
-  {estimate&&<p className="flex flex-wrap gap-x-1.5 gap-y-0.5 text-label leading-snug text-ink-2">
-   <span>Finish ≈ <strong className="text-ink">{estimate.day}</strong></span>
-   <span className="text-ink-3">at {estimate.pace.toFixed(2)}/wk{estimate.baseline?' (baseline)':''}</span>
+  {estimate.finish&&<p className="flex flex-wrap gap-x-1.5 gap-y-0.5 text-label leading-snug text-ink-2">
+   <span>Finish ≈ <strong className="text-ink">{estimate.finish.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})}</strong></span>
+   <span className="text-ink-3">{estimate.source==='plan'?'from your plan':'measured pace'}{estimate.pace!==null?' · '+estimate.pace.toFixed(2)+'/wk':''}</span>
    {targetDisplay&&<span className="basis-full">
     <strong className="text-amber"><Tex source={project.targetLabel??'Target'}/>:</strong>{' '}
     <time dateTime={target!}>{targetDisplay}</time>
@@ -55,14 +61,34 @@ function GoalCard({project,variant,events}:{project:ProjectSummary;variant:'asce
 }
 
 export function GoalDistance({projects,variant='metro'}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
- const active=projects.filter(project=>project.status==='active')
+ const active=projects.filter(project=>project.status==='active').sort(urgency)
+ const [showRest,setShowRest]=useState(false)
  const insight=useInsightData(30)
+ const featured=active.slice(0,3),rest=active.slice(3)
+ const behindCount=rest.filter(behind).length
  return <section aria-label="Distance to your goals" className="flex min-w-0 flex-col gap-3">
   <div className="flex min-h-11 items-center justify-between gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Distance to your goals</h2>
    <Link to="/projects" className="flex min-h-11 items-center text-label text-amber">All paths</Link>
   </div>
   {active.length===0?<p className="text-label text-ink-2">Create a project and plan to begin tracking your goals.</p>:
-   active.map(project=><GoalCard key={project.id} project={project} variant={variant} events={insight.data?.checkpointEvents}/>)}
+   <>
+    {featured.map(project=><GoalCard key={project.id} project={project} variant={variant} events={insight.data?.checkpointEvents}/>)}
+    {rest.length>0&&<div className="min-w-0 rounded-slab border border-edge bg-[var(--card)] p-2" data-compact-goals="">
+     <p className="px-2 py-2 text-label font-semibold text-ink-2">
+      {rest.length} more · {rest.length-behindCount} on schedule, {behindCount} behind
+     </p>
+     {rest.slice(0,showRest?rest.length:3).map(project=><div key={project.id}
+      className="flex min-h-11 items-center gap-2 border-t border-edge px-2 py-1" data-compact-goal={project.slug}>
+      <Link className="flex min-h-11 min-w-0 flex-[2] items-center truncate text-label text-ink" to={'/p/'+project.slug}><Tex source={project.title}/></Link>
+      <MiniStageBar project={project}/>
+      <span className="w-9 shrink-0 text-right text-caption tabular-nums text-ink-2">{project.total?Math.round(project.done/project.total*100):0}%</span>
+     </div>)}
+     {rest.length>3&&<button type="button" onClick={()=>setShowRest(value=>!value)}
+      aria-expanded={showRest} className="min-h-11 w-full text-label text-amber">
+      {showRest?'Show fewer':'Show all '+rest.length+' projects'}
+     </button>}
+    </div>}
+   </>}
  </section>
 }
