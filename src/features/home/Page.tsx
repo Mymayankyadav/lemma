@@ -78,9 +78,11 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
  const status=resume.pausedAt?relativeTime(resume.pausedAt):null;
  const description=resume.checkpointTitle??'Ready to study';
  const step=resume.stepsTotal>0?' · step '+Math.min(Math.max(1,resume.step),resume.stepsTotal)+' of '+resume.stepsTotal:'';
+ const spoken=resume.projectTitle+'. '+description+step.replace(' · step',', step')+(status?'. Paused '+status:'');
  return <Slab as="section" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-3 px-3 py-2">
+  <span className="sr-only">{spoken}</span>
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
-  <div className="min-w-0 flex-1">
+  <div aria-hidden="true" className="min-w-0 flex-1">
    <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><Tex source={resume.projectTitle}/>{step}</p>
    <p data-resume-meta="" title={(status?'Paused '+status+' · ':'')+plainMath(description)} style={clip} className="mt-1 text-caption text-ink-3">
     {status?'Paused '+status+' · ':''}<Tex source={description}/>
