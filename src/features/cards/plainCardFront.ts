@@ -3,8 +3,10 @@
  * so a string with no Markdown/HTML/LaTeX syntax is safe to show verbatim.
  * Anything ambiguous continues through the canonical Tex renderer.
  */
-const markupSyntax = /[\\$\`*_~\\[\\]<>!#|&\\r\\n]/;
+const markupCharacters = new Set(['\\', '$', '`', '*', '_', '~', '[', ']', '<', '>', '!', '#', '|', '&', '\r', '\n']);
 
 export function canRenderPlainCardFront(source: string): boolean {
-  return source.length > 0 && !markupSyntax.test(source);
+  if (!source.length) return false;
+  for (const character of source) if (markupCharacters.has(character)) return false;
+  return true;
 }
