@@ -53,6 +53,12 @@ for(const width of [360,390] as const){
    if(!await target.isVisible())continue;
    expect(await target.evaluate(node=>getComputedStyle(node).color)).toBe(tokens.ink);
   }
+  const viewPages=row.locator('[data-source-view-pages]');
+  await expect(viewPages).toBeVisible();
+  expect(await viewPages.evaluate(node=>getComputedStyle(node).color)).toBe(tokens.ink);
+  const viewBox=await viewPages.boundingBox();
+  expect(viewBox?.height??0).toBeGreaterThanOrEqual(44);
+  expect(viewBox?.width??0).toBeGreaterThanOrEqual(44);
   const edit=row.locator('[data-source-edit]');
   await edit.click();
   const save=row.getByRole('button',{name:'Save'});
@@ -79,5 +85,59 @@ for(const width of [360,390] as const){
   expect(metrics.nodes).toBeLessThan(1500);
   mkdirSync('test-results/screens/fix-600',{recursive:true});
   await page.screenshot({path:'test-results/screens/fix-600/'+profile+'-'+theme+'-'+width+'.png',fullPage:false});
+ });
+}
+
+/** The small seeded project has a real unchecked transcription and a
+ * "New · not yet used in a plan" source. Assert these states explicitly;
+ * the large S/X fixture is not allowed to make the checks vacuous.
+ */
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test('FIX #600 seeded Sources secondary and warning ink '+theme+' '+width,async({page})=>{
+  await page.setViewportSize({width,height:844});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+  await page.goto('/lemma/?demo=1&theme='+theme+'#/p/real-analysis?tab=sources');
+  const sources=page.getByRole('region',{name:'Sources'});
+  const colors=await page.evaluate(()=>{
+   const probe=(name:string)=>{
+    const el=document.createElement('span');
+    el.style.color='var('+name+')';
+    document.body.appendChild(el);
+    const color=getComputedStyle(el).color;
+    el.remove();
+    return color;
+   };
+   return {ink:probe('--ink-2'),late:probe('--late'),accent:probe('--accent')};
+  });
+  expect(colors.ink).not.toBe(colors.accent);
+  expect(colors.late).not.toBe(colors.accent);
+  const newSource=sources.locator('[data-source-new]:visible').first();
+  await expect(newSource).toBeVisible();
+  expect(await newSource.evaluate(el=>getComputedStyle(el).color)).toBe(colors.ink);
+  const rudin=sources.getByRole('group',{name:'Principles of Mathematical Analysis'});
+  await expect(rudin).toBeVisible();
+  const view=rudin.locator('[data-source-view-pages]');
+  await expect(view).toBeVisible();
+  expect(await view.evaluate(el=>getComputedStyle(el).color)).toBe(colors.ink);
+  await view.click();
+  const viewer=rudin.getByRole('region',{name:/Page transcription for Principles of Mathematical Analysis/});
+  await expect(viewer).toBeVisible();
+  const check=viewer.getByText('Check',{exact:true});
+  await expect(check).toBeVisible();
+  expect(await check.evaluate(el=>getComputedStyle(el).color)).toBe(colors.late);
+  const edit=viewer.getByRole('button',{name:'Edit page'});
+  const mark=viewer.getByRole('button',{name:'Mark checked'});
+  for(const control of [edit,mark]){
+   await expect(control).toBeVisible();
+   expect(await control.evaluate(el=>getComputedStyle(el).color)).toBe(colors.ink);
+   const box=await control.boundingBox();
+   expect(box?.width??0).toBeGreaterThanOrEqual(44);
+   expect(box?.height??0).toBeGreaterThanOrEqual(44);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  mkdirSync('test-results/screens/fix-600',{recursive:true});
+  await page.screenshot({path:'test-results/screens/fix-600/seeded-'+theme+'-'+width+'.png'});
  });
 }
