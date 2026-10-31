@@ -106,10 +106,12 @@ for (const theme of ['graph','graph-night'] as const) {
    expect(colours.icons).toEqual([colours.secondary,colours.secondary,colours.secondary]);
    expect(colours.typicalIcon).toBe(colours.secondary);
    expect(colours.recallNumber).toBe(colours.ink);
+   await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:'30 days'})).toHaveAttribute('aria-pressed','true');
    for(const key of ['trend','endpoint','hatching'] as const){
     expect(colours[key]).toBe(colours.secondary);
     expect(colours[key]).not.toBe(colours.accent);
    }
+   await page.screenshot({path:`test-results/screens/fix-590-insights-${theme}-${width}.png`,fullPage:true});
   });
  }
 }
