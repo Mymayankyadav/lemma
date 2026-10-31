@@ -66,5 +66,26 @@ for(const width of [360,390] as const){
    path:`test-results/screens/look-1a/${theme}-${profile}-${width}.png`,
    fullPage:true,
   });
+
+  // Home header icons remain 44px hit areas, but lose false boxed chrome.
+  await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/`,{
+   waitUntil:'domcontentloaded',timeout:90_000,
+  });
+  const headerIcon=page.locator('header .ui-icon-button').first();
+  await expect(headerIcon).toBeVisible({timeout:90_000});
+  const header=await headerIcon.evaluate(el=>{
+   const s=getComputedStyle(el),r=el.getBoundingClientRect();
+   return {border:s.borderTopWidth,shadow:s.boxShadow,
+    background:s.backgroundColor,width:r.width,height:r.height};
+  });
+  expect(header.border).toBe('0px');
+  expect(header.shadow).toBe('none');
+  expect(header.background).toBe('rgba(0, 0, 0, 0)');
+  expect(header.width).toBeGreaterThanOrEqual(44);
+  expect(header.height).toBeGreaterThanOrEqual(44);
+  await page.screenshot({
+   path:`test-results/screens/look-1a/home-${theme}-${profile}-${width}.png`,
+   fullPage:true,
+  });
  });
 }
