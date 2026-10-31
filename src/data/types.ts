@@ -176,6 +176,11 @@ export interface CardDetail {
  cards: {ord: number; state: CardState}[]
  history: {reviewedAt: IsoDate; rating: Rating; confidence: Confidence}[]; comments: CardComment[]
 }
+/** ST-4 D7: each server-filtered history request returns at most 20 rows.
+ * The opaque cursor encodes a stable (timestamp,id) continuation; never an offset.
+ */
+export interface CardHistoryPage { rows: CardDetail['history']; nextCursor: string | null }
+export interface CardCommentsPage { rows: CardComment[]; nextCursor: string | null }
 export interface CardComment {
  no: number; body: string; status: 'open' | 'addressed' | 'dismissed'; createdAt: IsoDate; resolvedAt: IsoDate | null
  resolvedByOrigin: Client | null
