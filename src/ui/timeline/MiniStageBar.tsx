@@ -2,10 +2,55 @@ import {useEffect,useRef,useState} from 'react'
 import type {ProjectSummary,ProjectStageProgress} from '../../data/types'
 import {layoutMiniRoute} from './miniRoute'
 
-/** A single 2x12px now-notch; inner marks keep 8px clearance from both ends. */
-export function miniRouteNotch(done:number,total:number,width:number){
+/** Locate the actual current checkpoint, not the number completed. */
+export function currentMiniRouteOrdinal(code:string|null|undefined,
+ stages:readonly ProjectStageProgress[],done:number):number{
+ const total=stages.reduce((sum,stage)=>sum+Math.max(0,stage.total),0)
+ const current=code?.trim()
+ if(current){
+  let before=0
+  const parts=(s:string)=>/^(.*?)(\\d+)$/.exec(s)
+  for(const stage of stages){
+   const count=Math.max(0,stage.total)
+   if(count>0){
+    if(current===stage.firstCode)return before+.5
+    if(current===stage.lastCode)return before+count-.5
+    const first=parts(stage.firstCode),last=parts(stage.lastCode),now=parts(current)
+    if(first&&last&&now&&first[1]===last[1]&&now[1]===first[1]){
+     const a=Number(first[2]),b=Number(last[2]),n=Number(now[2])
+     if(a!==b&&n>=Math.min(a,b)&&n<=Math.max(a,b))
+      return before+.5+(n-a)/(b-a)*(count-1)
+    }
+   }
+   before+=count
+  }
+  // Older summaries may not carry stage codes; CPn still gives a safe index.
+  const cp=/^CP(\\d+)$/i.exec(current)
+  if(cp&&Number(cp[1])>=1&&Number(cp[1])<=total)return Number(cp[1])-.5
+ }
+ return Math.max(0,Math.min(total,done>=total?total:done+.5))
+}
+
+/** A single 2x12px now-notch; inner marks keep 8px clearance from both ends.
+ * Map through the actual grouped segment widths, not total-completion ratio.
+ */
+export function miniRouteNotch(position:number,total:number,width:number,
+ segments?:readonly ReturnType<typeof layoutMiniRoute>[number][]){
  if(total<=0||width<=0)return null
- const ratio=Math.max(0,Math.min(1,done/total))
+ const ordinal=Math.max(0,Math.min(total,position))
+ let ratio=ordinal/total
+ if(segments?.length){
+  let remaining=ordinal,percent=0
+  for(const [i,segment] of segments.entries()){
+   if(remaining<=segment.total||i===segments.length-1){
+    percent+=segment.widthPercent*(segment.total?Math.max(0,Math.min(1,remaining/segment.total)):0)
+    break
+   }
+   percent+=segment.widthPercent
+   remaining-=segment.total
+  }
+  ratio=Math.max(0,Math.min(1,percent/100))
+ }
  const x=ratio===0?0:ratio===1?width:Math.max(9,Math.min(width-9,width*ratio))
  return {x,percent:x/width*100,edge:ratio===0?'start':ratio===1?'end':'middle'} as const
 }
@@ -29,7 +74,9 @@ export function MiniStageBar({project}:{project:ProjectSummary}){
     overdue:0,schedule:'unscheduled' as const}
   })
  const segments=layoutMiniRoute(stages,width)
- const notch=miniRouteNotch(project.done,total,width)
+ const stageTotal=stages.reduce((sum,stage)=>sum+Math.max(0,stage.total),0)
+ const currentOrdinal=currentMiniRouteOrdinal(project.current?.code,stages,project.done)
+ const notch=miniRouteNotch(currentOrdinal,stageTotal,width,segments)
  const color:Record<ProjectStageProgress['schedule'],string>={
   complete:'var(--ink-2)',behind:'var(--late)',
   dated:'var(--ink-2)',unscheduled:'var(--ink-3)',
