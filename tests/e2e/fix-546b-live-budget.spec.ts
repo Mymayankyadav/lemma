@@ -43,8 +43,9 @@ const token=[
 ].join('.')
 
 for(const theme of ['graph','graph-night'] as const)
-for(const width of [360,390] as const){
- test('FIX-546b live X-like bounded HTTP '+theme+' '+width,async({page})=>{
+for(const width of [360,390] as const)
+for(const recordCount of [20,1001] as const){
+ test('FIX-546b live bounded HTTP '+recordCount+' '+theme+' '+width,async({page})=>{
   test.setTimeout(120_000)
   await page.setViewportSize({width,height:width===360?740:844})
   await page.emulateMedia({colorScheme:theme==='graph-night'?'dark':'light'})
@@ -73,7 +74,7 @@ for(const width of [360,390] as const){
    const table=url.pathname.replace(/^\/rest\/v1\//,'')
    const single=req.headers()['accept']?.includes('application/vnd.pgrst.object+json')
    const pageNumber=url.searchParams.has('or')?1:0
-   const rows=table==='reviews'?reviews:comments
+   const rows=(table==='reviews'?reviews:comments).slice(0,recordCount)
    const payload:unknown=table==='rpc/bootstrap'||table==='settings'?{...settings,time_zone:browserZone}:
     table==='rpc/project_summaries'?[]:
     table==='notes'?note:
@@ -96,15 +97,22 @@ for(const width of [360,390] as const){
   await expect(page.getByRole('heading',{name:'Card detail',level:1})).toBeVisible()
   await expect(page.locator('[data-review-row]')).toHaveCount(20)
   await expect(page.locator('[data-comment-row]')).toHaveCount(20)
-  await page.getByRole('button',{name:'More reviews'}).click()
-  await expect(page.locator('[data-review-row]')).toHaveCount(20)
-  await expect(page.getByRole('button',{name:'Newer reviews'})).toBeVisible()
-  await page.getByRole('button',{name:'More comments'}).click()
-  await expect(page.locator('[data-comment-row]')).toHaveCount(20)
-  await expect(page.getByRole('button',{name:'Newer comments'})).toBeVisible()
+  if(recordCount===20){
+   await expect(page.getByRole('button',{name:'More reviews'})).toHaveCount(0)
+   await expect(page.getByRole('button',{name:'More comments'})).toHaveCount(0)
+  }else{
+   await page.getByRole('button',{name:'More reviews'}).click()
+   await expect(page.locator('[data-review-row]')).toHaveCount(20)
+   await expect(page.getByRole('button',{name:'Newer reviews'})).toBeVisible()
+   await page.getByRole('button',{name:'More comments'}).click()
+   await expect(page.locator('[data-comment-row]')).toHaveCount(20)
+   await expect(page.getByRole('button',{name:'Newer comments'})).toBeVisible()
+  }
 
   const bounded=calls.filter(c=>c.table==='reviews'||c.table==='card_comments')
-  expect(bounded.map(c=>c.table).sort()).toEqual(['card_comments','card_comments','card_comments','reviews','reviews','reviews'])
+  expect(bounded.map(c=>c.table).sort()).toEqual(recordCount===20
+   ?['card_comments','reviews']
+   :['card_comments','card_comments','reviews','reviews'])
   expect(bounded.reduce((sum,c)=>sum+c.bytes,0)).toBeLessThan(200*1024)
   for(const call of bounded){
    const url=new URL(call.url)
@@ -115,8 +123,10 @@ for(const width of [360,390] as const){
    expect(url.searchParams.get('select')).not.toBe('*')
    expect(call.bytes).toBeLessThan(100*1024)
   }
-  expect(bounded.filter(c=>c.table==='reviews')[2].url).toContain('or=')
-  expect(bounded.filter(c=>c.table==='card_comments')[2].url).toContain('or=')
+  if(recordCount>20){
+   expect(bounded.filter(c=>c.table==='reviews')[1].url).toContain('or=')
+   expect(bounded.filter(c=>c.table==='card_comments')[1].url).toContain('or=')
+  }
   for(const table of ['notes','cards','projects','reviews','card_comments']){
    const scoped=calls.filter(c=>c.table===table)
    expect(scoped.length,table+' must have a live HTTP read').toBeGreaterThan(0)
@@ -130,7 +140,7 @@ for(const width of [360,390] as const){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth))
    .toBeLessThanOrEqual(1)
   await page.screenshot({
-   path:'test-results/screens/fix-546b-live-'+theme+'-'+width+'.png',
+   path:'test-results/screens/fix-546b-live-'+recordCount+'-'+theme+'-'+width+'.png',
    fullPage:true,
   })
  })
