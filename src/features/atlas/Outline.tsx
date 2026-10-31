@@ -117,6 +117,7 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
  const lanes=layoutAtlasLanes(arcs,centers);
  const hiddenLanes=ordered.filter(arc=>!lanes.has(arc.key));
+ const hiddenLinkCount=hiddenLanes.reduce((total,arc)=>total+arc.count,0);
  const badges=layoutBundleLabels(arcs.filter(arc=>lanes.has(arc.key)),rows,centers,heightPx);
  const overflow=badges.get(OVERFLOW_BUNDLE_KEY);
  return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={heightPx??rows*ROW}
@@ -157,9 +158,9 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
   })}
  </svg>
   {hiddenLanes.length>0&&<details data-atlas-lane-overflow="true" className="absolute right-0 top-0 z-20">
-   <summary aria-label={`Show ${hiddenLanes.length} hidden Atlas connections`}
+   <summary aria-label={`Show ${hiddenLinkCount} hidden Atlas links`}
     className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-ctl border border-edge-2 bg-[var(--paper)] px-1 text-[12px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
-    +{hiddenLanes.length}
+    +{hiddenLinkCount}
    </summary>
    <div className="absolute right-0 top-11 max-h-60 w-[min(280px,calc(100vw-24px))] overflow-y-auto rounded-ctl border border-edge-2 bg-[var(--paper)] p-3 shadow-[var(--e-float)]">
     <p className="mb-2 text-[12px] font-semibold">Connections hidden by the 9px lane spacing</p>
