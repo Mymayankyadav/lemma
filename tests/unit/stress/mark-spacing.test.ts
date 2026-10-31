@@ -24,6 +24,12 @@ describe("FIX #489 all visible count marks are checked spatially", () => {
     setRect("b", 18, 12, 20, 8);
     expect(measureSvgMarks()).toBe(0);
   });
+  it("detects overlapping SVG path marks", () => {
+    document.body.innerHTML = '<svg><path id="a" data-stress-mark/><path id="b" data-stress-mark/></svg>';
+    setRect("a", 10, 10, 30, 3);
+    setRect("b", 25, 11, 30, 3);
+    expect(measureSvgMarks()).toBe(0);
+  });
   it("passes well-separated marks and does not count untagged decorations", () => {
     document.body.innerHTML = '<svg><circle id="a" data-stress-mark/><circle id="b" data-stress-mark/><circle id="c"/></svg>';
     setRect("a", 10, 10, 6, 6);
