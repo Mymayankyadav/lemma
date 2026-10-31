@@ -39,6 +39,18 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   expect(new Set([...result.values()].map(lane=>lane.x)).size).toBe(7);
   expect(result.has('dense-7')).toBe(false);
  });
+ it('prioritizes a selected shortest chain link when capacity is exhausted',()=>{
+  const arcs=Array.from({length:8},(_,i)=>arc('dense-'+i,i,i+8));
+  const centers=Array.from({length:16},(_,i)=>i*44+22);
+  const selected=new Set(['dense-7']);
+  const result=layoutAtlasLanes(arcs,centers,selected);
+  expect(result.size).toBe(7);
+  expect(result.has('dense-7')).toBe(true);
+  // No selected link may be dropped merely because an unrelated link was
+  // physically longer; a genuinely over-capacity selected chain still needs
+  // a separate spec resolution, never a false Ready-to-merge claim.
+  expect(result.has('dense-6')).toBe(false);
+ });
  it('allows a shared endpoint trunk but not an unrelated overlap on its track',()=>{
   const arcs=[arc('a',0,9),arc('b',0,8),arc('c',1,10)];
   const result=layoutAtlasLanes(arcs);
