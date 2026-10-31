@@ -25,7 +25,10 @@ export async function assertRouteLoaded(
   '/atlas':'[data-atlas-row]',
   '/insights':'h2:has-text("Reviews by")',
   '/settings':'h2:has-text("Teaching style")',
-  '/sign-in':'button:has-text("Continue with Google")',
+  // S/X profiles use demo mode, where the live-only OAuth button is
+  // intentionally absent. Require the route's actual explanatory content,
+  // not just a heading or a blank shell.
+  '/sign-in':'text=Sign-in is available in live mode.',
   '/kit':'h2:has-text("Surfaces")',
  };
  const selector=marker[route];
