@@ -7,7 +7,9 @@ import {resolve} from "node:path";
 // It does not alter the app, its demo fixture, or runtime contracts. The two
 // temporary files exist only during this browser test and are always removed.
 const source=resolve("src/st2-visual-preview.tsx");
-const html=resolve("public/st2-visual-preview.html");
+// Keep the test HTML at the Vite root so @vitejs/plugin-react injects its
+// refresh preamble. Files under public/ are served verbatim, causing a blank page.
+const html=resolve("st2-visual-preview.html");
 let server:ChildProcess|undefined;
 const preview = `
 import React,{useMemo,useState} from "react";
@@ -56,7 +58,6 @@ createRoot(document.getElementById("root")!).render(<Preview/>);
 `;
 test.describe.configure({mode:"serial"});
 test.beforeAll(async()=>{
-  mkdirSync(resolve("public"),{recursive:true});
   writeFileSync(source,preview);
   writeFileSync(html,`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><script>document.documentElement.dataset.theme=new URLSearchParams(location.search).get('theme')||'graph';document.documentElement.dataset.density='compact';document.documentElement.dataset.effects='calm';</script></head><body><div id="root"></div><script type="module" src="/lemma/src/st2-visual-preview.tsx"></script></body></html>`);
   server=spawn(process.execPath,["node_modules/vite/bin/vite.js","--host","127.0.0.1","--port","4174","--strictPort"],{stdio:"ignore"});
