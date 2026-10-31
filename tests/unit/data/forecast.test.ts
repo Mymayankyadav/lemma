@@ -32,3 +32,15 @@ it('counts 30,000 repeated due dates without 30,000 civil-time formatter calls',
   expect(formatter.mock.calls.length).toBeLessThan(20);
  }finally{formatter.mockRestore()}
 });
+
+// FIX #507: the 30k-card Today forecast must be able to stream states
+// instead of allocating another complete card-state array before first paint.
+it('forecasts from a one-pass iterable without requiring a materialized array',()=>{
+ const now=Date.parse('2026-10-31T12:00:00Z');
+ function* cards(){
+  yield {state:2,due:'2026-10-31T12:00:00Z'};
+  yield {state:2,due:'2026-10-31T12:00:00Z'};
+  yield {state:0,due:'2026-10-31T12:00:00Z'};
+ }
+ expect(reviewForecast(cards(),{timeZone:'UTC',rolloverHour:4},now)[0].due).toBe(2);
+});
