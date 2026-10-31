@@ -85,7 +85,7 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
   <div aria-hidden="true" className="min-w-0 flex-1">
    <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><Tex source={resume.projectTitle}/>{step}</p>
-   <p data-resume-meta="" title={(status?'Paused '+status+' · ':'')+plainMath(description)} style={clip} className="mt-1 text-caption text-ink-3">
+   <p data-resume-meta="" title={(status?'Paused '+status+' · ':'')+plainMath(description)} style={clip} className="mt-1 text-caption text-ink-3 [&_.katex]:text-[16px]">
     {status?'Paused '+status+' · ':''}<Tex source={description}/>
    </p>
   </div>
