@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {QA3_ROUTES} from '../../scripts/qa3-report';
 import {auditCpuCoverage,type CpuRouteSample} from '../../scripts/stress-cpu-coverage';
+import {analyzeQa3Cpu,renderQa3CpuMarkdown} from '../../scripts/qa3-cpu-report';
 
 /** AUDIT #540: a new document, not a cached HashRouter transition, for each route.
  * The existing eight-case ST-0 suite still checks S/X layout and screenshots.
@@ -63,7 +64,13 @@ test('AUDIT #540 all 18 routes cold-render at 4x CPU, extreme/night/360px',async
  mkdirSync('test-results/stress-cpu',{recursive:true});
  writeFileSync('test-results/stress-cpu/extreme-graph-night-360.json',JSON.stringify(samples,null,2));
  await testInfo.attach('4x-cold-route-evidence',{body:JSON.stringify(samples,null,2),contentType:'application/json'});
+ const qa3=analyzeQa3Cpu(samples);
+ const markdown=renderQa3CpuMarkdown(qa3);
+ mkdirSync('test-results/qa3',{recursive:true});
+ writeFileSync('test-results/qa3/cpu-route-report.md',markdown);
+ await testInfo.attach('qa3-4x-cold-route-report',{body:markdown,contentType:'text/markdown'});
  const failures=auditCpuCoverage(samples);
  expect(failures,'All routes must have 4x cold render under 1500ms with screenshot and DOM evidence')
   .toEqual([]);
+ expect(qa3.status).toBe('PASS');
 });
