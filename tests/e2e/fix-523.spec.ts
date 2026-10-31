@@ -11,6 +11,7 @@ for(const profile of ['stress','extreme'] as const)
     await expect(row).toBeVisible();
     await expect(row.locator('.katex')).toBeVisible();
     await expect(row).not.toContainText('operatorname');
+    await expect(page.getByRole('group',{name:'Card filters'}).locator('.lemma-tex-inline').first()).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
     await page.screenshot({path:`test-results/screens/fix-523-${profile}-${theme}-${width}.png`,fullPage:true});
    });
