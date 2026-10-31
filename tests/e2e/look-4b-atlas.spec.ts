@@ -78,8 +78,12 @@ for(const width of [360,390] as const){
   await page.getByRole('button',{name:'Unfold all'}).click();
   await expect.poll(async()=>Number(await tree.getAttribute('data-atlas-row-count'))).toBeGreaterThan(profile==='extreme'?1000:100);
   const stage=page.locator('[data-atlas-stage]');
-  await stage.evaluate(el=>{el.scrollTop=4000;el.dispatchEvent(new Event('scroll',{bubbles:true}))});
   const sticky=page.locator('[data-atlas-sticky-field]');
+  await stage.evaluate(el=>{el.scrollTop=1;el.dispatchEvent(new Event('scroll',{bubbles:true}))});
+  await expect(sticky).toBeVisible();
+  // The Field stays pinned from the first pixel, not only after its entire
+  // original row leaves the virtual window.
+  await stage.evaluate(el=>{el.scrollTop=4000;el.dispatchEvent(new Event('scroll',{bubbles:true}))});
   await expect(sticky).toBeVisible();
   expect((await sticky.boundingBox())?.height).toBe(56);
   const label=sticky.locator('.font-serif');
