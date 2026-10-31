@@ -56,6 +56,10 @@ for(const width of [390,360] as const)
   // Render real KaTeX markup in the test runner. Plain-text Today no longer
   // eagerly imports the rich renderer, so window.katex is absent until needed.
   // Keep all mathematical font-size, clipping and hit-target assertions.
+  // Plain Today deliberately omits the rich renderer and its KaTeX CSS.
+  // This test injects synthetic KaTeX, so load the identical production
+  // stylesheet before measuring the actual >=16px math glyph and clipping.
+  await page.addStyleTag({path:'node_modules/katex/dist/katex.min.css'});
   const mathHtml=katex.renderToString('\\pi_1(S^1)\\cong\\mathbb{Z}',{throwOnError:false});
   await meta.evaluate((el,html)=>{
    const target=el.querySelector('.lemma-tex-inline');
