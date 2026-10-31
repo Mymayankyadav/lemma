@@ -1772,6 +1772,11 @@ export class DemoAdapter implements LemmaApi {
       throw error;
     }
   }
+  async getSourceTranscriptionStats(_projectId:string):Promise<import('../types').SourceTranscriptionStat[]>{throw notImplemented('UI-8 transcription stats')}
+  async getSourcePage(_sourceId:string,_page:number):Promise<import('../types').TranscribedSourcePage|null>{throw notImplemented('UI-8 single-page reader')}
+  async getTranscribedPagesForExport(_sourceId:string):Promise<import('../types').TranscribedSourcePage[]>{throw notImplemented('UI-8 transcription export')}
+  async updateSourcePage(_sourceId:string,_page:number,_patch:{body?:string;confidence?:'high'|'check'}):Promise<import('../types').TranscribedSourcePage>{throw notImplemented('UI-8 transcription edit')}
+  async getSourcePdfUrl(_sourceId:string):Promise<string|null>{throw notImplemented('UI-8 PDF viewer')}
   async deleteSource(id: string) {
     this.transaction(() => {
       const source = found(
