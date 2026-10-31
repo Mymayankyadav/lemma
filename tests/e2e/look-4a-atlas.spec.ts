@@ -46,6 +46,14 @@ test('LOOK-4a details prioritize quiz and omit redundant level tags',async({page
  await expect(details.getByText('Idea',{exact:true})).toHaveCount(0);
  await expect(details.getByText('Detail',{exact:true})).toHaveCount(0);
  await expect(details.getByText(/Builds on · \d+/)).toBeVisible();
+ const checkpoint=details.getByRole('link',{name:'Checkpoint CP4'});
+ await expect(checkpoint).toBeVisible();
+ // The approved Details presentation uses a text link, not a bordered chip.
+ await expect(checkpoint).toHaveCSS('text-decoration-line','underline');
+ await expect(checkpoint).not.toHaveClass(/rounded-ctl|border-edge/);
+ const checkpointBox=await checkpoint.boundingBox();
+ expect(checkpointBox?.height).toBeGreaterThanOrEqual(44);
+ expect(checkpointBox?.width).toBeGreaterThanOrEqual(44);
 });
 
 test('LOOK-4a mathematical breadcrumbs navigate to their ancestor with a 44px target',async({page})=>{
