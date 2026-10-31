@@ -94,36 +94,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     await expect(stageLabels).toHaveCount(count);
     await expect(stageLabels.first().locator('.katex')).toBeVisible();
     await expect(stageLabels.nth(1).locator('.katex')).toBeVisible();
-    await expect(stageLabels.first()).not.toContainText('
-    const size=await map.boundingBox();
-    expect(size).not.toBeNull();
-    expect(size!.width).toBeLessThanOrEqual(width);
-    // The 40 checkpoint, seven-stage overview must fit in 1.5 phone heights.
-    if(profile==="stress")expect(size!.height).toBeLessThan(height*1.5);
-    const ideas=page.getByRole("region",{name:"Ideas in this plan"});
-    await expect(ideas.getByRole("tree",{name:"Ideas in this plan"})).toBeVisible();
-    const rows=await ideas.getByRole("treeitem").count();
-    expect(rows).toBeLessThanOrEqual(41);
-    expect(rows).toBeGreaterThan(1);
-    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
-    mkdirSync("test-results/screens/st2",{recursive:true});
-    const name=profile+"-"+theme+"-"+width;
-    await map.screenshot({path:"test-results/screens/st2/"+name+"-collapsed.png"});
-    await svg.locator(':scope > g[role="button"]').first().click();
-    await expect(map.locator('foreignObject[data-expanded-stage]')).toHaveCount(1);
-    await expect(map.locator('foreignObject[data-expanded-stage] .katex')).toBeVisible();
-    await expect(svg.locator(':scope > g[role="button"]')).toHaveCount(count);
-    await map.screenshot({path:"test-results/screens/st2/"+name+"-expanded.png"});
-    await map.getByRole("button",{name:"Expand all"}).click();
-    await expect(map.getByRole("group",{name:"Map of proposed checkpoints and prerequisites"})).toBeVisible();
-    await map.getByRole("button",{name:"Show stages"}).click();
-    await expect(svg).toBeVisible();
-    await ideas.scrollIntoViewIfNeeded();
-    await page.screenshot({path:"test-results/screens/st2/"+name+"-ideas.png"});
-    expect(errors).toEqual([]);
-  });
-}
-);
+    await expect(stageLabels.first()).not.toContainText('$');
     const labelFits=await stageLabels.evaluateAll(nodes=>nodes.every(node=>{
       const box=node.getBoundingClientRect();
       return box.width>0 && box.width<=140 && box.height>0;
@@ -144,7 +115,8 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     const name=profile+"-"+theme+"-"+width;
     await map.screenshot({path:"test-results/screens/st2/"+name+"-collapsed.png"});
     await svg.locator(':scope > g[role="button"]').first().click();
-    await expect(map.locator("foreignObject")).toHaveCount(1);
+    await expect(map.locator('foreignObject[data-expanded-stage]')).toHaveCount(1);
+    await expect(map.locator('foreignObject[data-expanded-stage] .katex')).toBeVisible();
     await expect(svg.locator(':scope > g[role="button"]')).toHaveCount(count);
     await map.screenshot({path:"test-results/screens/st2/"+name+"-expanded.png"});
     await map.getByRole("button",{name:"Expand all"}).click();
