@@ -207,14 +207,15 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
   for (const [projectIndex,project] of data.projects.entries()) {
     const existing = existingByProject.get(project.id)??0;
     for (let i=existing;i<sourceTarget;i++) {
+      const representative=(projectIndex===0||projectIndex===projectCount-1)&&i===existing;
       data.sources.push({
         ...firstSource,
         id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
         title: `Source ${i+1}: mathematical notes and proofs`,
         short: `stresssrc${i}`, filename:`source-${i+1}.pdf`,
-        kind:sourceKinds[i%sourceKinds.length],position:i,
+        kind:representative?"notes":sourceKinds[i%sourceKinds.length],position:i,
         pageCount:extreme?3000:1200,
-        status:"ready",hasText:false,outline:[],pages:[],
+        status:"ready",hasText:representative,outline:[],pages:[],
         sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
         addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
       });
