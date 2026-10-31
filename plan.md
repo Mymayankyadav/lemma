@@ -6,8 +6,8 @@ Approved by the owner on 29 October 2026. This is the only task list. Behaviour 
 
 1. Read this file, then `AGENTS.md`, then only the spec sections your task lists.
 2. Pick a task from §8 whose dependencies are merged and that has no open PR (search open PRs for its ID).
-3. Open a draft PR named `<TASK-ID> <title>` from branch `t/<task-id-lowercase>` before writing code. That is your claim.
-4. Touch only the paths your task owns. Run `npm run check` and your tests. Mark ready, merge when CI is green.
+3. Open a PR (never a draft: REST-only agents cannot un-draft it) named `<TASK-ID> <title>` from branch `t/<task-id-lowercase>` before writing code, with the line `Owner: <role> · Lease until <HH:MM IST>`. That is your claim (see `docs/agents/README.md` §2).
+4. Touch only the paths your task owns. Run `npm run check` and your tests. Write "Ready to merge" in the description when complete; the Steward merges when every check is green and there is no unresolved "AUDIT BLOCK".
 5. Then pick the next task. Never wait for permission between tasks.
 
 ## 1. Goal
@@ -94,7 +94,7 @@ Use the latest release of each major listed; pin exact versions in `package.json
 
 ## 6. Working protocol
 
-- **Claim**: branch `t/<task-id>` (lowercase, e.g. `t/scr-home`), draft PR titled `<TASK-ID> <title>` opened before the first code commit. If a draft PR with the same ID already exists and had a commit in the last 6 hours, pick another task. If it is older, comment "taking over", continue on a new branch, and link the old PR.
+- **Claim**: branch `t/<task-id>` (lowercase, e.g. `t/scr-home`), a PR (never a draft) titled `<TASK-ID> <title>` opened before the first code commit, carrying `Owner: <role> · Lease until <HH:MM IST>`. Only the lease holder pushes; when the lease has expired, any agent may take over, commenting "taking over" (see `docs/agents/README.md` §2).
 - **Scope**: only your owned paths. Need something outside them? Use §7, or leave a note in your PR under "Needs from others" and build against what exists.
 - **Quality bar**: `npm run check` passes; your tests pass; screens match `design.md` and the boards (compare your screenshot from `test-results/screens/` with the board); no `console.error` in the browser; no hard-coded colours outside `src/styles`.
 - **PR description**: what changed, how you verified it (commands and results), screenshot(s) for UI, remaining gaps.
