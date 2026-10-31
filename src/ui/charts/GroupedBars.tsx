@@ -12,7 +12,7 @@ export function GroupedBars({data,width=316,height=132,title='Checkpoints by wee
  const gap=12;
  const y=scaleLinear().domain([0,max]).range([bottom,top]),bw=Math.max(8,(groups.bandwidth()-gap)/2);
  // Reserve at least 44 SVG units per visible label on a narrow phone.
- const labelEvery=Math.max(1,Math.ceil(data.length/Math.max(1,Math.floor((right-left)/44))));
+ const labelEvery=Math.max(1,Math.ceil(data.length/Math.max(1,Math.floor((Math.max(140,width)-20)/44))));
  return <div className="w-full min-w-0 overflow-x-auto"><svg role="img" aria-label={`${title}: ${data.map(d=>d.label+': '+d.demonstrated+' demonstrated, '+d.rechecked+' rechecked').join('; ')}.`} width={w} viewBox={`0 0 ${w} ${h}`} className={className}>
  <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="var(--edge-3)"/>
  {data.map((d,i)=><g key={i}>{([['demonstrated','var(--amber)'],['rechecked','var(--ink-3)']] as const).map(([key,color],j)=>{
