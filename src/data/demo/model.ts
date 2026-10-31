@@ -114,6 +114,8 @@ export interface DemoStore {
   sessions: DemoSession[];
   notes: DemoNote[];
   reviews: DemoReview[];
+  /** ST-0: simulated server-side historical review count; raw rows stay bounded. */
+  stressReviewCount?: number;
   proposals: DemoProposal[];
   concepts: DemoConcept[];
   links: AtlasGraph["links"];

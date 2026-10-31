@@ -98,7 +98,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
             const from = at.get(edge.from)!, to = at.get(edge.to)!;
             const mx = (from.x+to.x)/2, my = (from.y+to.y)/2;
             const offset = from.x===to.x?18:0;
-            return <g key={edge.from+">"+edge.to} aria-label={`${edge.count} prerequisite links from ${from.name} to ${to.name}`}>
+            return <g key={edge.from+">"+edge.to} aria-label={`${edge.count} prerequisite links from ${plainMath(from.name)} to ${plainMath(to.name)}`}>
               <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
                 stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4" />
               <rect x={mx-13+offset} y={my-10} width="26" height="20" rx="7"
@@ -109,25 +109,29 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
           {layout.stages.map(stage => {
             const on = expandedStage===stage.id;
             return <g key={stage.id} role="button" tabIndex={0} aria-expanded={on}
-              aria-label={`${stage.name}, ${stage.count} checkpoints. ${on?"Collapse":"Expand"} stage`}
+              aria-label={`${plainMath(stage.name)}, ${stage.count} checkpoints. ${on?"Collapse":"Expand"} stage`}
               onClick={() => setExpandedStage(on?null:stage.id)}
               onKeyDown={e => {if(e.key==="Enter"||e.key===" "){e.preventDefault();setExpandedStage(on?null:stage.id)}}}
               style={{cursor:"pointer"}}>
-              <title>{stage.name} · {stage.count} checkpoints</title>
-              <rect x={stage.x-65} y={stage.y-32} width="130" height="64" rx="12"
+              <title>{plainMath(stage.name)} · {stage.count} checkpoints</title>
+              <rect x={stage.x-65} y={stage.y-44} width="130" height="88" rx="12"
                 fill={on?"var(--amber-tint)":"var(--raised)"}
                 stroke={on?"var(--amber)":"var(--amber-line-2)"} strokeWidth={on?2:1.5}/>
-              <text x={stage.x} y={stage.y-3} textAnchor="middle" fontSize="12" fontWeight="600"
-                fill="var(--ink)">{stage.name.length>21?stage.name.slice(0,20)+"…":stage.name}</text>
-              <text x={stage.x} y={stage.y+17} textAnchor="middle" fontSize="12" fill="var(--amber)">
+              <foreignObject data-stage-label="" x={stage.x-60} y={stage.y-38} width="120" height="54">
+                <div className="flex h-full w-full items-center overflow-x-auto overflow-y-hidden whitespace-nowrap px-1 text-center text-[16px] leading-10 text-ink"
+                  title={plainMath(stage.name)}>
+                  <Tex source={stage.name} className="mx-auto" />
+                </div>
+              </foreignObject>
+              <text x={stage.x} y={stage.y+33} textAnchor="middle" fontSize="12" fill="var(--amber)">
                 {stage.count} {stage.count===1?"checkpoint":"checkpoints"}
               </text>
             </g>;
           })}
           {expanded && layout.expandedY!==null && (
-            <foreignObject x="8" y={layout.expandedY} width="304" height="206">
+            <foreignObject data-expanded-stage="" x="8" y={layout.expandedY} width="304" height="206">
               <div className="flex h-full min-w-0 flex-col gap-1 rounded-ctl border border-amber-line bg-raised p-2">
-                <p className="shrink-0 text-label font-semibold text-ink">{expanded.name} · {expanded.nodes.length} checkpoints</p>
+                <p className="min-w-0 shrink-0 overflow-x-auto whitespace-nowrap text-[16px] font-semibold text-ink"><Tex source={expanded.name} /> · {expanded.nodes.length} checkpoints</p>
                 <div className="min-h-0 flex-1 overflow-auto">
                   <CheckpointTree nodes={expanded.nodes} selected={selected} onSelect={onSelect}/>
                 </div>
@@ -191,7 +195,7 @@ function CheckpointDrawer({
     <Sheet open onClose={onClose} title={`${node.code} · ${plainMath(node.title)}`}>
       <div data-checkpoint-drawer={node.code} className="flex flex-col gap-4 text-body text-ink-2">
         <div className="-mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-ink-3">
-          {node.stage && <span>{node.stage}</span>}
+          {node.stage && <span className="text-[16px]"><Tex source={node.stage} /></span>}
           {dueLabel(node.dueOn) && (
             <span className="flex items-center gap-1"><CalendarDays size={14} />Planned {dueLabel(node.dueOn)}</span>
           )}
@@ -409,16 +413,16 @@ export default function Page() {
           )}
           <section aria-label="Checkpoints" className="flex flex-col gap-4">
             {stages.length>5 && <nav aria-label="Jump to stage" className="flex gap-2 overflow-x-auto pb-2">
-              {stages.map((stage,i) => <button key={stage.id} type="button" title={stage.name}
+              {stages.map((stage,i) => <button key={stage.id} type="button" title={plainMath(stage.name)}
                 onClick={() => document.getElementById(`plan-stage-${i}`)?.scrollIntoView({behavior:"smooth",block:"start"})}
-                className="min-h-11 min-w-11 max-w-40 shrink-0 truncate rounded-chip border border-edge px-3 text-label text-ink-2">
-                {stage.name}
+                className="min-h-11 min-w-11 max-w-40 shrink-0 overflow-x-auto whitespace-nowrap rounded-chip border border-edge px-3 text-[16px] text-ink-2">
+                <Tex source={stage.name} />
               </button>)}
             </nav>}
             {stages.map((stage, i) => (
               <div id={`plan-stage-${i}`} key={stage.id} className="scroll-mt-20">
                 <h3 className="mb-1 flex items-baseline justify-between gap-3">
-                  <span className="text-title-s italic" style={{ fontFamily: "var(--font-display)" }}>{stage.name}</span>
+                  <span className="min-w-0 overflow-x-auto text-title-s italic" style={{ fontFamily: "var(--font-display)" }}><Tex source={stage.name} /></span>
                   <span className="text-caption text-ink-3">{stage.nodes.length}</span>
                 </h3>
                 <Slab className="rounded-slab px-2 py-1">
