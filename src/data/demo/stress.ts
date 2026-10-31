@@ -1,4 +1,4 @@
-import type { DemoStore, DemoCheckpoint, DemoNote } from "./model";
+import type { DemoStore, DemoCheckpoint, DemoNote, DemoSource } from "./model";
 
 import type {InsightAggregate,Subject} from "../types";
 import {DAY} from "../../lib/calendar";
@@ -70,6 +70,15 @@ export function makeStressInsightAggregate(
   subjectMinutes:[...bySubject.values()],checkpointDays,
   mostRevisited:most?{label:most.label,times:most.times,
    conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
+}
+
+/** Lazily serve the 1,200/3,000-page representative stress PDF without allocating page arrays. */
+export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pageCount">, page: number) {
+  if (!source.id.startsWith("stress-source-") || !source.hasText
+      || !Number.isSafeInteger(page) || page < 1 || page > (source.pageCount ?? 0)) return null;
+  return {page, label: String(page),
+    body: `Synthetic mathematics notes, page ${page}. Prove the stated lemma and cite its hypotheses.`,
+    transcribedBy: null, transcribedAt: null, confidence: null};
 }
 
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
@@ -153,14 +162,15 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   for (const [projectIndex,project] of data.projects.entries()) {
     const existing = existingByProject.get(project.id)??0;
     for (let i=existing;i<sourceTarget;i++) {
+      const representative=(projectIndex===0||projectIndex===projectCount-1)&&i===existing;
       data.sources.push({
         ...firstSource,
         id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
         title: `Source ${i+1}: mathematical notes and proofs`,
         short: `stresssrc${i}`, filename:`source-${i+1}.pdf`,
-        kind:sourceKinds[i%sourceKinds.length],position:i,
+        kind:representative?"notes":sourceKinds[i%sourceKinds.length],position:i,
         pageCount:extreme?3000:1200,
-        status:"ready",hasText:false,outline:[],pages:[],
+        status:"ready",hasText:representative,outline:[],pages:[],
         sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
         addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
       });

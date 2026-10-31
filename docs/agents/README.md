@@ -55,6 +55,14 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
 ## 4. Owner's decisions to protect (do not regress)
 
 - **Look:** Graph paper only, day and night, chosen automatically from the device, with an Automatic/Day/Night override. Compact text, calm motion, a docked tab bar with icon-first tabs and a label on the active tab only. No other themes or appearance controls. A simple graph-paper background with one curve per screen (Atlas and card review: grid only).
+- **v4 look (owner, 31 Oct 13:59):** `docs/spec/v4-look.md` is approved, including its §8 decision changes:
+  - red is reserved for "you are here", the primary action and real danger;
+  - lateness is ochre and dashed;
+  - the background curve is a letterhead that scrolls away;
+  - checkpoints are one Route line at any size;
+  - Atlas levels differ, and links are drawn as lanes.
+
+  It overrides `v3.md` where they differ. Do not reintroduce button rails, boxes inside boxes, or red for lateness.
 - **LaTeX everywhere:** every displayed text and every input renders LaTeX (`$…$`, `$$…$$`).
 - **Metro timeline** with schedule colours between stations (early, on time, late). Above about 14 checkpoints it becomes a stage Metro (stress.md A1).
 - **Atlas** (v3.md §4): a foldable outline of ideas (Field › Area › Topic › Idea › Detail) with prerequisite links drawn as arcs in a right-hand margin.
