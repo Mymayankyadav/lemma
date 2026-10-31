@@ -8,7 +8,7 @@ import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
 import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
-import {buildSchedule,scheduleHeadline,scheduleDate,scheduleColor,type ScheduledCheckpoint} from '../../lib/schedule';
+import {scheduleHeadline,scheduleDate,scheduleColor,type ScheduledCheckpoint} from '../../lib/schedule';
 import {currentCheckpointIndex,scheduleForProject,groupCheckpointStages,type ProgressStage} from '../../ui/timeline/progress';
 
 type Stage=ProgressStage;
