@@ -70,7 +70,7 @@ import { parseSteps } from "../../lib/fsrs";
 import {clozeOrds} from "./cloze";
 import { slugify } from "../../lib/text";
 import { DAY, studyClock } from "../../lib/calendar";
-import {makeStressInsightAggregate, makeStressNotes, stressSessionEvents, stressSourcePage} from "./stress";
+import {fillStressAtlas, makeStressInsightAggregate, makeStressNotes, stressSessionEvents, stressSourcePage} from "./stress";
 
 // One parse per module, not once per each of the 1,000 virtual sessions.
 export const demoSeedFixture = JSON.parse(fixtureText) as DemoStore;
@@ -260,6 +260,9 @@ export class DemoAdapter implements LemmaApi {
         "UTC",
       { takeOwnership: options.ownedFixture === true },
     );
+    // Snapshot before installing either lazy getter: spreading an accessor
+    // from its own materialization path would recursively invoke itself.
+    const original={...this.store};
     if(options.ownedFixture&&this.store.stressNoteCount!==undefined){
       const store=this.store,template=demoSeedFixture.notes[0];
       if(!template)throw Error('Missing stress card template');
@@ -269,7 +272,6 @@ export class DemoAdapter implements LemmaApi {
       this.virtualStressDue={overdue:clock.dayStart(today-1),future:clock.dayStart(today+14)};
       // Capture the original object before installing the getter: spreading a
       // lazy store from inside its own getter would recursively materialize it.
-      const original={...store};
       Object.defineProperty(store,'notes',{configurable:true,enumerable:true,get:()=>{
         const notes=makeStressNotes(template,store.projects,count,dueCount);
         const hydrated=hydrateFixture({...original,notes,projects:[],subjects:[],
@@ -280,6 +282,24 @@ export class DemoAdapter implements LemmaApi {
           enumerable:true,configurable:true});
         return hydrated;
       }});
+    }
+    if(options.ownedFixture&&this.store.stressAtlasIdeaCount!==undefined){
+      const store=this.store,baseConcept=original.concepts[0];
+      if(!baseConcept)throw Error('Missing stress Atlas concept template');
+      const ideaCount=store.stressAtlasIdeaCount??0,linkCount=store.stressAtlasLinkCount??0;
+      const materialize=()=>{
+        const staging={...original,subjects:store.subjects,projects:store.projects,
+          concepts:original.concepts,links:original.links};
+        fillStressAtlas(staging,ideaCount,linkCount,baseConcept);
+        Object.defineProperty(store,'concepts',{value:staging.concepts,writable:true,
+          enumerable:true,configurable:true});
+        Object.defineProperty(store,'links',{value:staging.links,writable:true,
+          enumerable:true,configurable:true});
+      };
+      Object.defineProperty(store,'concepts',{configurable:true,enumerable:true,
+        get:()=>{materialize();return store.concepts}});
+      Object.defineProperty(store,'links',{configurable:true,enumerable:true,
+        get:()=>{materialize();return store.links}});
     }
   }
   private iso() {
