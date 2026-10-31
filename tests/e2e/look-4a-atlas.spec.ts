@@ -34,8 +34,8 @@ test('LOOK-4a details prioritize quiz and omit redundant level tags',async({page
  await expect(details).toBeVisible();
  await expect(details.getByRole('button',{name:'Quiz me'})).toBeVisible();
  await expect(details.getByRole('link',{name:/Review/})).toBeVisible();
- await expect(details.getByText(/^Idea ·/)).toHaveCount(0);
- await expect(details.getByText(/^Detail ·/)).toHaveCount(0);
+ await expect(details.getByText('Idea',{exact:true})).toHaveCount(0);
+ await expect(details.getByText('Detail',{exact:true})).toHaveCount(0);
  await expect(details.getByText(/Builds on · \d+/)).toBeVisible();
 });
 
