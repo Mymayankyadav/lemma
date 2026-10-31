@@ -5,6 +5,22 @@ import type {DemoStore} from '../../../src/data/demo/model';
 
 const seed = JSON.parse(readFileSync('src/data/demo/fixture.json', 'utf8')) as DemoStore;
 
+function expectChronologicalEvents(session: {startedAt:string; lastActivityAt:string; events:{createdAt:string}[]}) {
+ const start=Date.parse(session.startedAt), end=Date.parse(session.lastActivityAt);
+ expect(Number.isFinite(start)).toBe(true);
+ expect(Number.isFinite(end)).toBe(true);
+ expect(end).toBeGreaterThanOrEqual(start);
+ let previous=start;
+ for(const event of session.events) {
+  const at=Date.parse(event.createdAt);
+  expect(Number.isFinite(at)).toBe(true);
+  expect(at).toBeGreaterThanOrEqual(start);
+  expect(at).toBeGreaterThanOrEqual(previous);
+  expect(at).toBeLessThanOrEqual(end);
+  previous=at;
+ }
+}
+
 describe('ST-0 session history at scale (audit #462)', () => {
  for (const [profile, sessionsPerProject, eventsPerSession] of [
   ['stress', 300, 150], ['extreme', 1000, 400],
@@ -25,6 +41,13 @@ describe('ST-0 session history at scale (audit #462)', () => {
    expect(detail?.events[10]?.kind).toBe('evidence');
    expect(detail?.events[11]?.kind).toBe('recheck');
    expect(new Set(detail?.events.map(event => event.id)).size).toBe(eventsPerSession);
+   // Unhydrated fixtures must retain study-day tokens within their own
+   // session interval; the adapter later resolves these on its study clock.
+   expect(detail?.events.every(event => event.createdAt.startsWith(`@day:-6:`))).toBe(true);
+   const authoredFractions=detail?.events.map(event => Number(event.createdAt.split(':')[2]))??[];
+   expect(authoredFractions[0]).toBeGreaterThan(0.3);
+   expect(authoredFractions.at(-1)).toBeLessThan(0.6);
+   expect(authoredFractions).toEqual([...authoredFractions].sort((a,b)=>a-b));
    const lazy = data.sessions.find(session => session.projectId === last.id && session.number === 8);
    expect(lazy?.events).toHaveLength(0);
    expect(lazy && stressSessionEvents(lazy, eventsPerSession)).toHaveLength(eventsPerSession);
@@ -48,8 +71,10 @@ describe('deferred browser stress sessions', () => {
   const detail=await api.getSession(first.slug,7);
   expect(detail.events).toHaveLength(400);
   expect(detail.events.some(event=>event.kind==='evidence')).toBe(true);
+  expectChronologicalEvents(detail);
   const lazy=await api.getSession(last.slug,8);
   expect(lazy.events).toHaveLength(400);
+  expectChronologicalEvents(lazy);
   // Checkpoint view scans due cards; keep this assertion focused on virtual
   // evidence rather than making the unit test benchmark all 30k review cards.
   const checkpointApi=new DemoAdapter({fixture:{...data,notes:data.notes.slice(0,12)},now:()=>Date.UTC(2026,9,31,12)});
