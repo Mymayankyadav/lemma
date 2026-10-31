@@ -9,8 +9,10 @@ for (const theme of ['graph','graph-night'] as const) {
    await page.goto(`./?demo=1&theme=${theme}#/p/real-analysis?tab=sources`);
    const sources=page.getByRole('region',{name:'Sources'});
    const meter=sources.getByRole('group',{name:'Source storage'});
-   await expect(meter).toContainText('At least 0 KB / 1 GB');
+   await expect(meter).toContainText('0 KB of 1 GB');
    const sourceCount=Number((await meter.locator('span').first().textContent())?.match(/\d+/)?.[0]);
+   const unknownBefore=(await meter.textContent())?.match(/(\d+) sizes? unknown/)?.[1];
+   expect(unknownBefore).toBeDefined();
    await sources.locator('input[type=file]').setInputFiles({
     name:'notes.tex',mimeType:'application/x-tex',
     buffer:Buffer.from(String.raw`\documentclass{article}\begin{document}\section{Groups}Text\end{document}`),
@@ -21,7 +23,8 @@ for (const theme of ['graph','graph-night'] as const) {
     name:'outline.md',mimeType:'text/markdown',buffer:Buffer.from('# Outline\n\nText-only Markdown source.'),
    });
    await expect.poll(async()=>Number((await meter.locator('span').first().textContent())?.match(/\d+/)?.[0])).toBe(sourceCount+2);
-   await expect(meter).toContainText('At least 0 KB / 1 GB');
+   await expect(meter).toContainText('0 KB of 1 GB');
+   await expect(meter).toContainText(new RegExp(unknownBefore+' sizes? unknown'));
    await expect(meter.getByRole('progressbar',{name:'PDF storage used'})).toHaveAttribute('aria-valuetext','At least 0 KB of 1 GB');
    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
    await page.screenshot({path:`test-results/screens/fix-478-${theme}-${width}.png`,fullPage:true});
