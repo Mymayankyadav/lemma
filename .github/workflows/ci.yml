@@ -12,9 +12,9 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # ST-0's full 8-case extreme/stress acceptance can exceed 15 minutes.
-    # Keep all tests and hard assertions; give the suite time to finish.
-    timeout-minutes: 30
+    # ST-0's eight-case layout suite plus 144 independent cold 4x route
+    # renders require a longer CI window. Per-route 1500ms limits are unchanged.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
