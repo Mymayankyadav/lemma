@@ -107,7 +107,7 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
     dense.push({key:kind+':'+i,from:0,to:1+i%4,kind,count:2,links:[]});
    }
    arcs=dense;rows=5;focus=null;centers=undefined;heightPx=undefined;
-  }else if(query.get('demo')==='stress'&&query.get('atlasDenseLanes')==='1'&&window.location.hash.startsWith('#/atlas')){
+  }else if(['stress','extreme'].includes(query.get('demo')??'')&&query.get('atlasDenseLanes')==='1'&&window.location.hash.startsWith('#/atlas')){
    // Eight unrelated overlapping spans cannot fit seven 9px lanes. Keep the
    // fixture independent of the backend and prove the overflow is disclosed.
    arcs=Array.from({length:8},(_,i)=>({key:'dense-lane:'+i,from:i,to:i+8,kind:'prereq' as const,count:1,links:[]}));
