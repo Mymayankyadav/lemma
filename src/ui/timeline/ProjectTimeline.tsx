@@ -1,7 +1,7 @@
 import {useMemo,useState,useEffect,useRef,type KeyboardEvent,type MouseEvent} from 'react'
 import {useNavigate} from 'react-router'
 import type {CheckpointView} from '../../data/types'
-import {buildSchedule,scheduleColor,scheduleDetail,scheduleHeadline} from '../../lib/schedule'
+import {buildSchedule,scheduleColor,scheduleDetail,scheduleHeadline,type ScheduledCheckpoint} from '../../lib/schedule'
 import {Tex} from '../Tex'
 import {plainMath} from '../../lib/plain-math'
 import {currentCheckpointIndex,groupCheckpointStages,worstStageSchedule} from './progress'
@@ -14,13 +14,14 @@ export interface ProjectTimelineProps {
  height?:number
  mini?:boolean
  pacePerWeek?:number
+ scheduleRows?:readonly ScheduledCheckpoint[]
 }
 
 /** The same scheduled checkpoints power Today and the project Metro.
  * SVG paths are per-station so early/on-time/late remain distinct; keyboard
  * navigation and the whole-width tap target are preserved from the old timeline.
  */
-export function ProjectTimeline({project,checkpoints,variant='metro',height=96,mini=false,pacePerWeek}:ProjectTimelineProps){
+export function ProjectTimeline({project,checkpoints,variant='metro',height=96,mini=false,pacePerWeek,scheduleRows}:ProjectTimelineProps){
  const navigate=useNavigate()
  const n=checkpoints.length
  const currentIndex=currentCheckpointIndex(checkpoints)
@@ -36,8 +37,8 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
  },[])
  const [selected,setSelected]=useState<number|null>(null)
  const focusedIndex=selected===null?currentIndex:Math.min(selected,Math.max(0,n-1))
- const rows=useMemo(()=>buildSchedule(checkpoints,{targetDate:project.targetDate,pacePerWeek}),
-  [checkpoints,project.targetDate,pacePerWeek])
+ const rows=useMemo(()=>scheduleRows??buildSchedule(checkpoints,{targetDate:project.targetDate,pacePerWeek}),
+  [scheduleRows,checkpoints,project.targetDate,pacePerWeek])
  const selectedCheckpoint=checkpoints[focusedIndex]
  const stages=useMemo(()=>groupCheckpointStages(checkpoints),[checkpoints])
  const activeStageIndex=Math.max(0,stages.findIndex(stage=>stage.start<=focusedIndex&&stage.end>=focusedIndex))
