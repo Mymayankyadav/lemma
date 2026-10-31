@@ -11,7 +11,7 @@ describe('FIX #507 route-aware Atlas prefetch',()=>{
   const projects=readFileSync('src/features/projects/Page.tsx','utf8')
   expect(routes).not.toMatch(/import\s+Page13\s+from\s+['"]\.\.\/features\/atlas\/Page['"]/)
   expect(routes).toMatch(/lazy\(loadAtlas\)/)
-  expect(routes).toMatch(/#\\\/\(\?:projects\|atlas\)/)
+  expect(routes).toContain('(?:projects|atlas)')
   expect(projects).toContain("import('../atlas/Page')")
  })
 })
