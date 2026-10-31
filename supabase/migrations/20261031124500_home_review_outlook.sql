@@ -1,6 +1,9 @@
 -- FIX-484b: one bounded, owner-scoped read supplies the Today due-deck
 -- breakdown and seven-day forecast. No browser-side notes/cards table scans.
 -- The existing deck_tree() RPC enforces the review quota and owner RLS.
+create index if not exists cards_owner_scheduled_due
+  on public.cards(user_id, due) where state <> 0 and due is not null;
+
 create or replace function public.home_review_outlook()
 returns jsonb
 language sql stable security invoker set search_path = ''
