@@ -12,6 +12,7 @@ for (const theme of ["graph", "graph-night"] as const) {
       const group = groups.getByRole("heading", { name: "Real Analysis", exact: true }).first();
       await expect(group).toBeVisible();
       await expect(group.locator("..")).toContainText(/S\d+ \/ CP\d+/);
+      await expect(groups.getByText("S12 / CP9 · 1 card", { exact: true })).toBeVisible();
       const choices = groups.getByRole("group", { name: "Cards in this proposal group" });
       await expect(choices.first().getByRole("button").first()).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth))
