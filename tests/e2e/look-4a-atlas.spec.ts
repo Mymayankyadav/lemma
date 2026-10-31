@@ -12,6 +12,15 @@ for(const profile of ['stress','extreme'] as const){
   await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
   await page.goto(`./?demo=${profile}&theme=${theme}#/atlas`);
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
+  // The full counts must stay readable at 360px, not clipped mid-word.
+  const summary=page.locator('[data-atlas-summary]');
+  await expect(summary).toContainText(/\\d+ ideas · \\d+ links · \\d+ demonstrated/);
+  const summarySize=await summary.evaluate(element=>({
+   scrollWidth:element.scrollWidth,clientWidth:element.clientWidth,
+   scrollHeight:element.scrollHeight,clientHeight:element.clientHeight,
+  }));
+  expect(summarySize.scrollWidth,'Atlas count line must wrap, not clip').toBeLessThanOrEqual(summarySize.clientWidth+1);
+  expect(summarySize.scrollHeight,'Atlas count must fit its full wrapped height').toBeLessThanOrEqual(summarySize.clientHeight+1);
   const toolbar=page.getByRole('toolbar',{name:'Atlas view'});
   for(const name of ['Fields','Areas','Topics','All','Related']){
    const control=toolbar.getByRole('button',{name,exact:true});

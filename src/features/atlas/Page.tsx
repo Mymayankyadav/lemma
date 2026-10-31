@@ -208,10 +208,10 @@ export default function Page(){
  const ideas=[...tree.nodes.values()].filter(n=>!n.synthetic).length;
  return <main aria-label="Atlas" className="relative flex h-dvh flex-col text-ink">
   <header className={'z-20 shrink-0 border-b border-edge bg-obsidian/95 px-3 '+(getMode()==='demo'?'pt-[calc(env(safe-area-inset-top)+30px)]':'pt-[env(safe-area-inset-top)]')}>
-   <div className="flex h-14 items-center gap-2">
+   <div className="flex min-h-14 items-center gap-2 py-1">
     <button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>
     <div className="min-w-0 flex-1"><h1 className="font-serif text-[28px] leading-[31px] font-medium">Atlas</h1>
-     <p className="text-caption text-ink-3" style={clip}>{ideas} ideas · {tree.links.filter(l=>l.kind==='prereq').length} links · {[...tree.nodes.values()].filter(n=>!n.synthetic&&n.status==='demonstrated').length} demonstrated</p></div>
+     <p data-atlas-summary className="whitespace-normal break-words text-caption leading-[18px] text-ink-3">{ideas} ideas · {tree.links.filter(l=>l.kind==='prereq').length} links · {[...tree.nodes.values()].filter(n=>!n.synthetic&&n.status==='demonstrated').length} demonstrated</p></div>
     <button type="button" aria-label="Find an idea" aria-pressed={searching} onClick={()=>{setSearching(v=>!v);if(searching)setSearch('')}}
      className="flex size-11 items-center justify-center rounded-ctl"><Search size={19}/></button>
    </div>
