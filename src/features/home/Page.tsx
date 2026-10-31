@@ -184,7 +184,9 @@ export default function Page(){
   <section aria-label="Cards" className="flex flex-col gap-3">
    <SectionHeading className="text-ink">Cards</SectionHeading>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
-   <ForecastOnDemand defer={projects.length>4}/>
+   {/* Live uses one bounded server RPC for the outlook, so load it immediately.
+       Only large in-browser demo stores need to defer the expensive local scan. */}
+   <ForecastOnDemand defer={getMode()==='demo'&&projects.length>4}/>
   </section>
   <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
    <SectionHeading className="text-ink">From your tutor</SectionHeading>
