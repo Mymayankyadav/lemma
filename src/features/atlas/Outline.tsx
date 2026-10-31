@@ -3,6 +3,7 @@ import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
 import {arcTone} from './tree';
+import {layoutAtlasLanes} from './lanes';
 
 /** Shared pieces of the collapsible idea graph: used by the Atlas and by plan review. */
 export const ROW=44,GUTTER=84,INDENT=16;
@@ -11,7 +12,7 @@ export const ROW=44,GUTTER=84,INDENT=16;
 export const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
 export const STORE='lemma.atlas.v2';
 export const statusName={demonstrated:'Demonstrated',revisit:'Re-check due',in_progress:'In progress',not_started:'Not started'};
-export const toneColor:Record<Tone,string>={up:'var(--grade-good)',down:'var(--accent)',related:'var(--hard)',self:'var(--accent)',none:'var(--ink-3)'};
+export const toneColor:Record<Tone,string>={up:'var(--link)',down:'var(--accent)',related:'var(--ink-3)',self:'var(--accent)',none:'var(--ink-3)'};
 
 export function StatusMark({node}:{node:AtlasNode}){
  const s=node.status;
@@ -33,11 +34,11 @@ interface BundlePlacement {
 /** The gutter has finite area. Never fall back to overlapping badges: replace
  * overflow with one 44px, keyboard-accessible summary containing every count.
  */
-export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,BundlePlacement>{
+export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:readonly number[],heightPx?:number):Map<string,BundlePlacement>{
  const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
- const height=rows*ROW,x0=8;
+ const height=heightPx??rows*ROW,x0=8;
  const items=arcs.filter(arc=>arc.count>1).map(arc=>{
-  const y1=arc.from*ROW+ROW/2,y2=arc.to*ROW+ROW/2;
+  const y1=centers?.[arc.from]??arc.from*ROW+ROW/2,y2=centers?.[arc.to]??arc.to*ROW+ROW/2;
   const span=Math.abs(arc.to-arc.from);
   const reach=x0+10+(GUTTER-x0-22)*Math.sqrt(span/longest);
   return {arc,anchorX:reach*.75+x0*.25,anchorY:(y1+y2)/2,
@@ -91,7 +92,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
 }
 
 /** Links drawn as nested arcs in a right-hand gutter, like a proof's dependency marks in a margin. */
-export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null}){
+export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number;focus:Focus|null;centers?:readonly number[];heightPx?:number}){
  // Deterministic demo-only browser fixture for the finite 84px gutter. It is
  // never enabled in live mode; CI exercises the real rendered keyboard control.
  if(typeof window!=='undefined'){
@@ -101,28 +102,29 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
    for(let from=0;from<5;from++)for(let to=from+1;to<5;to++)
     for(const kind of ['prereq','related'] as const)
      dense.push({key:kind+':'+from+':'+to,from,to,kind,count:2,links:[]});
-   arcs=dense;rows=5;focus=null;
+   arcs=dense;rows=5;focus=null;centers=undefined;heightPx=undefined;
   }
  }
- const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
- const x0=8;
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
- const badges=layoutBundleLabels(arcs,rows);
+ const lanes=layoutAtlasLanes(arcs,centers);
+ const badges=layoutBundleLabels(arcs,rows,centers,heightPx);
  const overflow=badges.get(OVERFLOW_BUNDLE_KEY);
- return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={rows*ROW}
+ return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={heightPx??rows*ROW}
   className="pointer-events-none absolute right-0 top-0 overflow-visible">
-  <defs>{(['none','up','down'] as Tone[]).map(t=><marker key={t} id={'atlas-arrow-'+t} viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-   <path d="M1 1L7 4L1 7" fill="none" stroke={toneColor[t]} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></marker>)}</defs>
+  <defs>{(['none','up','down'] as Tone[]).map(t=><marker key={t} id={'atlas-arrow-'+t} viewBox="0 0 6 6" refX="5.5" refY="3" markerWidth="6" markerHeight="6" orient="auto" markerUnits="userSpaceOnUse">
+   <path d="M0 0L6 3L0 6Z" fill={toneColor[t]}/></marker>)}</defs>
   {ordered.map(arc=>{
-   const y1=arc.from*ROW+ROW/2,y2=arc.to*ROW+ROW/2,span=Math.abs(arc.to-arc.from);
-   const reach=x0+10+(GUTTER-x0-22)*Math.sqrt(span/longest);
+   const lane=lanes.get(arc.key);
+   if(!lane)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
-   const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
-   const width=(lit?1.9:1.2)+Math.min(1.6,Math.log2(arc.count)*.7);
-   return <g key={arc.key} data-arc-kind={arc.kind} data-arc-tone={tone} style={{transition:'opacity 160ms ease'}} opacity={opacity}>
-    <path d={'M'+x0+' '+y1+' C'+reach+' '+y1+' '+reach+' '+y2+' '+x0+' '+y2} fill="none" stroke={toneColor[tone]} strokeWidth={width}
+   const opacity=focus?(lit?1:.12):.35;
+   const width=(lit?2:1.3)+Math.min(1.1,Math.log2(arc.count)*.4);
+   return <g key={arc.key} data-arc-kind={arc.kind} data-arc-tone={tone} data-atlas-lane={lane.x}
+    style={{transition:'opacity 160ms ease'}} opacity={opacity}>
+    <path d={lane.d} fill="none" stroke={toneColor[tone]} strokeWidth={width}
      strokeDasharray={arc.kind==='related'?'2 4':undefined} strokeLinecap="round"
      markerEnd={arc.kind==='prereq'?'url(#atlas-arrow-'+(tone==='related'||tone==='self'?'none':tone)+')':undefined}/>
+    {arc.kind==='prereq'&&<circle data-atlas-supplier-dot="true" cx="8" cy={lane.fromY} r="2.4" fill={toneColor[tone]}/>}
    </g>;
   })}
   {ordered.filter(arc=>arc.count>1).map(arc=>{
@@ -135,7 +137,10 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
      <path d={'M'+badge.anchorX+' '+badge.anchorY+' L'+badge.x+' '+badge.y}
       stroke={toneColor[tone]} strokeWidth="1" strokeDasharray="2 2" fill="none"/>}
     <g transform={'translate('+badge.x+' '+badge.y+')'}>
-     <circle data-atlas-bundle-circle="true" r={badge.radius} fill="var(--obsidian)" stroke={toneColor[tone]} strokeWidth="1"/>
+     <rect data-atlas-bundle-pill="true" data-atlas-bundle-circle="true"
+      x={-Math.max(16,String(arc.count).length*7+8)/2} y="-8"
+      width={Math.max(16,String(arc.count).length*7+8)} height="16" rx="8"
+      fill="var(--paper)" stroke={toneColor[tone]} strokeWidth="1"/>
      <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
     </g>
    </g>;
