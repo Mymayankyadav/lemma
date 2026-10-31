@@ -45,6 +45,9 @@ export function hydrateFixture(
     return value;
   };
   const store = walk(source) as DemoStore;
+  // Stress profiles contain no historical reviews: preserve their authored card states.
+  // Avoid replaying 30,000 empty histories through the FSRS engine.
+  if (store.reviews.length === 0) return store;
   // The history window starts with already-mature cards; learn/relearn behavior uses
   // the same engine as real review. Only fixture due study-days are deliberately fixed.
   const config = {
