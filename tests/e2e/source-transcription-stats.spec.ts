@@ -70,6 +70,8 @@ for(const width of [390,360] as const){
   const payloads:Record<string,unknown>={
    '/rpc/bootstrap':settings,'/rpc/project_summaries':[summary],
    '/rpc/review_items':[],'/rpc/source_transcription_stats':stats,
+   // Project header's finish estimate legitimately reads one bounded Insights aggregate.
+   '/rpc/insights':{reviewDays:[],studyDays:[],checkpointEvents:[]},
    '/projects':project,'/subjects':[subject],'/sources':sources,
    '/settings':settings,'/checkpoints':[],'/checkpoint_prereqs':[],
    '/proposals':[],'/sessions':[],'/v_plan_revisions':[],
@@ -108,6 +110,9 @@ for(const width of [390,360] as const){
    .toBe(1)
   expect(seen.filter(p=>p==='/rpc/source_transcription_stats')).toHaveLength(1)
   expect(seen.some(p=>p==='/source_pages'),'no per-page provenance reads').toBe(false)
+  // The shared project overview may read Insights once; it must never page raw tables.
+  expect(seen.filter(p=>p==='/rpc/insights')).toHaveLength(1)
+  expect(Buffer.byteLength(JSON.stringify(payloads['/rpc/insights']))).toBeLessThan(200*1024)
   expect(Buffer.byteLength(JSON.stringify(stats))).toBeLessThan(200*1024)
   expect(unexpected).toEqual([])
   expect(errors).toEqual([])
