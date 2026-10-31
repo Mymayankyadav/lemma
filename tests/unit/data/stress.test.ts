@@ -30,8 +30,7 @@ describe('ST-0 deterministic stress data', () => {
    expect(new Set(sourceShelf.map(s=>s.short)).size).toBe(sourceShelf.length);
    const stressPdfs=sourceShelf.filter(s=>s.id.startsWith('stress-source-'));
    expect(stressPdfs.length).toBeGreaterThan(0);
-   expect(stressPdfs.some(s=>s.pageCount===3000)).toBe(true);
-   expect(stressPdfs.some(s=>s.pageCount===1200)).toBe(true);
+   expect(stressPdfs.every(s=>s.pageCount===(profile==='stress'?1200:3000))).toBe(true);
    // Large PDFs are represented by metadata until a page is requested. Never
    // allocate 100 * 3,000 fake page bodies in the in-memory stress fixture.
    expect(stressPdfs.every(s=>s.pages.length===0)).toBe(true);
