@@ -3,6 +3,7 @@ import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
+import {GraphSketch} from '../ui/backgrounds/graph/GraphSketch';
 import {easeOut} from '../ui/motion';
 const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
@@ -12,6 +13,7 @@ export default function AppShell(){
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  <DemoChip/>
  <main id="main-content" className={fullBleed?'relative min-h-dvh w-full overflow-hidden':'relative mx-auto min-h-dvh max-w-[528px] px-6 pt-[calc(max(env(safe-area-inset-top),12px)+16px)] '+(showTabs?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+24px)]':'pb-6')}>
+ <GraphSketch path={location.pathname}/>
  {reduce?<div key={location.pathname}>{outlet}</div>:<AnimatePresence mode="wait" initial={false}>
  <motion.div key={location.pathname} initial={fullBleed?false:reduce?{opacity:0}:tab?{opacity:0,y:8}:{opacity:0,x:back?-30:'24%'}}
  animate={fullBleed?{opacity:1}:{opacity:1,x:0,y:0,scale:1,filter:'brightness(1)'}}

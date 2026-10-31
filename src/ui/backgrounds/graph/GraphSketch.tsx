@@ -32,10 +32,10 @@ export function GraphSketch({path}:{path:string}){
  },[]);
  const kind=kindFor(path);
  if(!kind||(theme!=='graph'&&theme!=='graph-night'))return null;
- const figure=sketches[kind],opacity=theme==='graph-night'?.22:.18;
+ const figure=sketches[kind],opacity=theme==='graph-night'?.13:.12;
  return <svg aria-hidden="true" data-graph-sketch={kind} viewBox="0 0 300 220" preserveAspectRatio="xMidYMid meet"
-  className="pointer-events-none fixed bottom-[calc(var(--tab)+68px)] right-0 z-0 h-auto w-[66vw] max-w-[360px] overflow-visible"
-  style={{maxHeight:'42vh'}}>
+  className="pointer-events-none absolute right-2 top-0 z-0 h-auto w-[min(34vw,150px)] overflow-hidden"
+  style={{maxHeight:'120px'}}>
   <g fill="none" stroke="var(--ink)" strokeWidth="1" opacity=".12">
    <path d="M14 185H289M30 15V205"/>
    {Array.from({length:8},(_,i)=><path key={'x'+i} d={`M${30+i*35} 181v8`}/>)}
@@ -44,6 +44,5 @@ export function GraphSketch({path}:{path:string}){
   <path d={figure.path} fill="none" stroke="var(--accent)" strokeWidth="2" opacity={opacity} strokeLinecap="round"/>
   {kind==='review'&&completedReview&&figure.second&&<path d={figure.second} fill="none" stroke="var(--accent)" strokeWidth="1.5" opacity={opacity*.7} strokeDasharray="3 5"/>}
   {figure.turns?.map(([x,y],i)=><circle key={i} cx={x} cy={y} r="3" fill="var(--accent)" opacity={opacity}/>)}
-  <text x="160" y="213" textAnchor="middle" fontSize="13" fontStyle="italic" fontFamily="Newsreader, Georgia, serif" fill="var(--ink)" opacity=".3">{figure.label}</text>
  </svg>;
 }
