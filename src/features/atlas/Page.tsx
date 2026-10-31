@@ -160,7 +160,9 @@ export default function Page(){
   if(!tree||!expanded||incoming===seen.current)return;
   seen.current=incoming;
   if(!focusId&&!focusSlug&&!focusName)return;
-  if(focusId===written.current&&!focusName)return;
+  // A missing id is not a previously handled selection: legacy slug-only
+  // links must still resolve on the first Atlas mount.
+  if(focusId&&focusId===written.current&&!focusName)return;
   written.current=focusId;
   const result=resolveAtlasDeepLink(tree.nodes.values(),{id:focusId,slug:focusSlug,name:focusName});
   if(result.kind==='found'){
