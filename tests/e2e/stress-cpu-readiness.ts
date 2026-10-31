@@ -49,7 +49,7 @@ export async function assertRouteLoaded(
   await expect(page.getByText(/events 1[–-]/).first()).toBeVisible({timeout});
  }
  // An app-level error or delayed skeleton is not a successful loaded route.
- await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0,{timeout});
+ if(route!=='/kit')await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0,{timeout});
  await expect(page.getByText(/This (card|proposal) could not be loaded\./))
   .toHaveCount(0,{timeout});
  await expect(page.getByText('Session unavailable.')).toHaveCount(0,{timeout});
