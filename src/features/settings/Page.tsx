@@ -345,7 +345,7 @@ export default function Page() {
               key={style.key}
               disabled={busy}
               onClick={() => void save({ defaultStyle: style.key })}
-              className={`flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left text-body ${s.defaultStyle === style.key ? "bg-amber-tint font-semibold text-ink" : "text-ink-2"}`}
+              className={`flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left text-body ${s.defaultStyle === style.key ? "bg-[var(--fill-1)] font-semibold text-ink" : "text-ink-2"}`}
             >
               <StyleIcon name={style.icon} />
               <span className="min-w-0 flex-1">{style.name}</span>
