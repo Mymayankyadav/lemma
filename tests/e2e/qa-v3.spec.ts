@@ -49,7 +49,7 @@ for(const world of ['graph','graph-night'] as const){
 
   await page.goto(base+'/atlas')
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible()
-  await expect(page.locator('[data-level="cluster"]')).toHaveCount(3)
+  await expect(page.getByRole('tree',{name:'Ideas and their links'})).toHaveAttribute('data-atlas-field-count','3')
   await expect(page.locator('[data-atlas-details]')).toHaveCount(0)
   await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'2',exact:true}).click()
   await capturePhone(page,world,'atlas')
