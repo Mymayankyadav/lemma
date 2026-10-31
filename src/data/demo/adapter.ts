@@ -50,6 +50,7 @@ import type {
   DemoNote,
   DemoProject,
   DemoProposal,
+  DemoReview,
   DemoSession,
   DemoStore,
 } from "./model";
@@ -1577,34 +1578,72 @@ export class DemoAdapter implements LemmaApi {
     ).resolvedAt = this.iso();
   }
   async getAtlas(): Promise<AtlasGraph> {
-    const eligible = this.eligible();
-    // The v3 Atlas navigates the entire owner-visible hierarchy, including
-    // structural ancestors and supporting ideas without checkpoint references.
-    // Limiting this to checkpoint concept IDs hides clusters/galaxies/systems.
-    const visibleSubjects = new Set((await this.listSubjects()).map(subject => subject.id));
+    // A stress profile has thousands of ideas and tens of thousands of notes.
+    // Index once: scanning every note, checkpoint and due card per concept is
+    // quadratic and blocked the Atlas route for >8s at 4x CPU.
+    const subjects = await this.listSubjects();
+    const visibleSubjects = new Set(subjects.map(subject => subject.id));
+    const checkpointsByConcept = new Map<string, DemoCheckpoint[]>();
+    for (const cp of this.store.checkpoints) {
+      // The old .includes() filter counted a checkpoint only once per concept.
+      for (const id of new Set(cp.conceptIds)) {
+        const bucket = checkpointsByConcept.get(id) ?? [];
+        bucket.push(cp);
+        checkpointsByConcept.set(id, bucket);
+      }
+    }
+    const cardIdsByConcept = new Map<string, Set<string>>();
+    for (const note of this.store.notes) {
+      if (!note.conceptId) continue;
+      const ids = cardIdsByConcept.get(note.conceptId) ?? new Set<string>();
+      for (const card of note.cards) ids.add(card.id);
+      cardIdsByConcept.set(note.conceptId, ids);
+    }
+    // Only linked cards can contribute to Atlas status or due counts.
+    // Stress profile X contains a large review history, but most cards have no
+    // idea link; scanning that history when there are no linked cards wastes
+    // hundreds of thousands of iterations on the Atlas critical path.
+    const linkedCardIds = new Set<string>();
+    for (const ids of cardIdsByConcept.values())
+      for (const id of ids) linkedCardIds.add(id);
+    const dueByCard = new Map<string, number>();
+    if (linkedCardIds.size) for (const item of this.eligible())
+      if (linkedCardIds.has(item.cardId))
+        dueByCard.set(item.cardId, (dueByCard.get(item.cardId) ?? 0) + 1);
+    const reviewsByCard = new Map<string, DemoReview[]>();
+    if (linkedCardIds.size) for (const review of this.store.reviews) {
+      if (review.undoneAt || !linkedCardIds.has(review.cardId)) continue;
+      const bucket = reviewsByCard.get(review.cardId) ?? [];
+      bucket.push(review);
+      reviewsByCard.set(review.cardId, bucket);
+    }
+    const unresolved = new Set(this.store.misconceptions
+      .filter(m => !m.resolvedAt).map(m => m.conceptId));
+    const projectSlugs = new Map(this.store.projects.map(p => [p.id, p.slug]));
+    const now = this.now();
     return {
-      subjects: await this.listSubjects(),
-      concepts: this.store.concepts.filter(c => visibleSubjects.has(c.subjectId)).map((c) => {
-        const checkpoints = this.store.checkpoints.filter((cp) =>
-            cp.conceptIds.includes(c.id),
-          ),
-          notes = this.store.notes.filter((n) => n.conceptId === c.id),
-          ids = new Set(notes.flatMap((n) => n.cards.map((c) => c.id)));
+      subjects,
+      concepts: this.store.concepts.filter(c => visibleSubjects.has(c.subjectId)).map(c => {
+        const checkpoints = checkpointsByConcept.get(c.id) ?? [];
+        const ids = cardIdsByConcept.get(c.id) ?? new Set<string>();
+        const reviews: DemoReview[] = [];
+        let dueCards = 0;
+        for (const id of ids) {
+          dueCards += dueByCard.get(id) ?? 0;
+          const history = reviewsByCard.get(id);
+          if (history) reviews.push(...history);
+        }
         return {
           ...clone(c),
           status: conceptStatus(
-            checkpoints.map((cp) => this.cpUi(cp)),
-            this.store.misconceptions.some(
-              (m) => m.conceptId === c.id && !m.resolvedAt,
-            ),
-            this.store.reviews.filter((r) => ids.has(r.cardId) && !r.undoneAt),
-            this.now(),
+            checkpoints.map(cp => this.cpUi(cp)),
+            unresolved.has(c.id), reviews, now,
           ),
-          checkpointRefs: checkpoints.map((cp) => ({
-            projectSlug: this.projectById(cp.projectId).slug,
+          checkpointRefs: checkpoints.map(cp => ({
+            projectSlug: projectSlugs.get(cp.projectId) ?? this.projectById(cp.projectId).slug,
             code: cp.code,
           })),
-          dueCards: eligible.filter((card) => ids.has(card.cardId)).length,
+          dueCards,
         };
       }),
       links: clone(this.store.links),

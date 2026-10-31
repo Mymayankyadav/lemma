@@ -243,11 +243,6 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     };
     data.notes.push(note);
   }
-  // Audit #462: sessions are per project, not shared across the entire library.
-  // Materialise long event histories for the actual /s/real-analysis/7 route
-  // and a second project's first session. The remaining sessions exercise list
-  // pagination without allocating millions of repetitive event objects.
-  const eventCount = extreme ? 400 : 150;
   data.sessions = [];
   for (const [projectIndex, project] of data.projects.entries()) {
     for (let index = 0; index < sessionCount; index++) {
