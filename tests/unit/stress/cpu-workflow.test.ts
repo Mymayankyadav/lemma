@@ -23,6 +23,6 @@ describe('AUDIT #540: cold 4x matrix and full sharded Playwright coexist',()=>{
   expect(workflow).toContain("--grep-invert 'AUDIT #540 cold 4x'");
   expect(workflow).toContain('test "$count" -eq 18');
   expect(workflow).toContain('name: e2e-${{ matrix.shard }}-of-4');
-  expect(workflow).toContain('name: qa3-screens');
+  expect(workflow).toContain('needs: e2e');
  });
 });
