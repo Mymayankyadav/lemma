@@ -30,7 +30,7 @@ interface ReviewState {
  total:number
  roundOrder:string[]
  pendingAgain:RetryEntry[]
- initialize:(items:ReviewItem[],settings:QueueSettings,filter:QueueFilter)=>void
+ initialize:(items:ReviewItem[],settings:QueueSettings,filter:QueueFilter,focus?:{projectSlug:string;checkpointCode:string|null})=>void
  reveal:(confidence:Confidence)=>void
  beginGrade:()=>void
  cancelGrade:()=>void
@@ -43,8 +43,16 @@ const defaultFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includ
 export const useReviewSession=create<ReviewState>((set,get)=>({
  filter:defaultFilter,queue:null,current:null,confidence:null,revealed:false,submitting:false,
  startTime:Date.now(),answers:[],completedRound:false,lastUndo:null,total:0,roundOrder:[],pendingAgain:[],
- initialize(items,settings,filter){
-  const first=nextCard(buildQueue(items,settings),Date.now())
+ initialize(items,settings,filter,focus){
+  const built=buildQueue(items,settings);
+  // Selection remains quota-aware; overdue cards in the owner's current
+  // checkpoint lead within each scheduling bucket.
+  const priority=(items:ReviewItem[])=>!focus?.checkpointCode?items:
+   [...items].sort((a,b)=>
+    Number(b.projectSlug===focus.projectSlug&&b.checkpointCode===focus.checkpointCode)-
+    Number(a.projectSlug===focus.projectSlug&&a.checkpointCode===focus.checkpointCode));
+  const first=nextCard({...built,learning:priority(built.learning),reviews:priority(built.reviews),
+   fresh:priority(built.fresh)},Date.now())
   set({filter,queue:first.queue,current:first.item,total:first.queue.total,
    revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],completedRound:false,lastUndo:null,
    roundOrder:first.item?[first.item.cardId]:[],pendingAgain:[]})
