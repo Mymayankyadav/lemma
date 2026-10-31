@@ -108,7 +108,15 @@ export default function Page(){
  const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
  const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
  const visible=virtual?rows.slice(first,last):rows;
- const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
+ // A virtual Field must remain a genuine 56px visual heading even after its
+ // original row leaves the mounted window. Derive its identity from logical
+ // row offsets, never from the overscan row's nearest (often Topic) ancestor.
+ const fieldRows=useMemo(()=>rows.flatMap((row,index)=>tree?.nodes.get(row.id)?.level==='cluster'?[index]:[]),[rows,tree]);
+ const activeFieldIndex=fieldRows.filter(index=>geometry.offsets[index]<=scrollTop).at(-1)??-1;
+ const activeField=virtual&&activeFieldIndex>=0?tree?.nodes.get(rows[activeFieldIndex].id):null;
+ const nextFieldIndex=fieldRows.find(index=>index>activeFieldIndex);
+ const stickyField=activeField&&scrollTop>=geometry.offsets[activeFieldIndex]+56?activeField:null;
+ const stickyPush=nextFieldIndex===undefined?0:Math.min(0,geometry.offsets[nextFieldIndex]-scrollTop-56);
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
  const arcBudget=useMemo(()=>{
   if(!tree)return {visible:[],hidden:0};
@@ -218,8 +226,20 @@ export default function Page(){
    {tree.roots.length===0?<div className="flex h-full items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty" body="Ideas appear here as your plans grow."/></div>
    :rows.length===0?<p className="px-4 py-10 text-center text-body text-ink-3">{search?'No idea matches “'+search+'”.':'Nothing to re-check.'}</p>
    :<>
-    {stickyParent&&<div className="sticky top-0 z-10 h-0 pointer-events-none" aria-label="Current branch"><div className="flex h-11 items-center border-b border-edge bg-raised/95 px-3 text-label font-semibold text-ink-2"><span className="truncate">{plainMath(tree.nodes.get(stickyParent)?.name??'')}</span></div></div>}
-    <div className="relative" role="tree" aria-label="Ideas and their links" style={virtual?{height:geometry.totalHeight}:undefined}>
+    {stickyField&&<div className="sticky top-0 z-20 h-0 pointer-events-none" style={{transform:`translateY(${stickyPush}px)`}}>
+     <div data-atlas-sticky-field="true" aria-label="Current Field"
+      className="flex h-14 items-center gap-2 border-b border-[var(--hair)] bg-[var(--paper)] px-3 text-ink">
+      {stickyField.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{stickyField.glyph}</span>}
+      <span className="min-w-0 flex-1 font-serif text-[21px] italic leading-[24px]" style={clip}><Tex source={stickyField.name}/></span>
+      <span className="flex shrink-0 items-center gap-1.5 text-[12px] tabular-nums text-ink-3">
+       <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
+        <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(stickyField.total?100*stickyField.done/stickyField.total:0)+'%'}}/>
+       </span>
+       {stickyField.done}/{stickyField.total}
+      </span>
+     </div>
+    </div>}
+    <div className="relative" role="tree" aria-label="Ideas and their links" data-atlas-field-count={tree.roots.length} data-atlas-row-count={rows.length} style={virtual?{height:geometry.totalHeight}:undefined}>
     <div style={virtual?{position:"absolute",top:geometry.offsets[first],left:0,right:0}:undefined}>
     {visible.map(row=>{const node=tree.nodes.get(row.id)!;
      return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match} focused={!!focus}
