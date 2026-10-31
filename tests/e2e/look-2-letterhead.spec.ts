@@ -33,6 +33,19 @@ for(const width of [360,390] as const){
     :route==='/insights'?page.getByRole('heading',{name:'Recall'})
     :page.getByRole('heading',{name:'Apps'});
    await expect(ready).toBeVisible({timeout:30_000});
+   // Playwright's toBeVisible() accepts opacity:0. Framer Motion mounts the
+   // route's heading and data while its entrance is still fully transparent;
+   // the old test captured only the fixed Demo badge and background sketch.
+   // Wait until *every* ancestor up to main is painted before screenshots.
+   await expect.poll(()=>ready.evaluate(element=>{
+    let node:Element|null=element,minOpacity=1;
+    while(node&&node.id!=='main-content'){
+     const opacity=Number.parseFloat(getComputedStyle(node).opacity);
+     if(Number.isFinite(opacity))minOpacity=Math.min(minOpacity,opacity);
+     node=node.parentElement;
+    }
+    return minOpacity;
+   }),{timeout:30_000}).toBeGreaterThanOrEqual(.99);
    // Hash-route navigation can retain the prior route's 600px test scroll.
    // Reset before taking visual evidence: otherwise the next screenshot shows
    // only the empty lower page even though all landmarks are mounted.
