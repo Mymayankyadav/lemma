@@ -129,7 +129,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
             </g>;
           })}
           {expanded && layout.expandedY!==null && (
-            <foreignObject x="8" y={layout.expandedY} width="304" height="206">
+            <foreignObject data-expanded-stage="" x="8" y={layout.expandedY} width="304" height="206">
               <div className="flex h-full min-w-0 flex-col gap-1 rounded-ctl border border-amber-line bg-raised p-2">
                 <p className="shrink-0 text-label font-semibold text-ink"><Tex source={expanded.name} /> · {expanded.nodes.length} checkpoints</p>
                 <div className="min-h-0 flex-1 overflow-auto">
