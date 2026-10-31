@@ -158,10 +158,36 @@ export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects']
  return notes;
 }
 
+/** Deterministic full Atlas; defer it until an Atlas/idea route needs it. */
+export function fillStressAtlas(data:DemoStore,ideaCount:number,linkCount:number,baseConcept:DemoStore['concepts'][number]):void{
+  for (let i = data.concepts.length; i < ideaCount; i++) {
+    const subject = data.subjects[i % data.subjects.length];
+    data.concepts.push({
+      ...baseConcept, id: `stress-idea-${i}`, slug: `stress-idea-${i}`,
+      name: `Idea ${i}: ${i % 7 === 0 ? "Long mathematical statement" : "Definition"}`,
+      blurb: `A mathematical idea with index ${i}`, subjectId: subject.id,
+      level: "planet", parentId: null, isStar: false, pinX: null, pinY: null,
+    });
+  }
+  // Deterministic DAG links; avoid duplicates and self-loops.
+  const linkKeys = new Set(data.links.map(link => `${link.fromId}:${link.toId}:${link.kind}`));
+  for (let offset = 1; data.links.length < linkCount && offset < ideaCount; offset++) {
+    for (let i = 0; i + offset < ideaCount && data.links.length < linkCount; i++) {
+      const fromId = data.concepts[i].id, toId = data.concepts[i + offset].id;
+      const key = `${fromId}:${toId}:prereq`;
+      if (!linkKeys.has(key)) {
+        data.links.push({ fromId, toId, kind: "prereq" });
+        linkKeys.add(key);
+      }
+    }
+  }
+
+}
+
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
 export type StressProfile = "stress" | "extreme";
 
-export function makeStressStore(original: DemoStore, profile: StressProfile, options: {deferSessions?: boolean;deferNotes?:boolean} = {}): DemoStore {
+export function makeStressStore(original: DemoStore, profile: StressProfile, options: {deferSessions?: boolean;deferNotes?:boolean;deferAtlas?:boolean} = {}): DemoStore {
   // The stress profile replaces these collections in full. Cloning the seed's
   // 1,300 historical reviews (and their nested FSRS states) before throwing
   // them away needlessly blocks the first Today paint under 4x CPU. Keep one
@@ -277,27 +303,10 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
     }
   }
 
-  for (let i = data.concepts.length; i < ideaCount; i++) {
-    const subject = data.subjects[i % data.subjects.length];
-    data.concepts.push({
-      ...baseConcept, id: `stress-idea-${i}`, slug: `stress-idea-${i}`,
-      name: `Idea ${i}: ${i % 7 === 0 ? "Long mathematical statement" : "Definition"}`,
-      blurb: `A mathematical idea with index ${i}`, subjectId: subject.id,
-      level: "planet", parentId: null, isStar: false, pinX: null, pinY: null,
-    });
-  }
-  // Deterministic DAG links; avoid duplicates and self-loops.
-  const linkKeys = new Set(data.links.map(link => `${link.fromId}:${link.toId}:${link.kind}`));
-  for (let offset = 1; data.links.length < linkCount && offset < ideaCount; offset++) {
-    for (let i = 0; i + offset < ideaCount && data.links.length < linkCount; i++) {
-      const fromId = data.concepts[i].id, toId = data.concepts[i + offset].id;
-      const key = `${fromId}:${toId}:prereq`;
-      if (!linkKeys.has(key)) {
-        data.links.push({ fromId, toId, kind: "prereq" });
-        linkKeys.add(key);
-      }
-    }
-  }
+  if(options.deferAtlas){
+    data.stressAtlasIdeaCount=ideaCount;
+    data.stressAtlasLinkCount=linkCount;
+  }else fillStressAtlas(data,ideaCount,linkCount,baseConcept);
 
   data.reviews = [];
   data.stressReviewCount = extreme ? 300000 : 50000;
