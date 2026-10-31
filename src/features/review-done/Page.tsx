@@ -18,7 +18,7 @@ import {prepareSessionNewRound} from './newSession';
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
  return <Tile className="flex min-h-[95px] flex-col items-center justify-center gap-1 px-2 py-3 text-center">
   <Icon size={18} aria-hidden="true" className="text-ink-2"/>
-  <strong className="text-card font-semibold tabular-nums">{value}</strong>
+  <strong className={"text-card font-semibold tabular-nums "+(value==="–"?"text-ink-4":"text-ink")}>{value}</strong>
   <span className="text-label text-ink-3">{label}</span>
  </Tile>;
 }
@@ -51,11 +51,11 @@ export default function Page(){
  const sure=firstAnswers.filter(a=>a.confidence==='sure');
  const sureRight=sure.filter(a=>a.rating>1).length;
  const seconds=Math.max(0,Math.floor(stats.durationMs/1000));
- const roundTime=answers.length?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'—';
+ const roundTime=firstAnswers.length?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'–';
  const recalledAnswers=firstAnswers.filter(a=>a.rating>1);
  const recalled=recalledAnswers.length;
  const compact=firstAnswers.length>24;
- const firstRecall=firstAnswers.length?Math.round(100*recalled/firstAnswers.length)+'%':'—';
+ const firstRecall=firstAnswers.length?Math.round(100*recalled/firstAnswers.length)+'%':'–';
  function retryMissed(){
   if(!settings.data||!missed.length)return;
   const latest=new Map(answers.map(a=>[a.card.cardId,a]));
@@ -89,8 +89,8 @@ export default function Page(){
   <section aria-label="Review statistics" className="grid w-full grid-cols-2 gap-2">
    <Metric icon={Target} label="recalled on the first try" value={firstRecall}/>
    <Metric icon={Clock3} label="time for the round" value={roundTime}/>
-   <Metric icon={RotateCcw} label="right when you were sure" value={sure.length?sureRight+'/'+sure.length:'—'}/>
-   <Metric icon={CalendarDays} label="due tomorrow" value={tomorrow===null?'—':String(tomorrow)}/>
+   <Metric icon={RotateCcw} label="right when you were sure" value={sure.length?sureRight+'/'+sure.length:'–'}/>
+   <Metric icon={CalendarDays} label="due tomorrow" value={firstAnswers.length&&tomorrow!==null?String(tomorrow):'–'}/>
   </section>
   <section aria-label="Round transcript" className="w-full">
    <h2 className="mb-2 font-math italic text-ink-2">Your round</h2>
