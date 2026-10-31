@@ -6,7 +6,6 @@ import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
 import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
 import {isSourceFile} from '../../pdf/ingest';
-import {slugify} from '../../lib/text';
 import ProjectsPage from '../projects/Page';
 import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
@@ -97,7 +96,6 @@ export default function Page(){
       value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
      <MathPreview source={name}/>
-     <p className="text-label text-ink-3">Path: {slugify(name||'project')}</p>
      <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
     </section>
     <section aria-label="Sources" className="flex flex-col gap-3"
