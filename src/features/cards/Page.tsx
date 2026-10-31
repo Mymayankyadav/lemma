@@ -30,8 +30,24 @@ export default function Page(){
  const [onlyComments,setOnlyComments]=useState(false),[creating,setCreating]=useState(false);
  const [scrollTop,setScrollTop]=useState(0),[viewportHeight,setViewportHeight]=useState(500);
  const scroller=useRef<HTMLDivElement>(null);
+ const filterScroller=useRef<HTMLDivElement>(null);
+ const [filterFade,setFilterFade]=useState({left:false,right:false});
+ const updateFilterFade=useCallback(()=>{
+  const element=filterScroller.current;if(!element)return;
+  const left=element.scrollLeft>1;
+  const right=element.scrollLeft+element.clientWidth<element.scrollWidth-1;
+  setFilterFade(previous=>previous.left===left&&previous.right===right?previous:{left,right});
+ },[]);
  const projects=useProjects(),create=useCreateNote(),notify=useToast(),navigate=useNavigate();
  const closeCreating=useCallback(()=>setCreating(false),[]);
+ useEffect(()=>{
+  const element=filterScroller.current;if(!element)return;
+  updateFilterFade();
+  if(typeof ResizeObserver==='undefined')return;
+  const observer=new ResizeObserver(updateFilterFade);
+  observer.observe(element);
+  return ()=>observer.disconnect();
+ },[projects.data,updateFilterFade]);
  useEffect(()=>{const timer=setTimeout(()=>setQuery(search),250);return ()=>clearTimeout(timer)},[search]);
  const cards=useInfiniteQuery({
   queryKey:['cards-page-infinite',query,project,checkpoint,state,noteStatus,onlyComments],
@@ -66,12 +82,20 @@ export default function Page(){
   }catch{notify("Couldn't create the card.",{tone:'danger'})}
  };
  const loading=cards.isPending;
+ // Only fade an edge when there are chips outside the visible scroll window.
+ const filterMask=filterFade.left&&filterFade.right
+  ?'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)'
+  :filterFade.left
+   ?'linear-gradient(to right, transparent, black 16px, black 100%)'
+   :filterFade.right
+    ?'linear-gradient(to right, black 0%, black calc(100% - 16px), transparent)'
+    :undefined;
  return <Screen title="Cards" back="/" actions={<IconButton icon={Plus} label="New card" tone="amber" onClick={()=>setCreating(true)}/>}>
   <label className="flex min-h-[var(--row)] min-w-0 items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
    <Search size={19}/><span className="sr-only">Search cards</span>
    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search cards" className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-3"/>
   </label>
-  <div role="group" aria-label="Card filters" className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
+  <div ref={filterScroller} role="group" aria-label="Card filters" data-filter-fade-left={String(filterFade.left)} data-filter-fade-right={String(filterFade.right)} onScroll={updateFilterFade} style={{maskImage:filterMask}} className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
    <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
    {projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
     <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
