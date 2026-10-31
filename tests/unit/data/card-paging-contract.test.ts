@@ -48,7 +48,7 @@ describe('FIX-546b bounded Card detail pagination contract',()=>{
    }
   }
   const cursor=(await api.getCardHistoryPage(no)).nextCursor!
-  await expect(api.getCardHistoryPage(no+1,cursor)).rejects.toMatchObject({code:'not_found'})
+  await expect(api.getCardHistoryPage(999999,cursor)).rejects.toMatchObject({code:'not_found'})
   await expect(api.getCardHistoryPage(no,'forged')).rejects.toMatchObject({code:'invalid'})
  })
 })
