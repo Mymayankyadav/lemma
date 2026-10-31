@@ -101,7 +101,7 @@ it('uses a safe plain-label fast path without bypassing mathematics',()=>{
 });
 
 it('renders plain Atlas rows without Markdown while preserving real KaTeX rows',()=>{
- const node=tree.nodes.get('idea')!;
+ const node={...tree.nodes.get('idea')!,depth:1,glyph:null,total:1,done:0,revisit:0,due:0,rank:0};
  const props={node,open:false,tone:'none' as const,match:false,onToggle:()=>{},onSelect:()=>{}};
  const plain=renderToStaticMarkup(createElement(Row,{...props,node:{...node,name:'Idea 123: Definition'}}));
  expect(plain).toContain('Idea 123: Definition');
