@@ -46,6 +46,22 @@ for(const width of [360,390] as const){
     }
     return minOpacity;
    }),{timeout:30_000}).toBeGreaterThanOrEqual(.99);
+   // Opacity alone does not establish that a Motion route has finished
+   // translating into view. Inspect every ancestor transform and wait for the
+   // actual painted position, rather than fast-forwarding Motion in screenshot().
+   await expect.poll(()=>ready.evaluate(element=>{
+    let node:Element|null=element,maxDisplacement=0;
+    while(node&&node.id!=='main-content'){
+     const transform=getComputedStyle(node).transform;
+     if(transform!=='none'){
+      const m=new DOMMatrixReadOnly(transform);
+      maxDisplacement=Math.max(maxDisplacement,Math.abs(m.m41),Math.abs(m.m42),
+       Math.abs(m.m11-1)*100,Math.abs(m.m22-1)*100);
+     }
+     node=node.parentElement;
+    }
+    return maxDisplacement;
+   }),{timeout:30_000}).toBeLessThan(.5);
    // Hash-route navigation can retain the prior route's 600px test scroll.
    // Reset before taking visual evidence: otherwise the next screenshot shows
    // only the empty lower page even though all landmarks are mounted.
@@ -112,7 +128,9 @@ for(const width of [360,390] as const){
    expect(Number(geometry.opacity)).toBeCloseTo(theme==='graph'?.12:.13,3);
    await page.screenshot({
     path:`test-results/screens/look-2/${kind}-${route.replaceAll('/','-')||'home'}-${theme}-${profile}-${width}.png`,
-    animations:'disabled',
+    // Do not fast-forward Framer Motion: disabling animations can dispatch
+    // completion callbacks and remove the active route during capture.
+    animations:'allow',
    });
    // A temporary, non-app spacer guarantees a scrollable document even on
    // short screens, so the assertion cannot pass vacuously at scrollY=0.
