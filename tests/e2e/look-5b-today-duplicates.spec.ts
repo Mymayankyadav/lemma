@@ -1,0 +1,26 @@
+import { expect, test } from "@playwright/test";
+
+// LOOK-5b: Goal Routes already expose the project destinations. Repeating
+// those same projects below the tutor section wastes an entire phone screen.
+for (const profile of ["stress", "extreme"] as const) {
+  for (const theme of ["graph", "graph-night"] as const) {
+    for (const width of [360, 390] as const) {
+      test(`LOOK-5b one project list on Today: ${profile} ${theme} ${width}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/`);
+        const goals = page.getByRole("region", { name: "Distance to your goals" });
+        await expect(goals).toBeVisible();
+        await expect(goals.getByRole("link", { name: "All paths" })).toBeVisible();
+        await expect(goals.getByRole("article", { name: /Goal progress for/ })).toHaveCount(3);
+        await expect(page.getByRole("region", { name: "Projects", exact: true })).toHaveCount(0);
+        await expect(page.getByRole("region", { name: "Continue" })).toBeVisible();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth))
+          .toBeLessThanOrEqual(width + 1);
+        await page.screenshot({
+          path: `test-results/screens/look-5b-today-${profile}-${theme}-${width}.png`,
+          fullPage: true,
+        });
+      });
+    }
+  }
+}
