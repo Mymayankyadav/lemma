@@ -174,9 +174,9 @@ export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onS
  const indentation=(depth:number)=>Math.min(depth,3)*INDENT+Math.max(0,depth-3)*8;
  const lead=12+indentation(node.depth);
  const textStyle=node.level==='cluster'?'font-serif italic text-[21px] leading-[24px] font-medium':
-  area?'text-[13.5px] leading-[18px] font-semibold tracking-[0.05em] [font-variant:small-caps]':
+  area?'text-[12px] leading-[18px] font-semibold tracking-[0.05em] [font-variant:small-caps]':
   node.level==='system'?'text-[15px] leading-5 font-semibold':
-  node.level==='moon'?'text-[13.5px] leading-[18px] text-ink-2':'text-[15px] leading-[22px]';
+  node.level==='moon'?'text-[13px] leading-[18px] text-ink-2':'text-[15px] leading-[22px]';
  const showProgress=root||area;
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
