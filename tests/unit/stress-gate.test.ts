@@ -34,7 +34,10 @@ describe('FIX #507 hard-budget CI gate',()=>{
    .toThrow(/#485/);
  });
  it('rejects silent/unnumbered exceptions and has a finite issue-linked pending list',()=>{
-  expect(unfinishedStressGates.length).toBeGreaterThan(0);
+  // The list may become empty once Auditor closes every outstanding gate.
+  expect(unfinishedStressGates.length).toBeLessThanOrEqual(12);
+  expect(new Set(unfinishedStressGates.map(g=>g.issue+":"+g.failure+":"+g.routes.join(","))).size)
+   .toBe(unfinishedStressGates.length);
   for(const item of unfinishedStressGates){
    expect(item.issue).toBeGreaterThan(0);
    expect(item.failure.length).toBeGreaterThan(0);
