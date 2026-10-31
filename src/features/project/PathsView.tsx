@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {Tex} from '../../ui/Tex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
@@ -46,11 +47,11 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
      <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
-    <div className="flex shrink-0 flex-col items-end gap-1"><strong className="font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
+    <div className="flex shrink-0 flex-col items-end gap-1"><strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-amber">{pct}%</strong>
      {headline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{headline}</span>}</div>
    </div>
    <section aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
-    <strong className="font-[var(--font-display)] text-title-s tabular-nums text-ink">{done}</strong>
+    <strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-ink">{done}</strong>
     <span>of {total} checkpoints done</span>
     {current>=0&&<span className="ml-auto text-amber">{checkpoints[current].code} now</span>}
    </section>
@@ -138,7 +139,7 @@ export function Stages({detail}:{detail:ProjectDetail}){
  const schedule=new Map(rows.map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-   <h2 className="font-[var(--font-display)] text-title-s italic">Stages</h2>
+   <SectionHeading>Stages</SectionHeading>
    <span className="text-label text-ink-3">{stages.length} {stages.length===1?'stage':'stages'}, {detail.total} checkpoints</span>
   </div>
   {stages.length>5&&<nav aria-label="Jump to stage" className="flex min-w-0 gap-2 overflow-x-auto pb-1" data-stage-jumps="">
