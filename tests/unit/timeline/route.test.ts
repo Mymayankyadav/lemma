@@ -24,6 +24,7 @@ describe('LOOK-3b accessible Route component',()=>{
   expect(html).not.toContain('data-stage-rail');
   expect(html).not.toContain('data-expanded-stations');
   expect((html.match(/data-route-mark="station"/g)||[])).toHaveLength(9);
+  expect((html.match(/data-route-stage-boundary/g)||[])).toHaveLength(2);
   for(const label of ['Previous checkpoint','Next checkpoint','Open checkpoint'])
    expect(html).toContain('aria-label="'+label+'"');
  });
