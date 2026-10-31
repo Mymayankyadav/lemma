@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useSearchParams} from 'react-router';
-import {ChevronDown,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
+import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
 import {useProjects,useUpdateProject} from '../../data/hooks';
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
