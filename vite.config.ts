@@ -19,8 +19,8 @@ export default defineConfig({
     start_url:'/lemma/',
     scope:'/lemma/',
     display:'standalone',
-    theme_color:'#0D0C11',
-    background_color:'#0D0C11',
+    theme_color:'#13171D',
+    background_color:'#13171D',
     icons:[
      {src:'/lemma/icons/lemma-192.png',sizes:'192x192',type:'image/png'},
      {src:'/lemma/icons/lemma-512.png',sizes:'512x512',type:'image/png'},

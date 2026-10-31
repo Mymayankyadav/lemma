@@ -13,7 +13,8 @@ import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
-import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
+import {atlasFoldDepth} from './depthOf';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 interface Saved{expanded:string[];related:boolean}
@@ -32,13 +33,13 @@ function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:Atlas
   groups.set(area,[...(groups.get(area)??[]),item]);
  }
  return <div className="mt-4">
-  <h3 className="mb-1 flex items-center gap-2 text-caption font-semibold text-ink-3"><span className="h-[2px] w-4" style={{background:toneColor[tone]}}/>{label}</h3>
+  <h3 className="mb-1 flex items-center gap-2 text-label font-semibold text-ink-2"><span className="h-[2px] w-4" style={{background:toneColor[tone]}}/>{label} · {items.length}</h3>
   {[...groups].map(([area,members])=><div key={area}>
-   {area&&<p className="mt-2 text-caption font-semibold text-ink-3">{area}</p>}
+   {area&&<p data-atlas-area-heading="true" className="mt-2 min-w-0 max-w-full overflow-x-auto text-[13.5px] font-semibold text-ink-3"><Tex source={area} className="text-[16px] leading-6"/></p>}
    {members.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
     className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
     <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
-    <span className="shrink-0 text-caption text-ink-3">{levelName[item.level]}</span><ChevronRight size={14} className="text-ink-3"/></button>)}
+    <ChevronRight size={14} className="shrink-0 text-ink-3"/></button>)}
   </div>)}
   {items.length>8&&<button type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}
    className="min-h-11 w-full rounded-ctl border border-edge px-3 text-left text-label text-amber">
@@ -51,8 +52,15 @@ function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onCl
  const toast=useToast(),near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
  return <Sheet open onClose={onClose} title={<AtlasDetailsTitle name={node.name}/>}>
   <div data-atlas-details="true">
-   {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)}/>}
-   <p className="text-label text-ink-2">{levelName[node.level]} · {statusName[node.status]}{node.total>1?` · ${node.done} of ${node.total} ideas demonstrated`:''}</p>
+   {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)} onSelect={index=>onTrace(path[index].id)}/>}
+   <div className="mt-3 flex items-center justify-between gap-3 text-label text-ink-2">
+    <span>{statusName[node.status]}</span>
+    <span className="tabular-nums">{node.done} of {node.total} demonstrated</span>
+   </div>
+   <div aria-label="Demonstrated ideas" role="progressbar" aria-valuemin={0} aria-valuemax={Math.max(1,node.total)} aria-valuenow={node.done}
+    className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--paper-2)]">
+    <div className="h-full rounded-full bg-[var(--ink-2)]" style={{width:(node.total?100*node.done/node.total:0)+'%'}}/>
+   </div>
    {node.blurb&&<Tex source={node.blurb} className="mt-3 block text-body text-ink-soft"/>}
    <NeighbourList label="Builds on" items={near.needs} tone="up" onTrace={onTrace} tree={tree}/>
    <NeighbourList label="Opens up" items={near.unlocks} tone="down" onTrace={onTrace} tree={tree}/>
@@ -60,13 +68,13 @@ function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onCl
    {node.children.length>0&&<NeighbourList label="Inside" items={node.children.map(id=>tree.nodes.get(id)!)} tone="none" onTrace={onTrace} tree={tree}/>}
    {node.checkpointRefs.length>0&&<div className="mt-4 flex flex-wrap gap-2">
     {node.checkpointRefs.map(ref=><Link key={ref.projectSlug+ref.code} to={'/p/'+ref.projectSlug+'/cp/'+ref.code}
-     className="flex min-h-11 items-center rounded-ctl border border-edge-2 px-3 text-label">Checkpoint {ref.code}</Link>)}
+     className="inline-flex min-h-11 min-w-11 items-center text-label text-ink-2 underline decoration-[var(--ink-3)] underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-amber focus-visible:outline-offset-2">Checkpoint {ref.code}</Link>)}
    </div>}
-   <div className="mt-4 grid grid-cols-2 gap-2">
-    <Link to={'/review/run?concept='+encodeURIComponent(node.slug)} className="flex min-h-11 items-center justify-center rounded-btn border border-edge-2 text-body">Review {node.due}</Link>
-    <button type="button" className="flex min-h-11 items-center justify-center gap-2 rounded-btn border border-edge-2 text-body"
+   <div className="mt-5 grid grid-cols-2 gap-2">
+    <button type="button" className="flex min-h-11 items-center justify-center gap-2 rounded-btn bg-[var(--accent)] px-3 text-body font-semibold text-[var(--paper)]"
      onClick={()=>{void navigator.clipboard.writeText('Quiz me in chat on '+node.name).then(()=>toast('Quiz prompt copied')).catch(()=>toast('Could not copy prompt'))}}>
      <MessageCircle size={16}/>Quiz me</button>
+    <Link to={'/review/run?concept='+encodeURIComponent(node.slug)} className="flex min-h-11 items-center justify-center rounded-btn border border-edge-2 px-3 text-body">Review {node.due}</Link>
    </div>
   </div>
  </Sheet>;
@@ -123,7 +131,19 @@ export default function Page(){
   return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
  },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
- const recheckCount=useMemo(()=>tree?[...tree.nodes.values()].filter(n=>!n.synthetic&&!n.children.length&&n.status==='revisit').length:0,[tree]);
+ const {ideas,demonstrated,links,recheckCount}=useMemo(()=>{
+  let ideas=0,demonstrated=0,links=0,recheckCount=0;
+  if(tree){
+   for(const node of tree.nodes.values()){
+    if(node.synthetic)continue;
+    ideas++;
+    if(node.status==='demonstrated')demonstrated++;
+    if(!node.children.length&&node.status==='revisit')recheckCount++;
+   }
+   for(const link of tree.links)if(link.kind==='prereq')links++;
+  }
+  return {ideas,demonstrated,links,recheckCount};
+ },[tree]);
 
  const written=useRef<string|null>(null);
  const select=useCallback((id:string|null,openDetails=false)=>{
@@ -186,44 +206,39 @@ export default function Page(){
    setAmbiguousIds([]);setSearching(true);setSearch(focusName??focusSlug??'');
   }
  },[tree,focusId,focusSlug,focusName,reveal]);
- const depthOf=useMemo(()=>{
-  if(!tree)return null;
-  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===open.size&&[...set].every(x=>open.has(x)))return d}
-  const all=[...tree.nodes.values()].filter(n=>n.children.length);
-  return all.every(n=>open.has(n.id))?99:null;
- },[tree,open]);
+ const depthOf=useMemo(()=>tree?atlasFoldDepth(tree,open):null,[tree,open]);
  const near=selected&&tree?neighbours(tree,selected.id):null;
 
  if(query.isPending)return <main aria-label="Atlas" className="h-dvh p-4"><Skeleton h={52}/><div className="mt-5"><Skeleton h="65%"/></div></main>;
  if(query.error||!tree)return <main aria-label="Atlas" className="h-dvh p-4">
   <button type="button" className="min-h-11" onClick={()=>navigate(-1)}>Back</button>
   <EmptyState art="plug" title="Could not open Atlas" body="Check your connection." action={{label:'Try again',onClick:()=>void query.refetch()}}/></main>;
- const ideas=[...tree.nodes.values()].filter(n=>!n.synthetic).length;
+
  return <main aria-label="Atlas" className="relative flex h-dvh flex-col text-ink">
   <header className={'z-20 shrink-0 border-b border-edge bg-obsidian/95 px-3 '+(getMode()==='demo'?'pt-[calc(env(safe-area-inset-top)+30px)]':'pt-[env(safe-area-inset-top)]')}>
-   <div className="flex h-14 items-center gap-2">
+   <div className="flex min-h-14 items-center gap-2 py-1">
     <button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>
-    <div className="min-w-0 flex-1"><h1 className="font-serif text-title-s leading-tight">Atlas</h1>
-     <p className="truncate text-caption text-ink-3">{ideas} ideas · {tree.links.filter(l=>l.kind==='prereq').length} dependencies</p></div>
+    <div className="min-w-0 flex-1"><h1 className="font-serif text-[28px] leading-[31px] font-medium">Atlas</h1>
+     <p data-atlas-summary className="whitespace-normal break-words text-caption leading-[18px] text-ink-3">{ideas} ideas · {links} links · {demonstrated} demonstrated</p></div>
     <button type="button" aria-label="Find an idea" aria-pressed={searching} onClick={()=>{setSearching(v=>!v);if(searching)setSearch('')}}
      className="flex size-11 items-center justify-center rounded-ctl"><Search size={19}/></button>
    </div>
    {searching&&<div className="pb-2"><input autoFocus aria-label="Find an idea" placeholder="Find an idea" value={search} onChange={e=>setSearch(e.target.value)}
     className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body"/></div>}
    <div className="flex flex-wrap items-center gap-2 pb-2" role="toolbar" aria-label="Atlas view">
-    <div role="group" aria-label="Fold to depth" className="flex overflow-hidden rounded-ctl border border-edge">
-     {[1,2,3,99].map(d=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to level '+d} onClick={()=>{if(d===99&&ideas>300){setConfirmAll(true);return}setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}}
-      className={'min-h-11 min-w-11 px-2 text-label '+(depthOf===d?'bg-amber-tint text-amber':'text-ink-2')}>{d===99?'All':d}</button>)}
+    <div role="group" aria-label="Fold to depth" className="flex max-w-full overflow-x-auto rounded-full bg-[var(--paper-2)]">
+     {([['Fields',1],['Areas',2],['Topics',3],['All',99]] as const).map(([label,d])=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to '+label.toLowerCase()} onClick={()=>{if(d===99&&ideas>300){setConfirmAll(true);return}setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}}
+      className={'min-h-11 min-w-11 shrink-0 rounded-full px-2 text-label '+(depthOf===d?'bg-[var(--ink)] text-[var(--paper)]':'text-ink-2')}>{label}</button>)}
     </div>
     <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
-     className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-amber-line-2 text-amber':'border-edge text-ink-2')}>
+     className={'flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 text-label '+(related?'bg-[var(--paper-2)] font-semibold text-ink':'text-ink-2')}>
      <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
     {recheckCount>0&&<button type="button" aria-pressed={recheckOnly} aria-label={'Re-check '+recheckCount} title="Ideas due for a re-check" onClick={()=>setRecheckOnly(v=>!v)}
-     className={'flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-ctl border px-2.5 text-label tabular-nums '+(recheckOnly?'border-[var(--hard)] text-[var(--hard)]':'border-edge text-ink-2')}>
-     <RotateCcw size={14} className="text-[var(--hard)]"/>{recheckCount}</button>}
+     className={'flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-3 text-label tabular-nums '+(recheckOnly?'bg-[var(--paper-2)] font-semibold text-[var(--late)]':'text-[var(--late)]')}>
+     <RotateCcw size={14}/>Re-check {recheckCount}</button>}
    </div>
   </header>
-  <div ref={scroller} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-24" data-atlas-stage="true">
+  <div ref={scroller} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--paper)] pb-24" data-atlas-stage="true">
    {tree.roots.length===0?<div className="flex h-full items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty" body="Ideas appear here as your plans grow."/></div>
    :rows.length===0?<p className="px-4 py-10 text-center text-body text-ink-3">{search?'No idea matches “'+search+'”.':'Nothing to re-check.'}</p>
    :<>
@@ -231,7 +246,7 @@ export default function Page(){
     <div className="relative" role="tree" aria-label="Ideas and their links" style={virtual?{height:rows.length*44}:undefined}>
     <div style={virtual?{position:"absolute",top:first*44,left:0,right:0}:undefined}>
     {visible.map(row=>{const node=tree.nodes.get(row.id)!;
-     return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match}
+     return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match} focused={!!focus}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
     </div>
     {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>}
@@ -239,17 +254,17 @@ export default function Page(){
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">
     <span className="flex items-center gap-1.5"><svg width="22" height="8" aria-hidden="true"><path d="M1 4H19M15 1L19 4L15 7" fill="none" stroke="var(--ink-3)" strokeWidth="1.3"/></svg>needed for</span>
-    <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 bg-[var(--grade-good)]"/>builds on</span>
+    <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 bg-[var(--link)]"/>builds on</span>
     <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 bg-[var(--accent)]"/>opens up</span>
-    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--accent)"/></svg>demonstrated</span>
-    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--hard)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/></svg>re-check</span>
+    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--ink-2)"/></svg>demonstrated</span>
+    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--late)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/></svg>re-check</span>
    </div>}
   </div>
-  {selected&&!details&&<div data-atlas-peek="true" className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-[528px] items-center gap-2 rounded-slab border border-edge-2 bg-raised py-2 pl-4 pr-2 shadow-[var(--e-float)]">
+  {selected&&!details&&<div data-atlas-peek="true" className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-[528px] items-center gap-2 rounded-slab border border-edge bg-[var(--paper)] py-2 pl-4 pr-2">
    <div className="min-w-0 flex-1">
     <p style={clip} className="text-body font-semibold"><Tex source={selected.name}/></p>
     <p style={clip} className="text-caption text-ink-3">
-     <span style={{color:'var(--grade-good)'}}>builds on {focus?.up.size??0}</span> · <span style={{color:'var(--accent)'}}>opens up {focus?.down.size??0}</span>
+     <span style={{color:'var(--link)'}}>builds on {focus?.up.size??0}</span> · <span style={{color:'var(--accent)'}}>opens up {focus?.down.size??0}</span>
      {near&&near.related.length>0?' · '+near.related.length+' related':''}</p>
    </div>
    <button type="button" onClick={()=>setDetails(true)} className="flex min-h-11 items-center gap-1.5 rounded-btn border border-edge-2 px-3 text-label"><Info size={15}/>Details</button>
