@@ -14,6 +14,7 @@ it('typesets the most revisited mathematical concept and keeps a readable Atlas 
  const html=renderToStaticMarkup(<MemoryRouter><MostRevisitedLink conceptName={'Uniform $\\ell^p$ convergence'} label="Uniform convergence"/></MemoryRouter>);
  expect(html).toContain('class="katex"');
  expect(html).toContain('Most revisited');
+ expect(html).toContain('aria-label="Most revisited: Uniform ℓᵖ convergence"');
  expect(html).toContain('href="/atlas?');
  expect(html).not.toContain('Uniform $');
 });
