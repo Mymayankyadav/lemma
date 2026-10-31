@@ -103,14 +103,29 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const {data}=await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle();
       if(!data)throw Error('No plan proposal');
       if((await scoped(c,'checkpoints').eq('project_id',p.id)).data?.length)throw Error('Plan applied before approval');
-      planId=data.id;await rpc(c,'approve_proposal',{p_id:planId});
+      if(data.payload?.concepts?.length!==1)throw Error('Plan proposal lost its single concept');
+      planId=data.id;
+      const applied=await rpc(c,'approve_proposal',{p_id:planId});
+      if(applied?.concepts!==1)throw Error('Plan approval did not report one concept');
       const {data:active}=await scoped(c,'projects').eq('id',p.id).maybeSingle();
       if(active?.status!=='active')throw Error('Plan not active');
     });
     if(only(1))await check('planning metadata, ETA and undo',async()=>{
       const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
-      const concept=(await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Selftest cover '+p.slug).single()).data;
+      const {data:concept,error:conceptError}=await scoped(c,'concepts').eq('subject_id',p.subject_id).eq('name','Selftest cover '+p.slug).maybeSingle();
+      if(conceptError)throw Error('Approved concept lookup failed: '+conceptError.message);
+      if(!concept){
+        const {data:subjectConcepts,error:subjectError}=await scoped(c,'concepts','id').eq('subject_id',p.subject_id).limit(10);
+        if(subjectError)throw Error('Approved concept subject lookup failed: '+subjectError.message);
+        throw Error('Approved concept missing after successful plan approval; subject contains '+(subjectConcepts?.length??0)+' concepts');
+      }
       if(cp.stage!=='Foundations'||concept.topic!=='Topology')throw Error('Approved plan lost stage/topic');
+      const assertConcept=async(phase:string)=>{
+        const {data,error}=await scoped(c,'concepts').eq('id',concept.id).maybeSingle();
+        if(error)throw Error('Concept lookup '+phase+' failed: '+error.message);
+        if(!data)throw Error('Approved concept disappeared '+phase);
+        return data;
+      };
       const change=await run('propose_plan_change',proposePlanChange,{project:p.slug,reason:'Selftest stages',ops:[
         {op:'update',code:'CP1',stage:'Revised'},
         {op:'add',title:'Bridge',objective:'Learn',criterion:'Proves it',steps:['Think'],stage:'Bridge'}]});
@@ -121,14 +136,16 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Revised')throw Error('Updated stage missing');
       await run('undo',undo,{action:approved.action});
       if((await scoped(c,'checkpoints').eq('id',cp.id).single()).data.stage!=='Foundations')throw Error('Stage undo failed');
+      await assertConcept('after plan-change undo');
       const edited=await run('edit',edit,{target:p.slug,set:{target_date:'2027-01-15',target_label:'Prelim'}});
       const packetText=await packet(c,{project:p.slug});
       if(!packetText.includes('finish ≈')||!packetText.includes('Prelim 15 Jan'))throw Error('ETA/target missing');
       await run('undo',undo,{action:edited.action});
       if((await scoped(c,'projects').eq('id',p.id).single()).data.target_date!==null)throw Error('Target undo failed');
+      await assertConcept('after target-date undo');
       await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:null}});
       await run('edit',edit,{target:'idea:Selftest cover '+p.slug,set:{topic:'Open sets'}});
-      if((await scoped(c,'concepts').eq('id',concept.id).single()).data.topic!=='Open sets')throw Error('Topic edit failed');
+      if((await assertConcept('after topic edit')).topic!=='Open sets')throw Error('Topic edit failed');
       await run('edit',edit,{project:p.slug,target:'CP1',set:{stage:'Foundations'}});
       for(const set of [{target_date:'2027-02-30'},{target_label:'x'.repeat(21)}]){
         let failed=false;try{await run('edit',edit,{target:p.slug,set});}catch{failed=true;}if(!failed)throw Error('Invalid target accepted');
