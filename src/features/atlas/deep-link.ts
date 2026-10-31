@@ -18,10 +18,16 @@ export function resolveAtlasDeepLink(
   const node=real.find(candidate=>candidate.id===link.id);
   return node?{kind:'found',id:node.id}:{kind:'missing'};
  }
- const candidates=link.name?real.filter(node=>node.name===link.name):real;
- const exact=link.slug?candidates.filter(node=>node.slug===link.slug):[];
- const matching=exact.length?exact:link.name?candidates:[];
- if(matching.length===1)return {kind:'found',id:matching[0].id};
- if(matching.length>1)return {kind:'ambiguous',ids:matching.map(node=>node.id)};
+ // Insights supplies a derived (lossy) slug, not a verified stored slug.
+ // If two subjects share the name, even one apparent slug match is unsafe.
+ if(link.name){
+  const named=real.filter(node=>node.name===link.name);
+  if(named.length===1)return {kind:'found',id:named[0].id};
+  if(named.length>1)return {kind:'ambiguous',ids:named.map(node=>node.id)};
+  return {kind:'missing'};
+ }
+ const exact=link.slug?real.filter(node=>node.slug===link.slug):[];
+ if(exact.length===1)return {kind:'found',id:exact[0].id};
+ if(exact.length>1)return {kind:'ambiguous',ids:exact.map(node=>node.id)};
  return {kind:'missing'};
 }
