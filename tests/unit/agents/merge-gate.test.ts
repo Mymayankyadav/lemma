@@ -60,8 +60,8 @@ describe("Steward exact-head merge gate (audit #493)", () => {
     expect(verdict.reason).toMatch(/owner approval/i);
     expect(evaluateMergeGate({ ...ready, body: "owner approval needed\nReady to merge" }).ok).toBe(false);
     expect(evaluateMergeGate({ ...ready, body: "**Owner approval needed** — waiting for review\nReady to merge" }).ok).toBe(false);
-    // Policy explanations do not themselves assert that this PR awaits approval.
-    expect(evaluateMergeGate({ ...ready, body: "Policy: reject Owner approval needed markers\nReady to merge" }).ok).toBe(true);
+    // Fail closed even if the marker appears in prose beside an affirmative Ready line.
+    expect(evaluateMergeGate({ ...ready, body: "Policy: reject Owner approval needed markers\nReady to merge" }).ok).toBe(false);
   });
 
   it("requires a standalone Ready marker, not a mere mention", () => {
