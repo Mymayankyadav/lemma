@@ -73,7 +73,7 @@ for(const theme of ['graph','graph-night'] as const){
   })
   expect(order).toBe(true)
   const algebra=goals.getByRole('article',{name:/Goal progress for Real Analysis/})
-  await expect(algebra).toContainText(/3\/12 checkpoints/)
+  await expect(algebra.locator('[data-goal-now]')).toContainText('3 of 12')
   const timeline=algebra.locator('[data-route-mode="today"]')
   await expect(timeline.getByRole('link')).toHaveAttribute('aria-label',/open current checkpoint CP4/)
   await page.screenshot({path:`test-results/screens/review/ui5b-goals-${theme}.png`,fullPage:true})
