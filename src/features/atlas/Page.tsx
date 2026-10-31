@@ -13,6 +13,7 @@ import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
+import {atlasFoldDepth} from './depthOf';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
@@ -130,7 +131,19 @@ export default function Page(){
   return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
  },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
- const recheckCount=useMemo(()=>tree?[...tree.nodes.values()].filter(n=>!n.synthetic&&!n.children.length&&n.status==='revisit').length:0,[tree]);
+ const {ideas,demonstrated,links,recheckCount}=useMemo(()=>{
+  let ideas=0,demonstrated=0,links=0,recheckCount=0;
+  if(tree){
+   for(const node of tree.nodes.values()){
+    if(node.synthetic)continue;
+    ideas++;
+    if(node.status==='demonstrated')demonstrated++;
+    if(!node.children.length&&node.status==='revisit')recheckCount++;
+   }
+   for(const link of tree.links)if(link.kind==='prereq')links++;
+  }
+  return {ideas,demonstrated,links,recheckCount};
+ },[tree]);
 
  const written=useRef<string|null>(null);
  const select=useCallback((id:string|null,openDetails=false)=>{
@@ -193,25 +206,20 @@ export default function Page(){
    setAmbiguousIds([]);setSearching(true);setSearch(focusName??focusSlug??'');
   }
  },[tree,focusId,focusSlug,focusName,reveal]);
- const depthOf=useMemo(()=>{
-  if(!tree)return null;
-  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===open.size&&[...set].every(x=>open.has(x)))return d}
-  const all=[...tree.nodes.values()].filter(n=>n.children.length);
-  return all.every(n=>open.has(n.id))?99:null;
- },[tree,open]);
+ const depthOf=useMemo(()=>tree?atlasFoldDepth(tree,open):null,[tree,open]);
  const near=selected&&tree?neighbours(tree,selected.id):null;
 
  if(query.isPending)return <main aria-label="Atlas" className="h-dvh p-4"><Skeleton h={52}/><div className="mt-5"><Skeleton h="65%"/></div></main>;
  if(query.error||!tree)return <main aria-label="Atlas" className="h-dvh p-4">
   <button type="button" className="min-h-11" onClick={()=>navigate(-1)}>Back</button>
   <EmptyState art="plug" title="Could not open Atlas" body="Check your connection." action={{label:'Try again',onClick:()=>void query.refetch()}}/></main>;
- const ideas=[...tree.nodes.values()].filter(n=>!n.synthetic).length;
+
  return <main aria-label="Atlas" className="relative flex h-dvh flex-col text-ink">
   <header className={'z-20 shrink-0 border-b border-edge bg-obsidian/95 px-3 '+(getMode()==='demo'?'pt-[calc(env(safe-area-inset-top)+30px)]':'pt-[env(safe-area-inset-top)]')}>
    <div className="flex min-h-14 items-center gap-2 py-1">
     <button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>
     <div className="min-w-0 flex-1"><h1 className="font-serif text-[28px] leading-[31px] font-medium">Atlas</h1>
-     <p data-atlas-summary className="whitespace-normal break-words text-caption leading-[18px] text-ink-3">{ideas} ideas · {tree.links.filter(l=>l.kind==='prereq').length} links · {[...tree.nodes.values()].filter(n=>!n.synthetic&&n.status==='demonstrated').length} demonstrated</p></div>
+     <p data-atlas-summary className="whitespace-normal break-words text-caption leading-[18px] text-ink-3">{ideas} ideas · {links} links · {demonstrated} demonstrated</p></div>
     <button type="button" aria-label="Find an idea" aria-pressed={searching} onClick={()=>{setSearching(v=>!v);if(searching)setSearch('')}}
      className="flex size-11 items-center justify-center rounded-ctl"><Search size={19}/></button>
    </div>
