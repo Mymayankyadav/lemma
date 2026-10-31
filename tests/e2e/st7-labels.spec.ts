@@ -21,6 +21,10 @@ for(const theme of ['graph','graph-night'] as const){
   });
   expect(bounds.labelScroll).toBeGreaterThan(bounds.labelWidth);
   expect(bounds.page).toBeLessThanOrEqual(bounds.viewport);
+  // Keep the tested legend in the captured viewport; the original screenshot
+  // only showed the top of Today, leaving this regression visually unreviewable.
+  await name.scrollIntoViewIfNeeded();
+  await expect(name).toBeInViewport();
   await page.screenshot({path:`test-results/screens/st-7-legend-360-${theme}.png`});
  });
 }
