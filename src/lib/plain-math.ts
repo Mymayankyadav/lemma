@@ -31,3 +31,12 @@ export function plainMath(source:string):string{
     .replace(/\$\$?|\u005c\(|\u005c\)|\u005c\[|\u005c\]/g,'')
     .replace(/[\\$]/g,'');
 }
+
+
+/** Detect math before choosing the Cards list preview's recoverable scroll mode.
+ * The renderer supports dollar, \(inline\), and \[display\] delimiters.
+ * Literal escaped dollars in ordinary prose do not trigger math layout.
+ */
+export function hasMathPreview(source:string):boolean{
+ return /(^|[^\\])\$/.test(source)||source.includes('\\(')||source.includes('\\[');
+}
