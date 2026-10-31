@@ -4,6 +4,7 @@ import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
 import {arcTone,isPlainAtlasLabel} from './tree';
 import {atlasRowGap,atlasRowHeight} from './rowGeometry';
+import './rowMath.css';
 
 /** Shared pieces of the collapsible idea graph: used by the Atlas and by plan review. */
 export const ROW=44,GUTTER=84,INDENT=16;
