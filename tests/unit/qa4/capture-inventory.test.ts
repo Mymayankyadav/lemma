@@ -29,6 +29,8 @@ describe('QA-4 approved screenshot inventory',()=>{
   const publish=readFileSync('.github/workflows/review-shots-publish.yml','utf8');
   expect(pr).toContain('  pull_request:');
   expect(pr).toContain('  workflow_dispatch:');
+  expect(pr).toContain("'scripts/qa4-screens.ts'");
+  expect(pr).toContain("'tests/unit/qa4/**'");
   expect(pr).toContain('  contents: read');
   expect(pr).not.toMatch(/^  publish:/m);
   expect(pr).not.toContain('contents: write');
