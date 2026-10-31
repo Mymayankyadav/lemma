@@ -128,6 +128,8 @@ describe('FIX-546a live Card detail scoped queries',()=>{
    const adapter=new LiveAdapter();
    const detail=await adapter.getCard(12);
    expect(detail.history).toHaveLength(20);
+   expect(new TextEncoder().encode(JSON.stringify(detail)).byteLength).toBeLessThan(200_000);
+   expect(requests.length).toBeLessThanOrEqual(12);
    const first=await adapter.getCardHistoryPage(12);
    expect(first.rows).toHaveLength(20);
    expect(first.nextCursor).not.toBeNull();
