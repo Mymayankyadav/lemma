@@ -1750,7 +1750,9 @@ export class DemoAdapter implements LemmaApi {
           if (history) reviews.push(...history);
         }
         return {
-          ...clone(c),
+          // DemoConcept contains only primitive fields; a shallow copy is
+          // independent and avoids thousands of structuredClone calls at 4x CPU.
+          ...c,
           status: conceptStatus(
             checkpoints.map(cp => this.cpUi(cp)),
             unresolved.has(c.id), reviews, now,
@@ -1762,7 +1764,9 @@ export class DemoAdapter implements LemmaApi {
           dueCards,
         };
       }),
-      links: clone(this.store.links),
+      // Atlas links also contain only primitive fields; copy each record so
+      // callers cannot mutate the underlying demo store.
+      links: this.store.links.map(link => ({...link})),
     };
   }
   async pinConcept(id: string, x: number | null, y: number | null) {
