@@ -162,7 +162,8 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
  const label=plainMath(project.title)+': '+project.done+' of '+n+
   ' checkpoints, '+(checkpoint?.code??'')+'. Arrow keys select; Enter opens.';
  return <div ref={ref} data-route="" data-route-mode={mode}
-  data-route-layout={layout.mode} className="min-w-0 w-full">
+  data-route-layout={layout.mode} data-route-stage-count={stages.length}
+  className="min-w-0 w-full">
   {mode==='today'?<Link to={'/p/'+project.slug+'/cp/'+encodeURIComponent(checkpoints[current].code)}
    aria-label={plainMath(project.title)+': open current checkpoint '+checkpoints[current].code}
    className="block min-h-[64px] w-full rounded-ctl focus-visible:outline-2 focus-visible:outline-[var(--accent)]">
