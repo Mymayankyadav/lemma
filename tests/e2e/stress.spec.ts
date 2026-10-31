@@ -64,6 +64,13 @@ async function measure(page: Page, route: string, profile: string, theme: string
  return {route, actualRoute: await page.evaluate(()=>location.hash.slice(1)), profile, theme, width, durationMs, cpuThrottle, ...result};
 }
 
+test('ST-0 counts small informative text but not KaTeX internal script glyphs',async({page})=>{
+ await page.setContent('<div style="font-size:11px">Informative label</div><span class="katex" style="font-size:16px"><span style="font-size:9px">script glyph</span></span>');
+ const measured=await measure(page,'/probe','probe','graph',390,0,1);
+ expect(measured.smallText).toBe(1);
+ expect(measured.smallMath).toBe(0);
+});
+
 // Full route inventory, matching the normal mobile layout audit.
 const routes = [
  '/', '/projects', '/projects/new', '/p/real-analysis', '/p/real-analysis/cp/CP4',
