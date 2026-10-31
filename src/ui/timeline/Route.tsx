@@ -42,6 +42,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
   return ()=>observer.disconnect();
  },[]);
  const checkpoint=checkpoints[focused];
+ const plannedOrdinal=checkpoints.slice(0,focused+1).filter(cp=>cp.ui!=='proposed').length;
  const scheduleText=rows[focused]?scheduleDetail(rows[focused]):null;
  const open=(index=focused)=>{
   const cp=checkpoints[index];
@@ -181,7 +182,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
      {checkpoint.code}
     </span>
     <span className="min-w-0 flex-1 break-words text-[16px] text-ink"><Tex source={checkpoint.title}/></span>
-    <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{focused+1} of {n}</span>
+    <span className="shrink-0 text-[12px] tabular-nums text-ink-3">{checkpoint.ui==='proposed'?'Proposed · ':''}{plannedOrdinal} of {project.total}</span>
    </div>
    {scheduleText&&<p data-schedule-detail="" className="mt-1 min-w-0 text-[12px] leading-[18px] text-ink-2">{scheduleText}</p>}
    {discloseStage&&<details data-route-stage-disclosure="" className="mt-2 min-w-0 text-ink">
