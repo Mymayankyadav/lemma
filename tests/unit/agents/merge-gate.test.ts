@@ -10,6 +10,8 @@ const ok = (name: string, id = 1) => ({
   status: "completed",
   conclusion: "success",
 });
+const required = ["check", "mcp-sql", "e2e-1-of-4", "e2e-2-of-4", "e2e-3-of-4", "e2e-4-of-4", "qa3-screens"] as const;
+const greenChecks = required.map(name => ok(name));
 const ready = {
   headSha: sha,
   draft: false,
@@ -17,12 +19,25 @@ const ready = {
   mergeable: true,
   mergeableState: "clean",
   leaseEligible: true,
-  checkRuns: [ok("check"), ok("mcp-sql")],
+  checkRuns: greenChecks,
   commitStatuses: [],
   auditComments: [],
 };
 
 describe("Steward exact-head merge gate (audit #493)", () => {
+  it("requires all four Playwright shards and the QA-3b aggregate, even if unreported", () => {
+    expect(evaluateMergeGate(ready).ok).toBe(true);
+    for (const missing of required) {
+      const verdict = evaluateMergeGate({ ...ready, checkRuns: greenChecks.filter(c => c.name !== missing) });
+      expect(verdict.ok, missing).toBe(false);
+      expect(verdict.reason).toContain(missing);
+    }
+    // An outdated Steward caller cannot override away the five new jobs.
+    const bypass = evaluateMergeGate({ ...ready, checkRuns: [ok("check"), ok("mcp-sql")], requiredChecks: ["check", "mcp-sql"] });
+    expect(bypass.ok).toBe(false);
+    expect(bypass.reason).toContain("e2e-1-of-4");
+  });
+
   it("fails closed on no check runs or missing expected jobs", () => {
     expect(evaluateMergeGate({ ...ready, checkRuns: [] }).ok).toBe(false);
     expect(evaluateMergeGate({ ...ready, checkRuns: [ok("check")] }).ok).toBe(false);
@@ -30,15 +45,15 @@ describe("Steward exact-head merge gate (audit #493)", () => {
   });
 
   it.each(["queued", "in_progress", "pending"])("rejects %s checks", (status) => {
-    expect(evaluateMergeGate({ ...ready, checkRuns: [ok("check"), { ...ok("mcp-sql"), status, conclusion: null }] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...ready, checkRuns: greenChecks.map(c => c.name === "mcp-sql" ? { ...c, status, conclusion: null } : c) }).ok).toBe(false);
   });
 
   it.each(["failure", "cancelled", "skipped", "timed_out", "neutral"])("rejects %s conclusions", (conclusion) => {
-    expect(evaluateMergeGate({ ...ready, checkRuns: [ok("check"), { ...ok("mcp-sql"), conclusion }] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...ready, checkRuns: greenChecks.map(c => c.name === "mcp-sql" ? { ...c, conclusion } : c) }).ok).toBe(false);
   });
 
   it("rejects checks belonging to a different head SHA", () => {
-    expect(evaluateMergeGate({ ...ready, checkRuns: [ok("check"), { ...ok("mcp-sql"), headSha: "b".repeat(40) }] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...ready, checkRuns: greenChecks.map(c => c.name === "mcp-sql" ? { ...c, headSha: "b".repeat(40) } : c) }).ok).toBe(false);
   });
 
   it("rejects an unresolved Auditor block even when checks are green", () => {
@@ -76,8 +91,8 @@ describe("Steward exact-head merge gate (audit #493)", () => {
   });
 
   it("uses the newest attempt of a named check and still checks all other jobs", () => {
-    expect(evaluateMergeGate({ ...ready, checkRuns: [{ ...ok("check", 1), conclusion: "failure" }, ok("check", 2), ok("mcp-sql")] }).ok).toBe(true);
-    expect(evaluateMergeGate({ ...ready, checkRuns: [ok("check"), ok("mcp-sql"), { ...ok("extra"), conclusion: "failure" }] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...ready, checkRuns: [{ ...ok("check", 1), conclusion: "failure" }, ...greenChecks.map(c => c.name === "check" ? ok("check", 2) : c)] }).ok).toBe(true);
+    expect(evaluateMergeGate({ ...ready, checkRuns: [...greenChecks, { ...ok("extra"), conclusion: "failure" }] }).ok).toBe(false);
   });
 });
 
