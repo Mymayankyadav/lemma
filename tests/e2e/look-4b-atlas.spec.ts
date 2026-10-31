@@ -17,6 +17,14 @@ for(const width of [360,390] as const){
   await expect(child).toBeVisible();
   expect((await field.boundingBox())?.height).toBe(56);
   expect((await child.boundingBox())?.height).toBe(44);
+  // The 8px breathing room is outside the 56/44px interactive row target,
+  // and must be present in actual browser geometry, not just the data model.
+  const boundaryGaps=await tree.locator('[data-atlas-row]').evaluateAll(elements=>elements.flatMap((el,i)=>{
+   if(i===0||!['cluster','galaxy'].includes(el.getAttribute('data-level')??''))return [];
+   return [el.getBoundingClientRect().top-elements[i-1].getBoundingClientRect().bottom];
+  }));
+  expect(boundaryGaps.length).toBeGreaterThan(0);
+  for(const gap of boundaryGaps)expect(Math.abs(gap-8)).toBeLessThanOrEqual(.5);
   // A 100× fixture must not mount the entire outline on cold open.
   expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(60);
   const fold=field.getByRole('button',{name:/^(Fold|Unfold)/});
