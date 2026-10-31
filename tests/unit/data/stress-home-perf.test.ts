@@ -250,7 +250,7 @@ describe('FIX #507: cold Today stress summary',()=>{
 
  it('keeps the browser stress adapter on the deferred-card path',()=>{
   const entry=readFileSync('src/data/index.ts','utf8');
-  expect(entry).toContain('{deferSessions:true,deferNotes:true,deferAtlas:initialToday}');
+  expect(entry).toContain('{deferSessions:true,deferNotes:true,deferAtlas:initialToday,deferSources:initialToday}');
   expect(entry).toContain('deferAtlas:');
  });
 
