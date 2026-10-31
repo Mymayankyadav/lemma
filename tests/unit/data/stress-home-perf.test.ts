@@ -298,6 +298,10 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(Object.getOwnPropertyDescriptor(store,'sources')?.get).toBeUndefined();
   expect(store.sources.length).toBeGreaterThanOrEqual(6000);
   expect(store.sources.find(p=>p.id==='stress-source-3-99')?.createdAt).not.toMatch(/^@/);
+  const full=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  expect(store.sources).toEqual((full as unknown as {store:DemoStore}).store.sources);
  },30_000);
 
  it('configures source deferral only for the initial Today document',()=>{
