@@ -29,7 +29,10 @@ test('LOOK-4c dense bundle pills are 16px high and preserve the 44px overflow di
  const pill=page.locator('[data-atlas-bundle-pill]').first();
  await expect(pill).toBeVisible();
  const bounds=await pill.boundingBox();
+ // SVG stroke is part of the painted footprint. A 16px rect with a 1px
+ // stroke paints 17px; the visible pill must actually be 16px tall/wide.
  expect(bounds?.height).toBe(16);
+ expect(bounds?.width).toBe(16);
  const count=page.locator('[data-atlas-bundle-count]').first();
  expect(await count.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(12);
  const disclosure=page.locator('[data-atlas-overflow-count]');
