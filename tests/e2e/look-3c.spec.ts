@@ -27,6 +27,15 @@ for(const width of [360,390] as const){
   const track=await route.locator('[data-route-track]').boundingBox();
   expect(track).not.toBeNull();
   expect(track!.height).toBe(80);
+  // ST-0 A1: every visible station/capsule retains at least 8px
+  // edge clearance even when 100 checkpoints fold into stage capsules.
+  const marks=await route.locator('[data-route-mark]').evaluateAll(elements=>elements.map(el=>{
+   const rect=el.getBoundingClientRect();
+   return {left:rect.left,right:rect.right};
+  }).sort((a,b)=>a.left-b.left));
+  expect(marks.length).toBeGreaterThan(1);
+  for(let i=1;i<marks.length;i++)
+   expect(marks[i].left-marks[i-1].right,`Route mark gap ${i}`).toBeGreaterThanOrEqual(7.5);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(0);
   await route.screenshot({path:'test-results/screens/look-3c/'+profile+'-'+theme+'-'+width+'.png'});
  });
