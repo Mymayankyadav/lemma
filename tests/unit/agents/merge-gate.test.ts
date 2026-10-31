@@ -48,7 +48,8 @@ describe("Steward exact-head merge gate (audit #493)", () => {
     const block = { body: "AUDIT BLOCK — fix", createdAt: "2026-10-31T06:10:00Z" };
     const clear = { body: "AUDIT CLEAR — verified", createdAt: "2026-10-31T06:20:00Z" };
     expect(evaluateMergeGate({ ...ready, auditComments: [block, clear] }).ok).toBe(true);
-    expect(evaluateMergeGate({ ...ready, auditComments: [clear, block] }).ok).toBe(false);
+    const earlyClear = { ...clear, createdAt: "2026-10-31T06:00:00Z" };
+    expect(evaluateMergeGate({ ...ready, auditComments: [block, earlyClear] }).ok).toBe(false);
   });
 
   it("requires a standalone Ready marker, not a mere mention", () => {
