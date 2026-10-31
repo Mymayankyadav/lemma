@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest'
-import {mkdtempSync,writeFileSync,rmSync,unlinkSync} from 'node:fs'
+import {mkdtempSync,writeFileSync,rmSync,unlinkSync,existsSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {deflateSync} from 'node:zlib'
@@ -166,5 +166,17 @@ describe('QA-3b screenshot structural gate',()=>{
   const forged=Buffer.concat([signature,chunk('IHDR',ihdr),
    chunk('IDAT',deflateSync(Buffer.from([0]))),chunk('IEND',Buffer.alloc(0))])
   expect(pngHeader(forged,390,844)).toBeNull()
+ })
+
+ it('rejects screenshots without the corresponding data-backed route readiness manifest',()=>{
+  const dir=fixture()
+  try{
+   const matrix=qa3Cases()[0]
+   const manifest=join(dir,matrix.filename.replace(/\\.json$/,'-readiness.json'))
+   if(existsSync(manifest))unlinkSync(manifest)
+   const report=auditQa3Screens(dir)
+   expect(report.status).toBe('FAIL')
+   expect(report.errors.some(e=>e.includes('readiness manifest')&&e.includes(matrix.profile))).toBe(true)
+  }finally{rmSync(dir,{recursive:true,force:true})}
  })
 })
