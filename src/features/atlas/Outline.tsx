@@ -171,9 +171,9 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    if(!badge)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
    const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
-   // The painted pill is 16px high including its 1px SVG stroke:
-   // a 15px rect plus half a stroke on each edge. Width grows with digits
-   // but stays within the placement radius, preserving 8px clearance.
+   // The painted pill is exactly 16px high, including its clipped outline.
+   // Width grows with digits and collision radii conservatively include the
+   // full un-clipped stroke, preserving >=8px edge clearance.
    // The placement circle encloses the painted pill's corners, not merely
    // its horizontal half-width. Diagonal pills must retain 8px edge clearance.
    const pillWidth=bundlePillWidth(arc.count);
@@ -183,8 +183,10 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
       stroke={toneColor[tone]} strokeWidth="1" strokeDasharray="2 2" fill="none"/>}
     <g transform={'translate('+badge.x+' '+badge.y+')'}>
      <rect data-atlas-bundle-pill="true" data-atlas-bundle-circle="true"
-      x={-pillWidth/2} y="-7.5"
-      width={pillWidth} height="15" rx="7.5"
+      x={-pillWidth/2} y="-8"
+      width={pillWidth} height="16" rx="8"
+      // Clip the outside half of the stroke to keep exactly 16 painted px.
+      style={{clipPath:'inset(0)'}}
       fill="var(--paper)" stroke={toneColor[tone]} strokeWidth="1"/>
      <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
     </g>
