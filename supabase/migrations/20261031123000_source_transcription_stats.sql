@@ -1,6 +1,9 @@
 -- FIX #475: count tutor transcriptions in PostgreSQL instead of fetching
 -- every source_pages row (300,000 rows / 301 requests in profile X).
 -- Security invoker + auth.uid() + source/page user_id equality preserve RLS.
+create index if not exists sources_owner_project_stats
+  on public.sources(user_id, project_id);
+
 create index if not exists source_pages_transcribed_owner_source
   on public.source_pages(user_id, source_id)
   where transcribed_at is not null;
