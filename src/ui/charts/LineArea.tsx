@@ -20,7 +20,7 @@ export function LineArea({data,width=316,height=132,target=0.9,min=0.8,max=1,tit
  {target>=min&&target<=max&&<g><line x1={left} x2={right} y1={y(target)} y2={y(target)} stroke="var(--ink-3)" strokeDasharray="5 5" opacity=".7"/><text x={right} y={y(target)-5} textAnchor="end" fontSize="10" fill="var(--ink-3)">target {Math.round(target*100)}%</text></g>}
  {fill&&<path d={fill} fill={`url(#${id}-area)`}/>}
  {path&&<motion.path d={path} fill="none" stroke="var(--amber)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" initial={reduce?false:{pathLength:0}} animate={{pathLength:1}} transition={{duration:1.2}}/>}
- {last&&<circle cx={x(last.index)} cy={y(last.value??min)} r="4" fill="var(--amber-hi)" stroke="var(--amber)" strokeWidth="2"/>}
+ {last&&<circle data-stress-mark="" cx={x(last.index)} cy={y(last.value??min)} r="4" fill="var(--amber-hi)" stroke="var(--amber)" strokeWidth="2"/>}
  <text x={left} y={h-5} fontSize="10" fill="var(--ink-3)">{data[0]?.label||''}</text><text x={right} y={h-5} fontSize="10" textAnchor="end" fill="var(--ink-3)">{data[data.length-1]?.label||''}</text>
  </svg>;
 }
