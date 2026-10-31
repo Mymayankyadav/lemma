@@ -95,6 +95,14 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await expect(page.locator('#main-content')).toBeVisible({timeout:90_000});
    await expect(page.getByRole('heading', {name:routeHeadings[route], exact:true, level:1})).toBeVisible({timeout:90_000});
    await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
+   // A heading and 40 characters also matched the missing-proposal error.
+   // Check that the actual plan change, its amendments and idea tree loaded.
+   if (route === '/proposals/proposal-6') {
+    await expect(page.getByRole('heading', {name:'Plan change', exact:true, level:2})).toBeVisible();
+    await expect(page.getByRole('region', {name:'Plan errata'})).toBeVisible();
+    await expect(page.getByRole('region', {name:'Ideas in this plan'})).toBeVisible();
+    await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
+   }
    await page.waitForTimeout(150);
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
    // Avoid counting the same cached resources again on subsequent hash routes.

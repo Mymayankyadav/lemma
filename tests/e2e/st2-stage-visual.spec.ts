@@ -30,7 +30,9 @@ const own=stress.checkpoints.filter(cp=>cp.projectId===stress.projects[3].id)
   .sort((a,b)=>Number(a.code.slice(2))-Number(b.code.slice(2)));
 const nodes:ReviewNode[]=own.map((cp,i)=>({
   code:cp.code,title:cp.title,criterion:cp.criterion,steps:cp.steps,
-  stage:profile==="stress"?"Stage "+(Math.floor(i/6)+1):cp.stage,
+  stage:(()=>{const name=profile==="stress"?"Stage "+(Math.floor(i/6)+1):cp.stage;
+    return name==="Stage 1"?"$"+String.fromCharCode(92)+"mathbb{R}^n$":
+      name==="Stage 2"?"$"+String.fromCharCode(92)+"sum_{k=1}^{20} x_k$":name;})(),
   prereqs:cp.prereqs,concepts:i<40?["Idea "+(2*i+1),"Idea "+(2*i+2)]:[],
 }));
 const proposed={
@@ -88,6 +90,28 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     await expect(svg).toBeVisible();
     const count=profile==="stress"?7:15;
     await expect(svg.locator(':scope > g[role="button"]')).toHaveCount(count);
+    const stageLabels=svg.locator('foreignObject[data-stage-label]');
+    await expect(stageLabels).toHaveCount(count);
+    await expect(stageLabels.first().locator('.katex')).toBeVisible();
+    await expect(stageLabels.nth(1).locator('.katex')).toBeVisible();
+    expect(await stageLabels.evaluateAll(nodes=>nodes.slice(0,2).every(node=>{
+      const math=node.querySelector('.katex');
+      return !!math && parseFloat(getComputedStyle(math).fontSize)>=16;
+    }))).toBe(true);
+    await expect(stageLabels.first()).not.toContainText('$');
+    const labelFits=await stageLabels.evaluateAll(nodes=>nodes.every(node=>{
+      const box=node.getBoundingClientRect();
+      return box.width>0 && box.width<=140 && box.height>0;
+    }));
+    expect(labelFits).toBe(true);
+    // A rendered sum with limits must not collide with the checkpoint count.
+    const labelOverlap=await svg.locator(':scope > g[role="button"]').evaluateAll(groups=>groups.slice(0,2).some(group=>{
+      const math=group.querySelector('foreignObject[data-stage-label] .katex');
+      const count=group.querySelector('text');
+      if(!math||!count)return true;
+      return math.getBoundingClientRect().bottom>count.getBoundingClientRect().top-2;
+    }));
+    expect(labelOverlap).toBe(false);
     const size=await map.boundingBox();
     expect(size).not.toBeNull();
     expect(size!.width).toBeLessThanOrEqual(width);
@@ -113,7 +137,8 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     const name=profile+"-"+theme+"-"+width;
     await map.screenshot({path:"test-results/screens/st2/"+name+"-collapsed.png"});
     await svg.locator(':scope > g[role="button"]').first().click();
-    await expect(map.locator("foreignObject")).toHaveCount(1);
+    await expect(map.locator('foreignObject[data-expanded-stage]')).toHaveCount(1);
+    await expect(map.locator('foreignObject[data-expanded-stage] .katex')).toBeVisible();
     await expect(svg.locator(':scope > g[role="button"]')).toHaveCount(count);
     await map.screenshot({path:"test-results/screens/st2/"+name+"-expanded.png"});
     await map.getByRole("button",{name:"Expand all"}).click();

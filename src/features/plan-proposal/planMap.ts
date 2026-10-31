@@ -83,7 +83,7 @@ export interface StageMapLayout {
   /** The expanded checkpoint tree occupies this gap between stage rows. */
   expandedY: number | null;
 }
-const STAGE_WIDTH = 320, STAGE_COLS = [82, 238], STAGE_ROW = 96, STAGE_DETAIL = 216;
+const STAGE_WIDTH = 320, STAGE_COLS = [82, 238], STAGE_ROW = 112, STAGE_DETAIL = 216;
 /** Bundles every cross-stage prerequisite, including fan-out and skipped-stage links. */
 export function layoutStagePlanMap(nodes: readonly ReviewNode[], expandedId: string | null = null): StageMapLayout {
   const groups = groupPlanStages(nodes);
@@ -108,5 +108,5 @@ export function layoutStagePlanMap(nodes: readonly ReviewNode[], expandedId: str
   });
   return {stages, edges:[...counts.values()], width:STAGE_WIDTH,
     height:Math.ceil(groups.length/2)*STAGE_ROW + (expandedRow >= 0 ? STAGE_DETAIL : 0) + 8,
-    expandedY:expandedRow < 0 ? null : 48 + expandedRow * STAGE_ROW + 40};
+    expandedY:expandedRow < 0 ? null : 48 + expandedRow * STAGE_ROW + 52};
 }

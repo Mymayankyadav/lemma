@@ -22,6 +22,10 @@ describe('ST-0 deterministic stress data', () => {
    expect(data.settings.reviewsPerDay).toBeLessThanOrEqual(2000);
    expect(data.settings.newPerDay).toBeLessThanOrEqual(200);
    expect(data.proposals).toHaveLength(proposals);
+   const planProposal = data.proposals.find(p => p.id === 'proposal-6');
+   expect(planProposal?.kind).toBe('plan_change');
+   expect(planProposal?.planChange?.ops.length).toBeGreaterThan(0);
+   expect(planProposal?.projectSlug).toBe(data.projects[projects - 1].slug);
    expect(data.sessions).toHaveLength(sessions * projects);
    expect(data.sessions.filter(session => session.projectId === data.projects[0].id)).toHaveLength(sessions);
    expect(data.sessions.filter(session => session.projectId === data.projects[projects - 1].id)).toHaveLength(sessions);
