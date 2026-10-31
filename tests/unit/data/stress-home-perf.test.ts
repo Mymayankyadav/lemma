@@ -49,6 +49,20 @@ describe('FIX #507: cold Today stress summary',()=>{
   }finally{parse.mockRestore()}
  },30_000);
 
+ it('builds the deck tree without recomputing 60 full project summaries',async()=>{
+  const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const summaries=vi.spyOn(api,'listProjects').mockImplementation(async()=>{
+   throw Error('DeckTree must not recompute full project summaries');
+  });
+  try{
+   const decks=await api.getDeckTree();
+   expect(decks).toHaveLength(60);
+   expect(decks.reduce((sum,deck)=>sum+deck.due,0)).toBe(4000);
+   expect(summaries).not.toHaveBeenCalled();
+  }finally{summaries.mockRestore()}
+ },30_000);
+
  it('keeps exact 4,000-card deck counts without materialising every ReviewItem',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme'),now:()=>now,timeZone:'UTC'});
   const started=performance.now();
