@@ -1,0 +1,1 @@
+-- FIX #475: bounded, owner-scoped transcription counters (implementation follows).
