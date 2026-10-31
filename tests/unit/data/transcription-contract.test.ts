@@ -11,14 +11,14 @@ describe('CONTRACT UI-8 transcription adapter boundaries',()=>{
   it(name+' rejects unimplemented transcription reads and writes explicitly',async()=>{
    const api=create();
    const attempts=[
-    api.getSourceTranscriptionStats('project-id'),
-    api.getSourcePage('source-id',1),
-    api.getTranscribedPagesForExport('source-id'),
-    api.updateSourcePage('source-id',1,{body:'A corrected proof'}),
-    api.getSourcePdfUrl('source-id'),
+    ()=>api.getSourceTranscriptionStats('project-id'),
+    ()=>api.getSourcePage('source-id',1),
+    ()=>api.getTranscribedPagesForExport('source-id'),
+    ()=>api.updateSourcePage('source-id',1,{body:'A corrected proof'}),
+    ()=>api.getSourcePdfUrl('source-id'),
    ];
    for(const operation of attempts){
-    await expect(operation).rejects.toMatchObject({code:'not_implemented'});
+    await expect(operation()).rejects.toMatchObject({code:'not_implemented'});
    }
   });
  }
