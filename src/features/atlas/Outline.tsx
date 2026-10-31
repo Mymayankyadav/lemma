@@ -103,11 +103,17 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
     for(const kind of ['prereq','related'] as const)
      dense.push({key:kind+':'+from+':'+to,from,to,kind,count:2,links:[]});
    arcs=dense;rows=5;focus=null;centers=undefined;heightPx=undefined;
+  }else if(query.get('demo')==='stress'&&query.get('atlasDenseLanes')==='1'&&window.location.hash.startsWith('#/atlas')){
+   // Eight unrelated overlapping spans cannot fit seven 9px lanes. Keep the
+   // fixture independent of the backend and prove the overflow is disclosed.
+   arcs=Array.from({length:8},(_,i)=>({key:'dense-lane:'+i,from:i,to:i+8,kind:'prereq' as const,count:1,links:[]}));
+   rows=16;focus=null;centers=undefined;heightPx=undefined;
   }
  }
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
  const lanes=layoutAtlasLanes(arcs,centers);
- const badges=layoutBundleLabels(arcs,rows,centers,heightPx);
+ const hiddenLanes=ordered.filter(arc=>!lanes.has(arc.key));
+ const badges=layoutBundleLabels(arcs.filter(arc=>lanes.has(arc.key)),rows,centers,heightPx);
  const overflow=badges.get(OVERFLOW_BUNDLE_KEY);
  return <><svg aria-hidden="true" data-atlas-wires="true" width={GUTTER} height={heightPx??rows*ROW}
   className="pointer-events-none absolute right-0 top-0 overflow-visible">
@@ -127,7 +133,7 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
     {arc.kind==='prereq'&&<circle data-atlas-supplier-dot="true" cx="8" cy={lane.fromY} r="1.2" fill={toneColor[tone]}/>}
    </g>;
   })}
-  {ordered.filter(arc=>arc.count>1).map(arc=>{
+  {ordered.filter(arc=>arc.count>1&&lanes.has(arc.key)).map(arc=>{
    const badge=badges.get(arc.key);
    if(!badge)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
@@ -138,14 +144,26 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
       stroke={toneColor[tone]} strokeWidth="1" strokeDasharray="2 2" fill="none"/>}
     <g transform={'translate('+badge.x+' '+badge.y+')'}>
      <rect data-atlas-bundle-pill="true" data-atlas-bundle-circle="true"
-      x={-Math.max(16,String(arc.count).length*7+8)/2} y="-8"
-      width={Math.max(16,String(arc.count).length*7+8)} height="16" rx="8"
+      x={-Math.max(16,String(arc.count).length*7+8)/2+0.5} y="-7.5"
+      width={Math.max(16,String(arc.count).length*7+8)-1} height="15" rx="7.5"
       fill="var(--paper)" stroke={toneColor[tone]} strokeWidth="1"/>
      <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
     </g>
    </g>;
   })}
  </svg>
+  {hiddenLanes.length>0&&<details data-atlas-lane-overflow="true" className="absolute right-0 top-0 z-20">
+   <summary aria-label={`Show ${hiddenLanes.length} hidden Atlas connections`}
+    className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-ctl border border-edge-2 bg-[var(--paper)] px-1 text-[12px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+    +{hiddenLanes.length}
+   </summary>
+   <div className="absolute right-0 top-11 max-h-60 w-[min(280px,calc(100vw-24px))] overflow-y-auto rounded-ctl border border-edge-2 bg-[var(--paper)] p-3 shadow-[var(--e-float)]">
+    <p className="mb-2 text-[12px] font-semibold">Connections hidden by the 9px lane spacing</p>
+    <ul className="space-y-1 text-[12px]">
+     {hiddenLanes.map(arc=><li key={arc.key}>Rows {arc.from+1}–{arc.to+1}: {arc.count} link{arc.count===1?'':'s'}</li>)}
+    </ul>
+   </div>
+  </details>}
   {overflow&&<details data-atlas-hidden-bundles="true" className="absolute z-20"
    style={{right:GUTTER-overflow.x-22,top:overflow.y-22}}>
    <summary data-atlas-overflow-count="true" aria-label={`Show ${overflow.hiddenKeys?.length??0} hidden Atlas link bundles`}
