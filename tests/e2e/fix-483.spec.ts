@@ -55,6 +55,16 @@ for(const theme of ['graph','graph-night'] as const)for(const width of [360,390]
   expect(hit!.height).toBeGreaterThanOrEqual(44);
   expect(await summary.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(12);
   await summary.focus();
+  // The visual focus outline extends beyond the element's hit rectangle.
+  // Measure that painted extent, not merely document.scrollWidth/box width.
+  const focusRing=await summary.evaluate(el=>{
+   const box=el.getBoundingClientRect(),css=getComputedStyle(el);
+   const protrusion=Math.max(0,parseFloat(css.outlineWidth)+parseFloat(css.outlineOffset));
+   return {left:box.left-protrusion,right:box.right+protrusion,style:css.outlineStyle};
+  });
+  expect(focusRing.style).not.toBe('none');
+  expect(focusRing.left).toBeGreaterThanOrEqual(0);
+  expect(focusRing.right).toBeLessThanOrEqual(width);
   await page.keyboard.press('Enter');
   await expect(overflow).toHaveAttribute('open','');
   const hidden=overflow.locator('li');
