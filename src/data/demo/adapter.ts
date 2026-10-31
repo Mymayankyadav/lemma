@@ -73,6 +73,9 @@ import { DAY } from "../../lib/calendar";
 import {reviewForecast} from "../../lib/review-forecast";
 import {makeStressInsightAggregate, stressSessionEvents} from "./stress";
 
+// One parse per module, not once per each of the 1,000 virtual sessions.
+const stressSessionTemplate = (JSON.parse(fixtureText) as DemoStore).sessions[0];
+
 const clone = <T>(value: T): T => structuredClone(value);
 const invalid = (message: string): never => {
   throw new LemmaError("invalid", message);
@@ -123,6 +126,7 @@ export class DemoAdapter implements LemmaApi {
   }
   private store: DemoStore;
   private readonly now: () => number;
+  private stressDayStart: number | undefined;
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
     this.store = hydrateFixture(
@@ -284,10 +288,11 @@ export class DemoAdapter implements LemmaApi {
     const count = this.store.stressSessionCount ?? 0;
     if (!Number.isInteger(number) || number < 1 || number > count) invalid("Invalid stress session number");
     const projectIndex = this.store.projects.findIndex(p => p.id === project.id);
-    const template = (JSON.parse(fixtureText) as DemoStore).sessions[0];
+    const template = stressSessionTemplate;
     const checkpointCode = `CP${((number - 1) % 36) + 1}`;
     const offset = (number - 1) % 90;
-    const start = studyDayBounds(this.now(), this.store.settings.timeZone, this.store.settings.rolloverHour).start - offset * DAY;
+    const today = this.stressDayStart ??= studyDayBounds(this.now(), this.store.settings.timeZone, this.store.settings.rolloverHour).start;
+    const start = today - offset * DAY;
     return {
       ...template, id: `stress-session-${projectIndex}-${number}`, projectId: project.id,
       number, checkpointCode, goal: `Study session ${number} for ${project.title}`,
