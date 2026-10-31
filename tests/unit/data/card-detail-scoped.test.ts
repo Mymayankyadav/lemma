@@ -117,6 +117,12 @@ describe('FIX-546a live Card detail scoped queries',()=>{
   }
  });
 
+ it('rejects numeric live comment cursors before any UUID comparison query',async()=>{
+  const {encodeCardPageCursor}=await import('../../../src/data/card-cursor')
+  const forged=encodeCardPageCursor('comments',12,{at:'2026-10-31T00:00:00Z',id:'17'})
+  await expect(new LiveAdapter().getCardCommentsPage(12,forged)).rejects.toMatchObject({code:'invalid'})
+  expect(requests.filter(r=>r.table==='card_comments')).toHaveLength(0)
+ })
  it('bounds 1,001 reviews to 20 rows and follows stable keyset pages without offset scans',async()=>{
   const original=fixtures.reviews;
   try{
