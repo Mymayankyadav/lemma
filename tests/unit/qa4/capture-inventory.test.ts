@@ -24,4 +24,15 @@ describe('QA-4 approved screenshot inventory',()=>{
    'atlas-all':'atlas-all',
   });
  });
+ it('runs PR captures with a read-only token and isolates publishing to review branches',()=>{
+  const workflow=readFileSync('.github/workflows/review-shots.yml','utf8');
+  expect(workflow).toContain("  pull_request:");
+  expect(workflow).toContain("  workflow_dispatch:");
+  expect(workflow).toContain("  contents: read");
+  expect(workflow).toContain("  publish:");
+  expect(workflow).toContain("    if: github.event_name == 'push'");
+  expect(workflow).toContain("      contents: write");
+  expect(workflow).toContain("V4_MATRIX: ${{ github.event_name == 'push' && '0' || '1' }}");
+  expect(workflow).toContain('npx tsx scripts/qa4-screens.ts');
+ });
 });
