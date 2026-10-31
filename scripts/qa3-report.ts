@@ -7,6 +7,7 @@ import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { stressViolations, type StressMeasurement } from './stress-limits';
+import { unfinishedStressGates, type PendingStressGate } from './stress-gate';
 
 export const QA3_PROFILES = ['stress', 'extreme'] as const;
 export const QA3_THEMES = ['graph', 'graph-night'] as const;
@@ -109,7 +110,10 @@ function validRow(value: unknown): value is Qa3Row {
  * Accept an in-memory map keyed by the ST-0 JSON filenames. This is pure,
  * so fixtures can test malformed/missing evidence without browser access.
  */
-export function analyzeQa3(files: Record<string, unknown>, screenshots?: ReadonlySet<string>): Qa3Report {
+export function analyzeQa3(
+  files: Record<string, unknown>, screenshots?: ReadonlySet<string>,
+  options: { release?: boolean; pendingGates?: readonly PendingStressGate[] } = {},
+): Qa3Report {
   const errors: string[] = [];
   const findings: Qa3Finding[] = [];
   const validRows: Qa3Row[] = [];
@@ -169,6 +173,12 @@ export function analyzeQa3(files: Record<string, unknown>, screenshots?: Readonl
       if (!seen.has(route)) errors.push(matrix.filename + ': missing route ' + route);
     }
     if (errors.length === errorCountBefore) filesValid++;
+  }
+
+  // QA-3b release cannot inherit ST-0's temporary audit exceptions. Even a
+  // clean fixture is not release clearance while a named gate is unresolved.
+  if (options.release) for (const gate of options.pendingGates ?? unfinishedStressGates) {
+    errors.push('QA-3 release blocked by unresolved audit #' + gate.issue);
   }
 
   const elements = Object.entries(QA3_ELEMENTS).map(([code, routes]): Qa3Element => {
@@ -232,9 +242,11 @@ export function renderQa3Markdown(report: Qa3Report): string {
 }
 
 function main(): void {
-  const input = process.argv[2] ?? 'test-results/stress';
-  const output = process.argv[3] ?? 'test-results/qa3/stress-budget-report.md';
-  const screenDir = process.argv[4] ?? 'test-results/screens/stress';
+  const release = process.argv.includes('--release');
+  const positional = process.argv.slice(2).filter(arg => arg !== '--release');
+  const input = positional[0] ?? 'test-results/stress';
+  const output = positional[1] ?? 'test-results/qa3/stress-budget-report.md';
+  const screenDir = positional[2] ?? 'test-results/screens/stress';
   const files: Record<string, unknown> = {};
   for (const { filename } of qa3Cases()) {
     try {
@@ -247,7 +259,7 @@ function main(): void {
   let screenshots: ReadonlySet<string>;
   try { screenshots = new Set(readdirSync(resolve(screenDir))); }
   catch { screenshots = new Set(); }
-  const report = analyzeQa3(files, screenshots);
+  const report = analyzeQa3(files, screenshots, { release });
   mkdirSync(dirname(resolve(output)), { recursive: true });
   writeFileSync(resolve(output), renderQa3Markdown(report), 'utf8');
   process.stdout.write('QA-3a ' + report.status + ' · ' + report.routesValid +
