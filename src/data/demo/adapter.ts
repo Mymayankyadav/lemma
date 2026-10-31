@@ -237,6 +237,11 @@ export class DemoAdapter implements LemmaApi {
       .filter((n) => n.note.status === "active" && active.has(n.projectId))
       .flatMap((n) => n.cards.map((c) => this.item(n, c)));
   }
+  /** The due badge and deck counts represent the full backlog, not the daily queue. */
+  private backlog(): ReviewItem[] {
+    const now = this.now();
+    return this.allItems().filter(item => Date.parse(item.state.due) <= now);
+  }
   private eligible(): ReviewItem[] {
     const start = studyDayBounds(
       this.now(),
@@ -837,7 +842,7 @@ export class DemoAdapter implements LemmaApi {
               sessionNumber: open?.number ?? null,
             }
           : null,
-      due: this.eligible().length,
+      due: this.backlog().length,
       pendingProposals: this.store.proposals.filter(
         (p) => p.status === "pending",
       ).length,
@@ -1368,29 +1373,31 @@ export class DemoAdapter implements LemmaApi {
     );
   }
   async getDeckTree(): Promise<DeckNode[]> {
-    const due = this.eligible();
-    return (await this.listProjects()).filter(p => p.status !== "archived").map((p) => ({
+    // One pass over the entire due backlog. A daily 200-card review cap must
+    // not turn a 4,000-card backlog into 200 due in the hub or deck tree.
+    const projectCounts = new Map<string,number>();
+    const checkpointCounts = new Map<string,number>();
+    for (const card of this.backlog()) {
+      projectCounts.set(card.projectSlug,(projectCounts.get(card.projectSlug) ?? 0)+1);
+      if (card.checkpointCode) {
+        const key = card.projectSlug + ':' + card.checkpointCode;
+        checkpointCounts.set(key,(checkpointCounts.get(key) ?? 0)+1);
+      }
+    }
+    return (await this.listProjects()).filter(p => p.status !== 'archived').map(p => ({
       key: `project:${p.slug}` as const,
       label: p.title,
       glyph: p.subject.glyph,
-      level: 0,
-      due: due.filter((c) => c.projectSlug === p.slug).length,
+      level: 0 as const,
+      due: projectCounts.get(p.slug) ?? 0,
       children: this.store.checkpoints
-        .filter(
-          (cp) =>
-            cp.projectId === p.id &&
-            due.some(
-              (c) => c.projectSlug === p.slug && c.checkpointCode === cp.code,
-            ),
-        )
-        .map((cp) => ({
+        .filter(cp => cp.projectId === p.id && (checkpointCounts.get(p.slug+':'+cp.code) ?? 0)>0)
+        .map(cp => ({
           key: `cp:${p.slug}:${cp.code}` as const,
           label: cp.title,
           glyph: p.subject.glyph,
-          level: 1,
-          due: due.filter(
-            (c) => c.projectSlug === p.slug && c.checkpointCode === cp.code,
-          ).length,
+          level: 1 as const,
+          due: checkpointCounts.get(p.slug+':'+cp.code) ?? 0,
           children: [],
         })),
     }));
