@@ -15,9 +15,12 @@ describe('ST-0 sources at scale (audit #461)', () => {
    const last = data.projects[data.projects.length - 1];
    for (const project of [first, last]) {
     const sources = data.sources.filter(source => source.projectId === project.id);
-    expect(sources.length).toBeGreaterThanOrEqual(sourcesPerProject);
+    expect(sources).toHaveLength(sourcesPerProject);
     expect(sources.some(source => source.pageCount === pagesPerPdf)).toBe(true);
-    expect(sources.some(source => source.pages.length === pagesPerPdf)).toBe(true);
+    const representative = sources.find(source => source.pages.length === pagesPerPdf);
+    expect(representative?.pages[0]?.page).toBe(1);
+    expect(representative?.pages.at(-1)?.page).toBe(pagesPerPdf);
+    expect(representative?.pages.at(-1)?.body).toContain('Synthetic mathematics notes');
    }
    expect(new Set(data.sources.map(source => source.id)).size).toBe(data.sources.length);
    expect(data.sources.every(source => data.projects.some(project => project.id === source.projectId))).toBe(true);
