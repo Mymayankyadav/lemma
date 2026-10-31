@@ -77,6 +77,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   patch(entry.id,{phase:'cancelled',file:null,error:null});
  }
  const grouped=kinds.map(value=>({kind:value,rows:sources.filter(s=>(s.kind??'other')===value).sort((a,b)=>Date.parse(b.addedAt??b.createdAt)-Date.parse(a.addedAt??a.createdAt))})).filter(g=>g.rows.length);
+ const visibleKind=(value:SourceKind)=>sources.length<=10?(openKind===null||openKind===value):(openKind??grouped[0]?.kind)===value;
  const sized=sources.filter(source=>typeof source.bytes==='number'&&Number.isFinite(source.bytes)&&source.bytes>=0);
  const storageBytes=sized.reduce((total,source)=>total+source.bytes!,0),unknownSizes=sources.length-sized.length;
  const storagePct=Math.min(100,storageBytes/storageLimit*100);
@@ -94,8 +95,8 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
    {unknownSizes>0&&<p className="text-caption text-ink-3">{unknownSizes} source {unknownSizes===1?'size':'sizes'} unknown; actual storage may be higher.</p>}
   </div>
   {grouped.map(group=><div key={group.kind} className="flex flex-col gap-2">
-   <button type="button" aria-expanded={(openKind??grouped[0]?.kind)===group.kind} className="flex min-h-11 items-center justify-between gap-2 text-left text-label font-semibold uppercase tracking-wider text-ink-2" onClick={()=>setOpenKind((openKind??grouped[0]?.kind)===group.kind?'none':group.kind)}><span>{group.kind} · {group.rows.length}</span><span className="text-amber">{(openKind??grouped[0]?.kind)===group.kind?'Fold':'Open'}</span></button>
-   {(openKind??grouped[0]?.kind)===group.kind&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
+   <h3 className="text-label font-semibold uppercase tracking-wider text-ink-2"><button type="button" aria-expanded={visibleKind(group.kind)} className="flex min-h-11 w-full items-center justify-between gap-2 text-left" onClick={()=>setOpenKind(visibleKind(group.kind)?'none':group.kind)}><span>{group.kind} · {group.rows.length}</span><span className="text-amber">{visibleKind(group.kind)?'Fold':'Open'}</span></button></h3>
+   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
     <div className="flex items-center gap-3">
      <FileText size={20} className="shrink-0 text-amber"/>
      <div className="min-w-0 flex-1">
@@ -118,7 +119,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
      <button type="button" className="min-h-11 text-label text-ink-2" onClick={()=>setConfirm(null)}>Cancel</button>
     </div>}
    </Tile>)}
-   {(openKind??grouped[0]?.kind)===group.kind&&group.rows.length>10&&<div className="flex items-center justify-between gap-2 text-label text-ink-3">
+   {visibleKind(group.kind)&&group.rows.length>10&&<div className="flex items-center justify-between gap-2 text-label text-ink-3">
     <button type="button" disabled={!(sourcePages[group.kind]??0)} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:Math.max(0,(p[group.kind]??0)-1)}))}>Previous</button>
     <span>{Math.min(group.rows.length,(sourcePages[group.kind]??0)*10+1)}–{Math.min(group.rows.length,((sourcePages[group.kind]??0)+1)*10)} of {group.rows.length}</span>
     <button type="button" disabled={((sourcePages[group.kind]??0)+1)*10>=group.rows.length} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:(p[group.kind]??0)+1}))}>More</button>
