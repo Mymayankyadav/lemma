@@ -1,7 +1,7 @@
 // @vitest-environment node
 import {readFileSync} from 'node:fs';
 import {performance} from 'node:perf_hooks';
-import {describe,expect,it} from 'vitest';
+import {describe,expect,it,vi} from 'vitest';
 import {DemoAdapter} from '../../../src/data/demo/adapter';
 import {makeStressStore} from '../../../src/data/demo/stress';
 import {hydrateFixture} from '../../../src/data/demo/hydrate';
@@ -11,6 +11,19 @@ const seed=JSON.parse(readFileSync('src/data/demo/fixture.json','utf8')) as Demo
 const now=Date.parse('2026-10-31T12:00:00Z');
 
 describe('FIX #507: cold Today stress summary',()=>{
+ it('memoizes repeated civil-day fixture tokens in the 30,000-card stress profile',()=>{
+  const input=makeStressStore(seed,'extreme');
+  const formatter=vi.spyOn(Intl.DateTimeFormat.prototype,'formatToParts');
+  try{
+   const hydrated=hydrateFixture(input,now,'UTC');
+   expect(hydrated.notes).toHaveLength(30_000);
+   expect(hydrated.notes[0].cards[0].state.due).not.toMatch(/^@/);
+   expect(hydrated.notes[29_999].cards[0].state.due).not.toMatch(/^@/);
+   // Only distinct @due/@day tokens should require expensive timezone work.
+   expect(formatter.mock.calls.length).toBeLessThan(4_000);
+  }finally{formatter.mockRestore()}
+ },30_000);
+
  it('hydrates a private copy and preserves the original fixture tokens',()=>{
   const input=structuredClone(seed);
   const original=JSON.stringify(input);
