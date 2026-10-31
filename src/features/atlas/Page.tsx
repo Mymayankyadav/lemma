@@ -12,7 +12,7 @@ import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
-import {ancestors,arcsFor,budgetArcs,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 interface Saved{expanded:string[];related:boolean}
@@ -75,9 +75,9 @@ export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams();
  const query=useAtlas(),graph=query.data;
  const tree=useMemo(()=>graph?buildAtlasTree(graph):null,[graph]);
- const saved=useRef(load());
+ const [saved]=useState(load);
  const [expanded,setExpanded]=useState<Set<string>|null>(null);
- const [related,setRelated]=useState(saved.current?.related??false);
+ const [related,setRelated]=useState(saved?.related??false);
  const [selectedId,setSelectedId]=useState<string|null>(null),[details,setDetails]=useState(false);
  const [searching,setSearching]=useState(false),[search,setSearch]=useState(''),[recheckOnly,setRecheckOnly]=useState(false);
  const [confirmAll,setConfirmAll]=useState(false);
@@ -90,17 +90,15 @@ export default function Page(){
   update();const observer=new ResizeObserver(update);observer.observe(el);
   return ()=>observer.disconnect();
  },[query.isPending]);
- useEffect(()=>{
-  if(!tree||expanded)return;
-  const stored=saved.current?.expanded.filter(id=>tree.nodes.has(id));
-  setExpanded(stored?.length?new Set(stored):defaultExpanded(tree));
- },[tree,expanded]);
+ // Resolve saved/default folds synchronously. A null override means the
+ // user has not changed them yet; do not schedule a redundant state update
+ // that would reconcile thousands of tree rows on the next frame.
+ const initialOpen=useMemo(()=>tree?initialExpanded(tree,saved?.expanded):new Set<string>(),[tree]);
+ const open=expanded??initialOpen;
  useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
- const open=expanded??new Set<string>();
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
  const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
- const arcs=useMemo(()=>tree?arcsFor(tree,rows,kinds):[],[tree,rows,kinds]);
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
  const virtual=rows.length>200;
@@ -109,7 +107,20 @@ export default function Page(){
  const visible=virtual?rows.slice(first,last):rows;
  const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
- const arcBudget=useMemo(()=>tree?budgetArcs(tree,rows,open,arcs,focus):{visible:[],hidden:0},[tree,rows,open,arcs,focus]);
+ const arcBudget=useMemo(()=>{
+  if(!tree)return {visible:[],hidden:0};
+  // When every visible branch is unfolded and no idea is selected, the
+  // 60-arc gutter intentionally hides the extreme graph. Count bundles
+  // without constructing 8,000 link arrays or sorting invisible arcs.
+  if(!focus&&tree.links.length>60&&!rows.some(row=>{
+   const node=tree.nodes.get(row.id);
+   return !!node?.children.length&&!open.has(node.id);
+  })){
+   const count=arcCountFor(tree,rows,kinds);
+   if(count>60)return {visible:[],hidden:count};
+  }
+  return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
+ },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
  const recheckCount=useMemo(()=>tree?[...tree.nodes.values()].filter(n=>!n.synthetic&&!n.children.length&&n.status==='revisit').length:0,[tree]);
 
@@ -129,7 +140,7 @@ export default function Page(){
  const reveal=useCallback((id:string)=>{
   if(!tree)return;
   setSearch('');setSearching(false);setRecheckOnly(false);
-  setExpanded(prev=>new Set([...(prev??[]),...ancestors(tree,id)]));
+  setExpanded(prev=>new Set([...(prev??initialOpen),...ancestors(tree,id)]));
   // Scroll to the target's absolute row before asking the windowed list for
   // its element; otherwise a distant idea does not exist in the DOM yet.
   const expandedPath=new Set([...open,...ancestors(tree,id)]);
@@ -143,9 +154,9 @@ export default function Page(){
    const el=scroller.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`);
    el?.scrollIntoView({block:'center',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }));
- },[tree,open]);
+ },[tree,open,initialOpen]);
  const trace=(id:string)=>{reveal(id);select(id,false)};
- const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev??[]);if(next.has(id))next.delete(id);else next.add(id);return next});
+ const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev??initialOpen);if(next.has(id))next.delete(id);else next.add(id);return next});
  const onRow=(node:AtlasNode)=>{
   // From a search or the re-check list, jump to the idea in its place in the tree.
   if(filter){trace(node.id);return}
@@ -157,7 +168,7 @@ export default function Page(){
  const seen=useRef<string|null>(null);
  useEffect(()=>{
   const incoming=(focusId??'')+'|'+(focusSlug??'')+'|'+(focusName??'');
-  if(!tree||!expanded||incoming===seen.current)return;
+  if(!tree||incoming===seen.current)return;
   seen.current=incoming;
   if(!focusId&&!focusSlug&&!focusName)return;
   // A missing id is not a previously handled selection: legacy slug-only
@@ -173,13 +184,13 @@ export default function Page(){
    // Missing targets must lead to an editable search, never to an unrelated idea.
    setAmbiguousIds([]);setSearching(true);setSearch(focusName??focusSlug??'');
   }
- },[tree,expanded,focusId,focusSlug,focusName,reveal]);
+ },[tree,focusId,focusSlug,focusName,reveal]);
  const depthOf=useMemo(()=>{
-  if(!tree||!expanded)return null;
-  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===expanded.size&&[...set].every(x=>expanded.has(x)))return d}
+  if(!tree)return null;
+  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===open.size&&[...set].every(x=>open.has(x)))return d}
   const all=[...tree.nodes.values()].filter(n=>n.children.length);
-  return all.every(n=>expanded.has(n.id))?99:null;
- },[tree,expanded]);
+  return all.every(n=>open.has(n.id))?99:null;
+ },[tree,open]);
  const near=selected&&tree?neighbours(tree,selected.id):null;
 
  if(query.isPending)return <main aria-label="Atlas" className="h-dvh p-4"><Skeleton h={52}/><div className="mt-5"><Skeleton h="65%"/></div></main>;
@@ -222,7 +233,7 @@ export default function Page(){
      return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match}
       onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
     </div>
-    <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>
+    {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">
