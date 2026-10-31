@@ -341,6 +341,7 @@ export default function Page() {
                 .map((c) => (
                   <div
                     key={c.no}
+                    data-comment-row
                     className="border-l-2 border-amber py-2 pl-4 pr-2"
                   >
                     <p className="font-math text-body-l italic">{c.body}</p>
@@ -360,7 +361,7 @@ export default function Page() {
               {visibleComments
                 .filter((c) => c.status === "addressed")
                 .map((c) => (
-                  <details key={c.no} className="rounded-ctl bg-fill-1 p-4">
+                  <details key={c.no} data-comment-row className="rounded-ctl bg-fill-1 p-4">
                     <summary className="flex cursor-pointer items-center gap-2 text-label text-ink-2">
                       <Check size={15} className="text-easy" />
                       Addressed
@@ -382,7 +383,7 @@ export default function Page() {
           </section>
           <section aria-label="Review history">
            <h2 className="mb-3 text-headline font-medium">Recent reviews</h2>
-           {visibleReviews.map((r,i)=><div key={r.reviewedAt+':'+i} className="flex min-h-11 items-center justify-between gap-3 border-b border-edge py-2 text-body">
+           {visibleReviews.map((r,i)=><div key={r.reviewedAt+':'+i} data-review-row className="flex min-h-11 items-center justify-between gap-3 border-b border-edge py-2 text-body">
             <span className="text-ink-2">{new Date(r.reviewedAt).toLocaleDateString()}</span>
             <span className="text-amber">{['','Again','Hard','Good','Easy'][r.rating]??'Reviewed'}</span>
             <span className="text-ink-3">{r.confidence??'—'}</span>
