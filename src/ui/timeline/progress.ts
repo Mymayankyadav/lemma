@@ -16,9 +16,9 @@ export function groupCheckpointStages(checkpoints:readonly CheckpointView[]):Pro
    last.checkpoints.push(cp);last.end=i
   }else if(!explicit&&last&&!last.checkpoints[0].stage?.trim()&&last.checkpoints.length<8){
    last.checkpoints.push(cp);last.end=i
-   last.name=last.checkpoints[0].code+'–'+cp.code
+   last.name=last.checkpoints[0].code+'–'+cp.code.replace(/^CP/,'')
   }else{
-   stages.push({key:(explicit??'auto')+':'+i,name:explicit||cp.code+'–'+cp.code,
+   stages.push({key:(explicit??'auto')+':'+i,name:explicit||cp.code,
     start:i,end:i,checkpoints:[cp]})
   }
  }
