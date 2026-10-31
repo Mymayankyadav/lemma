@@ -46,9 +46,14 @@ test('cards retain the real renderer for mathematical questions',async({page})=>
 test('card library renders mathematical fronts instead of stripping command names',async({page})=>{
  await page.goto('/lemma/?demo=stress#/cards');
  await page.getByLabel('Search cards').fill('longexpression');
- const row=page.getByRole('link',{name:/longexpression/}).first();
+ // KaTeX's MathML is a separate accessible math node, so the enclosing
+ // link's name is CP6 Due rather than the literal mathematical expression.
+ const row=page.locator('a[href="#/cards/6"]');
  await expect(row).toBeVisible();
  await expect(row.locator('.katex')).toBeVisible();
- await expect(row).not.toContainText(/operatorname|mathbb|limxto|frac[a-z]/i);
+ await expect(row.getByRole('math')).toContainText('longexpression');
+ // Hidden MathML annotation retains the original TeX for accessibility;
+ // assert that no raw commands leak into the *visible* rendered text.
+ await expect(row.locator('.katex-html')).not.toContainText(/operatorname|mathbb|limxto|frac[a-z]/i);
  await page.screenshot({path:'test-results/screens/math-card-list.png',fullPage:true});
 });
