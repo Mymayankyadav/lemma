@@ -24,7 +24,7 @@ function MiniMetro({project}:{project:ProjectSummary}){
  const percent=pct(project);
  return <div className="flex min-w-0 items-center gap-2">
   <MiniStageBar project={project}/>
-  <span className="flex shrink-0 flex-col items-end font-[var(--font-num)] text-caption tabular-nums text-ink-2">
+  <span data-count-role="" className="flex shrink-0 flex-col items-end font-[var(--font-ui)] text-caption tabular-nums text-ink-2">
    <span>{percent}%</span>
    {project.scheduleHeadline&&<span data-schedule-chip="" className="whitespace-nowrap text-[12px]">{project.scheduleHeadline}</span>}
   </span>
