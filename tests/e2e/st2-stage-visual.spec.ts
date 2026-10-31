@@ -104,6 +104,14 @@ for(const [width,height] of [[390,844],[360,740]] as const){
       return box.width>0 && box.width<=140 && box.height>0;
     }));
     expect(labelFits).toBe(true);
+    // A rendered sum with limits must not collide with the checkpoint count.
+    const labelOverlap=await svg.locator(':scope > g[role="button"]').evaluateAll(groups=>groups.slice(0,2).some(group=>{
+      const math=group.querySelector('foreignObject[data-stage-label] .katex');
+      const count=group.querySelector('text');
+      if(!math||!count)return true;
+      return math.getBoundingClientRect().bottom>count.getBoundingClientRect().top-2;
+    }));
+    expect(labelOverlap).toBe(false);
     const size=await map.boundingBox();
     expect(size).not.toBeNull();
     expect(size!.width).toBeLessThanOrEqual(width);
