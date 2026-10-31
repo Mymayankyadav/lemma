@@ -139,6 +139,14 @@ describe('FIX-546a live Card detail scoped queries',()=>{
    expect(exact.commentsNextCursor).toBeNull();
    expect(requests.filter(q=>q.table==='reviews')).toHaveLength(1);
    expect(requests.filter(q=>q.table==='card_comments')).toHaveLength(1);
+   const lastReview=fixtures.reviews.pop()!,lastComment=fixtures.card_comments.pop()!;
+   const nineteen=await api.getCard(12);
+   expect(nineteen.history).toHaveLength(19);
+   expect(nineteen.comments).toHaveLength(19);
+   expect(nineteen.historyNextCursor).toBeNull();
+   expect(nineteen.commentsNextCursor).toBeNull();
+   fixtures.reviews.push(lastReview);
+   fixtures.card_comments.push(lastComment);
    fixtures.reviews.push({...fixtures.reviews[19],id:'1',reviewed_at:'2026-01-01T00:00:00Z'});
    fixtures.card_comments.push({...fixtures.card_comments[19],
     id:'00000000-0000-4000-8000-000000000001',no:1,created_at:'2026-01-01T00:00:00Z'});
