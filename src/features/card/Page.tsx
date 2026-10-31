@@ -1,6 +1,6 @@
 import {MathPreview} from '../../ui/MathPreview';
 import {getApi} from "../../data";
-import type {CardHistoryPage,CardCommentsPage} from "../../data/types";
+import {useQuery} from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -58,11 +58,8 @@ export default function Page() {
   const [editing, setEditing] = useState(false),
     [deleting, setDeleting] = useState(false),
     [message, setMessage] = useState(""),
-    [commentPage,setCommentPage] = useState<CardCommentsPage|null>(null),
-    [reviewPage,setReviewPage] = useState<CardHistoryPage|null>(null),
     [commentCursors,setCommentCursors] = useState<string[]>([]),
     [reviewCursors,setReviewCursors] = useState<string[]>([]),
-    [pageBusy,setPageBusy] = useState(false),
     [slow, setSlow] = useState(false);
   const closeEditing = useCallback(() => setEditing(false), []);
   const closeDeleting = useCallback(() => setDeleting(false), []);
@@ -78,62 +75,66 @@ export default function Page() {
     note = detail?.note,
     project = projects.data?.find((p) => p.slug === note?.projectSlug),
     card = detail?.cards[0]?.state;
-  // Only one bounded page is mounted at a time, even after browsing thousands of rows.
-  const rawComments=commentPage?.rows??detail?.comments??[];
-  const visibleComments=rawComments.filter(c=>c.status==='open'||c.status==='addressed');
-  const visibleReviews=reviewPage?.rows??detail?.history??[];
-  // A full 20-row page is not evidence that a 21st row exists.
-  const moreComments=Boolean(commentPage?commentPage.nextCursor:detail?.commentsNextCursor);
-  const moreReviews=Boolean(reviewPage?reviewPage.nextCursor:detail?.historyNextCursor);
-  useEffect(()=>{
-    setCommentPage(null);setReviewPage(null);
-    setCommentCursors([]);setReviewCursors([]);
-  },[number,query.dataUpdatedAt]);
-  const olderReviews=async()=>{
-    if(pageBusy)return;
-    setPageBusy(true);
-    try{
-      const current=reviewPage??{rows:detail?.history??[],nextCursor:detail?.historyNextCursor??null};
-      if(!current.nextCursor){setReviewPage(current);return;}
-      const next=await getApi().getCardHistoryPage(number,current.nextCursor);
-      setReviewCursors(v=>[...v,current.nextCursor!]);
-      setReviewPage(next);
-    }catch{notify("Couldn't load older reviews.",{tone:"danger"});}
-    finally{setPageBusy(false);}
+  // Only the selected cursor page is observed. React Query owns the 30-second
+  // cache, so returning to an already visited page never downloads it again.
+  const reviewCursor = reviewCursors.at(-1) ?? null;
+  const commentCursor = commentCursors.at(-1) ?? null;
+  const reviewQuery = useQuery({
+    queryKey: ['card-history-page', number, reviewCursor],
+    queryFn: () => getApi().getCardHistoryPage(number, reviewCursor!),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    enabled: reviewCursor !== null,
+  });
+  const commentQuery = useQuery({
+    queryKey: ['card-comments-page', number, commentCursor],
+    queryFn: () => getApi().getCardCommentsPage(number, commentCursor!),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    enabled: commentCursor !== null,
+  });
+  const reviewPage = reviewCursor === null ? null : reviewQuery.data;
+  const commentPage = commentCursor === null ? null : commentQuery.data;
+  const pageBusy = reviewQuery.isFetching || commentQuery.isFetching;
+  const rawComments = commentCursor === null
+    ? detail?.comments ?? [] : commentPage?.rows ?? [];
+  const visibleComments = rawComments.filter(c => c.status === 'open' || c.status === 'addressed');
+  const visibleReviews = reviewCursor === null
+    ? detail?.history ?? [] : reviewPage?.rows ?? [];
+  // The initial 21-row probe supplies the first continuation without a second request.
+  const moreComments = Boolean(commentCursor === null
+    ? detail?.commentsNextCursor : commentPage?.nextCursor);
+  const moreReviews = Boolean(reviewCursor === null
+    ? detail?.historyNextCursor : reviewPage?.nextCursor);
+  useEffect(() => {
+    setCommentCursors([]);
+    setReviewCursors([]);
+  }, [number]);
+  useEffect(() => {
+    if (reviewQuery.isError) notify("Couldn't load older reviews.", {tone: "danger"});
+  }, [reviewQuery.errorUpdatedAt, reviewQuery.isError, notify]);
+  useEffect(() => {
+    if (commentQuery.isError) notify("Couldn't load older comments.", {tone: "danger"});
+  }, [commentQuery.errorUpdatedAt, commentQuery.isError, notify]);
+  const olderReviews = () => {
+    if (pageBusy) return;
+    const cursor = reviewCursor === null
+      ? detail?.historyNextCursor : reviewPage?.nextCursor;
+    if (cursor) setReviewCursors(v => [...v, cursor]);
   };
-  const newerReviews=async()=>{
-    if(pageBusy)return;
-    setPageBusy(true);
-    try{
-      const previous=reviewCursors.slice(0,-1);
-      const cursor=previous.at(-1);
-      setReviewPage(cursor?await getApi().getCardHistoryPage(number,cursor):null);
-      setReviewCursors(previous);
-    }catch{notify("Couldn't load newer reviews.",{tone:"danger"});}
-    finally{setPageBusy(false);}
+  const newerReviews = () => {
+    if (pageBusy) return;
+    setReviewCursors(v => v.slice(0, -1));
   };
-  const olderComments=async()=>{
-    if(pageBusy)return;
-    setPageBusy(true);
-    try{
-      const current=commentPage??{rows:detail?.comments??[],nextCursor:detail?.commentsNextCursor??null};
-      if(!current.nextCursor){setCommentPage(current);return;}
-      const next=await getApi().getCardCommentsPage(number,current.nextCursor);
-      setCommentCursors(v=>[...v,current.nextCursor!]);
-      setCommentPage(next);
-    }catch{notify("Couldn't load older comments.",{tone:"danger"});}
-    finally{setPageBusy(false);}
+  const olderComments = () => {
+    if (pageBusy) return;
+    const cursor = commentCursor === null
+      ? detail?.commentsNextCursor : commentPage?.nextCursor;
+    if (cursor) setCommentCursors(v => [...v, cursor]);
   };
-  const newerComments=async()=>{
-    if(pageBusy)return;
-    setPageBusy(true);
-    try{
-      const previous=commentCursors.slice(0,-1);
-      const cursor=previous.at(-1);
-      setCommentPage(cursor?await getApi().getCardCommentsPage(number,cursor):null);
-      setCommentCursors(previous);
-    }catch{notify("Couldn't load newer comments.",{tone:"danger"});}
-    finally{setPageBusy(false);}
+  const newerComments = () => {
+    if (pageBusy) return;
+    setCommentCursors(v => v.slice(0, -1));
   };
   const chart = useMemo(() => {
     const history = [...(detail?.history ?? [])].sort(
