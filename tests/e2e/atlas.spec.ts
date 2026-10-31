@@ -109,7 +109,7 @@ for(const width of [360,390] as const){
   await expect(path).toBeVisible();
   // Inject real KaTeX-rendered fraction/sum markup into the existing details
   // breadcrumb, retaining the component's CSS and responsive layout.
-  const rendered=katex.renderToString(String.raw`\\frac{1}{2}+\\sum_{n=1}^{4}n`,{throwOnError:true});
+  const rendered=katex.renderToString(String.raw`\frac{1}{2}+\sum_{n=1}^{4}n`,{throwOnError:true});
   await path.evaluate((el,html)=>{
    const tex=el.querySelector('.lemma-tex-inline');
    if(!tex)throw Error('Atlas details path has no Tex renderer');
