@@ -5,12 +5,12 @@ import {Check,FileText,Plus,Trash2} from 'lucide-react';
 import {useAddSource,useDeleteSource,useUpdateSource,useSourceTranscriptionStats} from '../../data/hooks';
 import {SourceTranscriptionView} from './SourceTranscriptionView';
 import type {IngestProgress,Source,SourceKind} from '../../data/types';
-import {isPdfFile} from '../../pdf/ingest';
+import {cancelIngest,isPdfFile,resetIngestCancellation} from '../../pdf/ingest';
 import {Rail} from '../../ui/Rail';
 import {Tile} from '../../ui/Tile';
 import {useToast} from '../../ui/Toast';
 
-type QueueEntry={id:number;file:File|null;name:string;bytes:number;pagesRead:number;phase:'queued'|'reading'|'uploading'|'saving'|'ready'|'failed';progress:IngestProgress|null;error:string|null};
+type QueueEntry={id:number;file:File|null;name:string;bytes:number;pagesRead:number;phase:'queued'|'reading'|'uploading'|'saving'|'ready'|'failed'|'cancelled';progress:IngestProgress|null;error:string|null};
 const kinds:SourceKind[]=['book','notes','slides','problems','syllabus','exam','other'];
 const limit=50*1024*1024;
 const formatSize=(bytes:number)=>bytes<=0?'0 KB':bytes>=1024*1024?(bytes/1024/1024).toFixed(1)+' MB':Math.max(1,Math.ceil(bytes/1024))+' KB';
@@ -19,9 +19,9 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
  const transcriptStats=useSourceTranscriptionStats(projectId);
  const summary=new Map((transcriptStats.data??[]).map(item=>[item.sourceId,item]));
- const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0);
+ const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0),cancelled=useRef(new Set<number>());
  const [queue,setQueue]=useState<QueueEntry[]>([]),[tick,setTick]=useState(0),[editing,setEditing]=useState<string|null>(null),
-  [title,setTitle]=useState(''),[kind,setKind]=useState<SourceKind>('other'),[confirm,setConfirm]=useState<string|null>(null);
+  [title,setTitle]=useState(''),[kind,setKind]=useState<SourceKind>('other'),[confirm,setConfirm]=useState<string|null>(null),[sourcePages,setSourcePages]=useState<Record<string,number>>({}),[openKind,setOpenKind]=useState<SourceKind|'none'|null>(null);
  const patch=(entryId:number,changes:Partial<QueueEntry>)=>setQueue(old=>old.map(x=>x.id===entryId?{
    ...x,...changes,
    pagesRead:changes.progress?Math.max(x.pagesRead,changes.progress.phase==='reading'||changes.progress.phase==='done'?changes.progress.page:0):x.pagesRead
@@ -39,6 +39,8 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   const next=queue.find(x=>x.phase==='queued'&&x.file);
   if(!next)return;
   const file=next.file!;
+  cancelled.current.delete(next.id);
+  resetIngestCancellation(file);
   running.current=true;
   const upload=async()=>{
    patch(next.id,{phase:'reading',error:null});
@@ -52,10 +54,12 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     await add.mutateAsync({projectId,file,onProgress:p=>{
      patch(next.id,{progress:p,phase:p.phase==='done'?'saving':p.phase==='failed'?'failed':p.phase});
     }});
+    if(cancelled.current.has(next.id))return;
     patch(next.id,{phase:'ready',file:null,error:null});notify('PDF added',{tone:'success'});
    }catch(error){
     const message=error instanceof Error?error.message:'Upload failed';
-    patch(next.id,{phase:'failed',file:/Already added/i.test(message)?null:file,error:message});
+    if(cancelled.current.has(next.id))patch(next.id,{phase:'cancelled',file:null,error:null});
+    else patch(next.id,{phase:'failed',file:/Already added/i.test(message)?null:file,error:message});
    }finally{running.current=false;setTick(n=>n+1)}
   };
   void upload();
@@ -70,7 +74,13 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   try{await remove.mutateAsync(source.id);setConfirm(null);notify('Source deleted (undo available in history)',{tone:'success'})}
   catch(error){notify(error instanceof Error?error.message:'Could not delete source',{tone:'danger'})}
  }
+ function cancel(entry:QueueEntry){
+  cancelled.current.add(entry.id);
+  if(entry.file)cancelIngest(entry.file);
+  patch(entry.id,{phase:'cancelled',file:null,error:null});
+ }
  const grouped=kinds.map(value=>({kind:value,rows:sources.filter(s=>(s.kind??'other')===value).sort((a,b)=>Date.parse(b.addedAt??b.createdAt)-Date.parse(a.addedAt??a.createdAt))})).filter(g=>g.rows.length);
+ const visibleKind=(value:SourceKind)=>sources.length<=10?(openKind===null||openKind===value):(openKind??grouped[0]?.kind)===value;
  const sized=sources.filter(source=>typeof source.bytes==='number'&&Number.isFinite(source.bytes)&&source.bytes>=0);
  const storageBytes=sized.reduce((total,source)=>total+source.bytes!,0),unknownSizes=sources.length-sized.length;
  const storagePct=Math.min(100,storageBytes/storageLimit*100);
@@ -88,8 +98,8 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
    {unknownSizes>0&&<p className="text-caption text-ink-3">{unknownSizes} source {unknownSizes===1?'size':'sizes'} unknown; actual storage may be higher.</p>}
   </div>
   {grouped.map(group=><div key={group.kind} className="flex flex-col gap-2">
-   <h3 className="text-label font-semibold uppercase tracking-wider text-ink-2">{group.kind}</h3>
-   {group.rows.map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
+   <h3 className="text-label font-semibold uppercase tracking-wider text-ink-2"><button type="button" aria-expanded={visibleKind(group.kind)} className="flex min-h-11 w-full items-center justify-between gap-2 text-left" onClick={()=>setOpenKind(visibleKind(group.kind)?'none':group.kind)}><span>{group.kind} · {group.rows.length}</span><span className="text-amber">{visibleKind(group.kind)?'Fold':'Open'}</span></button></h3>
+   {visibleKind(group.kind)&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
     <div className="flex items-center gap-3">
      <FileText size={20} className="shrink-0 text-amber"/>
      <div className="min-w-0 flex-1">
@@ -113,6 +123,11 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     </div>}
     <SourceTranscriptionView source={source} stat={summary.get(source.id)}/>
    </Tile>)}
+   {visibleKind(group.kind)&&group.rows.length>10&&<div className="flex items-center justify-between gap-2 text-label text-ink-3">
+    <button type="button" disabled={!(sourcePages[group.kind]??0)} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:Math.max(0,(p[group.kind]??0)-1)}))}>Previous</button>
+    <span>{Math.min(group.rows.length,(sourcePages[group.kind]??0)*10+1)}–{Math.min(group.rows.length,((sourcePages[group.kind]??0)+1)*10)} of {group.rows.length}</span>
+    <button type="button" disabled={((sourcePages[group.kind]??0)+1)*10>=group.rows.length} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:(p[group.kind]??0)+1}))}>More</button>
+   </div>}
   </div>)}
   <input ref={picker} hidden type="file" multiple accept=".pdf,application/pdf" onChange={e=>{if(e.currentTarget.files)enqueue(e.currentTarget.files);e.currentTarget.value=''}}/>
   <div onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();enqueue(e.dataTransfer.files)}}>
@@ -121,13 +136,16 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
    </button>
   </div>
   {queue.length>0&&<ul aria-label="Source upload queue" className="flex flex-col gap-2">
-   {queue.map(item=><li key={item.id} className="rounded-slab border border-edge bg-raised p-3">
+   {queue.slice(-20).map(item=><li key={item.id} className="rounded-slab border border-edge bg-raised p-3">
     <div className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-body">{item.name}</span>
      <span aria-label={'Upload status: '+item.phase} className="flex shrink-0 items-center gap-1 text-label text-ink-2">{item.phase==='ready'?<><Check size={17} className="text-easy"/>Ready</>:item.phase}</span></div>
     <p className="mt-1 text-caption text-ink-3">{formatSize(item.bytes)}{item.progress?.pageCount?' · '+item.pagesRead+'/'+item.progress.pageCount+' pages read':''}</p>
-    {item.progress&&item.phase!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.name}/>}
+    {(item.phase==='queued'||item.phase==='reading')&&<button type="button" className="min-h-11 px-3 text-label font-semibold text-amber" onClick={()=>cancel(item)}>Cancel reading</button>}
+    {item.progress?.pageCount&&item.progress.pageCount>1200&&<p role="alert" className="mt-1 text-label text-amber">This PDF has {item.progress.pageCount} pages. Reading may be slow; consider splitting it by chapter.</p>}
+    {item.progress&&item.phase!=='ready'&&item.phase!=='cancelled'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Upload '+item.name}/>}
     {item.error&&<p role="alert" className="text-label text-again">{item.error} {item.file&&<button type="button" className="min-h-11 text-amber" onClick={()=>patch(item.id,{phase:'queued',error:null})}>Retry</button>}</p>}
    </li>)}
+  {queue.length>20&&<p className="text-label text-ink-3">{queue.length-20} earlier queue entries hidden.</p>}
   </ul>}
  </section>;
 }
