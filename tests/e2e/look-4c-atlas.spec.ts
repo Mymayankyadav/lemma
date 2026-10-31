@@ -24,6 +24,8 @@ for(const width of [360,390] as const){
 test('LOOK-4c dense bundle pills are 16px high and preserve the 44px overflow disclosure',async({page})=>{
  await page.setViewportSize({width:360,height:740});
  await page.goto('./?demo=stress&atlasDenseFixture=1&theme=graph-night#/atlas');
+ const supplier=page.locator('[data-atlas-supplier-dot]').first();
+ await expect(supplier).toHaveAttribute('r','1.2');
  const pill=page.locator('[data-atlas-bundle-pill]').first();
  await expect(pill).toBeVisible();
  const bounds=await pill.boundingBox();
