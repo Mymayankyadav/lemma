@@ -226,9 +226,9 @@ export default function Page() {
         <div className="flex items-center gap-4">
           <PlugArt connected={connected} size={92} />
           <div>
-            <h2 className="font-semibold">
+            <h3 className="text-[16px] leading-5 font-semibold">
               {connected ? "Connected" : "Not connected yet"}
-            </h2>
+            </h3>
             <p className="mt-1 text-label text-ink-3">
               {s.connectorLastSeenAt
                 ? `Last call ${elapsed(s.connectorLastSeenAt)}${s.connectorLastClient ? `, ${s.connectorLastClient === "claude" ? "Claude" : s.connectorLastClient === "chatgpt" ? "ChatGPT" : s.connectorLastClient}` : ""}`
