@@ -1,7 +1,7 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {Link} from 'react-router';
-import {getMode,getDemoProfile} from '../../data/mode';
+import {getMode} from '../../data/mode';
 import {ChevronRight, Copy, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
@@ -53,12 +53,12 @@ function LoadingDesk(){
  </Screen>;
 }
 
-/** The 5k/30k stress desk keeps its full seven-day forecast, but only
- * evaluates the deck tree and rich labels when the reader reaches Cards.
- * The ordinary demo/live desk preserves its eager forecast behavior. */
-function ForecastOnDemand(){
- const deferred=getMode()==='demo'&&getDemoProfile()!=='default';
- const [mounted,setMounted]=useState(!deferred);
+/** On a desk with many projects, the Cards forecast sits below the fold.
+ * Delay its expensive deck tree until the reader scrolls there; smaller
+ * desks render it eagerly. This is based on actual project scale, not the
+ * demo/stress query parameter, and applies equally to large live accounts. */
+function ForecastOnDemand({defer}:{defer:boolean}){
+ const [mounted,setMounted]=useState(!defer);
  const target=useRef<HTMLDivElement>(null);
  useEffect(()=>{
   if(mounted)return;
@@ -184,7 +184,7 @@ export default function Page(){
   <section aria-label="Cards" className="flex flex-col gap-3">
    <SectionHeading className="text-ink">Cards</SectionHeading>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
-   <ForecastOnDemand/>
+   <ForecastOnDemand defer={projects.length>4}/>
   </section>
   <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
    <SectionHeading className="text-ink">From your tutor</SectionHeading>
