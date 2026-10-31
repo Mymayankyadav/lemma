@@ -52,7 +52,9 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
   const clampX=(x:number)=>Math.max(minX,Math.min(maxX,x));
   const xs=[anchorX,minX,maxX,GUTTER/2,(minX+GUTTER/2)/2,(maxX+GUTTER/2)/2]
    .map(clampX).filter((x,i,array)=>array.findIndex(other=>Math.abs(x-other)<.1)===i);
-  const maxSteps=Math.ceil(height/4)+2;
+  // Bound candidate work for a 2,500-row virtual outline; beyond this density
+  // the +N summary is preferable to scanning the entire document height.
+  const maxSteps=Math.min(Math.ceil(height/4)+2,items.length*20+20);
   for(let step=0;step<=maxSteps;step++){
    const offset=step===0?0:Math.ceil(step/2)*4*(step%2?1:-1);
    const y=anchorY+offset;
@@ -90,6 +92,18 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
 
 /** Links drawn as nested arcs in a right-hand gutter, like a proof's dependency marks in a margin. */
 export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null}){
+ // Deterministic demo-only browser fixture for the finite 84px gutter. It is
+ // never enabled in live mode; CI exercises the real rendered keyboard control.
+ if(typeof window!=='undefined'){
+  const query=new URLSearchParams(window.location.search);
+  if(query.get('demo')==='stress'&&query.get('atlasDenseFixture')==='1'&&window.location.hash.startsWith('#/atlas')){
+   const dense:Arc[]=[];
+   for(let from=0;from<5;from++)for(let to=from+1;to<5;to++)
+    for(const kind of ['prereq','related'] as const)
+     dense.push({key:kind+':'+from+':'+to,from,to,kind,count:2,links:[]});
+   arcs=dense;rows=5;focus=null;
+  }
+ }
  const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
  const x0=8;
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
@@ -130,6 +144,7 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
   {overflow&&<details data-atlas-hidden-bundles="true" className="absolute z-20"
    style={{right:GUTTER-overflow.x-22,top:overflow.y-22}}>
    <summary data-atlas-overflow-count="true" aria-label={`Show ${overflow.hiddenKeys?.length??0} hidden Atlas link bundles`}
+    style={{outlineOffset:-3}}
     className="flex size-11 cursor-pointer list-none items-center justify-center rounded-full border border-edge-2 bg-raised text-body font-semibold text-ink [&::-webkit-details-marker]:hidden">
     +{overflow.hiddenKeys?.length??0}
    </summary>
