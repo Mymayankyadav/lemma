@@ -63,3 +63,30 @@ test('LOOK-4b long mathematical row names remain scrollable without viewport ove
  expect(metrics.font).toBeGreaterThanOrEqual(16);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
 });
+
+test('LOOK-4b Field context remains 56px and correct after deep virtual scroll',async({page})=>{
+ await page.setViewportSize({width:360,height:740});
+ await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+ await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+ await page.goto('./?demo=extreme&theme=graph-night#/atlas');
+ const tree=page.getByRole('tree',{name:'Ideas and their links'});
+ await expect(tree).toBeVisible();
+ await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+ await page.getByRole('button',{name:'Unfold all'}).click();
+ await expect.poll(async()=>Number(await tree.getAttribute('data-atlas-row-count'))).toBeGreaterThan(1000);
+ const stage=page.locator('[data-atlas-stage]');
+ await stage.evaluate(el=>{el.scrollTop=4000;el.dispatchEvent(new Event('scroll',{bubbles:true}))});
+ const sticky=page.locator('[data-atlas-sticky-field]');
+ await expect(sticky).toBeVisible();
+ expect((await sticky.boundingBox())?.height).toBe(56);
+ await expect(sticky.locator('.font-serif')).not.toBeEmpty();
+ await expect(sticky.locator('.rounded-full').first()).toBeVisible();
+ const firstField=await sticky.locator('.font-serif').innerText();
+ await stage.evaluate(el=>{el.scrollTop=el.scrollHeight*.8;el.dispatchEvent(new Event('scroll',{bubbles:true}))});
+ await expect(sticky).toBeVisible();
+ await expect.poll(async()=>sticky.locator('.font-serif').innerText()).not.toBe(firstField);
+ expect((await sticky.boundingBox())?.height).toBe(56);
+ expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(60);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+ await page.screenshot({path:'test-results/screens/look-4b-extreme-deep-field-360.png'});
+});
