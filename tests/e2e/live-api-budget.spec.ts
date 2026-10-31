@@ -25,8 +25,12 @@ const projects=Array.from({length:60},(_,i)=>({
  current:{code:'CP'+(i+1),title:'Foundations',step:1,stepsTotal:4},
  lastActivityAt:'2026-10-31T06:00:00Z',cardsCount:500,
  sessionsCount:1000,sourcesCount:100,sourceTitles:['Notes'],
- stageProgress:[{label:'CP1–CP8',firstCode:'CP1',lastCode:'CP8',
-  done:1,total:8,overdue:0,schedule:'unscheduled'}],
+ stageProgress:Array.from({length:13},(_,stage)=>{
+  const first=stage*8+1,count=Math.min(8,100-stage*8),last=first+count-1
+  return {label:'CP'+first+'–CP'+last,firstCode:'CP'+first,lastCode:'CP'+last,
+   done:Math.max(0,Math.min(count,i-stage*8)),total:count,overdue:0,
+   schedule:'unscheduled'}
+ }),
  scheduleHeadline:null,
 }))
 const home={
