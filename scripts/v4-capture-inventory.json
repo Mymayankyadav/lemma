@@ -1,0 +1,98 @@
+[
+  {
+    "name": "today",
+    "route": "#/"
+  },
+  {
+    "name": "paths",
+    "route": "#/projects"
+  },
+  {
+    "name": "new-project",
+    "route": "#/projects/new"
+  },
+  {
+    "name": "project-path",
+    "route": "#/p/real-analysis"
+  },
+  {
+    "name": "project-sessions",
+    "route": "#/p/real-analysis?tab=sessions"
+  },
+  {
+    "name": "project-sources",
+    "route": "#/p/real-analysis?tab=sources"
+  },
+  {
+    "name": "checkpoint",
+    "route": "#/p/real-analysis/cp/CP4"
+  },
+  {
+    "name": "session",
+    "route": "#/s/real-analysis/7"
+  },
+  {
+    "name": "proposals",
+    "route": "#/proposals"
+  },
+  {
+    "name": "plan-change",
+    "route": "#/proposals/proposal-6"
+  },
+  {
+    "name": "review",
+    "route": "#/review"
+  },
+  {
+    "name": "review-run",
+    "route": "#/review/run"
+  },
+  {
+    "name": "review-run-answer",
+    "route": "#/review/run",
+    "action": "show-answer"
+  },
+  {
+    "name": "review-done",
+    "route": "#/review/done"
+  },
+  {
+    "name": "cards",
+    "route": "#/cards"
+  },
+  {
+    "name": "card",
+    "route": "#/cards/1"
+  },
+  {
+    "name": "atlas",
+    "route": "#/atlas"
+  },
+  {
+    "name": "atlas-selected",
+    "route": "#/atlas",
+    "action": "atlas-select"
+  },
+  {
+    "name": "atlas-details",
+    "route": "#/atlas",
+    "action": "atlas-details"
+  },
+  {
+    "name": "atlas-all",
+    "route": "#/atlas",
+    "action": "atlas-all"
+  },
+  {
+    "name": "insights",
+    "route": "#/insights"
+  },
+  {
+    "name": "settings",
+    "route": "#/settings"
+  },
+  {
+    "name": "sign-in",
+    "route": "#/sign-in"
+  }
+]
