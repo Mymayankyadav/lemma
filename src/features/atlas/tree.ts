@@ -31,22 +31,66 @@ function synthetic(id:string,name:string,subjectId:string,level:ConceptLevel,par
   status:'not_started',blurb:null,pinX:null,pinY:null,checkpointRefs:[],dueCards:0};
 }
 
-/** Longest prerequisite chain ending at each idea; cycles are cut where they close. */
+/** Longest prerequisite chain ending at each idea; cycles are cut where they close.
+ * Iterative postorder traversal avoids a JS stack overflow for long chains and
+ * eliminates a temporary mapped dependency array at every visited idea.
+ * The active-edge fallback of rank zero matches the previous DFS semantics.
+ */
 function prerequisiteRank(ids:Iterable<string>,links:readonly Link[]):Map<string,number>{
  const needs=new Map<string,string[]>();
- for(const l of links)if(l.kind==='prereq'){
-  const bucket=needs.get(l.toId)??[];
-  bucket.push(l.fromId);needs.set(l.toId,bucket);
+ for(const link of links)if(link.kind==='prereq'){
+  const bucket=needs.get(link.toId);
+  if(bucket)bucket.push(link.fromId);
+  else needs.set(link.toId,[link.fromId]);
  }
- const rank=new Map<string,number>(),active=new Set<string>();
- const visit=(id:string):number=>{
-  if(rank.has(id))return rank.get(id)!;
-  if(active.has(id))return 0;
-  active.add(id);
-  const value=Math.max(-1,...(needs.get(id)??[]).map(visit))+1;
-  active.delete(id);rank.set(id,value);return value;
- };
- for(const id of ids)visit(id);
+ // The usual Atlas DAG arrives in prerequisite order. Rank it in one
+ // forward pass without allocating a DFS frame or active-set entry per idea.
+ // If any dependency is not already ranked (reverse order, cycle or missing
+ // ancestor), restart with the exact iterative DFS fallback below.
+ const ordered=[...ids],rank=new Map<string,number>();
+ let inOrder=true;
+ for(const id of ordered){
+  let max=-1;
+  for(const dependency of needs.get(id)??[]){
+   const value=rank.get(dependency);
+   if(value===undefined){inOrder=false;break}
+   if(value>max)max=value;
+  }
+  if(!inOrder)break;
+  rank.set(id,max+1);
+ }
+ if(inOrder)return rank;
+ rank.clear();
+ const active=new Set<string>();
+ type Frame={id:string;dependencies:readonly string[];next:number;max:number};
+ const stack:Frame[]=[];
+ for(const root of ordered){
+  if(rank.has(root))continue;
+  active.add(root);
+  stack.push({id:root,dependencies:needs.get(root)??[],next:0,max:-1});
+  while(stack.length){
+   const frame=stack[stack.length-1];
+   if(frame.next<frame.dependencies.length){
+    const dependency=frame.dependencies[frame.next++];
+    const known=rank.get(dependency);
+    if(known!==undefined)frame.max=Math.max(frame.max,known);
+    else if(active.has(dependency))frame.max=Math.max(frame.max,0);
+    else{
+     active.add(dependency);
+     stack.push({id:dependency,dependencies:needs.get(dependency)??[],next:0,max:-1});
+    }
+   }else{
+    const value=frame.max+1;
+    rank.set(frame.id,value);
+    active.delete(frame.id);
+    stack.pop();
+    if(stack.length){
+     const parent=stack[stack.length-1];
+     parent.max=Math.max(parent.max,value);
+    }
+   }
+  }
+ }
  return rank;
 }
 function checkpointNumber(node:AtlasNode):number{

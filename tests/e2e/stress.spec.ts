@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { stressViolations } from '../../scripts/stress-limits';
+import { createHash } from 'node:crypto';
+import { QA3_ROUTE_READINESS, qa3ScreenshotName } from '../../scripts/qa3-report';
 import { enforceStressBudgets } from '../../scripts/stress-gate';
+import { stressViolations } from '../../scripts/stress-limits';
 import { measureSvgMarks } from '../../scripts/stress-marks';
 
 type Measurement = {
@@ -87,6 +89,7 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   await page.route('https://fonts.googleapis.com/**', route => route.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**', route => route.fulfill({body:''}));
   const measurements: Measurement[] = [];
+  const readinessEvidence: Array<{route:string;actualRoute:string;profile:string;theme:string;width:number;heading:string;landmark:string;screenshot:string;sha256:string;ready:true}> = [];
   // Measure the first render under 4x CPU throttling; other routes remain
   // unthrottled to keep the pre-fix 30,000-card profile within CI budgets.
   const cdp = await page.context().newCDPSession(page);
@@ -106,9 +109,7 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await expect(page.locator('#main-content')).toBeVisible({timeout:90_000});
    await expect(page.getByRole('heading', {name:routeHeadings[route], exact:true, level:1})).toBeVisible({timeout:90_000});
    await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
-   // Cold Today must paint an actual project Route, not merely a heading and
-   // 40 characters of fallback/skeleton text. Code splitting may improve
-   // startup, but the strict 4× timer must include the meaningful goal card.
+   // Cold Today must render a real goal, not just a heading or skeleton.
    if(route==='/')await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible({timeout:90_000});
    // A heading and 40 characters also matched the missing-proposal error.
    // Check that the actual plan change, its amendments and idea tree loaded.
@@ -118,7 +119,48 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
     await expect(page.getByRole('region', {name:'Ideas in this plan'})).toBeVisible();
     await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
    }
-   await page.waitForTimeout(150);
+   // FIX #586: the page shell and a heading are not a data-backed render.
+   // Check a route-specific landmark and reject skeleton/error states before
+   // taking the screenshot or claiming its visual evidence is ready.
+   const readiness=QA3_ROUTE_READINESS[route];
+   expect(routeHeadings[route]).toBe(readiness.heading);
+   await expect(page.locator('html')).toHaveAttribute('data-theme',theme,{timeout:90_000});
+   await expect(page.locator(readiness.landmark).first()).toBeVisible({timeout:90_000});
+   if(route==='/cards'){
+    await expect(page.locator('[data-card-row]').first()).toHaveAttribute(
+     'href','#/cards/'+(profile==='extreme'?'30000':'5000'),{timeout:90_000});
+    await expect(page.locator('[aria-live="polite"]').filter({hasText:'50 loaded'}))
+     .toBeVisible({timeout:90_000});
+   }
+   if(route!=='/kit')await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0,{timeout:90_000});
+   await expect(page.getByText(/This (card|proposal) could not be loaded\./)).toHaveCount(0,{timeout:90_000});
+   await expect(page.getByText('Session unavailable.')).toHaveCount(0,{timeout:90_000});
+   // A loaded landmark below a retained scroll position still yields a blank
+   // viewport. Reset to the route letterhead and prove its heading is painted.
+   // Visually hidden semantic h1 elements are not a screenshot anchor. Use
+   // the route's loaded form/control instead; keep the semantic heading check
+   // above and require actual painted content in the captured viewport.
+   const anchor=readiness.viewportAnchor
+    ?page.locator(readiness.viewportAnchor).first()
+    :page.getByRole('heading',{name:readiness.heading,exact:true,level:1});
+   await page.evaluate(()=>{
+    document.documentElement.style.setProperty('scroll-behavior','auto','important');
+    window.scrollTo(0,0);
+   });
+   await anchor.scrollIntoViewIfNeeded({timeout:90_000});
+   await expect(anchor).toBeInViewport({ratio:0.05,timeout:90_000});
+   // React Router and Screen use finite Motion fades. A visible DOM heading
+   // can still be visually blank while an ancestor is at opacity 0.
+   await page.waitForFunction(()=>{
+    const heading=document.querySelector('#main-content h1');
+    if(!heading)return false;
+    for(let el:Element|null=heading;el&&el.id!=='main-content';el=el.parentElement){
+     if(Number(getComputedStyle(el).opacity)<0.99)return false;
+    }
+    return true;
+   },null,{timeout:90_000});
+   await page.evaluate(()=>new Promise<void>(resolve=>
+    requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    if(route==='/'){
     const phases=await page.evaluate(()=>{
      const duration=(name:string)=>performance.getEntriesByName(name,'measure')[0]?.duration??null;
@@ -133,11 +175,26 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
    // Avoid counting the same cached resources again on subsequent hash routes.
    await page.evaluate(() => performance.clearResourceTimings());
-   const name = route === '/' ? 'today' : route.replaceAll('/','-').replace(/^-/, '');
+   const screenshot=qa3ScreenshotName({profile,theme,width,filename:''},route);
    mkdirSync('test-results/screens/stress',{recursive:true});
-   await page.screenshot({path:'test-results/screens/stress/'+profile+'-'+theme+'-'+width+'-'+name+'.png',fullPage:false,timeout:30_000});
+   // Even after the DOM reports visible, finite Motion/WAAPI entrance frames
+   // can leave the captured pixels as an empty Graph shell. Fast-forward those
+   // animations for the evidence frame rather than certifying a blank PNG.
+   const png=await page.screenshot({path:'test-results/screens/stress/'+screenshot,
+    fullPage:false,animations:'disabled',timeout:30_000});
+   const actualRoute=await page.evaluate(()=>location.hash.slice(1));
+   expect(actualRoute).toBe(route);
+   readinessEvidence.push({
+    route,actualRoute,profile,theme,width,heading:readiness.heading,
+    landmark:readiness.landmark,screenshot,
+    sha256:createHash('sha256').update(png).digest('hex'),ready:true,
+   });
   }
   await cdp.detach();
+  // This manifest travels in the same screens-shard artifact as the PNGs.
+  // The aggregate gate rejects absent, mismatched, or stale route evidence.
+  writeFileSync('test-results/screens/stress/'+profile+'-'+theme+'-'+width+'-readiness.json',
+   JSON.stringify(readinessEvidence,null,2));
   mkdirSync('test-results/stress',{recursive:true});
   const file = 'test-results/stress/'+profile+'-'+theme+'-'+width+'.json';
   const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
