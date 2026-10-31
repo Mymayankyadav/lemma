@@ -171,9 +171,9 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    if(!badge)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
    const opacity=focus?(lit?1:.12):arc.kind==='related'?.45:.62;
-   // The painted pill is exactly 16px high, including its clipped outline.
-   // Width grows with digits and collision radii conservatively include the
-   // full un-clipped stroke, preserving >=8px edge clearance.
+   // The painted pill is exactly 16px high, including its inset 1px border.
+   // Width grows with digits; collision radii conservatively include a
+   // further 1px margin, preserving >=8px edge clearance.
    // The placement circle encloses the painted pill's corners, not merely
    // its horizontal half-width. Diagonal pills must retain 8px edge clearance.
    const pillWidth=bundlePillWidth(arc.count);
@@ -182,11 +182,13 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
      <path d={'M'+badge.anchorX+' '+badge.anchorY+' L'+badge.x+' '+badge.y}
       stroke={toneColor[tone]} strokeWidth="1" strokeDasharray="2 2" fill="none"/>}
     <g transform={'translate('+badge.x+' '+badge.y+')'}>
-     <rect data-atlas-bundle-pill="true" data-atlas-bundle-circle="true"
-      x={-pillWidth/2} y="-8"
-      width={pillWidth} height="16" rx="8"
-      style={{clipPath:'inset(0)'}}
-      fill="var(--paper)" stroke={toneColor[tone]} strokeWidth="1"/>
+     <g data-atlas-bundle-pill="true" data-atlas-bundle-circle="true">
+      {/* A one-pixel inset fill creates a real 16px painted outline. SVG
+          stroke extends outside the box and Playwright includes it in
+          boundingBox(), even when CSS clipping hides those pixels. */}
+      <rect x={-pillWidth/2} y="-8" width={pillWidth} height="16" rx="8" fill={toneColor[tone]}/>
+      <rect x={1-pillWidth/2} y="-7" width={pillWidth-2} height="14" rx="7" fill="var(--paper)"/>
+     </g>
      <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
     </g>
    </g>;
