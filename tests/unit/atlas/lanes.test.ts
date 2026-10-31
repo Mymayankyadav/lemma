@@ -29,6 +29,22 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   expect(paths.get('two-rows')?.x).toBe(74);
   expect(paths.get('three-rows')?.x).toBe(65);
  });
+ it('never paints eight unrelated overlapping intervals onto seven 9px lanes',()=>{
+  const arcs=Array.from({length:8},(_,i)=>arc('dense-'+i,i,i+8));
+  const centers=Array.from({length:16},(_,i)=>i*44+22);
+  const result=layoutAtlasLanes(arcs,centers);
+  // One connection must be disclosed by the caller rather than overpainting
+  // a second independent interval on an occupied vertical track.
+  expect(result.size).toBe(7);
+  expect(new Set([...result.values()].map(lane=>lane.x)).size).toBe(7);
+  expect(result.has('dense-7')).toBe(false);
+ });
+ it('allows a shared endpoint trunk but not an unrelated overlap on its track',()=>{
+  const arcs=[arc('a',0,9),arc('b',0,8),arc('c',1,10)];
+  const result=layoutAtlasLanes(arcs);
+  expect(result.get('a')?.x).toBe(result.get('b')?.x);
+  expect(result.get('c')?.x).not.toBe(result.get('a')?.x);
+ });
  it('is stable across paint order and supports variable field row centers',()=>{
   const arcs=[arc('a',0,5),arc('b',1,4),arc('c',3,6)];
   const centers=[28,78,122,166,210,254,298];
