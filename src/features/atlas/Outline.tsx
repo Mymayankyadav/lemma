@@ -124,7 +124,7 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
     <path d={lane.d} fill="none" stroke={toneColor[tone]} strokeWidth={width}
      strokeDasharray={arc.kind==='related'?'2 4':undefined} strokeLinecap="round"
      markerEnd={arc.kind==='prereq'?'url(#atlas-arrow-'+(tone==='related'||tone==='self'?'none':tone)+')':undefined}/>
-    {arc.kind==='prereq'&&<circle data-atlas-supplier-dot="true" cx="8" cy={lane.fromY} r="2.4" fill={toneColor[tone]}/>}
+    {arc.kind==='prereq'&&<circle data-atlas-supplier-dot="true" cx="8" cy={lane.fromY} r="1.2" fill={toneColor[tone]}/>}
    </g>;
   })}
   {ordered.filter(arc=>arc.count>1).map(arc=>{
