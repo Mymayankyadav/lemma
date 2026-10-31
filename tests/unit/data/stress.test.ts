@@ -25,6 +25,13 @@ describe('ST-0 deterministic stress data', () => {
    expect(data.sessions).toHaveLength(sessions);
    expect(data.sessions.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(sessions);
    expect(data.sources.filter(s=>s.projectId===data.projects[0].id)).toHaveLength(profile==='stress'?30:100);
+   // Every project carries the same F2 source-list pressure; no single-project
+   // shortcut may make the 60-project library look artificially cheap.
+   const sourcesByProject=new Map<string,number>();
+   for(const source of data.sources)
+    sourcesByProject.set(source.projectId,(sourcesByProject.get(source.projectId)??0)+1);
+   expect(data.projects.every(p=>sourcesByProject.get(p.id)===(profile==='stress'?30:100))).toBe(true);
+   expect(new Set(data.sources.map(s=>s.id)).size).toBe(data.sources.length);
    const sourceShelf=data.sources.filter(s=>s.projectId===data.projects[0].id);
    expect(new Set(sourceShelf.map(s=>s.id)).size).toBe(sourceShelf.length);
    expect(new Set(sourceShelf.map(s=>s.short)).size).toBe(sourceShelf.length);
