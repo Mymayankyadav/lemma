@@ -7,7 +7,7 @@ vi.mock("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url", () => ({
     import.meta.url,
   ).href,
 }));
-import { ingest, flattenOutline, isPdfFile, cancelIngest, resetIngestCancellation } from "../../../src/pdf/ingest";
+import { ingest, flattenOutline, isPdfFile, isSourceFile, cancelIngest, resetIngestCancellation } from "../../../src/pdf/ingest";
 import { normalizePageText } from "../../../src/pdf/text";
 import type { IngestProgress } from "../../../src/data/types";
 
@@ -119,4 +119,17 @@ it("cancels reading between pages without saving an incomplete extraction", asyn
   resetIngestCancellation(file);
   const complete=await ingest(file);
   expect(complete.pageCount).toBe(3);
+});
+
+it("preserves UI-8 Markdown imports and supports cancelling before extraction",async()=>{
+ const file=new File(["# Definitions\nAn open cover.\n## Compactness\nA finite subcover."],"notes.md",{type:"text/markdown"});
+ expect(isSourceFile(file)).toBe(true);
+ cancelIngest(file);
+ await expect(ingest(file)).rejects.toMatchObject({code:"invalid",message:"PDF reading cancelled"});
+ resetIngestCancellation(file);
+ const progress:IngestProgress[]=[];
+ const result=await ingest(file,{onProgress:p=>progress.push(p)});
+ expect(result.pageCount).toBe(2);
+ expect(result.pages[1].body).toContain("finite subcover");
+ expect(progress.at(-1)?.phase).toBe("done");
 });
