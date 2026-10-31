@@ -3,6 +3,7 @@ import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {MemoryRouter} from 'react-router';
 import type {CheckpointView} from '../../../src/data/types';
+import type {ScheduledCheckpoint} from '../../../src/lib/schedule';
 import {Route} from '../../../src/ui/timeline/Route';
 
 const checkpoints=(n:number,staged=true):CheckpointView[]=>
@@ -35,6 +36,18 @@ describe('LOOK-3b accessible Route component',()=>{
   expect(html).toContain('CP4');
   expect(html).toContain('data-route-mark="stage"');
   expect(html).not.toContain('data-stage-rail');
+ });
+ it('uses ochre dashed track for late checkpoints, never accent red',()=>{
+  const cps=checkpoints(9);
+  const rows:ScheduledCheckpoint[]=cps.map((checkpoint,i)=>({
+   checkpoint,dueOn:null,inferred:false,state:i===4?'late':'on_time',
+   deltaDays:null,actualOn:null,projected:false,
+  }));
+  const html=renderToStaticMarkup(createElement(MemoryRouter,null,
+   createElement(Route,{project:project(9),checkpoints:cps,mode:'project',scheduleRows:rows})));
+  expect(html).toContain('data-track-state="late"');
+  expect(html).toContain('stroke="var(--late)"');
+  expect(html).toContain('stroke-dasharray="5 4"');
  });
  it('makes Today a single link to the current checkpoint, with no station buttons',()=>{
   const html=render(36,'today',false);
