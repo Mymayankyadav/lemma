@@ -34,4 +34,25 @@ describe('project stage jump navigation',()=>{
   expect(visibleMath).toContain('R');
   expect(visibleMath).not.toContain('\\mathbb');
  });
+
+ it('bounds an 80-character mathematical stage name in a recoverable chip frame',()=>{
+  const longStage='\\\\operatorname{'+'verylongmathematicalstage'.repeat(5)+'}';
+  const checkpoints:CheckpointView[]=Array.from({length:6},(_,i)=>({
+   id:'long-cp-'+i,code:'CP'+(i+1),title:'Checkpoint '+i,position:i,
+   stage:i===0?'\\\\('+longStage+'\\\\)':'Stage '+i,
+   ui:i===0?'now':'next',currentStep:1,stepsTotal:1,recheckDue:null,dueCards:0,
+  }));
+  const detail={project:{id:'long-stage',slug:'long-stage',targetDate:null},
+   checkpoints,done:0,total:6,sources:[],sessions:[],pendingProposals:0} as unknown as ProjectDetail;
+  const container=document.createElement('div');
+  container.innerHTML=renderToStaticMarkup(<MemoryRouter><Stages detail={detail}/></MemoryRouter>);
+  const chip=container.querySelector('[data-stage-chip="0"]');
+  const label=chip?.querySelector('[data-stage-chip-label]') as HTMLElement|null;
+  expect(label).not.toBeNull();
+  expect(label?.style.overflowX).toBe('auto');
+  expect(label?.style.whiteSpace).toBe('nowrap');
+  expect(label?.style.maskImage).toContain('linear-gradient');
+  expect(label?.style.fontSize).toBe('16px');
+  expect(label?.querySelector('.katex')).not.toBeNull();
+ });
 });
