@@ -47,4 +47,23 @@ describe('FIX #506 chart labels',()=>{
    {label:'30 days ago',value:0.84},{label:'Today',value:0.92},
   ]} target={0.9}/>))
  })
+ it('converts LaTeX subject labels before bounded SVG display without cutting commands',()=>{
+  const html=renderToStaticMarkup(<HBars data={[
+   {label:'Algebra $\\mathbb{F}_p$',value:120},
+   {label:'Long subject $\\mathbb{F}_p$',value:80},
+  ]}/>);
+  const host=document.createElement('div');
+  host.innerHTML=html;
+  const svg=host.querySelector('svg')!;
+  expect(svg.getAttribute('aria-label')).toContain('Algebra 𝔽ₚ');
+  const groups=Array.from(svg.querySelectorAll('g'));
+  expect(groups).toHaveLength(2);
+  for(const group of groups){
+   const label=group.querySelector('text')!;
+   expect(label.getAttribute('aria-label')).toContain('𝔽ₚ');
+   expect(label.textContent).not.toMatch(/[\\$]/);
+   expect(group.querySelector('title')?.textContent).toContain('𝔽ₚ');
+  }
+ });
+
 })
