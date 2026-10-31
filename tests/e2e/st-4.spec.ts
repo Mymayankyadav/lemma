@@ -54,3 +54,26 @@ for(const width of [390,360] as const){
   expect(errors).toEqual([]);
  });
 }
+
+
+test('ST-4 long aligned and matrix maths expand without horizontal page overflow',async({page})=>{
+ test.setTimeout(120_000);
+ await page.setViewportSize({width:360,height:740});
+ await page.goto('/lemma/?demo=stress&theme=graph-night#/cards/4',{waitUntil:'domcontentloaded'});
+ await expect(page.getByRole('heading',{name:'Card detail'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Show all 25 lines'})).toBeVisible();
+ await page.getByRole('button',{name:'Show all 25 lines'}).click();
+ const view=page.getByRole('button',{name:'View maths full screen'}).first();
+ await expect(view).toBeVisible();
+ await view.click();
+ const dialog=page.getByRole('dialog',{name:'Full screen maths'});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole('button',{name:'Zoom in'}).click();
+ await expect(dialog.getByRole('button',{name:'Close maths'})).toBeVisible();
+ await page.screenshot({path:'test-results/screens/stress/st-4-fullscreen-maths.png'});
+ await dialog.getByRole('button',{name:'Close maths'}).click();
+ await expect(dialog).toBeHidden();
+ await page.goto('/lemma/?demo=stress&theme=graph-night#/cards/3',{waitUntil:'domcontentloaded'});
+ await expect(page.getByRole('button',{name:'Show all 10 lines'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+});
