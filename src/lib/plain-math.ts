@@ -6,7 +6,7 @@ const symbols: Record<string,string> = {
   mapsto:'↦',to:'→',rightarrow:'→',leftarrow:'←',leftrightarrow:'↔',
   implies:'⇒',iff:'⇔',in:'∈',notin:'∉',subset:'⊂',subseteq:'⊆',supseteq:'⊇',
   cup:'∪',cap:'∩',emptyset:'∅',varnothing:'∅',forall:'∀',exists:'∃',
-  times:'×',cdot:'·',le:'≤',leq:'≤',ge:'≥',geq:'≥',ne:'≠',neq:'≠',
+  times:'×',cdot:'·',cong:'≅',simeq:'≃',approx:'≈',le:'≤',leq:'≤',ge:'≥',geq:'≥',ne:'≠',neq:'≠',
   ell:'ℓ',alpha:'α',beta:'β',gamma:'γ',delta:'δ',epsilon:'ε',varepsilon:'ε',theta:'θ',
   lambda:'λ',mu:'μ',pi:'π',sigma:'σ',tau:'τ',phi:'φ',varphi:'φ',
   Gamma:'Γ',Delta:'Δ',Sigma:'Σ',Pi:'Π',infty:'∞',circ:'∘',oplus:'⊕',

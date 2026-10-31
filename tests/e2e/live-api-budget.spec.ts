@@ -69,7 +69,8 @@ const payloads:Record<string,unknown>={
  '/rpc/insights':insights,
  '/settings':settings,
 }
-const maxTransfer=200*1024
+// E1 specifies 200 kB (decimal), not 200 KiB (204,800 bytes).
+const maxTransfer=200_000
 const withinBudget=(calls:{bytes:number}[],maxCalls:number)=>calls.length<=maxCalls &&
  calls.reduce((sum,call)=>sum+call.bytes,0)<=maxTransfer
 
@@ -77,6 +78,8 @@ test('FIX-484b cold budget rejects four requests and aggregate over 200kB',()=>{
  expect(withinBudget(Array.from({length:4},()=>({bytes:1000})),3)).toBe(false)
  expect(withinBudget([{bytes:150*1024},{bytes:100*1024}],3)).toBe(false)
  expect(withinBudget([{bytes:50*1024},{bytes:50*1024},{bytes:50*1024}],3)).toBe(true)
+ expect(withinBudget([{bytes:200_000}],3)).toBe(true)
+ expect(withinBudget([{bytes:200_001}],3)).toBe(false)
 })
 const token=([
  Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),
