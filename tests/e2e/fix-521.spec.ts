@@ -6,6 +6,7 @@ for(const profile of ['stress','extreme'] as const)
    test(`FIX #521 Continue row clips long text: ${profile} ${theme} ${width}px`,async({page})=>{
     await page.setViewportSize({width,height:740});
     await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/`);
+    await expect(page.getByRole('region',{name:'Continue'})).toBeVisible();
     const row=page.getByRole('region',{name:'Resume where you stopped'});
     await expect(row).toBeVisible();
     const title=row.locator('[data-resume-title]');
