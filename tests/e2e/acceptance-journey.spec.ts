@@ -26,7 +26,9 @@ test('acceptance 1–6: Home -> proposals -> plan approval -> project -> session
  // 2–3: review each proposal explicitly, no implicit tutor approval.
  await page.getByRole('navigation',{name:'Desk actions'}).getByRole('link',{name:'Open proposals'}).click()
  await expect(page.getByRole('button',{name:/Cards 5/})).toBeVisible()
- await expect(page.getByText(/Why must/)).toBeVisible()
+ // The proposal is intentionally visible in both the selectable list and the active card.
+ await expect(page.getByRole('group',{name:'Cards in this proposal group'}).getByRole('button',{name:/Why must/})).toBeVisible()
+ await expect(page.getByLabel('Proposal card, swipe right to approve or left to reject').getByText(/Why must/)).toBeVisible()
  await screenshot(page,'02-proposals')
  await page.getByRole('button',{name:'Approve card'}).click()
  await expect(page.getByRole('button',{name:/Cards 4/})).toBeVisible()
