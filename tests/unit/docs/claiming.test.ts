@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const repoRoot = new URL("../../../", import.meta.url);
-const read = (path: string) => readFileSync(new URL(path, repoRoot), "utf8");
+const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("REST-only agent claim instructions", () => {
   it("never directs agents to open an unmergeable draft PR", () => {
