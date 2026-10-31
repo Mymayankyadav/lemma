@@ -147,19 +147,21 @@ export default function Page(){
   if(selectedId===node.id&&!node.children.length){setDetails(true);return}
   select(selectedId===node.id?null:node.id);
  };
- const focusSlug=params.get('focus');
+ const focusSlug=params.get('focus'),focusName=params.get('name');
  const seen=useRef<string|null>(null);
  useEffect(()=>{
-  // React only when ?focus= itself changes to a slug this page did not write: an incoming
-  // link from elsewhere unfolds to the idea and opens it. (The URL updates a render after
-  // a selection here, so comparing against the current selection would undo it.)
-  if(!tree||!expanded||focusSlug===seen.current)return;
-  seen.current=focusSlug;
-  if(!focusSlug||focusSlug===written.current)return;
+  // A concept's stored slug need not be derivable from a LaTeX title. Prefer
+  // the exact slug; the source-name fallback preserves links from Insights.
+  const incoming=(focusSlug??'')+'|'+(focusName??'');
+  if(!tree||!expanded||incoming===seen.current)return;
+  seen.current=incoming;
+  if((!focusSlug&&!focusName)||(focusSlug===written.current&&!focusName))return;
   written.current=focusSlug;
-  const found=[...tree.nodes.values()].find(n=>n.slug===focusSlug);
+  const nodes=[...tree.nodes.values()].filter(n=>!n.synthetic);
+  const found=nodes.find(n=>n.slug===focusSlug)||
+   (focusName?nodes.find(n=>n.name===focusName):undefined);
   if(found){reveal(found.id);setSelectedId(found.id);setDetails(true)}
- },[tree,expanded,focusSlug,reveal]);
+ },[tree,expanded,focusSlug,focusName,reveal]);
  const depthOf=useMemo(()=>{
   if(!tree||!expanded)return null;
   for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===expanded.size&&[...set].every(x=>expanded.has(x)))return d}
