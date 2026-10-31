@@ -24,4 +24,17 @@ describe('ST-4 due backlog semantics',()=>{
   const decks=await api.getDeckTree();
   expect(decks.reduce((sum,d)=>sum+d.due,0)).toBe(expected);
  });
+ it('pages the card library newest-first without materialising all matches',async()=>{
+  const api=new DemoAdapter({now:()=>Date.parse('2026-10-31T12:00:00Z'),timeZone:'UTC'});
+  const first=await api.searchCardsPage({query:''});
+  expect(first.rows.length).toBe(50);
+  expect(first.nextOffset).toBe(50);
+  const numbers=first.rows.map(row=>row.noteNo);
+  expect(numbers).toEqual([...numbers].sort((a,b)=>b-a));
+  const second=await api.searchCardsPage({query:'',offset:first.nextOffset!});
+  expect(second.rows.length).toBeGreaterThan(0);
+  expect(second.rows[0].noteNo).toBeLessThan(numbers.at(-1)!);
+  expect(new Set([...numbers,...second.rows.map(row=>row.noteNo)]).size)
+   .toBe(numbers.length+second.rows.length);
+ });
 });
