@@ -8,7 +8,7 @@
 
 ## 1. Connector (MCP-6)
 
-New tool `save_pages` (write, undoable, owner-scoped), taking `{project, source?, title?, kind?, pages: [{page, label?, text}], replace?}`:
+New tool `save_pages` (write, undoable, owner-scoped), taking `{project, source?, title?, kind?, pages: [{page, label?, text, confidence?}], replace?}`. `confidence` is `high` (the default when omitted) or `check`, which the tutor sets per page:
 - **Into an existing source:** `source` names an uploaded scan (its short code). The tool fills `source_pages.body` for the given page numbers and sets `has_text` once at least one page has text. Existing text is kept unless `replace: true`.
 - **As a new source:** no `source`, a `title` and an optional `kind` (default `notes`). The tool creates a text-only source with `origin` = the client and no stored file.
 - **Limits per call:**
@@ -27,7 +27,7 @@ New tool `save_pages` (write, undoable, owner-scoped), taking `{project, source?
 - **Database (DB-5, a migration):**
   - `source_pages` gains `transcribed_by text null`, `transcribed_at timestamptz null` and `confidence text null check (confidence in ('high','check'))`;
   - `sources.origin` allows `claude` and `chatgpt`.
-- **Self-test:** the self-test transcribes 2 pages into a fixture scan, finds them with `search`, reads them back, and undoes.
+- **Self-test:** the self-test transcribes 2 pages into a fixture scan, one of them marked `confidence: check`. It finds them with `search`, reads them back, checks that the stored provenance (`transcribed_by`, `confidence`) is right, and undoes.
 
 ## 2. App (UI-8)
 
