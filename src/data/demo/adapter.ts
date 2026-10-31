@@ -143,6 +143,18 @@ export class DemoAdapter implements LemmaApi {
   private store: DemoStore;
   private readonly now: () => number;
   private stressDayStart: number | undefined;
+  // Due dates are immutable ISO values until a card is edited; keying by the
+  // timestamp string preserves correctness after edits without invalidation.
+  // The 30k-card fixture repeats two dates, so cold Today and DeckTree should
+  // parse each distinct value once, not once per card per query.
+  private readonly dueTimes = new Map<string,number>();
+  private dueTime(value:string):number {
+    const cached=this.dueTimes.get(value);
+    if(cached!==undefined)return cached;
+    const parsed=Date.parse(value);
+    this.dueTimes.set(value,parsed);
+    return parsed;
+  }
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
     this.store = hydrateFixture(
@@ -942,7 +954,7 @@ export class DemoAdapter implements LemmaApi {
         return this.store.notes.reduce((count, note) =>
           count + (note.note.status === "active" && active.has(note.projectId)
             ? note.cards.filter(card =>
-              card.state.state > 0 && Date.parse(card.state.due) <= now).length
+              card.state.state > 0 && this.dueTime(card.state.due) <= now).length
             : 0), 0);
       })(),
       pendingProposals: this.store.proposals.filter(
@@ -1493,7 +1505,7 @@ export class DemoAdapter implements LemmaApi {
       const project=activeProjects.get(note.projectId);
       if(!project||note.note.status!=="active")continue;
       for(const card of note.cards){
-        if(card.state.state<=0||!(Date.parse(card.state.due)<=now))continue;
+        if(card.state.state<=0||!(this.dueTime(card.state.due)<=now))continue;
         projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
         if(note.note.checkpointCode){
           const key=cpKey(project.slug,note.note.checkpointCode);
