@@ -12,6 +12,7 @@ export function getApi(): LemmaApi {
  if (profile === 'default') return adapters.default ??= new DemoAdapter()
  return adapters[profile] ??= new DemoAdapter({
   fixture: makeStressStore(JSON.parse(fixtureText) as DemoStore, profile),
+  ownedFixture: true,
  })
 }
 export * from './types'
