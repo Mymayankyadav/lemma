@@ -80,6 +80,44 @@ describe('FIX #507: cold Today stress summary',()=>{
   }finally{parse.mockRestore()}
  },30_000);
 
+ it('reuses one exact due-card scan across Today and DeckTree',async()=>{
+  const api=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const notes=store.notes;
+  let reads=0;
+  Object.defineProperty(store,'notes',{configurable:true,get(){reads++;return notes}});
+  const home=await api.getHome();
+  const afterHome=reads;
+  const decks=await api.getDeckTree();
+  expect(home.due).toBe(600);
+  expect(decks.reduce((sum,deck)=>sum+deck.due,0)).toBe(home.due);
+  // Re-scanning all 5k cards for DeckTree after Home already counted them
+  // adds unnecessary 4x-CPU startup work. Other checkpoint reads are allowed.
+  expect(reads).toBe(afterHome);
+ },30_000);
+
+ it('invalidates the due snapshot on project archive and direct note suspension',async()=>{
+  const api=new DemoAdapter({now:()=>now,timeZone:'UTC'});
+  const first=await api.getHome();
+  const decks=await api.getDeckTree();
+  const target=first.projects.find(p=>p.status!=='archived'&&decks.some(d=>d.key==='project:'+p.slug&&d.due>0));
+  expect(target).toBeDefined();
+  const targetDue=decks.find(d=>d.key==='project:'+target!.slug)!.due;
+  await api.updateProject(target!.id,{status:'archived'});
+  const afterArchive=await api.getHome();
+  expect(afterArchive.due).toBe(first.due-targetDue);
+  const store=(api as unknown as {store:DemoStore}).store;
+  const candidate=store.notes.find(n=>n.note.status==='active'&&
+   store.projects.some(p=>p.id===n.projectId&&p.status!=='archived'&&!p.system)&&
+   n.cards.some(card=>card.state.state>0&&Date.parse(card.state.due)<=now));
+  if(candidate){
+   const affected=candidate.cards.filter(card=>card.state.state>0&&Date.parse(card.state.due)<=now).length;
+   await api.setNoteStatus(candidate.note.noteNo,'suspended');
+   expect((await api.getHome()).due).toBe(afterArchive.due-affected);
+  }
+ });
+
  it('builds the deck tree without recomputing 60 full project summaries',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{deferSessions:true}),
    ownedFixture:true,now:()=>now,timeZone:'UTC'});
