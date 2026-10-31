@@ -37,3 +37,43 @@ for (const profile of ['stress','extreme'] as const) {
   }
  }
 }
+
+
+for(const theme of ['graph','graph-night'] as const)for(const width of [360,390] as const){
+ test(`FIX #483 dense 20-bundle overflow is keyboard accessible ${theme} ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:844});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+  await page.goto(`./?demo=stress&theme=${theme}&atlasDenseFixture=1#/atlas`);
+  await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
+  const overflow=page.locator('[data-atlas-hidden-bundles]');
+  const summary=overflow.locator('summary');
+  await expect(summary).toBeVisible();
+  const hit=await summary.boundingBox();
+  expect(hit).not.toBeNull();
+  expect(hit!.width).toBeGreaterThanOrEqual(44);
+  expect(hit!.height).toBeGreaterThanOrEqual(44);
+  expect(await summary.evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(12);
+  await summary.focus();
+  await page.keyboard.press('Enter');
+  await expect(overflow).toHaveAttribute('open','');
+  const hidden=overflow.locator('li');
+  const visible=page.locator('[data-atlas-bundle-count]');
+  expect(await hidden.count()+await visible.count()).toBe(20);
+  expect(await hidden.count()).toBeGreaterThan(0);
+  expect((await hidden.allTextContents()).every(t=>/rows \\d+–\\d+: 2 links/.test(t))).toBe(true);
+  const fontSizes=await hidden.evaluateAll(items=>items.map(el=>parseFloat(getComputedStyle(el).fontSize)));
+  expect(fontSizes.every(size=>size>=12)).toBe(true);
+  const boxes=await page.locator('[data-atlas-bundle-circle], [data-atlas-overflow-count]').evaluateAll(els=>els.map(el=>{
+   const b=el.getBoundingClientRect();
+   return {x:b.x+b.width/2,y:b.y+b.height/2,r:b.width/2};
+  }));
+  for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
+   const a=boxes[i],b=boxes[j];
+   expect(Math.hypot(a.x-b.x,a.y-b.y)-a.r-b.r).toBeGreaterThanOrEqual(7.5);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  await summary.scrollIntoViewIfNeeded();
+  await page.screenshot({path:`test-results/screens/stress/fix-483-dense-${theme}-${width}.png`});
+ });
+}
