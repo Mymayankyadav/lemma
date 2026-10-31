@@ -14,10 +14,10 @@ describe('FIX #507 Today route code-splitting',()=>{
  });
 });
 
-describe('FIX #507 route-specific goal preload',()=>{
- it('starts the meaningful GoalDistance chunk before React mount on Today only',()=>{
+describe('FIX #507 cold Today goal scheduling',()=>{
+ it('does not eagerly fetch goal work before Home data can paint',()=>{
   const page=readFileSync('src/features/home/Page.tsx','utf8')
-  expect(page).toContain("location.hash==='#/'")
-  expect(page).toContain("void import('./GoalDistance')")
+  expect(page).not.toContain("void import('./GoalDistance')")
+  expect(page).toMatch(/lazy\(\(\)\s*=>\s*import\(['"]\.\/GoalDistance['"]\)/)
  })
 })
