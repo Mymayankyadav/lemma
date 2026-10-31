@@ -44,6 +44,30 @@ for(const width of [390,360] as const){
    Number.parseFloat(getComputedStyle(node).fontSize)))
   expect(recallSizes.length).toBeGreaterThan(4)
   expect(recallSizes.every(size=>size>=12)).toBe(true)
+  // The kit alone is not proof of the actual Insights route. Check every
+  // informative SVG chart label here, including Reviews by day and Checkpoints.
+  const insightCharts=page.locator('svg[role="img"]')
+  const insightLabels=insightCharts.locator('text')
+  expect(await insightLabels.count()).toBeGreaterThan(12)
+  const tiny=await insightLabels.evaluateAll(nodes=>nodes.flatMap(node=>{
+   const size=Number.parseFloat(getComputedStyle(node).fontSize)
+   return size>=12?[]:[{text:node.textContent,size}]
+  }))
+  expect(tiny,'Insights chart labels must be at least 12 CSS px').toEqual([])
+  const insightOverlaps=await insightCharts.evaluateAll(charts=>{
+   const collisions:string[]=[]
+   for(const chart of charts){
+    const nodes=Array.from(chart.querySelectorAll('text')).filter(node=>node.textContent?.trim())
+    for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+     const a=nodes[i].getBoundingClientRect(),b=nodes[j].getBoundingClientRect()
+     if(Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 &&
+        Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1)
+      collisions.push((nodes[i].textContent||'')+' / '+(nodes[j].textContent||''))
+    }
+   }
+   return collisions
+  })
+  expect(insightOverlaps,'Insights chart labels must not overlap').toEqual([])
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
   await page.screenshot({path:'test-results/screens/fix-506-insights-'+profile+'-'+theme+'-'+width+'.png'})
  })
