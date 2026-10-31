@@ -68,24 +68,31 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     }
   }
 
-  // ST-6: scale the first project's source shelf without materialising
-  // thousands of fake PDF pages per source.
+  // F2: exercise the per-project source limit, not just the first project.
+  // Page counts are metadata; materialising thousands of dummy PDF pages per
+  // source would turn the fixture into a memory test instead of a UI stress test.
   const firstSource = data.sources.find(source => source.projectId === baseProject.id);
   if (!firstSource) throw Error("Stress fixture requires a seeded project source");
-  const existingSources = data.sources.filter(source => source.projectId === baseProject.id).length;
   const sourceKinds = ["book", "notes", "slides", "problems", "syllabus", "exam", "other"] as const;
-  for (let i = existingSources; i < (extreme ? 100 : 30); i++) {
-    data.sources.push({
-      ...firstSource,
-      id: `stress-source-${i}`, projectId: baseProject.id,
-      title: `Source ${i + 1}: mathematical notes and proofs`,
-      short: `stresssrc${i}`, filename: `source-${i + 1}.pdf`,
-      kind: sourceKinds[i % sourceKinds.length], position: i,
-      pageCount: extreme ? 3000 : 1200,
-      status: "ready", hasText: false, outline: [], pages: [],
-      sha256: null, createdAt: `@day:-${i % 60}:0.5:0`,
-      addedAt: `@day:-${i % 60}:0.5:0`, planCheckedAt: null,
-    });
+  const sourceTarget = extreme ? 100 : 30;
+  const existingByProject = new Map<string,number>();
+  for (const source of data.sources)
+    existingByProject.set(source.projectId,(existingByProject.get(source.projectId)??0)+1);
+  for (const [projectIndex,project] of data.projects.entries()) {
+    const existing = existingByProject.get(project.id)??0;
+    for (let i=existing;i<sourceTarget;i++) {
+      data.sources.push({
+        ...firstSource,
+        id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
+        title: `Source ${i+1}: mathematical notes and proofs`,
+        short: `stresssrc${i}`, filename:`source-${i+1}.pdf`,
+        kind:sourceKinds[i%sourceKinds.length],position:i,
+        pageCount:extreme?3000:1200,
+        status:"ready",hasText:false,outline:[],pages:[],
+        sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
+        addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
+      });
+    }
   }
 
   for (let i = data.concepts.length; i < ideaCount; i++) {
