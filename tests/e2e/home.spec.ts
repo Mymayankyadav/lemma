@@ -57,7 +57,7 @@ test('home shortcuts navigate to review, proposals and the project path',async({
 })
 
 for(const theme of ['graph','graph-night'] as const){
- test(`UI-6b goal-first Today and keyboard Metro timeline: ${theme}`,async({page})=>{
+ test(`LOOK-3c goal-first Today and one-link Route: ${theme}`,async({page})=>{
   await page.goto(`./?demo=1&theme=${theme}#/`)
   const goals=page.getByRole('region',{name:'Distance to your goals'})
   const cards=page.getByRole('region',{name:'Cards'})
@@ -74,12 +74,11 @@ for(const theme of ['graph','graph-night'] as const){
   expect(order).toBe(true)
   const algebra=goals.getByRole('article',{name:/Goal progress for Real Analysis/})
   await expect(algebra).toContainText(/3\/12 checkpoints/)
-  const timeline=algebra.locator('[data-timeline="metro"]')
-  await expect(timeline.getByRole('button')).toHaveAttribute('aria-label',/Arrow keys to browse; Enter to open/)
+  const timeline=algebra.locator('[data-route-mode="today"]')
+  await expect(timeline.getByRole('link')).toHaveAttribute('aria-label',/open current checkpoint CP4/)
   await page.screenshot({path:`test-results/screens/review/ui5b-goals-${theme}.png`,fullPage:true})
-  await timeline.getByRole('button').focus()
-  await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('Enter')
+  await expect(timeline.getByRole('button')).toHaveCount(0)
+  await timeline.getByRole('link').click()
   await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\//)
  })
 }
