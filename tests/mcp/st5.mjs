@@ -63,7 +63,7 @@ try {
  await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
  const outlook=(await q('select public.home_review_outlook() as data'))[0].data
  assert.equal(outlook.forecast.length,7,'forecast is seven bounded days')
- assert.equal(outlook.decks.length,2,'deck tree contains only owner projects')
+ assert.equal(outlook.decks.length,1,'deck tree excludes archived, system and foreign projects')
  assert.equal(outlook.forecast[0].due,1,'due review card counts on today')
  assert.equal(outlook.forecast.reduce((n,d)=>n+d.due,0),1,'new and private cards excluded')
  console.log('PASS FIX-484b one owner-scoped review outlook RPC with seven-day forecast')
