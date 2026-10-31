@@ -1,9 +1,10 @@
 import {readFileSync} from 'node:fs'
+import {resolve} from 'node:path'
 import {describe,expect,it} from 'vitest'
 
 // FIX #573: keep the complete Playwright suite and screenshot gate required
 // even as the number of stress and Graph-theme cases grows.
-const workflow=readFileSync(new URL('../../../.github/workflows/ci.yml',import.meta.url),'utf8')
+const workflow=readFileSync(resolve(process.cwd(),'.github/workflows/ci.yml'),'utf8')
 const job=(name:string)=>{
  const start=workflow.indexOf('\n  '+name+':\n')
  if(start<0)throw Error('Missing CI job: '+name)
