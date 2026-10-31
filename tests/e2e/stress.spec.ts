@@ -119,6 +119,17 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
     await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
    }
    await page.waitForTimeout(150);
+   if(route==='/'){
+    const phases=await page.evaluate(()=>{
+     const duration=(name:string)=>performance.getEntriesByName(name,'measure')[0]?.duration??null;
+     const nav=performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined;
+     return {fixtureGenerateMs:duration('lemma-stress-fixture-generate'),
+      fixtureHydrateMs:duration('lemma-stress-fixture-hydrate'),
+      domContentLoadedMs:nav?.domContentLoadedEventEnd??null,
+      loadedResources:performance.getEntriesByType('resource').length};
+    });
+    console.info('ST-0 cold Today phase timings',JSON.stringify({profile,theme,width,...phases}));
+   }
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
    // Avoid counting the same cached resources again on subsequent hash routes.
    await page.evaluate(() => performance.clearResourceTimings());
