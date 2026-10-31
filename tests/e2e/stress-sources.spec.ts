@@ -21,11 +21,13 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
     // ST-6 folds large source groups; open Notes when the fold control exists.
     const notesFold = sources.getByRole('button', {name:/notes ·/i});
     if (await notesFold.count()) await notesFold.click();
-    const source = sources.getByText('Source 5: mathematical notes and proofs');
-    await expect(source).toBeVisible();
-    const tile = source.locator('xpath=ancestor::*[contains(concat(" ",normalize-space(@class)," ")," tile ")][1]');
-    await tile.getByRole('button', {name:'View pages'}).click();
-    const viewer = tile.getByRole('region', {name:/Page transcription for Source 5/});
+    // The Graph Sources list uses flat rows, not legacy .tile wrappers.
+    // Scope the controls to the named source group so another source cannot
+    // accidentally satisfy this long-page navigation regression.
+    const row = sources.getByRole('group', {name:'Source 5: mathematical notes and proofs'});
+    await expect(row).toBeVisible();
+    await row.getByRole('button', {name:'View pages'}).click();
+    const viewer = row.getByRole('region', {name:/Page transcription for Source 5/});
     await expect(viewer).toBeVisible();
     await expect(viewer).toContainText(`of ${pageCount}`);
     await expect(viewer).toContainText('Synthetic mathematics notes, page 1');
