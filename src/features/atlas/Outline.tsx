@@ -165,8 +165,8 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
 /** Distinct hierarchy without shortening any interactive target. The full
  * mathematical name stays in the button's accessible label and details sheet.
  */
-export function Row({node,open,tone,match,focused=false,onToggle,onSelect}:{
- node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;onToggle:()=>void;onSelect:()=>void;
+export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onSelect}:{
+ node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;sticky?:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
  const parent=node.children.length>0,root=node.level==='cluster',area=node.level==='galaxy';
  const selected=tone==='self',height=atlasRowHeight(node.level);
@@ -179,7 +179,7 @@ export function Row({node,open,tone,match,focused=false,onToggle,onSelect}:{
  const showProgress=root||area;
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
-  className={'group relative flex items-center bg-[var(--paper)] '+(root?'sticky top-0 z-10 ':'')+(match?'bg-fill-1':'')}
+  className={'group relative flex items-center bg-[var(--paper)] '+(root&&sticky?'sticky top-0 z-10 ':'')+(match?'bg-fill-1':'')}
   style={{height,paddingLeft:lead,paddingRight:GUTTER+4,
    // Inset rule keeps the 44px button's painted hitbox intact (border-box lost 1px).
    boxShadow:root||area?'inset 0 1px var(--hair)':undefined,
