@@ -204,7 +204,7 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
      </g>
     })}
     {!mini&&<text x={Math.max(35,Math.min(315,selectedPoint.x))} y={Math.max(12,selectedPoint.y-15)}
-     fontSize="11" textAnchor="middle" fill="var(--accent)">{selectedCheckpoint?.code}</text>}
+     fontSize="12" textAnchor="middle" fill="var(--accent)">{selectedCheckpoint?.code}</text>}
    </svg>
    {!mini&&variant==='metro'&&groups.map((group,i)=>{
     const start=geometry[group.start].x,end=geometry[group.end].x
