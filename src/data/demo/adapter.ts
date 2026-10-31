@@ -673,16 +673,19 @@ export class DemoAdapter implements LemmaApi {
         .forEach((s,i) => { s.position = i; });
     });
   }
-  async listProjects() {
+  async listProjects(withDueCounts=false) {
     // ST-0: scanning 30,000 cards and 6,000 checkpoints separately for each
     // of 60 projects creates millions of redundant reads on the cold Today.
     const index:SummaryIndex={
-      checkpoints:new Map(),cards:this.dueSnapshot().cardCounts,sessions:new Map(),sourceTitles:new Map(),
+      checkpoints:new Map(),cards:withDueCounts?this.dueSnapshot().cardCounts:new Map(),sessions:new Map(),sourceTitles:new Map(),
     };
     for(const cp of this.store.checkpoints){
       const rows=index.checkpoints.get(cp.projectId)??[];
       rows.push(cp);index.checkpoints.set(cp.projectId,rows);
     }
+    // A standalone Projects read should not pay for due-card scheduling.
+    if(!withDueCounts)for(const note of this.store.notes)if(note.note.status!=="deleted")
+      index.cards.set(note.projectId,(index.cards.get(note.projectId)??0)+note.cards.length);
     for(const session of this.store.sessions)if(session.state==="ended")
       index.sessions.set(session.projectId,(index.sessions.get(session.projectId)??0)+1);
     for(const source of this.store.sources){
@@ -973,7 +976,7 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   async getHome(): Promise<HomeSummary> {
-    const projects = (await this.listProjects()).filter(p => p.status !== "archived"),
+    const projects = (await this.listProjects(true)).filter(p => p.status !== "archived"),
       open = this.store.sessions
         .filter((s) => s.state === "open" && this.projectById(s.projectId).status !== "archived" && !this.projectById(s.projectId).system)
         .sort(
