@@ -20,6 +20,7 @@ for(const width of [360,390] as const){
   for(const target of await actions.locator('button,a[href]').all()){
    const box=await target.boundingBox();
    expect(box?.height??0).toBeGreaterThanOrEqual(44);
+   expect(box?.width??0).toBeGreaterThanOrEqual(44);
   }
   await actions.getByRole('button',{name:'Pages'}).click();
   await expect(page.getByRole('dialog',{name:'Session pages'})).toBeVisible();
