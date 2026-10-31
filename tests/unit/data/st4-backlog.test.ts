@@ -13,6 +13,12 @@ describe('ST-4 due backlog semantics',()=>{
   note!.cards[0].state.due='@due:-1';
   const now=Date.parse('2026-10-31T12:00:00Z');
   const api=new DemoAdapter({fixture,now:()=>now,timeZone:'UTC'});
+  // The fixture hydrator normalises new-card dates. Force one state-0 card
+  // overdue after hydration to exercise the badge exclusion explicitly.
+  const hydrated=(api as unknown as {store:DemoStore}).store;
+  const newCard=hydrated.notes.find(n=>n.note.noteNo===note!.note.noteNo)!.cards[0];
+  newCard.state.state=0;
+  newCard.state.due=new Date(now-3600_000).toISOString();
   const snapshot=JSON.parse(await (await api.exportAll()).text()) as DemoStore;
   const visible=new Set(snapshot.projects.filter(p=>p.status!=='archived'&&!p.system).map(p=>p.id));
   const active=snapshot.notes.filter(n=>n.note.status==='active'&&visible.has(n.projectId))
