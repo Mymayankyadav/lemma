@@ -70,7 +70,7 @@ import { parseSteps } from "../../lib/fsrs";
 import {clozeOrds} from "./cloze";
 import { slugify } from "../../lib/text";
 import { DAY, studyClock } from "../../lib/calendar";
-import {fillStressAtlas, makeStressInsightAggregate, makeStressNotes, stressSessionEvents, stressSourcePage} from "./stress";
+import {fillStressAtlas, fillStressSources, makeStressInsightAggregate, makeStressNotes, stressSessionEvents, stressSourcePage} from "./stress";
 
 // One parse per module, not once per each of the 1,000 virtual sessions.
 export const demoSeedFixture = JSON.parse(fixtureText) as DemoStore;
@@ -156,6 +156,7 @@ export class DemoAdapter implements LemmaApi {
     return this.dueSnapshot().forecastDays.map(day=>({...day}));
   }
   private store: DemoStore;
+  private stressSourceSeedTitles:Map<string,string[]>|null=null;
   private readonly now: () => number;
   private stressDayStart: number | undefined;
   private virtualStressDue: {overdue:number;future:number}|null=null;
@@ -279,6 +280,27 @@ export class DemoAdapter implements LemmaApi {
           proposals:[],reviews:[]},this.now(),store.settings.timeZone,
           {takeOwnership:true}).notes;
         Object.defineProperty(store,'notes',{value:hydrated,writable:true,
+          enumerable:true,configurable:true});
+        return hydrated;
+      }});
+    }
+    if(options.ownedFixture&&this.store.stressSourceTarget!==undefined){
+      const store=this.store,sourceTarget=store.stressSourceTarget;
+      // Today only needs exact source titles/counts, not 6,000 source objects
+      // and their hydrated dates. Keep the authored seed sources untouched.
+      const titles=new Map<string,string[]>();
+      for(const source of original.sources){
+        const values=titles.get(source.projectId)??[];
+        values.push(source.title);titles.set(source.projectId,values);
+      }
+      this.stressSourceSeedTitles=titles;
+      Object.defineProperty(store,'sources',{configurable:true,enumerable:true,get:()=>{
+        const staging={...original,projects:store.projects,sources:[...original.sources]};
+        fillStressSources(staging,sourceTarget,store.seed===2026103102);
+        const hydrated=hydrateFixture({...staging,notes:[],checkpoints:[],
+          sessions:[],concepts:[],links:[],proposals:[],reviews:[]},
+          this.now(),store.settings.timeZone,{takeOwnership:true}).sources;
+        Object.defineProperty(store,'sources',{value:hydrated,writable:true,
           enumerable:true,configurable:true});
         return hydrated;
       }});
@@ -766,7 +788,21 @@ export class DemoAdapter implements LemmaApi {
       index.cards.set(note.projectId,(index.cards.get(note.projectId)??0)+note.cards.length);
     for(const session of this.store.sessions)if(session.state==="ended")
       index.sessions.set(session.projectId,(index.sessions.get(session.projectId)??0)+1);
-    for(const source of this.store.sources){
+    const virtualSources=withDueCounts&&this.stressSourceSeedTitles&&
+      typeof Object.getOwnPropertyDescriptor(this.store,'sources')?.get==='function';
+    if(virtualSources){
+      // The generated source titles follow a deterministic per-project index.
+      // Reproduce the complete 100/30-title summaries without forcing the
+      // source getter. Once a source route materializes or edits them, use
+      // the actual source records instead.
+      const target=this.store.stressSourceTarget??0;
+      for(const project of this.store.projects){
+        const titles=[...(this.stressSourceSeedTitles!.get(project.id)??[])];
+        for(let i=titles.length;i<target;i++)
+          titles.push('Source '+(i+1)+': mathematical notes and proofs');
+        index.sourceTitles.set(project.id,titles);
+      }
+    }else for(const source of this.store.sources){
       const titles=index.sourceTitles.get(source.projectId)??[];
       titles.push(source.title);index.sourceTitles.set(source.projectId,titles);
     }
