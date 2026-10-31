@@ -77,7 +77,10 @@ for(const theme of ['graph','graph-night'] as const)for(const width of [360,390]
   await expect(overflow).toHaveAttribute('open','');
   const hidden=overflow.locator('li');
   const visible=page.locator('[data-atlas-bundle-count]');
-  expect(await hidden.count()+await visible.count()).toBe(20);
+  const laneHidden=page.locator('[data-atlas-lane-overflow] li');
+  // Every original bundle remains reachable through a painted pill, the
+  // finite-gutter badge disclosure or the independent lane disclosure.
+  expect(await hidden.count()+await visible.count()+await laneHidden.count()).toBe(20);
   expect(await hidden.count()).toBeGreaterThan(0);
   expect((await hidden.allTextContents()).every(t=>/rows \d+–\d+: 2 links/.test(t))).toBe(true);
   const fontSizes=await hidden.evaluateAll(items=>items.map(el=>parseFloat(getComputedStyle(el).fontSize)));
