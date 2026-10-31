@@ -1,5 +1,10 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import type {ProjectSummary} from '../../src/data/types';
+import {MiniStageBar,miniRouteNotch,currentMiniRouteOrdinal} from '../../src/ui/timeline/MiniStageBar';
+import {layoutMiniRoute} from '../../src/ui/timeline/miniRoute';
 
 for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
@@ -58,5 +63,36 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   const path='test-results/screens/look-3a/paths-'+profile+'-'+theme+'-'+width+'.png';
   await page.screenshot({path});
   await testInfo.attach('mini-route-geometry',{body:JSON.stringify(metrics,null,2),contentType:'application/json'});
+  // Real S/X Paths plus an explicit out-of-order/recheck fixture. Completion
+  // fill must not move the red "you are here" notch away from CP9.
+  const uneven=[
+   {label:'S1',firstCode:'CP1',lastCode:'CP2',total:2,done:2,overdue:0,schedule:'complete' as const},
+   {label:'S2',firstCode:'CP3',lastCode:'CP10',total:8,done:1,overdue:0,schedule:'dated' as const},
+   {label:'S3',firstCode:'CP11',lastCode:'CP36',total:26,done:0,overdue:0,schedule:'unscheduled' as const},
+  ];
+  const done=profile==='extreme'?36:3;
+  const synthetic={total:36,done,stageProgress:uneven,
+   current:{code:'CP9',title:'Recheck',step:1,stepsTotal:1},
+  } as ProjectSummary;
+  const markup=renderToStaticMarkup(createElement(MiniStageBar,{project:synthetic}));
+  await page.evaluate(html=>{
+   const host=document.createElement('div');
+   host.setAttribute('data-current-audit','');
+   host.style.cssText='position:fixed;top:190px;left:16px;width:200px;display:flex;z-index:10000;background:var(--paper)';
+   host.innerHTML=html;document.body.appendChild(host);
+  },markup);
+  const mismatch=page.locator('[data-current-audit] [data-mini-route]');
+  await expect(mismatch.locator('[data-route-notch]')).toHaveCount(1);
+  const notchX=Number(await mismatch.locator('[data-route-notch]').getAttribute('data-notch-x'));
+  const groups=layoutMiniRoute(uneven,200);
+  const expected=miniRouteNotch(currentMiniRouteOrdinal('CP9',uneven,done),36,200,groups)!.x;
+  const completed=miniRouteNotch(done>=36?36:done+.5,36,200,groups)!.x;
+  expect(notchX).toBeCloseTo(expected,1);
+  expect(Math.abs(notchX-completed)).toBeGreaterThan(20);
+  const notchBox=await mismatch.locator('[data-route-notch]').boundingBox();
+  expect(notchBox?.width).toBeCloseTo(2,0);
+  expect(notchBox?.height).toBeCloseTo(12,0);
+  await page.screenshot({path:'test-results/screens/look-3a/current-'+profile+'-'+theme+'-'+width+'.png'});
+
  });
 }
