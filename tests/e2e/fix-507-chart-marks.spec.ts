@@ -17,7 +17,9 @@ for(const route of ['/insights','/kit'] as const){
   const checkpoints=page.locator('svg[aria-label^="Checkpoints by week"]');
   await expect(reviews).toBeVisible();
   await expect(checkpoints).toBeVisible();
-  expect(await reviews.locator('[data-stress-mark]').count()).toBeGreaterThan(3);
+  // The spacing fix must retain all 30/7 day buckets, not silently omit bars.
+  await expect(reviews.locator('[data-stress-mark]')).toHaveCount(route==='/insights'?30:7);
+  if(route==='/insights')expect(await reviews.evaluate(svg=>svg.getBoundingClientRect().width>(svg.parentElement?.clientWidth??0))).toBe(true);
   expect(await checkpoints.locator('[data-stress-mark]').count()).toBeGreaterThan(3);
   const gap=await page.evaluate(measureSvgMarks);
   expect(gap,`all ${route} informative chart marks need >=8px edge clearance`).not.toBeNull();
