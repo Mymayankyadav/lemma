@@ -30,7 +30,7 @@ function MiniMetro({project}:{project:ProjectSummary}){
  </div>;
 }
 
-function ProjectRow({project}:{project:ProjectSummary}){
+function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubject?:boolean}){
  const update=useUpdateProject(),projects=useProjects(),notify=useToast(),[menu,setMenu]=useState(false);
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const longPressed=useRef(false);
@@ -75,7 +75,7 @@ function ProjectRow({project}:{project:ProjectSummary}){
       {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
       <ChevronRight size={17} className="shrink-0 text-ink-3" aria-hidden="true"/>
      </div>
-     <div className="mt-1 text-caption text-ink-2">{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
+     <div className="mt-1 text-caption text-ink-2">{showSubject&&<span className="mr-2">{project.subject?.name??"Unassigned"} ·</span>}{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
     </Link>}
    <button type="button" aria-label={'Actions for '+project.title} aria-expanded={menu} aria-haspopup="menu"
     onClick={()=>setMenu(value=>!value)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-edge text-ink-2">
@@ -96,14 +96,14 @@ function ProjectRow({project}:{project:ProjectSummary}){
 
 function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void}){
  return <section aria-label={name+' projects'} className="space-y-2">
-  <button type="button" aria-expanded={!collapsed} onClick={onToggle}
+  {total>1&&<button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
    <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s"><Tex source={name}/></h2>
    <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
-  </button>
-  {!collapsed&&<div className="space-y-2">{items.map(project=><ProjectRow key={project.id} project={project}/>)}</div>}
+  </button>}
+  {(total===1||!collapsed)&&<div className="space-y-2">{items.map(project=><ProjectRow key={project.id} project={project} showSubject={total===1}/>)}</div>}
  </section>;
 }
 
