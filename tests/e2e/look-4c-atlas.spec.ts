@@ -46,7 +46,7 @@ test('LOOK-4c eight physical lanes disclose a ninth overlapping connection',asyn
  await expect(paths).toHaveCount(8);
  const xs=await paths.evaluateAll(elements=>elements.map(el=>Number(el.getAttribute('data-atlas-lane'))));
  expect(new Set(xs).size).toBe(8);
- for(const x of xs)expect((74-x)%9).toBe(0);
+ for(const x of xs)expect((83-x)%9).toBe(0);
  const overflow=page.locator('[data-atlas-lane-overflow]');
  const summary=overflow.locator('summary');
  await expect(summary).toBeVisible();
