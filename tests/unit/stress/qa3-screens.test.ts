@@ -105,7 +105,7 @@ describe('QA-3b screenshot structural gate',()=>{
    writeFileSync(join(dir,b),envelope(matrix.width*2,(matrix.width===390?844:740)*2,1))
    const report=auditQa3Screens(dir)
    expect(report.status).toBe('PASS')
-   expect(report.warnings.some(w=>w.includes('/')&&w.includes('/projects'))).toBe(true)
+   expect(report.warnings.some(w=>w.includes(a)&&w.includes(b))).toBe(true)
   }finally{rmSync(dir,{recursive:true,force:true})}
  })
 
