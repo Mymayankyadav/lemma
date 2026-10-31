@@ -149,14 +149,7 @@ export function Stages({detail}:{detail:ProjectDetail}){
     <span className="shrink-0">{i+1}.</span>
     <span data-stage-chip-label className="block min-w-0 flex-1 overflow-x-auto whitespace-nowrap"
      style={{overflowX:'auto',whiteSpace:'nowrap',maskImage:'linear-gradient(to right, black 85%, transparent)',
-      fontSize:stage.name.includes('
-   </button>)}
-  </nav>}
-  {stages.map((stage,i)=><StageCard key={detail.project.slug+'/'+stage.key} slug={detail.project.slug}
-   stage={stage} schedule={schedule} open={openStage===i} onToggle={()=>setOpenStage(value=>value===i?-1:i)}/>)}
- </section>;
-}
-)||stage.name.includes('\\\\')?'16px':undefined}}>
+      fontSize:stage.name.includes('$')||stage.name.includes('\\\\')?'16px':undefined}}>
      <Tex source={stage.name}/>
     </span>
    </button>)}
