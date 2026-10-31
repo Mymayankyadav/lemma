@@ -21,9 +21,6 @@ import {FastHomeTex} from './FastHomeTex'
 import type {HomeSummary, ProjectSummary} from '../../data/types';
 
 
-// Start fetching the actual goal-card module in parallel with Home's data.
-// It remains lazy for all other routes, especially direct Atlas cold entry.
-if(typeof window!=='undefined' && (!location.hash || location.hash==='#/')) void import('./GoalDistance')
 const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
 const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
 
