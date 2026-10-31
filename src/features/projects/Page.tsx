@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
@@ -99,7 +100,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
   <button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
-   <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s"><Tex source={name}/></h2>
+   <SectionHeading className="min-w-0 flex-1 break-words"><Tex source={name}/></SectionHeading>
    <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
   </button>
