@@ -35,6 +35,12 @@ async function checkMiniRoutes(page,scene){
   const widths=segments.map(node=>node.getBoundingClientRect().width);
   const notch=bar.querySelectorAll('[data-route-notch]');
   const failures=[];
+  // A project with no checkpoints has no segments and no current notch.
+  // It must not be mistaken for a broken nonempty Route.
+  if(/^0 of 0 checkpoints/.test(bar.getAttribute('aria-label')||'')){
+   if(segments.length||notch.length)failures.push('empty bar '+index+' unexpectedly has marks');
+   return failures;
+  }
   if(!segments.length)failures.push('bar '+index+' has no segments');
   if(widths.some(value=>value<7.99))failures.push('bar '+index+' has a segment under 8px');
   if(widths.reduce((sum,value)=>sum+value,0)>width+1)failures.push('bar '+index+' exceeds one track');
