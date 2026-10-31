@@ -225,7 +225,12 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   // and a second project's first session. The remaining sessions exercise list
   // pagination without allocating millions of repetitive event objects.
   const eventCount = extreme ? 400 : 150;
-  const eventKinds = ["attempt", "hint", "explanation", "note", "misconception", "evidence", "recheck", "pretest"] as const;
+  // ST-6 acceptance expects foldable nine-hint runs followed by visible evidence steps.
+  const eventKind = (index: number) => {
+    const phase = index % 12;
+    return phase < 9 ? "hint" as const : phase === 9 ? "attempt" as const
+      : phase === 10 ? "evidence" as const : "recheck" as const;
+  };
   data.sessions = [];
   for (const [projectIndex, project] of data.projects.entries()) {
     for (let index = 0; index < sessionCount; index++) {
@@ -234,13 +239,13 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
         || (projectIndex === projectCount - 1 && number === 1);
       const events = fullHistory
         ? Array.from({length: eventCount}, (_, eventIndex) => {
-            const kind = eventKinds[Math.floor(eventIndex / 12) % eventKinds.length];
+            const kind = eventKind(eventIndex);
             return {
               id: projectIndex * sessionCount * eventCount + index * eventCount + eventIndex + 1,
               kind,
               body: `Reasoning step ${eventIndex + 1}: justify the inference using the hypotheses of the lemma.`,
               outcome: kind === "evidence" ? "demonstrated" as const : kind === "attempt" ? "partial" as const : null,
-              hintLevel: kind === "hint" ? (eventIndex % 20) + 1 : null,
+              hintLevel: kind === "hint" ? (eventIndex % 12) + 1 : null,
               checkpointCode: `CP${(index % 36) + 1}`,
               createdAt: `@day:-${index % 90}:0.5:0`,
             };

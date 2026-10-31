@@ -20,8 +20,10 @@ describe('ST-0 session history at scale (audit #462)', () => {
    expect(detail?.events.some(event => event.kind === 'hint')).toBe(true);
    expect(detail?.events.some(event => event.kind === 'attempt')).toBe(true);
    expect(detail?.events.some(event => event.kind === 'evidence')).toBe(true);
-   expect(detail?.events.slice(0, 12).every(event => event.kind === 'attempt')).toBe(true);
-   expect(detail?.events.slice(12, 24).every(event => event.kind === 'hint')).toBe(true);
+   expect(detail?.events.slice(0, 9).every(event => event.kind === 'hint')).toBe(true);
+   expect(detail?.events[9]?.kind).toBe('attempt');
+   expect(detail?.events[10]?.kind).toBe('evidence');
+   expect(detail?.events[11]?.kind).toBe('recheck');
    expect(new Set(detail?.events.map(event => event.id)).size).toBe(eventsPerSession);
   });
  }
