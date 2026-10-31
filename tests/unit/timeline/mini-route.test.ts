@@ -40,6 +40,10 @@ describe('LOOK-3a mini Route geometry',()=>{
   const endResult=layoutMiniRoute(nearEnd,48);
   expect(endResult.some(s=>s.label==='S95'&&s.groupedCount===1)).toBe(true);
   expect(endResult.reduce((sum,s)=>sum+s.total,0)).toBe(100);
+  // A skipped earlier stage must not hide the actual current stage CP91.
+  const skipped=input.map(s=>({...s,done:0}));
+  const selected=layoutMiniRoute(skipped,48,90);
+  expect(selected.some(s=>s.label==='S90'&&s.groupedCount===1)).toBe(true);
  });
  it('renders a single progress bar without checkpoint ticks or danger-red lateness',()=>{
   const html=renderToStaticMarkup(createElement(MiniStageBar,{project:{
