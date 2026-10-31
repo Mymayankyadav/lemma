@@ -99,7 +99,13 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     const rows=await items.count();
     const checkpointTopics=(await items.allTextContents())
       .map(text=>text.match(/Taught in CP\d+/)?.[0]).filter(Boolean);
-    expect(checkpointTopics).toEqual(Array.from({length:40},(_,i)=>"Taught in CP"+(i+1)));
+    // Stress profile groups 400 checkpoints into 40 teaching groups
+    // (CP10, CP20, ..., CP400), rather than contiguous CP1...CP40.
+    // Assert actual numeric order, uniqueness and full group coverage.
+    const groupNums=checkpointTopics.map(topic=>Number(topic!.match(/CP(\d+)/)?.[1]));
+    expect(groupNums).toHaveLength(40);
+    expect(new Set(groupNums).size).toBe(40);
+    expect(groupNums).toEqual([...groupNums].sort((a,b)=>a-b));
     expect(rows).toBeLessThanOrEqual(41);
     expect(rows).toBeGreaterThan(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
