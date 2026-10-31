@@ -24,8 +24,33 @@ for(const width of [360,390] as const){
    const geometry=await sketch.evaluate(svg=>{
     const r=svg.getBoundingClientRect(),main=document.querySelector('#main-content')!.getBoundingClientRect();
     const s=getComputedStyle(svg);
-    const curve=svg.querySelector('path[stroke="var(--accent)"]');
-    return {
+    const curve=svg.querySelector<SVGGraphicsElement>('path[stroke="var(--accent)"]');
+    const box=curve?.getBBox(),matrix=curve?.getScreenCTM();
+    const painted=box&&matrix?[
+     new DOMPoint(box.x,box.y).matrixTransform(matrix),
+     new DOMPoint(box.x+box.width,box.y+box.height).matrixTransform(matrix),
+    ]:null;
+    const curveRect=painted?{left:Math.min(painted[0].x,painted[1].x)-2,
+     right:Math.max(painted[0].x,painted[1].x)+2,
+     top:Math.min(painted[0].y,painted[1].y)-2,
+     bottom:Math.max(painted[0].y,painted[1].y)+2}:null;
+    const overlaps:string[]=[];
+    if(curveRect){
+     const intersect=(r:DOMRect)=>Math.min(r.right,curveRect.right)-Math.max(r.left,curveRect.left)>1
+      &&Math.min(r.bottom,curveRect.bottom)-Math.max(r.top,curveRect.top)>1;
+     for(const element of document.querySelectorAll<HTMLElement>('[data-card],.card,.slab')){
+      if(intersect(element.getBoundingClientRect()))overlaps.push(element.tagName.toLowerCase()+'.paper');
+     }
+     for(const element of document.querySelectorAll<HTMLElement>('h1,h2,h3')){
+      const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);
+      for(let node=walker.nextNode();node;node=walker.nextNode()){
+       if(!node.textContent?.trim())continue;
+       const range=document.createRange();range.selectNodeContents(node);
+       if([...range.getClientRects()].some(intersect))overlaps.push(element.tagName.toLowerCase()+'.text');
+      }
+     }
+    }
+    return {overlaps,
      position:s.position,pointer:s.pointerEvents,top:r.top-main.top,
      height:r.height,bottom:r.bottom,opacity:curve?.getAttribute('opacity'),
      labels:svg.querySelectorAll('text').length,
@@ -37,6 +62,7 @@ for(const width of [360,390] as const){
    expect(geometry.pointer).toBe('none');
    expect(geometry.ariaHidden).toBe('true');
    expect(geometry.labels).toBe(0);
+   expect(geometry.overlaps).toEqual([]);
    expect(geometry.top).toBeGreaterThanOrEqual(-1);
    expect(geometry.top).toBeLessThanOrEqual(1);
    expect(geometry.height).toBeLessThanOrEqual(121);
