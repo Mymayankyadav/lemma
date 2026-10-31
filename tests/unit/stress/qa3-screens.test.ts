@@ -77,6 +77,16 @@ function updateManifestHash(dir:string,matrix:ReturnType<typeof qa3Cases>[number
  row.sha256=hash(readFileSync(join(dir,qa3ScreenshotName(matrix,route))))
  writeFileSync(path,JSON.stringify(evidence))
 }
+describe('FIX #586 sign-in readiness under the approved v4 demo flow',()=>{
+ it('waits for the demo-mode explanation, not a Google button absent from demo',()=>{
+  // LOOK-9a removes the misleading disabled sign-in action in demo mode.
+  // The screenshot matrix always runs in demo; its readiness must remain
+  // tied to visible page content after that approved UI change merges.
+  expect(QA3_ROUTE_READINESS['/sign-in'].landmark)
+   .toBe('p:has-text("Sign-in is available in live mode.")');
+ });
+});
+
 describe('QA-3b screenshot structural gate',()=>{
  it('accepts 1×/2×/3× matching PNG envelopes and rejects malformed dimensions',()=>{
   for(const scale of [1,2,3])expect(pngHeader(envelope(390*scale,844*scale),390,844)?.scale).toBe(scale)
