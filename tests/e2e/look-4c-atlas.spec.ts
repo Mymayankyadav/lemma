@@ -66,3 +66,24 @@ test('LOOK-4c seven physical lanes disclose an eighth overlapping connection',as
  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
  await page.screenshot({path:'test-results/screens/look-4c-dense-lanes-360.png'});
 });
+
+for(const profile of ['stress','extreme'] as const)
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test(`LOOK-4c suppressed ports remain visible ${profile} ${theme} ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:740});
+  await page.goto(`./?demo=${profile}&atlasDenseLanes=1&theme=${theme}#/atlas`);
+  const tree=page.getByRole('tree',{name:'Ideas and their links'});
+  await expect(tree).toBeVisible();
+  await expect(page.locator('[data-atlas-wires] [data-arc-kind]')).toHaveCount(7);
+  const ports=page.locator('[data-atlas-hidden-port]');
+  await expect(ports).toHaveCount(2);
+  await expect(page.locator('[data-atlas-hidden-port="out"]')).toHaveAttribute('data-atlas-row','7');
+  await expect(page.locator('[data-atlas-hidden-port="in"]')).toHaveAttribute('data-atlas-row','15');
+  const disclosure=page.locator('[data-atlas-lane-overflow] summary');
+  await expect(disclosure).toHaveAccessibleName('Show 1 hidden Atlas links');
+  expect((await disclosure.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({path:`test-results/screens/look-4c-hidden-ports-${profile}-${theme}-${width}.png`});
+ });
+}
