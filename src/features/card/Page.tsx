@@ -1,4 +1,6 @@
 import {MathPreview} from '../../ui/MathPreview';
+import {getApi} from "../../data";
+import type {CardHistoryPage,CardCommentsPage} from "../../data/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -56,8 +58,11 @@ export default function Page() {
   const [editing, setEditing] = useState(false),
     [deleting, setDeleting] = useState(false),
     [message, setMessage] = useState(""),
-    [allComments,setAllComments] = useState(false),
-    [allReviews,setAllReviews] = useState(false),
+    [commentPage,setCommentPage] = useState<CardCommentsPage|null>(null),
+    [reviewPage,setReviewPage] = useState<CardHistoryPage|null>(null),
+    [commentCursors,setCommentCursors] = useState<string[]>([]),
+    [reviewCursors,setReviewCursors] = useState<string[]>([]),
+    [pageBusy,setPageBusy] = useState(false),
     [slow, setSlow] = useState(false);
   const closeEditing = useCallback(() => setEditing(false), []);
   const closeDeleting = useCallback(() => setDeleting(false), []);
@@ -73,14 +78,62 @@ export default function Page() {
     note = detail?.note,
     project = projects.data?.find((p) => p.slug === note?.projectSlug),
     card = detail?.cards[0]?.state;
-  const visibleComments = useMemo(() => [...(detail?.comments??[])]
-    .filter(c=>c.status==='open'||c.status==='addressed')
-    .sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))
-    .slice(0,allComments?undefined:20),[detail?.comments,allComments]);
-  const visibleReviews = useMemo(() => [...(detail?.history??[])]
-    .sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt))
-    .slice(0,allReviews?undefined:20),[detail?.history,allReviews]);
-  const totalComments = detail?.comments.filter(c=>c.status==='open'||c.status==='addressed').length??0;
+  // Only one bounded page is mounted at a time, even after browsing thousands of rows.
+  const rawComments=commentPage?.rows??detail?.comments??[];
+  const visibleComments=rawComments.filter(c=>c.status==='open'||c.status==='addressed');
+  const visibleReviews=reviewPage?.rows??detail?.history??[];
+  const moreComments=commentPage?Boolean(commentPage.nextCursor):rawComments.length===20;
+  const moreReviews=reviewPage?Boolean(reviewPage.nextCursor):visibleReviews.length===20;
+  useEffect(()=>{
+    setCommentPage(null);setReviewPage(null);
+    setCommentCursors([]);setReviewCursors([]);
+  },[number,query.dataUpdatedAt]);
+  const olderReviews=async()=>{
+    if(pageBusy)return;
+    setPageBusy(true);
+    try{
+      const current=reviewPage??await getApi().getCardHistoryPage(number);
+      if(!current.nextCursor){setReviewPage(current);return;}
+      const next=await getApi().getCardHistoryPage(number,current.nextCursor);
+      setReviewCursors(v=>[...v,current.nextCursor!]);
+      setReviewPage(next);
+    }catch{notify("Couldn't load older reviews.",{tone:"danger"});}
+    finally{setPageBusy(false);}
+  };
+  const newerReviews=async()=>{
+    if(pageBusy)return;
+    setPageBusy(true);
+    try{
+      const previous=reviewCursors.slice(0,-1);
+      const cursor=previous.at(-1);
+      setReviewPage(cursor?await getApi().getCardHistoryPage(number,cursor):null);
+      setReviewCursors(previous);
+    }catch{notify("Couldn't load newer reviews.",{tone:"danger"});}
+    finally{setPageBusy(false);}
+  };
+  const olderComments=async()=>{
+    if(pageBusy)return;
+    setPageBusy(true);
+    try{
+      const current=commentPage??await getApi().getCardCommentsPage(number);
+      if(!current.nextCursor){setCommentPage(current);return;}
+      const next=await getApi().getCardCommentsPage(number,current.nextCursor);
+      setCommentCursors(v=>[...v,current.nextCursor!]);
+      setCommentPage(next);
+    }catch{notify("Couldn't load older comments.",{tone:"danger"});}
+    finally{setPageBusy(false);}
+  };
+  const newerComments=async()=>{
+    if(pageBusy)return;
+    setPageBusy(true);
+    try{
+      const previous=commentCursors.slice(0,-1);
+      const cursor=previous.at(-1);
+      setCommentPage(cursor?await getApi().getCardCommentsPage(number,cursor):null);
+      setCommentCursors(previous);
+    }catch{notify("Couldn't load newer comments.",{tone:"danger"});}
+    finally{setPageBusy(false);}
+  };
   const chart = useMemo(() => {
     const history = [...(detail?.history ?? [])].sort(
       (a, b) => Date.parse(a.reviewedAt) - Date.parse(b.reviewedAt),
@@ -316,16 +369,15 @@ export default function Page() {
                     <p className="mt-3 text-ink-3">{c.body}</p>
                   </details>
                 ))}
-              {!detail.comments.some(
-                (c) => c.status === "open" || c.status === "addressed",
-              ) && (
+              {!visibleComments.length && (
                 <p className="text-body text-ink-3">
-                  No notes for your tutor yet.
+                  No active notes on this page.
                 </p>
               )}
-              {totalComments>20&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setAllComments(v=>!v)}>
-               {allComments?'Show latest 20':'More comments ('+(totalComments-20)+')'}
-              </button>}
+              <div className="flex flex-wrap gap-3">
+               {commentCursors.length>0&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void newerComments()}>Newer comments</button>}
+               {moreComments&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void olderComments()}>More comments</button>}
+              </div>
             </div>
           </section>
           <section aria-label="Review history">
@@ -335,10 +387,11 @@ export default function Page() {
             <span className="text-amber">{['','Again','Hard','Good','Easy'][r.rating]??'Reviewed'}</span>
             <span className="text-ink-3">{r.confidence??'—'}</span>
            </div>)}
-           {!detail.history.length&&<p className="text-label text-ink-3">No reviews yet.</p>}
-           {detail.history.length>20&&<button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setAllReviews(v=>!v)}>
-            {allReviews?'Show latest 20':'More reviews ('+(detail.history.length-20)+')'}
-           </button>}
+           {!visibleReviews.length&&<p className="text-label text-ink-3">No reviews yet.</p>}
+           <div className="flex flex-wrap gap-3">
+            {reviewCursors.length>0&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void newerReviews()}>Newer reviews</button>}
+            {moreReviews&&<button type="button" className="min-h-11 text-label font-semibold text-amber" disabled={pageBusy} onClick={()=>void olderReviews()}>More reviews</button>}
+           </div>
           </section>
           <form
             className="flex gap-2 rounded-ctl border border-edge bg-well p-2"
