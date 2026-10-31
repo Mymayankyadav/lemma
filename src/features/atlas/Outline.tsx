@@ -165,8 +165,8 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
 /** Distinct hierarchy without shortening any interactive target. The full
  * mathematical name stays in the button's accessible label and details sheet.
  */
-export function Row({node,open,tone,match,onToggle,onSelect}:{
- node:AtlasNode;open:boolean;tone:Tone;match:boolean;onToggle:()=>void;onSelect:()=>void;
+export function Row({node,open,tone,match,focused=false,onToggle,onSelect}:{
+ node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
  const parent=node.children.length>0,root=node.level==='cluster',area=node.level==='galaxy';
  const selected=tone==='self',height=atlasRowHeight(node.level);
@@ -182,7 +182,8 @@ export function Row({node,open,tone,match,onToggle,onSelect}:{
   className={'group relative flex items-center bg-[var(--paper)] '+(root?'sticky top-0 z-10 ':'')+(match?'bg-fill-1':'')}
   style={{height,paddingLeft:lead,paddingRight:GUTTER+4,
    borderTop:root||area?'1px solid var(--hair)':undefined,
-   backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined}}>
+   backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined,
+   opacity:focused&&tone==='none'?.42:1}}>
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px"
    style={{left:12+indentation(d)+6,background:'color-mix(in srgb,var(--ink) 6%,transparent)'}}/>)}
   {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
