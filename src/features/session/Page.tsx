@@ -31,10 +31,21 @@ function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
    {event.outcome&&<Chip size={28} tone={event.outcome==='demonstrated'?'success':event.outcome==='failed'?'danger':'amber'}>{event.outcome}</Chip>}
   </div></motion.li>;
 }
+/** Consecutive routine events collapse; attempts, evidence and rechecks never do. */
+export function reasoningRuns(events:readonly SessionEvent[]){
+ const runs:{kind:EventKind;start:number;events:SessionEvent[]}[]=[];
+ for(let i=0;i<events.length;i++){
+  const event=events[i],last=runs[runs.length-1];
+  if(last?.kind===event.kind && !['attempt','evidence','recheck'].includes(event.kind))last.events.push(event);
+  else runs.push({kind:event.kind,start:i,events:[event]});
+ }
+ return runs;
+}
 export default function Page(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings();
- const resolve=useResolveMisconception(),notify=useToast(),[menu,setMenu]=useState(false),[pagesOpen,setPagesOpen]=useState(false);
+ const resolve=useResolveMisconception(),notify=useToast(),[menu,setMenu]=useState(false),[pagesOpen,setPagesOpen]=useState(false),[expanded,setExpanded]=useState<number[]>([]),[visibleRuns,setVisibleRuns]=useState(40);
  const session=query.data,summary=session?.summary;
+ const runs=reasoningRuns(session?.events??[]);
  const copy=useCallback(async(text:string)=>{try{await navigator.clipboard.writeText(text);notify('Copied to clipboard',{tone:'success'})}catch{notify('Copy unavailable. Select the text to copy.',{tone:'danger'})}},[notify]);
  const launch=(prompt:string)=>{void navigator.clipboard.writeText(prompt).catch(()=>{});notify('Prompt copied');window.open(chatLink(settings.data?.preferredChat??'claude',prompt),'_blank','noopener,noreferrer')};
  const proposalCount=(session?.pendingProposals.cards??0)+(session?.pendingProposals.planChanges??0);
@@ -50,10 +61,25 @@ export default function Page(){
    </Slab>
    {session.summaryText&&<Slab className="flex flex-col gap-2"><h2 className="text-answer font-semibold">Summary</h2><MathText source={session.summaryText} className="text-body-l"/></Slab>}
    <section aria-label="Reasoning" className="flex flex-col gap-4"><h2 className="text-headline font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Reasoning</h2>
-    {session.events.length?<ol className="relative before:absolute before:bottom-5 before:left-5 before:top-4 before:w-px before:bg-linear-to-b before:from-edge-2 before:to-amber/60">{session.events.map((event,i)=><ReasoningEvent key={event.id} event={event} index={i}/>)}</ol>:<p className="text-body text-ink-3">No reasoning events recorded for this session.</p>}
+    {session.events.length?<><ol className="relative before:absolute before:bottom-5 before:left-5 before:top-4 before:w-px before:bg-linear-to-b before:from-edge-2 before:to-amber/60">
+     {runs.slice(0,visibleRuns).map(run=>{
+      const fold=run.events.length>=3;
+      const open=expanded.includes(run.start);
+      return fold?<li key={run.events[0].id} className="relative pb-5">
+       <button type="button" aria-expanded={open} onClick={()=>setExpanded(old=>open?old.filter(i=>i!==run.start):[...old,run.start])}
+        className="flex min-h-11 w-full items-center gap-3 rounded-ctl border border-edge bg-fill-1 px-3 text-left text-body font-semibold text-ink-2">
+        <Lightbulb size={16} className="shrink-0 text-amber"/><span className="flex-1">{run.events.length} {name[run.kind].toLowerCase()}{run.events.length===1?'':'s'} · events {run.start+1}–{run.start+run.events.length}</span><span className="text-amber">{open?'Hide':'Show'}</span>
+       </button>
+       {open&&<ol className="mt-3">{run.events.map((event,i)=><ReasoningEvent key={event.id} event={event} index={run.start+i}/>)}</ol>}
+      </li>:run.events.map((event,i)=><ReasoningEvent key={event.id} event={event} index={run.start+i}/>);
+     })}
+    </ol>{visibleRuns<runs.length&&<button type="button" onClick={()=>setVisibleRuns(n=>n+40)} className="min-h-11 rounded-ctl border border-edge px-4 text-label font-semibold text-amber">More reasoning · {runs.length-visibleRuns} groups remaining</button>}</>:<p className="text-body text-ink-3">No reasoning events recorded for this session.</p>}
    </section>
    {!!session.misconceptions.filter(m=>!m.resolvedAt).length&&<section className="flex flex-col gap-3"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Things to revisit</h2>{session.misconceptions.filter(m=>!m.resolvedAt).map(m=><div key={m.id} className="flex flex-wrap items-center gap-3 border-l-2 border-amber py-2 pl-3"><TriangleAlert className="text-amber" size={18}/><span className="min-w-0 flex-1 text-body-l"><Tex source={m.label}/></span><Chip tone="amber">{m.times}×</Chip><button disabled={resolve.isPending} className="min-h-11 rounded-ctl px-2 text-label font-semibold text-amber" onClick={()=>resolve.mutate(m.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Couldn’t save. Try again.',{tone:'danger'})})}>Resolved</button></div>)}</section>}
-   {!!session.cards.length&&<section className="flex flex-col gap-3"><div className="flex items-center justify-between"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Cards</h2><span className="text-label text-ink-3">{session.cards.length}</span></div><div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-2">{session.cards.map((card,i)=><Link key={i} to={card.state==='active'?`/cards/${card.noteNo}`:'/proposals'} className="tile flex min-h-28 min-w-[160px] max-w-[175px] flex-col justify-between gap-2 rounded-[4px] border border-edge bg-raised p-3 text-left"><MathText source={card.front} className="line-clamp-3 font-math text-headline"/><span className="flex items-center gap-1 text-caption text-ink-3">{card.state==='pending'?<span className="size-2 rounded-full bg-amber"/>:<Check size={13} className="text-easy"/>}{card.state==='pending'?'Awaiting approval':`N${card.noteNo}`}</span></Link>)}</div></section>}
+   {!!session.cards.length&&<section aria-label="Session cards" className="flex flex-col gap-2"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Cards</h2>
+    <Link to={`/cards?project=${encodeURIComponent(slug)}&session=${number}`} className="flex min-h-14 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 text-body text-amber">
+     <span>{session.cards.length} cards · {session.cards.filter(card=>card.state==='pending').length} waiting</span><ArrowRight size={18} className="shrink-0"/>
+    </Link></section>}
    {proposalCount>0&&<Slab className="flex flex-wrap items-center gap-3"><Inbox className="text-amber" size={23}/><div className="min-w-0 flex-1"><h2 className="font-semibold">{session.pendingProposals.cards} cards, {session.pendingProposals.planChanges} plan changes</h2><p className="text-label text-ink-2">Waiting for you</p></div><Link className="lit inline-flex min-h-11 items-center rounded-ctl px-4 text-sm font-semibold" to="/proposals">Review</Link></Slab>}
    {session.pages&&<button className="tile flex min-h-[var(--row)] items-center gap-3 text-left" onClick={()=>setPagesOpen(true)}><BookOpen size={20} className="text-amber"/><span className="min-w-0 flex-1">Pages {session.pages}</span><ArrowRight size={16}/></button>}
    <div className="flex gap-3"><IconButton icon={Copy} label="Copy session summary" onClick={()=>void copy(session.summaryText||summary.goal)}/><Button className="flex-1" icon={MessageCircle} onClick={()=>launch(summary.display==='ended'?studyPrompt(project.data?.project.title||slug,summary.checkpointCode||undefined):resumePrompt(project.data?.project.title||slug))}>{summary.display==='ended'? 'Start studying':'Resume session'}</Button></div>
