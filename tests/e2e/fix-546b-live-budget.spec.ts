@@ -116,6 +116,16 @@ for(const recordCount of [19,20,21,1001] as const){
     await expect(page.locator('[data-comment-row]')).toHaveCount(20)
     await expect(page.getByRole('button',{name:'More reviews'})).toBeVisible()
     await expect(page.getByRole('button',{name:'More comments'})).toBeVisible()
+    // The second page is fresh in the canonical React Query cursor cache.
+    // Revisit it within 30 seconds: no third live HTTP request is permitted.
+    await page.getByRole('button',{name:'More reviews'}).click()
+    await expect(page.locator('[data-review-row]')).toHaveCount(1)
+    await page.getByRole('button',{name:'More comments'}).click()
+    await expect(page.locator('[data-comment-row]')).toHaveCount(1)
+    await page.getByRole('button',{name:'Newer reviews'}).click()
+    await page.getByRole('button',{name:'Newer comments'}).click()
+    await expect(page.locator('[data-review-row]')).toHaveCount(20)
+    await expect(page.locator('[data-comment-row]')).toHaveCount(20)
    }
   }
 
