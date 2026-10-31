@@ -4,27 +4,8 @@ import {resumeSpoken} from '../../../src/features/home/resumeSpoken';
 describe('Continue accessible math description',()=>{
  it('speaks tutor-authored mathematics without raw LaTeX control sequences',()=>{
   const spoken=resumeSpoken(
-   String.raw`Topology of $\mathbb{R}^nimport {describe,expect,it} from 'vitest';
-import {resumeSpoken} from '../../../src/features/home/resumeSpoken';
-
-describe('Continue accessible math description',()=>{
- it('speaks tutor-authored mathematics without raw LaTeX control sequences',()=>{
-  const spoken=resumeSpoken(
-   ,
-   String.raw`Prove $\pi_1(S^1)\cong\mathbb{Z}import {describe,expect,it} from 'vitest';
-import {resumeSpoken} from '../../../src/features/home/resumeSpoken';
-
-describe('Continue accessible math description',()=>{
- it('speaks tutor-authored mathematics without raw LaTeX control sequences',()=>{
-  const spoken=resumeSpoken(
-   String.raw`Topology of $\mathbb{R}^nimport {describe,expect,it} from 'vitest';
-import {resumeSpoken} from '../../../src/features/home/resumeSpoken';
-
-describe('Continue accessible math description',()=>{
- it('speaks tutor-authored mathematics without raw LaTeX control sequences',()=>{
-  const spoken=resumeSpoken(
-   ,
-   ,
+   String.raw`Topology of $\mathbb{R}^n$`,
+   String.raw`Prove $\pi_1(S^1)\cong\mathbb{Z}$`,
    ' · step 2 of 5','2 h ago');
   expect(spoken).toContain('ℝⁿ');
   expect(spoken).toContain('π₁');
