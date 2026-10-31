@@ -62,6 +62,15 @@ describe('FIX-546b bounded Card detail pagination contract',()=>{
    expect(Boolean(first.historyNextCursor)).toBe(count>20)
    expect(Boolean(first.commentsNextCursor)).toBe(count>20)
   }
+  // Reviews and comments must not share the continuation decision.
+  for(const [reviews,comments] of [[20,21],[21,20]] as const){
+   const mixed=structuredClone(fixture)
+   mixed.reviews=mixed.reviews.slice(0,reviews)
+   mixed.notes[0].comments=mixed.notes[0].comments.slice(0,comments)
+   const result=await new DemoAdapter({fixture:mixed,now:()=>Date.UTC(2026,9,31)}).getCard(no)
+   expect(Boolean(result.historyNextCursor)).toBe(reviews>20)
+   expect(Boolean(result.commentsNextCursor)).toBe(comments>20)
+  }
   await expect(api.getCardHistoryPage(999999,cursor)).rejects.toMatchObject({code:'not_found'})
   await expect(api.getCardHistoryPage(no,'forged')).rejects.toMatchObject({code:'invalid'})
  })
