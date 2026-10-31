@@ -19,6 +19,31 @@ export const QA3_ROUTES = [
   '/settings', '/sign-in', '/kit',
 ] as const;
 
+/** QA-3 screenshot contract: a heading or decorative Graph shell alone is
+ * never evidence that a route has loaded. Every route must expose its own
+ * usable control or data-backed landmark before capture.
+ */
+export const QA3_ROUTE_READINESS: Record<(typeof QA3_ROUTES)[number], {heading:string;landmark:string}> = {
+ '/':{heading:'Home',landmark:'section[aria-label="From your tutor"]'},
+ '/projects':{heading:'Paths',landmark:'[data-project-row]'},
+ '/projects/new':{heading:'New project',landmark:'#project-title'},
+ '/p/real-analysis':{heading:'Project',landmark:'button[aria-label^="Switch project from"]'},
+ '/p/real-analysis/cp/CP4':{heading:'Checkpoint',landmark:'section[aria-label="Checkpoint steps"]'},
+ '/s/real-analysis/7':{heading:'Session record',landmark:'section[aria-label="Reasoning"]'},
+ '/proposals':{heading:'Approve',landmark:'section[aria-label="Proposal groups"]'},
+ '/proposals/proposal-6':{heading:'Plan proposal',landmark:'section[aria-label="Plan errata"]'},
+ '/review':{heading:'Review',landmark:'h2:has-text("Decks")'},
+ '/review/run':{heading:'Card review',landmark:'[data-review-card-scroll]'},
+ '/review/done':{heading:'Review complete',landmark:'section[aria-label="Review statistics"]'},
+ '/cards':{heading:'Cards',landmark:'[data-card-row]'},
+ '/cards/31':{heading:'Card detail',landmark:'article[aria-label="Card front and answer"]'},
+ '/atlas':{heading:'Atlas',landmark:'[data-atlas-row]'},
+ '/insights':{heading:'Insights',landmark:'h2:has-text("Reviews by")'},
+ '/settings':{heading:'Settings',landmark:'h2:has-text("Teaching style")'},
+ '/sign-in':{heading:'Sign in',landmark:'button:has-text("Continue with Google")'},
+ '/kit':{heading:'Component kit',landmark:'h2:has-text("Surfaces")'},
+};
+
 /** A–I are the element groups from stress.md §2, not full behavior checks. */
 export const QA3_ELEMENTS: Record<string, readonly string[]> = {
   A: ['/', '/projects', '/p/real-analysis'],
