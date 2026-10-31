@@ -38,6 +38,16 @@ describe('FIX #483 Atlas bundle label placement',()=>{
 });
 
 describe('FIX #483 density fallback',()=>{
+ it('keeps an accessible overflow summary even in a one-row gutter',()=>{
+  const sameRow:Arc[]=Array.from({length:8},(_,i)=>({key:'row:'+i,from:0,to:0,kind:'related',count:2,links:[]}));
+  const labels=layoutBundleLabels(sameRow,1);
+  const summary=labels.get(OVERFLOW_BUNDLE_KEY);
+  expect(summary).toBeDefined();
+  expect(summary?.hiddenKeys?.length).toBeGreaterThan(0);
+  expect(new Set([...labels.keys()].filter(key=>key!==OVERFLOW_BUNDLE_KEY).concat(summary?.hiddenKeys??[]))).toEqual(new Set(sameRow.map(a=>a.key)));
+  expect(summary!.y-summary!.radius).toBeGreaterThanOrEqual(0);
+  expect(summary!.y+summary!.radius).toBeLessThanOrEqual(ROW);
+ });
  it('keeps a 20-bundle five-row DAG readable and every hidden count discoverable',()=>{
   const dense:Arc[]=[];
   for(let from=0;from<5;from++)for(let to=from+1;to<5;to++){
