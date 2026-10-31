@@ -31,7 +31,10 @@ function synthetic(id:string,name:string,subjectId:string,level:ConceptLevel,par
 /** Longest prerequisite chain ending at each idea; cycles are cut where they close. */
 function prerequisiteRank(ids:Iterable<string>,links:readonly Link[]):Map<string,number>{
  const needs=new Map<string,string[]>();
- for(const l of links)if(l.kind==='prereq')needs.set(l.toId,[...needs.get(l.toId)??[],l.fromId]);
+ for(const l of links)if(l.kind==='prereq'){
+  const bucket=needs.get(l.toId)??[];
+  bucket.push(l.fromId);needs.set(l.toId,bucket);
+ }
  const rank=new Map<string,number>(),active=new Set<string>();
  const visit=(id:string):number=>{
   if(rank.has(id))return rank.get(id)!;
@@ -98,6 +101,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  // Child ordering may compare the same idea dozens of times. Parse its
  // checkpoint code once, not during every comparison in each sibling sort.
  const checkpointRanks=new Map<string,number>([...nodes].map(([id,node]):[string,number]=>[id,checkpointNumber(node)]));
+ const taughtRanks=new Map<string,number|null>([...nodes].map(([id,node]):[string,number|null]=>[id,taughtCheckpoint(node)]));
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
   const kids=n.children.map(c=>summarise(c,depth+1));
@@ -114,7 +118,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
   n.children.sort((a,b)=>{
    const x=nodes.get(a)!,y=nodes.get(b)!;
-   const taughtX=taughtCheckpoint(x),taughtY=taughtCheckpoint(y);
+   const taughtX=taughtRanks.get(a)??null,taughtY=taughtRanks.get(b)??null;
    // A proposed plan must read CP1, CP2, …, CP10, never CP1, CP10, CP2.
    if(taughtX!==null&&taughtY!==null&&taughtX!==taughtY)return taughtX-taughtY;
    return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
