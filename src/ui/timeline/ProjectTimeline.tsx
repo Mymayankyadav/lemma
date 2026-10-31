@@ -81,7 +81,6 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
    visit(focusedIndex)
   }
  }
- if(!n)return <p className="text-label text-ink-3">A plan is needed before the timeline can appear.</p>
  const selectedPoint=geometry[focusedIndex]??geometry[0]
  const selectedSchedule=rows[focusedIndex]
  const detail=selectedSchedule?scheduleDetail(selectedSchedule):null
@@ -99,6 +98,7 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
   if(rail&&button)rail.scrollLeft=Math.max(0,button.offsetLeft-rail.offsetLeft-(rail.clientWidth-button.clientWidth)/2)
  },[stageMode,activeStageIndex])
  const move=(delta:number)=>setSelected(Math.min(n-1,Math.max(0,focusedIndex+delta)))
+ if(!n)return <p className="text-label text-ink-3">A plan is needed before the timeline can appear.</p>
  if(stageMode)return <div ref={widthRef} data-timeline="stage-metro" data-schedule={headline??'none'}
   data-stage-count={stages.length} className="min-w-0">
   {!mini&&<p className="mb-2 text-label font-semibold text-ink-2" data-timeline-header="">
