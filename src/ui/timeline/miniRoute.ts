@@ -14,12 +14,15 @@ const priority:Record<Stage['schedule'],number>={
  * oldest completed stages only when necessary. This keeps the user's current
  * position visible at 100x scale without turning stages into barcode ticks.
  */
-export function layoutMiniRoute(stages:readonly Stage[],width:number):MiniRouteSegment[]{
+export function layoutMiniRoute(stages:readonly Stage[],width:number,
+ currentStageIndex?:number):MiniRouteSegment[]{
  if(!stages.length)return [];
  const available=Math.max(48,Number.isFinite(width)?width:48);
  const maxSegments=Math.max(1,Math.floor(available/8));
  const firstIncomplete=stages.findIndex(stage=>stage.done<stage.total);
- const current=firstIncomplete<0?stages.length-1:firstIncomplete;
+ const current=currentStageIndex===undefined?
+  (firstIncomplete<0?stages.length-1:firstIncomplete):
+  Math.max(0,Math.min(stages.length-1,Math.floor(currentStageIndex)));
  const groups:Group[]=stages.map((stage,i)=>{
   const total=Math.max(0,stage.total);
   return {start:i,end:i,label:stage.label,total,
