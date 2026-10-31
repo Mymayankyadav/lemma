@@ -1851,8 +1851,12 @@ export class DemoAdapter implements LemmaApi {
     const visibleSubjects = new Set(subjects.map(subject => subject.id));
     const checkpointsByConcept = new Map<string, DemoCheckpoint[]>();
     for (const cp of this.store.checkpoints) {
-      // The old .includes() filter counted a checkpoint only once per concept.
-      for (const id of new Set(cp.conceptIds)) {
+      // 6,000 synthetic checkpoints have no concept IDs. Avoid allocating
+      // thousands of empty Sets on the Atlas 4× CPU critical path, while
+      // retaining exact deduplication for the occasional multi-link checkpoint.
+      if(!cp.conceptIds.length)continue;
+      const ids=cp.conceptIds.length===1?cp.conceptIds:new Set(cp.conceptIds);
+      for (const id of ids) {
         const bucket = checkpointsByConcept.get(id) ?? [];
         bucket.push(cp);
         checkpointsByConcept.set(id, bucket);
