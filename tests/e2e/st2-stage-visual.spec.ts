@@ -95,7 +95,11 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     if(profile==="stress")expect(size!.height).toBeLessThan(height*1.5);
     const ideas=page.getByRole("region",{name:"Ideas in this plan"});
     await expect(ideas.getByRole("tree",{name:"Ideas in this plan"})).toBeVisible();
-    const rows=await ideas.getByRole("treeitem").count();
+    const items=ideas.getByRole("treeitem");
+    const rows=await items.count();
+    const checkpointTopics=(await items.allTextContents())
+      .map(text=>text.match(/Taught in CP\d+/)?.[0]).filter(Boolean);
+    expect(checkpointTopics).toEqual(Array.from({length:40},(_,i)=>"Taught in CP"+(i+1)));
     expect(rows).toBeLessThanOrEqual(41);
     expect(rows).toBeGreaterThan(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
