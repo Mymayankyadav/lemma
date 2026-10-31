@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const){
@@ -14,6 +15,8 @@ for(const width of [360,390] as const){
   await expect(sketch).toHaveCount(1);
   await expect(sketch.locator('path[stroke="var(--accent)"]')).toHaveCount(1);
   await expect(sketch.locator('path[stroke-dasharray]')).toHaveCount(0);
+  mkdirSync('test-results/screens/fix-468',{recursive:true});
+  await page.screenshot({path:'test-results/screens/fix-468/'+theme+'-'+width+'.png'});
   await page.goto(base+'/review/done');
   await expect(page.getByRole('heading',{name:'Review complete',level:1})).toBeVisible();
   await expect(page.locator('[data-graph-sketch]')).toHaveCount(0);
