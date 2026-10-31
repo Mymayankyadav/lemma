@@ -12,6 +12,8 @@ import {Tex} from '../../ui/Tex';
 
 type Filter='active'|'paused'|'done'|'archived';
 const filters:Filter[]=['active','paused','done'];
+// Global cap, not per-subject: 40 subjects × one row still needs windowing.
+const INITIAL_PROJECT_ROWS=16;
 const active=(status:ProjectStatus)=>status==='active'||status==='planning';
 const matches=(project:ProjectSummary,filter:Filter)=>filter==='active'?active(project.status):project.status===filter;
 const newest=(a:ProjectSummary,b:ProjectSummary)=>(Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0);
@@ -92,13 +94,13 @@ function ProjectRow({project}:{project:ProjectSummary}){
  </article>;
 }
 
-function ProjectGroup({name,glyph,items,collapsed,onToggle}:{name:string;glyph:string;items:ProjectSummary[];collapsed:boolean;onToggle:()=>void}){
+function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void}){
  return <section aria-label={name+' projects'} className="space-y-2">
   <button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
    <h2 className="min-w-0 flex-1 break-words font-[var(--font-display)] text-title-s"><Tex source={name}/></h2>
-   <span className="text-caption text-ink-2">{items.length} {items.length===1?'project':'projects'}</span>
+   <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
   </button>
   {!collapsed&&<div className="space-y-2">{items.map(project=><ProjectRow key={project.id} project={project}/>)}</div>}
@@ -107,7 +109,7 @@ function ProjectGroup({name,glyph,items,collapsed,onToggle}:{name:string;glyph:s
 
 export default function Page(){
  const projects=useProjects(),notify=useToast(),[params,setParams]=useSearchParams();
- const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]);
+ const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]),[shown,setShown]=useState(INITIAL_PROJECT_ROWS);
  const filter=(['active','paused','done','archived'].includes(params.get('status')??'')?params.get('status'):'active') as Filter;
  useEffect(()=>{
   if(projects.error)notify("Couldn't load your paths.",{tone:'danger',action:{label:'Try again',onClick:()=>{void projects.refetch()}}});
@@ -117,7 +119,7 @@ export default function Page(){
   (!search.trim()||[project.title,project.subject?.name??'Unassigned',...(project.sourceTitles??[])].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
  const pinned=visible.filter(project=>project.pinned).slice(0,4);
  const pinnedIds=new Set(pinned.map(project=>project.id));
- const groups=useMemo(()=>{
+ const allGroups=useMemo(()=>{
   const map=new Map<string,{name:string;glyph:string;position:number;items:ProjectSummary[]}>();
   for(const project of visible){
    if(pinnedIds.has(project.id))continue;
@@ -127,8 +129,20 @@ export default function Page(){
   }
   return [...map.entries()].map(([id,group])=>({id,...group})).sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
  },[visible,pinnedIds]);
+ // Preserve the real per-subject totals, but mount at most N rows across ALL
+ // groups. Search still considers the full dataset; Show more reveals the rest.
+ const groups=useMemo(()=>{
+  let remaining=Math.max(0,shown-pinned.length);
+  return allGroups.flatMap(group=>{
+   if(!remaining)return [];
+   const items=group.items.slice(0,remaining);
+   remaining-=items.length;
+   return items.length?[{...group,items,total:group.items.length}]:[];
+  });
+ },[allGroups,shown,pinned.length]);
+ const displayed=pinned.length+groups.reduce((total,group)=>total+group.items.length,0);
  const toggle=(id:string)=>setCollapsed(items=>items.includes(id)?items.filter(item=>item!==id):[...items,id]);
- const choose=(next:Filter)=>{const p=new URLSearchParams(params);if(next==='active')p.delete('status');else p.set('status',next);setParams(p)};
+ const choose=(next:Filter)=>{setShown(INITIAL_PROJECT_ROWS);const p=new URLSearchParams(params);if(next==='active')p.delete('status');else p.set('status',next);setParams(p)};
  return <Screen tabBar className="gap-4">
   <header className="flex min-h-11 items-center justify-between gap-3">
    <h1 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h1>
@@ -140,9 +154,9 @@ export default function Page(){
   <label className="flex min-h-11 items-center gap-2 rounded-ctl border border-edge bg-[var(--card)] px-3">
    <Search size={17} aria-hidden="true" className="text-ink-3"/>
    <span className="sr-only">Search paths</span>
-   <input type="search" aria-label="Search paths" placeholder="Find a project or subject" value={search} onChange={event=>setSearch(event.target.value)}
+   <input type="search" aria-label="Search paths" placeholder="Find a project or subject" value={search} onChange={event=>{setSearch(event.target.value);setShown(INITIAL_PROJECT_ROWS)}}
     className="min-w-0 flex-1 bg-transparent py-3 text-body text-ink outline-none"/>
-   {search&&<button type="button" aria-label="Clear search" onClick={()=>setSearch('')} className="flex size-11 items-center justify-center"><X size={17}/></button>}
+   {search&&<button type="button" aria-label="Clear search" onClick={()=>{setSearch('');setShown(INITIAL_PROJECT_ROWS)}} className="flex size-11 items-center justify-center"><X size={17}/></button>}
   </label>
   <div role="group" aria-label="Project status" className="grid grid-cols-3 gap-2">
    {filters.map(value=><button key={value} type="button" aria-pressed={filter===value} onClick={()=>choose(value)}
@@ -157,9 +171,13 @@ export default function Page(){
    !visible.length?<div className="space-y-3 py-8 text-center"><p className="text-body text-ink-2">{search?'No projects match':'No projects in this status'}</p>
     {search&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-4 text-label" onClick={()=>setSearch('')}>Clear</button>}</div>:
    <div className="space-y-5">
-    {pinned.length>0&&<ProjectGroup name="Pinned" glyph="★" items={pinned} collapsed={collapsed.includes('pinned')} onToggle={()=>toggle('pinned')}/>}
-    {groups.map(group=><ProjectGroup key={group.id} name={group.name} glyph={group.glyph} items={group.items}
+    {pinned.length>0&&<ProjectGroup name="Pinned" glyph="★" items={pinned} total={pinned.length} collapsed={collapsed.includes('pinned')} onToggle={()=>toggle('pinned')}/>}
+    {groups.map(group=><ProjectGroup key={group.id} name={group.name} glyph={group.glyph} items={group.items} total={group.total}
      collapsed={collapsed.includes(group.id)} onToggle={()=>toggle(group.id)}/>)}
+    {displayed<visible.length&&<button type="button" onClick={()=>setShown(count=>count+INITIAL_PROJECT_ROWS)}
+     className="flex min-h-11 w-full items-center justify-center rounded-ctl border border-edge bg-fill-1 px-4 text-label text-amber">
+     Show next {Math.min(INITIAL_PROJECT_ROWS,visible.length-displayed)} projects · {displayed} of {visible.length} shown
+    </button>}
    </div>}
   <button type="button" onClick={()=>choose(filter==='archived'?'active':'archived')} aria-pressed={filter==='archived'}
    className="flex min-h-11 w-full items-center justify-between border-t border-edge text-left text-label text-ink-2">
