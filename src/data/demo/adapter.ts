@@ -1514,10 +1514,10 @@ export class DemoAdapter implements LemmaApi {
     if(!Number.isSafeInteger(offset)||offset<0)invalid('Card page offset must be nonnegative');
     const rows:CardRow[]=[];
     let matched=0,hasMore=false;
-    // The deterministic store is ordered by note number. Stop after 51 matches:
-    // a 30,000-card stress library never creates thousands of rendered rows.
-    for(const n of this.store.notes){
-      const note=n.note;
+    // Newest notes first, without copying or sorting the 30,000-card store.
+    // Stop after 51 matches to keep the rendered card library bounded.
+    for(let i=this.store.notes.length-1;i>=0;i--){
+      const n=this.store.notes[i],note=n.note;
       if(note.status==='deleted'&&filter.noteStatus!=='deleted')continue;
       if(filter.projectSlug&&note.projectSlug!==filter.projectSlug)continue;
       if(filter.checkpointCode&&note.checkpointCode!==filter.checkpointCode)continue;
