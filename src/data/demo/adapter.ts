@@ -1472,23 +1472,27 @@ export class DemoAdapter implements LemmaApi {
     return count;
   }
   async getReviewItems(filter: QueueFilter) {
+    const eligible = this.eligible();
+    const needed = new Set(eligible.map(card => card.cardId));
     const sessionForCard: Record<string, string> = {},
       conceptsForCard: Record<string, string[]> = {};
-    // Extreme has 30,000 cards and 2,500 ideas. The previous per-card
+    // Extreme has 30,000 cards and 2,500 ideas. The old per-card
     // Array.find did up to 75 million comparisons before Review could paint.
-    // Build the identity index once, preserving real concept-filtered cards.
+    // Index concepts once and attach metadata only to the bounded daily
+    // queue, never all 30,000 cards. Concept/session filtering is unchanged.
     const conceptSlugs = new Map(this.store.concepts.map(c => [c.id, c.slug] as const));
     for (const note of this.store.notes) {
       const slug = note.conceptId ? conceptSlugs.get(note.conceptId) : undefined;
       const concepts = slug ? [slug] : [];
       for (const card of note.cards) {
+        if (!needed.has(card.id)) continue;
         if (note.sessionId) sessionForCard[card.id] = note.sessionId;
         conceptsForCard[card.id] = concepts;
       }
     }
     return clone(
       filterReviewItems(
-        this.eligible(),
+        eligible,
         { ...filter, includeNew: filter.includeNew || filter.newOnly },
         {
           sessionForCard,
