@@ -138,8 +138,14 @@ export class DemoAdapter implements LemmaApi {
   }
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
     const ids=new Set(this.store.projects.filter(p=>p.status!=="archived"&&!p.system).map(p=>p.id));
-    const cards=this.store.notes.filter(n=>n.note.status==='active'&&ids.has(n.projectId)).flatMap(n=>n.cards.map(c=>c.state));
-    return reviewForecast(cards,this.store.settings,this.now());
+    const notes=this.store.notes;
+    function* scheduledStates(){
+      for(const note of notes){
+        if(note.note.status!=="active"||!ids.has(note.projectId))continue;
+        for(const card of note.cards)yield card.state;
+      }
+    }
+    return reviewForecast(scheduledStates(),this.store.settings,this.now());
   }
   private store: DemoStore;
   private readonly now: () => number;
