@@ -167,6 +167,9 @@ try {
  const privateHome=(await q('select public.home_summary() result'))[0].result
  assert.deepEqual(privateHome.projects.map(x=>x.slug),['private'])
  assert.equal(privateHome.pendingProposals,0);assert.equal(privateHome.due,1)
+ const privateOutlook=(await q('select public.home_review_outlook() as data'))[0].data
+ assert.deepEqual(privateOutlook.decks.map(x=>x.key),['project:private'],
+  'cross-owner outlook must not expose the other owner deck')
  console.log('PASS ST-5 review caps and cross-owner isolation')
 
  // Scale regression: 100 unstaged checkpoints must produce 13 bounded groups,
@@ -270,6 +273,10 @@ try {
   .every(p=>p.children.length===0))
  assert.ok(Buffer.byteLength(JSON.stringify(scaleDeck),'utf8')<200000,
   'Review deck tree must remain bounded for 60 projects / 6,000 checkpoints')
+ const scaleOutlook=(await q('select public.home_review_outlook() as data'))[0].data
+ assert.equal(scaleOutlook.forecast.length,7)
+ assert.ok(Buffer.byteLength(JSON.stringify(scaleOutlook),'utf8')<200000,
+  'Today outlook aggregate must remain under 200 kB at 60 projects / 6,000 checkpoints')
  const scaleQueue=(await q("select public.review_items(array[]::text[],null,null,true,false) item")).map(x=>x.item)
  assert.ok(scaleQueue.length<=1, 'Review queue respects the daily quota')
  assert.ok(Buffer.byteLength(JSON.stringify(scaleQueue),'utf8')<200000,
