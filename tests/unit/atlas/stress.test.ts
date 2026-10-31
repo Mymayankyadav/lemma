@@ -38,8 +38,25 @@ describe('ST-3 Atlas arc budget',()=>{
   expect(result.hidden+result.visible.length).toBe(arcs.length);
  });
  it('preserves a folded branch boundary up to the cap',()=>{
-  const result=budgetArcs(tree,rows,new Set(),arcs,null);
+  // Every dependency starts and ends in a different folded topic. The visible
+  // rows contain those topics, not their hidden child ideas. This is a genuine
+  // folded-boundary case, unlike passing an empty expansion set for visible leaves.
+  const foldedGraph:AtlasGraph={
+   subjects:graph.subjects,
+   concepts:concepts.flatMap(c=>[
+    {...c,level:'system' as const},
+    {...c,id:c.id+'-detail',slug:c.slug+'-detail',parentId:c.id},
+   ]),
+   links:graph.links.map(link=>({...link,fromId:link.fromId+'-detail',toId:link.toId+'-detail'})),
+  };
+  const foldedTree=buildAtlasTree(foldedGraph);
+  const foldedOpen=new Set(foldedTree.roots);
+  const foldedRows=visibleRows(foldedTree,foldedOpen);
+  const foldedArcs=arcsFor(foldedTree,foldedRows,new Set(['prereq']));
+  expect(foldedArcs).toHaveLength(99);
+  expect(foldedRows.every(row=>foldedTree.nodes.get(row.id)!.level!=='planet')).toBe(true);
+  const result=budgetArcs(foldedTree,foldedRows,foldedOpen,foldedArcs,null);
   expect(result.visible).toHaveLength(60);
-  expect(result.hidden).toBe(arcs.length-60);
+  expect(result.hidden).toBe(foldedArcs.length-60);
  });
 });
