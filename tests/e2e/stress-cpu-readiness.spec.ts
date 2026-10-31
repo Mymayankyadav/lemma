@@ -34,3 +34,11 @@ test('AUDIT #540 accepts the component-kit skeleton example as real gallery cont
  await page.setContent('<main id="main-content"><h2>Surfaces</h2><div class="animate-pulse bg-fill-2">Skeleton example</div></main>');
  await assertRouteLoaded(page,'/kit','stress',250);
 });
+
+
+test('AUDIT #540 recognizes the real Plan errata section, not only explicit role attributes',async({page})=>{
+ // A named <section> has an implicit region role; the production page does not
+ // write role="region" explicitly. Cold-route readiness must not time out on it.
+ await page.setContent('<main id="main-content"><section aria-label="Plan errata"><h2>Plan change</h2><section aria-label="Ideas in this plan">Ideas loaded</section></section></main>');
+ await assertRouteLoaded(page,'/proposals/proposal-6','stress',250);
+});
