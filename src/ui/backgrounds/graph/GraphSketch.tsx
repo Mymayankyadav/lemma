@@ -9,7 +9,7 @@ function sample(fn:(x:number)=>number,min:number,max:number,scale:(x:number,y:nu
 const sketches:Record<Sketch,{path:string;label:string;second?:string;turns?:[number,number][]}>={
  today:{path:sample(x=>x*x*x-3*x,-2,2,(x,y)=>[150+x*58,115-y*23]),label:'y = x³ − 3x',turns:[[92,69],[208,161]]},
  paths:{path:sample(x=>1/(1+Math.exp(-x)),-5,5,(x,y)=>[150+x*25,185-y*122]),label:'Learning curve'},
- review:{path:sample(x=>Math.exp(-x/3),0,6,(x,y)=>[30+x*42,185-y*122]),second:sample(x=>Math.exp(-x/4.6),0,6,(x,y)=>[30+x*42,185-y*122]),label:'y = e⁻ˣ⁄³'},
+ review:{path:sample(x=>Math.exp(-x/3),0,6,(x,y)=>[30+x*42,185-y*122]),label:'y = e⁻ˣ⁄³'},
  insights:{path:sample(x=>Math.exp(-x*x/2),-3,3,(x,y)=>[150+x*42,185-y*122]),label:'Normal density'},
  unit:{path:sample(x=>Math.sin(x),0,Math.PI*2,(a,y)=>[150+74*Math.cos(a),111-74*y]),label:'Unit circle'},
 };
