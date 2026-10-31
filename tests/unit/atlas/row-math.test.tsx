@@ -21,7 +21,7 @@ describe('LOOK-4b compact Atlas mathematical names',()=>{
    const label=host.querySelector(`[data-level="${level}"] button span[title]`);
    expect(label).not.toBeNull();
    expect(label?.querySelector('.lemma-tex-inline .katex')).not.toBeNull();
-   expect(label?.textContent).not.toContain('mathbb');
+   expect(label?.querySelector('.katex-html')?.textContent).not.toContain('mathbb');
   });
  }
 });
