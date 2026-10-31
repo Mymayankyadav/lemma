@@ -226,7 +226,7 @@ export default function Page() {
         <div className="flex items-center gap-4">
           <PlugArt connected={connected} size={92} />
           <div>
-            <h3 className="text-[16px] leading-5 font-semibold">
+            <h3 className="text-[16px] leading-5 font-semibold" style={{fontFamily:"var(--font-ui)",fontWeight:600,lineHeight:"20px"}}>
               {connected ? "Connected" : "Not connected yet"}
             </h3>
             <p className="mt-1 text-label text-ink-3">
