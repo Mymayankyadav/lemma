@@ -6,7 +6,8 @@ export interface RouteMark{
 }
 type Draft=Omit<RouteMark,'x'>;
 export interface RouteLayout{mode:'plain'|'folded';marks:RouteMark[];activeStage:number}
-const STATION_RADIUS=3.6;
+// Include the 1.5px outline around future/recheck stations.
+const STATION_RADIUS=4.2;
 // Reserve the full 11px translucent halo, not just the 5.5px red core.
 const CURRENT_RADIUS=11;
 const CLEARANCE=8;
