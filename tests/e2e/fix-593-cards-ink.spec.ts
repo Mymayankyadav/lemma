@@ -33,22 +33,9 @@ for(const profile of ['stress','extreme'] as const)
     expect(colors.actual).not.toBe(colors.accent);
     expect(colors.size).toBeGreaterThanOrEqual(16);
 
-    // Notes are passive metadata even when the user filters for them.
-    await page.getByRole('group',{name:'Card filters'})
-     .getByRole('button',{name:'Has notes'}).click();
-    const withNotes=page.locator('[data-card-row]')
-     .filter({has:page.locator('[data-card-open-comments]')}).first();
-    await expect(withNotes).toBeVisible();
-    const noteColor=await withNotes.locator('[data-card-open-comments]')
-     .evaluate(element=>getComputedStyle(element).color);
-    expect(noteColor).toBe(colors.ink);
-    expect(noteColor).not.toBe(colors.accent);
-
-    // Clear filters is a secondary action, not the screen's red primary.
-    const clear=page.getByRole('button',{name:'Clear filters'});
-    await expect(clear).toBeVisible();
-    expect(await clear.evaluate(el=>getComputedStyle(el).color)).toBe(colors.ink);
-
+    // The 30,000-note stress fixture deliberately has no open comments.
+    // Verify passive comment ink against the seeded open note in demo=1 below,
+    // rather than pretending the empty stress result contains a comment.
     const layout=await page.evaluate(()=>{
      const rows=[...document.querySelectorAll<HTMLElement>('[data-card-row]')];
      return {overflow:document.documentElement.scrollWidth-innerWidth,
@@ -61,3 +48,40 @@ for(const profile of ['stress','extreme'] as const)
      fullPage:true,
     });
    });
+
+for(const theme of ['graph','graph-night'] as const)
+ for(const width of [360,390] as const)
+  test(`FIX #593 seeded open-note ink: demo ${theme} ${width}px`,async({page})=>{
+   await page.setViewportSize({width,height:844});
+   await page.goto(`/lemma/?demo=1&theme=${theme}#/cards`);
+   await expect(page.locator('[data-card-row]').first()).toBeVisible();
+   await page.getByRole('group',{name:'Card filters'})
+    .getByRole('button',{name:'Has notes'}).click();
+   const withNotes=page.locator('[data-card-row]')
+    .filter({has:page.locator('[data-card-open-comments]')}).first();
+   await expect(withNotes).toBeVisible();
+   const noteColor=await withNotes.locator('[data-card-open-comments]').evaluate(element=>{
+    const inkProbe=document.createElement('span');
+    const accentProbe=document.createElement('span');
+    inkProbe.style.color='var(--ink-2)';
+    accentProbe.style.color='var(--accent)';
+    document.body.append(inkProbe,accentProbe);
+    const result={actual:getComputedStyle(element).color,
+     ink:getComputedStyle(inkProbe).color,accent:getComputedStyle(accentProbe).color};
+    inkProbe.remove();accentProbe.remove();
+    return result;
+   });
+   expect(noteColor.ink).not.toBe(noteColor.accent);
+   expect(noteColor.actual).toBe(noteColor.ink);
+   expect(noteColor.actual).not.toBe(noteColor.accent);
+   const clear=page.getByRole('button',{name:'Clear filters'});
+   await expect(clear).toBeVisible();
+   expect(await clear.evaluate(el=>getComputedStyle(el).color)).toBe(noteColor.ink);
+   await clear.click();
+   await expect(page.locator('[data-card-row]').first()).toBeVisible();
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+   await page.screenshot({
+    path:`test-results/screens/fix-593/open-note-${theme}-${width}.png`,
+    fullPage:true,
+   });
+  });
