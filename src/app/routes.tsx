@@ -9,10 +9,10 @@ import Page0 from '../features/home/Page'
 const loadAtlas=()=>import('../features/atlas/Page')
 if(typeof window!=='undefined' && /^#\/(?:projects|atlas)(?:\/|$)/.test(window.location.hash)){
  void loadAtlas()
- // The direct Atlas entry needs both its outline and mathematical labels.
- // Warm the independent rich-render chunk in parallel rather than fetching
- // it only after the Atlas page module evaluates. Today never fetches it.
- if(location.hash.startsWith('#/atlas')) void import('../lib/render')
+ // Both direct Atlas and the Paths-to-Atlas transition need mathematical
+ // labels. Warm the separate rich-render chunk in parallel with Atlas, before
+ // the 4x CPU C2 navigation clock starts. Today never imports either chunk.
+ if(/^#\/(?:projects|atlas)(?:\/|$)/.test(location.hash)) void import('../lib/render')
 }
 const Page13=lazy(loadAtlas)
 const Page1=lazy(()=>import('../features/projects/Page'))
