@@ -118,3 +118,11 @@ html:is([data-theme="graph"],[data-theme="graph-night"])
  :is(.card,.slab,.tile) :is(.card,.slab,.tile){
  background:transparent;border:0;box-shadow:none;
 }
+
+
+/* LOOK-1b: nested paper primitives are semantic groups, never a second
+ * material layer. This also overrides legacy caller-supplied card utility
+ * colours without suppressing spacing, labels or keyboard targets. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-paper-group{
+ background:transparent;border:0;box-shadow:none;
+}

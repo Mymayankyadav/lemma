@@ -10,6 +10,7 @@ describe('non-card mathematical content',()=>{
    .toBe('A ⊆ B; x₁∈ℂ');
   expect(plainMath('From \\(x^2\\) to \\[\\alpha\\]')).toBe('From x² to α');
   expect(plainMath('$\\unknown{a}$')).not.toMatch(/[\\$]/);
+  expect(plainMath('Algebra $\\mathbb{F}_p$ and $\\ell^p$')).toBe('Algebra 𝔽ₚ and ℓᵖ');
   expect(plainMath('Why is $\\mathbb R$ not compact?')).toBe('Why is ℝ not compact?');
   expect(plainMath('Let $x\\in\\mathbb C$')).toBe('Let x∈ℂ');
  });

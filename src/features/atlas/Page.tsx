@@ -12,6 +12,7 @@ import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
+import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
@@ -82,6 +83,7 @@ export default function Page(){
  const [selectedId,setSelectedId]=useState<string|null>(null),[details,setDetails]=useState(false);
  const [searching,setSearching]=useState(false),[search,setSearch]=useState(''),[recheckOnly,setRecheckOnly]=useState(false);
  const [confirmAll,setConfirmAll]=useState(false);
+ const [ambiguousIds,setAmbiguousIds]=useState<string[]>([]);
  const scroller=useRef<HTMLDivElement>(null);
  const [scrollTop,setScrollTop]=useState(0),[viewportHeight,setViewportHeight]=useState(740);
  useEffect(()=>{
@@ -150,11 +152,15 @@ export default function Page(){
 
  const written=useRef<string|null>(null);
  const select=useCallback((id:string|null,openDetails=false)=>{
-  setSelectedId(id);setDetails(!!id&&openDetails);
-  const next=new URLSearchParams(params),slug=id?tree?.nodes.get(id)?.slug:null;
-  const real=slug&&!tree?.nodes.get(id!)?.synthetic?slug:null;
-  written.current=real;
-  if(real)next.set('focus',real);else next.delete('focus');
+  setSelectedId(id);setDetails(!!id&&openDetails);setAmbiguousIds([]);
+  const next=new URLSearchParams(params),node=id?tree?.nodes.get(id):null;
+  const real=node&&!node.synthetic?node:null;
+  written.current=real?.id??null;
+  // A manual selection supersedes every incoming name fallback. The stable
+  // concept ID makes a copied link unambiguous across subjects.
+  next.delete('name');
+  if(real){next.set('focus',real.slug);next.set('id',real.id)}
+  else {next.delete('focus');next.delete('id')}
   setParams(next,{replace:true});
  },[params,setParams,tree]);
  const reveal=useCallback((id:string)=>{
@@ -194,19 +200,27 @@ export default function Page(){
    match={row.match} focused={!!focus}
    onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>;
  };
- const focusSlug=params.get('focus');
+ const focusSlug=params.get('focus'),focusName=params.get('name'),focusId=params.get('id');
  const seen=useRef<string|null>(null);
  useEffect(()=>{
-  // React only when ?focus= itself changes to a slug this page did not write: an incoming
-  // link from elsewhere unfolds to the idea and opens it. (The URL updates a render after
-  // a selection here, so comparing against the current selection would undo it.)
-  if(!tree||focusSlug===seen.current)return;
-  seen.current=focusSlug;
-  if(!focusSlug||focusSlug===written.current)return;
-  written.current=focusSlug;
-  const found=[...tree.nodes.values()].find(n=>n.slug===focusSlug);
-  if(found){reveal(found.id);setSelectedId(found.id);setDetails(true)}
- },[tree,focusSlug,reveal]);
+  const incoming=(focusId??'')+'|'+(focusSlug??'')+'|'+(focusName??'');
+  if(!tree||incoming===seen.current)return;
+  seen.current=incoming;
+  if(!focusId&&!focusSlug&&!focusName)return;
+  // A missing id is not a previously handled selection: legacy slug-only
+  // links must still resolve on the first Atlas mount.
+  if(focusId&&focusId===written.current&&!focusName)return;
+  written.current=focusId;
+  const result=resolveAtlasDeepLink(tree.nodes.values(),{id:focusId,slug:focusSlug,name:focusName});
+  if(result.kind==='found'){
+   setAmbiguousIds([]);reveal(result.id);setSelectedId(result.id);setDetails(true);
+  }else if(result.kind==='ambiguous'){
+   setSelectedId(null);setDetails(false);setAmbiguousIds(result.ids);
+  }else{
+   // Missing targets must lead to an editable search, never to an unrelated idea.
+   setAmbiguousIds([]);setSearching(true);setSearch(focusName??focusSlug??'');
+  }
+ },[tree,focusId,focusSlug,focusName,reveal]);
  const depthOf=useMemo(()=>{
   if(!tree)return null;
   for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===open.size&&[...set].every(x=>open.has(x)))return d}
@@ -288,6 +302,23 @@ export default function Page(){
    <button type="button" aria-label="Clear selection" onClick={()=>select(null)} className="flex size-11 items-center justify-center rounded-ctl text-ink-2"><X size={18}/></button>
   </div>}
   {selected&&details&&<Details tree={tree} node={selected} onClose={()=>setDetails(false)} onTrace={trace}/>}
+  <Sheet open={ambiguousIds.length>1} onClose={()=>{setAmbiguousIds([]);select(null)}} title="Choose an idea">
+   <p className="text-body text-ink-2">Several subjects have an idea with this name. Choose the intended subject; no idea has been selected automatically.</p>
+   <div className="mt-3 flex flex-col gap-2">
+    {ambiguousIds.map(id=>{
+     const node=tree.nodes.get(id);
+     if(!node)return null;
+     const subject=graph?.subjects.find(item=>item.id===node.subjectId)?.name??'Unknown subject';
+     return <button key={id} type="button"
+      aria-label={plainMath(node.name)+' in '+plainMath(subject)}
+      onClick={()=>{setAmbiguousIds([]);reveal(id);select(id,true)}}
+      className="flex min-h-11 min-w-0 flex-col items-start rounded-ctl border border-edge px-3 py-2 text-left">
+      <span className="max-w-full overflow-x-auto text-body font-medium"><Tex source={node.name}/></span>
+      <span className="text-caption text-ink-2"><Tex source={subject}/></span>
+     </button>;
+    })}
+   </div>
+  </Sheet>
   <Sheet open={confirmAll} onClose={()=>setConfirmAll(false)} title="Unfold every idea?">
    <p className="text-body text-ink-2">This Atlas contains {ideas} ideas. Showing every branch may be slower; folded groups keep the connections readable.</p>
    <div className="mt-4 flex gap-2">
