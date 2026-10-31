@@ -69,4 +69,10 @@ describe('FIX #507 hard-budget CI gate',()=>{
   for(const example of examples)
    expect(()=>enforceStressBudgets([example])).toThrow(/stress budget failed/);
  });
+ it('closed audit #489 never exempts overlapping count marks from the default gate',()=>{
+  expect(unfinishedStressGates.some(g=>g.issue===489)).toBe(false);
+  expect(()=>enforceStressBudgets([{...base,route:'/atlas',minCircleGap:0}]))
+   .toThrow(/marks closer than 8px/);
+ });
+
 });
