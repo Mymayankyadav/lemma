@@ -166,6 +166,9 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
   </p>}
  </div>
  return <div ref={widthRef} data-timeline={variant} className="min-w-0" data-schedule={headline??'none'}>
+  {!mini&&<p data-timeline-header="" className="mb-2 text-label font-semibold text-ink-2">
+   {selectedCheckpoint.code} of {n} · Stage {activeStageIndex+1} of {stages.length}
+  </p>}
   <button type="button" onClick={click} onKeyDown={key}
    aria-label={project.title+': '+project.done+' of '+project.total+' checkpoints, now '+(selectedCheckpoint?.code??'')+' '+(selectedCheckpoint?.title??'')+
     (headline?', '+headline:'')+'. Arrow keys to browse; Enter to open.'}
