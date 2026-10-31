@@ -77,9 +77,35 @@ try{
  assert.equal((await q('select confidence from public.source_pages where source_id=$1',[scan.id]))[0].confidence,null);
  console.log('PASS DB-5 provenance constraints and checked-page state');
 
+ // FIX #475: 100 sources with a 3,000-page transcription must return just
+ // 100 summary rows, not 300,000 page records. All counts are server-side.
+ const heavy=(await q(`insert into public.sources(user_id,project_id,title,short,kind,status,has_text,page_count)
+ values($1,$2,'Large scanned book','heavy','book','ready',true,3000) returning id`,[owner,project]))[0].id;
+ await q(`insert into public.sources(user_id,project_id,title,short,kind,status,has_text,page_count)
+ select $1,$2,'Empty scan '||n,'empty-'||n,'notes','ready',false,3000
+ from generate_series(1,99) n`,[owner,project]);
+ await q(`insert into public.source_pages(user_id,source_id,page,body,transcribed_by,transcribed_at,confidence)
+ select $1,$2,n,'Transcribed page '||n,'chatgpt',now(),
+        case when n % 10 = 0 then 'check' else 'high' end
+ from generate_series(1,3000) n`,[owner,heavy]);
+ await db.exec('set role authenticated');
+ const stats=await q('select * from public.source_transcription_stats($1)',[project]);
+ assert.equal(stats.length,101,'one summary per source (scan + 100 stress sources)');
+ assert.deepEqual(stats.find(s=>s.source_id===heavy),
+  {source_id:heavy,transcribed:3000,needs_check:300});
+ assert.equal(stats.filter(s=>s.transcribed===0&&s.needs_check===0).length,99);
+ assert.deepEqual(stats.find(s=>s.source_id===scan.id),
+  {source_id:scan.id,transcribed:1,needs_check:0});
+ await db.exec('reset role');
+ console.log('PASS FIX #475 100-source / 3,000-page aggregate, including zero counts');
+
+
+
  await db.exec(`select set_config('test.uid','${other}',false);set role authenticated`);
  assert.equal((await q('select count(*)::int n from public.sources'))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.source_pages'))[0].n,0);
+ assert.deepEqual(await q('select * from public.source_transcription_stats($1)',[project]),[],
+  'other users must never see owner transcription counters');
  assert.equal((await q('update public.source_pages set body=\'foreign\' where source_id=$1 returning page',[scan.id])).length,0);
  await db.exec('reset role');
  console.log('PASS DB-5 owner RLS preserved');
