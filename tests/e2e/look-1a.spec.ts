@@ -60,6 +60,7 @@ for(const width of [360,390] as const){
 
   const fonts=await page.locator('link[href*="fonts.googleapis.com"]').getAttribute('href');
   expect(fonts).not.toContain('EB+Garamond');
+  expect(fonts).toContain('Newsreader:ital,wght@0,400;0,500;1,500');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth))
    .toBeLessThanOrEqual(0);
   await page.screenshot({
