@@ -113,6 +113,11 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    if(route!=='/kit')await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0,{timeout:90_000});
    await expect(page.getByText(/This (card|proposal) could not be loaded\./)).toHaveCount(0,{timeout:90_000});
    await expect(page.getByText('Session unavailable.')).toHaveCount(0,{timeout:90_000});
+   // A loaded landmark below a retained scroll position still yields a blank
+   // viewport. Reset to the route letterhead and prove its heading is painted.
+   await page.evaluate(()=>window.scrollTo(0,0));
+   await expect(page.getByRole('heading',{name:readiness.heading,exact:true,level:1}))
+    .toBeInViewport({ratio:0.05,timeout:90_000});
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
