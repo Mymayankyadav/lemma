@@ -80,10 +80,48 @@ export function hydrateFixture(
   // visiting four nested objects per note under 4x CPU. This is limited to
   // freshly generated private stress fixtures; normal fixtures still receive
   // the complete recursive walk and immutable input semantics.
-  const stressNotes = takeOwnership && source.stressReviewCount !== undefined &&
-    source.reviews.length === 0 ? source.notes : null;
+  const generated = takeOwnership && source.stressReviewCount !== undefined;
+  const stressNotes = generated && source.reviews.length === 0 ? source.notes : null;
+  // Generated checkpoints and sources are complete records, but almost all
+  // fields are stable text or empty arrays. A generic Object.entries walk of
+  // 6,000 checkpoints and 6,000 sources dominates extreme cold hydration.
+  // Temporarily exclude these private arrays, then resolve only their date
+  // tokens; keep the normal full walk for seed/authored records.
+  const stressCheckpoints = generated ? source.checkpoints : null;
+  const stressSources = generated ? source.sources : null;
   if (stressNotes) source.notes = [];
+  if (stressCheckpoints) source.checkpoints = [];
+  if (stressSources) source.sources = [];
   const store = walk(source) as DemoStore;
+  if (stressCheckpoints) {
+    store.checkpoints = stressCheckpoints;
+    for (const cp of stressCheckpoints) {
+      if (!cp.id.endsWith('-cp-' + cp.code.slice(2))) {
+        walk(cp);
+        continue;
+      }
+      if (cp.dueOn !== undefined && cp.dueOn !== null)
+        cp.dueOn = walk(cp.dueOn) as string;
+      if (cp.demonstratedAt !== undefined && cp.demonstratedAt !== null)
+        cp.demonstratedAt = walk(cp.demonstratedAt) as string;
+      if (cp.recheckDue !== null)
+        cp.recheckDue = walk(cp.recheckDue) as string;
+    }
+  }
+  if (stressSources) {
+    store.sources = stressSources;
+    for (const item of stressSources) {
+      if (!item.id.startsWith('stress-source-')) {
+        walk(item);
+        continue;
+      }
+      item.createdAt = walk(item.createdAt) as string;
+      if (item.addedAt !== undefined)
+        item.addedAt = walk(item.addedAt) as string;
+      if (item.planCheckedAt !== undefined && item.planCheckedAt !== null)
+        item.planCheckedAt = walk(item.planCheckedAt) as string;
+    }
+  }
   if (stressNotes) {
     store.notes = stressNotes;
     for (const note of stressNotes) {
