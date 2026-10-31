@@ -4,10 +4,11 @@ import {describe,expect,it,vi} from 'vitest';
 import {DemoAdapter} from '../../../src/data/demo/adapter';
 import {makeStressStore} from '../../../src/data/demo/stress';
 import type {DemoStore} from '../../../src/data/demo/model';
+import type {QueueFilter} from '../../../src/data/types';
 
 const seed=JSON.parse(readFileSync('src/data/demo/fixture.json','utf8')) as DemoStore;
 const now=Date.parse('2026-10-31T12:00:00Z');
-const filter={decks:[],sessionId:null,conceptSlug:null,includeNew:false,newOnly:false} as const;
+const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:false,newOnly:false};
 
 describe('FIX #507: extreme Review queue concept indexing',()=>{
  it('does not rescan 2,500 concepts for each of 30,000 cards',async()=>{
