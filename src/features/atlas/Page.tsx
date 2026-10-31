@@ -11,7 +11,7 @@ import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
-import {ancestors,arcsFor,budgetArcs,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 interface Saved{expanded:string[];related:boolean}
@@ -88,13 +88,16 @@ export default function Page(){
   update();const observer=new ResizeObserver(update);observer.observe(el);
   return ()=>observer.disconnect();
  },[query.isPending]);
+ // Calculate the effective open set on the first render, not in an effect.
+ // Keep the same Set instance when the effect stores it: rows/arcs stay memoized
+ // instead of building the 2,500-idea/8,000-link graph a second time.
+ const initialOpen=useMemo(()=>tree?initialExpanded(tree,saved.current?.expanded):new Set<string>(),[tree]);
  useEffect(()=>{
   if(!tree||expanded)return;
-  const stored=saved.current?.expanded.filter(id=>tree.nodes.has(id));
-  setExpanded(stored?.length?new Set(stored):defaultExpanded(tree));
- },[tree,expanded]);
+  setExpanded(initialOpen);
+ },[tree,expanded,initialOpen]);
  useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
- const open=expanded??new Set<string>();
+ const open=expanded??initialOpen;
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
  const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
