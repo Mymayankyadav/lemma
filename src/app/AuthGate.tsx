@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getApi } from '../data'
 import { useAuth } from '../data/hooks'
 import { getMode } from '../data/mode'
@@ -14,7 +14,7 @@ function destination(value: string | null | undefined): string | null {
   path.split(/[?#]/)[0] !== '/sign-in' ? path : null
 }
 function ReadyGate({children, email}: {children: ReactNode; email: string}) {
- const location = useLocation(), navigate = useNavigate()
+ const location = useLocation(), navigate = useNavigate(), queryClient = useQueryClient()
  const [target] = useState(() =>
   destination(sessionStorage.getItem('lemma:sign-in-return')) ??
   destination(sessionStorage.getItem('lemma:oauth-return')) ??
@@ -27,6 +27,9 @@ function ReadyGate({children, email}: {children: ReactNode; email: string}) {
   staleTime: Infinity, retry: false, refetchOnWindowFocus: false})
  useEffect(() => {
   if (!setup.isSuccess || restored) return
+  // Bootstrap already returns Settings; seed the normal query before Home mounts.
+  // This prevents a redundant fourth REST request on a cold Today open.
+  queryClient.setQueryData(['settings'], setup.data)
   sessionStorage.removeItem('lemma:sign-in-return')
   sessionStorage.removeItem('lemma:oauth-return')
   const url = new URL(window.location.href)
@@ -34,7 +37,7 @@ function ReadyGate({children, email}: {children: ReactNode; email: string}) {
   window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
   void navigate(target, {replace: true})
   setRestored(true)
- }, [setup.isSuccess, restored, navigate, target])
+ }, [setup.isSuccess, setup.data, restored, navigate, target, queryClient])
  if (setup.isError) return <section className="p-6 text-ink-2">
   <p role="alert">Couldn't finish sign-in. Your study data hasn't loaded.</p>
   <Button className="mt-4" onClick={() => void setup.refetch()}>Try again</Button>
