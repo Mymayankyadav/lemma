@@ -45,3 +45,30 @@ describe("plan ideas as a collapsible graph",()=>{
     expect(planIdeasGraph({checkpoints:[]},null,[],"x",{name:"x",glyph:"x"})).toBeNull();
   });
 });
+
+describe("ST-2 flat ideas open as checkpoint groups",()=>{
+ it("groups 80 unlevelled ideas under at most 40 taught-in branches",()=>{
+   const plan:PlanPayload={
+     checkpoints:Array.from({length:40},(_,i)=>({
+       code:`CP${i+1}`,title:`Checkpoint ${i+1}`,objective:"",criterion:"",steps:[],
+       concepts:[`Idea ${2*i+1}`,`Idea ${2*i+2}`],
+     })),
+     concepts:Array.from({length:80},(_,i)=>({name:`Idea ${i+1}`,prereqs:i?[`Idea ${i}`]:[]})),
+   };
+   const graph=planIdeasGraph(plan,null,planReviewNodes(plan,null),"test",{name:"Algebra",glyph:"∑"})!;
+   const tree=buildAtlasTree(graph);
+   const groups=[...tree.nodes.values()].filter(n=>n.synthetic&&n.name.startsWith("Taught in "));
+   expect(groups).toHaveLength(40);
+   expect(groups.every(g=>g.children.length===2)).toBe(true);
+   expect([...tree.nodes.values()].filter(n=>!n.synthetic)).toHaveLength(80);
+   const collapsed=visibleRows(tree,expandedToDepth(tree,2));
+   expect(collapsed).toHaveLength(41); // one subject root and 40 folded checkpoint groups
+   expect(collapsed.every(r=>!r.id.startsWith("idea:idea "))).toBe(true);
+   expect(graph.links).toHaveLength(79);
+   expect(tree.nodes.get("idea:idea 1")!.checkpointRefs).toEqual([{projectSlug:"test",code:"CP1"}]);
+ });
+ it("does not group a tutor-authored hierarchy under checkpoint headings",()=>{
+   const graph=planIdeasGraph(bigPlan(),null,planReviewNodes(bigPlan(),null),"analysis",{name:"Analysis",glyph:"∫"})!;
+   expect(graph.concepts.every(c=>!c.topic?.startsWith("Taught in "))).toBe(true);
+ });
+});
