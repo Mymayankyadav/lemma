@@ -36,6 +36,24 @@ describe(".tex and .md sources",()=>{
     expect(r.pageCount).toBe(2);
     expect(r.outline.map(o=>o.title)).toEqual(["One","Two"]);
   });
+  it("ignores headings in tilde fences and respects fence marker and length",()=>{
+    const text=[
+      "~~~md", "# literal code", "```", "## still code", "~~~",
+      "## Actual heading", "Text",
+      "````js", "# not a heading", "```", "## also code", "````",
+      "## Next heading", "Done",
+    ].join("\n");
+    const result=splitTextSource(text,"md");
+    expect(result.outline.map(o=>o.title)).toEqual(["Actual heading","Next heading"]);
+    expect(result.pages).toHaveLength(3);
+    expect(result.pages[0].body).toContain("# literal code");
+    expect(result.pages[1].body).toContain("## also code");
+  });
+  it("supports multiple fenced sections without splitting inside either style",()=>{
+    const result=splitTextSource("~~~\n# ignored\n~~~\n# One\ntext\n```ts\n## ignored\n```\n## Two\nend","md");
+    expect(result.outline.map(o=>o.title)).toEqual(["One","Two"]);
+    expect(result.pageCount).toBe(3);
+  });
   it("keeps every page under the page limit for long sections",()=>{
     const long="\\section{Long}\n"+Array.from({length:40},(_,i)=>"Paragraph "+i+" "+"x".repeat(500)).join("\n\n");
     const r=splitTextSource(long,"tex");
