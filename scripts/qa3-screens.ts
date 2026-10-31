@@ -54,7 +54,7 @@ export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:numbe
    depth=bytes[data+8];color=bytes[data+9];interlace=bytes[data+12]
    const validDepth:Record<number,number[]>={0:[1,2,4,8,16],2:[8,16],3:[1,2,4,8],4:[8,16],6:[8,16]}
    if(!validDepth[color]?.includes(depth)||bytes[data+10]!==0||
-      bytes[data+11]!==0||bytes[data+12]>1)return null
+      bytes[data+11]!==0||interlace!==0)return null
    seenIHDR=true
   }else if(type==='IHDR')return null
   if(type==='IDAT'){
@@ -75,16 +75,16 @@ export function pngHeader(bytes:Buffer,viewportWidth:number,viewportHeight:numbe
  const rowBytes=Math.ceil(width*channels[color]*depth/8)
  const maxRaw=32*1024*1024
  if(!Number.isSafeInteger(rowBytes)||rowBytes<=0)return null
- if(interlace===0&&(rowBytes+1)*height>maxRaw)return null
+ if((rowBytes+1)*height>maxRaw)return null
  let raw:Buffer
  try{raw=inflateSync(Buffer.concat(idats),{maxOutputLength:maxRaw})}
  catch{return null}
- if(raw.length===0)return null
- if(interlace===0){
-  const stride=rowBytes+1
-  if(raw.length!==stride*height)return null
-  for(let y=0;y<height;y++)if(raw[y*stride]>4)return null
- }
+ // Chromium's screenshot writer emits noninterlaced PNGs. Adam7 would need
+ // seven independently validated pass dimensions and filters; reject it
+ // rather than accepting any successfully inflated byte stream as a screenshot.
+ const stride=rowBytes+1
+ if(raw.length!==stride*height)return null
+ for(let y=0;y<height;y++)if(raw[y*stride]>4)return null
 
  const scale=width/viewportWidth
  if(!Number.isInteger(scale)||scale<1||scale>3||height!==viewportHeight*scale)return null
