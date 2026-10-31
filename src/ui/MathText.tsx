@@ -10,7 +10,7 @@ const variants={card:'font-math text-card leading-[1.3] text-ink',answer:'font-m
 const largeEnvironment=/\\begin\{(aligned|align|matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|array)\}([\s\S]*?)\\end\{\1\}/g;
 function mathsToDisplay(source:string){
  return source.replace(/\\\(([\s\S]*?)\\\)|(?<!\$)\$([^\n$]+)\$(?!\$)/g,(all,bracket:string|undefined,dollar:string|undefined)=>{
-  const tex=bracket??dollar;
+  const tex=bracket??dollar??'';
   return tex.length>40?'\\['+tex+'\\]':all;
  });
 }
@@ -55,7 +55,7 @@ export function MathText({source,variant='body',cloze,className='',interactiveMa
   const old=document.body.style.overflow;document.body.style.overflow='hidden';
   return ()=>{document.removeEventListener('keydown',key);document.body.style.overflow=old};
  },[mathHtml]);
- const distance=(touches:React.TouchList)=>Math.hypot(
+ const distance=(touches:TouchList)=>Math.hypot(
   touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY
  );
  const zoomTo=(value:number)=>setZoom(Math.max(1,Math.min(4,value)));
