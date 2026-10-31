@@ -45,6 +45,8 @@ for(const matrix of CPU_CASES){
     await expect(page.getByRole('region',{name:'Ideas in this plan'})).toBeVisible();
     await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
    }
+   // Match ST-0's settle window so deferred route content is counted.
+   await page.waitForTimeout(150);
    const durationMs=Date.now()-start;
    const nodes=await page.locator('*').count();
    const navigationType=await page.evaluate(()=>
