@@ -70,3 +70,16 @@ test('FIX #517 Atlas opens a named idea even when its incoming slug is lossy',as
  await expect(dialog).toBeVisible();
  await expect(dialog.locator('[data-atlas-details="true"]')).toBeVisible();
 });
+
+test('FIX #517 Atlas manual deselection clears stale named deep-link metadata',async({page})=>{
+ await page.goto('/lemma/?demo=1#/atlas?focus=lossy-math-slug&name=Uniform%20continuity');
+ const dialog=page.getByRole('dialog',{name:'Uniform continuity'});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole('button',{name:'Close',exact:true}).click();
+ await expect(page.locator('[data-atlas-peek]')).toBeVisible();
+ await page.getByRole('button',{name:'Clear selection'}).click();
+ await expect(page).not.toHaveURL(/(?:[?&](?:name|focus|id)=)/);
+ await expect(page.locator('[data-atlas-peek]')).toHaveCount(0);
+ await expect(page.getByRole('dialog',{name:'Uniform continuity'})).toHaveCount(0);
+ await page.screenshot({path:'test-results/screens/fix-517-atlas-deselection.png',fullPage:true});
+});
