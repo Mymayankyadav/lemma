@@ -120,10 +120,10 @@ export function ProjectTimeline({project,checkpoints,variant='metro',height=96,m
      onClick={()=>setSelected(stage.start<=focusedIndex&&stage.end>=focusedIndex?focusedIndex:
       Math.max(stage.start,stage.checkpoints.findIndex(cp=>cp.ui==='now'||cp.ui==='next')+stage.start))}
      title={stage.name+': '+done+' of '+count+' complete'}
-     className={'relative flex min-h-11 min-w-14 shrink-0 flex-col justify-center overflow-hidden rounded-ctl border px-2 text-left focus-visible:outline-2 focus-visible:outline-amber '+
+     className={'relative flex min-h-11 min-w-14 shrink-0 flex-col justify-center overflow-hidden rounded-ctl border px-1 text-left focus-visible:outline-2 focus-visible:outline-amber '+
       (active?'border-amber bg-amber-tint':'border-edge bg-fill-1')}
      style={{flexGrow:stage.checkpoints.length,flexBasis:0}}>
-     <span className="truncate text-[12px] font-semibold leading-4 text-ink">{stage.name}</span>
+     <span className="block max-w-full truncate whitespace-nowrap text-[12px] font-semibold leading-4 text-ink" style={{whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{stage.name}</span>
      <span className="text-[12px] tabular-nums text-ink-2">{done}/{count}</span>
      <span className="absolute inset-x-0 bottom-0 h-[3px] bg-[var(--line)]">
       <span className="block h-full" style={{width:count?done/count*100+'%':'0%',
