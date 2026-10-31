@@ -1,28 +1,26 @@
 import {test,expect,type Page} from '@playwright/test'
 import {mkdirSync} from 'node:fs'
 
-async function checkStageMetro(page:Page,expectStages:number){
- const timeline=page.locator('[data-timeline="stage-metro"]').first()
- await expect(timeline).toBeVisible()
- await expect(timeline).toHaveAttribute('data-stage-count',String(expectStages))
- await expect(timeline.locator('[data-timeline-header]')).toContainText(/CP\d+ of 36 · Stage \d+ of 5/)
- const stations=timeline.locator('[data-station-index]')
- expect(await stations.count()).toBeLessThanOrEqual(9)
- expect(await stations.count()).toBeGreaterThan(0)
- const dimensions=await stations.evaluateAll(nodes=>nodes.map(n=>{
-  const b=n.getBoundingClientRect();return {x:b.x,width:b.width,height:b.height}
+async function checkRoute(page:Page,expectStages:number){
+ const route=page.locator('[data-route-mode="project"]').first()
+ await expect(route).toBeVisible()
+ await expect(route).toHaveAttribute('data-route-layout','folded')
+ await expect(route).toHaveAttribute('data-route-stage-count',String(expectStages))
+ await expect(route.locator('[data-stage-rail],[data-expanded-stations]')).toHaveCount(0)
+ const marks=route.locator('[data-route-mark]')
+ expect(await marks.count()).toBeGreaterThan(0)
+ expect(await route.locator('[data-station-index]').count()).toBeLessThanOrEqual(9)
+ const controls=route.locator('[data-route-controls] button')
+ await expect(controls).toHaveCount(3)
+ const dimensions=await controls.evaluateAll(nodes=>nodes.map(n=>{
+  const b=n.getBoundingClientRect();return {width:b.width,height:b.height}
  }))
  expect(dimensions.every(d=>d.width>=44&&d.height>=44)).toBe(true)
- for(let i=1;i<dimensions.length;i++)expect(dimensions[i].x-dimensions[i-1].x).toBeGreaterThanOrEqual(44)
- const stageButtons=timeline.locator('[data-stage-button]')
- expect(await stageButtons.count()).toBe(expectStages)
- expect(await stageButtons.evaluateAll(nodes=>nodes.every(n=>n.getBoundingClientRect().height>=44))).toBe(true)
- const before=await timeline.locator('[data-timeline-header]').textContent()
- await stageButtons.first().focus()
- await stageButtons.first().press('ArrowRight')
- expect(await timeline.locator('[data-timeline-header]').textContent()).not.toBe(before)
+ const before=await route.locator('[data-route-now]').textContent()
+ await route.locator('button[aria-label*="Arrow keys select"]').focus()
+ await page.keyboard.press('ArrowRight')
+ expect(await route.locator('[data-route-now]').textContent()).not.toBe(before)
 }
-
 for(const profile of ['stress','extreme'])
 for(const theme of ['graph','graph-night'])
 for(const width of [390,360]){
@@ -36,7 +34,7 @@ for(const width of [390,360]){
   const shot=(name:string)=>'test-results/screens/st-1/'+profile+'-'+theme+'-'+width+'-'+name+'.png'
   await page.goto(base+'/p/real-analysis',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible({timeout:90_000})
-  await checkStageMetro(page,5)
+  await checkRoute(page,5)
   await expect(page.locator('[data-done-summary]').first()).toContainText(/\d+ done/)
   await expect(page.locator('[data-done-summary]').first()).toBeVisible()
   await page.screenshot({path:shot('no-stages-36'),fullPage:false})
@@ -57,11 +55,12 @@ for(const width of [390,360]){
   if(profile==='extreme'){
    await page.evaluate(()=>{window.location.hash='/p/stress-project-3'})
    await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible({timeout:90_000})
-   const timeline=page.locator('[data-timeline="stage-metro"]')
-   await expect(timeline).toHaveAttribute('data-stage-count','15')
+   const timeline=page.locator('[data-route-mode="project"]')
+   await expect(timeline).toHaveAttribute('data-route-stage-count','15')
    await expect(page.locator('[data-stage-chip]')).toHaveCount(15)
    const stations=timeline.locator('[data-station-index]')
    expect(await stations.count()).toBeLessThanOrEqual(9)
+   await expect(timeline.locator('[data-stage-rail],[data-expanded-stations]')).toHaveCount(0)
    await page.locator('[data-stage-chip="8"]').click()
    await expect(page.locator('[data-stage-chip="8"]')).toHaveAttribute('aria-pressed','true')
    await page.screenshot({path:shot('stages-100'),fullPage:false})
