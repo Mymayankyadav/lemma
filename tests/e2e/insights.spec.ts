@@ -101,10 +101,18 @@ for (const theme of ['graph','graph-night'] as const) {
      trend:svg('svg[aria-label^="Recall over time"] path[stroke]','stroke'),
      endpoint:svg('svg[aria-label^="Recall over time"] circle','fill'),
      hatching:svg('svg[aria-label^="Recall over time"] pattern line','stroke'),
+     subjectGlyph:colour(document.querySelector('[aria-label="Time by subject"] button span[aria-hidden="true"]')),
+     subjectBar:getComputedStyle(document.querySelector('[aria-label="Time by subject"] .h-full')!).backgroundColor,
+     calibrationBar:getComputedStyle(document.querySelector('[aria-label^="Answer confidence calibration"] .h-full')!).backgroundColor,
+     mostRevisitedIcons:[...document.querySelectorAll('a[aria-label^="Most revisited:"] svg')].map(icon=>getComputedStyle(icon).color),
     };
    });
    expect(colours.icons).toEqual([colours.secondary,colours.secondary,colours.secondary]);
    expect(colours.typicalIcon).toBe(colours.secondary);
+   expect(colours.subjectGlyph).toBe(colours.secondary);
+   expect(colours.subjectBar).toBe(colours.secondary);
+   expect(colours.calibrationBar).toBe(colours.secondary);
+   expect(colours.mostRevisitedIcons).toEqual([colours.secondary,colours.secondary]);
    expect(colours.recallNumber).toBe(colours.ink);
    await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:'30 days'})).toHaveAttribute('aria-pressed','true');
    for(const key of ['trend','endpoint','hatching'] as const){
