@@ -1,7 +1,7 @@
 import {Tex} from '../../ui/Tex';
 import {useCallback,useState} from 'react';
 import {Link,useParams,useSearchParams} from 'react-router';
-import {BookOpen,Calendar,CheckCircle,Clock,Copy,History,Inbox,MessageCircle,MoreHorizontal,Target,TriangleAlert,XCircle,Lightbulb,BookMarked,Sparkles,Bot,Check,ArrowRight} from 'lucide-react';
+import {BookOpen,Calendar,CheckCircle,Clock,Copy,History,MessageCircle,MoreHorizontal,Target,TriangleAlert,XCircle,Lightbulb,BookMarked,Sparkles,Bot,Check,ArrowRight} from 'lucide-react';
 import {motion,useReducedMotion} from 'motion/react';
 import {useProject,useSession,useSettings,useResolveMisconception} from '../../data/hooks';
 import {chatLink,resumePrompt,studyPrompt} from '../../lib/chat';
@@ -83,9 +83,24 @@ export default function Page(){
     <Link to={`/s/${slug}/${number}?cards=1`} className="flex min-h-14 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 text-body text-amber">
      <span>{session.cards.length} cards · {session.cards.filter(card=>card.state==='pending').length} waiting</span><ArrowRight size={18} className="shrink-0"/>
     </Link></section>}
-   {proposalCount>0&&<Slab className="flex flex-wrap items-center gap-3"><Inbox className="text-amber" size={23}/><div className="min-w-0 flex-1"><h2 className="font-semibold">{session.pendingProposals.cards} {session.pendingProposals.cards===1?'card':'cards'}, {session.pendingProposals.planChanges} {session.pendingProposals.planChanges===1?'plan change':'plan changes'}</h2><p className="text-label text-ink-2">Waiting for you</p></div><Link className="lit inline-flex min-h-11 items-center rounded-ctl px-4 text-sm font-semibold" to="/proposals">Review</Link></Slab>}
-   {session.pages&&<button className="tile flex min-h-[var(--row)] items-center gap-3 text-left" onClick={()=>setPagesOpen(true)}><BookOpen size={20} className="text-amber"/><span className="min-w-0 flex-1">Pages {session.pages}</span><ArrowRight size={16}/></button>}
-   <div className="flex gap-3"><IconButton icon={Copy} label="Copy session summary" onClick={()=>void copy(session.summaryText||summary.goal)}/><Button className="flex-1" icon={MessageCircle} onClick={()=>launch(summary.display==='ended'?studyPrompt(project.data?.project.title||slug,summary.checkpointCode||undefined):resumePrompt(project.data?.project.title||slug))}>{summary.display==='ended'? 'Start studying':'Resume session'}</Button></div>
+   {proposalCount>0&&<p className="text-label text-ink-2" aria-label="Pending session proposals">
+    {session.pendingProposals.cards} {session.pendingProposals.cards===1?'card':'cards'} ·
+    {' '}{session.pendingProposals.planChanges} {session.pendingProposals.planChanges===1?'plan change':'plan changes'} waiting
+   </p>}
+   <div role="group" aria-label="Session actions" className="flex flex-col gap-2">
+    <Button className="w-full" icon={MessageCircle} onClick={()=>launch(summary.display==='ended'?studyPrompt(project.data?.project.title||slug,summary.checkpointCode||undefined):resumePrompt(project.data?.project.title||slug))}>
+     {summary.display==='ended'?'Start studying':'Resume session'}
+    </Button>
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+     <button type="button" aria-label="Copy session summary" className="inline-flex min-h-11 items-center gap-2 text-label font-semibold text-amber" onClick={()=>void copy(session.summaryText||summary.goal)}>
+      <Copy size={16} aria-hidden="true"/>Copy
+     </button>
+     {proposalCount>0&&<Link to="/proposals" className="inline-flex min-h-11 items-center text-label font-semibold text-amber">Review</Link>}
+     {session.pages&&<button type="button" className="inline-flex min-h-11 items-center gap-2 text-label font-semibold text-amber" onClick={()=>setPagesOpen(true)}>
+      Pages
+     </button>}
+    </div>
+   </div>
   </>}
   <Sheet title="Session pages" open={pagesOpen} onClose={()=>setPagesOpen(false)}><p className="text-ink-2">Source pages: {session?.pages||'Not recorded'}. Your tutor can read the source using Lemma’s PDF tools. The session record stores the citation rather than a copy of the page text.</p><Button className="mt-5 w-full" onClick={()=>setPagesOpen(false)}>Close</Button></Sheet>
  </section>;
