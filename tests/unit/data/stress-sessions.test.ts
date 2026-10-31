@@ -32,3 +32,24 @@ describe('ST-0 session history at scale (audit #462)', () => {
   });
  }
 });
+
+
+describe('deferred browser stress sessions', () => {
+ it('preserves all per-project sessions and long histories without allocating 60k rows on Atlas', async () => {
+  const data=makeStressStore(seed,'extreme',{deferSessions:true});
+  expect(data.sessions).toHaveLength(0);
+  expect(data.stressSessionCount).toBe(1000);
+  const {DemoAdapter}=await import('../../../src/data/demo/adapter');
+  const api=new DemoAdapter({fixture:data,now:()=>Date.UTC(2026,9,31,12)});
+  const first=data.projects[0],last=data.projects[data.projects.length-1];
+  expect(await api.listSessions(first.slug)).toHaveLength(1000);
+  expect(await api.listSessions(last.slug)).toHaveLength(1000);
+  const detail=await api.getSession(first.slug,7);
+  expect(detail.events).toHaveLength(400);
+  expect(detail.events.some(event=>event.kind==='evidence')).toBe(true);
+  const lazy=await api.getSession(last.slug,8);
+  expect(lazy.events).toHaveLength(400);
+  const insights=await api.getInsightData(7);
+  expect(insights.aggregate?.sessions).toBeGreaterThan(0);
+ });
+});

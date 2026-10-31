@@ -41,10 +41,17 @@ export function makeStressInsightAggregate(
   return Number.isFinite(timestamp)&&timestamp<=now&&studyDayBounds(timestamp,timeZone,rolloverHour).index>=start;
  };
  const sessions=data.sessions.filter(s=>inWindow(s.startedAt));
- const minutes=sessions.reduce((n,s)=>n+s.minutes,0);
- const sortedMinutes=sessions.map(s=>s.minutes).sort((a,b)=>a-b);
+ // Deferred browser fixtures keep only a per-project count. Derive the same
+ // 90-day synthetic session aggregates without allocating every history row.
+ const virtualCount=data.stressSessionCount??0;
+ const perProjectInWindow=virtualCount
+  ?Math.floor(virtualCount/90)*days+Math.min(days,virtualCount%90):0;
+ const totalSessions=virtualCount?perProjectInWindow*data.projects.length:sessions.length;
+ const baseMinutes=virtualCount?30:0;
+ const minutes=virtualCount?totalSessions*baseMinutes:sessions.reduce((n,s)=>n+s.minutes,0);
+ const sortedMinutes=virtualCount?[]:sessions.map(s=>s.minutes).sort((a,b)=>a-b);
  const middle=Math.floor(sortedMinutes.length/2);
- const typicalSession=sortedMinutes.length
+ const typicalSession=virtualCount?baseMinutes:sortedMinutes.length
   ?sortedMinutes.length%2?sortedMinutes[middle]:(sortedMinutes[middle-1]+sortedMinutes[middle])/2
   :null;
  const bySubject=new Map<string,{subject:Subject;minutes:number}>();
@@ -56,6 +63,12 @@ export function makeStressInsightAggregate(
   const entry=bySubject.get(subject.id)??{subject,minutes:0};
   entry.minutes+=session.minutes;bySubject.set(subject.id,entry);
  }
+ if(virtualCount)for(const project of data.projects){
+  const subject=subjectById.get(project.subjectId);
+  if(!subject)continue;
+  const entry=bySubject.get(subject.id)??{subject,minutes:0};
+  entry.minutes+=perProjectInWindow*baseMinutes;bySubject.set(subject.id,entry);
+ }
  const checkpointDays=Array.from({length:28},(_,i)=>{
   const index=end-27+i;
   const events=data.checkpointEvents.filter(e=>Number.isFinite(Date.parse(e.at))&&
@@ -66,7 +79,7 @@ export function makeStressInsightAggregate(
  });
  const most=data.misconceptions.reduce<(typeof data.misconceptions)[number]|null>(
   (best,item)=>!best||item.times>best.times?item:best,null);
- return {days,reviews,right,reviewDays,calibration,sessions:sessions.length,minutes,typicalSession,
+ return {days,reviews,right,reviewDays,calibration,sessions:totalSessions,minutes,typicalSession,
   subjectMinutes:[...bySubject.values()],checkpointDays,
   mostRevisited:most?{label:most.label,times:most.times,
    conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
@@ -98,7 +111,7 @@ export function stressSessionEvents(session: Pick<DemoSession, "id" | "checkpoin
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
 export type StressProfile = "stress" | "extreme";
 
-export function makeStressStore(original: DemoStore, profile: StressProfile): DemoStore {
+export function makeStressStore(original: DemoStore, profile: StressProfile, options: {deferSessions?: boolean} = {}): DemoStore {
   const data = structuredClone(original);
   const extreme = profile === "extreme";
   const projectCount = extreme ? 60 : 15;
@@ -245,7 +258,10 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   }
   const eventCount = extreme ? 400 : 150;
   data.sessions = [];
-  for (const [projectIndex, project] of data.projects.entries()) {
+  // The browser virtualises sessions so unrelated routes never hydrate 60,000
+  // records. The default generator remains fully materialised for fixture tests.
+  if (options.deferSessions) data.stressSessionCount = sessionCount;
+  else for (const [projectIndex, project] of data.projects.entries()) {
     for (let index = 0; index < sessionCount; index++) {
       const number = index + 1;
       const fullHistory = (projectIndex === 0 && number === 7)

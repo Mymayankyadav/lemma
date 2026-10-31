@@ -116,6 +116,8 @@ export interface DemoStore {
   reviews: DemoReview[];
   /** ST-0: simulated server-side historical review count; raw rows stay bounded. */
   stressReviewCount?: number;
+  /** Browser-only virtual per-project session count (avoids 60k hydrated rows). */
+  stressSessionCount?: number;
   proposals: DemoProposal[];
   concepts: DemoConcept[];
   links: AtlasGraph["links"];

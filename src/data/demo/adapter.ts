@@ -279,6 +279,27 @@ export class DemoAdapter implements LemmaApi {
       ).length,
     };
   }
+  /** Generate one stress session on demand; the UI never needs 60k hydrated rows. */
+  private virtualStressSession(project: DemoProject, number: number): DemoSession {
+    const count = this.store.stressSessionCount ?? 0;
+    if (!Number.isInteger(number) || number < 1 || number > count) invalid("Invalid stress session number");
+    const projectIndex = this.store.projects.findIndex(p => p.id === project.id);
+    const template = (JSON.parse(fixtureText) as DemoStore).sessions[0];
+    const checkpointCode = `CP${((number - 1) % 36) + 1}`;
+    const offset = (number - 1) % 90;
+    const start = studyDayBounds(this.now(), this.store.settings.timeZone, this.store.settings.rolloverHour).start - offset * DAY;
+    return {
+      ...template, id: `stress-session-${projectIndex}-${number}`, projectId: project.id,
+      number, checkpointCode, goal: `Study session ${number} for ${project.title}`,
+      state: "ended", startedAt: new Date(start + 30 * 60_000).toISOString(),
+      lastActivityAt: new Date(start + 60 * 60_000).toISOString(), events: [],
+    };
+  }
+  private sessionsForProject(project: DemoProject): DemoSession[] {
+    if (this.store.stressSessionCount) return Array.from(
+      {length:this.store.stressSessionCount}, (_,i) => this.virtualStressSession(project,i+1));
+    return this.store.sessions.filter(s => s.projectId === project.id);
+  }
   private sessionSummary(s: DemoSession): SessionSummary {
     return {
       id: s.id,
@@ -326,7 +347,7 @@ export class DemoAdapter implements LemmaApi {
       cardsCount: this.store.notes
         .filter((n) => n.projectId === p.id && n.note.status !== "deleted")
         .reduce((n, note) => n + note.cards.length, 0),
-      sessionsCount: this.store.sessions.filter(
+      sessionsCount: this.store.stressSessionCount ?? this.store.sessions.filter(
         (s) => s.projectId === p.id && s.state === "ended",
       ).length,
       sourcesCount: this.store.sources.filter((s) => s.projectId === p.id)
@@ -761,9 +782,7 @@ export class DemoAdapter implements LemmaApi {
         ),
         "Checkpoint",
       );
-    const sessions = this.store.sessions.filter(
-      (s) => s.projectId === project.id && s.checkpointCode === code,
-    );
+    const sessions = this.sessionsForProject(project).filter(s => s.checkpointCode === code);
     return {
       view: this.cpView(cp),
       objective: cp.objective,
@@ -848,8 +867,11 @@ export class DemoAdapter implements LemmaApi {
   }
   async listSessions(slug?: string) {
     const id = slug ? this.project(slug).id : null;
-    return this.store.sessions
-      .filter((s) => !id || s.projectId === id)
+    const sessions = this.store.stressSessionCount
+      ? (id ? this.sessionsForProject(this.project(slug!))
+        : this.store.projects.flatMap(project => this.sessionsForProject(project)))
+      : this.store.sessions.filter(s => !id || s.projectId === id);
+    return sessions
       .map((s) => this.sessionSummary(s))
       .sort(
         (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
@@ -858,9 +880,8 @@ export class DemoAdapter implements LemmaApi {
   async getSession(slug: string, number: number): Promise<SessionDetail> {
     const p = this.project(slug),
       s = found(
-        this.store.sessions.find(
-          (s) => s.projectId === p.id && s.number === number,
-        ),
+        this.store.stressSessionCount ? this.virtualStressSession(p,number)
+          : this.store.sessions.find(s => s.projectId === p.id && s.number === number),
         "Session",
       ),
       proposals = this.store.proposals.filter(
