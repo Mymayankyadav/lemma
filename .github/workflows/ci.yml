@@ -41,9 +41,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: >-
-          npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests
-          --grep-invert 'AUDIT #540 cold 4x'
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -114,7 +112,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Cold 4x first render of all 18 visual routes in this matrix cell
         run: >
-          npx playwright test tests/e2e/stress-cpu.spec.ts
+          npx playwright test --config playwright.cpu.config.ts tests/cpu/stress-cpu.spec.ts
           --grep "AUDIT #540 cold 4x ${{ matrix.profile }} ${{ matrix.theme }} ${{ matrix.width }}px all 18 routes"
           --workers=1
       - name: Require all 18 cold screenshots in this matrix cell
