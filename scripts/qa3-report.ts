@@ -3,7 +3,7 @@
  * Budget PASS means the generic ST-0 measurements passed; it does not certify
  * the element's task-specific interactions or the screenshot review (QA-3b).
  */
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { stressViolations, type StressMeasurement } from './stress-limits';
@@ -59,6 +59,8 @@ export type Qa3Report = {
   filesValid: number;
   routesExpected: number;
   routesValid: number;
+  screenshotsExpected: number;
+  screenshotsPresent: number | null;
   errors: string[];
   findings: Qa3Finding[];
   elements: Qa3Element[];
@@ -73,6 +75,12 @@ export function qa3Cases(): Case[] {
       })),
     ),
   );
+}
+
+/** ST-0 screenshot naming contract, one image per route and matrix case. */
+export function qa3ScreenshotName(matrix: Case, route: string): string {
+  const name = route === '/' ? 'today' : route.replaceAll('/', '-').replace(/^-/, '');
+  return matrix.profile + '-' + matrix.theme + '-' + matrix.width + '-' + name + '.png';
 }
 
 function object(value: unknown): value is Record<string, unknown> {
@@ -101,13 +109,19 @@ function validRow(value: unknown): value is Qa3Row {
  * Accept an in-memory map keyed by the ST-0 JSON filenames. This is pure,
  * so fixtures can test malformed/missing evidence without browser access.
  */
-export function analyzeQa3(files: Record<string, unknown>): Qa3Report {
+export function analyzeQa3(files: Record<string, unknown>, screenshots?: ReadonlySet<string>): Qa3Report {
   const errors: string[] = [];
   const findings: Qa3Finding[] = [];
   const validRows: Qa3Row[] = [];
   let filesValid = 0;
   const expectedRoutes = new Set<string>(QA3_ROUTES);
   const cases = qa3Cases();
+  let screenshotsPresent = 0;
+  if (screenshots) for (const matrix of cases) for (const route of QA3_ROUTES) {
+    const name = qa3ScreenshotName(matrix, route);
+    if (screenshots.has(name)) screenshotsPresent++;
+    else errors.push('missing screenshot ' + name);
+  }
 
   for (const matrix of cases) {
     const payload = files[matrix.filename];
@@ -172,7 +186,10 @@ export function analyzeQa3(files: Record<string, unknown>): Qa3Report {
   return {
     status, filesExpected: cases.length, filesValid,
     routesExpected: cases.length * QA3_ROUTES.length,
-    routesValid: validRows.length, errors, findings, elements,
+    routesValid: validRows.length,
+    screenshotsExpected: cases.length * QA3_ROUTES.length,
+    screenshotsPresent: screenshots ? screenshotsPresent : null,
+    errors, findings, elements,
   };
 }
 
@@ -184,6 +201,9 @@ export function renderQa3Markdown(report: Qa3Report): string {
     '',
     'Matrix: ' + report.filesValid + '/' + report.filesExpected +
       ' files; ' + report.routesValid + '/' + report.routesExpected + ' route measurements.',
+    'Screenshots: ' + (report.screenshotsPresent === null ? 'not checked' :
+      report.screenshotsPresent + '/' + report.screenshotsExpected + ' files present') +
+      ' (presence only; visual review is still required).',
     '',
     'This report covers only the generic ST-0 hard budgets (layout, tap targets,',
     'type sizes, DOM count, render time when CPU throttled, and API budgets).',
@@ -214,6 +234,7 @@ export function renderQa3Markdown(report: Qa3Report): string {
 function main(): void {
   const input = process.argv[2] ?? 'test-results/stress';
   const output = process.argv[3] ?? 'test-results/qa3/stress-budget-report.md';
+  const screenDir = process.argv[4] ?? 'test-results/screens/stress';
   const files: Record<string, unknown> = {};
   for (const { filename } of qa3Cases()) {
     try {
@@ -223,7 +244,10 @@ function main(): void {
       files[filename] = null;
     }
   }
-  const report = analyzeQa3(files);
+  let screenshots: ReadonlySet<string>;
+  try { screenshots = new Set(readdirSync(resolve(screenDir))); }
+  catch { screenshots = new Set(); }
+  const report = analyzeQa3(files, screenshots);
   mkdirSync(dirname(resolve(output)), { recursive: true });
   writeFileSync(resolve(output), renderQa3Markdown(report), 'utf8');
   process.stdout.write('QA-3a ' + report.status + ' · ' + report.routesValid +
