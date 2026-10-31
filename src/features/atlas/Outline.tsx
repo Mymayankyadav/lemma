@@ -45,8 +45,9 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number):Map<string,B
  }).sort((a,b)=>b.radius-a.radius||a.anchorY-b.anchorY||a.arc.key.localeCompare(b.arc.key));
  const placed:BundlePlacement[]=[],result=new Map<string,BundlePlacement>();
  const findSlot=(radius:number,anchorX:number,anchorY:number):BundlePlacement|null=>{
-  const minX=radius+2,maxX=GUTTER-radius-2;
-  const minY=radius+2,maxY=height-radius-2;
+  const inset=radius>=22?0:2; // A 44px summary must fit even a one-row outline.
+  const minX=radius+inset,maxX=GUTTER-radius-inset;
+  const minY=radius+inset,maxY=height-radius-inset;
   if(maxX<minX||maxY<minY)return null;
   const clampX=(x:number)=>Math.max(minX,Math.min(maxX,x));
   const xs=[anchorX,minX,maxX,GUTTER/2,(minX+GUTTER/2)/2,(maxX+GUTTER/2)/2]
