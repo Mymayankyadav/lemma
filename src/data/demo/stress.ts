@@ -119,15 +119,45 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     };
     data.notes.push(note);
   }
+  // Audit #462: sessions are per project, not shared across the entire library.
+  // Materialise long event histories for the actual /s/real-analysis/7 route
+  // and a second project's first session. The remaining sessions exercise list
+  // pagination without allocating millions of repetitive event objects.
+  const eventCount = extreme ? 400 : 150;
+  const eventKinds = ["attempt", "hint", "explanation", "note", "misconception", "evidence", "recheck", "pretest"] as const;
   data.sessions = [];
-  for (let i = 0; i < sessionCount; i++) {
-    const project = data.projects[i % data.projects.length];
-    data.sessions.push({
-      ...baseSession, id: `stress-session-${i}`, projectId: project.id,
-      number: Math.floor(i / projectCount) + 1, checkpointCode: `CP${(i % 36) + 1}`,
-      goal: `Study session ${i + 1}`, startedAt: `@day:-${i % 90}:0.3:0`,
-      lastActivityAt: `@day:-${i % 90}:0.6:0`, events: [],
-    });
+  for (const [projectIndex, project] of data.projects.entries()) {
+    for (let index = 0; index < sessionCount; index++) {
+      const number = index + 1;
+      const fullHistory = (projectIndex === 0 && number === 7)
+        || (projectIndex === projectCount - 1 && number === 1);
+      const events = fullHistory
+        ? Array.from({length: eventCount}, (_, eventIndex) => {
+            const kind = eventKinds[eventIndex % eventKinds.length];
+            return {
+              id: projectIndex * sessionCount * eventCount + index * eventCount + eventIndex + 1,
+              kind,
+              body: `Reasoning step ${eventIndex + 1}: justify the inference using the hypotheses of the lemma.`,
+              outcome: kind === "evidence" ? "demonstrated" as const : kind === "attempt" ? "partial" as const : null,
+              hintLevel: kind === "hint" ? (eventIndex % 20) + 1 : null,
+              checkpointCode: `CP${(index % 36) + 1}`,
+              createdAt: `@day:-${index % 90}:0.5:0`,
+            };
+          })
+        : [];
+      data.sessions.push({
+        ...baseSession,
+        id: `stress-session-${projectIndex}-${number}`,
+        projectId: project.id,
+        number,
+        checkpointCode: `CP${(index % 36) + 1}`,
+        goal: `Study session ${number} for ${project.title}`,
+        state: "ended",
+        startedAt: `@day:-${index % 90}:0.3:0`,
+        lastActivityAt: `@day:-${index % 90}:0.6:0`,
+        events,
+      });
+    }
   }
   data.proposals = [];
   for (let i = 0; i < proposalCount; i++) {
