@@ -21,6 +21,21 @@ for(const width of [360,390] as const){
    expect(rect.width).toBeGreaterThanOrEqual(44);
    expect(rect.height).toBeGreaterThanOrEqual(44);
   }
+  // Exercise the actual React/KaTeX stage renderer, not injected plain
+  // text. The stress fixture contains one inline-dollar mathematical stage
+  // and one long backslash-delimited stage on this real project.
+  const mathLabels=nav.locator('[data-stage-chip-label]:has(.katex)');
+  await expect(mathLabels).toHaveCount(2);
+  const mathSizes=await mathLabels.evaluateAll(elements=>elements.map(element=>
+   parseFloat(getComputedStyle(element.querySelector('.katex')!).fontSize)));
+  expect(mathSizes.every(px=>px>=16),JSON.stringify(mathSizes)).toBe(true);
+  const longMath=mathLabels.last();
+  const scrollable=await longMath.evaluate(el=>({width:el.clientWidth,content:el.scrollWidth}));
+  expect(scrollable.content).toBeGreaterThan(scrollable.width+8);
+  await longMath.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+  expect(await longMath.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+
   // Graph's global .truncate override must not spill a long mathematical
   // stage label across neighboring 44px controls. Unit tests supply actual
   // KaTeX; here we exercise the rendered CSS under both Graph worlds.
