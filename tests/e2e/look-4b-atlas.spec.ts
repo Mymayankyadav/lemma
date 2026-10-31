@@ -49,7 +49,7 @@ test('LOOK-4b long mathematical row names remain scrollable without viewport ove
  await name.evaluate(el=>{
   const renderer=(window as typeof window&{katex?:{renderToString:(source:string,options?:{throwOnError:boolean})=>string}}).katex;
   if(!renderer)throw Error('KaTeX unavailable');
-  el.innerHTML=renderer.renderToString(String.raw`\\sum_{n=1}^{100}\\frac{1}{n^2}+\\int_{0}^{1}\\frac{dx}{1+x^2}+\\mathbb{R}^{100}`,{throwOnError:false});
+  el.innerHTML=renderer.renderToString(String.raw`\sum_{n=1}^{100}\frac{1}{n^2}+\int_{0}^{1}\frac{dx}{1+x^2}+\mathbb{R}^{100}`,{throwOnError:false});
  });
  const metrics=await name.evaluate(el=>{
   el.scrollLeft=el.scrollWidth;
