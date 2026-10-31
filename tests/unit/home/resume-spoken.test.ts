@@ -10,6 +10,7 @@ describe('Continue accessible math description',()=>{
   expect(spoken).toContain('ℝⁿ');
   expect(spoken).toContain('π₁');
   expect(spoken).toContain('ℤ');
+  expect(spoken).toContain('π₁(S¹)≅ℤ');
   expect(spoken).toContain('≅');
   expect(spoken).not.toContain('cong');
   expect(spoken).not.toMatch(/[\\$]/);
