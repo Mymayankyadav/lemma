@@ -16,6 +16,12 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   const count=()=>page.evaluate(()=>document.querySelectorAll('*').length);
   expect(await count(),'Paths 1,500-node budget').toBeLessThan(1500);
   await expect(page.getByRole('button',{name:/Show next .* projects/i})).toBeVisible();
+  // Progressive disclosure must not accumulate all 60 mounted cards.
+  // Every page, not just the first, must obey the same hard budget.
+  for(let next=0;next<2;next++){
+   await page.getByRole('button',{name:/Show next .* projects/i}).click();
+   expect(await count(),'Paged Paths DOM budget').toBeLessThan(1500);
+  }
   // Search must reach a project beyond the first page, without showing all 60.
   await page.getByRole('searchbox',{name:'Search paths'}).fill('Mathematics project 60');
   await expect(page.locator('[data-project-row="stress-project-59"]')).toBeVisible();
