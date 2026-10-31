@@ -5,14 +5,12 @@ on:
       - 'scripts/review-shots.mjs'
       - 'scripts/v4-capture-inventory.json'
       - '.github/workflows/review-shots.yml'
+      - '.github/workflows/review-shots-publish.yml'
   workflow_dispatch:
-  push:
-    branches: ['review/**']
 permissions:
   contents: read
 jobs:
   shots:
-    if: "!contains(github.event.head_commit.message, '[shots]')"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -28,13 +26,12 @@ jobs:
           THEMES: all
           DENSITY: compact
           EFFECTS: calm
-          V4_MATRIX: ${{ github.event_name == 'push' && '0' || '1' }}
+          V4_MATRIX: '1'
         run: |
           (npx vite preview --port 4173 --strictPort > /tmp/lemma-preview.log 2>&1 &) 
           sleep 5
           node scripts/review-shots.mjs
       - name: Fail closed on missing, invalid or repeated v4 interaction screenshots
-        if: github.event_name != 'push'
         run: npx tsx scripts/qa4-screens.ts
       - name: Upload v4 route and interaction screenshots for independent review
         if: always()
@@ -44,26 +41,3 @@ jobs:
           path: review-shots/
           if-no-files-found: error
           retention-days: 14
-  # A PR's screenshot job has a read-only token. Only an explicit push to
-  # review/** can publish generated contact sheets, in a separate write job.
-  publish:
-    if: github.event_name == 'push'
-    needs: shots
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: v4-review-screens
-          path: review-shots/
-      - name: Commit contact sheets to the review branch
-        run: |
-          git config user.name "review-bot"
-          git config user.email "review-bot@users.noreply.github.com"
-          git add -f review-shots
-          if ! git diff --cached --quiet; then
-            git commit -m "[shots] all-theme contact sheets"
-            git push
-          fi
