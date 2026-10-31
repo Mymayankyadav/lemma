@@ -88,10 +88,11 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek}:RouteP
    if(mark.kind==='stage'){
     const status=stageStatus(mark);
     const y=24-mark.height/2;
+    const visualWidth=Math.max(2.7,mark.width-(status.allDone?0:1.3));
     return <rect key={'stage-'+mark.stageIndex} data-route-mark="stage"
      data-stage-range={mark.stageIndex+'-'+mark.stageEnd}
      data-hidden-stages={mark.stages>1?mark.stages:undefined}
-     x={mark.x-mark.width/2} y={y} width={mark.width} height={mark.height}
+     x={mark.x-visualWidth/2} y={y} width={visualWidth} height={mark.height}
      rx={mark.height/2} fill={status.allDone?'var(--ink-2)':'var(--paper)'}
      stroke={status.schedule==='late'?'var(--late)':'var(--ink-4)'}
      strokeWidth={status.allDone?0:1.3}
