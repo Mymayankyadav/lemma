@@ -225,4 +225,32 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(home.projects.find(p=>p.id===seed.projects[0].id)?.sessionsCount).toBe(1000);
   expect(home.projects.find(p=>p.slug==='stress-project-3')?.sessionsCount).toBe(1000);
  },30_000);
+ it('keeps the 30k-card fixture virtual through first Today and deck reads, then materializes on card detail',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{deferSessions:true,deferNotes:true});
+  expect(fixture.notes).toHaveLength(0);
+  expect(fixture.stressNoteCount).toBe(30_000);
+  expect(fixture.stressDueCount).toBe(4_000);
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const home=await api.getHome();
+  const decks=await api.getDeckTree();
+  const forecast=await api.getReviewForecast();
+  expect(home.due).toBe(4000);
+  expect(home.projects).toHaveLength(60);
+  expect(home.projects.reduce((n,p)=>n+p.cardsCount,0)).toBe(30000);
+  expect(decks.reduce((n,d)=>n+d.due,0)).toBe(4000);
+  expect(forecast[0].due).toBe(4000);
+  expect(Object.getOwnPropertyDescriptor(store,'notes')?.get).toBeTypeOf('function');
+  const detail=await api.getCard(30000);
+  expect(detail.note.noteNo).toBe(30000);
+  expect(store.notes).toHaveLength(30000);
+  expect(store.notes[29999].cards[0].state.due).not.toMatch(/^@/);
+  expect((await api.getHome()).due).toBe(4000);
+ },30_000);
+
+ it('keeps the browser stress adapter on the deferred-card path',()=>{
+  const entry=readFileSync('src/data/index.ts','utf8');
+  expect(entry).toContain('{deferSessions:true,deferNotes:true}');
+ });
+
 });
