@@ -375,6 +375,7 @@ Status on 29 Oct 2026, 21:30 IST:
 | `MCP_URL` secret | After MCP-1 is live: copy the address from Lemma › Settings into a repository secret. |
 | Connect Claude and ChatGPT | After MCP-1: `connector.md` §10. |
 | Install on the phone | Open the site, Share › Add to Home Screen. |
+| Draft PR ready-for-review handoff (only in REST-only runtimes) | When a PR says `Needs ready-for-review transition`, open that draft in GitHub and select **Ready for review**, or have a GraphQL-capable agent call `markPullRequestReadyForReview`. GitHub REST has no ready-for-review endpoint. The Steward may squash-merge only after the transition and exact-head green CI. |
 
 ## 11. Later (not in v1)
 
