@@ -8,8 +8,8 @@ import {ProjectTimeline} from '../../ui/timeline/ProjectTimeline';
 import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
-import {buildSchedule,scheduleHeadline,scheduleDate,scheduleColor,type ScheduledCheckpoint} from '../../lib/schedule';
-import {currentCheckpointIndex,estimateFinish,groupCheckpointStages,type ProgressStage} from '../../ui/timeline/progress';
+import {scheduleHeadline,scheduleDate,scheduleColor,type ScheduledCheckpoint} from '../../lib/schedule';
+import {currentCheckpointIndex,scheduleForProject,groupCheckpointStages,type ProgressStage} from '../../ui/timeline/progress';
 
 type Stage=ProgressStage;
 
@@ -29,17 +29,10 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
  </nav>;
 }
 
-function goalEstimate(detail:ProjectDetail,events:ReturnType<typeof useInsightData>['data']){
- return estimateFinish({projectId:detail.project.id,total:detail.total,done:detail.done,
-  targetDate:detail.project.targetDate,events:events?.checkpointEvents,
-  dueDates:detail.checkpoints.filter(cp=>cp.ui!=='done'&&cp.ui!=='revisit').map(cp=>cp.dueOn)});
-}
-
 export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'ascent'|'metro'}){
  const insight=useInsightData(30);
  const {project,subject,checkpoints,done,total}=detail;
- const estimate=goalEstimate(detail,insight.data);
- const schedule=buildSchedule(checkpoints,{targetDate:project.targetDate,pacePerWeek:estimate.pace??undefined});
+ const {estimate,rows:schedule}=scheduleForProject(detail,insight.data?.checkpointEvents);
  const headline=scheduleHeadline(schedule);
  const current=checkpoints.findIndex(cp=>cp.ui==='now');
  const pct=total?Math.round(done/total*100):0;
@@ -63,7 +56,7 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
    </section>
    <div role="region" aria-label="Project timeline" className="min-w-0">
     <ProjectTimeline project={{title:project.title,slug:project.slug,done,total,targetDate:project.targetDate}} checkpoints={checkpoints}
-     variant={variant} pacePerWeek={estimate.pace??undefined} height={96}/>
+     variant={variant} pacePerWeek={estimate.pace??undefined} scheduleRows={schedule} height={96}/>
     {schedule.some(row=>row.dueOn)&&<div aria-label="Schedule legend" className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-2">
      {(['early','on_time','late'] as const).map(state=><span key={state} className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-[3px] w-5" style={{background:scheduleColor[state]}}/>{state==='on_time'?'On time':state==='early'?'Early':'Late'}</span>)}
     </div>}
@@ -141,9 +134,8 @@ export function Stages({detail}:{detail:ProjectDetail}){
  const [openStage,setOpenStage]=useState(initial);
  useEffect(()=>{setOpenStage(initial)},[detail.project.slug,initial]);
  const insight=useInsightData(30);
- const estimate=goalEstimate(detail,insight.data);
- const schedule=new Map(buildSchedule(detail.checkpoints,{targetDate:detail.project.targetDate,
-  pacePerWeek:estimate.pace??undefined}).map(row=>[row.checkpoint.id,row]));
+ const {rows}=scheduleForProject(detail,insight.data?.checkpointEvents);
+ const schedule=new Map(rows.map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
    <h2 className="font-[var(--font-display)] text-title-s italic">Stages</h2>
