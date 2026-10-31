@@ -20,6 +20,9 @@ export interface Arc{key:string; from:number; to:number; kind:Link['kind']; coun
 export interface Focus{start:Set<string>; up:Set<string>; down:Set<string>; related:Set<string>}
 
 const LEVELS:ConceptLevel[]=['cluster','galaxy','system','planet','moon'];
+// Reuse the ICU collation object across thousands of extreme sibling-sort pairs.
+// Intl.Collator's default ordering matches String.localeCompare's defaults.
+const compareNames=new Intl.Collator().compare;
 const isTest=(s:string)=>/zz[-_ ]?selftest|^self[-_ ]test$|^system[-_]test/i.test(s);
 export const levelName:Record<ConceptLevel,string>={cluster:'Field',galaxy:'Area',system:'Topic',planet:'Idea',moon:'Detail'};
 
@@ -60,7 +63,7 @@ function taughtCheckpoint(node:AtlasNode):number|null{
 
 export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const subjects=[...graph.subjects].filter(s=>!isTest(s.name)&&!isTest(s.id))
-  .sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
+  .sort((a,b)=>a.position-b.position||compareNames(a.name,b.name));
  const permitted=new Set(subjects.map(s=>s.id)),nodes=new Map<string,AtlasNode>();
  const clustersBySubject=new Map<string,AtlasNode[]>();
  for(const c of graph.concepts){
@@ -77,7 +80,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const roots:string[]=[],rootBySubject=new Map<string,string>();
  for(const subject of subjects){
   // Group roots while building nodes instead of rescanning all ideas for each field.
-  const own=(clustersBySubject.get(subject.id)??[]).sort((a,b)=>a.name.localeCompare(b.name));
+  const own=(clustersBySubject.get(subject.id)??[]).sort((a,b)=>compareNames(a.name,b.name));
   for(const field of own){field.glyph=subject.glyph;roots.push(field.id)}
   const id=own[0]?.id??'atlas:root:'+subject.id;
   if(!own.length){nodes.set(id,synthetic(id,subject.name,subject.id,'cluster',null,subject.glyph));roots.push(id)}
@@ -121,7 +124,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
    const taughtX=taughtRanks.get(a)??null,taughtY=taughtRanks.get(b)??null;
    // A proposed plan must read CP1, CP2, …, CP10, never CP1, CP10, CP2.
    if(taughtX!==null&&taughtY!==null&&taughtX!==taughtY)return taughtX-taughtY;
-   return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
+   return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||compareNames(x.name,y.name)||compareNames(x.id,y.id);
   });
   return n;
  };
@@ -336,7 +339,7 @@ export function rowTone(tree:AtlasTree,id:string,focus:Focus|null,selectedId:str
 /** Direct neighbours for the details sheet. */
 export function neighbours(tree:AtlasTree,id:string){
  const own=new Set([id,...descendants(tree,id)]);
- const pick=(ids:string[])=>[...new Set(ids)].map(x=>tree.nodes.get(x)!).filter(Boolean).sort((a,b)=>a.rank-b.rank||a.name.localeCompare(b.name));
+ const pick=(ids:string[])=>[...new Set(ids)].map(x=>tree.nodes.get(x)!).filter(Boolean).sort((a,b)=>a.rank-b.rank||compareNames(a.name,b.name));
  return {
   needs:pick(tree.links.filter(l=>l.kind==='prereq'&&own.has(l.toId)&&!own.has(l.fromId)).map(l=>l.fromId)),
   unlocks:pick(tree.links.filter(l=>l.kind==='prereq'&&own.has(l.fromId)&&!own.has(l.toId)).map(l=>l.toId)),
