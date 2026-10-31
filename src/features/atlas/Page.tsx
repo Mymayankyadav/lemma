@@ -197,7 +197,7 @@ export default function Page(){
    <div className="flex h-14 items-center gap-2">
     <button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>
     <div className="min-w-0 flex-1"><h1 className="font-serif text-[28px] leading-[31px] font-medium">Atlas</h1>
-     <p className="text-caption text-ink-3" style={clip}>{ideas} ideas · {tree.links.length} links · {[...tree.nodes.values()].filter(n=>!n.synthetic&&n.status==='demonstrated').length} demonstrated</p></div>
+     <p className="text-caption text-ink-3" style={clip}>{ideas} ideas · {tree.links.filter(l=>l.kind==='prereq').length} links · {[...tree.nodes.values()].filter(n=>!n.synthetic&&n.status==='demonstrated').length} demonstrated</p></div>
     <button type="button" aria-label="Find an idea" aria-pressed={searching} onClick={()=>{setSearching(v=>!v);if(searching)setSearch('')}}
      className="flex size-11 items-center justify-center rounded-ctl"><Search size={19}/></button>
    </div>
