@@ -1438,7 +1438,7 @@ export class DemoAdapter implements LemmaApi {
       const project=activeProjects.get(note.projectId);
       if(!project||note.note.status!=="active")continue;
       for(const card of note.cards){
-        if(card.state.state<=0||Date.parse(card.state.due)>now)continue;
+        if(card.state.state<=0||!(Date.parse(card.state.due)<=now))continue;
         projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
         if(note.note.checkpointCode){
           const key=cpKey(project.slug,note.note.checkpointCode);
