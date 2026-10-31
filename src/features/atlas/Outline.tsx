@@ -55,13 +55,15 @@ export function Row({node,open,tone,match,onToggle,onSelect}:{
  node:AtlasNode;open:boolean;tone:Tone;match:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
  const parent=node.children.length>0,root=node.depth===0,selected=tone==='self';
- const lead=12+node.depth*INDENT;
+ // Preserve room for names on 360px phones beyond the third nesting level.
+ const indentation=(depth:number)=>Math.min(depth,3)*INDENT+Math.max(0,depth-3)*8;
+ const lead=12+indentation(node.depth);
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
   className={'group relative flex items-center shadow-[inset_0_-1px_0_var(--line)] '+(selected?'bg-amber-tint':match?'bg-fill-1':'')}
   style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4}}>
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px bg-edge"
-   style={{left:12+d*INDENT+6}}/>)}
+   style={{left:12+indentation(d)+6}}/>)}
   {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-0 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
   {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+plainMath(node.name)} onClick={onToggle}
    className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2">
