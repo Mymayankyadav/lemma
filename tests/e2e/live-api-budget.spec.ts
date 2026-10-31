@@ -119,6 +119,7 @@ for(const viewport of [{width:390,height:844},{width:360,height:740}] as const){
   await page.goto('./?demo=0&theme='+theme+'#/')
   await expect(page.getByRole('heading',{name:'Home'})).toBeVisible()
   await expect(page.getByRole('link',{name:/4000 cards due/})).toBeVisible()
+  await expect(page.locator('[aria-label="Seven-day review forecast"]')).toBeVisible()
   const today=requests.filter(r=>r.path!=='/rpc/bootstrap')
   expect(today.length,'Today must make actual intercepted REST calls').toBeGreaterThan(0)
   expect(today.length,'Today request budget').toBeLessThanOrEqual(3)
