@@ -102,9 +102,11 @@ export default function Page(){
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
  const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
- const virtual=rows.length>200;
- const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-12):0;
- const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+13):rows.length;
+ // Match the cold Atlas C2 fix (#553): start viewport-bounded rendering
+ // above 40 rows, with eight rows of overscan in the variable-height geometry.
+ const virtual=rows.length>40;
+ const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
+ const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
  const visible=virtual?rows.slice(first,last):rows;
  const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
