@@ -30,7 +30,7 @@ async function mount(page:import('@playwright/test').Page,n:number,width:number,
    checkpoints:cps,mode,initialWidth:width-64})));
  await page.setContent(`<!doctype html><html data-theme="${theme}">
  <head><meta name="viewport" content="width=device-width,initial-scale=1">
- <style>${css}</style></head>
+ <style>${getCss()}</style></head>
  <body><main style="padding:16px"><section class="card" style="padding:16px">
  ${html}</section></main></body></html>`);
  await expect(page.locator('[data-route]')).toBeVisible();
