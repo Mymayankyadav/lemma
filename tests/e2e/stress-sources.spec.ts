@@ -9,7 +9,7 @@ for (const [profile, sourceCount, pageCount] of [
 ] as const)
 for (const theme of ['graph', 'graph-night'] as const)
 for (const [width, height] of [[390, 844], [360, 740]] as const) {
-  test(`ST-0 Sources fixture: ${profile} has ${sourceCount} sources and ${pageCount}-page navigation`, async ({page}) => {
+  test(`ST-0 Sources fixture: ${profile} ${theme} ${width}px has ${sourceCount} sources and ${pageCount}-page navigation`, async ({page}) => {
     test.setTimeout(180_000);
     await page.setViewportSize({width, height});
     await page.route('https://fonts.googleapis.com/**', route => route.fulfill({body:''}));
