@@ -50,6 +50,7 @@ import type {
   DemoNote,
   DemoProject,
   DemoProposal,
+  DemoReview,
   DemoSession,
   DemoStore,
 } from "./model";
