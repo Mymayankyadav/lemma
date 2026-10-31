@@ -16,7 +16,7 @@ test('today desk shows resume, reviews, proposals and projects with no runtime e
  await expect(page.getByRole('link',{name:/6 proposals to approve/i}).getByText('6',{exact:true})).toBeVisible()
  await expect(page.getByText('to approve')).toBeVisible()
  await expect(page.getByRole('region',{name:'Resume where you stopped'})).not.toContainText('Why is a finite subcover enough to separate x from K?')
- await expect(page.getByRole('link',{name:/Real Analysis, 3 of 12 checkpoints/i})).toBeVisible()
+ await expect(page.getByRole('article',{name:'Goal progress for Real Analysis'}).getByRole('link',{name:'Real Analysis',exact:true})).toBeVisible()
  const goals=page.getByRole('region',{name:'Distance to your goals'})
  await expect(goals.getByRole('article',{name:'Goal progress for Topology'})).toBeVisible()
  await expect(goals.getByRole('article',{name:'Goal progress for Linear Algebra'})).toBeVisible()
@@ -56,7 +56,7 @@ test('home shortcuts navigate to review, proposals and the project path',async({
  await page.getByRole('link',{name:/6 proposals to approve/i}).click()
  await expect(page).toHaveURL(/#\/proposals$/)
  await page.goto('./?demo=1#/')
- await page.getByRole('link',{name:/Real Analysis, 3 of 12 checkpoints/i}).click()
+ await page.getByRole('article',{name:'Goal progress for Real Analysis'}).getByRole('link',{name:'Real Analysis',exact:true}).click()
  await expect(page).toHaveURL(/#\/p\/real-analysis$/)
 })
 
