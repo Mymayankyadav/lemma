@@ -47,7 +47,7 @@ export function makeStressInsightAggregate(
  const perProjectInWindow=virtualCount
   ?Math.floor(virtualCount/90)*days+Math.min(days,virtualCount%90):0;
  const totalSessions=virtualCount?perProjectInWindow*data.projects.length:sessions.length;
- const baseMinutes=virtualCount?30:0;
+ const baseMinutes=virtualCount?(data.stressSessionMinutes??0):0;
  const minutes=virtualCount?totalSessions*baseMinutes:sessions.reduce((n,s)=>n+s.minutes,0);
  const sortedMinutes=virtualCount?[]:sessions.map(s=>s.minutes).sort((a,b)=>a-b);
  const middle=Math.floor(sortedMinutes.length/2);
@@ -260,7 +260,10 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
   data.sessions = [];
   // The browser virtualises sessions so unrelated routes never hydrate 60,000
   // records. The default generator remains fully materialised for fixture tests.
-  if (options.deferSessions) data.stressSessionCount = sessionCount;
+  if (options.deferSessions) {
+    data.stressSessionCount = sessionCount;
+    data.stressSessionMinutes = baseSession.minutes;
+  }
   else for (const [projectIndex, project] of data.projects.entries()) {
     for (let index = 0; index < sessionCount; index++) {
       const number = index + 1;

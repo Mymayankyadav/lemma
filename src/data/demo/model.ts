@@ -118,6 +118,8 @@ export interface DemoStore {
   stressReviewCount?: number;
   /** Browser-only virtual per-project session count (avoids 60k hydrated rows). */
   stressSessionCount?: number;
+  /** Duration of one virtual stress session for bounded Insights aggregates. */
+  stressSessionMinutes?: number;
   proposals: DemoProposal[];
   concepts: DemoConcept[];
   links: AtlasGraph["links"];
