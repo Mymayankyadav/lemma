@@ -30,6 +30,8 @@ describe('FIX-546b bounded Card detail pagination contract',()=>{
   const detail=await api.getCard(no)
   expect(detail.history).toHaveLength(20)
   expect(detail.comments).toHaveLength(20)
+  expect(detail.historyNextCursor).toBeTruthy()
+  expect(detail.commentsNextCursor).toBeTruthy()
   for(const [method,key] of [['getCardHistoryPage','reviewedAt'],['getCardCommentsPage','no']] as const){
    const pages=[]
    let cursor: string|undefined
@@ -48,6 +50,15 @@ describe('FIX-546b bounded Card detail pagination contract',()=>{
    }
   }
   const cursor=(await api.getCardHistoryPage(no)).nextCursor!
+  // Exactly twenty rows must NOT show a More control: only the 21-row probe proves continuation.
+  fixture.reviews=fixture.reviews.slice(0,20)
+  note.comments=note.comments.slice(0,20)
+  const exact20=new DemoAdapter({fixture,now:()=>Date.UTC(2026,9,31)})
+  const detail20=await exact20.getCard(no)
+  expect(detail20.history).toHaveLength(20)
+  expect(detail20.comments).toHaveLength(20)
+  expect(detail20.historyNextCursor).toBeNull()
+  expect(detail20.commentsNextCursor).toBeNull()
   await expect(api.getCardHistoryPage(999999,cursor)).rejects.toMatchObject({code:'not_found'})
   await expect(api.getCardHistoryPage(no,'forged')).rejects.toMatchObject({code:'invalid'})
  })
