@@ -31,10 +31,11 @@ Source: [stress.md §3](../spec/stress.md), [QA-3a reporter](qa3.md), and the ow
 
 1. Run `npx playwright test tests/e2e/stress.spec.ts` on the final main-based head. This must produce the eight S/X × graph/graph-night × 360/390 JSON files and 144 PNG screenshots, each checked against the source SHA.
 2. Run `npx tsx scripts/qa3-report.ts`; its generic budget report must say PASS, not merely that the screenshot inventory is complete. A demo zero-request result is **not** live API proof.
-3. Independently exercise each A1–I3 behavioral acceptance in the relevant screen-specific Playwright suites. A green generic ST-0 baseline does not prove behavior.
-4. Inspect every screenshot against the actual owner-approved v3/stress design (v4-look supersedes visual decisions where applicable); record PASS/FAIL per element, not just one overall statement.
-5. Enforce strict budgets without exclusions unless the owner explicitly approves one: marks ≥8px, targets ≥44px, text ≥12px, maths ≥16px, no horizontal overflow, DOM <1,500, first render <1.5s at 4× CPU. Atlas C2 retains its stricter <1s gate.
-6. Record any failure with route, profile, world, width, screenshot path, measured value and issue/PR. Do not claim QA-3b complete while a prerequisite or audit block remains.
+3. Run `npx tsx scripts/qa3-screens.ts` to validate the 144 PNG envelopes and exact viewport dimensions (1×/2×/3×). Inspect duplicate-image warnings. A structural PASS is not visual acceptance.
+4. Independently exercise each A1–I3 behavioral acceptance in the relevant screen-specific Playwright suites. A green generic ST-0 baseline does not prove behavior.
+5. Inspect every screenshot against the actual owner-approved v3/stress design (v4-look supersedes visual decisions where applicable); record PASS/FAIL per element, not just one overall statement.
+6. Enforce strict budgets without exclusions unless the owner explicitly approves one: marks ≥8px, targets ≥44px, text ≥12px, maths ≥16px, no horizontal overflow, DOM <1,500, first render <1.5s at 4× CPU. Atlas C2 retains its stricter <1s gate.
+7. Record any failure with route, profile, world, width, screenshot path, measured value and issue/PR. Do not claim QA-3b complete while a prerequisite or audit block remains.
 
 ## Independently inspected ST-4 evidence (31 Oct 2026)
 
