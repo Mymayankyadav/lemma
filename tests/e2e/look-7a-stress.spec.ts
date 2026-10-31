@@ -61,6 +61,17 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   await page.getByRole('button',{name:'Close review'}).click()
   await expect(page.getByRole('heading',{name:'Review complete',level:1})).toBeVisible()
   await expect(page.getByRole('region',{name:'Review statistics'})).toBeVisible()
+  // The route is technically visible during the fade-in; screenshots must
+  // capture fully painted Q.E.D. and metrics, not an intermediate frame.
+  await expect.poll(()=>page.getByRole('heading',{name:'Review complete',level:1}).evaluate(element=>{
+   let node:HTMLElement|null=element
+   let opacity=1
+   while(node&&node.id!=='main-content'){
+    opacity=Math.min(opacity,Number(getComputedStyle(node).opacity))
+    node=node.parentElement
+   }
+   return opacity
+  })).toBeGreaterThanOrEqual(0.99)
   await page.screenshot({path:prefix+'-done.png'})
  })
 }
