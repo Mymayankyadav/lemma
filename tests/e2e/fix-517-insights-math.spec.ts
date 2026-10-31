@@ -107,6 +107,7 @@ test('FIX #517 duplicate mathematical idea names ask for a subject instead of op
  await page.route('**/rest/v1/**',r=>{
   const path=new URL(r.request().url()).pathname.replace(/^\/rest\/v1/,'');
   const data:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:
+   path==='/rpc/home_summary'?home:
    path==='/subjects'?subjects:path==='/concepts'?concepts:
    path==='/rpc/review_items'?[]:
    ['/concept_links','/checkpoint_concepts','/checkpoints','/projects','/checkpoint_prereqs',
