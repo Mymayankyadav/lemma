@@ -27,6 +27,12 @@ for(const width of [360,390] as const){
    expect(style.size).toBe(19);
    expect(style.line).toBe(23);
    expect(style.style).toBe('italic');
+   if(screen==='settings'){
+    const status=page.getByRole('heading',{name:/^(Connected|Not connected yet)$/,level:3});
+    await expect(status).toBeVisible();
+    const size=await status.evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+    expect(size).toBe(16);
+   }
    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
    await page.screenshot({path:`test-results/screens/look-1d-${screen}-${profile}-${theme}-${width}.png`});
   }
