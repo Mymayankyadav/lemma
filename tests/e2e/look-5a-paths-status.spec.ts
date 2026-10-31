@@ -67,6 +67,21 @@ for(const profile of ['1','stress','extreme'] as const){
     await expect(paused).toHaveAttribute('aria-pressed','false')
     await expect(done).toHaveAttribute('aria-pressed','false')
     expect(rects[0].background).not.toBe(rects[1].background)
+    if(profile==='1'){
+     // Three singleton subjects must be ONE paper list with hairline
+     // separators, never three individually bordered rounded cards.
+     const flat=page.locator('[data-singleton-list]').first()
+     await expect(flat).toBeVisible()
+     await expect(flat.locator('section[data-group-size="1"]')).toHaveCount(3)
+     const rows=flat.locator('[data-project-row]')
+     await expect(rows).toHaveCount(3)
+     const borders=await rows.evaluateAll(nodes=>nodes.map(el=>{
+      const style=getComputedStyle(el)
+      return [style.borderTopWidth,style.borderRightWidth,style.borderBottomWidth,style.borderLeftWidth]
+     }))
+     expect(borders.every(edges=>edges.every(edge=>edge==='0px'))).toBe(true)
+     expect(await flat.evaluate(el=>getComputedStyle(el).borderTopWidth)).not.toBe('0px')
+    }
     await page.screenshot({path:`test-results/screens/look-5a-${profile}-${theme}-${width}-active.png`,fullPage:true})
     await paused.focus()
     await expect(paused).toBeFocused()
