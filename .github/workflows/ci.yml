@@ -25,9 +25,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run check
       # Phase 0 adds the harness before screen specs land in P0-B.
-      - run: npm run e2e -- --pass-with-no-tests
-      - name: QA-3 4x cold-route evidence gate
-        run: npx tsx scripts/qa3-cpu-report.ts
+      # All eight cold 4x matrices execute in the separate required job below.
+      # The regular Playwright job still runs every other test.
+      - run: npm run e2e -- --pass-with-no-tests --grep-invert '^AUDIT #540 cold 4x'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -43,6 +43,39 @@ jobs:
             test-results/screens/
             test-results/stress-cpu/
             test-results/qa3/
+          if-no-files-found: ignore
+          retention-days: 14
+  cpu-matrix:
+    runs-on: ubuntu-latest
+    # Required, independent 144-route cold 4x evidence gate. No thresholds
+    # or routes are relaxed; parallelizing CI jobs avoids a 60m combined timeout.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run all 144 cold 4x route measurements
+        run: npx playwright test tests/e2e/stress-cpu.spec.ts
+      - name: QA-3 4x cold-route evidence gate
+        run: npx tsx scripts/qa3-cpu-report.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stress-cpu-screens
+          path: |
+            test-results/screens/stress-cpu/
+            test-results/stress-cpu/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stress-cpu-playwright-report
+          path: playwright-report/
           if-no-files-found: ignore
           retention-days: 14
   mcp-sql:
