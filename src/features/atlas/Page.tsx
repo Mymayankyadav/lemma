@@ -50,7 +50,7 @@ function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onCl
  const toast=useToast(),near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
  return <Sheet open onClose={onClose} title={<AtlasDetailsTitle name={node.name}/>}>
   <div data-atlas-details="true">
-   {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)}/>}
+   {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)} onSelect={index=>onTrace(path[index].id)}/>}
    <div className="mt-3 flex items-center justify-between gap-3 text-label text-ink-2">
     <span>{statusName[node.status]}</span>
     <span className="tabular-nums">{node.done} of {node.total} demonstrated</span>
