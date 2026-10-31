@@ -75,27 +75,29 @@ for (const world of ['graph','graph-night'] as const) {
 // the active tab and selected time-range control (v4-look §2a).
 for (const theme of ['graph','graph-night'] as const) {
  for (const width of [360,390]) {
-  test(\`FIX #590 passive Insights marks use ink in \${theme} at \${width}px\`,async({page})=>{
+  test(`FIX #590 passive Insights marks use ink in ${theme} at ${width}px`,async({page})=>{
    await page.setViewportSize({width,height:844});
-   await page.goto(\`/lemma/?demo=1&theme=\${theme}#/insights\`);
+   await page.goto(`/lemma/?demo=1&theme=${theme}#/insights`);
    await expect(page.getByRole('img',{name:/Recall over time/})).toBeVisible();
    await expect(page.locator('[aria-label="Study totals"] svg')).toHaveCount(3);
    const colours=await page.evaluate(()=>{
     const probe=(value:string)=>{
      const element=document.createElement('span');
-     element.style.color=\`var(\${value})\`;
+     element.style.color=`var(${value})`;
      document.body.appendChild(element);
      const colour=getComputedStyle(element).color;
      element.remove();
      return colour;
     };
-    const colour=(selector:string)=>getComputedStyle(document.querySelector(selector)!).color;
+    const colour=(element:Element|undefined|null)=>getComputedStyle(element!).color;
+    const tile=[...document.querySelectorAll('.tile')].find(el=>el.textContent?.includes('Typical session'));
+    const recallHeading=[...document.querySelectorAll('h2,h3')].find(el=>el.textContent?.trim()==='Recall');
     const svg=(selector:string,property:'stroke'|'fill')=>getComputedStyle(document.querySelector(selector)!).getPropertyValue(property);
     return {
      accent:probe('--accent'),ink:probe('--ink'),secondary:probe('--ink-2'),
      icons:[...document.querySelectorAll('[aria-label="Study totals"] svg')].map(icon=>getComputedStyle(icon).color),
-     typicalIcon:colour('.tile:has-text("Typical session") svg'),
-     recallNumber:colour('h2:has-text("Recall") + strong'),
+     typicalIcon:colour(tile?.querySelector('svg')),
+     recallNumber:colour(recallHeading?.parentElement?.querySelector('strong')),
      trend:svg('svg[aria-label^="Recall over time"] path[stroke]','stroke'),
      endpoint:svg('svg[aria-label^="Recall over time"] circle','fill'),
      hatching:svg('svg[aria-label^="Recall over time"] pattern line','stroke'),
