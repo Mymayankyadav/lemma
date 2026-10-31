@@ -41,7 +41,6 @@ function GoalCard({project,events}:{project:ProjectSummary;events:Events|undefin
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <div className="min-w-0 flex-1">
     <Link to={'/p/'+project.slug} className="flex min-h-11 items-center break-words text-[16px] font-semibold leading-5 text-ink focus-visible:outline-2 focus-visible:outline-[var(--accent)]"><Tex source={project.title}/></Link>
-    {project.current&&<p className="min-w-0 break-words text-[16px] leading-5 text-ink-2"><Tex source={project.current.title}/></p>}
    </div>
    <span data-schedule-chip="" className="max-w-[110px] shrink-0 rounded-full bg-[var(--paper-2)] px-2 py-1 text-center text-[12px] font-medium leading-4"
     style={{color:tone}}>{status}</span>
@@ -51,7 +50,7 @@ function GoalCard({project,events}:{project:ProjectSummary;events:Events|undefin
    <p className="text-label text-ink-3">No checkpoints yet. Ask your tutor to create a plan.</p>}
   {project.current&&<div data-goal-now="" className="flex min-w-0 items-center gap-2 text-[12px] leading-[18px] text-ink-2">
    <span data-code="" className="shrink-0 font-[var(--font-num)] text-[12px] text-[var(--accent)]">{project.current.code}</span>
-   <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"><Tex source={project.current.title}/></span>
+   <span className="min-w-0 flex-1 break-words text-[16px] leading-5 text-ink-2"><Tex source={project.current.title}/></span>
    <span className="shrink-0 tabular-nums">{project.done} of {project.total}</span>
   </div>}
   {(finishDisplay||targetDisplay)&&<p data-goal-footnote="" className="min-w-0 border-t border-[var(--hair)] pt-1 text-[12px] leading-[16px] text-ink-3">
