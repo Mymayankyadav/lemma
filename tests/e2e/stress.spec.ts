@@ -118,6 +118,16 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await page.evaluate(()=>window.scrollTo(0,0));
    await expect(page.getByRole('heading',{name:readiness.heading,exact:true,level:1}))
     .toBeInViewport({ratio:0.05,timeout:90_000});
+   // React Router and Screen use finite Motion fades. A visible DOM heading
+   // can still be visually blank while an ancestor is at opacity 0.
+   await page.waitForFunction(()=>{
+    const heading=document.querySelector('#main-content h1');
+    if(!heading)return false;
+    for(let el:Element|null=heading;el&&el.id!=='main-content';el=el.parentElement){
+     if(Number(getComputedStyle(el).opacity)<0.99)return false;
+    }
+    return true;
+   },null,{timeout:90_000});
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
