@@ -117,6 +117,40 @@ describe('FIX-546a live Card detail scoped queries',()=>{
   }
  });
 
+ it('does not advertise More when exactly 20 owner-scoped rows exist, but does at 21',async()=>{
+  const savedReviews=fixtures.reviews,savedComments=fixtures.card_comments;
+  try{
+   fixtures.reviews=Array.from({length:20},(_,i)=>({
+    id:String(100-i),user_id:'owner-1',card_id:'c1',
+    reviewed_at:new Date(Date.UTC(2026,9,31)-i*3600000).toISOString(),
+    rating:3,confidence:'sure',undone_at:null,
+   }));
+   fixtures.card_comments=Array.from({length:20},(_,i)=>({
+    id:'00000000-0000-4000-8000-'+String(100-i).padStart(12,'0'),
+    no:100-i,user_id:'owner-1',note_id:'n1',body:'Comment '+i,status:'open',
+    created_at:new Date(Date.UTC(2026,9,31)-i*3600000).toISOString(),
+    resolved_at:null,resolved_by_proposal:null,
+   }));
+   const api=new LiveAdapter();
+   const exact=await api.getCard(12);
+   expect(exact.history).toHaveLength(20);
+   expect(exact.comments).toHaveLength(20);
+   expect(exact.historyNextCursor).toBeNull();
+   expect(exact.commentsNextCursor).toBeNull();
+   expect(requests.filter(q=>q.table==='reviews')).toHaveLength(1);
+   expect(requests.filter(q=>q.table==='card_comments')).toHaveLength(1);
+   fixtures.reviews.push({...fixtures.reviews[19],id:'1',reviewed_at:'2026-01-01T00:00:00Z'});
+   fixtures.card_comments.push({...fixtures.card_comments[19],
+    id:'00000000-0000-4000-8000-000000000001',no:1,created_at:'2026-01-01T00:00:00Z'});
+   const more=await api.getCard(12);
+   expect(more.history).toHaveLength(20);
+   expect(more.comments).toHaveLength(20);
+   expect(more.historyNextCursor).toBeTruthy();
+   expect(more.commentsNextCursor).toBeTruthy();
+  }finally{
+   fixtures.reviews=savedReviews;fixtures.card_comments=savedComments;
+  }
+ });
  it('rejects numeric live comment cursors before any UUID comparison query',async()=>{
   const {encodeCardPageCursor}=await import('../../../src/data/card-cursor')
   const forged=encodeCardPageCursor('comments',12,{at:'2026-10-31T00:00:00Z',id:'17'})
