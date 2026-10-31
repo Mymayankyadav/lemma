@@ -1,204 +1,144 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
-import { Plus, Search } from "lucide-react";
-import { useCreateNote, useProjects, useSearchCards } from "../../data/hooks";
-import { Button } from "../../ui/Button";
-import { Chip } from "../../ui/Chip";
-import { IconButton } from "../../ui/IconButton";
-import { Screen } from "../../ui/Screen";
-import { Sheet } from "../../ui/Sheet";
-import { Skeleton } from "../../ui/Skeleton";
-import { useToast } from "../../ui/Toast";
-import { Editor, type EditorValue } from "./Editor";
-function plain(text: string) {
-  return text
-    .replace(/\{\{c\d+::([^}:]+)(?:::[^}]+)?\}\}/g, "$1")
-    .replace(/[#$*_`\\{}]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Link,useNavigate} from 'react-router';
+import {useInfiniteQuery} from '@tanstack/react-query';
+import {Plus,Search} from 'lucide-react';
+import {getApi} from '../../data';
+import {useCreateNote,useProjects} from '../../data/hooks';
+import type {SchedulingState} from '../../data/types';
+import {Button} from '../../ui/Button';
+import {Chip} from '../../ui/Chip';
+import {IconButton} from '../../ui/IconButton';
+import {Screen} from '../../ui/Screen';
+import {Sheet} from '../../ui/Sheet';
+import {Skeleton} from '../../ui/Skeleton';
+import {useToast} from '../../ui/Toast';
+import {Editor,type EditorValue} from './Editor';
+
+const ROW_HEIGHT=92,OVERSCAN=6;
+function plain(text:string){
+ return text.replace(/\{\{c\d+::([^}:]+)(?:::[^}]+)?\}\}/g,'$1')
+  .replace(/[#$*_`\\{}]/g,'').replace(/\s+/g,' ').trim();
 }
-function relative(due: string | null) {
-  if (!due) return "New";
-  const days = Math.ceil((Date.parse(due) - Date.now()) / 86400000);
-  return days <= 0 ? "Due" : days === 1 ? "in 1d" : `in ${days}d`;
+function relative(due:string|null){
+ if(!due)return 'New';
+ const days=Math.ceil((Date.parse(due)-Date.now())/86400000);
+ return days<=0?'Due':days===1?'in 1d':'in '+days+'d';
 }
-export default function Page() {
-  const [search, setSearch] = useState(""),
-    [query, setQuery] = useState(""),
-    [filter, setFilter] = useState("all"),
-    [creating, setCreating] = useState(false),
-    [slow, setSlow] = useState(false);
-  const cards = useSearchCards(query),
-    projects = useProjects(),
-    create = useCreateNote(),
-    notify = useToast(),
-    navigate = useNavigate();
-  const closeCreating = useCallback(() => setCreating(false), []);
-  useEffect(() => {
-    const timer = setTimeout(() => setQuery(search), 250);
-    return () => clearTimeout(timer);
-  }, [search]);
-  useEffect(() => {
-    if (!cards.isLoading) {
-      setSlow(false);
-      return;
-    }
-    const timer = setTimeout(() => setSlow(true), 300);
-    return () => clearTimeout(timer);
-  }, [cards.isLoading]);
-  useEffect(() => {
-    if (cards.isError)
-      notify("Couldn't load cards.", {
-        tone: "danger",
-        action: { label: "Try again", onClick: () => void cards.refetch() },
-      });
-  }, [cards.isError]);
-  const rows = (cards.data ?? []).filter(
-    (c) =>
-      c.status !== "deleted" &&
-      (filter === "all" ||
-        (filter === "notes"
-          ? c.openComments > 0
-          : filter === "paused"
-            ? c.status === "suspended"
-            : c.projectSlug === filter)),
-  );
-  const save = async (v: EditorValue) => {
-    try {
-      const result = await create.mutateAsync({
-        front: v.front,
-        back: v.back,
-        type: v.type,
-        kind: v.kind,
-        projectSlug: v.projectSlug,
-        checkpointCode: v.checkpointCode,
-      });
-      setCreating(false);
-      notify("Card created");
-      void navigate(`/cards/${result.noteNo}`);
-    } catch {
-      notify("Couldn't create the card.", { tone: "danger" });
-    }
-  };
-  return (
-    <Screen
-      title="Cards"
-      back="/"
-      actions={
-        <IconButton
-          icon={Plus}
-          label="New card"
-          tone="amber"
-          onClick={() => setCreating(true)}
-        />
-      }
-    >
-      <label className="flex min-h-[var(--row)] items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
-        <Search size={19} />
-        <span className="sr-only">Search cards</span>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search cards"
-          className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-3"
-        />
-      </label>
-      <div
-        className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1"
-        role="group"
-        aria-label="Card filters"
-      >
-        <Chip className="shrink-0 whitespace-nowrap" selected={filter === "all"} onClick={() => setFilter("all")}>
-          All
-        </Chip>
-        {projects.data?.map((p) => (
-          <Chip
-            key={p.id}
-            className="shrink-0 whitespace-nowrap"
-            selected={filter === p.slug}
-            onClick={() => setFilter(p.slug)}
-          >
-            <span aria-hidden="true" className="shrink-0">{p.subject.glyph}</span>
-            <span className="whitespace-nowrap">{p.title}</span>
-          </Chip>
-        ))}
-        <Chip className="shrink-0 whitespace-nowrap" selected={filter === "notes"} onClick={() => setFilter("notes")}>
-          Has notes
-        </Chip>
-        <Chip
-          className="shrink-0 whitespace-nowrap"
-          selected={filter === "paused"}
-          onClick={() => setFilter("paused")}
-        >
-          Paused
-        </Chip>
-      </div>
-      {cards.isLoading ? (
-        slow ? (
-          <div className="flex flex-col gap-3">
-            {[1, 2, 3, 4].map((n) => (
-              <Skeleton key={n} w="100%" h={64} />
-            ))}
-          </div>
-        ) : null
-      ) : cards.isError ? (
-        <Button variant="ghost" onClick={() => void cards.refetch()}>
-          Try again
-        </Button>
-      ) : rows.length ? (
-        <div className="flex flex-col">
-          {rows.map((row) => (
-            <Link
-              key={row.noteNo}
-              to={`/cards/${row.noteNo}`}
-              className="flex min-h-16 items-center gap-3 border-b border-edge py-3 focus-visible:outline-2 focus-visible:outline-amber"
-            >
-              <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
-              <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 font-math text-headline leading-snug text-ink">
-                  {plain(row.front)}
-                </span>
-                <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
-                  <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
-                  <span>{row.status === "suspended" ? "Paused" : relative(row.due)}</span>
-                  {row.openComments > 0 && <span className="text-amber">{row.openComments} tutor {row.openComments===1?"note":"notes"}</span>}
-                </span>
-              </span>
-              {row.openComments > 0 && (
-                <span
-                  aria-label={`${row.openComments} open notes`}
-                  className="h-7 w-[2px] shrink-0 bg-amber"
-                />
-              )}
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="py-12 text-center">
-          <h2 className="text-card font-semibold">No cards match</h2>
-          <Button
-            variant="text"
-            onClick={() => {
-              setSearch("");
-              setQuery("");
-              setFilter("all");
-            }}
-          >
-            Clear filters
-          </Button>
-        </div>
-      )}
-      <Sheet
-        open={creating}
-        onClose={closeCreating}
-        title="New card"
-      >
-        <Editor
-          creating
-          busy={create.isPending}
-          onSubmit={(v) => void save(v)}
-        />
-      </Sheet>
-    </Screen>
-  );
+export default function Page(){
+ const [search,setSearch]=useState(''),[query,setQuery]=useState('');
+ const [project,setProject]=useState(''),[checkpoint,setCheckpoint]=useState('');
+ const [state,setState]=useState(''),[noteStatus,setNoteStatus]=useState('');
+ const [onlyComments,setOnlyComments]=useState(false),[creating,setCreating]=useState(false);
+ const [scrollTop,setScrollTop]=useState(0),[viewportHeight,setViewportHeight]=useState(500);
+ const scroller=useRef<HTMLDivElement>(null);
+ const projects=useProjects(),create=useCreateNote(),notify=useToast(),navigate=useNavigate();
+ const closeCreating=useCallback(()=>setCreating(false),[]);
+ useEffect(()=>{const timer=setTimeout(()=>setQuery(search),250);return ()=>clearTimeout(timer)},[search]);
+ const cards=useInfiniteQuery({
+  queryKey:['cards-page-infinite',query,project,checkpoint,state,noteStatus,onlyComments],
+  initialPageParam:0,
+  queryFn:({pageParam})=>getApi().searchCardsPage({
+   query,projectSlug:project||undefined,checkpointCode:checkpoint.trim()||undefined,
+   state:state===''?undefined:Number(state) as SchedulingState,
+   noteStatus:noteStatus===''?undefined:noteStatus as 'active'|'suspended'|'deleted',
+   hasOpenComments:onlyComments||undefined,offset:pageParam,
+  }),
+  getNextPageParam:last=>last.nextOffset??undefined,
+  staleTime:30_000,
+ });
+ const rows=useMemo(()=>cards.data?.pages.flatMap(p=>p.rows)??[],[cards.data]);
+ useEffect(()=>{if(scroller.current){scroller.current.scrollTop=0;setScrollTop(0)}},[query,project,checkpoint,state,noteStatus,onlyComments]);
+ useEffect(()=>{
+  const element=scroller.current;if(!element)return;
+  const measure=()=>setViewportHeight(element.clientHeight);
+  measure();
+  const observer=new ResizeObserver(measure);
+  observer.observe(element);
+  return ()=>observer.disconnect();
+ },[cards.isPending]);
+ const first=Math.max(0,Math.floor(scrollTop/ROW_HEIGHT)-OVERSCAN);
+ const last=Math.min(rows.length,Math.ceil((scrollTop+viewportHeight)/ROW_HEIGHT)+OVERSCAN);
+ const visible=rows.slice(first,last);
+ const save=async(v:EditorValue)=>{
+  try{
+   const result=await create.mutateAsync({front:v.front,back:v.back,type:v.type,kind:v.kind,
+    projectSlug:v.projectSlug,checkpointCode:v.checkpointCode});
+   setCreating(false);notify('Card created');navigate('/cards/'+result.noteNo);
+  }catch{notify("Couldn't create the card.",{tone:'danger'})}
+ };
+ const loading=cards.isPending;
+ return <Screen title="Cards" back="/" actions={<IconButton icon={Plus} label="New card" tone="amber" onClick={()=>setCreating(true)}/>}>
+  <label className="flex min-h-[var(--row)] min-w-0 items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
+   <Search size={19}/><span className="sr-only">Search cards</span>
+   <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search cards" className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-3"/>
+  </label>
+  <div className="flex min-w-0 flex-wrap gap-2" aria-label="Card filters">
+   <label className="min-w-0 flex-1 text-label text-ink-2">Project
+    <select aria-label="Filter project" value={project} onChange={e=>{setProject(e.target.value);setCheckpoint('')}}
+     className="mt-1 min-h-11 w-full min-w-0 rounded-ctl border border-edge bg-well px-2 text-body text-ink">
+     <option value="">All projects</option>{projects.data?.map(p=><option key={p.id} value={p.slug}>{p.title}</option>)}
+    </select>
+   </label>
+   <label className="min-w-0 flex-1 text-label text-ink-2">Checkpoint
+    <input aria-label="Filter checkpoint" value={checkpoint} onChange={e=>setCheckpoint(e.target.value)}
+     className="mt-1 min-h-11 w-full min-w-0 rounded-ctl border border-edge bg-well px-2 text-body text-ink" placeholder="All"/>
+   </label>
+  </div>
+  <div className="flex w-full min-w-0 flex-wrap gap-2" role="group" aria-label="Scheduling filters">
+   <label className="min-w-[105px] flex-1 text-label text-ink-2">Scheduling
+    <select value={state} onChange={e=>setState(e.target.value)} aria-label="Filter scheduling state"
+     className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well px-2 text-body text-ink">
+     <option value="">All states</option><option value="0">New</option><option value="1">Learning</option>
+     <option value="2">Review</option><option value="3">Relearning</option>
+    </select>
+   </label>
+   <label className="min-w-[105px] flex-1 text-label text-ink-2">Status
+    <select value={noteStatus} onChange={e=>setNoteStatus(e.target.value)} aria-label="Filter note status"
+     className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well px-2 text-body text-ink">
+     <option value="">All statuses</option><option value="active">Active</option><option value="suspended">Paused</option>
+    </select>
+   </label>
+   <Chip selected={onlyComments} onClick={()=>setOnlyComments(v=>!v)} className="self-end whitespace-nowrap">
+    Has notes
+   </Chip>
+  </div>
+  <div className="flex items-center justify-between text-label text-ink-3">
+   <span aria-live="polite">{rows.length.toLocaleString()} loaded{cards.hasNextPage?' · more available':''}</span>
+   {(project||checkpoint||state||noteStatus||onlyComments||search)&&<button type="button" className="min-h-11 text-amber" onClick={()=>{
+    setProject('');setCheckpoint('');setState('');setNoteStatus('');setOnlyComments(false);setSearch('');setQuery('');
+   }}>Clear filters</button>}
+  </div>
+  {loading?<div className="flex flex-col gap-2">{[1,2,3,4].map(n=><Skeleton key={n} h={92}/>)}</div>:
+   cards.isError?<Button variant="ghost" onClick={()=>void cards.refetch()}>Try again</Button>:
+   rows.length?<div ref={scroller} data-card-virtual-list className="max-h-[min(60dvh,600px)] min-h-[160px] overflow-y-auto overscroll-contain rounded-ctl border-y border-edge"
+     style={{height:'min(60dvh,600px)'}} onScroll={e=>{
+      const el=e.currentTarget;setScrollTop(el.scrollTop);
+      if(el.scrollHeight-el.scrollTop-el.clientHeight<320&&cards.hasNextPage&&!cards.isFetchingNextPage)void cards.fetchNextPage();
+     }}>
+     <div style={{height:first*ROW_HEIGHT}} aria-hidden="true"/>
+     {visible.map(row=><Link key={row.noteNo} to={'/cards/'+row.noteNo} data-card-row
+      className="flex min-w-0 items-center gap-3 overflow-hidden border-b border-edge px-2 py-2 focus-visible:outline-2 focus-visible:outline-amber"
+      style={{height:ROW_HEIGHT}}>
+      <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
+      <span className="min-w-0 flex-1">
+       <span className="line-clamp-2 font-math text-headline leading-snug text-ink">{plain(row.front)}</span>
+       <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
+        <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
+        <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
+        {row.openComments>0&&<span className="text-amber">{row.openComments} notes</span>}
+       </span>
+      </span>
+     </Link>)}
+     <div style={{height:(rows.length-last)*ROW_HEIGHT}} aria-hidden="true"/>
+    </div>:
+    <div className="py-12 text-center"><h2 className="text-card font-semibold">No cards match</h2>
+     <Button variant="text" onClick={()=>{setSearch('');setProject('');setState('');setNoteStatus('');setCheckpoint('');setOnlyComments(false)}}>Clear filters</Button>
+    </div>}
+  {cards.hasNextPage&&<Button variant="ghost" disabled={cards.isFetchingNextPage} onClick={()=>void cards.fetchNextPage()}>
+   {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
+  </Button>}
+  <Sheet open={creating} onClose={closeCreating} title="New card">
+   <Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>
+  </Sheet>
+ </Screen>;
 }
