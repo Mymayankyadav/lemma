@@ -15,3 +15,10 @@ describe('FIX #507 route-aware Atlas prefetch',()=>{
   expect(projects).toContain("import('../atlas/Page')")
  })
 })
+
+test('direct Atlas entry warms the rich math chunk without loading it on Today',()=>{
+ const routes=readFileSync('src/app/routes.tsx','utf8')
+ expect(routes).toContain("location.hash.startsWith('#/atlas')")
+ expect(routes).toContain("import('../lib/render')")
+ expect(routes).toContain("if(typeof window!=='undefined'")
+})
