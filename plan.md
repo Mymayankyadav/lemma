@@ -319,6 +319,9 @@ Notes per task:
 - After PR 3: push a branch `review/themes` with `THEMES=all` so the review workflow commits contact sheets per theme; link them in the PR.
 - Done when: `themes.md` §7.
 
+#### How work runs now (31 Oct 10:25)
+- Four hourly agents (Steward :00, Fixer :15, Builder :30, Auditor :45) coordinate through GitHub: leases in PR descriptions and the issues "Task board", "Audit log" and "Agent log". See `docs/agents/README.md` and `docs/agents/prompts.md`. Add work by adding a section here with task IDs, specs and "depends on".
+
 #### Tutor transcriptions (owner, 31 Oct 08:38): DB-5, MCP-6, UI-8
 - Spec: `docs/spec/transcribe.md`. The connector cannot push PDFs or page text today: kind `book` only makes an empty record. The tutor will transcribe handwritten notes or scanned pages attached in chat into Markdown with LaTeX using a new `save_pages` tool. It writes either into an uploaded scan's pages or into a new text-only source, in batches of up to 10 pages, undoable, with who transcribed it and a "check" flag for doubtful pages.
 - The app shows transcription progress, a page viewer with the original beside it, edit and "mark checked", and export as .tex or .md.
