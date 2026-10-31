@@ -94,5 +94,12 @@ for(const width of [360,390] as const){
   expect((await disclosure.boundingBox())?.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({path:`test-results/screens/look-4c-hidden-ports-${profile}-${theme}-${width}.png`});
+  await page.goto(`./?demo=${profile}&atlasDenseLanes=1&atlasDenseLanesFocus=1&theme=${theme}#/atlas`);
+  const selected=page.locator('[data-atlas-wires] [data-arc-tone="up"]');
+  await expect(selected).toHaveCount(1);
+  await expect(selected).toHaveAttribute('data-atlas-lane','74');
+  expect(await selected.locator('path').evaluate(el=>parseFloat(getComputedStyle(el).strokeWidth))).toBeLessThanOrEqual(1);
+  await expect(page.locator('[data-atlas-lane-overflow] summary')).toHaveAccessibleName('Show 1 hidden Atlas links');
+  await page.screenshot({path:`test-results/screens/look-4c-selected-priority-${profile}-${theme}-${width}.png`});
  });
 }
