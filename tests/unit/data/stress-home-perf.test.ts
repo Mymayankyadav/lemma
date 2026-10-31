@@ -34,6 +34,21 @@ describe('FIX #507: cold Today stress summary',()=>{
   hydrated.notes[0].note.front='Changed only in the hydrated copy';
   expect(input.notes[0].note.front).not.toBe('Changed only in the hydrated copy');
  });
+ it('parses each distinct due timestamp once across cold Today and deck counts',async()=>{
+  const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const parse=vi.spyOn(Date,'parse');
+  try{
+   const home=await api.getHome();
+   const decks=await api.getDeckTree();
+   expect(home.due).toBe(4000);
+   expect(decks.reduce((sum,deck)=>sum+deck.due,0)).toBe(4000);
+   // 30k notes have only two due timestamps. Re-parsing them 60k times
+   // needlessly blocks 4x CPU first paint; other date parsing remains valid.
+   expect(parse.mock.calls.length).toBeLessThan(1000);
+  }finally{parse.mockRestore()}
+ },30_000);
+
  it('keeps exact 4,000-card deck counts without materialising every ReviewItem',async()=>{
   const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme'),now:()=>now,timeZone:'UTC'});
   const started=performance.now();
