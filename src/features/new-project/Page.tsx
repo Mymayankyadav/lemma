@@ -6,7 +6,6 @@ import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
 import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
 import {isSourceFile} from '../../pdf/ingest';
-import {slugify} from '../../lib/text';
 import ProjectsPage from '../projects/Page';
 import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
@@ -97,7 +96,6 @@ export default function Page(){
       value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
      <MathPreview source={name}/>
-     <p className="text-label text-ink-3">Path: {slugify(name||'project')}</p>
      <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
     </section>
     <section aria-label="Sources" className="flex flex-col gap-3"
@@ -129,7 +127,7 @@ export default function Page(){
      </ul>
     </section>
     {error&&<p role="alert" className="flex gap-2 text-label text-again"><AlertTriangle size={16}/>{error}</p>}
-    <Button size="xl" className="w-full" type="submit" disabled={saving||!name.trim()} loading={saving}>
+    <Button size="xl" className="w-full" type="submit" variant={saving||!name.trim()?'ghost':'lit'} disabled={saving||!name.trim()} loading={saving}>
      {saving?'Saving project and sources':created&&remaining?'Retry remaining uploads':'Create project'}
     </Button>
     <button type="button" className="flex min-h-11 items-center justify-center gap-2 text-label text-amber"
