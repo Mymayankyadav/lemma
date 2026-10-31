@@ -1,5 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { QA3_ROUTE_READINESS, qa3ScreenshotName } from '../../scripts/qa3-report';
 import { stressViolations } from '../../scripts/stress-limits';
 import { measureSvgMarks } from '../../scripts/stress-marks';
 
@@ -67,6 +69,7 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   await page.route('https://fonts.googleapis.com/**', route => route.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**', route => route.fulfill({body:''}));
   const measurements: Measurement[] = [];
+  const readinessEvidence: Array<{route:string;actualRoute:string;profile:string;theme:string;width:number;heading:string;landmark:string;screenshot:string;sha256:string;ready:true}> = [];
   // Measure the first render under 4x CPU throttling; other routes remain
   // unthrottled to keep the pre-fix 30,000-card profile within CI budgets.
   const cdp = await page.context().newCDPSession(page);
@@ -94,15 +97,43 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
     await expect(page.getByRole('region', {name:'Ideas in this plan'})).toBeVisible();
     await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
    }
-   await page.waitForTimeout(150);
+   // FIX #586: the page shell and a heading are not a data-backed render.
+   // Check a route-specific landmark and reject skeleton/error states before
+   // taking the screenshot or claiming its visual evidence is ready.
+   const readiness=QA3_ROUTE_READINESS[route];
+   expect(routeHeadings[route]).toBe(readiness.heading);
+   await expect(page.locator('html')).toHaveAttribute('data-theme',theme,{timeout:90_000});
+   await expect(page.locator(readiness.landmark).first()).toBeVisible({timeout:90_000});
+   if(route==='/cards'){
+    await expect(page.locator('[data-card-row]').first()).toHaveAttribute(
+     'href','#/cards/'+(profile==='extreme'?'30000':'5000'),{timeout:90_000});
+    await expect(page.locator('[aria-live="polite"]').filter({hasText:'50 loaded'}))
+     .toBeVisible({timeout:90_000});
+   }
+   if(route!=='/kit')await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0,{timeout:90_000});
+   await expect(page.getByText(/This (card|proposal) could not be loaded\./)).toHaveCount(0,{timeout:90_000});
+   await expect(page.getByText('Session unavailable.')).toHaveCount(0,{timeout:90_000});
+   await page.evaluate(()=>new Promise<void>(resolve=>
+    requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
    // Avoid counting the same cached resources again on subsequent hash routes.
    await page.evaluate(() => performance.clearResourceTimings());
-   const name = route === '/' ? 'today' : route.replaceAll('/','-').replace(/^-/, '');
+   const screenshot=qa3ScreenshotName({profile,theme,width,filename:''},route);
    mkdirSync('test-results/screens/stress',{recursive:true});
-   await page.screenshot({path:'test-results/screens/stress/'+profile+'-'+theme+'-'+width+'-'+name+'.png',fullPage:false,timeout:30_000});
+   const png=await page.screenshot({path:'test-results/screens/stress/'+screenshot,fullPage:false,timeout:30_000});
+   const actualRoute=await page.evaluate(()=>location.hash.slice(1));
+   expect(actualRoute).toBe(route);
+   readinessEvidence.push({
+    route,actualRoute,profile,theme,width,heading:readiness.heading,
+    landmark:readiness.landmark,screenshot,
+    sha256:createHash('sha256').update(png).digest('hex'),ready:true,
+   });
   }
   await cdp.detach();
+  // This manifest travels in the same screens-shard artifact as the PNGs.
+  // The aggregate gate rejects absent, mismatched, or stale route evidence.
+  writeFileSync('test-results/screens/stress/'+profile+'-'+theme+'-'+width+'-readiness.json',
+   JSON.stringify(readinessEvidence,null,2));
   mkdirSync('test-results/stress',{recursive:true});
   const file = 'test-results/stress/'+profile+'-'+theme+'-'+width+'.json';
   const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
