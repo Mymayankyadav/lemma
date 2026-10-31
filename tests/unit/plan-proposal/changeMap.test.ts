@@ -1,5 +1,6 @@
 import {describe,expect,it} from "vitest";
-import type {PlanChangePayload} from "../../../src/data/types";
+import type {CheckpointView,PlanChangePayload} from "../../../src/data/types";
+import {planReviewNodes} from "../../../src/features/plan-proposal/nodes";
 import type {ReviewNode} from "../../../src/features/plan-proposal/nodes";
 import {planChangeMapNodes,layoutPlanMap} from "../../../src/features/plan-proposal/planMap";
 
@@ -36,6 +37,18 @@ describe("LOOK-8b plan-change checkpoint map context",()=>{
   expect(codes(map)).toContain("CP10");
   expect(codes(map)).toContain("CP11");
   expect(map.length).toBeLessThan(original.length);
+ });
+ it("a move-only preview is marked changed, including its drawer badge",()=>{
+  const base:CheckpointView[]=original.map((node,i)=>({
+   id:node.code,code:node.code,title:node.title,position:i+1,ui:"next",
+   currentStep:0,stepsTotal:0,recheckDue:null,dueCards:0,
+  }));
+  const delta=change([{op:"move",code:"CP6",after:"CP10"}]);
+  const preview=planReviewNodes(null,delta,base);
+  expect(preview.find(node=>node.code==="CP6")?.change).toBe("updated");
+  const map=planChangeMapNodes(preview,delta,base);
+  expect(codes(map)).toContain("CP6");
+  expect(codes(map)).toContain("CP10");
  });
  it("a removal-only change shows the surviving neighbours rather than the entire old plan",()=>{
   const nodes=original.filter(n=>n.code!=="CP6");
