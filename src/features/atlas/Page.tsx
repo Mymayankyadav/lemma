@@ -12,7 +12,7 @@ import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
-import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 interface Saved{expanded:string[];related:boolean}
@@ -37,7 +37,7 @@ function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:Atlas
    {members.map(item=><button key={item.id} type="button" onClick={()=>onTrace(item.id)}
     className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left text-body">
     <StatusMark node={item}/><span style={clip} className="min-w-0 flex-1"><Tex source={item.name}/></span>
-    <span className="shrink-0 text-caption text-ink-3">{levelName[item.level]}</span><ChevronRight size={14} className="text-ink-3"/></button>)}
+    <ChevronRight size={14} className="shrink-0 text-ink-3"/></button>)}
   </div>)}
   {items.length>8&&<button type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}
    className="min-h-11 w-full rounded-ctl border border-edge px-3 text-left text-label text-amber">
