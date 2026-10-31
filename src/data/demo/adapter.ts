@@ -1826,9 +1826,36 @@ export class DemoAdapter implements LemmaApi {
     for (const ids of cardIdsByConcept.values())
       for (const id of ids) linkedCardIds.add(id);
     const dueByCard = new Map<string, number>();
-    if (linkedCardIds.size) for (const item of this.eligible())
-      if (linkedCardIds.has(item.cardId))
-        dueByCard.set(item.cardId, (dueByCard.get(item.cardId) ?? 0) + 1);
+    if (linkedCardIds.size) {
+      // The Atlas only needs card IDs, not 30,000 rich ReviewItem objects.
+      // allItems() resolves each note's project/checkpoint and clones state;
+      // on the extreme fixture that work dominates the 4x CPU transition.
+      // Keep the exact dueToday selection order, sibling deduplication and
+      // daily quotas, but feed it lightweight state references instead.
+      const now = this.now();
+      const start = studyDayBounds(now, this.store.settings.timeZone,
+        this.store.settings.rolloverHour).start;
+      const active = new Set(this.store.projects
+        .filter(p => p.status !== "archived" && !p.system).map(p => p.id));
+      const candidates: {cardId:string;noteId:string;state:CardState}[] = [];
+      for (const note of this.store.notes) {
+        if (note.note.status !== "active" || !active.has(note.projectId)) continue;
+        for (const card of note.cards)
+          candidates.push({cardId:card.id,noteId:note.note.noteId,state:card.state});
+      }
+      let answeredToday = 0, newAnsweredToday = 0;
+      for (const review of this.store.reviews) {
+        if (review.undoneAt) continue;
+        const at = Date.parse(review.reviewedAt);
+        if (at < start || at > now) continue;
+        answeredToday++;
+        if (review.stateBefore === 0) newAnsweredToday++;
+      }
+      for (const item of dueToday(candidates, this.store.settings,
+        {now, answeredToday, newAnsweredToday}))
+        if (linkedCardIds.has(item.cardId))
+          dueByCard.set(item.cardId, (dueByCard.get(item.cardId) ?? 0) + 1);
+    }
     const reviewsByCard = new Map<string, DemoReview[]>();
     if (linkedCardIds.size) for (const review of this.store.reviews) {
       if (review.undoneAt || !linkedCardIds.has(review.cardId)) continue;
@@ -1853,7 +1880,9 @@ export class DemoAdapter implements LemmaApi {
           if (history) reviews.push(...history);
         }
         return {
-          ...clone(c),
+          // DemoConcept contains only primitive fields; a shallow copy is
+          // independent and avoids thousands of structuredClone calls at 4x CPU.
+          ...c,
           status: conceptStatus(
             checkpoints.map(cp => this.cpUi(cp)),
             unresolved.has(c.id), reviews, now,
@@ -1865,7 +1894,9 @@ export class DemoAdapter implements LemmaApi {
           dueCards,
         };
       }),
-      links: clone(this.store.links),
+      // Atlas links also contain only primitive fields; copy each record so
+      // callers cannot mutate the underlying demo store.
+      links: this.store.links.map(link => ({...link})),
     };
   }
   async pinConcept(id: string, x: number | null, y: number | null) {
