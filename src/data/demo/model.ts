@@ -119,6 +119,8 @@ export interface DemoStore {
   /** Generated stress notes remain virtual until a card route needs them. */
   stressNoteCount?: number;
   stressDueCount?: number;
+  stressAtlasIdeaCount?: number;
+  stressAtlasLinkCount?: number;
   /** Browser-only virtual per-project session count (avoids 60k hydrated rows). */
   stressSessionCount?: number;
   /** Duration of one virtual stress session for bounded Insights aggregates. */
