@@ -22,7 +22,7 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   const chip=page.getByRole('group',{name:'Card filters'}).locator('[data-project-slug="'+projectSlug+'"] button');
   await expect(chip).toBeVisible();
   await expect(chip.locator('.katex')).toHaveCount(1);
-  const option=page.getByLabel('Filter project').locator('option').filter({hasText:'Algebra'});
+  const option=page.getByLabel('Filter project').locator('option[value="'+projectSlug+'"]');
   await expect(option).toHaveCount(1);
   expect(await option.textContent()).toContain('𝔽');
   expect(await option.textContent()).not.toContain('$');
