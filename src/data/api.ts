@@ -1,4 +1,4 @@
-import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, TranscribedSourcePage, SourceTranscriptionStat, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardSearchFilters, CardSearchPage, CardDetail, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
+import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, TranscribedSourcePage, SourceTranscriptionStat, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardSearchFilters, CardSearchPage, CardDetail, CardHistoryPage, CardCommentsPage, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
 
 export type LemmaErrorCode = 'not_found' | 'invalid' | 'conflict' | 'offline' | 'auth' | 'server' | 'not_implemented'
 export class LemmaError extends Error {
@@ -107,6 +107,10 @@ export interface LemmaApi {
  searchCardsPage(filter: CardSearchFilters): Promise<CardSearchPage>
  /** Read note content, scheduling, history and comments. */
  getCard(noteNo: number): Promise<CardDetail>
+ /** Read the next 20 owner-scoped reviews of one note, newest first. */
+ getCardHistoryPage(noteNo: number, cursor?: string): Promise<CardHistoryPage>
+ /** Read the next 20 owner-scoped comments of one note, newest first. */
+ getCardCommentsPage(noteNo: number, cursor?: string): Promise<CardCommentsPage>
  /** Create an owner-authored note without approval. */
  createNote(input: CreateNoteInput): Promise<{ noteNo: number }>
  /** Edit note content and reconcile card ordinals. */
