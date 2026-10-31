@@ -370,7 +370,7 @@ export default function Page() {
             <label htmlFor="retention" className="font-semibold">
               Target recall
             </label>
-            <span className="font-semibold text-amber">
+            <span className="font-semibold text-ink">
               {Math.round((retention ?? s.desiredRetention) * 100)}%
             </span>
           </div>
