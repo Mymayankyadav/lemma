@@ -13,6 +13,17 @@ export function hydrateFixture(
   source.settings.timeZone = timeZone;
   const clock = studyClock(source.settings.rolloverHour, timeZone),
     today = clock.dayIndex(now);
+  // Reuse civil-day boundaries across different @day fractions and due tokens.
+  // The same 90 study days appear in thousands of stress cards/sessions.
+  const dayStarts=new Map<number,number>();
+  const dayStart=(index:number)=>{
+    let value=dayStarts.get(index);
+    if(value===undefined){
+      value=clock.dayStart(index);
+      dayStarts.set(index,value);
+    }
+    return value;
+  };
   // A 30,000-card stress fixture repeats a handful of @due/@day tokens.
   // Cache their resolved civil timestamps instead of doing hundreds of
   // thousands of Intl.formatToParts calls for identical study days.
@@ -40,7 +51,7 @@ export function hydrateFixture(
       return remember(new Date(now + Number(value.split(":")[1]) * 60000).toISOString());
     if (value.startsWith("@due:"))
       return remember(new Date(
-        clock.dayStart(today + Number(value.split(":")[1])),
+        dayStart(today + Number(value.split(":")[1])),
       ).toISOString());
     if (value.startsWith("@date:"))
       return remember(new Date((today + Number(value.split(":")[1])) * DAY)
@@ -49,11 +60,11 @@ export function hydrateFixture(
     if (value.startsWith("@day:")) {
       const [, offset, fraction, minutes] = value.split(":"),
         index = today + Number(offset),
-        start = clock.dayStart(index);
+        start = dayStart(index);
       const span =
         index === today
           ? Math.max(0, now - start)
-          : clock.dayStart(index + 1) - start;
+          : dayStart(index + 1) - start;
       return remember(new Date(
         start + Number(fraction) * span + Number(minutes ?? 0) * 60000,
       ).toISOString());
@@ -85,10 +96,10 @@ export function hydrateFixture(
       fixedDue = card.state.due;
     let state: CardState = {
       state: 2,
-      due: new Date(clock.dayStart(today - 180)).toISOString(),
+      due: new Date(dayStart(today - 180)).toISOString(),
       stability: 14,
       difficulty: 5,
-      lastReview: new Date(clock.dayStart(today - 180)).toISOString(),
+      lastReview: new Date(dayStart(today - 180)).toISOString(),
       step: 0,
       reps: 5,
       lapses: 0,
