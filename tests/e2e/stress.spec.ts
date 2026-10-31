@@ -135,7 +135,11 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await page.evaluate(() => performance.clearResourceTimings());
    const screenshot=qa3ScreenshotName({profile,theme,width,filename:''},route);
    mkdirSync('test-results/screens/stress',{recursive:true});
-   const png=await page.screenshot({path:'test-results/screens/stress/'+screenshot,fullPage:false,timeout:30_000});
+   // Even after the DOM reports visible, finite Motion/WAAPI entrance frames
+   // can leave the captured pixels as an empty Graph shell. Fast-forward those
+   // animations for the evidence frame rather than certifying a blank PNG.
+   const png=await page.screenshot({path:'test-results/screens/stress/'+screenshot,
+    fullPage:false,animations:'disabled',timeout:30_000});
    const actualRoute=await page.evaluate(()=>location.hash.slice(1));
    expect(actualRoute).toBe(route);
    readinessEvidence.push({
