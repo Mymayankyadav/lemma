@@ -173,7 +173,9 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
     className="block min-h-[80px] w-full rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-[var(--accent)]">
     {geometry}
    </button>
-   <div data-route-now="" className="flex min-w-0 items-center gap-2 border-t border-[var(--hair)] pt-2">
+   <div data-route-now="" data-route-due-on={rows[focused]?.dueOn??undefined}
+    data-route-schedule-state={rows[focused]?.state??'unscheduled'}
+    className="flex min-w-0 items-center gap-2 border-t border-[var(--hair)] pt-2">
     <span data-code="" className="shrink-0 font-[var(--font-num)] text-[12px] font-medium tabular-nums text-[var(--accent)]">
      {checkpoint.code}
     </span>
