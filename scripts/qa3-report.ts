@@ -115,7 +115,7 @@ export function analyzeQa3(files: Record<string, unknown>): Qa3Report {
       errors.push(matrix.filename + ': missing or non-array evidence');
       continue;
     }
-    filesValid++;
+    const errorCountBefore = errors.length;
     const seen = new Set<string>();
     for (const [index, candidate] of payload.entries()) {
       if (!validRow(candidate)) {
@@ -150,6 +150,7 @@ export function analyzeQa3(files: Record<string, unknown>): Qa3Report {
     for (const route of QA3_ROUTES) {
       if (!seen.has(route)) errors.push(matrix.filename + ': missing route ' + route);
     }
+    if (errors.length === errorCountBefore) filesValid++;
   }
 
   const elements = Object.entries(QA3_ELEMENTS).map(([code, routes]): Qa3Element => {
