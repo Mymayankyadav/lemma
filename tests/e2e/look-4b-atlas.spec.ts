@@ -123,3 +123,45 @@ test('LOOK-4b preserves all moderate Fields while extreme outlines remain window
  await expect(tree.locator('[data-level="cluster"]')).toHaveCount(3);
  expect(await tree.locator('[data-atlas-row]').count()).toBeLessThanOrEqual(150);
 });
+
+
+/** Compact prose labels may be 13.5/15px, but mathematical glyphs may not.
+ * Mount genuine KaTeX in all four compact row levels and measure the actual
+ * browser font, rather than trusting the outer prose span's font size.
+ */
+for(const profile of ['stress','extreme'] as const)
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test(`LOOK-4b compact Atlas maths floor ${profile} ${theme} ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:740});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+  await page.goto(`./?demo=${profile}&theme=${theme}#/atlas`);
+  const tree=page.getByRole('tree',{name:'Ideas and their links'});
+  await expect(tree).toBeVisible();
+  await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+  await page.getByRole('button',{name:'Unfold all'}).click();
+  const formula=katex.renderToString(String.raw`\\mathbb{R}^{n}\\cong\\sum_{k=1}^{n}k`,{throwOnError:false});
+  for(const level of ['galaxy','system','planet','moon']){
+   const row=tree.locator(`[data-level="${level}"]`).first();
+   await expect(row).toBeVisible();
+   const name=row.locator('button span[title]').first();
+   await expect(name).toBeVisible();
+   await name.evaluate((el,html)=>{
+    const wrapper=document.createElement('span');
+    wrapper.className='lemma-math lemma-tex-inline';
+    wrapper.innerHTML=html;
+    el.replaceChildren(wrapper);
+   },formula);
+   const metrics=await name.evaluate(el=>{
+    const math=el.querySelector('.katex');
+    if(!math)throw new Error('Real KaTeX element missing');
+    return {size:parseFloat(getComputedStyle(math).fontSize),height:el.getBoundingClientRect().height};
+   });
+   expect(metrics.size,`math floor in ${level}`).toBeGreaterThanOrEqual(16);
+   expect(metrics.height).toBeLessThanOrEqual(44);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({path:`test-results/screens/look-4b-math-${profile}-${theme}-${width}.png`});
+ });
+}
