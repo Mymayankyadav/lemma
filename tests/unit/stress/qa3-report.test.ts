@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  analyzeQa3, qa3Cases, QA3_ROUTES, renderQa3Markdown,
+  analyzeQa3, qa3Cases, qa3ScreenshotName, QA3_ROUTES, renderQa3Markdown,
 } from '../../../scripts/qa3-report';
 
 function evidence(): Record<string, unknown> {
@@ -109,6 +109,22 @@ describe('QA-3a stress evidence', () => {
     expect(report.elements.find(e => e.code === 'I')?.status).toBe('FAIL');
     expect(report.elements.find(e => e.code === 'B')?.status).toBe('PASS');
     expect(renderQa3Markdown(report)).toContain('Hard-budget violations');
+  });
+
+  it('checks all 144 screenshot files without mistaking presence for visual approval', () => {
+    const images = new Set(qa3Cases().flatMap(matrix =>
+      QA3_ROUTES.map(route => qa3ScreenshotName(matrix, route))));
+    expect(images.size).toBe(144);
+    expect(images.has('stress-graph-390-today.png')).toBe(true);
+    expect(images.has('extreme-graph-night-360-p-real-analysis.png')).toBe(true);
+    const complete = analyzeQa3(evidence(), images);
+    expect(complete.status).toBe('PASS');
+    expect(complete.screenshotsPresent).toBe(144);
+    expect(renderQa3Markdown(complete)).toContain('visual review is still required');
+    images.delete('stress-graph-390-today.png');
+    const incomplete = analyzeQa3(evidence(), images);
+    expect(incomplete.status).toBe('INCOMPLETE');
+    expect(incomplete.errors).toContain('missing screenshot stress-graph-390-today.png');
   });
 
   it('rejects corrupt JSON payloads and does not certify behavior', () => {
