@@ -1,0 +1,33 @@
+import {test,expect} from '@playwright/test'
+
+test('FIX-546b Card detail browses older and newer review pages without mounting all history',async({page})=>{
+ await page.setViewportSize({width:390,height:844})
+ await page.goto('/lemma/?demo=1&theme=graph#/cards/26')
+ await expect(page.getByRole('heading',{name:'Card detail',level:1})).toBeVisible()
+ const rows=page.locator('[data-review-row]')
+ await expect(rows).toHaveCount(20)
+ const first=await rows.first().textContent()
+ await page.getByRole('button',{name:'More reviews'}).click()
+ await expect(page.getByRole('button',{name:'Newer reviews'})).toBeVisible()
+ await expect(rows).toHaveCount(9)
+ expect(await rows.first().textContent()).not.toBe(first)
+ await page.getByRole('button',{name:'Newer reviews'}).click()
+ await expect(rows).toHaveCount(20)
+ expect(await rows.first().textContent()).toBe(first)
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(391)
+})
+
+for(const profile of ['stress','extreme'] as const)
+ for(const theme of ['graph','graph-night'] as const)
+  for(const width of [360,390] as const)
+   test('FIX-546b bounded Card detail '+profile+' '+theme+' '+width,async({page})=>{
+    await page.setViewportSize({width,height:740})
+    await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/cards/31')
+    await expect(page.getByRole('heading',{name:'Card detail',level:1})).toBeVisible()
+    await expect(page.locator('article[aria-label="Card front and answer"]')).toBeVisible()
+    expect(await page.locator('[data-review-row]').count()).toBeLessThanOrEqual(20)
+    expect(await page.locator('[data-comment-row]').count()).toBeLessThanOrEqual(20)
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1)
+    expect(await page.evaluate(()=>document.querySelectorAll('*').length)).toBeLessThan(1500)
+    await page.screenshot({path:'test-results/screens/fix-546b-'+profile+'-'+theme+'-'+width+'.png',fullPage:true})
+   })
