@@ -4,7 +4,7 @@ import {MathPreview} from '../../ui/MathPreview';
 import {Check,FileText,Plus,Trash2} from 'lucide-react';
 import {useAddSource,useDeleteSource,useUpdateSource} from '../../data/hooks';
 import type {IngestProgress,Source,SourceKind} from '../../data/types';
-import {isPdfFile} from '../../pdf/ingest';
+import {isSourceFile} from '../../pdf/ingest';
 import {Rail} from '../../ui/Rail';
 import {Tile} from '../../ui/Tile';
 import {useToast} from '../../ui/Toast';
@@ -26,7 +26,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
  function enqueue(files:FileList|File[]){
   const accepted:QueueEntry[]=[];
   for(const file of Array.from(files)){
-   if(!isPdfFile(file)||!file.size||file.size>limit){notify('Choose a nonempty PDF under 50 MB: '+file.name,{tone:'danger'});continue}
+   if(!isSourceFile(file)||!file.size||file.size>limit){notify('Choose a nonempty PDF, .tex or .md file under 50 MB: '+file.name,{tone:'danger'});continue}
    accepted.push({id:++id.current,file,name:file.name,bytes:file.size,pagesRead:0,phase:'queued',progress:null,error:null});
   }
   setQueue(old=>[...old,...accepted]);
@@ -110,10 +110,10 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     </div>}
    </Tile>)}
   </div>)}
-  <input ref={picker} hidden type="file" multiple accept=".pdf,application/pdf" onChange={e=>{if(e.currentTarget.files)enqueue(e.currentTarget.files);e.currentTarget.value=''}}/>
+  <input ref={picker} hidden type="file" multiple accept=".pdf,application/pdf,.tex,.latex,.ltx,application/x-tex,text/x-tex,.md,.markdown,text/markdown" onChange={e=>{if(e.currentTarget.files)enqueue(e.currentTarget.files);e.currentTarget.value=''}}/>
   <div onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();enqueue(e.dataTransfer.files)}}>
    <button type="button" onClick={()=>picker.current?.click()} className="flex min-h-24 w-full items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
-    <Plus size={22} className="text-amber"/>Add sources · select or drop PDFs
+    <Plus size={22} className="text-amber"/>Add sources · PDF, .tex or .md
    </button>
   </div>
   {queue.length>0&&<ul aria-label="Source upload queue" className="flex flex-col gap-2">

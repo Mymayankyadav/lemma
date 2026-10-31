@@ -4,7 +4,7 @@ This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent c
 
 ## 1. The team
 
-Four scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh session with no memory). They coordinate only through GitHub. Their full prompts are in `docs/agents/prompts.md`.
+Five scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh session with no memory). They coordinate only through GitHub. Their full prompts are in `docs/agents/prompts.md`.
 
 | Role | Runs (IST) | Does |
 | --- | --- | --- |
@@ -12,8 +12,9 @@ Four scheduled agents run hourly (ChatGPT scheduled tasks; each run is a fresh s
 | Fixer | :15 | Turns every red PR green, fixes `FIX main` and `audit` issues, fixes bugs; works several in parallel |
 | Builder | :30 | Writes as much code as possible across 3–5 tasks in parallel; takes over any stalled PR |
 | Auditor | :45 | Audits every merged and "Ready to merge" PR against the specs and the owner's intent; files `audit` issues; verifies fixes |
+| Builder-2 | :50 | Unblocks the critical path: takes the 2–4 tasks that hold up the most other work (red, stalled or unstarted), splits large PRs so the most important parts land first |
 
-More agents can be added at any time: copy the Builder or Fixer prompt, give it a new role name (for example "Builder-2") and a different minute. The lease convention below stops agents from colliding.
+More agents can be added at any time: copy the Builder or Fixer prompt, give it a new role name (for example "Builder-3") and a different minute. The lease convention below stops agents from colliding.
 
 ## 2. Coordination conventions (all agents)
 
@@ -89,4 +90,4 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
   - UI-8 (#439);
   - audit findings #440 (ST-2 sorts CP10 before CP2), #441 (ST-3 extreme render and DOM budgets not asserted) and #443 (save_pages confidence; spec fixed in #444, awaiting verification).
 - **Not started:** MCP-6 (after DB-5) and QA-3 (after ST-1, ST-2, ST-4 and ST-6).
-- **Offered to the owner but not yet specified:** let the Sources tab also accept `.tex` and `.md` uploads, alongside the tutor's `save_pages`. Add it to `transcribe.md` before building.
+- **`.tex` and `.md` uploads:** specified in `transcribe.md` §2b and built in UI-8b.
