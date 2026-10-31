@@ -1597,14 +1597,20 @@ export class DemoAdapter implements LemmaApi {
       for (const card of note.cards) ids.add(card.id);
       cardIdsByConcept.set(note.conceptId, ids);
     }
-    // When no card is linked to an idea, Atlas due counts are necessarily zero.
-    // Avoid building and sorting a 30k-card review queue for that case.
+    // Only linked cards can contribute to Atlas status or due counts.
+    // Stress profile X contains a large review history, but most cards have no
+    // idea link; scanning that history when there are no linked cards wastes
+    // hundreds of thousands of iterations on the Atlas critical path.
+    const linkedCardIds = new Set<string>();
+    for (const ids of cardIdsByConcept.values())
+      for (const id of ids) linkedCardIds.add(id);
     const dueByCard = new Map<string, number>();
-    if (cardIdsByConcept.size) for (const item of this.eligible())
-      dueByCard.set(item.cardId, (dueByCard.get(item.cardId) ?? 0) + 1);
+    if (linkedCardIds.size) for (const item of this.eligible())
+      if (linkedCardIds.has(item.cardId))
+        dueByCard.set(item.cardId, (dueByCard.get(item.cardId) ?? 0) + 1);
     const reviewsByCard = new Map<string, DemoReview[]>();
-    for (const review of this.store.reviews) {
-      if (review.undoneAt) continue;
+    if (linkedCardIds.size) for (const review of this.store.reviews) {
+      if (review.undoneAt || !linkedCardIds.has(review.cardId)) continue;
       const bucket = reviewsByCard.get(review.cardId) ?? [];
       bucket.push(review);
       reviewsByCard.set(review.cardId, bucket);
