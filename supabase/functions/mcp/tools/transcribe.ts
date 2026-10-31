@@ -70,7 +70,7 @@ export async function savePages(c:Context,a:{
   }
   saved++;
  }
- if(saved&&!(!a.source)){
+ if(saved&&a.source){
   const changes:Record<string,unknown>={};
   if(!src.has_text)changes.has_text=true;
   if(!src.page_count||src.page_count<Math.max(...a.pages.map(page=>page.page)))
