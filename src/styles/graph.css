@@ -84,3 +84,37 @@ html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content [class~="
 html:is([data-theme="graph"],[data-theme="graph-night"]) #main-content .truncate{
  white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;
 }
+
+/* LOOK-1a: v4 quiet notebook surfaces and six-role typography foundation. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) h1{
+ font-family:var(--font-display);font-size:28px;line-height:31px;font-weight:500;
+}
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-section-heading{
+ font-family:var(--font-display);font-size:19px;line-height:23px;
+ font-style:italic;font-weight:500;letter-spacing:0;
+}
+/* A label is ink on tinted paper, not a small disabled button. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) .ui-chip:not(button){
+ border:0;box-shadow:none;background:var(--paper-2);border-radius:999px;
+ color:var(--ink-2);
+}
+/* Header icons have a full hit target but no false card/pressable chrome. */
+html:is([data-theme="graph"],[data-theme="graph-night"]) header .ui-icon-button{
+ min-width:44px;min-height:44px;border:0;background:transparent;box-shadow:none;
+}
+/* At night the notebook grid recedes, while paper has a quiet hairline edge. */
+html[data-theme="graph-night"]{
+ --bg-css:
+ linear-gradient(rgba(120,160,220,.075) 1px,transparent 1px) 0 0/60px 60px,
+ linear-gradient(90deg,rgba(120,160,220,.075) 1px,transparent 1px) 0 0/60px 60px,
+ linear-gradient(rgba(120,160,220,.035) 1px,transparent 1px) 0 0/12px 12px,
+ linear-gradient(90deg,rgba(120,160,220,.035) 1px,transparent 1px) 0 0/12px 12px;
+}
+html[data-theme="graph-night"] :is(.card,.slab,.tile){
+ border:1px solid var(--edge);box-shadow:3px 3px 0 rgba(0,0,0,.55);
+}
+/* Legacy nested surfaces become unboxed groups until their markup is flattened. */
+html:is([data-theme="graph"],[data-theme="graph-night"])
+ :is(.card,.slab,.tile) :is(.card,.slab,.tile){
+ background:transparent;border:0;box-shadow:none;
+}
