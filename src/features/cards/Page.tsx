@@ -72,9 +72,11 @@ export default function Page(){
   </label>
   <div role="group" aria-label="Card filters" className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
    <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
-   {projects.data?.map(p=><Chip key={p.id} className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
-    <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
-   </Chip>)}
+   {projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
+    <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
+     <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
+    </Chip>
+   </span>)}
    <Chip className="shrink-0 whitespace-nowrap" selected={onlyComments} onClick={()=>setOnlyComments(v=>!v)}>Has notes</Chip>
    <Chip className="shrink-0 whitespace-nowrap" selected={noteStatus==='suspended'} onClick={()=>setNoteStatus(v=>v==='suspended'?'':'suspended')}>Paused</Chip>
   </div>
