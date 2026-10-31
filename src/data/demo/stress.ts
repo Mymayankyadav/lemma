@@ -77,7 +77,8 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
   if (!source.id.startsWith("stress-source-") || !source.hasText
       || !Number.isSafeInteger(page) || page < 1 || page > (source.pageCount ?? 0)) return null;
   return {page, label: String(page),
-    body: `Synthetic mathematics notes, page ${page}. Prove the stated lemma and cite its hypotheses.`};
+    body: `Synthetic mathematics notes, page ${page}. Prove the stated lemma and cite its hypotheses.`,
+    transcribedBy: null, transcribedAt: null, confidence: null};
 }
 
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
