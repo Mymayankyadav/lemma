@@ -19,9 +19,10 @@ const token=[
  'fixture-signature',
 ].join('.');
 
+for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const){
- test('FIX #517 Insights mathematical labels '+theme+' '+width,async({page})=>{
+ test('FIX #517 Insights mathematical labels '+profile+' '+theme+' '+width,async({page})=>{
   test.setTimeout(90_000);
   await page.setViewportSize({width,height:width===360?740:844});
   await page.emulateMedia({colorScheme:theme==='graph-night'?'dark':'light'});
@@ -34,9 +35,12 @@ for(const width of [360,390] as const){
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
   await page.route('**/auth/v1/**',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(user)}));
+  const subjectMinutes=[...insights.subjectMinutes,...Array.from({length:profile==='stress'?14:39},(_,i)=>({
+   subject:{id:'extra-'+i,name:'Subject '+i,glyph:'S',hue:'amber',position:i+1},minutes:500-i,
+  }))];
   await page.route('**/rest/v1/**',r=>{
    const path=new URL(r.request().url()).pathname.replace(/^\/rest\/v1/,'');
-   const value:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:path==='/rpc/insights'?insights:path==='/rpc/home_summary'?home:undefined;
+   const value:unknown=path==='/rpc/bootstrap'||path==='/settings'?settings:path==='/rpc/insights'?{...insights,subjectMinutes}:path==='/rpc/home_summary'?home:undefined;
    if(value===undefined){unexpected.push(path);return r.fulfill({status:404,body:'{}'});}
    return r.fulfill({status:200,contentType:'application/json',headers:{'content-range':'0-0/1'},body:JSON.stringify(value)});
   });
@@ -45,16 +49,17 @@ for(const width of [360,390] as const){
   const subjects=page.getByRole('group',{name:'Time by subject'});
   const subject=subjects.getByRole('button',{name:'Algebra 𝔽ₚ'});
   await expect(subject).toBeVisible();
+  await expect(subjects.locator('button')).toHaveCount(7); // six visible subjects plus Other
   await expect(subject.locator('.katex')).toHaveCount(1);
   await subject.click();
-  await expect(subject).toBeVisible();
+  await expect(subject.locator('.katex')).toHaveCount(1);
   const revisited=page.locator('a[aria-label^="Most revisited:"]');
   await expect(revisited.locator('.katex')).toHaveCount(1);
   await expect(revisited).toHaveAttribute('href',/name=Uniform/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   expect(unexpected).toEqual([]);
   await revisited.scrollIntoViewIfNeeded();
-  await page.screenshot({path:'test-results/screens/fix-517-insights-'+theme+'-'+width+'.png'});
+  await page.screenshot({path:'test-results/screens/fix-517-insights-'+profile+'-'+theme+'-'+width+'.png'});
  });
 }
 
