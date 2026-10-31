@@ -451,6 +451,20 @@ export class LiveAdapter implements LemmaApi {
   const second=checked(await db.rpc('search_cards_page',{...pageArgs,p_offset:50})) as import('../types').CardRow[]
   return [...first,...second]
  }
+ async searchCardsPage(...args: Parameters<LemmaApi['searchCardsPage']>): ReturnType<LemmaApi['searchCardsPage']> {
+  const [filter]=args,db=liveClient()
+  await owner(db)
+  const offset=filter.offset??0
+  if(!Number.isSafeInteger(offset)||offset<0)
+   throw new LemmaError('invalid','Card page offset must be a nonnegative integer')
+  const page=checked(await db.rpc('search_cards_filtered_page',{
+   p_query:filter.query,p_slug:filter.projectSlug??null,
+   p_checkpoint:filter.checkpointCode??null,p_state:filter.state??null,
+   p_note_status:filter.noteStatus??null,
+   p_has_open_comments:filter.hasOpenComments??null,p_offset:offset,
+  })) as import('../types').CardRow[]
+  return {rows:page,nextOffset:page.length===50?offset+50:null}
+ }
  async getCard(...args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> {
   const [no]=args,db=liveClient(),uid=await owner(db)
   const note=checked(await db.from('notes').select('*').eq('user_id',uid).eq('no',no).single()) as Row

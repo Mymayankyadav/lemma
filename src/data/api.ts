@@ -1,4 +1,4 @@
-import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardDetail, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
+import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardSearchFilters, CardSearchPage, CardDetail, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
 
 export type LemmaErrorCode = 'not_found' | 'invalid' | 'conflict' | 'offline' | 'auth' | 'server' | 'not_implemented'
 export class LemmaError extends Error {
@@ -93,6 +93,8 @@ export interface LemmaApi {
  undoReview(reviewId: number): Promise<CardState>
  /** Search up to 100 cards by front or back. */
  searchCards(query: string, slug?: string): Promise<CardRow[]>
+ /** Search a single 50-row page with server-side filters and a continuation offset. */
+ searchCardsPage(filter: CardSearchFilters): Promise<CardSearchPage>
  /** Read note content, scheduling, history and comments. */
  getCard(noteNo: number): Promise<CardDetail>
  /** Create an owner-authored note without approval. */

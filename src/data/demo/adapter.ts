@@ -12,7 +12,7 @@ import type {
   SubjectPatch,
   SourcePatch,
 } from "../api";
-import { LemmaError } from "../api";
+import { LemmaError, notImplemented } from "../api";
 import type {
   AtlasGraph,
   CardComment,
@@ -1501,6 +1501,9 @@ export class DemoAdapter implements LemmaApi {
         status: n.note.status,
         openComments: n.comments.filter((c) => c.status === "open").length,
       }));
+  }
+  async searchCardsPage(..._args: Parameters<LemmaApi['searchCardsPage']>): ReturnType<LemmaApi['searchCardsPage']> {
+    throw notImplemented('searchCardsPage');
   }
   async getCard(noteNo: number): Promise<CardDetail> {
     const n = this.note(noteNo);
