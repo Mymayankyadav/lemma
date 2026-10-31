@@ -68,6 +68,26 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     }
   }
 
+  // ST-6: scale the first project's source shelf without materialising
+  // thousands of fake PDF pages per source.
+  const firstSource = data.sources.find(source => source.projectId === baseProject.id);
+  if (!firstSource) throw Error("Stress fixture requires a seeded project source");
+  const existingSources = data.sources.filter(source => source.projectId === baseProject.id).length;
+  const sourceKinds = ["book", "notes", "slides", "problems", "syllabus", "exam", "other"] as const;
+  for (let i = existingSources; i < (extreme ? 100 : 30); i++) {
+    data.sources.push({
+      ...firstSource,
+      id: `stress-source-${i}`, projectId: baseProject.id,
+      title: `Source ${i + 1}: mathematical notes and proofs`,
+      short: `stresssrc${i}`, filename: `source-${i + 1}.pdf`,
+      kind: sourceKinds[i % sourceKinds.length], position: i,
+      pageCount: i % 3 === 0 ? 3000 : 1200,
+      status: "ready", hasText: false, outline: [], pages: [],
+      sha256: null, createdAt: `@day:-${i % 60}:0.5:0`,
+      addedAt: `@day:-${i % 60}:0.5:0`, planCheckedAt: null,
+    });
+  }
+
   for (let i = data.concepts.length; i < ideaCount; i++) {
     const subject = data.subjects[i % data.subjects.length];
     data.concepts.push({
