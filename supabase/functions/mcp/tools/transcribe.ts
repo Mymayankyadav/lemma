@@ -2,15 +2,13 @@ import {Context,scoped,insert,update} from '../db.ts';
 import {project,source} from '../resolve.ts';
 import {settings} from '../packet.ts';
 import {slug} from '../text.ts';
-import {validateTranscription,type TranscribedPage as Page} from '../transcribe-validation.ts';
+import {validateTranscriptionBatch,type TranscribedPage as Page} from '../transcribe-validation.ts';
 
 export async function savePages(c:Context,a:{
  project:string;source?:string;title?:string;kind?:string;
  pages:Page[];replace?:boolean;client?:'claude'|'chatgpt';
 }):Promise<string>{
- if(!Array.isArray(a.pages)||!a.pages.length||a.pages.length>10)throw Error('Save 1–10 pages per call');
- const unique=new Set<number>();
- for(const page of a.pages){validateTranscription(page);if(unique.has(page.page))throw Error('Duplicate page '+page.page);unique.add(page.page)}
+ validateTranscriptionBatch(a.pages);
  const p=await project(c,a.project);
  const st=await settings(c);
  const client=a.client||st.connector_last_client;
