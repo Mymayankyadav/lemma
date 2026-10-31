@@ -76,7 +76,7 @@ export function makeStressInsightAggregate(
  * ST-6's nine-hint runs remain foldable; attempts/evidence/rechecks remain visible.
  */
 export function stressSessionEvents(session: Pick<DemoSession, "id" | "checkpointCode">, count: number): DemoSession["events"] {
-  const match = /^stress-session-(\\d+)-(\\d+)$/.exec(session.id);
+  const match = /^stress-session-(\d+)-(\d+)$/.exec(session.id);
   if (!match || !Number.isSafeInteger(count) || count < 0) return [];
   const projectIndex = Number(match[1]), number = Number(match[2]);
   return Array.from({length: count}, (_, index) => {
