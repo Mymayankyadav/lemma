@@ -25,7 +25,7 @@ describe('ST-0 deterministic stress data', () => {
    const planProposal = data.proposals.find(p => p.id === 'proposal-6');
    expect(planProposal?.kind).toBe('plan_change');
    expect(planProposal?.planChange?.ops.length).toBeGreaterThan(0);
-   expect(planProposal?.projectSlug).toBe('real-analysis');
+   expect(planProposal?.projectSlug).toBe(data.projects[projects - 1].slug);
    expect(data.sessions).toHaveLength(sessions);
    const projectIds = new Set(data.projects.map(p => p.id));
    const conceptIds = new Set(data.concepts.map(c => c.id));
