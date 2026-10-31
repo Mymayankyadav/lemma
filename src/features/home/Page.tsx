@@ -80,7 +80,7 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
  const description=resume.checkpointTitle??'Ready to study';
  const step=resume.stepsTotal>0?' · step '+Math.min(Math.max(1,resume.step),resume.stepsTotal)+' of '+resume.stepsTotal:'';
  const spoken=resumeSpoken(resume.projectTitle,description,step,status);
- return <Slab as="section" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-2" style={{padding:'4px 12px'}}> 
+ return <Slab as="section" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-2" style={{padding:'4px 12px'}}>
   <span className="sr-only">{spoken}</span>
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
   <div aria-hidden="true" className="min-w-0 flex-1">
