@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import katex from 'katex';
 
 for(const profile of ['stress','extreme'] as const)
  for(const theme of ['graph','graph-night'] as const)
@@ -52,13 +53,15 @@ for(const width of [390,360] as const)
   const row=page.getByRole('region',{name:'Resume where you stopped'});
   await expect(row).toBeVisible({timeout:90_000});
   const meta=row.locator('[data-resume-meta]');
-  await meta.evaluate(el=>{
-   const renderer=(window as typeof window&{katex?:{renderToString:(source:string,options?:{throwOnError:boolean})=>string}}).katex;
-   if(!renderer)throw new Error('KaTeX global not initialized');
+  // Render real KaTeX markup in the test runner. Plain-text Today no longer
+  // eagerly imports the rich renderer, so window.katex is absent until needed.
+  // Keep all mathematical font-size, clipping and hit-target assertions.
+  const mathHtml=katex.renderToString('\\pi_1(S^1)\\cong\\mathbb{Z}',{throwOnError:false});
+  await meta.evaluate((el,html)=>{
    const target=el.querySelector('.lemma-tex-inline');
    if(!target)throw new Error('Missing checkpoint Tex wrapper');
-   target.innerHTML=renderer.renderToString('\\pi_1(S^1)\\cong\\mathbb{Z}',{throwOnError:false});
-  });
+   target.innerHTML=html;
+  },mathHtml);
   const metrics=await row.evaluate(el=>{
    const meta=el.querySelector('[data-resume-meta]')!;
    const math=meta.querySelector('.katex')!;
