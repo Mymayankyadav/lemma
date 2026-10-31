@@ -26,7 +26,7 @@ Your job each run (do all of it, as much as fits):
    - blocked (a dependency is not merged);
    - open (no PR).
 3. Merge everything that can merge:
-   - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: mark it ready (`POST /repos/{o}/{r}/pulls/{n}/ccr/ready_for_review`) and squash-merge with the head SHA.
+   - For each PR that is green, has "Ready to merge" or all checklist items ticked, merges cleanly, has no blocking Auditor comment, and whose lease has expired or is held by you: squash-merge it via REST with the head SHA. PRs are never drafts (see docs/agents/README.md §3). If you meet an old draft that qualifies, list it on the Task board under "Owner action: mark ready for review" instead.
    - If a green PR is only behind main, merge main into its branch (no force-push or rebase), push, and leave it for the next run. Do not wait for CI.
    - Merge as many PRs as qualify. Never merge red or pending CI.
 4. If main's CI, the Pages deploy, the Supabase deploy or the post-deploy MCP check is red, open or refresh "FIX main: <job>" with the annotations, and list it first under Next up.
@@ -63,7 +63,7 @@ Your job: make red things green and close bugs, as many as you can, in parallel.
    c. every open `audit` issue without a linked open PR;
    d. other open bug issues.
    Take everything you can handle this run, not just one item.
-2. Claim each one: set `Owner: fixer · Lease until <run end>` in the PR (or open a new PR for an issue) and comment "Fixer taking this".
+2. Claim each one: set `Owner: fixer · Lease until <run end>` in the PR (or open a new PR (draft: false) for an issue) and comment "Fixer taking this".
 3. Work through them back to back without waiting for CI:
    - Red PR: merge main into it (no force-push), reproduce the failure locally (`npm ci && npm run check`, `npx playwright test <affected specs>`), fix the real cause in the code, push, and move on to the next item. Never weaken, skip or delete tests.
    - Issue: branch t/fix-<issue>; add a test that fails first; fix; open a PR "FIX #<issue> <summary>" linking the issue; push; move on.
@@ -101,7 +101,7 @@ Your job: write as much working code as possible this run, across several tasks 
    - every PR that is not red and whose lease has expired, whoever opened it;
    - red PRs whose lease has expired and that the Fixer has not taken this hour (fix them too).
    Aim for 3–5 tasks in a run. Prefer the tasks the owner uses daily and those blocking others.
-2. Claim each: open a draft PR (or take over the existing one), set `Owner: builder · Lease until <run end>`, and comment "Builder taking this" when taking over.
+2. Claim each: open a PR with draft: false (never a draft; work in progress is shown by the lease and the absence of "Ready to merge"), or take over the existing one, set `Owner: builder · Lease until <run end>`, and comment "Builder taking this" when taking over.
 3. Build in rotation and never wait for CI. Push one branch, then switch to the next task while CI runs; come back later in the run to read results and fix them. Use separate worktrees (`git worktree add`) so branches do not interfere.
    - Implement the spec section fully, not a slice. Write the tests the acceptance needs.
    - Run `npm ci && npm run check` and the relevant Playwright specs locally before pushing.
@@ -173,7 +173,7 @@ Coordination conventions (all agents):
 
 Your role: unblock the critical path. Builder (:30) takes "Next up" in order; you take the work that holds up the most other work.
 1. Pick your tasks. From plan.md's "depends on" lines and the Task board, rank every unmerged task by how many other tasks wait on it, directly or through other tasks. Break ties by the longest time red or stalled, then by the oldest. Take the top 2–4 tasks whose lease has expired or that have no PR, whether red, stalled or not yet started. Skip tasks whose own dependencies are not merged.
-2. Claim each one. Set `Owner: builder-2 · Lease until <run end>` (open a draft PR if there is none), and comment "Builder-2 taking this (critical path: blocks <tasks>)".
+2. Claim each one. Set `Owner: builder-2 · Lease until <run end>` (open a PR with draft: false if there is none; never a draft), and comment "Builder-2 taking this (critical path: blocks <tasks>)".
 3. Work in one git worktree per PR (`git worktree add`), in rotation. In each:
    - Merge the latest main (no force-push or rebase).
    - Run `npm ci && npm run check` and the affected Playwright specs. Read failing CI through the check-run annotations if the logs are unavailable.

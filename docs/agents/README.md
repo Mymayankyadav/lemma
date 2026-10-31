@@ -38,7 +38,11 @@ More agents can be added at any time: copy the Builder or Fixer prompt, give it 
 
 - **Supabase:** project `yemqnhnztlbyxmjxidis` only, never any other project. Schema changes go through migrations only. Connector code filters every query by `user_id`. Every write is reversible through the action log (`undo`).
 - **Secrets:** none in code, PRs, issues or comments. Never print the connector URL (it contains a secret).
-- **GitHub:** use `gh api` REST. GraphQL may be blocked in some agent environments. Ready a draft PR with `POST /repos/{o}/{r}/pulls/{n}/ccr/ready_for_review`, and merge with `PUT /repos/{o}/{r}/pulls/{n}/merge` (`merge_method=squash`, `sha=<head>`).
+- **GitHub:** use `gh api` REST.
+  - **Never open draft PRs.** Create every PR with `draft: false`. Work in progress is signalled by the lease line and by the absence of "Ready to merge", not by GitHub's draft flag. REST cannot mark a draft ready (only the web UI or GraphQL can), so a draft is a PR that REST-only agents can never merge.
+  - Merge with `PUT /repos/{o}/{r}/pulls/{n}/merge` (`merge_method=squash`, `sha=<head>`).
+  - If you find an old draft that is green and "Ready to merge", list it on the Task board under "Owner action: mark ready for review". The owner clicks "Ready for review" on GitHub, and the next Steward run merges it.
+  - Some agent runtimes cannot clone github.com. They edit through the contents API (`PUT /repos/{o}/{r}/contents/{path}` on the task branch) and rely on CI for tests. That is fine: never claim that a local test run happened when it did not.
 - **Commits and PRs** end with the attribution lines your environment specifies.
 
 ## 4. Owner's decisions to protect (do not regress)
