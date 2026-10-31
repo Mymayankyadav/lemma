@@ -128,6 +128,13 @@ interface SummaryIndex {
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
+  /** CONTRACT-546: bounded history pagination remains fail-closed until FIX-546b lands. */
+  async getCardHistoryPage(..._args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
+    throw notImplemented("getCardHistoryPage");
+  }
+  async getCardCommentsPage(..._args: Parameters<LemmaApi["getCardCommentsPage"]>): ReturnType<LemmaApi["getCardCommentsPage"]> {
+    throw notImplemented("getCardCommentsPage");
+  }
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
     const ids=new Set(this.store.projects.filter(p=>p.status!=="archived"&&!p.system).map(p=>p.id));
     const cards=this.store.notes.filter(n=>n.note.status==='active'&&ids.has(n.projectId)).flatMap(n=>n.cards.map(c=>c.state));
