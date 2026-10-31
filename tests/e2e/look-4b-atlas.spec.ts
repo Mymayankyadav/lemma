@@ -157,6 +157,8 @@ for(const width of [360,390] as const){
    await expect(row).toBeVisible();
    const name=row.locator('button span[title]').first();
    await expect(name).toBeVisible();
+   const proseSize=await name.evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+   expect(proseSize,`prose size in ${level}`).toBe(level==='galaxy'?12:level==='moon'?13:15);
    await name.evaluate((el,html)=>{
     const wrapper=document.createElement('span');
     wrapper.className='lemma-math lemma-tex-inline';
