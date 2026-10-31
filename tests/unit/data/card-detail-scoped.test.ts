@@ -155,6 +155,16 @@ describe('FIX-546a live Card detail scoped queries',()=>{
    expect(more.comments).toHaveLength(20);
    expect(more.historyNextCursor).toBeTruthy();
    expect(more.commentsNextCursor).toBeTruthy();
+   // Independently vary each resource: neither More control may borrow the other's cursor.
+   const review21=fixtures.reviews.pop()!,comment21=fixtures.card_comments.pop()!;
+   fixtures.reviews.push(review21);
+   const reviewOnly=await api.getCard(12);
+   expect(Boolean(reviewOnly.historyNextCursor)).toBe(true);
+   expect(reviewOnly.commentsNextCursor).toBeNull();
+   fixtures.reviews.pop();fixtures.card_comments.push(comment21);
+   const commentOnly=await api.getCard(12);
+   expect(commentOnly.historyNextCursor).toBeNull();
+   expect(Boolean(commentOnly.commentsNextCursor)).toBe(true);
   }finally{
    fixtures.reviews=savedReviews;fixtures.card_comments=savedComments;
   }
