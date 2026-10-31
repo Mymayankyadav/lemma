@@ -21,6 +21,36 @@ const screens=[
  ['home','#/'],['project','#/p/real-analysis'],['card-review','#/review/run'],
  ['insights','#/insights'],['settings','#/settings'],
 ];
+/** QA-4 Mini Route is one bar. Segment seams are borders, not data marks:
+ * check each grouped segment's own width, not a fictitious gap at its seam.
+ */
+async function checkMiniRoutes(page,scene){
+ const bars=page.locator('[data-mini-route]');
+ await bars.first().waitFor({state:'visible'});
+ const errors=await bars.evaluateAll(nodes=>nodes.flatMap((bar,index)=>{
+  const track=bar.querySelector('[data-stage-bar]');
+  if(!track)return ['bar '+index+' missing stage track'];
+  const segments=[...track.querySelectorAll('[data-stage-segment]')];
+  const width=track.getBoundingClientRect().width;
+  const widths=segments.map(node=>node.getBoundingClientRect().width);
+  const notch=bar.querySelectorAll('[data-route-notch]');
+  const failures=[];
+  if(!segments.length)failures.push('bar '+index+' has no segments');
+  if(widths.some(value=>value<7.99))failures.push('bar '+index+' has a segment under 8px');
+  if(widths.reduce((sum,value)=>sum+value,0)>width+1)failures.push('bar '+index+' exceeds one track');
+  if(bar.querySelectorAll('[data-mini-tick]').length)failures.push('bar '+index+' contains checkpoint ticks');
+  if(notch.length!==1)failures.push('bar '+index+' must show one current-position notch');
+  if(notch.length===1){
+   const rect=notch[0].getBoundingClientRect(),edge=track.getBoundingClientRect();
+   if(Math.abs(rect.width-2)>0.5||Math.abs(rect.height-12)>0.5)failures.push('bar '+index+' notch is not 2×12px');
+   const left=rect.left-edge.left,right=edge.right-rect.right;
+   if(!((left>=7.99&&right>=7.99)||(left>=-0.1&&left<=0.1)||(right>=-0.1&&right<=0.1)))
+    failures.push('bar '+index+' notch lacks 8px edge clearance');
+  }
+  return failures;
+ }));
+ if(errors.length)throw Error('QA-4 Mini Route geometry '+scene+': '+errors.join('; '));
+}
 mkdirSync('review-shots/sheets',{recursive:true});
 const browser=await chromium.launch();
 try {
@@ -94,6 +124,7 @@ try {
       // A shell-only frame is not evidence of a captured route. Require the
       // destination's visible heading, then let two frames paint before capture.
       await phone.locator('#main-content h1').first().waitFor({state:'visible'});
+      if(name==='paths')await checkMiniRoutes(phone,theme+'/'+demo+'/'+width);
       await phone.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await phone.screenshot({path:join(dir,name+'.png'),animations:'disabled'});
       if(['paths','project-path','project-sources','proposals','cards','atlas','insights','settings'].includes(name)){
