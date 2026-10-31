@@ -153,7 +153,7 @@ export default function Page(){
   const expandedPath=new Set([...open,...ancestors(tree,id)]);
   const targetRows=visibleRows(tree,expandedPath);
   const targetIndex=targetRows.findIndex(row=>row.id===id);
-  if(targetIndex>=0&&targetRows.length>200&&scroller.current){
+  if(targetIndex>=0&&targetRows.length>40&&scroller.current){
    const targetGeometry=buildAtlasRowGeometry(targetRows.map(row=>tree.nodes.get(row.id)?.level??'planet'));
    scroller.current.scrollTop=Math.max(0,targetGeometry.offsets[targetIndex]-scroller.current.clientHeight/2);
    setScrollTop(scroller.current.scrollTop);
