@@ -582,7 +582,6 @@ export class LiveAdapter implements LemmaApi {
   const cps=checked(cpResult) as Row[],sessions=checked(sessionResult) as Row[]
   const sources=checked(sourceResult) as Row[]
   const cardRows=checked(cardResult) as Row[]
-  const cardIds=cardRows.map(c=>c.id)
   // Initial Card detail is bounded; older rows are fetched explicitly by the UI.
   const [historyPage,commentsPage]=await Promise.all([
    this.getCardHistoryPage(no),this.getCardCommentsPage(no)
