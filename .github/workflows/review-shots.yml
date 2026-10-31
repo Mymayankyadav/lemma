@@ -33,6 +33,9 @@ jobs:
           (npx vite preview --port 4173 --strictPort > /tmp/lemma-preview.log 2>&1 &) 
           sleep 5
           node scripts/review-shots.mjs
+      - name: Fail closed on missing, invalid or repeated v4 interaction screenshots
+        if: github.event_name != 'push'
+        run: npx tsx scripts/qa4-screens.ts
       - name: Upload v4 route and interaction screenshots for independent review
         if: always()
         uses: actions/upload-artifact@v4
