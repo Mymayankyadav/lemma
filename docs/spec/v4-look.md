@@ -187,11 +187,12 @@ Owner decisions kept: a foldable outline, prerequisite links in a right-hand mar
    - Lanes are 9 px apart, and the longest spans take the outer lanes.
    - Links that share an endpoint share a lane, so a selected idea reads as two clean trunks: **builds on** (`--link`, upwards) and **opens up** (`--accent`, downwards).
    - Bundle counts become 16 px pills with 12 px text (supersedes #483 / PR #488).
-4. **Change form at scale** (stress principle):
-   - With ≤ 60 visible links, draw them all at 35 % `--ink-3`.
-   - Above 60, follow stress.md C1: draw only links that touch a folded branch or the selection, never more than 60, and show "312 links hidden — fold or select an idea".
-   - Rows whose links are hidden show a small in/out port tick. It is not interactive: the row itself is the target.
-   - Selection always draws the full chain.
+4. **Change form at scale** (stress principle; owner-approved capacity decision [#559](https://github.com/Mymayankyadav/lemma/issues/559), 31 Oct 2026):
+   - In the 84 px gutter, at most eight *independent overlapping* 1 px strokes fit on 9 px-spaced lane centres (x = 83, 74, …, 20), preserving at least 8 px painted-edge clearance. Links sharing an endpoint may share a trunk.
+   - With ≤ 60 visible links, draw every link that fits those physical lanes at 35 % `--ink-3`. When nine or more independent links overlap, **do not overpaint or silently omit**: give selected-chain links priority for the eight physical lanes, show visible noninteractive in/out port ticks on affected rows, and provide a keyboard-accessible disclosure at least 44 px tall listing every suppressed link and its endpoints. The complete selected chain remains discoverable there even when it cannot all be painted at once.
+   - Above 60 visible links, also follow stress.md C1: draw only links that touch a folded branch or the selection, never more than 60, and show "312 links hidden — fold or select an idea". The eight-lane overlap capacity still applies.
+   - Port ticks are not interactive: the row itself remains the selection target. The hidden-link disclosure is interactive and must retain a 44 × 44 px hit area.
+   - Selection prioritises drawing its chain; if physical capacity is exhausted, the disclosure lists the rest rather than implying every link was painted.
 5. **Selection:**
    - the row gets an accent tint at 12 % and a 3 px bar *inside* the row (x = 4);
    - rows in the chain get `--link` or accent bars, and unrelated rows fade to 42 %;

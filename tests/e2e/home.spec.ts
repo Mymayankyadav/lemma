@@ -11,7 +11,7 @@ test('today desk shows resume, reviews, proposals and projects with no runtime e
  page.on('pageerror',error=>errors.push(error.message))
  page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
  await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible()
- await expect(page.getByRole('region',{name:'Resume where you stopped'})).toContainText('Compactness, step 2 of 4')
+ await expect(page.getByRole('region',{name:'Resume where you stopped'})).toContainText('Real Analysis · step 2 of 4')
  await expect(page.getByRole('link',{name:/cards due/i}).getByText('23',{exact:true})).toBeVisible()
  await expect(page.getByRole('link',{name:/6 proposals to approve/i}).getByText('6',{exact:true})).toBeVisible()
  await expect(page.getByText('to approve')).toBeVisible()
@@ -25,15 +25,16 @@ test('today desk shows resume, reviews, proposals and projects with no runtime e
  expect(errors).toEqual([])
 })
 
-test('Last chat is a 56px passive row with a single Copy action',async({page,context})=>{
+test('Continue is a clipped 64px passive row with a single Copy action',async({page,context})=>{
  await context.grantPermissions(['clipboard-read','clipboard-write'])
  const handoff=page.getByRole('region',{name:'Resume where you stopped'})
  await expect(handoff).toBeVisible()
- await expect(handoff).toContainText('Compactness, step 2 of 4')
+ await expect(handoff).toContainText('Real Analysis · step 2 of 4')
  const box=await handoff.boundingBox()
  expect(box).not.toBeNull()
- expect(box!.height).toBeLessThanOrEqual(56)
- await expect(handoff.locator('svg')).toHaveCount(0)
+ expect(box!.height).toBeGreaterThanOrEqual(64)
+ await expect(handoff.getByRole('button',{name:'Copy resume prompt'}).locator('svg')).toHaveCount(1)
+ await expect(handoff).toContainText('Compactness')
  await expect(page.getByRole('button',{name:'Resume',exact:true})).toHaveCount(0)
  await expect(page.getByRole('button',{name:'Choose chat app or copy prompt'})).toHaveCount(0)
  await handoff.getByRole('button',{name:'Copy resume prompt'}).click()
@@ -57,7 +58,7 @@ test('home shortcuts navigate to review, proposals and the project path',async({
 })
 
 for(const theme of ['graph','graph-night'] as const){
- test(`UI-6b goal-first Today and keyboard Metro timeline: ${theme}`,async({page})=>{
+ test(`LOOK-3c goal-first Today and one-link Route: ${theme}`,async({page})=>{
   await page.goto(`./?demo=1&theme=${theme}#/`)
   const goals=page.getByRole('region',{name:'Distance to your goals'})
   const cards=page.getByRole('region',{name:'Cards'})
@@ -73,13 +74,12 @@ for(const theme of ['graph','graph-night'] as const){
   })
   expect(order).toBe(true)
   const algebra=goals.getByRole('article',{name:/Goal progress for Real Analysis/})
-  await expect(algebra).toContainText(/3\/12 checkpoints/)
-  const timeline=algebra.locator('[data-timeline="metro"]')
-  await expect(timeline.getByRole('button')).toHaveAttribute('aria-label',/Arrow keys to browse; Enter to open/)
+  await expect(algebra.locator('[data-goal-now]')).toContainText('3 of 12')
+  const timeline=algebra.locator('[data-route-mode="today"]')
+  await expect(timeline.getByRole('link')).toHaveAttribute('aria-label',/open current checkpoint CP4/)
   await page.screenshot({path:`test-results/screens/review/ui5b-goals-${theme}.png`,fullPage:true})
-  await timeline.getByRole('button').focus()
-  await page.keyboard.press('ArrowRight')
-  await page.keyboard.press('Enter')
+  await expect(timeline.getByRole('button')).toHaveCount(0)
+  await timeline.getByRole('link').click()
   await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\//)
  })
 }
