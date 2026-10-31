@@ -36,10 +36,10 @@ describe('project stage jump navigation',()=>{
  });
 
  it('bounds an 80-character mathematical stage name in a recoverable chip frame',()=>{
-  const longStage='\\\\operatorname{'+'verylongmathematicalstage'.repeat(5)+'}';
+  const longStage='\\operatorname{'+'verylongmathematicalstage'.repeat(5)+'}';
   const checkpoints:CheckpointView[]=Array.from({length:6},(_,i)=>({
    id:'long-cp-'+i,code:'CP'+(i+1),title:'Checkpoint '+i,position:i,
-   stage:i===0?'\\\\('+longStage+'\\\\)':'Stage '+i,
+   stage:i===0?'\\('+longStage+'\\)':'Stage '+i,
    ui:i===0?'now':'next',currentStep:1,stepsTotal:1,recheckDue:null,dueCards:0,
   }));
   const detail={project:{id:'long-stage',slug:'long-stage',targetDate:null},
