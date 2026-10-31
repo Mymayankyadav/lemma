@@ -149,8 +149,145 @@ export default function Page() {
             >
               <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
               <span className="min-w-0 flex-1">
-                <span data-card-front="" className="line-clamp-2 min-w-0 overflow-hidden font-math text-headline leading-snug text-ink">
-                  <Tex source={row.front} />
+                <span data-card-front=""
+                  className={`min-w-0 max-w-full font-math text-headline leading-snug text-ink ${row.front.includes('
+                <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
+                  <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
+                  <span>{row.status === "suspended" ? "Paused" : relative(row.due)}</span>
+                  {row.openComments > 0 && <span className="text-amber">{row.openComments} tutor {row.openComments===1?"note":"notes"}</span>}
+                </span>
+              </span>
+              {row.openComments > 0 && (
+                <span
+                  aria-label={`${row.openComments} open notes`}
+                  className="h-7 w-[2px] shrink-0 bg-amber"
+                />
+              )}
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="py-12 text-center">
+          <h2 className="text-card font-semibold">No cards match</h2>
+          <Button
+            variant="text"
+            onClick={() => {
+              setSearch("");
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Clear filters
+          </Button>
+        </div>
+      )}
+      <Sheet
+        open={creating}
+        onClose={closeCreating}
+        title="New card"
+      >
+        <Editor
+          creating
+          busy={create.isPending}
+          onSubmit={(v) => void save(v)}
+        />
+      </Sheet>
+    </Screen>
+  );
+}
+)?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden'}`}
+                  style={row.front.includes('
+                <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
+                  <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
+                  <span>{row.status === "suspended" ? "Paused" : relative(row.due)}</span>
+                  {row.openComments > 0 && <span className="text-amber">{row.openComments} tutor {row.openComments===1?"note":"notes"}</span>}
+                </span>
+              </span>
+              {row.openComments > 0 && (
+                <span
+                  aria-label={`${row.openComments} open notes`}
+                  className="h-7 w-[2px] shrink-0 bg-amber"
+                />
+              )}
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="py-12 text-center">
+          <h2 className="text-card font-semibold">No cards match</h2>
+          <Button
+            variant="text"
+            onClick={() => {
+              setSearch("");
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Clear filters
+          </Button>
+        </div>
+      )}
+      <Sheet
+        open={creating}
+        onClose={closeCreating}
+        title="New card"
+      >
+        <Editor
+          creating
+          busy={create.isPending}
+          onSubmit={(v) => void save(v)}
+        />
+      </Sheet>
+    </Screen>
+  );
+}
+)?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}>
+                  <span className={row.front.includes('
+                <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
+                  <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
+                  <span>{row.status === "suspended" ? "Paused" : relative(row.due)}</span>
+                  {row.openComments > 0 && <span className="text-amber">{row.openComments} tutor {row.openComments===1?"note":"notes"}</span>}
+                </span>
+              </span>
+              {row.openComments > 0 && (
+                <span
+                  aria-label={`${row.openComments} open notes`}
+                  className="h-7 w-[2px] shrink-0 bg-amber"
+                />
+              )}
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="py-12 text-center">
+          <h2 className="text-card font-semibold">No cards match</h2>
+          <Button
+            variant="text"
+            onClick={() => {
+              setSearch("");
+              setQuery("");
+              setFilter("all");
+            }}
+          >
+            Clear filters
+          </Button>
+        </div>
+      )}
+      <Sheet
+        open={creating}
+        onClose={closeCreating}
+        title="New card"
+      >
+        <Editor
+          creating
+          busy={create.isPending}
+          onSubmit={(v) => void save(v)}
+        />
+      </Sheet>
+    </Screen>
+  );
+}
+)?'inline-block min-w-max pr-4':undefined}><Tex source={row.front} /></span>
                 </span>
                 <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
                   <span className="inline-flex w-[46px] shrink-0 justify-center rounded-[3px] border border-edge px-1 py-0.5 tabular-nums">{row.checkpointCode ?? "—"}</span>
