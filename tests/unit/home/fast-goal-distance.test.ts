@@ -11,6 +11,7 @@ describe('FIX #507 cold Today goal-summary entry',()=>{
   expect(shouldUseFastGoals(Array.from({length:60},()=>project()))).toBe(true)
   expect(shouldUseFastGoals(Array.from({length:5},()=>project()))).toBe(true)
   expect(shouldUseFastGoals(Array.from({length:4},()=>project()))).toBe(false)
+  expect(shouldUseFastGoals([...Array.from({length:4},()=>project()),project('planning')])).toBe(true)
   expect(shouldUseFastGoals([...Array.from({length:4},()=>project()),project('archived')])).toBe(false)
   expect(shouldUseFastGoals([])).toBe(false)
  })
