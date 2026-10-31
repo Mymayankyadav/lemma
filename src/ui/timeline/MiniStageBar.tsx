@@ -30,7 +30,7 @@ export function MiniStageBar({project}:{project:ProjectSummary}){
  return <div ref={bar} role="img" aria-label={pct+' percent complete'+(project.scheduleHeadline?', '+project.scheduleHeadline:'')}
   className="relative h-6 min-w-12 flex-1" data-mini-metro="">
   <div className="absolute inset-x-0 top-[9px] flex h-2 overflow-hidden rounded-sm bg-fill-2" data-stage-bar="">
-   {segments.map((segment,index)=><span key={index} data-stage-segment={segment.label}
+   {segments.map((segment,index)=><span key={index} data-stage-segment={segment.label} data-track-state={segment.schedule}
     title={segment.label+': '+segment.done+'/'+segment.total}
     className="relative h-full min-w-0 border-r border-[var(--card)] last:border-r-0"
     style={{flex:Math.max(1,segment.total),background:'var(--line)'}}>
