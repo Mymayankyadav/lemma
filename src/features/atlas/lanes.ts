@@ -1,0 +1,50 @@
+import type {Arc} from './tree';
+
+export interface AtlasLane{
+ x:number;
+ fromY:number;
+ toY:number;
+ d:string;
+}
+const X0=8;
+const LANES=[74,65,56,47,38,29,20] as const;
+const ROW=44;
+
+/** A notebook-margin wire: two horizontal strokes and a vertical lane, with
+ * 5px rounded elbows. No cubic bows or screen-space camera.
+ */
+export function atlasLanePath(x:number,fromY:number,toY:number):string{
+ const sign=toY>=fromY?1:-1;
+ const r=Math.min(5,Math.abs(toY-fromY)/2);
+ if(r===0)return `M ${X0} ${fromY} H ${x}`;
+ return `M ${X0} ${fromY} H ${x-r} Q ${x} ${fromY} ${x} ${fromY+sign*r} V ${toY-sign*r} Q ${x} ${toY} ${x-r} ${toY} H ${X0}`;
+}
+
+/** Longest connections receive the outer lanes. Where several links share an
+ * endpoint, reuse its lane as a trunk; otherwise prefer an unoccupied 9px
+ * track over the same vertical interval. Bounded to seven tracks in 84px.
+ */
+export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[]):Map<string,AtlasLane>{
+ const sorted=[...arcs].sort((a,b)=>
+  Math.abs(b.to-b.from)-Math.abs(a.to-a.from)||a.key.localeCompare(b.key));
+ const placed:{arc:Arc;x:number;low:number;high:number}[]=[];
+ const result=new Map<string,AtlasLane>();
+ for(const arc of sorted){
+  const fromY=centers?.[arc.from]??arc.from*ROW+ROW/2;
+  const toY=centers?.[arc.to]??arc.to*ROW+ROW/2;
+  const low=Math.min(fromY,toY),high=Math.max(fromY,toY);
+  const shared=placed.find(p=>p.arc.from===arc.from||p.arc.to===arc.to);
+  let x=shared?.x;
+  if(x===undefined){
+   let best=Infinity;
+   for(const lane of LANES){
+    const collisions=placed.filter(p=>p.x===lane&&low<=p.high&&high>=p.low).length;
+    if(collisions<best){best=collisions;x=lane;if(best===0)break}
+   }
+  }
+  x??=LANES[LANES.length-1];
+  placed.push({arc,x,low,high});
+  result.set(arc.key,{x,fromY,toY,d:atlasLanePath(x,fromY,toY)});
+ }
+ return result;
+}
