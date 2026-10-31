@@ -24,9 +24,12 @@ export function atlasLanePath(x:number,fromY:number,toY:number):string{
  * endpoint, reuse its lane as a trunk; otherwise prefer an unoccupied 9px
  * track over the same vertical interval. Bounded to seven tracks in 84px.
  */
-export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[]):Map<string,AtlasLane>{
+export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[],priorityKeys?:ReadonlySet<string>):Map<string,AtlasLane>{
  const physicalSpan=(arc:Arc)=>Math.abs((centers?.[arc.to]??arc.to*ROW+ROW/2)-(centers?.[arc.from]??arc.from*ROW+ROW/2));
- const sorted=[...arcs].sort((a,b)=>physicalSpan(b)-physicalSpan(a)||a.key.localeCompare(b.key));
+ // Selected prerequisite chains take capacity before unrelated connections.
+ // The finite 84px gutter still cannot show every possible overlapping link;
+ // any omitted links remain disclosed rather than silently overpainted.
+ const sorted=[...arcs].sort((a,b)=>Number(priorityKeys?.has(b.key)??false)-Number(priorityKeys?.has(a.key)??false)||physicalSpan(b)-physicalSpan(a)||a.key.localeCompare(b.key));
  const placed:{arc:Arc;x:number;low:number;high:number}[]=[];
  const result=new Map<string,AtlasLane>();
  for(const arc of sorted){
