@@ -39,15 +39,17 @@ for(const width of [360,390] as const){
     probe.style.color=`var(${role})`
     return getComputedStyle(probe).color
    })
+   probe.style.backgroundColor='var(--accent)'
+   const accent=getComputedStyle(probe).backgroundColor
    probe.remove()
    return roles.map((role,index)=>{
     const button=section.querySelectorAll('button')[index]
     const label=button.querySelector('span')!
     const dot=label.querySelector('span')!
-    return {role,expected:colors[index],
+    return {role,expected:colors[index],accent,
      label:getComputedStyle(label).color,dot:getComputedStyle(dot).backgroundColor,
      button:getComputedStyle(button).backgroundColor,
-     height:button.getBoundingClientRect().height}
+     width:button.getBoundingClientRect().width,height:button.getBoundingClientRect().height}
    })
   })
   expect(new Set(actual.map(a=>a.expected)).size).toBe(4)
@@ -56,8 +58,11 @@ for(const width of [360,390] as const){
   for(const grade of actual){
    expect(grade.label).toBe(grade.expected)
    expect(grade.dot).toBe(grade.expected)
+   expect(grade.width).toBeGreaterThanOrEqual(44)
    expect(grade.height).toBeGreaterThanOrEqual(44)
+   expect(grade.button).not.toBe(grade.accent)
   }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(0)
   await page.screenshot({path:`test-results/screens/look-0/review-grades-${theme}-${width}.png`,fullPage:true})
  })
 }
