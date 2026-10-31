@@ -36,7 +36,8 @@ function GoalCard({project,events}:{project:ProjectSummary;events:Events|undefin
  const targetDisplay=target?new Date(target+'T12:00:00').toLocaleDateString('en',{month:'short',day:'numeric'}):null
  const finishDisplay=estimate.finish?.toLocaleDateString('en',{day:'numeric',month:'short'})??null
  return <Slab as="article" aria-label={'Goal progress for '+project.title}
-  data-goal-card="" className="flex min-w-0 flex-col gap-1 p-3">
+  data-goal-card="" className="flex min-w-0 flex-col gap-1 p-3"
+  style={{scrollMarginBottom:"calc(var(--tab) + env(safe-area-inset-bottom) + 24px)"}}>
   <div className="flex min-w-0 items-start gap-2">
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <div className="min-w-0 flex-1">
