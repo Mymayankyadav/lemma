@@ -18,7 +18,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
  const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0),cancelled=useRef(new Set<number>());
  const [queue,setQueue]=useState<QueueEntry[]>([]),[tick,setTick]=useState(0),[editing,setEditing]=useState<string|null>(null),
-  [title,setTitle]=useState(''),[kind,setKind]=useState<SourceKind>('other'),[confirm,setConfirm]=useState<string|null>(null),[sourcePages,setSourcePages]=useState<Record<string,number>>({});
+  [title,setTitle]=useState(''),[kind,setKind]=useState<SourceKind>('other'),[confirm,setConfirm]=useState<string|null>(null),[sourcePages,setSourcePages]=useState<Record<string,number>>({}),[openKind,setOpenKind]=useState<SourceKind|'none'|null>(null);
  const patch=(entryId:number,changes:Partial<QueueEntry>)=>setQueue(old=>old.map(x=>x.id===entryId?{
    ...x,...changes,
    pagesRead:changes.progress?Math.max(x.pagesRead,changes.progress.phase==='reading'||changes.progress.phase==='done'?changes.progress.page:0):x.pagesRead
@@ -94,8 +94,8 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
    {unknownSizes>0&&<p className="text-caption text-ink-3">{unknownSizes} source {unknownSizes===1?'size':'sizes'} unknown; actual storage may be higher.</p>}
   </div>
   {grouped.map(group=><div key={group.kind} className="flex flex-col gap-2">
-   <h3 className="text-label font-semibold uppercase tracking-wider text-ink-2">{group.kind} · {group.rows.length}</h3>
-   {group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
+   <button type="button" aria-expanded={(openKind??grouped[0]?.kind)===group.kind} className="flex min-h-11 items-center justify-between gap-2 text-left text-label font-semibold uppercase tracking-wider text-ink-2" onClick={()=>setOpenKind((openKind??grouped[0]?.kind)===group.kind?'none':group.kind)}><span>{group.kind} · {group.rows.length}</span><span className="text-amber">{(openKind??grouped[0]?.kind)===group.kind?'Fold':'Open'}</span></button>
+   {(openKind??grouped[0]?.kind)===group.kind&&group.rows.slice((sourcePages[group.kind]??0)*10,(sourcePages[group.kind]??0)*10+10).map(source=><Tile key={source.id} className="flex flex-col gap-2 p-3">
     <div className="flex items-center gap-3">
      <FileText size={20} className="shrink-0 text-amber"/>
      <div className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
      <button type="button" className="min-h-11 text-label text-ink-2" onClick={()=>setConfirm(null)}>Cancel</button>
     </div>}
    </Tile>)}
-   {group.rows.length>10&&<div className="flex items-center justify-between gap-2 text-label text-ink-3">
+   {(openKind??grouped[0]?.kind)===group.kind&&group.rows.length>10&&<div className="flex items-center justify-between gap-2 text-label text-ink-3">
     <button type="button" disabled={!(sourcePages[group.kind]??0)} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:Math.max(0,(p[group.kind]??0)-1)}))}>Previous</button>
     <span>{Math.min(group.rows.length,(sourcePages[group.kind]??0)*10+1)}–{Math.min(group.rows.length,((sourcePages[group.kind]??0)+1)*10)} of {group.rows.length}</span>
     <button type="button" disabled={((sourcePages[group.kind]??0)+1)*10>=group.rows.length} className="min-h-11 px-3 text-amber disabled:opacity-40" onClick={()=>setSourcePages(p=>({...p,[group.kind]:(p[group.kind]??0)+1}))}>More</button>
