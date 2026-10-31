@@ -42,3 +42,13 @@ test('cards retain the real renderer for mathematical questions',async({page})=>
  await note.fill('Replace $K/k$ with $H\\mapsto K^H$');
  await expect(page.getByRole('region',{name:'Math preview'}).locator('.katex')).toHaveCount(2);
 });
+
+test('card library renders mathematical fronts instead of stripping command names',async({page})=>{
+ await page.goto('/lemma/?demo=stress#/cards');
+ await page.getByLabel('Search cards').fill('longexpression');
+ const row=page.getByRole('link',{name:/longexpression/}).first();
+ await expect(row).toBeVisible();
+ await expect(row.locator('.katex')).toBeVisible();
+ await expect(row).not.toContainText(/operatorname|mathbb|limxto|frac[a-z]/i);
+ await page.screenshot({path:'test-results/screens/math-card-list.png',fullPage:true});
+});
