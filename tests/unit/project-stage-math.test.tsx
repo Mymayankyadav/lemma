@@ -1,4 +1,5 @@
 import {renderToStaticMarkup} from 'react-dom/server';
+import {MemoryRouter} from 'react-router';
 import {describe,expect,it,vi} from 'vitest';
 import type {CheckpointView,ProjectDetail} from '../../src/data/types';
 import {Stages} from '../../src/features/project/PathsView';
@@ -21,7 +22,7 @@ describe('project stage jump navigation',()=>{
    pendingProposals:0,
   } as unknown as ProjectDetail;
   const container=document.createElement('div');
-  container.innerHTML=renderToStaticMarkup(<Stages detail={detail}/>);
+  container.innerHTML=renderToStaticMarkup(<MemoryRouter><Stages detail={detail}/></MemoryRouter>);
   const navigation=container.querySelector('nav[aria-label="Jump to stage"]');
   const firstChip=navigation?.querySelector('[data-stage-chip="0"]');
   expect(navigation?.querySelectorAll('[data-stage-chip]')).toHaveLength(6);
