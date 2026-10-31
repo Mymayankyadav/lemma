@@ -72,7 +72,15 @@ export default function Page(){
    <Search size={19}/><span className="sr-only">Search cards</span>
    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search cards" className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-3"/>
   </label>
-  <div className="flex min-w-0 flex-wrap gap-2" aria-label="Card filters">
+  <div role="group" aria-label="Card filters" className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
+   <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
+   {projects.data?.map(p=><Chip key={p.id} className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
+    <span aria-hidden="true">{p.subject.glyph}</span><span className="whitespace-nowrap">{p.title}</span>
+   </Chip>)}
+   <Chip className="shrink-0 whitespace-nowrap" selected={onlyComments} onClick={()=>setOnlyComments(v=>!v)}>Has notes</Chip>
+   <Chip className="shrink-0 whitespace-nowrap" selected={noteStatus==='suspended'} onClick={()=>setNoteStatus(v=>v==='suspended'?'':'suspended')}>Paused</Chip>
+  </div>
+  <div className="flex min-w-0 flex-wrap gap-2" aria-label="Advanced card filters">
    <label className="min-w-0 flex-1 text-label text-ink-2">Project
     <select aria-label="Filter project" value={project} onChange={e=>{setProject(e.target.value);setCheckpoint('')}}
      className="mt-1 min-h-11 w-full min-w-0 rounded-ctl border border-edge bg-well px-2 text-body text-ink">
