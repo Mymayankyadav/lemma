@@ -109,6 +109,15 @@ it('uses a safe plain-label fast path without bypassing mathematics',()=>{
  expect(isPlainAtlasLabel('<img src=x>')).toBe(false);
 });
 
+it('keeps long plain labels scrollable and fully named for accessibility',()=>{
+ const node={...tree.nodes.get('idea')!,depth:1,glyph:null,total:1,done:0,revisit:0,due:0,rank:0,
+  name:'A very long mathematical topic whose complete title should remain discoverable'};
+ const html=renderToStaticMarkup(createElement(Row,{node,open:false,tone:'none',match:false,onToggle:()=>{},onSelect:()=>{}}));
+ expect(html).toContain('overflow-x:auto');
+ expect(html).toContain('title="A very long mathematical topic whose complete title should remain discoverable"');
+ expect(html).toContain('aria-label="A very long mathematical topic whose complete title should remain discoverable');
+});
+
 it('renders plain Atlas rows without Markdown while preserving real KaTeX rows',()=>{
  const node={...tree.nodes.get('idea')!,depth:1,glyph:null,total:1,done:0,revisit:0,due:0,rank:0};
  const props={node,open:false,tone:'none' as const,match:false,onToggle:()=>{},onSelect:()=>{}};
