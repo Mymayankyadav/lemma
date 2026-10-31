@@ -21,7 +21,7 @@ const graph:AtlasGraph={
 };
 
 describe('LOOK-4b cold Atlas tree identity cache',()=>{
- it('does not rebuild an unchanged query graph on StrictMode's repeated render',()=>{
+ it("does not rebuild an unchanged query graph on repeated render",()=>{
   const first=buildAtlasTree(graph);
   expect(buildAtlasTree(graph)).toBe(first);
   // A new immutable query snapshot must produce a new derived tree.
