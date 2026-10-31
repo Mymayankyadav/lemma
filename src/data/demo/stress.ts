@@ -140,6 +140,33 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
     }
   }
 
+  // F2: exercise the per-project source limit, not just the first project.
+  // Page counts are metadata; materialising thousands of dummy PDF pages per
+  // source would turn the fixture into a memory test instead of a UI stress test.
+  const firstSource = data.sources.find(source => source.projectId === baseProject.id);
+  if (!firstSource) throw Error("Stress fixture requires a seeded project source");
+  const sourceKinds = ["book", "notes", "slides", "problems", "syllabus", "exam", "other"] as const;
+  const sourceTarget = extreme ? 100 : 30;
+  const existingByProject = new Map<string,number>();
+  for (const source of data.sources)
+    existingByProject.set(source.projectId,(existingByProject.get(source.projectId)??0)+1);
+  for (const [projectIndex,project] of data.projects.entries()) {
+    const existing = existingByProject.get(project.id)??0;
+    for (let i=existing;i<sourceTarget;i++) {
+      data.sources.push({
+        ...firstSource,
+        id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
+        title: `Source ${i+1}: mathematical notes and proofs`,
+        short: `stresssrc${i}`, filename:`source-${i+1}.pdf`,
+        kind:sourceKinds[i%sourceKinds.length],position:i,
+        pageCount:extreme?3000:1200,
+        status:"ready",hasText:false,outline:[],pages:[],
+        sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
+        addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
+      });
+    }
+  }
+
   // Audit #461: pressure-test the source list for every project, while materialising
   // 1,200/3,000 searchable page bodies only in representative PDFs. Other synthetic
   // sources model scanned/metadata-only PDFs; no fake binary is stored or billed.
@@ -235,12 +262,31 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   }
   data.sessions = [];
   for (let i = 0; i < sessionCount; i++) {
-    const project = data.projects[i % data.projects.length];
+    const project = baseProject;
     data.sessions.push({
       ...baseSession, id: `stress-session-${i}`, projectId: project.id,
-      number: Math.floor(i / projectCount) + 1, checkpointCode: `CP${(i % 36) + 1}`,
+      number: i + 1, checkpointCode: `CP${(i % 36) + 1}`,
       goal: `Study session ${i + 1}`, startedAt: `@day:-${i % 90}:0.3:0`,
-      lastActivityAt: `@day:-${i % 90}:0.6:0`, events: [],
+      lastActivityAt: `@day:-${i % 90}:0.6:0`,
+      // Keep one real heavy session at S7 of the primary project, without
+      // multiplying event memory across all 1,000 sessions.
+      events: i === 6
+        ? Array.from({length: extreme ? 400 : 150},(_,n)=>{
+          const phase=n % 12;
+          const kind=phase<9?'hint':phase===9?'attempt':phase===10?'evidence':'recheck';
+          return {
+            id:n+1,kind,
+            body:kind==='hint'?`Hint ${n+1}: isolate the essential hypothesis.`
+              :kind==='attempt'?`Attempt ${n+1}: justify each implication.`
+              :kind==='evidence'?`Evidence ${n+1}: a complete argument is recorded.`
+              :`Recheck ${n+1}: repeat without referring to the hint.`,
+            outcome:kind==='evidence'?'demonstrated':null,
+            hintLevel:kind==='hint'?Math.min(20,phase+1):null,
+            checkpointCode:`CP${(i % 36)+1}`,
+            createdAt:new Date(Date.UTC(2026,9,31,0,n)).toISOString(),
+          } as const;
+        })
+        : [],
     });
   }
   // Keep a real plan-change proposal at the route exercised by the ST-0
