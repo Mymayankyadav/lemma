@@ -1,8 +1,0 @@
-/* Successive cloze words ink in on reveal; calm/reduced motion is immediately readable. */
-.review-front .cz.cza{animation:cloze-ink .52s ease-out both}
-.review-front .cz.cza:nth-of-type(2){animation-delay:.07s}
-.review-front .cz.cza:nth-of-type(3){animation-delay:.14s}
-.review-front .cz.cza:nth-of-type(n+4){animation-delay:.21s}
-@keyframes cloze-ink{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0)}}
-html[data-effects="calm"] .review-front .cz.cza{animation:none}
-@media(prefers-reduced-motion:reduce){.review-front .cz.cza{animation:none}}
