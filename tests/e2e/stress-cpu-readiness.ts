@@ -16,7 +16,7 @@ export async function assertRouteLoaded(
   '/p/real-analysis/cp/CP4':'section[aria-label="Checkpoint steps"]',
   '/s/real-analysis/7':'section[aria-label="Reasoning"]',
   '/proposals':'section[aria-label="Proposal groups"]',
-  '/proposals/proposal-6':'[role="region"][aria-label="Plan errata"]',
+  '/proposals/proposal-6':'section[aria-label="Plan errata"]',
   '/review':'h2:has-text("Decks")',
   '/review/run':'[data-review-card-scroll]',
   '/review/done':'section[aria-label="Review statistics"]',
