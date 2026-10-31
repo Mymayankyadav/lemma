@@ -1573,7 +1573,9 @@ export class DemoAdapter implements LemmaApi {
     found(
       this.store.misconceptions.find((m) => m.id === id),
       "Misconception",
-    ).resolvedAt = th  async getAtlas(): Promise<AtlasGraph> {
+    ).resolvedAt = this.iso();
+  }
+  async getAtlas(): Promise<AtlasGraph> {
     // A stress profile has thousands of ideas and tens of thousands of notes.
     // Index once: scanning every note, checkpoint and due card per concept is
     // quadratic and blocked the Atlas route for >8s at 4x CPU.
@@ -1637,9 +1639,6 @@ export class DemoAdapter implements LemmaApi {
         };
       }),
       links: clone(this.store.links),
-    };
-  }
-),
     };
   }
   async pinConcept(id: string, x: number | null, y: number | null) {
