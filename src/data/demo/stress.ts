@@ -133,7 +133,7 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
         || (projectIndex === projectCount - 1 && number === 1);
       const events = fullHistory
         ? Array.from({length: eventCount}, (_, eventIndex) => {
-            const kind = eventKinds[eventIndex % eventKinds.length];
+            const kind = eventKinds[Math.floor(eventIndex / 12) % eventKinds.length];
             return {
               id: projectIndex * sessionCount * eventCount + index * eventCount + eventIndex + 1,
               kind,
