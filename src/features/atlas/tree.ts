@@ -103,8 +103,11 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const rank=prerequisiteRank(nodes.keys(),links);
  // Child ordering may compare the same idea dozens of times. Parse its
  // checkpoint code once, not during every comparison in each sibling sort.
- const checkpointRanks=new Map<string,number>([...nodes].map(([id,node]):[string,number]=>[id,checkpointNumber(node)]));
- const taughtRanks=new Map<string,number|null>([...nodes].map(([id,node]):[string,number|null]=>[id,taughtCheckpoint(node)]));
+ const checkpointRanks=new Map<string,number>(),taughtRanks=new Map<string,number|null>();
+ for(const [id,node] of nodes){
+  checkpointRanks.set(id,checkpointNumber(node));
+  taughtRanks.set(id,taughtCheckpoint(node));
+ }
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
   const kids=n.children.map(c=>summarise(c,depth+1));
@@ -113,7 +116,9 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   n.done=(own&&n.status==='demonstrated'?1:0)+kids.reduce((s,k)=>s+k.done,0);
   n.revisit=(own&&n.status==='revisit'?1:0)+kids.reduce((s,k)=>s+k.revisit,0);
   n.due=n.dueCards+kids.reduce((s,k)=>s+k.due,0);
-  n.rank=Math.min(rank.get(id)??Number.MAX_SAFE_INTEGER,...kids.map(k=>k.rank));
+  let minRank=rank.get(id)??Number.MAX_SAFE_INTEGER;
+  for(const child of kids)if(child.rank<minRank)minRank=child.rank;
+  n.rank=minRank;
   if(n.synthetic||!own){
    n.status=n.revisit?'revisit':n.total&&n.done===n.total?'demonstrated':
     n.done>0||kids.some(k=>k.status==='in_progress')?'in_progress':n.status;
