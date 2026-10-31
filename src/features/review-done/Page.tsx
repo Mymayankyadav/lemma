@@ -51,6 +51,7 @@ export default function Page(){
  const roundTime=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
  const recalledAnswers=firstAnswers.filter(a=>a.rating>1);
  const recalled=recalledAnswers.length;
+ const compact=firstAnswers.length>24;
  const firstRecall=firstAnswers.length?Math.round(100*recalled/firstAnswers.length)+'%':'—';
  function retryMissed(){
   if(!settings.data||!missed.length)return;
@@ -97,10 +98,10 @@ export default function Page(){
     </div>}
     {recalled>0&&<div>
      <button type="button" className="min-h-11 text-label font-semibold text-amber" onClick={()=>setShowRecalled(v=>!v)}>
-      {recalled} recalled · {showRecalled?'Hide':'Show cards'}
+      {recalled} recalled · {compact?(showRecalled?'Hide':'Show cards'):'Show cards'}
      </button>
      {showRecalled&&<div className="flex flex-wrap gap-1.5">{recalledAnswers.map(a=><Link key={a.card.cardId}
-      to={'/cards/'+a.card.noteNo} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink-2">{'N'+a.card.noteNo}</Link>)}</div>}
+      title={a.card.projectSlug+' · '+(['','Again','Hard','Good','Easy'][a.rating]??'')} to={'/cards/'+a.card.noteNo} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink-2">{'N'+a.card.noteNo}</Link>)}</div>}
     </div>}
    </div>
   </section>
