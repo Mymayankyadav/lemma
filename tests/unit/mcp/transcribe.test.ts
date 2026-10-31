@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {validateTranscription} from '../../../supabase/functions/mcp/tools/transcribe';
+import {validateTranscription} from '../../../supabase/functions/mcp/transcribe-validation';
 
 describe('save_pages transcription validation',()=>{
  const page={page:1,text:'For $x<y$, the LaTeX $$x^2$$ remains verbatim.',confidence:'check' as const};
