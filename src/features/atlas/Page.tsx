@@ -88,16 +88,12 @@ export default function Page(){
   update();const observer=new ResizeObserver(update);observer.observe(el);
   return ()=>observer.disconnect();
  },[query.isPending]);
- // Calculate the effective open set on the first render, not in an effect.
- // Keep the same Set instance when the effect stores it: rows/arcs stay memoized
- // instead of building the 2,500-idea/8,000-link graph a second time.
+ // Resolve saved/default folds synchronously. A null override means the
+ // user has not changed them yet; do not schedule a redundant state update
+ // that would reconcile thousands of tree rows on the next frame.
  const initialOpen=useMemo(()=>tree?initialExpanded(tree,saved.current?.expanded):new Set<string>(),[tree]);
- useEffect(()=>{
-  if(!tree||expanded)return;
-  setExpanded(initialOpen);
- },[tree,expanded,initialOpen]);
- useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
  const open=expanded??initialOpen;
+ useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
  const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
@@ -126,7 +122,7 @@ export default function Page(){
  const reveal=useCallback((id:string)=>{
   if(!tree)return;
   setSearch('');setSearching(false);setRecheckOnly(false);
-  setExpanded(prev=>new Set([...(prev??[]),...ancestors(tree,id)]));
+  setExpanded(prev=>new Set([...(prev??initialOpen),...ancestors(tree,id)]));
   // Scroll to the target's absolute row before asking the windowed list for
   // its element; otherwise a distant idea does not exist in the DOM yet.
   const expandedPath=new Set([...open,...ancestors(tree,id)]);
@@ -140,9 +136,9 @@ export default function Page(){
    const el=scroller.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`);
    el?.scrollIntoView({block:'center',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
   }));
- },[tree,open]);
+ },[tree,open,initialOpen]);
  const trace=(id:string)=>{reveal(id);select(id,false)};
- const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev??[]);if(next.has(id))next.delete(id);else next.add(id);return next});
+ const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev??initialOpen);if(next.has(id))next.delete(id);else next.add(id);return next});
  const onRow=(node:AtlasNode)=>{
   // From a search or the re-check list, jump to the idea in its place in the tree.
   if(filter){trace(node.id);return}
@@ -156,19 +152,19 @@ export default function Page(){
   // React only when ?focus= itself changes to a slug this page did not write: an incoming
   // link from elsewhere unfolds to the idea and opens it. (The URL updates a render after
   // a selection here, so comparing against the current selection would undo it.)
-  if(!tree||!expanded||focusSlug===seen.current)return;
+  if(!tree||focusSlug===seen.current)return;
   seen.current=focusSlug;
   if(!focusSlug||focusSlug===written.current)return;
   written.current=focusSlug;
   const found=[...tree.nodes.values()].find(n=>n.slug===focusSlug);
   if(found){reveal(found.id);setSelectedId(found.id);setDetails(true)}
- },[tree,expanded,focusSlug,reveal]);
+ },[tree,focusSlug,reveal]);
  const depthOf=useMemo(()=>{
-  if(!tree||!expanded)return null;
-  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===expanded.size&&[...set].every(x=>expanded.has(x)))return d}
+  if(!tree)return null;
+  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===open.size&&[...set].every(x=>open.has(x)))return d}
   const all=[...tree.nodes.values()].filter(n=>n.children.length);
-  return all.every(n=>expanded.has(n.id))?99:null;
- },[tree,expanded]);
+  return all.every(n=>open.has(n.id))?99:null;
+ },[tree,open]);
  const near=selected&&tree?neighbours(tree,selected.id):null;
 
  if(query.isPending)return <main aria-label="Atlas" className="h-dvh p-4"><Skeleton h={52}/><div className="mt-5"><Skeleton h="65%"/></div></main>;
