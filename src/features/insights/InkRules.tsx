@@ -28,7 +28,7 @@ export function SubjectRules({data,format}: {data:SubjectMinutes[];format:(minut
      <button type="button" title={plainMath(row.subject.name)} aria-label={plainMath(row.subject.name)} onClick={()=>setFullLabel(fullLabel===row.subject.name?null:row.subject.name)}
       className={`flex min-h-11 min-w-0 flex-1 items-center text-left text-ink-2 ${fullLabel===row.subject.name?'break-words':'overflow-hidden'}`}>
       <span aria-hidden="true" className="mr-2 shrink-0 font-math italic text-amber">{row.subject.glyph}</span>
-      <span className={fullLabel===row.subject.name?'min-w-0 max-w-full overflow-x-auto break-words':'min-w-0 clip-1'}
+      <span className={fullLabel===row.subject.name?'min-w-0 max-w-full overflow-x-auto break-words text-body':'min-w-0 clip-1 text-body'}
        style={fullLabel===row.subject.name?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}><Tex source={row.subject.name}/></span>
      </button>
      <span className="shrink-0 tabular-nums text-ink-2">{format(row.minutes)}</span>
