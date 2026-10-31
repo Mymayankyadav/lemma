@@ -1,0 +1,86 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [0 << /S /r >> 1 << /S /D /St 1 >>] >> /Outlines 10 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 113 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+50 740 Td
+(Front matter) Tj
+T*
+(A short introduction to the mathematical study record.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 127 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+50 740 Td
+(Compactness) Tj
+T*
+(A com-) Tj
+T*
+(pact set admits a finite subcover of every open cover.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 106 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+50 740 Td
+(Continuity) Tj
+T*
+(A continuous image of a compact space is compact.) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Outlines /First 11 0 R /Last 11 0 R /Count 1 >>
+endobj
+11 0 obj
+<< /Title (Compactness) /Parent 10 0 R /Dest [6 0 R /XYZ null null null] >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000141 00000 n 
+0000000210 00000 n 
+0000000307 00000 n 
+0000000433 00000 n 
+0000000596 00000 n 
+0000000722 00000 n 
+0000000899 00000 n 
+0000001025 00000 n 
+0000001181 00000 n 
+0000001255 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R >>
+startxref
+1347
+%%EOF

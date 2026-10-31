@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './themes.css';
+@import './base.css';
+@import './surfaces.css';
+@import './effects.css';
+@import './graph.css';
+@theme inline {
+  --text-micro: var(--type-micro); --text-caption: var(--type-caption); --text-label: var(--type-label);
+  --text-body: var(--type-body); --text-body-l: var(--type-body-l); --text-headline: var(--type-headline);
+  --text-title-s: var(--type-title-s); --text-title: var(--type-title);
+  --text-num-l: var(--type-num-l); --text-num-xl: var(--type-num-xl);
+  --text-card: var(--type-card); --text-answer: var(--type-answer); --text-question: var(--type-question);
+  --color-obsidian: var(--obsidian); --color-obsidian-deep: var(--obsidian-deep);
+  --color-slab: var(--slab); --color-tile: var(--tile); --color-raised: var(--raised); --color-raised-2: var(--raised-2); --color-sheet: var(--sheet); --color-well: var(--well); --color-glass: var(--glass); --color-glass-strong: var(--glass-strong);
+  --color-edge: var(--edge); --color-edge-2: var(--edge-2); --color-edge-3: var(--edge-3); --color-fill-1: var(--fill-1); --color-fill-2: var(--fill-2);
+  --color-ink: var(--ink); --color-ink-soft: var(--ink-soft); --color-ink-2: var(--ink-2); --color-ink-3: var(--ink-3); --color-ink-4: var(--ink-4);
+  --color-amber: var(--amber); --color-amber-hi: var(--amber-hi); --color-amber-glow: var(--amber-glow); --color-amber-deep: var(--amber-deep); --color-amber-ink: var(--amber-ink); --color-amber-tint: var(--amber-tint); --color-amber-tint-2: var(--amber-tint-2); --color-amber-line: var(--amber-line); --color-amber-line-2: var(--amber-line-2);
+  --color-again: var(--again); --color-hard: var(--hard); --color-good: var(--good); --color-easy: var(--easy); --color-success-tint: var(--success-tint); --color-danger-tint: var(--danger-tint); --color-violet: var(--violet); --color-cyan: var(--cyan); --color-rose: var(--rose); --color-lime: var(--lime); --color-slate: var(--slate);
+  --radius-hero: var(--r-hero); --radius-sheet: var(--r-sheet); --radius-slab: var(--r-slab); --radius-btn: var(--r-btn); --radius-ctl: var(--r-ctl); --radius-chip: var(--r-chip); --radius-s: var(--r-s);
+  --font-ui: 'Instrument Sans', system-ui, sans-serif;
+  --font-math: 'STIX Two Text', Georgia, serif;
+}

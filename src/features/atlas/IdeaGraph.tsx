@@ -1,0 +1,78 @@
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {X} from 'lucide-react';
+import {Tex} from '../../ui/Tex';
+import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
+import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,neighbours,rowTone,visibleRows} from './tree';
+import {Row,StatusMark,Wires,toneColor} from './Outline';
+
+/**
+ * The Atlas's collapsible graph, embedded in a page: fold clusters, see their links
+ * merge, and trace one idea's chain. Used to review the ideas a plan would add.
+ */
+export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string;onCheckpoint?:(code:string)=>void}){
+ const branches=useMemo(()=>[...tree.nodes.values()].filter(n=>n.children.length),[tree]);
+ const ideas=useMemo(()=>[...tree.nodes.values()].filter(n=>!n.synthetic).length,[tree]);
+ // Small plans open fully; large ones open one level so the clusters and their links read first.
+ const initial=()=>ideas>14?expandedToDepth(tree,2):new Set(branches.map(n=>n.id));
+ const [expanded,setExpanded]=useState<Set<string>>(initial);
+ const [related,setRelated]=useState(false),[selectedId,setSelectedId]=useState<string|null>(null);
+ const box=useRef<HTMLDivElement>(null);
+ // A new proposal (a new tree) starts from a fresh view.
+ useEffect(()=>{setExpanded(initial());setSelectedId(null)},[tree]);
+ const rows=useMemo(()=>visibleRows(tree,expanded),[tree,expanded]);
+ const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
+ const arcs=useMemo(()=>arcsFor(tree,rows,kinds),[tree,rows,kinds]);
+ const focus=useMemo(()=>selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
+ const arcBudget=useMemo(()=>budgetArcs(tree,rows,expanded,arcs,focus),[tree,rows,expanded,arcs,focus]);
+ const selected=selectedId?tree.nodes.get(selectedId)??null:null;
+ const near=selected?neighbours(tree,selected.id):null;
+ const depth=useMemo(()=>{
+  for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===expanded.size&&[...set].every(x=>expanded.has(x)))return d}
+  return branches.every(n=>expanded.has(n.id))?99:null;
+ },[tree,expanded,branches]);
+ const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev);if(next.has(id))next.delete(id);else next.add(id);return next});
+ const jump=(id:string)=>{
+  setExpanded(prev=>new Set([...prev,...ancestors(tree,id)]));setSelectedId(id);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>box.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`)
+   ?.scrollIntoView({block:'nearest',behavior:'smooth'})));
+ };
+ const Names=({title,items,tone}:{title:string;items:AtlasNode[];tone:'up'|'down'})=>items.length?<p className="flex flex-wrap items-center gap-1.5">
+  <span className="text-caption font-semibold" style={{color:toneColor[tone]}}>{title}</span>
+  {items.map(n=><button key={n.id} type="button" onClick={()=>jump(n.id)} className="min-h-11 rounded-chip border border-edge px-2 text-label"><Tex source={n.name}/></button>)}
+ </p>:null;
+ return <div ref={box} className="flex flex-col gap-2" data-idea-graph="true">
+  <div role="toolbar" aria-label={label+' view'} className="flex flex-wrap items-center gap-2">
+   <div role="group" aria-label="Fold to depth" className="flex overflow-hidden rounded-ctl border border-edge">
+    {[1,2,3,99].map(d=><button key={d} type="button" aria-pressed={depth===d}
+     onClick={()=>setExpanded(d===99?new Set(branches.map(n=>n.id)):expandedToDepth(tree,d))}
+     className={'min-h-11 min-w-11 px-2 text-label '+(depth===d?'bg-amber-tint text-amber':'text-ink-2')}>{d===99?'All':d}</button>)}
+   </div>
+   <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
+    className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-amber-line-2 text-amber':'border-edge text-ink-2')}>
+    <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
+  </div>
+  {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge-2 bg-well p-3">
+   <div className="flex items-start gap-2">
+    <StatusMark node={selected}/>
+    <p className="min-w-0 flex-1 text-body font-semibold"><Tex source={selected.name}/></p>
+    <button type="button" aria-label="Clear selection" onClick={()=>setSelectedId(null)} className="-m-2 flex size-11 shrink-0 items-center justify-center text-ink-2"><X size={17}/></button>
+   </div>
+   {selected.blurb&&<Tex source={selected.blurb} className="block text-label text-ink-2"/>}
+   <Names title="Builds on" items={near.needs} tone="up"/>
+   <Names title="Opens up" items={near.unlocks} tone="down"/>
+   {selected.checkpointRefs.length>0&&<p className="flex flex-wrap items-center gap-1.5">
+    <span className="text-caption font-semibold text-ink-3">Taught in</span>
+    {selected.checkpointRefs.map(r=><button key={r.code} type="button" disabled={!onCheckpoint} onClick={()=>onCheckpoint?.(r.code)}
+     className="min-h-11 min-w-11 rounded-s border border-amber-line px-2 text-label font-semibold text-amber">{r.code}</button>)}
+   </p>}
+  </div>}
+  <div className="relative overflow-hidden rounded-ctl border border-edge" role="tree" aria-label={label}>
+   {rows.map(row=>{const node=tree.nodes.get(row.id)!;
+    return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false}
+     onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id)}}/>})}
+   <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>
+  </div>
+  {arcBudget.hidden>0&&<p role="status" className="text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
+ </div>;
+}
+export default IdeaGraph;

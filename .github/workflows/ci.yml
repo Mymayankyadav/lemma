@@ -1,0 +1,114 @@
+name: CI
+# FIX #255: isolated PostgreSQL acceptance gate follows in this PR.
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  # Each Playwright case runs exactly once; separate runners keep the growing
+  # S/X × Graph day/night suite below the 30-minute per-job limit. All four
+  # check runs must succeed, in addition to check, mcp-sql and qa3-screens.
+  e2e:
+    name: e2e-${{ matrix.shard }}-of-4
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens-shard-${{ matrix.shard }}
+          path: test-results/screens/
+          if-no-files-found: error
+          retention-days: 14
+
+  # Do not validate an incomplete shard: the 144 ST-0 PNG envelopes are
+  # checked only after every shard succeeds and all artifacts are combined.
+  qa3-screens:
+    needs: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: screens-shard-*
+          path: test-results/screens/
+          merge-multiple: true
+      - name: Validate QA-3b screenshot PNG envelopes
+        run: npx tsx scripts/qa3-screens.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa3-screenshot-structure
+          path: test-results/qa3/screenshot-structure.md
+          if-no-files-found: ignore
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens
+          path: test-results/screens/
+          if-no-files-found: ignore
+          retention-days: 14
+  mcp-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install pinned isolated PostgreSQL harness
+        run: npm install --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13
+      - name: Verify DB-2 action log, undo and owner isolation
+        run: node tests/mcp/db2.mjs
+      - name: Verify ST-5 owner-scoped aggregate and paging SQL
+        run: node tests/mcp/st5.mjs
+      - name: Verify DB-5 transcription provenance and reversible pages
+        run: node tests/mcp/db5.mjs
+      - name: Verify MCP-2 atomic transactions when available
+        if: hashFiles('tests/mcp/transactions.mjs') != ''
+        run: node tests/mcp/transactions.mjs

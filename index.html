@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#FAFAF6" />
+<script>
+      /* Graph paper before first paint, with migration from obsolete worlds. */
+      (function(){
+        var colors={graph:'#FAFAF6','graph-night':'#13171D'},mode='auto';
+        try{var saved=JSON.parse(localStorage.getItem('lemma.ui')||'null');
+          if(saved&&typeof saved==='object'){
+            if(['auto','day','night'].includes(saved.mode))mode=saved.mode;
+            else if(saved.theme==='graph')mode='day';
+            else if(saved.theme==='graph-night')mode='night';
+          }}catch(_){}
+        var query=new URLSearchParams(location.search);
+        if(['auto','day','night'].includes(query.get('mode')))mode=query.get('mode');
+        if(query.get('theme')==='graph')mode='day';
+        else if(query.get('theme')==='graph-night')mode='night';
+        else if(query.get('theme')==='system')mode='auto';
+        var actual=mode==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'graph-night':'graph'):mode==='day'?'graph':'graph-night';
+        document.documentElement.dataset.theme=actual;
+        document.documentElement.dataset.appearanceMode=mode;
+        document.documentElement.dataset.density='compact';
+        document.documentElement.dataset.effects='calm';
+        document.querySelector('meta[name="theme-color"]').setAttribute('content',colors[actual]);
+        try{localStorage.setItem('lemma.ui',JSON.stringify({mode:mode}))}catch(_){}
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
+    <title>Lemma</title>
+  </head>
+  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+</html>

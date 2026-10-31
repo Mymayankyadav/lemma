@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Card review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F7B538;text-decoration:none}
+a:hover{color:#FFD47E}
+button{font:inherit;color:inherit;cursor:pointer}
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.s{font-family:'STIX Two Text','Times New Roman',serif}
+.num{font-variant-numeric:tabular-nums}
+@keyframes deal{from{opacity:0;transform:translateY(34px) scale(.94) rotate(-1.5deg)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:perspective(900px) rotateX(-62deg);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes spark{0%,100%{opacity:.4;transform:scale(.8) rotate(45deg)}50%{opacity:1;transform:scale(1.15) rotate(45deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position:relative;width:390px;height:844px;overflow:hidden;font-family:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#F4F0E6;background:#0D0C11">
+<div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 40% at 50% 30%, rgba(247,181,56,0.07), rgba(247,181,56,0) 70%), radial-gradient(60% 35% at 100% 100%, rgba(164,149,255,0.06), rgba(164,149,255,0) 70%)"></div>
+
+<header style="position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) 44px 44px;align-items:center;gap:8px;padding:58px 16px 0 14px">
+<a href="Review.dc.html" aria-label="End review" style="width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#ACA7B5"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a>
+<div style="display:flex;flex-direction:column;gap:7px;padding:0 6px">
+<div style="display:flex;justify-content:space-between;font-size:12px;color:#8C8796"><span style="display:flex;align-items:center;gap:6px"><span class="s" style="font-style:italic;color:#F7B538;font-size:14px">∫</span>Compactness</span><span class="num">{{doneCount}} / 23</span></div>
+<div style="height:4px;border-radius:4px;background:rgba(255,255,255,0.08);overflow:hidden"><div style="height:4px;border-radius:4px;width:{{progress}}%;background:linear-gradient(90deg,#D98E1C,#F7B538);box-shadow:0 0 10px rgba(247,181,56,0.6);transition:width .5s cubic-bezier(.16,1,.3,1)"></div></div>
+</div>
+<button type="button" aria-label="Undo last answer" style="width:44px;height:44px;border-radius:14px;border:none;background:none;display:grid;place-items:center;color:#ACA7B5"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+<a href="CardDetail.dc.html" aria-label="Comment on this card" style="width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:#ACA7B5"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a2 2 0 0 1-2 2H8l-4 3.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M12 8v6M9 11h6"/></svg></a>
+</header>
+
+<section aria-label="Card" style="position:relative;margin:26px 22px 0;height:430px">
+<div aria-hidden="true" style="position:absolute;left:22px;right:22px;top:30px;bottom:-26px;border-radius:28px;background:#121117;border:1px solid rgba(255,255,255,0.04)"></div>
+<div aria-hidden="true" style="position:absolute;left:11px;right:11px;top:15px;bottom:-13px;border-radius:28px;background:#16151C;border:1px solid rgba(255,255,255,0.05);box-shadow:0 20px 40px -20px rgba(0,0,0,0.8)"></div>
+
+<sc-if value="{{c0}}" hint-placeholder-val="{{ true }}">
+<article style="position:absolute;inset:0;border-radius:28px;padding:26px 24px;box-sizing:border-box;display:flex;flex-direction:column;background:linear-gradient(165deg, rgba(164,149,255,0.08), rgba(164,149,255,0) 40%), #1B1A22;border:1px solid rgba(255,255,255,0.08);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 40px 70px -30px rgba(0,0,0,0.95);animation:deal .55s cubic-bezier(.16,1,.3,1) both">
+<div style="display:flex;align-items:center;justify-content:space-between;color:#8C8796;font-size:12px"><span style="display:flex;align-items:center;gap:6px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg>Theorem</span><sc-if value="{{hasConf}}" hint-placeholder-val="{{ false }}"><span style="padding:4px 9px;border-radius:99px;background:rgba(255,255,255,0.06);color:#ACA7B5">{{confLabel}}</span></sc-if></div>
+<p class="s" style="margin:22px 0 0;font-size:27px;line-height:1.3;text-wrap:balance">State the Heine–Borel theorem.</p>
+<sc-if value="{{revealed}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:22px;transform-origin:top center;animation:unfold .5s cubic-bezier(.16,1,.3,1) both">
+<div aria-hidden="true" style="position:relative;height:1px;background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.14), rgba(255,255,255,0))"><span style="position:absolute;left:50%;top:-4px;width:8px;height:8px;margin-left:-4px;background:#F7B538;box-shadow:0 0 12px #F7B538;animation:spark 2.4s ease-in-out infinite"></span></div>
+<p class="s" style="margin:22px 0 0;font-size:23px;line-height:1.45">For <i>K</i> ⊆ ℝ<sup style="font-size:14px"><i>n</i></sup>: <i>K</i> is compact ⟺ <i>K</i> is closed and bounded.</p>
+</div>
+</sc-if>
+<div style="flex:1"></div>
+<sc-if value="{{revealed}}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:8px;animation:up .5s .1s cubic-bezier(.16,1,.3,1) both">
+<span style="height:32px;padding:0 11px;border-radius:10px;display:flex;align-items:center;gap:6px;font-size:13px;color:#ACA7B5;background:rgba(255,255,255,0.05)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg>Rudin p. 40</span>
+<a href="Session.dc.html" style="height:32px;padding:0 11px;border-radius:10px;display:flex;align-items:center;gap:6px;font-size:13px;color:#ACA7B5;background:rgba(255,255,255,0.05)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M20 11.5a8 8 0 0 1-11.7 7.1L4 20l1.3-4A8 8 0 1 1 20 11.5z"/></svg>S7</a>
+</div>
+</sc-if>
+</article>
+</sc-if>
+
+<sc-if value="{{c1}}" hint-placeholder-val="{{ false }}">
+<article style="position:absolute;inset:0;border-radius:28px;padding:26px 24px;box-sizing:border-box;display:flex;flex-direction:column;background:linear-gradient(165deg, rgba(164,149,255,0.08), rgba(164,149,255,0) 40%), #1B1A22;border:1px solid rgba(255,255,255,0.08);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 40px 70px -30px rgba(0,0,0,0.95);animation:deal .55s cubic-bezier(.16,1,.3,1) both">
+<div style="display:flex;align-items:center;justify-content:space-between;color:#8C8796;font-size:12px"><span style="display:flex;align-items:center;gap:6px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4M12 17h.01"/></svg>Why</span><sc-if value="{{hasConf}}" hint-placeholder-val="{{ false }}"><span style="padding:4px 9px;border-radius:99px;background:rgba(255,255,255,0.06);color:#ACA7B5">{{confLabel}}</span></sc-if></div>
+<p class="s" style="margin:22px 0 0;font-size:25px;line-height:1.32;text-wrap:balance">In proving compact sets are closed, why must <i>U<sub style="font-size:15px">y</sub></i> and <i>V<sub style="font-size:15px">y</sub></i> be disjoint?</p>
+<sc-if value="{{revealed}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:22px;transform-origin:top center;animation:unfold .5s cubic-bezier(.16,1,.3,1) both">
+<div aria-hidden="true" style="position:relative;height:1px;background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.14), rgba(255,255,255,0))"><span style="position:absolute;left:50%;top:-4px;width:8px;height:8px;margin-left:-4px;background:#F7B538;box-shadow:0 0 12px #F7B538;animation:spark 2.4s ease-in-out infinite"></span></div>
+<p class="s" style="margin:22px 0 0;font-size:21px;line-height:1.45">So the finite intersection of the <i>V<sub style="font-size:13px">y</sub></i> misses every <i>U<sub style="font-size:13px">y</sub></i>: an open set around <i>x</i> that avoids <i>K</i>.</p>
+</div>
+</sc-if>
+<div style="flex:1"></div>
+<sc-if value="{{revealed}}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:8px;animation:up .5s .1s cubic-bezier(.16,1,.3,1) both">
+<span style="height:32px;padding:0 11px;border-radius:10px;display:flex;align-items:center;gap:6px;font-size:13px;color:#ACA7B5;background:rgba(255,255,255,0.05)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg>Rudin p. 37</span>
+<a href="Session.dc.html" style="height:32px;padding:0 11px;border-radius:10px;display:flex;align-items:center;gap:6px;font-size:13px;color:#ACA7B5;background:rgba(255,255,255,0.05)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M20 11.5a8 8 0 0 1-11.7 7.1L4 20l1.3-4A8 8 0 1 1 20 11.5z"/></svg>S7</a>
+</div>
+</sc-if>
+</article>
+</sc-if>
+
+<sc-if value="{{c2}}" hint-placeholder-val="{{ false }}">
+<article style="position:absolute;inset:0;border-radius:28px;padding:26px 24px;box-sizing:border-box;display:flex;flex-direction:column;background:linear-gradient(165deg, rgba(164,149,255,0.08), rgba(164,149,255,0) 40%), #1B1A22;border:1px solid rgba(255,255,255,0.08);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 40px 70px -30px rgba(0,0,0,0.95);animation:deal .55s cubic-bezier(.16,1,.3,1) both">
+<div style="display:flex;align-items:center;justify-content:space-between;color:#8C8796;font-size:12px"><span style="display:flex;align-items:center;gap:6px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M4 7V5h16v2M9 19h6M12 5v14"/></svg>Definition</span><sc-if value="{{hasConf}}" hint-placeholder-val="{{ false }}"><span style="padding:4px 9px;border-radius:99px;background:rgba(255,255,255,0.06);color:#ACA7B5">{{confLabel}}</span></sc-if></div>
+<sc-if value="{{hidden}}" hint-placeholder-val="{{ true }}">
+<p class="s" style="margin:22px 0 0;font-size:26px;line-height:1.4;text-wrap:balance"><i>K</i> is compact if every <span style="display:inline-block;min-width:96px;border-bottom:2px solid #F7B538;color:#F7B538;text-align:center">[ … ]</span> of <i>K</i> has a finite subcover.</p>
+</sc-if>
+<sc-if value="{{revealed}}" hint-placeholder-val="{{ false }}">
+<p class="s" style="margin:22px 0 0;font-size:26px;line-height:1.4;text-wrap:balance;animation:unfold .5s cubic-bezier(.16,1,.3,1) both"><i>K</i> is compact if every <span style="padding:0 4px;border-radius:6px;color:#1E1405;background:#F7B538;box-shadow:0 0 18px rgba(247,181,56,0.55)">open cover</span> of <i>K</i> has a finite subcover.</p>
+</sc-if>
+<div style="flex:1"></div>
+<sc-if value="{{revealed}}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:8px;animation:up .5s .1s cubic-bezier(.16,1,.3,1) both">
+<span style="height:32px;padding:0 11px;border-radius:10px;display:flex;align-items:center;gap:6px;font-size:13px;color:#ACA7B5;background:rgba(255,255,255,0.05)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><path d="M3 5h6a3 3 0 0 1 3 3v12a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg>Rudin p. 36</span>
+</div>
+</sc-if>
+</article>
+</sc-if>
+</section>
+
+<sc-if value="{{hidden}}" hint-placeholder-val="{{ true }}">
+<section aria-label="How sure are you?" style="position:absolute;left:22px;right:22px;bottom:44px;display:flex;flex-direction:column;gap:12px;animation:up .45s cubic-bezier(.16,1,.3,1) both">
+<span style="font-size:13px;color:#8C8796;text-align:center">How sure? Tap to reveal</span>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<button type="button" onClick="{{sure}}" style="height:60px;border-radius:18px;border:1px solid rgba(247,181,56,0.35);background:rgba(247,181,56,0.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:600;color:#F7B538"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:19px;height:19px"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.3 11 14.8l4.6-5.3"/></svg>Sure</button>
+<button type="button" onClick="{{unsure}}" style="height:60px;border-radius:18px;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:600;color:#E4DFD6"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:19px;height:19px"><circle cx="12" cy="12" r="8.5" style="stroke-dasharray:3 3"/></svg>Unsure</button>
+<button type="button" onClick="{{guess}}" style="height:60px;border-radius:18px;border:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:600;color:#E4DFD6"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:19px;height:19px"><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4M12 17h.01"/><circle cx="12" cy="12" r="8.5"/></svg>Guess</button>
+</div>
+<button type="button" onClick="{{show}}" style="height:44px;border:none;background:none;font-size:14px;color:#ACA7B5">Show answer</button>
+</section>
+</sc-if>
+
+<sc-if value="{{revealed}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Grade your answer" style="position:absolute;left:22px;right:22px;bottom:44px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;animation:up .45s cubic-bezier(.16,1,.3,1) both">
+<button type="button" onClick="{{grade}}" style="height:60px;border-radius:18px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:16px;font-weight:600;color:#F4F0E6"><span style="width:12px;height:12px;border-radius:99px;background:#F2545B;box-shadow:0 0 10px rgba(242,84,91,0.6)"></span>Again<span class="num" style="margin-left:auto;font-size:13px;font-weight:500;color:#8C8796">1m</span></button>
+<button type="button" onClick="{{grade}}" style="height:60px;border-radius:18px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:16px;font-weight:600;color:#F4F0E6"><span style="width:12px;height:12px;border-radius:99px;background:#F39A4B;box-shadow:0 0 10px rgba(243,154,75,0.6)"></span>Hard<span class="num" style="margin-left:auto;font-size:13px;font-weight:500;color:#8C8796">6m</span></button>
+<button type="button" onClick="{{grade}}" style="height:60px;border-radius:18px;border:none;background:rgba(247,181,56,0.12);box-shadow:{{goodRing}};display:flex;align-items:center;gap:12px;padding:0 18px;font-size:16px;font-weight:600;color:#F4F0E6"><span style="width:12px;height:12px;border-radius:99px;background:#F7B538;box-shadow:0 0 10px rgba(247,181,56,0.7)"></span>Good<span class="num" style="margin-left:auto;font-size:13px;font-weight:500;color:#ACA7B5">2d</span></button>
+<button type="button" onClick="{{grade}}" style="height:60px;border-radius:18px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);display:flex;align-items:center;gap:12px;padding:0 18px;font-size:16px;font-weight:600;color:#F4F0E6"><span style="width:12px;height:12px;border-radius:99px;background:#4FC88E;box-shadow:0 0 10px rgba(79,200,142,0.6)"></span>Easy<span class="num" style="margin-left:auto;font-size:13px;font-weight:500;color:#8C8796">5d</span></button>
+</section>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { idx: 0, revealed: false, conf: '', done: 12 };
+  }
+  renderVals() {
+    const s = this.state;
+    const reveal = (c) => () => this.setState({ revealed: true, conf: c });
+    const next = s.done >= 23 ? 12 : s.done + 1;
+    return {
+      c0: s.idx === 0, c1: s.idx === 1, c2: s.idx === 2,
+      revealed: s.revealed, hidden: !s.revealed,
+      hasConf: s.revealed && s.conf !== '',
+      confLabel: s.conf,
+      sure: reveal('Sure'), unsure: reveal('Unsure'), guess: reveal('Guess'), show: reveal(''),
+      grade: () => this.setState({ idx: (s.idx + 1) % 3, revealed: false, conf: '', done: next }),
+      doneCount: s.done,
+      progress: Math.round((s.done / 23) * 100),
+      goodRing: s.conf === 'Sure' ? '0 0 0 1.5px rgba(247,181,56,0.9), 0 12px 30px -10px rgba(247,181,56,0.6)' : '0 0 0 1px rgba(247,181,56,0.28)'
+    };
+  }
+}
+</script>
+</body>
+</html>
