@@ -228,10 +228,10 @@ export default function Page(){
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">
     <span className="flex items-center gap-1.5"><svg width="22" height="8" aria-hidden="true"><path d="M1 4H19M15 1L19 4L15 7" fill="none" stroke="var(--ink-3)" strokeWidth="1.3"/></svg>needed for</span>
-    <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 bg-[var(--grade-good)]"/>builds on</span>
+    <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 bg-[var(--link)]"/>builds on</span>
     <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 bg-[var(--accent)]"/>opens up</span>
-    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--accent)"/></svg>demonstrated</span>
-    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--hard)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/></svg>re-check</span>
+    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--ink-2)"/></svg>demonstrated</span>
+    <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--late)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/></svg>re-check</span>
    </div>}
   </div>
   {selected&&!details&&<div data-atlas-peek="true" className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-[528px] items-center gap-2 rounded-slab border border-edge-2 bg-raised py-2 pl-4 pr-2 shadow-[var(--e-float)]">
