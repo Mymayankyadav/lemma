@@ -144,6 +144,14 @@ export function descendants(tree:AtlasTree,id:string):string[]{
 export function expandedToDepth(tree:AtlasTree,depth:number):Set<string>{
  return new Set([...tree.nodes.values()].filter(n=>n.children.length&&n.depth<depth-1).map(n=>n.id));
 }
+/** Resolve saved/default folds before the first tree render. An effect-only
+ * initialization made the extreme Atlas calculate 8,000 links twice under
+ * 4× CPU throttling: once for the closed roots, then for the actual view. */
+export function initialExpanded(tree:AtlasTree,stored?:readonly string[]|null):Set<string>{
+ const valid=stored?.filter(id=>tree.nodes.has(id));
+ return valid?.length?new Set(valid):defaultExpanded(tree);
+}
+
 /** First visit: open each field one level and unfold the path to anything in progress or due. */
 export function defaultExpanded(tree:AtlasTree):Set<string>{
  const open=new Set(tree.roots);
