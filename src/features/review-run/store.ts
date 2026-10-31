@@ -25,6 +25,7 @@ interface ReviewState {
  submitting:boolean
  startTime:number
  answers:Answer[]
+ completedRound:boolean
  lastUndo:Answer|null
  total:number
  roundOrder:string[]
@@ -35,12 +36,13 @@ interface ReviewState {
  cancelGrade:()=>void
  committed:(receipt:Omit<Answer,'queueBefore'|'pendingBefore'|'orderBefore'>)=>void
  undoCommitted:()=>Answer|null
+ markCompleted:()=>void
  close:()=>void
 }
 const defaultFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false}
 export const useReviewSession=create<ReviewState>((set,get)=>({
  filter:defaultFilter,queue:null,current:null,confidence:null,revealed:false,submitting:false,
- startTime:Date.now(),answers:[],lastUndo:null,total:0,roundOrder:[],pendingAgain:[],
+ startTime:Date.now(),answers:[],completedRound:false,lastUndo:null,total:0,roundOrder:[],pendingAgain:[],
  initialize(items,settings,filter,focus){
   const built=buildQueue(items,settings);
   // Selection remains quota-aware; overdue cards in the owner's current
@@ -52,7 +54,7 @@ export const useReviewSession=create<ReviewState>((set,get)=>({
   const first=nextCard({...built,learning:priority(built.learning),reviews:priority(built.reviews),
    fresh:priority(built.fresh)},Date.now())
   set({filter,queue:first.queue,current:first.item,total:first.queue.total,
-   revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],lastUndo:null,
+   revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],completedRound:false,lastUndo:null,
    roundOrder:first.item?[first.item.cardId]:[],pendingAgain:[]})
  },
  reveal(confidence){if(get().current&&!get().submitting)set({revealed:true,confidence})},
@@ -76,5 +78,6 @@ export const useReviewSession=create<ReviewState>((set,get)=>({
    lastUndo:null,confidence:null,revealed:false,submitting:false,startTime:Date.now()})
   return lastUndo
  },
+ markCompleted(){if(get().answers.length>0)set({completedRound:true})},
  close(){set({current:null,queue:null,roundOrder:[],pendingAgain:[],confidence:null,revealed:false,submitting:false,startTime:Date.now()})},
 }))

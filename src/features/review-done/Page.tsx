@@ -25,6 +25,8 @@ function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:s
 export default function Page(){
  const reduced=!!useReducedMotion(),calm=useCalm(),quiet=reduced||calm;
  const navigate=useNavigate(),answers=useReviewSession(s=>s.answers),filter=useReviewSession(s=>s.filter);
+ const markCompleted=useReviewSession(s=>s.markCompleted);
+ useEffect(()=>{if(answers.length>0)markCompleted()},[answers.length,markCompleted]);
  const settings=useSettings(),[tomorrow,setTomorrow]=useState<number|null>(null);
  const [newPending,setNewPending]=useState(false),[newMessage,setNewMessage]=useState<string|null>(null);
  const [showRecalled,setShowRecalled]=useState(false);
