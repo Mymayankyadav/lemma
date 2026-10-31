@@ -72,4 +72,19 @@ describe('QA-3b screenshot structural gate',()=>{
    expect(report.warnings.some(w=>w.includes('/')&&w.includes('/projects'))).toBe(true)
   }finally{rmSync(dir,{recursive:true,force:true})}
  })
+
+ it('rejects a forged IHDR/IEND envelope without an IDAT chunk',()=>{
+  // This was the old positive fixture: signature and tail alone are not PNG.
+  expect(pngHeader(envelope(390,844),390,844)).toBeNull()
+ })
+ it('warns when an identical capture is reused across different matrices',()=>{
+  const dir=fixture()
+  try{
+   const cases=qa3Cases(),a=cases[0],b=cases.find(c=>c.width===a.width&&c.filename!==a.filename)!
+   const source=qa3ScreenshotName(a,'/'),target=qa3ScreenshotName(b,'/projects')
+   writeFileSync(join(dir,target),envelope(a.width*2,(a.width===390?844:740)*2,1))
+   const report=auditQa3Screens(dir)
+   expect(report.warnings.some(w=>w.includes(source)&&w.includes(target))).toBe(true)
+  }finally{rmSync(dir,{recursive:true,force:true})}
+ })
 })
