@@ -196,22 +196,53 @@ export class DemoAdapter implements LemmaApi {
     // Materialize actual notes only when a card route requests them.
     const virtual=this.virtualStressDue;
     if(virtual&&Object.getOwnPropertyDescriptor(this.store,'notes')?.get){
-      const count=this.store.stressNoteCount??0,dueCount=this.store.stressDueCount??0;
+      const count=this.store.stressNoteCount??0;
+      const dueCount=Math.min(count,Math.max(0,this.store.stressDueCount??0));
       const projects=this.store.projects,active=activeProjects;
-      const offsets=[virtual.overdue,virtual.future].map(due=>Math.max(0,clock.dayIndex(due)-today));
+      const projectTotal=projects.length;
+      const occurrences=(end:number,residue:number,period:number)=>
+        end>residue?Math.floor((end-1-residue)/period)+1:0;
+      const offsets=[virtual.overdue,virtual.future].map(due=>
+        Math.max(0,clock.dayIndex(due)-today));
+      const earlyDue=virtual.overdue<=now,lateDue=virtual.future<=now;
       let total=0,nextDue=Infinity;
-      for(let i=0;i<count;i++){
-        const project=projects[i%projects.length];
-        cardCounts.set(project.id,(cardCounts.get(project.id)??0)+1);
+      // Synthetic notes are distributed cyclically by project. Counting
+      // their future 26k cards one by one on cold Today wastes the 4x CPU
+      // budget; closed-form residue counts retain the exact per-project and
+      // seven-day forecast semantics, even after a study-day rollover.
+      for(let p=0;p<projectTotal;p++){
+        const project=projects[p];
+        const cards=occurrences(count,p,projectTotal);
+        const early=occurrences(dueCount,p,projectTotal),late=cards-early;
+        cardCounts.set(project.id,cards);
         if(!active.has(project.id))continue;
-        const early=i<dueCount,due=early?virtual.overdue:virtual.future;
-        const offset=offsets[early?0:1];
-        if(offset<forecastDays.length)forecastDays[offset].due++;
-        if(due>now){nextDue=Math.min(nextDue,due);continue}
-        total++;
-        projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
-        const key=cpKey(project.slug,`CP${(i%36)+1}`);
-        checkpointCounts.set(key,(checkpointCounts.get(key)??0)+1);
+        if(offsets[0]<forecastDays.length)forecastDays[offsets[0]].due+=early;
+        if(offsets[1]<forecastDays.length)forecastDays[offsets[1]].due+=late;
+        const due=(earlyDue?early:0)+(lateDue?late:0);
+        if(due){total+=due;projectCounts.set(project.slug,due)}
+        if(!earlyDue&&early)nextDue=Math.min(nextDue,virtual.overdue);
+        if(!lateDue&&late)nextDue=Math.min(nextDue,virtual.future);
+      }
+      // CP codes cycle every 36 cards. Their joint distribution with the
+      // project cycle repeats after lcm(projects,36), at most 180 records in
+      // the owner-approved 15/60-project stress worlds. Count each residue
+      // exactly instead of scanning 4k overdue (or 30k matured) card objects.
+      if(projectTotal){
+        const gcd=(a:number,b:number):number=>{
+          while(b){const next=a%b;a=b;b=next}
+          return a;
+        };
+        const cycle=projectTotal/gcd(projectTotal,36)*36;
+        for(let residue=0;residue<cycle;residue++){
+          const project=projects[residue%projectTotal];
+          if(!active.has(project.id))continue;
+          const early=occurrences(dueCount,residue,cycle);
+          const late=occurrences(count,residue,cycle)-early;
+          const due=(earlyDue?early:0)+(lateDue?late:0);
+          if(!due)continue;
+          const key=cpKey(project.slug,`CP${residue%36+1}`);
+          checkpointCounts.set(key,(checkpointCounts.get(key)??0)+due);
+        }
       }
       return this.dueSnapshotCache={createdAt:now,validUntil:Math.min(nextDue,clock.dayStart(today+1)),
         total,projectCounts,checkpointCounts,cardCounts,forecastDays};
