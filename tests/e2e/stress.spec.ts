@@ -128,6 +128,8 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
   // Log bounded concrete examples when the strict gate is red; never mask a failure.
   for(const row of report.filter(row=>row.violations.length)){
+   console.info('ST-0 hard-budget measurement',JSON.stringify({route:row.route,profile,theme,width,
+    durationMs:row.durationMs,cpuThrottle:row.cpuThrottle,violations:row.violations}));
    if(row.violations.some(v=>v==='text below 12px'||v==='marks closer than 8px'))
     console.info('ST-0 offender samples',JSON.stringify({route:row.route,profile,theme,width,
      text:row.smallTextSamples,marks:row.closeCircleSamples}));
