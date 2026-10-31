@@ -31,6 +31,10 @@ for (const width of [360, 390] as const) {
     await expect(queue).toContainText("batch-100.pdf");
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
     mkdirSync("test-results/screens/fix-492", { recursive: true });
+    // A viewport screenshot taken above the fold misses the active PDF.
+    // Scroll the pinned row into view so reviewers can inspect its progress
+    // and Cancel control in the saved Graph day/night evidence.
+    await rows.first().scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/screens/fix-492/${theme}-${width}.png` });
     await rows.first().getByRole("button", { name: "Cancel reading" }).click();
     await expect(queue.getByText("batch-001.pdf")).toHaveCount(0);
