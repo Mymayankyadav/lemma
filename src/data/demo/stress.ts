@@ -199,7 +199,7 @@ export function fillStressSources(data:DemoStore,sourceTarget:number,extreme:boo
   for (const [projectIndex,project] of data.projects.entries()) {
     const existing = existingByProject.get(project.id)??0;
     for (let i=existing;i<sourceTarget;i++) {
-      const representative=(projectIndex===0||projectIndex===projectCount-1)&&i===existing;
+      const representative=(projectIndex===0||projectIndex===data.projects.length-1)&&i===existing;
       data.sources.push({
         ...firstSource,
         id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
