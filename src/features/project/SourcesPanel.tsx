@@ -2,7 +2,8 @@ import {useEffect,useRef,useState} from 'react';
 import {Tex} from '../../ui/Tex';
 import {MathPreview} from '../../ui/MathPreview';
 import {Check,FileText,Plus,Trash2} from 'lucide-react';
-import {useAddSource,useDeleteSource,useUpdateSource} from '../../data/hooks';
+import {useAddSource,useDeleteSource,useUpdateSource,useSourceTranscriptionStats} from '../../data/hooks';
+import {SourceTranscriptionView} from './SourceTranscriptionView';
 import type {IngestProgress,Source,SourceKind} from '../../data/types';
 import {isPdfFile} from '../../pdf/ingest';
 import {Rail} from '../../ui/Rail';
@@ -16,6 +17,8 @@ const formatSize=(bytes:number)=>bytes<=0?'0 KB':bytes>=1024*1024?(bytes/1024/10
 const storageLimit=1024*1024*1024;
 export function SourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
+ const transcriptStats=useSourceTranscriptionStats(projectId);
+ const summary=new Map((transcriptStats.data??[]).map(item=>[item.sourceId,item]));
  const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0);
  const [queue,setQueue]=useState<QueueEntry[]>([]),[tick,setTick]=useState(0),[editing,setEditing]=useState<string|null>(null),
   [title,setTitle]=useState(''),[kind,setKind]=useState<SourceKind>('other'),[confirm,setConfirm]=useState<string|null>(null);
@@ -108,6 +111,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
      <button type="button" className="min-h-11 text-label text-again" disabled={remove.isPending} onClick={()=>{void erase(source)}}>Delete</button>
      <button type="button" className="min-h-11 text-label text-ink-2" onClick={()=>setConfirm(null)}>Cancel</button>
     </div>}
+    <SourceTranscriptionView source={source} stat={summary.get(source.id)}/>
    </Tile>)}
   </div>)}
   <input ref={picker} hidden type="file" multiple accept=".pdf,application/pdf" onChange={e=>{if(e.currentTarget.files)enqueue(e.currentTarget.files);e.currentTarget.value=''}}/>
