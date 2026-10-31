@@ -12,7 +12,7 @@ export function StackedBars({data,width=316,height=120,title='Reviews by day',cl
  const reduce=!!useReducedMotion(),w=Math.max(120,width,data.length*20+16),h=Math.max(70,height),top=8,bottom=h-23,left=8,right=w-7;
  const max=Math.max(1,...data.map(d=>d.again+d.hard+d.good+d.easy));
  // A half-step gap is >=8px at the minimum 20px step.
- const x=scaleBand().domain(data.map((_,i)=>String(i))).range([left,right]).paddingInner(0.5);
+ const x=scaleBand().domain(data.map((_,i)=>String(i))).range([left,right]).padding(0.5);
  const y=scaleLinear().domain([0,max]).range([bottom,top]);
  // Labels need >=12px; omit intermediate ticks instead of shrinking them.
  const labelEvery=Math.max(1,Math.ceil(data.length/Math.max(1,Math.floor((right-left)/38))));
