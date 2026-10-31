@@ -213,6 +213,7 @@ export default function Page() {
             <MathText
               source={note.front}
               variant="card"
+              interactiveMath
               cloze={
                 note.type === "cloze"
                   ? { ord: detail.cards[0]?.ord ?? 1, revealed: false }
@@ -223,6 +224,7 @@ export default function Page() {
             <MathText
               source={note.type === "cloze" ? note.front : note.back}
               variant="answer"
+              interactiveMath
               cloze={
                 note.type === "cloze"
                   ? { ord: detail.cards[0]?.ord ?? 1, revealed: true }
