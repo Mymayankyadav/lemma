@@ -11,14 +11,14 @@ export const ROW=44,GUTTER=84,INDENT=16;
 export const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
 export const STORE='lemma.atlas.v2';
 export const statusName={demonstrated:'Demonstrated',revisit:'Re-check due',in_progress:'In progress',not_started:'Not started'};
-export const toneColor:Record<Tone,string>={up:'var(--grade-good)',down:'var(--accent)',related:'var(--hard)',self:'var(--accent)',none:'var(--ink-3)'};
+export const toneColor:Record<Tone,string>={up:'var(--link)',down:'var(--accent)',related:'var(--ink-3)',self:'var(--accent)',none:'var(--ink-3)'};
 
 export function StatusMark({node}:{node:AtlasNode}){
  const s=node.status;
  return <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0">
-  {s==='demonstrated'&&<circle cx="7" cy="7" r="5" fill="var(--accent)"/>}
-  {s==='in_progress'&&<><circle cx="7" cy="7" r="5" fill="none" stroke="var(--accent)" strokeWidth="1.6"/><path d="M7 2a5 5 0 0 1 0 10z" fill="var(--accent)"/></>}
-  {s==='revisit'&&<circle cx="7" cy="7" r="5" fill="none" stroke="var(--hard)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/>}
+  {s==='demonstrated'&&<circle cx="7" cy="7" r="6" fill="var(--ink-2)"/>}
+  {s==='in_progress'&&<><circle cx="7" cy="7" r="5.4" fill="none" stroke="var(--ink-2)" strokeWidth="1.6"/><path d="M7 1.6a5.4 5.4 0 0 1 0 10.8z" fill="var(--ink-2)"/></>}
+  {s==='revisit'&&<circle cx="7" cy="7" r="5.4" fill="none" stroke="var(--late)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/>}
   {s==='not_started'&&<circle cx="7" cy="7" r="4.6" fill="none" stroke="var(--ink-3)" strokeWidth="1.2"/>}
  </svg>;
 }
@@ -161,8 +161,8 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
  </>;
 }
 
-export function Row({node,open,tone,match,onToggle,onSelect}:{
- node:AtlasNode;open:boolean;tone:Tone;match:boolean;onToggle:()=>void;onSelect:()=>void;
+export function Row({node,open,tone,match,focused=false,onToggle,onSelect}:{
+ node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
  const parent=node.children.length>0,root=node.depth===0,selected=tone==='self';
  // Preserve room for names on 360px phones beyond the third nesting level.
@@ -170,11 +170,13 @@ export function Row({node,open,tone,match,onToggle,onSelect}:{
  const lead=12+indentation(node.depth);
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
-  className={'group relative flex items-center shadow-[inset_0_-1px_0_var(--line)] '+(selected?'bg-amber-tint':match?'bg-fill-1':'')}
-  style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4}}>
+  className={'group relative flex items-center '+(match?'bg-fill-1':'')}
+  style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4,
+   backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined,
+   opacity:focused&&tone==='none'?.42:1}}>
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px bg-edge"
    style={{left:12+indentation(d)+6}}/>)}
-  {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-0 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
+  {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
   {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+plainMath(node.name)} onClick={onToggle}
    className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2">
    <ChevronRight size={16} style={{transform:open?'rotate(90deg)':'none',transition:'transform 140ms ease'}}/>
@@ -184,7 +186,7 @@ export function Row({node,open,tone,match,onToggle,onSelect}:{
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
    <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><Tex source={node.name}/></span>
    {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
-    {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-1.5 rounded-full bg-[var(--hard)]"/>}
+    {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-3 rounded-full bg-[var(--late)]"/>}
     {node.done}/{node.total}
    </span>}
   </button>
