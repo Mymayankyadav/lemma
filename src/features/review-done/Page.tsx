@@ -17,7 +17,7 @@ import {prepareSessionNewRound} from './newSession';
 
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
  return <Tile className="flex min-h-[95px] flex-col items-center justify-center gap-1 px-2 py-3 text-center">
-  <Icon size={18} aria-hidden="true" className="text-amber"/>
+  <Icon size={18} aria-hidden="true" className="text-ink-2"/>
   <strong className="text-card font-semibold tabular-nums">{value}</strong>
   <span className="text-label text-ink-3">{label}</span>
  </Tile>;
@@ -51,7 +51,7 @@ export default function Page(){
  const sure=firstAnswers.filter(a=>a.confidence==='sure');
  const sureRight=sure.filter(a=>a.rating>1).length;
  const seconds=Math.max(0,Math.floor(stats.durationMs/1000));
- const roundTime=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+ const roundTime=answers.length?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'—';
  const recalledAnswers=firstAnswers.filter(a=>a.rating>1);
  const recalled=recalledAnswers.length;
  const compact=firstAnswers.length>24;
@@ -79,10 +79,11 @@ export default function Page(){
  }
  return <Screen className="items-center gap-5">
   <div className="mt-4 flex flex-col items-center text-center">
-   <RoundSeal order={firstAnswers.map(a=>a.card.cardId)} answers={answers}/>
+   {firstAnswers.length>0&&<RoundSeal order={firstAnswers.map(a=>a.card.cardId)} answers={answers}/>}
    <motion.h1 initial={quiet?false:{letterSpacing:'.4em'}} animate={{letterSpacing:'.02em'}} transition={{duration:quiet?0:.7}} className="mt-1 font-[var(--font-display)] text-[44px] italic text-ink">
-    <span className="sr-only">Review complete</span><span aria-hidden="true"><span className="text-amber">Q</span>.E.D.</span>
+    <span className="sr-only">Review complete</span><span aria-hidden="true">Q.E.D<span className="text-amber">.</span></span>
    </motion.h1>
+   {!firstAnswers.length&&<p className="mt-2 text-body text-ink-3">Review a round to see stats.</p>}
    <p className="mt-2 text-body-l text-ink-2">{firstAnswers.length} {firstAnswers.length===1?'card':'cards'} reviewed, {missed.length} {missed.length===1?'needed':'needed'} another pass.</p>
   </div>
   <section aria-label="Review statistics" className="grid w-full grid-cols-2 gap-2">
