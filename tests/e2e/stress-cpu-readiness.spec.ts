@@ -28,3 +28,9 @@ test('AUDIT #540 counts delayed real card rows against the unchanged 1500ms limi
  }));
  expect(auditCpuMatrix(samples,matrix)).toContain('/cards [extreme/graph/360]: 4x CPU first render >= 1.5s');
 });
+
+
+test('AUDIT #540 accepts the component-kit skeleton example as real gallery content',async({page})=>{
+ await page.setContent('<main id="main-content"><h2>Surfaces</h2><div class="animate-pulse bg-fill-2">Skeleton example</div></main>');
+ await assertRouteLoaded(page,'/kit','stress',250);
+});
