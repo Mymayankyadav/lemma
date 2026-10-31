@@ -1,6 +1,6 @@
 /* LOOK-4b: compact Atlas hierarchy is for prose only. Tutor-authored
  * inline mathematics retains the stress specification's 16px hard floor,
- * even inside 13.5px Area/Detail and 15px Topic/Idea labels.
+ * even inside 12px Area, 13px Detail and 15px Topic/Idea labels.
  * Scoped to the row so other small-cap metadata stays compact.
  */
 [data-atlas-row] .lemma-tex-inline .katex {
