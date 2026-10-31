@@ -4,12 +4,13 @@ import { packet } from './packet.ts';
 import { get, search, readPages } from './tools/read.ts';
 import { proposePlanChange, proposePlan, startSession, saveProgress, proposeCards, endSession, createProject, proposals, decide } from './tools/write.ts';
 import { createMcpHandler } from './deps.ts';
+import { savePages } from './tools/transcribe.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
 import { parseMcpReply } from './protocol.ts';
 // The full self-test takes ~145s, at the edge function's 150s wall-clock limit,
 // so the smoke runs it in two independent halves with their own fixtures.
 export type SelftestPart=1|2|'all';
-const PART_STEPS={1:12,2:9,all:18} as const;
+const PART_STEPS={1:12,2:10,all:19} as const;
 export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
   const only=(n:1|2)=>part==='all'||part===n;
   c.selftestProjectIds=new Set<string>();
@@ -63,7 +64,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       if(!res.ok)throw Error('MCP tools/list HTTP '+res.status);
       const payload=parseMcpReply(body,res.headers.get('Content-Type')||'',1);
       const list=payload.tools;
-      if(!list||list.length!==22||TOOL_NAMES.some(n=>!list.some((x:any)=>x.name===n)))throw Error('Not all 22 tools registered');
+      if(!list||list.length!==TOOL_NAMES.length||TOOL_NAMES.some(n=>!list.some((x:any)=>x.name===n)))throw Error('Not all expected tools registered');
       const chars=JSON.stringify({tools:list}).length;
       if(chars>15000)throw Error('tools/list too large: '+chars);
     });
@@ -215,6 +216,38 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       if(!pending?.length)throw Error('Missing pending card');
       const answer=await decide(c,{approve:[pending[0].no]});
       if(!answer.includes('approved P'))throw Error(answer);
+    });
+    if(only(2))await check('scan transcription: search, readback, provenance and undo',async()=>{
+      const scan=await insert(c,'sources',{
+        project_id:p.id,title:'Selftest handwritten scan',short:'selftest-scan',
+        filename:'selftest-scan.pdf',kind:'notes',page_count:2,status:'ready',has_text:false
+      });
+      const saved=await run('save_pages',savePages,{project:p.slug,source:'selftest-scan',client:'chatgpt',pages:[
+        {page:1,text:'The handwritten compactness notes use finite subcovers.',confidence:'check'},
+        {page:2,text:'An open cover of a compact space has a finite subcover.',confidence:'high'}
+      ]});
+      if(!saved.action)throw Error('Transcription lacked undo action');
+      const {data:rows,error}=await scoped(c,'source_pages').eq('source_id',scan.id).order('page');
+      if(error||rows?.length!==2||rows[0].confidence!=='check'||rows[0].transcribed_by!=='chatgpt'||!rows[0].transcribed_at)
+       throw Error('Transcription provenance missing');
+      const hit=await search(c,{project:p.slug,source:'selftest-scan',query:'handwritten compactness'});
+      if(!hit.toLowerCase().includes('compactness'))throw Error('Transcribed page not indexed by search');
+      const pages=await readPages(c,{project:p.slug,source:'selftest-scan',from:'1',to:'2'});
+      if(!pages.includes('handwritten compactness')||!pages.includes('open cover'))
+       throw Error('Transcribed scan not readable by read_pages');
+      await run('undo',undo,{action:saved.action});
+      if((await scoped(c,'source_pages').eq('source_id',scan.id)).data?.length)
+       throw Error('Undo did not remove transcribed scan pages');
+      if((await scoped(c,'sources','has_text').eq('id',scan.id).single()).data?.has_text)
+       throw Error('Undo did not restore scan has_text=false');
+      const fresh=await run('save_pages',savePages,{project:p.slug,title:'Selftest lecture transcription',
+        client:'claude',pages:[{page:1,text:'Lecture transcription testing.'}]});
+      if(!fresh.action)throw Error('New-source transcription lacked undo action');
+      const made=(await scoped(c,'sources','id').eq('project_id',p.id).eq('title','Selftest lecture transcription').single()).data;
+      if(!made)throw Error('save_pages did not create text-only source');
+      await run('undo',undo,{action:fresh.action});
+      if((await scoped(c,'sources').eq('id',made.id)).data?.length)
+       throw Error('Undo did not remove transcribed text-only source');
     });
     if(only(2))await check('prompt history undo and redo',async()=>{
       const r=await run('set_prompt',setPrompt,{scope:p.slug,text:'Selftest Socratic prompt',mode:'replace'});
