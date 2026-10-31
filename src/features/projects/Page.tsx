@@ -159,9 +159,10 @@ export default function Page(){
     className="min-w-0 flex-1 bg-transparent py-3 text-body text-ink outline-none"/>
    {search&&<button type="button" aria-label="Clear search" onClick={()=>{setSearch('');setPage(0)}} className="flex size-11 items-center justify-center"><X size={17}/></button>}
   </label>
-  <div role="group" aria-label="Project status" className="grid grid-cols-3 gap-2">
+  <div role="group" aria-label="Project status" data-status-segments=""
+   className="flex w-full min-w-0 items-stretch rounded-full border border-edge bg-[var(--paper-2)] p-1">
    {filters.map(value=><button key={value} type="button" aria-pressed={filter===value} onClick={()=>choose(value)}
-    className={'min-h-11 rounded-ctl border px-2 text-label capitalize '+(filter===value?'border-amber bg-amber-tint text-amber':'border-edge bg-[var(--card)] text-ink-2')}>{value}</button>)}
+    className={'min-h-11 min-w-0 flex-1 rounded-full px-2 text-label capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link)] '+(filter===value?'bg-[var(--paper)] font-semibold text-ink shadow-[0_1px_3px_rgba(0,0,0,.15)]':'text-ink-2 hover:text-ink')}>{value}</button>)}
   </div>
   {projects.isPending?<><Skeleton h={80}/><Skeleton h={140}/><Skeleton h={140}/></>:
    projects.error?<EmptyState art="plug" title="Paths unavailable" body="Try again when you're connected."
