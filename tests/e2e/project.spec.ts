@@ -13,7 +13,7 @@ test('Graph Paper Paths groups checkpoints into named stages with current stage 
  await expect(page.getByRole('button',{name:'Switch project from Real Analysis'})).toBeVisible()
  await expect(page.getByRole('region',{name:'Goal and distance'})).toContainText('Rudin')
  await expect(page.getByRole('region',{name:'Checkpoint progress'})).toContainText('12')
- await expect(page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="metro"]')).toBeVisible()
+ await expect(page.getByRole('region',{name:'Project timeline'}).locator('[data-route-mode="project"]')).toBeVisible()
  await expect(page.getByRole('article',{name:'Current checkpoint CP4'})).toBeVisible()
  const stages=page.getByRole('region',{name:'Stages'})
  const foundation=stages.getByRole('article',{name:'Foundations stage'})
@@ -94,12 +94,12 @@ test('a new PDF can be uploaded from project Sources',async({page})=>{
  await expect(sources.getByText('sample',{exact:true})).toBeVisible()
 })
 
-test('Metro project timeline opens a checkpoint without horizontal scrolling',async({page})=>{
+test('One-line project Route opens a checkpoint without horizontal scrolling',async({page})=>{
  await page.goto('./?demo=1&theme=graph-night#/p/real-analysis')
- const timeline=page.getByRole('region',{name:'Project timeline'}).locator('[data-timeline="metro"]')
+ const timeline=page.getByRole('region',{name:'Project timeline'}).locator('[data-route-mode="project"]')
  await expect(timeline).toBeVisible()
- const button=timeline.getByRole('button')
- await expect(button).toHaveAttribute('aria-label',/12 checkpoints, now CP4/)
+ const button=timeline.locator('button[aria-label*="Arrow keys select"]')
+ await expect(button).toHaveAttribute('aria-label',/12 checkpoints, CP4/)
  await page.screenshot({path:'test-results/screens/review/ui5b-project-euclid-night.png',fullPage:true})
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
  await button.focus()
