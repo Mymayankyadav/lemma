@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { stressViolations } from '../../scripts/stress-limits';
+import { enforceStressBudgets } from '../../scripts/stress-gate';
 import { measureSvgMarks } from '../../scripts/stress-marks';
 
 type Measurement = {
@@ -8,6 +9,8 @@ type Measurement = {
  nodes: number; horizontalOverflow: number; smallText: number; smallMath: number;
  smallTargets: number; minCircleGap: number | null; durationMs: number;
  requestCount: number; transferBytes: number; cpuThrottle: number;
+ smallTextSamples: {size:string;inMath:boolean;html:string}[];
+ closeCircleSamples: {gap:number;svg:string}[];
 };
 
 /** Record all hard-limit violations before downstream ST-1…ST-7 make them pass. */
@@ -18,10 +21,19 @@ async function measure(page: Page, route: string, profile: string, theme: string
    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
   };
   const elements = Array.from(document.querySelectorAll('*')).filter(visible);
-  const smallText = elements.filter(e => {
+  const undersizedText = elements.filter(e => {
    const s = getComputedStyle(e);
-   return e.children.length === 0 && !!e.textContent?.trim() && parseFloat(s.fontSize) < 12;
-  }).length;
+   // KaTeX scriptstyle glyphs are part of one mathematical expression;
+   // the expression itself is checked separately against the 16px maths floor.
+   return !e.closest('.katex') && e.children.length === 0 && !!e.textContent?.trim() && parseFloat(s.fontSize) < 12;
+  });
+  const smallText = undersizedText.length;
+  // Diagnostic evidence only: retain the exact hard-budget measurement.
+  const smallTextSamples = undersizedText.slice(0,6).map(e => ({
+   size: getComputedStyle(e).fontSize,
+   inMath: !!e.closest('.katex'),
+   html: e.outerHTML.slice(0,180),
+  }));
   const smallMath = elements.filter(e => e.classList.contains('katex') && parseFloat(getComputedStyle(e).fontSize) < 16).length;
   const smallTargets = elements.filter(e => e.matches('button,a[href],[role="button"]') && (e.getBoundingClientRect().width < 44 || e.getBoundingClientRect().height < 44)).length;
   const resources = (performance.getEntriesByType('resource') as PerformanceResourceTiming[])
@@ -30,6 +42,7 @@ async function measure(page: Page, route: string, profile: string, theme: string
    nodes: document.querySelectorAll('*').length,
    horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
    smallText, smallMath, smallTargets,
+   smallTextSamples, closeCircleSamples: [],
    requestCount: resources.length,
    transferBytes: resources.reduce((total,entry)=>total+entry.transferSize,0),
   };
@@ -37,6 +50,13 @@ async function measure(page: Page, route: string, profile: string, theme: string
  const minCircleGap = await page.evaluate(measureSvgMarks); // Compatibility field: now all tagged SVG count marks.
  return {route, actualRoute: await page.evaluate(()=>location.hash.slice(1)), profile, theme, width, durationMs, cpuThrottle, ...result, minCircleGap};
 }
+
+test('ST-0 counts small informative text but not KaTeX internal script glyphs',async({page})=>{
+ await page.setContent('<div style="font-size:11px">Informative label</div><span class="katex" style="font-size:16px"><span style="font-size:9px">script glyph</span></span>');
+ const measured=await measure(page,'/probe','probe','graph',390,0,1);
+ expect(measured.smallText).toBe(1);
+ expect(measured.smallMath).toBe(0);
+});
 
 // Full route inventory, matching the normal mobile layout audit.
 const routes = [
@@ -106,6 +126,14 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   mkdirSync('test-results/stress',{recursive:true});
   const file = 'test-results/stress/'+profile+'-'+theme+'-'+width+'.json';
   const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
+  // Log bounded concrete examples when the strict gate is red; never mask a failure.
+  for(const row of report.filter(row=>row.violations.length)){
+   console.info('ST-0 hard-budget measurement',JSON.stringify({route:row.route,profile,theme,width,
+    durationMs:row.durationMs,cpuThrottle:row.cpuThrottle,violations:row.violations}));
+   if(row.violations.some(v=>v==='text below 12px'||v==='marks closer than 8px'))
+    console.info('ST-0 offender samples',JSON.stringify({route:row.route,profile,theme,width,
+     text:row.smallTextSamples,marks:row.closeCircleSamples}));
+  }
   writeFileSync(file,JSON.stringify(report,null,2));
   await testInfo.attach('stress-measurements',{body:JSON.stringify(report,null,2),contentType:'application/json'});
   // ST-0 establishes the baseline and route inventory. ST-1…ST-7 enforce
@@ -113,5 +141,6 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   expect(measurements.map(m=>m.route)).toEqual([...routes]);
   expect(measurements.every(m=>m.nodes>0 && Number.isFinite(m.durationMs))).toBe(true);
   expect(measurements[0].cpuThrottle).toBe(4);
+  enforceStressBudgets(measurements);
  });
 }

@@ -61,21 +61,21 @@ import {
   checkpointUi,
   conceptStatus,
   dueToday,
-  projectProgress,
   sessionDisplay,
   studyDayBounds,
   studyDay,
 } from "../../lib/derive";
 import { filterReviewItems } from "../../lib/queue";
 import { parseSteps } from "../../lib/fsrs";
-import legacyRender from "../../lib/render/render.js";
+import {clozeOrds} from "./cloze";
 import { slugify } from "../../lib/text";
 import { DAY } from "../../lib/calendar";
 import {reviewForecast} from "../../lib/review-forecast";
 import {makeStressInsightAggregate, stressSessionEvents, stressSourcePage} from "./stress";
 
 // One parse per module, not once per each of the 1,000 virtual sessions.
-const stressSessionTemplate = (JSON.parse(fixtureText) as DemoStore).sessions[0];
+export const demoSeedFixture = JSON.parse(fixtureText) as DemoStore;
+const stressSessionTemplate = demoSeedFixture.sessions[0];
 
 const clone = <T>(value: T): T => structuredClone(value);
 const invalid = (message: string): never => {
@@ -116,10 +116,21 @@ export interface DemoOptions {
   now?: () => number;
   timeZone?: string;
   fixture?: DemoStore;
+  /** Only set for a freshly generated private store, never a shared fixture. */
+  ownedFixture?: boolean;
+}
+/** Reuse one pass across the large stress fixture when summarising every
+ * project. Single-project reads keep the same standalone summary semantics. */
+interface SummaryIndex {
+  checkpoints: Map<string,DemoCheckpoint[]>;
+  cards: Map<string,number>;
+  sessions: Map<string,number>;
+  sourceTitles: Map<string,string[]>;
 }
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
+  /** CONTRACT-546: bounded history pagination remains fail-closed until FIX-546b lands. */
   async getCardHistoryPage(...args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
     const [no,cursor]=args,n=this.note(no),key=decodeCardPageCursor(cursor,'reviews',no);
     const ids=new Set(n.cards.map(c=>c.id));
@@ -142,20 +153,75 @@ export class DemoAdapter implements LemmaApi {
   }
   async getReviewForecast(): ReturnType<LemmaApi["getReviewForecast"]> {
     const ids=new Set(this.store.projects.filter(p=>p.status!=="archived"&&!p.system).map(p=>p.id));
-    const cards=this.store.notes.filter(n=>n.note.status==='active'&&ids.has(n.projectId)).flatMap(n=>n.cards.map(c=>c.state));
-    return reviewForecast(cards,this.store.settings,this.now());
+    const notes=this.store.notes;
+    function* scheduledStates(){
+      for(const note of notes){
+        if(note.note.status!=="active"||!ids.has(note.projectId))continue;
+        for(const card of note.cards)yield card.state;
+      }
+    }
+    return reviewForecast(scheduledStates(),this.store.settings,this.now());
   }
   private store: DemoStore;
   private readonly now: () => number;
   private stressDayStart: number | undefined;
+  // Due dates are immutable ISO values until a card is edited; keying by the
+  // timestamp string preserves correctness after edits without invalidation.
+  // The 30k-card fixture repeats two dates, so cold Today and DeckTree should
+  // parse each distinct value once, not once per card per query.
+  private readonly dueTimes = new Map<string,number>();
+  private dueTime(value:string):number {
+    const cached=this.dueTimes.get(value);
+    if(cached!==undefined)return cached;
+    const parsed=Date.parse(value);
+    this.dueTimes.set(value,parsed);
+    return parsed;
+  }
+  // Home, the deck tree and the ReviewOutlook mount together. A single
+  // exact backlog pass avoids re-reading 30,000 cards under 4x CPU. Expire
+  // precisely at the next future due timestamp (not an arbitrary TTL).
+  private dueSnapshotCache: {
+    createdAt:number;validUntil:number;total:number;
+    projectCounts:Map<string,number>;checkpointCounts:Map<string,number>;
+    cardCounts:Map<string,number>;
+  }|null=null;
+  private dueSnapshot(){
+    const now=this.now(),cached=this.dueSnapshotCache;
+    if(cached&&now>=cached.createdAt&&now<cached.validUntil)return cached;
+    const activeProjects=new Map(this.store.projects
+      .filter(p=>p.status!=="archived"&&!p.system).map(p=>[p.id,p] as const));
+    const projectCounts=new Map<string,number>(),checkpointCounts=new Map<string,number>(),cardCounts=new Map<string,number>();
+    let total=0,nextDue=Infinity;
+    for(const note of this.store.notes){
+      // Project summaries count suspended cards too, but not deleted notes.
+      if(note.note.status!=="deleted")
+        cardCounts.set(note.projectId,(cardCounts.get(note.projectId)??0)+note.cards.length);
+      const project=activeProjects.get(note.projectId);
+      if(!project||note.note.status!=="active")continue;
+      for(const card of note.cards){
+        if(card.state.state<=0)continue;
+        const due=this.dueTime(card.state.due);
+        if(due>now){nextDue=Math.min(nextDue,due);continue}
+        if(!Number.isFinite(due))continue;
+        total++;
+        projectCounts.set(project.slug,(projectCounts.get(project.slug)??0)+1);
+        if(note.note.checkpointCode){
+          const key=cpKey(project.slug,note.note.checkpointCode);
+          checkpointCounts.set(key,(checkpointCounts.get(key)??0)+1);
+        }
+      }
+    }
+    return this.dueSnapshotCache={createdAt:now,validUntil:nextDue,total,projectCounts,checkpointCounts,cardCounts};
+  }
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
     this.store = hydrateFixture(
-      options.fixture ?? (JSON.parse(fixtureText) as DemoStore),
+      options.fixture ?? demoSeedFixture,
       this.now(),
       options.timeZone ??
         Intl.DateTimeFormat().resolvedOptions().timeZone ??
         "UTC",
+      { takeOwnership: options.ownedFixture === true },
     );
   }
   private iso() {
@@ -164,9 +230,12 @@ export class DemoAdapter implements LemmaApi {
   private transaction<T>(write: () => T): T {
     const before = clone(this.store);
     try {
-      return write();
+      const result=write();
+      this.dueSnapshotCache=null;
+      return result;
     } catch (error) {
       this.store = before;
+      this.dueSnapshotCache=null;
       throw error;
     }
   }
@@ -230,15 +299,12 @@ export class DemoAdapter implements LemmaApi {
       ),
     );
   }
-  private item(note: DemoNote, card: DemoNote["cards"][number]): ReviewItem {
-    const project = this.projectById(note.projectId),
-      cp = note.note.checkpointCode
-        ? this.store.checkpoints.find(
-            (cp) =>
-              cp.projectId === project.id &&
-              cp.code === note.note.checkpointCode,
-          )
-        : null;
+  private item(
+    note: DemoNote,
+    card: DemoNote["cards"][number],
+    project: DemoProject,
+    cp: DemoCheckpoint | null,
+  ): ReviewItem {
     return {
       cardId: card.id,
       noteId: note.note.noteId,
@@ -258,11 +324,24 @@ export class DemoAdapter implements LemmaApi {
       state: clone(card.state),
     };
   }
-  private allItems() {
-    const active = new Set(this.store.projects.filter(p => p.status !== "archived" && !p.system).map(p => p.id));
+  private allItems(include?: (state: CardState) => boolean) {
+    // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
+    // identities once instead of scanning all checkpoints for every card.
+    const projects = new Map<string, DemoProject>(this.store.projects
+      .filter(p => p.status !== "archived" && !p.system)
+      .map(p => [p.id, p] as const));
+    const checkpoints = new Map<string, DemoCheckpoint>(this.store.checkpoints
+      .map(cp => [cpKey(cp.projectId, cp.code), cp] as const));
     return this.store.notes
-      .filter((n) => n.note.status === "active" && active.has(n.projectId))
-      .flatMap((n) => n.cards.map((c) => this.item(n, c)));
+      .filter(n => n.note.status === "active" && projects.has(n.projectId))
+      .flatMap(n => {
+        const project = projects.get(n.projectId)!;
+        const cp = n.note.checkpointCode
+          ? checkpoints.get(cpKey(n.projectId, n.note.checkpointCode)) ?? null
+          : null;
+        return n.cards.filter(card => !include || include(card.state))
+          .map(card => this.item(n, card, project, cp));
+      });
   }
   /** The due badge and deck counts represent the full backlog, not the daily queue. */
   private backlog(): ReviewItem[] {
@@ -270,18 +349,22 @@ export class DemoAdapter implements LemmaApi {
     return this.allItems().filter(item => item.state.state > 0 && Date.parse(item.state.due) <= now);
   }
   private eligible(): ReviewItem[] {
-    const start = studyDayBounds(
+    const {start,end} = studyDayBounds(
       this.now(),
       this.store.settings.timeZone,
       this.store.settings.rolloverHour,
-    ).start;
+    );
     const today = this.store.reviews.filter(
       (r) =>
         !r.undoneAt &&
         Date.parse(r.reviewedAt) >= start &&
         Date.parse(r.reviewedAt) <= this.now(),
     );
-    return dueToday(this.allItems(), this.store.settings, {
+    // dueToday never selects a future scheduled card. Avoid constructing
+    // 26,000 cloned ReviewItems only to discard them in the 30k-card fixture.
+    // Keep every new card, plus every due/learning card before study-day end.
+    return dueToday(this.allItems(state => state.state === 0 ||
+      this.dueTime(state.due) < end), this.store.settings, {
       now: this.now(),
       answeredToday: today.length,
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
@@ -364,11 +447,19 @@ export class DemoAdapter implements LemmaApi {
   private displaySubject(id: string): Subject {
     return id ? this.subject(id) : { id: "", name: "Unassigned", glyph: "·", hue: "slate", position: 999 };
   }
-  private summary(p: DemoProject, eligible = this.eligible()): ProjectSummary {
-    const cps = this.store.checkpoints.filter((cp) => cp.projectId === p.id),
-      views = cps.map((cp) => this.cpView(cp, eligible)),
-      progress = projectProgress(views),
-      current = cps.find((cp) => cp.status === "in_progress");
+  private summary(p: DemoProject, index?: SummaryIndex): ProjectSummary {
+    const cps = index ? index.checkpoints.get(p.id) ?? [] :
+      this.store.checkpoints.filter(cp => cp.projectId === p.id);
+    // Summary progress needs only demonstrated/proposed status, not the full
+    // recursive prerequisite UI and daily due-card queue for each checkpoint.
+    // checkpointUi() maps every demonstrated checkpoint to done or revisit;
+    // both count as done, and proposed checkpoints are excluded.
+    const approved = cps.filter(cp => !cp.proposed);
+    const progress = {
+      done: approved.filter(cp => cp.status === "demonstrated").length,
+      total: approved.length,
+    };
+    const current = cps.find(cp => cp.status === "in_progress");
     return {
       id: p.id,
       slug: p.slug,
@@ -390,16 +481,15 @@ export class DemoAdapter implements LemmaApi {
           }
         : null,
       lastActivityAt: p.lastActivityAt,
-      cardsCount: this.store.notes
-        .filter((n) => n.projectId === p.id && n.note.status !== "deleted")
-        .reduce((n, note) => n + note.cards.length, 0),
-      sessionsCount: this.store.stressSessionCount ?? this.store.sessions.filter(
-        (s) => s.projectId === p.id && s.state === "ended",
-      ).length,
-      sourcesCount: this.store.sources.filter((s) => s.projectId === p.id)
-        .length,
-      sourceTitles: this.store.sources.filter((s) => s.projectId === p.id)
-        .map((source) => source.title),
+      cardsCount: index ? index.cards.get(p.id) ?? 0 :
+        this.store.notes.filter(n => n.projectId === p.id && n.note.status !== "deleted")
+          .reduce((n,note) => n + note.cards.length,0),
+      sessionsCount: this.store.stressSessionCount ?? (index ? index.sessions.get(p.id) ?? 0 :
+        this.store.sessions.filter(s => s.projectId === p.id && s.state === "ended").length),
+      sourcesCount: index ? index.sourceTitles.get(p.id)?.length ?? 0 :
+        this.store.sources.filter(s => s.projectId === p.id).length,
+      sourceTitles: index ? [...(index.sourceTitles.get(p.id) ?? [])] :
+        this.store.sources.filter(s => s.projectId === p.id).map(source => source.title),
     };
   }
   async getAuth() {
@@ -583,11 +673,28 @@ export class DemoAdapter implements LemmaApi {
         .forEach((s,i) => { s.position = i; });
     });
   }
-  async listProjects() {
-    const eligible = this.eligible();
+  async listProjects(withDueCounts=false) {
+    // ST-0: scanning 30,000 cards and 6,000 checkpoints separately for each
+    // of 60 projects creates millions of redundant reads on the cold Today.
+    const index:SummaryIndex={
+      checkpoints:new Map(),cards:withDueCounts?this.dueSnapshot().cardCounts:new Map(),sessions:new Map(),sourceTitles:new Map(),
+    };
+    for(const cp of this.store.checkpoints){
+      const rows=index.checkpoints.get(cp.projectId)??[];
+      rows.push(cp);index.checkpoints.set(cp.projectId,rows);
+    }
+    // A standalone Projects read should not pay for due-card scheduling.
+    if(!withDueCounts)for(const note of this.store.notes)if(note.note.status!=="deleted")
+      index.cards.set(note.projectId,(index.cards.get(note.projectId)??0)+note.cards.length);
+    for(const session of this.store.sessions)if(session.state==="ended")
+      index.sessions.set(session.projectId,(index.sessions.get(session.projectId)??0)+1);
+    for(const source of this.store.sources){
+      const titles=index.sourceTitles.get(source.projectId)??[];
+      titles.push(source.title);index.sourceTitles.set(source.projectId,titles);
+    }
     return this.store.projects
       .filter(p => !p.system)
-      .map((p) => this.summary(p, eligible))
+      .map(p => this.summary(p,index))
       .sort(
         (a, b) =>
           Date.parse(b.lastActivityAt ?? "1970-01-01") -
@@ -798,7 +905,7 @@ export class DemoAdapter implements LemmaApi {
   async getProject(slug: string): Promise<ProjectDetail> {
     const p = this.project(slug),
       eligible = this.eligible(),
-      summary = this.summary(p, eligible);
+      summary = this.summary(p);
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
@@ -869,7 +976,7 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   async getHome(): Promise<HomeSummary> {
-    const projects = (await this.listProjects()).filter(p => p.status !== "archived"),
+    const projects = (await this.listProjects(true)).filter(p => p.status !== "archived"),
       open = this.store.sessions
         .filter((s) => s.state === "open" && this.projectById(s.projectId).status !== "archived" && !this.projectById(s.projectId).system)
         .sort(
@@ -904,7 +1011,9 @@ export class DemoAdapter implements LemmaApi {
               sessionNumber: open?.number ?? null,
             }
           : null,
-      due: this.backlog().length,
+      // Today needs a count, not 30,000 hydrated ReviewItem objects.
+      // Keep exactly the backlog() predicate (active, owner-visible, due).
+      due: this.dueSnapshot().total,
       pendingProposals: this.store.proposals.filter(
         (p) => p.status === "pending",
       ).length,
@@ -1056,7 +1165,7 @@ export class DemoAdapter implements LemmaApi {
       note.note.type === "reverse"
         ? [1, 2]
         : note.note.type === "cloze"
-          ? legacyRender.clozeOrds(note.note.front).filter((n) => n > 0)
+          ? clozeOrds(note.note.front).filter((n) => n > 0)
           : [1];
     const desired = ords.length ? ords : [1],
       removed = note.cards
@@ -1419,19 +1528,27 @@ export class DemoAdapter implements LemmaApi {
     return count;
   }
   async getReviewItems(filter: QueueFilter) {
+    const eligible = this.eligible();
+    const needed = new Set(eligible.map(card => card.cardId));
     const sessionForCard: Record<string, string> = {},
       conceptsForCard: Record<string, string[]> = {};
-    for (const note of this.store.notes)
+    // Extreme has 30,000 cards and 2,500 ideas. The old per-card
+    // Array.find did up to 75 million comparisons before Review could paint.
+    // Index concepts once and attach metadata only to the bounded daily
+    // queue, never all 30,000 cards. Concept/session filtering is unchanged.
+    const conceptSlugs = new Map(this.store.concepts.map(c => [c.id, c.slug] as const));
+    for (const note of this.store.notes) {
+      const slug = note.conceptId ? conceptSlugs.get(note.conceptId) : undefined;
+      const concepts = slug ? [slug] : [];
       for (const card of note.cards) {
+        if (!needed.has(card.id)) continue;
         if (note.sessionId) sessionForCard[card.id] = note.sessionId;
-        const concept = this.store.concepts.find(
-          (c) => c.id === note.conceptId,
-        );
-        conceptsForCard[card.id] = concept ? [concept.slug] : [];
+        conceptsForCard[card.id] = concepts;
       }
+    }
     return clone(
       filterReviewItems(
-        this.eligible(),
+        eligible,
         { ...filter, includeNew: filter.includeNew || filter.newOnly },
         {
           sessionForCard,
@@ -1441,33 +1558,34 @@ export class DemoAdapter implements LemmaApi {
     );
   }
   async getDeckTree(): Promise<DeckNode[]> {
-    // One pass over the entire due backlog. A daily 200-card review cap must
-    // not turn a 4,000-card backlog into 200 due in the hub or deck tree.
-    const projectCounts = new Map<string,number>();
-    const checkpointCounts = new Map<string,number>();
-    for (const card of this.backlog()) {
-      projectCounts.set(card.projectSlug,(projectCounts.get(card.projectSlug) ?? 0)+1);
-      if (card.checkpointCode) {
-        const key = card.projectSlug + ':' + card.checkpointCode;
-        checkpointCounts.set(key,(checkpointCounts.get(key) ?? 0)+1);
-      }
+    const activeProjects=new Map(this.store.projects
+      .filter(p=>p.status!=="archived"&&!p.system).map(p=>[p.id,p] as const));
+    const {projectCounts,checkpointCounts}=this.dueSnapshot();
+    const dueCheckpoints=new Map<string,DemoCheckpoint[]>();
+    for(const cp of this.store.checkpoints){
+      const project=activeProjects.get(cp.projectId);
+      if(!project||(checkpointCounts.get(cpKey(project.slug,cp.code))??0)===0)continue;
+      const rows=dueCheckpoints.get(cp.projectId)??[];
+      rows.push(cp);dueCheckpoints.set(cp.projectId,rows);
     }
-    return (await this.listProjects()).filter(p => p.status !== 'archived').map(p => ({
-      key: `project:${p.slug}` as const,
-      label: p.title,
-      glyph: p.subject.glyph,
-      level: 0 as const,
-      due: projectCounts.get(p.slug) ?? 0,
-      children: this.store.checkpoints
-        .filter(cp => cp.projectId === p.id && (checkpointCounts.get(p.slug+':'+cp.code) ?? 0)>0)
-        .map(cp => ({
-          key: `cp:${p.slug}:${cp.code}` as const,
-          label: cp.title,
-          glyph: p.subject.glyph,
-          level: 1 as const,
-          due: checkpointCounts.get(p.slug+':'+cp.code) ?? 0,
-          children: [],
-        })),
+    // The deck tree needs project identity and glyph only; re-running
+    // listProjects here re-scans every card, source and checkpoint on Today.
+    return this.store.projects.filter(p=>!p.system&&p.status!=="archived")
+      .sort((a,b)=>Date.parse(b.lastActivityAt??"1970-01-01")-Date.parse(a.lastActivityAt??"1970-01-01"))
+      .map(p=>({
+      key:`project:${p.slug}` as const,
+      label:p.title,
+      glyph:this.displaySubject(p.subjectId).glyph,
+      level:0 as const,
+      due:projectCounts.get(p.slug)??0,
+      children:(dueCheckpoints.get(p.id)??[]).map(cp=>({
+        key:`cp:${p.slug}:${cp.code}` as const,
+        label:cp.title,
+        glyph:this.displaySubject(p.subjectId).glyph,
+        level:1 as const,
+        due:checkpointCounts.get(cpKey(p.slug,cp.code))??0,
+        children:[],
+      })),
     }));
   }
   private validateState(state: CardState) {
@@ -1632,6 +1750,7 @@ export class DemoAdapter implements LemmaApi {
     if (!["active", "suspended", "deleted"].includes(status))
       invalid("Unknown note status");
     this.note(noteNo).note.status = status;
+    this.dueSnapshotCache=null;
   }
   async addComment(noteNo: number, body: string): Promise<CardComment> {
     return this.transaction(() => {

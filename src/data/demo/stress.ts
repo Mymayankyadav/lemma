@@ -130,7 +130,21 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
 export type StressProfile = "stress" | "extreme";
 
 export function makeStressStore(original: DemoStore, profile: StressProfile, options: {deferSessions?: boolean} = {}): DemoStore {
-  const data = structuredClone(original);
+  // The stress profile replaces these collections in full. Cloning the seed's
+  // 1,300 historical reviews (and their nested FSRS states) before throwing
+  // them away needlessly blocks the first Today paint under 4x CPU. Keep one
+  // actual note/session/proposal template and all persistent curriculum data.
+  // The generated 5k/30k notes and review aggregate are still materialized
+  // exactly as before; this only removes discarded intermediate work.
+  const data: DemoStore = structuredClone({
+    ...original,
+    notes: original.notes.slice(0, 1),
+    sessions: original.sessions.slice(0, 1),
+    proposals: original.proposals.slice(0, 1),
+    reviews: [],
+    misconceptions: [],
+    checkpointEvents: [],
+  });
   const extreme = profile === "extreme";
   const projectCount = extreme ? 60 : 15;
   const checkpointCount = extreme ? 100 : 40;
