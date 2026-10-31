@@ -211,7 +211,7 @@ try {
  await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
  const scaleSummaries=(await q('select public.project_summaries() item')).map(x=>x.item)
  assert.equal(scaleSummaries.filter(x=>x.status==='active').length,60)
- assert.ok(scaleSummaries.every(x=>x.stageProgress.length<=13))
+ assert.ok(scaleSummaries.filter(x=>x.slug.startsWith('scale-')).every(x=>x.stageProgress.length===13))
  const scaleHome=(await q('select public.home_summary() result'))[0].result
  assert.equal(scaleHome.projects.length,60)
  assert.ok(Buffer.byteLength(JSON.stringify(scaleHome),'utf8')<200000,
