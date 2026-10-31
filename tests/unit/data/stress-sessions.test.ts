@@ -37,7 +37,8 @@ describe('ST-0 session history at scale (audit #462)', () => {
 describe('deferred browser stress sessions', () => {
  it('preserves all per-project sessions and long histories without allocating 60k rows on Atlas', async () => {
   const data=makeStressStore(seed,'extreme',{deferSessions:true});
-  expect(data.sessions).toHaveLength(0);
+  expect(data.sessions).toHaveLength(2);
+  expect(data.sessions.find(s=>s.projectId===data.projects[0].id&&s.number===7)?.events).toHaveLength(400);
   expect(data.stressSessionCount).toBe(1000);
   const {DemoAdapter}=await import('../../../src/data/demo/adapter');
   const api=new DemoAdapter({fixture:data,now:()=>Date.UTC(2026,9,31,12)});

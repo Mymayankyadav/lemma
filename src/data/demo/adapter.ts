@@ -312,6 +312,7 @@ export class DemoAdapter implements LemmaApi {
   /** Preserve checkpoint evidence from the two representative long histories. */
   private stressCheckpointEvents(project: DemoProject, code: string): DemoSession["events"] {
     if (!this.store.stressSessionCount) return [];
+    if (this.store.sessions.some(s => s.projectId === project.id && s.events.some(e => e.checkpointCode === code))) return [];
     const index = this.store.projects.findIndex(p => p.id === project.id);
     const number = index === 0 && code === "CP7" ? 7
       : index === this.store.projects.length - 1 && code === "CP1" ? 1 : null;
@@ -899,7 +900,9 @@ export class DemoAdapter implements LemmaApi {
   async getSession(slug: string, number: number): Promise<SessionDetail> {
     const p = this.project(slug),
       s = found(
-        this.store.stressSessionCount ? this.virtualStressSession(p,number)
+        this.store.stressSessionCount
+          ? (this.store.sessions.find(s => s.projectId === p.id && s.number === number)
+            ?? this.virtualStressSession(p,number))
           : this.store.sessions.find(s => s.projectId === p.id && s.number === number),
         "Session",
       ),

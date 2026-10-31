@@ -40,10 +40,11 @@ export function makeStressInsightAggregate(
   const timestamp=Date.parse(at);
   return Number.isFinite(timestamp)&&timestamp<=now&&studyDayBounds(timestamp,timeZone,rolloverHour).index>=start;
  };
- const sessions=data.sessions.filter(s=>inWindow(s.startedAt));
+ // Representative stored histories must not double-count the virtual aggregate.
+ const virtualCount=data.stressSessionCount??0;
+ const sessions=virtualCount?[]:data.sessions.filter(s=>inWindow(s.startedAt));
  // Deferred browser fixtures keep only a per-project count. Derive the same
  // 90-day synthetic session aggregates without allocating every history row.
- const virtualCount=data.stressSessionCount??0;
  const perProjectInWindow=virtualCount
   ?Math.floor(virtualCount/90)*days+Math.min(days,virtualCount%90):0;
  const totalSessions=virtualCount?perProjectInWindow*data.projects.length:sessions.length;
@@ -263,6 +264,20 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
   if (options.deferSessions) {
     data.stressSessionCount = sessionCount;
     data.stressSessionMinutes = baseSession.minutes;
+    // Keep two real long histories for ST-6 visual acceptance; all other
+    // sessions remain virtual and do not inflate unrelated route startup.
+    for (const [projectIndex, number] of [[0,7],[projectCount-1,1]] as const) {
+      const project = data.projects[projectIndex];
+      const id = `stress-session-${projectIndex}-${number}`;
+      const checkpointCode = `CP${((number-1)%36)+1}`;
+      data.sessions.push({
+        ...baseSession, id, projectId:project.id, number, checkpointCode,
+        goal:`Study session ${number} for ${project.title}`, state:"ended",
+        startedAt:`@day:-${(number-1)%90}:0.3:0`,
+        lastActivityAt:`@day:-${(number-1)%90}:0.6:0`,
+        events:stressSessionEvents({id,checkpointCode},eventCount),
+      });
+    }
   }
   else for (const [projectIndex, project] of data.projects.entries()) {
     for (let index = 0; index < sessionCount; index++) {
