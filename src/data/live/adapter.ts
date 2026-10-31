@@ -6,7 +6,7 @@ import { projectProgress, conceptStatus } from '../../lib/derive'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError } from '../api'
+import { LemmaError, notImplemented } from '../api'
 
 type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
@@ -27,6 +27,13 @@ function homeReviewOutlook(db:ReturnType<typeof liveClient>,uid:string):Promise<
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ /** CONTRACT-546: FIX-546b replaces these with owner-scoped cursor queries. */
+ async getCardHistoryPage(..._args: Parameters<LemmaApi['getCardHistoryPage']>): ReturnType<LemmaApi['getCardHistoryPage']> {
+  throw notImplemented('getCardHistoryPage')
+ }
+ async getCardCommentsPage(..._args: Parameters<LemmaApi['getCardCommentsPage']>): ReturnType<LemmaApi['getCardCommentsPage']> {
+  throw notImplemented('getCardCommentsPage')
+ }
  /** DB-4 implementation supplies these APIs; legacy adapters stay unchanged until then. */
  async updateSubject(...args: Parameters<LemmaApi['updateSubject']>): ReturnType<LemmaApi['updateSubject']> {
   const [id,patch]=args,db=liveClient(),uid=await owner(db)
