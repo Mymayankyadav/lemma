@@ -21,10 +21,10 @@ function texPlain(text:string):string{
   return line.trim()?texEscape(line):'\\par';
  }).join('\n');
 }
-/** Convert Markdown prose to LaTeX while leaving dollar-delimited maths intact. */
+/** Convert Markdown prose to LaTeX while preserving all supported math delimiters. */
 export function sourceTex(title:string,pages:readonly TranscribedSourcePage[]):string{
  const chunks=ordered(pages).map(p=>{
-  const blocks=p.body.split(/(\$\$[\s\S]*?\$\$|\$[^$\n]+\$)/g);
+  const blocks=p.body.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$\n]+\$)/g);
   return '% page '+p.page+'\n'+blocks.map((block,i)=>i%2?block:texPlain(block)).join('')+'\n';
  });
  return '\\documentclass{article}\n\\usepackage{amsmath,amssymb}\n'+
