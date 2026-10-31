@@ -7,7 +7,6 @@ import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatu
 import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../data/types';
 import {preview,scheduleConfig} from '../../lib/fsrs';
 import {useReviewSession} from './store';
-import {PolygonProgress} from './PolygonProgress';
 import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
@@ -230,7 +229,8 @@ export default function Page(){
   <header className="flex items-center gap-2">
    <IconButton icon={X} label="Close review" disabled={submitting} onClick={close}/>
    <div className="min-w-0 flex-1">
-    <PolygonProgress total={total} order={roundOrder} currentCardId={current.cardId} answers={answers}/>
+    <div role="progressbar" aria-label="Review progress" aria-valuemin={0} aria-valuemax={Math.max(1,total)} aria-valuenow={Math.max(0,Math.min(total,roundOrder.indexOf(current.cardId)))} className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--paper-2)]"><div className="h-full rounded-full bg-[var(--ink-2)]" style={{width:(total?Math.max(0,roundOrder.indexOf(current.cardId))/total*100:0)+"%"}}/></div>
+    <p className="mt-1 text-center text-label tabular-nums text-ink-2">{Math.max(1,roundOrder.indexOf(current.cardId)+1)} of {total}</p>
     <div className="mt-1 flex items-center justify-center gap-1 text-label text-ink-3">
      <span className="font-math italic text-amber">{current.glyph}</span>
      <span className="truncate">{current.projectSlug.replaceAll('-',' ')} · {current.checkpointCode}</span>
