@@ -11,6 +11,7 @@ import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
+import {resolveAtlasDeepLink} from './deep-link';
 import {ancestors,arcsFor,budgetArcs,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,levelName,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
@@ -80,6 +81,7 @@ export default function Page(){
  const [selectedId,setSelectedId]=useState<string|null>(null),[details,setDetails]=useState(false);
  const [searching,setSearching]=useState(false),[search,setSearch]=useState(''),[recheckOnly,setRecheckOnly]=useState(false);
  const [confirmAll,setConfirmAll]=useState(false);
+ const [ambiguousIds,setAmbiguousIds]=useState<string[]>([]);
  const scroller=useRef<HTMLDivElement>(null);
  const [scrollTop,setScrollTop]=useState(0),[viewportHeight,setViewportHeight]=useState(740);
  useEffect(()=>{
@@ -113,11 +115,15 @@ export default function Page(){
 
  const written=useRef<string|null>(null);
  const select=useCallback((id:string|null,openDetails=false)=>{
-  setSelectedId(id);setDetails(!!id&&openDetails);
-  const next=new URLSearchParams(params),slug=id?tree?.nodes.get(id)?.slug:null;
-  const real=slug&&!tree?.nodes.get(id!)?.synthetic?slug:null;
-  written.current=real;
-  if(real)next.set('focus',real);else next.delete('focus');
+  setSelectedId(id);setDetails(!!id&&openDetails);setAmbiguousIds([]);
+  const next=new URLSearchParams(params),node=id?tree?.nodes.get(id):null;
+  const real=node&&!node.synthetic?node:null;
+  written.current=real?.id??null;
+  // A manual selection supersedes every incoming name fallback. The stable
+  // concept ID makes a copied link unambiguous across subjects.
+  next.delete('name');
+  if(real){next.set('focus',real.slug);next.set('id',real.id)}
+  else {next.delete('focus');next.delete('id')}
   setParams(next,{replace:true});
  },[params,setParams,tree]);
  const reveal=useCallback((id:string)=>{
@@ -147,21 +153,25 @@ export default function Page(){
   if(selectedId===node.id&&!node.children.length){setDetails(true);return}
   select(selectedId===node.id?null:node.id);
  };
- const focusSlug=params.get('focus'),focusName=params.get('name');
+ const focusSlug=params.get('focus'),focusName=params.get('name'),focusId=params.get('id');
  const seen=useRef<string|null>(null);
  useEffect(()=>{
-  // A concept's stored slug need not be derivable from a LaTeX title. Prefer
-  // the exact slug; the source-name fallback preserves links from Insights.
-  const incoming=(focusSlug??'')+'|'+(focusName??'');
+  const incoming=(focusId??'')+'|'+(focusSlug??'')+'|'+(focusName??'');
   if(!tree||!expanded||incoming===seen.current)return;
   seen.current=incoming;
-  if((!focusSlug&&!focusName)||(focusSlug===written.current&&!focusName))return;
-  written.current=focusSlug;
-  const nodes=[...tree.nodes.values()].filter(n=>!n.synthetic);
-  const found=nodes.find(n=>n.slug===focusSlug)||
-   (focusName?nodes.find(n=>n.name===focusName):undefined);
-  if(found){reveal(found.id);setSelectedId(found.id);setDetails(true)}
- },[tree,expanded,focusSlug,focusName,reveal]);
+  if(!focusId&&!focusSlug&&!focusName)return;
+  if(focusId===written.current&&!focusName)return;
+  written.current=focusId;
+  const result=resolveAtlasDeepLink(tree.nodes.values(),{id:focusId,slug:focusSlug,name:focusName});
+  if(result.kind==='found'){
+   setAmbiguousIds([]);reveal(result.id);setSelectedId(result.id);setDetails(true);
+  }else if(result.kind==='ambiguous'){
+   setSelectedId(null);setDetails(false);setAmbiguousIds(result.ids);
+  }else{
+   // Missing targets must lead to an editable search, never to an unrelated idea.
+   setAmbiguousIds([]);setSearching(true);setSearch(focusName??focusSlug??'');
+  }
+ },[tree,expanded,focusId,focusSlug,focusName,reveal]);
  const depthOf=useMemo(()=>{
   if(!tree||!expanded)return null;
   for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===expanded.size&&[...set].every(x=>expanded.has(x)))return d}
@@ -232,6 +242,23 @@ export default function Page(){
    <button type="button" aria-label="Clear selection" onClick={()=>select(null)} className="flex size-11 items-center justify-center rounded-ctl text-ink-2"><X size={18}/></button>
   </div>}
   {selected&&details&&<Details tree={tree} node={selected} onClose={()=>setDetails(false)} onTrace={trace}/>}
+  <Sheet open={ambiguousIds.length>1} onClose={()=>{setAmbiguousIds([]);select(null)}} title="Choose an idea">
+   <p className="text-body text-ink-2">Several subjects have an idea with this name. Choose the intended subject; no idea has been selected automatically.</p>
+   <div className="mt-3 flex flex-col gap-2">
+    {ambiguousIds.map(id=>{
+     const node=tree.nodes.get(id);
+     if(!node)return null;
+     const subject=graph?.subjects.find(item=>item.id===node.subjectId)?.name??'Unknown subject';
+     return <button key={id} type="button"
+      aria-label={plainMath(node.name)+' in '+plainMath(subject)}
+      onClick={()=>{setAmbiguousIds([]);reveal(id);select(id,true)}}
+      className="flex min-h-11 min-w-0 flex-col items-start rounded-ctl border border-edge px-3 py-2 text-left">
+      <span className="max-w-full overflow-x-auto text-body font-medium"><Tex source={node.name}/></span>
+      <span className="text-caption text-ink-2"><Tex source={subject}/></span>
+     </button>;
+    })}
+   </div>
+  </Sheet>
   <Sheet open={confirmAll} onClose={()=>setConfirmAll(false)} title="Unfold every idea?">
    <p className="text-body text-ink-2">This Atlas contains {ideas} ideas. Showing every branch may be slower; folded groups keep the connections readable.</p>
    <div className="mt-4 flex gap-2">
