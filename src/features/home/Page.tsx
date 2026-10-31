@@ -5,6 +5,7 @@ import {ChevronRight, Copy, Inbox, Plus, SlidersHorizontal, Waypoints} from 'luc
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
 import {relativeTime,formatCount} from '../../lib/text';
+import {plainMath} from '../../lib/plain-math';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
@@ -80,8 +81,8 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
  return <Slab as="section" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-3 px-3 py-2">
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
   <div className="min-w-0 flex-1">
-   <p data-resume-title="" style={clip} className="text-body font-medium text-ink"><Tex source={resume.projectTitle}/>{step}</p>
-   <p data-resume-meta="" style={clip} className="mt-1 text-caption text-ink-3">
+   <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><Tex source={resume.projectTitle}/>{step}</p>
+   <p data-resume-meta="" title={(status?'Paused '+status+' · ':'')+plainMath(description)} style={clip} className="mt-1 text-caption text-ink-3">
     {status?'Paused '+status+' · ':''}<Tex source={description}/>
    </p>
   </div>
