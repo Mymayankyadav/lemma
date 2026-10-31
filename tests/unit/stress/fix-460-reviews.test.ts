@@ -5,7 +5,7 @@ import type {DemoStore} from '../../../src/data/demo/model';
 
 const now=Date.UTC(2026,9,31,12);
 function store(seed:number):DemoStore {
- return {seed,sessions:[],projects:[],subjects:[],checkpointEvents:[],misconceptions:[]} as unknown as DemoStore;
+ return {seed,stressReviewCount:seed===2026103101?50000:seed===2026103102?300000:undefined,sessions:[],projects:[],subjects:[],checkpointEvents:[],misconceptions:[]} as unknown as DemoStore;
 }
 
 describe('FIX #460 bounded review-history stress aggregates',()=>{
