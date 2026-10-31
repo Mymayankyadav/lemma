@@ -13,3 +13,11 @@ describe('FIX #507 Today route code-splitting',()=>{
   expect(page).toContain('<Suspense')
  });
 });
+
+describe('FIX #507 route-specific goal preload',()=>{
+ it('starts the meaningful GoalDistance chunk before React mount on Today only',()=>{
+  const page=readFileSync('src/features/home/Page.tsx','utf8')
+  expect(page).toContain("location.hash==='#/'")
+  expect(page).toContain("void import('./GoalDistance')")
+ })
+})
