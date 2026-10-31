@@ -253,4 +253,14 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(entry).toContain('{deferSessions:true,deferNotes:true}');
  });
 
+ it('builds Atlas from virtual stress ideas and links without allocating unlinked cards',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{deferSessions:true,deferNotes:true});
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const graph=await api.getAtlas();
+  expect(graph.concepts.length).toBeGreaterThanOrEqual(2500);
+  expect(graph.links.length).toBeGreaterThanOrEqual(8000);
+  expect(Object.getOwnPropertyDescriptor(store,'notes')?.get).toBeTypeOf('function');
+ },30_000);
+
 });
