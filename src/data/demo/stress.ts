@@ -89,11 +89,20 @@ export function makeStressInsightAggregate(
 /** Materialise a single 150/400-event reasoning history only when a session is opened.
  * ST-6's nine-hint runs remain foldable; attempts/evidence/rechecks remain visible.
  */
-export function stressSessionEvents(session: Pick<DemoSession, "id" | "checkpointCode">, count: number): DemoSession["events"] {
+export function stressSessionEvents(session: Pick<DemoSession, "id" | "checkpointCode"> & Partial<Pick<DemoSession, "startedAt" | "lastActivityAt">>, count: number): DemoSession["events"] {
   const match = /^stress-session-(\d+)-(\d+)$/.exec(session.id);
   if (!match || !Number.isSafeInteger(count) || count < 0) return [];
   const projectIndex = Number(match[1]), number = Number(match[2]);
+  const start = Date.parse(session.startedAt ?? ""), end = Date.parse(session.lastActivityAt ?? "");
+  const hydrated = Number.isFinite(start) && Number.isFinite(end) && end >= start;
+  // Authored @day tokens resolve on hydration; on-demand virtual sessions already
+  // carry ISO bounds. Both paths put every event inside its ended session.
+  const offset = (number - 1) % 90;
   return Array.from({length: count}, (_, index) => {
+    const progress = (index + 1) / (count + 1);
+    const createdAt = hydrated
+      ? new Date(start + (end - start) * progress).toISOString()
+      : `@day:-${offset}:${(0.3 + 0.3 * progress).toFixed(10)}:0`;
     const phase = index % 12;
     const kind = phase < 9 ? "hint" as const : phase === 9 ? "attempt" as const
       : phase === 10 ? "evidence" as const : "recheck" as const;
@@ -104,7 +113,7 @@ export function stressSessionEvents(session: Pick<DemoSession, "id" | "checkpoin
       outcome: kind === "evidence" ? "demonstrated" as const : kind === "attempt" ? "partial" as const : null,
       hintLevel: kind === "hint" ? phase + 1 : null,
       checkpointCode: session.checkpointCode,
-      createdAt: new Date(Date.UTC(2026, 9, 31, 0, index)).toISOString(),
+      createdAt,
     };
   });
 }
