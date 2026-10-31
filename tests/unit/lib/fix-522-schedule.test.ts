@@ -1,4 +1,8 @@
 import {describe,it,expect} from 'vitest';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {MemoryRouter} from 'react-router';
+import {ProjectTimeline} from '../../../src/ui/timeline/ProjectTimeline';
 import type {CheckpointView,Project,ProjectDetail} from '../../../src/data/types';
 import {buildSchedule,scheduleDetail} from '../../../src/lib/schedule';
 import {scheduleForProject} from '../../../src/ui/timeline/progress';
@@ -28,5 +32,18 @@ describe('FIX #522 checkpoint and Metro schedule parity',()=>{
   expect(scheduleDetail(rows[0])).toBe(scheduleDetail(metro[0]));
   expect(scheduleDetail(rows[0])).toContain('Planned 4 Nov');
   expect(scheduleDetail(rows[0])).not.toContain('days late');
+ });
+ it('renders supplied schedule rows instead of recomputing a different pace',()=>{
+  const cp:CheckpointView={id:'cp',code:'CP1',title:'Proof',position:1,ui:'now',
+   currentStep:1,stepsTotal:4,recheckDue:null,dueCards:0,dueOn:'2035-01-01'};
+  const authoritative=buildSchedule([cp],{now:new Date('2034-12-31T12:00:00Z'),
+   pacePerWeek:4,targetDate:'2035-01-05'});
+  const expected=scheduleDetail(authoritative[0]);
+  expect(expected).toBeTruthy();
+  const markup=renderToStaticMarkup(createElement(MemoryRouter,null,
+   createElement(ProjectTimeline,{project:{title:'Analysis',slug:'analysis',done:0,total:1,
+    targetDate:'2035-01-05'},checkpoints:[cp],pacePerWeek:.25,scheduleRows:authoritative})));
+  expect(markup).toContain('data-schedule-detail');
+  expect(markup).toContain(expected!);
  });
 });
