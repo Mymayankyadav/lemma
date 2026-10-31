@@ -317,4 +317,30 @@ describe('FIX #507: cold Today stress summary',()=>{
   expect(entry).not.toContain('deferSources:initialToday');
  });
 
+ it('counts virtual future cards by project without visiting all 30k records on cold Today',async()=>{
+  let current=now;
+  const fixture=makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  });
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>current,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  let indexedReads=0;
+  store.projects=new Proxy(store.projects,{
+   get(target,key,receiver){
+    if(typeof key==='string'&&/^\\d+$/.test(key))indexedReads++;
+    return Reflect.get(target,key,receiver);
+   },
+  });
+  const home=await api.getHome();
+  expect(home.due).toBe(4000);
+  expect(home.projects.reduce((sum,project)=>sum+project.cardsCount,0)).toBe(30_000);
+  expect((await api.getDeckTree()).reduce((sum,deck)=>sum+deck.due,0)).toBe(4000);
+  // Project-card totals and future forecast are cyclic arithmetic, not
+  // 30,000 repeated array/Map reads on the first 4x CPU screen.
+  expect(indexedReads).toBeLessThan(2000);
+  current+=15*24*60*60*1000;
+  expect((await api.getHome()).due).toBe(30_000);
+  expect((await api.getDeckTree()).reduce((sum,deck)=>sum+deck.due,0)).toBe(30_000);
+ },30_000);
+
 });
