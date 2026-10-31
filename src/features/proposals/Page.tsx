@@ -182,8 +182,8 @@ export default function Page() {
   const [batch, setBatch] = useState<ProposalGroup | null>(null),
     [staged, setStaged] = useState<{ ids: string[]; label: string } | null>(null),
     [selected, setSelected] = useState<string | null>(null),
-    [visibleCards, setVisibleCards] = useState(20),
-    [visiblePlans, setVisiblePlans] = useState(20),
+    [cardPage, setCardPage] = useState(0),
+    [planPage, setPlanPage] = useState(0),
     [confirm, setConfirm] = useState(false),
     [editing, setEditing] = useState(false),
     [front, setFront] = useState(""),
@@ -214,8 +214,9 @@ export default function Page() {
       (p) => p.kind === "plan" || p.kind === "plan_change",
     ),
     active = cards.find(p=>p.id===selected)??cards[0],
-    cardGroups = groupProposals(pageProposals(cards,visibleCards)),
-    planGroups = groupProposals(pageProposals(plans,visiblePlans));
+    allCardGroups = groupProposals(cards),
+    cardGroups = groupProposals(pageProposals(cards.slice(cardPage*20),20)),
+    planGroups = groupProposals(pageProposals(plans.slice(planPage*20),20));
   useEffect(()=>{
     if(!staged)return;
     const timer=window.setTimeout(()=>{
@@ -291,17 +292,20 @@ export default function Page() {
         active ? (
           <>
             <section aria-label="Proposal groups" className="flex flex-col gap-3">
-             <p className="text-label text-ink-3">{Math.min(visibleCards,cards.length)} of {cards.length} card proposals · grouped by session and checkpoint</p>
+             <p className="text-label text-ink-3">{Math.min(cardPage*20+1,cards.length)}–{Math.min((cardPage+1)*20,cards.length)} of {cards.length} card proposals · grouped by session and checkpoint</p>
              {cardGroups.map(group=><Slab key={group.key} className="flex flex-col gap-2 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                <div className="min-w-0"><h2 className="text-body font-semibold">{group.label} · {group.proposals.length}</h2><p className="truncate text-caption text-ink-3">{group.project.replaceAll("-", " ")}</p></div>
-               {group.proposals.some(p=>p.kind==="card")&&<button type="button" disabled={pending} className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-amber disabled:opacity-50" onClick={()=>{setBatch(group);setConfirm(true)}}>
+               {group.proposals.some(p=>p.kind==="card")&&<button type="button" disabled={pending} className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-amber disabled:opacity-50" onClick={()=>{setBatch(allCardGroups.find(g=>g.key===group.key)??group);setConfirm(true)}}>
                 Approve all from {group.label}
                </button>}
               </div>
               <div className="flex flex-wrap gap-1.5">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`min-h-11 rounded-ctl border px-3 text-label ${active.id===p.id?"border-amber text-amber":"border-edge text-ink-2"}`}>{p.kind==="card_edit"?"Fix":"Card"} · {p.card?.front.slice(0,24)??`N${p.cardEdit?.note_no}`}</button>)}</div>
              </Slab>)}
-             {visibleCards<cards.length&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setVisibleCards(n=>n+20)}>More proposals · {cards.length-visibleCards} remaining</button>}
+             <div className="flex gap-2">
+              {cardPage>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n-1)}>Previous 20</button>}
+              {(cardPage+1)*20<cards.length&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n+1)}>More proposals · {cards.length-(cardPage+1)*20} remaining</button>}
+             </div>
             </section>
             <PendingCard
               key={active.id}
@@ -420,7 +424,10 @@ export default function Page() {
               </div>
             </Slab>
           ))}</section>)}
-          {visiblePlans<plans.length&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setVisiblePlans(n=>n+20)}>More plan proposals · {plans.length-visiblePlans} remaining</button>}
+          <div className="flex gap-2">
+           {planPage>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setPlanPage(n=>n-1)}>Previous 20</button>}
+           {(planPage+1)*20<plans.length&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setPlanPage(n=>n+1)}>More plan proposals · {plans.length-(planPage+1)*20} remaining</button>}
+          </div>
         </div>
       ) : (
         <EmptyState
@@ -431,7 +438,8 @@ export default function Page() {
       )}
       <Sheet open={confirm} onClose={()=>setConfirm(false)} title={`Approve ${batch?.proposals.filter(p=>p.kind==="card").length??0} from ${batch?.label??"group"}?`}>
         <p className="mb-3 text-ink-2">Preview the cards from this session and checkpoint. A six-second Undo window appears before anything is saved.</p>
-        <ul className="mb-4 max-h-56 overflow-y-auto text-label text-ink-2">{batch?.proposals.filter(p=>p.kind==="card").map(p=><li key={p.id} className="border-b border-edge py-2">{p.card?.front.slice(0,150)}</li>)}</ul>
+        <ul className="mb-4 max-h-56 overflow-y-auto text-label text-ink-2">{batch?.proposals.filter(p=>p.kind==="card").slice(0,10).map(p=><li key={p.id} className="border-b border-edge py-2">{p.card?.front.slice(0,150)}</li>)}</ul>
+        {(batch?.proposals.filter(p=>p.kind==="card").length??0)>10&&<p className="mb-3 text-label text-ink-3">Showing 10 of {batch?.proposals.filter(p=>p.kind==="card").length} cards in this batch.</p>}
         <div className="grid grid-cols-2 gap-3"><Button variant="ghost" onClick={()=>setConfirm(false)}>Cancel</Button>
          <Button disabled={pending || !batch?.proposals.some(p=>p.kind==="card")} onClick={()=>{
           if(!batch)return;
