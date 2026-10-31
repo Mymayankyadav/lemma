@@ -73,6 +73,8 @@ export interface LemmaApi {
  getSourceTranscriptionStats(projectId:string):Promise<SourceTranscriptionStat[]>
  /** Load exactly one PDF page rather than all pages of a long scan. */
  getSourcePage(sourceId:string,page:number):Promise<TranscribedSourcePage|null>
+ /** Export reads all transcribed pages only when the owner explicitly requests a download. */
+ getTranscribedPagesForExport(sourceId:string):Promise<TranscribedSourcePage[]>
  /** Owner edits or verifies a transcribed page (changes are logged for undo). */
  updateSourcePage(sourceId:string,page:number,patch:{body?:string;confidence?:'high'|'check'}):Promise<TranscribedSourcePage>
  /** Short-lived URL for the owner's original PDF, when present. */
