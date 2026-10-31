@@ -6,7 +6,8 @@ import type {DemoStore} from '../../../src/data/demo/model';
 describe('ST-4 due backlog semantics',()=>{
  it('counts scheduled overdue cards but excludes unseen new cards from the badge and deck tree',async()=>{
   const fixture=JSON.parse(readFileSync('src/data/demo/fixture.json','utf8')) as DemoStore;
-  const note=fixture.notes.find(n=>n.note.status==='active'&&n.cards.length);
+  const projectIds=new Set(fixture.projects.filter(p=>p.status!=='archived'&&!p.system).map(p=>p.id));
+  const note=fixture.notes.find(n=>n.note.status==='active'&&n.cards.length&&projectIds.has(n.projectId));
   expect(note).toBeDefined();
   note!.cards[0].state.state=0;
   note!.cards[0].state.due='@due:-1';
