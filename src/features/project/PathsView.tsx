@@ -145,9 +145,14 @@ export function Stages({detail}:{detail:ProjectDetail}){
   {stages.length>5&&<nav aria-label="Jump to stage" className="flex min-w-0 gap-2 overflow-x-auto pb-1" data-stage-jumps="">
    {stages.map((stage,i)=><button key={stage.key} type="button" data-stage-chip={i}
     aria-pressed={openStage===i} onClick={()=>setOpenStage(i)}
-    className={'min-h-11 min-w-11 max-w-44 shrink-0 truncate rounded-chip border px-3 text-label '+
+    className={'flex min-h-11 min-w-11 max-w-44 shrink-0 items-center gap-1 overflow-hidden rounded-chip border px-3 text-label '+
      (openStage===i?'border-amber bg-amber-tint text-amber':'border-edge bg-fill-1 text-ink-2')}>
-    {i+1}. {stage.name}
+    <span className="shrink-0">{i+1}.</span>
+    <span data-stage-chip-label className="block min-w-0 flex-1 overflow-x-auto whitespace-nowrap"
+     style={{overflowX:'auto',whiteSpace:'nowrap',maskImage:'linear-gradient(to right, black 85%, transparent)',
+      fontSize:stage.name.includes('$')||stage.name.includes('\\')?'16px':undefined}}>
+     <Tex source={stage.name}/>
+    </span>
    </button>)}
   </nav>}
   {stages.map((stage,i)=><StageCard key={detail.project.slug+'/'+stage.key} slug={detail.project.slug}
