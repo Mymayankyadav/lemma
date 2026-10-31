@@ -20,6 +20,11 @@ for(const [width,height] of [[390,844],[360,740]] as const){
    await page.evaluate((hash)=>{location.hash=hash},screen.hash);
    await expect(page.getByRole("heading",{name:screen.heading,level:1,exact:true})).toBeVisible({timeout:90_000});
    await page.waitForTimeout(150);
+   if(screen.slug==="sessions"){
+    const sessions=page.getByRole("region",{name:"Sessions"});
+    await expect(sessions).toContainText(profile==="extreme"?"1–20 of 1000":"1–20 of 300");
+    await expect(sessions.getByRole("button",{name:/More sessions/})).toBeVisible();
+   }
    if(screen.slug==="session-detail"){
     const reasoning=page.getByRole("region",{name:"Reasoning"});
     await expect(reasoning.getByRole("button",{name:/9 hints/}).first()).toBeVisible();
