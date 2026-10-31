@@ -50,6 +50,7 @@ function describe(op: PlanChangeOp) {
       return `${op.code} no longer needs ${op.prereq}`;
   }
 }
+const projectLabel=(slug:string)=>slug.replaceAll('-', ' ').replace(/\b[a-z]/g,letter=>letter.toUpperCase());
 function PendingCard({
   proposal,
   busy,
@@ -100,7 +101,7 @@ function PendingCard({
       transition={{ duration: reduce ? 0.15 : 0.55 }}
       aria-label="Proposal card, swipe right to approve or left to reject"
     >
-      <Card stack className="min-h-[340px] rounded-slab p-5">
+      <Card className="rounded-slab p-5">
         <div className="flex items-center gap-2 text-label font-medium text-ink-3">
           <Sparkles size={15} className="text-amber" />
           <span>
@@ -295,12 +296,12 @@ export default function Page() {
              <p className="text-label text-ink-3">{Math.min(cardPage*20+1,cards.length)}–{Math.min((cardPage+1)*20,cards.length)} of {cards.length} card proposals · grouped by session and checkpoint</p>
              {cardGroups.map(group=><Slab key={group.key} className="flex flex-col gap-2 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-               <div className="min-w-0"><h2 className="text-body font-semibold">{group.label} · {group.proposals.length}</h2><p className="truncate text-caption text-ink-3">{group.project.replaceAll("-", " ")}</p></div>
+               <div className="min-w-0"><h2 className="text-body font-semibold">{group.label} · {group.proposals.length}</h2><p className="truncate text-caption text-ink-3">{projectLabel(group.project)}</p></div>
                {group.proposals.some(p=>p.kind==="card")&&<button type="button" disabled={pending} className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-amber disabled:opacity-50" onClick={()=>{setBatch(allCardGroups.find(g=>g.key===group.key)??group);setConfirm(true)}}>
                 Approve all from {group.label}
                </button>}
               </div>
-              <div role="group" aria-label="Cards in this proposal group" className="flex flex-col divide-y divide-[var(--hair)]">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`flex min-h-11 w-full items-center gap-3 px-2 py-2 text-left text-body ${active.id===p.id?"bg-[var(--paper-2)] text-ink":"text-ink-2"}`}><span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">{active.id===p.id&&<Check size={17} />}</span><span className="min-w-0 flex-1 overflow-hidden"><MathText source={p.card?.front??("Fix N"+(p.cardEdit?.note_no??""))} variant="body" className="max-h-6 overflow-hidden"/></span></button>)}</div>
+              <div role="group" aria-label="Cards in this proposal group" className="flex flex-col divide-y divide-[var(--hair)]">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`flex min-h-11 w-full items-center gap-3 px-2 py-2 text-left text-body ${active.id===p.id?"bg-[var(--paper-2)] text-ink":"text-ink-2"}`}><span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">{active.id===p.id&&<Check size={17} />}</span><span className="min-w-0 flex-1 overflow-hidden"><MathText source={p.card?.front??p.cardEdit?.front??("Fix N"+(p.cardEdit?.note_no??""))} variant="body" className="max-h-6 overflow-hidden"/></span></button>)}</div>
              </Slab>)}
              <div className="flex gap-2">
               {cardPage>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n-1)}>Previous 20</button>}
@@ -362,13 +363,13 @@ export default function Page() {
         )
       ) : plans.length ? (
         <div className="flex flex-col gap-4">
-          {planGroups.map(group=><section key={group.key} className="flex flex-col gap-3"><h2 className="text-label font-semibold text-ink-2">{group.project.replaceAll("-", " ")} · {group.label} · {group.proposals.length}</h2>{group.proposals.map((p) => (
+          {planGroups.map(group=><section key={group.key} className="flex flex-col gap-3"><h2 className="text-label font-semibold text-ink-2">{projectLabel(group.project)} · {group.label} · {group.proposals.length}</h2>{group.proposals.map((p) => (
             <Slab key={p.id} className="p-5">
               <div className="flex items-center gap-3">
                 <Glyph subject={p.projectGlyph} size={40} />
                 <div>
                   <h2 className="font-semibold">
-                    {p.projectSlug.replaceAll("-", " ")}
+                    {projectLabel(p.projectSlug)}
                   </h2>
                   <p className="text-label text-ink-3">
                     {p.kind === "plan_change" ? "Plan change" : "New plan"}{p.sessionNumber ? ` · From S${p.sessionNumber}` : ""}
