@@ -30,8 +30,8 @@ as $$
       and n.status = 'active'
       and pr.status <> 'archived' and pr.system = false
       and c.state <> 0 and c.due is not null
-      and c.due < ((p.today + 7)::timestamp
-        + make_interval(hours => p.rollover_hour)) at time zone p.time_zone
+      and c.due < (((p.today + 7)::timestamp
+        + make_interval(hours => p.rollover_hour)) at time zone p.time_zone)
   ),
   counts as (
     select day, count(*)::integer as due
