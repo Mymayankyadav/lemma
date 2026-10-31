@@ -157,8 +157,8 @@ export function analyzeQa3(
         continue;
       }
       seen.add(row.route);
-      if (row.route === '/' && row.cpuThrottle < 4) {
-        errors.push(matrix.filename + ': first render not measured under 4x CPU throttle');
+      if (row.cpuThrottle < 4) {
+        errors.push(matrix.filename + ': route ' + row.route + ' not measured under 4x CPU throttle');
         continue;
       }
       if (row.actualRoute !== row.route) {
@@ -177,8 +177,7 @@ export function analyzeQa3(
     if (errors.length === errorCountBefore) filesValid++;
   }
 
-  // QA-3b release cannot inherit ST-0's temporary audit exceptions. Even a
-  // clean fixture is not release clearance while a named gate is unresolved.
+  // QA-3b release cannot inherit ST-0's temporary audit exceptions.
   if (options.release) for (const gate of options.pendingGates ?? unfinishedStressGates) {
     errors.push('QA-3 release blocked by unresolved audit #' + gate.issue);
   }
@@ -219,7 +218,7 @@ export function renderQa3Markdown(report: Qa3Report): string {
       ' (presence only; visual review is still required).',
     '',
     'This report covers only the generic ST-0 hard budgets (layout, tap targets,',
-    'type sizes, DOM count and render time when CPU throttled).',
+    'type sizes, DOM count and render time at 4x CPU for every route).',
     'The live Today/Insights request and transfer budgets require separate authenticated or faithfully intercepted-network evidence in QA-3b.',
     '**It does not certify the A–I behavioral acceptance or screenshot review.**',
     'Those remain QA-3b gates after the dependent feature PRs merge.',
@@ -246,11 +245,9 @@ export function renderQa3Markdown(report: Qa3Report): string {
 }
 
 function main(): void {
-  const release = process.argv.includes('--release');
-  const positional = process.argv.slice(2).filter(arg => arg !== '--release');
-  const input = positional[0] ?? 'test-results/stress';
-  const output = positional[1] ?? 'test-results/qa3/stress-budget-report.md';
-  const screenDir = positional[2] ?? 'test-results/screens/stress';
+  const input = process.argv[2] ?? 'test-results/stress';
+  const output = process.argv[3] ?? 'test-results/qa3/stress-budget-report.md';
+  const screenDir = process.argv[4] ?? 'test-results/screens/stress';
   const files: Record<string, unknown> = {};
   for (const { filename } of qa3Cases()) {
     try {
@@ -263,7 +260,7 @@ function main(): void {
   let screenshots: ReadonlySet<string>;
   try { screenshots = new Set(readdirSync(resolve(screenDir))); }
   catch { screenshots = new Set(); }
-  const report = analyzeQa3(files, screenshots, { release });
+  const report = analyzeQa3(files, screenshots);
   mkdirSync(dirname(resolve(output)), { recursive: true });
   writeFileSync(resolve(output), renderQa3Markdown(report), 'utf8');
   process.stdout.write('QA-3a ' + report.status + ' · ' + report.routesValid +
