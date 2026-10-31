@@ -12,7 +12,7 @@ export default function TabBar(){
  className={({isActive})=>`relative flex min-h-11 min-w-[64px] max-w-[160px] flex-1 flex-col items-center justify-center gap-[2px] rounded-ctl ${isActive?'text-amber':'text-ink-3'}`}>
  {({isActive})=><>
  <span className="relative"><Icon aria-hidden="true" size={22} strokeWidth={1.75}/>
- {label==='Review'&&!!data?.due&&<span className="absolute -right-4 -top-2 flex min-w-5 items-center justify-center rounded-[4px] px-1 text-[10px] font-bold" style={{background:'var(--accent)',color:'var(--on-accent)'}}>{data.due}</span>}
+ {label==='Review'&&!!data?.due&&<span className="absolute -right-5 -top-2 flex min-w-5 max-w-[48px] items-center justify-center rounded-[4px] px-1 text-[10px] font-bold tabular-nums" style={{background:'var(--accent)',color:'var(--on-accent)'}}>{data.due>999?'999+':data.due}</span>}
  </span>{isActive&&<motion.span initial={reduce?false:{opacity:0,y:4}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.2}} className="text-[11px] font-semibold">{label}</motion.span>}
  </>}
  </NavLink>)}</nav>;
