@@ -89,4 +89,19 @@ describe('FIX-546a live Card detail scoped queries',()=>{
   });
   expect(mock.getUser).toHaveBeenCalledOnce();
  });
+ it('skips unrelated review and proposal tables when the selected note has no references',async()=>{
+  const savedCards=fixtures.cards,savedComments=fixtures.card_comments;
+  try{
+   fixtures.cards=[];fixtures.card_comments=[];
+   const detail=await new LiveAdapter().getCard(12);
+   expect(detail.cards).toEqual([]);
+   expect(detail.history).toEqual([]);
+   expect(detail.comments).toEqual([]);
+   expect(requests.map(r=>r.table)).not.toContain('reviews');
+   expect(requests.map(r=>r.table)).not.toContain('proposals');
+  }finally{
+   fixtures.cards=savedCards;fixtures.card_comments=savedComments;
+  }
+ });
+
 });
