@@ -34,6 +34,8 @@ for(const width of [360,390] as const){
     expect(await count.evaluate(el=>getComputedStyle(el).fontFamily)).toMatch(/Instrument Sans/i);
    }
    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+   const focusHeading=section?page.getByRole('heading',{name:section,level:2}).first():headings.first();
+   await focusHeading.scrollIntoViewIfNeeded();
    await page.screenshot({path:`test-results/screens/look-1c-${name}-${profile}-${theme}-${width}.png`});
   }
  });
