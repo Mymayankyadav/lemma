@@ -7,6 +7,6 @@ export interface SectionHeadingProps extends HTMLAttributes<HTMLHeadingElement>{
  as?:'h2'|'h3';
 }
 export function SectionHeading({children,className='',as:Tag='h2',...props}:SectionHeadingProps){
- return <Tag {...props} className={`ui-section-heading ${className}`}>{children}</Tag>;
+ return <Tag {...props} className={className ? `ui-section-heading ${className}` : 'ui-section-heading'}>{children}</Tag>;
 }
 export default SectionHeading;
