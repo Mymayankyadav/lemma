@@ -43,8 +43,8 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
      strokeDasharray={arc.kind==='related'?'2 4':undefined} strokeLinecap="round"
      markerEnd={arc.kind==='prereq'?`url(#atlas-arrow-${tone==='related'||tone==='self'?'none':tone})`:undefined}/>
     {arc.count>1&&<g transform={`translate(${reach*.75+x0*.25} ${(y1+y2)/2})`}>
-     <circle r="8" fill="var(--obsidian)" stroke={toneColor[tone]} strokeWidth="1"/>
-     <text textAnchor="middle" dy="3.2" fontSize="9" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
+     <circle r="11.5" fill="var(--obsidian)" stroke={toneColor[tone]} strokeWidth="1"/>
+     <text data-atlas-bundle-count="true" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="600" fill={toneColor[tone]}>{arc.count}</text>
     </g>}
    </g>;
   })}
