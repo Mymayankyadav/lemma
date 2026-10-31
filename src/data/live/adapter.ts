@@ -596,7 +596,9 @@ export class LiveAdapter implements LemmaApi {
     sourceShort:sources[0]?.short??null,pageLabel:note.page_label},
     cards:cardRows.map(c=>({ord:c.ord,state:cardState(c)})).sort((a,b)=>a.ord-b.ord),
     history:historyPage.rows,
-    comments:commentsPage.rows}
+    comments:commentsPage.rows,
+    historyNextCursor:historyPage.nextCursor,
+    commentsNextCursor:commentsPage.nextCursor}
  }
  async createNote(...args: Parameters<LemmaApi['createNote']>): ReturnType<LemmaApi['createNote']> {
   const [input]=args,db=liveClient(),uid=await owner(db)
