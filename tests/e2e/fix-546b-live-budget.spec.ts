@@ -72,6 +72,11 @@ for(const recordCount of [19,20,21,1001] as const){
   await page.route('**/rest/v1/**',route=>{
    const req=route.request(),url=new URL(req.url())
    const table=url.pathname.replace(/^\/rest\/v1\//,'')
+   if(table==='card_comments'&&req.method()==='POST'){
+    const inserted={...comments[0],no:2002,body:'Mutation invalidates cursor page'}
+    calls.push({table,url:req.url(),bytes:Buffer.byteLength(JSON.stringify(inserted)),method:'POST'})
+    return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify(inserted)})
+   }
    const single=req.headers()['accept']?.includes('application/vnd.pgrst.object+json')
    const pageNumber=url.searchParams.has('or')?1:0
    const rows=(table==='reviews'?reviews:comments).slice(0,recordCount)
@@ -159,6 +164,18 @@ for(const recordCount of [19,20,21,1001] as const){
   expect(errors).toEqual([])
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth))
    .toBeLessThanOrEqual(1)
+  if(recordCount===21){
+   // A comment mutation must invalidate and refetch the active cursor page.
+   await page.getByRole('button',{name:'More comments'}).click()
+   await expect(page.locator('[data-comment-row]')).toHaveCount(1)
+   const cursorReads=()=>calls.filter(c=>c.table==='card_comments'&&c.method==='GET'&&
+    new URL(c.url).searchParams.has('or')).length
+   const before=cursorReads()
+   await page.getByRole('textbox',{name:'Note for your tutor'}).fill('Mutation invalidates cursor page')
+   await page.getByRole('button',{name:'Save note for your tutor'}).click()
+   await expect.poll(cursorReads).toBeGreaterThan(before)
+   await expect(page.locator('[data-comment-row]')).toHaveCount(1)
+  }
   await page.screenshot({
    path:'test-results/screens/fix-546b-live-'+recordCount+'-'+theme+'-'+width+'.png',
    fullPage:true,
