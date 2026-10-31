@@ -115,7 +115,8 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
   }
  }
  const ordered=focus?[...arcs].sort((a,b)=>Number(arcTone(a,focus)!=='none')-Number(arcTone(b,focus)!=='none')):arcs;
- const lanes=layoutAtlasLanes(arcs,centers);
+ const priorityKeys=focus?new Set(arcs.filter(arc=>arcTone(arc,focus)!=='none').map(arc=>arc.key)):undefined;
+ const lanes=layoutAtlasLanes(arcs,centers,priorityKeys);
  const hiddenLanes=ordered.filter(arc=>!lanes.has(arc.key));
  const hiddenLinkCount=hiddenLanes.reduce((total,arc)=>total+arc.count,0);
  // Even when a physical lane cannot be allocated, the two affected rows
@@ -141,7 +142,9 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
    if(!lane)return null;
    const tone=arcTone(arc,focus),lit=tone!=='none';
    const opacity=focus?(lit?1:.12):.35;
-   const width=(lit?2:1.3)+Math.min(1.1,Math.log2(arc.count)*.4);
+   // 9px center spacing with 1px strokes leaves exactly 8px of painted-edge
+   // clearance. Emphasis uses tone/opacity, never wider overlapping strokes.
+   const width=1;
    return <g key={arc.key} data-arc-kind={arc.kind} data-arc-tone={tone} data-atlas-lane={lane.x}
     style={{transition:'opacity 160ms ease'}} opacity={opacity}>
     <path d={lane.d} fill="none" stroke={toneColor[tone]} strokeWidth={width}
