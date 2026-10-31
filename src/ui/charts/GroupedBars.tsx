@@ -15,7 +15,7 @@ export function GroupedBars({data,width=316,height=132,title='Checkpoints by wee
  {data.map((d,i)=><g key={i}>{([['demonstrated','var(--amber)'],['rechecked','var(--ink-3)']] as const).map(([key,color],j)=>{
  const height=Math.max(0,bottom-y(d[key]));return <motion.rect key={key} x={(groups(String(i))||0)+bw*j} rx="2" fill={color} initial={reduce?false:{height:0,y:bottom}} animate={{height,y:y(d[key])}} width={Math.max(2,bw-2)} transition={{duration:0.6,delay:reduce?0:i*0.1}}/>
  })}
- {i%labelEvery===0&&<text x={(groups(String(i))||0)+groups.bandwidth()/2} y={h-5} fontSize="12" textAnchor="middle" fill="var(--ink-3)">{d.label}</text>}
+ {i%labelEvery===0&&<text x={(groups(String(i))||0)+groups.bandwidth()/2} y={h-5} fontSize="14" textAnchor="middle" fill="var(--ink-3)">{d.label}</text>}
  </g>)}</svg>;
 }
 export default GroupedBars;
