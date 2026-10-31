@@ -39,6 +39,15 @@ for(const width of [360,390] as const){
    actions.getByRole('link',{name:'Review'}),
    actions.getByRole('button',{name:'Pages'}),
   ])expect(await control.evaluate(el=>getComputedStyle(el).color)).toBe(ink);
+  // Secondary navigation is not a second red primary action.
+  const cardsLink=page.getByRole('region',{name:'Session cards'}).getByRole('link');
+  await expect(cardsLink).toBeVisible();
+  expect(await cardsLink.evaluate(el=>getComputedStyle(el).color)).toBe(ink);
+  const moreReasoning=page.getByRole('button',{name:/More reasoning/});
+  if(profile!=='1'){
+   await expect(moreReasoning).toBeVisible();
+   expect(await moreReasoning.evaluate(el=>getComputedStyle(el).color)).toBe(ink);
+  }
   mkdirSync('test-results/screens/look-6a',{recursive:true});
   await actions.scrollIntoViewIfNeeded();
   await page.screenshot({path:`test-results/screens/look-6a/session-actions-${profile}-${theme}-${width}.png`});
