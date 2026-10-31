@@ -322,6 +322,21 @@ Notes per task:
 #### How work runs now (31 Oct 10:25)
 - Four hourly agents (Steward :00, Fixer :15, Builder :30, Auditor :45) coordinate through GitHub: leases in PR descriptions and the issues "Task board", "Audit log" and "Agent log". See `docs/agents/README.md` and `docs/agents/prompts.md`. Add work by adding a section here with task IDs, specs and "depends on".
 
+#### v4 look (owner, 31 Oct 13:08): LOOK-0 … LOOK-9, QA-4
+- Spec: `docs/spec/v4-look.md`. The owner called the checkpoint presentation "the ugliest I have seen". The audit of every screen (night and day, default and S profiles) found six causes:
+  - the accent is the same red as "late" and "bad";
+  - boxes sit inside boxes, and labels look like buttons;
+  - the same fact is repeated three times at one weight;
+  - there is no type system;
+  - the background curve is fixed on top of the content;
+  - the stage Metro was built as clipped button rails.
+- The fix is "a quiet notebook": paper, ink and one red pencil for "you are here"; one `Route` line for checkpoints at any size; and an Atlas with real levels and links as lanes.
+- **Approved by the owner on 31 Oct at 13:59 IST**, including the decision changes in `v4-look.md` §8. Start now.
+- Presentation only: no database, connector or `src/data` contract changes.
+- Start LOOK-0, then LOOK-1, LOOK-3 and LOOK-4 in parallel. LOOK-5 … LOOK-9 follow, and QA-4 comes last.
+- The days-late mismatch (checkpoint sheet vs Metro) and the cards-list LaTeX leak may land early as `FIX` PRs.
+- Mockups: `docs/design/v4/`. Audit contact sheets: `docs/design/v4/audit/`.
+
 #### Tutor transcriptions (owner, 31 Oct 08:38): DB-5, MCP-6, UI-8
 - Spec: `docs/spec/transcribe.md`. The connector cannot push PDFs or page text today: kind `book` only makes an empty record. The tutor will transcribe handwritten notes or scanned pages attached in chat into Markdown with LaTeX using a new `save_pages` tool. It writes either into an uploaded scan's pages or into a new text-only source, in batches of up to 10 pages, undoable, with who transcribed it and a "check" flag for doubtful pages.
 - The app shows transcription progress, a page viewer with the original beside it, edit and "mark checked", and export as .tex or .md.
