@@ -83,6 +83,15 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek}:RouteP
      stroke="var(--early)" strokeWidth="1.2"/>}
    </g>;
   })}
+  {layout.mode==='plain'&&stages.slice(1).map(stage=>{
+   const previous=marks.find(mark=>mark.kind==='station'&&mark.index===stage.start-1);
+   const next=marks.find(mark=>mark.kind==='station'&&mark.index===stage.start);
+   if(!previous||!next)return null;
+   const x=(previous.x+next.x)/2;
+   return <path key={'boundary-'+stage.start} data-route-stage-boundary=""
+    d={`M${x} 15 L${x} 33`} stroke="var(--ink-4)" strokeWidth="1"
+    fill="none"/>;
+  })}
   {marks.map(mark=>{
    const cp=checkpoints[mark.index],state=stateAt(mark.index);
    if(mark.kind==='stage'){
