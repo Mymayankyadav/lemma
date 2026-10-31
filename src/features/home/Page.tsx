@@ -19,9 +19,10 @@ import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
 import type {HomeSummary, ProjectSummary} from '../../data/types';
-import {ReviewOutlook} from './ReviewOutlook';
+
 
 const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
+const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
 
 function TodayHeader({pending}: {pending:number}) {
  const today=new Date();
@@ -157,7 +158,9 @@ export default function Page(){
   <section aria-label="Cards" className="flex flex-col gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Cards</h2>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
-   <ReviewOutlook/>
+   <Suspense fallback={<div aria-label="Seven-day review forecast" className="min-h-20" role="status"><Skeleton h={80}/></div>}>
+    <ReviewOutlook/>
+   </Suspense>
   </section>
   <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">From your tutor</h2>
