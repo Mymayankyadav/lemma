@@ -52,17 +52,22 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  const subjects=[...graph.subjects].filter(s=>!isTest(s.name)&&!isTest(s.id))
   .sort((a,b)=>a.position-b.position||a.name.localeCompare(b.name));
  const permitted=new Set(subjects.map(s=>s.id)),nodes=new Map<string,AtlasNode>();
+ const clustersBySubject=new Map<string,AtlasNode[]>();
  for(const c of graph.concepts){
   if(!permitted.has(c.subjectId)||isTest(c.id)||isTest(c.name))continue;
   const level:ConceptLevel=LEVELS.includes(c.level as ConceptLevel)?c.level!:'planet';
-  nodes.set(c.id,{...c,level,parentId:c.parentId??null,children:[],depth:0,synthetic:false,glyph:null,
-   total:0,done:0,revisit:0,due:0,rank:0});
+  const node:AtlasNode={...c,level,parentId:c.parentId??null,children:[],depth:0,synthetic:false,glyph:null,
+   total:0,done:0,revisit:0,due:0,rank:0};
+  nodes.set(c.id,node);
+  if(level==='cluster'){
+   const own=clustersBySubject.get(c.subjectId)??[];
+   own.push(node);clustersBySubject.set(c.subjectId,own);
+  }
  }
  const roots:string[]=[],rootBySubject=new Map<string,string>();
  for(const subject of subjects){
-  // Every field (cluster) is a root; a subject without one gets a root named after it.
-  const own=[...nodes.values()].filter(n=>n.subjectId===subject.id&&n.level==='cluster')
-   .sort((a,b)=>a.name.localeCompare(b.name));
+  // Group roots while building nodes instead of rescanning all ideas for each field.
+  const own=(clustersBySubject.get(subject.id)??[]).sort((a,b)=>a.name.localeCompare(b.name));
   for(const field of own){field.glyph=subject.glyph;roots.push(field.id)}
   const id=own[0]?.id??'atlas:root:'+subject.id;
   if(!own.length){nodes.set(id,synthetic(id,subject.name,subject.id,'cluster',null,subject.glyph));roots.push(id)}
@@ -83,6 +88,9 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  for(const node of nodes.values())if(node.parentId)nodes.get(node.parentId)?.children.push(node.id);
  const links=graph.links.filter(l=>l.fromId!==l.toId&&nodes.has(l.fromId)&&nodes.has(l.toId));
  const rank=prerequisiteRank(nodes.keys(),links);
+ // Child ordering may compare the same idea dozens of times. Parse its
+ // checkpoint code once, not during every comparison in each sibling sort.
+ const checkpointRanks=new Map([...nodes].map(([id,node])=>[id,checkpointNumber(node)]));
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
   const kids=n.children.map(c=>summarise(c,depth+1));
@@ -99,7 +107,7 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
   n.children.sort((a,b)=>{
    const x=nodes.get(a)!,y=nodes.get(b)!;
-   return x.rank-y.rank||checkpointNumber(x)-checkpointNumber(y)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
+   return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||x.name.localeCompare(y.name)||x.id.localeCompare(y.id);
   });
   return n;
  };
