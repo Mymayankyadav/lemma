@@ -22,6 +22,12 @@ export interface Focus{start:Set<string>; up:Set<string>; down:Set<string>; rela
 const LEVELS:ConceptLevel[]=['cluster','galaxy','system','planet','moon'];
 const isTest=(s:string)=>/zz[-_ ]?selftest|^self[-_ ]test$|^system[-_]test/i.test(s);
 export const levelName:Record<ConceptLevel,string>={cluster:'Field',galaxy:'Area',system:'Topic',planet:'Idea',moon:'Detail'};
+/** Fast, JSX-escaped text path for literal labels. Keep Tex for every
+ * mathematical delimiter/markup: no loss of notation or sanitization. */
+export function isPlainAtlasLabel(source:string):boolean{
+ return /^[A-Za-z0-9][A-Za-z0-9 ,.:;!?()'+-]*$/.test(source);
+}
+
 
 function synthetic(id:string,name:string,subjectId:string,level:ConceptLevel,parentId:string|null,glyph:string|null):AtlasNode{
  return {id,slug:id,name,subjectId,level,parentId,children:[],depth:0,synthetic:true,glyph,total:0,done:0,revisit:0,due:0,rank:0,
