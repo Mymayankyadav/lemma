@@ -92,3 +92,31 @@ for(const theme of ['graph','graph-night'] as const){
   await page.screenshot({path:`test-results/screens/stress/st-3-extreme-${theme}-360.png`});
  });
 }
+
+
+// Audit #485: KaTeX in a details breadcrumb must be readable at its actual
+// computed CSS size. Existing SSR tests cover real LaTeX-to-KaTeX rendering;
+// the injected .katex span here isolates the responsive breadcrumb typography.
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test('FIX #485 Atlas mathematical breadcrumb minimum sizes '+theme+' '+width+'px',async({page})=>{
+  await page.setViewportSize({width,height:width===360?740:844});
+  await page.goto('./?demo=1&theme='+theme+'#/atlas?focus=compactness');
+  const dialog=page.getByRole('dialog',{name:'Compactness'});
+  await expect(dialog).toBeVisible();
+  const path=dialog.locator('[aria-label="Idea path"]');
+  await expect(path).toBeVisible();
+  // Replace only the path's text payload, not its CSS classes or layout.
+  await path.evaluate(el=>{
+   const tex=el.querySelector('.lemma-tex-inline');
+   if(!tex)throw Error('Atlas details path has no Tex renderer');
+   tex.innerHTML='<span class="katex">\\\\frac{1}{2} + \\\\sum_{n=1}^{4} n</span>';
+  });
+  const plainPx=await path.evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  const mathPx=await path.locator('.katex').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+  expect(plainPx,'breadcrumb plain-text font').toBeGreaterThanOrEqual(12);
+  expect(mathPx,'breadcrumb mathematical font').toBeGreaterThanOrEqual(16);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({path:'test-results/screens/fix-485-breadcrumb-'+theme+'-'+width+'.png'});
+ });
+}
