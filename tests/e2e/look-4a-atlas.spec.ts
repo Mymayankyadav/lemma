@@ -23,6 +23,15 @@ for(const profile of ['stress','extreme'] as const){
   await expect(toolbar.getByRole('button',{name:'Areas'})).toHaveAttribute('aria-pressed','true');
   await toolbar.getByRole('button',{name:'Related'}).click();
   await expect(toolbar.getByRole('button',{name:'Related'})).toHaveAttribute('aria-pressed','true');
+  const recheck=toolbar.getByRole('button',{name:/^Re-check \d+$/});
+  await expect(recheck).toBeVisible();
+  const recheckBox=await recheck.boundingBox();
+  expect(recheckBox?.width).toBeGreaterThanOrEqual(44);
+  expect(recheckBox?.height).toBeGreaterThanOrEqual(44);
+  await recheck.click();
+  await expect(recheck).toHaveAttribute('aria-pressed','true');
+  await recheck.click();
+  await expect(recheck).toHaveAttribute('aria-pressed','false');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({path:`test-results/screens/look-4a-${profile}-${theme}-${width}.png`});
  });
