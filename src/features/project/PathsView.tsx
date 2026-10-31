@@ -47,11 +47,11 @@ export function GoalOverview({detail,variant}:{detail:ProjectDetail;variant:'asc
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
      <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
-    <div className="flex shrink-0 flex-col items-end gap-1"><strong className="font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
+    <div className="flex shrink-0 flex-col items-end gap-1"><strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-amber">{pct}%</strong>
      {headline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{headline}</span>}</div>
    </div>
    <section aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
-    <strong className="font-[var(--font-display)] text-title-s tabular-nums text-ink">{done}</strong>
+    <strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-ink">{done}</strong>
     <span>of {total} checkpoints done</span>
     {current>=0&&<span className="ml-auto text-amber">{checkpoints[current].code} now</span>}
    </section>
