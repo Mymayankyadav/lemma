@@ -146,7 +146,7 @@ function dueLabel(date?: string | null) {
   return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 }
 /** Everything one checkpoint covers, one tap from the map or the list; steps through the plan in order. */
-function CheckpointDrawer({
+export function CheckpointDrawer({
   nodes,
   code,
   projectSlug,
