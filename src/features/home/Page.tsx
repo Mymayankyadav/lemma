@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {lazy, Suspense, useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
 import {ChevronRight, Copy, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
@@ -19,7 +19,7 @@ import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
 import type {HomeSummary, ProjectSummary} from '../../data/types';
-import {GoalDistance} from './GoalDistance';
+const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
 import {ReviewOutlook} from './ReviewOutlook';
 
 function TodayHeader({pending}: {pending:number}) {
@@ -150,7 +150,9 @@ export default function Page(){
    <span><strong className="text-amber">Tutor not connected.</strong> Set up the connector in Settings to record study progress.</span>
    <ChevronRight size={18} className="shrink-0 text-amber"/>
   </Link>}
-  <GoalDistance projects={projects} variant="metro"/>
+  <Suspense fallback={<section aria-label="Distance to your goals" className="min-h-[160px]"><Skeleton h={160}/></section>}>
+   <GoalDistance projects={projects} variant="metro"/>
+  </Suspense>
   <section aria-label="Cards" className="flex flex-col gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Cards</h2>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
