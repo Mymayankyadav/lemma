@@ -48,6 +48,13 @@ describe('LOOK-3b one-line Route geometry',()=>{
    expect(r.marks.some(m=>m.kind==='stage'&&m.stages>1)).toBe(true);
   }
  });
+ it('sizes unmerged stage capsules by square root of actual checkpoint count',()=>{
+  const r=layoutRoute([{start:0,end:0},{start:1,end:4},{start:5,end:20}],21,0,390);
+  expect(r.mode).toBe('folded');
+  const capsules=r.marks.filter(m=>m.kind==='stage');
+  expect(capsules).toHaveLength(2);
+  expect(capsules[1].width).toBeGreaterThan(capsules[0].width);
+ });
  it('never draws a station rail when there are no checkpoints',()=>{
   expect(layoutRoute([],0,0,360)).toEqual({mode:'plain',marks:[],activeStage:0});
  });
