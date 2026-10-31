@@ -185,13 +185,21 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
     n.done>0||kids.some(k=>k.status==='in_progress')?'in_progress':n.status;
   }
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
-  n.children.sort((a,b)=>{
+  const compareChildren=(a:string,b:string)=>{
    const x=nodes.get(a)!,y=nodes.get(b)!;
    const taughtX=taughtRanks.get(a)??null,taughtY=taughtRanks.get(b)??null;
    // A proposed plan must read CP1, CP2, …, CP10, never CP1, CP10, CP2.
    if(taughtX!==null&&taughtY!==null&&taughtX!==taughtY)return taughtX-taughtY;
    return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||compareNames(x.name,y.name)||compareNames(x.id,y.id);
-  });
+  };
+  // The large stress DAG arrives in prerequisite order, as do many real plans.
+  // Detect an already ordered sibling list in O(n) and skip a costly ICU sort.
+  // Unordered lists still use exactly the same comparator and stable sort.
+  let ordered=true;
+  for(let i=1;i<n.children.length;i++){
+   if(compareChildren(n.children[i-1],n.children[i])>0){ordered=false;break}
+  }
+  if(!ordered)n.children.sort(compareChildren);
   return n;
  };
  for(const root of roots)summarise(root,0);
