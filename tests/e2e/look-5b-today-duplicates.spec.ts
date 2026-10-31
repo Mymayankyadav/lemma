@@ -13,7 +13,14 @@ for (const profile of ["stress", "extreme"] as const) {
         const allPaths = goals.getByRole("link", { name: "All paths" });
         await expect(allPaths).toBeVisible();
         const navigationColor = await allPaths.evaluate((element) => getComputedStyle(element).color);
-        const accentColor = await allPaths.evaluate((element) => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim());
+        const accentColor = await page.evaluate(() => {
+          const probe = document.createElement("span");
+          probe.style.color = "var(--accent)";
+          document.body.appendChild(probe);
+          const color = getComputedStyle(probe).color;
+          probe.remove();
+          return color;
+        });
         // Secondary navigation must not consume the red primary-action token.
         expect(navigationColor).not.toBe(accentColor);
         expect((await allPaths.boundingBox())?.height).toBeGreaterThanOrEqual(44);
