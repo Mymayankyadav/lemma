@@ -101,8 +101,8 @@ export function makeStressStore(original: DemoStore, profile: StressProfile): De
   // The stage count and checkpoint grouping remain exactly fifteen.
   const stageName=(projectIndex:number,position:number,total:number)=>{
     const stage=Math.min(15,Math.floor((position-1)*15/total)+1);
-    if(projectIndex===3&&stage===14)return String.raw`Topology of $\\mathbb{R}^n$`;
-    if(projectIndex===3&&stage===15)return String.raw`\\(\\operatorname{verylongmathematicalstageverylongmathematicalstageverylongmathematicalstage}\\)`;
+    if(projectIndex===3&&stage===14)return String.raw`Topology of $\mathbb{R}^n$`;
+    if(projectIndex===3&&stage===15)return String.raw`\(\operatorname{verylongmathematicalstageverylongmathematicalstageverylongmathematicalstage}\)`;
     return `Stage ${stage}`;
   };
   const baseProject = data.projects[0];
