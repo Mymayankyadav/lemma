@@ -37,6 +37,27 @@ describe('FIX #483 Atlas bundle label placement',()=>{
  });
 });
 
+describe('LOOK-4c painted rectangular badge clearance',()=>{
+ it('reserves the diagonal of each 16px-high pill, including its stroke',()=>{
+  const labels=layoutBundleLabels(arcs,5);
+  for(const arc of arcs){
+   const label=labels.get(arc.key)!;
+   const width=Math.max(22,12+String(arc.count).length*8);
+   // A radius based only on half-width lets diagonal pill corners pass
+   // closer than the required eight painted CSS pixels.
+   expect(label.radius).toBeGreaterThanOrEqual(Math.hypot((width+1)/2,8));
+  }
+  for(let i=0;i<arcs.length;i++)for(let j=i+1;j<arcs.length;j++){
+   const a=labels.get(arcs[i].key)!,b=labels.get(arcs[j].key)!;
+   const wa=Math.max(22,12+String(arcs[i].count).length*8);
+   const wb=Math.max(22,12+String(arcs[j].count).length*8);
+   const dx=Math.max(0,Math.abs(a.x-b.x)-(wa+wb)/2-1);
+   const dy=Math.max(0,Math.abs(a.y-b.y)-16);
+   expect(Math.hypot(dx,dy)).toBeGreaterThanOrEqual(8);
+  }
+ });
+});
+
 describe('FIX #483 density fallback',()=>{
  it('keeps an accessible overflow summary even in a one-row gutter',()=>{
   const sameRow:Arc[]=Array.from({length:8},(_,i)=>({key:'row:'+i,from:0,to:0,kind:'related',count:2,links:[]}));
