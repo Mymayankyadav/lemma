@@ -142,6 +142,19 @@ export default function Page(){
    return items.length?[{...group,items,total:group.items.length}]:[];
   });
  },[allGroups,page,pageSize]);
+ // Consecutive one-project subjects are rows in ONE paper list, not
+ // individual bordered cards. Multi-project subjects keep their own foldable
+ // group header and paper container.
+ const renderGroups=[...(pinned.length?[{id:'pinned',name:'Pinned',glyph:'★',items:pinned,total:pinned.length}]:[]),...groups];
+ type PathGroup=(typeof renderGroups)[number];
+ const runs:Array<{kind:'single';groups:PathGroup[]}|{kind:'multi';group:PathGroup}>=[];
+ for(const group of renderGroups){
+  if(group.total===1){
+   const last=runs[runs.length-1];
+   if(last?.kind==='single')last.groups.push(group);
+   else runs.push({kind:'single',groups:[group]});
+  }else runs.push({kind:'multi',group});
+ }
  const pageEnd=Math.min(totalUnpinned,(page+1)*pageSize);
  const toggle=(id:string)=>setCollapsed(items=>items.includes(id)?items.filter(item=>item!==id):[...items,id]);
  const choose=(next:Filter)=>{setPage(0);const p=new URLSearchParams(params);if(next==='active')p.delete('status');else p.set('status',next);setParams(p)};
@@ -174,9 +187,16 @@ export default function Page(){
    !visible.length?<div className="space-y-3 py-8 text-center"><p className="text-body text-ink-2">{search?'No projects match':'No projects in this status'}</p>
     {search&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-4 text-label" onClick={()=>setSearch('')}>Clear</button>}</div>:
    <div className="space-y-5">
-    {pinned.length>0&&<ProjectGroup name="Pinned" glyph="★" items={pinned} total={pinned.length} collapsed={collapsed.includes('pinned')} onToggle={()=>toggle('pinned')}/>}
-    {groups.map(group=><ProjectGroup key={group.id} name={group.name} glyph={group.glyph} items={group.items} total={group.total}
-     collapsed={collapsed.includes(group.id)} onToggle={()=>toggle(group.id)}/>)}
+    {runs.map((run,i)=>run.kind==='single'
+     ? <section key={'single-'+i} aria-label="Single-project paths" data-singleton-list=""
+        className="divide-y divide-[var(--hair)] overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
+        {run.groups.map(group=><section key={group.id} aria-label={group.name+' projects'} data-group-size={1}>
+         {group.items.map(project=><ProjectRow key={project.id} project={project} showSubject/>)}
+        </section>)}
+       </section>
+     : <ProjectGroup key={run.group.id} name={run.group.name} glyph={run.group.glyph}
+       items={run.group.items} total={run.group.total} collapsed={collapsed.includes(run.group.id)}
+       onToggle={()=>toggle(run.group.id)}/>)}
     {totalUnpinned>pageSize&&<nav aria-label="Project pages" className="flex flex-wrap items-center justify-between gap-2">
      {page>0&&<button type="button" onClick={()=>setPage(index=>Math.max(0,index-1))}
       className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-4 text-label text-amber">
