@@ -38,7 +38,7 @@ export function enforceStressBudgets(
  for(const m of measurements){
   for(const failure of stressViolations(m)){
    const exception=pending.find(gate=>gate.failure===failure&&
-    (gate.routes.includes('*')||gate.routes.includes(m.route)));
+    gate.routes.includes(m.route));
    if(exception&&!release)continue;
    errors.push(m.route+': '+failure+(exception?' (pending audit #'+exception.issue+')':''));
   }
