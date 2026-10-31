@@ -72,6 +72,37 @@ describe('ST-5 bounded live reads',()=>{
   expect(mock.rpc).toHaveBeenCalledWith('search_cards_page',
    expect.objectContaining({p_query:'theorem',p_slug:null}))
  })
+ it('pages filtered cards with all filters before the 50-row boundary',async()=>{
+  const rows=Array.from({length:50},(_,i)=>({noteNo:150-i}))
+  mock.rpc.mockResolvedValue({data:rows,error:null})
+  const page=await new LiveAdapter().searchCardsPage({
+   query:'x%_',projectSlug:'algebra',checkpointCode:'CP2',state:0,
+   noteStatus:'active',hasOpenComments:false,offset:100,
+  })
+  expect(page).toEqual({rows,nextOffset:150})
+  expect(mock.rpc).toHaveBeenCalledOnce()
+  expect(mock.rpc).toHaveBeenCalledWith('search_cards_filtered_page',{
+   p_query:'x%_',p_slug:'algebra',p_checkpoint:'CP2',p_state:0,
+   p_note_status:'active',p_has_open_comments:false,p_offset:100,
+  })
+ })
+ it('ends pagination on a short page and passes absent filters as null',async()=>{
+  mock.rpc.mockResolvedValue({data:[{noteNo:1}],error:null})
+  expect(await new LiveAdapter().searchCardsPage({query:''})).toEqual({
+   rows:[{noteNo:1}],nextOffset:null,
+  })
+  expect(mock.rpc).toHaveBeenCalledWith('search_cards_filtered_page',{
+   p_query:'',p_slug:null,p_checkpoint:null,p_state:null,
+   p_note_status:null,p_has_open_comments:null,p_offset:0,
+  })
+ })
+ it('rejects invalid card page offsets before issuing a database request',async()=>{
+  await expect(new LiveAdapter().searchCardsPage({query:'',offset:-1}))
+   .rejects.toMatchObject({code:'invalid'})
+  await expect(new LiveAdapter().searchCardsPage({query:'',offset:1.5}))
+   .rejects.toMatchObject({code:'invalid'})
+  expect(mock.rpc).not.toHaveBeenCalled()
+ })
  it('does not silently treat an RPC error as an empty list',async()=>{
   mock.rpc.mockResolvedValue({data:null,error:{code:'42501',message:'not permitted'}})
   await expect(new LiveAdapter().listProjects()).rejects.toMatchObject({code:'auth'})
