@@ -29,6 +29,15 @@ for (const width of [360, 390] as const) {
         '<circle data-stress-mark cx="10" cy="10" r="3"/><circle data-stress-mark cx="100" cy="10" r="3"/>';
     });
     expect(await page.evaluate(measureSvgMarks)).toBe(8);
+    // A 10px-diameter circle needs 18px centre separation for 8px clear edges.
+    for (const [second,expected] of [[28,0],[34,4],[38,8]] as const) {
+      await page.evaluate(cx => {
+        document.getElementById("stress-mark-fixture")!.innerHTML =
+          '<circle data-stress-mark cx="20" cy="40" r="5"/>' +
+          '<circle data-stress-mark cx="' + cx + '" cy="40" r="5"/>';
+      }, second);
+      expect(await page.evaluate(measureSvgMarks)).toBe(expected);
+    }
     mkdirSync("test-results/screens/fix-489", { recursive: true });
     await page.screenshot({ path: `test-results/screens/fix-489/${theme}-${width}.png` });
   });
