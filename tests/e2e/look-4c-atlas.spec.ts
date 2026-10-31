@@ -37,3 +37,26 @@ test('LOOK-4c dense bundle pills are 16px high and preserve the 44px overflow di
  expect((await disclosure.boundingBox())?.width).toBeGreaterThanOrEqual(44);
  expect((await disclosure.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 });
+
+test('LOOK-4c seven physical lanes disclose an eighth overlapping connection',async({page})=>{
+ await page.setViewportSize({width:360,height:740});
+ await page.goto('./?demo=stress&atlasDenseLanes=1&theme=graph-night#/atlas');
+ await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
+ const paths=page.locator('[data-atlas-wires] [data-arc-kind]');
+ await expect(paths).toHaveCount(7);
+ const xs=await paths.evaluateAll(elements=>elements.map(el=>Number(el.getAttribute('data-atlas-lane'))));
+ expect(new Set(xs).size).toBe(7);
+ for(const x of xs)expect((74-x)%9).toBe(0);
+ const overflow=page.locator('[data-atlas-lane-overflow]');
+ const summary=overflow.locator('summary');
+ await expect(summary).toBeVisible();
+ await expect(summary).toHaveAccessibleName('Show 1 hidden Atlas connections');
+ expect((await summary.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+ await summary.focus();
+ await page.keyboard.press('Enter');
+ await expect(overflow).toHaveAttribute('open','');
+ await expect(overflow.locator('li')).toHaveCount(1);
+ await expect(overflow.locator('li')).toContainText('Rows 8–16');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+ await page.screenshot({path:'test-results/screens/look-4c-dense-lanes-360.png'});
+});
