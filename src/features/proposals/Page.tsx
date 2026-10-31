@@ -372,7 +372,7 @@ export default function Page() {
                 </div>
               </div>
               <div role="region" aria-label="Plan errata" className="my-5 flex flex-col">
-                {p.planChange?.ops.map((op, i) => (
+                {p.planChange?.ops.slice(0,3).map((op, i) => (
                   <div
                     key={i}
                     className="flex min-h-11 items-start gap-3 border-b border-edge py-3 text-body text-ink-soft last:border-0"
@@ -387,6 +387,7 @@ export default function Page() {
                     <span className="min-w-0 flex-1">{describe(op)}</span>
                   </div>
                 ))}
+                {(p.planChange?.ops.length??0)>3&&<Link to={`/proposals/${p.id}`} className="min-h-11 py-3 text-label text-amber">See all {p.planChange!.ops.length} changes</Link>}
                 {p.plan && (
                   <p className="text-ink-soft">
                     {p.plan.checkpoints.length} checkpoints proposed
