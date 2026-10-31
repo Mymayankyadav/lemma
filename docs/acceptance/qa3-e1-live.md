@@ -4,16 +4,16 @@
 
 ## Contract and evidence
 
-| E1 requirement | Evidence in the merged test | Result on main `8a532574` |
+| E1 requirement | Evidence in the live-budget test | Status |
 | --- | --- | --- |
 | Extreme (X-like) Today makes at most **3** data requests | `tests/e2e/live-api-budget.spec.ts` loads `?demo=0`, intercepts actual `/rest/v1/` HTTP, requires one `bootstrap` and one `home_summary` and asserts `withinBudget(today,3)` | PASS |
 | Extreme (X-like) Insights makes at most **1** data request | Same test clicks the actual Insights link after Today, records the new HTTP slice, requires exactly one `/rpc/insights` request | PASS |
-| Neither screen transfers more than **200 kB** | Uses `Buffer.byteLength(JSON.stringify(response))` for every intercepted response, sums the Today responses and checks the Insights response independently against `200_000` | PASS |
+| Neither screen transfers more than **200 kB** | Uses `Buffer.byteLength(JSON.stringify(response))` for every intercepted response, sums the Today responses and checks the Insights response independently against `200_000` in this split | Main X-like HTTP cases PASS at the former 204,800-byte cap; strict new cap pending CI |
 | Live adapter rather than zero-request demo | Explicit `?demo=0`; mock owner session; checks Today made nonzero requests and rejects unexpected REST endpoints or whole-table reads | PASS |
 | 360/390 px and both Graph worlds | Four independent Chromium cases, Graph and Graph-night at 360 and 390 px; captures Today and Insights screenshots | PASS |
-| Fail closed on excess count/bytes | The test rejects four Today calls, rejects 250 KiB split across two calls, accepts three 50 KiB responses, and explicitly checks 200,000 bytes PASS / 200,001 bytes FAIL | PASS |
+| Fail closed on excess count/bytes | Main already rejects four Today calls and 250 KiB split across two calls; this split adds exact 200,000-byte PASS / 200,001-byte FAIL regressions | Main negative cases PASS; new boundary CI pending |
 
-**Exact-head provenance:** GitHub Actions [CI #41229635840](https://github.com/Mymayankyadav/lemma/actions/runs/41229635840) on main commit [`8a532574`](https://github.com/Mymayankyadav/lemma/commit/8a532574688c8b558a5a2d1190dbc61625c16cbc), run on **31 October 2026**. `e2e-2-of-4` job `124621039653` reports all five `live-api-budget.spec.ts` cases PASS (the negative test and four live HTTP configurations); that shard reports 122 passes. The seven required jobs completed successfully on this head, but another shard reported an unrelated flaky Atlas C2 performance test; **a green CI summary does not prove strict Atlas first-attempt acceptance**. This is a source- and CI-verified E1 record, not a local Playwright run or full QA-3 PASS.
+**Exact-head provenance:** GitHub Actions [CI #41229635840](https://github.com/Mymayankyadav/lemma/actions/runs/41229635840) on main commit [`8a532574`](https://github.com/Mymayankyadav/lemma/commit/8a532574688c8b558a5a2d1190dbc61625c16cbc), run on **31 October 2026**. `e2e-2-of-4` job `124621039653` reports all five `live-api-budget.spec.ts` cases PASS (the negative test and four live HTTP configurations); that shard reports 122 passes. The seven required jobs completed successfully on this head, but another shard reported an unrelated flaky Atlas C2 performance test; **a green CI summary does not prove strict Atlas first-attempt acceptance**. This is source- and CI-verified evidence for the *existing* E1 tests; the stricter decimal boundary added by QA-3bc requires its own exact-head CI before acceptance. It is not a local Playwright run or full QA-3 PASS.
 
 ### Reproduce
 
@@ -22,7 +22,9 @@ npm ci
 npx playwright test tests/e2e/live-api-budget.spec.ts --project=chromium --retries=0
 ```
 
-The split also tightens the pre-existing 200×1,024-byte allowance to the literal decimal 200,000-byte E1 contract, with exact-boundary regressions. This is stricter, never a relaxed budget.\n\nThe test uses a fabricated owner UUID, fabricated JWT-like fixture token, and intercepted `auth/v1` and `rest/v1` responses. It does not call the owner's live Supabase backend, use a connector address, print secrets or mutate production data. It exercises the real LiveAdapter over browser HTTP, with realistic X-like aggregates (60 projects, 300,000 reviews and 40 subjects), not 300,000 individual downloaded rows. Its response-byte budget is based on mock HTTP payload bytes; it is **not** a measured production CDN transfer.
+The split also tightens the pre-existing 200×1,024-byte allowance to the literal decimal 200,000-byte E1 contract, with exact-boundary regressions. This is stricter, never a relaxed budget.
+
+The test uses a fabricated owner UUID, fabricated JWT-like fixture token, and intercepted `auth/v1` and `rest/v1` responses. It does not call the owner's live Supabase backend, use a connector address, print secrets or mutate production data. It exercises the real LiveAdapter over browser HTTP, with realistic X-like aggregates (60 projects, 300,000 reviews and 40 subjects), not 300,000 individual downloaded rows. Its response-byte budget is based on mock HTTP payload bytes; it is **not** a measured production CDN transfer.
 
 ## Limitations / handoff to QA-3bb
 
