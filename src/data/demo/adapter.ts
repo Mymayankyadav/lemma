@@ -1070,10 +1070,11 @@ export class DemoAdapter implements LemmaApi {
       );
     const session = input.sessionNumber
       ? found(
-          this.store.sessions.find(
-            (s) =>
-              s.projectId === project.id && s.number === input.sessionNumber,
-          ),
+          this.store.stressSessionCount
+            ? this.virtualStressSession(project, input.sessionNumber)
+            : this.store.sessions.find(
+                (s) => s.projectId === project.id && s.number === input.sessionNumber,
+              ),
           "Session",
         )
       : null;
