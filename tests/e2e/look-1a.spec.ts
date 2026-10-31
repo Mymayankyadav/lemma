@@ -68,9 +68,7 @@ for(const width of [360,390] as const){
   });
 
   // Home header icons remain 44px hit areas, but lose false boxed chrome.
-  await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/`,{
-   waitUntil:'domcontentloaded',timeout:90_000,
-  });
+  await page.evaluate(()=>{window.location.hash='/';});
   const headerIcon=page.locator('header .ui-icon-button').first();
   await expect(headerIcon).toBeVisible({timeout:90_000});
   const header=await headerIcon.evaluate(el=>{
