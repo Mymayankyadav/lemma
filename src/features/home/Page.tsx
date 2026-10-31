@@ -1,9 +1,11 @@
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
 import {ChevronRight, Copy, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
+import {getApi} from '../../data';
 import {resumePrompt} from '../../lib/chat';
 import {relativeTime,formatCount} from '../../lib/text';
 import {plainMath} from '../../lib/plain-math';
@@ -147,6 +149,13 @@ function SummaryTiles({due,pending}:{due:number;pending:number}){
 
 export default function Page(){
  const home=useHome(),settings=useSettings(),notify=useToast();
+ // Live Today must not expose navigation while a deferred owner-scoped outlook
+ // RPC can still leak into Insights' one-request budget. Prefetch both views
+ // through the same React Query keys consumed by ReviewOutlook, then reveal
+ // the desk once the bounded live RPC has settled. Local demo remains lazy.
+ const live=getMode()==='live';
+ const liveDecks=useQuery({queryKey:['decks'],queryFn:()=>getApi().getDeckTree(),enabled:live,staleTime:30_000});
+ const liveForecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),enabled:live,staleTime:30_000});
  const [offline,setOffline]=useState(typeof navigator!=='undefined'&&!navigator.onLine);
  useEffect(()=>{
   const check=()=>setOffline(!navigator.onLine);
@@ -160,7 +169,7 @@ export default function Page(){
   try{await navigator.clipboard.writeText(prompt);notify('Prompt copied',{tone:'success'})}
   catch{notify('Copy unavailable. Choose your chat app to continue.',{tone:'danger'})}
  }
- if(home.isPending && !home.data)return <LoadingDesk/>;
+ if((home.isPending && !home.data)||(live&&(liveDecks.isPending||liveForecast.isPending)))return <LoadingDesk/>;
  if(home.error || !home.data)return <Screen tabBar><TodayHeader pending={0}/>
   <EmptyState art={offline?'plug':'compass'} title={offline?'You are offline':"Couldn't load your desk"}
    body={offline?'Reconnect to resume studying.':'Your study data is safe. Try loading again.'}
