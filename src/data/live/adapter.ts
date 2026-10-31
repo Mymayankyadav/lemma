@@ -529,7 +529,7 @@ export class LiveAdapter implements LemmaApi {
   const note=checked(await db.from('notes').select('*').eq('user_id',uid).eq('no',no).single()) as Row
   // Fetch metadata only for this note. Do not scan eight entire owner tables.
   // Keep full per-note history until FIX-546b adds cursor-backed More controls.
-  const [projectResult,cpResult,sessionResult,sourceResult,cardResult,commentResult]=await Promise.all([
+  const [projectResult,cpResult,sessionResult,sourceResult,cardResult]=await Promise.all([
     db.from('projects').select('id,slug').eq('user_id',uid).eq('id',note.project_id).neq('status','archived').limit(1),
     note.checkpoint_id
       ? db.from('checkpoints').select('id,code').eq('user_id',uid).eq('id',note.checkpoint_id).limit(1)
@@ -541,16 +541,30 @@ export class LiveAdapter implements LemmaApi {
       ? db.from('sources').select('id,short').eq('user_id',uid).eq('id',note.source_id).limit(1)
       : Promise.resolve({data:[],error:null}),
     db.from('cards').select('*').eq('user_id',uid).eq('note_id',note.id),
-    db.from('card_comments').select('*').eq('user_id',uid).eq('note_id',note.id),
   ])
   const project=(checked(projectResult) as Row[])[0]
   const cps=checked(cpResult) as Row[],sessions=checked(sessionResult) as Row[]
   const sources=checked(sourceResult) as Row[]
-  const cardRows=checked(cardResult) as Row[],comments=checked(commentResult) as Row[]
+  const cardRows=checked(cardResult) as Row[]
   const cardIds=cardRows.map(c=>c.id)
-  const reviews=cardIds.length
-    ? checked(await db.from('reviews').select('*').eq('user_id',uid).in('card_id',cardIds)) as Row[]
-    : []
+  // Preserve the existing full-history Show all contract until FIX-546b
+  // introduces cursor paging. Each 1,000-row page is scoped to this note.
+  const scopedPages=async(table:'reviews'|'card_comments'):Promise<Row[]>=>{
+    const result:Row[]=[]
+    for(let offset=0;;offset+=1000){
+      const base=db.from(table).select('*').eq('user_id',uid)
+      const query=table==='reviews'
+        ? base.in('card_id',cardIds)
+        : base.eq('note_id',note.id)
+      const batch=checked(await query.range(offset,offset+999)) as Row[]
+      result.push(...batch)
+      if(batch.length<1000)return result
+    }
+  }
+  const [reviews,comments]=await Promise.all([
+    cardIds.length?scopedPages('reviews'):Promise.resolve([] as Row[]),
+    scopedPages('card_comments'),
+  ])
   const proposalIds=[...new Set(comments.map(c=>c.resolved_by_proposal).filter((id):id is string=>typeof id==='string'))]
   const proposals=proposalIds.length
     ? checked(await db.from('proposals').select('id,origin').eq('user_id',uid).in('id',proposalIds)) as Row[]
