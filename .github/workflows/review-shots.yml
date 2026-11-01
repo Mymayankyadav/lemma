@@ -1,11 +1,23 @@
 name: Review screenshots
 on:
+  # QA-4b: the strict route-budget job shares this trigger. Include every
+  # source, test, fixture, threshold and build-config change that can affect
+  # measured UI. In particular, a src-only or ST-0-only PR must run both jobs.
   pull_request:
     paths:
-      - 'scripts/review-shots.mjs'
-      - 'scripts/v4-capture-inventory.json'
-      - 'scripts/qa4-screens.ts'
-      - 'tests/unit/qa4/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'index.html'
+      - 'playwright.config.ts'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'docs/spec/v4-look.md'
+      - 'docs/spec/stress.md'
+      - '.github/workflows/ci.yml'
       - '.github/workflows/review-shots.yml'
       - '.github/workflows/review-shots-publish.yml'
   workflow_dispatch:
