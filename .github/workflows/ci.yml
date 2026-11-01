@@ -130,6 +130,14 @@ jobs:
         run: node tests/mcp/notif1a.mjs
       - name: Verify NOTIF-1a two-connection insert and restore races
         run: node tests/mcp/notif1a-concurrency.mjs
+      - name: Verify NOTIF-1b atomic notification actions, undo and owner isolation
+        run: node tests/mcp/notif1b.mjs
+      - name: Verify NOTIF-1b bounded candidates, due quota and time zones
+        run: node tests/mcp/notif1b-candidates.mjs
+      - name: Verify NOTIF-1b two-connection atomic claim and rollback
+        run: node tests/mcp/notif1b-concurrency.mjs
+      - name: Verify NOTIF-1b X 60-project/30k-card first-attempt candidate budget
+        run: node tests/mcp/notif1b-stress.mjs
       - name: Verify MCP-2 atomic transactions when available
         if: hashFiles('tests/mcp/transactions.mjs') != ''
         run: node tests/mcp/transactions.mjs
