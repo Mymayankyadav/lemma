@@ -27,7 +27,34 @@ export interface UiPreferences {
  follow?: boolean; day?: string; night?: string
  [key: string]: unknown
 }
+/** Owner preferences; unknown keys survive future versions. */
+export interface NotifyPrefs {
+ enabled?: boolean
+ mode?: 'live' | 'daily' | 'weekly' | 'off'
+ studyTime?: string
+ quiet?: {start:string;end:string}
+ maxPerDay?: number
+ kinds?: Partial<Record<'due'|'deadline'|'behind'|'resume'|'tutor'|'digest'|'plan'|'rhythm',boolean>>
+ dueThreshold?: 1 | 10 | 25 | 50
+ approveCards?: boolean
+ digest?: {weekday:0|1|2|3|4|5|6;time:string}
+ backoff?: Partial<Record<string,string>>
+ offered?: number
+ [key:string]:unknown
+}
+export interface PushDevice {
+ id:string;label:string;platform:'android_app'|'android_web'|'desktop'|'ios'|'other'
+ lastSeenAt:IsoDate|null;lastOkAt:IsoDate|null;disabledAt:IsoDate|null
+ disabledReason:'gone'|'removed'|'failing'|null;isThisDevice:boolean
+}
+export interface SentNotification {
+ id:number;kind:string;title:string;body:string;sentAt:IsoDate|null
+ action:string|null;actionAt:IsoDate|null
+}
+export interface NotifyHold {scope:string;label:string;until:IsoDate}
+export interface NotifyPreviewRow {at:IsoDate;kind:string;title:string;reason:string;held:boolean}
 export interface Settings {
+ notify?: NotifyPrefs | null
  ui?: UiPreferences | null
  desiredRetention: number; newPerDay: number; reviewsPerDay: number
  learnSteps: string; relearnSteps: string; rolloverHour: number; maxIntervalDays: number
