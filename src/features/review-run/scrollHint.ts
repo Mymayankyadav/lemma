@@ -3,10 +3,12 @@
  * controls and immediate onScroll measurement must not wait for this hint.
  */
 export function scheduleScrollHintMeasure(measure:()=>void):()=>void{
+ let active=true;
+ const run=()=>{if(active)measure()};
  if(typeof globalThis.requestIdleCallback==='function'){
-  const id=globalThis.requestIdleCallback(()=>measure(),{timeout:300});
-  return ()=>globalThis.cancelIdleCallback?.(id);
+  const id=globalThis.requestIdleCallback(run,{timeout:300});
+  return ()=>{active=false;globalThis.cancelIdleCallback?.(id)};
  }
- const id=globalThis.setTimeout(measure,80);
- return ()=>globalThis.clearTimeout(id);
+ const id=globalThis.setTimeout(run,80);
+ return ()=>{active=false;globalThis.clearTimeout(id)};
 }
