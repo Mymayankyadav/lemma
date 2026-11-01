@@ -72,4 +72,37 @@ describe('FIX #507 direct-route cold stress hydration',()=>{
   const store=(lazy as unknown as {store:DemoStore}).store;
   expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
  },30_000);
+
+ it('paginates 30k generated Cards without forcing future notes or Atlas',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  });
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const first=await api.searchCardsPage({query:''});
+  expect(first.rows).toHaveLength(50);
+  expect(first.rows[0].noteNo).toBe(30_000);
+  expect(first.nextOffset).toBe(50);
+  const filtered=await api.searchCardsPage({query:'card 30000'});
+  expect(filtered.rows.map(row=>row.noteNo)).toContain(30_000);
+  for(const key of ['notes','concepts','sources'] as const)
+   expect(typeof Object.getOwnPropertyDescriptor(store,key)?.get).toBe('function');
+ },30_000);
+ it('matches eager stress Cards pages with filters, search and offsets',async()=>{
+  const eager=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const lazy=new DemoAdapter({fixture:makeStressStore(seed,'stress',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const filters=[
+   {query:''},{query:'',offset:50},{query:'card 5000'},
+   {query:'matrix'},{query:'',projectSlug:'stress-project-3'},
+   {query:'',checkpointCode:'CP4'},{query:'',state:2 as const},
+   {query:'',noteStatus:'deleted' as const},{query:'',hasOpenComments:true},
+  ];
+  for(const filter of filters)
+   expect(await lazy.searchCardsPage(filter)).toEqual(await eager.searchCardsPage(filter));
+  const store=(lazy as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
+ },30_000);
 })
