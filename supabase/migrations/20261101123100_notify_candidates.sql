@@ -25,16 +25,24 @@ reviewed as (
   where r.user_id=p_user and r.undone_at is null and r.reviewed_at>=f.day_start
 ),
 due_candidates as (
-  select distinct on(n.id) n.id note_id,n.no,n.project_id,n.checkpoint_id,
+  -- A note contributes at most one sibling card. The owner/note card index
+  -- resolves that sibling with a bounded lateral lookup; unlike DISTINCT ON,
+  -- this avoids globally sorting 30,000 notes before the daily top-N.
+  select n.id note_id,n.no,n.project_id,n.checkpoint_id,
     c.state,c.due,c.id card_id
-  from public.cards c
-  join public.notes n on n.id=c.note_id and n.user_id=c.user_id
+  from public.notes n
   join visible_projects pr on pr.id=n.project_id and pr.user_id=n.user_id
   cross join prefs f
-  where c.user_id=p_user and n.status='active'
-    and (c.state=0 or c.due<f.day_end)
-  order by n.id,case when c.state=0 then 1 else 0 end,
-    case when c.state in (1,3) and c.due<=p_now then 0 else 1 end,c.due,c.id
+  join lateral (
+    select c.state,c.due,c.id from public.cards c
+    where c.user_id=p_user and c.note_id=n.id
+      and (c.state=0 or c.due<f.day_end)
+    order by case when c.state=0 then 1 else 0 end,
+      case when c.state in (1,3) and c.due<=p_now then 0 else 1 end,
+      c.due,c.id
+    limit 1
+  ) c on true
+  where n.user_id=p_user and n.status='active'
 ),
 -- The daily quota can never consume more than reviews_per_day + new_per_day
 -- distinct notes. Keep the complete due_candidates set for exact backlog, but
