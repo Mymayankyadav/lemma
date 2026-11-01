@@ -36,14 +36,21 @@ test('AND-1 installed PWA exposes correct manifest, service worker and launcher 
  }
 })
 
+for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const){
- test(`AND-1 mobile install quality ${theme} ${width}`,async({page})=>{
+ test(`AND-1 mobile install quality ${profile} ${theme} ${width}`,async({page})=>{
+  test.setTimeout(120_000)
   await page.setViewportSize({width,height:width===360?740:844})
-  await page.goto('/lemma/?demo=stress&theme='+theme+'#/',{waitUntil:'domcontentloaded'})
+  await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible({timeout:60_000})
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
-  await page.screenshot({path:`test-results/screens/and1/today-${theme}-${width}.png`})
+  const metrics=await page.evaluate(()=>({
+   overflow:document.documentElement.scrollWidth-innerWidth,
+   nodes:document.querySelectorAll('*').length,
+  }))
+  expect(metrics.overflow).toBeLessThanOrEqual(1)
+  expect(metrics.nodes).toBeLessThan(1500)
+  await page.screenshot({path:`test-results/screens/and1/today-${profile}-${theme}-${width}.png`})
  })
 }
 for(const theme of ['graph','graph-night'] as const){
