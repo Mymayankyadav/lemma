@@ -133,6 +133,21 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
   expect(prepare).toHaveBeenCalledTimes(1);
   expect(fetcher).not.toHaveBeenCalled();
  });
+ it('does not credit a late 201 or retry a fetch cancelled in flight',async()=>{
+  const late=new AbortController();
+  fetcher.mockImplementationOnce(async()=>{
+   late.abort();
+   return response(201);
+  });
+  expect(await sendWebPush({...base,signal:late.signal},fetcher)).toEqual({status:'failed'});
+  const cancelled=new AbortController();
+  fetcher.mockImplementationOnce(async()=>{
+   cancelled.abort();
+   throw new DOMException('Aborted','AbortError');
+  });
+  expect(await sendWebPush({...base,signal:cancelled.signal},fetcher)).toEqual({status:'failed'});
+  expect(fetcher).toHaveBeenCalledTimes(2);
+ });
  it('rejects push-service redirects rather than following a POST to a second destination',async()=>{
   fetcher.mockImplementationOnce(async(_url:string,init:RequestInit)=>{
    expect(init.redirect).toBe('error');
