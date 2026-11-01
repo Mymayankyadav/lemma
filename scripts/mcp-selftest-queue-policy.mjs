@@ -3,7 +3,8 @@
 const pattern=/^LEMMA-MCP-QUEUE v1 (START|DONE) ([1-9]\d*)\/([1-9]\d*)$/;
 export function parseQueueTicket(comment){
  const match=pattern.exec(String(comment.body??'').trim());
- if(!match||!Number.isSafeInteger(comment.id)||comment.id<=0)return null;
+ if(!match||comment.user?.login!=='github-actions[bot]'||
+    !Number.isSafeInteger(comment.id)||comment.id<=0)return null;
  const runId=Number(match[2]),attempt=Number(match[3]);
  if(!Number.isSafeInteger(runId)||!Number.isSafeInteger(attempt))return null;
  return {id:comment.id,kind:match[1],key:`${runId}/${attempt}`,runId,attempt};
