@@ -152,7 +152,9 @@ describe('NOTIF-5 Workbox push handling',()=>{
    status:'done',approved:['P1','P2','P3'],skipped:[],confirmId:84,action:123,undoToken:'signed-undo',
   })} as any);
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
-  expect(h.posted).toEqual([{token:'signed-approve'}]);
+  expect(h.fetchMock).toHaveBeenCalledWith(h.core.ACT_URL,expect.objectContaining({
+   method:'POST',body:JSON.stringify({token:'signed-approve'}),
+  }));
   expect(h.shown).toHaveLength(1);
   expect(h.shown[0]).toMatchObject({
    title:'Approved 3 cards',
@@ -183,7 +185,9 @@ describe('NOTIF-5 Workbox push handling',()=>{
   h.fetchMock.mockResolvedValueOnce({ok:false,status:409,
    json:async()=>({message:'Open Lemma to undo'})} as any);
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'undo'});
-  expect(h.posted).toEqual([{token:'signed-undo'}]);
+  expect(h.fetchMock).toHaveBeenCalledWith(h.core.ACT_URL,expect.objectContaining({
+   method:'POST',body:JSON.stringify({token:'signed-undo'}),
+  }));
   expect(h.shown.at(-1)?.options.body).toBe('Open Lemma to undo');
   expect(h.navigated).toEqual([scope+'#/proposals']);
  });
