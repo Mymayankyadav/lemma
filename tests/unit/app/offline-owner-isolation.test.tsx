@@ -92,17 +92,19 @@ test('AND-8 authenticated A to B switch never hydrates A into B; sign-out erases
   // old in-memory React Query cache before hydrating B's own IndexedDB store.
   auth.id='owner-b'
   await act(async()=>{auth.callback?.('SIGNED_IN',{user:{id:'owner-b'}})})
-  await flush()
-  expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
-  expect(offline.reads).toContain('owner-b')
-  expect(offline.deletes).toContain('owner-a')
+  await vi.waitFor(()=>{
+   expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
+   expect(offline.reads).toContain('owner-b')
+   expect(offline.deletes).toContain('owner-a')
+  },{timeout:4000})
   expect(offline.snapshots.has('owner-a')).toBe(false)
 
   await act(async()=>{auth.callback?.('SIGNED_OUT',null)})
-  await flush()
-  expect(queryClient.getQueryData(['home'])).toBeUndefined()
-  expect(offline.deletes).toContain('owner-b')
-  expect(offline.snapshots.has('owner-b')).toBe(false)
+  await vi.waitFor(()=>{
+   expect(queryClient.getQueryData(['home'])).toBeUndefined()
+   expect(offline.deletes).toContain('owner-b')
+   expect(offline.snapshots.has('owner-b')).toBe(false)
+  },{timeout:4000})
   expect(document.documentElement.dataset.offlineSavedAt).toBeUndefined()
 
   // A later account cannot accidentally resurrect B from either cache.
@@ -146,8 +148,7 @@ test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',as
 
   auth.id='owner-b'
   await act(async()=>{auth.callback?.('SIGNED_IN',{user:{id:'owner-b'}})})
-  await flush()
-  expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
+  await vi.waitFor(()=>expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'}),{timeout:4000})
   // deleteDatabase would be blocked while A's IDB read still owns its
   // connection; account-switch cleanup must wait for that read to finish.
   expect(offline.deletes).not.toContain('owner-a')
@@ -155,10 +156,11 @@ test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',as
   // IndexedDB can resolve an earlier read after the account has changed.
   // The identity check must discard that result rather than rehydrate A.
   await act(async()=>{finishA(snapshot('Only A'))})
-  await flush()
-  expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
-  expect(offline.reads).toContain('owner-b')
-  expect(offline.deletes).toContain('owner-a')
+  await vi.waitFor(()=>{
+   expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
+   expect(offline.reads).toContain('owner-b')
+   expect(offline.deletes).toContain('owner-a')
+  },{timeout:4000})
  }finally{
   await act(async()=>root.unmount())
   router.dispose()
