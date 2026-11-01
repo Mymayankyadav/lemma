@@ -1,5 +1,4 @@
-import {MathPreview} from '../../ui/MathPreview';
-import {useCallback,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
 import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
@@ -11,6 +10,10 @@ import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
 import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
+
+// The KaTeX preview is only needed after the owner types maths. Do not
+// evaluate its renderer on an empty cold New project form.
+const MathPreview=lazy(()=>import('../../ui/MathPreview').then(module=>({default:module.MathPreview})));
 
 type UploadState='queued'|'reading'|'uploading'|'saving'|'ready'|'failed';
 type QueueItem={id:number;file:File|null;name:string;size:number;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
@@ -105,7 +108,51 @@ export default function Page(){
      <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
       value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
-     <MathPreview source={name}/>
+     {(name.includes('
+     <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
+    </section>
+    <section aria-label="Sources" className="flex flex-col gap-3"
+     onDragOver={event=>event.preventDefault()}
+     onDrop={event=>{event.preventDefault();if(!saving)enqueue(event.dataTransfer.files)}}>
+     <div className="flex items-center justify-between gap-2">
+      <h3 className="text-body font-semibold text-ink-2">Sources (optional)</h3>
+      <span className="text-label text-ink-3">PDF, .tex, .md · 50 MB each</span>
+     </div>
+     <input ref={input} hidden type="file" multiple accept=".pdf,application/pdf,.tex,.latex,.ltx,application/x-tex,text/x-tex,.md,.markdown,text/markdown"
+      onChange={event=>{if(event.currentTarget.files)enqueue(event.currentTarget.files);event.currentTarget.value=''}}/>
+     <button type="button" disabled={saving} onClick={()=>input.current?.click()}
+      className="flex min-h-24 items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
+      <Plus size={20} className="text-ink-2"/>Add PDFs, .tex or .md files
+     </button>
+     <ul aria-label="Upload queue" className="flex flex-col gap-2">
+      {items.map(item=><li key={item.id} className="flex min-w-0 items-start gap-3 rounded-slab border border-edge bg-raised p-3">
+       <FileText size={19} className="mt-1 shrink-0 text-ink-2" aria-hidden="true"/>
+       <div className="min-w-0 flex-1">
+        <p className="truncate text-body font-semibold">{item.name}</p>
+        <p className="text-label text-ink-3">{bytes(item.size)} · {item.status}{item.progress?.pageCount?' · '+item.progress.page+'/'+item.progress.pageCount+' pages':''}</p>
+        {item.progress&&item.status!=='ready'&&<Rail className="mt-2" value={item.progress.pageCount?item.progress.page/item.progress.pageCount:0} label={'Progress for '+item.name}/>}
+        {item.error&&<p role="alert" className="text-label text-again">{item.error}</p>}
+       </div>
+       {item.status==='ready'?<Check size={18} className="text-easy"/>:
+        !saving&&<button type="button" aria-label={'Remove '+item.name} onClick={()=>setItems(previous=>previous.filter(x=>x.id!==item.id))}
+         className="flex size-11 shrink-0 items-center justify-center text-ink-3"><Trash2 size={17}/></button>}
+      </li>)}
+     </ul>
+    </section>
+    {error&&<p role="alert" className="flex gap-2 text-label text-again"><AlertTriangle size={16}/>{error}</p>}
+    <Button size="xl" className="w-full" type="submit" variant={saving||!name.trim()?'ghost':'lit'} disabled={saving||!name.trim()} loading={saving}>
+     {saving?'Saving project and sources':created&&remaining?'Retry remaining uploads':'Create project'}
+    </Button>
+    <button type="button" className="flex min-h-11 items-center justify-center gap-2 text-label text-ink-2 underline-offset-4 hover:underline focus-visible:underline"
+     onClick={()=>{void navigator.clipboard.writeText(planPrompt(name.trim()||'your project')).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy unavailable',{tone:'danger'}))}}>
+     <Copy size={15}/>Tell your tutor: {planPrompt(name.trim()||'your project')}
+    </button>
+   </form>
+  </Sheet>
+ </>;
+}
+)||name.includes('\\(')||name.includes('\\['))&&
+      <Suspense fallback={null}><MathPreview source={name}/></Suspense>}
      <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
     </section>
     <section aria-label="Sources" className="flex flex-col gap-3"
