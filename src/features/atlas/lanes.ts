@@ -32,7 +32,12 @@ export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[],
  // The finite 84px gutter still cannot show every possible overlapping link;
  // any omitted links remain disclosed rather than silently overpainted.
  const sorted=[...arcs].sort((a,b)=>Number(priorityKeys?.has(b.key)??false)-Number(priorityKeys?.has(a.key)??false)||physicalSpan(b)-physicalSpan(a)||a.key.localeCompare(b.key));
- const placed:{arc:Arc;x:number;low:number;high:number}[]=[];
+ type Placement={arc:Arc;x:number;low:number;high:number;order:number};
+ const placed:Placement[]=[];
+ // Every fit check only needs the placements on its candidate lane.
+ // Endpoint indexes preserve the original earliest shared-trunk preference.
+ const byLane=new Map<number,Placement[]>(),byFrom=new Map<number,Placement[]>(),
+  byTo=new Map<number,Placement[]>();
  const result=new Map<string,AtlasLane>();
  for(const arc of sorted){
   const fromY=centers?.[arc.from]??arc.from*ROW+ROW/2;
@@ -41,12 +46,39 @@ export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[],
   // An overlapping, unrelated wire must NEVER reuse a lane: with nine
   // independent overlapping intervals and only eight 9px tracks, the ninth
   // becomes an explicit overflow disclosure instead of an unreadable rope.
-  const sharesTrunk=(p:typeof placed[number])=>p.arc.from===arc.from||p.arc.to===arc.to;
-  const fits=(lane:number)=>placed.every(p=>p.x!==lane||high<p.low||low>p.high||sharesTrunk(p));
-  const shared=placed.find(p=>sharesTrunk(p)&&fits(p.x));
+  const sharesTrunk=(p:Placement)=>p.arc.from===arc.from||p.arc.to===arc.to;
+  // All candidates for this arc see the same placed set. Cache each lane's
+  // collision result once rather than rescanning a shared trunk repeatedly.
+  const fitCache=new Map<number,boolean>();
+  const fits=(lane:number):boolean=>{
+   const cached=fitCache.get(lane);
+   if(cached!==undefined)return cached;
+   const clear=(byLane.get(lane)??[]).every(p=>
+    high<p.low||low>p.high||sharesTrunk(p));
+   fitCache.set(lane,clear);
+   return clear;
+  };
+  // Merge two insertion-ordered endpoint lists. The first fitting candidate
+  // is identical to placed.find(sharesTrunk && fits), without scanning every
+  // unrelated prior arc or sorting the candidates.
+  const from=byFrom.get(arc.from)??[],to=byTo.get(arc.to)??[];
+  let fi=0,ti=0,shared:Placement|undefined;
+  while(fi<from.length||ti<to.length){
+   let candidate:Placement;
+   if(ti>=to.length||(fi<from.length&&from[fi].order<=to[ti].order)){
+    candidate=from[fi++];
+    if(ti<to.length&&to[ti]===candidate)ti++;
+   }else candidate=to[ti++];
+   if(fits(candidate.x)){shared=candidate;break}
+  }
   const x=shared?.x??LANES.find(fits);
   if(x===undefined)continue;
-  placed.push({arc,x,low,high});
+  const entry:Placement={arc,x,low,high,order:placed.length};
+  placed.push(entry);
+  for(const [map,key] of [[byLane,x],[byFrom,arc.from],[byTo,arc.to]] as const){
+   const entries=map.get(key)??[];
+   entries.push(entry);map.set(key,entries);
+  }
   result.set(arc.key,{x,fromY,toY,d:atlasLanePath(x,fromY,toY)});
  }
  return result;
