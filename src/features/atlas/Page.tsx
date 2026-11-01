@@ -15,7 +15,7 @@ import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outlin
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {atlasFoldDepth} from './depthOf';
-import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocused,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 interface Saved{expanded:string[];related:boolean}
@@ -156,7 +156,7 @@ export default function Page(){
    const count=arcCountFor(tree,rows,kinds);
    if(count>60)return {visible:[],hidden:count};
   }
-  if(!focus)return budgetArcsUnfocused(tree,rows,open,kinds);
+  if(!focus)return budgetArcsUnfocusedCached(tree,rows,open,kinds);
   return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
  },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
