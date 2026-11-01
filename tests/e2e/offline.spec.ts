@@ -68,6 +68,14 @@ for(const width of [360,390] as const){
   await expect(page.getByRole('switch',{name:'Mix decks'})).toBeDisabled()
   const start=page.getByRole('button',{name:/Start review, needs a connection/})
   await expect(start).toHaveAttribute('aria-disabled','true')
+  const offlineBanner=page.getByRole('status').filter({hasText:"You're offline"})
+  const [bannerBox,headingBox]=await Promise.all([
+   offlineBanner.boundingBox(),
+   page.getByRole('heading',{name:'Review',exact:true,level:1}).boundingBox(),
+  ])
+  expect(bannerBox).not.toBeNull()
+  expect(headingBox).not.toBeNull()
+  expect(headingBox!.y).toBeGreaterThanOrEqual(bannerBox!.y+bannerBox!.height+8)
   // aria-disabled correctly tells assistive tech this is unavailable, so
   // Playwright's actionability layer refuses locator.click(). A real browser
   // still dispatches DOM clicks on aria-disabled (not native-disabled) buttons;
