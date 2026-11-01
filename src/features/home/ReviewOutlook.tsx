@@ -1,53 +1,44 @@
-import {formatBadgeCount} from '../../lib/text'
 import {useQuery} from '@tanstack/react-query'
 import {getApi} from '../../data'
-import {useDeckTree} from '../../data/hooks'
-import {Tex} from '../../ui/Tex'
 import {forecastDueCount,hasNonzeroForecast} from './reviewForecast'
 
-/** Seven-day due forecast is read from the adapter's complete scheduled-card set.
- * Deck counts come from the review service, not a capped search or fabricated percentages.
+/** Compact seven-day spark beside the Review action. The forecast comes from
+ * the complete scheduled-card set, not a capped search or fabricated data.
+ * No separate chart or per-project stacked bar on the quiet Today screen.
  */
-export function ReviewOutlook(){
- const decks=useDeckTree()
+export function ReviewOutlook({quiet=false}:{quiet?:boolean}={}){
  const forecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),staleTime:30_000})
- const allGroups=[...(decks.data??[])].filter(node=>node.due>0).sort((a,b)=>b.due-a.due)
- const dueTotal=allGroups.reduce((sum,node)=>sum+node.due,0)
- const top=allGroups.slice(0,4).map(({key,label,due})=>({key,label,due}))
- const tail=allGroups.slice(4)
- const groups=tail.length?[...top,{key:'other',label:`Other (${tail.length})`,due:tail.reduce((sum,node)=>sum+node.due,0)}]:top
- const weekly=forecast.data??[]
+ // The S/X browser fixture paints adjacent nonzero days without changing the
+ // actual demo store, network requests, or any live forecast. This tests the
+ // hardest seven-bar geometry rather than a single painted bar.
+ const params=typeof window==='undefined'?null:new URLSearchParams(window.location.search)
+ const adjacentFixture=params?.get('reviewSparkFixture')==='adjacent'&&
+  (params.get('demo')==='stress'||params.get('demo')==='extreme')
+ const weekly=adjacentFixture?(forecast.data??[]).map((day,i)=>i<2?
+  {...day,due:Math.max(1,forecastDueCount(day.due))}:day):(forecast.data??[])
  const max=Math.max(1,...weekly.map(day=>forecastDueCount(day.due)))
- return <div className="flex min-w-0 flex-col gap-4">
-  {groups.length>0&&<div aria-label="Due cards by project">
-   <div className="flex h-2 w-full overflow-hidden rounded-[1px] bg-fill-2" role="img"
-    aria-label={groups.map(g=>g.label+': '+g.due+' due').join('; ')}>
-    {groups.map((group,i)=><span key={group.key} style={{width:(100*group.due/Math.max(1,dueTotal))+'%',background:'var(--accent)',opacity:Math.max(.3,1-i*.15)}}/>)}
-   </div>
-   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-    {groups.map((group,i)=><span key={group.key} className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-label text-ink-2"
-     aria-label={group.label+': '+group.due+' due'}>
-     <span aria-hidden="true" className="size-2 shrink-0 rounded-[1px]" style={{background:'var(--accent)',opacity:Math.max(.3,1-i*.15)}}/>
-     <span className="clip-1" title={group.label} data-due-group-name><Tex source={group.label}/></span>
-     <span className="shrink-0 tabular-nums text-ink-3">{formatBadgeCount(group.due)}</span>
-    </span>)}
-   </div>
-  </div>}
-  {forecast.error?<p className="text-label text-ink-3">Upcoming reviews are unavailable right now.</p>:
-   forecast.isPending?<p className="text-label text-ink-3">Loading seven-day forecast…</p>:
-   hasNonzeroForecast(weekly)?<div aria-label="Seven-day review forecast">
-    <p className="mb-2 text-label font-medium text-ink-2">Next seven days</p>
-    <div className="grid grid-cols-7 gap-1.5">
-     {weekly.map(day=>{const due=forecastDueCount(day.due);return <div key={day.day} className="flex min-w-0 flex-col items-center gap-1">
-      <span className="text-caption tabular-nums text-ink-2" title={due+' cards due'} aria-label={due+' cards due'}>{formatBadgeCount(due)}</span>
-      <div className="flex h-10 w-full items-end justify-center bg-fill-1">
-       <span aria-hidden="true" className="block w-full bg-amber" style={{height:due?Math.max(6,due/max*40)+'px':'0'}}/>
-      </div>
-      <span className="text-[length:var(--type-caption)] text-ink-3 tabular-nums">
-       {new Date(day.day+'T12:00:00Z').toLocaleDateString('en',{weekday:'short',timeZone:'UTC'}).slice(0,2)}
-      </span>
-     </div>})}
+ if(forecast.error)return quiet?null:<p className="text-caption text-ink-3">Forecast unavailable</p>
+ if(forecast.isPending)return quiet?null:<p className="text-caption text-ink-3">Loading forecast…</p>
+ if(!hasNonzeroForecast(weekly))return null
+ return <div aria-label="Seven-day review forecast" className="min-w-0 flex-1">
+  <p className="sr-only">Next seven days</p>
+  <div className="grid grid-cols-7 gap-2" role="group" aria-label="Due cards over the next seven days">
+   {weekly.map((day,i)=>{
+    const due=forecastDueCount(day.due)
+    return <div key={day.day} className="flex min-w-0 flex-col items-center gap-1">
+     <span className="sr-only" aria-label={due+' cards due'}>{due} cards due</span>
+     <div className="flex h-10 w-full items-end justify-center" aria-hidden="true">
+      <span data-review-spark-bar="" className="block w-full max-w-[10px] rounded-t-[1px]" style={{
+       height:due?Math.max(6,due/max*40)+'px':'0',
+       background:i===0?'var(--accent)':'var(--ink-2)',
+       opacity:i===0?1:0.65
+      }}/>
+     </div>
+     <span className="text-caption text-ink-3" aria-hidden="true">
+      {new Date(day.day+'T12:00:00Z').toLocaleDateString('en',{weekday:'short',timeZone:'UTC'}).slice(0,2)}
+     </span>
     </div>
-   </div>:null}
+   })}
+  </div>
  </div>
 }

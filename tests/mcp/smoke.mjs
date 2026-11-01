@@ -27,9 +27,9 @@ async function call(method,params={}){
   assert.equal(record.error,undefined,method+' error: '+record.error?.message);
   return record.result;
 }
-// The self-test runs in two halves so each request stays well under the
-// edge function's 150s wall-clock limit.
-for(const part of [1,2]){
+// The self-test runs in four independent partitions. The Edge worker can
+// terminate a long request before 150s, so keep each partition comfortably bounded.
+for(const part of [1,2,3,4]){
   const started=Date.now();
   let res;
   try {

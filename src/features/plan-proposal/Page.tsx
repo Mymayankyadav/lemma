@@ -454,7 +454,7 @@ export default function Page() {
                       aria-label={`Open ${node.code} ${plainMath(node.title)}`}
                       className={"flex min-h-12 w-full items-center gap-3 border-b border-edge px-2 text-left last:border-0 " + (current?.code === node.code && drawer ? "bg-amber-tint" : "")}
                     >
-                      <span className={"w-[46px] shrink-0 rounded-s border py-0.5 text-center text-label font-semibold text-amber " + (node.change === "added" ? "border-dashed border-amber" : "border-amber-line")}>
+                      <span className={"w-[46px] shrink-0 rounded-s border py-0.5 text-center text-label font-semibold " + (drawer === node.code ? "border-amber-line text-amber " : "border-edge text-ink-3 ") + (node.change === "added" ? "border-dashed" : "")}>
                         {node.code}
                       </span>
                       <span className="min-w-0 flex-1 truncate leading-snug"><PlanLabel source={node.title}/></span>
@@ -471,7 +471,7 @@ export default function Page() {
               <h3 className="mb-2 text-title-s italic" style={{fontFamily:"var(--font-display)"}}>Proposed amendments</h3>
               {p.planChange.ops.map((op, i) => (
                 <div key={i} className="flex min-h-11 items-start gap-3 border-b border-edge py-3 last:border-0">
-                  <span className="w-[46px] shrink-0 rounded-s border border-amber-line px-1 py-1 text-center text-label text-amber">
+                  <span className="w-[46px] shrink-0 rounded-s border border-edge px-1 py-1 text-center text-label text-ink-3">
                     {op.op === "add" ? "Add" : op.op === "remove" ? "Cut" : op.op === "move" ? "Move" : op.op === "update" ? "Edit" : "Link"}
                   </span>
                   <span className="min-w-0 flex-1">
