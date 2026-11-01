@@ -20,6 +20,20 @@ const subject='22222222-2222-2222-2222-222222222222'
 const project='33333333-3333-3333-3333-333333333333'
 const q=async(sql,params=[])=>(await db.query(sql,params)).rows
 const setUser=async(id)=>db.exec("select set_config('test.uid','"+id+"',false)")
+// Compare the complete owner-visible JSON snapshot against the prior
+// migration at a fixed instant. Restore the candidate function after each
+// comparison; neither path modifies data or broadens EXECUTE grants.
+const assertCandidateParity=async(at)=>{
+  await db.exec('reset role')
+  await db.exec(await readFile(new URL('../../supabase/migrations/20261101171500_notify_candidates_card_first.sql',import.meta.url),'utf8'))
+  await db.exec('set role service_role')
+  const before=await facts(owner,at)
+  await db.exec('reset role')
+  await db.exec(reuseSql)
+  await db.exec('set role service_role')
+  const after=await facts(owner,at)
+  assert.deepEqual(after,before,'ranked K2 fallback must preserve the entire notification candidate snapshot')
+}
 const facts=async(user=owner,at=new Date().toISOString())=>(await q(
  'select public.notify_candidates($1,$2::timestamptz) data',[user,at]))[0].data
 try{
@@ -65,6 +79,7 @@ try{
  await q("insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform) values($1,'https://push.example.test/owner','publickey','authkey','Phone','android_web')",[owner])
  await db.exec('set role service_role')
  const current=await facts()
+ await assertCandidateParity('2026-11-01T01:00:00Z')
  assert.equal(current.tz,'Asia/Calcutta')
  assert.equal(current.rollover,4)
  assert.equal(current.due.count,2)
@@ -206,6 +221,7 @@ try{
    [owner,geometry])
  await db.exec('set role service_role')
  const diverse=await facts(owner,'2026-11-01T01:00:00Z')
+ await assertCandidateParity('2026-11-01T01:00:00Z')
  assert.equal(diverse.tomorrow.length,20,'K2 stays bounded at 20 checkpoints')
  assert.ok(diverse.tomorrow.some(x=>x.slug==='geometry'),'K2 must not starve another project')
  assert.equal(new Set(diverse.tomorrow.slice(0,2).map(x=>x.slug)).size,2,
