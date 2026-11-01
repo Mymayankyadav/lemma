@@ -23,11 +23,13 @@ export interface RouteProps{
  todayLinkLabel?:string;
  /** Summary-only Today must not navigate to a synthetic checkpoint code. */
  todayLinkTo?:string;
+ /** A summary without a real current checkpoint has no red now mark. */
+ todayHasCurrent?:boolean;
 }
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 
 /** One 64/80px Route, not a scrollable rail of stage or station buttons. */
-export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360,initialSelected,foldedLabel,todayLinkLabel,todayLinkTo}:RouteProps){
+export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360,initialSelected,foldedLabel,todayLinkLabel,todayLinkTo,todayHasCurrent=true}:RouteProps){
  const navigate=useNavigate();
  const ref=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(initialWidth);
@@ -131,7 +133,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
      strokeWidth={status.allDone?0:1.3}
      strokeDasharray={status.schedule==='late'?'3 2':undefined}/>;
    }
-   const isCurrent=mark.index===current,done=cp.ui==='done',revisit=cp.ui==='revisit';
+   const isCurrent=mark.index===current&&(mode!=='today'||todayHasCurrent),done=cp.ui==='done',revisit=cp.ui==='revisit';
    const radius=isCurrent?5.5:done?3.6:3.4;
    return <g key={cp.id} data-station-index={mark.index} data-station-state={state}>
     {/* One SVG mark: the translucent 11px halo is its stroke, not a
