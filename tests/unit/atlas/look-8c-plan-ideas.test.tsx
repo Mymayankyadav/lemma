@@ -46,7 +46,9 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
  });
  it('opens a focus-trapped proposed-idea Details sheet with local path and checkpoint controls',()=>{
   expect(graph).toContain("import {Sheet} from '../../ui/Sheet'");
-  expect(graph).toContain("import {AtlasDetailsPath} from './DetailsMath'");
+  expect(graph).toContain("import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath'");
+  expect(graph).toContain('title={selected?<AtlasDetailsTitle name={selected.name}/>:undefined}');
+  expect(graph).toContain('min-h-11 max-w-full overflow-x-auto');
   expect(graph).toContain('onClick={()=>setDetails(true)}');
   expect(graph).toContain('<Sheet open={details&&!!selected}');
   expect(graph).toContain('data-proposed-idea-details="true"');
