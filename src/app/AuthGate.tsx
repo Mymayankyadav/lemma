@@ -5,7 +5,6 @@ import { getApi } from '../data'
 import { useAuth } from '../data/hooks'
 import { getMode } from '../data/mode'
 import { Button } from '../ui/Button'
-import {liveClient} from '../data/live/client'
 
 /** Accept only local hash-router destinations; never return to the sign-in loop. */
 function destination(value: string | null | undefined): string | null {
@@ -52,7 +51,10 @@ function LiveGate({children}: {children: ReactNode}) {
  useEffect(()=>{
   if(navigator.onLine)return
   let alive=true
-  void liveClient().auth.getSession().then(({data})=>{if(alive)setOfflineSession(!!data.session?.user.id)}).catch(()=>{})
+  // Supabase is a large dependency: load it only for an actual offline live
+  // session check, never in the demo/Today startup bundle.
+  void import('../data/live/client').then(({liveClient})=>liveClient().auth.getSession())
+   .then(({data})=>{if(alive)setOfflineSession(!!data.session?.user.id)}).catch(()=>{})
   return()=>{alive=false}
  },[])
  // A previously authenticated owner may read only their local snapshot while offline.
