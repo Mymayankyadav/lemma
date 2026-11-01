@@ -129,4 +129,27 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   const result=await runNotifyTick(deps,{now:NOW});
   expect(result).toMatchObject({queued:0,failed:0,sent:1});
  });
+ it('never starts delivery when cancellation races an idempotent queue result',async()=>{
+  const controller=new AbortController();
+  const deps=adapters([A]);
+  vi.mocked(deps.queue).mockImplementation(async()=>{
+   controller.abort();
+   return 1;
+  });
+  const result=await runNotifyTick(deps,{now:NOW,signal:controller.signal});
+  expect(result).toMatchObject({owners:1,sent:0,timedOut:false});
+  expect(deps.deliver).not.toHaveBeenCalled();
+ });
+ it('does not report delivery counts after external cancellation',async()=>{
+  const controller=new AbortController();
+  const deps=adapters([A]);
+  vi.mocked(deps.deliver).mockImplementation(async()=>{
+   controller.abort();
+   return {attempted:1,sent:1,failed:0};
+  });
+  const result=await runNotifyTick(deps,{now:NOW,signal:controller.signal});
+  expect(result).toMatchObject({owners:1,sent:0,failed:0,timedOut:false});
+  expect(vi.mocked(deps.deliver)).toHaveBeenCalledTimes(1);
+ });
+
 });
