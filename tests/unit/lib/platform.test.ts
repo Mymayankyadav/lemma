@@ -91,7 +91,7 @@ describe('platform capability detection', () => {
 
 describe('Digital Asset Links template',()=>{
  it('has the exact package, relation, and two unfilled public fingerprint placeholders',()=>{
-  const json=JSON.parse(readFileSync(new URL('../../../docs/android/assetlinks.template.json',import.meta.url),'utf8'))
+  const json=JSON.parse(readFileSync('docs/android/assetlinks.template.json','utf8'))
   expect(json).toHaveLength(1)
   expect(json[0].relation).toEqual(['delegate_permission/common.handle_all_urls'])
   expect(json[0].target.namespace).toBe('android_app')
