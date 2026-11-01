@@ -40,6 +40,8 @@ for (const required of ['workflow_dispatch:', 'android-v*', 'lint', 'bundleRelea
   'ANDROID_UPLOAD_KEY_ALIAS', 'ANDROID_UPLOAD_KEY_PASSWORD', 'upload-artifact']) {
   ensure(workflow.includes(required), 'Android workflow missing ' + required)
 }
+ensure(!/packages:\s*['\"]?tools\b/.test(workflow), 'obsolete Android SDK tools package is not installable')
+ensure(workflow.includes("packages: 'platform-tools'"), 'setup-android must avoid removed tools package')
 const ignore = await get('.gitignore')
 for (const forbidden of ['*.jks', '*.keystore', 'android/local.properties', 'google-services.json']) {
   ensure(ignore.includes(forbidden), '.gitignore missing ' + forbidden)
