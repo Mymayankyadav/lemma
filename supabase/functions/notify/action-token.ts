@@ -51,8 +51,10 @@ async function hmacKey(secret:string):Promise<CryptoKey>{
 /** The only allowed signing path. Expires within 48h; never stores a secret. */
 export async function signActionToken(payload:ActionTokenPayload,secret:string,nowSeconds=Math.floor(Date.now()/1000)):Promise<string>{
  const p=validate(payload,nowSeconds);
- const body=encode(encoder.encode(JSON.stringify(p)));
- if(body.length>MAX_TOKEN_LENGTH-50)bad('Notification action is too large');
+ const payloadBytes=encoder.encode(JSON.stringify(p));
+ if(payloadBytes.length>3000)bad('Notification action is too large');
+ const body=encode(payloadBytes);
+ if(body.length+44>MAX_TOKEN_LENGTH)bad('Notification action is too large');
  const key=await hmacKey(secret);
  const mac=new Uint8Array(await crypto.subtle.sign('HMAC',key,encoder.encode(body)));
  return body+'.'+encode(mac);
