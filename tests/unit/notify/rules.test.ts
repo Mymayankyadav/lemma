@@ -96,6 +96,13 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(result[0].status).toBe('send')
   expect(choose([second],{behindSentToday:true})[0]).toMatchObject({status:'suppressed',reason:'frequency'})
  })
+ it('sends K7 only for a new target-date crossing, never every tick',()=>{
+  const plan:ReminderCandidate={kind:'plan',key:'plan:p1',targetTransition:true}
+  expect(choose([plan])[0].status).toBe('send')
+  expect(choose([{...plan,lastSentAt:now-2*HOUR}])[0]).toMatchObject({status:'skipped',reason:'resolved'})
+  expect(choose([{...plan,lastSentAt:now-2*HOUR,targetTransitionAt:now-HOUR}])[0].status).toBe('send')
+  expect(choose([{...plan,lastSentAt:now-2*HOUR,targetTransitionAt:now-3*HOUR}])[0]).toMatchObject({status:'skipped',reason:'resolved'})
+ })
  it('limits K4 to two per paused session and waits 18 hours',()=>{
   const resume:ReminderCandidate={kind:'resume',key:'resume:s1',pausedSince:now-17*3_600_000}
   expect(choose([resume])[0]).toMatchObject({status:'defer',reason:'frequency'})
