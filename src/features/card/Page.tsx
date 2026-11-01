@@ -248,7 +248,7 @@ export default function Page() {
               tone="plain"
               onClick={() => setEditing(true)}
             />
-            <div ref={actionRoot} className="relative">
+            <div ref={actionRoot} className="relative" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setActionMenu(false); }}>
               <IconButton
                 icon={MoreHorizontal}
                 label="Card actions"
