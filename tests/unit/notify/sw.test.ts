@@ -78,6 +78,24 @@ describe('NOTIF-5 Workbox push handling',()=>{
   expect(h.core.destination('https://evil.example/lemma/',scope)).toBeNull();
   expect(h.core.parsePayload({...payload,url:'//evil.example/'},scope)).toBeNull();
  });
+ it('does not hijack a different app on the same GitHub Pages origin',async()=>{
+  const h=harness();
+  const other={url:'https://mymayankyadav.github.io/another-app/',
+   focus:vi.fn(async()=>{}),navigate:vi.fn(async()=>null),postMessage:vi.fn()};
+  h.self.clients.matchAll.mockResolvedValueOnce([other,h.client]);
+  const data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
+  expect(other.focus).not.toHaveBeenCalled();
+  expect(other.navigate).not.toHaveBeenCalled();
+  expect(h.client.navigate).toHaveBeenCalledWith(scope+'#/review');
+ });
+ it('rejects credential-bearing and control-character deep links',()=>{
+  const h=harness();
+  for(const url of ['https://evil@claude.ai/new','https://chatgpt.com:443\\n.evil/',
+   '#/review\\nother','#/review\\tfoo']){
+   expect(h.core.destination(url,scope),url).toBeNull();
+  }
+ });
  it('navigates via worker message and recovers from failed action',async()=>{
   const h=harness();
   await h.emit('message',{data:{type:'lemma:navigate',url:'#/proposals'}});
