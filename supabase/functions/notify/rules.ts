@@ -115,8 +115,12 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
    (c.lastSentAt===undefined||c.summaryAt>c.lastSentAt)
   if(c.newestProposalAt!==undefined&&!freshProposal&&!freshSummary)
    return result(c,'skipped','resolved')
-  if(c.lastSentAt!==undefined&&now-c.lastSentAt<2*HOUR&&!freshSummary)
-   return result(c,'suppressed','frequency')
+  if(c.hasSummary&&c.summaryAt!==undefined&&!freshSummary&&!freshProposal)
+   return result(c,'skipped','resolved')
+  // Legacy summary-only candidates without an event timestamp must not
+  // re-notify on every tick. New candidate RPCs should provide summaryAt.
+  if(c.hasSummary&&c.summaryAt===undefined&&c.newestProposalAt===undefined&&c.lastSentAt!==undefined)
+   return result(c,'skipped','resolved')
  }
  if(c.kind==='plan'&&!c.targetTransition)return result(c,'skipped','resolved')
  if(c.kind==='rhythm'&&(c.dismissals??0)>=3)return result(c,'skipped','disabled')
