@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {waitForLoadedPaths} from './helpers/waitForLoadedPaths';
 
 for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
@@ -130,7 +131,7 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
   await page.goto('/lemma/?demo=extreme&theme='+theme+'#/projects',{waitUntil:'domcontentloaded',timeout:90_000});
-  await expect(page.getByRole('heading',{name:'Paths',level:1})).toBeVisible({timeout:90_000});
+  await waitForLoadedPaths(page);
   const cdp=await page.context().newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
   try{
