@@ -29,6 +29,19 @@ const isTopic=(tag:string)=>/^[A-Za-z0-9_-]{1,32}$/.test(tag);
 const canRetry=(failures:number)=>failures<2;
 const failure=(failures:number):DeliveryResult=>({status:canRetry(failures)?'retry':'failed'});
 
+// Persisted subscription endpoints are untrusted even for owner-owned devices.
+// This is a pre-network SSRF guard, not a DNS rebinding guarantee.
+const NON_PUBLIC_SUFFIXES=[
+ 'localhost','local','internal','invalid','test','example',
+ 'localdomain','lan','home','corp','intranet','onion',
+];
+const nonPublicHost=(hostname:string):boolean=>{
+ const host=hostname.toLowerCase().replace(/\.+$/,'');
+ return !host||host.startsWith('[')||/^[0-9.]+$/.test(host)||
+  !host.includes('.')||NON_PUBLIC_SUFFIXES.some(suffix=>
+   host===suffix||host.endsWith('.'+suffix));
+};
+
 const MAX_ID=9223372036854775807n;
 const ENVELOPE_KEYS=new Set(['v','id','kind','tag','title','body','url','actions','ts']);
 const ACTION_KEYS=new Set(['action','title','url','token']);
@@ -92,15 +105,17 @@ export async function sendWebPush(
     !KINDS.has(kind)||!payload||typeof payload!=='object'||Array.isArray(payload)||
     !validEnvelope(payload,kind,tag))
   return {status:'failed'};
+ const rawEndpoint=subscription?.endpoint;
+ if(typeof rawEndpoint!=='string'||rawEndpoint.length<1||rawEndpoint.length>1000||
+    /[\x00-\x20\x7f]/.test(rawEndpoint))
+  return {status:'failed'};
  let endpoint:URL;
- try{endpoint=new URL(subscription.endpoint)}
+ try{endpoint=new URL(rawEndpoint)}
  catch{return {status:'failed'}}
- // Push services use public HTTPS origins, never loopback or IP-literal
- // endpoints. Reject obvious SSRF destinations before signing VAPID or fetch.
- const host=endpoint.hostname.toLowerCase().replace(/\.$/,'');
- if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash||
-    host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||
-    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||host.startsWith('['))
+ // Reject private/reserved hostnames before VAPID preparation and outbound I/O.
+ // Redirects remain forbidden, so encrypted push bytes cannot follow a 3xx.
+ if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||
+    endpoint.hash||nonPublicHost(endpoint.hostname))
   return {status:'failed'};
  let encoded:string;
  try{
