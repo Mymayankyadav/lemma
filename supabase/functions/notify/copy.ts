@@ -71,7 +71,12 @@ export function notificationCopy(input:NoticeCopyInput):NoticeCopy {
    const lines=visible.map(([project,group])=>{
     const extras=group.count>1?' (+'+(group.count-1)+' '+
      ((group.count-1)===1?'checkpoint':'checkpoints')+')':''
-    return notifyText(project+': '+group.first.code+' '+group.first.title+extras,perProject)
+    // Reserve the count before truncating a long title, otherwise the
+    // compact OS body silently loses how many checkpoints were grouped.
+    const name=notifyText(project,Math.max(2,perProject-group.first.code.length-extras.length-7))
+    const prefix=name+': '+group.first.code+' '
+    const title=notifyText(group.first.title,Math.max(2,perProject-prefix.length-extras.length))
+    return notifyText(prefix+title+extras,perProject)
    })
    if(suffix)lines.push(suffix)
    return asCopy('deadline','deadline',quantity(checkpoints.length,'checkpoint','checkpoints')+' planned for tomorrow',lines.join(' · '))
