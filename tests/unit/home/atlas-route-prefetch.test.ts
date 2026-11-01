@@ -6,7 +6,10 @@ describe('FIX-507c Atlas route-aware prefetch',()=>{
  it('keeps Atlas out of the cold Today entry chunk',()=>{
   const routes=readFileSync('src/app/routes.tsx','utf8')
   expect(routes).not.toMatch(/import\s+Page13\s+from\s+['"]\.\.\/features\/atlas\/Page['"]/)
-  expect(routes).toContain("lazy(()=>import('../features/atlas/Page'))")
+  expect(routes).toContain("const Page13=lazy(loadAtlas)")
+  expect(routes).toContain("const loadAtlas=()=>import('../features/atlas/Page')")
+  for(const n of [1,2,3,4,5,6,7,8,9,10,11,12,14,15,16,17])
+   expect(routes, 'screen '+n+' must not enter the cold Today chunk').toMatch(new RegExp('const Page'+n+'=lazy\\('))
  })
  it('preloads Atlas only on demo Paths, not on live Paths or Today',()=>{
   const projects=readFileSync('src/features/projects/Page.tsx','utf8')
