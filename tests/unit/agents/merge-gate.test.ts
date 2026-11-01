@@ -180,14 +180,17 @@ describe("FIX #619b: Steward must actually invoke the exact-head gate", () => {
     expect(steward).toContain("chronologically ordered Auditor comments");
   });
 
-  it.each(["NOTIF-3a #634", "NOTIF-3b #635"])(
+  it.each([
+    ["NOTIF-3a #634", "- [ ] Independent Auditor CLEAR (requested; no outstanding AUDIT BLOCK)"],
+    ["NOTIF-3b #635", "- [ ] Independent Auditor CLEAR"],
+  ])(
     "replays the actual %s unchecked independent-clearance checklist",
-    (label) => {
+    (label, clearanceItem) => {
       const body = [
         "Owner: builder-2 · Lease until 13:40 IST",
         "### Acceptance checklist",
         "- [x] Exact-head npm check and seven required CI jobs green",
-        "- [ ] Independent Auditor CLEAR (requested; no outstanding AUDIT BLOCK)",
+        clearanceItem,
         "Next step: Auditor independently review exact head before merge",
         "Ready to merge",
       ].join("\n");
