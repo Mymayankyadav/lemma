@@ -15,7 +15,7 @@ export function ReviewOutlook(){
  if(!hasNonzeroForecast(weekly))return null
  return <div aria-label="Seven-day review forecast" className="min-w-0 flex-1">
   <p className="sr-only">Next seven days</p>
-  <div className="grid grid-cols-7 gap-1" role="img" aria-label="Due cards over the next seven days">
+  <div className="grid grid-cols-7 gap-1" role="group" aria-label="Due cards over the next seven days">
    {weekly.map((day,i)=>{
     const due=forecastDueCount(day.due)
     return <div key={day.day} className="flex min-w-0 flex-col items-center gap-1">
