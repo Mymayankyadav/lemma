@@ -41,10 +41,24 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(until!).toBeGreaterThan(late.now+7*3_600_000)
   expect(until!).toBeLessThanOrEqual(late.now+8*3_600_000+10*60_000)
   expect(quietUntil(late,'due:1')).toBe(until)
+  // A tick at a nonzero second still schedules exactly on the local minute.
+  const lateWithSeconds={...late,now:late.now+37_000}
+  const aligned=quietUntil(lateWithSeconds,'due:1')
+  expect(aligned).not.toBeNull()
+  expect(aligned!%60_000).toBe(0)
+  expect(aligned).toBe(until)
   expect(quietUntil({...late,quietStart:'07:30',quietEnd:'07:30'},'due:1')).toBeNull()
   expect(choose([due],{now:late.now})[0]).toMatchObject({status:'defer',reason:'quiet'})
   const london={...base,now:Date.UTC(2026,10,1,23,0),timeZone:'Europe/London'}
   expect(quietUntil(london,'due:1')).not.toBeNull()
+ })
+ it('handles a full 50-candidate quiet-hour tick without repeated timezone construction',()=>{
+  const quiet={...base,now:Date.UTC(2026,10,1,18,0)}
+  const candidates=Array.from({length:50},(_,i)=>({...due,key:'due:'+i}))
+  const decisions=choose(candidates,quiet)
+  expect(decisions).toHaveLength(50)
+  expect(decisions.every(d=>d.status==='defer'&&d.reason==='quiet')).toBe(true)
+  expect(decisions.every(d=>d.nextAt!==undefined&&d.nextAt%60_000===0)).toBe(true)
  })
  it('defers active use twice then suppresses without interrupting',()=>{
   const active={lastActiveAt:now-5*60_000}
