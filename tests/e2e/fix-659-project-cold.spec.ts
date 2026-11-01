@@ -82,3 +82,23 @@ test('FIX #659 Sources tab stays functional after deferred module loading',async
  await page.getByRole('group',{name:'Choose view'}).getByRole('button',{name:/Path/}).click();
  await expect(page.getByRole('region',{name:'Stages'})).toBeVisible();
 });
+
+test('FIX #659 Project mathematical stage labels retain full KaTeX at 16px',async({page})=>{
+ await page.setViewportSize({width:360,height:740});
+ await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+ await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
+ await page.goto('/lemma/?demo=extreme&theme=graph-night#/p/stress-project-3',{waitUntil:'domcontentloaded'});
+ const jumps=page.getByRole('navigation',{name:'Jump to stage'});
+ await expect(jumps).toBeVisible();
+ // The X fixture deliberately includes both inline-dollar and \\(…\\) maths
+ // in stages 14 and 15. A fast cold path must not display raw delimiters.
+ for(const stageIndex of [13,14]){
+  const chip=jumps.locator('[data-stage-chip="'+stageIndex+'"]');
+  const math=chip.locator('.katex');
+  await expect(math).toBeVisible();
+  const font=await math.evaluate(element=>parseFloat(getComputedStyle(element).fontSize));
+  expect(font,'Mathematical stage label is at least 16px').toBeGreaterThanOrEqual(16);
+ }
+ await expect(page.locator('[data-stage-card]')).toHaveCount(15);
+ await expect(page.getByRole('region',{name:'Project timeline'})).toBeVisible();
+});
