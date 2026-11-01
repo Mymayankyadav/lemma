@@ -43,7 +43,16 @@ function usableSubscription(value:unknown):boolean{
     typeof auth!=='string'||!auth||auth.length>50||!BASE64URL.test(auth))return false;
  try{
   const url=new URL(endpoint);
-  return url.protocol==='https:'&&Boolean(url.hostname)&&!url.username&&!url.password&&!url.hash;
+  const hostname=url.hostname.toLowerCase().replace(/\\.$/,'');
+  // Push endpoints are public HTTPS origins. Never allow persisted client
+  // data to direct the service-role Edge sender at local infrastructure.
+  // Reject all IP literals (including URL-normalized numeric IPv4 forms).
+  const local=hostname==='localhost'||hostname.endsWith('.localhost')||
+   hostname.endsWith('.local')||hostname.endsWith('.internal')||
+   hostname.endsWith('.invalid');
+  const ipLiteral=hostname.startsWith('[')||/^[0-9.]+$/.test(hostname);
+  return url.protocol==='https:'&&Boolean(hostname)&&!local&&!ipLiteral&&
+   !url.username&&!url.password&&!url.hash;
  }catch{return false}
 }
 function testMessage(device:TestDevice):TestPushMessage{
