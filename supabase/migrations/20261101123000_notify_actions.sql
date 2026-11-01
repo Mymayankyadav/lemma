@@ -80,6 +80,7 @@ declare
   study_time text;
   local_time timestamp;
   action_number bigint;
+  undo_action_text text;
   confirm_id bigint;
 begin
   if p_user is null or p_notification is null or p_action is null
@@ -151,13 +152,28 @@ begin
       result:=result || jsonb_build_object('confirmId',confirm_id);
     end if;
   elsif p_action='undo' then
-    if (p_extra->>'action') is null
-      or (p_extra->>'action') !~ '^[0-9]+$'
-      or (p_extra->>'action')::bigint is distinct from (notice.facts->>'action')::bigint then
+    undo_action_text:=p_extra->>'action';
+    -- Reject malformed/oversized token claims before any bigint cast. A
+    -- rejected action must roll back the notification's single-use claim.
+    if undo_action_text is null or undo_action_text !~ '^[0-9]{1,19}
+  return jsonb_build_object('status','done','kind',notice.kind) || result;
+end $act$;
+
+revoke all on function public.notify_act(uuid,bigint,text,jsonb) from public,anon,authenticated;
+grant execute on function public.notify_act(uuid,bigint,text,jsonb) to service_role;
+
+-- Down (run before NOTIF-1a's down):
+-- drop function if exists public.notify_act(uuid,bigint,text,jsonb);
+-- drop function if exists public.approve_card_proposals(uuid,uuid[]);
+ then
+      raise exception 'bad_action';
+    end if;
+    if undo_action_text::numeric>9223372036854775807::numeric
+      or undo_action_text::numeric is distinct from (notice.facts->>'action')::numeric then
       raise exception 'bad_action';
     end if;
     perform pg_catalog.set_config('lemma.source','system',true);
-    result:=public.undo_action(p_user,(p_extra->>'action')::bigint,false);
+    result:=public.undo_action(p_user,undo_action_text::bigint,false);
   end if;
   return jsonb_build_object('status','done','kind',notice.kind) || result;
 end $act$;
