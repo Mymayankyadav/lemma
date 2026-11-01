@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isStandalone, isTwa, pushSupport } from '../../../src/lib/platform'
 
@@ -85,4 +86,18 @@ describe('platform capability detection', () => {
     Reflect.deleteProperty(window, 'Notification')
     expect(pushSupport()).toBe('unsupported')
   })
+})
+
+
+describe('Digital Asset Links template',()=>{
+ it('has the exact package, relation, and two unfilled public fingerprint placeholders',()=>{
+  const json=JSON.parse(readFileSync(new URL('../../../docs/android/assetlinks.template.json',import.meta.url),'utf8'))
+  expect(json).toHaveLength(1)
+  expect(json[0].relation).toEqual(['delegate_permission/common.handle_all_urls'])
+  expect(json[0].target.namespace).toBe('android_app')
+  expect(json[0].target.package_name).toBe('io.github.mymayankyadav.lemma')
+  expect(json[0].target.sha256_cert_fingerprints).toEqual([
+   '<FINGERPRINT_PLAY_APP_SIGNING>','<FINGERPRINT_UPLOAD_CERTIFICATE>',
+  ])
+ })
 })
