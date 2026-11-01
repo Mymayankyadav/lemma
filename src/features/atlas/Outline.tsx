@@ -38,11 +38,12 @@ interface BundlePlacement {
 function bundlePillWidth(count:number):number{return Math.max(22,12+String(count).length*8)}
 
 export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:readonly number[],heightPx?:number):Map<string,BundlePlacement>{
- const longest=Math.max(1,...arcs.map(a=>Math.abs(a.to-a.from)));
+ const physicalSpan=(arc:Arc)=>Math.abs((centers?.[arc.to]??arc.to*ROW+ROW/2)-(centers?.[arc.from]??arc.from*ROW+ROW/2));
+ const longest=Math.max(1,...arcs.map(physicalSpan));
  const height=heightPx??rows*ROW,x0=8;
  const items=arcs.filter(arc=>arc.count>1).map(arc=>{
   const y1=centers?.[arc.from]??arc.from*ROW+ROW/2,y2=centers?.[arc.to]??arc.to*ROW+ROW/2;
-  const span=Math.abs(arc.to-arc.from);
+  const span=physicalSpan(arc);
   const reach=x0+10+(GUTTER-x0-22)*Math.sqrt(span/longest);
   return {arc,anchorX:reach*.75+x0*.25,anchorY:(y1+y2)/2,
    // The collision circle must contain every corner of the painted rectangle.
