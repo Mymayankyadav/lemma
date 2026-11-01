@@ -20,6 +20,16 @@ const graph:AtlasGraph={
  ],
 };
 
+describe('LOOK-4b cold Atlas tree identity cache',()=>{
+ it("does not rebuild an unchanged query graph on repeated render",()=>{
+  const first=buildAtlasTree(graph);
+  expect(buildAtlasTree(graph)).toBe(first);
+  // A new immutable query snapshot must produce a new derived tree.
+  const updated:AtlasGraph={...graph,concepts:graph.concepts.map(c=>({...c}))};
+  expect(buildAtlasTree(updated)).not.toBe(first);
+ });
+});
+
 describe('Atlas tree',()=>{
  const tree=buildAtlasTree(graph);
  it('nests ideas under one root per subject and hides self-test data',()=>{
@@ -59,6 +69,24 @@ describe('Atlas tree',()=>{
   const rows=visibleRows(tree,new Set(),n=>n.id==='cauchy');
   expect(rows.map(r=>r.id)).toEqual(['atlas:root:analysis','sequences','cauchy']);
   expect(rows.map(r=>r.match)).toEqual([false,false,true]);
+ });
+});
+
+describe('LOOK-4b sorted Atlas child fast path',()=>{
+ it('produces identical child order from already sorted and reverse-ordered immutable graphs',()=>{
+  const concepts=Array.from({length:80},(_,i)=>({
+   ...idea('ordered-'+i,null,'planet'),
+   name:'Idea '+String(i).padStart(3,'0'),
+  }));
+  const source:AtlasGraph={subjects:graph.subjects.slice(0,1),concepts,links:[]};
+  const sorted=buildAtlasTree(source);
+  const reversed=buildAtlasTree({...source,concepts:[...concepts].reverse()});
+  const root='atlas:root:analysis';
+  const expected=sorted.nodes.get(root)!.children;
+  expect(expected).toHaveLength(80);
+  expect(reversed.nodes.get(root)!.children).toEqual(expected);
+  expect(expected[0]).toBe('ordered-0');
+  expect(expected[79]).toBe('ordered-79');
  });
 });
 
