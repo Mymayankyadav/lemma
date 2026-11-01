@@ -569,8 +569,12 @@ export class DemoAdapter implements LemmaApi {
     const dueCount=this.store.stressDueCount??0;
     const dailyShare=Math.min(dueCount,Math.max(0,this.store.settings.reviewsPerDay));
     if(!this.virtualReviewNotes||this.virtualReviewNotes.length!==dailyShare){
+      const generatedAt=performance.now();
       const notes=makeStressNotes(template,this.store.projects,dailyShare,dueCount);
+      const hydratedAt=performance.now();
       this.virtualReviewNotes=this.hydrateVirtualNotes(notes);
+      performance.measure('review-run-demo-virtual-generate',{start:generatedAt,end:hydratedAt});
+      performance.measure('review-run-demo-virtual-hydrate',{start:hydratedAt,end:performance.now()});
     }
     return this.virtualReviewNotes;
   }
@@ -1835,15 +1839,22 @@ export class DemoAdapter implements LemmaApi {
     return count;
   }
   async getReviewItems(filter: QueueFilter) {
+    const eligibleStarted=performance.now();
     const eligible = this.eligible();
+    const eligibleFinished=performance.now();
     const notes=this.reviewNotes();
     const options={...filter,includeNew:filter.includeNew||filter.newOnly};
     // Generated, unedited stress notes have neither session nor concept
     // associations. An empty metadata map has exactly the same filter
     // semantics without a second O(4,000) scan of the virtual due cohort.
     if(notes===this.virtualReviewNotes &&
-       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function')
-      return clone(filterReviewItems(eligible,options));
+       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function'){
+      const cloneStarted=performance.now();
+      const result=clone(filterReviewItems(eligible,options));
+      performance.measure('review-run-demo-eligible',{start:eligibleStarted,end:eligibleFinished});
+      performance.measure('review-run-demo-final-clone',{start:cloneStarted,end:performance.now()});
+      return result;
+    }
     const needed = new Set(eligible.map(card => card.cardId));
     const sessionForCard: Record<string, string> = {},
       conceptsForCard: Record<string, string[]> = {};
