@@ -5,7 +5,7 @@ const owner='123e4567-e89b-42d3-a456-426614174000';
 const device='123e4567-e89b-42d3-a456-426614174001';
 const other='123e4567-e89b-42d3-a456-426614174002';
 const record={
- id:device,disabledAt:null,
+ id:device,userId:owner,disabledAt:null,
  subscription:{endpoint:'https://push.example.test/sub',keys:{p256dh:'pub',auth:'auth'}},
  prefs:{maxPerDay:3,quiet:{start:'22:30',end:'07:30'}},
 };
@@ -52,7 +52,7 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   });
  });
  it('never sends to a missing, disabled or mismatched device',async()=>{
-  for(const value of [null,{...record,disabledAt:'2026-11-01T00:00:00Z'},{...record,id:other}]){
+  for(const value of [null,{...record,disabledAt:'2026-11-01T00:00:00Z'},{...record,id:other},{...record,userId:other}]){
    loadDevice.mockResolvedValueOnce(value);
    expect((await handleTestPushRequest('Bearer token',{deviceId:device},deps)).status).toBe(404);
   }
