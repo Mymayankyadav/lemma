@@ -8,11 +8,11 @@ import { savePages } from './tools/transcribe.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
 import { parseMcpReply } from './protocol.ts';
 // Keep each self-test request below the Edge worker's observed wall-clock limit.
-// The smoke runs three independent partitions with their own fixtures and cleanup.
-export type SelftestPart=1|2|3|'all';
-const PART_STEPS={1:12,2:8,3:5,all:19} as const;
+// The smoke runs four independent partitions with their own fixtures and cleanup.
+export type SelftestPart=1|2|3|4|'all';
+const PART_STEPS={1:6,2:9,3:8,4:5,all:19} as const;
 export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
-  const only=(n:1|2|3)=>part==='all'||part===n;
+  const only=(n:1|2|3|4)=>part==='all'||part===n;
   c.selftestProjectIds=new Set<string>();
   const steps:{name:string;ok:boolean;ms:number;detail?:string}[]=[];
   let subjectId:string|undefined,projectId:string|undefined,extraId:string|undefined,extraSubjectId:string|undefined;
@@ -156,12 +156,12 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const s=await packet(c,{project:p.slug});
       if(!s.includes('NOW CP1')||!s.includes('RULES')||s.length>2400)throw Error('Study packet invalid');
     });
-    if(only(1))await check('session reuse',async()=>{
+    if(only(2))await check('session reuse',async()=>{
       const a={project:p.slug,checkpoint:'CP1',goal:'Learn open covers',client:'other'};
       if(!(await startSession(c,a)).includes('started S1'))throw Error('Session creation failed');
       if(!(await startSession(c,a)).includes('continuing S1'))throw Error('Session reuse failed');
     });
-    if(only(1))await check('progress and misconception',async()=>{
+    if(only(2))await check('progress and misconception',async()=>{
       await saveProgress(c,{project:p.slug,session:sessionCode,step:2,events:[{kind:'hint',text:'Start with the definition.',hint_level:1}],misconception:'cover vs subcover',next_question:'Why finite?'});
       const detail=await get(c,{what:'checkpoint',project:p.slug,id:'CP1'});
       if(!detail.includes('hint L1'))throw Error('Hint missing');
@@ -178,21 +178,21 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       if(!rolledBack || before?.length!==after?.length || current?.resume_question!=='Why finite?')
         throw Error('Atomic rollback failed');
     });
-    if(only(1))await check('PDF reads and search',async()=>{
+    if(only(2))await check('PDF reads and search',async()=>{
       const hits=await search(c,{project:p.slug,query:'finite subcover'});
       if(!hits.includes('selftest "Selftest PDF" p.')||!hits.includes('finite subcover'))throw Error('Source-labelled search failed');
       if(!(await readPages(c,{project:p.slug,from:'1',pdf:true})).includes('finite subcover'))throw Error('PDF read failed');
     });
-    if(only(1))await check('card proposals and direct card',async()=>{
+    if(only(2))await check('card proposals and direct card',async()=>{
       await proposeCards(c,{project:p.slug,session:sessionCode,cards:[{front:'Define open cover',back:'A family of open sets.'},{front:'Define compactness',back:'Every open cover has a finite subcover.'}]});
       await proposeCards(c,{project:p.slug,session:sessionCode,direct:true,cards:[{front:'What is a subcover?',back:'A subfamily that still covers.'}]});
       const {data}=await scoped(c,'notes').eq('project_id',p.id);
       if(data?.length!==1)throw Error('Direct card not inserted');
     });
-    if(only(1))await check('end session',async()=>{
+    if(only(2))await check('end session',async()=>{
       if(!(await endSession(c,{project:p.slug,session:sessionCode,summary:'Studied covers.',goal_met:'yes'})).includes('closed S1'))throw Error('No closed session');
     });
-    if(only(1))await check('create, list and decide',async()=>{
+    if(only(2))await check('create, list and decide',async()=>{
       const title='zz-selftest extra '+Date.now();extraTitle=title;
       extraSubjectName='zz-selftest-'+Date.now();
       let invalid='';try{await run('create_project',createProject,{title,subject:extraSubjectName,goal:'Demo goal',style:'Teach with careful examples'});}catch(e){invalid=(e as Error).message;}
@@ -217,7 +217,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const answer=await decide(c,{approve:[pending[0].no]});
       if(!answer.includes('approved P'))throw Error(answer);
     });
-    if(only(2))await check('scan transcription: search, readback, provenance and undo',async()=>{
+    if(only(3))await check('scan transcription: search, readback, provenance and undo',async()=>{
       const scan=await insert(c,'sources',{
         project_id:p.id,title:'Selftest handwritten scan',short:'selftest-scan',
         filename:'selftest-scan.pdf',kind:'notes',page_count:2,status:'ready',has_text:false
@@ -249,7 +249,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       if((await scoped(c,'sources').eq('id',made.id)).data?.length)
        throw Error('Undo did not remove transcribed text-only source');
     });
-    if(only(2))await check('prompt history undo and redo',async()=>{
+    if(only(3))await check('prompt history undo and redo',async()=>{
       const r=await run('set_prompt',setPrompt,{scope:p.slug,text:'Selftest Socratic prompt',mode:'replace'});
       if(!(await packet(c,{project:p.slug})).startsWith('OWNER'))throw Error('OWNER missing');
       // Other owner or CI writes can land between the prompt write and this read.
@@ -260,7 +260,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       await run('undo',undo,{action:u.action});
       if(!(await packet(c,{project:p.slug})).includes('Selftest Socratic prompt'))throw Error('Prompt redo failed');
     });
-    if(only(2))await check('direct edits add review grade',async()=>{
+    if(only(3))await check('direct edits add review grade',async()=>{
       await run('edit',edit,{target:p.slug,set:{title:'Edited selftest'}});
       await run('edit',edit,{project:p.slug,target:'CP1',set:{steps:['Think','Prove']}});
       const a=await run('add',add,{kind:'card',project:p.slug,fields:{front:'Selftest new card',back:'Answer'}});
@@ -270,14 +270,14 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const nr=await scoped(c,'notes','id').eq('no',note.no).single();
       const cr=await scoped(c,'cards').eq('note_id',nr.data.id).single();if(cr.data?.reps!==1)throw Error('Grade failed');
     });
-    if(only(2))await check('adaptive planning diagnostics',async()=>{
+    if(only(3))await check('adaptive planning diagnostics',async()=>{
       const started=await run('start_session',startSession,{project:p.slug,goal:'Probe prerequisites',checkpoint:'CP1',client:'other'});
       const code=started.text.match(/S[0-9]+/)![0];
       for(let i=0;i<2;i++)await run('save_progress',saveProgress,{project:p.slug,session:code,diagnostics:[{kind:'gap',topic:'Selftest prerequisite',evidence:'Could not explain it',severity:3,confirmed:true}]});
       const d=await scoped(c,'diagnostics').eq('project_id',p.id).single();if(d.data?.times!==2)throw Error('Diagnostic sightings failed');
       if(!(await packet(c,{project:p.slug})).includes('ADAPT D'+d.data.no))throw Error('ADAPT missing');
     });
-    if(only(2))await check('repeated new concept references and undo',async()=>{
+    if(only(3))await check('repeated new concept references and undo',async()=>{
       const name='Selftest repeated concept';
       const cp=(await scoped(c,'checkpoints').eq('project_id',p.id).eq('code','CP1').single()).data;
       const before=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
@@ -291,7 +291,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const restored=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
       if(restored.length!==before.length||before.some((x:any)=>!restored.some((y:any)=>y.concept_id===x.concept_id)))throw Error('Original links not restored');
     });
-    if(only(3))await check('idea relationship duplicates, conflicts and undo',async()=>{
+    if(only(4))await check('idea relationship duplicates, conflicts and undo',async()=>{
       const base=await insert(c,'concepts',{subject_id:p.subject_id,slug:'selftest-links',name:'Selftest links '+p.slug});
       const subject=(await scoped(c,'subjects').eq('id',p.subject_id).single()).data.name;
       const links=async()=>{const r=await scoped(c,'concept_links').eq('to_id',base.id);if(r.error)throw Error(r.error.message);return r.data||[];};
@@ -321,7 +321,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       await run('undo',undo,{action:changed.action});
       if((await links())[0]?.kind!=='prereq')throw Error('Undo did not restore relationship kind');
     });
-    if(only(3))await check('delete preview cascade and undo',async()=>{
+    if(only(4))await check('delete preview cascade and undo',async()=>{
       const preview=await run('delete',remove,{target:p.slug,confirm:false});if(preview.action)throw Error('Preview wrote data');
       const r=await run('delete',remove,{target:p.slug,confirm:true});
       if((await scoped(c,'projects').eq('id',p.id)).data?.length)throw Error('Delete failed');
