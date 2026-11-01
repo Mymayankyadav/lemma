@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasNonzeroForecast } from "../../../src/features/home/reviewForecast";
+import { forecastDueCount, hasNonzeroForecast } from "../../../src/features/home/reviewForecast";
 
 describe("LOOK-5c1 quiet review forecast", () => {
   it("hides an empty or entirely zero seven-day forecast", () => {
@@ -15,4 +15,11 @@ describe("LOOK-5c1 quiet review forecast", () => {
   it("does not treat invalid or negative counts as a scheduled review", () => {
     expect(hasNonzeroForecast([{ due: -1 }, { due: Number.NaN }])).toBe(false);
   });
+  it("does not hide a positive but fractional legacy count", () => {
+    expect(hasNonzeroForecast([{ due: 0.5 }])).toBe(true);
+    expect(forecastDueCount(0.5)).toBe(1);
+    expect(forecastDueCount(-0.5)).toBe(0);
+    expect(forecastDueCount(Number.POSITIVE_INFINITY)).toBe(0);
+  });
+
 });
