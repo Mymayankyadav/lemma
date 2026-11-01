@@ -36,7 +36,11 @@ async function tap(id,action='open',user=owner){
  }catch(e){await c.query('rollback');throw e}finally{await c.end()}
 }
 try{
- await admin.query(`create role anon;create role authenticated;create role service_role bypassrls;
+ await admin.query(`do $roles$ begin
+ if not exists(select 1 from pg_roles where rolname='anon') then create role anon; end if;
+ if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if;
+ if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role; end if;
+ end $roles$;
  create schema auth;create table auth.users(id uuid primary key);
  create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
  create table public.settings(user_id uuid primary key,time_zone text not null default 'UTC',
