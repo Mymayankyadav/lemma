@@ -9,7 +9,7 @@ export interface ReminderCandidate {
  lastSentAt?:number; sentToday?:number; deferrals?:number; dismissals?:number
  cardsDue?:number; threshold?:number; studiedToday?:boolean
  /** A K1 Later action explicitly permits its one two-hour resend. */
- laterRequested?:boolean
+ laterRequested?:boolean; laterRequestedAt?:number
  /** K3: first transition to late; repeat once every 7 (or 14) days. */
  behindTransitionAt?:number; projectSentToday?:boolean; targetDate?:number; lateDueOn?:number
  /** K4: the paused session, not all sessions combined. */
@@ -96,8 +96,11 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext,quietBase:number|nu
  if(c.kind==='due'){
   const threshold=(c.threshold??10)*(c.dismissals&&c.dismissals>=3?2:1)
   if((c.cardsDue??0)<threshold||c.studiedToday)return result(c,'skipped','resolved')
+  // A Later action starts a fresh two-hour hold. Checking only lastSentAt
+  // would allow an almost-immediate resend when Later is tapped much later.
+  const laterAnchor=Math.max(c.lastSentAt??0,c.laterRequestedAt??0)
   if((c.sentToday??0)>=2||((c.sentToday??0)===1&&
-     (!c.laterRequested||!c.lastSentAt||now-c.lastSentAt<2*HOUR)))
+     (!c.laterRequested||!c.lastSentAt||now-laterAnchor<2*HOUR)))
    return result(c,'suppressed','frequency')
  }
  if(c.kind==='deadline'&&(c.sentToday??0)>=1)return result(c,'suppressed','frequency')
