@@ -58,6 +58,6 @@ describe('project stage jump navigation',()=>{
   expect(label?.style.whiteSpace).toBe('nowrap');
   expect(label?.style.maskImage).toContain('linear-gradient');
   expect(label?.style.fontSize).toBe('16px');
-  expect(label?.querySelector('.katex')).not.toBeNull();
+  expect(label?.querySelector('.katex'),`Completed stage chip HTML: ${label?.innerHTML??'missing'}`).not.toBeNull();
  });
 });
