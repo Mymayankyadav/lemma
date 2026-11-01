@@ -36,6 +36,12 @@ describe('FIX #636 durable MCP selftest queue',()=>{
   tickets.push(done(14,101));
   expect(queueDecision(tickets,12,{})).toEqual({canRun:true,waitingOn:[]});
  });
+ it('does not wait on a duplicate START ticket from the same run attempt',()=>{
+  const tickets=[start(15,150),start(16,150),start(17,151)];
+  expect(queueDecision(tickets,16,{})).toEqual({canRun:true,waitingOn:[]});
+  expect(queueDecision(tickets,17,{\'150/1\':\'in_progress\'}))
+   .toEqual({canRun:false,waitingOn:[\'150/1\']});
+ });
  it('recovers cancelled attempts but never reports their smoke as passed',()=>{
   const tickets=[start(20,200),start(21,201)];
   expect(queueDecision(tickets,21,{'200/1':'completed'}))
