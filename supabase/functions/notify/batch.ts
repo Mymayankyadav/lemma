@@ -42,7 +42,15 @@ export async function sendPushBatch(
  const worker=async()=>{
   while(next<limit&&!controller.signal.aborted){
    const index=next++;
-   const result=await sendWebPush({...requests[index],signal:controller.signal},options.sender);
+   let result:DeliveryResult;
+   try{
+    result=await sendWebPush({...requests[index],signal:controller.signal},options.sender);
+   }catch{
+    // A faulty transport must not abort the remaining owner-scoped sends or
+    // leak an endpoint/credential through an exception.
+    const failures=requests[index].priorFailures??0;
+    result={status:Number.isSafeInteger(failures)&&failures>=0&&failures<2?'retry':'failed'};
+   }
    if(!controller.signal.aborted)finished[index]={index,result};
   }
  };
