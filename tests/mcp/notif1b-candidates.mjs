@@ -95,6 +95,24 @@ try{
      [owner,'due:streak:'+i,new Date(Date.now()-(5-i)*60000).toISOString()])
  }
  assert.equal((await facts()).history.dismissStreak.due,3)
+ // Backoff is independent for each kind that changes its cadence or switches
+ // off after three dismissals. A tap resets that kind, not every kind.
+ for(const kind of ['behind','resume','rhythm']){
+   for(let i=0;i<3;i++)await q(
+     "insert into public.notifications(user_id,kind,key,title,body,url,due_at,action,action_at) values($1,$2,$3,'Test','Hello','#/',now(),'dismiss',$4::timestamptz)",
+     [owner,kind,kind+':streak:'+i,new Date(Date.now()-(3-i)*60000).toISOString()])
+ }
+ let streaks=(await facts()).history.dismissStreak
+ assert.deepEqual(Object.keys(streaks).sort(),['behind','due','resume','rhythm'])
+ for(const kind of ['due','behind','resume','rhythm'])assert.equal(streaks[kind],3,kind+' streak')
+ await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at,action,action_at) values($1,'behind','behind:reset','Test','Hello','#/',now(),'open',now())",[owner])
+ await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at,action,action_at) values($1,'rhythm','rhythm:foreign','Test','Hello','#/',now(),'open',now())",[other])
+ streaks=(await facts()).history.dismissStreak
+ assert.equal(streaks.behind,0,'tap resets only behind')
+ assert.equal(streaks.due,3)
+ assert.equal(streaks.resume,3)
+ assert.equal(streaks.rhythm,3,'other owner cannot reset rhythm')
+ console.log('PASS NOTIF-1b independent due/behind/resume/rhythm dismissal streaks and owner isolation')
  console.log('PASS NOTIF-1b dismissal streak resets on open and reaches three consecutive')
  await db.exec('reset role')
  await db.exec('set role authenticated')
