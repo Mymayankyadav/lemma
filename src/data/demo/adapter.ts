@@ -676,6 +676,73 @@ export class DemoAdapter implements LemmaApi {
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
     });
   }
+  /** Project needs daily-limited checkpoint counts, not ReviewItem faces.
+   * Build only the minimal state/note identity records used by dueToday,
+   * preserving its global daily caps, due order and sibling de-duplication.
+   * This avoids creating thousands of rich card objects, glyph lookups and
+   * cloned FSRS states before the Route can paint.
+   */
+  private projectDueCounts(projectId:string):Map<string,number>{
+    const now=this.now();
+    // A private, untouched S/X fixture has one reviewed-state card per
+    // generated note, all first stressDueCount cards at the same overdue
+    // timestamp and the rest in the future. dueToday's stable ordering,
+    // active-project filter, one-note sibling rule and global daily cap are
+    // therefore equivalent to selecting the first capped active indices.
+    // Count those indices directly instead of hydrating 600/4,000 synthetic
+    // note objects before the first real Project Route paints. Never use
+    // this shortcut after a card has been loaded/edited or any review exists;
+    // all mutable/live and nonstandard fixture states use dueToday below.
+    const virtual=this.virtualStressDue;
+    const deferred=typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
+    const template=demoSeedFixture.notes[0];
+    if(deferred&&virtual&&!this.virtualReviewNotes&&this.virtualCardCache.size===0&&
+       this.store.reviews.length===0&&template?.cards[0]?.state.state===2&&
+       now>=virtual.overdue&&now<virtual.future&&this.store.projects.length>0){
+      const counts=new Map<string,number>();
+      const dueCount=Math.min(this.store.stressDueCount??0,this.store.stressNoteCount??0);
+      let left=Math.max(0,Math.floor(this.store.settings.reviewsPerDay));
+      for(let i=0;i<dueCount&&left>0;i++){
+        const project=this.store.projects[i%this.store.projects.length];
+        if(project.status==='archived'||project.system)continue;
+        left--;
+        if(project.id!==projectId)continue;
+        const code='CP'+((i%36)+1);
+        counts.set(code,(counts.get(code)??0)+1);
+      }
+      return counts;
+    }
+    const {start,end}=studyDayBounds(now,this.store.settings.timeZone,
+      this.store.settings.rolloverHour);
+    const today=this.store.reviews.filter(r=>!r.undoneAt&&
+      Date.parse(r.reviewedAt)>=start&&Date.parse(r.reviewedAt)<=now);
+    const activeProjects=new Set(this.store.projects
+      .filter(p=>p.status!=='archived'&&!p.system).map(p=>p.id));
+    const candidates:Array<{
+      state:CardState;noteId:string;projectId:string;
+      checkpointCode?:string|null;
+    }>=[];
+    for(const note of this.reviewNotes()){
+      if(note.note.status!=='active'||!activeProjects.has(note.projectId))continue;
+      for(const card of note.cards){
+        if(card.state.state!==0&&!(this.dueTime(card.state.due)<end))continue;
+        candidates.push({
+          state:card.state,noteId:note.note.noteId,
+          projectId:note.projectId,checkpointCode:note.note.checkpointCode,
+        });
+      }
+    }
+    const selected=dueToday(candidates,this.store.settings,{
+      now,answeredToday:today.length,
+      newAnsweredToday:today.filter(r=>r.stateBefore===0).length,
+    });
+    const counts=new Map<string,number>();
+    for(const item of selected){
+      if(item.projectId!==projectId||!item.checkpointCode)continue;
+      counts.set(item.checkpointCode,(counts.get(item.checkpointCode)??0)+1);
+    }
+    return counts;
+  }
   /** Direct Project renders a long prerequisite chain all at once. The
    * normal cpUi() recursion deliberately has per-call cycle protection, but
    * calling it for each of 100 rows repeats the entire chain and a civil-day
@@ -1287,17 +1354,14 @@ export class DemoAdapter implements LemmaApi {
   }
   async getProject(slug: string): Promise<ProjectDetail> {
     const p = this.project(slug);
-    // A direct project route needs one project's full detail, not all 30k
-    // generated note objects. Reuse the exact bounded Paths summary while
-    // the private S/X note collection is still virtual. Once a write
-    // materializes notes, retain the ordinary mutable-store summary path.
-    const virtualNotes = this.virtualStressDue !== null &&
-      typeof Object.getOwnPropertyDescriptor(this.store, 'notes')?.get === 'function';
-    const summary = virtualNotes
-      ? (await this.listProjects()).find(row => row.id === p.id) ?? this.summary(p)
-      : this.summary(p);
-    const eligible = this.eligible();
+    // A direct Project route needs progress for one project only.
+    // Avoid materializing all project summaries (and their virtual sources).
+    // This matches summary(): only approved demonstrated checkpoints are done.
     const baseCheckpoints=this.store.checkpoints.filter(cp=>cp.projectId===p.id);
+    const approved=baseCheckpoints.filter(cp=>!cp.proposed);
+    const done=approved.filter(cp=>cp.status==='demonstrated').length;
+    const total=approved.length;
+    const dueByCode=this.projectDueCounts(p.id);
     const uiById=this.projectUiIndex(baseCheckpoints);
     return {
       project: this.projectValue(p),
@@ -1307,9 +1371,12 @@ export class DemoAdapter implements LemmaApi {
         ...this.proposed(p),
       ]
         .sort((a, b) => a.position - b.position)
-        .map(cp=>this.cpView(cp,eligible,cp.proposed?'proposed':uiById?.get(cp.id))),
-      done: summary.done,
-      total: summary.total,
+        .map(cp=>({
+          ...this.cpView(cp,[],cp.proposed?'proposed':uiById?.get(cp.id)),
+          dueCards:dueByCode.get(cp.code)??0,
+        })),
+      done,
+      total,
       planRevisions: clone(this.planHistory(p)),
       sources: this.projectSources(p)
         .map(({ pages, error, ...source }) => clone(source)),
