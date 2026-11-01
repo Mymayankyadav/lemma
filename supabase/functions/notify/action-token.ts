@@ -77,7 +77,7 @@ export async function verifyActionToken(token:string,secret:string,nowSeconds=Ma
 
 /** Authenticate the public /tick route without timing-sensitive string equality. */
 export async function verifyCronHeader(header:string|null,secret:string):Promise<boolean>{
- if(!header||!secret||header.length>512||secret.length>512)return false;
+ if(!header||!secret||secret.length<32||header.length>512||secret.length>512)return false;
  const [actual,expected]=await Promise.all([
   crypto.subtle.digest('SHA-256',encoder.encode(header)),
   crypto.subtle.digest('SHA-256',encoder.encode(secret)),
