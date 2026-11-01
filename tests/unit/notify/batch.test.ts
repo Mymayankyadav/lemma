@@ -71,4 +71,19 @@ describe('NOTIF-4b2 50-send/20-second bounded batch',()=>{
   expect(result.results[0].result).toEqual({status:'retry'});
   expect(JSON.stringify(result)).not.toMatch(/secret|endpoint|credential/i);
  });
+ it('respects caller cancellation without waiting for the full tick deadline',async()=>{
+  const controller=new AbortController();
+  controller.abort();
+  expect(await sendPushBatch([request(0)],{signal:controller.signal}))
+   .toEqual({attempted:0,deferred:1,timedOut:false,results:[]});
+  expect(send).not.toHaveBeenCalled();
+
+  const second=new AbortController();
+  send.mockImplementation(()=>new Promise(()=>{}));
+  const pending=sendPushBatch([request(0),request(1),request(2)],{signal:second.signal});
+  second.abort();
+  const result=await pending;
+  expect(result).toMatchObject({timedOut:false,deferred:3,results:[]});
+  expect(send).toHaveBeenCalledTimes(3);
+ });
 });
