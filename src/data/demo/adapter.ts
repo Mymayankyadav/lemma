@@ -1177,6 +1177,8 @@ export class DemoAdapter implements LemmaApi {
     return result;
   }
   async getProject(slug: string): Promise<ProjectDetail> {
+    const profile=this.virtualStressDue!==null;
+    const started=profile?performance.now():0;
     const p = this.project(slug);
     // A direct project route needs one project's full detail, not all 30k
     // generated note objects. Reuse the exact bounded Paths summary while
@@ -1187,26 +1189,46 @@ export class DemoAdapter implements LemmaApi {
     const summary = virtualNotes
       ? (await this.listProjects()).find(row => row.id === p.id) ?? this.summary(p)
       : this.summary(p);
+    const summaryDone=profile?performance.now():0;
     const eligible = this.eligible();
-    return {
+    const eligibleDone=profile?performance.now():0;
+    const checkpoints=[
+      ...this.store.checkpoints.filter((cp) => cp.projectId === p.id),
+      ...this.proposed(p),
+    ]
+      .sort((a, b) => a.position - b.position)
+      .map((cp) => this.cpView(cp, eligible));
+    const checkpointsDone=profile?performance.now():0;
+    const sessions=await this.listSessions(slug);
+    const sessionsDone=profile?performance.now():0;
+    const detail:ProjectDetail={
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
-      checkpoints: [
-        ...this.store.checkpoints.filter((cp) => cp.projectId === p.id),
-        ...this.proposed(p),
-      ]
-        .sort((a, b) => a.position - b.position)
-        .map((cp) => this.cpView(cp, eligible)),
+      checkpoints,
       done: summary.done,
       total: summary.total,
       planRevisions: clone(this.planHistory(p)),
       sources: this.projectSources(p)
         .map(({ pages, error, ...source }) => clone(source)),
-      sessions: await this.listSessions(slug),
+      sessions,
       pendingProposals: this.store.proposals.filter(
         (v) => v.projectSlug === slug && v.status === "pending",
       ).length,
     };
+    if(profile){
+      const finished=performance.now();
+      const phases=[
+        ['summary',started,summaryDone],
+        ['eligible',summaryDone,eligibleDone],
+        ['checkpoints',eligibleDone,checkpointsDone],
+        ['sessions',checkpointsDone,sessionsDone],
+        ['assembly',sessionsDone,finished],
+        ['total',started,finished],
+      ] as const;
+      for(const [name,start,end] of phases)
+        performance.measure('lemma-stress-project-'+name,{start,end});
+    }
+    return detail;
   }
   async getCheckpoint(slug: string, code: string): Promise<CheckpointDetail> {
     const project = this.project(slug),
