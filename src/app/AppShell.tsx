@@ -16,6 +16,7 @@ export default function AppShell(){
  const queryClient=useQueryClient();
  useEffect(()=>{
   let disposed=false,identity:string|null=null,saveTimer:ReturnType<typeof setTimeout>|null=null;
+  let authEventSeen=false;
   // Serialize writes and deletion so a sign-out cannot resurrect a prior owner's snapshot.
   let pendingSave:Promise<void>=Promise.resolve();
   const publish=(savedAt:number|null)=>{
@@ -47,6 +48,7 @@ export default function AppShell(){
   let authSubscription:{unsubscribe:()=>void}|null=null;
   try{authSubscription=getMode()==='live'
    ?liveClient().auth.onAuthStateChange((event,session)=>{
+      authEventSeen=true;
       if(event==='SIGNED_OUT'){
        if(saveTimer)clearTimeout(saveTimer);
        const previous=identity;identity=null;publish(null);
@@ -60,9 +62,12 @@ export default function AppShell(){
   }catch{/* AuthGate reports missing live configuration; no snapshot is opened. */}
   void (async()=>{
    try{
-    identity=getMode()==='demo'?'demo-'+getDemoProfile():
+    const initialIdentity=getMode()==='demo'?'demo-'+getDemoProfile():
      (await liveClient().auth.getSession()).data.session?.user.id??null;
-    if(disposed||!identity)return;
+    // A later SIGNED_OUT/SIGNED_IN event takes precedence over a stale getSession response.
+    if(disposed||authEventSeen)return;
+    identity=initialIdentity;
+    if(!identity)return;
     if(!navigator.onLine)await restore();
     else queueSave();
    }catch{/* No authenticated identity: never open another user's snapshot. */}
