@@ -41,8 +41,11 @@ test('AND-8 pagehide stages successful route queries synchronously before best-e
   ))
   // A successful query can already be in cache when a hard navigation begins.
   // The synchronous pagehide handoff must not wait for idle timers or IDB.
-  client.setQueryData(['projects'],[{slug:'real-analysis',title:'Real Analysis'}])
   vi.mocked(stageOfflineHandoff).mockClear()
+  client.setQueryData(['projects'],[{slug:'real-analysis',title:'Real Analysis'}])
+  // Successful query updates must not synchronously scrub/serialize S/X data
+  // during cold paint; the real pagehide is the synchronous handoff boundary.
+  expect(stageOfflineHandoff).not.toHaveBeenCalled()
   vi.mocked(saveOfflineSnapshot).mockClear()
   window.dispatchEvent(new Event('pagehide'))
   expect(stageOfflineHandoff).toHaveBeenCalledWith(
