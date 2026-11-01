@@ -11,7 +11,7 @@ const Page7=lazy(()=>import('../features/plan-proposal/Page'))
 const Page8=lazy(()=>import('../features/review/Page'))
 const Page9=lazy(()=>import('../features/review-run/Page'))
 const Page10=lazy(()=>import('../features/review-done/Page'))
-import Page11 from '../features/cards/Page'
+const Page11=lazy(()=>import('../features/cards/Page'))
 const Page12=lazy(()=>import('../features/card/Page'))
 import Page13 from '../features/atlas/Page'
 const Page14=lazy(()=>import('../features/insights/Page'))
