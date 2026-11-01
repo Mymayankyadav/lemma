@@ -26,7 +26,14 @@ describe('NOTIF-4b1 atomic /act handler',()=>{
    const response=await handleActionRequest(input,{secret,rpc,nowSeconds:now});
    expect(response.status).toBe(400);
   }
-  const expired=await handleActionRequest({token:await signed()},{secret,rpc,nowSeconds:now+3600});
+  const token=await signed();
+  const [encoded,signature]=token.split('.');
+  const forged=Buffer.from(JSON.stringify({
+   ...JSON.parse(Buffer.from(encoded,'base64url').toString()),n:43,
+  })).toString('base64url')+'.'+signature;
+  expect((await handleActionRequest({token:forged},{secret,rpc,nowSeconds:now})).status).toBe(401);
+  expect((await handleActionRequest({token},{secret:secret+'other',rpc,nowSeconds:now})).status).toBe(401);
+  const expired=await handleActionRequest({token},{secret,rpc,nowSeconds:now+3600});
   expect(expired.status).toBe(410);
   expect(rpc).not.toHaveBeenCalled();
  });
