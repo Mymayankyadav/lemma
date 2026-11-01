@@ -1,4 +1,4 @@
-import {FastTex as Tex} from '../../ui/FastTex';
+import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
 
 /** Preserve full mathematical layout in the visible Atlas details heading. */
