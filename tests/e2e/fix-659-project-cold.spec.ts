@@ -46,3 +46,15 @@ for(const width of [360,390] as const){
   await cdp.detach();
  });
 }
+
+// Deferring the heavy PDF/transcription module must not break the Sources tab.
+test('FIX #659 Sources tab stays functional after deferred module loading',async({page})=>{
+ await page.goto('/lemma/?demo=stress&theme=graph#/p/real-analysis',{waitUntil:'domcontentloaded'});
+ await expect(page.getByRole('region',{name:'Project timeline'})).toBeVisible();
+ await page.getByRole('group',{name:'Choose view'}).getByRole('button',{name:/Sources/}).click();
+ await expect(page.getByRole('region',{name:'Sources'})).toBeVisible();
+ await expect(page.getByRole('group',{name:'Source storage'})).toBeVisible();
+ await expect(page.getByText(/Add sources/)).toBeVisible();
+ await page.getByRole('group',{name:'Choose view'}).getByRole('button',{name:/Path/}).click();
+ await expect(page.getByRole('region',{name:'Stages'})).toBeVisible();
+});
