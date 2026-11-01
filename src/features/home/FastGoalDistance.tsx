@@ -89,7 +89,10 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
   const inspect=()=>{
    const goal=document.querySelector<HTMLElement>('[data-summary-goal]')
    const rect=goal?.getBoundingClientRect()
-   let visible=!!rect&&rect.width>0&&rect.height>0
+   // The first goal must actually intersect the painted viewport, not
+   // merely exist below the fold or in an offscreen cached subtree.
+   let visible=!!rect&&rect.width>0&&rect.height>0&&
+    rect.top<window.innerHeight&&rect.bottom>0&&rect.left<window.innerWidth&&rect.right>0
    for(let el:Element|null=goal??null;visible&&el;el=el.parentElement){
     const style=getComputedStyle(el)
     if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)<0.99)
