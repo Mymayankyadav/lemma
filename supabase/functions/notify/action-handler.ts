@@ -70,7 +70,12 @@ export async function handleActionRequest(input:unknown,deps:NotifyActDeps):Prom
    body.undoToken=await signActionToken({
     u:action.u,n:confirmId,a:'undo',exp:now+48*60*60,x:{action:actionId},
    },deps.secret,now);
-  }catch{return reply(409,{message:recover(action.a)})}
+  }catch{
+   // The SQL RPC has already committed. A signing failure cannot undo that
+   // transaction; report success without an Undo link instead of a false 409.
+   // The action number remains available for Undo inside Lemma.
+   return reply(200,body);
+  }
  }
  return reply(200,body);
 }
