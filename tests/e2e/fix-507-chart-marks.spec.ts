@@ -5,13 +5,14 @@ import {measureSvgMarks} from '../../scripts/stress-marks';
 // Regression for the real ST-0 /insights and /kit violations. Adjacent
 // grouped series and dense daily columns must keep >=8px painted clearance;
 // the data series and accessible totals must not be dropped to make it pass.
+for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [360,390] as const)
 for(const route of ['/insights','/kit'] as const){
- test(`FIX #507 chart marks ${route} ${theme} ${width}px`,async({page})=>{
+ test(`FIX #507a chart marks ${profile} ${route} ${theme} ${width}px`,async({page})=>{
   await page.setViewportSize({width,height:width===360?740:844});
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto(`/lemma/?demo=stress&theme=${theme}#${route}`);
+  await page.goto(`/lemma/?demo=${profile}&theme=${theme}#${route}`);
   await expect(page.getByRole('heading',{name:route==='/insights'?'Insights':'Component kit',level:1,exact:true})).toBeVisible();
   const reviews=page.locator('svg[aria-label^="Reviews by day"]');
   const checkpoints=page.locator('svg[aria-label^="Checkpoints by week"]');
