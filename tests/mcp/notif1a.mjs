@@ -48,6 +48,9 @@ try{
  const original=(await q('select id from public.push_devices where endpoint=$1',[device(1)[1]]))[0].id
  await q('update public.push_devices set disabled_at=now(),disabled_reason=$1 where id=$2',['removed',original])
  await add(11)
+ await assert.rejects(q('select public.upsert_push_device($1,$2,$3,$4,$5)',
+  [device(1)[1],'newkey','authkey1','Re-enable','android_web']),
+  /You have 10 devices with reminders. Remove one first./)
  await assert.rejects(q('update public.push_devices set disabled_at=null,disabled_reason=null where id=$1',[original]),
   /You have 10 devices with reminders. Remove one first./)
  assert.equal((await q('select count(*)::int n from public.push_devices where disabled_at is null'))[0].n,10)
