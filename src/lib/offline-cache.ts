@@ -63,7 +63,7 @@ export function isOfflineKey(key:readonly unknown[]):key is OfflineKey {
  return false
 }
 const privateKey=/^(?:.*(?:connector|secret|token|authorization|credential|subscription|pushkey|widgetkey|sessionkey|password|apikey|refreshkey).*)$/i
-const privateValue=/(?:\/functions\/v1\/mcp\/|\/mcp\/[^\s/]+|bearer\s+\S+|SENTINEL-SECRET|sb_secret_)/i
+const privateValue=/(?:\/functions\/v1\/mcp\/|\/mcp\/[^\s/]+|bearer\s+\S+|SENTINEL-SECRET|sb_secret_|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b)/i
 /** Defense in depth for non-Settings records: only allowlisted queries, then redact. */
 export function scrubOfflineData(value:unknown):unknown {
  const seen=new WeakSet<object>()
