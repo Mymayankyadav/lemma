@@ -86,6 +86,7 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   expect(source).toContain('byLane');
   expect(source).toContain('byFrom');
   expect(source).toContain('byTo');
+  expect(source).toContain('fitCache');
   const rows=Array.from({length:180},(_,i)=>i*44+22+(i%7)*3);
   const arcs=Array.from({length:180},(_,i)=>arc('indexed-'+i,
    (i*37)%140,Math.min(179,(i*37)%140+1+(i*19)%40)));
