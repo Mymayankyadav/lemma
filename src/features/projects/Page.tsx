@@ -115,7 +115,7 @@ export default function Page(){
  // Cards is the common next stop from Paths. Warm its small route chunk
  // asynchronously during the unthrottled Paths visit, without evaluating
  // Cards in the cold Today/Atlas entry bundle or issuing a Cards data query.
- useEffect(()=>{void import('../cards/Page')},[]);
+ useEffect(()=>{void import('../cards/Page').catch(()=>{})},[]);
  const warmAtlas=useCallback(()=>{
   if(getMode()!=='demo')return;
   void import('../atlas/Page');
