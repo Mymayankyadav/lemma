@@ -6,7 +6,7 @@ import { projectProgress, conceptStatus } from '../../lib/derive'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
-import { LemmaError } from '../api'
+import { LemmaError, notImplemented } from '../api'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
 
 type HomeReviewOutlook={
@@ -28,6 +28,18 @@ function homeReviewOutlook(db:ReturnType<typeof liveClient>,uid:string):Promise<
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ /** Reminders stay unavailable in live mode until NOTIF-6. */
+ async listPushDevices(..._args:Parameters<LemmaApi['listPushDevices']>):ReturnType<LemmaApi['listPushDevices']> {throw notImplemented('listPushDevices')}
+ async addPushDevice(..._args:Parameters<LemmaApi['addPushDevice']>):ReturnType<LemmaApi['addPushDevice']> {throw notImplemented('addPushDevice')}
+ async renamePushDevice(..._args:Parameters<LemmaApi['renamePushDevice']>):ReturnType<LemmaApi['renamePushDevice']> {throw notImplemented('renamePushDevice')}
+ async removePushDevice(..._args:Parameters<LemmaApi['removePushDevice']>):ReturnType<LemmaApi['removePushDevice']> {throw notImplemented('removePushDevice')}
+ async restorePushDevice(..._args:Parameters<LemmaApi['restorePushDevice']>):ReturnType<LemmaApi['restorePushDevice']> {throw notImplemented('restorePushDevice')}
+ async touchPushDevice(..._args:Parameters<LemmaApi['touchPushDevice']>):ReturnType<LemmaApi['touchPushDevice']> {throw notImplemented('touchPushDevice')}
+ async listRecentNotifications(..._args:Parameters<LemmaApi['listRecentNotifications']>):ReturnType<LemmaApi['listRecentNotifications']> {throw notImplemented('listRecentNotifications')}
+ async listNotifyHolds(..._args:Parameters<LemmaApi['listNotifyHolds']>):ReturnType<LemmaApi['listNotifyHolds']> {throw notImplemented('listNotifyHolds')}
+ async clearNotifyHold(..._args:Parameters<LemmaApi['clearNotifyHold']>):ReturnType<LemmaApi['clearNotifyHold']> {throw notImplemented('clearNotifyHold')}
+ async sendTestNotification(..._args:Parameters<LemmaApi['sendTestNotification']>):ReturnType<LemmaApi['sendTestNotification']> {throw notImplemented('sendTestNotification')}
+ async previewNotifications(..._args:Parameters<LemmaApi['previewNotifications']>):ReturnType<LemmaApi['previewNotifications']> {throw notImplemented('previewNotifications')}
  /** Read at most 21 reviews, with stable (reviewed_at,id) keyset paging. */
  async getCardHistoryPage(...args: Parameters<LemmaApi['getCardHistoryPage']>): ReturnType<LemmaApi['getCardHistoryPage']> {
   const [no,cursor]=args,db=liveClient(),uid=await owner(db)
