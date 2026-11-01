@@ -8,14 +8,24 @@ export function canWriteOnline(online:boolean,offlineSavedAt:string|undefined):b
  const saved=Number(offlineSavedAt)
  return online&&!(offlineSavedAt!==undefined&&Number.isFinite(saved)&&saved>0)
 }
+// All network-aware controls share one set of DOM listeners. This matters on
+// stress fixtures with hundreds of buttons and the strict cold-render budget.
+const subscribers=new Set<()=>void>();
+const broadcast=()=>{for(const listener of subscribers)listener()};
 function subscribe(listener:()=>void){
- window.addEventListener('online',listener);
- window.addEventListener('offline',listener);
- window.addEventListener('lemma:offline-snapshot',listener);
+ if(subscribers.size===0){
+  window.addEventListener('online',broadcast);
+  window.addEventListener('offline',broadcast);
+  window.addEventListener('lemma:offline-snapshot',broadcast);
+ }
+ subscribers.add(listener);
  return ()=>{
-  window.removeEventListener('online',listener);
-  window.removeEventListener('offline',listener);
-  window.removeEventListener('lemma:offline-snapshot',listener);
+  subscribers.delete(listener);
+  if(subscribers.size===0){
+   window.removeEventListener('online',broadcast);
+   window.removeEventListener('offline',broadcast);
+   window.removeEventListener('lemma:offline-snapshot',broadcast);
+  }
  };
 }
 function snapshot(){
