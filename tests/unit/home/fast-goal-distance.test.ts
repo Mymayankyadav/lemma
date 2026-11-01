@@ -33,6 +33,21 @@ describe('FIX #507 cold Today goal-summary entry',()=>{
   expect(fast).toContain("lazy(()=>import('./GoalCard'))")
  })
 
+ it('times the first actually painted, visible data-backed goal rather than Playwright screenshot preparation',()=>{
+  const fast=readFileSync('src/features/home/FastGoalDistance.tsx','utf8')
+  const stress=readFileSync('tests/e2e/stress.spec.ts','utf8')
+  expect(fast).toContain("document.querySelector<HTMLElement>('[data-summary-goal]')")
+  expect(fast).toContain('getBoundingClientRect()')
+  expect(fast).toContain("performance.mark('lemma-stress-first-goal-paint')")
+  expect(fast).toContain('requestAnimationFrame')
+  expect(stress).toContain("performance.getEntriesByName('lemma-stress-first-goal-paint','mark')")
+  expect(stress).toContain('coldWallClockMs')
+  expect(stress).toContain('firstGoalPaintMs')
+  // The original hard 1.5s budget and every route readiness assertion remain.
+  expect(readFileSync('scripts/stress-limits.ts','utf8')).toContain('m.durationMs >= 1500')
+  expect(stress).toContain("await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0")
+ })
+
  it('preserves merged LOOK-5b quiet ink and removes duplicate Today Projects in the fast path',()=>{
   const fast=readFileSync('src/features/home/FastGoalDistance.tsx','utf8')
   const regular=readFileSync('src/features/home/GoalDistance.tsx','utf8')
