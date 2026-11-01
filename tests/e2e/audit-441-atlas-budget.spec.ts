@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
+import {waitForLoadedPaths} from './helpers/waitForLoadedPaths';
 
 // C2 is a hard first-attempt 4× CPU budget. Global CI retries must not
 // turn an over-budget transition into a green performance acceptance.
@@ -15,7 +16,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
   await page.goto('/lemma/?demo=extreme&theme='+theme+'#/projects',{waitUntil:'domcontentloaded',timeout:90_000});
-  await expect(page.getByRole('heading',{name:'Paths',level:1})).toBeVisible({timeout:90_000});
+  await waitForLoadedPaths(page);
   const cdp=await page.context().newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
   try{
