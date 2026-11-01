@@ -19,7 +19,7 @@ const isId=(value:unknown):boolean=>{
  try{return BigInt(value)<=MAX_ID}catch{return false}
 };
 const safeUrl=(value:string):boolean=>{
- if(value.length===0||value.length>2048||value.trim()!==value)return false;
+ if(value.length===0||value.length>2048||value.trim()!==value||/[\u0000-\u001f\u007f]/.test(value))return false;
  if(/^#\//.test(value)||/^\/lemma\/#\//.test(value))return true;
  try{
   const url=new URL(value);
@@ -45,7 +45,7 @@ export function buildPushPayload(input:PushPayloadInput):string{
     typeof input.title!=='string'||!input.title.trim()||input.title.length>1000||
     typeof input.body!=='string'||input.body.length>2000||
     typeof input.url!=='string'||!safeUrl(input.url)||
-    !Array.isArray(input.actions)||input.actions.length>3||
+    !Array.isArray(input.actions)||input.actions.length>2||
     !Number.isSafeInteger(input.ts)||input.ts<=0)invalid();
  const actions=input.actions.map(action=>{
   if(!action||typeof action.action!=='string'||!/^[a-z][a-z0-9_-]{0,31}$/.test(action.action)||
