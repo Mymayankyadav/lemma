@@ -1,6 +1,6 @@
 import {SectionHeading} from '../../ui/SectionHeading';
 import {scheduleForVisibleProject} from './scheduleCache';
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
 import {ChevronRight,Check,RotateCcw,CircleDot,ArrowRight,Lock,CircleDashed} from 'lucide-react';

@@ -232,6 +232,24 @@ Each kind also has its own switch.
 ### 4g. Delivery
 
 - Payload ≤ 3 KB of JSON: `{v:1, id, kind, tag, title, body, url, actions:[{action, title, url?, token?}], ts}`.
+- **Passive signed receipts (additive v1 contract, FIX #714):** an optional
+  `openToken?: string` and `dismissToken?: string` may accompany the v1 payload
+  as **top-level fields**, separate from the at-most-two visible `actions`.
+  These are opaque HMAC-SHA256 `/act` tokens with the existing
+  `{u,n,a,exp,x?}` format: `u` is the owner, `n` the notification row,
+  `a` is exactly `open` or `dismiss`, and `exp` is no later than 48 h
+  after minting. The producer generates them for the same owner and notification
+  id as the visible actions, never embeds auth/session/connector secrets, and
+  enforces the existing **3 KB UTF-8 JSON** limit including both receipts.
+  Do not replace Review 5/Later or add a third action. A missing token means
+  **no passive `/act` request**; never send unsigned receipts or reinterpret
+  a visible action as a passive one. The worker posts `openToken` before body
+  navigation, without a second confirmation notification, and posts
+  `dismissToken` on `notificationclose`; receipt transport failures do not
+  block navigation or create a false action-failure notification. `notify_act`
+  claims the row atomically, so duplicate open/dismiss is idempotently rejected
+  without a second mutation. Producer/worker tests cover two visible actions,
+  signed open/dismiss, invalid/missing tokens, and the 3 KB bound.
 - Web Push settings by kind:
   - TTL 6 h; K6 24 h; action confirmations 10 min;
   - `Urgency: normal`; K6 and rhythm `low`;
