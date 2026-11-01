@@ -34,7 +34,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { Sparkline } from "../../ui/charts/Sparkline";
 import { useToast } from "../../ui/Toast";
-import { useOnlineStatus } from "../../ui/useOnlineStatus";
+import {useOnlineStatus,networkWritable} from "../../ui/useOnlineStatus";
 function next(due: string | null) {
   if (!due) return "New";
   const days = Math.ceil((Date.parse(due) - Date.now()) / 86400000);
@@ -160,7 +160,7 @@ export default function Page() {
         )
       : null;
   const save = async (v: EditorValue) => {
-    if(!navigator.onLine){notify("Needs a connection");return}
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!note) return;
     try {
       await update.mutateAsync({
@@ -180,7 +180,7 @@ export default function Page() {
     }
   };
   const setStatus = async (nextStatus: "active" | "suspended" | "deleted") => {
-    if(!navigator.onLine){notify("Needs a connection");return}
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!note) return;
     try {
       await status.mutateAsync({ noteNo: note.noteNo, status: nextStatus });
@@ -198,7 +198,7 @@ export default function Page() {
     }
   };
   const submit = async () => {
-    if(!navigator.onLine){notify("Needs a connection");return}
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!note || !message.trim() || add.isPending) return;
     try {
       await add.mutateAsync({ noteNo: note.noteNo, body: message.trim() });
@@ -209,7 +209,7 @@ export default function Page() {
     }
   };
   const remove = async (no: number) => {
-    if(!navigator.onLine){notify("Needs a connection");return}
+    if(!networkWritable()){notify("Needs a connection");return}
     try {
       await dismiss.mutateAsync(no);
       notify("Note dismissed");
@@ -229,7 +229,7 @@ export default function Page() {
               icon={PencilLine}
               label={online?"Edit card":"Edit card, needs a connection"}
               aria-disabled={!online||undefined}
-              onClick={() => {if(!navigator.onLine){notify("Needs a connection");return}setEditing(true)}}
+              onClick={() => {if(!networkWritable()){notify("Needs a connection");return}setEditing(true)}}
             />
             <IconButton
               icon={note.status === "suspended" ? Play : Pause}
@@ -246,7 +246,7 @@ export default function Page() {
               icon={Trash2}
               label={online?"Delete card":"Delete card, needs a connection"}
               aria-disabled={!online||undefined}
-              onClick={() => {if(!navigator.onLine){notify("Needs a connection");return}setDeleting(true)}}
+              onClick={() => {if(!networkWritable()){notify("Needs a connection");return}setDeleting(true)}}
             />
           </>
         ) : undefined
