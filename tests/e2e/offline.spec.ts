@@ -13,6 +13,10 @@ for(const width of [360,390] as const){
   await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible({timeout:60_000})
   await page.goto(prefix+'#/projects',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible()
+  await page.goto(prefix+'#/p/real-analysis',{waitUntil:'domcontentloaded'})
+  await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible()
+  await page.goto(prefix+'#/p/real-analysis/cp/CP4',{waitUntil:'domcontentloaded'})
+  await expect(page.getByRole('heading',{name:'Checkpoint',exact:true,level:1})).toBeVisible()
   await page.goto(prefix+'#/review',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Review',exact:true,level:1})).toBeVisible()
   await page.evaluate(()=>navigator.serviceWorker.ready)
@@ -44,6 +48,14 @@ for(const width of [360,390] as const){
   await context.setOffline(true)
   await page.reload({waitUntil:'domcontentloaded',timeout:30_000})
   await expect(page.getByRole('status').filter({hasText:/You're offline/})).toBeVisible({timeout:30_000})
+  await expect(page.getByText('Reviewing needs a connection')).toBeVisible({timeout:30_000})
+  // The four cached navigation targets must remain readable without a network.
+  for(const [route,heading] of [['/','Home'],['/projects','Paths'],['/p/real-analysis','Project'],['/p/real-analysis/cp/CP4','Checkpoint']] as const){
+   await page.evaluate(route=>{window.location.hash=route},route)
+   await expect(page.getByRole('heading',{name:heading,exact:true,level:1})).toBeVisible({timeout:30_000})
+   await expect(page.getByRole('status').filter({hasText:/You're offline/})).toBeVisible()
+  }
+  await page.evaluate(()=>{window.location.hash='/review'})
   await expect(page.getByText('Reviewing needs a connection')).toBeVisible({timeout:30_000})
   const start=page.getByRole('button',{name:/Start review, needs a connection/})
   await expect(start).toHaveAttribute('aria-disabled','true')
