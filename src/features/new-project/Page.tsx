@@ -42,7 +42,9 @@ export default function Page(){
  // behind it). Hydrate it only after the first modal paint, never in the
  // initial cold-route render; keep its rows and behavior intact thereafter.
  useEffect(()=>{
-  const id=window.setTimeout(()=>setLoadBackdrop(true),150);
+  // Give the actual modal two paints before hydrating the blurred library;
+  // 400ms keeps heavy 60-project parsing out of the strict cold paint budget.
+  const id=window.setTimeout(()=>setLoadBackdrop(true),400);
   return ()=>window.clearTimeout(id);
  },[]);
  const close=useCallback(()=>navigate('/projects'),[navigate]);
