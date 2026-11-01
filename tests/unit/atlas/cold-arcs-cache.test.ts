@@ -87,11 +87,11 @@ describe('FIX #647 StrictMode cold Atlas arc aggregation',()=>{
         return Reflect.get(target,key,receiver);
       },
     });
-    const first=budgetArcsUnfocusedCached(tree,rows,expanded,new Set(['prereq']));
+    const first=budgetArcsUnfocusedCached(tree,rows,expanded,new Set<'prereq'|'related'>(['prereq']));
     expect(first.visible).toHaveLength(0);
     expect(first.hidden).toBeGreaterThan(60);
     expect(traversals).toBe(1);
-    const second=budgetArcsUnfocusedCached(tree,rows,expanded,new Set(['prereq']));
+    const second=budgetArcsUnfocusedCached(tree,rows,expanded,new Set<'prereq'|'related'>(['prereq']));
     expect(second).toBe(first);
     expect(traversals).toBe(1);
   });
