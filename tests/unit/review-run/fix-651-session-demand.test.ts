@@ -7,7 +7,7 @@ import {describe,expect,it} from 'vitest';
 describe('FIX #651 Review runner cold session-demand boundary',()=>{
  const source=readFileSync('src/features/review-run/Page.tsx','utf8');
  it('does not subscribe to unused global sessions',()=>{
-  expect(source).not.toMatch(/\\buseSessions\\s*\\(/);
+  expect(source).not.toContain('useSessions()');
  });
  it('keeps session filtering and the review queue intact',()=>{
   expect(source).toContain("const sessionId=search.get('session')");
