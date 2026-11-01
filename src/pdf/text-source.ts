@@ -1,5 +1,4 @@
 import type { IngestResult, OutlineItem } from "./ingest";
-import {textKind} from "./validate";
 import type {TextKind} from "./validate";
 export {textKind} from "./validate";
 export type {TextKind} from "./validate";
