@@ -108,6 +108,11 @@ try{
  assert.equal((await q('select count(*)::int n from public.notifications where user_id=$1 and kind=$2',[owner,'confirm']))[0].n,1)
  console.log('PASS NOTIF-1b five approvals, one journal action, confirm and idempotency')
 
+ const malformedUndo='9'.repeat(50)
+ await assert.rejects(act(result.confirmId,'undo',{action:malformedUndo}),/bad_action/,
+   'an out-of-range action number must fail closed with the documented error')
+ assert.equal((await q('select action from public.notifications where id=$1',[result.confirmId]))[0].action,null,
+   'invalid undo must roll back its single-use claim')
  const undo=await act(result.confirmId,'undo',{action:result.action})
  assert.equal(undo.status,'done')
  assert.equal((await q("select count(*)::int n from public.proposals where user_id=$1 and status='pending'",[owner]))[0].n,6)
