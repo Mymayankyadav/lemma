@@ -70,8 +70,8 @@ export async function history(c:Context,a:any){const fetched=await scoped(c,'v_h
   if(actionNos.length){
    const pageSize=500;
    for(let offset=0;;offset+=pageSize){
-    const {data,error}=await c.db.from('action_changes').select('action_no')
-     .in('action_no',actionNos).or(projectFilter)
+    const {data,error}=await c.db.from('v_action_changes_owner').select('action_no')
+     .eq('user_id',c.userId).in('action_no',actionNos).or(projectFilter)
      .order('id',{ascending:true}).range(offset,offset+pageSize-1);
     if(error)throw Error(error.message);
     const page=data||[];
