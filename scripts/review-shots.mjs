@@ -163,7 +163,7 @@ try {
       // have no due count and deliberately need no forecast bars.
       if(name==='today'){
        const review=phone.getByRole('region',{name:'Review',exact:true});
-       const hasDue=(await review.locator('p').filter({hasText:/^\\s*[\\d,]+\\s+due\\s*$/}).count())>0;
+       const hasDue=(await review.locator('p').filter({hasText:/^\s*[\d,]+\s+due\s*$/}).count())>0;
        if(hasDue){
         await review.locator('[data-review-spark-bar]').first().waitFor({state:'visible'});
         const bars=await review.locator('[data-review-spark-bar]').count();
