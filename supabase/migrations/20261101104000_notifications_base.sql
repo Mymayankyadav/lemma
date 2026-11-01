@@ -47,7 +47,7 @@ revoke all on function public.push_devices_cap() from public,anon,authenticated,
 create function public.upsert_push_device(
  p_endpoint text,p_p256dh text,p_auth text,p_label text,p_platform text
 ) returns public.push_devices
-language plpgsql security definer set search_path='' as $
+language plpgsql security definer set search_path='' as $upsert$
 declare result public.push_devices%rowtype; uid uuid;
 begin
  uid:=auth.uid();
@@ -63,7 +63,7 @@ begin
   raise exception 'This browser gets reminders for another Lemma account.';
  end if;
  return result;
-end $;
+end $upsert$;
 revoke all on function public.upsert_push_device(text,text,text,text,text) from public,anon,service_role;
 grant execute on function public.upsert_push_device(text,text,text,text,text) to authenticated;
 
