@@ -70,4 +70,24 @@ describe('NOTIF-4b5 safe service-worker push payload',()=>{
    {action:'undo',title:'Undo',token:largeToken},
   ]})).toThrow();
  });
+ it('enforces the service worker two-action limit, not just the 3 KB payload limit',()=>{
+  expect(JSON.parse(buildPushPayload(base)).actions).toHaveLength(2);
+  expect(()=>buildPushPayload({...base,actions:[
+   {action:'review_5',title:'Review 5',url:'#/review?start=5'},
+   {action:'later',title:'Later',token:'abc.def'},
+   {action:'open',title:'Open',url:'#/review'},
+  ]})).toThrow();
+ });
+ it('rejects control characters in relative and absolute deep links, including action links',()=>{
+  for(const url of [
+   '#/review\nnext', '#/review\rnext', '#/review\tfoo',
+   '#/review\u0000foo', '#/review\u007ffoo',
+   'https://claude.ai/new\nother',
+   'https://mymayankyadav.github.io/lemma/#/review\rfoo',
+  ]){
+   expect(()=>buildPushPayload({...base,url}),JSON.stringify(url)).toThrow();
+   expect(()=>buildPushPayload({...base,actions:[{action:'open',title:'Open',url}]}),JSON.stringify(url)).toThrow();
+  }
+ });
+
 });
