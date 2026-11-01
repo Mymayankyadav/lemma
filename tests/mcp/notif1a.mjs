@@ -52,13 +52,10 @@ try{
  assert.equal((await q('select id from public.push_devices where id=$1',[original]))[0].id,original)
  console.log('PASS NOTIF-1a 10-device cap on insert and restore, same-id lifecycle')
 
- const existing=await q(`insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform)
- values($1,$2,$3,$4,$5,$6)
- on conflict(endpoint) do update set label=excluded.label,p256dh=excluded.p256dh
- where push_devices.user_id=excluded.user_id returning id,label`,
- [owner,device(1)[1],'newkey','authkey1','Renamed','android_web'])
+ const existing=await q('select (public.upsert_push_device($1,$2,$3,$4,$5)).id id',
+ [device(1)[1],'newkey','authkey1','Renamed','android_web'])
  assert.equal(existing[0].id,original)
- assert.equal(existing[0].label,'Renamed')
+ assert.equal((await q('select label from public.push_devices where id=$1',[original]))[0].label,'Renamed')
  assert.equal((await q('select count(*)::int n from public.push_devices'))[0].n,11)
  console.log('PASS NOTIF-1a endpoint re-add preserves row id')
 
@@ -66,6 +63,8 @@ try{
  await setUser(other)
  await db.exec('set role authenticated')
  assert.equal((await q('select count(*)::int n from public.push_devices'))[0].n,0)
+ await assert.rejects(q('select public.upsert_push_device($1,$2,$3,$4,$5)',
+  [device(1)[1],'foreignkey','auth','Foreign','desktop']),/This browser gets reminders for another Lemma account./)
  assert.equal((await q('select count(*)::int n from public.notify_holds'))[0].n,0)
  assert.equal((await q('select count(*)::int n from public.notifications'))[0].n,0)
  assert.equal((await q('update public.push_devices set label=$1 returning id',['Foreign'])).length,0)
@@ -81,7 +80,8 @@ try{
  console.log('PASS NOTIF-1a notification read-only owner RLS and cross-owner isolation')
 
  const before=await q("select tablename,policyname,roles::text from pg_policies where schemaname='public' and tablename in ('push_devices','notifications','notify_holds') order by tablename")
- await db.exec(`drop trigger push_devices_cap on public.push_devices;
+ await db.exec(`drop function public.upsert_push_device(text,text,text,text,text);
+ drop trigger push_devices_cap on public.push_devices;
  drop function public.push_devices_cap();
  drop table public.notify_holds,public.notifications,public.push_devices;
  alter table public.settings drop column notify;`)
