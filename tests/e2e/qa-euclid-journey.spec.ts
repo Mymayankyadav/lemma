@@ -17,7 +17,7 @@ for (const world of ['graph','graph-night'] as const) {
   await expect(page.locator('html')).toHaveAttribute('data-theme',world);
   await expect(nav.getByRole('link')).toHaveCount(4);
   await expect(nav.getByRole('link',{name:'Today'})).toHaveAttribute('aria-current','page');
-  await expect(page.getByRole('link',{name:/6 proposals to approve/})).toBeVisible();
+  await expect(page.getByRole('link',{name:/Review 6 tutor proposals/})).toBeVisible();
 
   await nav.getByRole('link',{name:'Paths'}).click();
   await expect(nav.getByRole('link',{name:'Paths'})).toHaveAttribute('aria-current','page');
@@ -34,7 +34,7 @@ for (const world of ['graph','graph-night'] as const) {
   await expect(page.getByRole('group',{name:'Study totals'}).or(page.locator('[aria-label="Study totals"]'))).toBeVisible();
 
   await nav.getByRole('link',{name:'Today'}).click();
-  await expect(page.getByRole('link',{name:/6 proposals to approve/})).toBeVisible();
+  await expect(page.getByRole('link',{name:/Review 6 tutor proposals/})).toBeVisible();
   await page.getByRole('navigation',{name:'Desk actions'}).getByRole('link',{name:'Open proposals'}).click();
   await expect(page.getByRole('button',{name:/Cards 5/})).toBeVisible();
   await page.getByRole('button',{name:'Approve card'}).click();
@@ -42,7 +42,7 @@ for (const world of ['graph','graph-night'] as const) {
   // Hash-router back keeps the in-memory demo adapter; a full reload would
   // hide a missing Home query invalidation by resetting the fixture.
   await page.goBack();
-  await expect(page.getByRole('link',{name:/5 proposals to approve/})).toBeVisible();
+  await expect(page.getByRole('link',{name:/Review 5 tutor proposals/})).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme',world);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   expect(errors).toEqual([]);
