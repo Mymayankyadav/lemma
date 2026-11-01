@@ -47,12 +47,12 @@ export default function Page(){
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
  const activeCatchUp=catchUpUntil>Date.now();
  useEffect(()=>{
-  if(!catchUpUntil||catchUpUntil>Date.now()||!settings.data)return;
+  if(offline||!catchUpUntil||catchUpUntil>Date.now()||!settings.data)return;
   const previous=Number(localStorage.getItem('lemma.catch-up-original')||200);
   localStorage.removeItem('lemma.catch-up-until');localStorage.removeItem('lemma.catch-up-original');
   setCatchUpUntil(0);
   if(settings.data.reviewsPerDay!==previous)update.mutate({reviewsPerDay:previous});
- },[catchUpUntil,settings.data?.reviewsPerDay]);
+ },[offline,catchUpUntil,settings.data?.reviewsPerDay]);
  function enableCatchUp(totalDue:number){
   if(offline){notify('Needs a connection');return}
   if(!settings.data||activeCatchUp)return;
@@ -136,8 +136,8 @@ export default function Page(){
   navigate('/review/run'+(qs.size?'?'+qs.toString():''));
  }
  useEffect(()=>{
-  if(cards.error||decks.error)notify("Couldn't load your review decks.",{tone:'danger'});
- },[cards.error,decks.error,notify]);
+  if(!offline&&(cards.error||decks.error))notify("Couldn't load your review decks.",{tone:'danger'});
+ },[offline,cards.error,decks.error,notify]);
  if(decks.isPending||settings.isPending||(!offline&&cards.isPending))return <Screen title="Review" tabBar actions={<IconButton icon={Search} label="Search cards" to="/cards"/>}>
   <Slab className="flex flex-col gap-4 p-6"><Skeleton h={75} w="55%"/><Skeleton h={50}/></Slab><Skeleton h={52}/><Skeleton h={56}/></Screen>;
  return <Screen title="Review" tabBar actions={<IconButton icon={Search} label="Search cards" to="/cards"/>}>
