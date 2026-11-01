@@ -69,7 +69,15 @@ try{
  // PGlite serialises requests on one backend; the advisory lock also protects
  // real concurrent PostgreSQL connections (independent integration still needed).
  await q('update public.push_devices set disabled_at=now(),disabled_reason=$1 where endpoint=$2',['removed',device(11)[1]])
- const simultaneous=await Promise.allSettled([add(12),add(13)])
+ // The two requests arrive together; the PGlite harness has one backend,
+ // so queue its SQL operations rather than issuing unsupported overlapping queries.
+ let queue=Promise.resolve()
+ const queuedAdd=(n)=>{
+  const run=queue.then(()=>add(n))
+  queue=run.then(()=>undefined,()=>undefined)
+  return run
+ }
+ const simultaneous=await Promise.allSettled([queuedAdd(12),queuedAdd(13)])
  assert.equal(simultaneous.filter(x=>x.status==='fulfilled').length,1)
  assert.equal(simultaneous.filter(x=>x.status==='rejected').length,1)
  assert.equal((await q('select count(*)::int n from public.push_devices where disabled_at is null'))[0].n,10)
