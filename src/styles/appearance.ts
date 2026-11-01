@@ -19,7 +19,7 @@ function updateTheme(mode:AppearanceMode){
  root.dataset.theme=theme;root.dataset.appearanceMode=mode;
  root.dataset.density='compact';root.dataset.effects='calm';
  delete root.dataset.themePreference;
- document.querySelector('meta[name="theme-color"]')?.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#FAFAF6');
+ document.querySelectorAll('meta[name="theme-color"]').forEach(meta=>meta.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#FAFAF6'));
 }
 export function applyAppearance(patch:Partial<Appearance>):Appearance {
  const next=normalize({...readAppearance(),...patch});

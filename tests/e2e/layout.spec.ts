@@ -119,10 +119,17 @@ test('UI-6a auto-switches graph worlds with OS theme and respects a manual choic
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.emulateMedia({colorScheme:'dark'});
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
- await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content','#13171D');
+ const themeMetas=page.locator('meta[name="theme-color"]');
+ await expect(themeMetas).toHaveCount(2);
+ await expect(themeMetas.nth(0)).toHaveAttribute('media','(prefers-color-scheme: light)');
+ await expect(themeMetas.nth(1)).toHaveAttribute('media','(prefers-color-scheme: dark)');
+ await expect(themeMetas.nth(0)).toHaveAttribute('content','#13171D');
+ await expect(themeMetas.nth(1)).toHaveAttribute('content','#13171D');
  await page.getByRole('radio',{name:/^Day /}).click();
  await page.emulateMedia({colorScheme:'light'});
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
  await page.emulateMedia({colorScheme:'dark'});
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph');
+ await expect(themeMetas.nth(0)).toHaveAttribute('content','#FAFAF6');
+ await expect(themeMetas.nth(1)).toHaveAttribute('content','#FAFAF6');
 });
