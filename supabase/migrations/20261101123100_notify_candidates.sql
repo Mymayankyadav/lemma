@@ -39,8 +39,7 @@ due_candidates as (
   -- Avoid a 30,000-probe per-note LATERAL plan while keeping archived/system
   -- project exclusion and stable per-note deduplication.
   select distinct on (n.id)
-    n.id note_id,n.no,n.project_id,n.checkpoint_id,
-    c.state,c.due,c.id card_id
+    n.id note_id,n.no,c.state,c.due,c.id card_id
   from public.cards c
   join public.notes n on n.id=c.note_id and n.user_id=c.user_id
   join visible_projects pr on pr.id=n.project_id and pr.user_id=n.user_id
