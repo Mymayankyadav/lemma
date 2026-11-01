@@ -4,7 +4,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {MemoryRouter} from 'react-router';
 
 vi.mock('../../../src/features/home/ReviewOutlook',()=>({
- ReviewOutlook:()=> <div aria-label="Seven-day review forecast">forecast</div>,
+ ReviewOutlook:({quiet}:{quiet?:boolean})=> quiet?null:<div aria-label="Seven-day review forecast">forecast</div>,
 }));
 
 import {ReviewDesk,TutorHandoff,ResumeCard} from '../../../src/features/home/Page';
