@@ -86,9 +86,14 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
  it('returns promptly on deadline and aborts a stalled adapter without false sends',async()=>{
   vi.useFakeTimers();
   const deps=adapters([A]);
-  vi.mocked(deps.load).mockImplementation(async()=>new Promise<ReturnType<typeof facts>>(()=>{}));
+  let entered!:()=>void;
+  const started=new Promise<void>(resolve=>{entered=resolve});
+  vi.mocked(deps.load).mockImplementation(async()=>{
+   entered();
+   return new Promise<ReturnType<typeof facts>>(()=>{});
+  });
   const pending=runNotifyTick(deps,{now:NOW,maxMs:10});
-  await vi.advanceTimersByTimeAsync(0);
+  await started;
   expect(deps.load).toHaveBeenCalledTimes(1);
   await vi.advanceTimersByTimeAsync(10);
   const result=await pending;
