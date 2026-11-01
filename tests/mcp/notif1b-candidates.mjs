@@ -186,13 +186,13 @@ try{
  // starve another project before NOTIF-3's copy groups the first three.
  await q('update public.settings set time_zone=$1 where user_id=$2',['Asia/Calcutta',owner])
  await q(`insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,due_on,steps)
-   select $1,$2,'CPX'||g.i,100+g.i,'Extra '||g.i,'Learn','Prove','2026-11-02','["Understand"]'::jsonb
+   select $1,$2,'CP'||(100+g.i),100+g.i,'Extra '||g.i,'Learn','Prove','2026-11-02','["Understand"]'::jsonb
    from generate_series(1,25) as g(i)`,[owner,project])
  const geometry=(await q(
    "insert into public.projects(user_id,subject_id,slug,title,goal,status) values($1,$2,'geometry','Geometry','Study','active') returning id",
    [owner,subject]))[0].id
  await q(`insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,due_on,steps)
-   values($1,$2,'G1',1,'Geometry tomorrow','Learn','Prove','2026-11-02','["Understand"]'::jsonb)`,
+   values($1,$2,'CP1',1,'Geometry tomorrow','Learn','Prove','2026-11-02','["Understand"]'::jsonb)`,
    [owner,geometry])
  await db.exec('set role service_role')
  const diverse=await facts(owner,'2026-11-01T01:00:00Z')
