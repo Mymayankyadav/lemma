@@ -24,8 +24,17 @@ for(const world of ['graph','graph-night'] as const){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({path:'test-results/screens/fix-402-paths-'+world+'.png',fullPage:true});
 
+  // A newly created project is in planning status. Today intentionally shows
+  // active goals, not the old duplicate list of every project. Activate this
+  // mathematical project through the Paths action, then verify its rendered
+  // title in the real Today goal list.
+  await project.getByRole('button',{name:/Actions for Vector spaces over/}).click();
+  await project.getByRole('menuitem',{name:'Set active'}).click();
+  await expect(page.getByRole('status').filter({hasText:'Set active saved'})).toBeVisible();
+
   await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Today'}).click();
-  const homeProject=page.getByRole('link',{name:/Vector spaces over/});
+  const goals=page.getByRole('region',{name:'Distance to your goals'});
+  const homeProject=goals.getByRole('link',{name:/Vector spaces over/});
   await expect(homeProject).toBeVisible();
   await expect(homeProject.locator('.katex')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
