@@ -261,7 +261,7 @@ export default function Page(){
    </div>
    {searching&&<div className="pb-2"><input autoFocus aria-label="Find an idea" placeholder="Find an idea" value={search} onChange={e=>setSearch(e.target.value)}
     className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body"/></div>}
-   <div className="flex flex-wrap items-center gap-2 pb-2" role="toolbar" aria-label="Atlas view">
+   <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-2" role="toolbar" aria-label="Atlas view">
     <div role="group" aria-label="Fold to depth" className="flex max-w-full overflow-x-auto rounded-full bg-[var(--paper-2)]">
      {([['Fields',1],['Areas',2],['Topics',3],['All',99]] as const).map(([label,d])=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to '+label.toLowerCase()} onClick={()=>{if(d===99&&ideas>300){setConfirmAll(true);return}setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}}
       className={'min-h-11 min-w-11 shrink-0 rounded-full px-2 text-label '+(depthOf===d?'bg-[var(--ink)] text-[var(--paper)]':'text-ink-2')}>{label}</button>)}
