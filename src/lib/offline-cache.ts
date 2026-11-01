@@ -139,9 +139,11 @@ function openDb(userId:string):Promise<IDBDatabase>{
  })
 }
 export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=Date.now()):Promise<void>{
+ // Capture the owner-scoped data before opening IndexedDB asynchronously:
+ // another auth event may clear/refill the shared query cache during that await.
+ const snapshot=snapshotFromClient(client,now)
  const db=await openDb(userId)
  try{
-  const snapshot=snapshotFromClient(client,now)
   await new Promise<void>((resolve,reject)=>{
    const tx=db.transaction(STORE,'readwrite')
    tx.objectStore(STORE).put(snapshot,SLOT)
