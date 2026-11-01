@@ -237,8 +237,15 @@ export default function Page() {
       </dl>
     </Slab>
   </Screen>;
+  // The offline projection deliberately omits the connector and all write-only
+  // preferences. Never enable online settings actions until the live record arrives.
+  if (typeof s.connectorUrl !== 'string') return <Screen title="Settings" back="/">
+    <Slab className="p-5"><p className="text-ink-2">Refreshing settings from Lemma…</p>
+      <Button className="mt-3" needsNetwork onClick={() => void settings.refetch()}>Try again</Button>
+    </Slab>
+  </Screen>;
   const connected = !!s.connectorLastSeenAt,
-    masked = s.connectorUrl?.replace(/\/[^/]+$/, "/••••••") ?? 'Needs a connection',
+    masked = s.connectorUrl.replace(/\/[^/]+$/, "/••••••"),
     busy = update.isPending;
   return (
     <Screen title="Settings" back="/" className="pb-8">
