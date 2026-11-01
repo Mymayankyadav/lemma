@@ -12,6 +12,7 @@ import {Slab} from '../../ui/Slab'
 import {Glyph} from '../../ui/Glyph'
 import {Skeleton} from '../../ui/Skeleton'
 import {Tex} from '../../ui/Tex'
+import {SummaryGoalCard} from './SummaryGoalCard'
 import {buildSchedule,scheduleHeadline} from '../../lib/schedule'
 
 type Events=InsightData['checkpointEvents']
@@ -64,49 +65,6 @@ function GoalCard({project,events}:{project:ProjectSummary;events:Events|undefin
  </Slab>
 }
 
-/** Above the 14-station switch point, Today uses the bounded project
- * summary already returned by home_summary(). Loading full project details
- * for each of 60 projects would violate the three-request Today budget.
- * The project page retains the full interactive stage Metro. */
-function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|undefined}){
- const pct=project.total?Math.round(100*project.done/project.total):0
- const estimate=estimateFinish({
-  projectId:project.id,total:project.total,done:project.done,
-  targetDate:project.targetDate,events,
- })
- return <Slab as="article" aria-label={'Goal progress for '+project.title}
-  className="flex min-w-0 flex-col gap-3 p-4" data-summary-goal="">
-  <div className="flex min-w-0 items-start gap-3">
-   <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
-   <div className="min-w-0 flex-1">
-    <Link to={'/p/'+project.slug}
-     className="flex min-h-11 items-center break-words font-semibold text-headline text-ink">
-     <Tex source={project.title}/>
-    </Link>
-    <p className="text-label leading-snug text-ink-2">
-     {project.done}/{project.total} checkpoints
-     {project.current&&<>, now {project.current.code} <Tex source={project.current.title}/></>}
-    </p>
-   </div>
-   <div className="flex shrink-0 flex-col items-end gap-1">
-    <strong className="font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
-    {project.scheduleHeadline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{project.scheduleHeadline}</span>}
-   </div>
-  </div>
-  <div className="flex min-h-11 items-center gap-3" aria-label={'Stage Metro for '+project.title}>
-   <MiniStageBar project={project}/>
-  </div>
-  <p className="text-label text-ink-3">
-   {project.stageProgress?.length??Math.ceil(project.total/8)} groups ·
-   {' '}Open the path for individual checkpoints and keyboard navigation
-  </p>
-  {estimate.finish&&<p className="text-label text-ink-2">
-   Finish ≈ <strong className="text-ink">{estimate.finish.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})}</strong>
-   {' · '}{estimate.source==='plan'?'from your plan':'measured pace'}
-  </p>}
- </Slab>
-}
-
 export function GoalDistance({projects}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
  const active=projects.filter(project=>project.status==='active').sort(urgency)
  const [showRest,setShowRest]=useState(false)
@@ -134,7 +92,7 @@ export function GoalDistance({projects}:{projects:ProjectSummary[];variant?:'asc
       className="flex min-h-11 items-center gap-2 border-t border-edge px-2 py-1" data-compact-goal={project.slug}>
       <Link className="flex min-h-11 min-w-0 flex-[2] items-center truncate text-label text-ink" to={'/p/'+project.slug}><Tex source={project.title}/></Link>
       <MiniStageBar project={project}/>
-      <span className="w-9 shrink-0 text-right text-caption tabular-nums text-ink-2">{project.total?Math.round(project.done/project.total*100):0}%</span>
+      <span className="shrink-0 text-right text-caption tabular-nums text-ink-2">{project.done} of {project.total}</span>
      </div>)}
      {rest.length>3&&<button type="button" onClick={()=>setShowRest(value=>!value)}
       aria-expanded={showRest} className="min-h-11 w-full text-label text-amber">
