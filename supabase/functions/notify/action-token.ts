@@ -38,7 +38,7 @@ function validate(raw:unknown,nowSeconds:number):ActionTokenPayload{
   if(Object.keys(x).some(k=>!['ids','action','scope'].includes(k)))bad();
   if(x.ids!==undefined&&(!Array.isArray(x.ids)||x.ids.length>50||Array.from(x.ids).some(v=>typeof v!=='string'||!UUID.test(v))))bad();
   if(x.action!==undefined&&(!Number.isSafeInteger(x.action)||Number(x.action)<1))bad();
-  if(x.scope!==undefined&&(typeof x.scope!=='string'||x.scope.length<1||x.scope.length>120))bad();
+  if(x.scope!==undefined&&(typeof x.scope!=='string'||x.scope.trim().length===0||x.scope.length>120||/[\x00-\x1f\x7f]/u.test(x.scope)))bad();
   // An authenticated token must not smuggle fields the selected RPC action ignores.
   // Keep each signed instruction unambiguous when the Edge route forwards x.
   if((p.a==='open'||p.a==='dismiss')&&Object.keys(x).length>0)bad();
