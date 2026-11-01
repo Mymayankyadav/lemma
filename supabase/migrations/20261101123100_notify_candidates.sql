@@ -92,11 +92,13 @@ answer_speed as (
   where r.user_id=p_user and r.undone_at is null and r.duration_ms>0
     and r.reviewed_at>=p_now-interval '30 days'
 ),
-tomorrow_rows as (
-  -- Limit before building JSON: profile X may have thousands of checkpoints
-  -- due tomorrow, but only the first 20 can appear in a notification.
+tomorrow_ranked as (
+  -- A project with 25 checkpoints tomorrow must not fill all 20 bounded
+  -- rows and hide another project from the K2 compact digest. Select each
+  -- project's first checkpoint before its second, then fill remaining slots.
   select c.code,c.title,c.current_step,c.steps,pr.slug,pr.title project,
-    c.due_on,c.position,c.id checkpoint_id
+    c.due_on,c.position,c.id checkpoint_id,
+    row_number() over(partition by pr.id order by c.due_on,c.position,c.id) project_rank
   from public.checkpoints c
   join visible_projects pr on pr.id=c.project_id and pr.user_id=c.user_id
   cross join prefs f
@@ -107,14 +109,17 @@ tomorrow_rows as (
       join public.checkpoints prerequisite on prerequisite.id=edge.prereq_id and prerequisite.user_id=edge.user_id
       where edge.user_id=p_user and edge.checkpoint_id=c.id and prerequisite.status<>'demonstrated'
     ))
-  order by c.due_on,pr.slug,c.position,c.id
+),
+tomorrow_rows as (
+  select * from tomorrow_ranked
+  order by project_rank,due_on,slug,position,checkpoint_id
   limit 20
 ),
 tomorrow_json as (
   select coalesce(jsonb_agg(jsonb_build_object(
     'slug',slug,'project',project,'code',code,'title',title,
     'step',current_step,'steps',jsonb_array_length(steps))
-    order by due_on,slug,position,checkpoint_id),'[]'::jsonb) items
+    order by project_rank,due_on,slug,position,checkpoint_id),'[]'::jsonb) items
   from tomorrow_rows
 ),
 late_ranked as (
