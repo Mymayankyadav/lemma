@@ -42,6 +42,14 @@ test('Insights deep link selects seven days, ignoring notification id',async({pa
  await page.screenshot({path:'test-results/screens/notif-insights-7.png',fullPage:true})
 })
 
+for(const period of [30,90] as const){
+ test(`Insights deep link selects ${period} days`,async({page})=>{
+  await page.goto(`/lemma/?demo=1#/insights?days=${period}`);
+  await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:`${period} days`}))
+   .toHaveAttribute('aria-pressed','true');
+ });
+}
+
 test('unsupported Insights days retain the 30-day default',async({page})=>{
  await page.goto('/lemma/?demo=1#/insights?days=999')
  await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:'30 days'})).toHaveAttribute('aria-pressed','true')
