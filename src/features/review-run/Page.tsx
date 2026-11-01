@@ -20,6 +20,9 @@ import {useToast} from '../../ui/Toast';
 import {useCalm} from '../../ui/useCalm';
 
 const RichMathText=lazy(()=>import('../../ui/MathText').then(module=>({default:module.MathText})));
+// Local performance entries only; no network/analytics. CI reads these to
+// distinguish module loading, data readiness and queue initialization.
+if(typeof performance!=='undefined')performance.mark('review-run-module-ready');
 
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
@@ -41,6 +44,7 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
   const el=scrollRef.current;
   if(!el)return;
   const measure=()=>setMore(Math.max(0,Math.ceil((el.scrollHeight-el.scrollTop-el.clientHeight)/28)));
+  if(typeof performance!=='undefined')performance.mark('review-run-card-mounted');
   const id=requestAnimationFrame(measure);
   return ()=>cancelAnimationFrame(id);
  },[front,back,revealed]);
@@ -93,6 +97,8 @@ function isInteractiveShortcutTarget(target:EventTarget|null):boolean{
 }
 
 export default function Page(){
+ const firstRender=useRef(false);
+ if(!firstRender.current){firstRender.current=true;if(typeof performance!=='undefined')performance.mark('review-run-first-render')}
  const navigate=useNavigate(),[search]=useSearchParams(),notify=useToast(),reduced=!!useReducedMotion(),calm=useCalm(),reduce=reduced||calm;
  const settings=useSettings(),mutate=useRecordReview(),undo=useUndoReview();
  const addComment=useAddComment(),suspend=useSetNoteStatus();
@@ -136,7 +142,10 @@ export default function Page(){
   if(init.current||!settings.data||!apiCards.data)return;
   init.current=true;
   if(useReviewSession.getState().queue)return;
+  const queueStart=performance.now();
+  performance.mark('review-run-data-ready');
   useReviewSession.getState().initialize(apiCards.data,settings.data,filter);
+  performance.measure('review-run-queue-initialize',{start:queueStart,end:performance.now()});
  },[settings.data,apiCards.data,filter]);
  const intervals=useMemo(()=>{
   if(!settings.data||!current)return null;
