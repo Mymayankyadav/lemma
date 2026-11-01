@@ -32,7 +32,7 @@ describe('NOTIF-4b6a Edge CORS origin allowlist',()=>{
  it('allows only the required methods and headers without wildcard credentials',()=>{
   const h=notifyCorsHeaders('http://localhost:5173');
   expect(h['Access-Control-Allow-Methods']).toBe('GET, POST, OPTIONS');
-  expect(h['Access-Control-Allow-Headers']).toBe('authorization, content-type, x-lemma-cron');
+  expect(h['Access-Control-Allow-Headers']).toBe('authorization, content-type');
   expect(h['Access-Control-Allow-Credentials']).toBeUndefined();
  });
 });
