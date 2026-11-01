@@ -80,3 +80,30 @@ for(const width of [360,390] as const){
   await context.setOffline(false)
  })
 }
+
+/** Regression: network loss must not mutate an already-open card or project. */
+test('AND-8 offline mutation guards retain the card and project state',async({page,context})=>{
+ test.setTimeout(90_000)
+ await page.setViewportSize({width:360,height:740})
+ await page.goto('/lemma/?demo=1&theme=graph#/cards',{waitUntil:'domcontentloaded'})
+ await expect(page.getByRole('heading',{name:'Cards',exact:true,level:1})).toBeVisible()
+ await context.setOffline(true)
+ const create=page.getByRole('button',{name:'New card, needs a connection'})
+ await expect(create).toHaveAttribute('aria-disabled','true')
+ // DOM click exercises the guarded handler: Playwright intentionally refuses
+ // locator.click() on aria-disabled controls even though browsers dispatch it.
+ await create.evaluate((button:HTMLButtonElement)=>button.click())
+ await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
+ await expect(page.getByRole('dialog',{name:/New card/i})).toHaveCount(0)
+ await page.evaluate(()=>{window.location.hash='/projects'})
+ await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible()
+ const actions=page.getByRole('button',{name:/Actions for/}).first()
+ await actions.click()
+ const menu=page.getByRole('menu',{name:/Manage/}).first()
+ await expect(menu).toBeVisible()
+ const mutate=menu.getByRole('menuitem',{name:/^(Pin|Unpin|Pause|Archive)$/}).first()
+ await expect(mutate).toHaveAttribute('aria-disabled','true')
+ await mutate.evaluate((button:HTMLButtonElement)=>button.click())
+ await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
+ await context.setOffline(false)
+})
