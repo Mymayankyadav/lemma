@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
+import {join} from 'node:path'
 
 // C2/D6 measure *navigation* from an already hydrated extreme fixture.
 // A Paths heading renders during the skeleton state, so it is not a
@@ -7,7 +8,7 @@ import {readFileSync} from 'node:fs'
 describe('strict C2/D6 loaded-fixture transition precondition (FIX #604)',()=>{
  for(const spec of ['audit-441-atlas-budget.spec.ts','st-4.spec.ts']){
   it(spec+' waits for actual Paths rows before CPU throttling',()=>{
-   const source=readFileSync(new URL('../../e2e/'+spec,import.meta.url),'utf8')
+   const source=readFileSync(join(process.cwd(),'tests/e2e',spec),'utf8')
    const ready=source.indexOf('await waitForLoadedPaths(page)')
    const throttle=source.indexOf("await cdp.send('Emulation.setCPUThrottlingRate',{rate:4})")
    expect(ready,'must wait for data-backed Paths, not just the h1').toBeGreaterThan(-1)
@@ -16,7 +17,7 @@ describe('strict C2/D6 loaded-fixture transition precondition (FIX #604)',()=>{
   })
  }
  it('helper requires a real project row and its Mini Route, not only a heading',()=>{
-  const source=readFileSync(new URL('../../e2e/helpers/waitForLoadedPaths.ts',import.meta.url),'utf8')
+  const source=readFileSync(join(process.cwd(),'tests/e2e/helpers/waitForLoadedPaths.ts'),'utf8')
   expect(source).toContain('[data-project-row]')
   expect(source).toContain('[data-mini-route]')
   expect(source).toContain('toBeVisible')
