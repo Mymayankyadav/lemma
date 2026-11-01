@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getApi } from '../data'
+import { LemmaError } from '../data/api'
 import { useAuth } from '../data/hooks'
 import { getMode } from '../data/mode'
 import { Button } from '../ui/Button'
@@ -48,18 +49,21 @@ function ReadyGate({children, email}: {children: ReactNode; email: string}) {
 function LiveGate({children}: {children: ReactNode}) {
  const auth = useAuth(), location = useLocation()
  const [offlineSession,setOfflineSession]=useState(false)
+ const authNetworkFailure=auth.isError&&auth.error instanceof LemmaError&&auth.error.code==='offline'
  useEffect(()=>{
-  if(navigator.onLine)return
+  // A DNS/server outage may leave navigator.onLine true. A cached local
+  // session may still read its own snapshot, never mutate or bypass a 401.
+  if(navigator.onLine&&!authNetworkFailure)return
   let alive=true
   // Supabase is a large dependency: load it only for an actual offline live
   // session check, never in the demo/Today startup bundle.
   void import('../data/live/client').then(({liveClient})=>liveClient().auth.getSession())
    .then(({data})=>{if(alive)setOfflineSession(!!data.session?.user.id)}).catch(()=>{})
   return()=>{alive=false}
- },[])
- // A previously authenticated owner may read only their local snapshot while offline.
- // No offline mutation or unauthenticated cross-user access is permitted.
- if (!navigator.onLine && offlineSession) return children
+ },[authNetworkFailure])
+ // A previously authenticated owner may read only their local snapshot during
+ // a real offline state or a confirmed network failure, never an auth failure.
+ if (offlineSession && (!navigator.onLine || authNetworkFailure)) return children
  if (auth.isPending) return <p role="status" className="p-6 text-ink-2">Checking sign-in…</p>
  if (auth.isError) return <section className="p-6 text-ink-2">
   <p role="alert">Couldn't check sign-in.</p>
