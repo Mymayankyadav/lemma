@@ -4,7 +4,7 @@ import {Sheet} from '../../ui/Sheet';
 import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
 import {Tex} from '../../ui/Tex';
 import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
-import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,levelName,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,neighbours,rowTone,visibleRows} from './tree';
 import {Row,StatusMark,Wires,toneColor,statusName} from './Outline';
 import {buildAtlasRowGeometry} from './rowGeometry';
 
@@ -107,7 +107,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
    {selected&&near&&<div data-proposed-idea-details="true" className="flex flex-col gap-3 rounded-ctl p-3 text-body"
     style={{background:'var(--paper)'}}>
     <AtlasDetailsPath names={selectedPath.map(n=>n.name)} onSelect={i=>jump(selectedPath[i].id)}/>
-    <p className="text-label text-ink-2">{levelName[selected.level]} · {statusName[selected.status]}</p>
+    <p className="text-label text-ink-2">{statusName[selected.status]}</p>
     <div role="progressbar" aria-label="Idea progress" aria-valuemin={0} aria-valuemax={100}
      aria-valuenow={selected.total?Math.round(100*selected.done/selected.total):0}
      aria-valuetext={selected.total?`${selected.done} of ${selected.total} demonstrated`:'No study progress yet'}
