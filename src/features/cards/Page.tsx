@@ -42,6 +42,16 @@ export default function Page(){
  },[]);
  const projects=useProjects(),create=useCreateNote(),notify=useToast(),navigate=useNavigate();
  const closeCreating=useCallback(()=>setCreating(false),[]);
+ // S/X contains 60 project filters. Cards query, viewport and scroll state
+ // update independently; keep the chip and native-option subtrees stable so
+ // they do not rerun 60 rich-title/plainMath conversions on each page paint.
+ const projectChips=useMemo(()=>projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
+  <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
+   <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
+  </Chip>
+ </span>),[projects.data,project]);
+ const projectOptions=useMemo(()=>projects.data?.map(p=><option key={p.id} value={p.slug}>{projectFilterOptionLabel(p.title)}</option>),[projects.data]);
+
  useEffect(()=>{
   const element=filterScroller.current;if(!element)return;
   updateFilterFade();
@@ -99,11 +109,7 @@ export default function Page(){
   </label>
   <div ref={filterScroller} role="group" aria-label="Card filters" data-filter-fade-left={String(filterFade.left)} data-filter-fade-right={String(filterFade.right)} onScroll={updateFilterFade} style={{maskImage:filterMask}} className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
    <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
-   {projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
-    <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
-     <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
-    </Chip>
-   </span>)}
+   {projectChips}
    <Chip className="shrink-0 whitespace-nowrap" selected={onlyComments} onClick={()=>setOnlyComments(v=>!v)}>Has notes</Chip>
    <Chip className="shrink-0 whitespace-nowrap" selected={noteStatus==='suspended'} onClick={()=>setNoteStatus(v=>v==='suspended'?'':'suspended')}>Paused</Chip>
   </div>
@@ -111,7 +117,7 @@ export default function Page(){
    <label className="min-w-0 flex-1 text-label text-ink-2">Project
     <select aria-label="Filter project" value={project} onChange={e=>{setProject(e.target.value);setCheckpoint('')}}
      className="mt-1 min-h-11 w-full min-w-0 rounded-ctl border border-edge bg-well px-2 text-body text-ink">
-     <option value="">All projects</option>{projects.data?.map(p=><option key={p.id} value={p.slug}>{projectFilterOptionLabel(p.title)}</option>)}
+     <option value="">All projects</option>{projectOptions}
     </select>
    </label>
    <label className="min-w-0 flex-1 text-label text-ink-2">Checkpoint
