@@ -20,3 +20,15 @@ export function notifyCorsHeaders(origin:string|null):Record<string,string>{
  headers['Access-Control-Allow-Headers']='authorization, content-type';
  return headers;
 }
+
+
+/** The Edge route can use this for OPTIONS without invoking cron or JWT auth. */
+export function notifyPreflight(origin:string|null):{
+ status:204|403;headers:Record<string,string>;
+}{
+ const headers=notifyCorsHeaders(origin);
+ return {
+  status:headers['Access-Control-Allow-Origin']?204:403,
+  headers,
+ };
+}
