@@ -127,7 +127,7 @@ function handoffStorage(storage?:Storage):Storage|null{
  try{return storage??(typeof sessionStorage==='undefined'?null:sessionStorage)}catch{return null}
 }
 function handoffKey(userId:string):string|null{
- return /^[-\\w]{1,128}$/.test(userId)?OFFLINE_HANDOFF_PREFIX+userId:null
+ return /^[-\w]{1,128}$/.test(userId)?OFFLINE_HANDOFF_PREFIX+userId:null
 }
 function handoffRecord(userId:string,now:number,storage?:Storage):{snapshot:OfflineSnapshot;raw:string}|null{
  const key=handoffKey(userId),store=handoffStorage(storage)
