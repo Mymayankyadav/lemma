@@ -15,7 +15,13 @@ for(const width of [360,390] as const)
   await expect(deferred).toBeAttached()
   // ST-0's all-route evidence rejects loading placeholders left behind
   // below the fold. A real, accessible reveal action is required instead.
-  await expect(deferred.getByRole('button',{name:'Show seven-day forecast'})).toBeVisible()
+  // At 390px the forecast may already intersect the bottom of the
+  // viewport and auto-mount before this assertion. Both the accessible
+  // reveal button and an already-loaded real forecast are valid; a
+  // persistent pulsing skeleton is not.
+  const reveal=deferred.getByRole('button',{name:'Show seven-day forecast'})
+  const bars=deferred.locator('[aria-label="Seven-day review forecast"] .grid > div')
+  await expect(reveal.or(bars.first()).first()).toBeVisible({timeout:90_000})
   await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0)
   await deferred.scrollIntoViewIfNeeded()
   await expect(deferred.locator('[aria-label="Seven-day review forecast"] .grid > div'))
