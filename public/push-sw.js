@@ -24,8 +24,10 @@ async function navigate(url){
     if(navigated)return;
    }
   }catch{/* A closed or stale client can reject navigate. */}
-  existing.postMessage({type:'lemma:navigate',url:target.url});
-  return;
+  try{
+   existing.postMessage({type:'lemma:navigate',url:target.url});
+   return;
+  }catch{/* A stale WindowClient may reject even postMessage; open a new window. */}
  }
  await self.clients.openWindow(target.url);
 }
