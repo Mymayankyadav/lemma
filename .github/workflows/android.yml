@@ -21,6 +21,10 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          # v3 defaults to obsolete `tools`, removed from current SDK indexes.
+          # Install only supported packages; platform 36 is installed below.
+          packages: 'platform-tools'
       - name: Install Android SDK platform
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'platform-tools'
       - uses: gradle/actions/setup-gradle@v4
