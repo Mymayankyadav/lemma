@@ -66,6 +66,22 @@ describe('NOTIF-4b1 atomic /act handler',()=>{
   const undo=await handleActionRequest({token:await signed('undo',{action:123})},{secret,rpc,nowSeconds:now});
   expect(undo).toEqual({status:409,body:{message:'Open Lemma to undo'}});
  });
+ it('fails closed when notification secrets are absent and never touches the database',async()=>{
+  const rpc=vi.fn();
+  const result=await handleActionRequest({token:await signed()},{secret:'',rpc,nowSeconds:now});
+  expect(result).toEqual({status:503,body:{message:'Reminders are not set up yet'}});
+  expect(rpc).not.toHaveBeenCalled();
+ });
+ it('accepts safe PostgREST bigint strings but refuses unsafe confirmation ids',async()=>{
+  const rpc=vi.fn().mockResolvedValue({data:{status:'done',kind:'tutor',action:'123',confirmId:'84'},error:null});
+  const valid=await handleActionRequest({token:await signed('approve_cards',{ids:[card]})},{secret,rpc,nowSeconds:now});
+  expect(valid.status).toBe(200);
+  const payload=await verifyActionToken(valid.body.undoToken as string,secret,now);
+  expect(payload.x?.action).toBe(123);
+  rpc.mockResolvedValueOnce({data:{status:'done',kind:'tutor',action:'9007199254740993',confirmId:'84'},error:null});
+  const invalid=await handleActionRequest({token:await signed('approve_cards',{ids:[card]})},{secret,rpc,nowSeconds:now});
+  expect(invalid).toEqual({status:409,body:{message:'Open Lemma to finish'}});
+ });
  it('fails closed on malformed confirmation metadata rather than issuing an invalid Undo token',async()=>{
   const rpc=vi.fn().mockResolvedValue({data:{status:'done',kind:'tutor',action:'not-a-number',confirmId:84},error:null});
   const result=await handleActionRequest({token:await signed('approve_cards',{ids:[card]})},{secret,rpc,nowSeconds:now});
