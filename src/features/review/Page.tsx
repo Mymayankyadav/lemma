@@ -104,10 +104,13 @@ export default function Page(){
  const history=insights.data?.reviews??[];
  const estimated=history.length?estimatedReviewMinutes(todayShare,history):Math.max(1,Math.ceil(todayShare*4.5/60));
  const groupedSessions=useMemo(()=>{
+  // A disabled query may still expose a previously cached 60k-session list.
+  // No session-backed due card means this section is necessarily empty.
+  if(!shouldFetchReviewSessions(cards.data))return [];
   return (sessions.data??[]).map(s=>({
    ...s,count:dueItems.filter(c=>c.projectSlug===s.projectSlug&&c.sessionNumber===s.number).length
   })).filter(s=>s.count>0).slice(0,3);
- },[sessions.data,dueItems]);
+ },[sessions.data,dueItems,cards.data]);
  const setProject=(node:DeckNode,value:boolean)=>{
   const changed=new Set(enabled),keys=[node.key,...node.children.map(c=>c.key)];
   for(const key of keys)value?changed.add(key):changed.delete(key);
