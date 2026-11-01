@@ -23,6 +23,7 @@ import type {
   CardRow,
   CardState,
   CheckpointDetail,
+  CheckpointUi,
   CheckpointView,
   DeckNode,
   HomeSummary,
@@ -570,6 +571,7 @@ export class DemoAdapter implements LemmaApi {
     card: DemoNote["cards"][number],
     project: DemoProject,
     cp: DemoCheckpoint | null,
+    copyState = true,
   ): ReviewItem {
     return {
       cardId: card.id,
@@ -587,7 +589,7 @@ export class DemoAdapter implements LemmaApi {
       sessionNumber: note.note.sessionNumber,
       sourceShort: note.note.sourceShort,
       pageLabel: note.note.pageLabel,
-      state: clone(card.state),
+      state: copyState ? clone(card.state) : card.state,
     };
   }
   /** Resolve only requested private synthetic notes; never spread the store
@@ -622,7 +624,7 @@ export class DemoAdapter implements LemmaApi {
     }
     return this.virtualReviewNotes;
   }
-  private allItems(include?: (state: CardState) => boolean, notes?: readonly DemoNote[]) {
+  private allItems(include?: (state: CardState) => boolean, notes?: readonly DemoNote[], copyState = true) {
     // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
     // identities once instead of scanning all checkpoints for every card.
     const projects = new Map<string, DemoProject>(this.store.projects
@@ -638,7 +640,7 @@ export class DemoAdapter implements LemmaApi {
           ? checkpoints.get(cpKey(n.projectId, n.note.checkpointCode)) ?? null
           : null;
         return n.cards.filter(card => !include || include(card.state))
-          .map(card => this.item(n, card, project, cp));
+          .map(card => this.item(n, card, project, cp, copyState));
       });
   }
   /** The due badge and deck counts represent the full backlog, not the daily queue. */
@@ -661,16 +663,64 @@ export class DemoAdapter implements LemmaApi {
     // dueToday never selects a future scheduled card. Avoid constructing
     // 26,000 cloned ReviewItems only to discard them in the 30k-card fixture.
     // Keep every new card, plus every due/learning card before study-day end.
+    const notes=this.reviewNotes();
+    // Private generated stress notes cannot be mutated by the queue read.
+    // getReviewItems defensively clones its final response, so cloning all
+    // 4,000 intermediate CardState objects here only delays cold Review-run.
+    const privateVirtual=notes===this.virtualReviewNotes &&
+      typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
     return dueToday(this.allItems(state => state.state === 0 ||
-      this.dueTime(state.due) < end,this.reviewNotes()), this.store.settings, {
+      this.dueTime(state.due) < end,notes,!privateVirtual), this.store.settings, {
       now: this.now(),
       answeredToday: today.length,
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
     });
   }
+  /** Direct Project renders a long prerequisite chain all at once. The
+   * normal cpUi() recursion deliberately has per-call cycle protection, but
+   * calling it for each of 100 rows repeats the entire chain and a civil-day
+   * conversion at every edge. Acyclic plans can share a memo for this one
+   * immutable snapshot; malformed cycles/missing refs use the original path.
+   */
+  private projectUiIndex(checkpoints:readonly DemoCheckpoint[]):Map<string,CheckpointUi>|null{
+    const byCode=new Map(checkpoints.map(cp=>[cp.code,cp] as const));
+    // A malformed duplicate code must retain checkpoint()'s original
+    // first-match semantics rather than using Map's last-match entry.
+    if(byCode.size!==checkpoints.length)return null;
+    const visiting=new Set<string>(),visited=new Set<string>();
+    let invalid=false;
+    const check=(cp:DemoCheckpoint):void=>{
+      if(cp.proposed||visited.has(cp.id)||invalid)return;
+      if(visiting.has(cp.id)){invalid=true;return}
+      visiting.add(cp.id);
+      for(const code of cp.prereqs){
+        const dep=byCode.get(code);
+        if(!dep){invalid=true;break}
+        check(dep);
+      }
+      visiting.delete(cp.id);
+      visited.add(cp.id);
+    };
+    for(const cp of checkpoints)check(cp);
+    if(invalid)return null;
+    const today=studyDay(this.now(),this.store.settings.timeZone,
+      this.store.settings.rolloverHour);
+    const cache=new Map<string,CheckpointUi>();
+    const resolve=(cp:DemoCheckpoint):CheckpointUi=>{
+      const cached=cache.get(cp.id);
+      if(cached!==undefined)return cached;
+      const ui=cp.proposed?'proposed':checkpointUi(cp,
+        cp.prereqs.map(code=>resolve(byCode.get(code)!)),today);
+      cache.set(cp.id,ui);
+      return ui;
+    };
+    for(const cp of checkpoints)resolve(cp);
+    return cache;
+  }
   private cpView(
     cp: DemoCheckpoint,
     eligible = this.eligible(),
+    uiOverride?:CheckpointUi,
   ): CheckpointView {
     const project = this.projectById(cp.projectId);
     return {
@@ -681,7 +731,7 @@ export class DemoAdapter implements LemmaApi {
       stage: cp.stage ?? null,
       dueOn: cp.dueOn ?? null,
       demonstratedAt: cp.demonstratedAt ?? null,
-      ui: this.cpUi(cp),
+      ui: uiOverride??this.cpUi(cp),
       currentStep: cp.currentStep,
       stepsTotal: cp.steps.length,
       recheckDue: cp.recheckDue,
@@ -1247,15 +1297,17 @@ export class DemoAdapter implements LemmaApi {
       ? (await this.listProjects()).find(row => row.id === p.id) ?? this.summary(p)
       : this.summary(p);
     const eligible = this.eligible();
+    const baseCheckpoints=this.store.checkpoints.filter(cp=>cp.projectId===p.id);
+    const uiById=this.projectUiIndex(baseCheckpoints);
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
       checkpoints: [
-        ...this.store.checkpoints.filter((cp) => cp.projectId === p.id),
+        ...baseCheckpoints,
         ...this.proposed(p),
       ]
         .sort((a, b) => a.position - b.position)
-        .map((cp) => this.cpView(cp, eligible)),
+        .map(cp=>this.cpView(cp,eligible,cp.proposed?'proposed':uiById?.get(cp.id))),
       done: summary.done,
       total: summary.total,
       planRevisions: clone(this.planHistory(p)),
@@ -1881,6 +1933,14 @@ export class DemoAdapter implements LemmaApi {
   }
   async getReviewItems(filter: QueueFilter) {
     const eligible = this.eligible();
+    const notes=this.reviewNotes();
+    const options={...filter,includeNew:filter.includeNew||filter.newOnly};
+    // Generated, unedited stress notes have neither session nor concept
+    // associations. An empty metadata map has exactly the same filter
+    // semantics without a second O(4,000) scan of the virtual due cohort.
+    if(notes===this.virtualReviewNotes &&
+       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function')
+      return clone(filterReviewItems(eligible,options));
     const needed = new Set(eligible.map(card => card.cardId));
     const sessionForCard: Record<string, string> = {},
       conceptsForCard: Record<string, string[]> = {};
@@ -1888,7 +1948,6 @@ export class DemoAdapter implements LemmaApi {
     // Array.find did up to 75 million comparisons before Review could paint.
     // Index concepts once and attach metadata only to the bounded daily
     // queue, never all 30,000 cards. Concept/session filtering is unchanged.
-    const notes=this.reviewNotes();
     // Generated stress notes have no concept IDs. Avoid hydrating 2,500
     // unrelated Atlas ideas merely to build a map with no matching keys.
     const conceptSlugs = notes===this.virtualReviewNotes
@@ -1906,7 +1965,7 @@ export class DemoAdapter implements LemmaApi {
     return clone(
       filterReviewItems(
         eligible,
-        { ...filter, includeNew: filter.includeNew || filter.newOnly },
+        options,
         {
           sessionForCard,
           conceptsForCard,
