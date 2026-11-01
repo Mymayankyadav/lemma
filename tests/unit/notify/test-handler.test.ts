@@ -62,6 +62,7 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   for(const subscription of [
    null,{},
    {endpoint:'http://push.example.test/sub',keys:{p256dh:'pub',auth:'auth'}},
+   {endpoint:'https://push.example.test/\nsub',keys:{p256dh:'pub',auth:'auth'}},
    {endpoint:'https://user:pass@push.example.test/sub',keys:{p256dh:'pub',auth:'auth'}},
    {endpoint:'https://push.example.test/sub#fragment',keys:{p256dh:'pub',auth:'auth'}},
    {endpoint:'https://push.example.test/sub',keys:{p256dh:'',auth:'auth'}},
