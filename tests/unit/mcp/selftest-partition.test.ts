@@ -16,7 +16,7 @@ describe('FIX #636b bounded MCP selftest partitions', () => {
     );
   const all = Array.from(source.matchAll(/await check\('([^']+)'/g), match => match[1]);
 
-  it('retains all nineteen unique checks and splits the expensive second half', () => {
+  it('retains all nineteen unique checks and splits both long halves', () => {
     const first = group(1);
     const second = group(2);
     const third = group(3);
@@ -54,7 +54,7 @@ describe('FIX #636b bounded MCP selftest partitions', () => {
       .toEqual([6, 9, 8, 5]);
   });
 
-  it('routes all three independent requests and retains full cleanup', () => {
+  it('routes all four independent requests and retains full cleanup', () => {
     expect(source).toContain("export type SelftestPart=1|2|3|4|'all'");
     expect(source).toContain('PART_STEPS={1:6,2:9,3:8,4:5,all:19}');
     expect(source).toContain("const only=(n:1|2|3|4)=>part==='all'||part===n");
