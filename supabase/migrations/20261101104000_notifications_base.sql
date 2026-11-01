@@ -27,6 +27,11 @@ language plpgsql security definer set search_path='' as $$
 begin
  if new.disabled_at is null and (tg_op='INSERT' or old.disabled_at is not null) then
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('push_devices:'||new.user_id::text));
+  -- BEFORE INSERT fires even for an ON CONFLICT UPDATE. Let the conflict
+  -- handler reuse that endpoint; the UPDATE trigger checks re-enabling.
+  if tg_op='INSERT' and exists(select 1 from public.push_devices where endpoint=new.endpoint) then
+   return new;
+  end if;
   if (select count(*) from public.push_devices
       where user_id=new.user_id and disabled_at is null and id<>new.id)>=10 then
    raise exception 'You have 10 devices with reminders. Remove one first.';
