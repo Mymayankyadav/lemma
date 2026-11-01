@@ -28,6 +28,7 @@ export default defineConfig({
     ],
    },
    workbox:{
+    importScripts:['push-sw.js'],
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     cleanupOutdatedCaches:true,
     maximumFileSizeToCacheInBytes:4*1024*1024,

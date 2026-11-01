@@ -76,3 +76,32 @@ function generate(size,maskable=false){
  console.log('Generated '+name+' ('+png.length+' bytes)');
 }
 generate(192);generate(512);generate(512,true);
+
+
+function generateBadge(){
+ const size=96,bytes=Buffer.alloc(size*(size*4+1));
+ for(let y=0;y<size;y++){
+  const row=y*(size*4+1);bytes[row]=0;
+  for(let x=0;x<size;x++){
+   const px=(x+.5)/size,py=(y+.5)/size;
+   // White-on-transparent partial-derivative glyph (∂), never a colour cue.
+   const outer=Math.hypot((px-.49)/.27,(py-.61)/.27);
+   const inner=Math.hypot((px-.49)/.17,(py-.61)/.17);
+   const loop=outer<=1&&inner>=1;
+   const stem=distanceLine(px,py,.64,.44,.43,.15)<.045;
+   const join=distanceLine(px,py,.62,.44,.57,.33)<.045;
+   const alpha=loop||stem||join?255:0;
+   const offset=row+1+x*4;
+   bytes[offset]=255;bytes[offset+1]=255;bytes[offset+2]=255;bytes[offset+3]=alpha;
+  }
+ }
+ const header=Buffer.alloc(13);header.writeUInt32BE(size,0);header.writeUInt32BE(size,4);
+ header[8]=8;header[9]=6;
+ const png=Buffer.concat([
+  Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',header),
+  chunk('IDAT',deflateSync(bytes,{level:9})),chunk('IEND',Buffer.alloc(0)),
+ ]);
+ writeFileSync(join(out,'badge-96.png'),png);
+ console.log('Generated badge-96.png ('+png.length+' bytes)');
+}
+generateBadge();
