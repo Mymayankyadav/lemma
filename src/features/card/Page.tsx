@@ -272,6 +272,7 @@ export default function Page() {
                     className="flex min-h-11 w-full items-center rounded-ctl px-3 text-left text-label font-medium text-ink-2 hover:bg-fill-1 disabled:opacity-50"
                     onClick={() => {
                       setActionMenu(false);
+                      actionRoot.current?.querySelector<HTMLButtonElement>('[aria-label="Card actions"]')?.focus();
                       void setStatus(note.status === "suspended" ? "active" : "suspended");
                     }}
                   >
