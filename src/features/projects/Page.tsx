@@ -13,7 +13,7 @@ import {Screen} from '../../ui/Screen';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
-import {useOnlineStatus} from '../../ui/useOnlineStatus';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {Tex} from '../../ui/Tex';
 import {countPinnedProjects} from './pinnedCount';
 
@@ -52,7 +52,7 @@ function ProjectRow({project,showSubject=false,pinnedCount}:{project:ProjectSumm
   ];
  async function act(label:string,patch:{pinned?:boolean;status?:ProjectStatus}){
   setMenu(false);
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(patch.pinned&&pinnedCount>=4){
    notify('At most four projects can be pinned. Unpin one first.',{tone:'danger'});return;
   }
