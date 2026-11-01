@@ -48,6 +48,7 @@ for(const profile of ['stress','extreme'] as const)
     // the current checkpoint, a primary action or a real danger.
     await expect(page.locator('[data-card-subject-glyph]')).toHaveClass(/text-ink-2/);
     await expect(page.locator('[data-recall-value]')).toHaveClass(/text-ink/);
+    await expect(page.locator('[data-card-answer-divider]')).toHaveClass(/bg-\[var\(--hair\)\]/);
     const edit=page.getByRole('button',{name:'Edit card'});
     const actions=page.getByRole('button',{name:'Card actions'});
     for(const button of [edit,actions]){
