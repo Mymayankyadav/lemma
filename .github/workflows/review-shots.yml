@@ -43,3 +43,30 @@ jobs:
           path: review-shots/
           if-no-files-found: error
           retention-days: 14
+
+  # QA-4b: screenshot integrity is not a performance or layout acceptance gate.
+  # Run the existing strict ST-0 all-route budget suite independently, so a
+  # beautiful/complete screenshot matrix cannot hide a failing hard budget.
+  # This does not claim full QA-4 cold 4x coverage for every route: ST-0
+  # currently throttles the cold Today route and measures later routes at 1x.
+  strict-route-budgets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Enforce existing ST-0 route budgets without retries
+        run: npx playwright test tests/e2e/stress.spec.ts --workers=2 --retries=0
+      - name: Preserve strict budget JSON and route screenshots on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa4-stress-route-evidence
+          path: |
+            test-results/stress/
+            test-results/screens/stress/
+          if-no-files-found: warn
+          retention-days: 14
