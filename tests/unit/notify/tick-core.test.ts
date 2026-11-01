@@ -152,4 +152,26 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   expect(vi.mocked(deps.deliver)).toHaveBeenCalledTimes(1);
  });
 
+ it('fails closed on malformed owner frequency, cap and send counters',async()=>{
+  for(const patch of [
+   {mode:'unexpected'},
+   {dailyCap:0},
+   {dailyCap:6},
+   {dailyCap:1.5},
+   {sendsToday:-1},
+   {sendsToday:Number.NaN},
+   {lastSendAt:Number.NaN},
+  ]){
+   const deps=adapters([A]);
+   vi.mocked(deps.load).mockResolvedValue({
+    ...facts(),context:{...facts().context,...patch} as ReturnType<typeof facts>['context'],
+   });
+   const result=await runNotifyTick(deps,{now:NOW});
+   expect(result.failed,JSON.stringify(patch)).toBe(1);
+   expect(result.sent).toBe(0);
+   expect(deps.queue).not.toHaveBeenCalled();
+   expect(deps.deliver).not.toHaveBeenCalled();
+  }
+ });
+
 });
