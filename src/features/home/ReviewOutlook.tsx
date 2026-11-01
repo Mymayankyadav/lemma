@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query'
 import {getApi} from '../../data'
 import {useDeckTree} from '../../data/hooks'
 import {Tex} from '../../ui/Tex'
+import {forecastDueCount,hasNonzeroForecast} from './reviewForecast'
 
 /** Seven-day due forecast is read from the adapter's complete scheduled-card set.
  * Deck counts come from the review service, not a capped search or fabricated percentages.
@@ -16,7 +17,7 @@ export function ReviewOutlook(){
  const tail=allGroups.slice(4)
  const groups=tail.length?[...top,{key:'other',label:`Other (${tail.length})`,due:tail.reduce((sum,node)=>sum+node.due,0)}]:top
  const weekly=forecast.data??[]
- const max=Math.max(1,...weekly.map(day=>day.due))
+ const max=Math.max(1,...weekly.map(day=>forecastDueCount(day.due)))
  return <div className="flex min-w-0 flex-col gap-4">
   {groups.length>0&&<div aria-label="Due cards by project">
    <div className="flex h-2 w-full overflow-hidden rounded-[1px] bg-fill-2" role="img"
@@ -34,19 +35,19 @@ export function ReviewOutlook(){
   </div>}
   {forecast.error?<p className="text-label text-ink-3">Upcoming reviews are unavailable right now.</p>:
    forecast.isPending?<p className="text-label text-ink-3">Loading seven-day forecast…</p>:
-   <div aria-label="Seven-day review forecast">
+   hasNonzeroForecast(weekly)?<div aria-label="Seven-day review forecast">
     <p className="mb-2 text-label font-medium text-ink-2">Next seven days</p>
     <div className="grid grid-cols-7 gap-1.5">
-     {weekly.map(day=><div key={day.day} className="flex min-w-0 flex-col items-center gap-1">
-      <span className="text-caption tabular-nums text-ink-2" title={day.due+' cards due'} aria-label={day.due+' cards due'}>{formatBadgeCount(day.due)}</span>
+     {weekly.map(day=>{const due=forecastDueCount(day.due);return <div key={day.day} className="flex min-w-0 flex-col items-center gap-1">
+      <span className="text-caption tabular-nums text-ink-2" title={due+' cards due'} aria-label={due+' cards due'}>{formatBadgeCount(due)}</span>
       <div className="flex h-10 w-full items-end justify-center bg-fill-1">
-       <span aria-hidden="true" className="block w-full bg-amber" style={{height:day.due?Math.max(6,day.due/max*40)+'px':'0'}}/>
+       <span aria-hidden="true" className="block w-full bg-amber" style={{height:due?Math.max(6,due/max*40)+'px':'0'}}/>
       </div>
       <span className="text-[length:var(--type-caption)] text-ink-3 tabular-nums">
        {new Date(day.day+'T12:00:00Z').toLocaleDateString('en',{weekday:'short',timeZone:'UTC'}).slice(0,2)}
       </span>
-     </div>)}
+     </div>})}
     </div>
-   </div>}
+   </div>:null}
  </div>
 }

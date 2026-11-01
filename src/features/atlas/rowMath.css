@@ -1,0 +1,19 @@
+/* LOOK-4b: compact Atlas hierarchy is for prose only. Tutor-authored
+ * inline mathematics retains the stress specification's 16px hard floor,
+ * even inside 12px Area, 13px Detail and 15px Topic/Idea labels.
+ * Scoped to the row so other small-cap metadata stays compact.
+ */
+[data-atlas-row] .lemma-tex-inline .katex {
+  font-size: max(16px, 1em);
+}
+
+/* A long title stays horizontally scrollable; its right edge fades rather
+ * than abruptly cutting mathematical or prose glyphs. The 16px trailing
+ * scroll padding lets the final glyph move clear of the fade when scrolled.
+ * No extra observer or per-row React state is needed in the 2,500-idea Atlas.
+ */
+[data-atlas-title-scroll] {
+  padding-right: 16px;
+  -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 16px), transparent 100%);
+}
