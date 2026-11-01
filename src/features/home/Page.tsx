@@ -81,11 +81,12 @@ export function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:
  </div>;
 }
 
-/** Approximate study time at thirty seconds per due card, with a readable
- * unit for stress-sized queues. This is an estimate, not a scheduling promise. */
+/** Keep the quiet Today estimate consistent with the Review hub's
+ * 4.5-second-per-card fallback (used when no timed review history exists).
+ * Only the configured daily share is estimated, never the whole backlog. */
 export function estimatedReviewTime(due:number,roundLimit=200):string{
  const round=Math.min(Math.max(0,Number.isFinite(due)?due:0),Math.max(1,roundLimit));
- const minutes=Math.max(1,Math.round(round/2));
+ const minutes=Math.max(1,Math.ceil(round*4.5/60));
  if(minutes<90)return 'about '+minutes+' min';
  const hours=Math.floor(minutes/60),remaining=minutes%60;
  return 'about '+hours+' h'+(remaining?' '+remaining+' min':'');
