@@ -105,7 +105,7 @@ export function useBootstrap() {
  return useWrite((api, _value: void) => api.bootstrap(), ['settings', 'styles', 'auth'])
 }
 export function useUpdateSettings() {
- return useWrite((api, value: Parameters<LemmaApi['updateSettings']>[0]) => api.updateSettings(value), ['settings'])
+ return useWrite((api, value: Parameters<LemmaApi['updateSettings']>[0]) => api.updateSettings(value), ['settings','notify-preview'])
 }
 export function useRotateConnectorSecret() {
  return useWrite((api, _value: void) => api.rotateConnectorSecret(), ['settings'])
@@ -198,16 +198,16 @@ export function useUpdateSourcePage(){
 }
 
 export function useAddPushDevice() {
- return useWrite((api,value:Parameters<LemmaApi['addPushDevice']>[0])=>api.addPushDevice(value),['push-devices'])
+ return useWrite((api,value:Parameters<LemmaApi['addPushDevice']>[0])=>api.addPushDevice(value),['push-devices','notify-preview'])
 }
 export function useRenamePushDevice() {
  return useWrite((api,value:{id:string;label:string})=>api.renamePushDevice(value.id,value.label),['push-devices'])
 }
 export function useRemovePushDevice() {
- return useWrite((api,id:string)=>api.removePushDevice(id),['push-devices'])
+ return useWrite((api,id:string)=>api.removePushDevice(id),['push-devices','notify-preview'])
 }
 export function useRestorePushDevice() {
- return useWrite((api,id:string)=>api.restorePushDevice(id),['push-devices'])
+ return useWrite((api,id:string)=>api.restorePushDevice(id),['push-devices','notify-preview'])
 }
 export function useTouchPushDevice() {
  return useWrite((api,endpoint:string)=>api.touchPushDevice(endpoint),['push-devices'])
