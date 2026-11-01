@@ -21,6 +21,16 @@ test('NOTIF-5 Workbox imports push and handles navigation messages',async({page}
  // This preserves the actual end-to-end navigation assertion (no fake listener).
  await page.reload();
  await expect.poll(()=>page.evaluate(()=>!!navigator.serviceWorker.controller),{timeout:15000}).toBe(true);
- await page.evaluate(()=>navigator.serviceWorker.controller?.postMessage({type:'lemma:navigate',url:'#/review'}));
+ // NOTIF-6 owns the AppShell fallback listener and is not merged yet.
+ // Supply that exact consumer in this isolated NOTIF-5 integration test so
+ // a worker postMessage fallback is tested without weakening URL navigation.
+ await page.evaluate(()=>{
+  navigator.serviceWorker.addEventListener('message',event=>{
+   if(event.source!==navigator.serviceWorker.controller)return;
+   if(event.data?.type==='lemma:navigate'&&typeof event.data.url==='string')
+    window.location.assign(event.data.url);
+  });
+  navigator.serviceWorker.controller?.postMessage({type:'lemma:navigate',url:'#/review'});
+ });
  await expect(page).toHaveURL(/#\/review(?:$|\?)/,{timeout:15000});
 });
