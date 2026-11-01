@@ -66,6 +66,8 @@ test('AND-8 authenticated A to B switch never hydrates A into B; sign-out erases
  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
  const oldOnline=Object.getOwnPropertyDescriptor(navigator,'onLine')
  Object.defineProperty(navigator,'onLine',{configurable:true,value:false})
+ expect(navigator.onLine).toBe(false)
+ auth.id='' // Start signed out; drive the actual SIGNED_IN callback below.
  offline.snapshots.set('owner-a',snapshot('Only A'))
  offline.snapshots.set('owner-b',snapshot('Only B'))
  const queryClient=new QueryClient({defaultOptions:{queries:{retry:false}}})
@@ -79,8 +81,10 @@ test('AND-8 authenticated A to B switch never hydrates A into B; sign-out erases
   ))
   // The Supabase client is deliberately a dynamic import. Wait for its
   // auth/session bootstrap instead of assuming it completes in one microtask.
+  await vi.waitFor(()=>expect(auth.callback).toBeTypeOf('function'),{timeout:4000})
+  auth.id='owner-a'
+  await act(async()=>{auth.callback?.('SIGNED_IN',{user:{id:'owner-a'}})})
   await vi.waitFor(()=>{
-   expect(auth.callback).toBeTypeOf('function')
    expect(offline.reads).toContain('owner-a')
    expect(queryClient.getQueryData(['home'])).toEqual({title:'Only A'})
   },{timeout:4000})
@@ -124,6 +128,8 @@ test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',as
  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
  const oldOnline=Object.getOwnPropertyDescriptor(navigator,'onLine')
  Object.defineProperty(navigator,'onLine',{configurable:true,value:false})
+ expect(navigator.onLine).toBe(false)
+ auth.id='' // Start signed out; drive the actual SIGNED_IN callback below.
  let finishA:(snapshot:Snapshot)=>void=()=>{}
  offline.delayed.set('owner-a',new Promise<Snapshot>(resolve=>{finishA=resolve}))
  offline.snapshots.set('owner-b',snapshot('Only B'))
@@ -136,10 +142,10 @@ test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',as
   await act(async()=>root.render(
    <QueryClientProvider client={queryClient}><RouterProvider router={router}/></QueryClientProvider>
   ))
-  await vi.waitFor(()=>{
-   expect(auth.callback).toBeTypeOf('function')
-   expect(offline.reads).toContain('owner-a')
-  },{timeout:4000})
+  await vi.waitFor(()=>expect(auth.callback).toBeTypeOf('function'),{timeout:4000})
+  auth.id='owner-a'
+  await act(async()=>{auth.callback?.('SIGNED_IN',{user:{id:'owner-a'}})})
+  await vi.waitFor(()=>expect(offline.reads).toContain('owner-a'),{timeout:4000})
   expect(queryClient.getQueryData(['home'])).toBeUndefined()
 
   auth.id='owner-b'
