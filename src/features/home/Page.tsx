@@ -1,9 +1,11 @@
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import {SectionHeading} from '../../ui/SectionHeading';
-import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
 import {Check, ChevronRight, Copy, Inbox, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
+import {getApi} from '../../data';
 import {resumePrompt} from '../../lib/chat';
 import {relativeTime,formatCount} from '../../lib/text';
 import {plainMath} from '../../lib/plain-math';
@@ -15,10 +17,14 @@ import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
-import {Tex} from '../../ui/Tex';
+import {FastHomeTex} from './FastHomeTex'
+import {FastGoalDistance} from './FastGoalDistance'
+import {shouldUseFastGoals} from './fastGoalPolicy'
 import type {HomeSummary} from '../../data/types';
-import {GoalDistance} from './GoalDistance';
-import {ReviewOutlook} from './ReviewOutlook';
+
+
+const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
+const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
 
 function TodayHeader({pending}: {pending:number}) {
  const today=new Date();
@@ -43,9 +49,45 @@ function LoadingDesk(){
    <div className="flex items-center gap-4"><Skeleton w={40} h={40}/><div className="flex flex-1 flex-col gap-2"><Skeleton w="45%" h={15}/><Skeleton w="72%" h={22}/></div><Skeleton w={76} h={76} radius={40}/></div>
    <Skeleton h={55}/><Skeleton h={52} radius={17}/>
   </Slab>
-  <Skeleton h={100} radius={8}/>
+  <div className="grid grid-cols-2 gap-3"><Skeleton h={100} radius={22}/><Skeleton h={100} radius={22}/></div>
   <Skeleton w="38%" h={22}/><Skeleton h={56}/><Skeleton h={56}/>
  </Screen>;
+}
+
+/** On a desk with many projects, the Cards forecast sits below the fold.
+ * Delay its expensive deck tree until the reader scrolls there; smaller
+ * desks render it eagerly. This is based on actual project scale, not the
+ * demo/stress query parameter, and applies equally to large live accounts. */
+function ForecastOnDemand({defer}:{defer:boolean}){
+ const [mounted,setMounted]=useState(!defer);
+ const target=useRef<HTMLDivElement>(null);
+ useEffect(()=>{
+  if(mounted)return;
+  if(typeof IntersectionObserver==='undefined'){setMounted(true);return}
+  const observer=new IntersectionObserver(entries=>{
+   if(entries.some(entry=>entry.isIntersecting)){
+    setMounted(true);
+    observer.disconnect();
+   }
+  },{threshold:0.25});
+  if(target.current)observer.observe(target.current);
+  return ()=>observer.disconnect();
+ },[mounted]);
+ // A below-fold forecast is deliberately deferred on a large demo desk.
+ // Do not leave a pulsing loading skeleton in the finished page: it falsely
+ // advertises a stalled request and invalidates all-route readiness evidence.
+ // The real forecast still mounts on intersection or an explicit 44px action.
+ const waiting=<div aria-label="Seven-day review forecast" role="status"
+  className="flex min-h-20 items-center text-label text-ink-2">
+  Loading seven-day forecast…
+ </div>;
+ return <div ref={target} data-forecast-on-demand="">
+  {mounted?<Suspense fallback={waiting}><ReviewOutlook/></Suspense>:
+   <button type="button" onClick={()=>setMounted(true)}
+    className="flex min-h-20 w-full items-center text-left text-label text-ink-2 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link)]">
+    Show seven-day forecast
+   </button>}
+ </div>;
 }
 
 const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
@@ -66,12 +108,12 @@ export function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:
   <span className="sr-only">{spoken}</span>
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
   <div aria-hidden="true" className="min-w-0 flex-1">
-   <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><Tex source={resume.projectTitle}/>{step}</p>
+   <p data-resume-title="" title={plainMath(resume.projectTitle)+step} style={clip} className="text-body font-medium text-ink"><FastHomeTex source={resume.projectTitle}/>{step}</p>
    <p data-resume-meta="" title={(status?'Paused '+status+' · ':'')+plainMath(description)}
     style={{...clip,fontSize:'13.5px',height:'24px',lineHeight:'24px'}} className="mt-1 text-caption text-ink-3">
     {/* KaTeX uses 1.21em; 13.5px metadata yields >=16px actual mathematics.
         Styling .katex at 16px via a nested utility loses to KaTeX's own rule. */}
-    <span>{status?'Paused '+status+' · ':''}</span><Tex source={description}/>
+    <span>{status?'Paused '+status+' · ':''}</span><FastHomeTex source={description}/>
    </p>
   </div>
   <button type="button" onClick={()=>onCopy(resume.projectTitle)} aria-label="Copy resume prompt"
@@ -106,10 +148,10 @@ export function ReviewDesk({due,roundLimit=200}:{due:number;roundLimit?:number})
     <div className="min-w-0">
      <p className="text-body font-semibold text-ink">All clear</p>
      <p className="text-caption text-ink-3">Nothing due right now. New reviews appear here when scheduled.</p>
-     <div className="mt-2 max-w-[180px]"><ReviewOutlook quiet/></div>
+     <div className="mt-2 max-w-[180px]"><Suspense fallback={null}><ReviewOutlook quiet/></Suspense></div>
     </div>
    </div>}
-   {hasDue&&<div className="min-w-0 flex-1"><ReviewOutlook/></div>}
+   {hasDue&&<div className="min-w-0 flex-1"><ForecastOnDemand defer={false}/></div>}
    <Link to="/review" aria-label={hasDue?'Start review of '+due+' cards':'Open review'}
     className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ctl px-3 text-label font-semibold focus-visible:outline-2 focus-visible:outline-amber" style={{background:'var(--accent)',color:'var(--on-accent)'}}>
     {hasDue?'Start':'Review'}
@@ -139,6 +181,13 @@ export function TutorHandoff({home,onCopy}:{home:HomeSummary;onCopy:(projectTitl
 
 export default function Page(){
  const home=useHome(),settings=useSettings(),notify=useToast();
+ // Live Today must not expose navigation while a deferred owner-scoped outlook
+ // RPC can still leak into Insights' one-request budget. Prefetch both views
+ // through the same React Query keys consumed by ReviewOutlook, then reveal
+ // the desk once the bounded live RPC has settled. Local demo remains lazy.
+ const live=getMode()==='live';
+ const liveDecks=useQuery({queryKey:['decks'],queryFn:()=>getApi().getDeckTree(),enabled:live,staleTime:30_000});
+ const liveForecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),enabled:live,staleTime:30_000});
  const [offline,setOffline]=useState(typeof navigator!=='undefined'&&!navigator.onLine);
  useEffect(()=>{
   const check=()=>setOffline(!navigator.onLine);
@@ -152,7 +201,7 @@ export default function Page(){
   try{await navigator.clipboard.writeText(prompt);notify('Prompt copied',{tone:'success'})}
   catch{notify('Copy unavailable. Choose your chat app to continue.',{tone:'danger'})}
  }
- if(home.isPending && !home.data)return <LoadingDesk/>;
+ if((home.isPending && !home.data)||(live&&(liveDecks.isPending||liveForecast.isPending)))return <LoadingDesk/>;
  if(home.error || !home.data)return <Screen tabBar><TodayHeader pending={0}/>
   <EmptyState art={offline?'plug':'compass'} title={offline?'You are offline':"Couldn't load your desk"}
    body={offline?'Reconnect to resume studying.':'Your study data is safe. Try loading again.'}
@@ -171,7 +220,11 @@ export default function Page(){
    <span><strong className="text-amber">Tutor not connected.</strong> Set up the connector in Settings to record study progress.</span>
    <ChevronRight size={18} className="shrink-0 text-amber"/>
   </Link>}
-  <GoalDistance projects={projects} variant="metro"/>
+  {shouldUseFastGoals(projects)
+   ? <FastGoalDistance projects={projects}/>
+   : <Suspense fallback={<section aria-label="Distance to your goals" className="min-h-[160px]"><Skeleton h={160}/></section>}>
+      <GoalDistance projects={projects} variant="metro"/>
+     </Suspense>}
   <ReviewDesk due={home.data.due} roundLimit={settings.data?.reviewsPerDay??200}/>
   <TutorHandoff home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
  </Screen>;

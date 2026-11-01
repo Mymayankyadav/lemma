@@ -322,6 +322,24 @@ Notes per task:
 #### How work runs now (31 Oct 10:25)
 - Four hourly agents (Steward :00, Fixer :15, Builder :30, Auditor :45) coordinate through GitHub: leases in PR descriptions and the issues "Task board", "Audit log" and "Agent log". See `docs/agents/README.md` and `docs/agents/prompts.md`. Add work by adding a section here with task IDs, specs and "depends on".
 
+#### Reminders and notifications (Planner, 31 Oct 22:40): NOTIF-0 … NOTIF-7, QA-5 — **owner-requested 31 Oct 23:33 IST; audit first**
+- Spec: `docs/spec/notifications.md`. Web Push reminders that work in the browser, the installed PWA and the Android app (`android.md`). They cover cards due, checkpoints planned for tomorrow, a kind "smaller step" when a project is behind plan, picking up a paused session, tutor proposals (approve cards from the notification, with Undo), plan-past-target and a weekly digest.
+- Rules: quiet hours, at most 3 a day, nothing while studying, fewer after repeated dismissals. Server-side scheduling (pg_cron → Edge Function `notify`); no Firebase, no new dependency, no connector change.
+- **Owner-requested (31 Oct 23:33 IST), Auditor first:** the Auditor audits PR "PLAN notifications" before it merges; after that Fixer and Builder agents start the tasks below. The decision changes in `notifications.md` §9 and the open questions are the Planner's proposed defaults; an owner reply overrides them. The owner must add the secrets in §10 before NOTIF-4 can run live.
+- Order: NOTIF-0, NOTIF-1 and NOTIF-2 in parallel → NOTIF-3 → NOTIF-4; NOTIF-5 after NOTIF-0; NOTIF-6 after NOTIF-0, NOTIF-5 and LOOK-9; NOTIF-7 after NOTIF-0 and LOOK-7; QA-5 last. Full acceptance in `notifications.md` §7.
+
+| Task | Spec | Depends on | Owns | State |
+| --- | --- | --- | --- | --- |
+| NOTIF-0 CONTRACT reminders data surface | §6g | — | `src/data/{types,api,hooks,env}.ts`, `.env.example`, demo notify fixtures, `data.md` §7.4 | pending audit |
+| NOTIF-1 Reminders schema | §6a–6d | — | `supabase/migrations/<ts>_notifications.sql`, `tests/mcp/notif1.mjs`, one `mcp-sql` step | pending audit |
+| NOTIF-2 Web Push and notification text | §4f, §6f | — | `supabase/functions/_shared/{webpush,notify-text}.ts`, `tests/unit/notify/{webpush,text}.test.ts` | pending audit |
+| NOTIF-3 Rules and copy | §3, §4 | NOTIF-2 | `supabase/functions/notify/{rules,copy}.ts`, `tests/unit/notify/rules.test.ts` | pending audit |
+| NOTIF-4 `notify` function and schedule | §6e, §6f | NOTIF-1, NOTIF-3 | `supabase/functions/notify/**`, `<ts>_notify_cron.sql`, `config.toml` block, `supabase.yml` deploy line | pending audit |
+| NOTIF-5 Service worker push handling | §4g, §5c, §5d | NOTIF-0 | `public/push-sw.js`, `src/lib/push-sw-core.js`, `vite.config.ts` (`importScripts` only), badge icon, `check-pwa.mjs` | pending audit |
+| NOTIF-6 Settings › Reminders | §5a, §5b, §5e, §5f | NOTIF-0, NOTIF-5, LOOK-9 (live part: NOTIF-1, NOTIF-4) | `src/features/settings/Reminders*.tsx`, `src/lib/push.ts`, live notify methods, `AppShell.tsx` listener | pending audit |
+| NOTIF-7 Notification entry points | §5d | NOTIF-0, LOOK-7 | `review/Page.tsx` (`start`), `review-done/*` (offer), `insights/Page.tsx` (`days`) | pending audit |
+| QA-5 Reminders acceptance | §7 | all NOTIF | `docs/acceptance/notifications.md`, `scripts/notify-dry-run.ts` | pending audit |
+
 #### v4 look (owner, 31 Oct 13:08): LOOK-0 … LOOK-9, QA-4
 - Spec: `docs/spec/v4-look.md`. The owner called the checkpoint presentation "the ugliest I have seen". The audit of every screen (night and day, default and S profiles) found six causes:
   - the accent is the same red as "late" and "bad";
@@ -336,6 +354,26 @@ Notes per task:
 - Start LOOK-0, then LOOK-1, LOOK-3 and LOOK-4 in parallel. LOOK-5 … LOOK-9 follow, and QA-4 comes last.
 - The days-late mismatch (checkpoint sheet vs Metro) and the cards-list LaTeX leak may land early as `FIX` PRs.
 - Mockups: `docs/design/v4/`. Audit contact sheets: `docs/design/v4/audit/`.
+
+#### Android app (Planner, 31 Oct 22:40): AND-1 … AND-9, QA-6 — **owner-requested 31 Oct 23:33 IST; audit first**
+- Spec: `docs/spec/android.md`. Recommendation: a Trusted Web Activity around the existing PWA. Google sign-in, KaTeX, pdf.js and every v4 screen work unchanged, every merged PR reaches the phone without a store release, and notifications (`notifications.md`) need no Firebase.
+- Stages: 1 installable app on Play internal testing with launcher shortcuts; 2 notifications shown as "Lemma"; 3 home-screen widget (due count, Continue, next checkpoint) from a read-only token; 4 read-only offline snapshot; 5 offline review (needs a separate decision change).
+- **Owner-requested (31 Oct 23:33 IST), Auditor first:** the Auditor audits PR "PLAN android" before it merges; after that Fixer and Builder agents start AND-1 … AND-8. The owner provides the Play Console account, the upload key, fingerprints and the asset-links repo (`android.md` §8). **AND-9a/9b stay blocked** until the owner changes decision §2 #1.
+- Order: AND-1 and AND-2 → AND-3 → AND-4; AND-5 after AND-3 and NOTIF-6; AND-6 after AND-2, NOTIF-1 and NOTIF-4; AND-7 after AND-3 and AND-6; AND-8 after LOOK-9; QA-6 last. Full acceptance in `android.md` §6.
+
+| Task | Spec | Depends on | Owns | State |
+| --- | --- | --- | --- | --- |
+| AND-1 Install quality (manifest, shortcuts, screenshots) | §4a | LOOK-9 | `vite.config.ts` manifest keys (not colours, not `importScripts`), shortcut icons, screenshots, `check-pwa.mjs` | pending audit |
+| AND-2 Platform detection and asset links | §4b, §4c | — | `src/lib/platform.ts`, `docs/android/{assetlinks.template.json,setup.md}` | pending audit |
+| AND-3 TWA shell and CI build | §4a | AND-1, AND-2 | `android/**`, `.github/workflows/android.yml`, `.gitignore` | pending audit |
+| AND-4 Store listing kit and privacy page | §5 | AND-1, LOOK-5 | `docs/android/listing.md`, `public/privacy.html`, `scripts/play-shots.mjs` | pending audit |
+| AND-5 Notifications inside the app | §4a | AND-3, NOTIF-6 | `android/**` (delegation only), `docs/android/notifications-check.md` | pending audit |
+| AND-6 Widget data and pairing | §4d | AND-2, NOTIF-1, NOTIF-4 | `<ts>_widget_tokens.sql`, `notify/widget.ts`, `settings/Widget*.tsx`, additive data methods | pending audit |
+| AND-7 Native widget | §4d | AND-3, AND-6 | `android/app/src/main/java/**/widget/**`, widget resources, JVM tests | pending audit |
+| AND-8 Read-only offline snapshot | §4e | LOOK-9 | `src/lib/offline-cache.ts`, `OfflineBanner.tsx`, `AppShell.tsx` hydrate, `Button` `needsNetwork` | pending audit |
+| AND-9a CONTRACT offline answers | §4f | owner decision §2 #1 | data contract, `<ts>_record_review_offline.sql` | awaiting owner decision |
+| AND-9b Offline review queue | §4f | AND-8, AND-9a | `src/lib/review-outbox.ts`, review offline paths | awaiting owner decision |
+| QA-6 Android acceptance | §6 | AND-1 … AND-8 | `docs/acceptance/android.md` | pending audit |
 
 #### Tutor transcriptions (owner, 31 Oct 08:38): DB-5, MCP-6, UI-8
 - Spec: `docs/spec/transcribe.md`. The connector cannot push PDFs or page text today: kind `book` only makes an empty record. The tutor will transcribe handwritten notes or scanned pages attached in chat into Markdown with LaTeX using a new `save_pages` tool. It writes either into an uploaded scan's pages or into a new text-only source, in batches of up to 10 pages, undoable, with who transcribed it and a "check" flag for doubtful pages.
@@ -392,6 +430,9 @@ Status on 29 Oct 2026, 21:30 IST:
 | Connect Claude and ChatGPT | After MCP-1: `connector.md` §10. |
 | Install on the phone | Open the site, Share › Add to Home Screen. |
 | Draft PR ready-for-review handoff (only in REST-only runtimes) | When a PR says `Needs ready-for-review transition`, open that draft in GitHub and select **Ready for review**, or have a GraphQL-capable agent call `markPullRequestReadyForReview`. GitHub REST has no ready-for-review endpoint. The Steward may squash-merge only after the transition and exact-head green CI. |
+| **Android Play Console and signing (AND-3/QA-6)** | Owner: create the Google Play Console app `io.github.mymayankyadav.lemma`, enable Play App Signing, retain the upload keystore privately, and configure the four CI signing secrets named in `docs/spec/android.md` §8. CI can build unsigned before these steps. Never commit signing material. |
+| **Android origin-root asset links (AND-2/AND-3/QA-6)** | Owner: publish `.nojekyll` and `.well-known/assetlinks.json` in the separate user-site repository `Mymayankyadav/mymayankyadav.github.io` with both public SHA-256 signing/upload fingerprints; the `/lemma/` project site cannot serve this origin-root path. Upload the first Android App Bundle manually to Internal testing and add your account as a tester. |
+| **Notification delivery secrets (NOTIF-4/QA-5)** | Owner: set `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`, `NOTIFY_ACTION_SECRET`, `NOTIFY_CRON_SECRET` in the designated Supabase Edge secrets for the single approved project, and put the cron secret in Vault under `lemma_notify_cron` as specified in `docs/spec/notifications.md` §10. Share only the public VAPID key; never paste private values into GitHub. |
 | **PR #615 — owner-visible v4 Today card** | **Action needed after independent Auditor CLEAR and strict first-attempt CI:** open [PR #615](https://github.com/Mymayankyadav/lemma/pull/615) and click **Ready for review**. It is a draft; REST-only agents cannot perform this transition. Do not merge until all seven exact-head checks, no-retry C2/D6 evidence and Auditor CLEAR pass. |
 
 ## 11. Later (not in v1)
