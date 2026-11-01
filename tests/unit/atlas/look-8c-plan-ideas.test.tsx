@@ -53,6 +53,10 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
   expect(graph).toContain('<Sheet open={details&&!!selected}');
   expect(graph).toContain('data-proposed-idea-details="true"');
   expect(graph).toContain('role="progressbar" aria-label="Idea progress"');
+  // v4 §4.7: hierarchy is already conveyed by indentation and breadcrumbs;
+  // the Details sheet shows status, not redundant "Idea"/"Detail" type tags.
+  expect(graph).toContain('{statusName[selected.status]}</p>');
+  expect(graph).not.toContain('levelName[selected.level]');
   expect(graph).toContain("aria-valuetext={selected.total?");
   expect(graph).toContain("recheckNodes.length>0&&<button");
   expect(graph).toContain("onClick={()=>jump(recheckNodes[0].id)}");
