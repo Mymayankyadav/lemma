@@ -1,5 +1,5 @@
 import {MathPreview} from '../../ui/MathPreview';
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   Bot,
@@ -276,6 +276,9 @@ export function CheckpointDrawer({
     </Sheet>
   );
 }
+const StablePlanMap=memo(PlanMap);
+const StableIdeaGraph=memo(IdeaGraph);
+
 export default function Page() {
   const { id = "" } = useParams(),
     navigate = useNavigate(),
@@ -302,10 +305,13 @@ export default function Page() {
   // A proposal and project detail are immutable React Query snapshots. Reuse
   // their expensive plan/Ideas derivations across StrictMode render replays and
   // unrelated local state changes, without keeping stale data after a refresh.
-  const prepared = useMemo(() => preparePlanProposal(p,project.data),[p,project.data]);
+  // The proposal often resolves before its base project. Avoid constructing
+  // a large incomplete Ideas tree and rebuilding it when the project arrives.
+  const waitingForProject=Boolean(p?.planChange&&project.isPending);
+  const prepared = useMemo(() => preparePlanProposal(waitingForProject?null:p,project.data),[p,project.data,waitingForProject]);
   const {nodes,ideaTree,ideaCount,stages}=prepared;
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
-  const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
+  const openCheckpoint = useCallback((code: string) => { setSelected(code); setDrawer(code); },[]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
     if (!p) return;
@@ -396,8 +402,9 @@ export default function Page() {
               </span>
             </div>
           </div>
+          {waitingForProject && <p role="status" className="text-label text-ink-3">Preparing project context…</p>}
           {nodes.length > 0 && (
-            <PlanMap
+            <StablePlanMap
               nodes={nodes}
               selected={drawer ?? ""}
               onSelect={openCheckpoint}
@@ -468,11 +475,11 @@ export default function Page() {
                 <span className="text-caption text-ink-3">{ideaCount} {ideaCount === 1 ? "idea" : "ideas"}</span>
               </h3>
               <p className="text-label text-ink-3">Fold clusters to see how they connect; tap an idea to trace what it builds on and opens up.</p>
-              <IdeaGraph tree={ideaTree} label="Ideas in this plan" onCheckpoint={openCheckpoint} />
+              <StableIdeaGraph tree={ideaTree} label="Ideas in this plan" onCheckpoint={openCheckpoint} />
             </section>
           ) : (
             <p className="flex items-center gap-2 text-label text-ink-3">
-              <Waypoints size={17} />No new ideas for your Atlas
+              <Waypoints size={17} />{waitingForProject?'Preparing ideas with the project context…':'No new ideas for your Atlas'}
             </p>
           )}
           <div className="grid grid-cols-2 gap-3">
