@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 // FIX #659: a new-project sheet is a functional cold route. Its inert
 // backdrop must not hydrate the entire 60-project library before the form
@@ -32,6 +33,8 @@ for(const width of [360,390] as const){
   await expect(dialog).toBeVisible({timeout:90_000});
   await expect(dialog.getByRole('textbox',{name:'Name'})).toBeVisible();
   await expect(dialog.getByRole('button',{name:'Add PDFs, .tex or .md files'})).toBeVisible();
+  await page.keyboard.press('Tab');
+  expect(await page.evaluate(()=>!!document.activeElement?.closest('[role="dialog"]'))).toBe(true);
   await page.waitForFunction(()=>performance.getEntriesByName('lemma-fix-659-new-project-first-paint','mark').length===1);
   const paintMs=await page.evaluate(()=>performance.getEntriesByName('lemma-fix-659-new-project-first-paint','mark')[0].startTime);
   console.info('FIX #659 cold New project 4x',JSON.stringify({profile,theme,width,paintMs}));
@@ -42,6 +45,8 @@ for(const width of [360,390] as const){
   await expect(backdrop).toHaveAttribute('inert','');
   await expect(backdrop.getByRole('heading',{name:'Paths',includeHidden:true})).toHaveCount(1);
   await expect(backdrop.locator('[data-project-row]')).toHaveCount(0);
+  mkdirSync('test-results/screens/fix-659',{recursive:true});
+  await page.screenshot({path:'test-results/screens/fix-659/new-'+profile+'-'+theme+'-'+width+'.png',animations:'disabled'});
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
   await dialog.getByRole('button',{name:'Close'}).click();
   await expect(page.getByRole('heading',{name:'Paths',exact:true})).toBeVisible();
