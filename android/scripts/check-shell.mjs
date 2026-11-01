@@ -47,6 +47,8 @@ for (const required of ['workflow_dispatch:', 'android-v*', 'lint', 'bundleRelea
 }
 ensure(!/packages:\s*['\"]?tools\b/.test(workflow), 'obsolete Android SDK tools package is not installable')
 ensure(workflow.includes("packages: 'platform-tools'"), 'setup-android must avoid removed tools package')
+ensure(/- name: Configure optional release signing\n\s+if: github\.event_name != 'pull_request'/.test(workflow),
+  'PR builds must never receive signing secrets')
 const ignore = await get('.gitignore')
 for (const forbidden of ['*.jks', '*.keystore', 'android/local.properties', 'google-services.json']) {
   ensure(ignore.includes(forbidden), '.gitignore missing ' + forbidden)
