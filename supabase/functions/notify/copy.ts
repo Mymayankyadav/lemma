@@ -12,6 +12,7 @@ export type NoticeCopyInput =
  | {kind:'behind';project:string;code:string;dueDate:string}
  | {kind:'resume';project:string;step:number;steps:number;question?:string|null;checkpointTitle?:string|null}
  | {kind:'tutor';sources?:Array<'claude'|'chatgpt'>;counts?:{cards?:number;plans?:number;planChanges?:number;cardEdits?:number};projects?:string[];notesAnswered?:number;sessionNo?:string;summary?:string}
+ | {kind:'confirm';approved:number;requested:number}
  | {kind:'digest';period:'weekly';daysStudied:number;cardsReviewed:number;checkpoints:number;next?:{code:string;title:string;date:string}}
  | {kind:'digest';period:'daily';clauses:string[]}
  | {kind:'plan';project:string;planEnd:string;targetDate:string}
@@ -83,6 +84,11 @@ export function notificationCopy(input:NoticeCopyInput):NoticeCopy {
    ].filter((value):value is string=>!!value)
    return asCopy('tutor','tutor',who+' left '+quantity(total,'proposal','proposals'),clauses.join(' · '))
   }
+  case 'confirm':
+   return asCopy('confirm','tutor',
+    'Approved '+input.approved+(input.approved===1?' card':' cards')+
+     (input.approved<input.requested?' of '+input.requested+' cards':''),
+    'Undo is in the app, or here for 48 hours.')
   case 'digest':
    if(input.period==='daily')
     return asCopy('digest','digest','Today in Lemma',input.clauses.slice(0,3).join(' · ')||'Open Lemma to see your next step.')
