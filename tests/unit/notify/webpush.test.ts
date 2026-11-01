@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { webcrypto } from 'node:crypto'
-import { base64url, fromBase64url, importEcdhKeyPair, encryptPushMessage, createVapidAuthorization } from '../../../supabase/functions/_shared/webpush'
+import { base64url, fromBase64url, importEcdhKeyPair, encryptPushMessage, createVapidAuthorization, prepareWebPush } from '../../../supabase/functions/_shared/webpush'
 
 beforeAll(()=>{ vi.stubGlobal('crypto',webcrypto) })
 
@@ -30,6 +30,12 @@ describe('RFC 8291 Web Push encryption',()=>{
 })
 
 describe('RFC 8292 VAPID',()=>{
+ it('rejects a notification JSON body above 3 KB before any network request',async()=>{
+  await expect(prepareWebPush({endpoint:'https://push.example.net/abc',keys:{p256dh:'x',auth:'x'}},
+   'x'.repeat(3073),{publicKey:'x',privateKey:'x',subject:'mailto:owner@example.org'}))
+   .rejects.toThrow('3 KB')
+ })
+
  it('signs a verifiable ES256 token for the push endpoint origin, expiring within 12 hours',async()=>{
   const pair=await webcrypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify'])
   const pub=base64url(new Uint8Array(await webcrypto.subtle.exportKey('raw',pair.publicKey)))
