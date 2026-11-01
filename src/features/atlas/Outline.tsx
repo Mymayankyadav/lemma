@@ -1,6 +1,6 @@
 import {memo} from 'react';
 import {ChevronRight} from 'lucide-react';
-import {FastTex as Tex} from '../../ui/FastTex';
+import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
 import {arcTone,isPlainAtlasLabel} from './tree';
