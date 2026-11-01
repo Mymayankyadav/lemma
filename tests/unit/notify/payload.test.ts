@@ -48,6 +48,8 @@ describe('NOTIF-4b5 safe service-worker push payload',()=>{
    {actions:[{action:'not valid',title:'Later'}]},
    {actions:[{action:'later',title:'Later',token:'bad token'}]},
    {body:'x'.repeat(5000)},
+   {title:'   '},
+   {actions:[{action:'later',title:'x'.repeat(2000)}]},
   ]){
    expect(()=>buildPushPayload({...base,...change})).toThrow();
   }
