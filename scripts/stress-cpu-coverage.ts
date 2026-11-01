@@ -8,6 +8,13 @@ export const CPU_CASES=(['stress','extreme'] as const).flatMap(profile=>
  (['graph','graph-night'] as const).flatMap(theme=>
   ([360,390] as const).map(width=>({profile,theme,width}))));
 export type CpuCase=(typeof CPU_CASES)[number];
+/** Allow an extreme first-attempt matrix to finish all 18 full documents.
+ * The 1,500ms per-route budget is enforced separately by auditCpuMatrix;
+ * extending this harness watchdog cannot turn a slow route green.
+ */
+export function cpuMatrixTimeoutMs(profile:CpuCase['profile']):number{
+ return profile==='extreme'?1_800_000:600_000;
+}
 export type CpuRouteSample={
  route:string;actualRoute:string;profile:string;theme:string;width:number;
  cpuThrottle:number;durationMs:number;navigationType:string;ready:boolean;
