@@ -69,6 +69,11 @@ try{
  // Diagnostic EXPLAIN is never used for acceptance: the first call above
  // remains the only timed attempt and always fails if it exceeded the budget.
  if(elapsed>=150){
+   // Diagnostic-only EXPLAIN must never hide a failed first attempt behind
+   // the 10-minute SQL job timeout. The strict elapsed<150 assertion below
+   // is unchanged; cancellation is allowed only for bounded diagnostics.
+   await db.exec("set statement_timeout = '3000ms'")
+   try{
    const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,now())',[owner])
    console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
    // Profile individual CTEs only after the strict first-attempt gate fails.
@@ -82,6 +87,12 @@ try{
      const detail=await q('explain (analyze,buffers) '+ctes+'\nselect count(*) from '+name,[owner,new Date().toISOString()])
      console.log('NOTIF-1b X CTE '+name+' '+(performance.now()-t0).toFixed(1)+'ms\n'+
        detail.map(row=>row['QUERY PLAN']).join('\n').slice(0,6000))
+   }
+   }catch(error){
+     if(error?.code!=='57014')throw error
+     console.log('NOTIF-1b X diagnostic query bounded at 3s after first-attempt failure')
+   }finally{
+     await db.exec('reset statement_timeout')
    }
  }
  // Guard the cold-X optimization structurally as well as with the unchanged
