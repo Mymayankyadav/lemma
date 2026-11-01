@@ -9,7 +9,7 @@ import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
 import {Skeleton} from '../../ui/Skeleton';
 import type {EmptyStateProps} from '../../ui/EmptyState';
 import type {SheetProps} from '../../ui/Sheet';
-import {useToast} from '../../ui/Toast';
+
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
@@ -69,7 +69,10 @@ function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:Atlas
 }
 
 function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onClose:()=>void;onTrace:(id:string)=>void}){
- const toast=useToast(),near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
+ // Copy feedback is used only after a details-sheet button press. Avoid
+ // evaluating the motion-backed Toast renderer on the cold Atlas route.
+ const toast=(message:string)=>{void import('../../ui/Toast').then(module=>module.toast(message))};
+ const near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
  return <Sheet open onClose={onClose} title={<AtlasDetailsTitle name={node.name}/>}>
   <div data-atlas-details="true">
    {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)} onSelect={index=>onTrace(path[index].id)}/>}
