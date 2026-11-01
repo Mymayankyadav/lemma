@@ -12,6 +12,7 @@ import {IconButton} from '../../ui/IconButton';
 import {Sheet} from '../../ui/Sheet';
 import {MathText} from '../../ui/MathText';
 import {useToast} from '../../ui/Toast';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import type {EventKind,GoalMet,SessionEvent} from '../../data/types';
 import {reasoningRuns} from './runs';
 import {sessionCardSummary} from './counts';
@@ -37,6 +38,7 @@ export default function Page(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings();
  const [params]=useSearchParams(),viewCards=params.get('cards')==='1';
  const [cardPage,setCardPage]=useState(0);
+ const online=useOnlineStatus();
  const resolve=useResolveMisconception(),notify=useToast(),[menu,setMenu]=useState(false),[pagesOpen,setPagesOpen]=useState(false),[expanded,setExpanded]=useState<number[]>([]),[visibleRuns,setVisibleRuns]=useState(40);
  const session=query.data,summary=session?.summary;
  const runs=reasoningRuns(session?.events??[]);
@@ -79,7 +81,10 @@ export default function Page(){
      })}
     </ol>{visibleRuns<runs.length&&<button type="button" onClick={()=>setVisibleRuns(n=>n+40)} className="min-h-11 rounded-ctl border border-edge px-4 text-label font-semibold text-ink-2">More reasoning · {runs.length-visibleRuns} groups remaining</button>}</>:<p className="text-body text-ink-3">No reasoning events recorded for this session.</p>}
    </section>}
-   {!viewCards&&!!session.misconceptions.filter(m=>!m.resolvedAt).length&&<section className="flex flex-col gap-3"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Things to revisit</h2>{session.misconceptions.filter(m=>!m.resolvedAt).map(m=><div key={m.id} className="flex flex-wrap items-center gap-3 border-l-2 border-amber py-2 pl-3"><TriangleAlert className="text-amber" size={18}/><span className="min-w-0 flex-1 text-body-l"><Tex source={m.label}/></span><Chip tone="amber">{m.times}×</Chip><button disabled={resolve.isPending} className="min-h-11 rounded-ctl px-2 text-label font-semibold text-ink-2" onClick={()=>resolve.mutate(m.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Couldn’t save. Try again.',{tone:'danger'})})}>Resolved</button></div>)}</section>}
+   {!viewCards&&!!session.misconceptions.filter(m=>!m.resolvedAt).length&&<section className="flex flex-col gap-3"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Things to revisit</h2>{session.misconceptions.filter(m=>!m.resolvedAt).map(m=><div key={m.id} className="flex flex-wrap items-center gap-3 border-l-2 border-amber py-2 pl-3"><TriangleAlert className="text-amber" size={18}/><span className="min-w-0 flex-1 text-body-l"><Tex source={m.label}/></span><Chip tone="amber">{m.times}×</Chip><button disabled={resolve.isPending} aria-disabled={!online||undefined} aria-label={online?'Resolved':'Resolved, needs a connection'} className="min-h-11 rounded-ctl px-2 text-label font-semibold text-ink-2" onClick={()=>{
+     if(!networkWritable()){notify('Needs a connection');return}
+     resolve.mutate(m.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Couldn’t save. Try again.',{tone:'danger'})})
+    }}>Resolved</button></div>)}</section>}
    {!!session.cards.length&&<section aria-label="Session cards" className="flex flex-col gap-2"><h2 className="text-title-s font-semibold italic" style={{fontFamily:'var(--font-display)'}}>Cards</h2>
     <Link to={`/s/${slug}/${number}?cards=1`} className="flex min-h-14 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 text-body text-ink-2">
      <span>{sessionCardSummary(session.cards.length,session.cards.filter(card=>card.state==='pending').length)}</span><ArrowRight size={18} className="shrink-0"/>
