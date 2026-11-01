@@ -25,6 +25,16 @@ for(const width of [360,390] as const){
   await expect(page.getByRole('heading',{name:'Review',exact:true,level:1})).toBeVisible()
   await expect(page.getByRole('region',{name:'Decks'})).toBeVisible()
   await page.evaluate(()=>navigator.serviceWorker.ready)
+  // Diagnostic only: when an asynchronous durable save fails, distinguish
+  // missing successful route handoff from a failed IndexedDB merge/flush.
+  // Log allowlisted query KEYS only, never cached values or credentials.
+  console.info('AND-8 staged route keys',JSON.stringify(await page.evaluate(profile=>{
+   try{
+    const raw=sessionStorage.getItem('lemma-offline-handoff:demo-'+profile)
+    const value=raw?JSON.parse(raw) as {entries?:{key:string[]}[]}:null
+    return value?.entries?.map(entry=>entry.key)??[]
+   }catch{return ['invalid-handoff']}
+  },profile)))
   await expect.poll(async()=>page.evaluate(async(profile)=>{
    const req=indexedDB.open('lemma-offline:demo-'+profile,1)
    return await new Promise<number>(resolve=>{
