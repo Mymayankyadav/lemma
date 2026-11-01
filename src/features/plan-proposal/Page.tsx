@@ -58,7 +58,7 @@ function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:st
               onKeyDown={e => {if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(n.code)}}}>
             <circle cx={pos.x} cy={pos.y} r={R+5} fill="transparent"/>
             <circle cx={pos.x} cy={pos.y} r={R} fill={on?"var(--amber)":"var(--raised)"}
-              stroke={n.change?"var(--amber)":"var(--amber-line-2)"} strokeWidth={n.change?2:1}
+              stroke={on?"var(--amber)":n.change?"var(--ink-3)":"var(--amber-line-2)"} strokeWidth={n.change?2:1}
               strokeDasharray={n.change==="added"?"4 3":undefined}/>
             <text x={pos.x} y={pos.y+3} textAnchor="middle" fontSize={n.code.length>4?12:12} fontWeight="600"
               fill={on?"var(--amber-ink)":"var(--ink)"}>{n.code}</text>
@@ -84,7 +84,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
   return <section aria-label="Checkpoint prerequisites" className="flex min-w-0 flex-col gap-2">
     <div className="flex items-center justify-between gap-3">
       <span className="text-caption text-ink-3">Stages · {nodes.length} checkpoints</span>
-      <button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-label text-amber"
+      <button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-label text-ink-2"
         onClick={() => {setShowAll(v => !v);setExpandedStage(null)}}>
         {showAll ? "Show stages" : "Expand all"}
       </button>
@@ -122,7 +122,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
                   <Tex source={stage.name} className="mx-auto" />
                 </div>
               </foreignObject>
-              <text x={stage.x} y={stage.y+33} textAnchor="middle" fontSize="12" fill="var(--amber)">
+              <text x={stage.x} y={stage.y+33} textAnchor="middle" fontSize="12" fill={on?"var(--amber)":"var(--ink-3)"}>
                 {stage.count} {stage.count===1?"checkpoint":"checkpoints"}
               </text>
             </g>;
