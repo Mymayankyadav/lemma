@@ -1,4 +1,8 @@
 import type { IngestResult, OutlineItem } from "./ingest";
+import {textKind} from "./validate";
+import type {TextKind} from "./validate";
+export {textKind} from "./validate";
+export type {TextKind} from "./validate";
 
 /**
  * LaTeX (.tex) and Markdown (.md) sources: read as text, split into pages at
@@ -7,14 +11,6 @@ import type { IngestResult, OutlineItem } from "./ingest";
  */
 export const MAX_PAGE_CHARS = 8000;
 const TARGET_CHARS = 6000;
-
-export type TextKind = "tex" | "md";
-export function textKind(file: Pick<File, "name" | "type">): TextKind | null {
-  const name = file.name.toLowerCase(), mime = file.type.toLowerCase();
-  if (/\.(tex|latex|ltx)$/.test(name) || mime === "application/x-tex" || mime === "text/x-tex") return "tex";
-  if (/\.(md|markdown)$/.test(name) || mime === "text/markdown") return "md";
-  return null;
-}
 
 interface Section { title: string | null; level: number; body: string }
 
