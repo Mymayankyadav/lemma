@@ -30,8 +30,8 @@ try{
  await q('insert into public.projects(id,user_id,subject_id,slug,title,goal,status,target_date) values($1,$2,$3,$4,$5,$6,$7,$8)',
    [project,owner,subject,'analysis','Analysis','Study','active','2026-10-29'])
  for(const [code,dueOn] of [['CP1','2026-11-02'],['CP2','2026-11-01'],['CP3','2026-10-25']]){
-   await q('insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,due_on) values($1,$2,$3,$4,$5,$6,$7,$8)',
-     [owner,project,code,Number(code.slice(2))*10,code+' Title','Learn','Prove',dueOn])
+   await q('insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,due_on,steps) values($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)',
+     [owner,project,code,Number(code.slice(2))*10,code+' Title','Learn','Prove',dueOn,JSON.stringify(['Understand'])])
  }
  for(let i=0;i<2;i++){
    const note=(await q('insert into public.notes(user_id,project_id,front) values($1,$2,$3) returning id',
