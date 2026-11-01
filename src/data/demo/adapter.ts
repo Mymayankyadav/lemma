@@ -70,7 +70,7 @@ import { parseSteps } from "../../lib/fsrs";
 import {clozeOrds} from "./cloze";
 import { slugify } from "../../lib/text";
 import { DAY, studyClock } from "../../lib/calendar";
-import {fillStressAtlas, fillStressSources, makeStressInsightAggregate, makeStressNotes, stressSessionEvents, stressSourcePage} from "./stress";
+import {fillStressAtlas, fillStressSources, makeStressInsightAggregate, makeStressNotes, makeStressProjectSources, stressSessionEvents, stressSourcePage} from "./stress";
 
 // One parse per module, not once per each of the 1,000 virtual sessions.
 export const demoSeedFixture = JSON.parse(fixtureText) as DemoStore;
@@ -157,6 +157,7 @@ export class DemoAdapter implements LemmaApi {
   }
   private store: DemoStore;
   private stressSourceSeedTitles:Map<string,string[]>|null=null;
+  private stressSourceSeedRows:DemoSource[]|null=null;
   private readonly now: () => number;
   private stressDayStart: number | undefined;
   private virtualStressDue: {overdue:number;future:number}|null=null;
@@ -319,6 +320,7 @@ export class DemoAdapter implements LemmaApi {
     }
     const sourceTarget=this.store.stressSourceTarget;
     if(options.ownedFixture&&sourceTarget!==undefined){
+      this.stressSourceSeedRows=original.sources;
       const store=this.store;
       // Today only needs exact source titles/counts, not 6,000 source objects
       // and their hydrated dates. Keep the authored seed sources untouched.
@@ -451,6 +453,31 @@ export class DemoAdapter implements LemmaApi {
       count+=Math.floor((total-1-i)/period)+1;
     }
     return count;
+  }
+  /** A project detail requests only its own 30/100 sources, not all 6,000
+   * generated rows. The full source getter remains available for source-wide
+   * routes and becomes authoritative after any source mutation.
+   */
+  private projectSources(project:DemoProject):DemoSource[]{
+    const seeds=this.stressSourceSeedRows;
+    const deferred=typeof Object.getOwnPropertyDescriptor(this.store,'sources')?.get==='function';
+    if(!deferred||!seeds)return this.store.sources.filter(s=>s.projectId===project.id);
+    const first=seeds.find(s=>s.projectId===this.store.projects[0]?.id);
+    const projectIndex=this.store.projects.findIndex(p=>p.id===project.id);
+    if(!first||projectIndex<0)return this.store.sources.filter(s=>s.projectId===project.id);
+    const existing=seeds.filter(s=>s.projectId===project.id);
+    const rows=makeStressProjectSources(first,existing,project,projectIndex,
+      this.store.projects.length,this.store.stressSourceTarget??0,
+      this.store.seed===2026103102);
+    const staging:DemoStore={
+      version:1,seed:this.store.seed,settings:{...this.store.settings},
+      styles:[],subjects:[],projects:[],checkpoints:[],sources:rows,
+      sessions:[],notes:[],reviews:[],proposals:[],concepts:[],links:[],
+      misconceptions:[],checkpointEvents:[],
+      stressReviewCount:this.store.stressReviewCount,
+    };
+    return hydrateFixture(staging,this.now(),this.store.settings.timeZone,
+      {takeOwnership:true}).sources;
   }
   private proposal(id: string) {
     return found(
@@ -1159,8 +1186,7 @@ export class DemoAdapter implements LemmaApi {
       done: summary.done,
       total: summary.total,
       planRevisions: clone(this.planHistory(p)),
-      sources: this.store.sources
-        .filter((s) => s.projectId === p.id)
+      sources: this.projectSources(p)
         .map(({ pages, error, ...source }) => clone(source)),
       sessions: await this.listSessions(slug),
       pendingProposals: this.store.proposals.filter(
