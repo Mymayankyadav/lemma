@@ -81,7 +81,7 @@ describe('LOOK-5c2 clipped mathematical Continue row',()=>{
   expect(view).toContain('data-resume-title=""');
   expect(view).toContain('data-resume-meta=""');
   expect(view).toContain('aria-label="Copy resume prompt"');
-  expect((view.match(/overflow:hidden;text-overflow:ellipsis;white-space:nowrap/g)??[]).toHaveLength(2);
+  expect((view.match(/overflow:hidden;text-overflow:ellipsis;white-space:nowrap/g)??[])).toHaveLength(2);
   expect(view).toContain('step 1 of 5');
  });
 });
