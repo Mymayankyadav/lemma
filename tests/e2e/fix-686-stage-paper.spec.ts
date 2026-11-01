@@ -32,7 +32,7 @@ for(const width of [360,390] as const){
   // after collapsing and cannot be clicked a second time.
   const activeIndex=await stages.evaluateAll(nodes=>nodes.findIndex(node=>node.querySelector(':scope > button[aria-expanded="true"]')));
   expect(activeIndex).toBeGreaterThanOrEqual(0);
-  const toggle=stages.nth(activeIndex).locator(':scope > button').first();
+  const toggle=stages.nth(activeIndex).locator('button[aria-expanded]').first();
   expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded','false');
