@@ -43,7 +43,7 @@ function usableSubscription(value:unknown):boolean{
     typeof auth!=='string'||!auth||auth.length>50||!BASE64URL.test(auth))return false;
  try{
   const url=new URL(endpoint);
-  const hostname=url.hostname.toLowerCase().replace(/\\.$/,'');
+  const hostname=url.hostname.toLowerCase().replace(/\.$/,'');
   // Push endpoints are public HTTPS origins. Never allow persisted client
   // data to direct the service-role Edge sender at local infrastructure.
   // Reject all IP literals (including URL-normalized numeric IPv4 forms).
