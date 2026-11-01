@@ -47,7 +47,8 @@ export function buildPushPayload(input:PushPayloadInput):string{
     typeof input.url!=='string'||!safeUrl(input.url)||
     !Array.isArray(input.actions)||input.actions.length>2||
     !Number.isSafeInteger(input.ts)||input.ts<=0)invalid();
- const actions=input.actions.map(action=>{
+ // Array.from visits sparse slots as undefined, so malformed holes fail closed.
+ const actions=Array.from(input.actions,action=>{
   if(!action||typeof action.action!=='string'||!/^[a-z][a-z0-9_-]{0,31}$/.test(action.action)||
      typeof action.title!=='string'||!action.title.trim()||action.title.length>1000||
      action.url!==undefined&&(typeof action.url!=='string'||!safeUrl(action.url))||
