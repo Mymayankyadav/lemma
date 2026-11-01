@@ -32,8 +32,8 @@ describe('FIX #651 cold direct Review-run prefetch',()=>{
   const fetch=vi.fn(async()=>{if(++attempts===1)throw Error('offline');return 'recovered'});
   const preload=createOneShotReviewPrefetch(fetch);
   preload.warm(base);
-  await Promise.resolve();
-  await Promise.resolve();
+  // Let the rejected speculative promise's cleanup microtask settle.
+  await new Promise<void>(resolve=>setTimeout(resolve,0));
   expect(await preload.take(base)).toBe('recovered');
   expect(fetch).toHaveBeenCalledTimes(2);
  });
