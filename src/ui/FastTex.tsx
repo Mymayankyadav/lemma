@@ -1,4 +1,5 @@
 import {lazy,Suspense} from 'react';
+import './FastTex.css';
 
 // Eager Today, Paths and Atlas must not load the full Markdown/KaTeX renderer
 // merely to display ordinary names. JSX escapes the safe literal path.
