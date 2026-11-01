@@ -43,14 +43,16 @@ for(const width of [360,390] as const){
   expect(box!.width).toBeGreaterThanOrEqual(44);
   expect(box!.height).toBeGreaterThanOrEqual(44);
   expect(box!.x+box!.width).toBeLessThanOrEqual(width+1);
-  const lines=await recheck.evaluate(element=>{
-   const node=[...element.childNodes].find(n=>n.nodeType===Node.TEXT_NODE&&n.textContent?.includes("Re-check"));
-   if(!node)return 0;
-   const range=document.createRange();
-   range.selectNodeContents(node);
-   return range.getClientRects().length;
+  const lineTops=await recheck.evaluate(element=>{
+   const nodes=[...element.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE&&n.textContent?.trim());
+   return nodes.flatMap(node=>{
+    const range=document.createRange();
+    range.selectNodeContents(node);
+    return [...range.getClientRects()].map(rect=>Math.round(rect.top));
+   });
   });
-  expect(lines,"Re-check label must stay on a single line").toBe(1);
+  expect(lineTops.length).toBeGreaterThan(0);
+  expect(new Set(lineTops).size,"Re-check label and count must stay on one line").toBe(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({path:`test-results/screens/fix-707-${profile}-${theme}-${width}.png`});
  });
