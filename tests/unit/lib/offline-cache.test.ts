@@ -42,6 +42,14 @@ describe('AND-8 strict offline snapshot',()=>{
   expect(clean).not.toMatch(/SENTINEL-SECRET|Bearer|widgetToken|pushSubscription|connectorUrl/)
   expect(clean).toContain('Algebra')
  })
+ it('redacts JWT-shaped auth strings even under innocuous field names',()=>{
+  const token='eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvd25lciJ9.abcdefghijklmnop123456'
+  const cached={title:'Analysis',note:'Signed in with '+token,other:{value:token},safe:'one proof'}
+  const cleaned=JSON.stringify(scrubOfflineData(cached))
+  expect(cleaned).not.toContain(token)
+  expect(cleaned).toContain('one proof')
+  expect(cleaned).toContain('Analysis')
+ })
  it('evicts stale and sixth-project data, then respects the 2MB hard cap',()=>{
   const entries=Array.from({length:7},(_,i)=>({key:['project','p'+i],savedAt:now-i*1000,data:{text:'x'.repeat(500_000)}}))
   entries.push({key:['decks'],savedAt:now-OFFLINE_MAX_AGE_MS-1,data:[]})
