@@ -71,7 +71,10 @@ describe('NOTIF-5 Workbox push handling',()=>{
  it('keeps passive navigation usable without showing an action-failure warning if receipt fails',async()=>{
   const h=harness();
   const data=h.core.notificationOptions(h.core.parsePayload({...payload,openToken:'signed-open'},scope)).data;
-  h.fetchMock.mockRejectedValueOnce(new Error('offline'));
+  h.fetchMock.mockImplementationOnce(async (_url:string,options:any)=>{
+   h.posted.push(JSON.parse(options.body));
+   throw new Error('offline');
+  });
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
   expect(h.posted).toEqual([{token:'signed-open'}]);
   expect(h.navigated).toEqual([scope+'#/review']);
