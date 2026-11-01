@@ -10,7 +10,13 @@ test("card approval, rejection, swipe, and plan approval update the inbox", asyn
   await page.goto("/lemma/?demo=1#/proposals");
   const cards = page.getByRole("button", { name: /Cards 5/ });
   await expect(cards).toBeVisible();
-  await expect(page.getByText("Why must", { exact: false })).toBeVisible();
+  // LOOK-8a intentionally shows the same mathematical front in both the
+  // new group checklist and the selected proposal card. Verify both regions
+  // rather than relying on an ambiguous page-wide text locator.
+  await expect(page.getByRole("group", { name: "Cards in this proposal group" })
+    .filter({ hasText: "Why must" }).first()).toBeVisible();
+  await expect(page.getByLabel("Proposal card, swipe right to approve or left to reject")
+    .getByText("Why must", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Approve card" }).click();
   await expect(page.getByRole("button", { name: /Cards 4/ })).toBeVisible();
   await page.getByRole("button", { name: "Reject card" }).click();

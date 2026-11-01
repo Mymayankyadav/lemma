@@ -26,6 +26,7 @@ import { Card } from "../../ui/Card";
 import { EmptyState } from "../../ui/EmptyState";
 import { Glyph } from "../../ui/Glyph";
 import { MathText } from "../../ui/MathText";
+import { Tex } from "../../ui/Tex";
 import { Screen } from "../../ui/Screen";
 import { Segmented } from "../../ui/Segmented";
 import { Sheet } from "../../ui/Sheet";
@@ -33,6 +34,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { useToast } from "../../ui/Toast";
 import { groupProposals, pageProposals, type ProposalGroup } from "./groups";
+import { firstProposalFrontLine } from "./frontPreview";
 
 function describe(op: PlanChangeOp) {
   switch (op.op) {
@@ -50,6 +52,45 @@ function describe(op: PlanChangeOp) {
       return `${op.code} no longer needs ${op.prereq}`;
   }
 }
+const projectLabel=(slug:string)=>slug.replaceAll('-', ' ').replace(/\b[a-z]/g,letter=>letter.toUpperCase());
+
+/** One readable line, never a vertically clipped half-formula. Long fronts can
+ * be revealed horizontally; selecting the row still opens the full card.
+ */
+function ProposalFrontLine({source}:{source:string}){
+ const scroller=useRef<HTMLSpanElement>(null);
+ const [moreLeft,setMoreLeft]=useState(false),[moreRight,setMoreRight]=useState(false);
+ const firstLine=firstProposalFrontLine(source);
+ const measure=()=>{
+  const el=scroller.current;
+  if(!el)return;
+  const overflow=el.scrollWidth>el.clientWidth+1;
+  setMoreLeft(overflow&&el.scrollLeft>1);
+  setMoreRight(overflow&&el.scrollLeft+el.clientWidth<el.scrollWidth-1);
+ };
+ useEffect(()=>{
+  measure();
+  const el=scroller.current;
+  if(!el||typeof ResizeObserver==="undefined")return;
+  const observer=new ResizeObserver(measure);
+  observer.observe(el);
+  if(el.firstElementChild)observer.observe(el.firstElementChild);
+  return ()=>observer.disconnect();
+ },[firstLine]);
+ return <span className="relative block min-w-0 flex-1">
+  <span ref={scroller} data-proposal-front-scroll="" onScroll={measure}
+   className="block w-full overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+   style={moreRight?{maskImage:"linear-gradient(to right, black calc(100% - 24px), transparent)"}:undefined}
+   title={moreLeft||moreRight?"Scroll sideways to read the full first line":undefined}>
+   <Tex source={firstLine} className="!inline-block !min-w-max !max-w-none !whitespace-nowrap ![overflow-wrap:normal] [&_.katex]:!text-[16px]"/>
+  </span>
+  {(moreLeft||moreRight)&&<span data-proposal-front-cue="" aria-hidden="true"
+   className={"pointer-events-none absolute top-1/2 -translate-y-1/2 text-label text-ink-2 "+(moreRight?"right-0":"left-0")}>
+   {moreRight?"›":"‹"}
+  </span>}
+ </span>;
+}
+
 function PendingCard({
   proposal,
   busy,
@@ -100,7 +141,7 @@ function PendingCard({
       transition={{ duration: reduce ? 0.15 : 0.55 }}
       aria-label="Proposal card, swipe right to approve or left to reject"
     >
-      <Card stack className="min-h-[340px] rounded-slab p-5">
+      <Card className="rounded-slab p-5">
         <div className="flex items-center gap-2 text-label font-medium text-ink-3">
           <Sparkles size={15} className="text-amber" />
           <span>
@@ -295,12 +336,12 @@ export default function Page() {
              <p className="text-label text-ink-3">{Math.min(cardPage*20+1,cards.length)}–{Math.min((cardPage+1)*20,cards.length)} of {cards.length} card proposals · grouped by session and checkpoint</p>
              {cardGroups.map(group=><Slab key={group.key} className="flex flex-col gap-2 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-               <div className="min-w-0"><h2 className="text-body font-semibold">{group.label} · {group.proposals.length}</h2><p className="truncate text-caption text-ink-3">{group.project.replaceAll("-", " ")}</p></div>
-               {group.proposals.some(p=>p.kind==="card")&&<button type="button" disabled={pending} className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-amber disabled:opacity-50" onClick={()=>{setBatch(allCardGroups.find(g=>g.key===group.key)??group);setConfirm(true)}}>
+               <div className="min-w-0"><h2 className="text-body font-semibold">{projectLabel(group.project)}</h2><p className="text-caption text-ink-3">{group.label} · {group.proposals.length} {group.proposals.length === 1 ? "card" : "cards"}</p></div>
+               {group.proposals.some(p=>p.kind==="card")&&<button type="button" disabled={pending} className="min-h-11 px-3 text-label font-semibold text-ink-2 underline decoration-current underline-offset-4 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)] disabled:opacity-50" onClick={()=>{setBatch(allCardGroups.find(g=>g.key===group.key)??group);setConfirm(true)}}>
                 Approve all from {group.label}
                </button>}
               </div>
-              <div className="flex flex-wrap gap-1.5">{group.proposals.map((p,i)=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`min-h-11 rounded-ctl border px-3 text-label ${active.id===p.id?"border-amber text-amber":"border-edge text-ink-2"}`}>{p.kind==="card_edit"?`Fix N${p.cardEdit?.note_no}`:`Card ${i+1}`}</button>)}</div>
+              <div role="group" aria-label="Cards in this proposal group" className="flex flex-col divide-y divide-[var(--hair)]">{group.proposals.map(p=><button key={p.id} type="button" disabled={pending} aria-pressed={active.id===p.id} onClick={()=>{setSelected(p.id);setEditing(false)}} className={`flex min-h-11 w-full items-center gap-3 px-2 py-2 text-left text-body ${active.id===p.id?"bg-[var(--paper-2)] text-ink":"text-ink-2"}`}><span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">{active.id===p.id&&<Check size={17} />}</span><ProposalFrontLine source={p.card?.front??p.cardEdit?.front??("Fix N"+(p.cardEdit?.note_no??""))}/></button>)}</div>
              </Slab>)}
              <div className="flex gap-2">
               {cardPage>0&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n-1)}>Previous 20</button>}
@@ -362,13 +403,13 @@ export default function Page() {
         )
       ) : plans.length ? (
         <div className="flex flex-col gap-4">
-          {planGroups.map(group=><section key={group.key} className="flex flex-col gap-3"><h2 className="text-label font-semibold text-ink-2">{group.project.replaceAll("-", " ")} · {group.label} · {group.proposals.length}</h2>{group.proposals.map((p) => (
+          {planGroups.map(group=><section key={group.key} className="flex flex-col gap-3"><h2 className="text-label font-semibold text-ink-2">{projectLabel(group.project)} · {group.label} · {group.proposals.length}</h2>{group.proposals.map((p) => (
             <Slab key={p.id} className="p-5">
               <div className="flex items-center gap-3">
                 <Glyph subject={p.projectGlyph} size={40} />
                 <div>
                   <h2 className="font-semibold">
-                    {p.projectSlug.replaceAll("-", " ")}
+                    {projectLabel(p.projectSlug)}
                   </h2>
                   <p className="text-label text-ink-3">
                     {p.kind === "plan_change" ? "Plan change" : "New plan"}{p.sessionNumber ? ` · From S${p.sessionNumber}` : ""}
