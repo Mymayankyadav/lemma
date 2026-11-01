@@ -153,7 +153,7 @@ export default function Page(){
        <span className="text-answer text-ink-2">due</span>
       </div>
       <p className="mt-2 flex items-center gap-2 text-label text-ink-3"><Clock3 size={16} aria-hidden="true"/>
-       {offline?'Reviewing needs a connection':selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
+       {offline?'Due cards are saved for reading':selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
      </div>
      <Button aria-label="Start review" icon={Play} needsNetwork disabled={!todayShare&&!offline} onClick={()=>start()}>Start {todayShare}</Button>
       {offline&&<p className="text-label text-ink-2" role="note">Reviewing needs a connection</p>}
