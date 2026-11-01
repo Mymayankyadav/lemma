@@ -101,4 +101,14 @@ describe('NOTIF-4b4 owner-authenticated read-only preview',()=>{
   expect(body.omitted).toBe(0);
  });
 
+ it('labels a future reminder as not yet due, not a frequency-limit suppression',async()=>{
+  const future:PreviewCandidate={kind:'due',key:'due:future',dueAt:now+30*60*1000,
+   cardsDue:23,threshold:10,title:'23 cards due',body:'Review later',why:'threshold 10'};
+  load.mockResolvedValueOnce({ownerId:owner,context,candidates:[future]});
+  const result=await handlePreviewRequest('Bearer signed',deps);
+  expect(result.status).toBe(200);
+  expect((result.body as {held:Array<{time:string;why:string}>}).held)
+   .toEqual([{time:'18:00',kind:'due',title:'23 cards due',body:'Review later',why:'not yet due'}]);
+ });
+
 });
