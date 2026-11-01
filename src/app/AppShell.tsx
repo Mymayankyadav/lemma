@@ -57,7 +57,7 @@ export default function AppShell(){
     // A successful fresh network read ends a stale-snapshot fallback. Merely
     // hydrating old entries must not clear the warning or re-enable writes.
     const restoredAt=Number(document.documentElement.dataset.offlineSavedAt);
-    if(navigator.onLine&&Number.isFinite(restoredAt)&&restoredAt>0&&
+    if(getMode()==='live'&&navigator.onLine&&Number.isFinite(restoredAt)&&restoredAt>0&&
        event.query.state.dataUpdatedAt>restoredAt)publish(null);
     queueSave();return
    }
