@@ -134,6 +134,15 @@ test('the ideas a plan adds fold into clusters and link to the checkpoints that 
  await fold.getByRole('button',{name:'Show fields level'}).click();
  expect(await ideas.getByRole('treeitem').count()).toBeLessThan(all);
  await fold.getByRole('button',{name:'Show all level'}).click();
+ // The chevron folds; selecting a parent row must not also collapse its
+ // descendants. These are distinct 44px actions in the approved v4 Atlas.
+ const parent=ideas.getByRole('treeitem').filter({has:ideas.getByRole('button',{name:/^Fold /})}).first();
+ await expect(parent).toHaveAttribute('aria-expanded','true');
+ const beforeSelectionCount=await ideas.getByRole('treeitem').count();
+ await parent.getByRole('button').last().click();
+ await expect(parent).toHaveAttribute('aria-selected','true');
+ await expect(parent).toHaveAttribute('aria-expanded','true');
+ expect(await ideas.getByRole('treeitem').count()).toBe(beforeSelectionCount);
  await ideas.getByRole('button',{name:/^Separating a point from a compact set, /}).click();
  const selection=ideas.locator('[data-idea-selection]');
  await expect(selection).toContainText('Builds on');
