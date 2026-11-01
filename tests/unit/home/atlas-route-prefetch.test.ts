@@ -8,11 +8,11 @@ describe('FIX-507c Atlas route-aware prefetch',()=>{
   // FIX #507c recorded 33 direct-navigation failures when a previous lazy
   // split had no cold-route coverage. FIX #632 now pairs a smaller entry
   // with an actual extreme cold-navigation browser test of every route.
-  // Keep Today and Paths eager: their first-paint and C2/D6 start budgets
-  // cannot depend on a deferred chunk.
-  for(const n of [0,1,13])
+  // Keep Today, Paths, Atlas and Cards eager: strict Today, C2 and D6
+  // first-interactive budgets cannot depend on a deferred chunk.
+  for(const n of [0,1,11,13])
    expect(routes,'screen '+n+' remains eager').toContain('import Page'+n+' from ')
-  for(const n of Array.from({length:18},(_,i)=>i).filter(n=>![0,1,13].includes(n)))
+  for(const n of Array.from({length:18},(_,i)=>i).filter(n=>![0,1,11,13].includes(n)))
    expect(routes,'screen '+n+' is code-split').toContain('const Page'+n+'=lazy(()=>import(')
   const browser=readFileSync('tests/e2e/fix-632-direct-routes.spec.ts','utf8')
   expect(browser).toContain('QA3_ROUTES')
