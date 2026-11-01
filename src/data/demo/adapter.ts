@@ -131,7 +131,7 @@ export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
   /** CONTRACT-546: bounded history pagination remains fail-closed until FIX-546b lands. */
   async getCardHistoryPage(...args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
-    const [no,cursor]=args,n=this.note(no),key=decodeCardPageCursor(cursor,'reviews',no);
+    const [no,cursor]=args,n=this.readOnlyNote(no),key=decodeCardPageCursor(cursor,'reviews',no);
     const ids=new Set(n.cards.map(c=>c.id));
     const page=this.store.reviews.filter(r=>ids.has(r.cardId)&&!r.undoneAt)
       .sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt)||b.id-a.id)
@@ -142,7 +142,7 @@ export class DemoAdapter implements LemmaApi {
       nextCursor:page.length>20?encodeCardPageCursor('reviews',no,{at:visible[19].reviewedAt,id:String(visible[19].id)}):null};
   }
   async getCardCommentsPage(...args: Parameters<LemmaApi["getCardCommentsPage"]>): ReturnType<LemmaApi["getCardCommentsPage"]> {
-    const [no,cursor]=args,n=this.note(no),key=decodeCardPageCursor(cursor,'comments',no);
+    const [no,cursor]=args,n=this.readOnlyNote(no),key=decodeCardPageCursor(cursor,'comments',no);
     const page=[...n.comments].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt)||b.no-a.no)
       .filter(c=>!key||olderThanKey({at:c.createdAt,id:String(c.no)},key))
       .slice(0,21);
@@ -161,6 +161,7 @@ export class DemoAdapter implements LemmaApi {
   private stressDayStart: number | undefined;
   private virtualStressDue: {overdue:number;future:number}|null=null;
   private virtualReviewNotes: DemoNote[]|null=null;
+  private readonly virtualCardCache=new Map<number,DemoNote>();
   // Due dates are immutable ISO values until a card is edited; keying by the
   // timestamp string preserves correctness after edits without invalidation.
   // The 30k-card fixture repeats two dates, so cold Today and DeckTree should
@@ -403,6 +404,27 @@ export class DemoAdapter implements LemmaApi {
       "Card",
     );
   }
+  /** Direct Card detail is a single bounded read, not a reason to hydrate
+   * 30,000 generated notes. Any write materializes the store and immediately
+   * falls back to the normal mutable note, preserving review/comment edits.
+   */
+  private readOnlyNote(no:number):DemoNote {
+    const deferred=typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
+    const template=demoSeedFixture.notes[0];
+    if(!deferred||!this.virtualStressDue||!template||!Number.isSafeInteger(no)||
+       no<1||no>(this.store.stressNoteCount??0))return this.note(no);
+    const cached=this.virtualCardCache.get(no);
+    if(cached)return cached;
+    const generated=makeStressNotes(template,this.store.projects,1,
+      this.store.stressDueCount??0,no-1);
+    const item=this.hydrateVirtualNotes(generated)[0];
+    this.virtualCardCache.set(no,item);
+    if(this.virtualCardCache.size>12){
+      const oldest=this.virtualCardCache.keys().next().value;
+      if(oldest!==undefined)this.virtualCardCache.delete(oldest);
+    }
+    return item;
+  }
   private proposal(id: string) {
     return found(
       this.store.proposals.find((p) => p.id === id),
@@ -457,6 +479,20 @@ export class DemoAdapter implements LemmaApi {
       state: clone(card.state),
     };
   }
+  /** Resolve only requested private synthetic notes; never spread the store
+   * because its unrelated sources, Atlas and notes are lazy accessors.
+   */
+  private hydrateVirtualNotes(notes:DemoNote[]):DemoNote[]{
+    const staging:DemoStore={
+      version:1,seed:this.store.seed,settings:{...this.store.settings},
+      styles:[],subjects:[],projects:[],checkpoints:[],sources:[],
+      sessions:[],notes,reviews:[],proposals:[],concepts:[],links:[],
+      misconceptions:[],checkpointEvents:[],
+      stressReviewCount:this.store.stressReviewCount,
+    };
+    return hydrateFixture(staging,this.now(),
+      this.store.settings.timeZone,{takeOwnership:true}).notes;
+  }
   /** Review needs at most today's due synthetic cards. Keep the 26k future
    * stress notes and unrelated Atlas graph virtual until their own routes ask
    * for them. This fast path applies only to the private, unedited generated
@@ -471,17 +507,7 @@ export class DemoAdapter implements LemmaApi {
     if(!this.virtualReviewNotes){
       const dueCount=this.store.stressDueCount??0;
       const notes=makeStressNotes(template,this.store.projects,dueCount,dueCount);
-      // Do not spread the live store here: its notes, sources and concepts
-      // are lazy accessors. A minimal owned shell hydrates only these cards.
-      const staging:DemoStore={
-        version:1,seed:this.store.seed,settings:{...this.store.settings},
-        styles:[],subjects:[],projects:[],checkpoints:[],sources:[],
-        sessions:[],notes,reviews:[],proposals:[],concepts:[],links:[],
-        misconceptions:[],checkpointEvents:[],
-        stressReviewCount:this.store.stressReviewCount,
-      };
-      this.virtualReviewNotes=hydrateFixture(staging,this.now(),
-        this.store.settings.timeZone,{takeOwnership:true}).notes;
+      this.virtualReviewNotes=this.hydrateVirtualNotes(notes);
     }
     return this.virtualReviewNotes;
   }
@@ -1908,7 +1934,7 @@ export class DemoAdapter implements LemmaApi {
     return {rows,nextOffset:hasMore?offset+50:null};
   }
   async getCard(noteNo: number): Promise<CardDetail> {
-    const n=this.note(noteNo);
+    const n=this.readOnlyNote(noteNo);
     const [history,comments]=await Promise.all([
       this.getCardHistoryPage(noteNo),this.getCardCommentsPage(noteNo)
     ]);
