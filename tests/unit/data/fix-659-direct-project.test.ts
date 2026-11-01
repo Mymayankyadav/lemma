@@ -50,5 +50,12 @@ describe('FIX-659f direct Project summary',()=>{
   const summary=(await api.listProjects()).find(p=>p.slug==='real-analysis')!;
   expect(actual.done).toBe(summary.done);
   expect(actual.total).toBe(summary.total);
+  // The lightweight count path must also agree with the full queue for
+  // ordinary authored data, not only the private synthetic stress fixture.
+  const queue=await api.getReviewItems({decks:[],sessionId:null,conceptSlug:null,
+   includeNew:true,newOnly:false});
+  for(const cp of actual.checkpoints)
+   expect(cp.dueCards,cp.code).toBe(queue.filter(card=>
+    card.projectSlug==='real-analysis'&&card.checkpointCode===cp.code).length);
  },30_000);
 });
