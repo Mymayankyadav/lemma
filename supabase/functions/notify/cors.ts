@@ -22,13 +22,25 @@ export function notifyCorsHeaders(origin:string|null):Record<string,string>{
 }
 
 
-/** The Edge route can use this for OPTIONS without invoking cron or JWT auth. */
-export function notifyPreflight(origin:string|null):{
- status:204|403;headers:Record<string,string>;
-}{
+/**
+ * OPTIONS must not invoke cron or JWT auth. When the Edge route passes the
+ * browser's requested method/headers, reject unexpected privileged headers
+ * explicitly rather than relying only on browser-side CORS enforcement.
+ * Optional arguments retain compatibility with the origin-only caller.
+ */
+export function notifyPreflight(
+ origin:string|null,
+ requestMethod?:string|null,
+ requestHeaders?:string|null,
+):{status:204|403;headers:Record<string,string>}{
  const headers=notifyCorsHeaders(origin);
- return {
-  status:headers['Access-Control-Allow-Origin']?204:403,
-  headers,
- };
+ const methodAllowed=requestMethod==null||
+  ['GET','POST','OPTIONS'].includes(requestMethod.toUpperCase());
+ const requested=requestHeaders==null||requestHeaders===''?[]:
+  requestHeaders.split(',').map(header=>header.trim().toLowerCase());
+ const headersAllowed=requested.every(header=>
+  header==='authorization'||header==='content-type');
+ if(!headers['Access-Control-Allow-Origin']||!methodAllowed||!headersAllowed)
+  return {status:403,headers:{Vary:'Origin'}};
+ return {status:204,headers};
 }
