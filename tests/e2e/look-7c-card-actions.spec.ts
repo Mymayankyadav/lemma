@@ -44,6 +44,10 @@ for(const profile of ['stress','extreme'] as const)
     await page.setViewportSize({width,height:844});
     await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/cards/31`,{waitUntil:'domcontentloaded'});
     await expect(page.getByRole('article',{name:'Card front and answer'})).toBeVisible();
+    // v4 red-pencil rule: a passive subject glyph and 90% recall are not
+    // the current checkpoint, a primary action or a real danger.
+    await expect(page.locator('[data-card-subject-glyph]')).toHaveClass(/text-ink-2/);
+    await expect(page.locator('[data-recall-value]')).toHaveClass(/text-ink/);
     const edit=page.getByRole('button',{name:'Edit card'});
     const actions=page.getByRole('button',{name:'Card actions'});
     for(const button of [edit,actions]){
