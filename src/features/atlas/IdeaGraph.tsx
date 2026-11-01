@@ -85,7 +85,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
      className="min-h-11 min-w-11 rounded-s border border-amber-line px-2 text-label font-semibold text-amber">{r.code}</button>)}
    </p>}
   </div>}
-  <div className="relative overflow-hidden rounded-ctl border border-edge" role="tree" aria-label={label}>
+  <div className="relative overflow-hidden rounded-ctl border border-edge" style={{background:'var(--paper)'}} role="tree" aria-label={label}>
    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
     return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false}
      onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id)}}/>})}
