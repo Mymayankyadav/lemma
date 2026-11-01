@@ -28,11 +28,17 @@ for(const width of [360,390] as const){
    expect((await row.locator('[data-cp-status-icon]').textContent())??'').not.toMatch(/up next|locked|re-check|in progress|proposed|done/i);
    expect(await row.getAttribute('aria-label')).toMatch(/, (done|re-check|in progress|up next|locked|proposed)$/);
   }
-  const toggle=stages.locator(':scope > button[aria-expanded="true"]').first();
+  // Keep a stable stage index: an aria-expanded=true locator disappears
+  // after collapsing and cannot be clicked a second time.
+  const activeIndex=await stages.evaluateAll(nodes=>nodes.findIndex(node=>node.querySelector(':scope > button[aria-expanded="true"]')));
+  expect(activeIndex).toBeGreaterThanOrEqual(0);
+  const toggle=stages.nth(activeIndex).locator(':scope > button').first();
   expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
   await expect(paper.locator('[data-cp-row]')).toHaveCount(0);
   await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded','true');
   await expect(rows.first()).toBeVisible();
   expect(await page.locator('*').count()).toBeLessThan(1500);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
