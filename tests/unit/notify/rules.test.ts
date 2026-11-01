@@ -109,6 +109,8 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   const oldProposal:ReminderCandidate={kind:'tutor',key:'tutor:old',newestProposalAt:previous-HOUR,lastSentAt:previous}
   expect(choose([oldProposal])[0]).toMatchObject({status:'skipped',reason:'resolved'})
   expect(choose([{...oldProposal,newestProposalAt:now-15*60_000}])[0].status).toBe('send')
+  // The shared 60-minute spacing is the only extra throttle on new K5 work.
+  expect(choose([{...oldProposal,lastSentAt:now-90*60_000,newestProposalAt:now-15*60_000}])[0].status).toBe('send')
   const recent=now-30*60_000
   expect(choose([{kind:'tutor',key:'tutor:summary',hasSummary:true,summaryAt:now-5*60_000,lastSentAt:recent}])[0].status).toBe('send')
  })
