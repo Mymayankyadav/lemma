@@ -81,7 +81,7 @@ describe('NOTIF-5 Workbox push handling',()=>{
  it('does not hijack a different app on the same GitHub Pages origin',async()=>{
   const h=harness();
   const other={url:'https://mymayankyadav.github.io/another-app/',
-   focus:vi.fn(async()=>{}),navigate:vi.fn(async()=>null),postMessage:vi.fn()};
+   focus:vi.fn(async()=>{}),navigate:vi.fn(async(_url:string)=>h.client),postMessage:vi.fn()};
   h.self.clients.matchAll.mockResolvedValueOnce([other,h.client]);
   const data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
