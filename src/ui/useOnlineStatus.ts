@@ -28,10 +28,14 @@ function subscribe(listener:()=>void){
   }
  };
 }
-function snapshot(){
+/** Synchronous guard for mutation handlers, including asynchronous uploads.
+ * A render-time online boolean alone can be stale after connectivity changes.
+ */
+export function networkWritable():boolean {
  return typeof navigator==='undefined'||canWriteOnline(navigator.onLine,
   typeof document==='undefined'?undefined:document.documentElement.dataset.offlineSavedAt)
 }
+function snapshot(){return networkWritable()}
 export function useOnlineStatus(){
  return useSyncExternalStore(subscribe,snapshot,()=>true);
 }
