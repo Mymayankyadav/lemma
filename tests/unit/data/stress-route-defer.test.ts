@@ -71,6 +71,13 @@ describe('FIX #507 direct-route cold stress hydration',()=>{
   const store=(lazy as unknown as {store:DemoStore}).store;
   expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
   expect(typeof Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBe('function');
+  const extreme=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  expect((await extreme.getCheckpoint('stress-project-3','CP4')).cardsCount).toBe(167);
+  expect((await extreme.getCheckpoint('stress-project-3','CP40')).cardsCount).toBe(0);
+  const extremeStore=(extreme as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(extremeStore,'notes')?.get).toBe('function');
  },30_000);
 
  it('reads a direct extreme Card detail without materializing 30k unrelated notes',async()=>{
