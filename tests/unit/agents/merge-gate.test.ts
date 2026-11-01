@@ -147,6 +147,23 @@ describe("FIX #619: explicit independent Auditor CLEAR is a real merge gate", ()
     expect(evaluateMergeGate({ ...ready, body, auditComments: [currentClear] }).ok).toBe(true);
   });
 
+  it("rejects a newer unchecked checklist even if an older checklist was checked", () => {
+    const body = ready.body
+      + "\n### Acceptance checklist\n- [x] Independent Auditor CLEAR\nNext step: old head"
+      + "\n### Acceptance checklist\n- [ ] Independent Auditor CLEAR\nNext step: latest head";
+    const result = evaluateMergeGate({ ...ready, body, auditComments: [currentClear] });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/acceptance remains unchecked/i);
+  });
+
+  it("uses the newest checked checklist when an older repeated checklist was unchecked", () => {
+    const body = ready.body
+      + "\n### Acceptance checklist\n- [ ] Independent Auditor CLEAR\nNext step: old head"
+      + "\n### Acceptance checklist\n- [x] Independent Auditor CLEAR\nNext step: current head";
+    expect(evaluateMergeGate({ ...ready, body, auditComments: [currentClear] }).ok).toBe(true);
+    expect(evaluateMergeGate({ ...ready, body, auditComments: [{ ...currentClear, body: "AUDIT CLEAR — old head bbbbbbbb" }] }).ok).toBe(false);
+  });
+
   it("does not impose a new blanket audit requirement on unrelated Ready PRs", () => {
     expect(evaluateMergeGate(ready).ok).toBe(true);
   });
