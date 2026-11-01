@@ -43,8 +43,11 @@ for(const width of [360,390] as const){
     }
    })
   },profile)
-  // The last online navigation may still have a 150ms debounced snapshot
-  // write in flight. Require a stable online baseline before disconnecting;
+  // The last online navigation may still have an idle snapshot save queued
+  // (1750ms debounce + up to 1500ms idle timeout). Wait for that legitimate
+  // online persistence before establishing the byte-identical offline baseline.
+  await page.waitForTimeout(3300)
+  // Require a stable online baseline before disconnecting;
   // this keeps the subsequent byte-for-byte assertion strict and distinguishes
   // a real offline mutation from a legitimate last online save.
   await expect.poll(async()=>{
