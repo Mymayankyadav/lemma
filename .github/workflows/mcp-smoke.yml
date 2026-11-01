@@ -7,6 +7,11 @@ on:
     branches: [main]
 permissions:
   contents: read
+# A completed deploy can trigger this while a newer deploy is already
+# running its mutating post-deploy selftest. Never overlap those requests.
+concurrency:
+  group: lemma-mcp-selftest
+  cancel-in-progress: false
 jobs:
   smoke:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
