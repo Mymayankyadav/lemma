@@ -61,7 +61,7 @@ export function isOfflineKey(key:readonly unknown[]):key is OfflineKey {
 /** Normalize common API/Push/Widget credential key spellings before redaction.
  * Never let snake_case or kebab-case keys bypass the offline allowlist. */
 const privateKey=(key:string):boolean=>{
- const normalized=key.replace(/[_-]/g,'').toLowerCase()
+ const normalized=key.replace(/[^a-z0-9]/gi,'').toLowerCase()
  return normalized==='auth'||normalized==='endpoint'||
   /(?:connector|secret|token|authorization|credential|subscription|pushkey|widgetkey|sessionkey|password|apikey|refreshkey|p256dh|authkey)/.test(normalized)
 }
