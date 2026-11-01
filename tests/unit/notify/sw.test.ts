@@ -91,8 +91,8 @@ describe('NOTIF-5 Workbox push handling',()=>{
  });
  it('rejects credential-bearing and control-character deep links',()=>{
   const h=harness();
-  for(const url of ['https://evil@claude.ai/new','https://chatgpt.com:443\\n.evil/',
-   '#/review\\nother','#/review\\tfoo']){
+  for(const url of ['https://evil@claude.ai/new','https://chatgpt.com:443\n.evil/',
+   '#/review\nother','#/review\tfoo']){
    expect(h.core.destination(url,scope),url).toBeNull();
   }
  });
