@@ -7,6 +7,7 @@ Sources: `docs/spec/stress.md` C2 and `docs/spec/v4-look.md` §4.
 - [x] Concurrent and repeated prefetch deduplicated through React Query.
 - [x] Today never prefetches Atlas data; Paths grouping and route semantics preserved.
 - [x] Restore eager direct-route imports pending the parent's *complete* cold-start/hydration optimization. The isolated lazy-route attempt regressed extreme-profile navigation across all four browser shards (CI [#41270600282](https://github.com/Mymayankyadav/lemma/actions/runs/41270600282)); do not ship the partial chunk split.
+- [x] Eight new S/X × Graph day/night × 360/390 browser journeys assert the 44px Paths Atlas link, keyboard prefetch, functional tree navigation and no horizontal overflow; capture eight screenshots.
 - [ ] Exact-head `npm run check`, SQL, four Playwright shards and 144 screenshots all green.
 - [ ] Strict first-attempt C2/D6 4× CPU evidence and S/X × day/night × 360/390 screenshots.
 - [ ] Independent Auditor CLEAR.
