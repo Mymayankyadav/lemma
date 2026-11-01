@@ -205,11 +205,18 @@ last_by_key as (
     where user_id=p_user and sent_at is not null
     order by key,sent_at desc limit 50) selected
 ),
+dismiss_recent as (
+  select action,row_number() over(order by action_at desc,id desc) seq
+  from public.notifications
+  where user_id=p_user and kind='due' and action_at is not null
+  order by action_at desc,id desc limit 3
+),
 dismiss_due as (
-  select count(*) filter(where action='dismiss')::integer n
-  from (select action from public.notifications
-    where user_id=p_user and kind='due' and action_at is not null
-    order by action_at desc,id desc limit 3) recent
+  select count(*)::integer n from (
+    select action,sum(case when action='dismiss' then 0 else 1 end)
+      over(order by seq rows between unbounded preceding and current row) interruptions
+    from dismiss_recent
+  ) streak where action='dismiss' and interruptions=0
 )
 select jsonb_build_object(
   'tz',f.time_zone,'rollover',f.rollover_hour,'today',f.today,
