@@ -2,7 +2,7 @@ import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
-import {ChevronRight, Copy, Inbox, SlidersHorizontal, Waypoints} from 'lucide-react';
+import {Check, ChevronRight, Copy, Inbox, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
 import {relativeTime,formatCount} from '../../lib/text';
@@ -10,7 +10,6 @@ import {plainMath} from '../../lib/plain-math';
 import {resumeSpoken} from './resumeSpoken';
 import {Screen} from '../../ui/Screen';
 import {Slab} from '../../ui/Slab';
-import {Tile} from '../../ui/Tile';
 import {IconButton} from '../../ui/IconButton';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
@@ -44,7 +43,7 @@ function LoadingDesk(){
    <div className="flex items-center gap-4"><Skeleton w={40} h={40}/><div className="flex flex-1 flex-col gap-2"><Skeleton w="45%" h={15}/><Skeleton w="72%" h={22}/></div><Skeleton w={76} h={76} radius={40}/></div>
    <Skeleton h={55}/><Skeleton h={52} radius={17}/>
   </Slab>
-  <div className="grid grid-cols-2 gap-3"><Skeleton h={100} radius={22}/><Skeleton h={100} radius={22}/></div>
+  <Skeleton h={100} radius={8}/>
   <Skeleton w="38%" h={22}/><Skeleton h={56}/><Skeleton h={56}/>
  </Screen>;
 }
@@ -55,15 +54,15 @@ const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as co
  * graph theme intentionally overrides Tailwind's truncate utility. */
 function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)=>void}){
  const resume=home.resume;
- if(!resume)return <Slab className="flex min-h-16 items-center justify-between gap-3 px-3 py-2">
+ if(!resume)return <div role="region" aria-label="Resume where you stopped" className="flex min-h-16 items-center justify-between gap-3 px-1 py-2">
   <span className="min-w-0 text-label text-ink-2" style={clip}>No chat yet. Start a path to begin.</span>
   <Link to="/projects/new" className="flex min-h-11 shrink-0 items-center text-label font-semibold text-amber">New path</Link>
- </Slab>;
+ </div>;
  const status=resume.pausedAt?relativeTime(resume.pausedAt):null;
  const description=resume.checkpointTitle??'Ready to study';
  const step=resume.stepsTotal>0?' · step '+Math.min(Math.max(1,resume.step),resume.stepsTotal)+' of '+resume.stepsTotal:'';
  const spoken=resumeSpoken(resume.projectTitle,description,step,status);
- return <Slab as="section" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-2" style={{padding:'4px 12px'}}>
+ return <div role="region" aria-label="Resume where you stopped" className="flex min-h-16 min-w-0 items-center gap-2 py-1">
   <span className="sr-only">{spoken}</span>
   <Glyph subject={resume.glyph} hue="slate" size={32}/>
   <div aria-hidden="true" className="min-w-0 flex-1">
@@ -79,24 +78,34 @@ function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)
    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 rounded-ctl px-2 text-label font-medium text-ink-2 hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
    <Copy size={16} aria-hidden="true"/>Copy
   </button>
- </Slab>;
+ </div>;
 }
 
-function SummaryTiles({due,pending}:{due:number;pending:number}){
- return <div className="grid grid-cols-2 gap-3">
-  <Link to="/review" aria-label={due+' cards due. Start reviewing'} className="focus-visible:outline-2 focus-visible:outline-amber">
-   <Tile className="relative flex h-[var(--summary-tile)] flex-col justify-between overflow-hidden p-[var(--pad-tile)]">
-    <span className="text-[clamp(0.9rem,4vw,1.6rem)] font-semibold leading-none tracking-tight tabular-nums">{formatCount(due)}</span>
-    <span className="text-label text-ink-2">{due===0?'all clear':'cards due'}</span>
-   </Tile>
-  </Link>
-  <Link to="/proposals" aria-label={pending+' proposals to approve'} className="focus-visible:outline-2 focus-visible:outline-amber">
-   <Tile className="relative flex h-[var(--summary-tile)] flex-col justify-between overflow-hidden p-[var(--pad-tile)]">
-    <span className="text-[clamp(0.9rem,4vw,1.6rem)] font-semibold leading-none tracking-tight tabular-nums">{formatCount(pending)}</span>
-    <span className="text-label text-ink-2">{pending===0?'inbox clear':'to approve'}</span>
-   </Tile>
-  </Link>
- </div>;
+/** One paper row replaces oversized summary tiles and the stacked deck bar.
+ * Estimate is explicitly approximate: about thirty seconds per due card.
+ */
+export function ReviewDesk({due}:{due:number}){
+ const hasDue=due>0;
+ return <section aria-label="Review" className="flex min-w-0 flex-col gap-3">
+  <SectionHeading className="text-ink">Review</SectionHeading>
+  <Slab className="flex min-w-0 items-center gap-3 p-3">
+   {hasDue?<div className="min-w-0 shrink-0">
+    <p className="text-body font-semibold tabular-nums text-ink">{formatCount(due)} <span className="text-label font-normal text-ink-2">due</span></p>
+    <p className="text-caption text-ink-3">about {Math.max(1,Math.round(due/2))} min</p>
+   </div>:<div className="flex min-w-0 flex-1 items-start gap-2">
+    <Check size={20} aria-hidden="true" className="mt-1 shrink-0 text-early"/>
+    <div className="min-w-0">
+     <p className="text-body font-semibold text-ink">All clear</p>
+     <p className="text-caption text-ink-3">Nothing due right now. New reviews appear here when scheduled.</p>
+    </div>
+   </div>}
+   {hasDue&&<div className="min-w-0 flex-1"><ReviewOutlook/></div>}
+   <Link to="/review" aria-label={hasDue?'Start review of '+due+' cards':'Open review'}
+    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ctl bg-amber px-3 text-label font-semibold text-on-amber focus-visible:outline-2 focus-visible:outline-amber">
+    {hasDue?'Start':'Review'}
+   </Link>
+  </Slab>
+ </section>;
 }
 
 export default function Page(){
@@ -134,25 +143,20 @@ export default function Page(){
    <ChevronRight size={18} className="shrink-0 text-amber"/>
   </Link>}
   <GoalDistance projects={projects} variant="metro"/>
-  <section aria-label="Cards" className="flex flex-col gap-3">
-   <SectionHeading className="text-ink">Cards</SectionHeading>
-   <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
-   <ReviewOutlook/>
-  </section>
-  <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
-   <SectionHeading className="text-ink">From your tutor</SectionHeading>
-   <Link to="/proposals" aria-label="Review tutor suggestions"
-    className="flex min-h-11 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 py-3 text-label text-ink-2">
-    <span className="min-w-0 break-words">
-     {home.data.pendingProposals===0?'All tutor proposals reviewed':
-      home.data.pendingProposals+' tutor proposals awaiting your decision'}
-    </span>
-    <ChevronRight size={16} className="shrink-0 text-amber"/>
-   </Link>
-  </section>
-  <section aria-label="Continue" className="flex flex-col gap-3">
-   <SectionHeading className="text-ink">Continue</SectionHeading>
-   <ResumeCard home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
-  </section>
+  <ReviewDesk due={home.data.due}/>
+  <Slab as="section" aria-label="Study handoff" className="flex min-w-0 flex-col gap-0 p-3">
+   {home.data.pendingProposals>0&&<section aria-label="From your tutor" className="flex min-w-0 flex-col gap-2">
+    <SectionHeading className="text-ink">From your tutor</SectionHeading>
+    <Link to="/proposals" aria-label={'Review '+home.data.pendingProposals+' tutor proposals'}
+     className="flex min-h-11 min-w-0 items-center justify-between gap-3 rounded-ctl px-1 py-2 text-label text-ink-2 focus-visible:outline-2 focus-visible:outline-amber">
+     <span className="min-w-0 break-words">{home.data.pendingProposals} tutor proposals awaiting your decision</span>
+     <ChevronRight size={16} className="shrink-0 text-ink-2" aria-hidden="true"/>
+    </Link>
+   </section>}
+   <section aria-label="Continue" className={'flex min-w-0 flex-col gap-2'+(home.data.pendingProposals>0?' mt-3 border-t border-edge pt-3':'')}>
+    <SectionHeading className="text-ink">Continue</SectionHeading>
+    <ResumeCard home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
+   </section>
+  </Slab>
  </Screen>;
 }
