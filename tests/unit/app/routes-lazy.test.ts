@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
 
 // Regression for FIX #632: the ST-0 cold Today budget must not parse the
-// other fifteen route modules before the first meaningful goal paint.
+// other fourteen noncritical route modules before the first meaningful goal paint.
 const routes = readFileSync('src/app/routes.tsx', 'utf8');
 const screens = [
   ['/', 'home'],
@@ -30,11 +30,12 @@ describe('FIX #632: Today entry does not eagerly import unrelated routes', () =>
     expect(routes).toMatch(/import Page0 from ['"]\.\.\/features\/home\/Page['"]/);
   });
 
-  it('keeps Paths eager for direct-route/transition readiness and splits fifteen other pages', () => {
+  it('keeps Paths, Atlas and Cards eager for strict C2/D6 transitions and splits fourteen other pages', () => {
     expect(routes).toMatch(/import Page1 from ['"]\.\.\/features\/projects\/Page['"]/);
     expect(routes).toMatch(/import Page13 from ['"]\.\.\/features\/atlas\/Page['"]/);
+    expect(routes).toMatch(/import Page11 from ['"]\.\.\/features\/cards\/Page['"]/);
     for (const [index, [, feature]] of screens.entries()) {
-      if (index === 0 || index === 1 || index === 13) continue;
+      if (index === 0 || index === 1 || index === 11 || index === 13) continue;
       expect(routes, feature).toContain(
         `const Page${index}=lazy(()=>import('../features/${feature}/Page'))`,
       );
