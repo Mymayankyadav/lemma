@@ -72,6 +72,18 @@ export function useReviewLog(...args: Parameters<LemmaApi['getReviewLog']>) {
  return useQuery({ ...queryDefaults, queryKey: ['review-log'], queryFn: () => getApi().getReviewLog() })
 }
 
+export function usePushDevices() {
+ return useQuery({ ...queryDefaults, queryKey:['push-devices'], queryFn:()=>getApi().listPushDevices() })
+}
+export function useRecentNotifications() {
+ return useQuery({ ...queryDefaults, queryKey:['notifications-recent'], queryFn:()=>getApi().listRecentNotifications() })
+}
+export function useNotifyHolds() {
+ return useQuery({ ...queryDefaults, queryKey:['notify-holds'], queryFn:()=>getApi().listNotifyHolds() })
+}
+export function useNotifyPreview() {
+ return useQuery({ ...queryDefaults, queryKey:['notify-preview'], queryFn:()=>getApi().previewNotifications() })
+}
 /** Never invalidate review-items: the review runner owns its in-progress queue. */
 function useWrite<TVariables, TResult>(write: (api: LemmaApi, variables: TVariables) => Promise<TResult>, prefixes: string[]) {
  const client = useQueryClient()
@@ -93,7 +105,7 @@ export function useBootstrap() {
  return useWrite((api, _value: void) => api.bootstrap(), ['settings', 'styles', 'auth'])
 }
 export function useUpdateSettings() {
- return useWrite((api, value: Parameters<LemmaApi['updateSettings']>[0]) => api.updateSettings(value), ['settings'])
+ return useWrite((api, value: Parameters<LemmaApi['updateSettings']>[0]) => api.updateSettings(value), ['settings','notify-preview'])
 }
 export function useRotateConnectorSecret() {
  return useWrite((api, _value: void) => api.rotateConnectorSecret(), ['settings'])
@@ -183,4 +195,26 @@ export function useUpdateSourcePage(){
  return useWrite((api,value:{sourceId:string;page:number;patch:{body?:string;confidence?:'high'|'check'}})=>
   api.updateSourcePage(value.sourceId,value.page,value.patch),
   ['source-transcript-page','source-transcript-stats'])
+}
+
+export function useAddPushDevice() {
+ return useWrite((api,value:Parameters<LemmaApi['addPushDevice']>[0])=>api.addPushDevice(value),['push-devices','notify-preview'])
+}
+export function useRenamePushDevice() {
+ return useWrite((api,value:{id:string;label:string})=>api.renamePushDevice(value.id,value.label),['push-devices'])
+}
+export function useRemovePushDevice() {
+ return useWrite((api,id:string)=>api.removePushDevice(id),['push-devices','notify-preview'])
+}
+export function useRestorePushDevice() {
+ return useWrite((api,id:string)=>api.restorePushDevice(id),['push-devices','notify-preview'])
+}
+export function useTouchPushDevice() {
+ return useWrite((api,endpoint:string)=>api.touchPushDevice(endpoint),['push-devices'])
+}
+export function useClearNotifyHold() {
+ return useWrite((api,scope:string)=>api.clearNotifyHold(scope),['notify-holds','notify-preview'])
+}
+export function useSendTestNotification() {
+ return useWrite((api,deviceId:string)=>api.sendTestNotification(deviceId),['notifications-recent'])
 }

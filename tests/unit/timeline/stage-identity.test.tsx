@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest'
-import {renderToStaticMarkup} from 'react-dom/server'
+import {renderAllReady} from '../../helpers/renderAllReady'
 import {MemoryRouter} from 'react-router'
 import {ProjectTimeline} from '../../../src/ui/timeline/ProjectTimeline'
 import type {CheckpointView} from '../../../src/data/types'
@@ -11,8 +11,8 @@ const checkpoints:CheckpointView[]=Array.from({length:20},(_,i)=>({
 }))
 
 describe('FIX #509 stage identity',()=>{
- it('shows unique compact identifiers and the selected full mathematical name',()=>{
-  const html=renderToStaticMarkup(<MemoryRouter>
+ it('shows unique compact identifiers and the selected full mathematical name',async()=>{
+  const html=await renderAllReady(<MemoryRouter>
    <ProjectTimeline project={{title:'Math',slug:'math',done:0,total:20}}
     checkpoints={checkpoints} variant="metro"/>
   </MemoryRouter>)
