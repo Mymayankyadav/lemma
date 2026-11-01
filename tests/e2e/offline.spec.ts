@@ -1,0 +1,56 @@
+import {test,expect} from '@playwright/test'
+test.describe.configure({retries:0})
+
+/** Installed-PWA offline acceptance, not a fake navigator.onLine override. */
+for(const profile of ['stress','extreme'] as const)
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [360,390] as const){
+ test(`AND-8 read-only snapshot ${profile} ${theme} ${width}px`,async({page,context})=>{
+  test.setTimeout(180_000)
+  await page.setViewportSize({width,height:width===360?740:844})
+  const prefix=`/lemma/?demo=${profile}&theme=${theme}`
+  await page.goto(prefix+'#/',{waitUntil:'domcontentloaded'})
+  await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible({timeout:60_000})
+  await page.goto(prefix+'#/projects',{waitUntil:'domcontentloaded'})
+  await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible()
+  await page.goto(prefix+'#/review',{waitUntil:'domcontentloaded'})
+  await expect(page.getByRole('heading',{name:'Review',exact:true,level:1})).toBeVisible()
+  await page.evaluate(()=>navigator.serviceWorker.ready)
+  await expect.poll(async()=>page.evaluate(async(profile)=>{
+   const req=indexedDB.open('lemma-offline:demo-'+profile,1)
+   return await new Promise<number>(resolve=>{
+    req.onerror=()=>resolve(0)
+    req.onsuccess=()=>{
+     const db=req.result
+     const tx=db.transaction('snapshot','readonly'),get=tx.objectStore('snapshot').get('latest')
+     get.onsuccess=()=>{const value=get.result as {entries?:unknown[]}|undefined;resolve(value?.entries?.length??0);db.close()}
+     get.onerror=()=>{resolve(0);db.close()}
+    }
+   })
+  },profile),{timeout:30_000}).toBeGreaterThanOrEqual(3)
+  const serialized=await page.evaluate(async(profile)=>{
+   const req=indexedDB.open('lemma-offline:demo-'+profile,1)
+   return await new Promise<string>((resolve,reject)=>{
+    req.onerror=()=>reject(req.error)
+    req.onsuccess=()=>{
+     const db=req.result,tx=db.transaction('snapshot','readonly'),get=tx.objectStore('snapshot').get('latest')
+     get.onsuccess=()=>{resolve(JSON.stringify(get.result));db.close()}
+     get.onerror=()=>{reject(get.error);db.close()}
+    }
+   })
+  },profile)
+  expect(serialized).not.toMatch(/connectorUrl|access_token|refresh_token|pushSubscription|widgetToken|SENTINEL-SECRET/)
+  expect(new TextEncoder().encode(serialized).byteLength).toBeLessThanOrEqual(2_000_000)
+  await context.setOffline(true)
+  await page.reload({waitUntil:'domcontentloaded',timeout:30_000})
+  await expect(page.getByRole('status').filter({hasText:/You're offline/})).toBeVisible({timeout:30_000})
+  await expect(page.getByText('Reviewing needs a connection')).toBeVisible({timeout:30_000})
+  const start=page.getByRole('button',{name:/Start review, needs a connection/})
+  await expect(start).toHaveAttribute('aria-disabled','true')
+  await start.click()
+  await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
+  await page.screenshot({path:`test-results/screens/and-8/offline-${profile}-${theme}-${width}.png`})
+  await context.setOffline(false)
+ })
+}
