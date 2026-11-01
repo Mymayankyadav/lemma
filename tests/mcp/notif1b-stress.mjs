@@ -45,6 +45,10 @@ try{
  select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,current_date+1
  from public.projects p cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner])
  await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
+ // Exercise the diagnostic-only EXPLAIN syntax on every CI run, even when
+ // the strict first-attempt query is fast and the failure branch is skipped.
+ const explainSmoke=await q(buildReadOnlyExplain('select 1'))
+ assert.ok(explainSmoke.length>0,'planner-only EXPLAIN must parse on PGlite')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
  // Regression-first: owner/note lookup must cover the three fields used by
