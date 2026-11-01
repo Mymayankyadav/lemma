@@ -66,6 +66,25 @@ end $batch$;
 revoke all on function public.approve_card_proposals(uuid,uuid[]) from public,anon,authenticated;
 grant execute on function public.approve_card_proposals(uuid,uuid[]) to service_role;
 
+-- Not-today is based on the owner's study day, which starts at rollover_hour.
+-- A study clock before rollover belongs to the following civil date within
+-- that study day. Resolve the target civil clock in the owner's time zone so
+-- DST transitions use the target day's offset, never a fixed UTC +24h.
+create or replace function public.notify_next_study_at(
+  p_now timestamptz, p_zone text, p_rollover integer, p_study_time time
+) returns timestamptz language sql stable security invoker set search_path = '' as $boundary$
+  select (
+    (
+      ((p_now at time zone p_zone) - make_interval(hours=>p_rollover))::date
+      + 1
+      + case when p_study_time < make_time(p_rollover,0,0) then 1 else 0 end
+    ) + p_study_time
+  ) at time zone p_zone
+$boundary$;
+
+revoke all on function public.notify_next_study_at(timestamptz,text,integer,time) from public,anon,authenticated;
+grant execute on function public.notify_next_study_at(timestamptz,text,integer,time) to service_role;
+
 create function public.notify_act(
   p_user uuid, p_notification bigint, p_action text, p_extra jsonb default '{}'::jsonb
 ) returns jsonb language plpgsql security definer set search_path = '' as $act$
@@ -78,7 +97,6 @@ declare
   owner_zone text;
   owner_rollover integer;
   study_time text;
-  local_time timestamp;
   action_number bigint;
   undo_action_text text;
   confirm_id bigint;
@@ -115,10 +133,9 @@ begin
         from public.settings where user_id=p_user;
       if not found then raise exception 'bad_action'; end if;
       if study_time !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then study_time:='19:00'; end if;
-      local_time:=now() at time zone coalesce(owner_zone,'UTC');
-      hold_until:=(
-        (local_time::date+1)::timestamp + study_time::time
-      ) at time zone coalesce(owner_zone,'UTC');
+      hold_until:=public.notify_next_study_at(
+        now(),coalesce(owner_zone,'UTC'),coalesce(owner_rollover,4),study_time::time
+      );
     end if;
     insert into public.notify_holds(user_id,scope,"until")
       values(p_user,hold_scope,hold_until)
@@ -174,3 +191,4 @@ grant execute on function public.notify_act(uuid,bigint,text,jsonb) to service_r
 -- Down (run before NOTIF-1a's down):
 -- drop function if exists public.notify_act(uuid,bigint,text,jsonb);
 -- drop function if exists public.approve_card_proposals(uuid,uuid[]);
+-- drop function if exists public.notify_next_study_at(timestamptz,text,integer,time);
