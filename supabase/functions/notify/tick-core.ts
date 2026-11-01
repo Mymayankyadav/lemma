@@ -61,7 +61,7 @@ export async function runNotifyTick(
  const now=typeof options.now==='number'&&Number.isFinite(options.now)
   ?options.now:Date.now();
  const maxMs=bound(options.maxMs,19_500,19_500);
- const sendLimit=bound(options.maxSends,50,50);
+ const sendLimit=options.maxSends===0?0:bound(options.maxSends,50,50);
  const controller=new AbortController();
  const expired=Symbol('expired');
  let expire!:()=>void;
