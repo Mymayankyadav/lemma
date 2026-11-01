@@ -23,7 +23,7 @@ import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, R} from "./planMap";
 import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
 import {preparePlanProposal} from "./prepared";
-import {isPlainAtlasLabel} from "../atlas/tree";
+import {PlanLabel} from "./PlanLabel";
 import { chatLink, revisePlanPrompt } from "../../lib/chat";
 import { Button } from "../../ui/Button";
 import { Glyph } from "../../ui/Glyph";
@@ -37,15 +37,6 @@ import { Tex } from "../../ui/Tex";
 import { plainMath } from "../../lib/plain-math";
 
 type Node = ReviewNode;
-/** Plain mathematical prose is already escaped JSX; avoid running Marked,
- * KaTeX and DOMPurify for hundreds of simple checkpoint labels. Any formula,
- * Markdown, link or ambiguous text keeps the full Tex renderer.
- */
-function PlanLabel({source}:{source:string}){
- return isPlainAtlasLabel(source)
-  ?<span className="lemma-math lemma-tex-inline">{source}</span>
-  :<Tex source={source}/>;
-}
 /** The owner's approved left-to-right tree. Every prerequisite stays visible as a dashed link. */
 function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:string; onSelect:(code:string)=>void}) {
   const layout = useMemo(() => layoutPlanMap(nodes), [nodes]);
