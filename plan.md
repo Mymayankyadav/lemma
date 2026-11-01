@@ -392,6 +392,7 @@ Status on 29 Oct 2026, 21:30 IST:
 | Connect Claude and ChatGPT | After MCP-1: `connector.md` §10. |
 | Install on the phone | Open the site, Share › Add to Home Screen. |
 | Draft PR ready-for-review handoff (only in REST-only runtimes) | When a PR says `Needs ready-for-review transition`, open that draft in GitHub and select **Ready for review**, or have a GraphQL-capable agent call `markPullRequestReadyForReview`. GitHub REST has no ready-for-review endpoint. The Steward may squash-merge only after the transition and exact-head green CI. |
+| **PR #615 — owner-visible v4 Today card** | **Action needed after independent Auditor CLEAR and strict first-attempt CI:** open [PR #615](https://github.com/Mymayankyadav/lemma/pull/615) and click **Ready for review**. It is a draft; REST-only agents cannot perform this transition. Do not merge until all seven exact-head checks, no-retry C2/D6 evidence and Auditor CLEAR pass. |
 
 ## 11. Later (not in v1)
 

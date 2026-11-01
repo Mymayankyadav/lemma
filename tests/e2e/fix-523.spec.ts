@@ -24,7 +24,13 @@ for(const profile of ['stress','extreme'] as const)
     await preview.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
     expect(await preview.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
     await preview.evaluate(el=>{el.scrollLeft=0;});
-    await expect(page.getByRole('group',{name:'Card filters'}).locator('.lemma-tex-inline').first()).toBeVisible();
+    // Ordinary stress project names should stay readable without paying the
+    // Markdown/KaTeX renderer cost. Mathematical card content above must still
+    // render as real KaTeX; the focused unit regression covers math project titles.
+    const projectChip=page.getByRole('group',{name:'Card filters'}).locator('[data-project-slug="stress-project-11"]');
+    await expect(projectChip).toContainText('Mathematics project 12');
+    await expect(projectChip.locator('.text-base')).toBeVisible();
+    await expect(projectChip.locator('.lemma-tex-inline')).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width+1);
     await page.screenshot({path:`test-results/screens/fix-523-${profile}-${theme}-${width}.png`,fullPage:true});
    });
