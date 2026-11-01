@@ -13,12 +13,17 @@ for(const width of [360,390] as const){
   await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible({timeout:60_000})
   await page.goto(prefix+'#/projects',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible()
+  await expect(page.locator('[data-project-row]').first()).toBeVisible()
   await page.goto(prefix+'#/p/real-analysis',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('region',{name:'Project timeline'})).toBeVisible()
+  await expect(page.locator('[data-stage-card]').first()).toBeVisible()
   await page.goto(prefix+'#/p/real-analysis/cp/CP4',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Checkpoint',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('region',{name:'Checkpoint steps'})).toBeVisible()
   await page.goto(prefix+'#/review',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Review',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('region',{name:'Decks'})).toBeVisible()
   await page.evaluate(()=>navigator.serviceWorker.ready)
   await expect.poll(async()=>page.evaluate(async(profile)=>{
    const req=indexedDB.open('lemma-offline:demo-'+profile,1)
@@ -55,6 +60,11 @@ for(const width of [360,390] as const){
    await page.waitForTimeout(450)
    return (await readSerialized())===before
   },{timeout:15_000}).toBe(true)
+  // The optional tab-local bridge is only an allowlisted, redacted handoff;
+  // never an auth, review-answer or mutation queue.
+  const handoff=await page.evaluate(profile=>sessionStorage.getItem('lemma-offline-handoff:demo-'+profile)??'',profile)
+  expect(handoff).not.toMatch(/connectorUrl|access_token|refresh_token|pushSubscription|widgetToken|SENTINEL-SECRET|density|motion/)
+  expect(new TextEncoder().encode(handoff).byteLength).toBeLessThanOrEqual(2_000_000)
   const serialized=await readSerialized()
   expect(serialized).not.toMatch(/connectorUrl|access_token|refresh_token|pushSubscription|widgetToken|SENTINEL-SECRET/)
   expect(new TextEncoder().encode(serialized).byteLength).toBeLessThanOrEqual(2_000_000)
