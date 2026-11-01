@@ -152,6 +152,25 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   expect(vi.mocked(deps.deliver)).toHaveBeenCalledTimes(1);
  });
 
+ it('rejects unrecognized or malformed candidate keys before any owner write',async()=>{
+  const invalid=[
+   {kind:'arbitrary',key:'unknown:1'},
+   {kind:'due',key:''},
+   {kind:'due',key:null},
+   undefined, // A sparse runtime array must not bypass Array.prototype.some().
+  ];
+  for(const row of invalid){
+   const deps=adapters([A,B]);
+   vi.mocked(deps.load).mockResolvedValueOnce({
+    ...facts(),candidates:row===undefined?new Array(1):[row],
+   } as unknown as ReturnType<typeof facts>);
+   const result=await runNotifyTick(deps,{now:NOW});
+   expect(result).toMatchObject({owners:2,queued:1,sent:1,failed:1});
+   expect(deps.queue).toHaveBeenCalledTimes(1);
+   expect(deps.queue).toHaveBeenCalledWith(B,expect.any(Array),expect.any(AbortSignal));
+   expect(deps.deliver).toHaveBeenCalledTimes(1);
+  }
+ });
  it('fails closed on malformed owner frequency, cap and send counters',async()=>{
   for(const patch of [
    {mode:'unexpected'},
