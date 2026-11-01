@@ -40,4 +40,11 @@ describe('strict C2/D6 loaded-fixture transition precondition (FIX #604)',()=>{
   expect(source).not.toContain("mode:'serial'")
  })
 
+ it('C2 allows slow fixture setup without relaxing its 1s measured transition',()=>{
+  const source=readFileSync(join(process.cwd(),'tests/e2e/audit-441-atlas-budget.spec.ts'),'utf8')
+  expect(source,'fixture generation and screenshots must not exhaust the outer 30s test timeout')
+   .toContain('test.setTimeout(120_000)')
+  expect(source,'keep strict 1000ms first-attempt transition budget').toContain('.toBeLessThan(1000)')
+ })
+
 })
