@@ -47,8 +47,10 @@ test.describe('AND-1 actual 1080×1920 phone captures',()=>{
   await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible({timeout:60_000})
   await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
-  await page.screenshot({path:'test-results/screens/and-1/today-'+world+'-1080x1920.png',
+  const png=await page.screenshot({path:'test-results/screens/and-1/today-'+world+'-1080x1920.png',
    scale:'device',animations:'disabled',fullPage:false})
+  expect(png.readUInt32BE(16)).toBe(1080)
+  expect(png.readUInt32BE(20)).toBe(1920)
  })
  }
 })
