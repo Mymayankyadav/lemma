@@ -62,7 +62,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
   requestAnimationFrame(()=>requestAnimationFrame(()=>box.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`)
    ?.scrollIntoView({block:'nearest',behavior:'smooth'})));
  };
- const Names=({title,items,tone}:{title:string;items:AtlasNode[];tone:'up'|'down'})=>items.length?<p className="flex flex-wrap items-center gap-1.5">
+ const Names=({title,items,tone}:{title:string;items:AtlasNode[];tone:'up'|'down'|'related'})=>items.length?<p className="flex flex-wrap items-center gap-1.5">
   <span className="text-caption font-semibold" style={{color:toneColor[tone]}}>{title}</span>
   {items.map(n=><button key={n.id} type="button" onClick={()=>jump(n.id)} className="min-h-11 rounded-chip border border-edge px-2 text-[16px]"><Tex source={n.name}/></button>)}
  </p>:null;
@@ -73,10 +73,10 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
      .map(({depth:d,label:foldLabel})=><button key={d} type="button" aria-pressed={depth===d}
      aria-label={'Show '+foldLabel.toLowerCase()+' level'} title={'Show '+foldLabel.toLowerCase()+' level'}
      onClick={()=>setExpanded(d===99?new Set(branches.map(n=>n.id)):expandedToDepth(tree,d))}
-     className={'min-h-11 min-w-11 px-2 text-label '+(depth===d?'bg-amber-tint text-amber':'text-ink-2')}>{foldLabel}</button>)}
+     className={'min-h-11 min-w-11 px-2 text-label '+(depth===d?'bg-[var(--ink)] text-[var(--paper)]':'text-ink-2')}>{foldLabel}</button>)}
    </div>
    <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
-    className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-amber-line-2 text-amber':'border-edge text-ink-2')}>
+    className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-edge bg-[var(--paper-2)] font-semibold text-ink':'border-edge text-ink-2')}>
     <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
   </div>
   {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge p-3" style={{background:'var(--paper)'}}>
@@ -106,8 +106,8 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
     </p>
     <Names title="Builds on" items={near.needs} tone="up"/>
     <Names title="Opens up" items={near.unlocks} tone="down"/>
-    <Names title="Related" items={near.related} tone="up"/>
-    {selected.children.length>0&&<Names title="Inside" items={selected.children.map(id=>tree.nodes.get(id)!).filter(Boolean)} tone="down"/>}
+    <Names title="Related" items={near.related} tone="related"/>
+    {selected.children.length>0&&<Names title="Inside" items={selected.children.map(id=>tree.nodes.get(id)!).filter(Boolean)} tone="related"/>}
     {selected.checkpointRefs.length>0&&<p className="flex flex-wrap items-center gap-1.5">
      <span className="text-caption font-semibold text-ink-3">Taught in</span>
      {selected.checkpointRefs.map(r=><button key={r.code} type="button" disabled={!onCheckpoint}
@@ -118,7 +118,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
   </Sheet>
   <div className="relative overflow-hidden rounded-ctl border border-edge" style={{background:'var(--paper)'}} role="tree" aria-label={label}>
    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
-    return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false}
+    return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false} focused={!!focus}
      onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id);setDetails(false)}}/>})}
    <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}
     centers={geometry.centers} heightPx={geometry.totalHeight}/>
