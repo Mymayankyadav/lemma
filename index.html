@@ -29,6 +29,13 @@
         try{localStorage.setItem('lemma.ui',JSON.stringify({mode:mode}))}catch(_){}
       })();
     </script>
+    <!-- Route-only early module request: avoid waiting for App's static graph on
+         direct Review-run deep links; never preload this chunk on other routes. -->
+    <script type="module" data-review-run-preload>
+      if (location.hash.split('?')[0] === '#/review/run') {
+        void import('/src/features/review-run/Page.tsx')
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />
