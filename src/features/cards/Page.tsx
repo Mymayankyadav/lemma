@@ -9,7 +9,7 @@ import {Button} from '../../ui/Button';
 import {Chip} from '../../ui/Chip';
 import {IconButton} from '../../ui/IconButton';
 import {Screen} from '../../ui/Screen';
-import {Sheet} from '../../ui/Sheet';
+import type {SheetProps} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
@@ -19,6 +19,15 @@ import type {EditorValue} from './Editor';
 import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
 
 const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
+// Motion-backed creation UI is optional. Keep it out of the cold Cards route
+// until New card is pressed; retain it after first open for exit animation.
+const LazySheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
+function CreateSheet(props:SheetProps){
+ const [activated,setActivated]=useState(props.open);
+ useEffect(()=>{if(props.open)setActivated(true)},[props.open]);
+ if(!props.open&&!activated)return null;
+ return <Suspense fallback={<Skeleton h={180}/>}>\n  <LazySheet {...props}/>\n </Suspense>;
+}
 const ROW_HEIGHT=92,OVERSCAN=6;
 function relative(due:string|null){
  if(!due)return 'New';
@@ -189,8 +198,8 @@ export default function Page(){
   {cards.hasNextPage&&<Button variant="ghost" disabled={cards.isFetchingNextPage} onClick={()=>void cards.fetchNextPage()}>
    {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
   </Button>}
-  <Sheet open={creating} onClose={closeCreating} title="New card">
+  <CreateSheet open={creating} onClose={closeCreating} title="New card">
    <Suspense fallback={<Skeleton h={180}/>}>{creating&&<Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>}</Suspense>
-  </Sheet>
+  </CreateSheet>
  </Screen>;
 }
