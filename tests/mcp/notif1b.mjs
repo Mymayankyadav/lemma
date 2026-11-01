@@ -21,7 +21,7 @@ const act=async(id,action,extra={},user=owner)=>(await q(
   [user,id,action,JSON.stringify(extra)]
 ))[0].result
 try{
- await db.exec(`create role anon;create role authenticated;create role service_role;
+ await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
  create schema auth;create schema extensions;create table auth.users(id uuid primary key);
  create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
  create function extensions.gen_random_bytes(n int) returns bytea language sql as $$select decode(repeat('00',n),'hex')$$;
