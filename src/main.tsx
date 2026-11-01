@@ -15,9 +15,9 @@ if(window.location.hash.startsWith('#/review/run')){
  try{getApi()}catch{/* Router/query surfaces any adapter initialization error. */}
  const profile=new URLSearchParams(window.location.search).get('demo');
  if((profile==='stress'||profile==='extreme')&&window.location.hash==='#/review/run'){
-  // Yield the first shell frame, then overlap the bounded demo card read
-  // with route-chunk loading. The normal QueryClient owns the result.
-  requestAnimationFrame(()=>warmReviewRun(defaultReviewRunFilter));
+  // Wait until after the first shell frame, then overlap the bounded demo
+  // card read with route-chunk loading. The normal QueryClient owns the result.
+  requestAnimationFrame(()=>setTimeout(()=>warmReviewRun(defaultReviewRunFilter),0));
  }
 }
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
