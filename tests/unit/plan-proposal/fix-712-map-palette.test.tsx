@@ -17,6 +17,11 @@ describe("FIX #712 large plan-map accent budget",()=>{
   // No stage is expanded or selected. Its passive count must not look like
   // the one active red-pencil selection.
   expect(html).not.toContain('fill="var(--amber)"');
+  // No stage is selected, so neither its passive rectangle nor the
+  // prerequisite lines/count badges may use red-tinted aliases.
+  expect(html).not.toContain('stroke="var(--amber)"');
+  expect(html).not.toContain('stroke="var(--amber-line-2)"');
+  expect(html).toContain('stroke="var(--line)"');
   expect(html).toContain('fill="var(--ink-3)"');
  });
 });
