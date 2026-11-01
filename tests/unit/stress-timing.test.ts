@@ -12,6 +12,10 @@ describe('FIX-507b fail-closed browser timing evidence',()=>{
   for(const durationMs of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY,-1])
    expect(stressViolations({...base,durationMs})).toContain('invalid first render timing')
  })
+ it('rejects absent or invalid CPU-throttling evidence instead of bypassing the 4x budget',()=>{
+  for(const cpuThrottle of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY,0,-1])
+   expect(stressViolations({...base,cpuThrottle,durationMs:1800})).toContain('invalid CPU throttling evidence')
+ })
  it('retains the unchanged strict 1,500ms at 4x CPU boundary',()=>{
   expect(stressViolations({...base,durationMs:1499})).toEqual([])
   expect(stressViolations({...base,durationMs:1500})).toContain('4x CPU first render >= 1.5s')
