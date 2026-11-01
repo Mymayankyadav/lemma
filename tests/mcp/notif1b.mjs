@@ -47,6 +47,16 @@ try{
    "insert into public.proposals(user_id,project_id,kind,payload,origin) values($1,$2,'card',$3::jsonb,'claude') returning id",
    [owner,project,JSON.stringify({back:'Missing front'})]
  ))[0].id
+ const otherSubject='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+ const otherProject='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+ await q('insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,$3,$4,$5)',
+   [otherSubject,other,'Other','A','amber'])
+ await q('insert into public.projects(id,user_id,subject_id,slug,title,goal,status) values($1,$2,$3,$4,$5,$6,$7)',
+   [otherProject,other,otherSubject,'other','Other','Study','active'])
+ const foreignProposal=(await q(
+   "insert into public.proposals(user_id,project_id,kind,payload,origin) values($1,$2,'card',$3::jsonb,'claude') returning id",
+   [other,otherProject,JSON.stringify({front:'Private',back:'Other owner'})]
+ ))[0].id
  const tutor=await notify('tutor','tutor:batch')
  const due=await notify('due','due:today')
  const foreign=(await q(
@@ -70,7 +80,12 @@ try{
  assert.equal((await q('select action from public.notifications where id=$1',[foreign]))[0].action,null)
  await assert.rejects(act(due,'approve_cards',{ids:proposals.map(p=>p.id)}),/bad_action/)
  assert.equal((await q('select action from public.notifications where id=$1',[due]))[0].action,null)
- console.log('PASS NOTIF-1b foreign-owner claim and wrong-kind rollback')
+ const foreignBatch=(await q('select public.approve_card_proposals($1,ARRAY[$2::uuid]) result',
+   [owner,foreignProposal]))[0].result
+ assert.equal(foreignBatch.action,null)
+ assert.deepEqual(foreignBatch.approved,[])
+ assert.equal((await q('select status from public.proposals where id=$1',[foreignProposal]))[0].status,'pending')
+ console.log('PASS NOTIF-1b foreign-owner claim, proposal batch and wrong-kind rollback')
 
  const before=(await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n
  const result=await act(tutor,'approve_cards',{ids:proposals.map(p=>p.id)})
