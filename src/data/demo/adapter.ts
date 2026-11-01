@@ -589,7 +589,7 @@ export class DemoAdapter implements LemmaApi {
     // Resolve titles for those notes, not all 6,000 unrelated checkpoints.
     // Full-table callers still receive the original complete index.
     const wantedCheckpointKeys=notes?new Set<string>():null;
-    if(wantedCheckpointKeys)for(const note of notes){
+    if(notes&&wantedCheckpointKeys)for(const note of notes){
       if(note.note.checkpointCode)
         wantedCheckpointKeys.add(cpKey(note.projectId,note.note.checkpointCode));
     }
