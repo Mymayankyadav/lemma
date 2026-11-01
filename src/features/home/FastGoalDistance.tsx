@@ -53,7 +53,7 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
     </p>
    </div>
    <div className="flex shrink-0 flex-col items-end gap-1">
-    <strong className="font-[var(--font-display)] text-title-s tabular-nums text-amber">{pct}%</strong>
+    <strong className="font-[var(--font-display)] text-title-s tabular-nums text-ink-2">{pct}%</strong>
     {project.scheduleHeadline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{project.scheduleHeadline}</span>}
    </div>
   </div>
@@ -85,7 +85,7 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
  return <section aria-label="Distance to your goals" className="flex min-w-0 flex-col gap-3">
   <div className="flex min-h-11 items-center justify-between gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Distance to your goals</h2>
-   <Link to="/projects" className="flex min-h-11 items-center text-label text-amber">All paths</Link>
+   <Link to="/projects" className="flex min-h-11 items-center text-label text-ink-2 underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link)]">All paths</Link>
   </div>
   {active.length===0?<p className="text-label text-ink-2">Create a project and plan to begin tracking your goals.</p>:
    <>
@@ -105,7 +105,7 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
       <span className="w-9 shrink-0 text-right text-caption tabular-nums text-ink-2">{project.total?Math.round(project.done/project.total*100):0}%</span>
      </div>)}
      {rest.length>3&&<button type="button" onClick={()=>setShowRest(value=>!value)}
-      aria-expanded={showRest} className="min-h-11 w-full text-label text-amber">
+      aria-expanded={showRest} className="min-h-11 w-full text-label text-ink-2">
       {showRest?'Show fewer':'Show all '+rest.length+' projects'}
      </button>}
     </div>}
