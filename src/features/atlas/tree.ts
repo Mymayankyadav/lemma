@@ -437,6 +437,12 @@ export function budgetArcsUnfocused(
  };
  type Bundle={from:number;to:number;kind:Link['kind'];count:number;index:number;folded:boolean};
  const width=rows.length,packed=width<2**26;
+ // Fold membership is per visible row, not per link. On the 8,000-link
+ // stress DAG this replaces repeated Map and Set lookups with two booleans.
+ const foldedRows=rows.map(row=>{
+  const node=tree.nodes.get(row.id);
+  return !!node?.children.length&&!expanded.has(node.id);
+ });
  const bundles=new Map<number|string,Bundle>();
  for(const link of tree.links){
   if(!kinds.has(link.kind))continue;
@@ -448,11 +454,8 @@ export function budgetArcsUnfocused(
   const key=packed?(a*width+b)*2+(link.kind==='related'?1:0):link.kind+':'+a+':'+b;
   const existing=bundles.get(key);
   if(existing){existing.count++;continue}
-  // Avoid an array and callback allocation for every distinct bundle.
-  const fromNode=tree.nodes.get(rows[a]?.id??'');
-  const toNode=tree.nodes.get(rows[b]?.id??'');
-  const folded=!!(fromNode?.children.length&&!expanded.has(fromNode.id)||
-    toNode?.children.length&&!expanded.has(toNode.id));
+  // Fold state was indexed once for the entire visible row inventory.
+  const folded=foldedRows[a]||foldedRows[b];
   bundles.set(key,{from:a,to:b,kind:link.kind,count:1,index:bundles.size,folded});
  }
  const all=[...bundles.values()];
