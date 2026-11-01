@@ -1,0 +1,38 @@
+import {expect, test} from '@playwright/test';
+
+// LOOK-5c2: the bottom of Today remains one quiet review row and one handoff
+// card even when the owner has tens of thousands of cards and long maths.
+for (const profile of ['stress','extreme'] as const)
+for (const theme of ['graph','graph-night'] as const)
+for (const width of [360,390] as const) {
+ test(`LOOK-5c2 quiet Today ${profile} ${theme} ${width}px`,async({page})=>{
+  test.setTimeout(120_000);
+  await page.setViewportSize({width,height:844});
+  await page.goto(`./?demo=${profile}&theme=${theme}#/`);
+  const review=page.getByRole('region',{name:'Review',exact:true});
+  await expect(review).toBeVisible({timeout:90_000});
+  await expect(review.getByRole('link',{name:/Start review of [\d,]+ cards/i})).toBeVisible();
+  await expect(page.getByLabel('Due cards by project')).toHaveCount(0);
+  await expect(page.getByRole('region',{name:'Cards',exact:true})).toHaveCount(0);
+  const forecast=review.getByLabel('Seven-day review forecast');
+  await expect(forecast).toBeVisible({timeout:90_000});
+  await expect(forecast.locator('.grid > div')).toHaveCount(7);
+  const handoff=page.getByRole('region',{name:'Study handoff'});
+  await expect(handoff).toBeVisible();
+  const continueSection=handoff.getByRole('region',{name:'Continue'});
+  await expect(continueSection).toBeVisible();
+  const resume=continueSection.getByRole('region',{name:'Resume where you stopped'});
+  await expect(resume).toBeVisible();
+  expect((await resume.boundingBox())!.height).toBeGreaterThanOrEqual(64);
+  const copy=resume.getByRole('button',{name:'Copy resume prompt'});
+  const bounds=await copy.boundingBox();
+  expect(bounds).not.toBeNull();
+  expect(bounds!.width).toBeGreaterThanOrEqual(44);
+  expect(bounds!.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  const smallMath=await page.locator('#main-content .katex').evaluateAll(nodes=>
+   nodes.filter(node=>{const r=node.getBoundingClientRect();return r.width>0&&r.height>0&&parseFloat(getComputedStyle(node).fontSize)<16}).length);
+  expect(smallMath).toBe(0);
+  await page.screenshot({path:`test-results/screens/look-5c2-${profile}-${theme}-${width}.png`,fullPage:true});
+ });
+}
