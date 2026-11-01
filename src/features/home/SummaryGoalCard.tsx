@@ -43,7 +43,10 @@ export function SummaryGoalCard({project,events}:{project:ProjectSummary;events:
   {checkpoints.length>0?
    <Route project={project} checkpoints={checkpoints} scheduleRows={scheduleRows}
     foldedLabel={foldedLabel} mode="today"
-    todayLinkLabel={project.title+': Open the path for individual checkpoints and keyboard navigation. Current '+(project.current?.code??checkpoints[0].code)}/>:
+    todayLinkTo={!project.current?'/p/'+project.slug:undefined}
+    todayLinkLabel={project.current?
+     project.title+': Open the path for individual checkpoints and keyboard navigation. Current '+project.current.code:
+     project.title+': Open the project to choose a checkpoint'}/>:
    <p className="text-label text-ink-3">No checkpoints yet. Ask your tutor to create a plan.</p>}
   {project.current&&<div data-goal-now="" className="flex min-h-5 min-w-0 items-center gap-2 text-[12px] leading-[18px] text-ink-2">
    <span data-code="" className="shrink-0 font-[var(--font-num)] text-[12px] text-[var(--accent)]">{project.current.code}</span>
