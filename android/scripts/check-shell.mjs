@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** AND-3 fail-closed shell contract (run before Gradle in Android CI). */
 import { readFile, stat } from 'node:fs/promises'
+import { inflateSync } from 'node:zlib'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 const root = resolve(fileURLToPath(new URL('../../', import.meta.url)))
@@ -50,6 +51,35 @@ const expectedShortcutUrls = {
   atlas: 'https://mymayankyadav.github.io/lemma/#/atlas',
 }
 ensure(shortcutEntries.length === 3, 'exactly three Android shortcuts required')
+// PNG dimensions alone are insufficient: AAPT2 rejects corrupt IDAT/CRC data.
+const pngCrc32 = bytes => {
+  let crc = -1
+  for (const byte of bytes) {
+    crc ^= byte
+    for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (-(crc & 1) & 0xEDB88320)
+  }
+  return (crc ^ -1) >>> 0
+}
+const validShortcutPng = png => {
+  if (png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') return false
+  if (png.length < 45 || png.readUInt32BE(16) !== 96 || png.readUInt32BE(20) !== 96) return false
+  let offset = 8, sawHeader = false, sawEnd = false
+  const compressed = []
+  while (offset + 12 <= png.length) {
+    const length = png.readUInt32BE(offset), end = offset + 12 + length
+    if (end > png.length) return false
+    const kind = png.toString('ascii', offset + 4, offset + 8)
+    const body = png.subarray(offset + 4, offset + 8 + length)
+    if (pngCrc32(body) !== png.readUInt32BE(offset + 8 + length)) return false
+    if (kind === 'IHDR') sawHeader = length === 13 && png[offset + 25] === 6
+    if (kind === 'IDAT') compressed.push(png.subarray(offset + 8, offset + 8 + length))
+    offset = end
+    if (kind === 'IEND') { sawEnd = length === 0; break }
+  }
+  if (!sawHeader || !sawEnd || offset !== png.length || !compressed.length) return false
+  try { return inflateSync(Buffer.concat(compressed)).length === 96 * (96 * 4 + 1) }
+  catch { return false }
+}
 const iconReferences = new Set()
 const iconContents = new Set()
 for (const [kind, url] of Object.entries(expectedShortcutUrls)) {
@@ -65,9 +95,8 @@ for (const [kind, url] of Object.entries(expectedShortcutUrls)) {
   const pngPath = 'android/app/src/main/res/drawable-nodpi/shortcut_' + kind + '.png'
   ensure(await exists(pngPath), 'missing Android 96px shortcut glyph ' + kind)
   const png = await readFile(resolve(root, pngPath))
-  ensure(png.subarray(0, 8).toString('hex') === '89504e470d0a1a0a' &&
-    png.readUInt32BE(16) === 96 && png.readUInt32BE(20) === 96,
-    'Android shortcut glyph must be a 96x96 PNG: ' + kind)
+  ensure(validShortcutPng(png),
+    'Android shortcut glyph must be an intact 96x96 RGBA PNG: ' + kind)
   iconContents.add(png.toString('base64'))
 }
 ensure(iconReferences.size === 3 && iconContents.size === 3,
