@@ -1185,27 +1185,28 @@ export class DemoAdapter implements LemmaApi {
   }
   async getProject(slug: string): Promise<ProjectDetail> {
     const p = this.project(slug);
-    // A direct project route needs one project's full detail, not all 30k
-    // generated note objects. Reuse the exact bounded Paths summary while
-    // the private S/X note collection is still virtual. Once a write
-    // materializes notes, retain the ordinary mutable-store summary path.
-    const virtualNotes = this.virtualStressDue !== null &&
-      typeof Object.getOwnPropertyDescriptor(this.store, 'notes')?.get === 'function';
-    const summary = virtualNotes
-      ? (await this.listProjects()).find(row => row.id === p.id) ?? this.summary(p)
-      : this.summary(p);
+    // The direct Project route only displays progress for this project.
+    // listProjects() builds every project's source titles, card counts and
+    // summary (6,000 source labels in X) just to return these two numbers.
+    // Match summary() exactly: proposed checkpoints are excluded and only
+    // demonstrated checkpoints count as done. Never touch the lazy note,
+    // source or Atlas collections merely to calculate project progress.
+    const checkpoints = this.store.checkpoints.filter(cp => cp.projectId === p.id);
+    const approved = checkpoints.filter(cp => !cp.proposed);
+    const done = approved.filter(cp => cp.status === 'demonstrated').length;
+    const total = approved.length;
     const eligible = this.eligible();
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
       checkpoints: [
-        ...this.store.checkpoints.filter((cp) => cp.projectId === p.id),
+        ...checkpoints,
         ...this.proposed(p),
       ]
         .sort((a, b) => a.position - b.position)
         .map((cp) => this.cpView(cp, eligible)),
-      done: summary.done,
-      total: summary.total,
+      done,
+      total,
       planRevisions: clone(this.planHistory(p)),
       sources: this.projectSources(p)
         .map(({ pages, error, ...source }) => clone(source)),
