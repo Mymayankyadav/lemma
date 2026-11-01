@@ -62,7 +62,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
    const y=anchorY+offset;
    if(y<minY||y>maxY)continue;
    for(const x of xs){
-    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+9))
+    if(placed.every(other=>{const dx=x-other.x,dy=y-other.y,clearance=radius+other.radius+9;return dx*dx+dy*dy>=clearance*clearance}))
      return {x,y,radius,anchorX,anchorY};
    }
   }
