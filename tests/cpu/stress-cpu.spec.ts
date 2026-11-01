@@ -36,17 +36,29 @@ for(const matrix of CPU_CASES){
    // #hash alone is same-document navigation and cannot certify cold rendering.
    await page.goto('about:blank');
    const start=Date.now();
-   await page.goto('/lemma/?demo='+matrix.profile+'&theme='+matrix.theme+'#'+route,{
-    waitUntil:'domcontentloaded',timeout:90_000,
-   });
+   const readinessPhases:ReadinessPhase[]=[];
+   // The prior diagnostics began only AFTER the heading appeared, obscuring
+   // the 50–100s extreme-fixture wait despite fast post-heading checks.
+   // These timings are diagnostic only: the original wall clock, real-data
+   // assertions and strict 1,500ms budget remain unchanged.
+   const measured=async(name:string,check:()=>Promise<unknown>)=>{
+    const started=Date.now();
+    try {await check();}
+    finally {readinessPhases.push({name,elapsedMs:Date.now()-started});}
+   };
+   await measured('document-navigation',()=>page.goto(
+    '/lemma/?demo='+matrix.profile+'&theme='+matrix.theme+'#'+route,{
+     waitUntil:'domcontentloaded',timeout:90_000,
+    }));
    // A query label is not proof that the intended Graph world rendered.
-   await expect(page.locator('html')).toHaveAttribute('data-theme',matrix.theme,{timeout:90_000});
-   await expect(page.getByRole('heading',{name:headings[route],exact:true,level:1}))
-    .toBeVisible({timeout:90_000});
+   await measured('theme-ready',()=>expect(page.locator('html'))
+    .toHaveAttribute('data-theme',matrix.theme,{timeout:90_000}));
+   await measured('heading-ready',()=>expect(page.getByRole('heading',{
+    name:headings[route],exact:true,level:1,
+   })).toBeVisible({timeout:90_000}));
    // A heading and >40 text characters can be visible on an empty skeleton.
    // Wait for the route's actual S/X data and paint BEFORE stopping the clock.
    let ready=false;
-   const readinessPhases:ReadinessPhase[]=[];
    try {
     await assertRouteLoaded(page,route,matrix.profile,12_000,readinessPhases);
     ready=true;
