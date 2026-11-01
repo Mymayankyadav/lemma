@@ -11,7 +11,7 @@ for (const width of [360,390] as const) {
   await page.goto(`./?demo=${profile}&theme=${theme}#/`);
   const review=page.getByRole('region',{name:'Review',exact:true});
   await expect(review).toBeVisible({timeout:90_000});
-  const start=review.getByRole('link',{name:/Start review of [\\d,]+ cards/i});
+  const start=review.getByRole('link',{name:/Start review of [\d,]+ cards/i});
   await expect(start).toBeVisible();
   const startBox=await start.boundingBox();
   expect(startBox).not.toBeNull();
