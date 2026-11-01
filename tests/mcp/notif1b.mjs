@@ -94,6 +94,10 @@ try{
  assert.equal(result.approved.length,5)
  assert.ok(result.action)
  assert.ok(result.confirmId)
+ const confirmation=(await q('select status,sent_at from public.notifications where id=$1 and user_id=$2',
+   [result.confirmId,owner]))[0]
+ assert.equal(confirmation.status,'sent','confirmation is returned by the service worker, never re-queued')
+ assert.ok(confirmation.sent_at,'confirmation is already delivered to the action response')
  assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,before+1)
  assert.equal((await q("select count(*)::int n from public.proposals where user_id=$1 and status='approved'",[owner]))[0].n,5)
  assert.equal((await q('select count(*)::int n from public.cards where user_id=$1',[owner]))[0].n,5)
