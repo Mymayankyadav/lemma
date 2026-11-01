@@ -156,7 +156,7 @@ for(const world of ['graph','graph-night'] as const){
   await expect(page.getByRole('article',{name:'Card front and answer'})).toBeVisible();
   const note=page.getByText('Too wordy. Make the hypotheses a cloze.');
   await expect(note).toBeVisible();
-  expect(await note.locator('..').evaluate(el=>getComputedStyle(el).borderLeftWidth)).toBe('2px');
+  expect(await note.locator('xpath=ancestor::*[@data-comment-row][1]').evaluate(el=>getComputedStyle(el).borderLeftWidth)).toBe('2px');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
   await page.screenshot({path:`test-results/screens/ui-5g-card-detail-${world}.png`,fullPage:true});
  });
