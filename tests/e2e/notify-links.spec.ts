@@ -28,7 +28,13 @@ test('notification link with no selected due cards stays on Review and says All 
  const projects=page.getByRole('checkbox',{name:/^Include (Real Analysis|Linear Algebra|Topology)$/});
  await expect(projects.first()).toBeVisible();
  const count=await projects.count();
- for(let i=0;i<count;i++)await projects.nth(i).uncheck();
+ for(let i=0;i<count;i++){
+  const checkbox=projects.nth(i);
+  // The native input is sr-only; click its visible 44px label, not the
+  // 1px hidden input, and retain the checked-state assertion.
+  await checkbox.locator('..').click();
+  await expect(checkbox).not.toBeChecked();
+ }
  await expect(page.getByText('All clear for today')).toBeVisible();
  await page.evaluate(()=>{location.hash='#/review?start=5'});
  await expect(page).toHaveURL(/#\/review$/);
