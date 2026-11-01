@@ -57,6 +57,9 @@ describe('NOTIF-4b6a Edge CORS origin allowlist',()=>{
   for(const headers of ['x-lemma-cron','authorization,x-lemma-cron','x-api-key','authorization,','authorization,,content-type']){
    expect(notifyPreflight(origin,'POST',headers).status,headers).toBe(403);
   }
+  for(const headers of ['authorization\n','\tauthorization','authorization,\r\ncontent-type']){
+   expect(notifyPreflight(origin,'POST',headers).status,JSON.stringify(headers)).toBe(403);
+  }
   for(const method of ['GET','POST','OPTIONS']){
    expect(notifyPreflight(origin,method,'Authorization, Content-Type').status).toBe(204);
   }
