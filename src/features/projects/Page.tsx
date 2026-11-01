@@ -1,6 +1,6 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {SectionHeading} from '../../ui/SectionHeading';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
 import {useProjects,useUpdateProject} from '../../data/hooks';
@@ -14,6 +14,7 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
+import {countPinnedProjects} from './pinnedCount';
 
 type Filter='active'|'paused'|'done'|'archived';
 const filters:Filter[]=['active','paused','done'];
@@ -22,21 +23,19 @@ const INITIAL_PROJECT_ROWS=16;
 const active=(status:ProjectStatus)=>status==='active'||status==='planning';
 const matches=(project:ProjectSummary,filter:Filter)=>filter==='active'?active(project.status):project.status===filter;
 const newest=(a:ProjectSummary,b:ProjectSummary)=>(Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0);
-const pct=(project:ProjectSummary)=>project.total?Math.round(100*project.done/project.total):0;
 
 function MiniMetro({project}:{project:ProjectSummary}){
- const percent=pct(project);
  return <div className="flex min-w-0 items-center gap-2">
   <MiniStageBar project={project}/>
-  <span className="flex shrink-0 flex-col items-end font-[var(--font-ui)] text-caption tabular-nums text-ink-2">
-   <span data-count-role="">{percent}%</span>
+  <span data-count-role="" className="flex shrink-0 flex-col items-end font-[var(--font-ui)] text-caption tabular-nums text-ink-2">
+   <span>{project.done} of {project.total}</span>
    {project.scheduleHeadline&&<span data-schedule-chip="" className="whitespace-nowrap text-[12px]">{project.scheduleHeadline}</span>}
   </span>
  </div>;
 }
 
-function ProjectRow({project}:{project:ProjectSummary}){
- const update=useUpdateProject(),projects=useProjects(),notify=useToast(),[menu,setMenu]=useState(false);
+function ProjectRow({project,showSubject=false,pinnedCount}:{project:ProjectSummary;showSubject?:boolean;pinnedCount:number}){
+ const update=useUpdateProject(),notify=useToast(),[menu,setMenu]=useState(false);
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const longPressed=useRef(false);
  const clear=()=>{if(hold.current!==null){clearTimeout(hold.current);hold.current=null}};
@@ -51,14 +50,14 @@ function ProjectRow({project}:{project:ProjectSummary}){
   ];
  async function act(label:string,patch:{pinned?:boolean;status?:ProjectStatus}){
   setMenu(false);
-  if(patch.pinned&&(projects.data??[]).filter(item=>item.pinned&&!item.system&&item.status!=='archived').length>=4){
+  if(patch.pinned&&pinnedCount>=4){
    notify('At most four projects can be pinned. Unpin one first.',{tone:'danger'});return;
   }
   try{await update.mutateAsync({id:project.id,patch});notify(label+' saved',{tone:'success'})}
   catch(error){notify(error instanceof Error?error.message:'Unable to update project',{tone:'danger'})}
  }
  useEffect(()=>()=>clear(),[]);
- return <article className="rounded-slab border border-edge bg-[var(--card)] p-3" data-project-row={project.slug}
+ return <article className="px-3 py-3 hover:bg-[var(--paper-2)]" data-project-row={project.slug}
   onContextMenu={event=>{event.preventDefault();setMenu(true)}}
   onPointerDown={event=>{longPressed.current=false;if(event.pointerType!=='mouse'){clear();hold.current=setTimeout(()=>{longPressed.current=true;setMenu(true)},550)}}}
   onClickCapture={event=>{if(longPressed.current){event.preventDefault();event.stopPropagation();longPressed.current=false}}}
@@ -68,19 +67,18 @@ function ProjectRow({project}:{project:ProjectSummary}){
     <button type="button" onClick={()=>setMenu(true)} aria-label={'Restore options for '+project.title}
      className="min-w-0 flex-1 rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-amber">
      <span className="flex items-center gap-2">
-      <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
+      <span aria-hidden="true" className="text-title-s text-ink-2">{project.subject?.glyph??'∫'}</span>
       <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
       <span className="text-caption text-ink-2">Archived · restore</span>
      </span>
     </button>:
     <Link to={'/p/'+project.slug} className="min-w-0 flex-1 rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
      <div className="flex items-center gap-2">
-      <span aria-hidden="true" className="text-title-s text-amber">{project.subject?.glyph??'∫'}</span>
+      <span aria-hidden="true" className="text-title-s text-ink-2">{project.subject?.glyph??'∫'}</span>
       <span className="min-w-0 flex-1 break-words text-body-l font-semibold"><Tex source={project.title}/></span>
-      {project.pinned&&<span className="shrink-0 text-caption text-amber">Pinned</span>}
-      <ChevronRight size={17} className="shrink-0 text-ink-3" aria-hidden="true"/>
+      {project.pinned&&<span className="shrink-0 text-caption text-ink-2">Pinned</span>}
      </div>
-     <div className="mt-1 text-caption text-ink-2">{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
+     <div className="mt-1 text-caption text-ink-2 [&_.katex]:text-[16px]">{showSubject&&<span className="mr-2"><Tex source={project.subject?.name??"Unassigned"}/> ·</span>}{project.current?<>Now {project.current.code} <Tex source={project.current.title}/></>:project.total?'Plan complete':'Your tutor fills in the plan'}</div>
     </Link>}
    <button type="button" aria-label={'Actions for '+project.title} aria-expanded={menu} aria-haspopup="menu"
     onClick={()=>setMenu(value=>!value)} className="flex size-11 shrink-0 items-center justify-center rounded-ctl border border-edge text-ink-2">
@@ -99,25 +97,23 @@ function ProjectRow({project}:{project:ProjectSummary}){
  </article>;
 }
 
-function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void}){
- return <section aria-label={name+' projects'} className="space-y-2">
-  <button type="button" aria-expanded={!collapsed} onClick={onToggle}
+function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void;pinnedCount:number}){
+ return <section aria-label={name+' projects'} data-group-size={total} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
+  {total>1&&<button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
-   <span aria-hidden="true" className="text-title-s text-amber">{glyph}</span>
+   <span aria-hidden="true" className="text-title-s text-ink-2">{glyph}</span>
    <SectionHeading className="min-w-0 flex-1 break-words"><Tex source={name}/></SectionHeading>
    <span data-count-role="" className="font-[var(--font-ui)] text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
-  </button>
-  {!collapsed&&<div className="space-y-2">{items.map(project=><ProjectRow key={project.id} project={project}/>)}</div>}
+  </button>}
+  {(total===1||!collapsed)&&<div className="divide-y divide-[var(--hair)]">{items.map(project=><ProjectRow key={project.id} project={project} showSubject={total===1} pinnedCount={pinnedCount}/>)}</div>}
  </section>;
 }
 
 export default function Page(){
  const queryClient=useQueryClient();
- // Paths is the entry point for Atlas. Warm both its module and the canonical
- // demo graph query here, without forcing Today to hydrate 8,000 links or
- // making an extra live-network request. useAtlas shares this query/inflight
- // promise when a user immediately follows the Atlas link.
+ // Warm Atlas only from Paths, not cold Today. Reuse the canonical graph query
+ // and the already-merged v4 singleton subject rows without restoring old cards.
  useEffect(()=>{
   void import('../atlas/Page');
   void prefetchAtlasForPaths(queryClient,getMode(),()=>getApi().getAtlas());
@@ -129,10 +125,11 @@ export default function Page(){
   if(projects.error)notify("Couldn't load your paths.",{tone:'danger',action:{label:'Try again',onClick:()=>{void projects.refetch()}}});
  },[projects.error,projects.refetch,notify]);
  const all=useMemo(()=>(projects.data??[]).filter(project=>!project.system),[projects.data]);
+ const pinnedCount=useMemo(()=>countPinnedProjects(all),[all]);
  const visible=useMemo(()=>all.filter(project=>matches(project,filter)&&
   (!search.trim()||[project.title,project.subject?.name??'Unassigned',...(project.sourceTitles??[])].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
- const pinned=visible.filter(project=>project.pinned).slice(0,4);
- const pinnedIds=new Set(pinned.map(project=>project.id));
+ const pinned=useMemo(()=>visible.filter(project=>project.pinned).slice(0,4),[visible]);
+ const pinnedIds=useMemo(()=>new Set(pinned.map(project=>project.id)),[pinned]);
  const allGroups=useMemo(()=>{
   const map=new Map<string,{name:string;glyph:string;position:number;items:ProjectSummary[]}>();
   for(const project of visible){
@@ -158,6 +155,19 @@ export default function Page(){
    return items.length?[{...group,items,total:group.items.length}]:[];
   });
  },[allGroups,page,pageSize]);
+ // Consecutive one-project subjects are rows in ONE paper list, not
+ // individual bordered cards. Multi-project subjects keep their own foldable
+ // group header and paper container.
+ const renderGroups=[...(pinned.length?[{id:'pinned',name:'Pinned',glyph:'★',items:pinned,total:pinned.length}]:[]),...groups];
+ type PathGroup=(typeof renderGroups)[number];
+ const runs:Array<{kind:'single';groups:PathGroup[]}|{kind:'multi';group:PathGroup}>=[];
+ for(const group of renderGroups){
+  if(group.total===1){
+   const last=runs[runs.length-1];
+   if(last?.kind==='single')last.groups.push(group);
+   else runs.push({kind:'single',groups:[group]});
+  }else runs.push({kind:'multi',group});
+ }
  const pageEnd=Math.min(totalUnpinned,(page+1)*pageSize);
  const toggle=(id:string)=>setCollapsed(items=>items.includes(id)?items.filter(item=>item!==id):[...items,id]);
  const choose=(next:Filter)=>{setPage(0);const p=new URLSearchParams(params);if(next==='active')p.delete('status');else p.set('status',next);setParams(p)};
@@ -176,9 +186,10 @@ export default function Page(){
     className="min-w-0 flex-1 bg-transparent py-3 text-body text-ink outline-none"/>
    {search&&<button type="button" aria-label="Clear search" onClick={()=>{setSearch('');setPage(0)}} className="flex size-11 items-center justify-center"><X size={17}/></button>}
   </label>
-  <div role="group" aria-label="Project status" className="grid grid-cols-3 gap-2">
+  <div role="group" aria-label="Project status" data-status-segments=""
+   className="flex w-full min-w-0 items-stretch rounded-full border border-edge bg-[var(--paper-2)] p-1">
    {filters.map(value=><button key={value} type="button" aria-pressed={filter===value} onClick={()=>choose(value)}
-    className={'min-h-11 rounded-ctl border px-2 text-label capitalize '+(filter===value?'border-amber bg-amber-tint text-amber':'border-edge bg-[var(--card)] text-ink-2')}>{value}</button>)}
+    className={'min-h-11 min-w-0 flex-1 rounded-full px-2 text-label capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link)] '+(filter===value?'bg-[var(--paper)] font-semibold text-ink shadow-[0_1px_3px_rgba(0,0,0,.15)]':'text-ink-2 hover:text-ink')}>{value}</button>)}
   </div>
   {projects.isPending?<><Skeleton h={80}/><Skeleton h={140}/><Skeleton h={140}/></>:
    projects.error?<EmptyState art="plug" title="Paths unavailable" body="Try again when you're connected."
@@ -189,9 +200,16 @@ export default function Page(){
    !visible.length?<div className="space-y-3 py-8 text-center"><p className="text-body text-ink-2">{search?'No projects match':'No projects in this status'}</p>
     {search&&<button type="button" className="min-h-11 rounded-ctl border border-edge px-4 text-label" onClick={()=>setSearch('')}>Clear</button>}</div>:
    <div className="space-y-5">
-    {pinned.length>0&&<ProjectGroup name="Pinned" glyph="★" items={pinned} total={pinned.length} collapsed={collapsed.includes('pinned')} onToggle={()=>toggle('pinned')}/>}
-    {groups.map(group=><ProjectGroup key={group.id} name={group.name} glyph={group.glyph} items={group.items} total={group.total}
-     collapsed={collapsed.includes(group.id)} onToggle={()=>toggle(group.id)}/>)}
+    {runs.map((run,i)=>run.kind==='single'
+     ? <section key={'single-'+i} aria-label="Single-project paths" data-singleton-list=""
+        className="divide-y divide-[var(--hair)] overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
+        {run.groups.map(group=><section key={group.id} aria-label={group.name+' projects'} data-group-size={1}>
+         {group.items.map(project=><ProjectRow key={project.id} project={project} showSubject pinnedCount={pinnedCount}/>)}
+        </section>)}
+       </section>
+     : <ProjectGroup key={run.group.id} name={run.group.name} glyph={run.group.glyph}
+       items={run.group.items} total={run.group.total} collapsed={collapsed.includes(run.group.id)}
+       onToggle={()=>toggle(run.group.id)} pinnedCount={pinnedCount}/>)}
     {totalUnpinned>pageSize&&<nav aria-label="Project pages" className="flex flex-wrap items-center justify-between gap-2">
      {page>0&&<button type="button" onClick={()=>setPage(index=>Math.max(0,index-1))}
       className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-4 text-label text-amber">

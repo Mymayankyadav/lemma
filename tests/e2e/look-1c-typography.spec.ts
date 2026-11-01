@@ -16,25 +16,40 @@ for(const width of [360,390] as const){
    ['/p/real-analysis', 'Stages', 'project'],
   ] as const){
    await page.goto(`./?demo=${profile}&theme=${theme}#${path}`);
+   // LOOK-5a removes redundant subject headings when every visible
+   // subject has just one project. Wait for data before distinguishing that
+   // intentional layout from a missing or still-loading section heading.
+   if(name==='paths')await expect(page.locator('[data-project-row]').first()).toBeVisible({timeout:90_000});
    const headings=page.locator('h2.ui-section-heading');
-   await expect(headings.first()).toBeVisible({timeout:90_000});
-   if(section)await expect(page.getByRole('heading',{name:section,level:2}).first()).toHaveClass(/ui-section-heading/);
-   const styles=await headings.first().evaluate(el=>{
-    const css=getComputedStyle(el);
-    return {font:css.fontFamily,size:parseFloat(css.fontSize),
-     line:parseFloat(css.lineHeight),style:css.fontStyle};
-   });
-   expect(styles.font).toMatch(/Newsreader/i);
-   expect(styles.size).toBe(19);
-   expect(styles.line).toBe(23);
-   expect(styles.style).toBe('italic');
+   const singletonPaths=name==='paths'&&(await headings.count())===0;
+   if(singletonPaths){
+    const groups=page.locator('section[aria-label$=" projects"][data-group-size]');
+    await expect(groups.first()).toBeVisible();
+    const sizes=await groups.evaluateAll(nodes=>nodes.map(node=>Number(node.getAttribute('data-group-size'))));
+    expect(sizes.length).toBeGreaterThan(0);
+    expect(sizes.every(size=>size===1)).toBe(true);
+    await expect(page.locator('[data-project-row] .mr-2').first()).toBeVisible();
+   }else{
+    await expect(headings.first()).toBeVisible({timeout:90_000});
+    if(section)await expect(page.getByRole('heading',{name:section,level:2}).first()).toHaveClass(/ui-section-heading/);
+    const styles=await headings.first().evaluate(el=>{
+     const css=getComputedStyle(el);
+     return {font:css.fontFamily,size:parseFloat(css.fontSize),
+      line:parseFloat(css.lineHeight),style:css.fontStyle};
+    });
+    expect(styles.font).toMatch(/Newsreader/i);
+    expect(styles.size).toBe(19);
+    expect(styles.line).toBe(23);
+    expect(styles.style).toBe('italic');
+   }
    if(name!=='today'){
     const count=page.locator('[data-count-role]').first();
     await expect(count).toBeVisible();
     expect(await count.evaluate(el=>getComputedStyle(el).fontFamily)).toMatch(/Instrument Sans/i);
    }
    expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
-   const focusHeading=section?page.getByRole('heading',{name:section,level:2}).first():headings.first();
+   const focusHeading=singletonPaths?page.locator('[data-project-row]').first():
+    section?page.getByRole('heading',{name:section,level:2}).first():headings.first();
    await focusHeading.scrollIntoViewIfNeeded();
    await page.screenshot({path:`test-results/screens/look-1c-${name}-${profile}-${theme}-${width}.png`});
   }
