@@ -15,7 +15,7 @@ export interface PushBatchOptions {
 }
 export interface PushBatchResult {
  attempted:number;
- /** Count of unsent/unconfirmed items, including unstarted items and timeouts. */
+ /** Entries without a completed transport result (unstarted or timed out). */
  deferred:number;
  timedOut:boolean;
  results:Array<{index:number;result:DeliveryResult}>;
