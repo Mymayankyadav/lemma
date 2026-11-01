@@ -40,3 +40,25 @@ for(const [name,hash] of Object.entries(expectedShortcuts)){
 if(!index.includes('media="(prefers-color-scheme: light)" content="#FAFAF6"')||
  !index.includes('media="(prefers-color-scheme: dark)" content="#13171D"'))
  throw Error('Missing Graph day/night theme-color variants');
+
+/** AND-1 screenshot gate. A screenshot is a real 360px phone capture at 3× DPR,
+ * not a scaled mockup. Once the two artifacts are checked in, the manifest
+ * declares them and this validates both PNG dimensions and narrow form factor.
+ */
+if(manifest.screenshots!==undefined){
+ if(!Array.isArray(manifest.screenshots)||manifest.screenshots.length!==2)
+  throw Error('Android install screenshots must contain day and night captures');
+ const sources=new Set();
+ for(const shot of manifest.screenshots){
+  if(shot.form_factor!=='narrow'||shot.type!=='image/png'||!shot.src?.startsWith('/lemma/screenshots/'))
+   throw Error('Invalid Android install screenshot metadata');
+  if(sources.has(shot.src))throw Error('Duplicate Android install screenshot');
+  sources.add(shot.src);
+  const filename=shot.src.replace(/^\/lemma\//,'');
+  if(!existsSync(path(filename)))throw Error('Missing Android install screenshot: '+filename);
+  const png=readFileSync(path(filename));
+  if(png.toString('hex',0,8)!=='89504e470d0a1a0a'||
+   png.readUInt32BE(16)!==1080||png.readUInt32BE(20)!==1920)
+   throw Error('Android install screenshot must be 1080x1920: '+filename);
+ }
+}
