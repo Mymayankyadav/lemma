@@ -13,7 +13,7 @@ export interface OfflineSettings {
  v:1
  timeZone:string
  rolloverHour:number
- ui:{mode?:'auto'|'day'|'night';density?:'compact'|'cozy'|'comfortable';motion?:'calm'|'lively'}|null
+ ui:{mode?:'auto'|'day'|'night'}|null
  preferredChat:'claude'|'chatgpt'
  defaultStyle:string
  mixDecks:boolean
@@ -31,10 +31,10 @@ export function isOfflineSettings(value:unknown):value is OfflineSettings {
  if(data.ui===null)return true
  if(!data.ui||typeof data.ui!=='object'||Array.isArray(data.ui))return false
  const ui=data.ui as Record<string,unknown>
- if(Object.keys(ui).some(key=>!['mode','density','motion'].includes(key)))return false
+ // The owner removed density and motion controls; old snapshots carrying
+ // either key must not be hydrated into live Settings.
+ if(Object.keys(ui).some(key=>key!=='mode'))return false
  if(ui.mode!==undefined&&!['auto','day','night'].includes(String(ui.mode)))return false
- if(ui.density!==undefined&&!['compact','cozy','comfortable'].includes(String(ui.density)))return false
- if(ui.motion!==undefined&&!['calm','lively'].includes(String(ui.motion)))return false
  return true
 }
 export type OfflineKey=readonly string[]
@@ -47,9 +47,7 @@ export function projectOfflineSettings(settings:Settings):OfflineSettings {
  return {
   v:1,timeZone:settings.timeZone,rolloverHour:settings.rolloverHour,
   ui:ui?{
-   ...(ui.mode==='auto'||ui.mode==='day'||ui.mode==='night'?{mode:ui.mode}:{}),
-   ...(ui.density==='compact'||ui.density==='cozy'||ui.density==='comfortable'?{density:ui.density}:{}),
-   ...(ui.motion==='calm'||ui.motion==='lively'?{motion:ui.motion}:{})
+   ...(ui.mode==='auto'||ui.mode==='day'||ui.mode==='night'?{mode:ui.mode}:{})
   }:null,
   preferredChat:settings.preferredChat,defaultStyle:settings.defaultStyle,
   mixDecks:settings.mixDecks,newPerDay:settings.newPerDay
