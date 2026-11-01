@@ -11,10 +11,12 @@ create index if not exists cards_notify_owner_note_due_cover
 
 create or replace function public.notify_candidates(p_user uuid,p_now timestamptz)
 -- The 30k-card X snapshot must not use one cards_note_id_owner probe per note.
--- Owner-scoped hash joins keep the bounded read stable even before auto-ANALYZE
--- has refreshed estimates after a bulk import. The setting is function-local.
-returns jsonb language sql stable security definer set search_path = ''
-  set enable_nestloop = off as $facts$
+-- Keep PostgreSQL's normal join choices: the tomorrow-primary LATERAL
+-- checkpoint lookup depends on a bounded nested loop per project. Disabling
+-- nested loops for the *entire* function can make the 30k-card X fixture
+-- exceed the ten-minute SQL job timeout after other migrations land.
+-- Card-first sibling dedup and the covering index remain the optimization.
+returns jsonb language sql stable security definer set search_path = '' as $facts$
 with
 prefs as (
   select s.user_id,s.time_zone,s.rollover_hour,s.reviews_per_day,s.new_per_day,
