@@ -47,14 +47,14 @@ describe('FIX #647 StrictMode cold Atlas arc aggregation',()=>{
     expect(related).not.toBe(first);
     expect(related).toEqual(budgetArcsUnfocused(tree,rows,expanded,kinds));
     kinds.delete('related');
-    expect(budgetArcsUnfocusedCached(tree,rows,expanded,kinds))
-      .toEqual(budgetArcsUnfocused(tree,rows,expanded,kinds));
+    const reverted=budgetArcsUnfocusedCached(tree,rows,expanded,kinds);
+    expect(reverted).toEqual(budgetArcsUnfocused(tree,rows,expanded,kinds));
 
     // The same row array can be passed with a mutated fold Set. The cache
     // must observe folded branch membership rather than only Set identity.
-    expanded.delete('area-a');
+    expanded.add('area-a');
     const folded=budgetArcsUnfocusedCached(tree,rows,expanded,kinds);
-    expect(folded).not.toBe(related);
+    expect(folded).not.toBe(reverted);
     expect(folded).toEqual(budgetArcsUnfocused(tree,rows,expanded,kinds));
 
     const newRows=visibleRows(tree,expanded);
