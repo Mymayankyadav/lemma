@@ -65,7 +65,7 @@ export async function history(c:Context,a:any){const fetched=await scoped(c,'v_h
   // (and transferring old/new row JSON) can exhaust an Edge request budget.
   // A project action can change its own row (id) or a child (project_id).
   const projectFilter=['old','new'].flatMap(side=>[
-   side+'->>project_id.eq.'+p.id,side+'->>id.eq.'+p.id
+   side+'_project_id.eq.'+p.id,side+'_id.eq.'+p.id
   ]).join(',');
   if(actionNos.length){
    const pageSize=500;
