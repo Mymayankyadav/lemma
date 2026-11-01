@@ -40,6 +40,8 @@ describe('NOTIF-4a authenticated action links',()=>{
   expect((await verifyActionToken(await signActionToken(approved,secret,now),secret,now)).x?.ids).toEqual([card]);
   await expect(signActionToken({...approved,x:{ids:Array(51).fill(card)}},secret,now)).rejects.toMatchObject({status:400});
   await expect(signActionToken({...approved,x:{ids:['bad-id']}},secret,now)).rejects.toMatchObject({status:400});
+  await expect(signActionToken({...approved,x:{ids:[card,card]}},secret,now)).rejects.toMatchObject({status:400});
+  await expect(signActionToken({...approved,x:{ids:[card,card.toUpperCase()]}},secret,now)).rejects.toMatchObject({status:400});
   await expect(signActionToken({...approved,x:{ids:[]}},secret,now)).rejects.toMatchObject({status:400});
   // Sparse arrays skip Array.prototype.some(), but JSON serializes holes as
   // null. Never sign an approval token that verification will reject.
