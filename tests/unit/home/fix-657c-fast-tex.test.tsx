@@ -16,7 +16,7 @@ describe('FIX #657c eager-route mathematical labels',()=>{
  });
  it('uses full rich rendering for math, markdown, entities and auto-links',()=>{
   for(const name of ['$x^2$','\\(x\\)','**strong**','&frac12;','example.org','www.example.org',
-   'name@example.org','https://example.org','<em>idea</em>','Line\\nTwo','\\alpha'])
+   'name@example.org','https://example.org','example.org/path','example.org#proof','<em>idea</em>','Line\\nTwo','\\alpha'])
    expect(canRenderPlainFastTex(name),name).toBe(false);
  });
  it('does not statically import the rich Tex renderer from eager Paths/Atlas modules',()=>{
