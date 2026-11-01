@@ -36,6 +36,16 @@ due_candidates as (
   order by n.id,case when c.state=0 then 1 else 0 end,
     case when c.state in (1,3) and c.due<=p_now then 0 else 1 end,c.due,c.id
 ),
+-- The daily quota can never consume more than reviews_per_day + new_per_day
+-- distinct notes. Keep the complete due_candidates set for exact backlog, but
+-- apply the expensive priority windows only to the bounded first 2,200.
+top_due as (
+  select c.* from due_candidates c
+  order by case when c.state=0 then 2
+      when c.state in (1,3) and c.due<=p_now then 0 else 1 end,
+    c.due,c.no,c.card_id
+  limit (select least(reviews_per_day+new_per_day,2200) from prefs)
+),
 prioritized as (
   select c.*,
     row_number() over(order by
@@ -44,7 +54,7 @@ prioritized as (
     sum(case when c.state=0 then 1 else 0 end) over(order by
       case when c.state=0 then 2 when c.state in (1,3) and c.due<=p_now then 0 else 1 end,
       c.due,c.no,c.card_id) fresh_seq
-  from due_candidates c
+  from top_due c
 ),
 quota as (
   select p.*,row_number() over(order by p.seq) review_seq
