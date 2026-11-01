@@ -98,6 +98,37 @@ for(const width of [360,390] as const){
    })
   },profile)
   expect(afterOffline).toBe(serialized)
+  // Inspect the actual browser persistence schema, not merely the UI. A
+  // disconnected Review/approval attempt must not create an outbox, mutation
+  // queue, extra IndexedDB store or extra snapshot record.
+  const storageAudit=await page.evaluate(async()=>{
+   const databases=(await indexedDB.databases()).filter(db=>db.name?.startsWith('lemma-offline:'))
+   const records:{name:string;stores:string[];keys:IDBValidKey[]}[]=[]
+   for(const entry of databases){
+    const name=entry.name!
+    const db=await new Promise<IDBDatabase>((resolve,reject)=>{
+     const request=indexedDB.open(name)
+     request.onsuccess=()=>resolve(request.result)
+     request.onerror=()=>reject(request.error)
+    })
+    try{
+     const stores=Array.from(db.objectStoreNames)
+     const keys=stores.includes('snapshot')
+      ?await new Promise<IDBValidKey[]>((resolve,reject)=>{
+       const request=db.transaction('snapshot','readonly').objectStore('snapshot').getAllKeys()
+       request.onsuccess=()=>resolve(request.result)
+       request.onerror=()=>reject(request.error)
+      }):[]
+     records.push({name,stores,keys})
+    }finally{db.close()}
+   }
+   return {
+    records,
+    queuedLocalKeys:Object.keys(localStorage).filter(key=>/lemma.*(?:outbox|queue|pending|sync)/i.test(key)),
+   }
+  })
+  expect(storageAudit.records).toEqual([{name:`lemma-offline:demo-${profile}`,stores:['snapshot'],keys:['latest']}])
+  expect(storageAudit.queuedLocalKeys).toEqual([])
   await page.screenshot({path:`test-results/screens/and-8/offline-${profile}-${theme}-${width}.png`})
   await context.setOffline(false)
  })
