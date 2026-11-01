@@ -90,6 +90,25 @@ describe('FIX #507 direct-route cold stress hydration',()=>{
   expect(typeof Object.getOwnPropertyDescriptor(extremeStore,'notes')?.get).toBe('function');
  },30_000);
 
+
+ it('constructs only sessions for the requested checkpoint in an extreme project',async()=>{
+  const api=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const subject=api as unknown as {
+   virtualStressSession:(project:unknown,number:number)=>unknown;
+  };
+  const original=subject.virtualStressSession.bind(api);
+  let generated=0;
+  subject.virtualStressSession=(project,number)=>{
+   generated++;
+   return original(project,number);
+  };
+  const detail=await api.getCheckpoint('stress-project-3','CP4');
+  expect(detail.sessions).toHaveLength(28);
+  expect(generated).toBeLessThan(40);
+ },30_000);
+
  it('reads a direct extreme Card detail without materializing 30k unrelated notes',async()=>{
   const fixture=makeStressStore(seed,'extreme',{
    deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
