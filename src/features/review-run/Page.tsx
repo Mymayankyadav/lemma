@@ -11,6 +11,7 @@ import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
 import {isPlainReviewFront} from './plainFront';
+import {scheduleScrollHintMeasure} from './scrollHint';
 import {Card} from '../../ui/Card';
 import {Glyph} from '../../ui/Glyph';
 import {Chip} from '../../ui/Chip';
@@ -45,8 +46,7 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
   if(!el)return;
   const measure=()=>setMore(Math.max(0,Math.ceil((el.scrollHeight-el.scrollTop-el.clientHeight)/28)));
   if(typeof performance!=='undefined')performance.mark('review-run-card-mounted');
-  const id=requestAnimationFrame(measure);
-  return ()=>cancelAnimationFrame(id);
+  return scheduleScrollHintMeasure(measure);
  },[front,back,revealed]);
  return <Card stack className="relative flex min-w-0 flex-col gap-2 overflow-hidden rounded-[6px] px-[18px] pb-3 pt-3"
   style={{height:'clamp(208px,42dvh,350px)',minHeight:208,backgroundImage:'repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, var(--line) 28px)'}}>
