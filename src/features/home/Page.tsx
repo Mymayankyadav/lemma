@@ -151,7 +151,7 @@ export default function Page(){
  const projects=home.data.projects.filter(p=>!p.system&&p.status!=='archived')
   .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
    (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
- return <Screen tabBar className="gap-6">
+ return <Screen tabBar className="gap-6 pb-6">
   <TodayHeader pending={home.data.pendingProposals}/>
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
    You're offline. Changes cannot be saved until you're connected.
