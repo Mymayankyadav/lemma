@@ -19,12 +19,10 @@ import {
   useRejectProposal,
   useSettings,
 } from "../../data/hooks";
-import {planReviewNodes} from "./nodes";
-import {planIdeasGraph} from "./ideas";
 import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, R} from "./planMap";
-import {buildAtlasTree} from "../atlas/tree";
 import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
+import {preparePlanProposal} from "./prepared";
 import { chatLink, revisePlanPrompt } from "../../lib/chat";
 import { Button } from "../../ui/Button";
 import { Glyph } from "../../ui/Glyph";
@@ -300,20 +298,13 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [query.isLoading]);
   const p = query.data;
-  const nodes = useMemo(
-    () => planReviewNodes(p?.plan ?? null, p?.planChange ?? null, project.data?.checkpoints ?? []),
-    [p, project.data?.checkpoints],
-  );
+  // A proposal and project detail are immutable React Query snapshots. Reuse
+  // their expensive plan/Ideas derivations across StrictMode render replays and
+  // unrelated local state changes, without keeping stale data after a refresh.
+  const prepared = useMemo(() => preparePlanProposal(p,project.data),[p,project.data]);
+  const {nodes,ideaTree,ideaCount,stages}=prepared;
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
   const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
-  const ideaTree = useMemo(() => {
-    if (!p) return null;
-    const graph = planIdeasGraph(p.plan, p.planChange, nodes, p.projectSlug,
-      {name: project.data?.subject?.name ?? "This plan", glyph: p.projectGlyph});
-    return graph ? buildAtlasTree(graph) : null;
-  }, [p, nodes, project.data?.subject?.name]);
-  const ideaCount = ideaTree ? [...ideaTree.nodes.values()].filter((n) => !n.synthetic).length : 0;
-  const stages = useMemo(() => groupPlanStages(nodes), [nodes]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
     if (!p) return;
