@@ -29,6 +29,22 @@ export interface TestPushResponse {
  body:{message:string};
 }
 const reply=(status:TestPushResponse['status'],message:string):TestPushResponse=>({status,body:{message}});
+/** Push subscriptions are persisted client data: validate again before outbound I/O. */
+function usableSubscription(value:unknown):boolean{
+ if(!value||typeof value!=='object'||Array.isArray(value))return false;
+ const subscription=value as Record<string,unknown>;
+ const endpoint=subscription.endpoint;
+ const keys=subscription.keys;
+ if(typeof endpoint!=='string'||endpoint.length>4096||/[\\x00-\\x20\\x7f]/u.test(endpoint))return false;
+ if(!keys||typeof keys!=='object'||Array.isArray(keys))return false;
+ const {p256dh,auth}=keys as Record<string,unknown>;
+ if(typeof p256dh!=='string'||!p256dh||p256dh.length>1024||
+    typeof auth!=='string'||!auth||auth.length>1024)return false;
+ try{
+  const url=new URL(endpoint);
+  return url.protocol==='https:'&&Boolean(url.hostname)&&!url.username&&!url.password&&!url.hash;
+ }catch{return false}
+}
 function testMessage(device:TestDevice):TestPushMessage{
  const prefs=device.prefs;
  const requestedCap=prefs?.maxPerDay;
@@ -71,6 +87,7 @@ export async function handleTestPushRequest(
  catch{return reply(503,'Could not send test reminder')}
  if(!device||device.id!==raw.deviceId||device.userId!==owner.id||device.disabledAt)
   return reply(404,'Device not available');
+ if(!usableSubscription(device.subscription))return reply(503,'Could not send test reminder');
  try{
   const result=await deps.send(device,testMessage(device));
   // Only an HTTP 201 from the push service confirms delivery acceptance.
