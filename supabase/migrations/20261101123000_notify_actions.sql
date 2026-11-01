@@ -155,17 +155,7 @@ begin
     undo_action_text:=p_extra->>'action';
     -- Reject malformed/oversized token claims before any bigint cast. A
     -- rejected action must roll back the notification's single-use claim.
-    if undo_action_text is null or undo_action_text !~ '^[0-9]{1,19}
-  return jsonb_build_object('status','done','kind',notice.kind) || result;
-end $act$;
-
-revoke all on function public.notify_act(uuid,bigint,text,jsonb) from public,anon,authenticated;
-grant execute on function public.notify_act(uuid,bigint,text,jsonb) to service_role;
-
--- Down (run before NOTIF-1a's down):
--- drop function if exists public.notify_act(uuid,bigint,text,jsonb);
--- drop function if exists public.approve_card_proposals(uuid,uuid[]);
- then
+    if undo_action_text is null or undo_action_text !~ '^[0-9]{1,19}$' then
       raise exception 'bad_action';
     end if;
     if undo_action_text::numeric>9223372036854775807::numeric
