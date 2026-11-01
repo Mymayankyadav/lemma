@@ -43,7 +43,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     body:JSON.stringify({profile,theme,width,durationMs,nodes,cpuThrottle:4,firstAttempt:true,phases},null,2),
     contentType:'application/json',
    });
-   console.info('FIX #651 Review-run cold 4x: '+JSON.stringify({profile,theme,width,durationMs,nodes}));
+   console.info('FIX #651 Review-run cold 4x: '+JSON.stringify({profile,theme,width,durationMs,nodes,phases}));
    expect(nodes,'Review runner DOM budget').toBeLessThan(1500);
    expect(durationMs,'Review runner first real cold render at 4x CPU').toBeLessThan(1500);
   }finally{
