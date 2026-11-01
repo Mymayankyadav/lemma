@@ -50,8 +50,11 @@ export async function handlePreviewRequest(
   const formatter=new Intl.DateTimeFormat('en-GB',{
    timeZone:context.timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23',
   });
+  // A resolved condition is not a held reminder. Showing it in Preview
+  // today would incorrectly suggest the owner has something pending.
+  const relevant=decisions.filter(d=>!(d.status==='skipped'&&d.reason==='resolved'));
   const send:PreviewRow[]=[],held:PreviewRow[]=[];
-  for(const decision of decisions.slice(0,MAX_ROWS)){
+  for(const decision of relevant.slice(0,MAX_ROWS)){
    const candidate=decision.candidate as PreviewCandidate;
    const at=decision.nextAt??candidate.dueAt??context.now;
    const row:PreviewRow={
@@ -62,7 +65,7 @@ export async function handlePreviewRequest(
    if(decision.status==='send')send.push(row);
    else held.push(row);
   }
-  return {status:200,body:{send,held,omitted:Math.max(0,decisions.length-MAX_ROWS)}};
+  return {status:200,body:{send,held,omitted:Math.max(0,relevant.length-MAX_ROWS)}};
  }catch{
   // Never disclose owner candidate facts or privileged query errors.
   return error(503,'Could not preview reminders');
