@@ -33,8 +33,8 @@ for(const width of [360,390] as const){
   }));
   expect(metrics.overflow).toBeLessThanOrEqual(1);
   expect(metrics.nodes).toBeLessThan(1500);
-  mkdirSync('test-results/fix-659j',{recursive:true});
-  await page.screenshot({path:'test-results/fix-659j/'+profile+'-'+theme+'-'+width+'.png'});
+  mkdirSync('test-results/screens/fix-659j',{recursive:true});
+  await page.screenshot({path:'test-results/screens/fix-659j/'+profile+'-'+theme+'-'+width+'.png'});
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   await expect(switchButton).toBeFocused();
