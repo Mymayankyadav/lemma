@@ -23,8 +23,28 @@ const LEVELS:ConceptLevel[]=['cluster','galaxy','system','planet','moon'];
 // Reuse the ICU collation object across thousands of extreme sibling-sort pairs.
 // Intl.Collator's default ordering matches String.localeCompare's defaults.
 const compareNames=new Intl.Collator().compare;
+/** React StrictMode evaluates useMemo calculations twice in development. Reuse
+ * the derived tree for an unchanged immutable query snapshot, rather than
+ * sorting and aggregating 2,500 ideas twice on the cold 4x CPU route.
+ * A new query data object receives a new tree; weak keys avoid retention.
+ */
+const derivedAtlasTrees=new WeakMap<AtlasGraph,AtlasTree>();
 const isTest=(s:string)=>/zz[-_ ]?selftest|^self[-_ ]test$|^system[-_]test/i.test(s);
 export const levelName:Record<ConceptLevel,string>={cluster:'Field',galaxy:'Area',system:'Topic',planet:'Idea',moon:'Detail'};
+/** A safe literal label needs no Markdown parser, KaTeX tree or sanitizer.
+ * Delimiters/markup fall back to Tex; JSX escapes the plain path automatically.
+ * This matters on the cold 2,500-idea Atlas where dozens of rows mount at once.
+ */
+export function isPlainAtlasLabel(source:string):boolean{
+ // Marked/GFM auto-links bare domains such as example.org even without
+ // explicit Markdown punctuation. They must use Tex, not the fast text node.
+ // The fallback is conservative: mathematical prose remains escaped JSX.
+ if(/(?:^|[\s(])(?:www\.)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?=$|[\s),.!?;:])/i.test(source))
+  return false;
+ return /^[A-Za-z0-9][A-Za-z0-9 ,.:;!?()'+-]*$/.test(source);
+}
+
+
 
 function synthetic(id:string,name:string,subjectId:string,level:ConceptLevel,parentId:string|null,glyph:string|null):AtlasNode{
  return {id,slug:id,name,subjectId,level,parentId,children:[],depth:0,synthetic:true,glyph,total:0,done:0,revisit:0,due:0,rank:0,
@@ -106,6 +126,8 @@ function taughtCheckpoint(node:AtlasNode):number|null{
 }
 
 export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
+ const cached=derivedAtlasTrees.get(graph);
+ if(cached)return cached;
  const subjects=[...graph.subjects].filter(s=>!isTest(s.name)&&!isTest(s.id))
   .sort((a,b)=>a.position-b.position||compareNames(a.name,b.name));
  const permitted=new Set(subjects.map(s=>s.id)),nodes=new Map<string,AtlasNode>();
@@ -168,17 +190,27 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
     n.done>0||kids.some(k=>k.status==='in_progress')?'in_progress':n.status;
   }
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
-  n.children.sort((a,b)=>{
+  const compareChildren=(a:string,b:string)=>{
    const x=nodes.get(a)!,y=nodes.get(b)!;
    const taughtX=taughtRanks.get(a)??null,taughtY=taughtRanks.get(b)??null;
    // A proposed plan must read CP1, CP2, …, CP10, never CP1, CP10, CP2.
    if(taughtX!==null&&taughtY!==null&&taughtX!==taughtY)return taughtX-taughtY;
    return x.rank-y.rank||(checkpointRanks.get(a)??Number.MAX_SAFE_INTEGER)-(checkpointRanks.get(b)??Number.MAX_SAFE_INTEGER)||compareNames(x.name,y.name)||compareNames(x.id,y.id);
-  });
+  };
+  // The large stress DAG arrives in prerequisite order, as do many real plans.
+  // Detect an already ordered sibling list in O(n) and skip a costly ICU sort.
+  // Unordered lists still use exactly the same comparator and stable sort.
+  let ordered=true;
+  for(let i=1;i<n.children.length;i++){
+   if(compareChildren(n.children[i-1],n.children[i])>0){ordered=false;break}
+  }
+  if(!ordered)n.children.sort(compareChildren);
   return n;
  };
  for(const root of roots)summarise(root,0);
- return {roots,nodes,links};
+ const result={roots,nodes,links};
+ derivedAtlasTrees.set(graph,result);
+ return result;
 }
 
 export function ancestors(tree:AtlasTree,id:string):string[]{
