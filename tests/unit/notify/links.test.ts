@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {notificationRoundCap} from '../../../src/features/review/notification-limit';
+import {notificationRoundCap,notificationQueueSettings} from '../../../src/features/review/notification-limit';
 
 // NOTIF-7: the explicit Review N deep link selects N due cards, even if
 // the user's ordinary daily target is lower. Ordinary Start remains capped.
@@ -12,6 +12,13 @@ describe('NOTIF-7 review round caps',()=>{
   expect(notificationRoundCap(3,5)).toBe(5);
   expect(notificationRoundCap(200,1)).toBe(1);
   expect(notificationRoundCap(2,50)).toBe(50);
+ });
+ it('raises only the in-memory queue quota for an explicit N link',()=>{
+  const settings={reviewsPerDay:3,newPerDay:20};
+  expect(notificationQueueSettings(settings)).toBe(settings);
+  expect(notificationQueueSettings(settings,5)).toEqual({reviewsPerDay:5,newPerDay:20});
+  expect(notificationQueueSettings(settings,2)).toEqual(settings);
+  expect(settings.reviewsPerDay).toBe(3); // never persist a changed daily goal
  });
  it('bounds notification size even when a caller passes an invalid number',()=>{
   expect(notificationRoundCap(3,0)).toBe(1);
