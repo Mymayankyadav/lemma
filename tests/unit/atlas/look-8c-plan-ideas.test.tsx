@@ -52,6 +52,10 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
   expect(graph).toContain('onClick={()=>setDetails(true)}');
   expect(graph).toContain('<Sheet open={details&&!!selected}');
   expect(graph).toContain('data-proposed-idea-details="true"');
+  expect(graph).toContain('role="progressbar" aria-label="Idea progress"');
+  expect(graph).toContain("aria-valuetext={selected.total?");
+  expect(graph).toContain("recheckNodes.length>0&&<button");
+  expect(graph).toContain("onClick={()=>jump(recheckNodes[0].id)}");
   expect(graph).toContain('onSelect={i=>jump(selectedPath[i].id)}');
   expect(graph).toContain('<Names title="Related"');
   expect(graph).toContain('<Names title="Inside"');
