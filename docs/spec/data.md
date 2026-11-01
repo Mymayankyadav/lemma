@@ -547,6 +547,19 @@ Audit #546 / ST-4 D7 requires a Card detail screen to load at most 20 recent rev
 - This contract introduces `notImplemented` stubs in both adapters; no screen may call them until FIX-546b supplies the implementations, 20/21-row paging tests, X-like network budget tests and bounded chart data.
 - **CONTRACT-546c (additive, audit boundary):** `CardDetail` may include `historyNextCursor?: string | null` and `commentsNextCursor?: string | null`. These are the exact 21-row probe continuations for the initial 20-row `history` and `comments` arrays returned by `getCard`. `null` means no older rows, even when exactly 20 were returned; absence is supported for legacy adapters and treated as no continuation. UI never infers continuation from array length and reuses these cursors to avoid a duplicate first-page query. FIX-546b implements the fields in both adapters; no new method, schema change, write or migration is needed.
 
+
+### 7.4 CONTRACT NOTIF-0 — reminder data surface (additive)
+
+Reminders are optional and default off until the owner enables them. `Settings.notify?: NotifyPrefs | null` is a JSON object with optional `enabled`, `mode` (live/daily/weekly/off), `studyTime`, `quiet`, `maxPerDay`, `kinds`, `dueThreshold`, `approveCards`, `digest`, `backoff`, and `offered`. Unknown preference keys survive partial updates. See `docs/spec/notifications.md` §6a and §6g.
+
+- `PushDevice`: id, label, platform, lastSeenAt, lastOkAt, disabledAt, disabledReason and isThisDevice. Devices are soft-disabled and restored using the same id.
+- `SentNotification`: id, kind, title, body, sentAt, action, actionAt. The recent list is bounded to 20 rows.
+- `NotifyHold`: scope, label, until. `NotifyPreviewRow`: at, kind, title, reason, held.
+- `LemmaApi` adds `listPushDevices`, `addPushDevice`, `renamePushDevice`, `removePushDevice`, `restorePushDevice`, `touchPushDevice`, `listRecentNotifications`, `listNotifyHolds`, `clearNotifyHold`, `sendTestNotification`, `previewNotifications`. No existing method is removed or renamed.
+- React Query keys: `['push-devices']`, `['notifications-recent']`, `['notify-holds']`, `['notify-preview']`. Matching mutation hooks invalidate only affected keys.
+- The demo adapter supplies two in-memory devices, five recent rows, one hold and three preview rows; the live adapter explicitly raises `not_implemented` until NOTIF-6.
+- `VITE_VAPID_PUBLIC_KEY` is a **public** environment variable; no private signing material is stored in the app.
+
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
 
 Both adapters (`src/data/live`, `src/data/demo`) implement every method with identical behavior. Errors are thrown as `LemmaError {code, message}` with codes `not_found`, `invalid`, `conflict`, `offline`, `auth`, `server`, `not_implemented` (stubs only).
