@@ -27,4 +27,16 @@ describe('ST-4 project filters preserve mathematical titles',()=>{
   const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title:'**Topology**'}));
   expect(html).toContain('<strong>Topology</strong>');
  });
+ it('FIX #608: GFM bare domains and email addresses retain autolinks',()=>{
+  for(const title of ['example.org','person@example.org']){
+   const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title}));
+   expect(html,'expected rich link for '+title).toContain('href=');
+  }
+ });
+ it('FIX #608: encoded HTML entities are not double escaped by the fast path',()=>{
+  const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title:'Proof &amp; logic'}));
+  expect(html).toContain('Proof &amp; logic');
+  expect(html).not.toContain('&amp;amp;');
+ });
+
 });
