@@ -9,7 +9,7 @@ import type {QueueFilter} from '../../../src/data/types';
 const seed=JSON.parse(readFileSync('src/data/demo/fixture.json','utf8')) as DemoStore;
 const now=Date.parse('2026-10-31T12:00:00Z');
 const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
-const adapter=(deferred:boolean)=>new DemoAdapter({fixture:makeStressStore(seed,'stress',
+const adapter=(deferred:boolean,profile:'stress'|'extreme'='stress')=>new DemoAdapter({fixture:makeStressStore(seed,profile,
  deferred?{deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true}:{deferSessions:true}),
  ownedFixture:true,now:()=>now,timeZone:'UTC'});
 
@@ -22,7 +22,7 @@ describe('FIX #671 private stress Review-run queue first paint',()=>{
   }
  },30_000);
  it('does not clone thousands of read-only virtual card states before the final response clone',async()=>{
-  const api=adapter(true);
+  const api=adapter(true,'extreme');
   await api.getReviewItems(filter); // Warm fixture once; measure only repeat query work.
   const original=globalThis.structuredClone;
   let clones=0;
