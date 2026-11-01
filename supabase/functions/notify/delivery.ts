@@ -85,6 +85,9 @@ export async function sendWebPush(
 ):Promise<DeliveryResult>{
  const {subscription,payload,vapid,kind,tag,signal}=request;
  const priorFailures=request.priorFailures??0;
+ // A tick can expire while another owner is preparing a payload.
+ // Never begin cryptographic work or network delivery for an aborted tick.
+ if(signal?.aborted)return {status:'failed'};
  if(!Number.isSafeInteger(priorFailures)||priorFailures<0||typeof tag!=='string'||!isTopic(tag)||
     !KINDS.has(kind)||!payload||typeof payload!=='object'||Array.isArray(payload)||
     !validEnvelope(payload,kind,tag))
@@ -108,6 +111,9 @@ export async function sendWebPush(
  let prepared:Awaited<ReturnType<typeof prepareWebPush>>;
  try{prepared=await prepareWebPush(subscription,encoded,vapid)}
  catch{return {status:'failed'}}
+ // WebCrypto preparation is asynchronous and cannot be assumed abort-aware.
+ // Recheck immediately before any push-service request.
+ if(signal?.aborted)return {status:'failed'};
  const ttl=kind==='confirm'?600:kind==='digest'?86400:21600;
  const urgency=kind==='digest'||kind==='rhythm'?'low':'normal';
  let status:number;
