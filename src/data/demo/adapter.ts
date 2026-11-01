@@ -21,6 +21,7 @@ import type {
   CardRow,
   CardState,
   CheckpointDetail,
+  CheckpointUi,
   CheckpointView,
   DeckNode,
   HomeSummary,
@@ -619,9 +620,51 @@ export class DemoAdapter implements LemmaApi {
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
     });
   }
+  /** Direct Project renders a long prerequisite chain all at once. The
+   * normal cpUi() recursion deliberately has per-call cycle protection, but
+   * calling it for each of 100 rows repeats the entire chain and a civil-day
+   * conversion at every edge. Acyclic plans can share a memo for this one
+   * immutable snapshot; malformed cycles/missing refs use the original path.
+   */
+  private projectUiIndex(checkpoints:readonly DemoCheckpoint[]):Map<string,CheckpointUi>|null{
+    const byCode=new Map(checkpoints.map(cp=>[cp.code,cp] as const));
+    // A malformed duplicate code must retain checkpoint()'s original
+    // first-match semantics rather than using Map's last-match entry.
+    if(byCode.size!==checkpoints.length)return null;
+    const visiting=new Set<string>(),visited=new Set<string>();
+    let invalid=false;
+    const check=(cp:DemoCheckpoint):void=>{
+      if(cp.proposed||visited.has(cp.id)||invalid)return;
+      if(visiting.has(cp.id)){invalid=true;return}
+      visiting.add(cp.id);
+      for(const code of cp.prereqs){
+        const dep=byCode.get(code);
+        if(!dep){invalid=true;break}
+        check(dep);
+      }
+      visiting.delete(cp.id);
+      visited.add(cp.id);
+    };
+    for(const cp of checkpoints)check(cp);
+    if(invalid)return null;
+    const today=studyDay(this.now(),this.store.settings.timeZone,
+      this.store.settings.rolloverHour);
+    const cache=new Map<string,CheckpointUi>();
+    const resolve=(cp:DemoCheckpoint):CheckpointUi=>{
+      const cached=cache.get(cp.id);
+      if(cached!==undefined)return cached;
+      const ui=cp.proposed?'proposed':checkpointUi(cp,
+        cp.prereqs.map(code=>resolve(byCode.get(code)!)),today);
+      cache.set(cp.id,ui);
+      return ui;
+    };
+    for(const cp of checkpoints)resolve(cp);
+    return cache;
+  }
   private cpView(
     cp: DemoCheckpoint,
     eligible = this.eligible(),
+    uiOverride?:CheckpointUi,
   ): CheckpointView {
     const project = this.projectById(cp.projectId);
     return {
@@ -632,7 +675,7 @@ export class DemoAdapter implements LemmaApi {
       stage: cp.stage ?? null,
       dueOn: cp.dueOn ?? null,
       demonstratedAt: cp.demonstratedAt ?? null,
-      ui: this.cpUi(cp),
+      ui: uiOverride??this.cpUi(cp),
       currentStep: cp.currentStep,
       stepsTotal: cp.steps.length,
       recheckDue: cp.recheckDue,
@@ -642,7 +685,7 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   /** Generate one stress session on demand; the UI never needs 60k hydrated rows. */
-  private virtualStressSession(project: DemoProject, number: number, projectIndex=this.store.projects.findIndex(p => p.id === project.id)): DemoSession {
+  private virtualStressSession(project: DemoProject, number: number, projectIndex=this.store.projects.findIndex(p=>p.id===project.id)): DemoSession {
     const count = this.store.stressSessionCount ?? 0;
     if (!Number.isInteger(number) || number < 1 || number > count) invalid("Invalid stress session number");
     const template = stressSessionTemplate;
@@ -663,8 +706,7 @@ export class DemoAdapter implements LemmaApi {
   }
   private sessionsForProject(project: DemoProject): DemoSession[] {
     if (this.store.stressSessionCount){
-      // Every synthetic session belongs to this one project; resolve its
-      // position once rather than scanning 60 projects for every row.
+      // One lookup for the project, rather than one per synthetic session.
       const index=this.store.projects.findIndex(p=>p.id===project.id);
       return Array.from({length:this.store.stressSessionCount},
         (_,i)=>this.virtualStressSession(project,i+1,index));
@@ -1199,15 +1241,17 @@ export class DemoAdapter implements LemmaApi {
       ? (await this.listProjects()).find(row => row.id === p.id) ?? this.summary(p)
       : this.summary(p);
     const eligible = this.eligible();
+    const baseCheckpoints=this.store.checkpoints.filter(cp=>cp.projectId===p.id);
+    const uiById=this.projectUiIndex(baseCheckpoints);
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
       checkpoints: [
-        ...this.store.checkpoints.filter((cp) => cp.projectId === p.id),
+        ...baseCheckpoints,
         ...this.proposed(p),
       ]
         .sort((a, b) => a.position - b.position)
-        .map((cp) => this.cpView(cp, eligible)),
+        .map(cp=>this.cpView(cp,eligible,cp.proposed?'proposed':uiById?.get(cp.id))),
       done: summary.done,
       total: summary.total,
       planRevisions: clone(this.planHistory(p)),
@@ -1325,8 +1369,8 @@ export class DemoAdapter implements LemmaApi {
         : this.store.projects.flatMap(project => this.sessionsForProject(project)))
       : this.store.sessions.filter(s => !id || s.projectId === id);
     return sessions
-      // The slug-scoped Project route already resolved its identity;
-      // avoid 1,000 repeated linear projectById lookups in the X fixture.
+      // A scoped route already knows its slug; do not repeat projectById
+      // for each of the 1,000 generated sessions.
       .map((s) => this.sessionSummary(s,id?slug:undefined))
       .sort(
         (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
