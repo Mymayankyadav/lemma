@@ -1,3 +1,4 @@
+import {evaluateMergeGate} from '../../../scripts/merge-gate';
 import {existsSync,readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
 
@@ -34,5 +35,31 @@ describe('AUDIT #540: cold 4x matrix and full sharded Playwright coexist',()=>{
   expect(workflow).toContain('test "$count" -eq 18');
   expect(workflow).toContain('name: e2e-${{ matrix.shard }}-of-4');
   expect(workflow).toContain('needs: e2e');
+ });
+});
+
+
+// AUDIT #540: the canonical seven-job merge gate must not silently accept a
+// PR whose CPU evidence jobs were omitted from the REST check-run response.
+describe('AUDIT #540 exact-head CPU merge gate',()=>{
+ const headSha='cpu-gate-test-head';
+ const base=['check','mcp-sql','e2e-1-of-4','e2e-2-of-4','e2e-3-of-4','e2e-4-of-4','qa3-screens'];
+ const cpu=['cpu-aggregate',...['stress','extreme'].flatMap(profile=>
+  ['graph','graph-night'].flatMap(theme=>[360,390].map(width=>
+   'cpu-matrix ('+profile+', '+theme+', '+width+')')))];
+ const names=[...base,...cpu];
+ const evaluate=(checks:string[])=>evaluateMergeGate({
+  headSha,draft:false,body:'Ready to merge\n',mergeable:true,mergeableState:'clean',leaseEligible:true,
+  checkRuns:checks.map((name,i)=>({name,id:i+1,headSha,status:'completed',conclusion:'success'})),
+  commitStatuses:[],auditComments:[],
+ });
+ it('accepts all 16 exact-head completed-success jobs',()=>{
+  expect(names).toHaveLength(16);
+  expect(evaluate(names).ok).toBe(true);
+ });
+ for(const missing of cpu)it('fails closed if '+missing+' is absent',()=>{
+  const decision=evaluate(names.filter(name=>name!==missing));
+  expect(decision.ok).toBe(false);
+  expect(decision.reason).toContain(missing);
  });
 });
