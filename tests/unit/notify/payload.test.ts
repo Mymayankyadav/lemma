@@ -47,6 +47,10 @@ describe('NOTIF-4b5 safe service-worker push payload',()=>{
    {ts:0},{ts:Infinity},{kind:'unknown' as PushPayloadInput['kind']},
    {tag:'bad topic'},{actions:Array(4).fill({action:'later',title:'Later'})},
    {actions:[{action:'not valid',title:'Later'}]},
+   // Sparse arrays must not silently serialize missing actions as null.
+   {actions:new Array(1) as PushPayloadInput['actions']},
+   {actions:[{action:'review_5',title:'Review 5'},,] as PushPayloadInput['actions']},
+   {actions:[,{action:'later',title:'Later'}] as PushPayloadInput['actions']},
    {actions:[{action:'later',title:'Later',token:'bad token'}]},
    {body:'x'.repeat(5000)},
    {title:'   '},
