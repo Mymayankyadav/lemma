@@ -46,10 +46,12 @@ export default function Page(){
  // update independently; keep the chip and native-option subtrees stable so
  // they do not rerun 60 rich-title/plainMath conversions on each page paint.
  // Preserve the first twelve rich mathematical chips (FIX #523's accessible
- // project 12) while bounding the S/X first paint. The Project selector below
+ // project 12) while bounding the S/X first paint. Choose quick chips in
+ // natural title order, independent of volatile last-activity ordering; the
+ // Project selector below
  // retains all remaining choices without mounting 60 rich chip titles.
  const hasMoreProjects=(projects.data?.length??0)>12;
- const projectChips=useMemo(()=>projects.data?.slice(0,12).map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
+ const projectChips=useMemo(()=>projects.data?.slice().sort((a,b)=>a.title.localeCompare(b.title,undefined,{numeric:true})).slice(0,12).map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
   <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
    <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
   </Chip>
