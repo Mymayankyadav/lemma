@@ -35,18 +35,30 @@ for(const width of [360,390] as const){
     return value?.entries?.map(entry=>entry.key)??[]
    }catch{return ['invalid-handoff']}
   },profile)))
-  await expect.poll(async()=>page.evaluate(async(profile)=>{
+  const durableKeys=()=>page.evaluate(async(profile)=>{
    const req=indexedDB.open('lemma-offline:demo-'+profile,1)
-   return await new Promise<number>(resolve=>{
-    req.onerror=()=>resolve(0)
+   return await new Promise<string[][]>(resolve=>{
+    req.onerror=()=>resolve([])
     req.onsuccess=()=>{
      const db=req.result
-     const tx=db.transaction('snapshot','readonly'),get=tx.objectStore('snapshot').get('latest')
-     get.onsuccess=()=>{const value=get.result as {entries?:unknown[]}|undefined;resolve(value?.entries?.length??0);db.close()}
-     get.onerror=()=>{resolve(0);db.close()}
+     const get=db.transaction('snapshot','readonly').objectStore('snapshot').get('latest')
+     get.onsuccess=()=>{
+      const value=get.result as {entries?:{key:string[]}[]}|undefined
+      resolve(value?.entries?.map(entry=>entry.key)??[])
+      db.close()
+     }
+     get.onerror=()=>{resolve([]);db.close()}
     }
    })
-  },profile),{timeout:30_000}).toBeGreaterThanOrEqual(3)
+  },profile)
+  try{
+   await expect.poll(async()=>(await durableKeys()).length,{timeout:30_000}).toBeGreaterThanOrEqual(3)
+  }catch(error){
+   // Failure-only evidence: log allowlisted route keys, never cached values,
+   // session contents or credentials. No retry/timeout/budget is changed.
+   console.info('AND-8 durable route keys on timeout',JSON.stringify(await durableKeys()))
+   throw error
+  }
   const readSerialized=()=>page.evaluate(async(profile)=>{
    const req=indexedDB.open('lemma-offline:demo-'+profile,1)
    return await new Promise<string>((resolve,reject)=>{
