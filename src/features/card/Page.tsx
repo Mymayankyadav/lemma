@@ -328,7 +328,7 @@ export default function Page() {
                   : undefined
               }
             />
-            <div className="my-6 h-px bg-amber" aria-hidden="true" />
+            <div data-card-answer-divider className="my-6 h-px bg-[var(--hair)]" aria-hidden="true" />
             <MathText
               source={note.type === "cloze" ? note.front : note.back}
               variant="answer"
