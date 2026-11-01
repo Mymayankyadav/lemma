@@ -143,4 +143,49 @@ describe('NOTIF-5 Workbox push handling',()=>{
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'later'});
   expect(h.shown.at(-1)?.options.body).toBe('Open Lemma to finish');
  });
+ it('replaces the original K5 notification with the exact approved-card Undo copy and confirmation row id',async()=>{
+  const h=harness();
+  const k5={...payload,kind:'tutor',tag:'tutor-proposals-42',url:'#/proposals',
+   actions:[{action:'approve_cards',title:'Approve 3 cards',token:'signed-approve'}]};
+  const data=h.core.notificationOptions(h.core.parsePayload(k5,scope)).data;
+  h.fetchMock.mockResolvedValueOnce({ok:true,json:async()=>({
+   status:'done',approved:['P1','P2','P3'],skipped:[],confirmId:84,action:123,undoToken:'signed-undo',
+  })} as any);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
+  expect(h.posted).toEqual([{token:'signed-approve'}]);
+  expect(h.shown).toHaveLength(1);
+  expect(h.shown[0]).toMatchObject({
+   title:'Approved 3 cards',
+   options:{tag:'tutor-proposals-42',body:'Undo is in the app, or here for 48 hours.',
+    actions:[{action:'undo',title:'Undo'}],data:{id:'84',tag:'tutor-proposals-42'}},
+  });
+  expect(h.shown[0].options.data.actions[0].token).toBe('signed-undo');
+ });
+ it('states the partial K5 approval count without claiming skipped cards were approved',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,kind:'tutor',tag:'tutor-proposals-42',url:'#/proposals',
+   actions:[{action:'approve_cards',title:'Approve 3 cards',token:'signed-approve'}],
+  },scope)).data;
+  h.fetchMock.mockResolvedValueOnce({ok:true,json:async()=>({
+   status:'done',approved:['P1','P2'],skipped:['P3'],confirmId:85,action:124,undoToken:'signed-undo',
+  })} as any);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
+  expect(h.shown[0]).toMatchObject({
+   title:'Approved 2 of 3 cards',
+   options:{tag:'tutor-proposals-42',body:'Undo is in the app, or here for 48 hours.'},
+  });
+ });
+ it('uses the required Undo-conflict copy and recovers at proposals, never at the original deep link',async()=>{
+  const h=harness();
+  const data={id:'84',tag:'tutor-proposals-42',url:scope+'#/review',
+   actions:[{action:'undo',title:'Undo',token:'signed-undo',url:scope+'#/review'}]};
+  h.fetchMock.mockResolvedValueOnce({ok:false,status:409,
+   json:async()=>({message:'Open Lemma to undo'})} as any);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'undo'});
+  expect(h.posted).toEqual([{token:'signed-undo'}]);
+  expect(h.shown.at(-1)?.options.body).toBe('Open Lemma to undo');
+  expect(h.navigated).toEqual([scope+'#/proposals']);
+ });
+
 });
