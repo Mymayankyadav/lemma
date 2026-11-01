@@ -115,6 +115,9 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 
 export default function Page(){
  const queryClient=useQueryClient();
+ // Cards is the common next stop from Paths. Warm the small route chunk
+ // during the Paths visit without issuing a Cards data query.
+ useEffect(()=>{void import('../cards/Page').catch(()=>{})},[]);
  // The 2,500-idea demo Atlas must not compete with first paint of Paths.
  // Warm its module and canonical data query on genuine Atlas navigation
  // intent (hover, keyboard focus, or touch/pointer down), not on mount.
