@@ -25,6 +25,10 @@ describe('FIX #657c eager-route mathematical labels',()=>{
   expect(html).toContain('katex-html');
   expect(html).not.toContain('Rendering mathematical text');
  });
+ it('retains the Atlas breadcrumb 16px math floor without eagerly importing rich math CSS',()=>{
+  const baseCss=readFileSync('src/ui/FastTex.css','utf8');
+  expect(baseCss).toMatch(/\\[aria-label="Idea path"\\] \\.lemma-tex-inline \\.katex\\s*\\{[^}]*font-size:\\s*max\\(16px,\\s*1em\\)/);
+ });
  it('does not statically import the rich Tex renderer from eager Paths/Atlas modules',()=>{
   for(const file of [
    'src/features/projects/Page.tsx',
