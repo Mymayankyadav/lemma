@@ -67,5 +67,6 @@ describe('NOTIF-4a cron secret header',()=>{
   expect(await verifyCronHeader(secret.slice(0,-1),secret)).toBe(false);
   expect(await verifyCronHeader('x'.repeat(513),secret)).toBe(false);
   expect(await verifyCronHeader(secret,'')).toBe(false);
+  expect(await verifyCronHeader('weak','weak')).toBe(false);
  });
 });
