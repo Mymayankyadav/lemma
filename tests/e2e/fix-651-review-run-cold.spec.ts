@@ -46,7 +46,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     // first-card duration has already been captured. Do not move the start,
     // add retries, or alter the first-attempt CPU/DOM assertions.
     const topModuleResources=performance.getEntriesByType('resource')
-     .filter(entry=>/\\.(?:js|ts|tsx)(?:\\?|$)/.test(entry.name))
+     .filter(entry=>/\.(?:js|ts|tsx)(?:\?|$)/.test(entry.name))
      .sort((a,b)=>b.duration-a.duration).slice(0,12)
      .map(entry=>({path:new URL(entry.name).pathname,
       startMs:Math.round(entry.startTime),durationMs:Math.round(entry.duration),
