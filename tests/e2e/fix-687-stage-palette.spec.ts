@@ -42,6 +42,16 @@ for(const width of [360,390] as const){
   expect(palette.show,'secondary Show/Hide uses ink-2').toBe(palette.inkText);
   expect(palette.fill).not.toBe(palette.accentBackground);
   expect(palette.show).not.toBe(palette.accentText);
+  const percent=page.getByRole('region',{name:'Goal and distance'}).locator('[data-count-role]').first();
+  const percentColor=await percent.evaluate(el=>getComputedStyle(el).color);
+  expect(percentColor,'passive overall percentage uses graphite').toBe(palette.inkText);
+  await summary.click();
+  const done=stages.locator('[data-cp-row][aria-label$=", done"]').first();
+  await expect(done).toBeVisible();
+  const doneMark=done.locator('span[aria-hidden="true"]').first();
+  const doneColor=await doneMark.evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(doneColor,'completed checkpoint mark uses graphite').toBe(palette.inkBackground);
+  expect(doneColor).not.toBe(palette.accentBackground);
   const toggle=stages.locator('[data-stage-card] > button').first();
   expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   expect(await page.locator('*').count()).toBeLessThan(1500);
