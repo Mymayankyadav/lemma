@@ -92,34 +92,59 @@ answer_speed as (
   where r.user_id=p_user and r.undone_at is null and r.duration_ms>0
     and r.reviewed_at>=p_now-interval '30 days'
 ),
-tomorrow_ranked as (
-  -- A project with 25 checkpoints tomorrow must not fill all 20 bounded
-  -- rows and hide another project from the K2 compact digest. Select each
-  -- project's first checkpoint before its second, then fill remaining slots.
+tomorrow_primary as (
+  -- First represent distinct projects, using one indexed checkpoint lookup per
+  -- active project. With 60 projects / 2,400 tomorrow checkpoints this avoids
+  -- ranking and sorting all 2,400 rows merely to show 20 compact K2 entries.
   select c.code,c.title,c.current_step,c.steps,pr.slug,pr.title project,
-    c.due_on,c.position,c.id checkpoint_id,
-    row_number() over(partition by pr.id order by c.due_on,c.position,c.id) project_rank
+    c.due_on,c.position,c.id checkpoint_id
+  from visible_projects pr cross join prefs f
+  join lateral (
+    select c.code,c.title,c.current_step,c.steps,c.due_on,c.position,c.id
+    from public.checkpoints c
+    where c.user_id=p_user and c.project_id=pr.id
+      and c.status<>'demonstrated' and c.due_on=f.today+1
+      and (c.status='in_progress' or not exists (
+        select 1 from public.checkpoint_prereqs edge
+        join public.checkpoints prerequisite on prerequisite.id=edge.prereq_id and prerequisite.user_id=edge.user_id
+        where edge.user_id=p_user and edge.checkpoint_id=c.id and prerequisite.status<>'demonstrated'
+      ))
+    order by c.position,c.id
+    limit 1
+  ) c on true
+  where pr.status='active'
+  order by pr.slug
+  limit 20
+),
+tomorrow_extras as (
+  -- If fewer than twenty projects qualify, fill remaining slots with their
+  -- other checkpoints. The LIMIT is zero in the 60-project stress fixture.
+  select c.code,c.title,c.current_step,c.steps,pr.slug,pr.title project,
+    c.due_on,c.position,c.id checkpoint_id
   from public.checkpoints c
   join visible_projects pr on pr.id=c.project_id and pr.user_id=c.user_id
   cross join prefs f
   where c.user_id=p_user and pr.status='active'
     and c.status<>'demonstrated' and c.due_on=f.today+1
+    and not exists(select 1 from tomorrow_primary first where first.checkpoint_id=c.id)
     and (c.status='in_progress' or not exists (
       select 1 from public.checkpoint_prereqs edge
       join public.checkpoints prerequisite on prerequisite.id=edge.prereq_id and prerequisite.user_id=edge.user_id
       where edge.user_id=p_user and edge.checkpoint_id=c.id and prerequisite.status<>'demonstrated'
     ))
+  order by pr.slug,c.position,c.id
+  limit (select greatest(20-count(*),0) from tomorrow_primary)
 ),
 tomorrow_rows as (
-  select * from tomorrow_ranked
-  order by project_rank,due_on,slug,position,checkpoint_id
-  limit 20
+  select 0 priority,first.* from tomorrow_primary first
+  union all
+  select 1 priority,extra.* from tomorrow_extras extra
 ),
 tomorrow_json as (
   select coalesce(jsonb_agg(jsonb_build_object(
     'slug',slug,'project',project,'code',code,'title',title,
     'step',current_step,'steps',jsonb_array_length(steps))
-    order by project_rank,due_on,slug,position,checkpoint_id),'[]'::jsonb) items
+    order by priority,due_on,slug,position,checkpoint_id),'[]'::jsonb) items
   from tomorrow_rows
 ),
 late_ranked as (
