@@ -130,15 +130,48 @@ test('the ideas a plan adds fold into clusters and link to the checkpoints that 
  const ideas=page.getByRole('region',{name:'Ideas in this plan'});
  await expect(ideas.getByRole('tree',{name:'Ideas in this plan'})).toBeVisible();
  const all=await ideas.getByRole('treeitem').count();
- await ideas.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'1',exact:true}).click();
+ const fold=ideas.getByRole('group',{name:'Fold ideas to level'});
+ await fold.getByRole('button',{name:'Show fields level'}).click();
  expect(await ideas.getByRole('treeitem').count()).toBeLessThan(all);
- await ideas.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+ await fold.getByRole('button',{name:'Show all level'}).click();
  await ideas.getByRole('button',{name:/^Separating a point from a compact set, /}).click();
  const selection=ideas.locator('[data-idea-selection]');
  await expect(selection).toContainText('Builds on');
  expect(await ideas.locator('[data-arc-tone="up"]').count()).toBeGreaterThan(0);
  await ideas.scrollIntoViewIfNeeded();
  await page.screenshot({path:'test-results/screens/plan-ideas-graph.png'});
- await selection.getByRole('button',{name:'CP4a'}).click();
+ await selection.getByRole('button',{name:'Details'}).click();
+ const details=page.getByRole('dialog');
+ await expect(details).toContainText('Builds on');
+ await expect(details).toContainText('Opens up');
+ await expect(details).toContainText('Taught in');
+ // Proposed ideas remain inside plan review: the checkpoint opens the local
+ // drawer rather than navigating to an idea not yet in the approved Atlas.
+ await details.getByRole('button',{name:'CP4a'}).click();
  await expect(page.locator('[data-checkpoint-drawer="CP4a"]')).toBeVisible();
 });
+
+// LOOK-8c: preserve the embedded v4 hierarchy and paper at both ST-0 sizes,
+// in both graph themes, against the actual stress and extreme demo stores.
+for(const profile of ['stress','extreme'] as const)
+for(const theme of ['graph','graph-night'] as const)
+for(const width of [390,360] as const){
+ test(`LOOK-8c plan ideas ${profile} ${theme} ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:width===390?844:740});
+  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
+  await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/proposals?tab=plan`);
+  await page.getByRole('link',{name:'See the whole plan'}).click();
+  const ideas=page.getByRole('region',{name:'Ideas in this plan'});
+  const tree=ideas.getByRole('tree',{name:'Ideas in this plan'});
+  await expect(tree).toBeVisible();
+  const fold=ideas.getByRole('group',{name:'Fold ideas to level'});
+  await fold.getByRole('button',{name:'Show fields level'}).click();
+  await expect(fold.getByRole('button',{name:'Show fields level'})).toHaveAttribute('aria-pressed','true');
+  await fold.getByRole('button',{name:'Show all level'}).click();
+  await expect(tree.getByRole('treeitem').first()).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  const paper=await tree.evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(paper,'The grid must not show through the idea rows').not.toBe('rgba(0, 0, 0, 0)');
+  await page.screenshot({path:`test-results/screens/stress/look-8c-${profile}-${theme}-${width}.png`,fullPage:true});
+ });
+}
