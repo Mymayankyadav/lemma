@@ -32,6 +32,15 @@ for(const route of ['/insights','/kit'] as const){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/fix-507-charts',{recursive:true});
   await reviews.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews.png`});
+  // The narrow Insights chart deliberately scrolls *inside* its card.
+  // Exercise the actual scrollport and capture the final periods too, rather
+  // than accepting a 30-bucket DOM count with unreachable right-hand marks.
+  if(route==='/insights'){
+   const scrollport=reviews.locator('..');
+   await scrollport.evaluate(el=>{el.scrollLeft=el.scrollWidth});
+   expect(await scrollport.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
+   await reviews.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews-right.png`});
+  }
   await checkpoints.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-checkpoints.png`});
  });
 }
