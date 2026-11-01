@@ -7,11 +7,15 @@ on:
     branches: [main]
 permissions:
   contents: read
+  issues: write
+  actions: read
+# Every run attempt gets a durable FIFO ticket. GitHub Actions concurrency
+# would silently replace the older pending run when a third trigger arrives.
 jobs:
   smoke:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 75
     env:
       MCP_URL: ${{ secrets.MCP_URL }}
     steps:
@@ -21,13 +25,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Acquire durable MCP selftest FIFO ticket
+        timeout-minutes: 56
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/mcp-selftest-queue.mjs acquire
       - name: Verify deployed connector
         shell: bash
         run: |
+          # A completed-success workflow must mean the connector was tested.
+          # Never print the URL: it contains a secret path component.
           if [[ -z "$MCP_URL" ]]; then
-            echo "::notice::MCP smoke skipped: add the MCP_URL secret after MCP-1."
+            echo "::error::MCP smoke blocked: MCP_URL is not configured."
+            exit 1
           elif [[ ! -f tests/mcp/smoke.mjs ]]; then
-            echo "::notice::MCP smoke skipped: MCP-1 has not supplied the smoke script yet."
+            echo "::error::MCP smoke blocked: missing smoke script."
+            exit 1
           else
             node tests/mcp/smoke.mjs
           fi
+      - name: Release MCP selftest FIFO ticket
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/mcp-selftest-queue.mjs release

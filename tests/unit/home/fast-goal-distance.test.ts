@@ -1,7 +1,7 @@
 // @vitest-environment node
 import {readFileSync} from 'node:fs'
 import {describe,expect,it} from 'vitest'
-import {shouldUseFastGoals} from '../../../src/features/home/fastGoalPolicy'
+import {shouldUseFastGoals,shouldStageSecondaryGoals} from '../../../src/features/home/fastGoalPolicy'
 import type {ProjectSummary} from '../../../src/data/types'
 
 const project=(status:ProjectSummary['status']='active')=>({status}) as ProjectSummary
@@ -63,4 +63,19 @@ describe('FIX #507 cold Today goal-summary entry',()=>{
   expect(page).not.toContain('function ProjectLink(')
   expect(page).not.toContain('<section aria-label="Projects"')
  })
+ it('stages only below-fold secondary goals after a real first-goal paint on large desks',()=>{
+  expect(shouldStageSecondaryGoals(0)).toBe(false)
+  expect(shouldStageSecondaryGoals(4)).toBe(false)
+  expect(shouldStageSecondaryGoals(5)).toBe(true)
+  expect(shouldStageSecondaryGoals(60)).toBe(true)
+  const fast=readFileSync('src/features/home/FastGoalDistance.tsx','utf8')
+  expect(fast).toContain('secondaryReady?featured:featured.slice(0,1)')
+  expect(fast).toContain('secondaryReady&&rest.length>0')
+  // The real visible first goal is still the original, independently measured
+  // DOM paint. Later cards may not block the first meaningful paint.
+  expect(fast).toContain("performance.mark('lemma-stress-first-goal-paint')")
+  expect(fast).toContain('requestAnimationFrame(()=>setSecondaryReady(true))')
+  expect(fast).toContain("showRest?'Show fewer':'Show all '+rest.length+' projects'")
+ })
+
 })
