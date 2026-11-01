@@ -17,6 +17,11 @@ describe('LOOK-5a bounded Paths row subscriptions',()=>{
   expect(countPinnedProjects(projects)).toBe(4)
   expect(countPinnedProjects([...projects,{pinned:true,system:false,status:'active'}])).toBe(5)
  })
+ it('memoizes pinned selection instead of rebuilding every subject group on each render',()=>{
+  const source=readFileSync(join(process.cwd(),'src/features/projects/Page.tsx'),'utf8')
+  expect(source).toContain('const pinned=useMemo(')
+  expect(source).toContain('const pinnedIds=useMemo(')
+ })
  it('subscribes to the project query once per Paths page, not once per row',()=>{
   const source=readFileSync(join(process.cwd(),'src/features/projects/Page.tsx'),'utf8')
   expect(source.match(/\buseProjects\(\)/g)?.length).toBe(1)
