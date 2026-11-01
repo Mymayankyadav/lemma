@@ -61,7 +61,9 @@ export default function AppShell(){
    pendingSave=pendingSave.then(async()=>{
     if(identity!==owner||disposed||(!allowOffline&&!navigator.onLine))return;
     await saveOfflineSnapshot(owner,queryClient,savedAt,()=>!disposed&&identity===owner&&(allowOffline||navigator.onLine));
-    lastSavedAt=savedAt;
+    // An aborted old-owner/offline write must not advance the next owner's
+    // persistence watermark or suppress its first real snapshot.
+    if(!disposed&&identity===owner&&(allowOffline||navigator.onLine))lastSavedAt=savedAt;
    }).catch(()=>{/* Quota/private mode: online use continues. */});
    await pendingSave;
   };
