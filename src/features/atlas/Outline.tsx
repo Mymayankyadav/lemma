@@ -53,6 +53,41 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
     radius:Math.hypot((bundlePillWidth(arc.count)+1)/2,8)};
  }).sort((a,b)=>b.radius-a.radius||a.anchorY-b.anchorY||a.arc.key.localeCompare(b.arc.key));
  const placed:BundlePlacement[]=[],result=new Map<string,BundlePlacement>();
+ // A badge tests only nearby painted rectangles. Scanning every previous
+ // placement for each 4px candidate becomes quadratic in dense 60-arc gutters
+ // under 4x CPU. Vertical buckets preserve the original exact circle test
+ // and candidate ordering, including the overflow-summary backtracking.
+ const placedByY=new Map<number,BundlePlacement[]>(),bucketHeight=64;
+ let widestPlacedRadius=0;
+ const register=(badge:BundlePlacement)=>{
+  placed.push(badge);
+  const bucket=Math.floor(badge.y/bucketHeight);
+  const group=placedByY.get(bucket)??[];
+  group.push(badge);placedByY.set(bucket,group);
+  widestPlacedRadius=Math.max(widestPlacedRadius,badge.radius);
+ };
+ const unregisterLast=():BundlePlacement=>{
+  const badge=placed.pop()!,bucket=Math.floor(badge.y/bucketHeight);
+  const group=placedByY.get(bucket);
+  if(group){
+   const index=group.indexOf(badge);
+   if(index>=0)group.splice(index,1);
+   if(!group.length)placedByY.delete(bucket);
+  }
+  // A conservative maximum after removal costs only extra bucket lookups.
+  return badge;
+ };
+ const clearOfPlaced=(x:number,y:number,radius:number):boolean=>{
+  if(!placed.length)return true;
+  const reach=radius+widestPlacedRadius+9;
+  for(let bucket=Math.floor((y-reach)/bucketHeight);bucket<=Math.floor((y+reach)/bucketHeight);bucket++){
+   for(const other of placedByY.get(bucket)??[]){
+    const dx=x-other.x,dy=y-other.y,clearance=radius+other.radius+9;
+    if(dx*dx+dy*dy<clearance*clearance)return false;
+   }
+  }
+  return true;
+ };
  const findSlot=(radius:number,anchorX:number,anchorY:number):BundlePlacement|null=>{
   const inset=radius>=22?0:2; // A 44px summary must fit even a one-row outline.
   const minX=radius+inset,maxX=GUTTER-radius-inset;
@@ -71,7 +106,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
    for(const x of xs){
     // SVG circles have a 1px stroke (0.5px per edge), so reserve 9px
     // between geometric radii to guarantee >=8 CSS px between painted marks.
-    if(placed.every(other=>{const dx=x-other.x,dy=y-other.y,clearance=radius+other.radius+9;return dx*dx+dy*dy>=clearance*clearance}))
+    if(clearOfPlaced(x,y,radius))
      return {x,y,radius,anchorX,anchorY};
    }
   }
@@ -80,7 +115,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
  const hiddenKeys:string[]=[];
  for(const item of items){
   const label=findSlot(item.radius,item.anchorX,item.anchorY);
-  if(label){placed.push(label);result.set(item.arc.key,label)}
+  if(label){register(label);result.set(item.arc.key,label)}
   else hiddenKeys.push(item.arc.key);
  }
  if(hiddenKeys.length){
@@ -88,7 +123,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
   // the summary itself has the same eight-pixel clearance as every other mark.
   let summary=findSlot(22,GUTTER/2,height/2);
   while(!summary&&placed.length){
-   const removed=placed.pop()!;
+   const removed=unregisterLast();
    const key=[...result].find(([,value])=>value===removed)?.[0];
    if(key){result.delete(key);hiddenKeys.push(key)}
    summary=findSlot(22,GUTTER/2,height/2);
