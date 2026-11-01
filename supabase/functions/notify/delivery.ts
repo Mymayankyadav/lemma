@@ -29,6 +29,51 @@ const isTopic=(tag:string)=>/^[A-Za-z0-9_-]{1,32}$/.test(tag);
 const canRetry=(failures:number)=>failures<2;
 const failure=(failures:number):DeliveryResult=>({status:canRetry(failures)?'retry':'failed'});
 
+const MAX_ID=9223372036854775807n;
+const ENVELOPE_KEYS=new Set(['v','id','kind','tag','title','body','url','actions','ts']);
+const ACTION_KEYS=new Set(['action','title','url','token']);
+const safeUrl=(value:unknown):boolean=>{
+ if(typeof value!=='string'||value.length<1||value.length>2048||
+    value.trim()!==value||/[\u0000-\u001f\u007f]/.test(value))return false;
+ if(/^#\//.test(value)||/^\/lemma\/#\//.test(value))return true;
+ try{
+  const url=new URL(value);
+  if(url.username||url.password)return false;
+  if(url.protocol==='https:'&&(url.hostname==='claude.ai'||url.hostname==='chatgpt.com'))return true;
+  if(url.protocol==='https:'&&url.hostname==='mymayankyadav.github.io'&&
+     url.pathname.startsWith('/lemma/')&&url.hash.startsWith('#/'))return true;
+  if(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)&&
+     url.pathname.startsWith('/lemma/'))return true;
+ }catch{/* Invalid navigation destination. */}
+ return false;
+};
+const validAction=(raw:unknown):boolean=>{
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return false;
+ const action=raw as Record<string,unknown>;
+ if(Object.keys(action).some(key=>!ACTION_KEYS.has(key))||
+    typeof action.action!=='string'||!/^[a-z][a-z0-9_-]{0,31}$/.test(action.action)||
+    typeof action.title!=='string'||!action.title.trim()||action.title.length>40)return false;
+ if(action.url!==undefined&&!safeUrl(action.url))return false;
+ if(action.token!==undefined&&(typeof action.token!=='string'||action.token.length>4096||
+    !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(action.token)))return false;
+ return true;
+};
+/** Fail closed before encrypting: never transmit unrecognized JSON properties. */
+const validEnvelope=(payload:Record<string,unknown>,kind:PushKind,tag:string):boolean=>{
+ const keys=Object.keys(payload);
+ if(keys.length!==ENVELOPE_KEYS.size||keys.some(key=>!ENVELOPE_KEYS.has(key)))return false;
+ const id=payload.id;
+ const validId=typeof id==='number'?Number.isSafeInteger(id)&&id>0:
+  typeof id==='string'&&/^[1-9]\d{0,18}$/.test(id)&&BigInt(id)<=MAX_ID;
+ return validId&&payload.v===1&&payload.kind===kind&&payload.tag===tag&&
+  typeof payload.title==='string'&&!!payload.title.trim()&&payload.title.length<=48&&
+  typeof payload.body==='string'&&payload.body.length<=140&&
+  safeUrl(payload.url)&&
+  Array.isArray(payload.actions)&&payload.actions.length<=2&&payload.actions.every(validAction)&&
+  Number.isSafeInteger(payload.ts)&&Number(payload.ts)>0;
+};
+
+
 /**
  * Returns a classification, never an endpoint, key, body, response text or
  * exception message. The caller persists status and disables 404/410 devices.
@@ -42,15 +87,7 @@ export async function sendWebPush(
  const priorFailures=request.priorFailures??0;
  if(!Number.isSafeInteger(priorFailures)||priorFailures<0||typeof tag!=='string'||!isTopic(tag)||
     !KINDS.has(kind)||!payload||typeof payload!=='object'||Array.isArray(payload)||
-    payload.kind!==kind||payload.tag!==tag||payload.v!==1)
-  return {status:'failed'};
- const id=payload.id;
- if(!(typeof id==='number'&&Number.isSafeInteger(id)&&id>0||
-      typeof id==='string'&&/^[1-9]\d{0,18}$/.test(id))||
-    typeof payload.title!=='string'||payload.title.length<1||payload.title.length>48||
-    typeof payload.body!=='string'||payload.body.length>140||
-    typeof payload.url!=='string'||payload.url.length<1||payload.url.length>2048||
-    /^\s*javascript:/i.test(payload.url))
+    !validEnvelope(payload,kind,tag))
   return {status:'failed'};
  let endpoint:URL;
  try{endpoint=new URL(subscription.endpoint)}
@@ -77,6 +114,8 @@ export async function sendWebPush(
  try{
   const response=await sender(subscription.endpoint,{
    method:'POST',
+   // Never forward encrypted push bytes or VAPID auth across a 307/308 redirect.
+   redirect:'error',
    headers:{...prepared.headers,TTL:String(ttl),Urgency:urgency,Topic:tag},
    body:prepared.body as BodyInit,
    signal,
