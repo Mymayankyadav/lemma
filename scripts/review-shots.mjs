@@ -156,6 +156,22 @@ try {
       const heading=v4Headings[name];
       if(!heading)throw Error('No QA-4 route heading contract for '+name);
       await phone.getByRole('heading',{name:heading,level:1,exact:true}).waitFor({state:'visible'});
+      // QA-4 #737: a heading alone is not data-backed Today evidence.
+      // The demo Review forecast can still be inside Suspense after the h1
+      // appears; wait for the seven actual bars instead of capturing its
+      // transient "Loading seven-day forecast" placeholder. All-clear desks
+      // have no due count and deliberately need no forecast bars.
+      if(name==='today'){
+       const review=phone.getByRole('region',{name:'Review',exact:true});
+       const hasDue=(await review.locator('p').filter({hasText:/^\\s*[\\d,]+\\s+due\\s*$/}).count())>0;
+       if(hasDue){
+        await review.locator('[data-review-spark-bar]').first().waitFor({state:'visible'});
+        const bars=await review.locator('[data-review-spark-bar]').count();
+        if(bars!==7)throw Error('Today forecast must show seven settled bars');
+       }
+       if(await review.getByText(/Loading (seven-day )?forecast/i).count())
+        throw Error('Loading forecast is not valid QA-4 Today evidence');
+      }
       if(name==='paths')await checkMiniRoutes(phone,theme+'/'+demo+'/'+width);
       if(name==='review-run'||name==='review-run-answer')
        await phone.locator('[data-review-card-scroll]').waitFor({state:'visible'});
