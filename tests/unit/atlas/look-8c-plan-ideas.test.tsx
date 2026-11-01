@@ -40,4 +40,17 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
   expect(review).toContain('Ask for changes');
   expect(graph).not.toMatch(/approveProposal|useApproveProposal|notify_act/);
  });
+ it('opens a focus-trapped proposed-idea Details sheet with local path and checkpoint controls',()=>{
+  expect(graph).toContain("import {Sheet} from '../../ui/Sheet'");
+  expect(graph).toContain("import {AtlasDetailsPath} from './DetailsMath'");
+  expect(graph).toContain('onClick={()=>setDetails(true)}');
+  expect(graph).toContain('<Sheet open={details&&!!selected}');
+  expect(graph).toContain('data-proposed-idea-details="true"');
+  expect(graph).toContain('onSelect={i=>jump(selectedPath[i].id)}');
+  expect(graph).toContain('<Names title="Related"');
+  expect(graph).toContain('<Names title="Inside"');
+  expect(graph).toContain('setDetails(false);onCheckpoint?.(r.code)');
+  expect(graph).not.toMatch(/useNavigate|navigate\(|window\.location|href=.*atlas/);
+ });
+
 });
