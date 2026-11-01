@@ -54,6 +54,14 @@ describe('FIX #507 hard-budget CI gate',()=>{
   })).toThrow(/invalid pending stress gate/);
  });
 
+ it('fails closed when first-render timing evidence is missing or non-finite',()=>{
+  // A missing browser Performance mark must never turn a 4x CPU budget into
+  // NaN < 1500 and silently pass the release gate.
+  for(const durationMs of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY,-1]){
+   expect(()=>enforceStressBudgets([{...base,route:'/',cpuThrottle:4,durationMs}],{pending:[]}))
+    .toThrow(/invalid first render timing/);
+  }
+ });
  it('does not exempt already merged and Auditor-closed stress fixes',()=>{
   // Closed #506/#485/#510 and merged ST-4 #433 must not silently forgive
   // regressions in chart text, Atlas maths, Sources taps or Cards DOM.
