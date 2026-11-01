@@ -167,7 +167,7 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
  * Any possible markup, math, entity or autolink still goes through Tex. */
 const richNameCharacters=new Set(['$','\\','*','_','~','`','[',']','<','>','#','{','}','!','|','&','@','\r','\n']);
 export function isPlainAtlasLabel(source:string):boolean{
- if(!source||source.trim()!==source||/https?:\/\/|www\./i.test(source))return false;
+ if(!source||source.trim()!==source||/https?:\/\/|www\.|\b[\w-]+\.[a-z]{2,}\b/i.test(source))return false;
  if(/^(?:[-+]\s|\d+\.\s|---+$)/.test(source))return false;
  for(const char of source)if(richNameCharacters.has(char))return false;
  return true;
