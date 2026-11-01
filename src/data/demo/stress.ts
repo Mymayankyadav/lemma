@@ -127,7 +127,7 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
 }
 
 /** Build the real note rows only when a route needs card content. */
-export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects'],cardCount:number,dueCount:number):DemoNote[]{
+export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects'],cardCount:number,dueCount:number,startIndex=0):DemoNote[]{
  const notes:DemoNote[]=[];
   const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
   const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
@@ -135,7 +135,7 @@ export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects']
   const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
   const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
   const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
-  for (let i = 0; i < cardCount; i++) {
+  for (let i = startIndex; i < startIndex + cardCount; i++) {
     const project = projects[i % projects.length];
     const no = i + 1;
     const note: DemoNote = {
