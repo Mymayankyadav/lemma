@@ -66,6 +66,22 @@ try{
  assert.equal(current.week.daysStudied,0)
  assert.ok(current.history.lastByKey)
  assert.ok(current.history.dismissStreak)
+ // Neither archived projects nor hidden system fixtures may generate a
+ // reminder, even when their cards are overdue.
+ for(const [slug,status,system] of [['archived-notify','archived',false],['zz-selftest-notify','active',true]]){
+   const hiddenProject=(await q(
+     'insert into public.projects(user_id,subject_id,slug,title,goal,status,system) values($1,$2,$3,$4,$5,$6,$7) returning id',
+     [owner,subject,slug,slug,'Study',status,system]))[0].id
+   const hiddenNote=(await q(
+     'insert into public.notes(user_id,project_id,front) values($1,$2,$3) returning id',
+     [owner,hiddenProject,'Hidden question']))[0].id
+   await q('insert into public.cards(user_id,note_id,ord,state,due) values($1,$2,1,2,$3)',
+     [owner,hiddenNote,'2026-10-20T00:00:00Z'])
+ }
+ const visibleOnly=await facts()
+ assert.equal(visibleOnly.due.count,2)
+ assert.equal(visibleOnly.due.backlog,2)
+ console.log('PASS NOTIF-1b archived/system projects excluded from reminders')
  console.log('PASS NOTIF-1b K1/K5/K6/K8 shape and stable proposal IDs')
  // Backoff counts only consecutive dismissals, never total dismissals in the
  // last three actions. A tap resets the streak.
