@@ -1,3 +1,4 @@
+import {memo} from 'react';
 import {ChevronRight} from 'lucide-react';
 import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
@@ -263,6 +264,12 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
   </details>}
  </>;
 }
+
+// Scrolling and the ResizeObserver update the Atlas row window without
+// changing arcs, geometry or focus. Avoid rerunning the expensive finite
+// lane/badge placement for those unrelated state changes.
+export const MemoWires=memo(Wires);
+MemoWires.displayName='AtlasWires';
 
 /** Distinct hierarchy without shortening any interactive target. The full
  * mathematical name stays in the button's accessible label and details sheet.
