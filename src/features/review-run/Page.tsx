@@ -3,9 +3,7 @@ import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
-import {useAddComment,useRecordReview,useSettings,useSetNoteStatus,useUndoReview} from '../../data/hooks';
-import {useQuery} from '@tanstack/react-query';
-import {getReviewRunItems} from './preload';
+import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatus,useUndoReview} from '../../data/hooks';
 import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../data/types';
 import {preview,scheduleConfig} from '../../lib/fsrs';
 import {useReviewSession} from './store';
@@ -139,10 +137,7 @@ export default function Page(){
  const init=useRef(false);
  const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
  const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
- // Same query key and defaults as useReviewItems: the first direct stress
- // navigation may reuse a speculative bounded read; subsequent queries are fresh.
- const apiCards=useQuery({staleTime:30_000,refetchOnWindowFocus:true,
-  queryKey:['review-items',filter],queryFn:()=>getReviewRunItems(filter)});
+ const apiCards=useReviewItems(filter);
  useEffect(()=>{
   if(init.current||!settings.data||!apiCards.data)return;
   init.current=true;
