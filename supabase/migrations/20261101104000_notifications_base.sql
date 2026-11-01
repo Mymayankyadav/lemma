@@ -38,6 +38,30 @@ create trigger push_devices_cap before insert or update of disabled_at on public
  for each row execute function public.push_devices_cap();
 revoke all on function public.push_devices_cap() from public,anon,authenticated,service_role;
 
+-- The browser registers an endpoint atomically; a foreign owner's endpoint is never claimed.
+create function public.upsert_push_device(
+ p_endpoint text,p_p256dh text,p_auth text,p_label text,p_platform text
+) returns public.push_devices
+language plpgsql security definer set search_path='' as $
+declare result public.push_devices%rowtype; uid uuid;
+begin
+ uid:=auth.uid();
+ if uid is null then raise exception 'Not authorized'; end if;
+ insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform)
+ values(uid,p_endpoint,p_p256dh,p_auth,p_label,p_platform)
+ on conflict(endpoint) do update set
+  p256dh=excluded.p256dh,auth=excluded.auth,label=excluded.label,
+  platform=excluded.platform,disabled_at=null,disabled_reason=null
+ where push_devices.user_id=excluded.user_id
+ returning * into result;
+ if not found then
+  raise exception 'This browser gets reminders for another Lemma account.';
+ end if;
+ return result;
+end $;
+revoke all on function public.upsert_push_device(text,text,text,text,text) from public,anon,service_role;
+grant execute on function public.upsert_push_device(text,text,text,text,text) to authenticated;
+
 create table public.notifications (
  id bigint generated always as identity primary key,
  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -88,6 +112,7 @@ create policy owner_read on public.notifications for select to authenticated
 
 -- These three plumbing tables intentionally have no log_change() trigger.
 -- Down for NOTIF-1a (after NOTIF-1b's functions have been removed):
+-- drop function if exists public.upsert_push_device(text,text,text,text,text);
 -- drop trigger if exists push_devices_cap on public.push_devices;
 -- drop function if exists public.push_devices_cap();
 -- drop table if exists public.notify_holds,public.notifications,public.push_devices;
