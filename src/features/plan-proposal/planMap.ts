@@ -55,11 +55,19 @@ export function layoutPlanMap(nodes: readonly ReviewNode[]): PlanMapLayout {
 
 /** Keep the owner's named stages; create neutral eight-checkpoint stages for legacy flat plans. */
 export interface PlanStage {id: string; name: string; nodes: ReviewNode[]}
+// Review nodes are immutable derivations of a proposal snapshot. Share the
+// grouped stages across the list and stage graph instead of repeating an
+// O(n²) flat-plan reduce during each StrictMode render replay.
+const groupedStageCache=new WeakMap<readonly ReviewNode[],PlanStage[]>();
 export function groupPlanStages(nodes: readonly ReviewNode[]): PlanStage[] {
+  const cached=groupedStageCache.get(nodes);
+  if(cached)return cached;
   const hasNames = nodes.some(n => !!n.stage?.trim());
   const stages: PlanStage[] = [];
+  let processed=0;
   for (const node of nodes) {
-    const name = node.stage?.trim() || (hasNames ? "Unstaged" : `CP${Math.floor(stages.reduce((sum, s) => sum + s.nodes.length, 0) / 8) * 8 + 1}`);
+    const name = node.stage?.trim() || (hasNames ? "Unstaged" : `CP${Math.floor(processed / 8) * 8 + 1}`);
+    processed++;
     const last = stages[stages.length - 1];
     if (last && last.name === name && (hasNames || last.nodes.length < 8)) {
       last.nodes.push(node);
@@ -70,6 +78,7 @@ export function groupPlanStages(nodes: readonly ReviewNode[]): PlanStage[] {
   if (!hasNames) for (const s of stages) {
     s.name = `${s.nodes[0].code}–${s.nodes[s.nodes.length - 1].code}`;
   }
+  groupedStageCache.set(nodes,stages);
   return stages;
 }
 
