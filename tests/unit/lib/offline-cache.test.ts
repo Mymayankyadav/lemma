@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest'
 import {QueryClient} from '@tanstack/react-query'
-import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient} from '../../../src/lib/offline-cache'
+import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient} from '../../../src/lib/offline-cache'
 import type {Settings} from '../../../src/data/types'
 const now=Date.UTC(2026,10,1)
 const settings={
@@ -14,6 +14,20 @@ describe('AND-8 strict offline snapshot',()=>{
   expect(Object.keys(projection).sort()).toEqual(['v','timeZone','rolloverHour','ui','preferredChat','defaultStyle','mixDecks','newPerDay'].sort())
   expect(projection.ui).toEqual({mode:'night',density:'compact'})
   expect(JSON.stringify(projection)).not.toContain('SENTINEL-SECRET')
+ })
+ it('rejects tampered offline settings on read before they reach React Query',()=>{
+  const good=projectOfflineSettings(settings)
+  expect(isOfflineSettings(good)).toBe(true)
+  expect(isOfflineSettings({...good,connectorUrl:'SENTINEL-SECRET'})).toBe(false)
+  expect(isOfflineSettings({...good,ui:{...good.ui,widgetToken:'SENTINEL-SECRET'}})).toBe(false)
+  expect(isOfflineSettings({...good,rolloverHour:'four'})).toBe(false)
+  expect(isOfflineSettings({...good,v:2})).toBe(false)
+  const entries=[
+   {key:['settings'],savedAt:now,data:{...good,connectorUrl:'SENTINEL-SECRET'}},
+   {key:['decks'],savedAt:now,data:[{key:'project:math',due:12}]}
+  ]
+  const safe=boundOfflineEntries(entries,now)
+  expect(safe.map(entry=>entry.key[0])).toEqual(['decks'])
  })
  it('accepts only the exact read-only query allowlist',()=>{
   for(const key of [['home'],['projects'],['project','math'],['checkpoint','math','CP4'],['decks'],['styles'],['settings']])
