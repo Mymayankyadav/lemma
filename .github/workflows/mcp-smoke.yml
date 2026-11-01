@@ -7,16 +7,15 @@ on:
     branches: [main]
 permissions:
   contents: read
-# A completed deploy can trigger this while a newer deploy is already
-# running its mutating post-deploy selftest. Never overlap those requests.
-concurrency:
-  group: lemma-mcp-selftest
-  cancel-in-progress: false
+  issues: write
+  actions: read
+# Every run attempt gets a durable FIFO ticket. GitHub Actions concurrency
+# would silently replace the older pending run when a third trigger arrives.
 jobs:
   smoke:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 75
     env:
       MCP_URL: ${{ secrets.MCP_URL }}
     steps:
@@ -26,6 +25,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Acquire durable MCP selftest FIFO ticket
+        timeout-minutes: 56
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/mcp-selftest-queue.mjs acquire
       - name: Verify deployed connector
         shell: bash
         run: |
@@ -36,3 +40,8 @@ jobs:
           else
             node tests/mcp/smoke.mjs
           fi
+      - name: Release MCP selftest FIFO ticket
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/mcp-selftest-queue.mjs release
