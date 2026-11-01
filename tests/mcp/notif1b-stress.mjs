@@ -61,10 +61,10 @@ try{
  console.log('NOTIF-1b X candidate snapshot',JSON.stringify({projects:60,checkpoints:2400,cards:30000,queryCount,elapsedMs:Number(elapsed.toFixed(1))}))
  // Diagnostic EXPLAIN is never used for acceptance: the first call above
  // remains the only timed attempt and always fails if it exceeded the budget.
- if(elapsed>=120){
+ if(elapsed>=150){
    const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,now())',[owner])
    console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
-   // Profile the individual CTEs after the measured first attempt.
+   // Profile individual CTEs only after the strict first-attempt gate fails.
    // No diagnostic rerun can change the first-attempt acceptance measurement.
    const migrationSql=await readFile(new URL('../../supabase/migrations/20261101123100_notify_candidates.sql',import.meta.url),'utf8')
    const cteBody=migrationSql.split('\nwith\n')[1]?.split("\nselect jsonb_build_object(\n  'tz'")[0]
