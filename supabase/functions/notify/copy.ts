@@ -5,7 +5,7 @@ import {notifyTitle,notifyBody,notifyText} from '../_shared/notify-text.ts'
  * Never pass HTML, raw LaTeX or connector/auth data into system notifications.
  */
 export interface NoticeCopy {kind:string;tag:string;title:string;body:string}
-interface Checkpoint {project:string;code:string;title:string;step?:number;steps?:number}
+interface Checkpoint {project:string;slug?:string;code:string;title:string;step?:number;steps?:number}
 export type NoticeCopyInput =
  | {kind:'due';count:number;backlog:number;minutes:number}
  | {kind:'deadline';checkpoints:Checkpoint[]}
@@ -60,16 +60,20 @@ export function notificationCopy(input:NoticeCopyInput):NoticeCopy {
    // The three visible slots belong to projects, not checkpoint rows.
    const projects=new Map<string,{first:Checkpoint;count:number}>()
    for(const cp of checkpoints){
-    const group=projects.get(cp.project)
+    // Slugs identify projects; titles need not be unique. Older callers
+    // without a slug retain the original display-title grouping.
+    const key=cp.slug??cp.project
+    const group=projects.get(key)
     if(group)group.count++
-    else projects.set(cp.project,{first:cp,count:1})
+    else projects.set(key,{first:cp,count:1})
    }
    const visible=Array.from(projects.entries()).slice(0,3)
    const omitted=projects.size-visible.length
    const suffix=omitted?'+'+omitted+' more':''
    const separators=3*(visible.length-1+(suffix?1:0)) // ' · '
    const perProject=Math.floor((140-separators-suffix.length)/visible.length)
-   const lines=visible.map(([project,group])=>{
+   const lines=visible.map(([,group])=>{
+    const project=group.first.project
     const extras=group.count>1?' (+'+(group.count-1)+' '+
      ((group.count-1)===1?'checkpoint':'checkpoints')+')':''
     // Reserve the count before truncating a long title, otherwise the
