@@ -31,7 +31,7 @@ describe('FIX-659 Project checkpoint daily due-card count index',()=>{
    const project=await api.getProject('real-analysis');
    const cards=await api.getReviewItems(filter);
    const expected=new Map<string,number>();
-   for(const card of cards)if(card.projectSlug==='real-analysis')
+   for(const card of cards)if(card.projectSlug==='real-analysis'&&card.checkpointCode!==null)
     expected.set(card.checkpointCode,(expected.get(card.checkpointCode)??0)+1);
    for(const cp of project.checkpoints)
     expect(cp.dueCards,'daily due for '+profile+' '+cp.code)
