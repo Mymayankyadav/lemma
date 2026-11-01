@@ -127,7 +127,10 @@ export async function sendWebPush(
    signal,
   });
   status=response.status;
- }catch{return failure(priorFailures)}
+ }catch{return signal?.aborted?{status:'failed'}:failure(priorFailures)}
+ // A late response from an abort-insensitive sender is not confirmation of
+ // a completed tick. The batch runner leaves such rows unconfirmed/deferred.
+ if(signal?.aborted)return {status:'failed'};
  if(status===201)return {status:'sent',httpStatus:status};
  if(status===404||status===410)return {status:'gone',httpStatus:status};
  if(status===429||status>=500&&status<=599)
