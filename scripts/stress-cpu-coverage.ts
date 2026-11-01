@@ -19,6 +19,8 @@ export type CpuRouteSample={
  route:string;actualRoute:string;profile:string;theme:string;width:number;
  cpuThrottle:number;durationMs:number;navigationType:string;ready:boolean;
  nodes:number;screenshot:string;
+ /** Optional per-assertion and paint-frame timings; never used to waive budgets. */
+ readinessPhases?:{name:string;elapsedMs:number}[];
  /** Diagnostic only: does not replace the strict 1500ms wall-clock gate. */
  browserTiming?:{
   elapsedMs:number;
