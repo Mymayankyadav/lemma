@@ -42,7 +42,7 @@ export function SummaryGoalCard({project,events}:{project:ProjectSummary;events:
   </div>
   {checkpoints.length>0?
    <Route project={project} checkpoints={checkpoints} scheduleRows={scheduleRows}
-    foldedLabel={foldedLabel} mode="today"
+    foldedLabel={foldedLabel} mode="today" todayHasCurrent={!!project.current}
     todayLinkTo={!project.current?'/p/'+project.slug:undefined}
     todayLinkLabel={project.current?
      project.title+': Open the path for individual checkpoints and keyboard navigation. Current '+project.current.code:
