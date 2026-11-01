@@ -1,8 +1,11 @@
 import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {getApi} from '../../data/index';
+import {shouldFetchReviewSessions} from './session-demand';
 import {useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
-import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
+import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useInsightData} from '../../data/hooks';
 import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
 import {Screen} from '../../ui/Screen';
@@ -36,7 +39,18 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 
 export default function Page(){
  const navigate=useNavigate(),notify=useToast();
- const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
+ const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
+ // The session chips are optional: only cards tied to a session can use
+ // them. The extreme demo otherwise materializes and sorts 60,000 virtual
+ // session summaries on cold Review for a section that renders nothing.
+ // Retain the existing useSessions() cache key and query defaults.
+ const sessions=useQuery({
+  queryKey:['sessions','all'],
+  queryFn:()=>getApi().listSessions(),
+  enabled:shouldFetchReviewSessions(cards.data),
+  staleTime:30_000,
+  refetchOnWindowFocus:true,
+ });
  const update=useUpdateSettings();
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
  const activeCatchUp=catchUpUntil>Date.now();
