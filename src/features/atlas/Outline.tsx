@@ -163,45 +163,9 @@ export function Wires({arcs,rows,focus}:{arcs:Arc[];rows:number;focus:Focus|null
  </>;
 }
 
-/**
- * Plain outline titles are already safe React text. Avoid invoking the
- * Markdown/KaTeX/DOMPurify pipeline for every visible idea at 4× CPU.
- * The conservative check sends *any* possible markup, math, autolink or
- * entity back through Tex, preserving the owner's LaTeX-everywhere rule.
- */
-const richNameCharacters=new Set(['
- node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;onToggle:()=>void;onSelect:()=>void;
-}){
- const parent=node.children.length>0,root=node.depth===0,selected=tone==='self';
- // Preserve room for names on 360px phones beyond the third nesting level.
- const indentation=(depth:number)=>Math.min(depth,3)*INDENT+Math.max(0,depth-3)*8;
- const lead=12+indentation(node.depth);
- return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
-  data-atlas-row={node.id} data-level={node.level} data-tone={tone}
-  className={'group relative flex items-center '+(match?'bg-fill-1':'')}
-  style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4,
-   backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined,
-   opacity:focused&&tone==='none'?0.42:1}}>
-  {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px bg-edge"
-   style={{left:12+indentation(d)+6}}/>)}
-  {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
-  {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+plainMath(node.name)} onClick={onToggle}
-   className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2">
-   <ChevronRight size={16} style={{transform:open?'rotate(90deg)':'none',transition:'transform 140ms ease'}}/>
-  </button>:<span className="flex size-7 shrink-0 items-center justify-center"><StatusMark node={node}/></span>}
-  <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
-   className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
-   {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
-   <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><AtlasLabel source={node.name}/></span>
-   {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
-    {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-3 rounded-full bg-[var(--late)]"/>}
-    {node.done}/{node.total}
-   </span>}
-  </button>
- </div>;
-}
-
-,'\\','*','_','~','`','[',']','<','>','#','{','}','!','|','&','@','\r','\n']);
+/** Plain outline titles do not need Markdown/KaTeX/DOMPurify on each row.
+ * Any possible markup, math, entity or autolink still goes through Tex. */
+const richNameCharacters=new Set(['$','\\','*','_','~','`','[',']','<','>','#','{','}','!','|','&','@','\r','\n']);
 export function isPlainAtlasLabel(source:string):boolean{
  if(!source||source.trim()!==source||/https?:\/\/|www\./i.test(source))return false;
  if(/^(?:[-+]\s|\d+\.\s|---+$)/.test(source))return false;
@@ -236,7 +200,7 @@ export function Row({node,open,tone,match,focused=false,onToggle,onSelect}:{
   <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
-   <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><Tex source={node.name}/></span>
+   <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><AtlasLabel source={node.name}/></span>
    {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
     {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-3 rounded-full bg-[var(--late)]"/>}
     {node.done}/{node.total}
