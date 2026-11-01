@@ -12,7 +12,7 @@ import {Screen} from '../../ui/Screen';
 import type {SheetProps} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {hasMathPreview} from '../../lib/plain-math';
 import {canRenderPlainCardFront} from './plainCardFront';
 import type {EditorValue} from './Editor';
