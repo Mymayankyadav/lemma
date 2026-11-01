@@ -11,7 +11,14 @@ if(!['localhost','127.0.0.1'].includes(endpoint.hostname))
   throw Error('Refusing non-local PostgreSQL URL')
 const owner='11111111-1111-1111-1111-111111111111'
 const other='99999999-9999-9999-9999-999999999999'
-const client=async()=>{const c=new Client({connectionString:url});await c.connect();return c}
+// NOTIF-1a's concurrency suite uses lemma_test; isolate this suite in its
+// own database so role/schema creation cannot collide with that prior test.
+const root=new Client({connectionString:url})
+await root.connect()
+try{await root.query('create database lemma_notify_1b')}finally{await root.end()}
+const isolated=new URL(url)
+isolated.pathname='/lemma_notify_1b'
+const client=async()=>{const c=new Client({connectionString:isolated.toString()});await c.connect();return c}
 const admin=await client()
 const migration1a=await readFile(new URL('../../supabase/migrations/20261101104000_notifications_base.sql',import.meta.url),'utf8')
 const migration1b=await readFile(new URL('../../supabase/migrations/20261101123000_notify_actions.sql',import.meta.url),'utf8')
