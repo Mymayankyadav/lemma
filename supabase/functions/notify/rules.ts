@@ -49,8 +49,8 @@ const hashOffset=(key:string):number=>{
  for(const char of key){hash=Math.imul(hash^char.charCodeAt(0),16777619)>>>0}
  return hash%11
 }
-/** Scan the owner's actual local clock so DST transitions do not shift quiet-hour end. */
-export function quietUntil(context:ReminderContext,key:string):number|null{
+/** Find the shared quiet-hour boundary once per tick; each key adds its own offset. */
+function quietBoundary(context:ReminderContext):number|null{
  const start=parseClock(context.quietStart),end=parseClock(context.quietEnd)
  if(start===end)return null
  // Reuse the formatter across all minute probes; constructing it for each
@@ -63,9 +63,14 @@ export function quietUntil(context:ReminderContext,key:string):number|null{
  const minuteStart=Math.floor(context.now/MIN)*MIN
  for(let step=1;step<=1500;step++){
   const at=minuteStart+step*MIN
-  if(!inQuiet(localMinute(at,formatter),start,end))return at+hashOffset(key)*MIN
+  if(!inQuiet(localMinute(at,formatter),start,end))return at
  }
  throw Error('Quiet hours did not end within 25 hours')
+}
+/** Scan the owner's actual local clock so DST transitions do not shift quiet-hour end. */
+export function quietUntil(context:ReminderContext,key:string):number|null{
+ const boundary=quietBoundary(context)
+ return boundary===null?null:boundary+hashOffset(key)*MIN
 }
 const result=(candidate:ReminderCandidate,status:RuleResult['status'],reason?:RuleResult['reason'],nextAt?:number):RuleResult=>
  ({candidate,status,...(reason?{reason}:{}),...(nextAt?{nextAt}:{})})
@@ -79,7 +84,7 @@ export function tutorActions(options:{cards:number;hasPlan:boolean;approveCards:
   return ['Approve '+options.cards+' '+(options.cards===1?'card':'cards'),'Review']
  return ['Review','Later']
 }
-function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
+function eligibility(c:ReminderCandidate,ctx:ReminderContext,quietBase:number|null):RuleResult|null{
  const now=ctx.now
  if(c.enabled===false||c.kind==='rhythm'&&!ctx.rhythmEnabled)return result(c,'skipped','disabled')
  if(c.condition===false)return result(c,'skipped','resolved')
@@ -147,7 +152,7 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
   return result(c,'suppressed','frequency')
  if(c.kind==='digest'&&c.lastSentAt!==undefined&&now-c.lastSentAt<(c.period==='weekly'?7*DAY:DAY))
   return result(c,'suppressed','frequency')
- const quiet=quietUntil(ctx,c.key)
+ const quiet=quietBase===null?null:quietBase+hashOffset(c.key)*MIN
  if(quiet!==null)return result(c,'defer','quiet',quiet)
  if(['due','deadline','behind','resume','plan','rhythm'].includes(c.kind)&&
     (ctx.liveSession||ctx.lastActiveAt!==undefined&&now-ctx.lastActiveAt<10*MIN)){
@@ -165,8 +170,11 @@ export function decideNotifications(candidates:ReminderCandidate[],context:Remin
    ?(a.targetDate??a.lateDueOn??Number.MAX_SAFE_INTEGER)-(b.targetDate??b.lateDueOn??Number.MAX_SAFE_INTEGER):0)||
   (a.dueAt??0)-(b.dueAt??0)||a.key.localeCompare(b.key))
  let sent=false
+ // A 50-candidate tick should not rescan 25 hours of timezone minute parts
+ // for every candidate. One shared boundary preserves each key's stable jitter.
+ const quietBase=ordered.length?quietBoundary(context):null
  return ordered.map(candidate=>{
-  const preliminary=eligibility(candidate,context)
+  const preliminary=eligibility(candidate,context,quietBase)
   if(preliminary)return preliminary
   if(context.sendsToday>=Math.max(1,Math.min(5,context.dailyCap)))
    return result(candidate,'suppressed','cap')
