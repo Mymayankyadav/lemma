@@ -1,23 +1,23 @@
-import {Suspense} from "react";
+import {lazy,Suspense} from "react";
 import RouteError, {RouteFallback} from "./RouteError";
 import Page0 from '../features/home/Page'
 import Page1 from '../features/projects/Page'
-import Page2 from '../features/new-project/Page'
-import Page3 from '../features/project/Page'
-import Page4 from '../features/checkpoint/Page'
-import Page5 from '../features/session/Page'
-import Page6 from '../features/proposals/Page'
-import Page7 from '../features/plan-proposal/Page'
-import Page8 from '../features/review/Page'
-import Page9 from '../features/review-run/Page'
-import Page10 from '../features/review-done/Page'
-import Page11 from '../features/cards/Page'
-import Page12 from '../features/card/Page'
+const Page2=lazy(()=>import('../features/new-project/Page'))
+const Page3=lazy(()=>import('../features/project/Page'))
+const Page4=lazy(()=>import('../features/checkpoint/Page'))
+const Page5=lazy(()=>import('../features/session/Page'))
+const Page6=lazy(()=>import('../features/proposals/Page'))
+const Page7=lazy(()=>import('../features/plan-proposal/Page'))
+const Page8=lazy(()=>import('../features/review/Page'))
+const Page9=lazy(()=>import('../features/review-run/Page'))
+const Page10=lazy(()=>import('../features/review-done/Page'))
+const Page11=lazy(()=>import('../features/cards/Page'))
+const Page12=lazy(()=>import('../features/card/Page'))
 import Page13 from '../features/atlas/Page'
-import Page14 from '../features/insights/Page'
-import Page15 from '../features/settings/Page'
-import Page16 from '../features/sign-in/Page'
-import Page17 from '../features/kit/Page'
+const Page14=lazy(()=>import('../features/insights/Page'))
+const Page15=lazy(()=>import('../features/settings/Page'))
+const Page16=lazy(()=>import('../features/sign-in/Page'))
+const Page17=lazy(()=>import('../features/kit/Page'))
 /** The canonical route inventory from design.md §6. */
 export const screenRoutes = [
  {path: '/', element: <Suspense fallback={<RouteFallback/>}><Page0 /></Suspense>, errorElement: <RouteError/> },
