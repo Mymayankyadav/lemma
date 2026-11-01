@@ -15,10 +15,11 @@ const html=(due:number)=>renderToStaticMarkup(
 );
 
 describe('LOOK-5c2 quiet Today review row',()=>{
- it('labels large review queues in hours without inventing a daily cap',()=>{
-  expect(estimatedReviewTime(23)).toBe('about 12 min');
-  expect(estimatedReviewTime(4000,200)).toBe('about 1 h 40 min');
-  expect(estimatedReviewTime(4000,400)).toBe('about 3 h 20 min');
+ it('uses the same 4.5-second fallback as Review and caps at the configured daily round',()=>{
+  expect(estimatedReviewTime(23)).toBe('about 2 min');
+  expect(estimatedReviewTime(200)).toBe('about 15 min');
+  expect(estimatedReviewTime(4000,200)).toBe('about 15 min');
+  expect(estimatedReviewTime(4000,400)).toBe('about 30 min');
  });
  it('shows one neutral All clear row and no empty charts or zero tiles',()=>{
   const view=html(0);
@@ -33,7 +34,7 @@ describe('LOOK-5c2 quiet Today review row',()=>{
  it('keeps one review action, due count, estimated time and spark',()=>{
   const view=html(23);
   expect(view).toContain('23');
-  expect(view).toContain('about 12 min');
+  expect(view).toContain('about 2 min');
   expect(view).toContain('aria-label="Start review of 23 cards"');
   expect(view).toContain('Seven-day review forecast');
   expect(view).not.toContain('Due cards by project');
