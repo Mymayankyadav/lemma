@@ -22,7 +22,7 @@ for(const width of [360,390] as const){
   }));
   expect(metrics.overflow).toBeLessThanOrEqual(1);
   expect(metrics.nodes).toBeLessThan(1500);
-  mkdirSync('test-results/fix-659k',{recursive:true});
-  await page.screenshot({path:'test-results/fix-659k/'+profile+'-'+theme+'-'+width+'.png'});
+  mkdirSync('test-results/screens/fix-659k',{recursive:true});
+  await page.screenshot({path:'test-results/screens/fix-659k/'+profile+'-'+theme+'-'+width+'.png'});
  });
 }
