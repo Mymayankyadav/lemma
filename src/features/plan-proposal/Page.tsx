@@ -23,6 +23,7 @@ import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, R} from "./planMap";
 import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
 import {preparePlanProposal} from "./prepared";
+import {isPlainAtlasLabel} from "../atlas/tree";
 import { chatLink, revisePlanPrompt } from "../../lib/chat";
 import { Button } from "../../ui/Button";
 import { Glyph } from "../../ui/Glyph";
@@ -36,6 +37,15 @@ import { Tex } from "../../ui/Tex";
 import { plainMath } from "../../lib/plain-math";
 
 type Node = ReviewNode;
+/** Plain mathematical prose is already escaped JSX; avoid running Marked,
+ * KaTeX and DOMPurify for hundreds of simple checkpoint labels. Any formula,
+ * Markdown, link or ambiguous text keeps the full Tex renderer.
+ */
+function PlanLabel({source}:{source:string}){
+ return isPlainAtlasLabel(source)
+  ?<span className="lemma-math lemma-tex-inline">{source}</span>
+  :<Tex source={source}/>;
+}
 /** The owner's approved left-to-right tree. Every prerequisite stays visible as a dashed link. */
 function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:string; onSelect:(code:string)=>void}) {
   const layout = useMemo(() => layoutPlanMap(nodes), [nodes]);
@@ -129,7 +139,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
           {expanded && layout.expandedY!==null && (
             <foreignObject data-expanded-stage="" x="8" y={layout.expandedY} width="304" height="206">
               <div className="flex h-full min-w-0 flex-col gap-1 rounded-ctl border border-amber-line bg-raised p-2">
-                <p className="min-w-0 shrink-0 overflow-x-auto whitespace-nowrap text-[16px] font-semibold text-ink"><Tex source={expanded.name} /> · {expanded.nodes.length} checkpoints</p>
+                <p className="min-w-0 shrink-0 overflow-x-auto whitespace-nowrap text-[16px] font-semibold text-ink"><PlanLabel source={expanded.name}/> · {expanded.nodes.length} checkpoints</p>
                 <div className="min-h-0 flex-1 overflow-auto">
                   <CheckpointTree nodes={expanded.nodes} selected={selected} onSelect={onSelect}/>
                 </div>
@@ -407,13 +417,13 @@ export default function Page() {
               {stages.map((stage,i) => <button key={stage.id} type="button" title={plainMath(stage.name)}
                 onClick={() => document.getElementById(`plan-stage-${i}`)?.scrollIntoView({behavior:"smooth",block:"start"})}
                 className="min-h-11 min-w-11 max-w-40 shrink-0 overflow-x-auto whitespace-nowrap rounded-chip border border-edge px-3 text-[16px] text-ink-2">
-                <Tex source={stage.name} />
+                <PlanLabel source={stage.name}/>
               </button>)}
             </nav>}
             {stages.map((stage, i) => (
               <div id={`plan-stage-${i}`} key={stage.id} className="scroll-mt-20">
                 <h3 className="mb-1 flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 overflow-x-auto text-title-s italic" style={{ fontFamily: "var(--font-display)" }}><Tex source={stage.name} /></span>
+                  <span className="min-w-0 overflow-x-auto text-title-s italic" style={{ fontFamily: "var(--font-display)" }}><PlanLabel source={stage.name}/></span>
                   <span className="text-caption text-ink-3">{stage.nodes.length}</span>
                 </h3>
                 <Slab className="rounded-slab px-2 py-1">
@@ -429,7 +439,7 @@ export default function Page() {
                       <span className={"w-[46px] shrink-0 rounded-s border py-0.5 text-center text-label font-semibold text-amber " + (node.change === "added" ? "border-dashed border-amber" : "border-amber-line")}>
                         {node.code}
                       </span>
-                      <span className="min-w-0 flex-1 truncate leading-snug"><Tex source={node.title} /></span>
+                      <span className="min-w-0 flex-1 truncate leading-snug"><PlanLabel source={node.title}/></span>
                       {dueLabel(node.dueOn) && <span className="shrink-0 text-caption tabular-nums text-ink-3">{dueLabel(node.dueOn)}</span>}
                       <ChevronRight size={16} className="shrink-0 text-ink-3" />
                     </button>
