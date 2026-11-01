@@ -1,4 +1,4 @@
-import {notifyTitle,notifyBody} from '../_shared/notify-text.ts'
+import {notifyTitle,notifyBody,notifyText} from '../_shared/notify-text.ts'
 
 /** NOTIF-3a: one central, pure copy surface for every reminder kind.
  * All dates are preformatted in the owner's time zone as "d MMM" by the caller.
@@ -56,9 +56,25 @@ export function notificationCopy(input:NoticeCopyInput):NoticeCopy {
       ?"You're on step "+step+' of '+(cp.steps??step)+'; about 20 min today keeps it on time.'
       :'Starting today keeps it on time.'))
    }
-   const first=checkpoints.slice(0,3).map(cp=>cp.project+': '+cp.code+' '+cp.title)
-   if(checkpoints.length>3)first.push('+'+(checkpoints.length-3)+' more')
-   return asCopy('deadline','deadline',quantity(checkpoints.length,'checkpoint','checkpoints')+' planned for tomorrow',first.join(' · '))
+   // The three visible slots belong to projects, not checkpoint rows.
+   const projects=new Map<string,{first:Checkpoint;count:number}>()
+   for(const cp of checkpoints){
+    const group=projects.get(cp.project)
+    if(group)group.count++
+    else projects.set(cp.project,{first:cp,count:1})
+   }
+   const visible=Array.from(projects.entries()).slice(0,3)
+   const omitted=projects.size-visible.length
+   const suffix=omitted?'+'+omitted+' more':''
+   const separators=3*(visible.length-1+(suffix?1:0)) // ' · '
+   const perProject=Math.floor((140-separators-suffix.length)/visible.length)
+   const lines=visible.map(([project,group])=>{
+    const extras=group.count>1?' (+'+(group.count-1)+' '+
+     ((group.count-1)===1?'checkpoint':'checkpoints')+')':''
+    return notifyText(project+': '+group.first.code+' '+group.first.title+extras,perProject)
+   })
+   if(suffix)lines.push(suffix)
+   return asCopy('deadline','deadline',quantity(checkpoints.length,'checkpoint','checkpoints')+' planned for tomorrow',lines.join(' · '))
   }
   case 'behind':
    return asCopy('behind','behind',input.project+': a smaller step today?',
