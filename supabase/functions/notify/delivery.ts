@@ -69,7 +69,7 @@ const validEnvelope=(payload:Record<string,unknown>,kind:PushKind,tag:string):bo
   typeof payload.title==='string'&&!!payload.title.trim()&&payload.title.length<=48&&
   typeof payload.body==='string'&&payload.body.length<=140&&
   safeUrl(payload.url)&&
-  Array.isArray(payload.actions)&&payload.actions.length<=2&&payload.actions.every(validAction)&&
+  Array.isArray(payload.actions)&&payload.actions.length<=2&&Array.from(payload.actions).every(validAction)&&
   Number.isSafeInteger(payload.ts)&&Number(payload.ts)>0;
 };
 
