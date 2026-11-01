@@ -65,14 +65,14 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
     className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-amber-line-2 text-amber':'border-edge text-ink-2')}>
     <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
   </div>
-  {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge bg-paper p-3">
+  {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge p-3" style={{background:'var(--paper)'}}>
    <div className="flex items-start gap-2">
     <StatusMark node={selected}/>
     <p className="min-w-0 flex-1 text-body font-semibold"><Tex source={selected.name}/></p>
     <button type="button" aria-label="Clear selection" onClick={()=>setSelectedId(null)} className="-m-2 flex size-11 shrink-0 items-center justify-center text-ink-2"><X size={17}/></button>
    </div>
    <p className="text-label text-ink-2" aria-label="Idea connections">
-    <span className="text-link">Builds on {near.needs.length}</span>
+    <span style={{color:'var(--link)'}}>Builds on {near.needs.length}</span>
     <span aria-hidden="true"> · </span>
     <span className="text-ink-2">Opens up {near.unlocks.length}</span>
    </p>
