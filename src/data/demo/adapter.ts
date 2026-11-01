@@ -628,6 +628,9 @@ export class DemoAdapter implements LemmaApi {
    */
   private projectUiIndex(checkpoints:readonly DemoCheckpoint[]):Map<string,CheckpointUi>|null{
     const byCode=new Map(checkpoints.map(cp=>[cp.code,cp] as const));
+    // A malformed duplicate code must retain checkpoint()'s original
+    // first-match semantics rather than using Map's last-match entry.
+    if(byCode.size!==checkpoints.length)return null;
     const visiting=new Set<string>(),visited=new Set<string>();
     let invalid=false;
     const check=(cp:DemoCheckpoint):void=>{
