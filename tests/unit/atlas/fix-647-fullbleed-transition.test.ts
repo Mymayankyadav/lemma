@@ -14,7 +14,7 @@ describe('FIX #647 Atlas full-bleed transition headroom',()=>{
  });
  it('does not mount the unused GraphSketch hook on the grid-only Atlas',()=>{
   const shell=readFileSync('src/app/AppShell.tsx','utf8');
-  expect(shell).toContain('{!fullBleed&&<GraphSketch path={location.pathname}/> }'.replace('/> }','/>}'));
+  expect(shell).toContain('{!fullBleed&&<GraphSketch path={location.pathname}/>}');
  });
  it('does not wait for the outgoing Paths animation before mounting Atlas',()=>{
   const shell=readFileSync('src/app/AppShell.tsx','utf8');
