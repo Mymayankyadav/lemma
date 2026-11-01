@@ -54,6 +54,16 @@ describe('FIX #507 direct-route cold stress hydration',()=>{
   const store=(lazy as unknown as {store:DemoStore}).store;
   expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
   expect(typeof Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBe('function');
+  expect(typeof Object.getOwnPropertyDescriptor(store,'sources')?.get).toBe('function');
+  const extreme=new DemoAdapter({fixture:makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const detail=await extreme.getProject('stress-project-3');
+  expect(detail.sources).toHaveLength(100);
+  const extremeStore=(extreme as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(extremeStore,'notes')?.get).toBe('function');
+  expect(typeof Object.getOwnPropertyDescriptor(extremeStore,'sources')?.get).toBe('function');
+  expect(typeof Object.getOwnPropertyDescriptor(extremeStore,'concepts')?.get).toBe('function');
  },30_000);
 
 
