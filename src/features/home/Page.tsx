@@ -93,7 +93,7 @@ export function ReviewDesk({due}:{due:number}){
     <p className="text-body font-semibold tabular-nums text-ink">{formatCount(due)} <span className="text-label font-normal text-ink-2">due</span></p>
     <p className="text-caption text-ink-3">about {Math.max(1,Math.round(due/2))} min</p>
    </div>:<div className="flex min-w-0 flex-1 items-start gap-2">
-    <Check size={20} aria-hidden="true" className="mt-1 shrink-0 text-early"/>
+    <Check size={20} aria-hidden="true" className="mt-1 shrink-0" style={{color:'var(--early)'}}/>
     <div className="min-w-0">
      <p className="text-body font-semibold text-ink">All clear</p>
      <p className="text-caption text-ink-3">Nothing due right now. New reviews appear here when scheduled.</p>
@@ -101,7 +101,7 @@ export function ReviewDesk({due}:{due:number}){
    </div>}
    {hasDue&&<div className="min-w-0 flex-1"><ReviewOutlook/></div>}
    <Link to="/review" aria-label={hasDue?'Start review of '+due+' cards':'Open review'}
-    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ctl bg-amber px-3 text-label font-semibold text-on-amber focus-visible:outline-2 focus-visible:outline-amber">
+    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-ctl px-3 text-label font-semibold focus-visible:outline-2 focus-visible:outline-amber" style={{background:'var(--accent)',color:'var(--on-accent)'}}>
     {hasDue?'Start':'Review'}
    </Link>
   </Slab>
