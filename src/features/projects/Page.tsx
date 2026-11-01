@@ -10,6 +10,7 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
+import {countPinnedProjects} from './pinnedCount';
 
 type Filter='active'|'paused'|'done'|'archived';
 const filters:Filter[]=['active','paused','done'];
@@ -29,8 +30,8 @@ function MiniMetro({project}:{project:ProjectSummary}){
  </div>;
 }
 
-function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubject?:boolean}){
- const update=useUpdateProject(),projects=useProjects(),notify=useToast(),[menu,setMenu]=useState(false);
+function ProjectRow({project,showSubject=false,pinnedCount}:{project:ProjectSummary;showSubject?:boolean;pinnedCount:number}){
+ const update=useUpdateProject(),notify=useToast(),[menu,setMenu]=useState(false);
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const longPressed=useRef(false);
  const clear=()=>{if(hold.current!==null){clearTimeout(hold.current);hold.current=null}};
@@ -45,7 +46,7 @@ function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubj
   ];
  async function act(label:string,patch:{pinned?:boolean;status?:ProjectStatus}){
   setMenu(false);
-  if(patch.pinned&&(projects.data??[]).filter(item=>item.pinned&&!item.system&&item.status!=='archived').length>=4){
+  if(patch.pinned&&pinnedCount>=4){
    notify('At most four projects can be pinned. Unpin one first.',{tone:'danger'});return;
   }
   try{await update.mutateAsync({id:project.id,patch});notify(label+' saved',{tone:'success'})}
@@ -92,7 +93,7 @@ function ProjectRow({project,showSubject=false}:{project:ProjectSummary;showSubj
  </article>;
 }
 
-function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void}){
+function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{name:string;glyph:string;items:ProjectSummary[];total:number;collapsed:boolean;onToggle:()=>void;pinnedCount:number}){
  return <section aria-label={name+' projects'} data-group-size={total} className="overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
   {total>1&&<button type="button" aria-expanded={!collapsed} onClick={onToggle}
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
@@ -101,7 +102,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle}:{name:string;g
    <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
   </button>}
-  {(total===1||!collapsed)&&<div className="divide-y divide-[var(--hair)]">{items.map(project=><ProjectRow key={project.id} project={project} showSubject={total===1}/>)}</div>}
+  {(total===1||!collapsed)&&<div className="divide-y divide-[var(--hair)]">{items.map(project=><ProjectRow key={project.id} project={project} showSubject={total===1} pinnedCount={pinnedCount}/>)}</div>}
  </section>;
 }
 
@@ -113,6 +114,7 @@ export default function Page(){
   if(projects.error)notify("Couldn't load your paths.",{tone:'danger',action:{label:'Try again',onClick:()=>{void projects.refetch()}}});
  },[projects.error,projects.refetch,notify]);
  const all=useMemo(()=>(projects.data??[]).filter(project=>!project.system),[projects.data]);
+ const pinnedCount=useMemo(()=>countPinnedProjects(all),[all]);
  const visible=useMemo(()=>all.filter(project=>matches(project,filter)&&
   (!search.trim()||[project.title,project.subject?.name??'Unassigned',...(project.sourceTitles??[])].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
  const pinned=visible.filter(project=>project.pinned).slice(0,4);
@@ -191,12 +193,12 @@ export default function Page(){
      ? <section key={'single-'+i} aria-label="Single-project paths" data-singleton-list=""
         className="divide-y divide-[var(--hair)] overflow-hidden rounded-slab border border-edge bg-[var(--paper)]">
         {run.groups.map(group=><section key={group.id} aria-label={group.name+' projects'} data-group-size={1}>
-         {group.items.map(project=><ProjectRow key={project.id} project={project} showSubject/>)}
+         {group.items.map(project=><ProjectRow key={project.id} project={project} showSubject pinnedCount={pinnedCount}/>)}
         </section>)}
        </section>
      : <ProjectGroup key={run.group.id} name={run.group.name} glyph={run.group.glyph}
        items={run.group.items} total={run.group.total} collapsed={collapsed.includes(run.group.id)}
-       onToggle={()=>toggle(run.group.id)}/>)}
+       onToggle={()=>toggle(run.group.id)} pinnedCount={pinnedCount}/>)}
     {totalUnpinned>pageSize&&<nav aria-label="Project pages" className="flex flex-wrap items-center justify-between gap-2">
      {page>0&&<button type="button" onClick={()=>setPage(index=>Math.max(0,index-1))}
       className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-4 text-label text-amber">
