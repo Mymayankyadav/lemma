@@ -94,6 +94,23 @@ jobs:
   mcp-sql:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Isolated PostgreSQL is required to verify two real connections racing
+    # against the NOTIF-1a advisory-lock cap; never use live Supabase.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: lemma_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lemma_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NOTIF_TEST_DATABASE_URL: postgres://postgres:test-only@localhost:5432/lemma_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -102,13 +119,25 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install pinned isolated PostgreSQL harness
-        run: npm install --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13
+        run: npm install --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13 pg@8.16.3
       - name: Verify DB-2 action log, undo and owner isolation
         run: node tests/mcp/db2.mjs
       - name: Verify ST-5 owner-scoped aggregate and paging SQL
         run: node tests/mcp/st5.mjs
       - name: Verify DB-5 transcription provenance and reversible pages
         run: node tests/mcp/db5.mjs
+      - name: Verify NOTIF-1a reminder tables, RLS and device cap
+        run: node tests/mcp/notif1a.mjs
+      - name: Verify NOTIF-1a two-connection insert and restore races
+        run: node tests/mcp/notif1a-concurrency.mjs
+      - name: Verify NOTIF-1b atomic notification actions, undo and owner isolation
+        run: node tests/mcp/notif1b.mjs
+      - name: Verify NOTIF-1b bounded candidates, due quota and time zones
+        run: node tests/mcp/notif1b-candidates.mjs
+      - name: Verify NOTIF-1b two-connection atomic claim and rollback
+        run: node tests/mcp/notif1b-concurrency.mjs
+      - name: Verify NOTIF-1b X 60-project/30k-card first-attempt candidate budget
+        run: node tests/mcp/notif1b-stress.mjs
       - name: Verify MCP-2 atomic transactions when available
         if: hashFiles('tests/mcp/transactions.mjs') != ''
         run: node tests/mcp/transactions.mjs

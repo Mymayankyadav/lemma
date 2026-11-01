@@ -4,6 +4,7 @@ import {Tex} from '../../ui/Tex';
 import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
 import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,neighbours,rowTone,visibleRows} from './tree';
 import {Row,StatusMark,Wires,toneColor} from './Outline';
+import {buildAtlasRowGeometry} from './rowGeometry';
 
 /**
  * The Atlas's collapsible graph, embedded in a page: fold clusters, see their links
@@ -17,9 +18,20 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  const [expanded,setExpanded]=useState<Set<string>>(initial);
  const [related,setRelated]=useState(false),[selectedId,setSelectedId]=useState<string|null>(null);
  const box=useRef<HTMLDivElement>(null);
- // A new proposal (a new tree) starts from a fresh view.
- useEffect(()=>{setExpanded(initial());setSelectedId(null)},[tree]);
+ const previousTree=useRef(tree);
+ // The lazy useState initializer already chose the correct folds on mount.
+ // Re-running it in a mount effect forces a second expensive tree/arc render
+ // under StrictMode. Reset only when a *different* proposal tree arrives.
+ useEffect(()=>{
+  if(previousTree.current===tree)return;
+  previousTree.current=tree;
+  setExpanded(initial());setSelectedId(null);
+ },[tree]);
  const rows=useMemo(()=>visibleRows(tree,expanded),[tree,expanded]);
+ // Match the 56/44px Field/idea rows and notebook gaps in both the embedded
+ // plan graph and its orthogonal dependency lanes. Row indices alone are not
+ // physical y-coordinates after the v4 hierarchy change.
+ const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree.nodes.get(row.id)!.level)),[tree,rows]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  const arcs=useMemo(()=>arcsFor(tree,rows,kinds),[tree,rows,kinds]);
  const focus=useMemo(()=>selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
@@ -70,7 +82,8 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
     return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false}
      onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id)}}/>})}
-   <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>
+   <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}
+    centers={geometry.centers} heightPx={geometry.totalHeight}/>
   </div>
   {arcBudget.hidden>0&&<p role="status" className="text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
  </div>;
