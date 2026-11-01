@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {X} from 'lucide-react';
 import {Sheet} from '../../ui/Sheet';
-import {AtlasDetailsPath} from './DetailsMath';
+import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
 import {Tex} from '../../ui/Tex';
 import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
 import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,levelName,neighbours,rowTone,visibleRows} from './tree';
@@ -69,7 +69,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  };
  const Names=({title,items,tone}:{title:string;items:AtlasNode[];tone:'up'|'down'|'related'})=>items.length?<p className="flex flex-wrap items-center gap-1.5">
   <span className="text-caption font-semibold" style={{color:toneColor[tone]}}>{title}</span>
-  {items.map(n=><button key={n.id} type="button" onClick={()=>jump(n.id)} className="min-h-11 rounded-chip border border-edge px-2 text-[16px]"><Tex source={n.name}/></button>)}
+  {items.map(n=><button key={n.id} type="button" onClick={()=>jump(n.id)} className="min-h-11 max-w-full overflow-x-auto rounded-chip border border-edge px-2 text-[16px]"><Tex source={n.name}/></button>)}
  </p>:null;
  return <div ref={box} className="flex flex-col gap-2" data-idea-graph="true">
   <div role="toolbar" aria-label={label+' view'} className="flex flex-wrap items-center gap-2">
@@ -87,7 +87,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
   {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge p-3" style={{background:'var(--paper)'}}>
    <div className="flex items-start gap-2">
     <StatusMark node={selected}/>
-    <p className="min-w-0 flex-1 text-body font-semibold"><Tex source={selected.name}/></p>
+    <p className="min-w-0 flex-1 overflow-x-auto text-body font-semibold"><Tex source={selected.name}/></p>
     <button type="button" aria-label="Clear selection" onClick={()=>setSelectedId(null)} className="-m-2 flex size-11 shrink-0 items-center justify-center text-ink-2"><X size={17}/></button>
    </div>
    <p className="text-label text-ink-2" aria-label="Idea connections">
@@ -99,7 +99,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
     className="min-h-11 self-start rounded-ctl border border-edge px-4 text-body font-semibold text-ink">Details</button>
   </div>}
   <Sheet open={details&&!!selected} onClose={()=>setDetails(false)}
-   title={selected?<Tex source={selected.name}/>:undefined}>
+   title={selected?<AtlasDetailsTitle name={selected.name}/>:undefined}>
    {selected&&near&&<div data-proposed-idea-details="true" className="flex flex-col gap-3 rounded-ctl p-3 text-body"
     style={{background:'var(--paper)'}}>
     <AtlasDetailsPath names={selectedPath.map(n=>n.name)} onSelect={i=>jump(selectedPath[i].id)}/>
