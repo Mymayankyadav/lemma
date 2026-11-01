@@ -19,16 +19,17 @@ ensure(['#/review', '#/proposals', '#/atlas'].every(x => twa.shortcuts.some(s =>
 
 const manifest = await get('android/app/src/main/AndroidManifest.xml')
 for (const required of [
-  'io.github.mymayankyadav.lemma', 'https', 'mymayankyadav.github.io',
+  'https', 'mymayankyadav.github.io',
   '/lemma/', 'asset_statements', 'LauncherActivity', 'DelegationService',
   'android.support.customtabs.trusted.DEFAULT_URL', 'android.support.customtabs.trusted.FALLBACK_STRATEGY',
   'customtabs', 'android.support.customtabs.trusted.ENABLE_NOTIFICATION_DELEGATION',
   'lemma-widget', 'android.intent.action.VIEW',
 ]) ensure(manifest.includes(required), 'manifest missing ' + required)
 const gradle = await get('android/app/build.gradle')
+ensure(gradle.includes('io.github.mymayankyadav.lemma'), 'applicationId/namespace mismatch')
 ensure(/minSdk\s+23/.test(gradle), 'minSdk 23 required')
 ensure(/targetSdk\s+(3[5-9]|[4-9]\d)/.test(gradle), 'targetSdk must be 35 or newer')
-ensure(gradle.includes('androidbrowserhelper:2.7.4'), 'pin audited stable Android Browser Helper 2.7.4')
+ensure(gradle.includes('androidbrowserhelper:2.7.3'), 'pin latest minSdk-23-compatible Android Browser Helper 2.7.3')
 ensure(await exists('android/gradlew') && await exists('android/gradle/wrapper/gradle-wrapper.jar'),
   'Gradle wrapper required')
 ensure(await exists('android/app/src/main/res/drawable/ic_stat_lemma.xml'),

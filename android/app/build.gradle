@@ -36,7 +36,7 @@ android {
  lint { abortOnError true; checkReleaseBuilds true }
 }
 dependencies {
- implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+ implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
  implementation 'androidx.browser:browser:1.10.0'
  implementation 'androidx.core:core:1.17.0'
 }
