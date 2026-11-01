@@ -1344,13 +1344,19 @@ export class DemoAdapter implements LemmaApi {
         this.store.misconceptions.filter((m) => m.projectId === p.id),
       ),
       cards: [
-        ...this.store.notes
-          .filter((n) => n.sessionId === s.id && n.note.status !== "deleted")
-          .map((n) => ({
-            noteNo: n.note.noteNo,
-            front: n.note.front,
-            state: "active" as const,
-          })),
+        // Generated S/X notes always have sessionId=null. Do not hydrate
+        // 30,000 unrelated notes for one synthetic session; authored edits
+        // materialize the note store and use the ordinary filtered path.
+        ...(this.virtualStressDue &&
+          typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function'
+          ? []
+          : this.store.notes
+              .filter((n) => n.sessionId === s.id && n.note.status !== "deleted")
+              .map((n) => ({
+                noteNo: n.note.noteNo,
+                front: n.note.front,
+                state: "active" as const,
+              }))),
         ...proposals
           .filter((p) => p.kind === "card" && p.card)
           .map((p) => ({
