@@ -8,6 +8,12 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'scripts/**'
+      # Preserve the original explicit QA-4a inventory triggers and contract.
+      # The broader globs above additionally cover UI-only/ST-0-only PRs.
+      - 'scripts/review-shots.mjs'
+      - 'scripts/v4-capture-inventory.json'
+      - 'scripts/qa4-screens.ts'
+      - 'tests/unit/qa4/**'
       - 'public/**'
       - 'index.html'
       - 'playwright.config.ts'
