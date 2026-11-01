@@ -21,6 +21,7 @@ import type {
   CardRow,
   CardState,
   CheckpointDetail,
+  CheckpointUi,
   CheckpointView,
   DeckNode,
   HomeSummary,
