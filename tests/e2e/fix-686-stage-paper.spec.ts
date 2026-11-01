@@ -19,7 +19,7 @@ for(const width of [360,390] as const){
   const stages=paper.locator('[data-stage-card]');
   expect(await stages.count()).toBeGreaterThan(1);
   await expect(paper.locator('[data-stage-card][data-card]')).toHaveCount(0);
-  const expanded=stages.locator(':scope > button[aria-expanded="true"]');
+  const expanded=paper.locator('[data-stage-card] > button[aria-expanded="true"]');
   await expect(expanded).toHaveCount(1);
   const rows=paper.locator('[data-cp-row]');
   await expect(rows.first()).toBeVisible();
