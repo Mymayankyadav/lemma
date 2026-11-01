@@ -43,7 +43,8 @@ describe('NOTIF-4b5 safe service-worker push payload',()=>{
  });
  it('rejects malformed identifiers, tags, actions and excessive payloads',()=>{
   for(const change of [
-   {id:0},{id:Number.MAX_SAFE_INTEGER+1},{kind:'unknown' as PushPayloadInput['kind']},
+   {id:0},{id:Number.MAX_SAFE_INTEGER+1},{id:'9223372036854775808'},
+   {ts:0},{ts:Infinity},{kind:'unknown' as PushPayloadInput['kind']},
    {tag:'bad topic'},{actions:Array(4).fill({action:'later',title:'Later'})},
    {actions:[{action:'not valid',title:'Later'}]},
    {actions:[{action:'later',title:'Later',token:'bad token'}]},
