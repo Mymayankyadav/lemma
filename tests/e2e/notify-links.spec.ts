@@ -18,14 +18,14 @@ test('Review 5 deep link starts exactly five cards and consumes the query',async
 test('notification Review 5 preserves the first card from ordinary Start',async({page,context})=>{
  await page.goto('/lemma/?demo=1#/review');
  await page.getByRole('button',{name:'Start review'}).click();
- await expect(page).toHaveURL(/#\\/review\\/run$/);
+ await expect(page).toHaveURL(/#\/review\/run$/);
  const first=page.locator('.review-front').first();
  await expect(first).not.toBeEmpty();
  const ordinaryFront=await first.innerText();
  const fromNotification=await context.newPage();
  try{
   await fromNotification.goto('/lemma/?demo=1#/review?start=5');
-  await expect(fromNotification).toHaveURL(/#\\/review\\/run$/);
+  await expect(fromNotification).toHaveURL(/#\/review\/run$/);
   await expect(fromNotification.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuemax','5');
   const linkedFront=fromNotification.locator('.review-front').first();
   await expect(linkedFront).not.toBeEmpty();
