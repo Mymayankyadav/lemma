@@ -12,7 +12,7 @@ test('today desk shows resume, reviews, proposals and projects with no runtime e
  page.on('console',message=>{if(message.type()==='error')errors.push(message.text())})
  await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible()
  await expect(page.getByRole('region',{name:'Resume where you stopped'})).toContainText('Real Analysis · step 2 of 4')
- await expect(page.getByRole('region',{name:'Review',exact:true}).getByText('23',{exact:false})).toBeVisible()
+ await expect(page.getByRole('region',{name:'Review',exact:true}).locator('p.text-body').first()).toContainText('23 due')
  await expect(page.getByRole('link',{name:/Review 6 tutor proposals/i})).toBeVisible()
  await expect(page.getByText('6 tutor proposals awaiting your decision')).toBeVisible()
  await expect(page.getByRole('region',{name:'Resume where you stopped'})).not.toContainText('Why is a finite subcover enough to separate x from K?')
