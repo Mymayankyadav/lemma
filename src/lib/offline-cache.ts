@@ -33,8 +33,8 @@ export function isOfflineSettings(value:unknown):value is OfflineSettings {
  const ui=data.ui as Record<string,unknown>
  // The owner removed density and motion controls; old snapshots carrying
  // either key must not be hydrated into live Settings.
- if(Object.keys(ui).some(key=>key!=='mode'))return false
- if(ui.mode!==undefined&&!['auto','day','night'].includes(String(ui.mode)))return false
+ if(Object.keys(ui).length!==1||!Object.hasOwn(ui,'mode'))return false
+ if(!['auto','day','night'].includes(String(ui.mode)))return false
  return true
 }
 export type OfflineKey=readonly string[]
@@ -46,9 +46,7 @@ export function projectOfflineSettings(settings:Settings):OfflineSettings {
  const ui=settings.ui
  return {
   v:1,timeZone:settings.timeZone,rolloverHour:settings.rolloverHour,
-  ui:ui?{
-   ...(ui.mode==='auto'||ui.mode==='day'||ui.mode==='night'?{mode:ui.mode}:{})
-  }:null,
+  ui:ui&&(ui.mode==='auto'||ui.mode==='day'||ui.mode==='night')?{mode:ui.mode}:null,
   preferredChat:settings.preferredChat,defaultStyle:settings.defaultStyle,
   mixDecks:settings.mixDecks,newPerDay:settings.newPerDay
  }
