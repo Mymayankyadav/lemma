@@ -11,7 +11,7 @@ const runId=Number(process.env.GITHUB_RUN_ID);
 const attempt=Number(process.env.GITHUB_RUN_ATTEMPT??'1');
 const issue=668; // Machine-managed FIFO comments, not an owner-facing log.
 if(!['acquire','release'].includes(action)||!token||
- !/^[\\w.-]+\\/[\\w.-]+$/.test(repository)||
+ !/^[\w.-]+\/[\w.-]+$/.test(repository)||
  !Number.isSafeInteger(runId)||runId<=0||
  !Number.isSafeInteger(attempt)||attempt<=0)
  throw new Error('MCP queue requires a valid action and GitHub Actions run context');
