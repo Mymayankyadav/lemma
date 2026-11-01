@@ -22,6 +22,11 @@ for(const width of [360,390] as const){
    const box=await row.boundingBox();
    expect(box?.height).toBeGreaterThanOrEqual(44);
   }
+  // Proposed amendment type labels are explanatory, not active actions.
+  const add=page.getByText("Add",{exact:true}).first();
+  await expect(add).toBeVisible();
+  await expect(add).toHaveClass(/text-ink-3/);
+  await expect(add).not.toHaveClass(/text-amber/);
   const changed=list.getByRole("button",{name:/^Open CP4a /});
   await expect(changed).toBeVisible();
   const changedPill=changed.locator("span").first();
