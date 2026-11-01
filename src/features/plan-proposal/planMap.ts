@@ -119,3 +119,55 @@ export function layoutStagePlanMap(nodes: readonly ReviewNode[], expandedId: str
     height:Math.ceil(groups.length/2)*STAGE_ROW + (expandedRow >= 0 ? STAGE_DETAIL : 0) + 8,
     expandedY:expandedRow < 0 ? null : 48 + expandedRow * STAGE_ROW + 52};
 }
+
+/**
+ * A plan-change map is a local explanation, not a second copy of the whole
+ * approved plan. Keep the changed checkpoints, their immediate list neighbours
+ * and both endpoints of directly affected prerequisite links. The full list and
+ * drawer still receive the unfiltered nodes.
+ *
+ * Remove-only changes have no surviving changed node, so show the closest
+ * surviving checkpoints on either side of each removed code in the old plan.
+ * A concept-only proposal has no checkpoint map at all.
+ */
+export function planChangeMapNodes(
+  nodes: readonly ReviewNode[],
+  change: import("../../data/types").PlanChangePayload | null,
+  existing: readonly Pick<import("../../data/types").CheckpointView,"code">[] = [],
+): ReviewNode[] {
+  if (!change) return [...nodes];
+  const index=new Map(nodes.map((node,i)=>[node.code,i]));
+  const changed=new Set(nodes.filter(node=>node.change).map(node=>node.code));
+  const context=new Set<string>();
+  const add=(code:string)=>{if(index.has(code))context.add(code)};
+  for(const op of change.ops){
+    if(op.op==="move"){
+      if(index.has(op.code))changed.add(op.code);
+      add(op.after);
+    }else if(op.op==="prereq_remove"||op.op==="prereq_add"){
+      // A removed edge is absent from the post-change node.prereqs. Retain
+      // its other endpoint as context without re-adding the deleted edge.
+      add(op.prereq);
+    }else if(op.op==="remove"){
+      const removed=existing.findIndex(cp=>cp.code===op.code);
+      if(removed<0)continue;
+      for(let i=removed-1;i>=0;i--)if(index.has(existing[i].code)){add(existing[i].code);break}
+      for(let i=removed+1;i<existing.length;i++)if(index.has(existing[i].code)){add(existing[i].code);break}
+    }
+  }
+  for(const code of changed){
+    const i=index.get(code);
+    if(i===undefined)continue;
+    add(code);
+    if(i>0)add(nodes[i-1].code);
+    if(i+1<nodes.length)add(nodes[i+1].code);
+    for(const prerequisite of nodes[i].prereqs)add(prerequisite);
+  }
+  // A checkpoint that depends on a changed checkpoint is also a direct
+  // neighbour, even when it is far away in the ordered list.
+  for(const node of nodes)if(node.prereqs.some(prereq=>changed.has(prereq)))add(node.code);
+  if(context.size===0)return [];
+  return nodes.filter(node=>context.has(node.code)).map(node=>({
+    ...node,prereqs:node.prereqs.filter(code=>context.has(code)),
+  }));
+}
