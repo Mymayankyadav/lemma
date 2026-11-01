@@ -1,4 +1,4 @@
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {useQuery} from '@tanstack/react-query';
 import {lazy,Suspense,useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
