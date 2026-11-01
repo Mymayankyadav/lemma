@@ -20,17 +20,27 @@ for(const [width,height] of [[390,844],[360,740]] as const){
    await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/review/run',{
     waitUntil:'domcontentloaded',timeout:90_000,
    });
+   const navigationMs=Date.now()-started;
    await expect(page.locator('html')).toHaveAttribute('data-theme',theme,{timeout:60_000});
+   const themeReadyMs=Date.now()-started;
    await expect(page.getByRole('heading',{name:'Card review',exact:true,level:1}))
     .toBeVisible({timeout:60_000});
+   const headingReadyMs=Date.now()-started;
    await expect(page.locator('[data-review-card-scroll]')).toBeVisible({timeout:60_000});
+   const cardReadyMs=Date.now()-started;
    await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0,{timeout:60_000});
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    const durationMs=Date.now()-started;
    const nodes=await page.locator('*').count();
+   const browserTiming=await page.evaluate(()=>{
+    const nav=performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined;
+    const fcp=performance.getEntriesByType('paint').find(entry=>entry.name==='first-contentful-paint');
+    return {domContentLoadedMs:nav?.domContentLoadedEventEnd??null,firstContentfulPaintMs:fcp?.startTime??null};
+   });
+   const phases={navigationMs,themeReadyMs,headingReadyMs,cardReadyMs,browserTiming};
    await testInfo.attach('review-run-cold-4x',{
-    body:JSON.stringify({profile,theme,width,durationMs,nodes,cpuThrottle:4,firstAttempt:true},null,2),
+    body:JSON.stringify({profile,theme,width,durationMs,nodes,cpuThrottle:4,firstAttempt:true,phases},null,2),
     contentType:'application/json',
    });
    console.info('FIX #651 Review-run cold 4x: '+JSON.stringify({profile,theme,width,durationMs,nodes}));
