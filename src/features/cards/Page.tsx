@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate} from 'react-router';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {Plus,Search} from 'lucide-react';
@@ -14,9 +14,11 @@ import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
 import {hasMathPreview} from '../../lib/plain-math';
-import {Editor,type EditorValue} from './Editor';
+import {canRenderPlainCardFront} from './plainCardFront';
+import type {EditorValue} from './Editor';
 import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
 
+const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
 const ROW_HEIGHT=92,OVERSCAN=6;
 function relative(due:string|null){
  if(!due)return 'New';
@@ -40,6 +42,16 @@ export default function Page(){
  },[]);
  const projects=useProjects(),create=useCreateNote(),notify=useToast(),navigate=useNavigate();
  const closeCreating=useCallback(()=>setCreating(false),[]);
+ // S/X contains 60 project filters. Cards query, viewport and scroll state
+ // update independently; keep the chip and native-option subtrees stable so
+ // they do not rerun 60 rich-title/plainMath conversions on each page paint.
+ const projectChips=useMemo(()=>projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
+  <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
+   <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
+  </Chip>
+ </span>),[projects.data,project]);
+ const projectOptions=useMemo(()=>projects.data?.map(p=><option key={p.id} value={p.slug}>{projectFilterOptionLabel(p.title)}</option>),[projects.data]);
+
  useEffect(()=>{
   const element=filterScroller.current;if(!element)return;
   updateFilterFade();
@@ -97,11 +109,7 @@ export default function Page(){
   </label>
   <div ref={filterScroller} role="group" aria-label="Card filters" data-filter-fade-left={String(filterFade.left)} data-filter-fade-right={String(filterFade.right)} onScroll={updateFilterFade} style={{maskImage:filterMask}} className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
    <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
-   {projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
-    <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
-     <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
-    </Chip>
-   </span>)}
+   {projectChips}
    <Chip className="shrink-0 whitespace-nowrap" selected={onlyComments} onClick={()=>setOnlyComments(v=>!v)}>Has notes</Chip>
    <Chip className="shrink-0 whitespace-nowrap" selected={noteStatus==='suspended'} onClick={()=>setNoteStatus(v=>v==='suspended'?'':'suspended')}>Paused</Chip>
   </div>
@@ -109,7 +117,7 @@ export default function Page(){
    <label className="min-w-0 flex-1 text-label text-ink-2">Project
     <select aria-label="Filter project" value={project} onChange={e=>{setProject(e.target.value);setCheckpoint('')}}
      className="mt-1 min-h-11 w-full min-w-0 rounded-ctl border border-edge bg-well px-2 text-body text-ink">
-     <option value="">All projects</option>{projects.data?.map(p=><option key={p.id} value={p.slug}>{projectFilterOptionLabel(p.title)}</option>)}
+     <option value="">All projects</option>{projectOptions}
     </select>
    </label>
    <label className="min-w-0 flex-1 text-label text-ink-2">Checkpoint
@@ -157,7 +165,7 @@ export default function Page(){
        <div data-card-front="" data-card-front-preview=""
         className={'min-w-0 max-w-full font-math text-headline leading-snug text-ink '+(hasMathPreview(row.front)?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden')}
         style={hasMathPreview(row.front)?{maskImage:'linear-gradient(to right, black 0%, black calc(100% - 12px), transparent 100%)'}:undefined}>
-        <span className={hasMathPreview(row.front)?'inline-block min-w-max pr-4':undefined}><Tex source={row.front}/></span>
+        <span className={hasMathPreview(row.front)?'inline-block min-w-max pr-4':undefined}>{canRenderPlainCardFront(row.front)?row.front:<Tex source={row.front}/>}</span>
        </div>
        <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
         <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
@@ -175,7 +183,7 @@ export default function Page(){
    {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
   </Button>}
   <Sheet open={creating} onClose={closeCreating} title="New card">
-   <Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>
+   <Suspense fallback={<Skeleton h={180}/>}>{creating&&<Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>}</Suspense>
   </Sheet>
  </Screen>;
 }
