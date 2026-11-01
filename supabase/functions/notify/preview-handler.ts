@@ -16,7 +16,7 @@ export interface PreviewDeps {
  /** Must verify the bearer JWT through supabase.auth.getUser. */
  verifyJwt:(jwt:string)=>Promise<{id:string}|null>;
  /** One read, filtered by the verified owner ID. No mutations allowed. */
- load:(ownerId:string)=>Promise<{context:ReminderContext;candidates:PreviewCandidate[]}>;
+ load:(ownerId:string)=>Promise<{ownerId:string;context:ReminderContext;candidates:PreviewCandidate[]}>;
 }
 export interface PreviewRow {
  time:string;kind:string;title:string;body:string;why:string;
@@ -44,7 +44,8 @@ export async function handlePreviewRequest(
  if(!owner||typeof owner.id!=='string'||!UUID.test(owner.id))
   return error(401,'Sign in to preview reminders');
  try{
-  const {context,candidates}=await deps.load(owner.id);
+  const {ownerId,context,candidates}=await deps.load(owner.id);
+  if(ownerId!==owner.id)throw Error('Owner mismatch');
   const decisions=decideNotifications(candidates,context);
   const formatter=new Intl.DateTimeFormat('en-GB',{
    timeZone:context.timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23',
