@@ -82,6 +82,15 @@ try{
  assert.equal(visibleOnly.due.count,2)
  assert.equal(visibleOnly.due.backlog,2)
  console.log('PASS NOTIF-1b archived/system projects excluded from reminders')
+ // Removed devices must not suppress reminders through stale/disabled presence.
+ await q(`insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform,last_seen_at)
+   values($1,'https://notify.example/enabled','abc','abc','Enabled','other','2026-10-30T12:00:00Z')`,[owner])
+ await q(`insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform,last_seen_at,disabled_at,disabled_reason)
+   values($1,'https://notify.example/disabled','abc','abc','Removed','other',now(),now(),'removed')`,[owner])
+ const deviceFacts=(await facts()).devices
+ assert.equal(deviceFacts.enabled,1)
+ assert.equal(new Date(deviceFacts.lastSeenAt).toISOString(),'2026-10-30T12:00:00.000Z')
+ console.log('PASS NOTIF-1b disabled devices do not count as active use')
  console.log('PASS NOTIF-1b K1/K5/K6/K8 shape and stable proposal IDs')
  // Backoff counts only consecutive dismissals, never total dismissals in the
  // last three actions. A tap resets the streak.
@@ -125,6 +134,13 @@ try{
  assert.ok(Object.hasOwn(recentKeys,'zz-recent'),'recent key must not be lost to alphabetical ordering')
  assert.ok(!Object.hasOwn(recentKeys,'history:60'),'oldest key should be evicted')
  console.log('PASS NOTIF-1b lastByKey retains fifty most recent keys')
+ // Test sends and action confirmations are out-of-band: no cap or spacing.
+ const beforeTest=(await facts()).history
+ await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at,status,sent_at) values($1,'test','test:out-of-band','Test','Hello','#/',now(),'sent',now())",[owner])
+ const afterTest=(await facts()).history
+ assert.equal(afterTest.sentToday,beforeTest.sentToday)
+ assert.equal(afterTest.lastSentAt,beforeTest.lastSentAt)
+ console.log('PASS NOTIF-1b test sends do not consume daily cap or spacing')
  console.log('PASS NOTIF-1b dismissal streak resets on open and reaches three consecutive')
  await db.exec('reset role')
  await db.exec('set role authenticated')
