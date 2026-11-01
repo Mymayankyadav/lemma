@@ -1109,9 +1109,17 @@ export class DemoAdapter implements LemmaApi {
     return result;
   }
   async getProject(slug: string): Promise<ProjectDetail> {
-    const p = this.project(slug),
-      eligible = this.eligible(),
-      summary = this.summary(p);
+    const p = this.project(slug);
+    // A direct project route needs one project's full detail, not all 30k
+    // generated note objects. Reuse the exact bounded Paths summary while
+    // the private S/X note collection is still virtual. Once a write
+    // materializes notes, retain the ordinary mutable-store summary path.
+    const virtualNotes = this.virtualStressDue !== null &&
+      typeof Object.getOwnPropertyDescriptor(this.store, 'notes')?.get === 'function';
+    const summary = virtualNotes
+      ? (await this.listProjects()).find(row => row.id === p.id) ?? this.summary(p)
+      : this.summary(p);
+    const eligible = this.eligible();
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
