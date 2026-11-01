@@ -6,12 +6,12 @@ import {forecastDueCount,hasNonzeroForecast} from './reviewForecast'
  * the complete scheduled-card set, not a capped search or fabricated data.
  * No separate chart or per-project stacked bar on the quiet Today screen.
  */
-export function ReviewOutlook(){
+export function ReviewOutlook({quiet=false}:{quiet?:boolean}={}){
  const forecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),staleTime:30_000})
  const weekly=forecast.data??[]
  const max=Math.max(1,...weekly.map(day=>forecastDueCount(day.due)))
- if(forecast.error)return <p className="text-caption text-ink-3">Forecast unavailable</p>
- if(forecast.isPending)return <p className="text-caption text-ink-3">Loading forecast…</p>
+ if(forecast.error)return quiet?null:<p className="text-caption text-ink-3">Forecast unavailable</p>
+ if(forecast.isPending)return quiet?null:<p className="text-caption text-ink-3">Loading forecast…</p>
  if(!hasNonzeroForecast(weekly))return null
  return <div aria-label="Seven-day review forecast" className="min-w-0 flex-1">
   <p className="sr-only">Next seven days</p>
