@@ -42,8 +42,13 @@ export default function AppShell(){
   const onOffline=()=>{void restore()};
   const onOnline=()=>{publish(null);queueSave()};
   const unsubscribe=queryClient.getQueryCache().subscribe(event=>{
-   if(event.type==='updated'&&event.query.state.status==='success'&&isOfflineKey(event.query.queryKey))
-    queueSave();
+   if(event.type!=='updated'||!isOfflineKey(event.query.queryKey))return;
+   if(event.query.state.status==='success'){queueSave();return}
+   // navigator.onLine can be true during DNS/server failure. Restore only
+   // when there is no live data, never after an authentication failure.
+   const error=event.query.state.error as {code?:string}|null;
+   if(event.query.state.status==='error'&&event.query.state.data===undefined&&
+    error?.code!=='auth')void restore();
   });
   let authSubscription:{unsubscribe:()=>void}|null=null;
   try{authSubscription=getMode()==='live'
