@@ -39,7 +39,7 @@ for(const route of ['/insights','/kit'] as const){
    const scrollport=reviews.locator('..');
    await scrollport.evaluate(el=>{el.scrollLeft=el.scrollWidth});
    expect(await scrollport.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
-   await reviews.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews-right.png`});
+   await scrollport.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews-right.png`});
   }
   await checkpoints.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-checkpoints.png`});
  });
