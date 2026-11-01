@@ -23,6 +23,11 @@ describe('FIX #657b lazy graph letterheads',()=>{
   expect(source).toContain('const getSketch=');
   expect(source).not.toContain('const sketches:Record<Sketch,');
  });
+ it('uses an exact precomputed Today curve rather than sampling on the critical entry',()=>{
+  const source=readFileSync('src/ui/backgrounds/graph/GraphSketch.tsx','utf8');
+  expect(source).toContain('today:()=>({path:TODAY_PATH');
+  expect(source).not.toContain('today:()=>({path:sample(');
+ });
  it.each(expected)('keeps the exact SVG curve for %s', (path,d)=>{
   document.documentElement.dataset.theme='graph';
   const html=renderToStaticMarkup(createElement(GraphSketch,{path}));
