@@ -1,4 +1,5 @@
 import {MathPreview} from '../../ui/MathPreview';
+import {networkWritable} from '../../ui/useOnlineStatus';
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -316,7 +317,7 @@ export default function Page() {
   const stages = useMemo(() => groupPlanStages(nodes), [nodes]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
-    if(!navigator.onLine){notify("Needs a connection");return}
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!p) return;
     try {
       await approve.mutateAsync({ id: p.id });
@@ -327,7 +328,7 @@ export default function Page() {
     }
   };
   const askChanges = async () => {
-    if(!navigator.onLine){notify("Needs a connection");return}
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!p || !request.trim() || pending) return;
     const prompt = revisePlanPrompt(
       p.projectSlug.replaceAll("-", " "),
