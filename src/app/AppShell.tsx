@@ -114,11 +114,9 @@ export default function AppShell(){
   const unsubscribe=queryClient.getQueryCache().subscribe(event=>{
    if(event.type!=='updated'||!isOfflineKey(event.query.queryKey))return;
    if(event.query.state.status==='success'){
-    // A full-page navigation can discard an idle IndexedDB timer before it
-    // fires. Stage only this successful allowlisted query in a bounded,
-    // redacted tab-local handoff synchronously; the next save commits it.
-    if(identity&&navigator.onLine&&event.query.state.dataUpdatedAt>0)
-     stageOfflineHandoff(identity,event.query.queryKey,event.query.state.data,event.query.state.dataUpdatedAt);
+    // Avoid serializing a potentially large S/X query on the critical paint
+    // path. The idle save persists it later; pagehide synchronously stages all
+    // successful allowlisted queries before a hard navigation can discard them.
     // A successful fresh network read ends a stale-snapshot fallback. Merely
     // hydrating old entries must not clear the warning or re-enable writes.
     const restoredAt=Number(document.documentElement.dataset.offlineSavedAt);
@@ -164,12 +162,8 @@ export default function AppShell(){
     if(disposed||authEventSeen)return;
     identity=initialIdentity;
     if(!identity)return;
-    // React Query can finish before the async identity lookup. Capture any
-    // already-successful allowlisted reads before the first full-page exit.
-    if(navigator.onLine)for(const query of queryClient.getQueryCache().findAll()){
-     if(query.state.status==='success'&&isOfflineKey(query.queryKey))
-      stageOfflineHandoff(identity,query.queryKey,query.state.data,query.state.dataUpdatedAt);
-    }
+    // Never serialize the initial query cache on cold paint. If a full-page
+    // exit happens before the deferred save, pagehide captures these entries.
     const authError=queryClient.getQueryState(['auth'])?.error as {code?:string}|null;
     // The browser may report online while the first auth/network request
     // failed. Hydrate only this signed-in owner's read-only snapshot.
