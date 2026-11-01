@@ -50,7 +50,7 @@ describe('NOTIF-4a authenticated action links',()=>{
    {...basic,u:'bad'}, {...basic,exp:now+0.5}, {...basic,x:{scope:'x'.repeat(121)}},
    {...basic,x:{extra:true}},
   ]){
-   await expect(signActionToken(invalid as typeof basic,secret,now)).rejects.toMatchObject({status:400});
+   await expect(signActionToken(invalid as unknown as typeof basic,secret,now)).rejects.toMatchObject({status:400});
   }
   await expect(verifyActionToken('x'.repeat(4097),secret,now)).rejects.toMatchObject({status:400});
   await expect(verifyActionToken('bad.token.with.dots',secret,now)).rejects.toMatchObject({status:400});
