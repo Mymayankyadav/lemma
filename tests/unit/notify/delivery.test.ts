@@ -38,11 +38,11 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
  });
  it('uses 24h low-urgency weekly digest and 10m confirmation TTL',async()=>{
   fetcher.mockResolvedValue(response(201));
-  await sendWebPush({...base,kind:'digest',tag:'digest'},fetcher);
+  await sendWebPush({...base,kind:'digest',tag:'digest',payload:{...base.payload,kind:'digest',tag:'digest'}},fetcher);
   expect(fetcher.mock.calls[0][1].headers).toMatchObject({TTL:'86400',Urgency:'low',Topic:'digest'});
-  await sendWebPush({...base,kind:'confirm',tag:'confirm'},fetcher);
+  await sendWebPush({...base,kind:'confirm',tag:'confirm',payload:{...base.payload,kind:'confirm',tag:'confirm'}},fetcher);
   expect(fetcher.mock.calls[1][1].headers).toMatchObject({TTL:'600',Urgency:'normal',Topic:'confirm'});
-  await sendWebPush({...base,kind:'rhythm',tag:'rhythm'},fetcher);
+  await sendWebPush({...base,kind:'rhythm',tag:'rhythm',payload:{...base.payload,kind:'rhythm',tag:'rhythm'}},fetcher);
   expect(fetcher.mock.calls[2][1].headers).toMatchObject({TTL:'21600',Urgency:'low',Topic:'rhythm'});
  });
  it('disables gone subscriptions on 404/410 without retry',async()=>{
@@ -77,6 +77,9 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
    {subscription:{...base.subscription,endpoint:'https://user:pass@push.example.test/sub'}},
    {tag:'bad topic'},
    {tag:'x'.repeat(33)},
+   {kind:'unexpected' as DeliveryRequest['kind']},
+   {kind:'digest'},
+   {tag:'another'},
    {payload:{...base.payload,body:'x'.repeat(3100)}},
   ]){
    expect(await sendWebPush({...base,...change},fetcher)).toEqual({status:'failed'});
