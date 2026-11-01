@@ -137,7 +137,7 @@ begin
     action_number:=(result->>'action')::bigint;
     if action_number is not null then
       insert into public.notifications(
-        user_id,kind,key,project_id,title,body,url,facts,due_at,status
+        user_id,kind,key,project_id,title,body,url,facts,due_at,status,sent_at
       ) values (
         p_user,'confirm','confirm:'||p_notification::text,notice.project_id,
         case when jsonb_array_length(result->'skipped')=0
@@ -146,7 +146,7 @@ begin
             (jsonb_array_length(result->'approved')+jsonb_array_length(result->'skipped'))||' cards' end,
         'Undo is in the app, or here for 48 hours.','#/review',
         jsonb_build_object('action',action_number,'approved',result->'approved','skipped',result->'skipped'),
-        now(),'queued'
+        now(),'sent',now()
       ) returning id into confirm_id;
       result:=result || jsonb_build_object('confirmId',confirm_id);
     end if;
