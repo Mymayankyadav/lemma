@@ -52,6 +52,23 @@ describe('NOTIF-5 Workbox push handling',()=>{
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
   expect(h.navigated).toEqual([scope+'#/review']);
  });
+ it('falls back to openWindow when a matching Lemma client is stale and cannot receive messages',async()=>{
+  const h=harness(),data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
+  h.client.focus.mockRejectedValueOnce(new Error('stale client'));
+  h.client.postMessage.mockImplementationOnce(()=>{throw new Error('closed client')});
+  await expect(h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''})).resolves.toBeUndefined();
+  expect(h.client.focus).toHaveBeenCalledOnce();
+  expect(h.client.postMessage).toHaveBeenCalledOnce();
+  expect(h.self.clients.openWindow).toHaveBeenCalledWith(scope+'#/review');
+  expect(h.navigated).toEqual([scope+'#/review']);
+ });
+ it('opens a valid deep link when no Lemma window exists',async()=>{
+  const h=harness(),data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
+  h.self.clients.matchAll.mockResolvedValueOnce([]);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
+  expect(h.self.clients.openWindow).toHaveBeenCalledWith(scope+'#/review');
+  expect(h.navigated).toEqual([scope+'#/review']);
+ });
  it('navigates Review 5 without a server action token',async()=>{
   const h=harness(),data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'review_5'});
