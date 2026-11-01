@@ -27,36 +27,7 @@ describe('FIX #611 Atlas plain-name render path',()=>{
   expect(html).toContain('role="treeitem"');
  });
  it('keeps real LaTeX typesetting for mathematical names',()=>{
-  const source=String.raw`$\frac{a}{b}import {createElement} from 'react';
-import {renderToStaticMarkup} from 'react-dom/server';
-import {describe,expect,it} from 'vitest';
-import {AtlasLabel,Row,isPlainAtlasLabel} from '../../../src/features/atlas/Outline';
-import type {AtlasNode} from '../../../src/features/atlas/tree';
-
-// Regression-first: the 4x CPU Atlas C2 transition need not parse, typeset,
-// and sanitize a plain title for each mounted outline row. Rich content must
-// retain the existing LaTeX/Markdown pipeline and its sanitization.
-describe('FIX #611 Atlas plain-name render path',()=>{
- it('uses escaped React text and the existing typography classes for ordinary titles',()=>{
-  const html=renderToStaticMarkup(createElement(AtlasLabel,{source:'Real Analysis (Part 2)'}));
-  expect(isPlainAtlasLabel('Real Analysis (Part 2)')).toBe(true);
-  expect(html).toContain('data-atlas-plain-label="true"');
-  expect(html).toContain('lemma-math lemma-tex-inline');
-  expect(html).toContain('Real Analysis (Part 2)');
-  expect(html).not.toContain('katex-html');
- });
- it('uses the plain path in the real Atlas outline row',()=>{
-  const node={id:'idea',name:'Topology',depth:2,children:[],status:'not_started',
-   glyph:null,done:0,total:1,revisit:0} as unknown as AtlasNode;
-  const html=renderToStaticMarkup(createElement(Row,{
-   node,open:false,tone:'none',match:false,onToggle:()=>{},onSelect:()=>{},
-  }));
-  expect(html).toContain('data-atlas-plain-label="true"');
-  expect(html).toContain('Topology');
-  expect(html).toContain('role="treeitem"');
- });
- it('keeps real LaTeX typesetting for mathematical names',()=>{
-  ;
+  const source=String.raw`$\frac{a}{b}$`;
   expect(isPlainAtlasLabel(source)).toBe(false);
   const html=renderToStaticMarkup(createElement(AtlasLabel,{source}));
   expect(html).toContain('katex-html');
