@@ -45,11 +45,15 @@ export default function Page(){
  // S/X contains 60 project filters. Cards query, viewport and scroll state
  // update independently; keep the chip and native-option subtrees stable so
  // they do not rerun 60 rich-title/plainMath conversions on each page paint.
- const projectChips=useMemo(()=>projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
+ // At S/X sizes the Project select below preserves every choice without
+ // mounting 15–60 rich mathematical chip labels on the cold Cards route.
+ // Keep quick chips for small libraries; change form rather than shrink marks.
+ const showProjectChips=(projects.data?.length??0)<=8;
+ const projectChips=useMemo(()=>showProjectChips?projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
   <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
    <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
   </Chip>
- </span>),[projects.data,project]);
+ </span>):null,[projects.data,project,showProjectChips]);
  const projectOptions=useMemo(()=>projects.data?.map(p=><option key={p.id} value={p.slug}>{projectFilterOptionLabel(p.title)}</option>),[projects.data]);
 
  useEffect(()=>{
@@ -110,6 +114,7 @@ export default function Page(){
   <div ref={filterScroller} role="group" aria-label="Card filters" data-filter-fade-left={String(filterFade.left)} data-filter-fade-right={String(filterFade.right)} onScroll={updateFilterFade} style={{maskImage:filterMask}} className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
    <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
    {projectChips}
+   {!showProjectChips&&<span className="self-center shrink-0 text-[12px] text-ink-3">Choose from {projects.data?.length??0} projects below</span>}
    <Chip className="shrink-0 whitespace-nowrap" selected={onlyComments} onClick={()=>setOnlyComments(v=>!v)}>Has notes</Chip>
    <Chip className="shrink-0 whitespace-nowrap" selected={noteStatus==='suspended'} onClick={()=>setNoteStatus(v=>v==='suspended'?'':'suspended')}>Paused</Chip>
   </div>
