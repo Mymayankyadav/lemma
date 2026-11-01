@@ -14,5 +14,7 @@ describe('FIX #647 Atlas optional surfaces on cold route',()=>{
   expect(page).toContain('if(!props.open&&!activated)return null');
   expect(page).toContain('<LazySheet {...props}/>');
   expect(page).toContain('<LazyEmptyState {...props}/>');
+  expect(page).not.toMatch(/import\\s*\\{\\s*useToast\\s*\\}\\s*from\\s*['\"]\\.\\.\\/\\.\\.\\/ui\\/Toast/);
+  expect(page).toContain("import('../../ui/Toast')");
  });
 });
