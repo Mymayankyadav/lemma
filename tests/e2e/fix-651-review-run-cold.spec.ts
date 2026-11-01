@@ -37,10 +37,10 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     const nav=performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined;
     const fcp=performance.getEntriesByType('paint').find(entry=>entry.name==='first-contentful-paint');
     const marks=performance.getEntriesByType('mark')
-     .filter(entry=>entry.name.startsWith('review-run-'))
+     .filter(entry=>entry.name.startsWith('review-run-')||entry.name.startsWith('lemma-stress-fixture-'))
      .map(entry=>({name:entry.name,atMs:Math.round(entry.startTime)}));
     const measures=performance.getEntriesByType('measure')
-     .filter(entry=>entry.name.startsWith('review-run-'))
+     .filter(entry=>entry.name.startsWith('review-run-')||entry.name.startsWith('lemma-stress-fixture-'))
      .map(entry=>({name:entry.name,durationMs:Math.round(entry.duration)}));
     return {domContentLoadedMs:nav?.domContentLoadedEventEnd??null,firstContentfulPaintMs:fcp?.startTime??null,marks,measures};
    });
