@@ -684,6 +684,34 @@ export class DemoAdapter implements LemmaApi {
    */
   private projectDueCounts(projectId:string):Map<string,number>{
     const now=this.now();
+    // A private, untouched S/X fixture has one reviewed-state card per
+    // generated note, all first stressDueCount cards at the same overdue
+    // timestamp and the rest in the future. dueToday's stable ordering,
+    // active-project filter, one-note sibling rule and global daily cap are
+    // therefore equivalent to selecting the first capped active indices.
+    // Count those indices directly instead of hydrating 600/4,000 synthetic
+    // note objects before the first real Project Route paints. Never use
+    // this shortcut after a card has been loaded/edited or any review exists;
+    // all mutable/live and nonstandard fixture states use dueToday below.
+    const virtual=this.virtualStressDue;
+    const deferred=typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
+    const template=demoSeedFixture.notes[0];
+    if(deferred&&virtual&&!this.virtualReviewNotes&&this.virtualCardCache.size===0&&
+       this.store.reviews.length===0&&template?.cards[0]?.state.state===2&&
+       now>=virtual.overdue&&now<virtual.future&&this.store.projects.length>0){
+      const counts=new Map<string,number>();
+      const dueCount=Math.min(this.store.stressDueCount??0,this.store.stressNoteCount??0);
+      let left=Math.max(0,Math.floor(this.store.settings.reviewsPerDay));
+      for(let i=0;i<dueCount&&left>0;i++){
+        const project=this.store.projects[i%this.store.projects.length];
+        if(project.status==='archived'||project.system)continue;
+        left--;
+        if(project.id!==projectId)continue;
+        const code='CP'+((i%36)+1);
+        counts.set(code,(counts.get(code)??0)+1);
+      }
+      return counts;
+    }
     const {start,end}=studyDayBounds(now,this.store.settings.timeZone,
       this.store.settings.rolloverHour);
     const today=this.store.reviews.filter(r=>!r.undoneAt&&
