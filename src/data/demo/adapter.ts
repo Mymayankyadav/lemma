@@ -721,8 +721,14 @@ export class DemoAdapter implements LemmaApi {
     cp: DemoCheckpoint,
     eligible = this.eligible(),
     uiOverride?:CheckpointUi,
+    dueCountOverride?:number,
   ): CheckpointView {
-    const project = this.projectById(cp.projectId);
+    // Single-checkpoint callers retain the original owner/project filter.
+    // Project detail supplies the same count from its one-pass daily index.
+    const dueCards=dueCountOverride??(()=>{
+      const project=this.projectById(cp.projectId);
+      return eligible.filter(c=>c.projectSlug===project.slug&&c.checkpointCode===cp.code).length;
+    })();
     return {
       id: cp.id,
       code: cp.code,
@@ -735,9 +741,7 @@ export class DemoAdapter implements LemmaApi {
       currentStep: cp.currentStep,
       stepsTotal: cp.steps.length,
       recheckDue: cp.recheckDue,
-      dueCards: eligible.filter(
-        (c) => c.projectSlug === project.slug && c.checkpointCode === cp.code,
-      ).length,
+      dueCards,
     };
   }
   /** Generate one stress session on demand; the UI never needs 60k hydrated rows. */
@@ -1301,6 +1305,12 @@ export class DemoAdapter implements LemmaApi {
       : this.summary(p);
     const summaryDone=profile?performance.now():0;
     const eligible = this.eligible();
+    // The daily queue is already bounded. Count each project's checkpoint
+    // cards once rather than scanning the same queue for every CP in a 100-row
+    // extreme plan. Unassigned cards never match a checkpoint code.
+    const dueByCheckpoint=new Map<string,number>();
+    for(const card of eligible)if(card.projectSlug===p.slug&&card.checkpointCode!==null)
+      dueByCheckpoint.set(card.checkpointCode,(dueByCheckpoint.get(card.checkpointCode)??0)+1);
     const eligibleDone=profile?performance.now():0;
     const baseCheckpoints=this.store.checkpoints.filter(cp=>cp.projectId===p.id);
     const uiById=this.projectUiIndex(baseCheckpoints);
@@ -1309,7 +1319,7 @@ export class DemoAdapter implements LemmaApi {
       ...this.proposed(p),
     ]
       .sort((a, b) => a.position - b.position)
-      .map(cp=>this.cpView(cp,eligible,cp.proposed?'proposed':uiById?.get(cp.id)));
+      .map(cp=>this.cpView(cp,eligible,cp.proposed?'proposed':uiById?.get(cp.id),dueByCheckpoint.get(cp.code)??0));
     const checkpointsDone=profile?performance.now():0;
     const sessions=await this.listSessions(slug);
     const sessionsDone=profile?performance.now():0;
