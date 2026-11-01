@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {QA3_ROUTES} from '../../scripts/qa3-report';
 import {CPU_CASES,auditCpuMatrix,cpuMatrixTimeoutMs,type CpuRouteSample} from '../../scripts/stress-cpu-coverage';
-import {assertRouteLoaded} from '../e2e/stress-cpu-readiness';
+import {assertRouteLoaded,type ReadinessPhase} from '../e2e/stress-cpu-readiness';
 
 /** AUDIT #540: all 144 S/X x Graph day/night x phone-width x visual-route
  * cells use a NEW DOCUMENT at 4x CPU. The existing ST-0 1x hash-navigation
@@ -46,8 +46,9 @@ for(const matrix of CPU_CASES){
    // A heading and >40 text characters can be visible on an empty skeleton.
    // Wait for the route's actual S/X data and paint BEFORE stopping the clock.
    let ready=false;
+   const readinessPhases:ReadinessPhase[]=[];
    try {
-    await assertRouteLoaded(page,route,matrix.profile,12_000);
+    await assertRouteLoaded(page,route,matrix.profile,12_000,readinessPhases);
     ready=true;
    } catch (error) {
     // A failed cold route must identify the precise fixture and loaded state;
@@ -59,12 +60,14 @@ for(const matrix of CPU_CASES){
      mainText:document.querySelector('#main-content')?.textContent?.slice(0,180)??'',
     })).catch(()=>null);
     console.error('[AUDIT #540 cold 4x route failure]',JSON.stringify({
-     ...matrix,route,elapsedMs:Date.now()-start,diagnostic,
+     ...matrix,route,elapsedMs:Date.now()-start,readinessPhases,diagnostic,
     }));
     throw error;
    }
+   const paintStarted=Date.now();
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+   readinessPhases.push({name:'two-paint-frames',elapsedMs:Date.now()-paintStarted});
    const durationMs=Date.now()-start;
    // Diagnostic only: distinguish actual browser navigation/paint work from
    // Playwright's cross-process polling and loaded-state assertions. FCP is
@@ -90,13 +93,13 @@ for(const matrix of CPU_CASES){
     (route==='/'?'today':route.replaceAll('/','-').replace(/^-/,''))+'.png';
    await page.screenshot({path:screenshot,fullPage:false,timeout:30_000});
    console.info('[AUDIT #540 cold 4x route]',JSON.stringify({
-    ...matrix,route,durationMs,nodes,navigationType,browserTiming,
+    ...matrix,route,durationMs,nodes,navigationType,browserTiming,readinessPhases,
    }));
    samples.push({
     route,actualRoute:await page.evaluate(()=>location.hash.slice(1)),
     profile:matrix.profile,theme:matrix.theme,width:matrix.width,
     cpuThrottle:4,durationMs,navigationType:navigationType==='navigate'?'document':navigationType,
-    ready,nodes,screenshot,browserTiming,
+    ready,nodes,screenshot,browserTiming,readinessPhases,
    });
   }
   await cdp.detach();
