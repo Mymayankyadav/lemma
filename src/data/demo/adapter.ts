@@ -21,6 +21,7 @@ import type {
   CardRow,
   CardState,
   CheckpointDetail,
+  CheckpointUi,
   CheckpointView,
   DeckNode,
   HomeSummary,
@@ -619,9 +620,51 @@ export class DemoAdapter implements LemmaApi {
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
     });
   }
+  /** Direct Project renders a long prerequisite chain all at once. The
+   * normal cpUi() recursion deliberately has per-call cycle protection, but
+   * calling it for each of 100 rows repeats the entire chain and a civil-day
+   * conversion at every edge. Acyclic plans can share a memo for this one
+   * immutable snapshot; malformed cycles/missing refs use the original path.
+   */
+  private projectUiIndex(checkpoints:readonly DemoCheckpoint[]):Map<string,CheckpointUi>|null{
+    const byCode=new Map(checkpoints.map(cp=>[cp.code,cp] as const));
+    // A malformed duplicate code must retain checkpoint()'s original
+    // first-match semantics rather than using Map's last-match entry.
+    if(byCode.size!==checkpoints.length)return null;
+    const visiting=new Set<string>(),visited=new Set<string>();
+    let invalid=false;
+    const check=(cp:DemoCheckpoint):void=>{
+      if(cp.proposed||visited.has(cp.id)||invalid)return;
+      if(visiting.has(cp.id)){invalid=true;return}
+      visiting.add(cp.id);
+      for(const code of cp.prereqs){
+        const dep=byCode.get(code);
+        if(!dep){invalid=true;break}
+        check(dep);
+      }
+      visiting.delete(cp.id);
+      visited.add(cp.id);
+    };
+    for(const cp of checkpoints)check(cp);
+    if(invalid)return null;
+    const today=studyDay(this.now(),this.store.settings.timeZone,
+      this.store.settings.rolloverHour);
+    const cache=new Map<string,CheckpointUi>();
+    const resolve=(cp:DemoCheckpoint):CheckpointUi=>{
+      const cached=cache.get(cp.id);
+      if(cached!==undefined)return cached;
+      const ui=cp.proposed?'proposed':checkpointUi(cp,
+        cp.prereqs.map(code=>resolve(byCode.get(code)!)),today);
+      cache.set(cp.id,ui);
+      return ui;
+    };
+    for(const cp of checkpoints)resolve(cp);
+    return cache;
+  }
   private cpView(
     cp: DemoCheckpoint,
     eligible = this.eligible(),
+    uiOverride?:CheckpointUi,
   ): CheckpointView {
     const project = this.projectById(cp.projectId);
     return {
@@ -632,7 +675,7 @@ export class DemoAdapter implements LemmaApi {
       stage: cp.stage ?? null,
       dueOn: cp.dueOn ?? null,
       demonstratedAt: cp.demonstratedAt ?? null,
-      ui: this.cpUi(cp),
+      ui: uiOverride??this.cpUi(cp),
       currentStep: cp.currentStep,
       stepsTotal: cp.steps.length,
       recheckDue: cp.recheckDue,
@@ -1195,15 +1238,17 @@ export class DemoAdapter implements LemmaApi {
       ? (await this.listProjects()).find(row => row.id === p.id) ?? this.summary(p)
       : this.summary(p);
     const eligible = this.eligible();
+    const baseCheckpoints=this.store.checkpoints.filter(cp=>cp.projectId===p.id);
+    const uiById=this.projectUiIndex(baseCheckpoints);
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
       checkpoints: [
-        ...this.store.checkpoints.filter((cp) => cp.projectId === p.id),
+        ...baseCheckpoints,
         ...this.proposed(p),
       ]
         .sort((a, b) => a.position - b.position)
-        .map((cp) => this.cpView(cp, eligible)),
+        .map(cp=>this.cpView(cp,eligible,cp.proposed?'proposed':uiById?.get(cp.id))),
       done: summary.done,
       total: summary.total,
       planRevisions: clone(this.planHistory(p)),
