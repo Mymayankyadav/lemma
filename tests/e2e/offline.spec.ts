@@ -76,6 +76,20 @@ for(const width of [360,390] as const){
   await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
   await expect(page).toHaveURL(/#\/review$/)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
+  // No offline write queue: navigating and attempting disabled writes must not
+  // alter even the allowlisted IndexedDB snapshot while disconnected.
+  const afterOffline=await page.evaluate(async(profile)=>{
+   const req=indexedDB.open('lemma-offline:demo-'+profile,1)
+   return await new Promise<string>((resolve,reject)=>{
+    req.onerror=()=>reject(req.error)
+    req.onsuccess=()=>{
+     const db=req.result,tx=db.transaction('snapshot','readonly'),get=tx.objectStore('snapshot').get('latest')
+     get.onsuccess=()=>{resolve(JSON.stringify(get.result));db.close()}
+     get.onerror=()=>{reject(get.error);db.close()}
+    }
+   })
+  },profile)
+  expect(afterOffline).toBe(serialized)
   await page.screenshot({path:`test-results/screens/and-8/offline-${profile}-${theme}-${width}.png`})
   await context.setOffline(false)
  })
@@ -106,7 +120,7 @@ test('AND-8 offline mutation guards retain the card and project state',async({pa
  const mutate=menu.getByRole('menuitem',{name:/^(Pin|Unpin)$/}).first()
  await expect(mutate).toHaveAttribute('aria-disabled','true')
  await mutate.evaluate((button:HTMLButtonElement)=>button.click())
- await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
+ await expect(page.getByText('Needs a connection',{exact:true}).last()).toBeVisible()
  await expect.poll(()=>row.getByText('Pinned',{exact:true}).count()).toBe(pinnedBefore)
  await context.setOffline(false)
 })
