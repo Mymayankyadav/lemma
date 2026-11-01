@@ -1,6 +1,12 @@
 -- NOTIF-1b: one owner-scoped, bounded read for K1–K8 notification facts.
 -- The service-role caller passes the authenticated owner UUID resolved by the Edge
 -- Function. No dynamic SQL, no per-project Edge loops and no write side effects.
+-- K2/K3 share the owner/due-date access path; without it profile X scans
+-- thousands of unrelated checkpoints for tomorrow and late reminders.
+create index if not exists notify_checkpoints_owner_due
+  on public.checkpoints(user_id,due_on,project_id)
+  where status<>'demonstrated';
+
 create function public.notify_candidates(p_user uuid,p_now timestamptz)
 returns jsonb language sql stable security definer set search_path = '' as $facts$
 with
@@ -279,3 +285,4 @@ revoke all on function public.notify_candidates(uuid,timestamptz) from public,an
 grant execute on function public.notify_candidates(uuid,timestamptz) to service_role;
 
 -- Down: drop function if exists public.notify_candidates(uuid,timestamptz);
+-- drop index if exists public.notify_checkpoints_owner_due;
