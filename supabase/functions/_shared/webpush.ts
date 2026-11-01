@@ -49,7 +49,7 @@ export async function encryptPushMessage(
  const salt=options.salt??crypto.getRandomValues(new Uint8Array(16))
  if(salt.length!==16)throw new Error('Web Push salt must be 16 bytes')
  const rs=options.recordSize??4096
- if(!Number.isInteger(rs)||rs<18||rs>65535||message.length+17>=rs)
+ if(!Number.isInteger(rs)||rs<18||rs>65535||message.length+17>=rs||86+message.length+17>4096)
   throw new Error('Web Push message exceeds single-record limit')
  const pair=options.serverKeyPair??await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveBits'])
  const asPublic=rawPoint(new Uint8Array(await crypto.subtle.exportKey('raw',pair.publicKey)))
