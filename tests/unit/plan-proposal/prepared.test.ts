@@ -1,6 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import type {Proposal,ProjectDetail} from '../../../src/data/types';
 import {preparePlanProposal} from '../../../src/features/plan-proposal/prepared';
+import {groupPlanStages} from '../../../src/features/plan-proposal/planMap';
 
 const proposal=()=>({
  id:'p',kind:'plan',projectSlug:'analysis',projectGlyph:'∫',
@@ -21,6 +22,9 @@ describe('FIX #656 immutable plan preparation cache',()=>{
   expect(second.ideaTree).toBe(first.ideaTree);
   expect(first.nodes.map(n=>n.code)).toEqual(['CP1','CP2']);
   expect(first.ideaCount).toBe(2);
+  expect(groupPlanStages(first.nodes)).toBe(first.stages);
+  expect(groupPlanStages([...first.nodes])).not.toBe(first.stages);
+  expect(first.stages.map(stage=>stage.name)).toEqual(['CP1–CP2']);
   expect(first.ideaTree?.links.some(l=>l.kind==='prereq')).toBe(true);
  });
  it('invalidates on a new proposal or project snapshot, preserving titles and subjects',()=>{
