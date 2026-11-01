@@ -660,6 +660,19 @@ export class DemoAdapter implements LemmaApi {
       {length:this.store.stressSessionCount}, (_,i) => this.virtualStressSession(project,i+1));
     return this.store.sessions.filter(s => s.projectId === project.id);
   }
+  /** Direct checkpoint details only need sessions in the CP36 residue,
+   * not 1,000 generated sessions for the whole project.
+   */
+  private checkpointSessions(project:DemoProject,code:string):DemoSession[]{
+    if(!this.store.stressSessionCount)
+      return this.store.sessions.filter(s=>s.projectId===project.id&&s.checkpointCode===code);
+    const cp=Number(/^CP([1-9]\\d*)$/.exec(code)?.[1]);
+    if(!Number.isSafeInteger(cp)||cp<1||cp>36)return [];
+    const result:DemoSession[]=[];
+    for(let number=cp;number<=this.store.stressSessionCount;number+=36)
+      result.push(this.virtualStressSession(project,number));
+    return result;
+  }
   /** Preserve checkpoint evidence from the two representative long histories. */
   private stressCheckpointEvents(project: DemoProject, code: string): DemoSession["events"] {
     if (!this.store.stressSessionCount) return [];
@@ -1203,7 +1216,7 @@ export class DemoAdapter implements LemmaApi {
         ),
         "Checkpoint",
       );
-    const sessions = this.sessionsForProject(project).filter(s => s.checkpointCode === code);
+    const sessions = this.checkpointSessions(project,code);
     return {
       view: this.cpView(cp),
       objective: cp.objective,
