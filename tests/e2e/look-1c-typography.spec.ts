@@ -11,7 +11,9 @@ for(const width of [360,390] as const){
   await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
   for(const [path,section,name] of [
-   ['/', 'Cards', 'today'],
+   // LOOK-5c2 replaced the old Cards summary with a Review section;
+   // retain the exact notebook heading-role and font assertions.
+   ['/', 'Review', 'today'],
    ['/projects', null, 'paths'],
    ['/p/real-analysis', 'Stages', 'project'],
   ] as const){
