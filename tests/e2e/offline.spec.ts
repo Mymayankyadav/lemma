@@ -32,7 +32,7 @@ for(const width of [360,390] as const){
     }
    })
   },profile),{timeout:30_000}).toBeGreaterThanOrEqual(3)
-  const serialized=await page.evaluate(async(profile)=>{
+  const readSerialized=()=>page.evaluate(async(profile)=>{
    const req=indexedDB.open('lemma-offline:demo-'+profile,1)
    return await new Promise<string>((resolve,reject)=>{
     req.onerror=()=>reject(req.error)
@@ -43,6 +43,16 @@ for(const width of [360,390] as const){
     }
    })
   },profile)
+  // The last online navigation may still have a 150ms debounced snapshot
+  // write in flight. Require a stable online baseline before disconnecting;
+  // this keeps the subsequent byte-for-byte assertion strict and distinguishes
+  // a real offline mutation from a legitimate last online save.
+  await expect.poll(async()=>{
+   const before=await readSerialized()
+   await page.waitForTimeout(450)
+   return (await readSerialized())===before
+  },{timeout:15_000}).toBe(true)
+  const serialized=await readSerialized()
   expect(serialized).not.toMatch(/connectorUrl|access_token|refresh_token|pushSubscription|widgetToken|SENTINEL-SECRET/)
   expect(new TextEncoder().encode(serialized).byteLength).toBeLessThanOrEqual(2_000_000)
   await context.setOffline(true)
@@ -86,17 +96,7 @@ for(const width of [360,390] as const){
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
   // No offline write queue: navigating and attempting disabled writes must not
   // alter even the allowlisted IndexedDB snapshot while disconnected.
-  const afterOffline=await page.evaluate(async(profile)=>{
-   const req=indexedDB.open('lemma-offline:demo-'+profile,1)
-   return await new Promise<string>((resolve,reject)=>{
-    req.onerror=()=>reject(req.error)
-    req.onsuccess=()=>{
-     const db=req.result,tx=db.transaction('snapshot','readonly'),get=tx.objectStore('snapshot').get('latest')
-     get.onsuccess=()=>{resolve(JSON.stringify(get.result));db.close()}
-     get.onerror=()=>{reject(get.error);db.close()}
-    }
-   })
-  },profile)
+  const afterOffline=await readSerialized()
   expect(afterOffline).toBe(serialized)
   // Inspect the actual browser persistence schema, not merely the UI. A
   // disconnected Review/approval attempt must not create an outbox, mutation
