@@ -91,6 +91,22 @@ describe('NOTIF-5 Workbox push handling',()=>{
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
   expect(h.self.clients.openWindow).toHaveBeenCalledWith('https://claude.ai/new');
  });
+ it('keeps both visible buttons when passive dismiss token is separate',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,openToken:'signed-open',dismissToken:'signed-dismiss',
+  },scope)).data;
+  expect(data.actions.map((a:any)=>a.action)).toEqual(['review_5','later']);
+  await h.emit('notificationclose',{notification:{data}});
+  expect(h.posted).toEqual([{token:'signed-dismiss'}]);
+  expect(h.shown).toHaveLength(0);
+ });
+ it('fails closed on passive dismissal when no signed receipt is present',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
+  await h.emit('notificationclose',{notification:{data}});
+  expect(h.posted).toHaveLength(0);
+ });
  it('rejects executable and foreign URLs',()=>{
   const h=harness();
   expect(h.core.destination('javascript:alert(1)',scope)).toBeNull();
