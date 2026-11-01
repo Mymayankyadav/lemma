@@ -65,4 +65,35 @@ describe('FIX #647 StrictMode cold Atlas arc aggregation',()=>{
     expect(budgetArcsUnfocusedCached(fresh,rows,expanded,kinds))
       .toEqual(budgetArcsUnfocused(fresh,rows,expanded,kinds));
   });
+  it('does not traverse 8,000 links twice for a StrictMode first-mount render',()=>{
+    const concepts=Array.from({length:2500},(_,i)=>({
+      ...idea('idea-'+i,null,'planet'),
+      name:'Idea '+String(i).padStart(4,'0'),
+    }));
+    const links=Array.from({length:8000},(_,i)=>({
+      fromId:'idea-'+(i%2499),toId:'idea-'+(i%2499+1),
+      kind:'prereq' as const,
+    }));
+    const tree=buildAtlasTree({subjects:[subject],concepts,links});
+    const expanded=expandedToDepth(tree,2);
+    const rows=visibleRows(tree,expanded);
+    let traversals=0;
+    tree.links=new Proxy(tree.links,{
+      get(target,key,receiver){
+        if(key===Symbol.iterator)return function*(){
+          traversals++;
+          yield* target;
+        };
+        return Reflect.get(target,key,receiver);
+      },
+    });
+    const first=budgetArcsUnfocusedCached(tree,rows,expanded,new Set(['prereq']));
+    expect(first.visible).toHaveLength(0);
+    expect(first.hidden).toBeGreaterThan(60);
+    expect(traversals).toBe(1);
+    const second=budgetArcsUnfocusedCached(tree,rows,expanded,new Set(['prereq']));
+    expect(second).toBe(first);
+    expect(traversals).toBe(1);
+  });
+
 });
