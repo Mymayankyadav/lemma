@@ -1,4 +1,4 @@
-import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, TranscribedSourcePage, SourceTranscriptionStat, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardSearchFilters, CardSearchPage, CardDetail, CardHistoryPage, CardCommentsPage, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput } from './types'
+import type { Settings, Style, Subject, HomeSummary, ProjectSummary, ProjectDetail, Project, NewProjectInput, CheckpointDetail, IngestProgress, Source, TranscribedSourcePage, SourceTranscriptionStat, SessionSummary, SessionDetail, Proposal, DeckNode, QueueFilter, ReviewItem, RecordReviewInput, CardState, CardRow, CardSearchFilters, CardSearchPage, CardDetail, CardHistoryPage, CardCommentsPage, NoteType, NoteKind, NoteStatus, CardComment, AtlasGraph, InsightData, Rating, PlanRevision, NewProjectDraftInput, PushDevice, SentNotification, NotifyHold, NotifyPreviewRow } from './types'
 
 export type LemmaErrorCode = 'not_found' | 'invalid' | 'conflict' | 'offline' | 'auth' | 'server' | 'not_implemented'
 export class LemmaError extends Error {
@@ -31,6 +31,28 @@ export interface LemmaApi {
  getSettings(): Promise<Settings>
  /** Update editable settings only. */
  updateSettings(patch: SettingsPatch): Promise<Settings>
+ /** List the owner's registered and removed push devices. */
+ listPushDevices(): Promise<PushDevice[]>
+ /** Register or re-enable a subscription, preserving its row identity. */
+ addPushDevice(input:{endpoint:string;p256dh:string;auth:string;label:string;platform:PushDevice['platform']}):Promise<PushDevice>
+ /** Rename one registered device. */
+ renamePushDevice(id:string,label:string):Promise<PushDevice>
+ /** Soft-disable one registered device. */
+ removePushDevice(id:string):Promise<PushDevice>
+ /** Re-enable the same device row, subject to the 10-device cap. */
+ restorePushDevice(id:string):Promise<PushDevice>
+ /** Presence ping, at most once a minute from the UI. */
+ touchPushDevice(endpoint:string):Promise<void>
+ /** Read the 20 most recent notification records. */
+ listRecentNotifications():Promise<SentNotification[]>
+ /** Read active holds for the owner. */
+ listNotifyHolds():Promise<NotifyHold[]>
+ /** Clear a single reminder hold. */
+ clearNotifyHold(scope:string):Promise<void>
+ /** Send a test notification to an owner's device. */
+ sendTestNotification(deviceId:string):Promise<void>
+ /** Preview upcoming reminders without sending or writing. */
+ previewNotifications():Promise<NotifyPreviewRow[]>
  /** Rotate the connector secret and invalidate its previous URL. */
  rotateConnectorSecret(): Promise<Settings>
  /** List teaching styles. */
