@@ -58,6 +58,25 @@ describe('NOTIF-5 Workbox push handling',()=>{
   expect(h.navigated).toEqual([scope+'#/review?start=5']);
   expect(h.posted).toHaveLength(0);
  });
+ it('posts passive signed open receipt before navigation without a second notification',async()=>{
+  const h=harness();
+  const withReceipt={...payload,openToken:'signed-open',dismissToken:'signed-dismiss'};
+  const data=h.core.notificationOptions(h.core.parsePayload(withReceipt,scope)).data;
+  expect(data.actions).toHaveLength(2);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
+  expect(h.posted).toEqual([{token:'signed-open'}]);
+  expect(h.navigated).toEqual([scope+'#/review']);
+  expect(h.shown).toHaveLength(0);
+ });
+ it('keeps passive navigation usable without showing an action-failure warning if receipt fails',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({...payload,openToken:'signed-open'},scope)).data;
+  h.fetchMock.mockRejectedValueOnce(new Error('offline'));
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
+  expect(h.posted).toEqual([{token:'signed-open'}]);
+  expect(h.navigated).toEqual([scope+'#/review']);
+  expect(h.shown).toHaveLength(0);
+ });
  it('posts signed actions and shows undo confirmation',async()=>{
   const h=harness(),data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'later'});
