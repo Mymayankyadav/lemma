@@ -84,7 +84,7 @@ try{
  // the 30k-card path joins the notes/projects tables. This deliberately fails
  // on the pre-fix migration, which deduplicates after those joins.
  const optimizedSql=await readFile(new URL('../../supabase/migrations/20261101171500_notify_candidates_card_first.sql',import.meta.url),'utf8').catch(()=> '')
- assert.match(optimizedSql,/due_candidates as \\(\\s*select n\\.id note_id,n\\.no,c\\.state,c\\.due,c\\.id card_id\\s+from \\(\\s*select distinct on \\(c\\.note_id\\)/,
+ assert.match(optimizedSql,/due_candidates as \(\s*select n\.id note_id,n\.no,c\.state,c\.due,c\.id card_id\s+from \(\s*select distinct on \(c\.note_id\)/,
    'X candidate path must deduplicate sibling cards before joining notes/projects')
  assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
  console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
