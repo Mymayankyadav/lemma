@@ -16,6 +16,7 @@ export default function AppShell(){
  useEffect(()=>{
   let disposed=false,identity:string|null=null,saveTimer:ReturnType<typeof setTimeout>|null=null;
   let idleSave:number|null=null;
+  let lastSavedAt=0;
   let authEventSeen=false;
   // Serialize writes and deletion so a sign-out cannot resurrect a prior owner's snapshot.
   let pendingSave:Promise<void>=Promise.resolve();
@@ -42,6 +43,7 @@ export default function AppShell(){
     // Reading IndexedDB is asynchronous. A sign-out or account switch during
     // that read must never inject the former owner's rows into the new cache.
     if(disposed||identity!==owner)return;
+    if(snapshot)lastSavedAt=snapshot.savedAt;
     if(snapshot)for(const entry of snapshot.entries){
      if(queryClient.getQueryData(entry.key)===undefined)
       queryClient.setQueryData(entry.key,entry.data,{updatedAt:entry.savedAt});
@@ -55,9 +57,12 @@ export default function AppShell(){
    const owner=identity;
    // A queued save must not read the next account's React Query data under
    // the previous owner's ID after a rapid sign-out/account switch.
-   pendingSave=pendingSave.then(()=>identity===owner&&!disposed&&(allowOffline||navigator.onLine)
-    ?saveOfflineSnapshot(owner,queryClient,Date.now(),()=>!disposed&&identity===owner&&(allowOffline||navigator.onLine)):undefined)
-    .catch(()=>{/* Quota/private mode: online use continues. */});
+   const savedAt=Date.now();
+   pendingSave=pendingSave.then(async()=>{
+    if(identity!==owner||disposed||(!allowOffline&&!navigator.onLine))return;
+    await saveOfflineSnapshot(owner,queryClient,savedAt,()=>!disposed&&identity===owner&&(allowOffline||navigator.onLine));
+    lastSavedAt=savedAt;
+   }).catch(()=>{/* Quota/private mode: online use continues. */});
    await pendingSave;
   };
   const cancelQueuedSave=()=>{
@@ -84,7 +89,9 @@ export default function AppShell(){
    cancelQueuedSave();
    // Flush already-read query data to IndexedDB before restoring offline;
    // this is read-only cache persistence, not an offline mutation queue.
-   const writing=queued?save(true):pendingSave;
+   const changed=queryClient.getQueryCache().findAll().some(query=>
+    isOfflineKey(query.queryKey)&&query.state.status==='success'&&query.state.dataUpdatedAt>lastSavedAt);
+   const writing=queued&&changed?save(true):pendingSave;
    void writing.finally(()=>{if(!disposed&&!navigator.onLine)void restore()})
   };
   const onOnline=()=>{
@@ -122,11 +129,11 @@ export default function AppShell(){
       authEventSeen=true;
       if(event==='SIGNED_OUT'){
        cancelQueuedSave();
-       const previous=identity;identity=null;publish(null);
+       const previous=identity;identity=null;lastSavedAt=0;publish(null);
        queryClient.clear(); // No signed-out route may retain the former owner's in-memory queries.
        if(previous)eraseOwner(previous);
       }else if(session?.user?.id&&session.user.id!==identity){
-       const previous=identity;identity=session.user.id;publish(null);
+       const previous=identity;identity=session.user.id;lastSavedAt=0;publish(null);
        if(previous)queryClient.clear(); // Switching accounts must also clear live in-memory data.
        if(previous)eraseOwner(previous);
        if(!navigator.onLine)void restore();else queueSave();
