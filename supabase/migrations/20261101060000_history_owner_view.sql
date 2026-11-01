@@ -1,6 +1,7 @@
 -- FIX #606: project history must enforce the connector owner at the query boundary.
 -- The journal intentionally has no denormalized user_id; derive it from the
--- immutable action owner. Only project identifiers are projected, never\n-- the potentially sensitive old/new journal payloads. SECURITY INVOKER preserves both underlying RLS
+-- immutable action owner. Only project identifiers are projected, never
+-- the potentially sensitive old/new journal payloads. SECURITY INVOKER preserves both underlying RLS
 -- policies for authenticated callers. The service role must still filter
 -- v_action_changes_owner.user_id explicitly (it bypasses RLS).
 create view public.v_action_changes_owner with (security_invoker = true) as
