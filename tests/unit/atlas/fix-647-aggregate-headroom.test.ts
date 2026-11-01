@@ -42,4 +42,21 @@ describe('FIX #647 cold Atlas aggregation semantics',()=>{
   expect(visibleRows(tree,defaultExpanded(tree)).length).toBe(603);
   expect(buildAtlasTree(graph)).toBe(tree);
  });
+ it('keeps finite checkpoint numbers beyond MAX_SAFE_INTEGER in sibling order',()=>{
+  const leaf=(id:string,name:string,code:string):AtlasGraph['concepts'][number]=>({
+   id,slug:id,name,subjectId:'s',level:'planet',parentId:null,
+   status:'not_started',blurb:null,pinX:null,pinY:null,
+   checkpointRefs:[{projectSlug:'s',code}],dueCards:0,
+  });
+  const graph:AtlasGraph={
+   subjects:[{id:'s',name:'Analysis',glyph:'A',hue:'amber',position:0}],
+   concepts:[
+    leaf('later','A later','CP9999999999999999'),
+    leaf('earlier','Z earlier','CP9007199254740991'),
+   ],
+   links:[],
+  };
+  expect(buildAtlasTree(graph).nodes.get('atlas:root:s')!.children)
+   .toEqual(['earlier','later']);
+ });
 });
