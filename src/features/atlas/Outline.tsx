@@ -1,5 +1,5 @@
 import {ChevronRight} from 'lucide-react';
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
 import {arcTone,isPlainAtlasLabel} from './tree';
