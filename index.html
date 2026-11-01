@@ -32,7 +32,7 @@
     <!-- Route-only early module request: avoid waiting for App's static graph on
          direct Review-run deep links; never preload this chunk on other routes. -->
     <script type="module" data-review-run-preload>
-      if (location.hash === '#/review/run') {
+      if (location.hash.split('?')[0] === '#/review/run') {
         void import('/src/features/review-run/Page.tsx')
       }
     </script>
