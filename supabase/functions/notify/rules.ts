@@ -17,7 +17,7 @@ export interface ReminderCandidate {
  /** K5: newest proposal; an ended session summary may send without proposals. */
  newestProposalAt?:number; hasSummary?:boolean; summaryAt?:number
  /** K7: a fresh target-date transition. */
- targetTransition?:boolean
+ targetTransition?:boolean; targetTransitionAt?:number
 }
 export interface ReminderContext {
  now:number; timeZone:string; quietStart:string; quietEnd:string
@@ -129,7 +129,14 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
   if(c.hasSummary&&c.summaryAt===undefined&&c.newestProposalAt===undefined&&c.lastSentAt!==undefined)
    return result(c,'skipped','resolved')
  }
- if(c.kind==='plan'&&!c.targetTransition)return result(c,'skipped','resolved')
+ if(c.kind==='plan'){
+  if(!c.targetTransition)return result(c,'skipped','resolved')
+  // K7 is an event, not a permanent daily warning. Only a new transition
+  // after the last K7 send can notify the owner again.
+  if(c.lastSentAt!==undefined&&
+     (c.targetTransitionAt===undefined||c.targetTransitionAt<=c.lastSentAt))
+   return result(c,'skipped','resolved')
+ }
  if(c.kind==='rhythm'&&(c.dismissals??0)>=3)return result(c,'skipped','disabled')
  if(c.kind==='rhythm'&&c.lastSentAt!==undefined&&now-c.lastSentAt<3*DAY)
   return result(c,'suppressed','frequency')
