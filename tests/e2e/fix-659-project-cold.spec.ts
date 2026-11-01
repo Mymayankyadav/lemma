@@ -34,12 +34,14 @@ for(const width of [360,390] as const){
   const metrics=await page.evaluate(()=>({
    ms:performance.getEntriesByName('lemma-fix-659-project-first-paint','mark')[0].startTime,
    nodes:document.querySelectorAll('*').length,
+   panelOpacity:Number(getComputedStyle(document.querySelector('[data-project-tab-panel]')!).opacity),
    overflow:document.documentElement.scrollWidth-innerWidth
   }));
   console.info('FIX #659 cold Project 4x',JSON.stringify({profile,theme,width,...metrics}));
   expect(Number.isFinite(metrics.ms)).toBe(true);
   expect(metrics.ms,'First real Project Route and Stages at 4x CPU').toBeLessThan(1500);
   expect(metrics.nodes).toBeLessThan(1500);
+  expect(metrics.panelOpacity,'Cold Project Path is visibly painted, not under a nested fade').toBe(1);
   expect(metrics.overflow).toBeLessThanOrEqual(0);
   mkdirSync('test-results/screens/fix-659',{recursive:true});
   await page.screenshot({path:'test-results/screens/fix-659/project-'+profile+'-'+theme+'-'+width+'.png',animations:'disabled'});
