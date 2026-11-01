@@ -584,9 +584,23 @@ export class DemoAdapter implements LemmaApi {
     const projects = new Map<string, DemoProject>(this.store.projects
       .filter(p => p.status !== "archived" && !p.system)
       .map(p => [p.id, p] as const));
-    const checkpoints = new Map<string, DemoCheckpoint>(this.store.checkpoints
-      .map(cp => [cpKey(cp.projectId, cp.code), cp] as const));
-    return (notes??this.store.notes)
+    const sourceNotes=notes??this.store.notes;
+    // A cold private Review-run read supplies only today's bounded cohort.
+    // Resolve titles for those notes, not all 6,000 unrelated checkpoints.
+    // Full-table callers still receive the original complete index.
+    const wantedCheckpointKeys=notes?new Set<string>():null;
+    if(wantedCheckpointKeys)for(const note of notes){
+      if(note.note.checkpointCode)
+        wantedCheckpointKeys.add(cpKey(note.projectId,note.note.checkpointCode));
+    }
+    const checkpoints=new Map<string,DemoCheckpoint>();
+    if(!wantedCheckpointKeys||wantedCheckpointKeys.size>0)
+      for(const cp of this.store.checkpoints){
+        const key=cpKey(cp.projectId,cp.code);
+        if(wantedCheckpointKeys&&!wantedCheckpointKeys.has(key))continue;
+        checkpoints.set(key,cp);
+      }
+    return sourceNotes
       .filter(n => n.note.status === "active" && projects.has(n.projectId))
       .flatMap(n => {
         const project = projects.get(n.projectId)!;
