@@ -24,6 +24,13 @@ describe('FIX-659f direct Project summary',()=>{
   const actual=await api.getProject('stress-project-3');
   expect(library).not.toHaveBeenCalled();
   expect(actual).toEqual(expected);
+  // Project badge counts are the daily-limited queue, not the full backlog.
+  const queue=await api.getReviewItems({decks:[],sessionId:null,conceptSlug:null,
+   includeNew:true,newOnly:false});
+  for(const cp of actual.checkpoints){
+   const due=queue.filter(card=>card.projectSlug==='stress-project-3'&&card.checkpointCode===cp.code).length;
+   expect(cp.dueCards,cp.code).toBe(due);
+  }
   const store=(api as unknown as {store:DemoStore}).store;
   for(const key of ['notes','sources','concepts'] as const)
    expect(typeof Object.getOwnPropertyDescriptor(store,key)?.get).toBe('function');
