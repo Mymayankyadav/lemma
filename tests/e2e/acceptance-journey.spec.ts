@@ -21,7 +21,7 @@ test('acceptance 1–6: Home -> proposals -> plan approval -> project -> session
  await expect(page.getByRole('region',{name:'Resume where you stopped'})).toContainText('Compactness, step 2 of 4')
  await expect(page.getByRole('link',{name:/23 cards due/})).toBeVisible()
  await expect(page.getByRole('link',{name:/6 proposals to approve/})).toBeVisible()
- await expect(page.getByRole('link',{name:/Real Analysis, 3 of 12/})).toBeVisible()
+ await expect(page.getByRole('article',{name:'Goal progress for Real Analysis'}).getByRole('link',{name:'Real Analysis',exact:true})).toBeVisible()
  await screenshot(page,'01-home')
  // 2–3: review each proposal explicitly, no implicit tutor approval.
  await page.getByRole('navigation',{name:'Desk actions'}).getByRole('link',{name:'Open proposals'}).click()

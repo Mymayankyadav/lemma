@@ -119,7 +119,7 @@ export function GoalDistance({projects}:{projects:ProjectSummary[];variant?:'asc
  return <section aria-label="Distance to your goals" className="flex min-w-0 flex-col gap-3">
   <div className="flex min-h-11 items-center justify-between gap-3">
    <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Distance to your goals</h2>
-   <Link to="/projects" className="flex min-h-11 items-center text-label text-amber">All paths</Link>
+   <Link to="/projects" className="flex min-h-11 items-center text-label text-ink-2 underline underline-offset-4 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link)]">All paths</Link>
   </div>
   {active.length===0?<p className="text-label text-ink-2">Create a project and plan to begin tracking your goals.</p>:
    <>
