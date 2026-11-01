@@ -53,6 +53,7 @@ import type {
   DemoProposal,
   DemoReview,
   DemoSession,
+  DemoSource,
   DemoStore,
 } from "./model";
 import fixtureText from "./fixture.json?raw";
