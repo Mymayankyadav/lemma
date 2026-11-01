@@ -20,5 +20,8 @@ describe('Review session fetch demand',()=>{
   expect(source).toMatch(/enabled:\s*shouldFetchReviewSessions\(cards\.data\)/);
   expect(source).not.toMatch(/\buseSessions\s*\(/);
   expect(source).toContain("queryKey:['sessions','all']");
+  // Disabled React Query observers may still expose cached 60k sessions;
+  // the optional chip grouping must not traverse those rows either.
+  expect(source).toMatch(/if\s*\(!shouldFetchReviewSessions\(cards\.data\)\)\s*return\s*\[\]/);
  });
 });
