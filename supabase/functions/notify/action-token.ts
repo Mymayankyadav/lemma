@@ -36,7 +36,7 @@ function validate(raw:unknown,nowSeconds:number):ActionTokenPayload{
   if(!p.x||typeof p.x!=='object'||Array.isArray(p.x))bad();
   const x=p.x as Record<string,unknown>;
   if(Object.keys(x).some(k=>!['ids','action','scope'].includes(k)))bad();
-  if(x.ids!==undefined&&(!Array.isArray(x.ids)||x.ids.length>50||x.ids.some(v=>typeof v!=='string'||!UUID.test(v))))bad();
+  if(x.ids!==undefined&&(!Array.isArray(x.ids)||x.ids.length>50||Array.from(x.ids).some(v=>typeof v!=='string'||!UUID.test(v))))bad();
   if(x.action!==undefined&&(!Number.isSafeInteger(x.action)||Number(x.action)<1))bad();
   if(x.scope!==undefined&&(typeof x.scope!=='string'||x.scope.length<1||x.scope.length>120))bad();
   // An authenticated token must not smuggle fields the selected RPC action ignores.
