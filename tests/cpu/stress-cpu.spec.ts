@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {QA3_ROUTES} from '../../scripts/qa3-report';
-import {CPU_CASES,auditCpuMatrix,type CpuRouteSample} from '../../scripts/stress-cpu-coverage';
+import {CPU_CASES,auditCpuMatrix,cpuMatrixTimeoutMs,type CpuRouteSample} from '../../scripts/stress-cpu-coverage';
 import {assertRouteLoaded} from '../e2e/stress-cpu-readiness';
 
 /** AUDIT #540: all 144 S/X x Graph day/night x phone-width x visual-route
@@ -21,7 +21,10 @@ const headings:Record<string,string>={
 for(const matrix of CPU_CASES){
  test('AUDIT #540 cold 4x '+matrix.profile+' '+matrix.theme+' '+matrix.width+'px all 18 routes',
  async({page},testInfo)=>{
-  test.setTimeout(600_000);
+  // This watchdog permits collecting every slow extreme route; the audit
+  // still rejects each route at >=1,500ms. Never confuse test runtime with
+  // the per-route hard performance acceptance threshold.
+  test.setTimeout(cpuMatrixTimeoutMs(matrix.profile));
   await page.setViewportSize({width:matrix.width,height:matrix.width===360?740:844});
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
