@@ -97,6 +97,26 @@ describe('NOTIF-5 Workbox push handling',()=>{
   expect(h.navigated).toEqual([scope+'#/review']);
   expect(h.shown).toHaveLength(0);
  });
+ it('navigates while a signed passive receipt is pending',async()=>{
+  const h=harness();
+  let finishReceipt:((response:any)=>void)|undefined;
+  h.fetchMock.mockImplementationOnce(async (_url:string,options:any)=>{
+   h.posted.push(JSON.parse(options.body));
+   return await new Promise<any>(resolve=>{finishReceipt=resolve});
+  });
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,openToken:'signed-open',
+  },scope)).data;
+  const click=h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
+  try{
+   await vi.waitFor(()=>expect(h.navigated).toEqual([scope+'#/review']),{timeout:750});
+   expect(h.posted).toEqual([{token:'signed-open'}]);
+   expect(h.shown).toHaveLength(0);
+  }finally{
+   finishReceipt?.({ok:true,json:async()=>({status:'done'})});
+   await click;
+  }
+ });
  it('posts signed actions and shows undo confirmation',async()=>{
   const h=harness(),data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'later'});
