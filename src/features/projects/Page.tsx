@@ -112,17 +112,6 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 
 export default function Page(){
  const queryClient=useQueryClient();
- // FIX #632: the C2 strict hash-navigation benchmark cannot hover/focus its
- // Atlas link. Warm only the lazy Atlas module while the loaded Paths fixture
- // settles, before 4x CPU throttling starts. Do NOT prefetch the 2,500-idea
- // Atlas query here: that must remain gated on genuine user intent below.
- useEffect(()=>{
-  if(getMode()==='demo')void import('../atlas/Page');
- },[]);
- // The 2,500-idea demo Atlas must not compete with first paint of Paths.
- // Warm its module and canonical data query on genuine Atlas navigation
- // intent (hover, keyboard focus, or touch/pointer down), not on mount.
- // Live Paths never issues an extra Atlas network request.
  const warmAtlas=useCallback(()=>{
   if(getMode()!=='demo')return;
   void import('../atlas/Page');
