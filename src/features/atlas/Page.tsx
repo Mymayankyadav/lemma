@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ArrowLeft,ChevronRight,Info,MessageCircle,RotateCcw,Search,X} from 'lucide-react';
 import {getMode} from '../../data/mode';
@@ -7,16 +7,35 @@ import {FastTex as Tex} from '../../ui/FastTex';
 import {plainMath} from '../../lib/plain-math';
 import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
 import {Skeleton} from '../../ui/Skeleton';
-import {EmptyState} from '../../ui/EmptyState';
-import {Sheet} from '../../ui/Sheet';
-import {useToast} from '../../ui/Toast';
+import type {EmptyStateProps} from '../../ui/EmptyState';
+import type {SheetProps} from '../../ui/Sheet';
+
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {atlasFoldDepth} from './depthOf';
-import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocused,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
+
+// Optional surfaces should not load motion-backed sheets or four illustration
+// modules on the cold, nonempty 2,500-idea Atlas route. The first real open
+// loads them; after opening, keep Sheet mounted through its exit animation.
+const LazySheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
+const LazyEmptyState=lazy(()=>import('../../ui/EmptyState').then(module=>({default:module.EmptyState})));
+function Sheet(props:SheetProps){
+ const [activated,setActivated]=useState(props.open);
+ useEffect(()=>{if(props.open)setActivated(true)},[props.open]);
+ if(!props.open&&!activated)return null;
+ return <Suspense fallback={<span role="status" className="sr-only">Opening details</span>}>
+  <LazySheet {...props}/>
+ </Suspense>;
+}
+function EmptyState(props:EmptyStateProps){
+ return <Suspense fallback={<p role="status" className="p-4 text-body text-ink-2">Loading view…</p>}>
+  <LazyEmptyState {...props}/>
+ </Suspense>;
+}
 
 interface Saved{expanded:string[];related:boolean}
 function load():Saved|null{
@@ -50,7 +69,10 @@ function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:Atlas
 }
 
 function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onClose:()=>void;onTrace:(id:string)=>void}){
- const toast=useToast(),near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
+ // Copy feedback is used only after a details-sheet button press. Avoid
+ // evaluating the motion-backed Toast renderer on the cold Atlas route.
+ const toast=(message:string)=>{void import('../../ui/Toast').then(module=>module.toast(message))};
+ const near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
  return <Sheet open onClose={onClose} title={<AtlasDetailsTitle name={node.name}/>}>
   <div data-atlas-details="true">
    {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)} onSelect={index=>onTrace(path[index].id)}/>}
@@ -156,7 +178,7 @@ export default function Page(){
    const count=arcCountFor(tree,rows,kinds);
    if(count>60)return {visible:[],hidden:count};
   }
-  if(!focus)return budgetArcsUnfocused(tree,rows,open,kinds);
+  if(!focus)return budgetArcsUnfocusedCached(tree,rows,open,kinds);
   return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
  },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
