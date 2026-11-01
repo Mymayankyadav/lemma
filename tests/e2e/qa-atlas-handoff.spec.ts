@@ -13,7 +13,7 @@ for(const world of ['graph','graph-night'] as const){
   await page.getByRole('navigation',{name:'Desk actions'}).getByRole('link',{name:'Open the Atlas'}).click();
   await expect(page).toHaveURL(/#\/atlas$/);
   await expect(page.getByRole('heading',{name:'Atlas',level:1})).toBeVisible();
-  await expect(page.locator('[data-level="cluster"]')).toHaveCount(3);
+  await expect(page.getByRole('tree',{name:'Ideas and their links'})).toHaveAttribute('data-atlas-field-count','3');
   await expect(page.locator('[data-atlas-details]')).toHaveCount(0);
   await page.getByRole('button',{name:'Find an idea'}).click();
   await page.getByRole('textbox',{name:'Find an idea'}).fill('Compactness');

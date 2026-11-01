@@ -11,7 +11,7 @@ test.beforeEach(async({page})=>{
 });
 
 test('opens as an outline with each field and the path to current work unfolded',async({page})=>{
- await expect(page.locator('[data-level="cluster"]')).toHaveCount(3);
+ await expect(page.getByRole('tree',{name:'Ideas and their links'})).toHaveAttribute('data-atlas-field-count','3');
  await expect(page.locator('[data-atlas-details]')).toHaveCount(0);
  await expect(page.locator('[data-atlas-peek]')).toHaveCount(0);
  await expect(page.getByRole('treeitem',{name:/Compactness/}).first()).toBeVisible();
@@ -34,7 +34,10 @@ test('folding a branch keeps its links by re-attaching them to the branch',async
  await page.getByRole('button',{name:'Fold Compactness and continuity'}).click();
  await expect(page.getByRole('treeitem')).toHaveCount(areas);
  await fold.getByRole('button',{name:'All'}).click();
- expect(await page.getByRole('treeitem').count()).toBeGreaterThan(40);
+ const logicalRows=Number(await page.getByRole('tree',{name:'Ideas and their links'}).getAttribute('data-atlas-row-count'));
+ expect(logicalRows).toBeGreaterThan(40);
+ // All rows remain in the logical tree, but only a bounded viewport is mounted.
+ expect(await page.getByRole('treeitem').count()).toBeLessThanOrEqual(60);
  await page.screenshot({path:'test-results/screens/atlas-tree-depth.png',fullPage:true});
 });
 
@@ -72,7 +75,7 @@ test('following a link in the details jumps to that idea in the tree',async({pag
 for(const mode of ['graph','graph-night'] as const){
  test('outline in '+mode,async({page})=>{
   await page.goto(`./?demo=1&theme=${mode}#/atlas`);
-  await expect(page.locator('[data-level="cluster"]')).toHaveCount(3);
+  await expect(page.getByRole('tree',{name:'Ideas and their links'})).toHaveAttribute('data-atlas-field-count','3');
   await page.screenshot({path:`test-results/screens/atlas-tree-${mode}.png`,fullPage:true});
  });
 }
