@@ -81,7 +81,7 @@ function ForecastOnDemand({defer}:{defer:boolean}){
   className="flex min-h-20 items-center text-label text-ink-2">
   Loading seven-day forecast…
  </div>;
- return <div ref={target} data-forecast-on-demand="">
+ return <div ref={target} data-forecast-on-demand="" className="min-h-20">
   {mounted?<Suspense fallback={waiting}><ReviewOutlook/></Suspense>:
    <button type="button" onClick={()=>setMounted(true)}
     className="flex min-h-20 w-full items-center text-left text-label text-ink-2 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link)]">
