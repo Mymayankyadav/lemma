@@ -1,7 +1,7 @@
 import {lazy,Suspense} from "react";
 import RouteError, {RouteFallback} from "./RouteError";
 import Page0 from '../features/home/Page'
-import Page1 from '../features/projects/Page'
+const Page1=lazy(()=>import('../features/projects/Page'))
 const Page2=lazy(()=>import('../features/new-project/Page'))
 const Page3=lazy(()=>import('../features/project/Page'))
 const Page4=lazy(()=>import('../features/checkpoint/Page'))
