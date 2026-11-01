@@ -1,17 +1,15 @@
 import {MathPreview} from '../../ui/MathPreview';
 import {getApi} from "../../data";
 import {useQuery} from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowRight,
   BookOpen,
   Check,
   MessageCircle,
-  Pause,
+  MoreHorizontal,
   PencilLine,
-  Play,
-  Trash2,
 } from "lucide-react";
 import {
   useAddComment,
@@ -60,7 +58,10 @@ export default function Page() {
     [message, setMessage] = useState(""),
     [commentCursors,setCommentCursors] = useState<string[]>([]),
     [reviewCursors,setReviewCursors] = useState<string[]>([]),
-    [slow, setSlow] = useState(false);
+    [slow, setSlow] = useState(false),
+    [actionMenu, setActionMenu] = useState(false);
+  const actionRoot = useRef<HTMLDivElement>(null);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
   const closeEditing = useCallback(() => setEditing(false), []);
   const closeDeleting = useCallback(() => setDeleting(false), []);
   useEffect(() => {
@@ -71,6 +72,28 @@ export default function Page() {
     const timer = setTimeout(() => setSlow(true), 300);
     return () => clearTimeout(timer);
   }, [query.isLoading]);
+  useEffect(() => {
+    if (!actionMenu) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!actionRoot.current?.contains(event.target as Node)) setActionMenu(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    actionMenuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [actionMenu]);
+  const actionKeys = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setActionMenu(false);
+      actionRoot.current?.querySelector<HTMLButtonElement>('[aria-label="Card actions"]')?.focus();
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      const items = Array.from(actionMenuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? []);
+      if (!items.length) return;
+      event.preventDefault();
+      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+      items[(index + (event.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
+    }
+  };
   const detail = query.data,
     note = detail?.note,
     project = projects.data?.find((p) => p.slug === note?.projectSlug),
@@ -222,23 +245,52 @@ export default function Page() {
             <IconButton
               icon={PencilLine}
               label="Edit card"
+              tone="plain"
               onClick={() => setEditing(true)}
             />
-            <IconButton
-              icon={note.status === "suspended" ? Play : Pause}
-              label={note.status === "suspended" ? "Resume card" : "Pause card"}
-              disabled={status.isPending}
-              onClick={() =>
-                void setStatus(
-                  note.status === "suspended" ? "active" : "suspended",
-                )
-              }
-            />
-            <IconButton
-              icon={Trash2}
-              label="Delete card"
-              onClick={() => setDeleting(true)}
-            />
+            <div ref={actionRoot} className="relative">
+              <IconButton
+                icon={MoreHorizontal}
+                label="Card actions"
+                tone="plain"
+                aria-haspopup="menu"
+                aria-expanded={actionMenu}
+                onClick={() => setActionMenu(open => !open)}
+              />
+              {actionMenu && (
+                <div
+                  ref={actionMenuRef}
+                  role="menu"
+                  aria-label="Card actions"
+                  onKeyDown={actionKeys}
+                  className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-ctl border border-edge bg-[var(--card)] p-1 shadow-md"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={status.isPending}
+                    className="flex min-h-11 w-full items-center rounded-ctl px-3 text-left text-label font-medium text-ink-2 hover:bg-fill-1 disabled:opacity-50"
+                    onClick={() => {
+                      setActionMenu(false);
+                      void setStatus(note.status === "suspended" ? "active" : "suspended");
+                    }}
+                  >
+                    {note.status === "suspended" ? "Resume card" : "Suspend card"}
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex min-h-11 w-full items-center rounded-ctl px-3 text-left text-label font-medium text-again hover:bg-fill-1"
+                    onClick={() => {
+                      setActionMenu(false);
+                      setDeleting(true);
+                    }}
+                  >
+                    Delete card
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         ) : undefined
       }
