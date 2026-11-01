@@ -52,7 +52,11 @@ export default function AppShell(){
   const save=async()=>{
    if(disposed||!identity||!navigator.onLine)return;
    const owner=identity;
-   pendingSave=pendingSave.then(()=>saveOfflineSnapshot(owner,queryClient)).catch(()=>{/* Quota/private mode: online use continues. */});
+   // A queued save must not read the next account's React Query data under
+   // the previous owner's ID after a rapid sign-out/account switch.
+   pendingSave=pendingSave.then(()=>identity===owner&&!disposed
+    ?saveOfflineSnapshot(owner,queryClient):undefined)
+    .catch(()=>{/* Quota/private mode: online use continues. */});
    await pendingSave;
   };
   const queueSave=()=>{
