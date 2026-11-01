@@ -19,7 +19,7 @@ describe('AND-8 strict offline snapshot',()=>{
   const good=projectOfflineSettings(settings)
   expect(isOfflineSettings(good)).toBe(true)
   expect(isOfflineSettings({...good,connectorUrl:'SENTINEL-SECRET'})).toBe(false)
-  expect(isOfflineSettings({...good,ui:{...good.ui,widgetToken:'SENTINEL-SECRET'}})).toBe(false)
+  expect(isOfflineSettings({...good,ui:{...(good.ui??{}),widgetToken:'SENTINEL-SECRET'}})).toBe(false)
   expect(isOfflineSettings({...good,rolloverHour:'four'})).toBe(false)
   expect(isOfflineSettings({...good,v:2})).toBe(false)
   const entries=[
