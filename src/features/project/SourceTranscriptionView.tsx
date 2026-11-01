@@ -6,7 +6,7 @@ import {useSourcePage,useSourcePdfUrl,useUpdateSourcePage} from '../../data/hook
 import {MathText} from '../../ui/MathText';
 import {MathPreview} from '../../ui/MathPreview';
 import {useToast} from '../../ui/Toast';
-import {useOnlineStatus} from '../../ui/useOnlineStatus';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {sourceMarkdown,sourceTex} from './transcriptionExport';
 
 export function SourceTranscriptionView({source,stat}:{
@@ -24,7 +24,7 @@ export function SourceTranscriptionView({source,stat}:{
  useEffect(()=>{setEditing(false);setDraft(current.data?.body??'')},[current.data?.body,page]);
  const go=(next:number)=>{setPage(Math.min(count,Math.max(1,next)));setEditing(false)};
  const save=async(patch:{body?:string;confidence?:'high'|'check'})=>{
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   try{
    await edit.mutateAsync({sourceId:source.id,page,patch});
    setEditing(false);
@@ -114,7 +114,7 @@ export function SourceTranscriptionView({source,stat}:{
        </div>:
         <div className="max-h-96 overflow-auto rounded-s bg-raised p-3"><MathText source={current.data.body}/></div>}
      {current.data?.body&&transcribed&&!editing&&<div className="mt-2 flex flex-wrap gap-3">
-      <button type="button" aria-disabled={!online||undefined} onClick={()=>{if(!navigator.onLine){notify("Needs a connection");return}setEditing(true)}}
+      <button type="button" aria-disabled={!online||undefined} onClick={()=>{if(!networkWritable()){notify("Needs a connection");return}setEditing(true)}}
        className="flex min-h-11 min-w-11 items-center gap-1 px-2 text-ink-2"><PenLine size={15}/>Edit page</button>
       {current.data.confidence==='check'&&<button type="button" aria-disabled={!online||undefined} disabled={edit.isPending}
        onClick={()=>void save({confidence:'high'})}
