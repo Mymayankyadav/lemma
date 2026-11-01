@@ -143,6 +143,9 @@ test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',as
   await act(async()=>{auth.callback?.('SIGNED_IN',{user:{id:'owner-b'}})})
   await flush()
   expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
+  // deleteDatabase would be blocked while A's IDB read still owns its
+  // connection; account-switch cleanup must wait for that read to finish.
+  expect(offline.deletes).not.toContain('owner-a')
 
   // IndexedDB can resolve an earlier read after the account has changed.
   // The identity check must discard that result rather than rehydrate A.
@@ -150,6 +153,7 @@ test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',as
   await flush()
   expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
   expect(offline.reads).toContain('owner-b')
+  expect(offline.deletes).toContain('owner-a')
  }finally{
   await act(async()=>root.unmount())
   router.dispose()
