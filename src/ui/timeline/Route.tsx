@@ -17,11 +17,15 @@ export interface RouteProps{
  initialWidth?:number;
  /** Optional initial selection, also used to restore a keyboard-navigated Route. */
  initialSelected?:number;
+ /** Summary-only Today can supply the exact remaining-group count. */
+ foldedLabel?:string;
+ /** Keep assistive Route instructions out of visible card copy. */
+ todayLinkLabel?:string;
 }
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 
 /** One 64/80px Route, not a scrollable rail of stage or station buttons. */
-export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360,initialSelected}:RouteProps){
+export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360,initialSelected,foldedLabel,todayLinkLabel}:RouteProps){
  const navigate=useNavigate();
  const ref=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(initialWidth);
@@ -66,7 +70,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
  if(!n)return <p className="text-label text-ink-3">A plan is needed before the Route can appear.</p>;
  const active=stages[layout.activeStage];
  const stateAt=(index:number)=>rows[index]?.state??'unscheduled';
- const rightFoldedLabel=stages.length+' stages · '+Math.max(0,project.total-project.done)+' to go';
+ const rightFoldedLabel=foldedLabel??(stages.length+' stages · '+Math.max(0,project.total-project.done)+' to go');
  // Never clip a tutor-authored formula in the 360px folded SVG. Show the
  // whole name through an accessible disclosure instead of truncating TeX.
  const foldedName=active?.name??'';
@@ -167,7 +171,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
   data-route-layout={layout.mode} data-route-stage-count={stages.length}
   className="min-w-0 w-full">
   {mode==='today'?<Link to={'/p/'+project.slug+'/cp/'+encodeURIComponent(checkpoints[current].code)}
-   aria-label={plainMath(project.title)+': open current checkpoint '+checkpoints[current].code}
+   aria-label={todayLinkLabel??(plainMath(project.title)+': open current checkpoint '+checkpoints[current].code)}
    className="block min-h-[64px] w-full rounded-ctl focus-visible:outline-2 focus-visible:outline-[var(--accent)]">
    {geometry}
   </Link>:<>
