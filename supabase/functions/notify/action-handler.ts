@@ -65,7 +65,12 @@ export async function handleActionRequest(input:unknown,deps:NotifyActDeps):Prom
  const {undoToken:_ignored,...body}=row;
  if(action.a==='approve_cards'&&row.confirmId!==undefined&&row.confirmId!==null){
   const confirmId=positiveId(row.confirmId),actionId=positiveId(row.action);
-  if(confirmId===null||actionId===null)return reply(409,{message:recover(action.a)});
+  if(confirmId===null||actionId===null){
+   // notify_act has already committed its claim and approved cards. Invalid
+   // optional confirmation metadata cannot make the action retryable: report
+   // the committed success without minting an unusable Undo link.
+   return reply(200,body);
+  }
   try{
    body.undoToken=await signActionToken({
     u:action.u,n:confirmId,a:'undo',exp:now+48*60*60,x:{action:actionId},
