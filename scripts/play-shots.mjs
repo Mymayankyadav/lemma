@@ -85,6 +85,30 @@ async function capture() {
       })
       const page = await context.newPage()
       try {
+        // Privacy must work at the same 360px phone width in both worlds,
+        // without any third-party requests other than optional Google Fonts.
+        const externalRequests = []
+        page.on('request', request => {
+          const url = new URL(request.url())
+          if (url.origin !== baseUrl.origin &&
+              !/^https:\/\/fonts\.(googleapis|gstatic)\.com\//.test(request.url())) {
+            externalRequests.push(request.url())
+          }
+        })
+        const privacyUrl = new URL('privacy.html', baseUrl)
+        await page.goto(privacyUrl.href, { waitUntil: 'domcontentloaded' })
+        await page.getByRole('heading', { name: 'Privacy, in plain language.' }).waitFor()
+        const privacyMetrics = await page.evaluate(() => ({
+          overflow: document.documentElement.scrollWidth - innerWidth,
+          scheme: getComputedStyle(document.documentElement).colorScheme,
+        }))
+        assert(privacyMetrics.overflow <= 1,
+          'privacy/' + world + ' overflows 360px by ' + privacyMetrics.overflow)
+        assert(privacyMetrics.scheme.includes(colorScheme),
+          'privacy/' + world + ' does not use the expected colour scheme')
+        assert(externalRequests.length === 0,
+          'privacy/' + world + ' requested unexpected origins: ' + externalRequests.join(', '))
+        page.removeAllListeners('request')
         for (const [screen, route] of screens) {
           const url = new URL(baseUrl)
           url.search = '?demo=1&theme=' + theme
