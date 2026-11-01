@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {mkdirSync} from 'node:fs';
 
 test('FIX-659i Project Route stays usable before supplemental checkpoint detail resolves',async({page})=>{
  await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
@@ -16,6 +17,8 @@ test('FIX-659i Project Route stays usable before supplemental checkpoint detail 
  await expect(current).toContainText('Prove compact sets in a Hausdorff space are closed.');
  await expect(current).toContainText('p. 36-40');
  await expect(current).toContainText('sessions');
+ mkdirSync('test-results/screens/fix-659i',{recursive:true});
+ await page.screenshot({path:'test-results/screens/fix-659i/project-detail-after-paint.png',fullPage:true,animations:'disabled'});
  await details.click();
  await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible();
 });
