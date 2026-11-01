@@ -40,7 +40,11 @@ jobs:
           fi
       - name: Static TWA acceptance
         run: node android/scripts/check-shell.mjs
+      - name: PR builds are always unsigned
+        if: github.event_name == 'pull_request'
+        run: echo 'PR build is unsigned; signing secrets are not exposed'
       - name: Configure optional release signing
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
