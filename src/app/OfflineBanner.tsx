@@ -26,7 +26,9 @@ export default function OfflineBanner(){
    window.removeEventListener('lemma:offline-snapshot',snapshot);
   };
  },[queryClient]);
- if(!offline)return null;
+ // navigator.onLine can stay true during a failed first fetch; a restored
+ // snapshot still needs a visible stale-data warning.
+ if(!offline&&savedAt===null)return null;
  const time=savedAt===null?null:new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}).format(savedAt);
  return <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-4 top-[calc(12px+env(safe-area-inset-top))] z-[70] mx-auto flex max-w-[480px] items-center justify-center gap-2 rounded-ctl border border-amber-line bg-obsidian px-4 py-3 text-[13px] text-amber shadow-lg">
   <CloudOff size={17} aria-hidden="true"/>
