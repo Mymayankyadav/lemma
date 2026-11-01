@@ -18,10 +18,10 @@ describe('FIX-651b Review-run early bootstrap ordering',()=>{
  })
  it('preloads the App graph on non-Review routes without fetching Review-run code',()=>{
   const html=readFileSync(resolve(process.cwd(),'index.html'),'utf8')
-  const preload=html.match(/<script type="module" data-review-run-preload>([\\s\\S]*?)<\\/script>/)?.[1]??''
+  const preload=html.match(/<script type="module" data-review-run-preload>([\s\S]*?)<\/script>/)?.[1]??''
   expect(preload).toContain("if (location.hash.split('?')[0] === '#/review/run')")
-  expect(preload).toMatch(/import\\(['"]\\/src\\/features\\/review-run\\/Page\\.tsx['"]\\)/)
-  expect(preload).toMatch(/}\\s*else\\s*{\\s*void\\s+import\\(['"]\\/src\\/app\\/App\\.tsx['"]\\)/)
+  expect(preload).toMatch(/import\(['"]\/src\/features\/review-run\/Page\.tsx['"]\)/)
+  expect(preload).toMatch(/}\s*else\s*{\s*void\s+import\(['"]\/src\/app\/App\.tsx['"]\)/)
  })
  it('renders the same StrictMode App root after its asynchronous import',()=>{
   expect(source).toContain("createRoot(document.getElementById('root')!)")
