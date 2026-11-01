@@ -94,7 +94,7 @@ for(const profile of ['stress','extreme'] as const){
    test(`NOTIF-7 ${profile} ${theme} ${width}px Review 5 stays bounded`,async({page})=>{
     await page.setViewportSize({width,height:844});
     await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/review?start=5`);
-    await expect(page).toHaveURL(/#\\/review\\/run$/);
+    await expect(page).toHaveURL(/#\/review\/run$/);
     await expect(page.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuemax','5');
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
     expect(overflow).toBe(false);
