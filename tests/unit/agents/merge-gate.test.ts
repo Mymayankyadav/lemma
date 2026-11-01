@@ -115,3 +115,56 @@ describe("documented Steward policy cannot regress silently", () => {
     expect(handbook).toContain("scripts/merge-gate.ts");
   });
 });
+
+
+describe("FIX #619: explicit independent Auditor CLEAR is a real merge gate", () => {
+  const gated = { ...ready, body: ready.body + "\n- [x] Independent Auditor CLEAR" };
+  const currentClear = { body: "AUDIT CLEAR — independently reviewed exact head `" + sha.slice(0, 8) + "`", createdAt: "2026-11-01T04:20:00Z" };
+
+  it("rejects a Ready, 7/7 green PR whose external Auditor gate has no CLEAR", () => {
+    const result = evaluateMergeGate({ ...gated, auditComments: [] });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/auditor clear/i);
+    const external = { ...ready, body: ready.body + "\nIndependent Auditor CLEAR remains an external merge gate" };
+    expect(evaluateMergeGate(external).ok).toBe(false);
+  });
+
+  it("rejects an unchecked Auditor acceptance item even if a CLEAR comment exists", () => {
+    const unchecked = { ...gated, body: ready.body + "\n- [ ] Independent Auditor CLEAR" };
+    expect(evaluateMergeGate({ ...unchecked, auditComments: [currentClear] }).ok).toBe(false);
+  });
+
+  it("rejects stale or unscoped CLEAR and accepts an exact-current-head CLEAR", () => {
+    const old = { ...currentClear, body: "AUDIT CLEAR — independently reviewed exact head `" + "b".repeat(8) + "`" };
+    expect(evaluateMergeGate({ ...gated, auditComments: [old] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...gated, auditComments: [{ ...currentClear, body: "AUDIT CLEAR — reviewed" }] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...gated, auditComments: [old, currentClear] }).ok).toBe(true);
+  });
+
+  it("uses the current acceptance checklist, not stale unchecked historical handoff notes", () => {
+    const body = ready.body + "\n### Acceptance checklist\n- [x] Independent Auditor CLEAR\nNext step: merge"
+      + "\n### Earlier handoff\n- [ ] Independent Auditor CLEAR pending at old head";
+    expect(evaluateMergeGate({ ...ready, body, auditComments: [currentClear] }).ok).toBe(true);
+  });
+
+  it("rejects a newer unchecked checklist even if an older checklist was checked", () => {
+    const body = ready.body
+      + "\n### Acceptance checklist\n- [x] Independent Auditor CLEAR\nNext step: old head"
+      + "\n### Acceptance checklist\n- [ ] Independent Auditor CLEAR\nNext step: latest head";
+    const result = evaluateMergeGate({ ...ready, body, auditComments: [currentClear] });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/acceptance remains unchecked/i);
+  });
+
+  it("uses the newest checked checklist when an older repeated checklist was unchecked", () => {
+    const body = ready.body
+      + "\n### Acceptance checklist\n- [ ] Independent Auditor CLEAR\nNext step: old head"
+      + "\n### Acceptance checklist\n- [x] Independent Auditor CLEAR\nNext step: current head";
+    expect(evaluateMergeGate({ ...ready, body, auditComments: [currentClear] }).ok).toBe(true);
+    expect(evaluateMergeGate({ ...ready, body, auditComments: [{ ...currentClear, body: "AUDIT CLEAR — old head bbbbbbbb" }] }).ok).toBe(false);
+  });
+
+  it("does not impose a new blanket audit requirement on unrelated Ready PRs", () => {
+    expect(evaluateMergeGate(ready).ok).toBe(true);
+  });
+});

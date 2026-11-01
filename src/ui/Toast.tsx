@@ -1,7 +1,19 @@
-import {Tex} from './Tex';
-import {useLayoutEffect,useRef,useState,useSyncExternalStore} from 'react';
+import {lazy,Suspense,useLayoutEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import {X} from 'lucide-react';
+
+const RichTex=lazy(()=>import('./Tex').then(module=>({default:module.Tex})));
+const richSyntax=new Set([String.fromCharCode(92),String.fromCharCode(36),String.fromCharCode(96),'*','_','~','[',']','<','>','!','#','|','&',String.fromCharCode(13),String.fromCharCode(10)]);
+function ToastText({source}:{source:string}){
+ // A notification with plain prose must appear immediately. React escapes
+ // the text; rich Markdown, HTML entities and LaTeX keep canonical rendering.
+ if(source && !Array.from(source).some(character=>richSyntax.has(character)))
+  return <span>{source}</span>;
+ return <Suspense fallback={<span role="status" aria-label="Rendering notification text">…</span>}>
+  <RichTex source={source}/>
+ </Suspense>;
+}
+
 export interface ToastOptions{action?:{label:string;onClick:()=>void};tone?:'normal'|'success'|'danger'}
 export interface ToastProps extends ToastOptions{message:string;id:number}
 let counter=0;
@@ -47,7 +59,7 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  const messageId='toast-message-'+item.id;
  return <motion.div role="status" initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0.15:0.22}}
  className={`glass pointer-events-auto flex min-h-12 items-center gap-3 rounded-chip px-4 py-2 text-label ${item.tone==='danger'?'text-again':item.tone==='success'?'text-easy':'text-ink'}`}>
- <span ref={messageRef} id={messageId} className={`min-w-0 flex-1 ${expanded?'wrap max-h-[50vh] overflow-y-auto':'line-clamp-2'}`}><Tex source={item.message}/></span>
+ <span ref={messageRef} id={messageId} className={`min-w-0 flex-1 ${expanded?'wrap max-h-[50vh] overflow-y-auto':'line-clamp-2'}`}><ToastText source={item.message}/></span>
  {overflow&&<button type="button" aria-label={expanded?'Collapse notification details':'Show notification details'}
   aria-expanded={expanded} aria-controls={messageId}
   className="flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1 text-amber" onClick={()=>{
@@ -55,7 +67,7 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
    if(expanded){setExpanded(false);resumeToast(item.id)}
    else{pauseToast(item.id);setExpanded(true)}
   }}>{expanded?'Less':'More'}</button>}
- {item.action&&<button className="flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1 font-semibold text-amber" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><Tex source={item.action.label}/></button>}
+ {item.action&&<button className="flex min-h-11 min-w-11 shrink-0 items-center justify-center px-1 font-semibold text-amber" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><ToastText source={item.action.label}/></button>}
  <button type="button" aria-label="Dismiss notification" className="flex size-11 shrink-0 items-center justify-center" onClick={()=>dismiss(item.id)}><X size={16}/></button>
  </motion.div>;
 }
