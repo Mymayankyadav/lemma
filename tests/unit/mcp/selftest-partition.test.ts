@@ -44,19 +44,25 @@ describe('FIX #636b bounded MCP selftest partitions', () => {
       'end session',
       'create, list and decide',
     ]);
-    expect(third).toHaveLength(5);
+    expect(third).toEqual([
+      'scan transcription: search, readback, provenance and undo',
+      'prompt history undo and redo',
+      'repeated new concept references and undo',
+    ]);
     expect(fourth).toEqual([
+      'direct edits add review grade',
+      'adaptive planning diagnostics',
       'idea relationship duplicates, conflicts and undo',
       'delete preview cascade and undo',
     ]);
     expect(new Set(assigned).size).toBe(assigned.length);
     expect([common.length + first.length, common.length + second.length, common.length + third.length, common.length + fourth.length])
-      .toEqual([6, 9, 8, 5]);
+      .toEqual([6, 9, 6, 7]);
   });
 
   it('routes all four independent requests and retains full cleanup', () => {
     expect(source).toContain("export type SelftestPart=1|2|3|4|'all'");
-    expect(source).toContain('PART_STEPS={1:6,2:9,3:8,4:5,all:19}');
+    expect(source).toContain('PART_STEPS={1:6,2:9,3:6,4:7,all:19}');
     expect(source).toContain("const only=(n:1|2|3|4)=>part==='all'||part===n");
     expect(source).toContain("console.info('[lemma selftest] START cleanup')");
     expect(source).toContain("await sweepStaleFixtures(c)");
