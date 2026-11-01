@@ -55,6 +55,8 @@ try{
  assert.equal(snapshot.due.count,200)
  assert.equal(snapshot.due.minutes,84)
  assert.ok(snapshot.tomorrow.length<=20)
+ assert.equal(new Set(snapshot.tomorrow.map(row=>row.slug)).size,20,
+   'K2 bound must represent 20 different projects before repeating one')
  assert.ok(snapshot.late.length<=20)
  assert.ok(snapshot.pastTarget.length<=20)
  assert.equal(snapshot.devices.enabled,0)
