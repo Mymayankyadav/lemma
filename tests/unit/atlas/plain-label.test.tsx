@@ -46,7 +46,7 @@ describe('FIX #611 Atlas plain-name render path',()=>{
   expect(unsafe).not.toContain('onerror=');
  });
  it('routes ambiguous entities and autolinks through the rich renderer',()=>{
-  for(const source of ['R & D','A\\\\B','www.example.org','person@example.org','x_y','a * b']){
+  for(const source of ['R & D','A\\\\B','www.example.org','example.org','person@example.org','x_y','a * b']){
    expect(isPlainAtlasLabel(source)).toBe(false);
   }
  });
