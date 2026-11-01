@@ -25,6 +25,10 @@ for(const route of ['/insights','/kit'] as const){
   const gap=await page.evaluate(measureSvgMarks);
   expect(gap,`all ${route} informative chart marks need >=8px edge clearance`).not.toBeNull();
   expect(gap!).toBeGreaterThanOrEqual(8);
+  const labelSizes=await page.locator('svg[aria-label^="Reviews by day"] text, svg[aria-label^="Checkpoints by week"] text')
+   .evaluateAll(nodes=>nodes.map(node=>parseFloat(getComputedStyle(node).fontSize)));
+  expect(labelSizes.length).toBeGreaterThan(0);
+  expect(Math.min(...labelSizes),'informative chart labels stay >=12px').toBeGreaterThanOrEqual(12);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/fix-507-charts',{recursive:true});
   await reviews.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews.png`});
