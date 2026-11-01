@@ -1,6 +1,8 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
+test.describe.configure({retries:0});
+
 // FIX #655: a checkpoint remains a sheet over the actual project, but the
 // project chooser is not needed until someone opens it. These checks guard
 // the user journey while the cold CP4 4x CPU budget is measured by FIX #540.
@@ -12,6 +14,18 @@ for(const width of [390,360] as const){
   await page.setViewportSize({width,height:width===360?740:844});
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
+  await page.addInitScript(()=>{
+   const loaded=()=>!!document.querySelector('[data-sheet-background] section[aria-label="Checkpoint progress"]')
+    &&!!document.querySelector('section[aria-label="Checkpoint steps"]');
+   const observer=new MutationObserver(()=>{
+    if(loaded()&&!performance.getEntriesByName('lemma-cp4-loaded','mark').length){
+     performance.mark('lemma-cp4-loaded');observer.disconnect();
+    }
+   });
+   observer.observe(document,{childList:true,subtree:true});
+  });
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/p/real-analysis/cp/CP4',{waitUntil:'domcontentloaded',timeout:90_000});
   await expect(page.getByRole('heading',{name:'Checkpoint',level:1})).toBeVisible({timeout:90_000});
   const backdrop=page.locator('[data-sheet-background]');
@@ -22,6 +36,12 @@ for(const width of [390,360] as const){
   await expect(page.getByRole('dialog',{name:'Switch project'})).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   expect(await page.locator('*').count()).toBeLessThan(1500);
+  const readyMs=await page.evaluate(()=>performance.getEntriesByName('lemma-cp4-loaded','mark')[0]?.startTime??NaN);
+  console.info('FIX #655 CP4 cold 4x',JSON.stringify({profile,theme,width,readyMs}));
+  expect(Number.isFinite(readyMs)).toBe(true);
+  expect(readyMs,'First real CP4 sheet + project at 4x CPU').toBeLessThan(1500);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
+  await cdp.detach();
   mkdirSync('test-results/screens/fix-655',{recursive:true});
   await page.screenshot({path:'test-results/screens/fix-655/'+profile+'-'+theme+'-'+width+'.png'});
   await page.getByRole('button',{name:'Close',exact:true}).click();
