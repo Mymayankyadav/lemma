@@ -61,6 +61,19 @@ try{
  assert.ok(current.history.lastByKey)
  assert.ok(current.history.dismissStreak)
  console.log('PASS NOTIF-1b K1/K5/K6/K8 shape and stable proposal IDs')
+ // Backoff counts only consecutive dismissals, never total dismissals in the
+ // last three actions. A tap resets the streak.
+ for(const [i,action] of ['dismiss','open','dismiss'].entries()){
+   await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at,action,action_at) values($1,'due',$2,'Test','Hello','#/',now(),$3,$4::timestamptz)",
+     [owner,'due:streak:'+i,action,new Date(Date.now()-(3-i)*60000).toISOString()])
+ }
+ assert.equal((await facts()).history.dismissStreak.due,1)
+ for(let i=3;i<5;i++){
+   await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at,action,action_at) values($1,'due',$2,'Test','Hello','#/',now(),'dismiss',$3::timestamptz)",
+     [owner,'due:streak:'+i,new Date(Date.now()+(i-3)*60000).toISOString()])
+ }
+ assert.equal((await facts()).history.dismissStreak.due,3)
+ console.log('PASS NOTIF-1b dismissal streak resets on open and reaches three consecutive')
  await db.exec('reset role')
  await db.exec('set role authenticated')
  const deck=await q('select item from public.deck_tree() as t(item)')
