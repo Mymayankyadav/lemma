@@ -15,7 +15,7 @@ export interface ReminderCandidate {
  /** K4: the paused session, not all sessions combined. */
  pausedSince?:number; sessionSends?:number
  /** K5: newest proposal; an ended session summary may send without proposals. */
- newestProposalAt?:number; hasSummary?:boolean
+ newestProposalAt?:number; hasSummary?:boolean; summaryAt?:number
  /** K7: a fresh target-date transition. */
  targetTransition?:boolean
 }
@@ -91,7 +91,9 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
  if(c.kind==='deadline'&&(c.sentToday??0)>=1)return result(c,'suppressed','frequency')
  if(c.kind==='behind'){
   const interval=(c.dismissals??0)>=3?14*DAY:7*DAY
-  if(c.projectSentToday||ctx.behindSentToday||c.lastSentAt!==undefined&&now-c.lastSentAt<interval)
+  const newTransition=c.behindTransitionAt!==undefined&&c.lastSentAt!==undefined&&c.behindTransitionAt>c.lastSentAt
+  if(c.projectSentToday||ctx.behindSentToday||
+     c.lastSentAt!==undefined&&!newTransition&&now-c.lastSentAt<interval)
    return result(c,'suppressed','frequency')
   if(c.behindTransitionAt!==undefined&&c.behindTransitionAt>now)return result(c,'defer','frequency',c.behindTransitionAt)
  }
@@ -105,7 +107,16 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
   if(!c.hasSummary&&c.newestProposalAt===undefined)return result(c,'skipped','resolved')
   if(c.newestProposalAt!==undefined&&now-c.newestProposalAt<15*MIN)
    return result(c,'defer','settling',c.newestProposalAt+15*MIN)
-  if(c.lastSentAt!==undefined&&now-c.lastSentAt<2*HOUR)return result(c,'suppressed','frequency')
+  // A proposal already notified must not be sent again merely because two
+  // hours elapsed. A genuinely new end-session summary can notify separately.
+  const freshProposal=c.newestProposalAt!==undefined&&
+   (c.lastSentAt===undefined||c.newestProposalAt>c.lastSentAt)
+  const freshSummary=c.summaryAt!==undefined&&
+   (c.lastSentAt===undefined||c.summaryAt>c.lastSentAt)
+  if(c.newestProposalAt!==undefined&&!freshProposal&&!freshSummary)
+   return result(c,'skipped','resolved')
+  if(c.lastSentAt!==undefined&&now-c.lastSentAt<2*HOUR&&!freshSummary)
+   return result(c,'suppressed','frequency')
  }
  if(c.kind==='plan'&&!c.targetTransition)return result(c,'skipped','resolved')
  if(c.kind==='rhythm'&&(c.dismissals??0)>=3)return result(c,'skipped','disabled')
