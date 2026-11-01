@@ -4,7 +4,10 @@ import {waitForLoadedPaths} from './helpers/waitForLoadedPaths';
 
 // C2 is a hard first-attempt 4× CPU budget. Global CI retries must not
 // turn an over-budget transition into a green performance acceptance.
-test.describe.configure({retries:0});
+// The four 4x CPU cases run in default (ordered) mode rather than fullyParallel:
+// two simultaneously throttled browsers contend for the same runner CPU.
+// Unlike serial mode, default still executes every case after a failure.
+test.describe.configure({mode:'default',retries:0});
 
 // Measure a real extreme-profile Atlas route transition, not a screenshot
 // counter or an unthrottled Today route. Initial 30k-card fixture load is
