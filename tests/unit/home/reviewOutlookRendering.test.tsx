@@ -41,4 +41,20 @@ describe("LOOK-5c1 ReviewOutlook rendering", () => {
     expect(html).toContain("Next seven days");
     expect((html.match(/aria-label="\d+ cards due"/g) ?? []).length).toBe(7);
   });
+  it("keeps positive bars finite when other days have invalid counts", () => {
+    const html = markup([
+      { day: "2026-11-01", due: Number.NaN },
+      { day: "2026-11-02", due: Number.POSITIVE_INFINITY },
+      { day: "2026-11-03", due: -8 },
+      { day: "2026-11-04", due: 5 },
+      { day: "2026-11-05", due: 0 },
+      { day: "2026-11-06", due: 0 },
+      { day: "2026-11-07", due: 0 },
+    ]);
+    expect(html).toContain('aria-label="Seven-day review forecast"');
+    expect(html).toContain('aria-label="5 cards due"');
+    expect(html).toContain("height:40px");
+    expect(html).not.toMatch(/NaN|Infinity|-8 cards due/);
+  });
+
 });
