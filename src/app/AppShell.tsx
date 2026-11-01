@@ -15,6 +15,7 @@ export default function AppShell(){
  const queryClient=useQueryClient();
  useEffect(()=>{
   let disposed=false,identity:string|null=null,saveTimer:ReturnType<typeof setTimeout>|null=null;
+  let idleSave:number|null=null;
   let authEventSeen=false;
   // Serialize writes and deletion so a sign-out cannot resurrect a prior owner's snapshot.
   let pendingSave:Promise<void>=Promise.resolve();
@@ -49,26 +50,42 @@ export default function AppShell(){
    }catch{if(!disposed&&identity===owner)publish(null)}
    finally{pendingReads.delete(reading)}
   };
-  const save=async()=>{
-   if(disposed||!identity||!navigator.onLine)return;
+  const save=async(allowOffline=false)=>{
+   if(disposed||!identity||(!allowOffline&&!navigator.onLine))return;
    const owner=identity;
    // A queued save must not read the next account's React Query data under
    // the previous owner's ID after a rapid sign-out/account switch.
-   pendingSave=pendingSave.then(()=>identity===owner&&!disposed
-    ?saveOfflineSnapshot(owner,queryClient,Date.now(),()=>!disposed&&identity===owner&&navigator.onLine):undefined)
+   pendingSave=pendingSave.then(()=>identity===owner&&!disposed&&(allowOffline||navigator.onLine)
+    ?saveOfflineSnapshot(owner,queryClient,Date.now(),()=>!disposed&&identity===owner&&(allowOffline||navigator.onLine)):undefined)
     .catch(()=>{/* Quota/private mode: online use continues. */});
    await pendingSave;
   };
+  const cancelQueuedSave=()=>{
+   if(saveTimer){clearTimeout(saveTimer);saveTimer=null}
+   if(idleSave!==null){window.cancelIdleCallback?.(idleSave);idleSave=null}
+  };
   const queueSave=()=>{
    if(disposed||!identity||!navigator.onLine)return;
-   if(saveTimer)clearTimeout(saveTimer);
-   saveTimer=setTimeout(()=>{saveTimer=null;void save()},150);
+   cancelQueuedSave();
+   // A 150ms snapshot serialization competed with cold React/KaTeX paint.
+   // Persist after the 1500ms render budget, then when the browser is idle.
+   // Sudden offline transitions flush this pending cache save immediately.
+   saveTimer=setTimeout(()=>{
+    saveTimer=null;
+    if(typeof window.requestIdleCallback==='function')
+     idleSave=window.requestIdleCallback(()=>{idleSave=null;void save()},{timeout:1500});
+    else void save();
+   },1750);
   };
   const onOffline=()=>{
    // Cancel a pending debounce and let any already-started online write
    // finish before reading the final immutable offline snapshot.
-   if(saveTimer){clearTimeout(saveTimer);saveTimer=null}
-   void pendingSave.finally(()=>{if(!disposed&&!navigator.onLine)void restore()})
+   const queued=saveTimer!==null||idleSave!==null;
+   cancelQueuedSave();
+   // Flush already-read query data to IndexedDB before restoring offline;
+   // this is read-only cache persistence, not an offline mutation queue.
+   const writing=queued?save(true):pendingSave;
+   void writing.finally(()=>{if(!disposed&&!navigator.onLine)void restore()})
   };
   const onOnline=()=>{
    // A browser 'online' event does not prove the API is reachable. Keep a
@@ -104,7 +121,7 @@ export default function AppShell(){
    authSubscription=client.auth.onAuthStateChange((event,session)=>{
       authEventSeen=true;
       if(event==='SIGNED_OUT'){
-       if(saveTimer)clearTimeout(saveTimer);
+       cancelQueuedSave();
        const previous=identity;identity=null;publish(null);
        queryClient.clear(); // No signed-out route may retain the former owner's in-memory queries.
        if(previous)eraseOwner(previous);
@@ -134,7 +151,7 @@ export default function AppShell(){
   window.addEventListener('offline',onOffline);
   window.addEventListener('online',onOnline);
   return()=>{
-   disposed=true;if(saveTimer)clearTimeout(saveTimer);
+   disposed=true;cancelQueuedSave();
    unsubscribe();authSubscription?.unsubscribe();
    window.removeEventListener('offline',onOffline);window.removeEventListener('online',onOnline);
   };
