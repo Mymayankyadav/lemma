@@ -118,8 +118,11 @@ export default function Page(){
  // off-window Field rows at their true absolute offsets, rather than
  // disabling virtualization for every child in the moderate outline.
  const virtual=rows.length>40;
- const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
- const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
+ // Four 44px rows beyond each viewport edge retain 176px of keyboard and
+ // scroll headroom while avoiding 8 unnecessary first-mount rows. The
+ // separate moderate-Field pinning below is unchanged.
+ const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-4):0;
+ const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+5):rows.length;
  // A virtual Field must remain a genuine 56px visual heading even after its
  // original row leaves the mounted window. Derive its identity from logical
  // row offsets, never from the overscan row's nearest (often Topic) ancestor.
