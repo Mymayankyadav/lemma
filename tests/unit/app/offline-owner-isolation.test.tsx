@@ -33,6 +33,8 @@ vi.mock('../../../src/lib/offline-cache',()=>({
   return offline.delayed.get(owner)??offline.snapshots.get(owner)??null
  },
  saveOfflineSnapshot:async()=>{},
+ stageOfflineHandoff:()=>{},
+ clearOfflineHandoff:()=>{},
  deleteOfflineSnapshot:async(owner:string)=>{
   offline.deletes.push(owner)
   offline.snapshots.delete(owner)
