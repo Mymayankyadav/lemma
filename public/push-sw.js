@@ -66,18 +66,27 @@ self.addEventListener('notificationclick',event=>{
   const data=event.notification.data;
   const decision=core.clickDecision(data,event.action||'',self.registration.scope);
   if(!decision)return;
+  const passiveReceipt=!event.action||decision.action==='open';
   if(decision.token){
-   try{const reply=await act(decision.token);await confirmation(reply,data);}
-   catch{
-    await self.registration.showNotification('Lemma',{body:'Open Lemma to finish',
-     tag:'action-failed:'+data.id,icon:'/lemma/icons/lemma-192.png',
-     badge:'/lemma/icons/badge-96.png',data:{id:data.id,url:decision.url,actions:[]}});
+   try{
+    const reply=await act(decision.token);
+    // Open is a passive receipt, not a user action confirmation. Do not
+    // interrupt the owner's navigation with a redundant "Done" notification.
+    if(!passiveReceipt)await confirmation(reply,data);
+   }catch{
+    // A failed receipt must never strand the user or create a false action
+    // failure warning. Visible action failures still receive their warning.
+    if(!passiveReceipt){
+     await self.registration.showNotification('Lemma',{body:'Open Lemma to finish',
+      tag:'action-failed:'+data.id,icon:'/lemma/icons/lemma-192.png',
+      badge:'/lemma/icons/badge-96.png',data:{id:data.id,url:decision.url,actions:[]}});
+    }
     await navigate(decision.url);
     return;
    }
   }
   // Passive clicks and actions without a server token open the deep link.
-  if(decision.chat||!event.action||!decision.token||decision.action==='open')await navigate(decision.url);
+  if(decision.chat||passiveReceipt||!decision.token)await navigate(decision.url);
  })());
 });
 
