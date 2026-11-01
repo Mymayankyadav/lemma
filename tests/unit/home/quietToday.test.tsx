@@ -7,7 +7,7 @@ vi.mock('../../../src/features/home/ReviewOutlook',()=>({
  ReviewOutlook:()=> <div aria-label="Seven-day review forecast">forecast</div>,
 }));
 
-import {ReviewDesk,TutorHandoff} from '../../../src/features/home/Page';
+import {ReviewDesk,TutorHandoff,ResumeCard} from '../../../src/features/home/Page';
 import type {HomeSummary} from '../../../src/data/types';
 
 const html=(due:number)=>renderToStaticMarkup(
@@ -58,5 +58,25 @@ describe('LOOK-5c2 tutor handoff',()=>{
   expect(view).toContain('aria-label="Review 6 tutor proposals"');
   expect(view).toContain('Continue');
   expect((view.match(/class="slab /g)??[]).toHaveLength(1);
+ });
+});
+
+describe('LOOK-5c2 clipped mathematical Continue row',()=>{
+ it('keeps an eighty-character checkpoint title inside two explicitly clipped lines',()=>{
+  const title='$\\alpha$ '+ 'x'.repeat(71);
+  expect(title.length).toBe(80);
+  const home:HomeSummary={
+   due:0,pendingProposals:0,projects:[],
+   resume:{projectSlug:'algebra-1',projectTitle:'Algebra 1',glyph:'∑',
+    checkpointCode:'CP1',checkpointTitle:title,step:1,stepsTotal:5,
+    question:null,objective:null,pausedAt:null,sessionNumber:1},
+  };
+  const view=renderToStaticMarkup(<MemoryRouter><ResumeCard home={home} onCopy={()=>{}}/></MemoryRouter>);
+  expect(view).toContain('min-h-16');
+  expect(view).toContain('data-resume-title=""');
+  expect(view).toContain('data-resume-meta=""');
+  expect(view).toContain('aria-label="Copy resume prompt"');
+  expect((view.match(/overflow:hidden;text-overflow:ellipsis;white-space:nowrap/g)??[]).toHaveLength(2);
+  expect(view).toContain('step 1 of 5');
  });
 });
