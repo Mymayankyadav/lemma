@@ -225,12 +225,12 @@ week_next as (
 ),
 devices as (
   select count(*) filter(where disabled_at is null)::integer enabled,
-    max(last_seen_at) last_seen_at
+    max(last_seen_at) filter(where disabled_at is null) last_seen_at
   from public.push_devices where user_id=p_user
 ),
 history as (
-  select count(*) filter(where sent_at>=f.day_start and kind<>'confirm')::integer sent_today,
-    max(sent_at) filter(where kind<>'confirm') last_sent_at
+  select count(*) filter(where sent_at>=f.day_start and kind not in ('confirm','test'))::integer sent_today,
+    max(sent_at) filter(where kind not in ('confirm','test')) last_sent_at
   from public.notifications n cross join prefs f
   where n.user_id=p_user
 ),
