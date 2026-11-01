@@ -82,6 +82,19 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   const math=notificationCopy({kind:'behind',project:'ℝ → ℂ',code:'CP1',dueDate:'2 Nov'})
   expect(math.title).toContain('ℝ → ℂ')
  })
+ it('keeps different project slugs separate even when display titles coincide',()=>{
+  const checkpoints=[
+   {project:'Algebra',slug:'algebra-one',code:'CP1',title:'Groups'},
+   {project:'Algebra',slug:'algebra-two',code:'CP2',title:'Rings'},
+   {project:'Analysis',slug:'analysis',code:'CP3',title:'Limits'},
+  ];
+  const copy=notificationCopy({kind:'deadline',checkpoints});
+  expect(copy.title).toBe('3 checkpoints planned for tomorrow');
+  expect(copy.body).toContain('Algebra: CP1 Groups');
+  expect(copy.body).toContain('Algebra: CP2 Rings');
+  expect(copy.body).toContain('Analysis: CP3 Limits');
+  expect(copy.body.length).toBeLessThanOrEqual(140);
+ });
  it('groups tomorrow reminders by project rather than consuming slots per checkpoint',()=>{
   const checkpoints=[
    {project:'Algebra',code:'CP1',title:'Groups'},
