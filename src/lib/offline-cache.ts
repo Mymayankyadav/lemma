@@ -58,7 +58,13 @@ export function isOfflineKey(key:readonly unknown[]):key is OfflineKey {
  if(key.length===3)return key[0]==='checkpoint'&&typeof key[1]==='string'&&!!key[1]&&typeof key[2]==='string'&&!!key[2]
  return false
 }
-const privateKey=/^(?:.*(?:connector|secret|token|authorization|credential|subscription|pushkey|widgetkey|sessionkey|password|apikey|refreshkey).*)$/i
+/** Normalize common API/Push/Widget credential key spellings before redaction.
+ * Never let snake_case or kebab-case keys bypass the offline allowlist. */
+const privateKey=(key:string):boolean=>{
+ const normalized=key.replace(/[_-]/g,'').toLowerCase()
+ return normalized==='auth'||normalized==='endpoint'||
+  /(?:connector|secret|token|authorization|credential|subscription|pushkey|widgetkey|sessionkey|password|apikey|refreshkey|p256dh|authkey)/.test(normalized)
+}
 const privateValue=/(?:\/functions\/v1\/mcp\/|\/mcp\/[^\s/]+|bearer\s+\S+|SENTINEL-SECRET|sb_secret_|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b)/i
 /** Defense in depth for non-Settings records: only allowlisted queries, then redact. */
 export function scrubOfflineData(value:unknown):unknown {
@@ -73,7 +79,7 @@ export function scrubOfflineData(value:unknown):unknown {
   seen.add(input)
   const result:Record<string,unknown>={}
   for(const [key,item] of Object.entries(input)){
-   if(privateKey.test(key))continue
+   if(privateKey(key))continue
    result[key]=clean(item,depth+1)
   }
   return result
