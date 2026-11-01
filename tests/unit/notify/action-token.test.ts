@@ -44,6 +44,24 @@ describe('NOTIF-4a authenticated action links',()=>{
   await expect(signActionToken({...basic,a:'undo',x:{action:0}},secret,now)).rejects.toMatchObject({status:400});
   expect((await verifyActionToken(await signActionToken({...basic,a:'undo',x:{action:123}},secret,now),secret,now)).x?.action).toBe(123);
  });
+ it('binds each extra field to its own action instead of accepting ignored signed instructions',async()=>{
+  const hold={...basic,a:'later' as const,x:{scope:'due:project'}};
+  expect((await verifyActionToken(await signActionToken(hold,secret,now),secret,now)).x?.scope).toBe('due:project');
+  const today={...basic,a:'not_today' as const,x:{scope:'tutor'}};
+  expect((await verifyActionToken(await signActionToken(today,secret,now),secret,now)).x?.scope).toBe('tutor');
+  for(const invalid of [
+   {...basic,x:{ids:[card]}},
+   {...basic,a:'dismiss',x:{action:17}},
+   {...basic,a:'later',x:{ids:[card]}},
+   {...basic,a:'not_today',x:{action:17}},
+   {...basic,a:'approve_cards',x:{ids:[card],action:17}},
+   {...basic,a:'approve_cards',x:{ids:[card],scope:'due'}},
+   {...basic,a:'undo',x:{action:17,ids:[card]}},
+   {...basic,a:'undo',x:{action:17,scope:'due'}},
+  ]){
+   await expect(signActionToken(invalid as unknown as typeof basic,secret,now)).rejects.toMatchObject({status:400});
+  }
+ });
  it('rejects unknown actions, unknown fields, unsafe IDs, malformed payloads and oversized tokens',async()=>{
   for(const invalid of [
    {...basic,a:'delete'}, {...basic,n:0}, {...basic,n:Number.MAX_SAFE_INTEGER+1},
