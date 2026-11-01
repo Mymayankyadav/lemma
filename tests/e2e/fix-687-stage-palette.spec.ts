@@ -23,17 +23,20 @@ for(const width of [360,390] as const){
   const palette=await page.evaluate(({progressEl,showEl})=>{
    const progress=document.querySelector(progressEl) as HTMLElement;
    const show=document.querySelector(showEl) as HTMLElement;
-   const probe=document.createElement('span');
-   probe.style.backgroundColor='var(--ink-2)';
-   probe.style.color='var(--ink-2)';
-   document.body.appendChild(probe);
-   const inkBackground=getComputedStyle(probe).backgroundColor;
-   const inkText=getComputedStyle(probe).color;
-   probe.style.backgroundColor='var(--accent)';
-   probe.style.color='var(--accent)';
-   const accentBackground=getComputedStyle(probe).backgroundColor;
-   const accentText=getComputedStyle(probe).color;
-   probe.remove();
+   // Separate probes prevent a cached CSSStyleDeclaration from returning
+   // the prior value when one element is mutated twice in the same task.
+   const ink=document.createElement('span');
+   ink.style.backgroundColor='var(--ink-2)';
+   ink.style.color='var(--ink-2)';
+   const accent=document.createElement('span');
+   accent.style.backgroundColor='var(--accent)';
+   accent.style.color='var(--accent)';
+   document.body.append(ink,accent);
+   const inkBackground=getComputedStyle(ink).backgroundColor;
+   const inkText=getComputedStyle(ink).color;
+   const accentBackground=getComputedStyle(accent).backgroundColor;
+   const accentText=getComputedStyle(accent).color;
+   ink.remove();accent.remove();
    return {fill:getComputedStyle(progress).backgroundColor,show:getComputedStyle(show).color,
     inkBackground,inkText,accentBackground,accentText};
   },{progressEl:'[data-stage-card] [role="img"][aria-label$="percent complete"] > span',
