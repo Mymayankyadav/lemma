@@ -71,7 +71,7 @@ export function notificationCopy(input:NoticeCopyInput):NoticeCopy {
    const counts=input.counts??{}
    const total=(counts.cards??0)+(counts.plans??0)+(counts.planChanges??0)+(counts.cardEdits??0)
    if(!total)return asCopy('tutor','tutor','Session '+(input.sessionNo??'saved')+(input.sessionNo?' saved':''),
-    input.summary??'Your tutor saved the session.')
+    input.summary?Array.from(input.summary).slice(0,120).join(''):'Your tutor saved the session.')
    const source=new Set(input.sources??[])
    const who=source.size===1?(source.has('claude')?'Claude':'ChatGPT'):'Your tutor'
    const clauses=[
