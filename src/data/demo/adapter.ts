@@ -642,10 +642,9 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   /** Generate one stress session on demand; the UI never needs 60k hydrated rows. */
-  private virtualStressSession(project: DemoProject, number: number): DemoSession {
+  private virtualStressSession(project: DemoProject, number: number, projectIndex=this.store.projects.findIndex(p => p.id === project.id)): DemoSession {
     const count = this.store.stressSessionCount ?? 0;
     if (!Number.isInteger(number) || number < 1 || number > count) invalid("Invalid stress session number");
-    const projectIndex = this.store.projects.findIndex(p => p.id === project.id);
     const template = stressSessionTemplate;
     const checkpointCode = `CP${((number - 1) % 36) + 1}`;
     const offset = (number - 1) % 90;
@@ -663,8 +662,13 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   private sessionsForProject(project: DemoProject): DemoSession[] {
-    if (this.store.stressSessionCount) return Array.from(
-      {length:this.store.stressSessionCount}, (_,i) => this.virtualStressSession(project,i+1));
+    if (this.store.stressSessionCount){
+      // Every synthetic session belongs to this one project; resolve its
+      // position once rather than scanning 60 projects for every row.
+      const index=this.store.projects.findIndex(p=>p.id===project.id);
+      return Array.from({length:this.store.stressSessionCount},
+        (_,i)=>this.virtualStressSession(project,i+1,index));
+    }
     return this.store.sessions.filter(s => s.projectId === project.id);
   }
   /** Direct checkpoint details only need sessions in the CP36 residue,
@@ -691,10 +695,10 @@ export class DemoAdapter implements LemmaApi {
     return stressSessionEvents(this.virtualStressSession(project, number),
       this.store.seed === 2026103102 ? 400 : 150);
   }
-  private sessionSummary(s: DemoSession): SessionSummary {
+  private sessionSummary(s: DemoSession, knownProjectSlug?:string): SessionSummary {
     return {
       id: s.id,
-      projectSlug: this.projectById(s.projectId).slug,
+      projectSlug: knownProjectSlug??this.projectById(s.projectId).slug,
       number: s.number,
       goal: s.goal,
       checkpointCode: s.checkpointCode,
@@ -1321,7 +1325,9 @@ export class DemoAdapter implements LemmaApi {
         : this.store.projects.flatMap(project => this.sessionsForProject(project)))
       : this.store.sessions.filter(s => !id || s.projectId === id);
     return sessions
-      .map((s) => this.sessionSummary(s))
+      // The slug-scoped Project route already resolved its identity;
+      // avoid 1,000 repeated linear projectById lookups in the X fixture.
+      .map((s) => this.sessionSummary(s,slug))
       .sort(
         (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
       );
