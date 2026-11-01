@@ -172,7 +172,7 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   }
  });
  it('rejects oversized or control-character candidate keys before any write',async()=>{
-  for(const key of ['k'.repeat(513),'due:today\\nspoof','due:today\\u0000hidden',' \\t ']){
+  for(const key of ['k'.repeat(513),'due:today\nspoof','due:today\u0000hidden',' \t ']){
    const deps=adapters([A,B]);
    vi.mocked(deps.load).mockResolvedValueOnce({
     ...facts(),candidates:[{...facts().candidates[0],key}],
