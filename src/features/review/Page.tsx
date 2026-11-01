@@ -1,8 +1,11 @@
 import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {getApi} from '../../data/index';
+import {groupReviewSessions,shouldFetchReviewSessions} from './session-demand';
 import {useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
-import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useSessions,useInsightData} from '../../data/hooks';
+import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useInsightData} from '../../data/hooks';
 import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
 import {estimatedReviewMinutes} from '../../lib/insights';
 import {Screen} from '../../ui/Screen';
@@ -36,7 +39,18 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 
 export default function Page(){
  const navigate=useNavigate(),notify=useToast();
- const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
+ const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
+ // The session chips are optional: only cards tied to a session can use
+ // them. The extreme demo otherwise materializes and sorts 60,000 virtual
+ // session summaries on cold Review for a section that renders nothing.
+ // Retain the existing session-query cache key and query defaults.
+ const sessions=useQuery({
+  queryKey:['sessions','all'],
+  queryFn:()=>getApi().listSessions(),
+  enabled:shouldFetchReviewSessions(cards.data),
+  staleTime:30_000,
+  refetchOnWindowFocus:true,
+ });
  const update=useUpdateSettings();
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
  const activeCatchUp=catchUpUntil>Date.now();
@@ -90,10 +104,11 @@ export default function Page(){
  const history=insights.data?.reviews??[];
  const estimated=history.length?estimatedReviewMinutes(todayShare,history):Math.max(1,Math.ceil(todayShare*4.5/60));
  const groupedSessions=useMemo(()=>{
-  return (sessions.data??[]).map(s=>({
-   ...s,count:dueItems.filter(c=>c.projectSlug===s.projectSlug&&c.sessionNumber===s.number).length
-  })).filter(s=>s.count>0).slice(0,3);
- },[sessions.data,dueItems]);
+  // A disabled query may still expose a previously cached 60k-session list.
+  // No session-backed due card means this section is necessarily empty.
+  if(!shouldFetchReviewSessions(cards.data))return [];
+  return groupReviewSessions(sessions.data??[],dueItems);
+ },[sessions.data,dueItems,cards.data]);
  const setProject=(node:DeckNode,value:boolean)=>{
   const changed=new Set(enabled),keys=[node.key,...node.children.map(c=>c.key)];
   for(const key of keys)value?changed.add(key):changed.delete(key);
