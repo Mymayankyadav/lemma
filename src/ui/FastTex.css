@@ -1,0 +1,9 @@
+/* Literal labels must retain the same wrapping contract as Tex even when
+ * the full KaTeX/Markdown stylesheet is loaded only for rich content. */
+.lemma-tex-inline { display:inline; max-width:100%; overflow-wrap:anywhere; }
+.lemma-math { min-width:0; overflow-wrap:anywhere; }
+
+/* Atlas breadcrumb formulas must remain at least 16px even before the lazy
+ * Markdown/KaTeX stylesheet is fetched. This is a scoped typography rule,
+ * not a request to eagerly import the expensive renderer. */
+[aria-label="Idea path"] .lemma-tex-inline .katex { font-size:max(16px,1em); white-space:nowrap; }
