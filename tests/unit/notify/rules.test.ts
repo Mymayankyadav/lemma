@@ -59,6 +59,9 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(decisions).toHaveLength(50)
   expect(decisions.every(d=>d.status==='defer'&&d.reason==='quiet')).toBe(true)
   expect(decisions.every(d=>d.nextAt!==undefined&&d.nextAt%60_000===0)).toBe(true)
+  // The shared boundary must preserve each candidate's exact per-key jitter.
+  for(const decision of [decisions[0],decisions[11],decisions[49]])
+   expect(decision.nextAt).toBe(quietUntil(quiet,decision.candidate.key))
  })
  it('defers active use twice then suppresses without interrupting',()=>{
   const active={lastActiveAt:now-5*60_000}
