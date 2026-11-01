@@ -61,7 +61,7 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
  it('removes prohibited tone even from owner-created project names',()=>{
   const copy=notificationCopy({kind:'behind',project:'Failed streak again!',code:'CP1',dueDate:'1 Nov'})
   expect(copy.title+' '+copy.body).not.toMatch(/failed|streak|again|!/i)
-  expect(copy.title).toContain('Unfinished rhythm next.')
+  expect(copy.title).toContain('unfinished rhythm next.')
  })
  it('requires a checkpoint to construct a tomorrow reminder',()=>{
   expect(()=>notificationCopy({kind:'deadline',checkpoints:[]})).toThrow('Deadline requires a checkpoint')
