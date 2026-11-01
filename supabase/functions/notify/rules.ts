@@ -8,6 +8,8 @@ export interface ReminderCandidate {
  /** Per-kind state from the owner-scoped notifications table. */
  lastSentAt?:number; sentToday?:number; deferrals?:number; dismissals?:number
  cardsDue?:number; threshold?:number; studiedToday?:boolean
+ /** A K1 Later action explicitly permits its one two-hour resend. */
+ laterRequested?:boolean
  /** K3: first transition to late; repeat once every 7 (or 14) days. */
  behindTransitionAt?:number; projectSentToday?:boolean; targetDate?:number; lateDueOn?:number
  /** K4: the paused session, not all sessions combined. */
@@ -82,7 +84,8 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
  if(c.kind==='due'){
   const threshold=(c.threshold??10)*(c.dismissals&&c.dismissals>=3?2:1)
   if((c.cardsDue??0)<threshold||c.studiedToday)return result(c,'skipped','resolved')
-  if((c.sentToday??0)>=2||((c.sentToday??0)===1&&(!c.lastSentAt||now-c.lastSentAt<2*HOUR)))
+  if((c.sentToday??0)>=2||((c.sentToday??0)===1&&
+     (!c.laterRequested||!c.lastSentAt||now-c.lastSentAt<2*HOUR)))
    return result(c,'suppressed','frequency')
  }
  if(c.kind==='deadline'&&(c.sentToday??0)>=1)return result(c,'suppressed','frequency')
@@ -100,7 +103,7 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
  if(c.kind==='tutor'){
   if(ctx.liveSession)return result(c,'defer','active',now+30*MIN)
   if(!c.hasSummary&&c.newestProposalAt===undefined)return result(c,'skipped','resolved')
-  if(!c.hasSummary&&c.newestProposalAt!==undefined&&now-c.newestProposalAt<15*MIN)
+  if(c.newestProposalAt!==undefined&&now-c.newestProposalAt<15*MIN)
    return result(c,'defer','settling',c.newestProposalAt+15*MIN)
   if(c.lastSentAt!==undefined&&now-c.lastSentAt<2*HOUR)return result(c,'suppressed','frequency')
  }
