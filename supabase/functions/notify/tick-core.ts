@@ -104,7 +104,8 @@ export async function runNotifyTick(
     if(!Array.from(facts.candidates).every(candidate=>
      candidate&&typeof candidate==='object'&&
      KINDS.has(candidate.kind)&&typeof candidate.key==='string'&&
-     candidate.key.trim().length>0))
+     candidate.key.trim().length>0&&candidate.key.length<=512&&
+     !/[\x00-\x1f\x7f]/u.test(candidate.key)))
      throw Error('Invalid notification candidate');
     const context=facts.context;
     // The pure rules expect a normalized owner setting. A malformed database
