@@ -92,7 +92,7 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   const result=await handleTestPushRequest('Bearer token',{deviceId:device},deps);
   expect(result.status).toBe(200);
   expect(send.mock.calls[0][1].body)
-   .toBe('Lemma will write at most 1 time a day. Quiet hours are off.');
+   .toBe('Lemma will write at most once a day. Quiet hours are off.');
   expect(send.mock.calls[0][1].body).not.toContain('never between');
  });
 
