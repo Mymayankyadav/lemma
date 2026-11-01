@@ -108,7 +108,8 @@ export default function Page(){
      <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
       value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
-     {(name.includes('
+     {(name.includes('$')||name.includes('\\(')||name.includes('\\['))&&
+      <Suspense fallback={null}><MathPreview source={name}/></Suspense>}
      <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
     </section>
     <section aria-label="Sources" className="flex flex-col gap-3"
