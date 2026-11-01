@@ -1,4 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
+import {useOnlineStatus} from '../../ui/useOnlineStatus';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
@@ -88,13 +89,7 @@ export default function Page() {
     signOut = useSignOut(),
     notify = useToast(),
     navigate = useNavigate();
-  const [offline, setOffline] = useState(typeof navigator !== 'undefined' && !navigator.onLine);
-  useEffect(() => {
-    const updateOnlineState = () => setOffline(!navigator.onLine);
-    window.addEventListener('online', updateOnlineState);
-    window.addEventListener('offline', updateOnlineState);
-    return () => { window.removeEventListener('online', updateOnlineState); window.removeEventListener('offline', updateOnlineState); };
-  }, []);
+  const online = useOnlineStatus(), offline = !online;
   const [revealed, setRevealed] = useState(false),
     [setup, setSetup] = useState(false),
     [sheet, setSheet] = useState<
