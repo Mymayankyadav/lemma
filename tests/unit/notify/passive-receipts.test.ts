@@ -34,8 +34,8 @@ describe('FIX-714a passive receipt producer signing',()=>{
   ]);
   expect(new TextEncoder().encode(encoded).length).toBeLessThanOrEqual(3072);
   expect(encoded).not.toContain(secret);
-  expect(payload.openToken).toMatch(/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/);
-  expect(payload.dismissToken).toMatch(/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/);
+  expect(payload.openToken).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  expect(payload.dismissToken).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   expect(await verifyActionToken(payload.openToken,secret,now)).toEqual({
    u:owner,n:42,a:'open',exp:now+3600,
   });
