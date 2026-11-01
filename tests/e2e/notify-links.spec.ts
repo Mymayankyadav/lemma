@@ -23,6 +23,18 @@ for(const [raw,expected] of [['0','1'],['99','23'],['oops','1']] as const){
  })
 }
 
+test('notification link with no selected due cards stays on Review and says All clear',async({page})=>{
+ await page.goto('/lemma/?demo=1#/review');
+ const projects=page.getByRole('checkbox',{name:/^Include (Real Analysis|Linear Algebra|Topology)$/});
+ await expect(projects.first()).toBeVisible();
+ const count=await projects.count();
+ for(let i=0;i<count;i++)await projects.nth(i).uncheck();
+ await expect(page.getByText('All clear for today')).toBeVisible();
+ await page.evaluate(()=>{location.hash='#/review?start=5'});
+ await expect(page).toHaveURL(/#\\/review$/);
+ await expect(page.getByText('All clear',{exact:true})).toBeVisible();
+});
+
 test('Insights deep link selects seven days, ignoring notification id',async({page})=>{
  await page.goto('/lemma/?demo=1#/insights?days=7&n=42')
  await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:'7 days'})).toHaveAttribute('aria-pressed','true')
