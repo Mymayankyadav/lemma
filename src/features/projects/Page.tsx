@@ -1,8 +1,12 @@
 import {SectionHeading} from '../../ui/SectionHeading';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
 import {useProjects,useUpdateProject} from '../../data/hooks';
+import {getApi} from '../../data';
+import {getMode} from '../../data/mode';
+import {prefetchAtlasForPaths} from './atlasPrefetch';
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
 import {Screen} from '../../ui/Screen';
@@ -107,6 +111,16 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 }
 
 export default function Page(){
+ const queryClient=useQueryClient();
+ // The 2,500-idea demo Atlas must not compete with first paint of Paths.
+ // Warm its module and canonical data query on genuine Atlas navigation
+ // intent (hover, keyboard focus, or touch/pointer down), not on mount.
+ // Live Paths never issues an extra Atlas network request.
+ const warmAtlas=useCallback(()=>{
+  if(getMode()!=='demo')return;
+  void import('../atlas/Page');
+  void prefetchAtlasForPaths(queryClient,getMode(),()=>getApi().getAtlas());
+ },[queryClient]);
  const projects=useProjects(),notify=useToast(),[params,setParams]=useSearchParams();
  const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]),[page,setPage]=useState(0);
  const filter=(['active','paused','done','archived'].includes(params.get('status')??'')?params.get('status'):'active') as Filter;
@@ -164,7 +178,7 @@ export default function Page(){
   <header className="flex min-h-11 items-center justify-between gap-3">
    <h1 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h1>
    <nav aria-label="Path actions" className="flex gap-2">
-    <Link to="/atlas" aria-label="Open Atlas" className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-fill-1 text-ink-2"><Waypoints size={19}/></Link>
+    <Link to="/atlas" aria-label="Open Atlas" onPointerEnter={warmAtlas} onPointerDown={warmAtlas} onFocus={warmAtlas} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-fill-1 text-ink-2"><Waypoints size={19}/></Link>
     <Link to="/projects/new" aria-label="New project" className="flex min-h-11 items-center gap-2 rounded-ctl border border-amber bg-amber-tint px-3 text-label text-amber"><Plus size={16}/>New</Link>
    </nav>
   </header>
