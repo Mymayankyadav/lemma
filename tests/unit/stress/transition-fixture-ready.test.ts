@@ -29,8 +29,15 @@ describe('strict C2/D6 loaded-fixture transition precondition (FIX #604)',()=>{
   const source=readFileSync(join(process.cwd(),'tests/e2e/st-4.spec.ts'),'utf8')
   const d6=source.slice(source.indexOf('// D6 acceptance:'))
   expect(d6,'D6 block must exist').toContain('ST-4 extreme cards open under 1s')
-  expect(d6,'strict D6 budget must disable global Playwright retries').toContain('test.describe.configure({retries:0})')
+  expect(d6,'strict D6 budget must disable retries and avoid simultaneous 4x CPU test contention').toContain("test.describe.configure({mode:'default',retries:0})")
   expect(d6,'retain the original 4x throttle').toContain("await cdp.send('Emulation.setCPUThrottlingRate',{rate:4})")
   expect(d6,'retain the original 1000ms first-attempt budget').toContain('.toBeLessThan(1000)')
  })
+ it('C2 runs all four first-attempt cells sequentially, not simultaneously under 4x CPU',()=>{
+  const source=readFileSync(join(process.cwd(),'tests/e2e/audit-441-atlas-budget.spec.ts'),'utf8')
+  expect(source,'mode default overrides fullyParallel without serial fail-fast skips')
+   .toContain("test.describe.configure({mode:'default',retries:0})")
+  expect(source).not.toContain("mode:'serial'")
+ })
+
 })
