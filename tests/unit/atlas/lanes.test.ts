@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {buildAtlasRowGeometry} from '../../../src/features/atlas/rowGeometry';
 import type {Arc} from '../../../src/features/atlas/tree';
-import {layoutAtlasLanes} from '../../../src/features/atlas/lanes';
+import {layoutAtlasLanes,atlasLanePath} from '../../../src/features/atlas/lanes';
 
 const arc=(key:string,from:number,to:number):Arc=>({key,from,to,kind:'prereq',count:1,links:[]});
 
@@ -77,5 +77,38 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   expect(source).toContain('buildAtlasRowGeometry');
   expect(source).toContain('centers={geometry.centers}');
   expect(source).toContain('heightPx={geometry.totalHeight}');
+ });
+
+ it('keeps the original deterministic lanes while indexing dense collision/trunk lookups',()=>{
+  // Performance regression: old code scans every placed arc for every lane.
+  // Keep this guard alongside exact-output parity and the hard C2 browser gate.
+  const source=readFileSync(join(process.cwd(),'src/features/atlas/lanes.ts'),'utf8');
+  expect(source).toContain('byLane');
+  expect(source).toContain('byFrom');
+  expect(source).toContain('byTo');
+  const rows=Array.from({length:180},(_,i)=>i*44+22+(i%7)*3);
+  const arcs=Array.from({length:180},(_,i)=>arc('indexed-'+i,
+   (i*37)%140,Math.min(179,(i*37)%140+1+(i*19)%40)));
+  const selected=new Set(arcs.filter((_,i)=>i%11===0).map(a=>a.key));
+  const lanes=[83,74,65,56,47,38,29,20];
+  const reference=()=>{
+   const span=(a:Arc)=>Math.abs(rows[a.to]-rows[a.from]);
+   const sorted=[...arcs].sort((a,b)=>Number(selected.has(b.key))-Number(selected.has(a.key))||
+    span(b)-span(a)||a.key.localeCompare(b.key));
+   const placed:{arc:Arc;x:number;low:number;high:number}[]=[];
+   const result=new Map<string,{x:number;fromY:number;toY:number;d:string}>();
+   for(const a of sorted){
+    const fromY=rows[a.from],toY=rows[a.to],low=Math.min(fromY,toY),high=Math.max(fromY,toY);
+    const shares=(p:typeof placed[number])=>p.arc.from===a.from||p.arc.to===a.to;
+    const fits=(x:number)=>placed.every(p=>p.x!==x||high<p.low||low>p.high||shares(p));
+    const shared=placed.find(p=>shares(p)&&fits(p.x));
+    const x=shared?.x??lanes.find(fits);
+    if(x===undefined)continue;
+    placed.push({arc:a,x,low,high});
+    result.set(a.key,{x,fromY,toY,d:atlasLanePath(x,fromY,toY)});
+   }
+   return result;
+  };
+  expect([...layoutAtlasLanes(arcs,rows,selected)]).toEqual([...reference()]);
  });
 });
