@@ -560,9 +560,16 @@ export class DemoAdapter implements LemmaApi {
     const template=demoSeedFixture.notes[0];
     if(!deferred||!this.virtualStressDue||this.now()>=this.virtualStressDue.future||
        !template||template.cards[0]?.state.state!==2)return this.store.notes;
-    if(!this.virtualReviewNotes){
-      const dueCount=this.store.stressDueCount??0;
-      const notes=makeStressNotes(template,this.store.projects,dueCount,dueCount);
+    // The virtual backlog may contain 4,000 overdue cards, but dueToday
+    // admits at most reviewsPerDay (200 in S/X). All generated cards are
+    // single-card mature notes with the same due date, so the stable
+    // earliest-due order is exactly the first dailyShare notes. Materializing
+    // the other 3,800 only delays the first real Review-run card. Backlog
+    // totals remain sourced from the independent full due snapshot.
+    const dueCount=this.store.stressDueCount??0;
+    const dailyShare=Math.min(dueCount,Math.max(0,this.store.settings.reviewsPerDay));
+    if(!this.virtualReviewNotes||this.virtualReviewNotes.length!==dailyShare){
+      const notes=makeStressNotes(template,this.store.projects,dailyShare,dueCount);
       this.virtualReviewNotes=this.hydrateVirtualNotes(notes);
     }
     return this.virtualReviewNotes;
