@@ -22,7 +22,7 @@ import {
 } from "../../data/hooks";
 import type { Proposal, PlanChangeOp } from "../../data/types";
 import { Button } from "../../ui/Button";
-import { useOnlineStatus } from "../../ui/useOnlineStatus";
+import {useOnlineStatus,networkWritable} from "../../ui/useOnlineStatus";
 import { Card } from "../../ui/Card";
 import { EmptyState } from "../../ui/EmptyState";
 import { Glyph } from "../../ui/Glyph";
@@ -265,11 +265,11 @@ export default function Page() {
     const timer=window.setTimeout(()=>{
       const ids=staged.ids;
       setStaged(null);
-      if(!navigator.onLine){notify("Needs a connection");return;}
+      if(!networkWritable()){notify("Needs a connection");return;}
       void (async()=>{
         let succeeded=0;
         for(const id of ids){
-          if(!navigator.onLine){notify("Needs a connection");break}
+          if(!networkWritable()){notify("Needs a connection");break}
           try{await approve.mutateAsync({id});succeeded++}
           catch{break}
         }
@@ -286,7 +286,7 @@ export default function Page() {
     edit?: { front: string; back: string },
   ) => {
     if (pending) return;
-    if(!navigator.onLine){notify("Needs a connection");return}
+    if(!networkWritable()){notify("Needs a connection");return}
     try {
       if (accept) await approve.mutateAsync({ id: p.id, edit });
       else await reject.mutateAsync(p.id);
