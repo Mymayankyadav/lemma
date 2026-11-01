@@ -127,8 +127,9 @@ try {
  await db.exec(`insert into public.projects(id,user_id,slug,subject_id,title,goal)
    values ('${otherProject}','${other}','analysis','${otherSubject}','Analysis','Study')`);
  await db.exec(`insert into public.notes(user_id,project_id,front)
-   values ('${owner}','${project}','Owner-only history'),
-          ('${other}','${otherProject}','Other-only history')`);
+   values ('${owner}','${project}','Owner-only history')`);
+ await db.exec(`insert into public.notes(user_id,project_id,front)
+   values ('${other}','${otherProject}','Other-only history')`);
  const ownerRows=await q(`select v.action_no,v.user_id from public.v_action_changes_owner v
    where v.user_id='${owner}' and
    (v.new->>'project_id'='${project}' or v.new->>'id'='${project}')
