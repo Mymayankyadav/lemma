@@ -9,7 +9,7 @@ export interface ReminderCandidate {
  lastSentAt?:number; sentToday?:number; deferrals?:number; dismissals?:number
  cardsDue?:number; threshold?:number; studiedToday?:boolean
  /** K3: first transition to late; repeat once every 7 (or 14) days. */
- behindTransitionAt?:number; projectSentToday?:boolean
+ behindTransitionAt?:number; projectSentToday?:boolean; targetDate?:number; lateDueOn?:number
  /** K4: the paused session, not all sessions combined. */
  pausedSince?:number; sessionSends?:number
  /** K5: newest proposal; an ended session summary may send without proposals. */
@@ -20,7 +20,7 @@ export interface ReminderCandidate {
 export interface ReminderContext {
  now:number; timeZone:string; quietStart:string; quietEnd:string
  mode:Frequency; dailyCap:number; sendsToday:number; lastSendAt?:number
- lastActiveAt?:number; liveSession?:boolean; rhythmEnabled?:boolean
+ lastActiveAt?:number; liveSession?:boolean; rhythmEnabled?:boolean; behindSentToday?:boolean
 }
 export type RuleResult={
  candidate:ReminderCandidate; status:'send'|'defer'|'suppressed'|'skipped'
@@ -88,7 +88,7 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
  if(c.kind==='deadline'&&(c.sentToday??0)>=1)return result(c,'suppressed','frequency')
  if(c.kind==='behind'){
   const interval=(c.dismissals??0)>=3?14*DAY:7*DAY
-  if(c.projectSentToday||c.lastSentAt!==undefined&&now-c.lastSentAt<interval)
+  if(c.projectSentToday||ctx.behindSentToday||c.lastSentAt!==undefined&&now-c.lastSentAt<interval)
    return result(c,'suppressed','frequency')
   if(c.behindTransitionAt!==undefined&&c.behindTransitionAt>now)return result(c,'defer','frequency',c.behindTransitionAt)
  }
@@ -124,6 +124,8 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
  */
 export function decideNotifications(candidates:ReminderCandidate[],context:ReminderContext):RuleResult[]{
  const ordered=[...candidates].sort((a,b)=>priority[a.kind]-priority[b.kind]||
+  (a.kind==='behind'&&b.kind==='behind'
+   ?(a.targetDate??a.lateDueOn??Number.MAX_SAFE_INTEGER)-(b.targetDate??b.lateDueOn??Number.MAX_SAFE_INTEGER):0)||
   (a.dueAt??0)-(b.dueAt??0)||a.key.localeCompare(b.key))
  let sent=false
  return ordered.map(candidate=>{
