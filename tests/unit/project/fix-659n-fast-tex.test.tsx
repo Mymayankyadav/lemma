@@ -22,6 +22,9 @@ describe('FIX-659n direct Project FastTex adoption',()=>{
   const math=await renderAllReady(createElement(FastTex,{source:'$\\frac{1}{2}$'}));
   expect(math).toContain('katex-html');
   expect(math).not.toContain('Rendering mathematical text');
+  const longStage='\\('+ '\\operatorname{'+'verylongmathematicalstage'.repeat(5)+'}'+'\\)';
+  const longMath=await renderAllReady(createElement(FastTex,{source:longStage}));
+  expect(longMath).toContain('katex-html');
   const literal=await renderAllReady(createElement(FastTex,{source:'A < B'}));
   expect(literal).not.toContain('<script');
   expect(literal).toContain('&lt;');
