@@ -106,10 +106,15 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext):RuleResult|null{
  }
  if(c.kind==='resume'){
   if((c.dismissals??0)>=3)return result(c,'skipped','disabled')
+  if((c.sentToday??0)>=1)return result(c,'suppressed','frequency')
   if(c.studiedToday||(c.sessionSends??0)>=2||c.pausedSince===undefined)return result(c,'skipped','resolved')
   if(now-c.pausedSince<18*HOUR)return result(c,'defer','frequency',c.pausedSince+18*HOUR)
  }
  if(c.kind==='tutor'){
+  // The K5 per-kind two-hour cap is stricter than the shared one-hour spacing.
+  // Fresh proposals and summaries remain eligible on the next tick after it ends.
+  if(c.lastSentAt!==undefined&&now-c.lastSentAt<2*HOUR)
+   return result(c,'suppressed','frequency')
   if(ctx.liveSession)return result(c,'defer','active',now+30*MIN)
   if(!c.hasSummary&&c.newestProposalAt===undefined)return result(c,'skipped','resolved')
   if(c.newestProposalAt!==undefined&&now-c.newestProposalAt<15*MIN)
