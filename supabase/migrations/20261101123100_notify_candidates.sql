@@ -217,7 +217,7 @@ devices as (
 ),
 history as (
   select count(*) filter(where sent_at>=f.day_start and kind<>'confirm')::integer sent_today,
-    max(sent_at) last_sent_at
+    max(sent_at) filter(where kind<>'confirm') last_sent_at
   from public.notifications n cross join prefs f
   where n.user_id=p_user
 ),
