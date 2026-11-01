@@ -381,6 +381,67 @@ export function budgetArcs(
  return {visible,hidden:arcs.length-visible.length};
 }
 
+/**
+ * Unfocused first paint needs at most 60 bundled arcs, never their underlying
+ * 8,000 individual Link objects. Aggregate counts and folded priorities in
+ * one pass; materialize only the selected Arc records. The focused path still
+ * uses arcsFor() because arcTone() needs the real underlying links.
+ *
+ * The ordering and hidden count are identical to
+ * budgetArcs(tree, rows, expanded, arcsFor(tree, rows, kinds), null, limit).
+ */
+export function budgetArcsUnfocused(
+ tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
+ kinds:ReadonlySet<Link['kind']>,limit=60,
+):{visible:Arc[];hidden:number}{
+ const index=new Map(rows.map((row,i)=>[row.id,i]));
+ const cache=new Map<string,number|null>();
+ const resolve=(id:string):number|null=>{
+  if(cache.has(id))return cache.get(id)!;
+  const path:string[]=[];
+  let current:string|null=id,found:number|null=null;
+  while(current&&!path.includes(current)){
+   if(cache.has(current)){found=cache.get(current)!;break}
+   path.push(current);
+   const at=index.get(current);
+   if(at!==undefined){found=at;break}
+   current=tree.nodes.get(current)?.parentId??null;
+  }
+  for(const part of path)cache.set(part,found);
+  return found;
+ };
+ type Bundle={from:number;to:number;kind:Link['kind'];count:number;index:number;folded:boolean};
+ const width=rows.length,packed=width<2**26;
+ const bundles=new Map<number|string,Bundle>();
+ for(const link of tree.links){
+  if(!kinds.has(link.kind))continue;
+  const from=resolve(link.fromId),to=resolve(link.toId);
+  if(from===null||to===null||from===to)continue;
+  const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
+  const key=packed?(a*width+b)*2+(link.kind==='related'?1:0):link.kind+':'+a+':'+b;
+  const existing=bundles.get(key);
+  if(existing){existing.count++;continue}
+  const folded=[a,b].some(i=>{
+   const node=tree.nodes.get(rows[i]?.id??'');
+   return !!node?.children.length&&!expanded.has(node.id);
+  });
+  bundles.set(key,{from:a,to:b,kind:link.kind,count:1,index:bundles.size,folded});
+ }
+ const all=[...bundles.values()];
+ const bySpan=(a:Bundle,b:Bundle)=>Math.abs(b.to-b.from)-Math.abs(a.to-a.from);
+ const toArc=(bundle:Bundle):Arc=>({
+  key:bundle.kind+':'+bundle.from+':'+bundle.to,
+  from:bundle.from,to:bundle.to,kind:bundle.kind,count:bundle.count,links:[],
+ });
+ if(all.length<=limit)return {visible:all.sort(bySpan).map(toArc),hidden:0};
+ // Same stable insertion-order tiebreak as budgetArcs. Non-folded arcs are
+ // intentionally hidden until the user selects a concept.
+ const selected=new Set(all.filter(bundle=>bundle.folded)
+  .sort((a,b)=>bySpan(a,b)||a.index-b.index).slice(0,limit));
+ const visible=all.filter(bundle=>selected.has(bundle)).sort(bySpan).map(toArc);
+ return {visible,hidden:all.length-visible.length};
+}
+
 /** Everything the selected idea (or branch) builds on, and everything it opens up. */
 export function focusOn(tree:AtlasTree,id:string):Focus{
  const start=new Set([id,...descendants(tree,id)]);
