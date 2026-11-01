@@ -6,9 +6,10 @@ import './math.css';
 // several independent components during the same cold render. Rendering each
 // copy through Markdown, KaTeX and DOMPurify is expensive on slower phones.
 // Cache only the *already sanitized* HTML of short inline strings. The cache
-// is memory-only, bounded and never contains card faces or long documents.
+// is memory-only, bounded and never persists rendered content to disk.
 const INLINE_TEX_CACHE_LIMIT=128;
 const INLINE_TEX_SOURCE_LIMIT=512;
+const INLINE_TEX_HTML_LIMIT=24_000;
 const inlineTexCache=new Map<string,string>();
 
 export function renderInlineTex(source:string):string {
@@ -21,6 +22,8 @@ export function renderInlineTex(source:string):string {
   return hit;
  }
  const html=renderMarkdown(source,{inline:true});
+ // Even a short TeX source can expand to a very large KaTeX tree.
+ if(html.length>INLINE_TEX_HTML_LIMIT)return html;
  inlineTexCache.set(source,html);
  if(inlineTexCache.size>INLINE_TEX_CACHE_LIMIT){
   const oldest=inlineTexCache.keys().next().value;
