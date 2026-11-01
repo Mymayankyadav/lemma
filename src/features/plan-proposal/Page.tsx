@@ -302,7 +302,10 @@ export default function Page() {
   // A proposal and project detail are immutable React Query snapshots. Reuse
   // their expensive plan/Ideas derivations across StrictMode render replays and
   // unrelated local state changes, without keeping stale data after a refresh.
-  const prepared = useMemo(() => preparePlanProposal(p,project.data),[p,project.data]);
+  // The proposal often resolves before its base project. Avoid constructing
+  // a large incomplete Ideas tree and rebuilding it when the project arrives.
+  const waitingForProject=Boolean(p?.planChange&&project.isPending);
+  const prepared = useMemo(() => preparePlanProposal(waitingForProject?null:p,project.data),[p,project.data,waitingForProject]);
   const {nodes,ideaTree,ideaCount,stages}=prepared;
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
   const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
@@ -396,6 +399,7 @@ export default function Page() {
               </span>
             </div>
           </div>
+          {waitingForProject && <p role="status" className="text-label text-ink-3">Preparing project context…</p>}
           {nodes.length > 0 && (
             <PlanMap
               nodes={nodes}
@@ -472,7 +476,7 @@ export default function Page() {
             </section>
           ) : (
             <p className="flex items-center gap-2 text-label text-ink-3">
-              <Waypoints size={17} />No new ideas for your Atlas
+              <Waypoints size={17} />{waitingForProject?'Preparing ideas with the project context…':'No new ideas for your Atlas'}
             </p>
           )}
           <div className="grid grid-cols-2 gap-3">
