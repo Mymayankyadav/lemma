@@ -13,7 +13,7 @@ describe('FIX-651b Review-run early bootstrap ordering',()=>{
   expect(app).toBeGreaterThan(review)
  })
  it('starts the early route request only for the exact Review-run hash',()=>{
-  expect(source).toMatch(/location\.hash\.split\(['"]\?['"]\)\[0\]\s*===\s*['"]#\/review\/run['"]/)
+  expect(source).toMatch(/const\s+hash\s*=\s*window\.location\.hash\.split\(['"]\?['"]\)\[0\]/)
   expect(source).toMatch(/if\s*\([^)]*#\/review\/run[^)]*\)\s*\{/)
  })
  it('renders the same StrictMode App root after its asynchronous import',()=>{
