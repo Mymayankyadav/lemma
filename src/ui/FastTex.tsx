@@ -5,6 +5,11 @@ import './FastTex.css';
 // merely to display ordinary names. JSX escapes the safe literal path.
 // Everything ambiguous retains the exact rich Tex implementation, including
 // GFM autolinks, mathematical delimiters, entities and Markdown formatting.
+// Server-side static rendering cannot suspend for rich maths: its output
+// must contain real KaTeX immediately. Vite replaces import.meta.env.SSR at
+// build time, so the browser keeps only the lazy rich import and never eagerly
+// evaluates Markdown/KaTeX on ordinary literal labels.
+const ServerTex=import.meta.env.SSR?(await import('./Tex')).Tex:null;
 const RichTex=lazy(()=>import('./Tex').then(module=>({default:module.Tex})));
 
 const markupCharacters=new Set(['\\','$','`','*','_','~','[',']','<','>','!','#','|','&','{','}','\r','\n']);
@@ -21,7 +26,8 @@ export function canRenderPlainFastTex(source:string):boolean{
 export function FastTex({source,className=''}:{source:string;className?:string}){
  const classes=`lemma-math lemma-tex-inline ${className}`;
  if(canRenderPlainFastTex(source))return <span className={classes}>{source}</span>;
+ const Rich=ServerTex??RichTex;
  return <Suspense fallback={<span role="status" aria-label="Rendering mathematical text" className={classes}>…</span>}>
-  <RichTex source={source} className={className}/>
+  <Rich source={source} className={className}/>
  </Suspense>;
 }
