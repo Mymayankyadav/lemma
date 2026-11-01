@@ -15,7 +15,7 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
   expect(graph).not.toContain("{d===99?'All':d}");
  });
  it('reuses the merged Atlas level rows, geometry, selection tones and dependency lanes',()=>{
-  expect(graph).toContain("import {Row,StatusMark,Wires,toneColor} from './Outline'");
+  expect(graph).toContain("import {Row,StatusMark,Wires,toneColor,statusName} from './Outline'");
   expect(graph).toContain('buildAtlasRowGeometry');
   expect(graph).toContain('rowTone(tree,row.id,focus,selectedId');
   expect(graph).toContain('<Wires arcs={arcBudget.visible}');
