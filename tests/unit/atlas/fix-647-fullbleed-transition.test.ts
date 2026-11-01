@@ -12,6 +12,10 @@ describe('FIX #647 Atlas full-bleed transition headroom',()=>{
   expect(shell).toContain('fullBleed||reduce?<div key={location.pathname}>');
   expect(shell).toContain(':<AnimatePresence');
  });
+ it('does not mount the unused GraphSketch hook on the grid-only Atlas',()=>{
+  const shell=readFileSync('src/app/AppShell.tsx','utf8');
+  expect(shell).toContain('{!fullBleed&&<GraphSketch path={location.pathname}/> }'.replace('/> }','/>}'));
+ });
  it('does not wait for the outgoing Paths animation before mounting Atlas',()=>{
   const shell=readFileSync('src/app/AppShell.tsx','utf8');
   expect(shell).toContain("key={fullBleed?'atlas':'standard'}");
