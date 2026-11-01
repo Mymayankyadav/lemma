@@ -1196,6 +1196,15 @@ export class DemoAdapter implements LemmaApi {
     const done = approved.filter(cp => cp.status === 'demonstrated').length;
     const total = approved.length;
     const eligible = this.eligible();
+    // A 100-checkpoint Project used to scan the same daily review queue
+    // once for every row. Index only this project's eligible cards once,
+    // preserving the exact dueToday quota and ordering already applied by
+    // eligible() (the full backlog is deliberately not substituted here).
+    const dueByCode = new Map<string,number>();
+    for(const card of eligible){
+      if(card.projectSlug!==p.slug||!card.checkpointCode)continue;
+      dueByCode.set(card.checkpointCode,(dueByCode.get(card.checkpointCode)??0)+1);
+    }
     return {
       project: this.projectValue(p),
       subject: clone(this.displaySubject(p.subjectId)),
@@ -1204,7 +1213,7 @@ export class DemoAdapter implements LemmaApi {
         ...this.proposed(p),
       ]
         .sort((a, b) => a.position - b.position)
-        .map((cp) => this.cpView(cp, eligible)),
+        .map(cp=>({...this.cpView(cp,[]),dueCards:dueByCode.get(cp.code)??0})),
       done,
       total,
       planRevisions: clone(this.planHistory(p)),
