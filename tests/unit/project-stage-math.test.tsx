@@ -7,6 +7,11 @@ import {Stages} from '../../src/features/project/PathsView';
 vi.mock('../../src/data/hooks',()=>({
  useInsightData:()=>({data:{checkpointEvents:[]},isPending:false}),
 }));
+// The Project's deferred query retains the same insight data contract.
+// This SSR-only stage math test mocks the hook, not React Query transport.
+vi.mock('../../src/features/project/useProjectInsight',()=>({
+ useProjectInsight:()=>({data:{checkpointEvents:[]},isPending:false}),
+}));
 
 describe('project stage jump navigation',()=>{
  it('typesets mathematical tutor stage names in the jump chips',()=>{
