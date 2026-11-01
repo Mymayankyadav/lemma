@@ -129,7 +129,12 @@ function openDb(userId:string):Promise<IDBDatabase>{
  return new Promise((resolve,reject)=>{
   const req=indexedDB.open(OFFLINE_DB_PREFIX+userId,1)
   req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE)}
-  req.onsuccess=()=>resolve(req.result)
+  req.onsuccess=()=>{
+   // A sign-out in another tab must be able to delete this owner's database.
+   // Otherwise a long-lived connection can block deleteDatabase indefinitely.
+   req.result.onversionchange=()=>req.result.close()
+   resolve(req.result)
+  }
   req.onerror=()=>reject(req.error??Error('Cannot open offline snapshot'))
  })
 }
