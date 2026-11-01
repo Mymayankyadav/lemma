@@ -98,6 +98,9 @@ try{
    [result.confirmId,owner]))[0]
  assert.equal(confirmation.status,'sent','confirmation is returned by the service worker, never re-queued')
  assert.ok(confirmation.sent_at,'confirmation is already delivered to the action response')
+ const afterConfirm=(await q('select public.notify_candidates($1,now()) data',[owner]))[0].data.history
+ assert.equal(afterConfirm.sentToday,0,'confirmation does not consume daily notification cap')
+ assert.equal(afterConfirm.lastSentAt,null,'confirmation does not delay ordinary notifications')
  assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,before+1)
  assert.equal((await q("select count(*)::int n from public.proposals where user_id=$1 and status='approved'",[owner]))[0].n,5)
  assert.equal((await q('select count(*)::int n from public.cards where user_id=$1',[owner]))[0].n,5)
