@@ -1,12 +1,18 @@
 name: Review screenshots
 on:
-  push:
-    branches: ['review/**']
+  pull_request:
+    paths:
+      - 'scripts/review-shots.mjs'
+      - 'scripts/v4-capture-inventory.json'
+      - 'scripts/qa4-screens.ts'
+      - 'tests/unit/qa4/**'
+      - '.github/workflows/review-shots.yml'
+      - '.github/workflows/review-shots-publish.yml'
+  workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   shots:
-    if: "!contains(github.event.head_commit.message, '[shots]')"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -22,16 +28,18 @@ jobs:
           THEMES: all
           DENSITY: compact
           EFFECTS: calm
+          V4_MATRIX: '1'
         run: |
           (npx vite preview --port 4173 --strictPort > /tmp/lemma-preview.log 2>&1 &) 
           sleep 5
           node scripts/review-shots.mjs
-      - name: Commit contact sheets to the review branch
-        run: |
-          git config user.name "review-bot"
-          git config user.email "review-bot@users.noreply.github.com"
-          git add -f review-shots
-          if ! git diff --cached --quiet; then
-            git commit -m "[shots] all-theme contact sheets"
-            git push
-          fi
+      - name: Fail closed on missing, invalid or repeated v4 interaction screenshots
+        run: npx tsx scripts/qa4-screens.ts
+      - name: Upload v4 route and interaction screenshots for independent review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4-review-screens
+          path: review-shots/
+          if-no-files-found: error
+          retention-days: 14
