@@ -17,6 +17,6 @@ export function notifyCorsHeaders(origin:string|null):Record<string,string>{
  if(!allowed||!origin)return headers;
  headers['Access-Control-Allow-Origin']=origin;
  headers['Access-Control-Allow-Methods']='GET, POST, OPTIONS';
- headers['Access-Control-Allow-Headers']='authorization, content-type, x-lemma-cron';
+ headers['Access-Control-Allow-Headers']='authorization, content-type';
  return headers;
 }
