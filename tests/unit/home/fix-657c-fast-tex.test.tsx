@@ -37,7 +37,10 @@ describe('FIX #657c eager-route mathematical labels',()=>{
    expect(source,file).toContain("from '../../ui/FastTex'");
    expect(source,file).not.toContain("from '../../ui/Tex'");
   }
+  const baseCss=readFileSync('src/ui/FastTex.css','utf8');
+  expect(baseCss).toContain('overflow-wrap:anywhere');
   const fast=readFileSync('src/ui/FastTex.tsx','utf8');
   expect(fast).toContain("lazy(()=>import('./Tex')");
+  expect(fast).toContain("import './FastTex.css'");
  });
 });
