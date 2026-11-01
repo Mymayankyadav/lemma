@@ -50,6 +50,13 @@ describe('FIX-714a passive receipt producer signing',()=>{
   expect(new TextEncoder().encode(JSON.stringify(near)).length).toBeLessThan(3072);
   await expect(sign(near)).rejects.toThrow(/3 KB/);
  });
+ it('measures the entire signed payload in UTF-8 bytes, not JS characters',async()=>{
+  const unicode={...base,body:'∑'.repeat(900)};
+  const raw=JSON.stringify(unicode);
+  expect(raw.length).toBeLessThan(3072);
+  expect(new TextEncoder().encode(raw).length).toBeLessThan(3072);
+  await expect(sign(unicode)).rejects.toThrow(/3 KB/);
+ });
  it('fails closed on missing or unsafe row identity and extra visible actions',async()=>{
   for(const invalid of [
    {...base,id:0},
