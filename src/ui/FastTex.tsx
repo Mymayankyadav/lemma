@@ -6,7 +6,7 @@ import {lazy,Suspense} from 'react';
 // GFM autolinks, mathematical delimiters, entities and Markdown formatting.
 const RichTex=lazy(()=>import('./Tex').then(module=>({default:module.Tex})));
 const markupCharacters=new Set(['\\','$','`','*','_','~','[',']','<','>','!','#','|','&','{','}','\r','\n']);
-const domain=/(?:^|[\s(])(?:www\.)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?=$|[\s),.!?;:])/i;
+const domain=/(?:^|[\s(])(?:www\.)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?=$|[\s),.!?;:/#])/i;
 const email=/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b/;
 const protocol=/(?:https?|ftp):\/\//i;
 
