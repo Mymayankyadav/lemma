@@ -39,7 +39,7 @@
    icon:'/lemma/icons/lemma-192.png',badge:'/lemma/icons/badge-96.png',
    lang:'en-GB',dir:'ltr',timestamp:payload.ts,
    actions:payload.actions.slice(0,2).map(({action,title})=>({action,title})),
-   data:{id:payload.id,kind:payload.kind,url:payload.url,ts:payload.ts,
+   data:{id:payload.id,kind:payload.kind,tag:payload.tag,url:payload.url,ts:payload.ts,
     actions:payload.actions.slice(0,2),openToken:payload.openToken,dismissToken:payload.dismissToken}};
  }
  function clickDecision(data,action='',scope=APP_SCOPE){
