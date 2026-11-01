@@ -1,5 +1,5 @@
 import {useOutlet,useLocation,useNavigationType} from 'react-router';
-import {useEffect} from 'react';
+import {useLayoutEffect} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {getMode,getDemoProfile} from '../data/mode';
 import {saveOfflineSnapshot,readOfflineSnapshot,deleteOfflineSnapshot,isOfflineKey,stageOfflineHandoff,clearOfflineHandoff} from '../lib/offline-cache';
@@ -13,7 +13,11 @@ const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
  const queryClient=useQueryClient();
- useEffect(()=>{
+ // Register the owner-scoped pagehide handoff before the first visible paint.
+ // A rapid full-document navigation can happen after a heading is visible but
+ // before a passive useEffect runs, losing that route's only cached snapshot.
+ // This layout effect only registers listeners; serialization stays deferred.
+ useLayoutEffect(()=>{
   let disposed=false,identity:string|null=null,saveTimer:ReturnType<typeof setTimeout>|null=null;
   let idleSave:number|null=null;
   let lastSavedAt=0;
