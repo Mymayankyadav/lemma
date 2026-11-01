@@ -620,6 +620,45 @@ export class DemoAdapter implements LemmaApi {
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
     });
   }
+  /** Project needs daily-limited checkpoint counts, not ReviewItem faces.
+   * Build only the minimal state/note identity records used by dueToday,
+   * preserving its global daily caps, due order and sibling de-duplication.
+   * This avoids creating thousands of rich card objects, glyph lookups and
+   * cloned FSRS states before the Route can paint.
+   */
+  private projectDueCounts(projectId:string):Map<string,number>{
+    const now=this.now();
+    const {start,end}=studyDayBounds(now,this.store.settings.timeZone,
+      this.store.settings.rolloverHour);
+    const today=this.store.reviews.filter(r=>!r.undoneAt&&
+      Date.parse(r.reviewedAt)>=start&&Date.parse(r.reviewedAt)<=now);
+    const activeProjects=new Set(this.store.projects
+      .filter(p=>p.status!=='archived'&&!p.system).map(p=>p.id));
+    const candidates:Array<{
+      state:CardState;noteId:string;projectId:string;
+      checkpointCode?:string|null;
+    }>=[];
+    for(const note of this.reviewNotes()){
+      if(note.note.status!=='active'||!activeProjects.has(note.projectId))continue;
+      for(const card of note.cards){
+        if(card.state.state!==0&&!(this.dueTime(card.state.due)<end))continue;
+        candidates.push({
+          state:card.state,noteId:note.note.noteId,
+          projectId:note.projectId,checkpointCode:note.note.checkpointCode,
+        });
+      }
+    }
+    const selected=dueToday(candidates,this.store.settings,{
+      now,answeredToday:today.length,
+      newAnsweredToday:today.filter(r=>r.stateBefore===0).length,
+    });
+    const counts=new Map<string,number>();
+    for(const item of selected){
+      if(item.projectId!==projectId||!item.checkpointCode)continue;
+      counts.set(item.checkpointCode,(counts.get(item.checkpointCode)??0)+1);
+    }
+    return counts;
+  }
   /** Direct Project renders a long prerequisite chain all at once. The
    * normal cpUi() recursion deliberately has per-call cycle protection, but
    * calling it for each of 100 rows repeats the entire chain and a civil-day
@@ -1235,14 +1274,7 @@ export class DemoAdapter implements LemmaApi {
     const approved=baseCheckpoints.filter(cp=>!cp.proposed);
     const done=approved.filter(cp=>cp.status==='demonstrated').length;
     const total=approved.length;
-    const eligible=this.eligible();
-    // The bounded daily queue is shared by all checkpoint rows. Index it once
-    // instead of scanning it separately for each checkpoint.
-    const dueByCode=new Map<string,number>();
-    for(const card of eligible){
-      if(card.projectSlug!==p.slug||!card.checkpointCode)continue;
-      dueByCode.set(card.checkpointCode,(dueByCode.get(card.checkpointCode)??0)+1);
-    }
+    const dueByCode=this.projectDueCounts(p.id);
     const uiById=this.projectUiIndex(baseCheckpoints);
     return {
       project: this.projectValue(p),
