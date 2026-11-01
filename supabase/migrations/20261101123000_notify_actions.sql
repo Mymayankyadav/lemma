@@ -113,56 +113,7 @@ begin
         into owner_zone,owner_rollover,study_time
         from public.settings where user_id=p_user;
       if not found then raise exception 'bad_action'; end if;
-      if study_time !~ '^([01][0-9]|2[0-3]):[0-5][0-9]
-    insert into public.notify_holds(user_id,scope,"until")
-      values(p_user,hold_scope,hold_until)
-      on conflict(user_id,scope) do update set "until"=excluded."until";
-    result:=jsonb_build_object('hold',hold_scope,'until',hold_until);
-  elsif p_action='approve_cards' then
-    if jsonb_typeof(p_extra->'ids') is distinct from 'array'
-      or jsonb_array_length(p_extra->'ids')>50
-      or exists(select 1 from jsonb_array_elements(p_extra->'ids') as item(value)
-        where jsonb_typeof(item.value)<>'string'
-          or (item.value #>> '{}') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') then
-      raise exception 'bad_action';
-    end if;
-    select coalesce(array_agg(value::uuid),'{}'::uuid[]) into ids
-      from jsonb_array_elements_text(p_extra->'ids') as items(value);
-    result:=public.approve_card_proposals(p_user,ids);
-    action_number:=(result->>'action')::bigint;
-    if action_number is not null then
-      insert into public.notifications(
-        user_id,kind,key,project_id,title,body,url,facts,due_at,status
-      ) values (
-        p_user,'confirm','confirm:'||p_notification::text,notice.project_id,
-        case when jsonb_array_length(result->'skipped')=0
-          then 'Approved '||jsonb_array_length(result->'approved')||' cards'
-          else 'Approved '||jsonb_array_length(result->'approved')||' of '||
-            jsonb_array_length(result->'approved')+jsonb_array_length(result->'skipped')||' cards' end,
-        'Undo is in the app, or here for 48 hours.','#/review',
-        jsonb_build_object('action',action_number,'approved',result->'approved','skipped',result->'skipped'),
-        now(),'queued'
-      ) returning id into confirm_id;
-      result:=result || jsonb_build_object('confirmId',confirm_id);
-    end if;
-  elsif p_action='undo' then
-    if (p_extra->>'action') is null
-      or (p_extra->>'action') !~ '^[0-9]+$'
-      or (p_extra->>'action')::bigint is distinct from (notice.facts->>'action')::bigint then
-      raise exception 'bad_action';
-    end if;
-    result:=public.undo_action(p_user,(p_extra->>'action')::bigint,false);
-  end if;
-  return jsonb_build_object('status','done','kind',notice.kind) || result;
-end $act$;
-
-revoke all on function public.notify_act(uuid,bigint,text,jsonb) from public,anon,authenticated;
-grant execute on function public.notify_act(uuid,bigint,text,jsonb) to service_role;
-
--- Down (run before NOTIF-1a's down):
--- drop function if exists public.notify_act(uuid,bigint,text,jsonb);
--- drop function if exists public.approve_card_proposals(uuid,uuid[]);
- then study_time:='19:00'; end if;
+      if study_time !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then study_time:='19:00'; end if;
       local_time:=now() at time zone coalesce(owner_zone,'UTC');
       hold_until:=(
         (local_time::date+1)::timestamp + study_time::time
@@ -189,7 +140,11 @@ grant execute on function public.notify_act(uuid,bigint,text,jsonb) to service_r
         user_id,kind,key,project_id,title,body,url,facts,due_at,status
       ) values (
         p_user,'confirm','confirm:'||p_notification::text,notice.project_id,
-        'Cards added','Cards are ready to review.','#/review',
+        case when jsonb_array_length(result->'skipped')=0
+          then 'Approved '||jsonb_array_length(result->'approved')||' cards'
+          else 'Approved '||jsonb_array_length(result->'approved')||' of '||
+            (jsonb_array_length(result->'approved')+jsonb_array_length(result->'skipped'))||' cards' end,
+        'Undo is in the app, or here for 48 hours.','#/review',
         jsonb_build_object('action',action_number,'approved',result->'approved','skipped',result->'skipped'),
         now(),'queued'
       ) returning id into confirm_id;
@@ -201,6 +156,7 @@ grant execute on function public.notify_act(uuid,bigint,text,jsonb) to service_r
       or (p_extra->>'action')::bigint is distinct from (notice.facts->>'action')::bigint then
       raise exception 'bad_action';
     end if;
+    perform pg_catalog.set_config('lemma.source','system',true);
     result:=public.undo_action(p_user,(p_extra->>'action')::bigint,false);
   end if;
   return jsonb_build_object('status','done','kind',notice.kind) || result;
