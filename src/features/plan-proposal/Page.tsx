@@ -19,7 +19,7 @@ import {
   useRejectProposal,
   useSettings,
 } from "../../data/hooks";
-import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, R} from "./planMap";
+import {groupPlanStages, layoutPlanMap, layoutStagePlanMap, planChangeMapNodes, R} from "./planMap";
 import {IdeaGraph} from "../atlas/IdeaGraph";
 import type {ReviewNode} from "./nodes";
 import {preparePlanProposal} from "./prepared";
@@ -310,6 +310,14 @@ export default function Page() {
   const waitingForProject=Boolean(p?.planChange&&project.isPending);
   const prepared = useMemo(() => preparePlanProposal(waitingForProject?null:p,project.data),[p,project.data,waitingForProject]);
   const {nodes,ideaTree,ideaCount,stages}=prepared;
+  // Only the map is contextual; the list, drawer and Ideas graph retain every checkpoint.
+  const mapNodes=useMemo(
+    ()=>planChangeMapNodes(nodes,p?.planChange ?? null,project.data?.checkpoints ?? []),
+    [nodes,p?.planChange,project.data?.checkpoints],
+  );
+  const removedPrerequisites=p?.planChange?.ops.flatMap(op=>
+    op.op==="prereq_remove" ? [op.prereq+" → "+op.code] : [],
+  ) ?? [];
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
   const openCheckpoint = useCallback((code: string) => { setSelected(code); setDrawer(code); },[]);
   const pending = approve.isPending || reject.isPending;
@@ -403,13 +411,25 @@ export default function Page() {
             </div>
           </div>
           {waitingForProject && <p role="status" className="text-label text-ink-3">Preparing project context…</p>}
-          {nodes.length > 0 && (
+          {p.planChange && mapNodes.length > 0 && (
+            <p className="text-caption text-ink-2" data-change-map-count="">
+              Change context · {mapNodes.length} of {nodes.length} checkpoints shown. Full plan below.
+            </p>
+          )}
+          {removedPrerequisites.length > 0 && (
+            <p className="text-caption text-ink-2" data-removed-prerequisite="">
+              Removed prerequisite: {removedPrerequisites.join(", ")}. These links are no longer active and are not drawn.
+            </p>
+          )}
+          {mapNodes.length > 0 ? (
             <StablePlanMap
-              nodes={nodes}
+              nodes={mapNodes}
               selected={drawer ?? ""}
               onSelect={openCheckpoint}
             />
-          )}
+          ) : p.planChange ? (
+            <p className="text-label text-ink-2">No checkpoint changes in this proposal. Review the ideas below.</p>
+          ) : null}
           <section aria-label="Checkpoints" className="flex flex-col gap-4">
             {stages.length>5 && <nav aria-label="Jump to stage" className="flex gap-2 overflow-x-auto pb-2">
               {stages.map((stage,i) => <button key={stage.id} type="button" title={plainMath(stage.name)}
