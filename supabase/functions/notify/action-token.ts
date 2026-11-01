@@ -74,3 +74,16 @@ export async function verifyActionToken(token:string,secret:string,nowSeconds=Ma
  try{parsed=JSON.parse(decoder.decode(body))}catch{bad()}
  return validate(parsed,nowSeconds);
 }
+
+/** Authenticate the public /tick route without timing-sensitive string equality. */
+export async function verifyCronHeader(header:string|null,secret:string):Promise<boolean>{
+ if(!header||!secret||header.length>512||secret.length>512)return false;
+ const [actual,expected]=await Promise.all([
+  crypto.subtle.digest('SHA-256',encoder.encode(header)),
+  crypto.subtle.digest('SHA-256',encoder.encode(secret)),
+ ]);
+ const a=new Uint8Array(actual),b=new Uint8Array(expected);
+ let mismatch=0;
+ for(let i=0;i<32;i++)mismatch|=a[i]^b[i];
+ return mismatch===0;
+}
