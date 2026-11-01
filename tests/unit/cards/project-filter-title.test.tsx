@@ -27,11 +27,15 @@ describe('ST-4 project filters preserve mathematical titles',()=>{
   const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title:'**Topology**'}));
   expect(html).toContain('<strong>Topology</strong>');
  });
- it('FIX #608: GFM bare domains and email addresses retain autolinks',()=>{
-  for(const title of ['example.org','person@example.org']){
+ it('FIX #608: GFM www domains and email addresses retain autolinks',()=>{
+  for(const title of ['www.example.org','person@example.org']){
    const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title}));
    expect(html,'expected rich link for '+title).toContain('href=');
   }
+  // Marked 18's GFM tokenizer does not autolink bare example.org, but keep
+  // domain-like labels on the conservative rich path for parser parity.
+  const bare=renderToStaticMarkup(createElement(ProjectFilterTitle,{title:'example.org'}));
+  expect(bare).toContain('lemma-tex-inline');
  });
  it('FIX #608: encoded HTML entities are not double escaped by the fast path',()=>{
   const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title:'Proof &amp; logic'}));
