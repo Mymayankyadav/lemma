@@ -116,12 +116,15 @@ export default function Page(){
  const cardMotion=useAnimationControls();
  const [stamp,setStamp]=useState(false),[calibrationNote,setCalibrationNote]=useState<string|null>(null);
  const previousCardId=useRef<string|null>(null);
+ const firstCard=useRef(true);
  useEffect(()=>{
   const cardId=current?current.cardId+':'+answers.length:null;
   if(previousCardId.current===cardId)return;
   previousCardId.current=cardId;
+  const first=firstCard.current;
+  firstCard.current=false;
   dragX.set(0);dragY.set(0);setStamp(false);
-  void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:reduce?0:.48}});
+  void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:reduce||first?0:.48}});
   setDraft(null);
   setSheetOpen(false);
  },[current?.cardId,answers.length,reduce]);
@@ -249,7 +252,7 @@ export default function Page(){
    <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>setSheetOpen(true)}/>
   </header>
   <div>
-   <motion.div key={current.cardId} initial={reduce?false:{opacity:0,y:34,scale:0.94}} animate={cardMotion}
+   <motion.div key={current.cardId} initial={firstCard.current?false:reduce?false:{opacity:0,y:34,scale:0.94}} animate={cardMotion}
     exit={{opacity:0,transition:{duration:0}}} transition={{duration:reduce?0:.48}}
     drag={revealed&&!submitting&&current.front.length<500&&current.back.length<500} dragElastic={0.6} dragSnapToOrigin
     dragConstraints={{left:0,right:0,top:0,bottom:0}}
