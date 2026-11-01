@@ -73,7 +73,10 @@ export default function AppShell(){
   };
   const queueSave=()=>{
    if(disposed||!identity||!navigator.onLine)return;
-   cancelQueuedSave();
+   // Throttle the first save rather than debouncing it. Repeated successful
+   // queries on busy S/X screens must not keep resetting the idle deadline
+   // forever; the callback snapshots the latest query cache when it runs.
+   if(saveTimer||idleSave!==null)return;
    // A 150ms snapshot serialization competed with cold React/KaTeX paint.
    // Persist after the 1500ms render budget, then when the browser is idle.
    // Sudden offline transitions flush this pending cache save immediately.
