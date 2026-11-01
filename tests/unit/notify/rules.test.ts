@@ -52,6 +52,19 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   const london={...base,now:Date.UTC(2026,10,1,23,0),timeZone:'Europe/London'}
   expect(quietUntil(london,'due:1')).not.toBeNull()
  })
+ it('releases at the real local quiet end across both London DST changes',()=>{
+  const london={...base,timeZone:'Europe/London'}
+  // Spring-forward: 07:30 BST is 06:30 UTC on 29 March 2026.
+  const spring=quietUntil({...london,now:Date.UTC(2026,2,29,0,30)},'due:dst')
+  expect(spring).not.toBeNull()
+  expect(spring!).toBeGreaterThanOrEqual(Date.UTC(2026,2,29,6,30))
+  expect(spring!).toBeLessThanOrEqual(Date.UTC(2026,2,29,6,40))
+  // Fall-back: 07:30 GMT is 07:30 UTC on 25 October 2026.
+  const fall=quietUntil({...london,now:Date.UTC(2026,9,25,0,30)},'due:dst')
+  expect(fall).not.toBeNull()
+  expect(fall!).toBeGreaterThanOrEqual(Date.UTC(2026,9,25,7,30))
+  expect(fall!).toBeLessThanOrEqual(Date.UTC(2026,9,25,7,40))
+ })
  it('handles a full 50-candidate quiet-hour tick without repeated timezone construction',()=>{
   const quiet={...base,now:Date.UTC(2026,10,1,18,0)}
   const candidates=Array.from({length:50},(_,i)=>({...due,key:'due:'+i}))
