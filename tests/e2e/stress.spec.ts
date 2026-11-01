@@ -6,6 +6,10 @@ import { enforceStressBudgets } from '../../scripts/stress-gate';
 import { stressViolations } from '../../scripts/stress-limits';
 import { measureSvgMarks } from '../../scripts/stress-marks';
 
+// The ST-0 4× CPU hard budget is a first-attempt gate: a retry must never
+// turn a >1,500ms cold Today paint into a green acceptance result.
+test.describe.configure({retries:0});
+
 type Measurement = {
  route: string; actualRoute: string; profile: string; theme: string; width: number;
  nodes: number; horizontalOverflow: number; smallText: number; smallMath: number;
