@@ -53,16 +53,25 @@ for(const width of [360,390] as const){
   await page.screenshot({path:`test-results/screens/and1/today-${profile}-${theme}-${width}.png`})
  })
 }
-for(const theme of ['graph','graph-night'] as const){
- test(`AND-1 real demo listing screenshots ${theme} 1080x1920`,async({page})=>{
-  test.setTimeout(120_000)
-  await page.setViewportSize({width:1080,height:1920})
-  const prefix='/lemma/?demo=1&theme='+theme
-  await page.goto(prefix+'#/',{waitUntil:'domcontentloaded'})
-  await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible()
-  await page.screenshot({path:`test-results/screens/and1/listing-today-${theme}-1080x1920.png`,animations:'disabled'})
-  await page.goto(prefix+'#/atlas',{waitUntil:'domcontentloaded'})
-  await expect(page.getByRole('heading',{name:'Atlas',exact:true,level:1})).toBeVisible()
-  await page.screenshot({path:`test-results/screens/and1/listing-atlas-${theme}-1080x1920.png`,animations:'disabled'})
- })
-}
+// A 1080 CSS-pixel viewport at the default 2× DPR produced 2160×3840
+// images while naming them 1080×1920. Use a genuine 360×640 phone at 3×
+// DPR, and verify the PNG IHDR rather than trusting the filename.
+test.describe('AND-1 real 1080×1920 listing captures',()=>{
+ test.use({deviceScaleFactor:3})
+ for(const theme of ['graph','graph-night'] as const){
+  test(`AND-1 real demo listing screenshots ${theme} 1080x1920`,async({page})=>{
+   test.setTimeout(120_000)
+   await page.setViewportSize({width:360,height:640})
+   await page.emulateMedia({colorScheme:theme==='graph'?'light':'dark',reducedMotion:'reduce'})
+   const prefix='/lemma/?demo=1&theme='+theme
+   await page.goto(prefix+'#/',{waitUntil:'domcontentloaded'})
+   await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible()
+   const today=await page.screenshot({path:`test-results/screens/and1/listing-today-${theme}-1080x1920.png`,scale:'device',fullPage:false,animations:'disabled'})
+   expect([today.readUInt32BE(16),today.readUInt32BE(20)]).toEqual([1080,1920])
+   await page.goto(prefix+'#/atlas',{waitUntil:'domcontentloaded'})
+   await expect(page.getByRole('heading',{name:'Atlas',exact:true,level:1})).toBeVisible()
+   const atlas=await page.screenshot({path:`test-results/screens/and1/listing-atlas-${theme}-1080x1920.png`,scale:'device',fullPage:false,animations:'disabled'})
+   expect([atlas.readUInt32BE(16),atlas.readUInt32BE(20)]).toEqual([1080,1920])
+  })
+ }
+})
