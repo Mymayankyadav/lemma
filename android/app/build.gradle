@@ -9,7 +9,7 @@ android {
   applicationId twa.packageId
   minSdk 23
   targetSdk 35
-  versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: twa.appVersionCode.toString()).toInteger()
+  versionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
   versionName twa.appVersionName
   resValue 'string', 'app_name', twa.name
  }
