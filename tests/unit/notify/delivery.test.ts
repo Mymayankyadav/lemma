@@ -80,6 +80,8 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
    {kind:'unexpected' as DeliveryRequest['kind']},
    {kind:'digest'},
    {tag:'another'},
+   {payload:{...base.payload,kind:undefined}},
+   {payload:{...base.payload,tag:undefined}},
    {payload:{...base.payload,body:'x'.repeat(3100)}},
   ]){
    expect(await sendWebPush({...base,...change},fetcher)).toEqual({status:'failed'});
