@@ -58,12 +58,12 @@ export function isOfflineKey(key:readonly unknown[]):key is OfflineKey {
  if(key.length===3)return key[0]==='checkpoint'&&typeof key[1]==='string'&&!!key[1]&&typeof key[2]==='string'&&!!key[2]
  return false
 }
-/** Normalize common API/Push/Widget credential key spellings before redaction.
- * Never let snake_case or kebab-case keys bypass the offline allowlist. */
+/** Normalize API/Push/Widget and private credential key spellings before redaction.
+ * Never let snake_case, kebab-case, dots or spaces bypass the offline allowlist. */
 const privateKey=(key:string):boolean=>{
  const normalized=key.replace(/[^a-z0-9]/gi,'').toLowerCase()
  return normalized==='auth'||normalized==='endpoint'||
-  /(?:connector|secret|token|authorization|credential|subscription|pushkey|widgetkey|sessionkey|password|apikey|refreshkey|p256dh|authkey)/.test(normalized)
+  /(?:connector|secret|token|authorization|credential|subscription|pushkey|widgetkey|sessionkey|password|apikey|refreshkey|p256dh|authkey|privatekey|servicerolekey|accesskey|vapidkey)/.test(normalized)
 }
 const privateValue=/(?:\/functions\/v1\/mcp\/|\/mcp\/[^\s/]+|bearer\s+\S+|SENTINEL-SECRET|sb_secret_|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b)/i
 /** Defense in depth for non-Settings records: only allowlisted queries, then redact. */
