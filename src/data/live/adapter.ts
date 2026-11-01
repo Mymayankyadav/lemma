@@ -7,6 +7,7 @@ import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
 import { LemmaError, notImplemented } from '../api'
+import { mergeNotifyPrefs } from '../notify'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
 
 type HomeReviewOutlook={
@@ -179,6 +180,10 @@ export class LiveAdapter implements LemmaApi {
   const [patch]=args
   const db=liveClient(), uid=await owner(db)
   const dbPatch=toDb(patch)
+  if(patch.notify && typeof patch.notify==='object'){
+   const before=await this.getSettings()
+   dbPatch.notify=mergeNotifyPrefs(before.notify,patch.notify)
+  }
   for (const key of ['connector_secret','connector_last_client','connector_last_seen_at','user_id']) delete dbPatch[key]
   if(!Object.keys(dbPatch).length) return this.getSettings()
   return settingsRow(checked(await db.from('settings').update(dbPatch).eq('user_id',uid).select('*').single()) as Row)
