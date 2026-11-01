@@ -22,6 +22,13 @@ describe('FIX-659h direct Project prerequisite status',()=>{
   expect(actual).toEqual(expected);
   expect(actual.checkpoints.length).toBeGreaterThanOrEqual(100);
   expect(old.mock.calls.length).toBeLessThanOrEqual(1);
+  // Independently compare every optimized status with the original
+  // cycle-aware cpUi implementation, not just another optimized adapter.
+  const hydrated=(api as unknown as {store:DemoStore}).store;
+  for(const cp of hydrated.checkpoints.filter(cp=>cp.projectId===hydrated.projects[3].id)){
+   const row=actual.checkpoints.find(row=>row.id===cp.id)!;
+   expect(row.ui,cp.code).toBe(subject.cpUi(cp));
+  }
  },30_000);
 
  it('preserves the cycle-safe original fallback for malformed plans',async()=>{
