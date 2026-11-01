@@ -406,7 +406,7 @@ export default function Page() {
                     data-comment-row
                     className="border-l-2 border-amber py-2 pl-4 pr-2"
                   >
-                    <p className="font-math text-body-l italic">{c.body}</p>
+                    <MathText source={c.body} variant="body" className="font-math text-body-l italic" />
                     <p className="mt-3 text-label text-ink-3">
                       <span className="mr-2 inline-block size-1.5 rounded-full bg-amber" />
                       Next time you ask to update cards · {age(c.createdAt)}
@@ -429,7 +429,7 @@ export default function Page() {
                       Addressed
                       {c.resolvedByOrigin ? ` by ${c.resolvedByOrigin}` : ""}
                     </summary>
-                    <p className="mt-3 text-ink-3">{c.body}</p>
+                    <MathText source={c.body} variant="body" className="mt-3 text-ink-3" />
                   </details>
                 ))}
               {!visibleComments.length && (
