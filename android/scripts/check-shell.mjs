@@ -34,6 +34,9 @@ ensure(await exists('android/gradlew') && await exists('android/gradle/wrapper/g
   'Gradle wrapper required')
 ensure(await exists('android/app/src/main/res/drawable/ic_stat_lemma.xml'),
   'monochrome notification glyph required')
+const splash = await get('android/app/src/main/res/drawable/ic_launcher.xml')
+ensure(splash.includes('@color/paper') && splash.includes('@color/ink'),
+  'splash glyph and background must use day/night resource colours')
 const workflow = await get('.github/workflows/android.yml')
 for (const required of ['workflow_dispatch:', 'android-v*', 'lint', 'bundleRelease',
   'ANDROID_UPLOAD_KEYSTORE_BASE64', 'ANDROID_UPLOAD_KEYSTORE_PASSWORD',
