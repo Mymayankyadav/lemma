@@ -21,6 +21,10 @@ describe('FIX #614 v4 large-project summary Route',()=>{
   expect(result.checkpoints.slice(8,16).every(cp=>cp.stage==='CP9–16')).toBe(true);
   expect(result.foldedLabel).toBe('4 groups · 28 to go');
   expect(result.scheduleRows).toHaveLength(36);
+  const forty=summaryRouteCheckpoints(project({total:40}));
+  expect(forty.checkpoints).toHaveLength(40);
+  expect(forty.checkpoints.slice(32).every(cp=>cp.stage==='CP33–40')).toBe(true);
+  expect(forty.foldedLabel).toBe('4 groups · 32 to go');
  });
  it('preserves real stage totals, the current checkpoint link and done counts from the summary',()=>{
   const result=summaryRouteCheckpoints(project({
