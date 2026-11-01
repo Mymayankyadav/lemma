@@ -2,7 +2,6 @@ import {useOutlet,useLocation,useNavigationType} from 'react-router';
 import {useEffect} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {getMode,getDemoProfile} from '../data/mode';
-import {liveClient} from '../data/live/client';
 import {saveOfflineSnapshot,readOfflineSnapshot,deleteOfflineSnapshot,isOfflineKey} from '../lib/offline-cache';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
@@ -61,9 +60,13 @@ export default function AppShell(){
    if(event.query.state.status==='error'&&event.query.state.data===undefined&&
     error?.code!=='auth')void restore();
   });
+  // The live Supabase client is large. Keep it in an async chunk so demo
+  // cold Today does not pay its parse cost; the PWA precaches this chunk.
+  const loadLiveClient=async()=>(await import('../data/live/client')).liveClient();
   let authSubscription:{unsubscribe:()=>void}|null=null;
-  try{authSubscription=getMode()==='live'
-   ?liveClient().auth.onAuthStateChange((event,session)=>{
+  if(getMode()==='live')void loadLiveClient().then(client=>{
+   if(disposed)return;
+   authSubscription=client.auth.onAuthStateChange((event,session)=>{
       authEventSeen=true;
       if(event==='SIGNED_OUT'){
        if(saveTimer)clearTimeout(saveTimer);
@@ -76,12 +79,12 @@ export default function AppShell(){
        if(previous)void pendingSave.then(()=>deleteOfflineSnapshot(previous)).catch(()=>{});
        if(!navigator.onLine)void restore();else queueSave();
       }
-     }).data.subscription:null;
-  }catch{/* AuthGate reports missing live configuration; no snapshot is opened. */}
+     }).data.subscription;
+  }).catch(()=>{/* AuthGate reports missing live configuration; no snapshot is opened. */});
   void (async()=>{
    try{
     const initialIdentity=getMode()==='demo'?'demo-'+getDemoProfile():
-     (await liveClient().auth.getSession()).data.session?.user.id??null;
+     (await (await loadLiveClient()).auth.getSession()).data.session?.user.id??null;
     // A later SIGNED_OUT/SIGNED_IN event takes precedence over a stale getSession response.
     if(disposed||authEventSeen)return;
     identity=initialIdentity;
