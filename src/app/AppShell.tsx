@@ -50,7 +50,15 @@ export default function AppShell(){
    saveTimer=setTimeout(()=>{saveTimer=null;void save()},150);
   };
   const onOffline=()=>{void restore()};
-  const onOnline=()=>{publish(null);queueSave()};
+  const onOnline=()=>{
+   // A browser 'online' event does not prove the API is reachable. Keep a
+   // restored live snapshot read-only until a newer query succeeds.
+   if(getMode()==='live'&&document.documentElement.dataset.offlineSavedAt){
+    void queryClient.invalidateQueries({refetchType:'active'});
+    return;
+   }
+   publish(null);queueSave();
+  };
   const unsubscribe=queryClient.getQueryCache().subscribe(event=>{
    if(event.type!=='updated'||!isOfflineKey(event.query.queryKey))return;
    if(event.query.state.status==='success'){
