@@ -102,3 +102,23 @@ describe('FIX #483 density fallback',()=>{
   }
  });
 });
+
+
+describe('LOOK-4b/4c variable-height wire integration',()=>{
+ it('aligns orthogonal wire endpoints and bundle anchors with measured row centers',()=>{
+  // Field rows are 56px, ordinary rows 44px, and the hierarchy adds gaps.
+  // Fixed row-index * 44 geometry would attach these links to empty paper.
+  const centers=[28,78,122,166,210];
+  const selected=[arcs[0]];
+  const positions=layoutBundleLabels(selected,5,centers,250);
+  expect(positions.get('long-prereq')?.anchorY).toBe(119);
+  const markup=renderToStaticMarkup(createElement(Wires,{
+   arcs:selected,rows:5,focus:null,centers,heightPx:250,
+  }));
+  expect(markup).toContain('data-atlas-wires="true"');
+  expect(markup).toContain('height="250"');
+  expect(markup).toContain('d="M 8 28 H 78 Q 83 28');
+  expect(markup).toContain('cy="28"');
+  expect(markup).toContain('V 205 Q 83 210');
+ });
+});
