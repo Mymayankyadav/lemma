@@ -11,7 +11,7 @@ describe('FIX #632: split Atlas module does not inflate C2 transition',()=>{
   expect(paths).toContain("if(getMode()==='demo')void import('../atlas/Page')");
   expect(paths).toContain("prefetchAtlasForPaths(queryClient,getMode(),()=>getApi().getAtlas())");
   const mount=paths.slice(paths.indexOf('export default function Page(){'));
-  const effect=mount.slice(0,mount.indexOf('const projects=useProjects()'));
+  const effect=mount.slice(0,mount.indexOf('const warmAtlas=useCallback'));
   expect(effect).toContain("import('../atlas/Page')");
   expect(effect).not.toContain('prefetchAtlasForPaths(');
   expect(effect).not.toContain('getApi().getAtlas()');
