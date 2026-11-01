@@ -70,7 +70,7 @@ import {
 } from "../../lib/derive";
 import { filterReviewItems } from "../../lib/queue";
 import { parseSteps } from "../../lib/fsrs";
-import legacyRender from "../../lib/render/render.js";
+import {clozeOrds} from "./cloze";
 import { slugify } from "../../lib/text";
 import { DAY } from "../../lib/calendar";
 import {reviewForecast} from "../../lib/review-forecast";
@@ -1116,7 +1116,7 @@ export class DemoAdapter implements LemmaApi {
       note.note.type === "reverse"
         ? [1, 2]
         : note.note.type === "cloze"
-          ? legacyRender.clozeOrds(note.note.front).filter((n) => n > 0)
+          ? clozeOrds(note.note.front).filter((n) => n > 0)
           : [1];
     const desired = ords.length ? ords : [1],
       removed = note.cards
