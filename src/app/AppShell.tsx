@@ -52,9 +52,11 @@ export default function AppShell(){
       if(event==='SIGNED_OUT'){
        if(saveTimer)clearTimeout(saveTimer);
        const previous=identity;identity=null;publish(null);
+       queryClient.clear(); // No signed-out route may retain the former owner's in-memory queries.
        if(previous)void pendingSave.then(()=>deleteOfflineSnapshot(previous)).catch(()=>{});
       }else if(session?.user?.id&&session.user.id!==identity){
        const previous=identity;identity=session.user.id;publish(null);
+       if(previous)queryClient.clear(); // Switching accounts must also clear live in-memory data.
        if(previous)void pendingSave.then(()=>deleteOfflineSnapshot(previous)).catch(()=>{});
        if(!navigator.onLine)void restore();else queueSave();
       }
