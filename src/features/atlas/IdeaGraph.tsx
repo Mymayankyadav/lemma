@@ -15,6 +15,7 @@ import {buildAtlasRowGeometry} from './rowGeometry';
 export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string;onCheckpoint?:(code:string)=>void}){
  const branches=useMemo(()=>[...tree.nodes.values()].filter(n=>n.children.length),[tree]);
  const ideas=useMemo(()=>[...tree.nodes.values()].filter(n=>!n.synthetic).length,[tree]);
+ const recheckNodes=useMemo(()=>[...tree.nodes.values()].filter(n=>!n.synthetic&&n.status==='revisit'),[tree]);
  // Small plans open fully; large ones open one level so the clusters and their links read first.
  const initial=()=>ideas>14?expandedToDepth(tree,2):new Set(branches.map(n=>n.id));
  const [expanded,setExpanded]=useState<Set<string>>(initial);
@@ -83,6 +84,9 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
    <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
     className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-edge bg-[var(--paper-2)] font-semibold text-ink':'border-edge text-ink-2')}>
     <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
+   {recheckNodes.length>0&&<button type="button" onClick={()=>jump(recheckNodes[0].id)}
+    className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold"
+    style={{color:'var(--late)'}}>Re-check {recheckNodes.length}</button>}
   </div>
   {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge p-3" style={{background:'var(--paper)'}}>
    <div className="flex items-start gap-2">
@@ -104,6 +108,13 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
     style={{background:'var(--paper)'}}>
     <AtlasDetailsPath names={selectedPath.map(n=>n.name)} onSelect={i=>jump(selectedPath[i].id)}/>
     <p className="text-label text-ink-2">{levelName[selected.level]} · {statusName[selected.status]}</p>
+    <div role="progressbar" aria-label="Idea progress" aria-valuemin={0} aria-valuemax={100}
+     aria-valuenow={selected.total?Math.round(100*selected.done/selected.total):0}
+     aria-valuetext={selected.total?`${selected.done} of ${selected.total} demonstrated`:'No study progress yet'}
+     className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--paper-2)]">
+     <div className="h-full rounded-full bg-[var(--ink-2)]"
+      style={{width:`${selected.total?Math.round(100*selected.done/selected.total):0}%`}}/>
+    </div>
     {selected.blurb&&<Tex source={selected.blurb} className="block text-[16px] text-ink-2"/>}
     <p className="text-label" aria-label="Idea connections">
      <span style={{color:'var(--link)'}}>Builds on {near.needs.length}</span>
