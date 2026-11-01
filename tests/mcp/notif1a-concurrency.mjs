@@ -5,7 +5,9 @@ import pg from 'pg'
 import {readFile} from 'node:fs/promises'
 const {Client}=pg
 const url=process.env.NOTIF_TEST_DATABASE_URL
-if(!url||!url.includes('localhost'))throw Error('Isolated local PostgreSQL URL required')
+if(!url)throw Error('Isolated local PostgreSQL URL required')
+const endpoint=new URL(url)
+if(!['localhost','127.0.0.1'].includes(endpoint.hostname))throw Error('Refusing non-local PostgreSQL URL')
 const owner='11111111-1111-1111-1111-111111111111'
 const client=async()=>{const c=new Client({connectionString:url});await c.connect();return c}
 const admin=await client()
