@@ -4,6 +4,7 @@
  * JWT verification and never looks up a device without its owner id.
  */
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const BASE64URL=/^[A-Za-z0-9_-]+={0,2}$/;
 const CLOCK=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
 export interface TestDevice {
  id:string;
@@ -35,11 +36,11 @@ function usableSubscription(value:unknown):boolean{
  const subscription=value as Record<string,unknown>;
  const endpoint=subscription.endpoint;
  const keys=subscription.keys;
- if(typeof endpoint!=='string'||endpoint.length>4096||/[\x00-\x20\x7f]/u.test(endpoint))return false;
+ if(typeof endpoint!=='string'||endpoint.length>1000||/[\x00-\x20\x7f]/u.test(endpoint))return false;
  if(!keys||typeof keys!=='object'||Array.isArray(keys))return false;
  const {p256dh,auth}=keys as Record<string,unknown>;
- if(typeof p256dh!=='string'||!p256dh||p256dh.length>1024||
-    typeof auth!=='string'||!auth||auth.length>1024)return false;
+ if(typeof p256dh!=='string'||!p256dh||p256dh.length>200||!BASE64URL.test(p256dh)||
+    typeof auth!=='string'||!auth||auth.length>50||!BASE64URL.test(auth))return false;
  try{
   const url=new URL(endpoint);
   return url.protocol==='https:'&&Boolean(url.hostname)&&!url.username&&!url.password&&!url.hash;
