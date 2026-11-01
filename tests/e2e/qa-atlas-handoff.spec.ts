@@ -9,7 +9,7 @@ for(const world of ['graph','graph-night'] as const){
   await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
   await page.goto(`/lemma/?demo=1&theme=${world}&effects=calm#/`);
-  await expect(page.getByRole('link',{name:/6 proposals to approve/})).toBeVisible();
+  await expect(page.getByRole('link',{name:/Review 6 tutor proposals/})).toBeVisible();
   await page.getByRole('navigation',{name:'Desk actions'}).getByRole('link',{name:'Open the Atlas'}).click();
   await expect(page).toHaveURL(/#\/atlas$/);
   await expect(page.getByRole('heading',{name:'Atlas',level:1})).toBeVisible();
