@@ -35,10 +35,10 @@
       if (location.hash.split('?')[0] === '#/review/run') {
         void import('/src/features/review-run/Page.tsx')
       } else {
-        // Non-review entries must fetch the App graph immediately; waiting
-        // for main.tsx's dynamic App import regressed Today cold 4× CPU.
-        // The module loader deduplicates this early request with main.tsx.
         void import('/src/app/App.tsx')
+        // Non-review entries fetch App before main.tsx's dynamic import;
+        // the module loader deduplicates the requests. Review-run keeps its
+        // own early route fetch and never preloads the App in this script.
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
