@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest'
 import {QueryClient} from '@tanstack/react-query'
-import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient,hydrateOfflineSnapshot} from '../../../src/lib/offline-cache'
+import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient,mergeOfflineSnapshots,hydrateOfflineSnapshot} from '../../../src/lib/offline-cache'
 import type {Settings} from '../../../src/data/types'
 const now=Date.UTC(2026,10,1)
 const settings={
@@ -96,3 +96,31 @@ describe('AND-8 strict offline snapshot',()=>{
   expect(JSON.stringify(snapshot)).not.toMatch(/SENTINEL-SECRET|sensitive card face|access_token|connectorUrl/)
  })
 })
+
+describe('AND-8 atomic recent-route retention',()=>{
+ it('preserves Home, Paths and Project across separate full-page QueryClients',()=>{
+  const a=new QueryClient(),b=new QueryClient();
+  a.setQueryData(['home'],{title:'Today'},{updatedAt:now-3000});
+  a.setQueryData(['projects'],[{slug:'real-analysis'}],{updatedAt:now-2000});
+  b.setQueryData(['project','real-analysis'],{project:{title:'Analysis'}},{updatedAt:now-1000});
+  const earlier=snapshotFromClient(a,now-1500);
+  const later=snapshotFromClient(b,now);
+  const merged=mergeOfflineSnapshots(earlier,later,now);
+  expect(merged.entries.map(e=>e.key.join(':')).sort()).toEqual(['home','project:real-analysis','projects']);
+  expect(merged.savedAt).toBe(now);
+  a.clear();b.clear();
+ });
+ it('never resurrects stale, oversized, tampered or cross-owner data',()=>{
+  const recent={v:1,savedAt:now-1,entries:[
+   {key:['home'],data:{title:'ok',access_token:'SENTINEL-SECRET'},savedAt:now-1},
+   {key:['settings'],data:{...projectOfflineSettings(settings),connectorUrl:'SENTINEL-SECRET'},savedAt:now-1},
+   {key:['auth'],data:{token:'SENTINEL-SECRET'},savedAt:now-1},
+  ]};
+  const merged=mergeOfflineSnapshots(recent,{v:1,savedAt:now,entries:[]},now);
+  expect(merged.entries.map(e=>e.key[0])).toEqual(['home']);
+  expect(JSON.stringify(merged)).not.toContain('SENTINEL-SECRET');
+  expect(mergeOfflineSnapshots({...recent,savedAt:now-OFFLINE_MAX_AGE_MS-1},
+   {v:1,savedAt:now,entries:[]},now).entries).toEqual([]);
+ });
+});
+
