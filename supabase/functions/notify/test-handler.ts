@@ -73,7 +73,9 @@ export async function handleTestPushRequest(
   return reply(404,'Device not available');
  try{
   const result=await deps.send(device,testMessage(device));
-  if(result.status==='sent')return reply(200,'Test reminder sent');
+  // Only an HTTP 201 from the push service confirms delivery acceptance.
+  // A contradictory or incomplete adapter result must not claim success.
+  if(result.status==='sent'&&result.httpStatus===201)return reply(200,'Test reminder sent');
   if(result.status==='gone')return reply(410,'Device no longer receives reminders');
  }catch{/* Generic response; never expose subscription details. */}
  return reply(503,'Could not send test reminder');
