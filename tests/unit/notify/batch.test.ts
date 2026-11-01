@@ -49,4 +49,26 @@ describe('NOTIF-4b2 50-send/20-second bounded batch',()=>{
   expect(result).toEqual({attempted:0,deferred:0,timedOut:false,results:[]});
   expect(send).not.toHaveBeenCalled();
  });
+ it('clamps caller-requested 500 sends and 100 workers to the hard limits',async()=>{
+  let active=0,peak=0;
+  send.mockImplementation(async()=>{
+   active++;peak=Math.max(peak,active);
+   await Promise.resolve();
+   active--;
+   return {status:'sent'};
+  });
+  const result=await sendPushBatch(Array.from({length:60},(_,i)=>request(i)),{
+   maxSends:500,concurrency:100,
+  });
+  expect(result).toMatchObject({attempted:50,deferred:10,timedOut:false});
+  expect(peak).toBeLessThanOrEqual(4);
+ });
+ it('never leaks an unexpected transport exception or claims it was sent',async()=>{
+  send.mockRejectedValueOnce(Error('secret endpoint credential'));
+  send.mockResolvedValue({status:'sent'});
+  const result=await sendPushBatch([request(0),request(1)]);
+  expect(result.attempted).toBe(2);
+  expect(result.results[0].result).toEqual({status:'retry'});
+  expect(JSON.stringify(result)).not.toMatch(/secret|endpoint|credential/i);
+ });
 });
