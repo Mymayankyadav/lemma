@@ -36,6 +36,11 @@ export const levelName:Record<ConceptLevel,string>={cluster:'Field',galaxy:'Area
  * This matters on the cold 2,500-idea Atlas where dozens of rows mount at once.
  */
 export function isPlainAtlasLabel(source:string):boolean{
+ // Marked/GFM auto-links bare domains such as example.org even without
+ // explicit Markdown punctuation. They must use Tex, not the fast text node.
+ // The fallback is conservative: mathematical prose remains escaped JSX.
+ if(/(?:^|[\s(])(?:www\.)?[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}(?=$|[\s),.!?;:])/i.test(source))
+  return false;
  return /^[A-Za-z0-9][A-Za-z0-9 ,.:;!?()'+-]*$/.test(source);
 }
 

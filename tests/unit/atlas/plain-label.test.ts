@@ -10,4 +10,11 @@ describe('LOOK-4b Atlas cold-render label safety',()=>{
   for(const label of [String.raw`$L^p$`,String.raw`\mathbb{R}^n`,'<script>alert(1)</script>','**Bold**','x_y'])
    expect(isPlainAtlasLabel(label)).toBe(false);
  });
+ it('does not bypass GFM autolinks for bare domains',()=>{
+  for(const label of ['example.org','www.example.com','Read example.org today',
+   '(example.org)','example.org:443','a.edu'])
+   expect(isPlainAtlasLabel(label)).toBe(false);
+  for(const label of ['Proof: 1.2','Cauchy-Schwarz','Topic 2.5'])
+   expect(isPlainAtlasLabel(label)).toBe(true);
+ });
 });
