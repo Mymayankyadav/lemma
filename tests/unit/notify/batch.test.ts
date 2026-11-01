@@ -86,4 +86,12 @@ describe('NOTIF-4b2 50-send/20-second bounded batch',()=>{
   expect(result).toMatchObject({timedOut:false,deferred:3,results:[]});
   expect(send).toHaveBeenCalledTimes(3);
  });
+ it('caps an oversized requested deadline at 19.5 seconds',async()=>{
+  vi.useFakeTimers();
+  send.mockImplementation(()=>new Promise(()=>{}));
+  const pending=sendPushBatch([request(0)],{maxMs:60_000});
+  await vi.advanceTimersByTimeAsync(19_500);
+  const result=await pending;
+  expect(result).toMatchObject({attempted:1,deferred:1,timedOut:true,results:[]});
+ });
 });
