@@ -140,6 +140,20 @@ try{
  assert.equal(afterTest.sentToday,beforeTest.sentToday)
  assert.equal(afterTest.lastSentAt,beforeTest.lastSentAt)
  console.log('PASS NOTIF-1b test sends do not consume daily cap or spacing')
+ // Test sends and confirmation receipts must not displace real reminder
+ // dedupe keys from the bounded lastByKey history after many deliveries.
+ await q(`insert into public.notifications(user_id,kind,key,title,body,url,due_at,status,sent_at)
+   select $1,'test','test:bulk:'||g.i,'Test','Hello','#/',now(),'sent',now()-make_interval(secs=>g.i)
+   from generate_series(1,60) g(i)`,[owner])
+ await q(`insert into public.notifications(user_id,kind,key,title,body,url,due_at,status,sent_at)
+   select $1,'confirm','confirm:bulk:'||g.i,'Confirmed','Done','#/',now(),'sent',now()-make_interval(secs=>g.i)
+   from generate_series(1,60) g(i)`,[owner])
+ const realKeys=(await facts()).history.lastByKey
+ assert.equal(Object.keys(realKeys).length,50)
+ assert.ok(Object.hasOwn(realKeys,'zz-recent'),'out-of-band sends must not evict real reminder keys')
+ assert.ok(Object.keys(realKeys).every(k=>!k.startsWith('test:')&&!k.startsWith('confirm:')),
+   'out-of-band keys must not occupy the bounded scheduling history')
+ console.log('PASS NOTIF-1b test and confirm sends do not evict reminder dedupe history')
  console.log('PASS NOTIF-1b dismissal streak resets on open and reaches three consecutive')
  await db.exec('reset role')
  await db.exec('set role authenticated')
