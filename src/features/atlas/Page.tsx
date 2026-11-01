@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ArrowLeft,ChevronRight,Info,MessageCircle,RotateCcw,Search,X} from 'lucide-react';
 import {getMode} from '../../data/mode';
@@ -7,8 +7,8 @@ import {FastTex as Tex} from '../../ui/FastTex';
 import {plainMath} from '../../lib/plain-math';
 import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
 import {Skeleton} from '../../ui/Skeleton';
-import {EmptyState} from '../../ui/EmptyState';
-import {Sheet} from '../../ui/Sheet';
+import type {EmptyStateProps} from '../../ui/EmptyState';
+import type {SheetProps} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outline';
@@ -17,6 +17,25 @@ import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {atlasFoldDepth} from './depthOf';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
+
+// Optional surfaces should not load motion-backed sheets or four illustration
+// modules on the cold, nonempty 2,500-idea Atlas route. The first real open
+// loads them; after opening, keep Sheet mounted through its exit animation.
+const LazySheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
+const LazyEmptyState=lazy(()=>import('../../ui/EmptyState').then(module=>({default:module.EmptyState})));
+function Sheet(props:SheetProps){
+ const [activated,setActivated]=useState(props.open);
+ useEffect(()=>{if(props.open)setActivated(true)},[props.open]);
+ if(!props.open&&!activated)return null;
+ return <Suspense fallback={<span role="status" className="sr-only">Opening details</span>}>
+  <LazySheet {...props}/>
+ </Suspense>;
+}
+function EmptyState(props:EmptyStateProps){
+ return <Suspense fallback={<p role="status" className="p-4 text-body text-ink-2">Loading view…</p>}>
+  <LazyEmptyState {...props}/>
+ </Suspense>;
+}
 
 interface Saved{expanded:string[];related:boolean}
 function load():Saved|null{
