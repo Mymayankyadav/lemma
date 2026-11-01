@@ -12,5 +12,7 @@ export function ProjectFilterTitle({title}:{title:string}){
  // Stress desks have 60 mostly plain project names. Avoid 60 full
  // Markdown/KaTeX parses on the first Cards paint; any possible markup still
  // uses the canonical Tex renderer and retains its >=16px maths typography.
- return <span className="whitespace-nowrap text-base">{canRenderPlainCardFront(title)?title:<Tex source={title}/>}</span>;
+ return <span className="whitespace-nowrap text-base">{canRenderPlainCardFront(title)?
+  <span className="lemma-math lemma-tex-inline">{title}</span>:
+  <Tex source={title}/>}</span>;
 }
