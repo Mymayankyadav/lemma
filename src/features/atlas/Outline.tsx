@@ -278,6 +278,10 @@ export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onS
  node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;sticky?:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
  const parent=node.children.length>0,root=node.level==='cluster',area=node.level==='galaxy';
+ // A plain title is already its own accessible name. Avoid running the
+ // nine-pass TeX fallback for every plain idea twice on the cold Atlas mount.
+ const plain=isPlainAtlasLabel(node.name);
+ const accessibleName=plain?node.name:plainMath(node.name);
  const selected=tone==='self',height=atlasRowHeight(node.level);
  const indentation=(depth:number)=>Math.min(depth,3)*INDENT+Math.max(0,depth-3)*8;
  const lead=12+indentation(node.depth);
@@ -297,16 +301,16 @@ export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onS
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px"
    style={{left:12+indentation(d)+6,background:'color-mix(in srgb,var(--ink) 6%,transparent)'}}/>)}
   {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
-  {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+plainMath(node.name)} onClick={onToggle}
+  {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+accessibleName} onClick={onToggle}
    className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2">
    <ChevronRight size={16} style={{transform:open?'rotate(90deg)':'none',transition:'transform 140ms ease'}}/>
   </button>:<span className="flex size-7 shrink-0 items-center justify-center"><StatusMark node={node}/></span>}
-  <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
+  <button type="button" onClick={onSelect} aria-label={accessibleName+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{node.glyph}</span>}
-   <span title={plainMath(node.name)} data-atlas-title-scroll
+   <span title={accessibleName} data-atlas-title-scroll
     style={{...clip,overflowX:'auto',textOverflow:'clip',scrollbarWidth:'none'}}
-    className={'atlas-row-title-scroll min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}>{isPlainAtlasLabel(node.name)?node.name:<Tex source={node.name}/>}</span>
+    className={'atlas-row-title-scroll min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}>{plain?node.name:<Tex source={node.name}/>}</span>
    {showProgress&&<span className="flex shrink-0 items-center gap-1.5 pl-1 text-[12px] tabular-nums text-ink-3">
     <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
      <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(node.total?100*node.done/node.total:0)+'%'}}/>
