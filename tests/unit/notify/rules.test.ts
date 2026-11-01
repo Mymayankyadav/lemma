@@ -89,6 +89,10 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(choose([{...due,sentToday:1,lastSentAt:now-2*3_600_000}])[0]).toMatchObject({status:'suppressed',reason:'frequency'})
   expect(choose([{...due,sentToday:1,lastSentAt:now-2*3_600_000,laterRequested:true}])[0].status).toBe('send')
   expect(choose([{...due,sentToday:2,laterRequested:true}])[0].reason).toBe('frequency')
+  // The hold starts when Later was tapped, not at the original send time.
+  const sent=now-3*HOUR,clicked=now-30*60_000
+  expect(choose([{...due,sentToday:1,lastSentAt:sent,laterRequested:true,laterRequestedAt:clicked}])[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+  expect(choose([{...due,sentToday:1,lastSentAt:sent,laterRequested:true,laterRequestedAt:now-2*HOUR}])[0].status).toBe('send')
  })
  it('applies K3 first transition, 7-day repeat and 14-day dismissal backoff',()=>{
   const behind:ReminderCandidate={kind:'behind',key:'behind:p1',behindTransitionAt:now-20*DAY}
