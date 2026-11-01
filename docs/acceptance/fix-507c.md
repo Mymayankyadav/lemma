@@ -1,13 +1,14 @@
 # FIX-507c — Paths-to-Atlas prefetch acceptance
 
-Split from [FIX #507 / PR #516](https://github.com/Mymayankyadav/lemma/pull/516).
+Independent, mergeable split from [FIX #507 / PR #516](https://github.com/Mymayankyadav/lemma/pull/516).
+Sources: `docs/spec/stress.md` C2 and `docs/spec/v4-look.md` §4.
 
-Source: `docs/spec/stress.md` C2, `docs/spec/v4-look.md` §4.
-
-- [x] Canonical Atlas query prefetch on Paths in demo only; never a new live-network request.
-- [x] Repeated and concurrent prefetch deduplicate; cache remains available for Atlas navigation.
-- [x] Preserve v4 Paths groups, no eager Today Atlas load.
-- [ ] Full exact-head CI (seven required jobs), strict first-attempt C2/D6 under 1,000 ms, 144 screenshots.
+- [x] Demo-only canonical `['atlas']` query prefetch when Paths mounts; no additional live-network request.
+- [x] Concurrent and repeated prefetch deduplicated through React Query.
+- [x] Today never prefetches Atlas data; Paths grouping and route semantics preserved.
+- [x] Restore eager direct-route imports pending the parent's *complete* cold-start/hydration optimization. The isolated lazy-route attempt regressed extreme-profile navigation across all four browser shards (CI [#41270600282](https://github.com/Mymayankyadav/lemma/actions/runs/41270600282)); do not ship the partial chunk split.
+- [ ] Exact-head `npm run check`, SQL, four Playwright shards and 144 screenshots all green.
+- [ ] Strict first-attempt C2/D6 4× CPU evidence and S/X × day/night × 360/390 screenshots.
 - [ ] Independent Auditor CLEAR.
 
-Implementation: `b27776b7` helper regressions, `83d8add9` lazy-route regressions, `231b8b11` query helper, `0658f8fd` Paths integration, `07287bb6` lazy Atlas route. All exact-head CI and visual evidence still pending. No local tests claimed (GitHub DNS unavailable).
+The parent #516 retains the route-splitting/Today performance work together with its optimized stress-fixture path; it must reconcile this prefetch slice after merge. No local test run is claimed: this environment has no authenticated GitHub checkout.
