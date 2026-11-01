@@ -180,7 +180,7 @@ for(const width of [390,360] as const){
   await ideas.locator('[data-idea-selection="true"]').getByRole('button',{name:'Details'}).click();
   const sheet=page.getByRole('dialog');
   await expect(sheet.getByRole('progressbar',{name:'Idea progress'})).toBeVisible();
-  const close=sheet.getByRole('button',{name:'Close'});
+  const close=sheet.getByRole('button',{name:'Close',exact:true});
   const closeBox=await close.boundingBox();
   expect(closeBox?.height).toBeGreaterThanOrEqual(44);
   expect(closeBox?.width).toBeGreaterThanOrEqual(44);
