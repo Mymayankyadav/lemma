@@ -66,6 +66,23 @@ for(const matrix of CPU_CASES){
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
    const durationMs=Date.now()-start;
+   // Diagnostic only: distinguish actual browser navigation/paint work from
+   // Playwright's cross-process polling and loaded-state assertions. FCP is
+   // NOT data-backed readiness, and cannot certify the strict 1500ms gate.
+   // The private goal-paint mark is present only on builds that instrument it.
+   const browserTiming=await page.evaluate(()=>{
+    const nav=performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined;
+    const fcp=performance.getEntriesByType('paint').find(entry=>
+     entry.name==='first-contentful-paint');
+    const goal=performance.getEntriesByName('lemma-stress-first-goal-paint','mark').at(-1);
+    return {
+     elapsedMs:performance.now(),
+     navigationResponseEndMs:nav?.responseEnd??null,
+     domContentLoadedMs:nav?.domContentLoadedEventEnd??null,
+     firstContentfulPaintMs:fcp?.startTime??null,
+     firstStressGoalPaintMs:goal?.startTime??null,
+    };
+   });
    const nodes=await page.locator('*').count();
    const navigationType=await page.evaluate(()=>
     (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined)?.type??'unknown');
@@ -73,13 +90,13 @@ for(const matrix of CPU_CASES){
     (route==='/'?'today':route.replaceAll('/','-').replace(/^-/,''))+'.png';
    await page.screenshot({path:screenshot,fullPage:false,timeout:30_000});
    console.info('[AUDIT #540 cold 4x route]',JSON.stringify({
-    ...matrix,route,durationMs,nodes,navigationType,
+    ...matrix,route,durationMs,nodes,navigationType,browserTiming,
    }));
    samples.push({
     route,actualRoute:await page.evaluate(()=>location.hash.slice(1)),
     profile:matrix.profile,theme:matrix.theme,width:matrix.width,
     cpuThrottle:4,durationMs,navigationType:navigationType==='navigate'?'document':navigationType,
-    ready,nodes,screenshot,
+    ready,nodes,screenshot,browserTiming,
    });
   }
   await cdp.detach();
