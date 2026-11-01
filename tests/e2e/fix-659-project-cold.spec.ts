@@ -24,9 +24,6 @@ for(const width of [360,390] as const){
    observer.observe(document,{childList:true,subtree:true});
   });
   const cdp=await page.context().newCDPSession(page);
-  // CDP counters distinguish JavaScript evaluation from style/layout and
-  // network/fixture work; reading them does not alter the strict paint mark.
-  await cdp.send('Performance.enable');
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/p/real-analysis',{waitUntil:'domcontentloaded',timeout:90_000});
   await expect(page.getByRole('heading',{name:'Project',exact:true,level:1})).toBeVisible({timeout:90_000});
@@ -51,11 +48,7 @@ for(const width of [360,390] as const){
     .sort((left,right)=>right.duration-left.duration).slice(0,5)
     .map(entry=>({name:entry.name.split('/').at(-1),durationMs:Math.round(entry.duration*10)/10}))
   }));
-  const cdpMetrics=await cdp.send('Performance.getMetrics');
-  const cpu=Object.fromEntries(cdpMetrics.metrics
-   .filter(item=>['ScriptDuration','TaskDuration','LayoutDuration','RecalcStyleDuration','JSHeapUsedSize'].includes(item.name))
-   .map(item=>[item.name,Math.round(item.value*1000)/1000]));
-  console.info('FIX #659 cold Project 4x',JSON.stringify({profile,theme,width,...metrics,cpu,
+  console.info('FIX #659 cold Project 4x',JSON.stringify({profile,theme,width,...metrics,
    postQueryMs:Math.round((metrics.ms-(metrics.dataPhases.prequery??0)-(metrics.dataPhases.total??0))*10)/10,
    prequeryOtherMs:Math.round(((metrics.dataPhases.prequery??0)-
     (metrics.fixturePhases.generate??0)-(metrics.fixturePhases.hydrate??0))*10)/10}));
@@ -66,7 +59,6 @@ for(const width of [360,390] as const){
   expect(metrics.overflow).toBeLessThanOrEqual(0);
   mkdirSync('test-results/screens/fix-659',{recursive:true});
   await page.screenshot({path:'test-results/screens/fix-659/project-'+profile+'-'+theme+'-'+width+'.png',animations:'disabled'});
-  await cdp.send('Performance.disable');
   await cdp.detach();
  });
 }
