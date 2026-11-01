@@ -88,6 +88,13 @@ export default function Page() {
     signOut = useSignOut(),
     notify = useToast(),
     navigate = useNavigate();
+  const [offline, setOffline] = useState(typeof navigator !== 'undefined' && !navigator.onLine);
+  useEffect(() => {
+    const updateOnlineState = () => setOffline(!navigator.onLine);
+    window.addEventListener('online', updateOnlineState);
+    window.addEventListener('offline', updateOnlineState);
+    return () => { window.removeEventListener('online', updateOnlineState); window.removeEventListener('offline', updateOnlineState); };
+  }, []);
   const [revealed, setRevealed] = useState(false),
     [setup, setSetup] = useState(false),
     [sheet, setSheet] = useState<
@@ -216,8 +223,22 @@ export default function Page() {
         </Button>
       </Screen>
     );
+  if (offline) return <Screen title="Settings" back="/" className="pb-8">
+    <Slab className="p-5" aria-label="Saved settings">
+      <h2 className="text-headline font-semibold">Saved settings · read only</h2>
+      <p className="mt-2 text-body text-ink-2">Needs a connection to change settings or view your connector address.</p>
+      <dl className="mt-4 grid grid-cols-2 gap-3 text-body">
+        <div><dt className="text-ink-3">Time zone</dt><dd>{s.timeZone}</dd></div>
+        <div><dt className="text-ink-3">Rollover hour</dt><dd>{s.rolloverHour}:00</dd></div>
+        <div><dt className="text-ink-3">Tutor</dt><dd>{s.preferredChat}</dd></div>
+        <div><dt className="text-ink-3">Style</dt><dd>{s.defaultStyle}</dd></div>
+        <div><dt className="text-ink-3">Mix decks</dt><dd>{s.mixDecks ? 'On' : 'Off'}</dd></div>
+        <div><dt className="text-ink-3">New cards per day</dt><dd>{s.newPerDay}</dd></div>
+      </dl>
+    </Slab>
+  </Screen>;
   const connected = !!s.connectorLastSeenAt,
-    masked = s.connectorUrl.replace(/\/[^/]+$/, "/••••••"),
+    masked = s.connectorUrl?.replace(/\/[^/]+$/, "/••••••") ?? 'Needs a connection',
     busy = update.isPending;
   return (
     <Screen title="Settings" back="/" className="pb-8">
