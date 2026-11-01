@@ -52,7 +52,7 @@ export async function sendWebPush(
  const host=endpoint.hostname.toLowerCase();
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash||
     host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||
-    /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)||host.startsWith('['))
+    /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||host.startsWith('['))
   return {status:'failed'};
  let encoded:string;
  try{
