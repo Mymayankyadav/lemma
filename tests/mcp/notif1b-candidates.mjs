@@ -112,6 +112,8 @@ try{
  assert.equal(streaks.due,3)
  assert.equal(streaks.resume,3)
  assert.equal(streaks.rhythm,3,'other owner cannot reset rhythm')
+ await q("update public.notifications set action_at=now()-interval '31 days' where user_id=$1 and kind='rhythm'",[owner])
+ assert.equal((await facts()).history.dismissStreak.rhythm,0,'backoff expires after thirty days')
  console.log('PASS NOTIF-1b independent due/behind/resume/rhythm dismissal streaks and owner isolation')
  console.log('PASS NOTIF-1b dismissal streak resets on open and reaches three consecutive')
  await db.exec('reset role')
