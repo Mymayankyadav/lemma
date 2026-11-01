@@ -78,6 +78,7 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
    expect(combined).not.toMatch(/[\p{Regional_Indicator}\p{Extended_Pictographic}\p{Emoji_Modifier}\u200D\u20E3\uFE0F]/u)
    expect(combined).toContain('Algebra')
   }
+  expect(notificationCopy({kind:'behind',project:'Algebra 🇮🇳',code:'CP1',dueDate:'2 Nov'}).title).toBe('Algebra: a smaller step today?')
   const math=notificationCopy({kind:'behind',project:'ℝ → ℂ',code:'CP1',dueDate:'2 Nov'})
   expect(math.title).toContain('ℝ → ℂ')
  })
