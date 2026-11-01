@@ -134,23 +134,36 @@ function openDb(userId:string):Promise<IDBDatabase>{
   req.onerror=()=>reject(req.error??Error('Cannot open offline snapshot'))
  })
 }
+/** Keep earlier successfully viewed routes when a navigation creates a new
+ * React Query client. A full page reload must not replace the last five
+ * offline projects with only the final route's query cache. */
+export function mergeOfflineSnapshots(previous:unknown,current:OfflineSnapshot,now=Date.now()):OfflineSnapshot{
+ const old=previous&&typeof previous==='object'?previous as Partial<OfflineSnapshot>:null;
+ const prior=old?.v===1&&Number.isFinite(old.savedAt)&&typeof old.savedAt==='number'&&
+  old.savedAt<=now&&now-old.savedAt<=OFFLINE_MAX_AGE_MS&&Array.isArray(old.entries)?old.entries:[];
+ return {v:1,savedAt:now,entries:boundOfflineEntries([...prior,...current.entries],now)};
+}
 export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=Date.now(),canWrite:()=>boolean=()=>true):Promise<void>{
- // An offline/account switch may occur while IndexedDB is opening. Never
- // commit a queued online save after the connection or owner has changed.
- if(!canWrite())return
- // Capture the owner-scoped data before opening IndexedDB asynchronously:
- // another auth event may clear/refill the shared query cache during that await.
- const snapshot=snapshotFromClient(client,now)
- const db=await openDb(userId)
+ if(!canWrite())return;
+ // Capture before the async open: account B must never be written under A.
+ const snapshot=snapshotFromClient(client,now);
+ const db=await openDb(userId);
  try{
-  if(!canWrite())return
+  if(!canWrite())return;
   await new Promise<void>((resolve,reject)=>{
-   const tx=db.transaction(STORE,'readwrite')
-   tx.objectStore(STORE).put(snapshot,SLOT)
-   tx.oncomplete=()=>resolve()
-   tx.onerror=()=>reject(tx.error??Error('Cannot save offline snapshot'))
-   tx.onabort=()=>reject(tx.error??Error('Offline snapshot transaction aborted'))
-  })
+   const tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE);
+   // Read and write in ONE transaction: two tabs cannot lose each other's
+   // recent route snapshots through a read/modify/write gap.
+   const req=store.get(SLOT);
+   req.onsuccess=()=>{
+    if(!canWrite()){tx.abort();return}
+    store.put(mergeOfflineSnapshots(req.result,snapshot,now),SLOT);
+   };
+   req.onerror=()=>tx.abort();
+   tx.oncomplete=()=>resolve();
+   tx.onerror=()=>reject(tx.error??Error('Cannot save offline snapshot'));
+   tx.onabort=()=>canWrite()?reject(tx.error??Error('Offline snapshot transaction aborted')):resolve();
+  });
  }finally{db.close()}
 }
 export async function readOfflineSnapshot(userId:string,now=Date.now()):Promise<OfflineSnapshot|null>{
