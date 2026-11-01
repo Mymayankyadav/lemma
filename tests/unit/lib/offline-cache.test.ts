@@ -120,4 +120,29 @@ describe('AND-8 account-switch save race',()=>{
    else Reflect.deleteProperty(globalThis,'indexedDB')
   }
  })
+
+ it('cancels a queued save if the owner goes offline while IndexedDB opens',async()=>{
+  const client=new QueryClient()
+  client.setQueryData(['home'],{title:'A'},{updatedAt:now})
+  const old=Object.getOwnPropertyDescriptor(globalThis,'indexedDB')
+  let releaseOpen:()=>void=()=>{}
+  let transactions=0
+  const db={transaction:()=>{transactions++;throw Error('Offline save must not write')},close:()=>{},onversionchange:null as null|(()=>void)}
+  const request={result:db,onsuccess:null as null|(()=>void),onerror:null as null|(()=>void),onupgradeneeded:null as null|(()=>void)}
+  Object.defineProperty(globalThis,'indexedDB',{configurable:true,value:{
+   open:()=>{releaseOpen=()=>request.onsuccess?.();return request},
+  }})
+  try{
+   let online=true
+   const pending=saveOfflineSnapshot('owner-a',client,now,()=>online)
+   online=false
+   releaseOpen()
+   await pending
+   expect(transactions).toBe(0)
+  }finally{
+   client.clear()
+   if(old)Object.defineProperty(globalThis,'indexedDB',old)
+   else Reflect.deleteProperty(globalThis,'indexedDB')
+  }
+ })
 })
