@@ -44,7 +44,9 @@ for(const width of [360,390] as const){
   await expect(backdrop).toHaveAttribute('aria-hidden','true');
   await expect(backdrop).toHaveAttribute('inert','');
   await expect(backdrop.getByRole('heading',{name:'Paths',includeHidden:true})).toHaveCount(1);
-  await expect(backdrop.locator('[data-project-row]')).toHaveCount(0);
+  // The real, inert Paths library must eventually render behind the sheet.
+  // Deferring its mount is allowed; replacing it with an empty mock is not.
+  await expect(backdrop.locator('[data-project-row]').first()).toBeVisible({timeout:30_000});
   mkdirSync('test-results/screens/fix-659',{recursive:true});
   await page.screenshot({path:'test-results/screens/fix-659/new-'+profile+'-'+theme+'-'+width+'.png',animations:'disabled'});
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
