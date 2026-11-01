@@ -79,7 +79,7 @@ describe('NOTIF-4b1 atomic /act handler',()=>{
   expect(result).toEqual({status:503,body:{message:'Reminders are not set up yet'}});
   expect(rpc).not.toHaveBeenCalled();
  });
- it('accepts safe PostgREST bigint strings but refuses unsafe confirmation ids',async()=>{
+ it('accepts safe PostgREST bigint strings without misreporting committed approvals',async()=>{
   const rpc=vi.fn().mockResolvedValue({data:{status:'done',kind:'tutor',action:'123',confirmId:'84'},error:null});
   const valid=await handleActionRequest({token:await signed('approve_cards',{ids:[card]})},{secret,rpc,nowSeconds:now});
   expect(valid.status).toBe(200);
@@ -87,13 +87,31 @@ describe('NOTIF-4b1 atomic /act handler',()=>{
   expect(payload.x?.action).toBe(123);
   rpc.mockResolvedValueOnce({data:{status:'done',kind:'tutor',action:'9007199254740993',confirmId:'84'},error:null});
   const invalid=await handleActionRequest({token:await signed('approve_cards',{ids:[card]})},{secret,rpc,nowSeconds:now});
-  expect(invalid).toEqual({status:409,body:{message:'Open Lemma to finish'}});
+  // The approval is already committed by notify_act. Invalid optional Undo
+  // metadata cannot turn success into a retryable HTTP 409.
+  expect(invalid.status).toBe(200);
+  expect(invalid.body).toMatchObject({status:'done',kind:'tutor',action:'9007199254740993',confirmId:'84'});
+  expect(invalid.body).not.toHaveProperty('undoToken');
+  expect(rpc).toHaveBeenCalledTimes(2);
  });
- it('fails closed on malformed confirmation metadata rather than issuing an invalid Undo token',async()=>{
-  const rpc=vi.fn().mockResolvedValue({data:{status:'done',kind:'tutor',action:'not-a-number',confirmId:84},error:null});
-  const result=await handleActionRequest({token:await signed('approve_cards',{ids:[card]})},{secret,rpc,nowSeconds:now});
-  expect(result).toEqual({status:409,body:{message:'Open Lemma to finish'}});
-  expect(rpc).toHaveBeenCalledTimes(1);
+ it('reports committed approval success without Undo for malformed confirmation metadata',async()=>{
+  const rows=[
+   {status:'done',kind:'tutor',action:'not-a-number',confirmId:84},
+   {status:'done',kind:'tutor',action:123,confirmId:'not-a-number'},
+   {status:'done',kind:'tutor',action:0,confirmId:84},
+   {status:'done',kind:'tutor',action:123,confirmId:'9007199254740993'},
+   {status:'done',kind:'tutor',confirmId:84},
+  ];
+  const rpc=vi.fn();
+  const token=await signed('approve_cards',{ids:[card]});
+  for(const row of rows){
+   rpc.mockResolvedValueOnce({data:row,error:null});
+   const result=await handleActionRequest({token},{secret,rpc,nowSeconds:now});
+   expect(result.status).toBe(200);
+   expect(result.body).toMatchObject(row);
+   expect(result.body).not.toHaveProperty('undoToken');
+  }
+  expect(rpc).toHaveBeenCalledTimes(rows.length);
  });
  it('reports committed approval success if signing the optional Undo link fails',async()=>{
   const rpc=vi.fn().mockResolvedValue({data:{status:'done',kind:'tutor',approved:[card],skipped:[],action:123,confirmId:84},error:null});
