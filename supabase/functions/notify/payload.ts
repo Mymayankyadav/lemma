@@ -42,14 +42,14 @@ const isToken=(value:string)=>value.length<=4096&&/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-
 export function buildPushPayload(input:PushPayloadInput):string{
  if(!input||!isId(input.id)||!KINDS.has(input.kind)||
     typeof input.tag!=='string'||!/^[A-Za-z0-9_-]{1,32}$/.test(input.tag)||
-    typeof input.title!=='string'||input.title.length>1000||
+    typeof input.title!=='string'||!input.title.trim()||input.title.length>1000||
     typeof input.body!=='string'||input.body.length>2000||
     typeof input.url!=='string'||!safeUrl(input.url)||
     !Array.isArray(input.actions)||input.actions.length>3||
     !Number.isSafeInteger(input.ts)||input.ts<=0)invalid();
  const actions=input.actions.map(action=>{
   if(!action||typeof action.action!=='string'||!/^[a-z][a-z0-9_-]{0,31}$/.test(action.action)||
-     typeof action.title!=='string'||!action.title.trim()||
+     typeof action.title!=='string'||!action.title.trim()||action.title.length>1000||
      action.url!==undefined&&(typeof action.url!=='string'||!safeUrl(action.url))||
      action.token!==undefined&&(typeof action.token!=='string'||!isToken(action.token)))invalid();
   return {
