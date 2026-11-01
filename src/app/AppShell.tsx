@@ -16,6 +16,8 @@ export default function AppShell(){
  const queryClient=useQueryClient();
  useEffect(()=>{
   let disposed=false,identity:string|null=null,saveTimer:ReturnType<typeof setTimeout>|null=null;
+  // Serialize writes and deletion so a sign-out cannot resurrect a prior owner's snapshot.
+  let pendingSave:Promise<void>=Promise.resolve();
   const publish=(savedAt:number|null)=>{
    if(savedAt===null)delete document.documentElement.dataset.offlineSavedAt;
    else document.documentElement.dataset.offlineSavedAt=String(savedAt);
@@ -27,7 +29,9 @@ export default function AppShell(){
   };
   const save=async()=>{
    if(disposed||!identity||!navigator.onLine)return;
-   try{await saveOfflineSnapshot(identity,queryClient)}catch{/* Quota/private mode: online use continues. */}
+   const owner=identity;
+   pendingSave=pendingSave.then(()=>saveOfflineSnapshot(owner,queryClient)).catch(()=>{/* Quota/private mode: online use continues. */});
+   await pendingSave;
   };
   const queueSave=()=>{
    if(disposed||!identity||!navigator.onLine)return;
@@ -46,10 +50,10 @@ export default function AppShell(){
       if(event==='SIGNED_OUT'){
        if(saveTimer)clearTimeout(saveTimer);
        const previous=identity;identity=null;publish(null);
-       if(previous)void deleteOfflineSnapshot(previous);
-      }else if(session?.user?.id&&identity&&session.user.id!==identity){
+       if(previous)void pendingSave.then(()=>deleteOfflineSnapshot(previous)).catch(()=>{});
+      }else if(session?.user?.id&&session.user.id!==identity){
        const previous=identity;identity=session.user.id;publish(null);
-       void deleteOfflineSnapshot(previous);
+       if(previous)void pendingSave.then(()=>deleteOfflineSnapshot(previous)).catch(()=>{});
        if(!navigator.onLine)void restore();else queueSave();
       }
      }).data.subscription:null;
