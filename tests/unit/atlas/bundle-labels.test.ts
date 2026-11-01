@@ -122,3 +122,16 @@ describe('LOOK-4b/4c variable-height wire integration',()=>{
   expect(markup).toContain('V 205 Q 83 210');
  });
 });
+
+
+describe('LOOK-4c physical bundle span ranking',()=>{
+ it('anchors the physically longer bundle farther out when Field heights vary',()=>{
+  const centers=[0,30,60,70,400,430];
+  const links:Arc[]=[
+   {key:'three-short-rows',from:0,to:3,kind:'prereq',count:2,links:[]},
+   {key:'two-tall-rows',from:2,to:4,kind:'prereq',count:2,links:[]},
+  ];
+  const placed=layoutBundleLabels(links,6,centers,460);
+  expect(placed.get('two-tall-rows')?.anchorX).toBeGreaterThan(placed.get('three-short-rows')!.anchorX);
+ });
+});
