@@ -38,10 +38,20 @@ for(const width of [360,390] as const){
    overflow:document.documentElement.scrollWidth-innerWidth,
    dataPhases:Object.fromEntries(performance.getEntriesByType('measure')
     .filter(entry=>entry.name.startsWith('lemma-stress-project-'))
-    .map(entry=>[entry.name.slice('lemma-stress-project-'.length),Math.round(entry.duration*10)/10]))
+    .map(entry=>[entry.name.slice('lemma-stress-project-'.length),Math.round(entry.duration*10)/10])),
+   fixturePhases:Object.fromEntries(performance.getEntriesByType('measure')
+    .filter(entry=>entry.name.startsWith('lemma-stress-fixture-'))
+    .map(entry=>[entry.name.slice('lemma-stress-fixture-'.length),Math.round(entry.duration*10)/10])),
+   domContentLoadedMs:(performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined)?.domContentLoadedEventEnd??null,
+   largestScripts:performance.getEntriesByType('resource')
+    .filter(entry=>entry.name.includes('/assets/')&&entry.name.endsWith('.js'))
+    .sort((left,right)=>right.duration-left.duration).slice(0,5)
+    .map(entry=>({name:entry.name.split('/').at(-1),durationMs:Math.round(entry.duration*10)/10}))
   }));
   console.info('FIX #659 cold Project 4x',JSON.stringify({profile,theme,width,...metrics,
-   postQueryMs:Math.round((metrics.ms-(metrics.dataPhases.prequery??0)-(metrics.dataPhases.total??0))*10)/10}));
+   postQueryMs:Math.round((metrics.ms-(metrics.dataPhases.prequery??0)-(metrics.dataPhases.total??0))*10)/10,
+   prequeryOtherMs:Math.round(((metrics.dataPhases.prequery??0)-
+    (metrics.fixturePhases.generate??0)-(metrics.fixturePhases.hydrate??0))*10)/10}));
   expect(Number.isFinite(metrics.ms)).toBe(true);
   expect(metrics.ms,'First real Project Route and Stages at 4x CPU').toBeLessThan(1500);
   expect(metrics.nodes).toBeLessThan(1500);
