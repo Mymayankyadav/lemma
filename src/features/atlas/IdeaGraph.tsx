@@ -4,8 +4,8 @@ import {Sheet} from '../../ui/Sheet';
 import {AtlasDetailsPath} from './DetailsMath';
 import {Tex} from '../../ui/Tex';
 import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
-import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,levelName,neighbours,rowTone,statusName,visibleRows} from './tree';
-import {Row,StatusMark,Wires,toneColor} from './Outline';
+import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,levelName,neighbours,rowTone,visibleRows} from './tree';
+import {Row,StatusMark,Wires,toneColor,statusName} from './Outline';
 import {buildAtlasRowGeometry} from './rowGeometry';
 
 /**
