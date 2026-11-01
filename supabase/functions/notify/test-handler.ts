@@ -37,9 +37,14 @@ function testMessage(device:TestDevice):TestPushMessage{
  const quiet=prefs?.quiet;
  const start=typeof quiet?.start==='string'&&CLOCK.test(quiet.start)?quiet.start:'22:30';
  const end=typeof quiet?.end==='string'&&CLOCK.test(quiet.end)?quiet.end:'07:30';
+ // Equal endpoints mean quiet hours are disabled (notifications.md §4a).
+ // Do not promise silence during a window that does not exist.
+ const cadence=cap===1?'1 time':`${cap} times`;
+ const body=start===end
+  ?`Lemma will write at most ${cadence} a day. Quiet hours are off.`
+  :`Lemma will write at most ${cadence} a day, never between ${start} and ${end}.`;
  return {
-  kind:'test',tag:'test',title:'Reminders are on',
-  body:`Lemma will write at most ${cap} times a day, never between ${start} and ${end}.`,
+  kind:'test',tag:'test',title:'Reminders are on',body,
  };
 }
 export async function handleTestPushRequest(
