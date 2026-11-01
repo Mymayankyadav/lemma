@@ -228,7 +228,7 @@ export async function readOfflineSnapshot(userId:string,now=Date.now()):Promise<
   if(!value||typeof value!=='object')return readOfflineHandoff(userId,now)
   const snapshot=value as Partial<OfflineSnapshot>
   if(snapshot.v!==1||!Number.isFinite(snapshot.savedAt)||!snapshot.savedAt||
-   snapshot.savedAt>now||now-snapshot.savedAt>OFFLINE_MAX_AGE_MS||!Array.isArray(snapshot.entries))return null
+   snapshot.savedAt>now||now-snapshot.savedAt>OFFLINE_MAX_AGE_MS||!Array.isArray(snapshot.entries))return readOfflineHandoff(userId,now)
   const saved={v:1 as const,savedAt:snapshot.savedAt,entries:boundOfflineEntries(snapshot.entries,now)}
   const handoff=readOfflineHandoff(userId,now)
   return handoff?mergeOfflineSnapshots(saved,handoff,now):saved
