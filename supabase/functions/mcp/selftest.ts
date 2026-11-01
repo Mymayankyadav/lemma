@@ -10,7 +10,7 @@ import { parseMcpReply } from './protocol.ts';
 // Keep each self-test request below the Edge worker's observed wall-clock limit.
 // The smoke runs four independent partitions with their own fixtures and cleanup.
 export type SelftestPart=1|2|3|4|'all';
-const PART_STEPS={1:6,2:9,3:8,4:5,all:19} as const;
+const PART_STEPS={1:6,2:9,3:6,4:7,all:19} as const;
 export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
   const only=(n:1|2|3|4)=>part==='all'||part===n;
   c.selftestProjectIds=new Set<string>();
@@ -260,7 +260,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       await run('undo',undo,{action:u.action});
       if(!(await packet(c,{project:p.slug})).includes('Selftest Socratic prompt'))throw Error('Prompt redo failed');
     });
-    if(only(3))await check('direct edits add review grade',async()=>{
+    if(only(4))await check('direct edits add review grade',async()=>{
       await run('edit',edit,{target:p.slug,set:{title:'Edited selftest'}});
       await run('edit',edit,{project:p.slug,target:'CP1',set:{steps:['Think','Prove']}});
       const a=await run('add',add,{kind:'card',project:p.slug,fields:{front:'Selftest new card',back:'Answer'}});
@@ -270,7 +270,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const nr=await scoped(c,'notes','id').eq('no',note.no).single();
       const cr=await scoped(c,'cards').eq('note_id',nr.data.id).single();if(cr.data?.reps!==1)throw Error('Grade failed');
     });
-    if(only(3))await check('adaptive planning diagnostics',async()=>{
+    if(only(4))await check('adaptive planning diagnostics',async()=>{
       const started=await run('start_session',startSession,{project:p.slug,goal:'Probe prerequisites',checkpoint:'CP1',client:'other'});
       const code=started.text.match(/S[0-9]+/)![0];
       for(let i=0;i<2;i++)await run('save_progress',saveProgress,{project:p.slug,session:code,diagnostics:[{kind:'gap',topic:'Selftest prerequisite',evidence:'Could not explain it',severity:3,confirmed:true}]});
