@@ -83,20 +83,23 @@ export function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:
 
 /** Approximate study time at thirty seconds per due card, with a readable
  * unit for stress-sized queues. This is an estimate, not a scheduling promise. */
-export function estimatedReviewTime(due:number):string{
- const minutes=Math.max(1,Math.round(Math.max(0,due)/2));
- return minutes<90?'about '+minutes+' min':'about '+Math.round(minutes/60)+' h';
+export function estimatedReviewTime(due:number,roundLimit=200):string{
+ const round=Math.min(Math.max(0,Number.isFinite(due)?due:0),Math.max(1,roundLimit));
+ const minutes=Math.max(1,Math.round(round/2));
+ if(minutes<90)return 'about '+minutes+' min';
+ const hours=Math.floor(minutes/60),remaining=minutes%60;
+ return 'about '+hours+' h'+(remaining?' '+remaining+' min':'');
 }
 
 /** One paper row replaces oversized summary tiles and the stacked deck bar. */
-export function ReviewDesk({due}:{due:number}){
+export function ReviewDesk({due,roundLimit=200}:{due:number;roundLimit?:number}){
  const hasDue=due>0;
  return <section aria-label="Review" className="flex min-w-0 flex-col gap-3">
   <SectionHeading className="text-ink">Review</SectionHeading>
   <Slab className="flex min-w-0 items-center gap-3 p-3">
    {hasDue?<div className="min-w-0 shrink-0">
     <p className="text-body font-semibold tabular-nums text-ink">{formatCount(due)} <span className="text-label font-normal text-ink-2">due</span></p>
-    <p className="text-caption text-ink-3">{estimatedReviewTime(due)}</p>
+    <p className="text-caption text-ink-3">{estimatedReviewTime(due,roundLimit)}</p>
    </div>:<div className="flex min-w-0 flex-1 items-start gap-2">
     <Check size={20} aria-hidden="true" className="mt-1 shrink-0" style={{color:'var(--early)'}}/>
     <div className="min-w-0">
@@ -168,7 +171,7 @@ export default function Page(){
    <ChevronRight size={18} className="shrink-0 text-amber"/>
   </Link>}
   <GoalDistance projects={projects} variant="metro"/>
-  <ReviewDesk due={home.data.due}/>
+  <ReviewDesk due={home.data.due} roundLimit={settings.data?.reviewsPerDay??200}/>
   <TutorHandoff home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
  </Screen>;
 }
