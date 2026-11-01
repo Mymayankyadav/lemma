@@ -7,9 +7,10 @@
  const CHAT_ORIGINS=new Set(['https://claude.ai','https://chatgpt.com']);
  const clean=(value,limit)=>typeof value==='string'?value.slice(0,limit):'';
  function destination(value,scope=APP_SCOPE){
-  if(typeof value!=='string'||!value||value.length>2048)return null;
+  if(typeof value!=='string'||!value||value.length>2048||value.trim()!==value||/[\u0000-\u001f\u007f]/.test(value))return null;
   try{
    const url=new URL(value,scope),base=new URL(scope);
+   if(url.username||url.password)return null;
    if(CHAT_ORIGINS.has(url.origin)&&url.protocol==='https:')return {url:url.href,chat:true};
    if(url.origin!==base.origin||!url.pathname.startsWith(base.pathname))return null;
    return {url:url.href,chat:false};

@@ -11,7 +11,10 @@ async function navigate(url){
  if(target.chat){await self.clients.openWindow(target.url);return;}
  const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
  const existing=windows.find(client=>{
-  try{return new URL(client.url).origin===new URL(target.url).origin;}catch{return false;}
+  try{
+   const candidate=new URL(client.url),scope=new URL(self.registration.scope);
+   return candidate.origin===scope.origin&&candidate.pathname.startsWith(scope.pathname);
+  }catch{return false;}
  });
  if(existing){
   try{
