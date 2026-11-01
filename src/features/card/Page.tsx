@@ -32,6 +32,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { Sparkline } from "../../ui/charts/Sparkline";
 import { useToast } from "../../ui/Toast";
+const reviewInk = ['var(--ink-2)', 'var(--danger)', 'var(--late)', 'var(--early)', 'var(--link)'] as const;
 function next(due: string | null) {
   if (!due) return "New";
   const days = Math.ceil((Date.parse(due) - Date.now()) / 86400000);
@@ -359,7 +360,7 @@ export default function Page() {
                 </Link>
               )}
               <Chip>{note.kind}</Chip>
-              {note.status === "suspended" && <Chip tone="amber">Paused</Chip>}
+              {note.status === "suspended" && <Chip tone="quiet">Paused</Chip>}
             </div>
           </Slab>
           <Slab className="p-5">
@@ -404,15 +405,15 @@ export default function Page() {
                   <div
                     key={c.no}
                     data-comment-row
-                    className="border-l-2 border-amber py-2 pl-4 pr-2"
+                    className="border-l-2 border-[var(--ink-3)] py-2 pl-4 pr-2"
                   >
                     <MathText source={c.body} variant="body" className="font-math text-body-l italic" />
                     <p className="mt-3 text-label text-ink-3">
-                      <span className="mr-2 inline-block size-1.5 rounded-full bg-amber" />
+                      <span className="mr-2 inline-block size-1.5 rounded-full bg-[var(--ink-3)]" />
                       Next time you ask to update cards · {age(c.createdAt)}
                     </p>
                     <button
-                      className="mt-2 min-h-11 text-label font-semibold text-amber"
+                      className="mt-2 min-h-11 text-label font-semibold text-ink-2"
                       disabled={dismiss.isPending}
                       onClick={() => void remove(c.no)}
                     >
@@ -452,7 +453,7 @@ export default function Page() {
            <h2 className="mb-3 text-headline font-medium">Recent reviews</h2>
            {visibleReviews.map((r,i)=><div key={r.reviewedAt+':'+i} data-review-row className="flex min-h-11 items-center justify-between gap-3 border-b border-edge py-2 text-body">
             <span className="text-ink-2">{new Date(r.reviewedAt).toLocaleDateString()}</span>
-            <span className="text-amber">{['','Again','Hard','Good','Easy'][r.rating]??'Reviewed'}</span>
+            <span style={{color:reviewInk[r.rating] ?? 'var(--ink-2)'}}>{['','Again','Hard','Good','Easy'][r.rating]??'Reviewed'}</span>
             <span className="text-ink-3">{r.confidence??'—'}</span>
            </div>)}
            {!visibleReviews.length&&<p className="text-label text-ink-3"
