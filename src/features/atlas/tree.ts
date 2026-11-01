@@ -114,8 +114,16 @@ function prerequisiteRank(ids:Iterable<string>,links:readonly Link[]):Map<string
  return rank;
 }
 function checkpointNumber(node:AtlasNode):number{
- const numbers=node.checkpointRefs.map(r=>Number(r.code.match(/\d+/)?.[0])).filter(Number.isFinite);
- return numbers.length?Math.min(...numbers):Number.MAX_SAFE_INTEGER;
+ // Most ideas have no checkpoint refs. Avoid allocating two arrays and a
+ // spread call per idea during the 2,500-node first Atlas mount.
+ let minimum=Number.MAX_SAFE_INTEGER;
+ for(const ref of node.checkpointRefs){
+  const match=/\d+/.exec(ref.code);
+  if(!match)continue;
+  const value=Number(match[0]);
+  if(Number.isFinite(value)&&value<minimum)minimum=value;
+ }
+ return minimum;
 }
 
 /** Proposed flat ideas are synthetic topics named after the teaching checkpoint. */
@@ -176,18 +184,26 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  }
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
-  const kids=n.children.map(c=>summarise(c,depth+1));
   const own=!n.synthetic&&(n.level==='planet'||n.level==='moon'||n.children.length===0);
-  n.total=(own?1:0)+kids.reduce((s,k)=>s+k.total,0);
-  n.done=(own&&n.status==='demonstrated'?1:0)+kids.reduce((s,k)=>s+k.done,0);
-  n.revisit=(own&&n.status==='revisit'?1:0)+kids.reduce((s,k)=>s+k.revisit,0);
-  n.due=n.dueCards+kids.reduce((s,k)=>s+k.due,0);
-  let minRank=rank.get(id)??Number.MAX_SAFE_INTEGER;
-  for(const child of kids)if(child.rank<minRank)minRank=child.rank;
-  n.rank=minRank;
+  // A single postorder pass accumulates all four counts and child status.
+  // The previous map + four reduce/some passes allocated one child array
+  // per parent and revisited the same 2,500-node cold Atlas tree repeatedly.
+  let total=own?1:0,done=own&&n.status==='demonstrated'?1:0;
+  let revisit=own&&n.status==='revisit'?1:0,due=n.dueCards;
+  let minRank=rank.get(id)??Number.MAX_SAFE_INTEGER,childInProgress=false;
+  for(const childId of n.children){
+   const child=summarise(childId,depth+1);
+   total+=child.total;
+   done+=child.done;
+   revisit+=child.revisit;
+   due+=child.due;
+   if(child.rank<minRank)minRank=child.rank;
+   if(child.status==='in_progress')childInProgress=true;
+  }
+  n.total=total;n.done=done;n.revisit=revisit;n.due=due;n.rank=minRank;
   if(n.synthetic||!own){
-   n.status=n.revisit?'revisit':n.total&&n.done===n.total?'demonstrated':
-    n.done>0||kids.some(k=>k.status==='in_progress')?'in_progress':n.status;
+   n.status=revisit?'revisit':total&&done===total?'demonstrated':
+    done>0||childInProgress?'in_progress':n.status;
   }
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
   const compareChildren=(a:string,b:string)=>{
@@ -239,8 +255,17 @@ export function initialExpanded(tree:AtlasTree,stored?:readonly string[]|null):S
 /** First visit: open each field one level and unfold the path to anything in progress or due. */
 export function defaultExpanded(tree:AtlasTree):Set<string>{
  const open=new Set(tree.roots);
- for(const n of tree.nodes.values())if(!n.synthetic&&(n.status==='in_progress'||n.status==='revisit'))
-  for(const a of ancestors(tree,n.id))open.add(a);
+ // Active ideas often share the same five ancestors. Walk upward only until
+ // reaching an already-open branch; its entire ancestor chain was opened by
+ // the previous walk. This avoids allocating a path and visited Set per idea.
+ for(const n of tree.nodes.values()){
+  if(n.synthetic||(n.status!=='in_progress'&&n.status!=='revisit'))continue;
+  let parent=n.parentId;
+  while(parent&&!open.has(parent)){
+   open.add(parent);
+   parent=tree.nodes.get(parent)?.parentId??null;
+  }
+ }
  return open;
 }
 
