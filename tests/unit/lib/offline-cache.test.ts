@@ -150,6 +150,8 @@ describe('AND-8 rapid full-page navigation handoff',()=>{
    push_key:'opaque-push-credential',widget_key:'opaque-widget-credential',
    session_key:'opaque-session-credential',refresh_key:'opaque-refresh-credential',
    api_key:'opaque-api-credential','x-api-key':'opaque-header-credential',
+   'api.key':'opaque-api-dot-credential','push.key':'opaque-push-dot-credential',
+   'widget key':'opaque-widget-space-credential',
    p256dh:'opaque-p256dh-credential',auth:'opaque-auth-credential',
    endpoint:'https://push.invalid/opaque-endpoint-credential',safe:'keep me',
   }};
