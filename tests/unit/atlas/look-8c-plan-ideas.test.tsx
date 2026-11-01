@@ -25,6 +25,7 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
   expect(graph).toContain('centers={geometry.centers}');
   expect(graph).toContain('heightPx={geometry.totalHeight}');
   expect(graph).toContain('style={{background:\'var(--paper)\'}} role="tree"');
+  expect(graph).not.toContain('relative overflow-hidden rounded-ctl border border-edge');
  });
  it('shows the selection and both connection directions on paper',()=>{
   expect(graph).toContain('data-idea-selection="true"');
