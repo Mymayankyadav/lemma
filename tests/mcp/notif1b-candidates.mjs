@@ -88,7 +88,9 @@ try{
  await db.exec('reset role')
 
  await setUser(other)
- await db.exec('select public.bootstrap()')
+ // The isolated test's fake random-byte extension is deterministic; assign a
+ // distinct test-only connector token instead of colliding with the owner.
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[other,'f'.repeat(48)])
  await q("insert into public.subjects(user_id,name,glyph,hue) values($1,'Other','A','amber')",[other])
  const otherSubject=(await q('select id from public.subjects where user_id=$1 limit 1',[other]))[0].id
  const otherProject=(await q("insert into public.projects(user_id,subject_id,slug,title,goal,status) values($1,$2,'other','Other','Study','active') returning id",[other,otherSubject]))[0].id
