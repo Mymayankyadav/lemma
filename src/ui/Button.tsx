@@ -23,12 +23,12 @@ export function Button({variant='lit',size='l',icon:Icon,loading=false,needsNetw
  const originalLabel=rest['aria-label']??(typeof children==='string'?children:'Action');
  return <motion.button {...rest} disabled={disabled||loading} aria-disabled={blocked||undefined}
  aria-label={blocked?originalLabel+', needs a connection':rest['aria-label']}
- aria-busy={loading||undefined} whileTap={reduce?undefined:{scale:0.97}} transition={{duration:0.12}}
+ aria-busy={loading||undefined} whileTap={reduce||blocked?undefined:{scale:0.97}} transition={{duration:0.12}}
  onClick={event=>{
   if(blocked){event.preventDefault();event.stopPropagation();toast('Needs a connection');return}
   onClick?.(event);
  }}
- className={`ui-button inline-flex items-center justify-center gap-2 rounded-btn px-[var(--pad)] font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${heights[size]} ${variants[variant]} ${className}`}>
+ className={`ui-button inline-flex items-center justify-center gap-2 rounded-btn px-[var(--pad)] font-semibold transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${heights[size]} ${variants[variant]} ${blocked?"cursor-not-allowed opacity-50":""} ${className}`}>
  {loading?<LoaderCircle aria-hidden="true" size={19} className="animate-spin"/>:Icon?<Icon aria-hidden="true" size={19}/>:null}{children}
  </motion.button>;
 }
