@@ -102,6 +102,8 @@ export async function runNotifyTick(
     if(!safeCount(queued,decisions.length))throw Error('Invalid queued count');
     summary.queued+=queued;
     summary.skipped+=decisions.filter(row=>row.status==='skipped'||row.status==='suppressed').length;
+    // Switching reminders off must also block previously queued deliveries.
+    if(facts.context.mode==='off')continue;
     const remaining=sendLimit-attempted;
     if(remaining<=0)continue;
     const delivery=await within(deps.deliver(userId,remaining,controller.signal));
