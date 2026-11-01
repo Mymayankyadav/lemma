@@ -1,4 +1,4 @@
-import {Suspense} from "react";
+import {lazy,Suspense} from "react";
 import RouteError, {RouteFallback} from "./RouteError";
 import Page0 from '../features/home/Page'
 import Page1 from '../features/projects/Page'
@@ -13,7 +13,7 @@ import Page9 from '../features/review-run/Page'
 import Page10 from '../features/review-done/Page'
 import Page11 from '../features/cards/Page'
 import Page12 from '../features/card/Page'
-import Page13 from '../features/atlas/Page'
+const Page13=lazy(()=>import('../features/atlas/Page'))
 import Page14 from '../features/insights/Page'
 import Page15 from '../features/settings/Page'
 import Page16 from '../features/sign-in/Page'
