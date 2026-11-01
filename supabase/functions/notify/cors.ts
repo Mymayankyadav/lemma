@@ -36,11 +36,12 @@ export function notifyPreflight(
  const headers=notifyCorsHeaders(origin);
  const methodAllowed=requestMethod==null||
   ['GET','POST','OPTIONS'].includes(requestMethod.toUpperCase());
+ const rawHeadersSafe=requestHeaders==null||!/[\x00-\x1f\x7f]/u.test(requestHeaders);
  const requested=requestHeaders==null||requestHeaders===''?[]:
   requestHeaders.split(',').map(header=>header.trim().toLowerCase());
  const headersAllowed=requested.every(header=>
   header==='authorization'||header==='content-type');
- if(!headers['Access-Control-Allow-Origin']||!methodAllowed||!headersAllowed)
+ if(!headers['Access-Control-Allow-Origin']||!methodAllowed||!rawHeadersSafe||!headersAllowed)
   return {status:403,headers:{Vary:'Origin'}};
  return {status:204,headers};
 }
