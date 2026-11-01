@@ -1911,6 +1911,44 @@ export class DemoAdapter implements LemmaApi {
     if(!Number.isSafeInteger(offset)||offset<0)invalid('Card page offset must be nonnegative');
     const rows:CardRow[]=[];
     let matched=0,hasMore=false;
+    // The private S/X fixture is a deterministic numbered card sequence.
+    // A 50-row Cards page must not hydrate 30k future notes merely to inspect
+    // its last 51 rows. Generate only matches; all edits materialize the store
+    // and take the normal exact filtering path below.
+    const deferred=typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
+    const template=demoSeedFixture.notes[0];
+    if(deferred&&this.virtualStressDue&&template?.cards[0]?.state.state===2){
+      if((filter.noteStatus&&filter.noteStatus!=='active')||
+         filter.hasOpenComments||(filter.state!==undefined&&filter.state!==2))
+        return {rows,nextOffset:null};
+      const projects=this.store.projects,dueCount=this.store.stressDueCount??0;
+      for(let i=(this.store.stressNoteCount??0)-1;i>=0;i--){
+        const project=projects[i%projects.length];
+        if(filter.projectSlug&&project.slug!==filter.projectSlug)continue;
+        const checkpointCode='CP'+(i%36+1);
+        if(filter.checkpointCode&&checkpointCode!==filter.checkpointCode)continue;
+        // Most generated cards have simple indexed text. Check that first,
+        // so a rare search does not construct 30k rich note objects.
+        if(needle&&i>5){
+          const no=i+1;
+          if(!('Recall the definition in card '+no+'?').toLowerCase().includes(needle)&&
+             !('Prove the statement for card '+no+'.').toLowerCase().includes(needle))
+            continue;
+        }
+        const n=makeStressNotes(template,projects,1,dueCount,i)[0],note=n.note;
+        if(needle&&!note.front.toLowerCase().includes(needle)&&
+           !note.back.toLowerCase().includes(needle))continue;
+        if(matched++<offset)continue;
+        if(rows.length===50){hasMore=true;break;}
+        rows.push({noteNo:note.noteNo,front:note.front,type:note.type,kind:note.kind,
+          projectSlug:note.projectSlug,glyph:this.subject(project.subjectId).glyph,
+          checkpointCode:note.checkpointCode,
+          due:new Date(i<dueCount?this.virtualStressDue.overdue:
+            this.virtualStressDue.future).toISOString(),
+          status:note.status,openComments:0});
+      }
+      return {rows,nextOffset:hasMore?offset+50:null};
+    }
     // Newest notes first, without copying or sorting the 30,000-card store.
     // Stop after 51 matches to keep the rendered card library bounded.
     for(let i=this.store.notes.length-1;i>=0;i--){
