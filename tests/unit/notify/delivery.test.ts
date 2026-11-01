@@ -7,7 +7,7 @@ vi.mock('../../../supabase/functions/_shared/webpush',()=>({
 }));
 const base:DeliveryRequest={
  subscription:{endpoint:'https://push.example.test/sub/123',keys:{p256dh:'test-key',auth:'test-auth'}},
- payload:{v:1,id:42,kind:'due',tag:'due',title:'23 cards due',body:'Start with five?',url:'#/review'},
+ payload:{v:1,id:42,kind:'due',tag:'due',title:'23 cards due',body:'Start with five?',url:'#/review',actions:[],ts:1793527200000},
  vapid:{publicKey:'public',privateKey:'private',subject:'mailto:test@example.test'},
  kind:'due',tag:'due',
 };
@@ -30,6 +30,7 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
   const [url,init]=fetcher.mock.calls[0] as [string,RequestInit];
   expect(url).toBe(base.subscription.endpoint);
   expect(init.method).toBe('POST');
+  expect(init.redirect).toBe('error');
   expect(init.body).toEqual(new Uint8Array([1,2,3]));
   expect(init.headers).toMatchObject({
    'Content-Encoding':'aes128gcm','Content-Type':'application/octet-stream',
@@ -109,4 +110,37 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
   expect(fetcher.mock.calls[0][1].signal).toBe(controller.signal);
   expect(JSON.stringify(result)).not.toMatch(/sensitive|endpoint|vapid|private/i);
  });
+ it('rejects push-service redirects rather than following a POST to a second destination',async()=>{
+  fetcher.mockImplementationOnce(async(_url:string,init:RequestInit)=>{
+   expect(init.redirect).toBe('error');
+   // Real fetch with redirect:error rejects before issuing a second request.
+   throw new TypeError('redirect blocked');
+  });
+  expect(await sendWebPush(base,fetcher)).toEqual({status:'retry'});
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  fetcher.mockResolvedValueOnce(response(307));
+  expect(await sendWebPush(base,fetcher)).toEqual({status:'failed',httpStatus:307});
+  expect(fetcher).toHaveBeenCalledTimes(2);
+ });
+ it('rejects missing, malformed or extra fields in the exact v1 envelope before encryption',async()=>{
+  const invalid=[
+   {actions:undefined},{ts:undefined},{actions:null},{actions:'not-an-array'},
+   {actions:Array(3).fill({action:'open',title:'Open'})},
+   {actions:[{action:'not valid',title:'Open'}]},
+   {actions:[{action:'open',title:'Open',secret:'unexpected'}]},
+   {actions:[{action:'open',title:'Open',url:'https://evil.example/'}]},
+   {actions:[{action:'later',title:'Later',token:'not a token'}]},
+   {actions:[{action:'later',title:'Later',title2:'private'}]},
+   {ts:0},{ts:Infinity},{ts:1.5},{id:'9223372036854775808'},
+   {url:'https://evil.example/redirect'},{url:'//evil.example/path'},
+   {url:'#/review\nother'},{secret:'unexpected'},
+  ];
+  for(const change of invalid){
+   expect(await sendWebPush({...base,payload:{...base.payload,...change}},fetcher),JSON.stringify(change))
+    .toEqual({status:'failed'});
+  }
+  expect(fetcher).not.toHaveBeenCalled();
+  expect(prepare).not.toHaveBeenCalled();
+ });
+
 });
