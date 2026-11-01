@@ -10,7 +10,7 @@ import {useReviewSession} from './store';
 import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
-import {useOnlineStatus} from '../../ui/useOnlineStatus';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {MathText} from '../../ui/MathText';
 import {Card} from '../../ui/Card';
 import {Glyph} from '../../ui/Glyph';
@@ -141,7 +141,7 @@ export default function Page(){
   else {useReviewSession.getState().close();navigate('/review')}
  }
  async function grade(rating:Rating){
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!current||!revealed||!intervals||useReviewSession.getState().submitting)return;
   const durationMs=Math.max(0,Math.min(600000,Date.now()-startTime));
   beginGrade();
@@ -167,11 +167,11 @@ export default function Page(){
    setStamp(false);void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:0}});
    cancelGrade();
    notify((error instanceof Error?error.message:'Could not confirm answer')+'. Current card kept.',
-    {tone:'danger',action:{label:'Retry',onClick:()=>{if(navigator.onLine)void grade(rating);else notify('Reconnect before retrying',{tone:'danger'})}}});
+    {tone:'danger',action:{label:'Retry',onClick:()=>{if(networkWritable())void grade(rating);else notify('Reconnect before retrying',{tone:'danger'})}}});
   }
  }
  async function undoLast(){
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!lastUndo||undo.isPending||submitting)return;
   try{
    await undo.mutateAsync(lastUndo.reviewId);
@@ -200,7 +200,7 @@ export default function Page(){
   return ()=>document.removeEventListener('keydown',handler);
  },[current,submitting,revealed,sheetOpen,intervals,confidence,startTime]);
  async function leaveNote(){
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!current || !note.trim())return;
   try{
    await addComment.mutateAsync({noteNo:current.noteNo,body:note.trim()});
@@ -208,7 +208,7 @@ export default function Page(){
   }catch(error){notify(error instanceof Error?error.message:'Could not add note',{tone:'danger'})}
  }
  async function suspendCard(){
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!current)return;
   try{
    await suspend.mutateAsync({noteNo:current.noteNo,status:'suspended'});
