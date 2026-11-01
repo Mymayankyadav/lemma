@@ -1,5 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
@@ -103,7 +103,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
    className="flex min-h-11 w-full items-center gap-2 border-b border-edge text-left">
    <span aria-hidden="true" className="text-title-s text-ink-2">{glyph}</span>
    <SectionHeading className="min-w-0 flex-1 break-words"><Tex source={name}/></SectionHeading>
-   <span data-count-role="" className="font-[var(--font-ui)] text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
+   <span className="text-caption text-ink-2">{total} {total===1?'project':'projects'}</span>
    <ChevronDown size={17} className={'text-ink-3 transition-transform '+(collapsed?'-rotate-90':'')}/>
   </button>}
   {(total===1||!collapsed)&&<div className="divide-y divide-[var(--hair)]">{items.map(project=><ProjectRow key={project.id} project={project} showSubject={total===1} pinnedCount={pinnedCount}/>)}</div>}
@@ -112,9 +112,12 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 
 export default function Page(){
  const queryClient=useQueryClient();
- // Warm Atlas only from Paths, not cold Today. Reuse the canonical graph query
- // and the already-merged v4 singleton subject rows without restoring old cards.
- useEffect(()=>{
+ // The 2,500-idea demo Atlas must not compete with first paint of Paths.
+ // Warm its module and canonical data query on genuine Atlas navigation
+ // intent (hover, keyboard focus, or touch/pointer down), not on mount.
+ // Live Paths never issues an extra Atlas network request.
+ const warmAtlas=useCallback(()=>{
+  if(getMode()!=='demo')return;
   void import('../atlas/Page');
   void prefetchAtlasForPaths(queryClient,getMode(),()=>getApi().getAtlas());
  },[queryClient]);
@@ -175,7 +178,7 @@ export default function Page(){
   <header className="flex min-h-11 items-center justify-between gap-3">
    <h1 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h1>
    <nav aria-label="Path actions" className="flex gap-2">
-    <Link to="/atlas" aria-label="Open Atlas" className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-fill-1 text-ink-2"><Waypoints size={19}/></Link>
+    <Link to="/atlas" aria-label="Open Atlas" onPointerEnter={warmAtlas} onPointerDown={warmAtlas} onFocus={warmAtlas} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-fill-1 text-ink-2"><Waypoints size={19}/></Link>
     <Link to="/projects/new" aria-label="New project" className="flex min-h-11 items-center gap-2 rounded-ctl border border-amber bg-amber-tint px-3 text-label text-amber"><Plus size={16}/>New</Link>
    </nav>
   </header>

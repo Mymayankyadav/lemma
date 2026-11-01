@@ -1,12 +1,9 @@
 import type {QueryClient} from '@tanstack/react-query'
 import type {DataMode} from '../../data/mode'
 
-/** Paths is the natural entry to Atlas. Warm the existing canonical query only
- * in the local demo: the full 2,500-idea stress graph stays virtual on Today,
- * and opening Paths must never introduce an extra live-network request.
- *
- * React Query shares in-flight fetches with useAtlas(), so an immediate tap
- * neither duplicates the graph build nor changes the actual Atlas contents.
+/** Paths is the natural entry to Atlas. Warm its canonical query only in
+ * demo: a Paths visit must never introduce an extra live-network request.
+ * React Query deduplicates in-flight loads with the eventual useAtlas hook.
  */
 export function prefetchAtlasForPaths<T>(
  queryClient:Pick<QueryClient,'prefetchQuery'>,
