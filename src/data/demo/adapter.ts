@@ -514,7 +514,6 @@ export class DemoAdapter implements LemmaApi {
     card: DemoNote["cards"][number],
     project: DemoProject,
     cp: DemoCheckpoint | null,
-    copyState = true,
   ): ReviewItem {
     return {
       cardId: card.id,
@@ -532,7 +531,7 @@ export class DemoAdapter implements LemmaApi {
       sessionNumber: note.note.sessionNumber,
       sourceShort: note.note.sourceShort,
       pageLabel: note.note.pageLabel,
-      state: copyState ? clone(card.state) : card.state,
+      state: clone(card.state),
     };
   }
   /** Resolve only requested private synthetic notes; never spread the store
@@ -567,7 +566,7 @@ export class DemoAdapter implements LemmaApi {
     }
     return this.virtualReviewNotes;
   }
-  private allItems(include?: (state: CardState) => boolean, notes?: readonly DemoNote[], copyState = true) {
+  private allItems(include?: (state: CardState) => boolean, notes?: readonly DemoNote[]) {
     // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
     // identities once instead of scanning all checkpoints for every card.
     const projects = new Map<string, DemoProject>(this.store.projects
@@ -583,7 +582,7 @@ export class DemoAdapter implements LemmaApi {
           ? checkpoints.get(cpKey(n.projectId, n.note.checkpointCode)) ?? null
           : null;
         return n.cards.filter(card => !include || include(card.state))
-          .map(card => this.item(n, card, project, cp, copyState));
+          .map(card => this.item(n, card, project, cp));
       });
   }
   /** The due badge and deck counts represent the full backlog, not the daily queue. */
@@ -606,14 +605,8 @@ export class DemoAdapter implements LemmaApi {
     // dueToday never selects a future scheduled card. Avoid constructing
     // 26,000 cloned ReviewItems only to discard them in the 30k-card fixture.
     // Keep every new card, plus every due/learning card before study-day end.
-    const notes=this.reviewNotes();
-    // Private generated stress notes cannot be mutated by the queue read.
-    // getReviewItems defensively clones its final response, so cloning all
-    // 4,000 intermediate CardState objects here only delays cold Review-run.
-    const privateVirtual=notes===this.virtualReviewNotes &&
-      typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
     return dueToday(this.allItems(state => state.state === 0 ||
-      this.dueTime(state.due) < end,notes,!privateVirtual), this.store.settings, {
+      this.dueTime(state.due) < end,this.reviewNotes()), this.store.settings, {
       now: this.now(),
       answeredToday: today.length,
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
@@ -1829,14 +1822,6 @@ export class DemoAdapter implements LemmaApi {
   }
   async getReviewItems(filter: QueueFilter) {
     const eligible = this.eligible();
-    const notes=this.reviewNotes();
-    const options={...filter,includeNew:filter.includeNew||filter.newOnly};
-    // Generated, unedited stress notes have neither session nor concept
-    // associations. An empty metadata map has exactly the same filter
-    // semantics without a second O(4,000) scan of the virtual due cohort.
-    if(notes===this.virtualReviewNotes &&
-       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function')
-      return clone(filterReviewItems(eligible,options));
     const needed = new Set(eligible.map(card => card.cardId));
     const sessionForCard: Record<string, string> = {},
       conceptsForCard: Record<string, string[]> = {};
@@ -1844,6 +1829,7 @@ export class DemoAdapter implements LemmaApi {
     // Array.find did up to 75 million comparisons before Review could paint.
     // Index concepts once and attach metadata only to the bounded daily
     // queue, never all 30,000 cards. Concept/session filtering is unchanged.
+    const notes=this.reviewNotes();
     // Generated stress notes have no concept IDs. Avoid hydrating 2,500
     // unrelated Atlas ideas merely to build a map with no matching keys.
     const conceptSlugs = notes===this.virtualReviewNotes
@@ -1861,7 +1847,7 @@ export class DemoAdapter implements LemmaApi {
     return clone(
       filterReviewItems(
         eligible,
-        options,
+        { ...filter, includeNew: filter.includeNew || filter.newOnly },
         {
           sessionForCard,
           conceptsForCard,
