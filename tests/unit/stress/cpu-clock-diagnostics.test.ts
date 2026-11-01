@@ -12,4 +12,18 @@ describe('AUDIT #540 cold CPU clock diagnostics',()=>{
   expect(source).toContain('browserTiming');
   expect(source).toContain('expect(auditCpuMatrix(samples,matrix)');
  });
+ it('records each loaded-state assertion and the two paint frames without replacing the wall-clock gate',()=>{
+  const readiness=readFileSync(join(process.cwd(),'tests/e2e/stress-cpu-readiness.ts'),'utf8');
+  const cpu=readFileSync(join(process.cwd(),'tests/cpu/stress-cpu.spec.ts'),'utf8');
+  for(const phase of ['route-marker','cards-first-row','cards-loaded-count','plan-heading',
+   'plan-ideas-region','session-events','no-skeleton','no-card-proposal-error',
+   'no-session-error']){
+   expect(readiness,'missing loaded-state phase '+phase).toContain("'"+phase+"'");
+  }
+  expect(cpu).toContain("'two-paint-frames'");
+  expect(cpu).toContain('readinessPhases');
+  expect(cpu).toContain('const durationMs=Date.now()-start');
+  expect(cpu).toContain('expect(auditCpuMatrix(samples,matrix)');
+ });
+
 });
