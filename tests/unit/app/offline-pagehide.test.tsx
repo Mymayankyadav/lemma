@@ -1,4 +1,4 @@
-import {act} from 'react'
+import {act,useEffect} from 'react'
 import {createRoot} from 'react-dom/client'
 import {createMemoryRouter,RouterProvider} from 'react-router'
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query'
@@ -57,6 +57,38 @@ test('AND-8 pagehide stages successful route queries synchronously before best-e
   await vi.waitFor(()=>expect(saveOfflineSnapshot).toHaveBeenCalled())
   expect(order[0]).toBe('stage')
   expect(order).toContain('save')
+ }finally{
+  await act(async()=>root.unmount())
+  router.dispose()
+  host.remove()
+  client.clear()
+ }
+})
+
+
+test('AND-8 registers the pagehide listener before a newly painted route can navigate away',async()=>{
+ Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
+ const client=new QueryClient()
+ client.setQueryData(['projects'],[{slug:'real-analysis',title:'Real Analysis'}])
+ function ImmediateExit(){
+  // Child passive effects run before the parent passive effect. This
+  // deliberately reproduces a fast navigation after the route commits:
+  // a parent useEffect listener would miss it; useLayoutEffect cannot.
+  useEffect(()=>{window.dispatchEvent(new Event('pagehide'))},[])
+  return <p>Home</p>
+ }
+ const router=createMemoryRouter([{element:<AppShell/>,children:[{path:'/',element:<ImmediateExit/>}]}])
+ const host=document.createElement('div')
+ document.body.append(host)
+ const root=createRoot(host)
+ try{
+  vi.mocked(stageOfflineHandoff).mockClear()
+  await act(async()=>root.render(
+   <QueryClientProvider client={client}><RouterProvider router={router}/></QueryClientProvider>
+  ))
+  expect(stageOfflineHandoff).toHaveBeenCalledWith(
+   'demo-stress',['projects'],[{slug:'real-analysis',title:'Real Analysis'}],expect.any(Number)
+  )
  }finally{
   await act(async()=>root.unmount())
   router.dispose()
