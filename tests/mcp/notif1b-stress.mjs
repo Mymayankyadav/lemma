@@ -64,6 +64,23 @@ try{
  if(elapsed>=150){
    const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,now())',[owner])
    console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
+   // Inspect individual CTE costs only after the strict first attempt has failed.
+   // This never changes the measured elapsed time, data, or acceptance threshold.
+   const migrationSql=await readFile(new URL('../../supabase/migrations/20261101123100_notify_candidates.sql',import.meta.url),'utf8')
+   const cteSource=migrationSql.split('as $facts
+ }
+ assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
+ console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
+}finally{await db.close()}
+)[1]?.split("\nselect jsonb_build_object(\n  'tz'")[0]
+   assert.ok(cteSource?.startsWith('\nwith\n'),'candidate CTE diagnostics must match the migration')
+   const ctes=cteSource.replace(/\bp_user\b/g,'$1::uuid').replace(/\bp_now\b/g,'$2::timestamptz')
+   for(const name of ['due_candidates','top_due','prioritized','quota','tomorrow_rows','study_summary']){
+     const t0=performance.now()
+     const detail=await q('explain (analyze,buffers) '+ctes+'\nselect count(*) from '+name,[owner,new Date().toISOString()])
+     console.log('NOTIF-1b X CTE '+name+' '+(performance.now()-t0).toFixed(1)+'ms\n'+
+       detail.map(row=>row['QUERY PLAN']).join('\n').slice(0,6000))
+   }
  }
  assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
  console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
