@@ -19,6 +19,24 @@ export interface OfflineSettings {
  mixDecks:boolean
  newPerDay:number
 }
+/** Reject unknown or malformed persisted fields before hydration, not just on write. */
+export function isOfflineSettings(value:unknown):value is OfflineSettings {
+ if(!value||typeof value!=='object'||Array.isArray(value))return false
+ const data=value as Record<string,unknown>
+ const keys=['v','timeZone','rolloverHour','ui','preferredChat','defaultStyle','mixDecks','newPerDay']
+ if(Object.keys(data).length!==keys.length||!keys.every(key=>Object.hasOwn(data,key)))return false
+ if(data.v!==1||typeof data.timeZone!=='string'||!Number.isFinite(data.rolloverHour)||
+  typeof data.defaultStyle!=='string'||typeof data.mixDecks!=='boolean'||
+  !Number.isFinite(data.newPerDay)||!['claude','chatgpt'].includes(String(data.preferredChat)))return false
+ if(data.ui===null)return true
+ if(!data.ui||typeof data.ui!=='object'||Array.isArray(data.ui))return false
+ const ui=data.ui as Record<string,unknown>
+ if(Object.keys(ui).some(key=>!['mode','density','motion'].includes(key)))return false
+ if(ui.mode!==undefined&&!['auto','day','night'].includes(String(ui.mode)))return false
+ if(ui.density!==undefined&&!['compact','cozy','comfortable'].includes(String(ui.density)))return false
+ if(ui.motion!==undefined&&!['calm','lively'].includes(String(ui.motion)))return false
+ return true
+}
 export type OfflineKey=readonly string[]
 export interface OfflineEntry {key:string[];data:unknown;savedAt:number}
 export interface OfflineSnapshot {v:1;savedAt:number;entries:OfflineEntry[]}
@@ -74,6 +92,7 @@ function projectSlug(entry:OfflineEntry):string|null {
 export function boundOfflineEntries(entries:OfflineEntry[],now=Date.now(),maxBytes=OFFLINE_MAX_BYTES):OfflineEntry[]{
  const valid=entries.filter(e=>isOfflineKey(e.key)&&Number.isFinite(e.savedAt)&&e.savedAt<=now&&now-e.savedAt<=OFFLINE_MAX_AGE_MS)
   .map(e=>({...e,data:scrubOfflineData(e.data)}))
+  .filter(e=>e.key[0]!=='settings'||isOfflineSettings(e.data))
  const latest=new Map<string,OfflineEntry>()
  for(const entry of valid){
   const key=JSON.stringify(entry.key),previous=latest.get(key)
