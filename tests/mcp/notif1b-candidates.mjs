@@ -223,10 +223,14 @@ try{
 
  await db.exec('reset role')
  const migration=await readFile(new URL('../../supabase/migrations/20261101123100_notify_candidates.sql',import.meta.url),'utf8')
+ const parityAt='2026-11-01T01:00:00Z'
+ const optimizedSnapshot=await facts(owner,parityAt)
  const before=await q("select has_function_privilege('service_role','public.notify_candidates(uuid,timestamptz)','EXECUTE') ok")
  await db.exec('drop function public.notify_candidates(uuid,timestamptz)')
  await db.exec(migration)
  const after=await q("select has_function_privilege('service_role','public.notify_candidates(uuid,timestamptz)','EXECUTE') ok")
  assert.deepEqual(after,before)
+ assert.deepEqual(await facts(owner,parityAt),optimizedSnapshot,
+   'card-first optimization and original SQL must return identical owner-scoped snapshots')
  console.log('PASS NOTIF-1b candidate function down/up grants parity')
 }finally{await db.close()}

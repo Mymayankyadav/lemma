@@ -3,7 +3,7 @@ import {Link,useNavigate} from 'react-router';
 import type {CheckpointView} from '../../data/types';
 import {buildSchedule,scheduleDetail,type ScheduledCheckpoint} from '../../lib/schedule';
 import {plainMath} from '../../lib/plain-math';
-import {Tex} from '../Tex';
+import {FastTex as Tex} from '../FastTex';
 import {currentCheckpointIndex,groupCheckpointStages,worstStageSchedule} from './progress';
 import {layoutRoute,type RouteMark} from './route-layout';
 
