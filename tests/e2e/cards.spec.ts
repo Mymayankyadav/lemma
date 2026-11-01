@@ -24,8 +24,11 @@ test("search, notes, editing and pause work for a card", async ({ page }) => {
   await expect(
     page.getByText("Next time you ask to update cards").first(),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Pause card" }).click();
-  await expect(page.getByRole("button", { name: "Resume card" })).toBeVisible();
+  await page.getByRole("button", { name: "Card actions" }).click();
+  await page.getByRole("menuitem", { name: "Suspend card" }).click();
+  await page.getByRole("button", { name: "Card actions" }).click();
+  await expect(page.getByRole("menuitem", { name: "Resume card" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Edit card" }).click();
   const dialog = page.getByRole("dialog", { name: "Edit card" });
   await dialog
