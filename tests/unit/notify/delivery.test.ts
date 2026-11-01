@@ -110,6 +110,29 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
   expect(fetcher.mock.calls[0][1].signal).toBe(controller.signal);
   expect(JSON.stringify(result)).not.toMatch(/sensitive|endpoint|vapid|private/i);
  });
+ it('never encrypts or sends an already-aborted delivery',async()=>{
+  const controller=new AbortController();
+  controller.abort();
+  expect(await sendWebPush({...base,signal:controller.signal},fetcher)).toEqual({status:'failed'});
+  expect(prepare).not.toHaveBeenCalled();
+  expect(fetcher).not.toHaveBeenCalled();
+ });
+ it('does not send after cancellation while Web Push encryption is pending',async()=>{
+  const controller=new AbortController();
+  let release!:()=>void;
+  const paused=new Promise<Awaited<ReturnType<typeof prepare>>>(resolve=>{
+   release=()=>resolve({body:new Uint8Array([1,2,3]),headers:{Authorization:'vapid test'}});
+  });
+  prepare.mockReturnValueOnce(paused);
+  const result=sendWebPush({...base,signal:controller.signal},fetcher);
+  // Let preparation begin, then cancel before it finishes.
+  await Promise.resolve();
+  controller.abort();
+  release();
+  expect(await result).toEqual({status:'failed'});
+  expect(prepare).toHaveBeenCalledTimes(1);
+  expect(fetcher).not.toHaveBeenCalled();
+ });
  it('rejects push-service redirects rather than following a POST to a second destination',async()=>{
   fetcher.mockImplementationOnce(async(_url:string,init:RequestInit)=>{
    expect(init.redirect).toBe('error');
