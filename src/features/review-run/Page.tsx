@@ -1,5 +1,5 @@
 import './review.css';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
@@ -10,7 +10,7 @@ import {useReviewSession} from './store';
 import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
-import {MathText} from '../../ui/MathText';
+import {isPlainReviewFront} from './plainFront';
 import {Card} from '../../ui/Card';
 import {Glyph} from '../../ui/Glyph';
 import {Chip} from '../../ui/Chip';
@@ -18,6 +18,8 @@ import {Sheet} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {useCalm} from '../../ui/useCalm';
+
+const RichMathText=lazy(()=>import('../../ui/MathText').then(module=>({default:module.MathText})));
 
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
@@ -34,6 +36,7 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
  const scrollRef=useRef<HTMLDivElement>(null);
  const [more,setMore]=useState(0);
  const fontSize=front.length>200?18:21;
+ const plainFront=isPlainReviewFront(front,item.type);
  useEffect(()=>{
   const el=scrollRef.current;
   if(!el)return;
@@ -53,13 +56,16 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
     onScroll={e=>{const el=e.currentTarget;setMore(Math.max(0,Math.ceil((el.scrollHeight-el.scrollTop-el.clientHeight)/28)))}}
     className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-1 pb-6">
     <div className="review-front min-w-0 font-math" style={{fontSize,lineHeight:'28px'}}>
-     <MathText className={fontSize===21?'!text-[21px] !leading-[28px]':'!text-[18px] !leading-[28px]'} source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined} interactiveMath/>
+     {plainFront?<div className={'lemma-math prose-invert min-w-0 max-w-none wrap-break-word font-math text-card leading-[1.3] text-ink '+(fontSize===21?'!text-[21px] !leading-[28px]':'!text-[18px] !leading-[28px]')}><p>{front}</p></div>:
+      <RichMathText className={fontSize===21?'!text-[21px] !leading-[28px]':'!text-[18px] !leading-[28px]'} source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined} interactiveMath/>}
     </div>
     {revealed&&<div className="mt-4 min-w-0 font-math text-[18px] leading-[28px]">
      <motion.div initial={quiet?false:{scaleX:0}} animate={{scaleX:1}} transition={{duration:quiet?0:0.32}} className="mb-4 h-[1.5px] origin-left bg-amber"/>
      <motion.div initial={quiet?false:{opacity:0}} animate={{opacity:1}} transition={{duration:quiet?0:.3}}>
-      {back?<MathText className="!text-[18px] !leading-[28px]" source={back} variant="answer" interactiveMath/>:item.type==='cloze'?<MathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}} interactiveMath/>:
+      <Suspense fallback={<p role="status" className="text-label text-ink-2">Rendering mathematical answer…</p>}>
+      {back?<RichMathText className="!text-[18px] !leading-[28px]" source={back} variant="answer" interactiveMath/>:item.type==='cloze'?<RichMathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}} interactiveMath/>:
        <p className="font-math text-title-s text-ink-2">See the highlighted answer above.</p>}
+      </Suspense>
      </motion.div>
     </div>}
    </div>
@@ -255,7 +261,9 @@ export default function Page(){
      else if(info.offset.y< -110)void grade(4);
     }}>
     <motion.span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 z-10 text-center font-math text-num italic text-amber">{swipeLabel}</motion.span>
-    <CardFace item={current} revealed={revealed} confidence={confidence} quiet={reduce} stamp={stamp}/>
+    <Suspense fallback={<Skeleton h={208}/>}> 
+     <CardFace item={current} revealed={revealed} confidence={confidence} quiet={reduce} stamp={stamp}/>
+    </Suspense>
    </motion.div>
   </div>
   <p className="text-center text-caption text-ink-3">{Math.max(0,total-new Set(answers.map(a=>a.card.cardId)).size-1)} after this</p>
