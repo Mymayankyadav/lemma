@@ -62,4 +62,11 @@ describe('NOTIF-4b5 safe service-worker push payload',()=>{
   expect(payload.title.length).toBeLessThanOrEqual(48);
   expect(payload.body.length).toBeLessThanOrEqual(140);
  });
+ it('rejects otherwise valid signed actions whose combined UTF-8 payload exceeds 3 KB',()=>{
+  const largeToken='a'.repeat(1600)+'.'+'b'.repeat(100);
+  expect(()=>buildPushPayload({...base,actions:[
+   {action:'approve_cards',title:'Approve cards',token:largeToken},
+   {action:'undo',title:'Undo',token:largeToken},
+  ]})).toThrow();
+ });
 });
