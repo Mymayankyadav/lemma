@@ -126,6 +126,7 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
   const invalid=[
    {actions:undefined},{ts:undefined},{actions:null},{actions:'not-an-array'},
    {actions:Array(3).fill({action:'open',title:'Open'})},
+   {actions:new Array(1)}, // sparse arrays serialize as null; every() skips holes
    {actions:[{action:'not valid',title:'Open'}]},
    {actions:[{action:'open',title:'Open',secret:'unexpected'}]},
    {actions:[{action:'open',title:'Open',url:'https://evil.example/'}]},
