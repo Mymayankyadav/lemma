@@ -141,6 +141,12 @@ describe("FIX #619: explicit independent Auditor CLEAR is a real merge gate", ()
     expect(evaluateMergeGate({ ...gated, auditComments: [old, currentClear] }).ok).toBe(true);
   });
 
+  it("uses the current acceptance checklist, not stale unchecked historical handoff notes", () => {
+    const body = ready.body + "\n### Acceptance checklist\n- [x] Independent Auditor CLEAR\nNext step: merge"
+      + "\n### Earlier handoff\n- [ ] Independent Auditor CLEAR pending at old head";
+    expect(evaluateMergeGate({ ...ready, body, auditComments: [currentClear] }).ok).toBe(true);
+  });
+
   it("does not impose a new blanket audit requirement on unrelated Ready PRs", () => {
     expect(evaluateMergeGate(ready).ok).toBe(true);
   });
