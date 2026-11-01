@@ -19,8 +19,17 @@ export type NoticeCopyInput =
 
 const quantity=(count:number,singular:string,plural:string)=>String(Math.max(0,Math.floor(count)))+' '+(count===1?singular:plural)
 const capped=(count:number)=>count>999?'999+':String(Math.max(0,Math.floor(count)))
+/** User-supplied project names can contain language forbidden in system alerts. */
+const toneSafe=(value:string)=>value
+ .replace(/\bdon't break\b/gi,'continue')
+ .replace(/\b(missed|failed|overdue|streak|only|still|again|hurry)\b/gi,word=>({
+  missed:'planned',failed:'unfinished',overdue:'due',streak:'rhythm',
+  only:'just',still:'currently',again:'next',hurry:'take your time'
+ } as Record<string,string>)[word.toLowerCase()]??word)
+ .replace(/!/g,'.')
+ .replace(/[\u{1F300}-\u{1FAFF}]/gu,'')
 const asCopy=(kind:string,tag:string,title:string,body:string):NoticeCopy=>({
- kind,tag,title:notifyTitle(title),body:notifyBody(body)
+ kind,tag,title:notifyTitle(toneSafe(title)),body:notifyBody(toneSafe(body))
 })
 const countClause=(n:number,one:string,many:string)=>n>0?quantity(n,one,many):null
 
