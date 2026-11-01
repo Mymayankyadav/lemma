@@ -3,7 +3,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
-import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatus,useUndoReview,useSessions} from '../../data/hooks';
+import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatus,useUndoReview} from '../../data/hooks';
 import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../data/types';
 import {preview,scheduleConfig} from '../../lib/fsrs';
 import {useReviewSession} from './store';
@@ -88,7 +88,7 @@ function isInteractiveShortcutTarget(target:EventTarget|null):boolean{
 
 export default function Page(){
  const navigate=useNavigate(),[search]=useSearchParams(),notify=useToast(),reduced=!!useReducedMotion(),calm=useCalm(),reduce=reduced||calm;
- const settings=useSettings(),sessions=useSessions(),mutate=useRecordReview(),undo=useUndoReview();
+ const settings=useSettings(),mutate=useRecordReview(),undo=useUndoReview();
  const addComment=useAddComment(),suspend=useSetNoteStatus();
  const current=useReviewSession(s=>s.current),queue=useReviewSession(s=>s.queue);
  const revealed=useReviewSession(s=>s.revealed),confidence=useReviewSession(s=>s.confidence);
