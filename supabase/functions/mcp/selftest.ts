@@ -7,12 +7,12 @@ import { createMcpHandler } from './deps.ts';
 import { savePages } from './tools/transcribe.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
 import { parseMcpReply } from './protocol.ts';
-// The full self-test takes ~145s, at the edge function's 150s wall-clock limit,
-// so the smoke runs it in two independent halves with their own fixtures.
-export type SelftestPart=1|2|'all';
-const PART_STEPS={1:12,2:10,all:19} as const;
+// Keep each self-test request below the Edge worker's observed wall-clock limit.
+// The smoke runs three independent partitions with their own fixtures and cleanup.
+export type SelftestPart=1|2|3|'all';
+const PART_STEPS={1:12,2:8,3:5,all:19} as const;
 export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
-  const only=(n:1|2)=>part==='all'||part===n;
+  const only=(n:1|2|3)=>part==='all'||part===n;
   c.selftestProjectIds=new Set<string>();
   const steps:{name:string;ok:boolean;ms:number;detail?:string}[]=[];
   let subjectId:string|undefined,projectId:string|undefined,extraId:string|undefined,extraSubjectId:string|undefined;
@@ -291,7 +291,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const restored=(await scoped(c,'checkpoint_concepts').eq('checkpoint_id',cp.id)).data||[];
       if(restored.length!==before.length||before.some((x:any)=>!restored.some((y:any)=>y.concept_id===x.concept_id)))throw Error('Original links not restored');
     });
-    if(only(2))await check('idea relationship duplicates, conflicts and undo',async()=>{
+    if(only(3))await check('idea relationship duplicates, conflicts and undo',async()=>{
       const base=await insert(c,'concepts',{subject_id:p.subject_id,slug:'selftest-links',name:'Selftest links '+p.slug});
       const subject=(await scoped(c,'subjects').eq('id',p.subject_id).single()).data.name;
       const links=async()=>{const r=await scoped(c,'concept_links').eq('to_id',base.id);if(r.error)throw Error(r.error.message);return r.data||[];};
@@ -321,7 +321,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       await run('undo',undo,{action:changed.action});
       if((await links())[0]?.kind!=='prereq')throw Error('Undo did not restore relationship kind');
     });
-    if(only(2))await check('delete preview cascade and undo',async()=>{
+    if(only(3))await check('delete preview cascade and undo',async()=>{
       const preview=await run('delete',remove,{target:p.slug,confirm:false});if(preview.action)throw Error('Preview wrote data');
       const r=await run('delete',remove,{target:p.slug,confirm:true});
       if((await scoped(c,'projects').eq('id',p.id)).data?.length)throw Error('Delete failed');
