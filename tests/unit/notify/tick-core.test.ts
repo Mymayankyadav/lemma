@@ -48,6 +48,15 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   expect(deps.queue).toHaveBeenCalledTimes(2);
   expect(result).toMatchObject({owners:2,queued:2,sent:45,failed:5});
  });
+ it('does not deliver previously queued rows after reminders are turned off',async()=>{
+  const deps=adapters();
+  vi.mocked(deps.load).mockResolvedValue({
+   ...facts(),context:{...facts().context,mode:'off'},
+  });
+  const result=await runNotifyTick(deps,{now:NOW});
+  expect(result).toMatchObject({owners:1,queued:1,sent:0,skipped:1,failed:0});
+  expect(deps.deliver).not.toHaveBeenCalled();
+ });
  it('allows a queue-only tick with zero sends while still persisting decisions',async()=>{
   const deps=adapters([A,B]);
   const result=await runNotifyTick(deps,{now:NOW,maxSends:0});
