@@ -59,7 +59,12 @@ try{
  assert.ok(snapshot.pastTarget.length<=20)
  assert.equal(snapshot.devices.enabled,0)
  console.log('NOTIF-1b X candidate snapshot',JSON.stringify({projects:60,checkpoints:2400,cards:30000,queryCount,elapsedMs:Number(elapsed.toFixed(1))}))
- // This is a hard acceptance budget, not a retry or averaged warm timing.
+ // Diagnostic EXPLAIN is never used for acceptance: the first call above
+ // remains the only timed attempt and always fails if it exceeded the budget.
+ if(elapsed>=150){
+   const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,now())',[owner])
+   console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
+ }
  assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
  console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
 }finally{await db.close()}
