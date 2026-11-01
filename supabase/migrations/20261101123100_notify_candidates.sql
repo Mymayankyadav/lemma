@@ -242,7 +242,7 @@ history as (
 last_by_key as (
   select coalesce(jsonb_object_agg(key,sent_at),'{}'::jsonb) items
   from (select key,max(sent_at) sent_at from public.notifications
-    where user_id=p_user and sent_at is not null
+    where user_id=p_user and sent_at is not null and kind not in ('test','confirm')
     group by key order by max(sent_at) desc,key limit 50) selected
 ),
 dismiss_recent as (
