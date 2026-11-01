@@ -143,4 +143,21 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
   expect(prepare).not.toHaveBeenCalled();
  });
 
+ it('accepts the approved app and tutor deep links with at most two bounded actions',async()=>{
+  fetcher.mockResolvedValue(response(201));
+  for(const url of [
+   '#/review?start=5','/lemma/#/proposals',
+   'https://mymayankyadav.github.io/lemma/#/review',
+   'https://claude.ai/new','https://chatgpt.com/c/abc',
+   'http://localhost:5173/lemma/#/review',
+  ]){
+   const payload={...base.payload,url,actions:[
+    {action:'review_5',title:'Review 5',url:'#/review?start=5'},
+    {action:'later',title:'Later',token:'abc.def'},
+   ]};
+   expect(await sendWebPush({...base,payload},fetcher),url).toEqual({status:'sent',httpStatus:201});
+  }
+  expect(fetcher).toHaveBeenCalledTimes(6);
+ });
+
 });
