@@ -25,9 +25,9 @@ export function isOfflineSettings(value:unknown):value is OfflineSettings {
  const data=value as Record<string,unknown>
  const keys=['v','timeZone','rolloverHour','ui','preferredChat','defaultStyle','mixDecks','newPerDay']
  if(Object.keys(data).length!==keys.length||!keys.every(key=>Object.hasOwn(data,key)))return false
- if(data.v!==1||typeof data.timeZone!=='string'||!Number.isFinite(data.rolloverHour)||
+ if(data.v!==1||typeof data.timeZone!=='string'||typeof data.rolloverHour!=='number'||!Number.isFinite(data.rolloverHour)||
   typeof data.defaultStyle!=='string'||typeof data.mixDecks!=='boolean'||
-  !Number.isFinite(data.newPerDay)||!['claude','chatgpt'].includes(String(data.preferredChat)))return false
+  (typeof data.newPerDay!=='number'||!Number.isFinite(data.newPerDay))||!['claude','chatgpt'].includes(String(data.preferredChat)))return false
  if(data.ui===null)return true
  if(!data.ui||typeof data.ui!=='object'||Array.isArray(data.ui))return false
  const ui=data.ui as Record<string,unknown>
