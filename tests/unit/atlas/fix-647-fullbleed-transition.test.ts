@@ -7,6 +7,11 @@ import {describe,expect,it} from 'vitest';
 // crossing tears down the old subtree immediately; normal tab-to-tab
 // transitions retain the owner's approved wait animation.
 describe('FIX #647 Atlas full-bleed transition headroom',()=>{
+ it('renders the full-bleed Atlas directly, outside motion and wait animations',()=>{
+  const shell=readFileSync('src/app/AppShell.tsx','utf8');
+  expect(shell).toContain('fullBleed||reduce?<div key={location.pathname}>');
+  expect(shell).toContain(':<AnimatePresence');
+ });
  it('does not wait for the outgoing Paths animation before mounting Atlas',()=>{
   const shell=readFileSync('src/app/AppShell.tsx','utf8');
   expect(shell).toContain("key={fullBleed?'atlas':'standard'}");
