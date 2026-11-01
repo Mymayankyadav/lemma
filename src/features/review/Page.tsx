@@ -2,7 +2,7 @@ import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {getApi} from '../../data/index';
-import {shouldFetchReviewSessions} from './session-demand';
+import {groupReviewSessions,shouldFetchReviewSessions} from './session-demand';
 import {useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
 import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useInsightData} from '../../data/hooks';
@@ -107,9 +107,7 @@ export default function Page(){
   // A disabled query may still expose a previously cached 60k-session list.
   // No session-backed due card means this section is necessarily empty.
   if(!shouldFetchReviewSessions(cards.data))return [];
-  return (sessions.data??[]).map(s=>({
-   ...s,count:dueItems.filter(c=>c.projectSlug===s.projectSlug&&c.sessionNumber===s.number).length
-  })).filter(s=>s.count>0).slice(0,3);
+  return groupReviewSessions(sessions.data??[],dueItems);
  },[sessions.data,dueItems,cards.data]);
  const setProject=(node:DeckNode,value:boolean)=>{
   const changed=new Set(enabled),keys=[node.key,...node.children.map(c=>c.key)];
