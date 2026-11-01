@@ -82,6 +82,12 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   const math=notificationCopy({kind:'behind',project:'ℝ → ℂ',code:'CP1',dueDate:'2 Nov'})
   expect(math.title).toContain('ℝ → ℂ')
  })
+ it('strips subdivision-flag tag characters and presentation selectors',()=>{
+  const project='Algebra \u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}\uFE0E';
+  const copy=notificationCopy({kind:'behind',project,code:'CP1',dueDate:'2 Nov'});
+  expect(copy.title).toBe('Algebra: a smaller step today?');
+  expect(copy.title+' '+copy.body).not.toMatch(/[\u{E0020}-\u{E007F}\uFE0E]/u);
+ });
  it('requires a checkpoint to construct a tomorrow reminder',()=>{
   expect(()=>notificationCopy({kind:'deadline',checkpoints:[]})).toThrow('Deadline requires a checkpoint')
  })
