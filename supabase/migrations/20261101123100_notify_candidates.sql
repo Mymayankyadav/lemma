@@ -8,7 +8,11 @@ create index if not exists notify_checkpoints_owner_due
   where status<>'demonstrated';
 
 create function public.notify_candidates(p_user uuid,p_now timestamptz)
-returns jsonb language sql stable security definer set search_path = '' as $facts$
+-- The 30k-card X snapshot must not use one cards_note_id_owner probe per note.
+-- Owner-scoped hash joins keep the bounded read stable even before auto-ANALYZE
+-- has refreshed estimates after a bulk import. The setting is function-local.
+returns jsonb language sql stable security definer set search_path = ''
+  set enable_nestloop = off as $facts$
 with
 prefs as (
   select s.user_id,s.time_zone,s.rollover_hour,s.reviews_per_day,s.new_per_day,
