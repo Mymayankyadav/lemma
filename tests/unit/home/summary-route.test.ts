@@ -1,4 +1,8 @@
 import {describe,expect,it} from 'vitest';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {MemoryRouter} from 'react-router';
+import {SummaryGoalCard} from '../../../src/features/home/SummaryGoalCard';
 import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import type {ProjectSummary} from '../../../src/data/types';
@@ -47,6 +51,16 @@ describe('FIX #614 v4 large-project summary Route',()=>{
   expect(summaryScheduleStatus(project({scheduleHeadline:'6 days behind'}))).toBe('6 days behind');
   expect(summaryScheduleStatus(project({scheduleHeadline:'9 days ahead'}))).toBe('9 days ahead');
   expect(summaryScheduleStatus(project())).toBe('Not started');
+ });
+ it('never links a guessed checkpoint when home_summary has no current checkpoint',()=>{
+  const html=renderToStaticMarkup(createElement(MemoryRouter,null,
+   createElement(SummaryGoalCard,{project:project({current:null}),events:undefined})));
+  const routeHref=html.match(/data-route-mode="today"[\\s\\S]*?<a[^>]+href="([^"]+)"/)?.[1];
+  expect(routeHref).toBe('/p/algebra');
+  expect(html).not.toContain('href="/p/algebra/cp/CP1"');
+  const current=renderToStaticMarkup(createElement(MemoryRouter,null,
+   createElement(SummaryGoalCard,{project:project(),events:undefined})));
+  expect(current).toContain('href="/p/algebra/cp/CP1"');
  });
  it('does not add a per-project detail query to the large-card component',()=>{
   const source=readFileSync(join(process.cwd(),'src/features/home/SummaryGoalCard.tsx'),'utf8');
