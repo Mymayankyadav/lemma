@@ -1,5 +1,12 @@
 import {test,expect} from '@playwright/test';
 
+interface PaintedBox{left:number;right:number;top:number;bottom:number}
+function paintedGap(a:PaintedBox,b:PaintedBox){
+ const dx=Math.max(0,a.left-b.right,b.left-a.right);
+ const dy=Math.max(0,a.top-b.bottom,b.top-a.bottom);
+ return Math.hypot(dx,dy);
+}
+
 for (const profile of ['stress','extreme'] as const) {
  for (const theme of ['graph','graph-night'] as const) {
   for (const width of [360,390] as const) {
@@ -16,22 +23,23 @@ for (const profile of ['stress','extreme'] as const) {
     await expect.poll(()=>labels.count()).toBeGreaterThan(0);
     const sizes=await labels.evaluateAll(elements=>elements.map(element=>parseFloat(getComputedStyle(element).fontSize)));
     expect(sizes.every(size=>size>=12)).toBe(true);
-    const radii=await labels.evaluateAll(elements=>elements.map(element=>Number(element.previousElementSibling?.getAttribute('r'))));
-    expect(radii.every(radius=>radius>=11)).toBe(true);
-    const fits=await labels.evaluateAll(elements=>elements.every(element=>
-     Number(element.previousElementSibling?.getAttribute('r'))>=Math.max(11.5,6+(element.textContent?.trim().length??0)*4)));
-    expect(fits).toBe(true);
-    // Count circles are actual marks, not just 12px numerals: adjacent
-    // bundles need at least 8px of visible separation in both stress modes.
-    const circles=await page.locator('[data-atlas-bundle-circle]').evaluateAll(elements=>elements.map(element=>{
-     const box=element.getBoundingClientRect();
-     return {x:box.x+box.width/2,y:box.y+box.height/2,r:box.width/2};
+    // v4 replaces circular badges with 16px pills. Keep the original
+    // readability and painted-mark spacing contract, measuring the actual
+    // stroked rectangles rather than a circle radius that no longer exists.
+    const fits=await labels.evaluateAll(elements=>elements.every(element=>{
+     const pill=element.previousElementSibling;
+     if(!pill?.hasAttribute('data-atlas-bundle-pill'))return false;
+     const text=element.getBoundingClientRect(),paint=pill.getBoundingClientRect();
+     return paint.height===16&&paint.width>=text.width+6;
     }));
-    expect(circles.length).toBe(await labels.count());
-    for(let i=0;i<circles.length;i++)for(let j=i+1;j<circles.length;j++){
-     const a=circles[i],b=circles[j];
-     const edgeGap=Math.hypot(a.x-b.x,a.y-b.y)-a.r-b.r;
-     expect(edgeGap,'bundle circles '+i+' and '+j+' overlap').toBeGreaterThanOrEqual(7.5);
+    expect(fits).toBe(true);
+    const pills=await page.locator('[data-atlas-bundle-pill]').evaluateAll(elements=>elements.map(element=>{
+     const b=element.getBoundingClientRect();
+     return {left:b.left,right:b.right,top:b.top,bottom:b.bottom};
+    }));
+    expect(pills.length).toBe(await labels.count());
+    for(let i=0;i<pills.length;i++)for(let j=i+1;j<pills.length;j++){
+     expect(paintedGap(pills[i],pills[j]),'bundle pills '+i+' and '+j+' overlap').toBeGreaterThanOrEqual(8);
     }
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     await page.screenshot({path:`test-results/screens/stress/fix-483-${profile}-${theme}-${width}.png`});
@@ -71,19 +79,20 @@ for(const theme of ['graph','graph-night'] as const)for(const width of [360,390]
   await expect(overflow).toHaveAttribute('open','');
   const hidden=overflow.locator('li');
   const visible=page.locator('[data-atlas-bundle-count]');
-  expect(await hidden.count()+await visible.count()).toBe(20);
+  const laneHidden=page.locator('[data-atlas-lane-overflow] li');
+  // Every original bundle remains reachable through a painted pill, the
+  // finite-gutter badge disclosure or the independent lane disclosure.
+  expect(await hidden.count()+await visible.count()+await laneHidden.count()).toBe(20);
   expect(await hidden.count()).toBeGreaterThan(0);
   expect((await hidden.allTextContents()).every(t=>/rows \d+–\d+: 2 links/.test(t))).toBe(true);
   const fontSizes=await hidden.evaluateAll(items=>items.map(el=>parseFloat(getComputedStyle(el).fontSize)));
   expect(fontSizes.every(size=>size>=12)).toBe(true);
-  const boxes=await page.locator('[data-atlas-bundle-circle], [data-atlas-overflow-count]').evaluateAll(els=>els.map(el=>{
+  const boxes=await page.locator('[data-atlas-bundle-pill], [data-atlas-overflow-count]').evaluateAll(els=>els.map(el=>{
    const b=el.getBoundingClientRect();
-   return {x:b.x+b.width/2,y:b.y+b.height/2,r:b.width/2};
+   return {left:b.left,right:b.right,top:b.top,bottom:b.bottom};
   }));
-  for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
-   const a=boxes[i],b=boxes[j];
-   expect(Math.hypot(a.x-b.x,a.y-b.y)-a.r-b.r).toBeGreaterThanOrEqual(7.5);
-  }
+  for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++)
+   expect(paintedGap(boxes[i],boxes[j])).toBeGreaterThanOrEqual(8);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   await summary.scrollIntoViewIfNeeded();
   await page.screenshot({path:`test-results/screens/stress/fix-483-dense-${theme}-${width}.png`});
