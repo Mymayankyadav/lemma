@@ -1,5 +1,5 @@
 import {Tex} from '../../ui/Tex';
-import {useEffect,useState} from 'react';
+import {lazy,Suspense,useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
 import {ArrowLeft,BookOpen,ChevronRight,Check,Layers,MessageCircle,Pause,Play,Waypoints} from 'lucide-react';
@@ -19,7 +19,10 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {GoalOverview,Stages} from './PathsView';
-import {SourcesPanel} from './SourcesPanel';
+// PDF ingestion and transcription are substantial modules. They are only
+// needed on the Sources tab; loading them on the default Path tab delays the
+// real Route/Stages first paint under 4x CPU for no user-visible benefit.
+const SourcesPanel=lazy(()=>import('./SourcesPanel').then(module=>({default:module.SourcesPanel})));
 import {Sheet} from '../../ui/Sheet';
 
 function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<typeof useToast>){
@@ -171,7 +174,7 @@ export default function Page(){
       action={{label:'Copy plan prompt',onClick:()=>{void navigator.clipboard.writeText(planPrompt(project.title));
        notify('Plan prompt copied',{tone:'success'})}}}/>}
     </div>:tab==='sessions'?
-    <Sessions slug={slug} sessions={data.sessions}/>:<><SourcesPanel sources={data.sources} projectId={project.id}/><PlanHistory slug={slug}/></>}
+    <Sessions slug={slug} sessions={data.sessions}/>:<><Suspense fallback={<Skeleton h={180}/>}><SourcesPanel sources={data.sources} projectId={project.id}/></Suspense><PlanHistory slug={slug}/></>}
   </motion.div>
  </Screen>;
 }
