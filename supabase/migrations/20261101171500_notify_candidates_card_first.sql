@@ -1,5 +1,7 @@
 -- FIX #679: optimize NOTIF-1b X cold candidate read; no table/data rewrite.
--- Down: reapply 20261101123100_notify_candidates.sql to restore original function.
+-- Down: drop function public.notify_candidates(uuid,timestamptz); then
+-- reapply 20261101123100_notify_candidates.sql to restore its original body
+-- and service_role-only EXECUTE grant. No tables or data are changed.
 create or replace function public.notify_candidates(p_user uuid,p_now timestamptz)
 -- The 30k-card X snapshot must not use one cards_note_id_owner probe per note.
 -- Owner-scoped hash joins keep the bounded read stable even before auto-ANALYZE
