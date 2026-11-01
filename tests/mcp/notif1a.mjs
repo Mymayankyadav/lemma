@@ -88,6 +88,7 @@ try{
  console.log('PASS NOTIF-1a notification read-only owner RLS and cross-owner isolation')
 
  const before=await q("select tablename,policyname,roles::text from pg_policies where schemaname='public' and tablename in ('push_devices','notifications','notify_holds') order by tablename")
+ const grantsBefore=await q("select table_name,grantee,privilege_type from information_schema.role_table_grants where table_schema='public' and table_name in ('push_devices','notifications','notify_holds') order by table_name,grantee,privilege_type")
  await db.exec(`drop function public.upsert_push_device(text,text,text,text,text);
  drop trigger push_devices_cap on public.push_devices;
  drop function public.push_devices_cap();
@@ -96,5 +97,7 @@ try{
  await db.exec(migration)
  const after=await q("select tablename,policyname,roles::text from pg_policies where schemaname='public' and tablename in ('push_devices','notifications','notify_holds') order by tablename")
  assert.deepEqual(after,before)
- console.log('PASS NOTIF-1a down → up restores owner policies')
+ const grantsAfter=await q("select table_name,grantee,privilege_type from information_schema.role_table_grants where table_schema='public' and table_name in ('push_devices','notifications','notify_holds') order by table_name,grantee,privilege_type")
+ assert.deepEqual(grantsAfter,grantsBefore)
+ console.log('PASS NOTIF-1a down → up restores owner policies and grants')
 }finally{await db.close()}
