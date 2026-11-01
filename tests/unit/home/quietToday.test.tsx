@@ -17,7 +17,8 @@ const html=(due:number)=>renderToStaticMarkup(
 describe('LOOK-5c2 quiet Today review row',()=>{
  it('labels large review queues in hours without inventing a daily cap',()=>{
   expect(estimatedReviewTime(23)).toBe('about 12 min');
-  expect(estimatedReviewTime(4000)).toBe('about 33 h');
+  expect(estimatedReviewTime(4000,200)).toBe('about 1 h 40 min');
+  expect(estimatedReviewTime(4000,400)).toBe('about 3 h 20 min');
  });
  it('shows one neutral All clear row and no empty charts or zero tiles',()=>{
   const view=html(0);
