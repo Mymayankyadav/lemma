@@ -1327,7 +1327,7 @@ export class DemoAdapter implements LemmaApi {
     return sessions
       // The slug-scoped Project route already resolved its identity;
       // avoid 1,000 repeated linear projectById lookups in the X fixture.
-      .map((s) => this.sessionSummary(s,slug))
+      .map((s) => this.sessionSummary(s,id?slug:undefined))
       .sort(
         (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
       );
