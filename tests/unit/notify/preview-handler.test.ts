@@ -90,4 +90,15 @@ describe('NOTIF-4b4 owner-authenticated read-only preview',()=>{
   expect(await handlePreviewRequest('Bearer signed',deps))
    .toEqual({status:503,body:{message:'Could not preview reminders'}});
  });
+ it('omits resolved conditions instead of presenting them as held reminders',async()=>{
+  const resolved:PreviewCandidate={kind:'due',key:'due:resolved',cardsDue:0,threshold:10,
+   title:'0 cards due',body:'No cards due',why:'threshold 10'};
+  load.mockResolvedValueOnce({ownerId:owner,context,candidates:[resolved,...candidates]});
+  const result=await handlePreviewRequest('Bearer signed',deps);
+  expect(result.status).toBe(200);
+  const body=result.body as {send:Array<{title:string}>;held:Array<{title:string}>;omitted:number};
+  expect([...body.send,...body.held].map(row=>row.title)).not.toContain('0 cards due');
+  expect(body.omitted).toBe(0);
+ });
+
 });
