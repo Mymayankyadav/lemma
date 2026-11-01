@@ -60,7 +60,9 @@ export async function handlePreviewRequest(
    const row:PreviewRow={
     time:formatter.format(at),kind:candidate.kind,
     title:notifyTitle(candidate.title),body:notifyBody(candidate.body),
-    why:decision.status==='send'?notifyBody(candidate.why):reasonText[decision.reason??'resolved'],
+    why:decision.status==='send'?notifyBody(candidate.why):
+     decision.status==='defer'&&decision.reason==='frequency'?'not yet due':
+     reasonText[decision.reason??'resolved'],
    };
    if(decision.status==='send')send.push(row);
    else held.push(row);
