@@ -1,3 +1,4 @@
+import {memo} from 'react';
 import {ChevronRight} from 'lucide-react';
 import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
@@ -53,6 +54,41 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
     radius:Math.hypot((bundlePillWidth(arc.count)+1)/2,8)};
  }).sort((a,b)=>b.radius-a.radius||a.anchorY-b.anchorY||a.arc.key.localeCompare(b.arc.key));
  const placed:BundlePlacement[]=[],result=new Map<string,BundlePlacement>();
+ // A badge tests only nearby painted rectangles. Scanning every previous
+ // placement for each 4px candidate becomes quadratic in dense 60-arc gutters
+ // under 4x CPU. Vertical buckets preserve the original exact circle test
+ // and candidate ordering, including the overflow-summary backtracking.
+ const placedByY=new Map<number,BundlePlacement[]>(),bucketHeight=64;
+ let widestPlacedRadius=0;
+ const register=(badge:BundlePlacement)=>{
+  placed.push(badge);
+  const bucket=Math.floor(badge.y/bucketHeight);
+  const group=placedByY.get(bucket)??[];
+  group.push(badge);placedByY.set(bucket,group);
+  widestPlacedRadius=Math.max(widestPlacedRadius,badge.radius);
+ };
+ const unregisterLast=():BundlePlacement=>{
+  const badge=placed.pop()!,bucket=Math.floor(badge.y/bucketHeight);
+  const group=placedByY.get(bucket);
+  if(group){
+   const index=group.indexOf(badge);
+   if(index>=0)group.splice(index,1);
+   if(!group.length)placedByY.delete(bucket);
+  }
+  // A conservative maximum after removal costs only extra bucket lookups.
+  return badge;
+ };
+ const clearOfPlaced=(x:number,y:number,radius:number):boolean=>{
+  if(!placed.length)return true;
+  const reach=radius+widestPlacedRadius+9;
+  for(let bucket=Math.floor((y-reach)/bucketHeight);bucket<=Math.floor((y+reach)/bucketHeight);bucket++){
+   for(const other of placedByY.get(bucket)??[]){
+    const dx=x-other.x,dy=y-other.y,clearance=radius+other.radius+9;
+    if(dx*dx+dy*dy<clearance*clearance)return false;
+   }
+  }
+  return true;
+ };
  const findSlot=(radius:number,anchorX:number,anchorY:number):BundlePlacement|null=>{
   const inset=radius>=22?0:2; // A 44px summary must fit even a one-row outline.
   const minX=radius+inset,maxX=GUTTER-radius-inset;
@@ -71,7 +107,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
    for(const x of xs){
     // SVG circles have a 1px stroke (0.5px per edge), so reserve 9px
     // between geometric radii to guarantee >=8 CSS px between painted marks.
-    if(placed.every(other=>Math.hypot(x-other.x,y-other.y)>=radius+other.radius+9))
+    if(clearOfPlaced(x,y,radius))
      return {x,y,radius,anchorX,anchorY};
    }
   }
@@ -80,7 +116,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
  const hiddenKeys:string[]=[];
  for(const item of items){
   const label=findSlot(item.radius,item.anchorX,item.anchorY);
-  if(label){placed.push(label);result.set(item.arc.key,label)}
+  if(label){register(label);result.set(item.arc.key,label)}
   else hiddenKeys.push(item.arc.key);
  }
  if(hiddenKeys.length){
@@ -88,7 +124,7 @@ export function layoutBundleLabels(arcs:readonly Arc[],rows:number,centers?:read
   // the summary itself has the same eight-pixel clearance as every other mark.
   let summary=findSlot(22,GUTTER/2,height/2);
   while(!summary&&placed.length){
-   const removed=placed.pop()!;
+   const removed=unregisterLast();
    const key=[...result].find(([,value])=>value===removed)?.[0];
    if(key){result.delete(key);hiddenKeys.push(key)}
    summary=findSlot(22,GUTTER/2,height/2);
@@ -229,6 +265,12 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
  </>;
 }
 
+// Scrolling and the ResizeObserver update the Atlas row window without
+// changing arcs, geometry or focus. Avoid rerunning the expensive finite
+// lane/badge placement for those unrelated state changes.
+export const MemoWires=memo(Wires);
+MemoWires.displayName='AtlasWires';
+
 /** Distinct hierarchy without shortening any interactive target. The full
  * mathematical name stays in the button's accessible label and details sheet.
  */
@@ -236,6 +278,10 @@ export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onS
  node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;sticky?:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
  const parent=node.children.length>0,root=node.level==='cluster',area=node.level==='galaxy';
+ // A plain title is already its own accessible name. Avoid running the
+ // nine-pass TeX fallback for every plain idea twice on the cold Atlas mount.
+ const plain=isPlainAtlasLabel(node.name);
+ const accessibleName=plain?node.name:plainMath(node.name);
  const selected=tone==='self',height=atlasRowHeight(node.level);
  const indentation=(depth:number)=>Math.min(depth,3)*INDENT+Math.max(0,depth-3)*8;
  const lead=12+indentation(node.depth);
@@ -255,16 +301,16 @@ export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onS
   {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px"
    style={{left:12+indentation(d)+6,background:'color-mix(in srgb,var(--ink) 6%,transparent)'}}/>)}
   {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
-  {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+plainMath(node.name)} onClick={onToggle}
+  {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+accessibleName} onClick={onToggle}
    className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2">
    <ChevronRight size={16} style={{transform:open?'rotate(90deg)':'none',transition:'transform 140ms ease'}}/>
   </button>:<span className="flex size-7 shrink-0 items-center justify-center"><StatusMark node={node}/></span>}
-  <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
+  <button type="button" onClick={onSelect} aria-label={accessibleName+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
    {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{node.glyph}</span>}
-   <span title={plainMath(node.name)} data-atlas-title-scroll
+   <span title={accessibleName} data-atlas-title-scroll
     style={{...clip,overflowX:'auto',textOverflow:'clip',scrollbarWidth:'none'}}
-    className={'atlas-row-title-scroll min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}>{isPlainAtlasLabel(node.name)?node.name:<Tex source={node.name}/>}</span>
+    className={'atlas-row-title-scroll min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}>{plain?node.name:<Tex source={node.name}/>}</span>
    {showProgress&&<span className="flex shrink-0 items-center gap-1.5 pl-1 text-[12px] tabular-nums text-ink-3">
     <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
      <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(node.total?100*node.done/node.total:0)+'%'}}/>
