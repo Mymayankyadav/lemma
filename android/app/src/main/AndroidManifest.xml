@@ -37,6 +37,7 @@
   <service android:name="com.google.androidbrowserhelper.trusted.DelegationService"
    android:permission="android.permission.BIND_TRUSTED_WEB_ACTIVITY_SERVICE"
    android:exported="true" tools:ignore="ExportedService">
+   <meta-data android:name="android.support.customtabs.trusted.SMALL_ICON" android:resource="@drawable/ic_stat_lemma"/>
    <intent-filter><action android:name="android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE"/>
     <category android:name="android.intent.category.DEFAULT"/></intent-filter>
   </service>
