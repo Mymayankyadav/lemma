@@ -7,15 +7,14 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-# Deploy and standalone workflow_run smoke both mutate the same selftest
-# fixture owner. Serialize across workflow names, not only within deploy.
-concurrency:
-  group: lemma-mcp-selftest
-  cancel-in-progress: false
+  issues: write
+  actions: read
+# A durable FIFO queue protects deployment and post-deploy selftests across
+# workflow names, without dropping the second pending run on a third trigger.
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 80
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD || secrets.LEMMA_SUPABASE_DB_PASSWORD }}
@@ -30,6 +29,12 @@ jobs:
           else
             echo "::notice::Supabase deploy skipped: add SUPABASE_ACCESS_TOKEN and a DB password secret."
           fi
+      - name: Acquire durable MCP selftest FIFO ticket
+        if: steps.credentials.outputs.ready == 'true'
+        timeout-minutes: 56
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/mcp-selftest-queue.mjs acquire
       - uses: supabase/setup-cli@v1
         if: steps.credentials.outputs.ready == 'true'
         with:
@@ -101,3 +106,8 @@ jobs:
             fi
             sleep "$((attempt * 3))"
           done
+      - name: Release MCP selftest FIFO ticket
+        if: always() && steps.credentials.outputs.ready == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/mcp-selftest-queue.mjs release
