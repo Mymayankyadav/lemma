@@ -37,17 +37,28 @@ async function act(token){
  return response.json();
 }
 
-async function confirmation(reply,data){
+async function confirmation(reply,data,action){
  const result=reply&&typeof reply==='object'?reply:{};
  const undoToken=typeof result.undoToken==='string'?result.undoToken:'';
- const actions=undoToken?[{action:'undo',title:'Undo',token:undoToken,url:data.url}]:[];
- await self.registration.showNotification('Lemma',{
-  ...core.notificationOptions({id:data.id,kind:'confirm',tag:'confirm:'+data.id,
-   title:'Lemma',body:typeof result.message==='string'?result.message:
-    Array.isArray(result.approved)&&result.approved.length?result.approved.length+' cards approved':'Done',
-   url:data.url,ts:Date.now(),actions,openToken:'',dismissToken:''}),
-  tag:'confirm:'+data.id,
- });
+ const actions=undoToken?[{action:'undo',title:'Undo',token:undoToken,url:'#/proposals'}]:[];
+ const approved=Array.isArray(result.approved)?result.approved.length:null;
+ const skipped=Array.isArray(result.skipped)?result.skipped.length:0;
+ const isCardApproval=action==='approve_cards'&&approved!==null;
+ const title=isCardApproval?
+  'Approved '+approved+(skipped?' of '+(approved+skipped):'')+' cards':'Lemma';
+ const body=isCardApproval?
+  (undoToken?'Undo is in the app, or here for 48 hours.':'Undo is in the app.'):
+  (typeof result.message==='string'?result.message:'Done');
+ const confirmId=(typeof result.confirmId==='number'&&Number.isSafeInteger(result.confirmId)&&result.confirmId>0)||
+  (typeof result.confirmId==='string'&&/^\\d{1,16}$/.test(result.confirmId))?
+  String(result.confirmId):data.id;
+ // Reuse the original tag to replace the actionable K5 notification, while
+ // binding Undo to the new server-created confirmation row.
+ const tag=typeof data.tag==='string'&&data.tag?data.tag:'confirm:'+data.id;
+ await self.registration.showNotification(title,core.notificationOptions({
+  id:confirmId,kind:'confirm',tag,title,body,
+  url:'#/proposals',ts:Date.now(),actions,openToken:'',dismissToken:'',
+ }));
 }
 
 self.addEventListener('push',event=>{
@@ -72,16 +83,23 @@ self.addEventListener('notificationclick',event=>{
     const reply=await act(decision.token);
     // Open is a passive receipt, not a user action confirmation. Do not
     // interrupt the owner's navigation with a redundant "Done" notification.
-    if(!passiveReceipt)await confirmation(reply,data);
+    if(!passiveReceipt){
+     if(decision.action==='undo')await navigate('#/proposals');
+     else await confirmation(reply,data,decision.action);
+    }
    }catch{
     // A failed receipt must never strand the user or create a false action
     // failure warning. Visible action failures still receive their warning.
     if(!passiveReceipt){
-     await self.registration.showNotification('Lemma',{body:'Open Lemma to finish',
+     const undo=decision.action==='undo';
+     const recovery=undo?'#/proposals':decision.url;
+     await self.registration.showNotification('Lemma',{
+      body:undo?'Open Lemma to undo':'Open Lemma to finish',
       tag:'action-failed:'+data.id,icon:'/lemma/icons/lemma-192.png',
-      badge:'/lemma/icons/badge-96.png',data:{id:data.id,url:decision.url,actions:[]}});
+      badge:'/lemma/icons/badge-96.png',data:{id:data.id,url:recovery,actions:[]},
+     });
     }
-    await navigate(decision.url);
+    await navigate(decision.action==='undo'?'#/proposals':decision.url);
     return;
    }
   }
