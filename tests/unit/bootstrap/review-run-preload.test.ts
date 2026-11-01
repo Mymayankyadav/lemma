@@ -11,7 +11,9 @@ describe('FIX-651a conditional Review-run cold bootstrap', () => {
     const mainAt = html.indexOf('src="/src/main.tsx"')
     expect(preloadAt).toBeGreaterThan(0)
     expect(mainAt).toBeGreaterThan(preloadAt)
-    expect(html.slice(preloadAt, mainAt)).toMatch(/type="module"/)
+    const scriptStart = html.lastIndexOf('<script', preloadAt)
+    expect(scriptStart).toBeGreaterThan(-1)
+    expect(html.slice(scriptStart, preloadAt)).toContain('type="module"')
   })
 
   it('only preloads the Review-run route, not Today, Atlas or Cards', () => {
