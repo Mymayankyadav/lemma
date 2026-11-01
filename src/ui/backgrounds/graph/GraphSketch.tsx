@@ -8,12 +8,24 @@ const pathFrom=(points:[number,number][])=>points.map(([x,y],i)=>(i?'L':'M')+x.t
 function sample(fn:(x:number)=>number,min:number,max:number,scale:(x:number,y:number)=>[number,number]){
  return pathFrom(Array.from({length:101},(_,i)=>{const x=min+(max-min)*i/100;return scale(x,fn(x));}));
 }
-const sketches:Record<Sketch,{path:string;label:string;second?:string;turns?:[number,number][]}>={
- today:{path:sample(x=>x*x*x-3*x,-2,2,(x,y)=>[150+x*58,115-y*23]),label:'y = x³ − 3x',turns:[[92,69],[208,161]]},
- paths:{path:sample(x=>1/(1+Math.exp(-x)),-5,5,(x,y)=>[150+x*25,185-y*122]),label:'Learning curve'},
- review:{path:sample(x=>Math.exp(-x/3),0,6,(x,y)=>[30+x*42,185-y*122]),second:sample(x=>Math.exp(-x/4.6),0,6,(x,y)=>[30+x*42,185-y*122]),label:'y = e⁻ˣ⁄³'},
- insights:{path:sample(x=>Math.exp(-x*x/2),-3,3,(x,y)=>[150+x*42,185-y*122]),label:'Normal density'},
- unit:{path:sample(x=>Math.sin(x),0,Math.PI*2,(a,y)=>[150+74*Math.cos(a),111-74*y]),label:'Unit circle'},
+type SketchFigure={path:string;label:string;second?:string;turns?:[number,number][]};
+// Each route has its own immutable letterhead. Construct only the active
+// curve: eagerly sampling every unrelated route (hundreds of toFixed/exp
+// operations) delayed the first real Today goal under strict 4x CPU.
+const sketchFactories:Record<Sketch,()=>SketchFigure>={
+ today:()=>({path:sample(x=>x*x*x-3*x,-2,2,(x,y)=>[150+x*58,115-y*23]),label:'y = x³ − 3x',turns:[[92,69],[208,161]]}),
+ paths:()=>({path:sample(x=>1/(1+Math.exp(-x)),-5,5,(x,y)=>[150+x*25,185-y*122]),label:'Learning curve'}),
+ review:()=>({path:sample(x=>Math.exp(-x/3),0,6,(x,y)=>[30+x*42,185-y*122]),second:sample(x=>Math.exp(-x/4.6),0,6,(x,y)=>[30+x*42,185-y*122]),label:'y = e⁻ˣ⁄³'}),
+ insights:()=>({path:sample(x=>Math.exp(-x*x/2),-3,3,(x,y)=>[150+x*42,185-y*122]),label:'Normal density'}),
+ unit:()=>({path:sample(x=>Math.sin(x),0,Math.PI*2,(a,y)=>[150+74*Math.cos(a),111-74*y]),label:'Unit circle'}),
+};
+const sketchCache=new Map<Sketch,SketchFigure>();
+const getSketch=(kind:Sketch):SketchFigure=>{
+ const cached=sketchCache.get(kind);
+ if(cached)return cached;
+ const figure=sketchFactories[kind]();
+ sketchCache.set(kind,figure);
+ return figure;
 };
 function kindFor(path:string):Sketch|null {
  if(path==='/')return 'today';
@@ -32,7 +44,7 @@ export function GraphSketch({path}:{path:string}){
  },[]);
  const kind=kindFor(path);
  if(!kind||(theme!=='graph'&&theme!=='graph-night'))return null;
- const figure=sketches[kind],opacity=theme==='graph-night'?.13:.12;
+ const figure=getSketch(kind),opacity=theme==='graph-night'?.13:.12;
  return <svg aria-hidden="true" data-graph-sketch={kind} viewBox="0 0 300 220" preserveAspectRatio="xMidYMid meet"
   className="pointer-events-none absolute right-2 top-0 z-0 h-auto w-[min(34vw,150px)] overflow-hidden"
   style={{maxHeight:'120px'}}>
