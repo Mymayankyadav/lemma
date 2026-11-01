@@ -74,6 +74,20 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   }
   expect(send).not.toHaveBeenCalled();
  });
+ it('never sends a test push to loopback, private IP or local-network endpoints',async()=>{
+  for(const endpoint of [
+   'https://localhost/sub','https://localhost./sub','https://push.local/sub',
+   'https://metadata.google.internal/sub','https://127.0.0.1/sub',
+   'https://10.1.2.3/sub','https://172.16.0.1/sub',
+   'https://192.168.1.1/sub','https://169.254.169.254/latest/meta-data',
+   'https://[::1]/sub','https://[fd00::1]/sub',
+  ]){
+   loadDevice.mockResolvedValueOnce({...record,subscription:{...record.subscription,endpoint}});
+   expect(await handleTestPushRequest('Bearer token',{deviceId:device},deps))
+    .toEqual({status:503,body:{message:'Could not send test reminder'}});
+  }
+  expect(send).not.toHaveBeenCalled();
+ });
  it('rejects malformed or oversized persisted Web Push keys before network I/O',async()=>{
   const base=record.subscription;
   for(const subscription of [
