@@ -27,7 +27,7 @@ describe('FIX-657ca conservative FastTex primitive',()=>{
  });
  it('keeps the 16px Atlas breadcrumb math floor without an eager rich CSS import',()=>{
   const css=readFileSync('src/ui/FastTex.css','utf8');
-  expect(baseCss).toMatch(/\[aria-label="Idea path"\] \.lemma-tex-inline \.katex\s*\{[^}]*font-size:\s*max\(16px,\s*1em\)/);
+  expect(css).toMatch(/\[aria-label="Idea path"\] \.lemma-tex-inline \.katex\s*\{[^}]*font-size:\s*max\(16px,\s*1em\)/);
   expect(css).toContain('overflow-wrap:anywhere');
   const fast=readFileSync('src/ui/FastTex.tsx','utf8');
   expect(fast).toContain("lazy(()=>import('./Tex')");
