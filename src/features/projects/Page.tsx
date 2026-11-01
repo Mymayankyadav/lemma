@@ -7,6 +7,7 @@ import {useProjects,useUpdateProject} from '../../data/hooks';
 import {getApi} from '../../data';
 import {getMode} from '../../data/mode';
 import {prefetchAtlasForPaths} from './atlasPrefetch';
+import {scheduleCardsWarmup} from './cardsWarmup';
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
 import {Screen} from '../../ui/Screen';
@@ -115,7 +116,7 @@ export default function Page(){
  // Cards is the common next stop from Paths. Warm its small route chunk
  // asynchronously during the unthrottled Paths visit, without evaluating
  // Cards in the cold Today/Atlas entry bundle or issuing a Cards data query.
- useEffect(()=>{void import('../cards/Page').catch(()=>{})},[]);
+ useEffect(()=>scheduleCardsWarmup(()=>{void import('../cards/Page').catch(()=>{})}),[]);
  const warmAtlas=useCallback(()=>{
   if(getMode()!=='demo')return;
   void import('../atlas/Page');
