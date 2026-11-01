@@ -21,6 +21,7 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
   expect(graph).toContain('<Wires arcs={arcBudget.visible}');
   expect(graph).toContain('centers={geometry.centers}');
   expect(graph).toContain('heightPx={geometry.totalHeight}');
+  expect(graph).toContain('style={{background:\'var(--paper)\'}} role="tree"');
  });
  it('shows the selection and both connection directions on paper',()=>{
   expect(graph).toContain('data-idea-selection="true"');
