@@ -174,5 +174,19 @@ for(const width of [390,360] as const){
   const paper=await tree.evaluate(el=>getComputedStyle(el).backgroundColor);
   expect(paper,'The grid must not show through the idea rows').not.toBe('rgba(0, 0, 0, 0)');
   await page.screenshot({path:`test-results/screens/stress/look-8c-${profile}-${theme}-${width}.png`,fullPage:true});
+  // The Details sheet must remain usable at the same real S/X phone width.
+  // It stays inside this proposal, with a focus-trapped 44px Close action.
+  await tree.getByRole('treeitem').last().getByRole('button').last().click();
+  await ideas.locator('[data-idea-selection="true"]').getByRole('button',{name:'Details'}).click();
+  const sheet=page.getByRole('dialog');
+  await expect(sheet.getByRole('progressbar',{name:'Idea progress'})).toBeVisible();
+  const close=sheet.getByRole('button',{name:'Close'});
+  const closeBox=await close.boundingBox();
+  expect(closeBox?.height).toBeGreaterThanOrEqual(44);
+  expect(closeBox?.width).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({path:`test-results/screens/stress/look-8c-${profile}-${theme}-${width}-details.png`});
+  await close.click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
  });
 }
