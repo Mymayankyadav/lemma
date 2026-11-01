@@ -21,6 +21,8 @@ describe('strict C2/D6 loaded-fixture transition precondition (FIX #604)',()=>{
   expect(source).toContain('[data-project-row]')
   expect(source).toContain('[data-mini-route]')
   expect(source).toContain('toBeVisible')
+  expect(source,'prior Paths page must finish painting before the transition clock starts').toContain('requestAnimationFrame')
+  expect(source.match(/requestAnimationFrame/g)?.length,'require two-frame paint barrier, not a timer').toBeGreaterThanOrEqual(2)
  })
 
  it('D6 first-attempt performance failures cannot pass through CI retries',()=>{
