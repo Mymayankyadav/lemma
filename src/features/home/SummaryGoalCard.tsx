@@ -34,7 +34,7 @@ export function SummaryGoalCard({project,events}:{project:ProjectSummary;events:
     <Link to={'/p/'+project.slug} className="flex min-h-11 min-w-0 items-center text-[16px] font-semibold leading-5 text-ink focus-visible:outline-2 focus-visible:outline-[var(--accent)]">
      <span style={clip} className="block min-w-0"><Tex source={project.title}/></span>
     </Link>
-    {project.current&&<p className="min-w-0 text-[12px] leading-[16px] text-ink-2"
+    {project.current&&<p className="min-w-0 text-[14px] leading-[18px] text-ink-2"
       style={clip} title={project.current.title}><Tex source={project.current.title}/></p>}
    </div>
    <span data-schedule-chip="" className="max-w-[108px] shrink-0 rounded-full bg-[var(--paper-2)] px-2 py-1 text-center text-[12px] font-medium leading-4"
