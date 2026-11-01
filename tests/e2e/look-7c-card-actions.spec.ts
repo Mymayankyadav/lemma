@@ -36,6 +36,16 @@ test('Card detail actions are explicit, reversible and keyboard accessible',asyn
  await expect(page.getByRole('dialog',{name:'Delete this card?'})).toBeHidden();
 });
 
+test('Saved tutor notes render their mathematical notation, not raw dollar delimiters',async({page})=>{
+ await page.goto('/lemma/?demo=1&theme=graph#/cards/31');
+ await page.getByRole('textbox',{name:'Note for your tutor'}).fill('Check $\\forall x\\in X$ before proving this.');
+ await page.getByRole('button',{name:'Save note for your tutor'}).click();
+ const note=page.locator('[data-comment-row]').filter({hasText:'Check'}).first();
+ await expect(note).toBeVisible();
+ await expect(note.locator('.katex')).toBeVisible();
+ await expect(note).not.toContainText('$\\forall');
+});
+
 test('Card detail never carries a destructive dialog or overflow action to another card',async({page})=>{
  await page.goto('/lemma/?demo=1&theme=graph#/cards/31');
  const actions=page.getByRole('button',{name:'Card actions'});
