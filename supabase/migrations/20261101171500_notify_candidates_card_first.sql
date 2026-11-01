@@ -11,12 +11,12 @@ create index if not exists cards_notify_owner_note_due_cover
 
 create or replace function public.notify_candidates(p_user uuid,p_now timestamptz)
 -- The 30k-card X snapshot must not use one cards_note_id_owner probe per note.
--- Keep PostgreSQL's normal join choices: the tomorrow-primary LATERAL
--- checkpoint lookup depends on a bounded nested loop per project. Disabling
--- nested loops for the *entire* function can make the 30k-card X fixture
--- exceed the ten-minute SQL job timeout after other migrations land.
--- Card-first sibling dedup and the covering index remain the optimization.
-returns jsonb language sql stable security definer set search_path = '' as $facts$
+-- Prefer hash joins for the 30k-card X candidate path, but avoid the
+-- per-project LATERAL checkpoint lookup that explodes under this setting.
+-- Tomorrow's eligible checkpoints are ranked once across visible projects.
+-- This planner setting is function-local, never session/global state.
+returns jsonb language sql stable security definer set search_path = ''
+  set enable_nestloop = off as $facts$
 with
 prefs as (
   select s.user_id,s.time_zone,s.rollover_hour,s.reviews_per_day,s.new_per_day,
@@ -91,28 +91,28 @@ answer_speed as (
   where r.user_id=p_user and r.undone_at is null and r.duration_ms>0
     and r.reviewed_at>=p_now-interval '30 days'
 ),
-tomorrow_primary as (
-  -- First represent distinct projects, using one indexed checkpoint lookup per
-  -- active project. With 60 projects / 2,400 tomorrow checkpoints this avoids
-  -- ranking and sorting all 2,400 rows merely to show 20 compact K2 entries.
+tomorrow_ranked as (
+  -- Rank all eligible tomorrow checkpoints once instead of invoking a
+  -- per-project LATERAL lookup under the hash-join preference. This preserves
+  -- the same earliest (position,id) checkpoint for each active project.
   select c.code,c.title,c.current_step,c.steps,pr.slug,pr.title project,
-    c.due_on,c.position,c.id checkpoint_id
-  from visible_projects pr cross join prefs f
-  join lateral (
-    select c.code,c.title,c.current_step,c.steps,c.due_on,c.position,c.id
-    from public.checkpoints c
-    where c.user_id=p_user and c.project_id=pr.id
-      and c.status<>'demonstrated' and c.due_on=f.today+1
-      and (c.status='in_progress' or not exists (
-        select 1 from public.checkpoint_prereqs edge
-        join public.checkpoints prerequisite on prerequisite.id=edge.prereq_id and prerequisite.user_id=edge.user_id
-        where edge.user_id=p_user and edge.checkpoint_id=c.id and prerequisite.status<>'demonstrated'
-      ))
-    order by c.position,c.id
-    limit 1
-  ) c on true
-  where pr.status='active'
-  order by pr.slug
+    c.due_on,c.position,c.id checkpoint_id,
+    row_number() over(partition by pr.id order by c.position,c.id) project_rank
+  from public.checkpoints c
+  join visible_projects pr on pr.id=c.project_id and pr.user_id=c.user_id
+  cross join prefs f
+  where c.user_id=p_user and pr.status='active'
+    and c.status<>'demonstrated' and c.due_on=f.today+1
+    and (c.status='in_progress' or not exists (
+      select 1 from public.checkpoint_prereqs edge
+      join public.checkpoints prerequisite on prerequisite.id=edge.prereq_id and prerequisite.user_id=edge.user_id
+      where edge.user_id=p_user and edge.checkpoint_id=c.id and prerequisite.status<>'demonstrated'
+    ))
+),
+tomorrow_primary as (
+  select code,title,current_step,steps,slug,project,due_on,position,checkpoint_id
+  from tomorrow_ranked where project_rank=1
+  order by slug
   limit 20
 ),
 tomorrow_extras as (
