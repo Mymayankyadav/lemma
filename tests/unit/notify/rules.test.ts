@@ -75,7 +75,7 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(choose([{...due,sentToday:2,laterRequested:true}])[0].reason).toBe('frequency')
  })
  it('applies K3 first transition, 7-day repeat and 14-day dismissal backoff',()=>{
-  const behind:ReminderCandidate={kind:'behind',key:'behind:p1',behindTransitionAt:now-4*DAY}
+  const behind:ReminderCandidate={kind:'behind',key:'behind:p1',behindTransitionAt:now-20*DAY}
   expect(choose([behind])[0].status).toBe('send')
   expect(choose([{...behind,lastSentAt:now-6*DAY}])[0].reason).toBe('frequency')
   expect(choose([{...behind,lastSentAt:now-7*DAY}])[0].status).toBe('send')
