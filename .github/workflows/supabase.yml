@@ -7,8 +7,10 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# Deploy and standalone workflow_run smoke both mutate the same selftest
+# fixture owner. Serialize across workflow names, not only within deploy.
 concurrency:
-  group: supabase-lemma
+  group: lemma-mcp-selftest
   cancel-in-progress: false
 jobs:
   deploy:
