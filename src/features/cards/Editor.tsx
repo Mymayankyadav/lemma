@@ -196,6 +196,7 @@ export function Editor({
       </div>
       <Button
         type="submit"
+        needsNetwork
         disabled={busy || !front.trim() || (!!creating && !project)}
       >
         {creating ? "Create card" : "Save changes"}
