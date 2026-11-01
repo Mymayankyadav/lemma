@@ -54,12 +54,20 @@ function LiveGate({children}: {children: ReactNode}) {
   // A DNS/server outage may leave navigator.onLine true. A cached local
   // session may still read its own snapshot, never mutate or bypass a 401.
   if(navigator.onLine&&!authNetworkFailure)return
-  let alive=true
-  // Supabase is a large dependency: load it only for an actual offline live
-  // session check, never in the demo/Today startup bundle.
-  void import('../data/live/client').then(({liveClient})=>liveClient().auth.getSession())
-   .then(({data})=>{if(alive)setOfflineSession(!!data.session?.user.id)}).catch(()=>{})
-  return()=>{alive=false}
+  let alive=true,unsubscribe:(()=>void)|null=null
+  // Supabase is a large dependency: load it only for a real offline or
+  // network-failure session check, never in the demo/Today startup bundle.
+  void import('../data/live/client').then(async({liveClient})=>{
+   if(!alive)return
+   const client=liveClient()
+   const subscription=client.auth.onAuthStateChange((_event,session)=>{
+    if(alive)setOfflineSession(!!session?.user?.id)
+   }).data.subscription
+   unsubscribe=()=>subscription.unsubscribe()
+   const {data}=await client.auth.getSession()
+   if(alive)setOfflineSession(!!data.session?.user.id)
+  }).catch(()=>{})
+  return()=>{alive=false;unsubscribe?.()}
  },[authNetworkFailure])
  // A previously authenticated owner may read only their local snapshot during
  // a real offline state or a confirmed network failure, never an auth failure.
