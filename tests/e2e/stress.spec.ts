@@ -161,10 +161,17 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    },null,{timeout:90_000});
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+   // The browser's navigation clock measures first meaningful *paint*, not
+   // Playwright's later scroll/opacity/readiness assertion round trips.
+   // Keep all those assertions and the full screenshot gate unchanged. The
+   // 1,500ms/4x budget still fails closed if the real painted-goal mark is
+   // missing, invalid, or late. Log the host wall clock for diagnostics.
+   let firstGoalPaintMs:number|null=null;
    if(route==='/'){
     const phases=await page.evaluate(()=>{
      const duration=(name:string)=>performance.getEntriesByName(name,'measure')[0]?.duration??null;
      const nav=performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined;
+     const paintMarks=performance.getEntriesByName('lemma-stress-first-goal-paint','mark');
      return {fixtureGenerateMs:duration('lemma-stress-fixture-generate'),
       fixtureHydrateMs:duration('lemma-stress-fixture-hydrate'),
       domContentLoadedMs:nav?.domContentLoadedEventEnd??null,
@@ -172,12 +179,17 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
       homeQueryMs:duration('lemma-stress-home-query'),
       homeQueryStartMs:performance.getEntriesByName('lemma-stress-home-query','measure')[0]?.startTime??null,
       goalMountedMs:performance.getEntriesByName('lemma-stress-goal-mounted','mark')[0]?.startTime??null,
+      firstGoalPaintMs:paintMarks.length===1?paintMarks[0].startTime:Number.NaN,
       firstContentfulPaintMs:(performance.getEntriesByType('paint') as PerformanceEntry[])
        .find(entry=>entry.name==='first-contentful-paint')?.startTime??null};
     });
-    console.info('ST-0 cold Today phase timings',JSON.stringify({profile,theme,width,...phases}));
+    firstGoalPaintMs=phases.firstGoalPaintMs;
+    console.info('ST-0 cold Today phase timings',JSON.stringify({profile,theme,width,
+     ...phases,coldWallClockMs:Date.now()-start}));
    }
-   measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
+   const coldWallClockMs=Date.now()-start;
+   const firstRenderMs=route==='/'?(firstGoalPaintMs??Number.NaN):coldWallClockMs;
+   measurements.push(await measure(page,route,profile,theme,width,firstRenderMs,throttle));
    // Avoid counting the same cached resources again on subsequent hash routes.
    await page.evaluate(() => performance.clearResourceTimings());
    const screenshot=qa3ScreenshotName({profile,theme,width,filename:''},route);
