@@ -7,6 +7,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]
 const CLOCK=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
 export interface TestDevice {
  id:string;
+ userId:string;
  disabledAt?:string|null;
  subscription:{endpoint:string;keys:{p256dh:string;auth:string}};
  prefs?:{maxPerDay?:number;quiet?:{start?:string;end?:string}};
@@ -63,7 +64,7 @@ export async function handleTestPushRequest(
  let device:TestDevice|null;
  try{device=await deps.loadDevice(owner.id,raw.deviceId)}
  catch{return reply(503,'Could not send test reminder')}
- if(!device||device.id!==raw.deviceId||device.disabledAt)
+ if(!device||device.id!==raw.deviceId||device.userId!==owner.id||device.disabledAt)
   return reply(404,'Device not available');
  try{
   const result=await deps.send(device,testMessage(device));
