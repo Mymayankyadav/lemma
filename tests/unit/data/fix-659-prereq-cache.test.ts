@@ -31,8 +31,12 @@ describe('FIX-659h direct Project prerequisite status',()=>{
   cps[0].prereqs=[cps[1].code];
   cps[1].prereqs=[cps[0].code];
   const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const subject=api as unknown as {cpUi:(cp:unknown)=>unknown};
+  const original=vi.spyOn(subject,'cpUi');
   const first=await api.getProject('real-analysis');
   const second=await api.getProject('real-analysis');
   expect(second).toEqual(first);
+  // A cyclic input must deliberately use the original seen-set semantics.
+  expect(original).toHaveBeenCalled();
  },30_000);
 });
