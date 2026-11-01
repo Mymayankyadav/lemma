@@ -21,12 +21,14 @@ describe('FIX-648b defer Cards create-sheet until requested',()=>{
 
 
 describe('FIX-648b cold Cards rich-render module split',()=>{
- it('does not eagerly load Markdown/KaTeX for ordinary card fronts or project chips',()=>{
+ it('defers optional card-front rich rendering but keeps synchronous mathematical project titles',()=>{
   const titles=readFileSync('src/features/cards/ProjectFilterTitle.tsx','utf8');
   expect(page).not.toContain("import {Tex} from '../../ui/Tex'");
   expect(page).toContain("import {FastTex as Tex} from '../../ui/FastTex'");
-  expect(titles).not.toContain("import {Tex} from '../../ui/Tex'");
-  expect(titles).toContain("import {FastTex as Tex} from '../../ui/FastTex'");
+  // ProjectFilterTitle is also rendered through synchronous SSR tests; its
+  // mathematical, Markdown and GFM titles must be complete immediately.
+  expect(titles).toContain("import {Tex} from '../../ui/Tex'");
+  expect(titles).not.toContain("import {FastTex as Tex} from '../../ui/FastTex'");
   // The existing conservative guards still send ambiguous mathematical and
   // Markdown card fronts and project titles through the canonical renderer.
   expect(page).toContain('canRenderPlainCardFront(row.front)?row.front:<Tex source={row.front}/>');
