@@ -55,9 +55,10 @@ describe('NOTIF-3b deterministic scheduling',()=>{
  it('applies K1 threshold backoff and the once-per-day Later resend',()=>{
   expect(choose([{...due,cardsDue:15,dismissals:3}])[0].reason).toBe('resolved')
   expect(choose([{...due,cardsDue:20,dismissals:3}])[0].status).toBe('send')
-  expect(choose([{...due,sentToday:1,lastSentAt:now-60*60_000}])[0].reason).toBe('frequency')
-  expect(choose([{...due,sentToday:1,lastSentAt:now-2*3_600_000}])[0].status).toBe('send')
-  expect(choose([{...due,sentToday:2}])[0].reason).toBe('frequency')
+  expect(choose([{...due,sentToday:1,lastSentAt:now-60*60_000,laterRequested:true}])[0].reason).toBe('frequency')
+  expect(choose([{...due,sentToday:1,lastSentAt:now-2*3_600_000}])[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+  expect(choose([{...due,sentToday:1,lastSentAt:now-2*3_600_000,laterRequested:true}])[0].status).toBe('send')
+  expect(choose([{...due,sentToday:2,laterRequested:true}])[0].reason).toBe('frequency')
  })
  it('applies K3 first transition, 7-day repeat and 14-day dismissal backoff',()=>{
   const behind:ReminderCandidate={kind:'behind',key:'behind:p1',behindTransitionAt:now-4*DAY}
@@ -87,7 +88,11 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(choose([tutor])[0]).toMatchObject({status:'defer',reason:'settling'})
   expect(choose([{...tutor,newestProposalAt:now-15*60_000}])[0].status).toBe('send')
   expect(choose([{...tutor,hasSummary:true}],{liveSession:true})[0].reason).toBe('active')
-  expect(choose([{...tutor,hasSummary:true}])[0].status).toBe('send')
+  // A saved summary must not bypass the 15-minute settle time when proposals exist.
+  expect(choose([{...tutor,hasSummary:true}])[0]).toMatchObject({status:'defer',reason:'settling'})
+  expect(choose([{...tutor,hasSummary:true,newestProposalAt:now-15*60_000}])[0].status).toBe('send')
+  // Ended sessions without proposals can notify on the next tick.
+  expect(choose([{kind:'tutor',key:'tutor:summary',hasSummary:true}])[0].status).toBe('send')
   expect(tutorActions({cards:1,hasPlan:false,approveCards:true})).toEqual(['Approve 1 card','Review'])
   expect(tutorActions({cards:5,hasPlan:false,approveCards:true})).toEqual(['Approve 5 cards','Review'])
   expect(tutorActions({cards:5,hasPlan:true,approveCards:true})).toEqual(['Review','Later'])
