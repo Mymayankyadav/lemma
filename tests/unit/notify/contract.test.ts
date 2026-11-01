@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { DemoAdapter } from '../../../src/data/demo/adapter'
 import { LiveAdapter } from '../../../src/data/live/adapter'
+import { mergeNotifyPrefs } from '../../../src/data/notify'
+import { settingsRow } from '../../../src/data/live/helpers'
 
 const demo=()=>new DemoAdapter({now:()=>Date.parse('2026-11-01T10:00:00Z')})
 
 describe('NOTIF-0 additive reminder contract',()=>{
+ it('preserves unknown future nested kind keys and exposes live notify JSON',()=>{
+  const result=mergeNotifyPrefs({enabled:false,unknown:'keep',kinds:{due:true,future:true} as any},
+   {enabled:true,kinds:{tutor:false}})
+  expect(result).toMatchObject({enabled:true,unknown:'keep',kinds:{due:true,tutor:false,future:true}})
+  expect(settingsRow({notify:{enabled:true}} as any).notify).toEqual({enabled:true})
+ })
  it('provides the bounded deterministic demo rows',async()=>{
   const api=demo()
   expect(await api.listPushDevices()).toHaveLength(2)
