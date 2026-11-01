@@ -31,6 +31,16 @@ for(const route of ['/insights','/kit'] as const){
   expect(Math.min(...labelSizes),'informative chart labels stay >=12px').toBeGreaterThanOrEqual(12);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/fix-507-charts',{recursive:true});
+  // A 360px phone has a fixed bottom tab bar. Centre the chart vertically
+  // before taking evidence; otherwise the bar can obscure its numeric ticks
+  // even though the data remain horizontally reachable.
+  if(route==='/insights'){
+   await reviews.locator('..').evaluate(el=>{
+    document.documentElement.style.scrollBehavior='auto';
+    const bounds=el.getBoundingClientRect();
+    window.scrollBy(0,bounds.top-window.innerHeight/3);
+   });
+  }
   await reviews.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews.png`});
   // The narrow Insights chart deliberately scrolls *inside* its card.
   // Exercise the actual scrollport and capture the final periods too, rather
@@ -39,6 +49,18 @@ for(const route of ['/insights','/kit'] as const){
    const scrollport=reviews.locator('..');
    await scrollport.evaluate(el=>{el.scrollLeft=el.scrollWidth});
    expect(await scrollport.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
+   // Prove that at least one numeric tick remains painted *inside* the
+   // scrolled viewport and above the fixed tab bar, not just present in DOM.
+   const rightTickVisible=await scrollport.evaluate(el=>{
+    const viewport=el.getBoundingClientRect();
+    return [...el.querySelectorAll('svg text')].some(text=>{
+     const box=text.getBoundingClientRect();
+     return box.width>0&&box.height>0&&box.left>=viewport.left&&
+      box.right<=viewport.right&&box.top>=viewport.top&&
+      box.bottom<=viewport.bottom&&box.bottom<window.innerHeight-72;
+    });
+   });
+   expect(rightTickVisible,'scrolled final periods retain a visible x-axis tick above the dock').toBe(true);
    await scrollport.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews-right.png`});
   }
   await checkpoints.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-checkpoints.png`});
