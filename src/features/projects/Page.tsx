@@ -117,8 +117,8 @@ export default function Page(){
  const pinnedCount=useMemo(()=>countPinnedProjects(all),[all]);
  const visible=useMemo(()=>all.filter(project=>matches(project,filter)&&
   (!search.trim()||[project.title,project.subject?.name??'Unassigned',...(project.sourceTitles??[])].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))).sort(newest),[all,filter,search]);
- const pinned=visible.filter(project=>project.pinned).slice(0,4);
- const pinnedIds=new Set(pinned.map(project=>project.id));
+ const pinned=useMemo(()=>visible.filter(project=>project.pinned).slice(0,4),[visible]);
+ const pinnedIds=useMemo(()=>new Set(pinned.map(project=>project.id)),[pinned]);
  const allGroups=useMemo(()=>{
   const map=new Map<string,{name:string;glyph:string;position:number;items:ProjectSummary[]}>();
   for(const project of visible){
