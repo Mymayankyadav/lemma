@@ -1,5 +1,3 @@
-import type {DeliveryResult} from './delivery.ts';
-
 /**
  * NOTIF-4b3: owner-authenticated /test behavior, with network and database
  * adapters injected by the Edge route. Never uses the service role before
@@ -14,6 +12,8 @@ export interface TestDevice {
  prefs?:{maxPerDay?:number;quiet?:{start?:string;end?:string}};
 }
 export interface TestPushMessage {kind:'test';tag:'test';title:string;body:string}
+/** Structural result; the later transport integration supplies sendWebPush. */
+export type TestPushOutcome={status:'sent'|'gone'|'retry'|'failed';httpStatus?:number};
 export interface TestPushDeps {
  configured:boolean;
  /** Must call supabase.auth.getUser(jwt), not parse JWT claims locally. */
@@ -21,7 +21,7 @@ export interface TestPushDeps {
  /** Must filter the query by BOTH user_id and device id. */
  loadDevice:(ownerId:string,deviceId:string)=>Promise<TestDevice|null>;
  /** One attempt; the transport handles status classification, not retries. */
- send:(device:TestDevice,message:TestPushMessage)=>Promise<DeliveryResult>;
+ send:(device:TestDevice,message:TestPushMessage)=>Promise<TestPushOutcome>;
 }
 export interface TestPushResponse {
  status:200|400|401|404|410|503;
