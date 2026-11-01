@@ -27,7 +27,7 @@ for(const route of ['/insights','/kit'] as const){
   expect(gap!).toBeGreaterThanOrEqual(8);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   mkdirSync('test-results/screens/fix-507-charts',{recursive:true});
-  await reviews.screenshot({path:`test-results/screens/fix-507-charts/${route.slice(1)}-${theme}-${width}-reviews.png`});
-  await checkpoints.screenshot({path:`test-results/screens/fix-507-charts/${route.slice(1)}-${theme}-${width}-checkpoints.png`});
+  await reviews.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-reviews.png`});
+  await checkpoints.screenshot({path:`test-results/screens/fix-507-charts/${profile}-${route.slice(1)}-${theme}-${width}-checkpoints.png`});
  });
 }
