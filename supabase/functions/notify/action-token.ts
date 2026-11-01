@@ -11,7 +11,7 @@ export interface ActionTokenPayload{
  x?:{ids?:string[];action?:number;scope?:string};
 }
 export class ActionTokenError extends Error{
- constructor(public readonly status:400|410,message:string){super(message);this.name='ActionTokenError'}
+ constructor(public readonly status:400|401|410,message:string){super(message);this.name='ActionTokenError'}
 }
 function bad(message='Invalid notification action'):never{throw new ActionTokenError(400,message)}
 function encode(bytes:Uint8Array):string{
@@ -75,7 +75,7 @@ export async function verifyActionToken(token:string,secret:string,nowSeconds=Ma
  try{signature=decode(parts[1]);body=decode(parts[0])}catch{bad()}
  if(signature.length!==32||body.length>3000)bad();
  const verified=await crypto.subtle.verify('HMAC',key,signature,encoder.encode(parts[0]));
- if(!verified)bad('Invalid notification action signature');
+ if(!verified)throw new ActionTokenError(401,'Invalid notification action signature');
  let parsed:unknown;
  try{parsed=JSON.parse(decoder.decode(body))}catch{bad()}
  return validate(parsed,nowSeconds);

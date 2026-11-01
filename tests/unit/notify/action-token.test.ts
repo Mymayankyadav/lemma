@@ -15,7 +15,7 @@ describe('NOTIF-4a authenticated action links',()=>{
   expect(token).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
   expect(token).not.toContain(secret);
   expect(await verifyActionToken(token,secret,now)).toEqual(basic);
-  await expect(verifyActionToken(token,secret+'different',now)).rejects.toMatchObject({status:400});
+  await expect(verifyActionToken(token,secret+'different',now)).rejects.toMatchObject({status:401});
  });
  it('rejects tampered owner, action and notification id, even if base64 JSON is well-formed',async()=>{
   const token=await signActionToken(basic,secret,now);
@@ -23,7 +23,7 @@ describe('NOTIF-4a authenticated action links',()=>{
   const data=JSON.parse(Buffer.from(payload,'base64url').toString());
   for(const edit of [{u:other},{a:'undo'},{n:43}]){
    const forged=Buffer.from(JSON.stringify({...data,...edit})).toString('base64url')+'.'+mac;
-   await expect(verifyActionToken(forged,secret,now)).rejects.toMatchObject({status:400});
+   await expect(verifyActionToken(forged,secret,now)).rejects.toMatchObject({status:401});
   }
   await expect(verifyActionToken(token.slice(0,-1)+'?',secret,now)).rejects.toMatchObject({status:400});
  });
