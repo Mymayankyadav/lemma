@@ -96,7 +96,10 @@ export default function AppShell(){
     if(disposed||authEventSeen)return;
     identity=initialIdentity;
     if(!identity)return;
-    if(!navigator.onLine)await restore();
+    const authError=queryClient.getQueryState(['auth'])?.error as {code?:string}|null;
+    // The browser may report online while the first auth/network request
+    // failed. Hydrate only this signed-in owner's read-only snapshot.
+    if(!navigator.onLine||authError?.code==='offline')await restore();
     else queueSave();
    }catch{/* No authenticated identity: never open another user's snapshot. */}
   })();
