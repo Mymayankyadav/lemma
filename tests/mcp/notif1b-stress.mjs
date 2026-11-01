@@ -4,6 +4,8 @@
 import assert from 'node:assert/strict'
 import {readFile,readdir} from 'node:fs/promises'
 import {performance} from 'node:perf_hooks'
+import {buildReadOnlyExplain} from './notif1b-diagnostic.mjs'
+import './notif1b-diagnostic.test.mjs'
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite')
 const db=new PGlite()
 const owner='11111111-1111-1111-1111-111111111111'
@@ -69,28 +71,29 @@ try{
  // Diagnostic EXPLAIN is never used for acceptance: the first call above
  // remains the only timed attempt and always fails if it exceeded the budget.
  if(elapsed>=150){
-   // Diagnostic-only EXPLAIN must never hide a failed first attempt behind
-   // the 10-minute SQL job timeout. The strict elapsed<150 assertion below
-   // is unchanged; cancellation is allowed only for bounded diagnostics.
+   // Never execute a second candidate/CTE query after the first-attempt gate
+   // has failed. PGlite's EXPLAIN ANALYZE can outlive statement_timeout and
+   // cancel the entire 10-minute mcp-sql job, concealing the measured failure.
+   // Planner-only EXPLAIN preserves plan shape, estimates and index choices.
    await db.exec("set statement_timeout = '3000ms'")
    try{
-   const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,now())',[owner])
-   console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
-   // Profile individual CTEs only after the strict first-attempt gate fails.
-   // No diagnostic rerun can change the first-attempt acceptance measurement.
-   const migrationSql=await readFile(new URL('../../supabase/migrations/20261101171500_notify_candidates_card_first.sql',import.meta.url),'utf8')
-   const cteBody=migrationSql.split('\nwith\n')[1]?.split("\nselect jsonb_build_object(\n  'tz'")[0]
-   assert.ok(cteBody?.startsWith('prefs as ('),'candidate CTE diagnostics must match the migration')
-   const ctes=('with\n'+cteBody).replace(/\bp_user\b/g,'$1::uuid').replace(/\bp_now\b/g,'$2::timestamptz')
-   for(const name of ['due_candidates','top_due','prioritized','quota','tomorrow_rows','study_summary']){
-     const t0=performance.now()
-     const detail=await q('explain (analyze,buffers) '+ctes+'\nselect count(*) from '+name,[owner,new Date().toISOString()])
-     console.log('NOTIF-1b X CTE '+name+' '+(performance.now()-t0).toFixed(1)+'ms\n'+
-       detail.map(row=>row['QUERY PLAN']).join('\n').slice(0,6000))
-   }
+     const plan=await q(buildReadOnlyExplain('select public.notify_candidates($1,now())'),[owner])
+     console.log('NOTIF-1b X estimated diagnostic plan',
+       plan.map(row=>row['QUERY PLAN']).join('\n').slice(0,6000))
+     const migrationSql=await readFile(new URL('../../supabase/migrations/20261101171500_notify_candidates_card_first.sql',import.meta.url),'utf8')
+     const cteBody=migrationSql.split('\nwith\n')[1]?.split("\nselect jsonb_build_object(\n  'tz'")[0]
+     assert.ok(cteBody?.startsWith('prefs as ('),'candidate CTE diagnostics must match the migration')
+     const ctes=('with\n'+cteBody).replace(/\bp_user\b/g,'$1::uuid').replace(/\bp_now\b/g,'$2::timestamptz')
+     for(const name of ['due_candidates','top_due','prioritized','quota','tomorrow_rows','study_summary']){
+       const detail=await q(buildReadOnlyExplain(ctes+'\nselect count(*) from '+name),
+         [owner,new Date().toISOString()])
+       console.log('NOTIF-1b X estimated CTE '+name+'\n'+
+         detail.map(row=>row['QUERY PLAN']).join('\n').slice(0,6000))
+     }
    }catch(error){
-     if(error?.code!=='57014')throw error
-     console.log('NOTIF-1b X diagnostic query bounded at 3s after first-attempt failure')
+     // Diagnostics cannot replace the original first-attempt failure. Log a
+     // bounded code only; do not expose SQL parameters or secrets.
+     console.log('NOTIF-1b X planner diagnostic unavailable',String(error?.code||'unknown').slice(0,60))
    }finally{
      await db.exec('reset statement_timeout')
    }
