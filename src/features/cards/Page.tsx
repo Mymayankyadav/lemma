@@ -26,7 +26,9 @@ function CreateSheet(props:SheetProps){
  const [activated,setActivated]=useState(props.open);
  useEffect(()=>{if(props.open)setActivated(true)},[props.open]);
  if(!props.open&&!activated)return null;
- return <Suspense fallback={<Skeleton h={180}/>}>\n  <LazySheet {...props}/>\n </Suspense>;
+ return <Suspense fallback={<Skeleton h={180}/>}>
+  <LazySheet {...props}/>
+ </Suspense>;
 }
 const ROW_HEIGHT=92,OVERSCAN=6;
 function relative(due:string|null){
