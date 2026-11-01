@@ -35,6 +35,11 @@ try{
  await assert.rejects(q('update public.settings set notify=$1::jsonb where user_id=$2',['[]',owner]),/settings_notify_object_check/)
  await assert.rejects(q('update public.settings set notify=$1::jsonb where user_id=$2',[JSON.stringify({x:'x'.repeat(5000)}),owner]),/settings_notify_object_check/)
  console.log('PASS NOTIF-1a bounded settings JSON object')
+ const settingsAction=(await q('select max(no) n from public.actions where user_id=$1',[owner]))[0].n
+ await q('select public.undo_action($1,$2,false)',[owner,settingsAction])
+ assert.equal((await q('select notify from public.settings where user_id=$1',[owner]))[0].notify,null)
+ console.log('PASS NOTIF-1a settings.notify update is journalled and undoable')
+
 
  await db.exec('set role authenticated')
  for(let n=1;n<=10;n++)await add(n)
