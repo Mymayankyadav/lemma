@@ -73,6 +73,9 @@ describe('NOTIF-4a authenticated action links',()=>{
    {...basic,a:'delete'}, {...basic,n:0}, {...basic,n:Number.MAX_SAFE_INTEGER+1},
    {...basic,u:'bad'}, {...basic,exp:now+0.5}, {...basic,x:{scope:'x'.repeat(121)}},
    {...basic,x:{extra:true}},
+   {...basic,a:'later',x:{scope:'  '}},
+   {...basic,a:'later',x:{scope:'due:\nspoof'}},
+   {...basic,a:'not_today',x:{scope:'tutor\u0000hidden'}},
   ]){
    await expect(signActionToken(invalid as unknown as typeof basic,secret,now)).rejects.toMatchObject({status:400});
   }
