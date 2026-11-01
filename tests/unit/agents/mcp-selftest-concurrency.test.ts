@@ -27,6 +27,14 @@ describe('FIX #636: deployed MCP selftests cannot overlap',()=>{
   expect(smoke).toContain('timeout-minutes: 75');
   expect(deploy).toContain('timeout-minutes: 80');
  });
+ it('fails closed when connector verification cannot run',()=>{
+  // A queued run that exits green without a connector or smoke script is
+  // indistinguishable from a verified deployment to the downstream gate.
+  expect(smoke).not.toContain('MCP smoke skipped');
+  expect(smoke).toContain('::error::MCP smoke blocked: MCP_URL');
+  expect(smoke).toContain('::error::MCP smoke blocked: missing smoke script');
+  expect((smoke.match(/exit 1/g)??[]).length).toBeGreaterThanOrEqual(2);
+ });
  it('retains deploy and smoke verification rather than bypassing assertions',()=>{
   expect(deploy).toContain('supabase db push');
   expect(deploy).toContain('supabase functions deploy mcp --no-verify-jwt');
