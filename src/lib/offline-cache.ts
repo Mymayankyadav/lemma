@@ -91,6 +91,9 @@ function projectSlug(entry:OfflineEntry):string|null {
 /** Oldest project/checkpoint entries go first; keep at most five project slugs. */
 export function boundOfflineEntries(entries:OfflineEntry[],now=Date.now(),maxBytes=OFFLINE_MAX_BYTES):OfflineEntry[]{
  const valid=entries.filter(e=>isOfflineKey(e.key)&&Number.isFinite(e.savedAt)&&e.savedAt<=now&&now-e.savedAt<=OFFLINE_MAX_AGE_MS)
+  // Validate before redaction too: a tampered projection with a secret field
+  // must be rejected, not silently normalized into an apparently valid record.
+  .filter(e=>e.key[0]!=='settings'||isOfflineSettings(e.data))
   .map(e=>({...e,data:scrubOfflineData(e.data)}))
   .filter(e=>e.key[0]!=='settings'||isOfflineSettings(e.data))
  const latest=new Map<string,OfflineEntry>()
