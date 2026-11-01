@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {waitForLoadedPaths} from './helpers/waitForLoadedPaths';
 
 for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
@@ -122,15 +123,20 @@ for(const width of [360,390] as const){
 
 // D6 acceptance: measure the interactive list transition under 4x CPU.
 // Loading the deterministic 30,000-card fixture happens before timing.
+// Unlike normal UI tests, a retry must never certify a failed 1000ms budget.
+// Ordered default mode avoids simultaneous 4x CPU tests on one CI runner,
+// while still executing all four cells even if one exceeds the limit.
+test.describe('D6 strict first-attempt 4x CPU budget',()=>{
+ test.describe.configure({mode:'default',retries:0});
 for(const theme of ['graph','graph-night'] as const)
 for(const [width,height] of [[360,740],[390,844]] as const){
- test('ST-4 extreme cards open under 1s at 4x CPU: '+theme+' '+width,async({page})=>{
+ test('ST-4 extreme cards open under 1s at 4x CPU: '+theme+' '+width,async({page},testInfo)=>{
   test.setTimeout(120_000);
   await page.setViewportSize({width,height});
   await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
   await page.goto('/lemma/?demo=extreme&theme='+theme+'#/projects',{waitUntil:'domcontentloaded',timeout:90_000});
-  await expect(page.getByRole('heading',{name:'Paths',level:1})).toBeVisible({timeout:90_000});
+  await waitForLoadedPaths(page);
   const cdp=await page.context().newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
   try{
@@ -145,6 +151,11 @@ for(const [width,height] of [[360,740],[390,844]] as const){
     rows:document.querySelectorAll('[data-card-row]').length,
     overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth),
    }));
+   const evidence={...metrics,theme,width,profile:'extreme',cpuThrottle:4};
+   await testInfo.attach('cards-d6-first-attempt-measurement',{
+    body:JSON.stringify(evidence,null,2),contentType:'application/json',
+   });
+   console.info('Cards D6 cold 4x: '+JSON.stringify(evidence));
    expect(metrics.durationMs,'Card list first interactive render at 4x CPU').toBeLessThan(1000);
    expect(metrics.nodes,'Card list DOM budget').toBeLessThan(1500);
    expect(metrics.rows).toBeLessThanOrEqual(24);
@@ -156,3 +167,5 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   }
  });
 }
+
+});
