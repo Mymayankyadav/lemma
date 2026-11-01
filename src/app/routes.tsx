@@ -13,11 +13,13 @@ import Page9 from '../features/review-run/Page'
 import Page10 from '../features/review-done/Page'
 import Page11 from '../features/cards/Page'
 import Page12 from '../features/card/Page'
-const Page13=lazy(()=>import('../features/atlas/Page'))
 import Page14 from '../features/insights/Page'
 import Page15 from '../features/settings/Page'
 import Page16 from '../features/sign-in/Page'
 import Page17 from '../features/kit/Page'
+
+// Atlas is not needed for the cold Today entry; Paths warms it on demo visits.
+const Page13=lazy(()=>import('../features/atlas/Page'))
 /** The canonical route inventory from design.md §6. */
 export const screenRoutes = [
  {path: '/', element: <Suspense fallback={<RouteFallback/>}><Page0 /></Suspense>, errorElement: <RouteError/> },
