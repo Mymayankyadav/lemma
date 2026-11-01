@@ -56,6 +56,23 @@ describe('FIX #507 direct-route cold stress hydration',()=>{
   expect(typeof Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBe('function');
  },30_000);
 
+
+ it('keeps the 30k synthetic note collection deferred for individual checkpoint details',async()=>{
+  const eager=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const lazy=new DemoAdapter({fixture:makeStressStore(seed,'stress',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  for(const code of ['CP1','CP4','CP36','CP40']){
+   const expected=await eager.getCheckpoint('stress-project-3',code);
+   const actual=await lazy.getCheckpoint('stress-project-3',code);
+   expect(actual).toEqual(expected);
+  }
+  const store=(lazy as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
+  expect(typeof Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBe('function');
+ },30_000);
+
  it('reads a direct extreme Card detail without materializing 30k unrelated notes',async()=>{
   const fixture=makeStressStore(seed,'extreme',{
    deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
