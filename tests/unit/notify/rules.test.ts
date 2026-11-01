@@ -68,6 +68,12 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(choose([{...behind,lastSentAt:now-10*DAY,dismissals:3}])[0].reason).toBe('frequency')
   expect(choose([{...behind,projectSentToday:true}])[0].reason).toBe('frequency')
  })
+ it('treats a fresh K3 late transition as new even after a recent prior send',()=>{
+  const prior=now-2*DAY,transition=now-DAY
+  const behind:ReminderCandidate={kind:'behind',key:'behind:renewed',lastSentAt:prior,behindTransitionAt:transition}
+  expect(choose([behind])[0].status).toBe('send')
+  expect(choose([{...behind,behindTransitionAt:prior-DAY}])[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+ })
  it('chooses the earliest target among late projects and allows only one K3 per study day',()=>{
   const first:ReminderCandidate={kind:'behind',key:'behind:later',targetDate:now+10*DAY}
   const second:ReminderCandidate={kind:'behind',key:'behind:earlier',targetDate:now+3*DAY}
@@ -98,6 +104,14 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(tutorActions({cards:5,hasPlan:true,approveCards:true})).toEqual(['Review','Later'])
   expect(tutorActions({cards:5,hasPlan:false,approveCards:false})).toEqual(['Review','Later'])
  })
+ it('does not resend old K5 proposals and allows a genuinely new session summary',()=>{
+  const previous=now-3*HOUR
+  const oldProposal:ReminderCandidate={kind:'tutor',key:'tutor:old',newestProposalAt:previous-HOUR,lastSentAt:previous}
+  expect(choose([oldProposal])[0]).toMatchObject({status:'skipped',reason:'resolved'})
+  expect(choose([{...oldProposal,newestProposalAt:now-15*60_000}])[0].status).toBe('send')
+  const recent=now-30*60_000
+  expect(choose([{kind:'tutor',key:'tutor:summary',hasSummary:true,summaryAt:now-5*60_000,lastSentAt:recent}])[0].status).toBe('send')
+ })
  it('resets dismissal backoff on a tap or action',()=>{
   expect(dismissalStreak(2,'dismiss')).toBe(3)
   expect(dismissalStreak(3,'tap')).toBe(0)
@@ -110,3 +124,4 @@ describe('NOTIF-3b deterministic scheduling',()=>{
  })
 })
 const DAY=24*60*60*1000
+const HOUR=60*60*1000
