@@ -247,6 +247,7 @@ dismiss_recent as (
   left join lateral (
     select action,action_at,id from public.notifications
     where user_id=p_user and kind=k.kind and action_at is not null
+      and action_at>=p_now-interval '30 days'
     order by action_at desc,id desc limit 3
   ) n on true
 ),
