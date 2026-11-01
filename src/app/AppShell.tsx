@@ -116,7 +116,10 @@ export default function AppShell(){
     const restoredAt=Number(document.documentElement.dataset.offlineSavedAt);
     if(getMode()==='live'&&navigator.onLine&&Number.isFinite(restoredAt)&&restoredAt>0&&
        event.query.state.dataUpdatedAt>restoredAt)publish(null);
-    queueSave();return
+    // React Query also emits success-state notifications while refetching;
+    // only newer data merits another offline snapshot.
+    if(event.query.state.dataUpdatedAt>lastSavedAt)queueSave();
+    return
    }
    // navigator.onLine can be true during DNS/server failure. Restore only
    // when there is no live data, never after an authentication failure.
