@@ -55,10 +55,11 @@ describe('FIX #614 v4 large-project summary Route',()=>{
  it('never links a guessed checkpoint when home_summary has no current checkpoint',()=>{
   const html=renderToStaticMarkup(createElement(MemoryRouter,null,
    createElement(SummaryGoalCard,{project:project({current:null}),events:undefined})));
-  const routeHref=html.match(/data-route-mode="today"[\\s\\S]*?<a[^>]+href="([^"]+)"/)?.[1];
+  const routeHtml=html.split('data-route-mode="today"')[1]??'';
+  const routeHref=routeHtml.match(/href="([^"]+)"/)?.[1];
   expect(routeHref).toBe('/p/algebra');
   expect(html).not.toContain('href="/p/algebra/cp/CP1"');
-  const routeSvg=html.match(/<svg data-route-track[\\s\\S]*?<\\/svg>/)?.[0]??'';
+  const routeSvg=routeHtml.split('data-route-track')[1]?.split('</svg>')[0]??'';
   expect(routeSvg,'no synthetic checkpoint may wear the red current marker').not.toContain('fill="var(--accent)"');
   const current=renderToStaticMarkup(createElement(MemoryRouter,null,
    createElement(SummaryGoalCard,{project:project(),events:undefined})));
