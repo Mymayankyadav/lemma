@@ -7,6 +7,11 @@ create index if not exists notify_checkpoints_owner_due
   on public.checkpoints(user_id,due_on,project_id)
   where status<>'demonstrated';
 
+-- Backoff checks read only the latest three actions of each affected kind.
+create index if not exists notify_actions_owner_kind_recent
+  on public.notifications(user_id,kind,action_at desc,id desc)
+  where action_at is not null;
+
 create function public.notify_candidates(p_user uuid,p_now timestamptz)
 -- The 30k-card X snapshot must not use one cards_note_id_owner probe per note.
 -- Owner-scoped hash joins keep the bounded read stable even before auto-ANALYZE
@@ -236,17 +241,26 @@ last_by_key as (
     order by key,sent_at desc limit 50) selected
 ),
 dismiss_recent as (
-  select action,row_number() over(order by action_at desc,id desc) seq
-  from public.notifications
-  where user_id=p_user and kind='due' and action_at is not null
-  order by action_at desc,id desc limit 3
+  select k.kind,n.action,
+    row_number() over(partition by k.kind order by n.action_at desc,n.id desc) seq
+  from (values ('due'),('behind'),('resume'),('rhythm')) as k(kind)
+  left join lateral (
+    select action,action_at,id from public.notifications
+    where user_id=p_user and kind=k.kind and action_at is not null
+    order by action_at desc,id desc limit 3
+  ) n on true
 ),
-dismiss_due as (
-  select count(*)::integer n from (
-    select action,sum(case when action='dismiss' then 0 else 1 end)
-      over(order by seq rows between unbounded preceding and current row) interruptions
+dismiss_streaks as (
+  select kind,count(*) filter(where action='dismiss' and interruptions=0)::integer n
+  from (
+    select kind,action,
+      sum(case when action='dismiss' then 0 else 1 end)
+        over(partition by kind order by seq rows between unbounded preceding and current row) interruptions
     from dismiss_recent
-  ) streak where action='dismiss' and interruptions=0
+  ) streak group by kind
+),
+dismiss_json as (
+  select coalesce(jsonb_object_agg(kind,n),'{}'::jsonb) items from dismiss_streaks
 )
 select jsonb_build_object(
   'tz',f.time_zone,'rollover',f.rollover_hour,'today',f.today,
@@ -276,16 +290,17 @@ select jsonb_build_object(
     'demonstrated',wd.items,'next',(select item from week_next)),
   'devices',jsonb_build_object('enabled',dev.enabled,'lastSeenAt',dev.last_seen_at),
   'history',jsonb_build_object('sentToday',h.sent_today,'lastSentAt',h.last_sent_at,
-    'lastByKey',lk.items,'dismissStreak',jsonb_build_object('due',dd.n))
+    'lastByKey',lk.items,'dismissStreak',dd.items)
 )
 from prefs f cross join reviewed r cross join due_totals d cross join answer_speed speed
 cross join tomorrow_json tomorrow cross join late_json late cross join past_target_json past
 cross join pending_counts pc cross join pending_bounded pb cross join study_summary s
 cross join week_demonstrated wd cross join devices dev cross join history h
-cross join last_by_key lk cross join dismiss_due dd;
+cross join last_by_key lk cross join dismiss_json dd;
 $facts$;
 revoke all on function public.notify_candidates(uuid,timestamptz) from public,anon,authenticated;
 grant execute on function public.notify_candidates(uuid,timestamptz) to service_role;
 
 -- Down: drop function if exists public.notify_candidates(uuid,timestamptz);
 -- drop index if exists public.notify_checkpoints_owner_due;
+-- drop index if exists public.notify_actions_owner_kind_recent;
