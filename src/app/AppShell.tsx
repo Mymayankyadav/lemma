@@ -2,7 +2,7 @@ import {useOutlet,useLocation,useNavigationType} from 'react-router';
 import {useEffect} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {getMode,getDemoProfile} from '../data/mode';
-import {saveOfflineSnapshot,readOfflineSnapshot,deleteOfflineSnapshot,isOfflineKey} from '../lib/offline-cache';
+import {saveOfflineSnapshot,readOfflineSnapshot,deleteOfflineSnapshot,isOfflineKey,stageOfflineHandoff,clearOfflineHandoff} from '../lib/offline-cache';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
 import DemoChip from './DemoChip';
@@ -25,6 +25,7 @@ export default function AppShell(){
   // can leave the former owner's offline records on disk.
   const pendingReads=new Set<Promise<unknown>>();
   const eraseOwner=(owner:string)=>{
+   clearOfflineHandoff(owner);
    void Promise.allSettled([pendingSave,...pendingReads])
     .then(()=>deleteOfflineSnapshot(owner)).catch(()=>{/* Private mode/blocked storage: no data is exposed to the next owner. */});
   };
@@ -111,6 +112,11 @@ export default function AppShell(){
   const unsubscribe=queryClient.getQueryCache().subscribe(event=>{
    if(event.type!=='updated'||!isOfflineKey(event.query.queryKey))return;
    if(event.query.state.status==='success'){
+    // A full-page navigation can discard an idle IndexedDB timer before it
+    // fires. Stage only this successful allowlisted query in a bounded,
+    // redacted tab-local handoff synchronously; the next save commits it.
+    if(identity&&navigator.onLine&&event.query.state.dataUpdatedAt>0)
+     stageOfflineHandoff(identity,event.query.queryKey,event.query.state.data,event.query.state.dataUpdatedAt);
     // A successful fresh network read ends a stale-snapshot fallback. Merely
     // hydrating old entries must not clear the warning or re-enable writes.
     const restoredAt=Number(document.documentElement.dataset.offlineSavedAt);
@@ -156,6 +162,12 @@ export default function AppShell(){
     if(disposed||authEventSeen)return;
     identity=initialIdentity;
     if(!identity)return;
+    // React Query can finish before the async identity lookup. Capture any
+    // already-successful allowlisted reads before the first full-page exit.
+    if(navigator.onLine)for(const query of queryClient.getQueryCache().findAll()){
+     if(query.state.status==='success'&&isOfflineKey(query.queryKey))
+      stageOfflineHandoff(identity,query.queryKey,query.state.data,query.state.dataUpdatedAt);
+    }
     const authError=queryClient.getQueryState(['auth'])?.error as {code?:string}|null;
     // The browser may report online while the first auth/network request
     // failed. Hydrate only this signed-in owner's read-only snapshot.
@@ -163,12 +175,19 @@ export default function AppShell(){
     else queueSave();
    }catch{/* No authenticated identity: never open another user's snapshot. */}
   })();
+  const onPageHide=()=>{
+   // Best-effort durable flush; the synchronous sanitized handoff survives
+   // even if the browser terminates this asynchronous IDB transaction.
+   if(identity&&navigator.onLine){cancelQueuedSave();void save(true)}
+  };
   window.addEventListener('offline',onOffline);
   window.addEventListener('online',onOnline);
+  window.addEventListener('pagehide',onPageHide);
   return()=>{
    disposed=true;cancelQueuedSave();
    unsubscribe();authSubscription?.unsubscribe();
    window.removeEventListener('offline',onOffline);window.removeEventListener('online',onOnline);
+   window.removeEventListener('pagehide',onPageHide);
   };
  },[queryClient]);
  const showTabs=tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas';
