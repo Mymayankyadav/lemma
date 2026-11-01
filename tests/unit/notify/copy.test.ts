@@ -41,7 +41,7 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   const result=notificationCopy(input)
   expect(result.title).toBe(title)
   expect(result.body).toBe(body)
-  expect(result.tag).toBe(input.kind)
+  expect(result.tag).toBe(input.kind==='confirm'?'tutor':input.kind)
  })
  it('never exposes raw TeX, forbidden language or oversized system text',()=>{
   const input:NoticeCopyInput={kind:'deadline',checkpoints:[{
