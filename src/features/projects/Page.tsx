@@ -14,7 +14,7 @@ import {Screen} from '../../ui/Screen';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {countPinnedProjects} from './pinnedCount';
 
 type Filter='active'|'paused'|'done'|'archived';

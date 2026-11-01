@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {X} from 'lucide-react';
 import {Sheet} from '../../ui/Sheet';
 import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
 import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,neighbours,rowTone,visibleRows} from './tree';
 import {Row,StatusMark,Wires,toneColor,statusName} from './Outline';
