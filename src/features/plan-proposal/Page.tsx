@@ -316,6 +316,7 @@ export default function Page() {
   const stages = useMemo(() => groupPlanStages(nodes), [nodes]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
+    if(!navigator.onLine){notify("Needs a connection");return}
     if (!p) return;
     try {
       await approve.mutateAsync({ id: p.id });
@@ -326,6 +327,7 @@ export default function Page() {
     }
   };
   const askChanges = async () => {
+    if(!navigator.onLine){notify("Needs a connection");return}
     if (!p || !request.trim() || pending) return;
     const prompt = revisePlanPrompt(
       p.projectSlug.replaceAll("-", " "),
@@ -486,12 +488,13 @@ export default function Page() {
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="ghost"
+              needsNetwork
               disabled={pending}
               onClick={() => setAsking(true)}
             >
               Ask for changes
             </Button>
-            <Button disabled={pending} onClick={() => void doApprove()}>
+            <Button needsNetwork disabled={pending} onClick={() => void doApprove()}>
               Approve plan
             </Button>
           </div>
@@ -518,6 +521,7 @@ export default function Page() {
             </p>
             <Button
               className="w-full"
+              needsNetwork
               disabled={pending || !request.trim()}
               onClick={() => void askChanges()}
             >
