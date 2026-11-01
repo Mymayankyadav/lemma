@@ -33,12 +33,18 @@ try{
    await q('insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,due_on,steps) values($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)',
      [owner,project,code,Number(code.slice(2))*10,code+' Title','Learn','Prove',dueOn,JSON.stringify(['Understand'])])
  }
+ let firstNote
  for(let i=0;i<2;i++){
    const note=(await q('insert into public.notes(user_id,project_id,front) values($1,$2,$3) returning id',
      [owner,project,'Question '+i]))[0].id
+   if(i===0) firstNote=note
    await q('insert into public.cards(user_id,note_id,ord,state,due) values($1,$2,1,$3,$4)',
      [owner,note,i===0?0:2,'2026-10-20T00:00:00Z'])
  }
+ // Two eligible siblings of the same note must still contribute only one
+ // candidate, with the due review card preferred to the new sibling.
+ await q('insert into public.cards(user_id,note_id,ord,state,due) values($1,$2,2,2,$3)',
+   [owner,firstNote,'2026-10-19T00:00:00Z'])
  const proposals=[]
  for(let i=0;i<3;i++){
    proposals.push((await q(
