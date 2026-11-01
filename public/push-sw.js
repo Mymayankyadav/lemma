@@ -50,7 +50,7 @@ async function confirmation(reply,data,action){
   (undoToken?'Undo is in the app, or here for 48 hours.':'Undo is in the app.'):
   (typeof result.message==='string'?result.message:'Done');
  const confirmId=(typeof result.confirmId==='number'&&Number.isSafeInteger(result.confirmId)&&result.confirmId>0)||
-  (typeof result.confirmId==='string'&&/^\\d{1,16}$/.test(result.confirmId))?
+  (typeof result.confirmId==='string'&&/^\d{1,16}$/.test(result.confirmId))?
   String(result.confirmId):data.id;
  // Reuse the original tag to replace the actionable K5 notification, while
  // binding Undo to the new server-created confirmation row.
