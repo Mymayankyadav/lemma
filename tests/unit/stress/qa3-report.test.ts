@@ -43,6 +43,16 @@ describe('QA-3a stress evidence', () => {
     expect(markdown).toContain('demo adapter');
   });
 
+  it('cannot certify QA-3 release while a named stress gate awaits Auditor clearance', () => {
+    const report = analyzeQa3(evidence(), undefined, {
+      release: true,
+      pendingGates: [{ issue: 485, failure: 'maths below 16px', routes: ['/atlas'] }],
+    });
+    expect(report.status).toBe('INCOMPLETE');
+    expect(report.errors).toContain('QA-3 release blocked by unresolved audit #485');
+    expect(renderQa3Markdown(report)).toContain('QA-3 release blocked');
+  });
+
   it('rejects a missing matrix file and reports incomplete evidence', () => {
     const files = evidence();
     delete files[qa3Cases()[0].filename];

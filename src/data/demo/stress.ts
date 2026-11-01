@@ -126,11 +126,125 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
     transcribedBy: null, transcribedAt: null, confidence: null};
 }
 
+/** Build the real note rows only when a route needs card content. */
+export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects'],cardCount:number,dueCount:number,startIndex=0):DemoNote[]{
+ const notes:DemoNote[]=[];
+  const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
+  const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
+  const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
+  const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
+  const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
+  const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
+  for (let i = startIndex; i < startIndex + cardCount; i++) {
+    const project = projects[i % projects.length];
+    const no = i + 1;
+    const note: DemoNote = {
+      ...baseNote, projectId: project.id, sessionId: null, conceptId: null,
+      note: {
+        ...baseNote.note, noteId: `stress-note-${no}`, noteNo: no,
+        projectSlug: project.slug, checkpointCode: `CP${(i % 36) + 1}`,
+        front: i === 0 ? longFront : i === 2 ? matrix : i === 3 ? aligned : i === 4 ? sum : i === 5 ? inline : `Recall the definition in card ${no}?`,
+        back: i === 0 ? longBack : `Prove the statement for card ${no}.`,
+        status: "active", sessionNumber: null, sourceShort: null, pageLabel: null,
+      },
+      cards: [{ id: `stress-card-${no}`, ord: 1, state: {
+        ...baseNote.cards[0].state, due: i < dueCount ? "@due:-1" : "@due:14",
+        lastReview: "@day:-14:0.5:0",
+      }}],
+      comments: [],
+    };
+    notes.push(note);
+  }
+ return notes;
+}
+
+/** Deterministic full Atlas; defer it until an Atlas/idea route needs it. */
+export function fillStressAtlas(data:DemoStore,ideaCount:number,linkCount:number,baseConcept:DemoStore['concepts'][number]):void{
+  for (let i = data.concepts.length; i < ideaCount; i++) {
+    const subject = data.subjects[i % data.subjects.length];
+    data.concepts.push({
+      ...baseConcept, id: `stress-idea-${i}`, slug: `stress-idea-${i}`,
+      name: `Idea ${i}: ${i % 7 === 0 ? "Long mathematical statement" : "Definition"}`,
+      blurb: `A mathematical idea with index ${i}`, subjectId: subject.id,
+      level: "planet", parentId: null, isStar: false, pinX: null, pinY: null,
+    });
+  }
+  // Deterministic DAG links; avoid duplicates and self-loops.
+  const linkKeys = new Set(data.links.map(link => `${link.fromId}:${link.toId}:${link.kind}`));
+  for (let offset = 1; data.links.length < linkCount && offset < ideaCount; offset++) {
+    for (let i = 0; i + offset < ideaCount && data.links.length < linkCount; i++) {
+      const fromId = data.concepts[i].id, toId = data.concepts[i + offset].id;
+      const key = `${fromId}:${toId}:prereq`;
+      if (!linkKeys.has(key)) {
+        data.links.push({ fromId, toId, kind: "prereq" });
+        linkKeys.add(key);
+      }
+    }
+  }
+
+}
+
+
+/** Generate the exact source rows for one stress project. Shared by full
+ * fixture materialization and direct project reads, so neither route can
+ * silently diverge on IDs, kinds, dates, or representative source metadata.
+ */
+export function makeStressProjectSources(
+  firstSource:DemoSource, existing:readonly DemoSource[],
+  project:DemoStore['projects'][number],projectIndex:number,
+  projectCount:number,sourceTarget:number,extreme:boolean,
+):DemoSource[]{
+  const rows=[...existing];
+  const sourceKinds=["book","notes","slides","problems","syllabus","exam","other"] as const;
+  for(let i=existing.length;i<sourceTarget;i++){
+    const representative=(projectIndex===0||projectIndex===projectCount-1)&&i===existing.length;
+    rows.push({
+      ...firstSource,
+      id:`stress-source-${projectIndex}-${i}`,projectId:project.id,
+      title:`Source ${i+1}: mathematical notes and proofs`,
+      short:`stresssrc${i}`,filename:`source-${i+1}.pdf`,
+      kind:representative?"notes":sourceKinds[i%sourceKinds.length],position:i,
+      pageCount:extreme?3000:1200,
+      status:"ready",hasText:representative,outline:[],pages:[],
+      sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
+      addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
+    });
+  }
+  return rows;
+}
+
+/** Generate exact per-project stress sources only when a source route needs them. */
+export function fillStressSources(data:DemoStore,sourceTarget:number,extreme:boolean):void{
+  const original=[...data.sources];
+  const firstSource=original.find(source=>source.projectId===data.projects[0].id);
+  if(!firstSource)throw Error("Stress fixture requires a seeded project source");
+  for(const [projectIndex,project] of data.projects.entries()){
+    const existing=original.filter(source=>source.projectId===project.id);
+    const generated=makeStressProjectSources(firstSource,existing,project,projectIndex,
+      data.projects.length,sourceTarget,extreme);
+    data.sources.push(...generated.slice(existing.length));
+  }
+}
+
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
 export type StressProfile = "stress" | "extreme";
 
-export function makeStressStore(original: DemoStore, profile: StressProfile, options: {deferSessions?: boolean} = {}): DemoStore {
-  const data = structuredClone(original);
+export function makeStressStore(original: DemoStore, profile: StressProfile, options: {deferSessions?: boolean;deferNotes?:boolean;deferAtlas?:boolean;deferSources?:boolean} = {}): DemoStore {
+  // The stress profile replaces these collections in full. Cloning the seed's
+  // 1,300 historical reviews (and their nested FSRS states) before throwing
+  // them away needlessly blocks the first Today paint under 4x CPU. Keep one
+  // actual note/session/proposal template and all persistent curriculum data.
+  // The generated 5k/30k notes and review aggregate are still materialized
+  // exactly as before; this only removes discarded intermediate work.
+  const data: DemoStore = structuredClone({
+    ...original,
+    notes: original.notes.slice(0, 1),
+    sessions: original.sessions.slice(0, 1),
+    proposals: original.proposals.slice(0, 1),
+    reviews: [],
+    misconceptions: [],
+    checkpointEvents: [],
+  });
   const extreme = profile === "extreme";
   const projectCount = extreme ? 60 : 15;
   const checkpointCount = extreme ? 100 : 40;
@@ -203,86 +317,23 @@ export function makeStressStore(original: DemoStore, profile: StressProfile, opt
     }
   }
 
-  // F2: exercise the per-project source limit, not just the first project.
-  // Page counts are metadata; materialising thousands of dummy PDF pages per
-  // source would turn the fixture into a memory test instead of a UI stress test.
-  const firstSource = data.sources.find(source => source.projectId === baseProject.id);
-  if (!firstSource) throw Error("Stress fixture requires a seeded project source");
-  const sourceKinds = ["book", "notes", "slides", "problems", "syllabus", "exam", "other"] as const;
-  const sourceTarget = extreme ? 100 : 30;
-  const existingByProject = new Map<string,number>();
-  for (const source of data.sources)
-    existingByProject.set(source.projectId,(existingByProject.get(source.projectId)??0)+1);
-  for (const [projectIndex,project] of data.projects.entries()) {
-    const existing = existingByProject.get(project.id)??0;
-    for (let i=existing;i<sourceTarget;i++) {
-      const representative=(projectIndex===0||projectIndex===projectCount-1)&&i===existing;
-      data.sources.push({
-        ...firstSource,
-        id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
-        title: `Source ${i+1}: mathematical notes and proofs`,
-        short: `stresssrc${i}`, filename:`source-${i+1}.pdf`,
-        kind:representative?"notes":sourceKinds[i%sourceKinds.length],position:i,
-        pageCount:extreme?3000:1200,
-        status:"ready",hasText:representative,outline:[],pages:[],
-        sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
-        addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
-      });
-    }
-  }
+  const sourceTarget=extreme?100:30;
+  if(options.deferSources)data.stressSourceTarget=sourceTarget;
+  else fillStressSources(data,sourceTarget,extreme);
 
-  for (let i = data.concepts.length; i < ideaCount; i++) {
-    const subject = data.subjects[i % data.subjects.length];
-    data.concepts.push({
-      ...baseConcept, id: `stress-idea-${i}`, slug: `stress-idea-${i}`,
-      name: `Idea ${i}: ${i % 7 === 0 ? "Long mathematical statement" : "Definition"}`,
-      blurb: `A mathematical idea with index ${i}`, subjectId: subject.id,
-      level: "planet", parentId: null, isStar: false, pinX: null, pinY: null,
-    });
-  }
-  // Deterministic DAG links; avoid duplicates and self-loops.
-  const linkKeys = new Set(data.links.map(link => `${link.fromId}:${link.toId}:${link.kind}`));
-  for (let offset = 1; data.links.length < linkCount && offset < ideaCount; offset++) {
-    for (let i = 0; i + offset < ideaCount && data.links.length < linkCount; i++) {
-      const fromId = data.concepts[i].id, toId = data.concepts[i + offset].id;
-      const key = `${fromId}:${toId}:prereq`;
-      if (!linkKeys.has(key)) {
-        data.links.push({ fromId, toId, kind: "prereq" });
-        linkKeys.add(key);
-      }
-    }
-  }
+  if(options.deferAtlas){
+    data.stressAtlasIdeaCount=ideaCount;
+    data.stressAtlasLinkCount=linkCount;
+  }else fillStressAtlas(data,ideaCount,linkCount,baseConcept);
 
-  // Long faces and four representative maths stress cases remain real card content.
-  const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
-  const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
-  const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
-  const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
-  const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
-  const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
-  data.notes = [];
-  // ST-5-style bounded server aggregate represents the stored review pressure.
   data.reviews = [];
   data.stressReviewCount = extreme ? 300000 : 50000;
-  for (let i = 0; i < cardCount; i++) {
-    const project = data.projects[i % data.projects.length];
-    const no = i + 1;
-    const note: DemoNote = {
-      ...baseNote, projectId: project.id, sessionId: null, conceptId: null,
-      note: {
-        ...baseNote.note, noteId: `stress-note-${no}`, noteNo: no,
-        projectSlug: project.slug, checkpointCode: `CP${(i % 36) + 1}`,
-        front: i === 0 ? longFront : i === 2 ? matrix : i === 3 ? aligned : i === 4 ? sum : i === 5 ? inline : `Recall the definition in card ${no}?`,
-        back: i === 0 ? longBack : `Prove the statement for card ${no}.`,
-        status: "active", sessionNumber: null, sourceShort: null, pageLabel: null,
-      },
-      cards: [{ id: `stress-card-${no}`, ord: 1, state: {
-        ...baseNote.cards[0].state, due: i < dueCount ? "@due:-1" : "@due:14",
-        lastReview: "@day:-14:0.5:0",
-      }}],
-      comments: [],
-    };
-    data.notes.push(note);
+  if(options.deferNotes){
+    data.notes=[];
+    data.stressNoteCount=cardCount;
+    data.stressDueCount=dueCount;
+  }else{
+    data.notes=makeStressNotes(baseNote,data.projects,cardCount,dueCount);
   }
   const eventCount = extreme ? 400 : 150;
   data.sessions = [];
