@@ -63,6 +63,13 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   expect(copy.title+' '+copy.body).not.toMatch(/failed|streak|again|!/i)
   expect(copy.title).toContain('unfinished rhythm next.')
  })
+ it('limits a saved session summary to its first 120 characters before OS text conversion',()=>{
+  const summary='A'.repeat(120)+'NEVER-INCLUDE-THIS-TAIL'
+  const rendered=notificationCopy({kind:'tutor',sessionNo:'S5',summary})
+  expect(rendered.title).toBe('Session S5 saved')
+  expect(rendered.body).toBe('A'.repeat(120))
+  expect(rendered.body).not.toContain('NEVER-INCLUDE')
+ })
  it('requires a checkpoint to construct a tomorrow reminder',()=>{
   expect(()=>notificationCopy({kind:'deadline',checkpoints:[]})).toThrow('Deadline requires a checkpoint')
  })
