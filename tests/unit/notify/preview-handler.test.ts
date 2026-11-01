@@ -80,4 +80,9 @@ describe('NOTIF-4b4 owner-authenticated read-only preview',()=>{
    status:200,body:{send:[],held:[],omitted:0},
   });
  });
+ it('does not expose malformed owner time-zone configuration',async()=>{
+  load.mockResolvedValueOnce({context:{...context,timeZone:'Not/AZone'},candidates});
+  expect(await handlePreviewRequest('Bearer signed',deps))
+   .toEqual({status:503,body:{message:'Could not preview reminders'}});
+ });
 });
