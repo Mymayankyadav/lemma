@@ -13,6 +13,7 @@ import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
+import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {atlasFoldDepth} from './depthOf';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
@@ -110,11 +111,35 @@ export default function Page(){
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
- const virtual=rows.length>200;
- const first=virtual?Math.max(0,Math.floor(scrollTop/44)-12):0;
- const last=virtual?Math.min(rows.length,Math.ceil((scrollTop+viewportHeight)/44)+12):rows.length;
- const visible=virtual?rows.slice(first,last):rows;
- const stickyParent=virtual&&first>0&&tree?ancestors(tree,rows[Math.min(first,rows.length-1)].id).at(-1):null;
+ const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
+ // Window all outlines above 40 rows, including the normal 82-row demo.
+ // FIX #519b additionally requires every Field in a moderate (≤150-node)
+ // outline to remain keyboard/screen-reader reachable. Mount only those
+ // off-window Field rows at their true absolute offsets, rather than
+ // disabling virtualization for every child in the moderate outline.
+ const virtual=rows.length>40;
+ const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
+ const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
+ // A virtual Field must remain a genuine 56px visual heading even after its
+ // original row leaves the mounted window. Derive its identity from logical
+ // row offsets, never from the overscan row's nearest (often Topic) ancestor.
+ const fieldRows=useMemo(()=>rows.flatMap((row,index)=>tree?.nodes.get(row.id)?.level==='cluster'?[index]:[]),[rows,tree]);
+ // One sorted, keyed absolute row list keeps moderate Fields permanently
+ // mounted, in logical screen-reader order, even as the viewport moves.
+ // Unlike switching a Field between separate offscreen/window containers,
+ // reconciliation never unmounts its focused 44px keyboard control.
+ const mountedIndices=useMemo(()=>{
+  if(!virtual)return [];
+  const indices=new Set<number>();
+  for(let index=first;index<last;index++)indices.add(index);
+  if(tree&&tree.nodes.size<=150)for(const index of fieldRows)indices.add(index);
+  return [...indices].sort((a,b)=>a-b);
+ },[virtual,first,last,fieldRows,tree]);
+ const activeFieldIndex=fieldRows.filter(index=>geometry.offsets[index]<=scrollTop).at(-1)??-1;
+ const activeField=virtual&&activeFieldIndex>=0?tree?.nodes.get(rows[activeFieldIndex].id):null;
+ const nextFieldIndex=fieldRows.find(index=>index>activeFieldIndex);
+ const stickyField=activeField&&scrollTop>geometry.offsets[activeFieldIndex]?activeField:null;
+ const stickyPush=nextFieldIndex===undefined?0:Math.min(0,geometry.offsets[nextFieldIndex]-scrollTop-56);
  const focus=useMemo(()=>tree&&selectedId&&tree.nodes.has(selectedId)?focusOn(tree,selectedId):null,[tree,selectedId]);
  const arcBudget=useMemo(()=>{
   if(!tree)return {visible:[],hidden:0};
@@ -167,8 +192,9 @@ export default function Page(){
   const expandedPath=new Set([...open,...ancestors(tree,id)]);
   const targetRows=visibleRows(tree,expandedPath);
   const targetIndex=targetRows.findIndex(row=>row.id===id);
-  if(targetIndex>=0&&targetRows.length>200&&scroller.current){
-   scroller.current.scrollTop=Math.max(0,targetIndex*44-scroller.current.clientHeight/2);
+  if(targetIndex>=0&&targetRows.length>40&&scroller.current){
+   const targetGeometry=buildAtlasRowGeometry(targetRows.map(row=>tree.nodes.get(row.id)?.level??'planet'));
+   scroller.current.scrollTop=Math.max(0,targetGeometry.offsets[targetIndex]-scroller.current.clientHeight/2);
    setScrollTop(scroller.current.scrollTop);
   }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -184,6 +210,15 @@ export default function Page(){
   if(node.children.length)toggle(node.id);
   if(selectedId===node.id&&!node.children.length){setDetails(true);return}
   select(selectedId===node.id?null:node.id);
+ };
+ const renderRow=(row:typeof rows[number],sticky:boolean)=>{
+  if(!tree)return null;
+  const node=tree.nodes.get(row.id)!;
+  return <Row key={row.id} node={node} sticky={sticky}
+   open={!!filter||open.has(row.id)}
+   tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))}
+   match={row.match} focused={!!focus}
+   onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>;
  };
  const focusSlug=params.get('focus'),focusName=params.get('name'),focusId=params.get('id');
  const seen=useRef<string|null>(null);
@@ -242,14 +277,25 @@ export default function Page(){
    {tree.roots.length===0?<div className="flex h-full items-center justify-center"><EmptyState art="compass" title="Your Atlas is empty" body="Ideas appear here as your plans grow."/></div>
    :rows.length===0?<p className="px-4 py-10 text-center text-body text-ink-3">{search?'No idea matches “'+search+'”.':'Nothing to re-check.'}</p>
    :<>
-    {stickyParent&&<div className="sticky top-0 z-10 h-0 pointer-events-none" aria-label="Current branch"><div className="flex h-11 items-center border-b border-edge bg-raised/95 px-3 text-label font-semibold text-ink-2"><span className="truncate">{plainMath(tree.nodes.get(stickyParent)?.name??'')}</span></div></div>}
-    <div className="relative" role="tree" aria-label="Ideas and their links" style={virtual?{height:rows.length*44}:undefined}>
-    <div style={virtual?{position:"absolute",top:first*44,left:0,right:0}:undefined}>
-    {visible.map(row=>{const node=tree.nodes.get(row.id)!;
-     return <Row key={row.id} node={node} open={!!filter||open.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!filter&&!open.has(row.id))} match={row.match} focused={!!focus}
-      onToggle={()=>{if(!filter)toggle(row.id)}} onSelect={()=>onRow(node)}/>})}
-    </div>
-    {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}/>}
+    {stickyField&&<div className="sticky top-0 z-20 h-0 pointer-events-none" style={{transform:`translateY(${stickyPush}px)`}}>
+     <div data-atlas-sticky-field="true" aria-label="Current Field"
+      className="flex h-14 items-center gap-2 border-b border-[var(--hair)] bg-[var(--paper)] px-3 text-ink">
+      {stickyField.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{stickyField.glyph}</span>}
+      <span className="min-w-0 flex-1 font-serif text-[21px] italic leading-[24px]" style={clip}><Tex source={stickyField.name}/></span>
+      <span className="flex shrink-0 items-center gap-1.5 text-[12px] tabular-nums text-ink-3">
+       <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
+        <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(stickyField.total?100*stickyField.done/stickyField.total:0)+'%'}}/>
+       </span>
+       {stickyField.done}/{stickyField.total}
+      </span>
+     </div>
+    </div>}
+    <div className="relative flow-root" role="tree" aria-label="Ideas and their links" data-atlas-field-count={tree.roots.length} data-atlas-row-count={rows.length} style={virtual?{height:geometry.totalHeight}:undefined}>
+    {virtual?mountedIndices.map(index=><div key={rows[index].id}
+     className="absolute inset-x-0 flow-root" style={{top:geometry.offsets[index]}}>
+     {renderRow(rows[index],false)}
+    </div>):rows.map(row=>renderRow(row,true))}
+    {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">
@@ -260,7 +306,7 @@ export default function Page(){
     <span className="flex items-center gap-1.5"><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--late)" strokeWidth="1.8" strokeDasharray="2.4 1.8"/></svg>re-check</span>
    </div>}
   </div>
-  {selected&&!details&&<div data-atlas-peek="true" className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-[528px] items-center gap-2 rounded-slab border border-edge bg-[var(--paper)] py-2 pl-4 pr-2">
+  {selected&&!details&&<div data-atlas-peek="true" className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] z-20 mx-auto flex max-w-[528px] items-center gap-2 rounded-slab border border-edge-2 bg-[var(--paper)] py-2 pl-4 pr-2">
    <div className="min-w-0 flex-1">
     <p style={clip} className="text-body font-semibold"><Tex source={selected.name}/></p>
     <p style={clip} className="text-caption text-ink-3">
