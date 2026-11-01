@@ -498,6 +498,39 @@ export function budgetArcsUnfocused(
  return {visible,hidden:all.length-visible.length};
 }
 
+/**
+ * React StrictMode invokes useMemo calculations twice on the first mount.
+ * The extreme Atlas may aggregate 8,000 links into the same 60-arc gutter
+ * twice before a single interactive frame. Cache only that identical input
+ * snapshot; weak row-array keys do not retain old route or fold states.
+ *
+ * The fold fingerprint checks visible branch membership rather than relying
+ * on Set identity, so even an in-place fold change cannot return stale arcs.
+ * A new query graph, row array, link-kind membership or cap always recomputes.
+ */
+type UnfocusedBudget=ReturnType<typeof budgetArcsUnfocused>;
+const coldArcBudgets=new WeakMap<readonly Row[],{
+ tree:AtlasTree;folded:string;prereq:boolean;related:boolean;limit:number;result:UnfocusedBudget;
+}>();
+export function budgetArcsUnfocusedCached(
+ tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
+ kinds:ReadonlySet<Link['kind']>,limit=60,
+):UnfocusedBudget{
+ let folded='';
+ for(const row of rows){
+  const node=tree.nodes.get(row.id);
+  if(node?.children.length)folded+=expanded.has(row.id)?'1':'0';
+ }
+ const prereq=kinds.has('prereq'),related=kinds.has('related');
+ const previous=coldArcBudgets.get(rows);
+ if(previous&&previous.tree===tree&&previous.folded===folded&&
+    previous.prereq===prereq&&previous.related===related&&previous.limit===limit)
+  return previous.result;
+ const result=budgetArcsUnfocused(tree,rows,expanded,kinds,limit);
+ coldArcBudgets.set(rows,{tree,folded,prereq,related,limit,result});
+ return result;
+}
+
 /** Everything the selected idea (or branch) builds on, and everything it opens up. */
 export function focusOn(tree:AtlasTree,id:string):Focus{
  const start=new Set([id,...descendants(tree,id)]);
