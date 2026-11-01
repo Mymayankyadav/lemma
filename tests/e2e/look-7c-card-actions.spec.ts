@@ -43,6 +43,14 @@ test('Saved tutor notes render their mathematical notation, not raw dollar delim
  const note=page.locator('[data-comment-row]').filter({hasText:'Check'}).first();
  await expect(note).toBeVisible();
  await expect(note.locator('.katex')).toBeVisible();
+ // The tutor's passive marginalia is graphite, not another red-pencil mark.
+ await expect(note).toHaveClass(/border-\\\[var\\\(--ink-3\\\)\\\]/);
+ await expect(note.getByRole('button',{name:'Dismiss'})).toHaveClass(/text-ink-2/);
+ // Card history uses the same semantic grade palette as Review run.
+ for(const [label,token] of [['Again','--danger'],['Hard','--late'],['Good','--early']] as const){
+  const grade=page.locator('[data-review-row]').filter({hasText:label}).first().locator('span').nth(1);
+  await expect(grade).toHaveAttribute('style',new RegExp('var\\\\(' + token + '\\\\)'));
+ }
  await expect(note).not.toContainText('$\\forall');
  await page.screenshot({path:'test-results/screens/review/look-7c-tutor-note-math.png',fullPage:true});
 });
