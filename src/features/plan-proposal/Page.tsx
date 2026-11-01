@@ -471,7 +471,7 @@ export default function Page() {
               <h3 className="mb-2 text-title-s italic" style={{fontFamily:"var(--font-display)"}}>Proposed amendments</h3>
               {p.planChange.ops.map((op, i) => (
                 <div key={i} className="flex min-h-11 items-start gap-3 border-b border-edge py-3 last:border-0">
-                  <span className="w-[46px] shrink-0 rounded-s border border-amber-line px-1 py-1 text-center text-label text-amber">
+                  <span className="w-[46px] shrink-0 rounded-s border border-edge px-1 py-1 text-center text-label text-ink-3">
                     {op.op === "add" ? "Add" : op.op === "remove" ? "Cut" : op.op === "move" ? "Move" : op.op === "update" ? "Edit" : "Link"}
                   </span>
                   <span className="min-w-0 flex-1">
