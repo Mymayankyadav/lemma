@@ -11,7 +11,7 @@ import {EmptyState} from '../../ui/EmptyState';
 import {Sheet} from '../../ui/Sheet';
 import {useToast} from '../../ui/Toast';
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
-import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
+import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {atlasFoldDepth} from './depthOf';
@@ -296,7 +296,7 @@ export default function Page(){
      className="absolute inset-x-0 flow-root" style={{top:geometry.offsets[index]}}>
      {renderRow(rows[index],false)}
     </div>):rows.map(row=>renderRow(row,true))}
-    {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
+    {arcBudget.visible.length>0&&<MemoWires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">
