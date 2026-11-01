@@ -185,35 +185,45 @@ export function fillStressAtlas(data:DemoStore,ideaCount:number,linkCount:number
 }
 
 
+/** Generate the exact source rows for one stress project. Shared by full
+ * fixture materialization and direct project reads, so neither route can
+ * silently diverge on IDs, kinds, dates, or representative source metadata.
+ */
+export function makeStressProjectSources(
+  firstSource:DemoSource, existing:readonly DemoSource[],
+  project:DemoStore['projects'][number],projectIndex:number,
+  projectCount:number,sourceTarget:number,extreme:boolean,
+):DemoSource[]{
+  const rows=[...existing];
+  const sourceKinds=["book","notes","slides","problems","syllabus","exam","other"] as const;
+  for(let i=existing.length;i<sourceTarget;i++){
+    const representative=(projectIndex===0||projectIndex===projectCount-1)&&i===existing.length;
+    rows.push({
+      ...firstSource,
+      id:`stress-source-${projectIndex}-${i}`,projectId:project.id,
+      title:`Source ${i+1}: mathematical notes and proofs`,
+      short:`stresssrc${i}`,filename:`source-${i+1}.pdf`,
+      kind:representative?"notes":sourceKinds[i%sourceKinds.length],position:i,
+      pageCount:extreme?3000:1200,
+      status:"ready",hasText:representative,outline:[],pages:[],
+      sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
+      addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
+    });
+  }
+  return rows;
+}
+
 /** Generate exact per-project stress sources only when a source route needs them. */
 export function fillStressSources(data:DemoStore,sourceTarget:number,extreme:boolean):void{
-  // F2: exercise the per-project source limit, not just the first project.
-  // Page counts are metadata; materialising thousands of dummy PDF pages per
-  // source would turn the fixture into a memory test instead of a UI stress test.
-  const firstSource = data.sources.find(source => source.projectId === data.projects[0].id);
-  if (!firstSource) throw Error("Stress fixture requires a seeded project source");
-  const sourceKinds = ["book", "notes", "slides", "problems", "syllabus", "exam", "other"] as const;
-  const existingByProject = new Map<string,number>();
-  for (const source of data.sources)
-    existingByProject.set(source.projectId,(existingByProject.get(source.projectId)??0)+1);
-  for (const [projectIndex,project] of data.projects.entries()) {
-    const existing = existingByProject.get(project.id)??0;
-    for (let i=existing;i<sourceTarget;i++) {
-      const representative=(projectIndex===0||projectIndex===data.projects.length-1)&&i===existing;
-      data.sources.push({
-        ...firstSource,
-        id: `stress-source-${projectIndex}-${i}`, projectId:project.id,
-        title: `Source ${i+1}: mathematical notes and proofs`,
-        short: `stresssrc${i}`, filename:`source-${i+1}.pdf`,
-        kind:representative?"notes":sourceKinds[i%sourceKinds.length],position:i,
-        pageCount:extreme?3000:1200,
-        status:"ready",hasText:representative,outline:[],pages:[],
-        sha256:null,createdAt:`@day:-${i%60}:0.5:0`,
-        addedAt:`@day:-${i%60}:0.5:0`,planCheckedAt:null,
-      });
-    }
+  const original=[...data.sources];
+  const firstSource=original.find(source=>source.projectId===data.projects[0].id);
+  if(!firstSource)throw Error("Stress fixture requires a seeded project source");
+  for(const [projectIndex,project] of data.projects.entries()){
+    const existing=original.filter(source=>source.projectId===project.id);
+    const generated=makeStressProjectSources(firstSource,existing,project,projectIndex,
+      data.projects.length,sourceTarget,extreme);
+    data.sources.push(...generated.slice(existing.length));
   }
-
 }
 
 /** Pure, repeatable stress profiles. No network calls, dates or random IDs. */
