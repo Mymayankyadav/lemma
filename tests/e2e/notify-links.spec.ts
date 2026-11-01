@@ -34,3 +34,44 @@ test('unsupported Insights days retain the 30-day default',async({page})=>{
  await page.goto('/lemma/?demo=1#/insights?days=999')
  await expect(page.getByRole('group',{name:'Time range'}).getByRole('button',{name:'30 days'})).toHaveAttribute('aria-pressed','true')
 })
+
+async function finishOneCard(page:import('@playwright/test').Page){
+ await page.getByRole('button',{name:'Start review'}).click();
+ await page.getByRole('button',{name:'Sure',exact:true}).click();
+ await page.getByRole('button',{name:'Grade Good'}).click();
+ await page.getByRole('button',{name:'Close review'}).click();
+ await expect(page.getByRole('heading',{name:'Review complete'})).toBeVisible();
+}
+
+test('review-done reminder offer is shown only twice, with Not now dismissing it',async({page})=>{
+ await page.addInitScript(()=>{
+  Object.defineProperty(window,'Notification',{configurable:true,value:{permission:'default',requestPermission:async()=> 'default'}});
+  Object.defineProperty(window,'PushManager',{configurable:true,value:class PushManager{}});
+  if(!('serviceWorker' in navigator))
+   Object.defineProperty(navigator,'serviceWorker',{configurable:true,value:{}});
+ });
+ await page.goto('/lemma/?demo=1#/review');
+ for(let attempt=0;attempt<3;attempt++){
+  await finishOneCard(page);
+  const offer=page.getByRole('region',{name:'Reminder offer'});
+  if(attempt<2){
+   await expect(offer).toBeVisible();
+   await expect(offer.getByText('Want a reminder when cards are due?')).toBeVisible();
+   await offer.getByRole('button',{name:'Not now'}).click();
+   await expect(offer).toHaveCount(0);
+  }else await expect(offer).toHaveCount(0);
+  if(attempt<2)await page.getByRole('link',{name:'Review more'}).click();
+ }
+});
+
+test('blocked notification permission never shows a post-review offer',async({page})=>{
+ await page.addInitScript(()=>{
+  Object.defineProperty(window,'Notification',{configurable:true,value:{permission:'denied',requestPermission:async()=> 'denied'}});
+  Object.defineProperty(window,'PushManager',{configurable:true,value:class PushManager{}});
+  if(!('serviceWorker' in navigator))
+   Object.defineProperty(navigator,'serviceWorker',{configurable:true,value:{}});
+ });
+ await page.goto('/lemma/?demo=1#/review');
+ await finishOneCard(page);
+ await expect(page.getByRole('region',{name:'Reminder offer'})).toHaveCount(0);
+});
