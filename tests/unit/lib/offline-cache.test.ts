@@ -24,6 +24,7 @@ describe('AND-8 strict offline snapshot',()=>{
   expect(isOfflineSettings({...good,v:2})).toBe(false)
   const entries=[
    {key:['settings'],savedAt:now,data:{...good,connectorUrl:'SENTINEL-SECRET'}},
+   {key:['settings'],savedAt:now-1,data:{...good,ui:{...(good.ui??{}),widgetToken:'SENTINEL-SECRET'}}},
    {key:['decks'],savedAt:now,data:[{key:'project:math',due:12}]}
   ]
   const safe=boundOfflineEntries(entries,now)
