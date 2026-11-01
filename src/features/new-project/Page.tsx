@@ -6,7 +6,7 @@ import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
 import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
 import {isSourceFile} from '../../pdf/ingest';
-import ProjectsPage from '../projects/Page';
+import {Screen} from '../../ui/Screen';
 import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
 import {Rail} from '../../ui/Rail';
@@ -86,7 +86,17 @@ export default function Page(){
  }
  const remaining=items.filter(item=>item.status!=='ready').length;
  return <>
-  <div data-sheet-background aria-hidden="true" inert><ProjectsPage/></div>
+  {/* The route always opens this modal. The full Paths library behind it is
+      inert and inaccessible, so don't evaluate its 60-project selectors,
+      KaTeX rows, mutation hooks or Atlas/Cards prefetch on cold entry.
+      Dismissing the sheet navigates to /projects and mounts the real list. */}
+  <div data-new-project-backdrop data-sheet-background aria-hidden="true" inert>
+   <Screen tabBar className="gap-4">
+    <header className="flex min-h-11 items-center">
+     <h1 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h1>
+    </header>
+   </Screen>
+  </div>
   <h1 className="sr-only">New project</h1>
   <Sheet open onClose={close} title="New project">
    <form onSubmit={event=>{void submit(event)}} className="flex flex-col gap-5">
