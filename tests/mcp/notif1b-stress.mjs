@@ -95,11 +95,11 @@ try{
  // tomorrow K2 lookup as a per-project LATERAL nested-loop dependency.
  // Rank eligible checkpoints once, then take one per project. The existing
  // snapshot checks above assert the exact twenty-project K2 semantics.
- assert.match(optimizedSql,/set enable_nestloop\\s*=\\s*off/i,
+ assert.match(optimizedSql,/set enable_nestloop\s*=\s*off/i,
    'X due-card scan requires the function-local non-nested-loop planner path');
- assert.match(optimizedSql,/tomorrow_ranked as \\(\\s*select[\\s\\S]*?row_number\\(\\) over\\(partition by pr\\.id order by c\\.position,c\\.id\\)/i,
+ assert.match(optimizedSql,/tomorrow_ranked as \(\s*select[\s\S]*?row_number\(\) over\(partition by pr\.id order by c\.position,c\.id\)/i,
    'K2 must rank eligible checkpoints once per project, without per-project LATERAL scans');
- assert.doesNotMatch(optimizedSql,/join lateral\\s*\\(\\s*select c\\.code/i,
+ assert.doesNotMatch(optimizedSql,/join lateral\s*\(\s*select c\.code/i,
    'K2 LATERAL must not be planned under the global non-nested-loop preference');
  assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
  console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
