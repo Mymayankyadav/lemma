@@ -1,4 +1,5 @@
 import {MathPreview} from '../../ui/MathPreview';
+import {networkWritable} from '../../ui/useOnlineStatus';
 import { useState } from "react";
 import { useProject, useProjects } from "../../data/hooks";
 import type { CardDetail, NoteKind, NoteType } from "../../data/types";
@@ -80,7 +81,7 @@ export function Editor({
       className="flex flex-col gap-4 text-body text-ink-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if(!navigator.onLine){toast("Needs a connection");return}
+        if(!networkWritable()){toast("Needs a connection");return}
         onSubmit({
           front,
           back,
