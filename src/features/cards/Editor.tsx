@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useProject, useProjects } from "../../data/hooks";
 import type { CardDetail, NoteKind, NoteType } from "../../data/types";
 import { Button } from "../../ui/Button";
+import { toast } from "../../ui/Toast";
 import { MathText } from "../../ui/MathText";
 export interface EditorValue {
   front: string;
@@ -79,6 +80,7 @@ export function Editor({
       className="flex flex-col gap-4 text-body text-ink-2"
       onSubmit={(e) => {
         e.preventDefault();
+        if(!navigator.onLine){toast("Needs a connection");return}
         onSubmit({
           front,
           back,
