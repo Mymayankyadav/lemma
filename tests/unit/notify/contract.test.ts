@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { DemoAdapter } from '../../../src/data/demo/adapter'
-import { LemmaError } from '../../../src/data/api'
 import { LiveAdapter } from '../../../src/data/live/adapter'
 
 const demo=()=>new DemoAdapter({now:()=>Date.parse('2026-11-01T10:00:00Z')})
@@ -46,7 +45,19 @@ describe('NOTIF-0 additive reminder contract',()=>{
  })
  it('live adapter methods fail closed until NOTIF-6',async()=>{
   const api=new LiveAdapter()
-  await expect(api.listPushDevices()).rejects.toMatchObject({code:'not_implemented'} satisfies Partial<LemmaError>)
-  await expect(api.previewNotifications()).rejects.toMatchObject({code:'not_implemented'})
+  const calls=[
+   ()=>api.listPushDevices(),
+   ()=>api.addPushDevice({endpoint:'https://push.example.test',p256dh:'key',auth:'auth',label:'Phone',platform:'android_web'}),
+   ()=>api.renamePushDevice('device','Phone'),
+   ()=>api.removePushDevice('device'),
+   ()=>api.restorePushDevice('device'),
+   ()=>api.touchPushDevice('https://push.example.test'),
+   ()=>api.listRecentNotifications(),
+   ()=>api.listNotifyHolds(),
+   ()=>api.clearNotifyHold('due'),
+   ()=>api.sendTestNotification('device'),
+   ()=>api.previewNotifications(),
+  ]
+  for(const call of calls)await expect(call()).rejects.toMatchObject({code:'not_implemented'})
  })
 })
