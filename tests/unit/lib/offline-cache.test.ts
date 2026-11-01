@@ -23,6 +23,8 @@ describe('AND-8 strict offline snapshot',()=>{
   expect(isOfflineSettings({...good,ui:{...(good.ui??{}),widgetToken:'SENTINEL-SECRET'}})).toBe(false)
   expect(isOfflineSettings({...good,ui:{mode:'night',density:'compact'}})).toBe(false)
   expect(isOfflineSettings({...good,ui:{mode:'night',motion:'lively'}})).toBe(false)
+  expect(isOfflineSettings({...good,ui:{}})).toBe(false)
+  expect(isOfflineSettings({...good,ui:{mode:'obsolete'}})).toBe(false)
   expect(isOfflineSettings({...good,rolloverHour:'four'})).toBe(false)
   expect(isOfflineSettings({...good,v:2})).toBe(false)
   const entries=[
