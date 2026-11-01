@@ -14,7 +14,11 @@ export default function OfflineBanner(){
  useEffect(()=>{
   const update=()=>{
    setOffline(!navigator.onLine);
-   if(navigator.onLine){setSavedAt(null);void queryClient.invalidateQueries({refetchType:'active'})}
+   if(navigator.onLine){
+    // Preserve a stale live snapshot warning until a real query succeeds.
+    if(!document.documentElement.dataset.offlineSavedAt)setSavedAt(null);
+    void queryClient.invalidateQueries({refetchType:'active'});
+   }
   };
   const snapshot=(event:Event)=>{
    const detail=(event as CustomEvent<{savedAt:number|null}>).detail;
