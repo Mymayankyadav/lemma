@@ -24,24 +24,25 @@ reviewed as (
   from public.reviews r cross join prefs f
   where r.user_id=p_user and r.undone_at is null and r.reviewed_at>=f.day_start
 ),
-due_candidates as (
-  -- A note contributes only its highest-priority eligible sibling. Drive
-  -- this set from the owner-filtered cards instead of executing a lateral
-  -- index probe for every note (30,000 probes in stress profile X). The
-  -- DISTINCT ON ordering is identical to the former sibling selection.
-  select distinct on (n.id)
-    n.id note_id,n.no,n.project_id,n.checkpoint_id,
-    c.state,c.due,c.id card_id
-  from public.cards c
-  join public.notes n on n.id=c.note_id and n.user_id=c.user_id
-  join visible_projects pr on pr.id=n.project_id and pr.user_id=n.user_id
-  cross join prefs f
-  where c.user_id=p_user and n.user_id=p_user and n.status='active'
-    and (c.state=0 or c.due<f.day_end)
-  order by n.id,
+eligible_cards as (
+  -- Resolve sibling priority on the narrow card rows first. This avoids
+  -- carrying note/project columns through the 30,000-card DISTINCT sort.
+  -- Selection order exactly matches deck_tree(), including new siblings.
+  select distinct on (c.note_id) c.note_id,c.state,c.due,c.id card_id
+  from public.cards c cross join prefs f
+  where c.user_id=p_user and (c.state=0 or c.due<f.day_end)
+  order by c.note_id,
     case when c.state=0 then 1 else 0 end,
     case when c.state in (1,3) and c.due<=p_now then 0 else 1 end,
     c.due,c.id
+),
+due_candidates as (
+  select n.id note_id,n.no,n.project_id,n.checkpoint_id,
+    c.state,c.due,c.card_id
+  from eligible_cards c
+  join public.notes n on n.id=c.note_id and n.user_id=p_user
+  join visible_projects pr on pr.id=n.project_id and pr.user_id=n.user_id
+  where n.status='active'
 ),
 -- The daily quota can never consume more than reviews_per_day + new_per_day
 -- distinct notes. Keep the complete due_candidates set for exact backlog, but
