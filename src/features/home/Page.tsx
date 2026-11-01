@@ -52,7 +52,7 @@ const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as co
 
 /** A passive, one-tap handoff. Fixed-height rows must clip explicitly: the
  * graph theme intentionally overrides Tailwind's truncate utility. */
-function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)=>void}){
+export function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)=>void}){
  const resume=home.resume;
  if(!resume)return <div role="region" aria-label="Resume where you stopped" className="flex min-h-16 items-center justify-between gap-3 px-1 py-2">
   <span className="min-w-0 text-label text-ink-2" style={clip}>No chat yet. Start a path to begin.</span>
