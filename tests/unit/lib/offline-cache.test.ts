@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest'
 import {QueryClient} from '@tanstack/react-query'
-import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient} from '../../../src/lib/offline-cache'
+import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient,saveOfflineSnapshot} from '../../../src/lib/offline-cache'
 import type {Settings} from '../../../src/data/types'
 import {canWriteOnline} from '../../../src/ui/useOnlineStatus'
 const now=Date.UTC(2026,10,1)
@@ -76,5 +76,48 @@ describe('AND-8 strict offline snapshot',()=>{
   const snapshot=snapshotFromClient(client,now)
   expect(snapshot.entries.map(e=>e.key[0]).sort()).toEqual(['home','settings'])
   expect(JSON.stringify(snapshot)).not.toMatch(/SENTINEL-SECRET|sensitive card face|access_token|connectorUrl/)
+ })
+})
+
+describe('AND-8 account-switch save race',()=>{
+ it('captures A query data before an asynchronous IndexedDB open can observe B',async()=>{
+  const client=new QueryClient()
+  client.setQueryData(['home'],{title:'Only A'},{updatedAt:now})
+  const old=Object.getOwnPropertyDescriptor(globalThis,'indexedDB')
+  let releaseOpen:()=>void=()=>{}
+  let stored:unknown
+  const tx={
+   oncomplete:null as null|(()=>void),
+   onerror:null as null|(()=>void),
+   onabort:null as null|(()=>void),
+   objectStore:()=>({put:(value:unknown)=>{
+    stored=value
+    queueMicrotask(()=>tx.oncomplete?.())
+   }}),
+  }
+  const db={transaction:()=>tx,close:()=>{},onversionchange:null as null|(()=>void)}
+  const request={
+   result:db,
+   onsuccess:null as null|(()=>void),
+   onerror:null as null|(()=>void),
+   onupgradeneeded:null as null|(()=>void),
+  }
+  Object.defineProperty(globalThis,'indexedDB',{configurable:true,value:{
+   open:()=>{releaseOpen=()=>request.onsuccess?.();return request},
+  }})
+  try{
+   const pending=saveOfflineSnapshot('owner-a',client,now)
+   // The old implementation read the shared QueryClient *after* openDb.
+   // A fast account switch could therefore persist B's rows under A's ID.
+   client.setQueryData(['home'],{title:'Only B'},{updatedAt:now})
+   releaseOpen()
+   await pending
+   const snapshot=stored as {entries:{key:string[];data:{title:string}}[]}
+   expect(snapshot.entries.find(e=>e.key[0]==='home')?.data.title).toBe('Only A')
+  }finally{
+   client.clear()
+   if(old)Object.defineProperty(globalThis,'indexedDB',old)
+   else Reflect.deleteProperty(globalThis,'indexedDB')
+  }
  })
 })
