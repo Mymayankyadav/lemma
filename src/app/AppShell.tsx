@@ -55,7 +55,7 @@ export default function AppShell(){
    // A queued save must not read the next account's React Query data under
    // the previous owner's ID after a rapid sign-out/account switch.
    pendingSave=pendingSave.then(()=>identity===owner&&!disposed
-    ?saveOfflineSnapshot(owner,queryClient):undefined)
+    ?saveOfflineSnapshot(owner,queryClient,Date.now(),()=>!disposed&&identity===owner&&navigator.onLine):undefined)
     .catch(()=>{/* Quota/private mode: online use continues. */});
    await pendingSave;
   };
@@ -64,7 +64,12 @@ export default function AppShell(){
    if(saveTimer)clearTimeout(saveTimer);
    saveTimer=setTimeout(()=>{saveTimer=null;void save()},150);
   };
-  const onOffline=()=>{void restore()};
+  const onOffline=()=>{
+   // Cancel a pending debounce and let any already-started online write
+   // finish before reading the final immutable offline snapshot.
+   if(saveTimer){clearTimeout(saveTimer);saveTimer=null}
+   void pendingSave.finally(()=>{if(!disposed&&!navigator.onLine)void restore()})
+  };
   const onOnline=()=>{
    // A browser 'online' event does not prove the API is reachable. Keep a
    // restored live snapshot read-only until a newer query succeeds.
