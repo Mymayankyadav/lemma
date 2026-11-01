@@ -442,14 +442,17 @@ export function budgetArcsUnfocused(
   if(!kinds.has(link.kind))continue;
   const from=resolve(link.fromId),to=resolve(link.toId);
   if(from===null||to===null||from===to)continue;
-  const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
+  // No transient endpoint array per link (8,000 on the extreme graph).
+  const swap=link.kind==='related'&&from>to;
+  const a=swap?to:from,b=swap?from:to;
   const key=packed?(a*width+b)*2+(link.kind==='related'?1:0):link.kind+':'+a+':'+b;
   const existing=bundles.get(key);
   if(existing){existing.count++;continue}
-  const folded=[a,b].some(i=>{
-   const node=tree.nodes.get(rows[i]?.id??'');
-   return !!node?.children.length&&!expanded.has(node.id);
-  });
+  // Avoid an array and callback allocation for every distinct bundle.
+  const fromNode=tree.nodes.get(rows[a]?.id??'');
+  const toNode=tree.nodes.get(rows[b]?.id??'');
+  const folded=!!(fromNode?.children.length&&!expanded.has(fromNode.id)||
+    toNode?.children.length&&!expanded.has(toNode.id));
   bundles.set(key,{from:a,to:b,kind:link.kind,count:1,index:bundles.size,folded});
  }
  const all=[...bundles.values()];
