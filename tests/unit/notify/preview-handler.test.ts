@@ -17,7 +17,7 @@ const verifyJwt=vi.fn(),load=vi.fn();
 const deps:PreviewDeps={configured:true,verifyJwt,load};
 beforeEach(()=>{
  verifyJwt.mockReset().mockResolvedValue({id:owner});
- load.mockReset().mockResolvedValue({context,candidates});
+ load.mockReset().mockResolvedValue({ownerId:owner,context,candidates});
 });
 describe('NOTIF-4b4 owner-authenticated read-only preview',()=>{
  it('requires verified JWT before reading any owner data',async()=>{
@@ -46,11 +46,11 @@ describe('NOTIF-4b4 owner-authenticated read-only preview',()=>{
   expect(body.omitted).toBe(0);
  });
  it('does not fabricate sends during quiet hours or while reminders are off',async()=>{
-  load.mockResolvedValueOnce({context:{...context,now:Date.UTC(2026,10,1,18,0)},candidates});
+  load.mockResolvedValueOnce({ownerId:owner,context:{...context,now:Date.UTC(2026,10,1,18,0)},candidates});
   const quiet=await handlePreviewRequest('Bearer signed',deps);
   expect((quiet.body as Record<string,unknown>).send).toEqual([]);
   expect(((quiet.body as Record<string,unknown>).held as Array<{why:string}>).every(r=>r.why==='quiet hours')).toBe(true);
-  load.mockResolvedValueOnce({context:{...context,mode:'off'},candidates});
+  load.mockResolvedValueOnce({ownerId:owner,context:{...context,mode:'off'},candidates});
   const off=await handlePreviewRequest('Bearer signed',deps);
   expect((off.body as Record<string,unknown>).send).toEqual([]);
  });
@@ -59,7 +59,7 @@ describe('NOTIF-4b4 owner-authenticated read-only preview',()=>{
    kind:'due' as const,key:'due:'+i,cardsDue:23,threshold:10,
    title:'Due '+i,body:'Start?',why:'threshold 10',
   }));
-  load.mockResolvedValueOnce({context,candidates:many});
+  load.mockResolvedValueOnce({ownerId:owner,context,candidates:many});
   const result=await handlePreviewRequest('Bearer signed',deps);
   const body=result.body as {send:unknown[];held:unknown[];omitted:number};
   expect(body.send.length+body.held.length).toBe(20);
@@ -75,13 +75,18 @@ describe('NOTIF-4b4 owner-authenticated read-only preview',()=>{
   expect(JSON.stringify(result)).not.toMatch(/private|SQL data/i);
  });
  it('returns an empty preview when there are no candidates',async()=>{
-  load.mockResolvedValueOnce({context,candidates:[]});
+  load.mockResolvedValueOnce({ownerId:owner,context,candidates:[]});
   expect(await handlePreviewRequest('Bearer signed',deps)).toEqual({
    status:200,body:{send:[],held:[],omitted:0},
   });
  });
  it('does not expose malformed owner time-zone configuration',async()=>{
-  load.mockResolvedValueOnce({context:{...context,timeZone:'Not/AZone'},candidates});
+  load.mockResolvedValueOnce({ownerId:owner,context:{...context,timeZone:'Not/AZone'},candidates});
+  expect(await handlePreviewRequest('Bearer signed',deps))
+   .toEqual({status:503,body:{message:'Could not preview reminders'}});
+ });
+ it('rejects a cross-owner snapshot even if an adapter accidentally returns it',async()=>{
+  load.mockResolvedValueOnce({ownerId:'123e4567-e89b-42d3-a456-426614174009',context,candidates});
   expect(await handlePreviewRequest('Bearer signed',deps))
    .toEqual({status:503,body:{message:'Could not preview reminders'}});
  });
