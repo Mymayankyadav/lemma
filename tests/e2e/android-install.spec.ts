@@ -19,6 +19,18 @@ test('AND-1 manifest, service worker and installability contracts',async({page,r
   expect.objectContaining({sizes:'512x512',type:'image/png'}),
   expect.objectContaining({sizes:'512x512',purpose:'maskable'})
  ]))
+ expect(manifest.screenshots).toHaveLength(2)
+ for(const [world,src] of [['day','/lemma/screenshots/today-day-1080x1920.png'],['night','/lemma/screenshots/today-night-1080x1920.png']] as const){
+  const shot=manifest.screenshots.find((item:{src:string})=>item.src===src)
+  expect(shot).toEqual(expect.objectContaining({sizes:'1080x1920',type:'image/png',form_factor:'narrow'}))
+  expect(shot.label).toContain(world)
+  const response=await request.get(src)
+  expect(response.ok()).toBe(true)
+  const bytes=await response.body()
+  expect(bytes.toString('hex',0,8)).toBe('89504e470d0a1a0a')
+  expect(bytes.readUInt32BE(16)).toBe(1080)
+  expect(bytes.readUInt32BE(20)).toBe(1920)
+ }
  for(const [name,route] of [['Review','#/review'],['Approve','#/proposals'],['Atlas','#/atlas']] as const){
   const shortcut=manifest.shortcuts.find((entry:{name:string})=>entry.name===name)
   expect(shortcut?.url).toBe('/lemma/'+route)
