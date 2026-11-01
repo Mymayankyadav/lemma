@@ -35,7 +35,7 @@ describe('FIX #632: Today entry does not eagerly import unrelated routes', () =>
     expect(routes).toMatch(/import Page13 from ['"]\.\.\/features\/atlas\/Page['"]/);
     expect(routes).toContain("const Page11=lazy(()=>import('../features/cards/Page'))");
     const paths=readFileSync('src/features/projects/Page.tsx','utf8');
-    expect(paths).toContain("void import('../cards/Page')");
+    expect(paths).toContain("void import('../cards/Page').catch(()=>{})");
     for (const [index, [, feature]] of screens.entries()) {
       if (index === 0 || index === 1 || index === 13) continue;
       expect(routes, feature).toContain(
