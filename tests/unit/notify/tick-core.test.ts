@@ -171,6 +171,18 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
    expect(deps.deliver).toHaveBeenCalledTimes(1);
   }
  });
+ it('rejects oversized or control-character candidate keys before any write',async()=>{
+  for(const key of ['k'.repeat(513),'due:today\\nspoof','due:today\\u0000hidden',' \\t ']){
+   const deps=adapters([A,B]);
+   vi.mocked(deps.load).mockResolvedValueOnce({
+    ...facts(),candidates:[{...facts().candidates[0],key}],
+   });
+   const result=await runNotifyTick(deps,{now:NOW});
+   expect(result).toMatchObject({owners:2,queued:1,sent:1,failed:1});
+   expect(deps.queue).toHaveBeenCalledTimes(1);
+   expect(deps.queue).toHaveBeenCalledWith(B,expect.any(Array),expect.any(AbortSignal));
+  }
+ });
  it('fails closed on malformed owner frequency, cap and send counters',async()=>{
   for(const patch of [
    {mode:'unexpected'},
