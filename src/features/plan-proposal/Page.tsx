@@ -1,5 +1,5 @@
 import {MathPreview} from '../../ui/MathPreview';
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   Bot,
@@ -276,6 +276,9 @@ export function CheckpointDrawer({
     </Sheet>
   );
 }
+const StablePlanMap=memo(PlanMap);
+const StableIdeaGraph=memo(IdeaGraph);
+
 export default function Page() {
   const { id = "" } = useParams(),
     navigate = useNavigate(),
@@ -308,7 +311,7 @@ export default function Page() {
   const prepared = useMemo(() => preparePlanProposal(waitingForProject?null:p,project.data),[p,project.data,waitingForProject]);
   const {nodes,ideaTree,ideaCount,stages}=prepared;
   const current = nodes.find((n) => n.code === selected) ?? nodes[0];
-  const openCheckpoint = (code: string) => { setSelected(code); setDrawer(code); };
+  const openCheckpoint = useCallback((code: string) => { setSelected(code); setDrawer(code); },[]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
     if (!p) return;
@@ -401,7 +404,7 @@ export default function Page() {
           </div>
           {waitingForProject && <p role="status" className="text-label text-ink-3">Preparing project context…</p>}
           {nodes.length > 0 && (
-            <PlanMap
+            <StablePlanMap
               nodes={nodes}
               selected={drawer ?? ""}
               onSelect={openCheckpoint}
@@ -472,7 +475,7 @@ export default function Page() {
                 <span className="text-caption text-ink-3">{ideaCount} {ideaCount === 1 ? "idea" : "ideas"}</span>
               </h3>
               <p className="text-label text-ink-3">Fold clusters to see how they connect; tap an idea to trace what it builds on and opens up.</p>
-              <IdeaGraph tree={ideaTree} label="Ideas in this plan" onCheckpoint={openCheckpoint} />
+              <StableIdeaGraph tree={ideaTree} label="Ideas in this plan" onCheckpoint={openCheckpoint} />
             </section>
           ) : (
             <p className="flex items-center gap-2 text-label text-ink-3">
