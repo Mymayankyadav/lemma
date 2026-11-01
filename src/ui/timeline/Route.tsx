@@ -21,11 +21,13 @@ export interface RouteProps{
  foldedLabel?:string;
  /** Keep assistive Route instructions out of visible card copy. */
  todayLinkLabel?:string;
+ /** Summary-only Today must not navigate to a synthetic checkpoint code. */
+ todayLinkTo?:string;
 }
 const clamp=(n:number,min:number,max:number)=>Math.max(min,Math.min(max,n));
 
 /** One 64/80px Route, not a scrollable rail of stage or station buttons. */
-export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360,initialSelected,foldedLabel,todayLinkLabel}:RouteProps){
+export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initialWidth=360,initialSelected,foldedLabel,todayLinkLabel,todayLinkTo}:RouteProps){
  const navigate=useNavigate();
  const ref=useRef<HTMLDivElement>(null);
  const [width,setWidth]=useState(initialWidth);
@@ -170,7 +172,7 @@ export function Route({project,checkpoints,mode,scheduleRows,pacePerWeek,initial
  return <div ref={ref} data-route="" data-route-mode={mode}
   data-route-layout={layout.mode} data-route-stage-count={stages.length}
   className="min-w-0 w-full">
-  {mode==='today'?<Link to={'/p/'+project.slug+'/cp/'+encodeURIComponent(checkpoints[current].code)}
+  {mode==='today'?<Link to={todayLinkTo??('/p/'+project.slug+'/cp/'+encodeURIComponent(checkpoints[current].code))}
    aria-label={todayLinkLabel??(plainMath(project.title)+': open current checkpoint '+checkpoints[current].code)}
    className="block min-h-[64px] w-full rounded-ctl focus-visible:outline-2 focus-visible:outline-[var(--accent)]">
    {geometry}
