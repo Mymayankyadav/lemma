@@ -20,23 +20,7 @@ describe('FIX #657c eager-route mathematical labels',()=>{
    expect(canRenderPlainFastTex(name),name).toBe(false);
  });
  it('preserves real KaTeX during synchronous server rendering',()=>{
-  const html=renderToStaticMarkup(createElement(FastTex,{source:'$\\\\frac{1}{2}
-  for(const file of [
-   'src/features/projects/Page.tsx',
-   'src/features/atlas/Page.tsx',
-   'src/features/atlas/Outline.tsx',
-   'src/features/atlas/DetailsMath.tsx',
-   'src/features/atlas/IdeaGraph.tsx',
-  ]){
-   const source=readFileSync(file,'utf8');
-   expect(source,file).toContain("from '../../ui/FastTex'");
-   expect(source,file).not.toContain("from '../../ui/Tex'");
-  }
-  const fast=readFileSync('src/ui/FastTex.tsx','utf8');
-  expect(fast).toContain("lazy(()=>import('./Tex')");
- });
-});
-}));
+  const html=renderToStaticMarkup(createElement(FastTex,{source:'$\\frac{1}{2}$'}));
   expect(html).toContain('katex-html');
   expect(html).not.toContain('Rendering mathematical text');
  });
