@@ -97,6 +97,7 @@ export function ReviewDesk({due}:{due:number}){
     <div className="min-w-0">
      <p className="text-body font-semibold text-ink">All clear</p>
      <p className="text-caption text-ink-3">Nothing due right now. New reviews appear here when scheduled.</p>
+     <div className="mt-2 max-w-[180px]"><ReviewOutlook quiet/></div>
     </div>
    </div>}
    {hasDue&&<div className="min-w-0 flex-1"><ReviewOutlook/></div>}
