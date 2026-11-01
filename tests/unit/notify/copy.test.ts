@@ -70,6 +70,64 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   expect(rendered.body).toBe('A'.repeat(120))
   expect(rendered.body).not.toContain('NEVER-INCLUDE')
  })
+ it('strips Unicode flag, family, keycap and pictographic emoji while retaining mathematical text',()=>{
+  const examples=['Algebra 🇮🇳','Algebra 👨‍👩‍👧‍👦','Algebra 1️⃣','Algebra 🧮','Algebra 👍🏽']
+  for(const project of examples){
+   const rendered=notificationCopy({kind:'behind',project,code:'CP1',dueDate:'2 Nov'})
+   const combined=rendered.title+' '+rendered.body
+   expect(combined).not.toMatch(/[\p{Regional_Indicator}\p{Extended_Pictographic}\p{Emoji_Modifier}\u200D\u20E3\uFE0F]/u)
+   expect(combined).toContain('Algebra')
+  }
+  expect(notificationCopy({kind:'behind',project:'Algebra 🇮🇳',code:'CP1',dueDate:'2 Nov'}).title).toBe('Algebra: a smaller step today?')
+  const math=notificationCopy({kind:'behind',project:'ℝ → ℂ',code:'CP1',dueDate:'2 Nov'})
+  expect(math.title).toContain('ℝ → ℂ')
+ })
+ it('keeps different project slugs separate even when display titles coincide',()=>{
+  const checkpoints=[
+   {project:'Algebra',slug:'algebra-one',code:'CP1',title:'Groups'},
+   {project:'Algebra',slug:'algebra-two',code:'CP2',title:'Rings'},
+   {project:'Analysis',slug:'analysis',code:'CP3',title:'Limits'},
+  ];
+  const copy=notificationCopy({kind:'deadline',checkpoints});
+  expect(copy.title).toBe('3 checkpoints planned for tomorrow');
+  expect(copy.body).toContain('Algebra: CP1 Groups');
+  expect(copy.body).toContain('Algebra: CP2 Rings');
+  expect(copy.body).toContain('Analysis: CP3 Limits');
+  expect(copy.body.length).toBeLessThanOrEqual(140);
+ });
+ it('groups tomorrow reminders by project rather than consuming slots per checkpoint',()=>{
+  const checkpoints=[
+   {project:'Algebra',code:'CP1',title:'Groups'},
+   {project:'Algebra',code:'CP2',title:'Rings'},
+   {project:'Algebra',code:'CP3',title:'Fields'},
+   {project:'Analysis',code:'CP4',title:'Limits'},
+  ]
+  const copy=notificationCopy({kind:'deadline',checkpoints})
+  expect(copy.title).toBe('4 checkpoints planned for tomorrow')
+  expect(copy.body).toContain('Algebra: CP1 Groups')
+  expect(copy.body).toContain('Analysis: CP4 Limits')
+  expect(copy.body).toContain('+2 checkpoints')
+  expect(copy.body).not.toContain('Algebra: CP2')
+  expect(copy.body.length).toBeLessThanOrEqual(140)
+  const long=checkpoints.map((cp,i)=>i===0?{...cp,title:'A very long checkpoint title about compactness and convergence '.repeat(5)}:cp)
+  expect(notificationCopy({kind:'deadline',checkpoints:long}).body).toContain('+2 checkpoints')
+ })
+ it('reserves space for three distinct projects and counts omitted projects',()=>{
+  const checkpoints=['Algebra','Analysis','Topology','Geometry'].map((project,i)=>({
+   project,code:'CP'+(i+1),title:'A long checkpoint title about compactness and continuous functions'.repeat(2)
+  }))
+  const copy=notificationCopy({kind:'deadline',checkpoints})
+  for(const project of ['Algebra','Analysis','Topology'])expect(copy.body).toContain(project+':')
+  expect(copy.body).toContain('+1 more')
+  expect(copy.body).not.toContain('Geometry:')
+  expect(copy.body.length).toBeLessThanOrEqual(140)
+ })
+ it('strips subdivision-flag tag characters and presentation selectors',()=>{
+  const project='Algebra \u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}\uFE0E';
+  const copy=notificationCopy({kind:'behind',project,code:'CP1',dueDate:'2 Nov'});
+  expect(copy.title).toBe('Algebra: a smaller step today?');
+  expect(copy.title+' '+copy.body).not.toMatch(/[\u{E0020}-\u{E007F}\uFE0E]/u);
+ });
  it('requires a checkpoint to construct a tomorrow reminder',()=>{
   expect(()=>notificationCopy({kind:'deadline',checkpoints:[]})).toThrow('Deadline requires a checkpoint')
  })
