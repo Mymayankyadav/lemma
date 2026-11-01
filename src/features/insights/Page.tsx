@@ -1,4 +1,5 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
+import {useLocation} from 'react-router';
 import {Clock,MessageCircle,Layers,Target} from 'lucide-react';
 import {useInsightData,useSettings} from '../../data/hooks';
 import {buildInsights} from '../../lib/insights';
@@ -14,8 +15,14 @@ import {StackedBars} from '../../ui/charts/StackedBars';
 import {GroupedBars} from '../../ui/charts/GroupedBars';
 import type {InsightDays} from '../../data/api';
 const percent=(n:number|null)=>n===null?'—':`${Math.round(n*100)}%`;
+function requestedDays(search:string):InsightDays{
+ const value=new URLSearchParams(search).get('days');
+ return value==='7'?7:value==='90'?90:30;
+}
 export default function Page(){
- const [days,setDays]=useState<InsightDays>(30);
+ const location=useLocation();
+ const [days,setDays]=useState<InsightDays>(()=>requestedDays(location.search));
+ useEffect(()=>setDays(requestedDays(location.search)),[location.search]);
  const query=useInsightData(days),settings=useSettings();
  const values=useMemo(()=>query.data?buildInsights(query.data,days,{timeZone:settings.data?.timeZone??'UTC',rolloverHour:settings.data?.rolloverHour??4}):null,[query.data,days,settings.data?.timeZone,settings.data?.rolloverHour]);
  const legend=[{name:'Again',color:'bg-[var(--bad)]'},{name:'Hard',color:'bg-[var(--warn)]'},{name:'Good',color:'bg-[var(--grade-good)]'},{name:'Easy',color:'bg-[var(--easy)]'}];
