@@ -86,6 +86,11 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
    {tag:'another'},
    {payload:{...base.payload,kind:undefined}},
    {payload:{...base.payload,tag:undefined}},
+   {payload:{...base.payload,v:2}},
+   {payload:{...base.payload,id:0}},
+   {payload:{...base.payload,title:'x'.repeat(49)}},
+   {payload:{...base.payload,body:'x'.repeat(141)}},
+   {payload:{...base.payload,url:'javascript:alert(1)'}},
    {payload:{...base.payload,body:'x'.repeat(3100)}},
   ]){
    expect(await sendWebPush({...base,...change},fetcher)).toEqual({status:'failed'});
