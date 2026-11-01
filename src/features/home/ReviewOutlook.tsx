@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query'
 import {getApi} from '../../data'
 import {useDeckTree} from '../../data/hooks'
 import {Tex} from '../../ui/Tex'
+import {hasNonzeroForecast} from './reviewForecast'
 
 /** Seven-day due forecast is read from the adapter's complete scheduled-card set.
  * Deck counts come from the review service, not a capped search or fabricated percentages.
@@ -34,7 +35,7 @@ export function ReviewOutlook(){
   </div>}
   {forecast.error?<p className="text-label text-ink-3">Upcoming reviews are unavailable right now.</p>:
    forecast.isPending?<p className="text-label text-ink-3">Loading seven-day forecast…</p>:
-   <div aria-label="Seven-day review forecast">
+   hasNonzeroForecast(weekly)?<div aria-label="Seven-day review forecast">
     <p className="mb-2 text-label font-medium text-ink-2">Next seven days</p>
     <div className="grid grid-cols-7 gap-1.5">
      {weekly.map(day=><div key={day.day} className="flex min-w-0 flex-col items-center gap-1">
@@ -47,6 +48,6 @@ export function ReviewOutlook(){
       </span>
      </div>)}
     </div>
-   </div>}
+   </div>:null}
  </div>
 }
