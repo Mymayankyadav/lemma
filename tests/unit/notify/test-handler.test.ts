@@ -87,4 +87,13 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   expect(send.mock.calls[0][1].body)
    .toBe('Lemma will write at most 5 times a day, never between 21:00 and 06:15.');
  });
+ it('does not claim quiet hours exist when start equals end, and uses singular copy for a one-send cap',async()=>{
+  loadDevice.mockResolvedValueOnce({...record,prefs:{maxPerDay:1,quiet:{start:'00:00',end:'00:00'}}});
+  const result=await handleTestPushRequest('Bearer token',{deviceId:device},deps);
+  expect(result.status).toBe(200);
+  expect(send.mock.calls[0][1].body)
+   .toBe('Lemma will write at most 1 time a day. Quiet hours are off.');
+  expect(send.mock.calls[0][1].body).not.toContain('never between');
+ });
+
 });
