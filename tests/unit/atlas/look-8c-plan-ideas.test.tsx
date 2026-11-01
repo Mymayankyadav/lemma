@@ -24,7 +24,8 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
  });
  it('shows the selection and both connection directions on paper',()=>{
   expect(graph).toContain('data-idea-selection="true"');
-  expect(graph).toContain('bg-paper');
+  expect(graph).toContain("background:'var(--paper)'");
+  expect(graph).toContain("color:'var(--link)'");
   expect(graph).toContain('Builds on {near.needs.length}');
   expect(graph).toContain('Opens up {near.unlocks.length}');
   expect(graph).toContain('aria-label="Clear selection"');
