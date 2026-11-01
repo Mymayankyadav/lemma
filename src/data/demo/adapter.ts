@@ -425,6 +425,33 @@ export class DemoAdapter implements LemmaApi {
     }
     return item;
   }
+  /** Generated stress cards follow a project × CP36 cycle. A single
+   * checkpoint detail needs only its exact count, not all 30k note objects.
+   * After any mutation the note getter disappears and the ordinary mutable
+   * store remains authoritative.
+   */
+  private virtualCheckpointCardCount(project:DemoProject,code:string):number|null {
+    if(!this.virtualStressDue ||
+       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get!=='function')
+      return null;
+    const cp=Number(/^CP([1-9]\\d*)$/.exec(code)?.[1]);
+    if(!Number.isSafeInteger(cp)||cp<1||cp>36)return 0;
+    const projectIndex=this.store.projects.findIndex(p=>p.id===project.id);
+    const projectTotal=this.store.projects.length;
+    if(projectIndex<0||projectTotal===0)return 0;
+    const gcd=(a:number,b:number):number=>{
+      while(b){const remainder=a%b;a=b;b=remainder}
+      return a;
+    };
+    const period=projectTotal/gcd(projectTotal,36)*36;
+    const total=this.store.stressNoteCount??0;
+    let count=0;
+    for(let i=projectIndex;i<period;i+=projectTotal){
+      if(i%36!==cp-1||i>=total)continue;
+      count+=Math.floor((total-1-i)/period)+1;
+    }
+    return count;
+  }
   private proposal(id: string) {
     return found(
       this.store.proposals.find((p) => p.id === id),
@@ -1174,14 +1201,15 @@ export class DemoAdapter implements LemmaApi {
           .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
           .slice(0, 20),
       ),
-      cardsCount: this.store.notes
-        .filter(
-          (n) =>
-            n.projectId === project.id &&
-            n.note.checkpointCode === code &&
-            n.note.status !== "deleted",
-        )
-        .reduce((n, note) => n + note.cards.length, 0),
+      cardsCount: this.virtualCheckpointCardCount(project,code) ??
+        this.store.notes
+          .filter(
+            (n) =>
+              n.projectId === project.id &&
+              n.note.checkpointCode === code &&
+              n.note.status !== "deleted",
+          )
+          .reduce((n, note) => n + note.cards.length, 0),
       sessions: sessions
         .map((s) => this.sessionSummary(s))
         .sort(
