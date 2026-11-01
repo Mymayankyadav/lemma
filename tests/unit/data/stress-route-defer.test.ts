@@ -40,4 +40,36 @@ describe('FIX #507 direct-route cold stress hydration',()=>{
   expect(index).not.toContain('deferAtlas:initialToday')
   expect(index).not.toContain('deferSources:initialToday')
  })
+
+ it('reads a direct extreme Card detail without materializing 30k unrelated notes',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  });
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const deferred=(key:'notes'|'concepts'|'sources')=>
+   typeof Object.getOwnPropertyDescriptor(store,key)?.get==='function';
+  expect(deferred('notes')).toBe(true);
+  const detail=await api.getCard(30_000);
+  expect(detail.note.noteNo).toBe(30_000);
+  expect(detail.note.front).toContain('card 30000');
+  expect(detail.cards).toHaveLength(1);
+  await api.getCardHistoryPage(30_000);
+  await api.getCardCommentsPage(30_000);
+  expect(deferred('notes')).toBe(true);
+  expect(deferred('concepts')).toBe(true);
+  expect(deferred('sources')).toBe(true);
+ },30_000);
+ it('preserves eager Card detail and math content for generated first, special and last notes',async()=>{
+  const eager=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const lazy=new DemoAdapter({fixture:makeStressStore(seed,'stress',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  for(const no of [1,3,4,5,6,5000]){
+   expect(await lazy.getCard(no)).toEqual(await eager.getCard(no));
+  }
+  const store=(lazy as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
+ },30_000);
 })
