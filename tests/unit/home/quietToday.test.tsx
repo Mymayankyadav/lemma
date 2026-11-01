@@ -62,7 +62,7 @@ describe('LOOK-5c2 tutor handoff',()=>{
   expect(view).toContain('6 tutor proposals awaiting your decision');
   expect(view).toContain('aria-label="Review 6 tutor proposals"');
   expect(view).toContain('Continue');
-  expect((view.match(/class="slab /g)??[]).toHaveLength(1);
+  expect((view.match(/class="slab /g)??[])).toHaveLength(1);
  });
 });
 
