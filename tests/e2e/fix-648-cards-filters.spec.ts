@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test'
 
 // FIX #648: S/X project filters change form above eight projects rather than
 // mounting 15–60 rich-title chips before the first Cards page is interactive.
+// Preserve the first 12 rich chips required by FIX #523, including KaTeX.
 // The existing Project select must retain all options, touch size and state.
 for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
@@ -16,7 +17,10 @@ for(const width of [360,390] as const){
   await expect(selector).toBeVisible()
   const options=selector.locator('option')
   await expect.poll(()=>options.count(),{timeout:60_000}).toBeGreaterThan(8)
-  await expect(filters.locator('[data-project-slug]')).toHaveCount(0)
+  await expect(filters.locator('[data-project-slug]')).toHaveCount(12)
+  const mathChip=filters.locator('[data-project-slug="stress-project-11"]')
+  await expect(mathChip).toContainText('Mathematics project 12')
+  await expect(mathChip.locator('.text-base')).toBeVisible()
   const box=await selector.boundingBox()
   expect(box).not.toBeNull()
   expect(box!.height).toBeGreaterThanOrEqual(44)
