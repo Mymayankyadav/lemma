@@ -91,10 +91,10 @@ answer_speed as (
   where r.user_id=p_user and r.undone_at is null and r.duration_ms>0
     and r.reviewed_at>=p_now-interval '30 days'
 ),
+-- Rank all eligible tomorrow checkpoints once instead of invoking a
+-- per-project LATERAL lookup under the hash-join preference. This preserves
+-- the same earliest (position,id) checkpoint for each active project.
 tomorrow_ranked as (
-  -- Rank all eligible tomorrow checkpoints once instead of invoking a
-  -- per-project LATERAL lookup under the hash-join preference. This preserves
-  -- the same earliest (position,id) checkpoint for each active project.
   select c.code,c.title,c.current_step,c.steps,pr.slug,pr.title project,
     c.due_on,c.position,c.id checkpoint_id,
     row_number() over(partition by pr.id order by c.position,c.id) project_rank
