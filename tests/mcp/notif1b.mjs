@@ -145,6 +145,47 @@ try{
  assert.ok((await holdHours('tutor'))>2.9&&(await holdHours('tutor'))<3.1)
  console.log('PASS NOTIF-1b Later (due 2h, tutor 3h) and Not today (rhythm 3d) holds')
 
+ // AUDIT BLOCK: Not today is defined by the owner's study day, not the
+ // calendar date. Use fixed instants to cover both sides of rollover and DST
+ // without depending on the CI runner's wall clock.
+ const nextStudyCases=[
+  ['before rollover, evening study','2026-11-01T19:30:00Z','Asia/Calcutta',4,'19:00','2026-11-02T13:30:00.000Z'],
+  ['after rollover, evening study','2026-11-02T01:30:00Z','Asia/Calcutta',4,'19:00','2026-11-03T13:30:00.000Z'],
+  ['before rollover, early study','2026-11-01T19:30:00Z','Asia/Calcutta',4,'02:00','2026-11-02T20:30:00.000Z'],
+  ['after rollover, early study','2026-11-02T01:30:00Z','Asia/Calcutta',4,'02:00','2026-11-03T20:30:00.000Z'],
+  ['London spring DST, evening study','2026-03-28T20:00:00Z','Europe/London',4,'19:00','2026-03-29T18:00:00.000Z'],
+  ['London spring DST, early study','2026-03-27T12:00:00Z','Europe/London',4,'02:00','2026-03-29T01:00:00.000Z'],
+  ['London autumn DST, evening study','2026-10-24T12:00:00Z','Europe/London',4,'19:00','2026-10-25T19:00:00.000Z'],
+  ['London autumn DST, early study','2026-10-24T12:00:00Z','Europe/London',4,'02:00','2026-10-26T02:00:00.000Z'],
+ ]
+ for(const [label,at,zone,rollover,study,expected] of nextStudyCases){
+  const actual=(await q(
+   'select public.notify_next_study_at($1::timestamptz,$2,$3,$4::time) at',
+   [at,zone,rollover,study]))[0].at
+  assert.equal(new Date(actual).toISOString(),expected,label)
+ }
+ console.log('PASS NOTIF-1b fixed study-day rollover and London DST boundary cases')
+
+ // The production action must call the same tested boundary, not a separate
+ // calendar-day expression. Compare to the claimed notification action_at.
+ for(const study of ['19:00','02:00']){
+  await q("update public.settings set time_zone='Asia/Calcutta',rollover_hour=4,notify=$1::jsonb where user_id=$2",
+   [JSON.stringify({studyTime:study}),owner])
+  const id=await notify('due','due:not-today:'+study)
+  const scope='due:not-today:'+study
+  assert.equal((await act(id,'not_today',{scope})).status,'done')
+  const pair=(await q(`select h."until" actual,
+   public.notify_next_study_at(n.action_at,s.time_zone,s.rollover_hour,
+     coalesce(s.notify->>'studyTime','19:00')::time) expected
+   from public.notify_holds h
+   join public.notifications n on n.user_id=h.user_id and n.id=$2
+   join public.settings s on s.user_id=h.user_id
+   where h.user_id=$1 and h.scope=$3`,[owner,id,scope]))[0]
+  assert.equal(new Date(pair.actual).toISOString(),new Date(pair.expected).toISOString(),
+   'not_today must use the tested study-day boundary for '+study)
+ }
+ console.log('PASS NOTIF-1b actual not_today action uses owner study-day boundary')
+
  await db.exec('reset role')
  const privilegeBefore=await q(`select grantee,privilege_type,routine_name from information_schema.role_routine_grants
  where specific_schema='public' and routine_name in ('notify_act','approve_card_proposals')
