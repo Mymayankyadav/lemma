@@ -1,7 +1,7 @@
 /** Convert a scheduled-card count to a safe display value. Malformed counts
  * must never poison the chart's scale or leak NaN/Infinity into the UI. */
 export function forecastDueCount(due: number): number {
-  return Number.isFinite(due) && due > 0 ? Math.floor(due) : 0;
+  return Number.isFinite(due) && due > 0 ? Math.max(1, Math.floor(due)) : 0;
 }
 
 /** Hide the seven-day chart when every column is empty. A missing forecast
