@@ -18,8 +18,15 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  const [expanded,setExpanded]=useState<Set<string>>(initial);
  const [related,setRelated]=useState(false),[selectedId,setSelectedId]=useState<string|null>(null);
  const box=useRef<HTMLDivElement>(null);
- // A new proposal (a new tree) starts from a fresh view.
- useEffect(()=>{setExpanded(initial());setSelectedId(null)},[tree]);
+ const previousTree=useRef(tree);
+ // The lazy useState initializer already chose the correct folds on mount.
+ // Re-running it in a mount effect forces a second expensive tree/arc render
+ // under StrictMode. Reset only when a *different* proposal tree arrives.
+ useEffect(()=>{
+  if(previousTree.current===tree)return;
+  previousTree.current=tree;
+  setExpanded(initial());setSelectedId(null);
+ },[tree]);
  const rows=useMemo(()=>visibleRows(tree,expanded),[tree,expanded]);
  // Match the 56/44px Field/idea rows and notebook gaps in both the embedded
  // plan graph and its orthogonal dependency lanes. Row indices alone are not
