@@ -63,7 +63,7 @@ try{
  console.log('PASS NOTIF-1b K1/K5/K6/K8 shape and stable proposal IDs')
  await db.exec('reset role')
  await db.exec('set role authenticated')
- const deck=await q('select item from public.deck_tree() as item')
+ const deck=await q('select item from public.deck_tree() as t(item)')
  const total=deck.reduce((n,r)=>n+Number(r.item.due),0)
  assert.equal(current.due.count,total,'due quota must match the app deck_tree()')
  await assert.rejects(facts(),/permission denied/)
