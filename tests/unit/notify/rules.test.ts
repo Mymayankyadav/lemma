@@ -67,6 +67,14 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(choose([{...behind,lastSentAt:now-10*DAY,dismissals:3}])[0].reason).toBe('frequency')
   expect(choose([{...behind,projectSentToday:true}])[0].reason).toBe('frequency')
  })
+ it('chooses the earliest target among late projects and allows only one K3 per study day',()=>{
+  const first:ReminderCandidate={kind:'behind',key:'behind:later',targetDate:now+10*DAY}
+  const second:ReminderCandidate={kind:'behind',key:'behind:earlier',targetDate:now+3*DAY}
+  const result=choose([first,second])
+  expect(result[0].candidate.key).toBe('behind:earlier')
+  expect(result[0].status).toBe('send')
+  expect(choose([second],{behindSentToday:true})[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+ })
  it('limits K4 to two per paused session and waits 18 hours',()=>{
   const resume:ReminderCandidate={kind:'resume',key:'resume:s1',pausedSince:now-17*3_600_000}
   expect(choose([resume])[0]).toMatchObject({status:'defer',reason:'frequency'})
