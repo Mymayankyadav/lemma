@@ -49,7 +49,7 @@ try{
  // due-card sibling ranking, rather than visiting 30k heap tuples per query.
  const covering=await q("select indexdef from pg_indexes where schemaname='public' and tablename='cards' and indexname='cards_notify_owner_note_due_cover'")
  assert.equal(covering.length,1,'notification card lookup needs its covering index')
- assert.match(covering[0].indexdef,/INCLUDE\\s*\\(state, due, id\\)/i)
+ assert.match(covering[0].indexdef,/INCLUDE\s*\(state, due, id\)/i)
  let queryCount=0
  const start=performance.now()
  queryCount++
