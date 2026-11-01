@@ -135,7 +135,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
   <div className="relative rounded-ctl border border-edge" style={{background:'var(--paper)'}} role="tree" aria-label={label}>
    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
     return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false} focused={!!focus}
-     onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id);setDetails(false)}}/>})}
+     onToggle={()=>toggle(row.id)} onSelect={()=>{setSelectedId(selectedId===node.id?null:node.id);setDetails(false)}}/>})}
    <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}
     centers={geometry.centers} heightPx={geometry.totalHeight}/>
   </div>
