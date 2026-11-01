@@ -30,8 +30,24 @@ export default function Page(){
  const [onlyComments,setOnlyComments]=useState(false),[creating,setCreating]=useState(false);
  const [scrollTop,setScrollTop]=useState(0),[viewportHeight,setViewportHeight]=useState(500);
  const scroller=useRef<HTMLDivElement>(null);
+ const filterScroller=useRef<HTMLDivElement>(null);
+ const [filterFade,setFilterFade]=useState({left:false,right:false});
+ const updateFilterFade=useCallback(()=>{
+  const element=filterScroller.current;if(!element)return;
+  const left=element.scrollLeft>1;
+  const right=element.scrollLeft+element.clientWidth<element.scrollWidth-1;
+  setFilterFade(previous=>previous.left===left&&previous.right===right?previous:{left,right});
+ },[]);
  const projects=useProjects(),create=useCreateNote(),notify=useToast(),navigate=useNavigate();
  const closeCreating=useCallback(()=>setCreating(false),[]);
+ useEffect(()=>{
+  const element=filterScroller.current;if(!element)return;
+  updateFilterFade();
+  if(typeof ResizeObserver==='undefined')return;
+  const observer=new ResizeObserver(updateFilterFade);
+  observer.observe(element);
+  return ()=>observer.disconnect();
+ },[projects.data,updateFilterFade]);
  useEffect(()=>{const timer=setTimeout(()=>setQuery(search),250);return ()=>clearTimeout(timer)},[search]);
  const cards=useInfiniteQuery({
   queryKey:['cards-page-infinite',query,project,checkpoint,state,noteStatus,onlyComments],
@@ -66,12 +82,20 @@ export default function Page(){
   }catch{notify("Couldn't create the card.",{tone:'danger'})}
  };
  const loading=cards.isPending;
+ // Only fade an edge when there are chips outside the visible scroll window.
+ const filterMask=filterFade.left&&filterFade.right
+  ?'linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent)'
+  :filterFade.left
+   ?'linear-gradient(to right, transparent, black 16px, black 100%)'
+   :filterFade.right
+    ?'linear-gradient(to right, black 0%, black calc(100% - 16px), transparent)'
+    :undefined;
  return <Screen title="Cards" back="/" actions={<IconButton icon={Plus} label="New card" tone="amber" onClick={()=>setCreating(true)}/>}>
   <label className="flex min-h-[var(--row)] min-w-0 items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
    <Search size={19}/><span className="sr-only">Search cards</span>
    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search cards" className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-3"/>
   </label>
-  <div role="group" aria-label="Card filters" className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
+  <div ref={filterScroller} role="group" aria-label="Card filters" data-filter-fade-left={String(filterFade.left)} data-filter-fade-right={String(filterFade.right)} onScroll={updateFilterFade} style={{maskImage:filterMask}} className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
    <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
    {projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
     <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
@@ -113,7 +137,7 @@ export default function Page(){
   </div>
   <div className="flex items-center justify-between text-label text-ink-3">
    <span aria-live="polite">{rows.length.toLocaleString()} loaded{cards.hasNextPage?' · more available':''}</span>
-   {(project||checkpoint||state||noteStatus||onlyComments||search)&&<button type="button" className="min-h-11 text-amber" onClick={()=>{
+   {(project||checkpoint||state||noteStatus||onlyComments||search)&&<button type="button" className="min-h-11 text-ink-2 underline-offset-2 hover:underline" onClick={()=>{
     setProject('');setCheckpoint('');setState('');setNoteStatus('');setOnlyComments(false);setSearch('');setQuery('');
    }}>Clear filters</button>}
   </div>
@@ -128,7 +152,7 @@ export default function Page(){
      {visible.map(row=><Link key={row.noteNo} to={'/cards/'+row.noteNo} data-card-row
       className="flex min-w-0 items-center gap-3 overflow-hidden border-b border-edge px-2 py-2 focus-visible:outline-2 focus-visible:outline-amber"
       style={{height:ROW_HEIGHT}}>
-      <span aria-hidden="true" className="w-6 shrink-0 text-center font-math text-card italic text-amber">{row.glyph}</span>
+      <span aria-hidden="true" data-card-subject-glyph className="w-6 shrink-0 text-center font-math text-card italic text-ink-2">{row.glyph}</span>
       <div className="min-w-0 flex-1">
        <div data-card-front="" data-card-front-preview=""
         className={'min-w-0 max-w-full font-math text-headline leading-snug text-ink '+(hasMathPreview(row.front)?'block overflow-x-auto whitespace-nowrap':'line-clamp-2 overflow-hidden')}
@@ -138,7 +162,7 @@ export default function Page(){
        <span className="mt-1 flex flex-wrap items-center gap-2 text-label text-ink-3">
         <span className="inline-flex min-w-10 justify-center rounded-[3px] border border-edge px-1 py-0.5">{row.checkpointCode??'—'}</span>
         <span>{row.status==='suspended'?'Paused':relative(row.due)}</span>
-        {row.openComments>0&&<span className="text-amber">{row.openComments} notes</span>}
+        {row.openComments>0&&<span data-card-open-comments className="text-ink-2">{row.openComments} notes</span>}
        </span>
       </div>
      </Link>)}

@@ -8,6 +8,7 @@ import {scheduleDetail} from '../../lib/schedule';
 import {scheduleForProject} from '../../ui/timeline/progress';
 import ProjectPage from '../project/Page';
 import {Sheet} from '../../ui/Sheet';
+import {SectionHeading} from '../../ui/SectionHeading';
 import {Chip} from '../../ui/Chip';
 import {Button} from '../../ui/Button';
 import {Skeleton} from '../../ui/Skeleton';
@@ -50,11 +51,11 @@ export default function Page(){
      {scheduleText&&<p aria-label="Checkpoint schedule" className="rounded-ctl border border-edge bg-raised px-3 py-2 text-label text-ink-2">{scheduleText}</p>}
      <p className="font-math text-title-s italic leading-relaxed text-ink-soft"><Tex source={detail.objective}/></p>
      <section className="flex flex-col gap-2 rounded-ctl border border-edge bg-raised p-4">
-      <h3 className="flex items-center gap-2 text-label font-semibold text-ink-2"><Target size={17} className="text-amber"/>Evidence required</h3>
+      <SectionHeading as="h3" className="flex items-center gap-2 text-ink-2"><Target size={17} className="text-amber"/>Evidence required</SectionHeading>
       <p className="text-body leading-relaxed text-ink-soft"><Tex source={detail.criterion}/></p>
      </section>
      <section aria-label="Checkpoint steps">
-      <h3 className="mb-3 text-body-l font-semibold text-ink-2">Steps</h3>
+      <SectionHeading as="h3" className="mb-3 text-ink-2">Steps</SectionHeading>
       <ol className="flex flex-col gap-3">
        {detail.steps.map((step,i)=>{
         const complete=i<view.currentStep,active=i===view.currentStep;
@@ -71,12 +72,12 @@ export default function Page(){
       <Chip icon={BookOpen}>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Chip>
      </div>}
      {detail.prereqs.length>0&&<section aria-label="Prerequisites">
-      <h3 className="mb-2 text-body font-semibold text-ink-2">Prerequisites</h3>
+      <SectionHeading as="h3" className="mb-2 text-ink-2">Prerequisites</SectionHeading>
       <div className="flex flex-wrap gap-2">{detail.prereqs.map(p=><button key={p} type="button"
        onClick={()=>navigate('/p/'+slug+'/cp/'+p)} className="min-h-11 rounded-chip bg-fill-1 px-3 text-label text-amber">{p}</button>)}</div>
      </section>}
      {detail.concepts.length>0&&<section aria-label="Concepts">
-      <h3 className="mb-2 text-body font-semibold text-ink-2">Concepts</h3>
+      <SectionHeading as="h3" className="mb-2 text-ink-2">Concepts</SectionHeading>
       <div className="flex flex-wrap gap-2">{detail.concepts.map(concept=><button key={concept.slug} type="button"
        onClick={()=>navigate('/atlas?focus='+encodeURIComponent(concept.slug))}
        className="min-h-11 rounded-chip border border-edge-2 bg-fill-1 px-3 text-label text-ink-soft"><Tex source={concept.name}/></button>)}</div>
@@ -85,7 +86,7 @@ export default function Page(){
       <RotateCcw size={18} className="mt-0.5 shrink-0"/><span>{view.ui==='revisit'?'Re-check due':'Next re-check'}: <Tex source={detail.recheckPrompt}/></span>
      </div>}
      {detail.events.length>0&&<section aria-label="Recent evidence">
-      <h3 className="mb-3 text-body font-semibold text-ink-2">Recent evidence</h3>
+      <SectionHeading as="h3" className="mb-3 text-ink-2">Recent evidence</SectionHeading>
       <div className="flex flex-col gap-3">{detail.events.slice(0,8).map(event=><article key={event.id}
        className="rounded-ctl border border-edge bg-raised px-4 py-3">
        <div className="flex items-center gap-2 text-label text-ink-3">

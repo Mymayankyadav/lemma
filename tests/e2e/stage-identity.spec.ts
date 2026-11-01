@@ -1,6 +1,7 @@
 import {expect,test} from '@playwright/test'
 
-// FIX #509: stage segments remain distinguishable when 100 checkpoints collapse.
+// FIX #509 / LOOK-3c: folded Route retains distinguishable stage ranges,
+// a readable current-stage label and station-by-station keyboard access.
 for(const profile of ['stress','extreme'] as const)
 for(const theme of ['graph','graph-night'] as const)
 for(const width of [390,360] as const){
@@ -13,28 +14,27 @@ for(const width of [390,360] as const){
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/')
   await expect(page.getByRole('heading',{name:'Home'})).toBeVisible({timeout:90_000})
   await page.screenshot({path:'test-results/screens/fix-509-today-'+profile+'-'+theme+'-'+width+'.png'})
-  // Today may use the bounded summary Metro after FIX-484b; the project
-  // page always keeps the interactive stage Metro and its full labels.
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/p/real-analysis')
-  const metro=page.locator('[data-timeline="stage-metro"]').first()
-  await expect(metro).toBeVisible({timeout:90_000})
-  const stages=metro.locator('[data-stage-button]')
-  const labels=await stages.locator('[data-stage-name]').allTextContents()
-  expect(labels.length).toBeGreaterThanOrEqual(5)
-  expect(labels).toEqual(labels.map((_,i)=>'S'+(i+1)))
-  expect(new Set(labels).size).toBe(labels.length)
-  const full=metro.locator('[data-stage-full-name]')
-  await expect(full).toBeVisible()
-  const first=await full.textContent()
-  expect(first?.trim().length).toBeGreaterThan(0)
-  await stages.nth(1).click()
-  await expect(stages.nth(1)).toHaveAttribute('aria-pressed','true')
-  await expect.poll(()=>full.textContent()).not.toBe(first)
-  const targets=await stages.evaluateAll(nodes=>nodes.map(node=>({
+  const route=page.locator('[data-route-mode="project"]').first()
+  await expect(route).toBeVisible({timeout:90_000})
+  await expect(route).toHaveAttribute('data-route-layout','folded')
+  await expect(route).toHaveAttribute('data-route-stage-count','5')
+  await expect(route.locator('[data-stage-rail],[data-expanded-stations]')).toHaveCount(0)
+  const ranges=await route.locator('[data-stage-range]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-stage-range')))
+  expect(ranges.length).toBeGreaterThan(0)
+  expect(new Set(ranges).size).toBe(ranges.length)
+  const label=route.locator('[data-route-folded-stage-label]')
+  await expect(label).toBeVisible()
+  expect((await label.textContent())?.trim().length).toBeGreaterThan(0)
+  const now=route.locator('[data-route-now]')
+  const first=await now.textContent()
+  await route.getByRole('button',{name:'Next checkpoint'}).click()
+  expect(await now.textContent()).not.toBe(first)
+  const targets=await route.locator('[data-route-controls] button').evaluateAll(nodes=>nodes.map(node=>({
    width:node.getBoundingClientRect().width,height:node.getBoundingClientRect().height
   })))
   expect(targets.every(r=>r.width>=44&&r.height>=44)).toBe(true)
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(0)
   await page.screenshot({path:'test-results/screens/fix-509-project-'+profile+'-'+theme+'-'+width+'.png'})
  })
 }

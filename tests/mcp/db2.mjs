@@ -17,7 +17,7 @@ try {
  create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
  create function extensions.gen_random_bytes(n int) returns bytea language sql as $$select decode(repeat('00',n),'hex')$$;
  grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
- for(const file of ['20261029164215_lemma_tables.sql','20261029164314_lemma_triggers.sql','20261029164323_lemma_rls.sql','20261029164341_lemma_functions.sql','20261029165642_lemma_atomic_progress.sql','20261029183249_action_log.sql','20261030031945_initial_plan_source_coverage.sql'])await db.exec(await readFile(new URL('../../supabase/migrations/'+file,import.meta.url),'utf8'));
+ for(const file of ['20261029164215_lemma_tables.sql','20261029164314_lemma_triggers.sql','20261029164323_lemma_rls.sql','20261029164341_lemma_functions.sql','20261029165642_lemma_atomic_progress.sql','20261029183249_action_log.sql','20261030031945_initial_plan_source_coverage.sql','20261101060000_history_owner_view.sql'])await db.exec(await readFile(new URL('../../supabase/migrations/'+file,import.meta.url),'utf8'));
  await db.exec(`select set_config('test.uid','${owner}',false); insert into auth.users values ('${owner}'),('${other}')`);
  await db.exec(`insert into public.subjects(id,user_id,name,glyph,hue) values ('22222222-2222-2222-2222-222222222222','${owner}','Analysis','A','amber')`);
  await db.exec(`insert into public.projects(id,user_id,slug,subject_id,title,goal) values ('${project}','${owner}','analysis','22222222-2222-2222-2222-222222222222','Analysis','Study')`);
@@ -117,4 +117,59 @@ try {
  await assert.rejects(db.exec('delete from public.action_changes'),/permission denied/);
  await db.exec(`reset role;select set_config('test.uid','${owner}',false)`);
  console.log('PASS service-role undo and journal immutability');
+ // FIX #606: two owners may have identical human-facing project names/slugs.
+ // Project history is bound to the action owner *inside* the SQL view, not
+ // inferred from a prefiltered action-number list supplied by the caller.
+ const otherSubject='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab';
+ const otherProject='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc';
+ await db.exec(`insert into public.subjects(id,user_id,name,glyph,hue)
+   values ('${otherSubject}','${other}','Analysis','A','amber')`);
+ await db.exec(`insert into public.projects(id,user_id,slug,subject_id,title,goal)
+   values ('${otherProject}','${other}','analysis','${otherSubject}','Analysis','Study')`);
+ await db.exec(`insert into public.notes(user_id,project_id,front)
+   values ('${owner}','${project}','Owner-only history')`);
+ await db.exec(`insert into public.notes(user_id,project_id,front)
+   values ('${other}','${otherProject}','Other-only history')`);
+ const ownerRows=await q(`select v.action_no,v.user_id from public.v_action_changes_owner v
+   where v.user_id='${owner}' and
+   (v.new_project_id='${project}' or v.new_id='${project}')
+   order by v.id limit 500 offset 0`);
+ const otherRows=await q(`select v.action_no,v.user_id from public.v_action_changes_owner v
+   where v.user_id='${other}' and
+   (v.new_project_id='${otherProject}' or v.new_id='${otherProject}')
+   order by v.id limit 500 offset 0`);
+ assert.ok(ownerRows.length>0 && otherRows.length>0);
+ assert.ok(ownerRows.every(x=>x.user_id===owner));
+ assert.ok(otherRows.every(x=>x.user_id===other));
+ // A deleted child must remain discoverable through the old identifier
+ // projection, without exposing the original row JSON to this view.
+ await db.exec(`delete from public.notes where user_id='${other}' and front='Other-only history'`);
+ const removed=await q(`select action_no,user_id from public.v_action_changes_owner
+   where user_id='${other}' and old_project_id='${otherProject}'`);
+ assert.ok(removed.length>0 && removed.every(x=>x.user_id===other));
+
+ assert.equal(ownerRows.some(x=>otherRows.some(y=>x.action_no===y.action_no)),false);
+ // Model the privileged connector's RLS-bypassing service role. An explicit
+ // user_id predicate is still required to protect project-history pagination.
+ await db.exec('alter role service_role bypassrls; set role service_role');
+ const privileged=await q(`select distinct action_no,user_id from public.v_action_changes_owner
+   where user_id='${owner}' and
+   (new_project_id='${project}' or new_id='${project}')
+   order by action_no limit 500 offset 0`);
+ assert.ok(privileged.length>0 && privileged.every(x=>x.user_id===owner));
+ assert.ok(privileged.every(x=>!otherRows.some(y=>y.action_no===x.action_no)));
+ await db.exec('reset role; set role authenticated');
+ await db.exec(`select set_config('test.uid','${other}',false)`);
+ assert.equal((await q(`select count(*) n from public.v_action_changes_owner where user_id='${owner}'`))[0].n,0);
+ assert.ok((await q(`select count(*) n from public.v_action_changes_owner where user_id='${other}'`))[0].n>0);
+ await db.exec('reset role');
+ const security=(await q(`select c.relrowsecurity from pg_class c
+   where c.oid in ('public.actions'::regclass,'public.action_changes'::regclass)`));
+ assert.equal(security.length,2);
+ assert.ok(security.every(x=>x.relrowsecurity===true));
+ assert.equal((await q(`select has_table_privilege('anon','public.v_action_changes_owner','SELECT') allowed`))[0].allowed,false);
+ assert.ok(String((await q(`select reloptions from pg_class where oid='public.v_action_changes_owner'::regclass`))[0].reloptions).includes('security_invoker=true'));
+ await db.exec('begin; drop view public.v_action_changes_owner; rollback;');
+ assert.ok((await q('select count(*) n from public.v_action_changes_owner'))[0].n>0);
+ console.log('PASS owner-joined history isolation, service-role owner filter, RLS and transactional migration rollback');
 } finally {await db.close();}
