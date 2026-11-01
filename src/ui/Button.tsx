@@ -1,9 +1,10 @@
-import {useEffect,useState,type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import type {HTMLMotionProps} from 'motion/react';
 import type {LucideIcon} from 'lucide-react';
 import {LoaderCircle} from 'lucide-react';
 import {motion,useReducedMotion} from 'motion/react';
 import {toast} from './Toast';
+import {useOnlineStatus} from './useOnlineStatus';
 export interface ButtonProps extends Omit<HTMLMotionProps<'button'>,'children'>{
  variant?:'lit'|'primary'|'ghost'|'danger'|'text';size?:'m'|'l'|'xl';
  icon?:LucideIcon;loading?:boolean;needsNetwork?:boolean;children:ReactNode
@@ -12,14 +13,8 @@ const heights={m:'min-h-[var(--ctl)]',l:'min-h-[var(--ctl)]',xl:'min-h-[calc(var
 const variants={primary:'lit',lit:'lit',ghost:'ghost',danger:'border border-again/30 bg-danger-tint text-again',text:'bg-transparent text-amber'};
 export function Button({variant='lit',size='l',icon:Icon,loading=false,needsNetwork=false,disabled=false,className='',children,onClick,...rest}:ButtonProps){
  const reduce=!!useReducedMotion();
- const [offline,setOffline]=useState(typeof navigator!=='undefined'&&!navigator.onLine);
- useEffect(()=>{
-  if(!needsNetwork)return;
-  const update=()=>setOffline(!navigator.onLine);
-  window.addEventListener('offline',update);window.addEventListener('online',update);
-  return()=>{window.removeEventListener('offline',update);window.removeEventListener('online',update)};
- },[needsNetwork]);
- const blocked=needsNetwork&&offline;
+ const online=useOnlineStatus();
+ const blocked=needsNetwork&&!online;
  const originalLabel=rest['aria-label']??(typeof children==='string'?children:'Action');
  return <motion.button {...rest} disabled={disabled||loading} aria-disabled={blocked||undefined}
  aria-label={blocked?originalLabel+', needs a connection':rest['aria-label']}
