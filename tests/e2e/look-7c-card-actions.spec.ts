@@ -36,6 +36,20 @@ test('Card detail actions are explicit, reversible and keyboard accessible',asyn
  await expect(page.getByRole('dialog',{name:'Delete this card?'})).toBeHidden();
 });
 
+test('Card detail never carries a destructive dialog or overflow action to another card',async({page})=>{
+ await page.goto('/lemma/?demo=1&theme=graph#/cards/31');
+ const actions=page.getByRole('button',{name:'Card actions'});
+ await actions.click();
+ await page.getByRole('menuitem',{name:'Delete card'}).click();
+ await expect(page.getByRole('dialog',{name:'Delete this card?'})).toBeVisible();
+ // React Router reuses the card-detail component when only :no changes.
+ await page.evaluate(()=>{window.location.hash='#/cards/32'});
+ await expect(page.getByRole('dialog',{name:'Delete this card?'})).toHaveCount(0);
+ await page.evaluate(()=>{window.location.hash='#/cards/31'});
+ await expect(page.getByRole('button',{name:'Card actions'})).toHaveAttribute('aria-expanded','false');
+ await expect(page.getByRole('dialog',{name:'Delete this card?'})).toHaveCount(0);
+});
+
 for(const profile of ['stress','extreme'] as const)
  for(const theme of ['graph','graph-night'] as const)
   for(const width of [360,390] as const)
