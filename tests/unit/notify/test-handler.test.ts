@@ -64,6 +64,14 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   expect(verifyJwt).not.toHaveBeenCalled();
   expect(loadDevice).not.toHaveBeenCalled();
  });
+ it('does not claim a push was sent without the required 201 confirmation',async()=>{
+  for(const result of [{status:'sent',httpStatus:503},{status:'sent',httpStatus:202},{status:'sent'}]){
+   send.mockResolvedValueOnce(result);
+   const response=await handleTestPushRequest('Bearer token',{deviceId:device},deps);
+   expect(response.status).toBe(503);
+   expect(response.body.message).not.toMatch(/sent/i);
+  }
+ });
  it('maps gone devices and temporary push failures without exposing endpoint or secrets',async()=>{
   for(const [outcome,status] of [['gone',410],['retry',503],['failed',503]] as const){
    send.mockResolvedValueOnce({status:outcome});
