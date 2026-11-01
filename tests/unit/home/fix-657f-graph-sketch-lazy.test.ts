@@ -8,7 +8,8 @@ import {afterEach,describe,expect,it,vi} from 'vitest';
 describe('FIX #657 GraphSketch cold-route work',()=>{
  afterEach(()=>{vi.restoreAllMocks()});
  it('does not sample off-route exponential or sine curves during module evaluation',async()=>{
-  vi.resetModules();
+  // This test file has its own Vitest module context; avoid resetting React
+  // itself, which would give the SSR renderer and hooks separate dispatchers.
   const exp=vi.spyOn(Math,'exp');
   const sin=vi.spyOn(Math,'sin');
   const {GraphSketch}=await import('../../../src/ui/backgrounds/graph/GraphSketch');
