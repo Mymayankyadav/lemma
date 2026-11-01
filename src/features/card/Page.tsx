@@ -132,6 +132,13 @@ export default function Page() {
   useEffect(() => {
     setCommentCursors([]);
     setReviewCursors([]);
+    // The route component is reused for /cards/:no. A Delete confirmation,
+    // Edit sheet or overflow menu from the previous card must never remain
+    // actionable against a newly selected card.
+    setActionMenu(false);
+    setDeleting(false);
+    setEditing(false);
+    setMessage("");
   }, [number]);
   useEffect(() => {
     if (reviewQuery.isError) notify("Couldn't load older reviews.", {tone: "danger"});
