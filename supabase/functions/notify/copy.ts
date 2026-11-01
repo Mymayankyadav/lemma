@@ -28,7 +28,8 @@ const toneSafe=(value:string)=>value
   only:'just',still:'currently',again:'next',hurry:'take your time'
  } as Record<string,string>)[word.toLowerCase()]??word)
  .replace(/!/g,'.')
- .replace(/[\u2600-\u27BF\u{1F300}-\u{1FAFF}\uFE0F]/gu,'')
+ .replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Modifier}\u2600-\u27BF\u{1F300}-\u{1FAFF}\uFE0F\u200D\u20E3]/gu,'')
+ .replace(/\s+([:;,.?])/g,'$1')
 const asCopy=(kind:string,tag:string,title:string,body:string):NoticeCopy=>({
  kind,tag,title:notifyTitle(toneSafe(title)),body:notifyBody(toneSafe(body))
 })
