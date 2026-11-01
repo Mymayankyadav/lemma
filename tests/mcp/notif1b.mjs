@@ -111,6 +111,8 @@ try{
  const malformedUndo='9'.repeat(50)
  await assert.rejects(act(result.confirmId,'undo',{action:malformedUndo}),/bad_action/,
    'an out-of-range action number must fail closed with the documented error')
+ await assert.rejects(act(result.confirmId,'undo',{action:'9999999999999999999'}),/bad_action/,
+   'a 19-digit value beyond signed bigint range must also fail closed')
  assert.equal((await q('select action from public.notifications where id=$1',[result.confirmId]))[0].action,null,
    'invalid undo must roll back its single-use claim')
  const undo=await act(result.confirmId,'undo',{action:result.action})
