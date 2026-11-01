@@ -35,6 +35,24 @@ test('FIX-659e long content bypasses the title cache and is always sanitized',()
  expect(renderMarkdown).toHaveBeenCalledTimes(2)
 })
 
+test('FIX-659e does not retain oversized expanded KaTeX HTML',()=>{
+ const source='FIX-659e oversized $\\\\frac{a}{b}
+ const source='$\\fieldcache$'
+ renderMarkdown(source,{macros:'\\newcommand{\\fieldcache}{\\mathbb{F}}',inline:true})
+ const actual=renderInlineTex(source)
+ const doc=new DOMParser().parseFromString(actual,'text/html')
+ expect(doc.querySelector('math mtext')?.textContent).toBe('\\fieldcache')
+ expect(doc.querySelector('math mi')).toBeNull()
+})
+
+ vi.mocked(renderMarkdown).mockImplementationOnce(()=>'<span>'+('x'.repeat(25_000))+'</span>')
+ const first=renderInlineTex(source)
+ const second=renderInlineTex(source)
+ expect(first.length).toBeGreaterThan(24_000)
+ expect(second).toContain('katex')
+ expect(renderMarkdown).toHaveBeenCalledTimes(2)
+})
+
 test('FIX-659e cached default title cannot inherit a previous custom macro preamble',()=>{
  const source='$\\fieldcache$'
  renderMarkdown(source,{macros:'\\newcommand{\\fieldcache}{\\mathbb{F}}',inline:true})
