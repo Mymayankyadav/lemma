@@ -1,0 +1,4 @@
+/* Literal labels must retain the same wrapping contract as Tex even when
+ * the full KaTeX/Markdown stylesheet is loaded only for rich content. */
+.lemma-tex-inline { display:inline; max-width:100%; overflow-wrap:anywhere; }
+.lemma-math { min-width:0; overflow-wrap:anywhere; }
