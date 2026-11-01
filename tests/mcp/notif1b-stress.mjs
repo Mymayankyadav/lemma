@@ -38,9 +38,11 @@ try{
  await q(`insert into public.cards(user_id,note_id,ord,state,due)
  select $1,id,1,2,now()-interval '1 day' from public.notes where user_id=$1`,[owner])
  await db.exec('alter table public.notes enable trigger lemma_log_change;alter table public.cards enable trigger lemma_log_change')
+ await db.exec('alter table public.checkpoints disable trigger lemma_log_change')
  await q(`insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps,due_on)
  select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,current_date+1
  from public.projects p cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner])
+ await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
  let queryCount=0
