@@ -68,8 +68,13 @@ for(const width of [360,390] as const){
   await expect(page.getByRole('switch',{name:'Mix decks'})).toBeDisabled()
   const start=page.getByRole('button',{name:/Start review, needs a connection/})
   await expect(start).toHaveAttribute('aria-disabled','true')
-  await start.click()
+  // aria-disabled correctly tells assistive tech this is unavailable, so
+  // Playwright's actionability layer refuses locator.click(). A real browser
+  // still dispatches DOM clicks on aria-disabled (not native-disabled) buttons;
+  // invoke that path to prove the mutation guard shows its toast and does not start.
+  await start.evaluate((button:HTMLButtonElement)=>button.click())
   await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
+  await expect(page).toHaveURL(/#\/review$/)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
   await page.screenshot({path:`test-results/screens/and-8/offline-${profile}-${theme}-${width}.png`})
   await context.setOffline(false)
