@@ -14,6 +14,7 @@ import type {
 } from "../api";
 import { LemmaError } from "../api";
 import { makeDemoNotifyData } from "./notify-fixture";
+import { mergeNotifyPrefs } from "../notify";
 import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
 import type {
   AtlasGraph,
@@ -493,16 +494,8 @@ export class DemoAdapter implements LemmaApi {
         "notify",
       ]);
       const value = { ...this.store.settings, ...clone(patch) };
-      if (patch.notify && typeof patch.notify === 'object') {
-        const before = this.store.settings.notify ?? {};
-        value.notify = {
-          ...before, ...clone(patch.notify),
-          ...(patch.notify.kinds ? {kinds:{...before.kinds,...patch.notify.kinds}} : {}),
-          ...(patch.notify.quiet ? {quiet:{...before.quiet,...patch.notify.quiet}} : {}),
-          ...(patch.notify.digest ? {digest:{...before.digest,...patch.notify.digest}} : {}),
-          ...(patch.notify.backoff ? {backoff:{...before.backoff,...patch.notify.backoff}} : {}),
-        };
-      }
+      if (patch.notify && typeof patch.notify === 'object')
+        value.notify = mergeNotifyPrefs(this.store.settings.notify,patch.notify);
       if (
         value.desiredRetention < 0.8 ||
         value.desiredRetention > 0.97 ||
