@@ -32,4 +32,18 @@ describe('FIX #507 cold Today goal-summary entry',()=>{
   expect(fast).toContain("showRest?'Show fewer':'Show all '+rest.length+' projects'")
   expect(fast).toContain("lazy(()=>import('./GoalCard'))")
  })
+
+ it('preserves merged LOOK-5b quiet ink and removes duplicate Today Projects in the fast path',()=>{
+  const fast=readFileSync('src/features/home/FastGoalDistance.tsx','utf8')
+  const regular=readFileSync('src/features/home/GoalDistance.tsx','utf8')
+  const page=readFileSync('src/features/home/Page.tsx','utf8')
+  // Passive percentages, section navigation and Show all are not red-pencil
+  // marks. The large-desk optimized path must match the audited small desk.
+  expect(fast).toContain('text-title-s tabular-nums text-ink-2')
+  expect(fast).toContain('text-label text-ink-2 underline underline-offset-4')
+  expect(fast).toContain('aria-expanded={showRest} className="min-h-11 w-full text-label text-ink-2"')
+  expect(regular).toContain('text-label text-ink-2 underline underline-offset-4')
+  expect(page).not.toContain('function ProjectLink(')
+  expect(page).not.toContain('<section aria-label="Projects"')
+ })
 })
