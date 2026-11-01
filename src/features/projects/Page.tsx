@@ -112,10 +112,10 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 
 export default function Page(){
  const queryClient=useQueryClient();
- // The 2,500-idea demo Atlas must not compete with first paint of Paths.
- // Warm its module and canonical data query on genuine Atlas navigation
- // intent (hover, keyboard focus, or touch/pointer down), not on mount.
- // Live Paths never issues an extra Atlas network request.
+ // Cards is the common next stop from Paths. Warm its small route chunk
+ // asynchronously during the unthrottled Paths visit, without evaluating
+ // Cards in the cold Today/Atlas entry bundle or issuing a Cards data query.
+ useEffect(()=>{void import('../cards/Page').catch(()=>{})},[]);
  const warmAtlas=useCallback(()=>{
   if(getMode()!=='demo')return;
   void import('../atlas/Page');
