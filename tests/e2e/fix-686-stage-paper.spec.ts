@@ -25,6 +25,7 @@ for(const width of [360,390] as const){
   await expect(rows.first()).toBeVisible();
   for(const row of await rows.all()){
    await expect(row.locator('[data-cp-status-icon]')).toHaveCount(1);
+   expect((await row.locator('[data-cp-status-icon]').textContent())??'').not.toMatch(/up next|locked|re-check|in progress|proposed|done/i);
    expect(await row.getAttribute('aria-label')).toMatch(/, (done|re-check|in progress|up next|locked|proposed)$/);
   }
   const toggle=stages.locator(':scope > button[aria-expanded="true"]').first();
