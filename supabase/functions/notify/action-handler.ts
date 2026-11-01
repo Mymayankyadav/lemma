@@ -11,7 +11,7 @@ export interface NotifyActDeps {
  rpc:(args:NotifyActArgs)=>Promise<{data:unknown;error?:{message:string}|null}>;
  nowSeconds?:number;
 }
-export interface NotifyActResponse {status:200|400|409|410|503;body:Record<string,unknown>}
+export interface NotifyActResponse {status:200|400|401|409|410|503;body:Record<string,unknown>}
 const reply=(status:NotifyActResponse['status'],body:Record<string,unknown>):NotifyActResponse=>({status,body});
 const recover=(action:string)=>action==='undo'?'Open Lemma to undo':'Open Lemma to finish';
 function positiveId(value:unknown):number|null{
@@ -40,6 +40,8 @@ export async function handleActionRequest(input:unknown,deps:NotifyActDeps):Prom
  catch(error){
   if(error instanceof ActionTokenError&&error.status===410)
    return reply(410,{message:'Notification action expired'});
+  if(error instanceof ActionTokenError&&error.status===401)
+   return reply(401,{message:'Invalid notification action'});
   return reply(400,{message:'Invalid notification action'});
  }
  let data:unknown;
