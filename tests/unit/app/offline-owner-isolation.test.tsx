@@ -53,9 +53,6 @@ const snapshot=(title:string):Snapshot=>{
  const savedAt=Date.now()
  return {v:1,savedAt,entries:[{key:['home'],data:{title},savedAt}]}
 }
-async function flush(){
- await act(async()=>{for(let i=0;i<8;i++)await Promise.resolve()})
-}
 afterEach(()=>{
  auth.id='owner-a'
  auth.callback=null
@@ -110,9 +107,8 @@ test('AND-8 authenticated A to B switch never hydrates A into B; sign-out erases
   // A later account cannot accidentally resurrect B from either cache.
   auth.id='owner-a'
   await act(async()=>{auth.callback?.('SIGNED_IN',{user:{id:'owner-a'}})})
-  await flush()
+  await vi.waitFor(()=>expect(offline.reads.at(-1)).toBe('owner-a'),{timeout:4000})
   expect(queryClient.getQueryData(['home'])).toBeUndefined()
-  expect(offline.reads.at(-1)).toBe('owner-a')
  }finally{
   await act(async()=>root.unmount())
   router.dispose()
