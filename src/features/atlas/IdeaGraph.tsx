@@ -116,7 +116,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
     </p>}
    </div>}
   </Sheet>
-  <div className="relative overflow-hidden rounded-ctl border border-edge" style={{background:'var(--paper)'}} role="tree" aria-label={label}>
+  <div className="relative rounded-ctl border border-edge" style={{background:'var(--paper)'}} role="tree" aria-label={label}>
    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
     return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false} focused={!!focus}
      onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id);setDetails(false)}}/>})}
