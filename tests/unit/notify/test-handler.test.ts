@@ -58,6 +58,21 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   }
   expect(send).not.toHaveBeenCalled();
  });
+ it('never forwards malformed or insecure push subscriptions to the transport',async()=>{
+  for(const subscription of [
+   null,{},
+   {endpoint:'http://push.example.test/sub',keys:{p256dh:'pub',auth:'auth'}},
+   {endpoint:'https://user:pass@push.example.test/sub',keys:{p256dh:'pub',auth:'auth'}},
+   {endpoint:'https://push.example.test/sub#fragment',keys:{p256dh:'pub',auth:'auth'}},
+   {endpoint:'https://push.example.test/sub',keys:{p256dh:'',auth:'auth'}},
+   {endpoint:'https://push.example.test/sub',keys:{p256dh:'pub',auth:''}},
+  ]){
+   loadDevice.mockResolvedValueOnce({...record,subscription});
+   expect(await handleTestPushRequest('Bearer token',{deviceId:device},deps))
+    .toEqual({status:503,body:{message:'Could not send test reminder'}});
+  }
+  expect(send).not.toHaveBeenCalled();
+ });
  it('fails closed if delivery secrets are missing, without calling auth or database',async()=>{
   expect(await handleTestPushRequest('Bearer token',{deviceId:device},{...deps,configured:false}))
    .toEqual({status:503,body:{message:'Reminders are not set up yet'}});
