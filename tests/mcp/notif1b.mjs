@@ -160,8 +160,8 @@ try{
  ]
  for(const [label,at,zone,rollover,study,expected] of nextStudyCases){
   const actual=(await q(
-   'select public.notify_next_study_at($1::timestamptz,$2,$3,$4::time) at',
-   [at,zone,rollover,study]))[0].at
+   'select public.notify_next_study_at($1::timestamptz,$2,$3,$4::time) as target_at',
+   [at,zone,rollover,study]))[0].target_at
   assert.equal(new Date(actual).toISOString(),expected,label)
  }
  console.log('PASS NOTIF-1b fixed study-day rollover and London DST boundary cases')
