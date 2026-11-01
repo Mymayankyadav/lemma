@@ -81,9 +81,14 @@ export function ResumeCard({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:
  </div>;
 }
 
-/** One paper row replaces oversized summary tiles and the stacked deck bar.
- * Estimate is explicitly approximate: about thirty seconds per due card.
- */
+/** Approximate study time at thirty seconds per due card, with a readable
+ * unit for stress-sized queues. This is an estimate, not a scheduling promise. */
+export function estimatedReviewTime(due:number):string{
+ const minutes=Math.max(1,Math.round(Math.max(0,due)/2));
+ return minutes<90?'about '+minutes+' min':'about '+Math.round(minutes/60)+' h';
+}
+
+/** One paper row replaces oversized summary tiles and the stacked deck bar. */
 export function ReviewDesk({due}:{due:number}){
  const hasDue=due>0;
  return <section aria-label="Review" className="flex min-w-0 flex-col gap-3">
@@ -91,7 +96,7 @@ export function ReviewDesk({due}:{due:number}){
   <Slab className="flex min-w-0 items-center gap-3 p-3">
    {hasDue?<div className="min-w-0 shrink-0">
     <p className="text-body font-semibold tabular-nums text-ink">{formatCount(due)} <span className="text-label font-normal text-ink-2">due</span></p>
-    <p className="text-caption text-ink-3">about {Math.max(1,Math.round(due/2))} min</p>
+    <p className="text-caption text-ink-3">{estimatedReviewTime(due)}</p>
    </div>:<div className="flex min-w-0 flex-1 items-start gap-2">
     <Check size={20} aria-hidden="true" className="mt-1 shrink-0" style={{color:'var(--early)'}}/>
     <div className="min-w-0">
