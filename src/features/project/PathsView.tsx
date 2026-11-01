@@ -49,7 +49,7 @@ export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'m
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
      <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
-    <div className="flex shrink-0 flex-col items-end gap-1"><strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-amber">{pct}%</strong>
+    <div className="flex shrink-0 flex-col items-end gap-1"><strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-ink-2">{pct}%</strong>
      {headline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{headline}</span>}</div>
    </div>
    <section aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
@@ -69,7 +69,7 @@ export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'m
      className="font-semibold text-ink">{displayDate(estimate.finish)}</time></span>}
     {estimate.finish&&<span>{estimate.source==='plan'?'from your plan':'measured pace'}{estimate.pace!==null?' · '+estimate.pace.toFixed(2)+'/wk':''}</span>}
     {target&&<span className="basis-full">
-     <span className="font-semibold text-amber">{project.targetLabel??'Target'}:</span>{' '}
+     <span className="font-semibold text-ink-2">{project.targetLabel??'Target'}:</span>{' '}
      <time dateTime={project.targetDate!}>{displayDate(target)}</time>
      {estimate.spare!==null&&<span className={estimate.spare>=0?'text-easy':'text-hard'}>
       {' · '+(estimate.spare>=0?estimate.spare+' days spare':Math.abs(estimate.spare)+' days late')}
@@ -90,9 +90,9 @@ function StatusGlyph({ui}:{ui:CheckpointUi}){
  return <Icon size={16} strokeWidth={1.8} aria-hidden="true"/>;
 }
 const marks:Record<CheckpointUi,string>={
- done:'border-amber bg-amber',revisit:'border-hard bg-amber-tint',
+ done:'border-ink-2 bg-ink-2',revisit:'border-hard bg-amber-tint',
  now:'border-[3px] border-amber bg-raised',next:'border-ink-2 bg-raised',
- locked:'border-dotted border-edge-3 opacity-70',proposed:'border-dashed border-amber'
+ locked:'border-dotted border-edge-3 opacity-70',proposed:'border-dashed border-ink-3'
 };
 
 function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;open:boolean;onToggle:()=>void;schedule:Map<string,ScheduledCheckpoint>}){
@@ -111,7 +111,7 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
    <ChevronRight size={16} aria-hidden="true" className={'shrink-0 text-ink-3 transition-transform '+(open?'rotate-90':'')}/>
    <strong className="min-w-0 flex-1 break-words font-[var(--font-display)] text-headline font-semibold"><Tex source={stage.name}/></strong>
    <span role="img" aria-label={progress+' percent complete'} className="h-1 w-16 shrink-0 overflow-hidden rounded-[1px] bg-fill-2">
-    <span className="block h-full bg-amber" style={{width:progress+'%'}}/>
+    <span className="block h-full bg-ink-2" style={{width:progress+'%'}}/>
    </span>
    <span className="w-9 shrink-0 text-right text-label tabular-nums text-ink-2">{done}/{total}</span>
   </button>
@@ -119,7 +119,7 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
    {open&&finished.length>0&&<button type="button" data-done-summary=""
     aria-expanded={showFinished} onClick={()=>setShowFinished(value=>!value)}
     className="flex min-h-11 w-full items-center justify-between rounded-ctl border-t border-edge px-2 text-left text-label text-ink-2">
-    <span>{finished.length} done ✓</span><span className="text-amber">{showFinished?'Hide':'Show'}</span>
+    <span>{finished.length} done ✓</span><span className="text-ink-2">{showFinished?'Hide':'Show'}</span>
    </button>}
    {rows.map((cp,index)=><Link key={cp.id} to={'/p/'+slug+'/cp/'+encodeURIComponent(cp.code)}
     data-cp-row="" aria-label={cp.code+' '+cp.title+', '+labels[cp.ui]}
