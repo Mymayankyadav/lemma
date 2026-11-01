@@ -22,4 +22,13 @@ describe('strict C2/D6 loaded-fixture transition precondition (FIX #604)',()=>{
   expect(source).toContain('[data-mini-route]')
   expect(source).toContain('toBeVisible')
  })
+
+ it('D6 first-attempt performance failures cannot pass through CI retries',()=>{
+  const source=readFileSync(join(process.cwd(),'tests/e2e/st-4.spec.ts'),'utf8')
+  const d6=source.slice(source.indexOf('// D6 acceptance:'))
+  expect(d6,'D6 block must exist').toContain('ST-4 extreme cards open under 1s')
+  expect(d6,'strict D6 budget must disable global Playwright retries').toContain('test.describe.configure({retries:0})')
+  expect(d6,'retain the original 4x throttle').toContain("await cdp.send('Emulation.setCPUThrottlingRate',{rate:4})")
+  expect(d6,'retain the original 1000ms first-attempt budget').toContain('.toBeLessThan(1000)')
+ })
 })
