@@ -64,6 +64,8 @@ for(const width of [360,390] as const){
   await expect(page.getByRole('button',{name:'Copy connector address'})).toHaveCount(0)
   await page.evaluate(()=>{window.location.hash='/review'})
   await expect(page.getByText('Reviewing needs a connection')).toBeVisible()
+  await expect(page.getByRole('region',{name:'Decks'})).toBeVisible()
+  await expect(page.getByRole('switch',{name:'Mix decks'})).toBeDisabled()
   const start=page.getByRole('button',{name:/Start review, needs a connection/})
   await expect(start).toHaveAttribute('aria-disabled','true')
   await start.click()
