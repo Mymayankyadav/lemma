@@ -20,12 +20,19 @@ for(const width of [360,390] as const){
   const visibleCircle=(node:typeof added)=>node.locator("circle").nth(1);
   // Existing prerequisite edges remain dashed. Changed nodes keep their
   // separate dashed/weighted distinction, but none is selected by default.
-  expect(await map.locator("line[stroke-dasharray='3 4']").count()).toBeGreaterThan(0);
+  const prerequisites=map.locator("line[stroke-dasharray='3 4']");
+  expect(await prerequisites.count()).toBeGreaterThan(0);
+  for(const edge of await prerequisites.all()){
+   await expect(edge,"Passive prerequisite links must not use a red alias")
+    .toHaveAttribute("stroke","var(--line)");
+  }
   await expect(visibleCircle(added)).toHaveAttribute("stroke-dasharray","4 3");
   await expect(visibleCircle(updated)).toHaveAttribute("stroke-width","2");
   for(const node of await map.getByRole("button",{name:/^Select CP/}).all()){
-   await expect(visibleCircle(node),"Unselected checkpoint must not use red pencil")
-    .not.toHaveAttribute("stroke","var(--amber)");
+   // A non-red alias is required: --amber-line-2 is red in both Graph
+   // themes even though its literal attribute is not --amber.
+   await expect(visibleCircle(node),"Every passive ring must be graphite/neutral, not a red alias")
+    .toHaveAttribute("stroke",/^var\(--(?:ink-3|line)\)$/);
    const hit=await node.locator("circle").first().getAttribute("r");
    expect(Number(hit)*2,"Every map hit target remains at least 44px").toBeGreaterThanOrEqual(44);
   }
