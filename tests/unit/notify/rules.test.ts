@@ -103,6 +103,17 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(choose([{...plan,lastSentAt:now-2*HOUR,targetTransitionAt:now-HOUR}])[0].status).toBe('send')
   expect(choose([{...plan,lastSentAt:now-2*HOUR,targetTransitionAt:now-3*HOUR}])[0]).toMatchObject({status:'skipped',reason:'resolved'})
  })
+ it('enforces one K4 per study day even across paused sessions',()=>{
+  const resume:ReminderCandidate={kind:'resume',key:'resume:s2',pausedSince:now-20*HOUR,sessionSends:0,sentToday:1}
+  expect(choose([resume])[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+  expect(choose([{...resume,sentToday:0}])[0].status).toBe('send')
+ })
+ it('enforces the K5 two-hour kind cap without hiding new tutor work',()=>{
+  const tutor:ReminderCandidate={kind:'tutor',key:'tutor:new',newestProposalAt:now-15*60_000,lastSentAt:now-90*60_000}
+  expect(choose([tutor])[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+  expect(choose([{...tutor,lastSentAt:now-2*HOUR}])[0].status).toBe('send')
+  expect(choose([{...tutor,lastSentAt:now-3*HOUR}],{lastSendAt:now-30*60_000})[0]).toMatchObject({status:'suppressed',reason:'spacing'})
+ })
  it('limits K4 to two per paused session and waits 18 hours',()=>{
   const resume:ReminderCandidate={kind:'resume',key:'resume:s1',pausedSince:now-17*3_600_000}
   expect(choose([resume])[0]).toMatchObject({status:'defer',reason:'frequency'})
