@@ -3,7 +3,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {getApi} from '../../data/index';
 import {groupReviewSessions,shouldFetchReviewSessions} from './session-demand';
-import {notificationRoundCap} from './notification-limit';
+import {notificationRoundCap,notificationQueueSettings} from './notification-limit';
 import {useLocation,useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
 import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useInsightData} from '../../data/hooks';
@@ -138,7 +138,7 @@ export default function Page(){
    .slice(0,notificationRoundCap(settings.data.reviewsPerDay,notificationLimit));
   if(!chosen.length)return notify(notificationLimit===undefined?'No cards due in this selection':'All clear');
   const target=home.data?.resume;
-  useReviewSession.getState().initialize(chosen,settings.data,filter,
+  useReviewSession.getState().initialize(chosen,notificationQueueSettings(settings.data,notificationLimit),filter,
    target?{projectSlug:target.projectSlug,checkpointCode:target.checkpointCode}:undefined);
   const qs=new URLSearchParams();
   if(sessionId)qs.set('session',sessionId);
