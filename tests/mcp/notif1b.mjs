@@ -121,7 +121,15 @@ try{
  const notToday=await notify('rhythm','rhythm:today')
  assert.equal((await act(notToday,'not_today',{scope:'rhythm'})).status,'done')
  assert.equal((await q('select count(*)::int n from public.notify_holds where user_id=$1 and scope=$2',[owner,'rhythm']))[0].n,1)
- console.log('PASS NOTIF-1b Later and Not today owner-scoped holds')
+ const holdHours=async(scope)=>Number((await q(
+   'select extract(epoch from ("until"-now()))/3600 as hours from public.notify_holds where user_id=$1 and scope=$2',
+   [owner,scope]))[0].hours)
+ assert.ok((await holdHours('due'))>1.9&&(await holdHours('due'))<2.1)
+ assert.ok((await holdHours('rhythm'))>71.9&&(await holdHours('rhythm'))<72.1)
+ const tutorLater=await notify('tutor','tutor:later')
+ assert.equal((await act(tutorLater,'later',{scope:'tutor'})).status,'done')
+ assert.ok((await holdHours('tutor'))>2.9&&(await holdHours('tutor'))<3.1)
+ console.log('PASS NOTIF-1b Later (due 2h, tutor 3h) and Not today (rhythm 3d) holds')
 
  await db.exec('reset role')
  const privilegeBefore=await q(`select grantee,privilege_type,routine_name from information_schema.role_routine_grants
