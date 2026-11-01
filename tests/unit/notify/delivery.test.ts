@@ -107,7 +107,7 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
    'https://hidden.onion/sub','https://printer/sub',
    'https://127.1/sub','https://0x7f000001/sub',
    'https://2130706433/sub','https://[fd00::1]/sub',
-   'https://push.example.com/\\nsub',
+   'https://push.example.com/\nsub',
   ]){
    expect(await sendWebPush({...base,subscription:{...base.subscription,endpoint}},fetcher),endpoint)
     .toEqual({status:'failed'});
