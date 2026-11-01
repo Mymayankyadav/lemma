@@ -12,5 +12,10 @@ describe('FIX #507 defer below-the-fold review outlook',()=>{
   expect(page).toMatch(/lazy\(\(\)\s*=>\s*import\(['"]\.\/ReviewOutlook['"]\)/)
   expect(page).toContain('aria-label="Seven-day review forecast"')
   expect(page).toContain('<ReviewOutlook/>')
+  // Deferral must not strand a pulsing skeleton below the fold. There is a
+  // real keyboard-operable reveal action even without IntersectionObserver.
+  expect(page).toContain('Show seven-day forecast')
+  expect(page).toContain('onClick={()=>setMounted(true)}')
+  expect(page).not.toContain('const loading=<div aria-label="Seven-day review forecast" role="status" className="min-h-20"><Skeleton h={80}/></div>')
  });
 });
