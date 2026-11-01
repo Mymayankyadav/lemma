@@ -35,7 +35,7 @@ function usableSubscription(value:unknown):boolean{
  const subscription=value as Record<string,unknown>;
  const endpoint=subscription.endpoint;
  const keys=subscription.keys;
- if(typeof endpoint!=='string'||endpoint.length>4096||/[\\x00-\\x20\\x7f]/u.test(endpoint))return false;
+ if(typeof endpoint!=='string'||endpoint.length>4096||/[\x00-\x20\x7f]/u.test(endpoint))return false;
  if(!keys||typeof keys!=='object'||Array.isArray(keys))return false;
  const {p256dh,auth}=keys as Record<string,unknown>;
  if(typeof p256dh!=='string'||!p256dh||p256dh.length>1024||
