@@ -17,7 +17,7 @@ export function queueDecision(comments,ticketId,attemptStatuses){
  const seen=new Set();
  for(const ticket of tickets){
   if(ticket.id>=own.id)break;
-  if(ticket.kind!=='START'||seen.has(ticket.key))continue;
+  if(ticket.kind!=='START'||ticket.key===own.key||seen.has(ticket.key))continue;
   seen.add(ticket.key);
   if(!finished.has(ticket.key)&&attemptStatuses[ticket.key]!=='completed')
    waitingOn.push(ticket.key);
