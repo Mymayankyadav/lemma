@@ -34,6 +34,16 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(choose([due,daily],{mode:'daily'}).find(r=>r.status==='send')?.candidate.key).toBe('digest:daily')
   expect(choose([daily],{mode:'as-happens'})[0].reason).toBe('mode')
  })
+ it('caps digests by local period, not 24/168 elapsed hours across DST',()=>{
+  const daily:ReminderCandidate={kind:'digest',key:'digest:daily',period:'daily',
+   lastSentAt:now-23*HOUR,periodKey:'2026-03-29',lastSentPeriodKey:'2026-03-28'}
+  expect(choose([daily],{mode:'daily'})[0].status).toBe('send')
+  expect(choose([{...daily,lastSentAt:now-25*HOUR,lastSentPeriodKey:'2026-03-29'}],{mode:'daily'})[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+  const weekly:ReminderCandidate={kind:'digest',key:'digest:weekly',period:'weekly',
+   lastSentAt:now-167*HOUR,periodKey:'2026-W13',lastSentPeriodKey:'2026-W12'}
+  expect(choose([weekly],{mode:'weekly'})[0].status).toBe('send')
+  expect(choose([{...weekly,lastSentAt:now-169*HOUR,lastSentPeriodKey:'2026-W13'}],{mode:'weekly'})[0]).toMatchObject({status:'suppressed',reason:'frequency'})
+ })
  it('handles quiet hours crossing midnight, equal endpoints and deterministic offset',()=>{
   const late={...base,now:Date.UTC(2026,10,1,18,0)} // 23:30 in Kolkata
   const until=quietUntil(late,'due:1')
