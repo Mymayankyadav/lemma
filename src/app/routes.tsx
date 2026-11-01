@@ -13,7 +13,8 @@ const Page9=lazy(()=>import('../features/review-run/Page'))
 const Page10=lazy(()=>import('../features/review-done/Page'))
 const Page11=lazy(()=>import('../features/cards/Page'))
 const Page12=lazy(()=>import('../features/card/Page'))
-import Page13 from '../features/atlas/Page'
+// Atlas stays off cold Today/Paths entry; direct deep links preload in main.tsx.
+const Page13=lazy(()=>import('../features/atlas/Page'))
 const Page14=lazy(()=>import('../features/insights/Page'))
 const Page15=lazy(()=>import('../features/settings/Page'))
 const Page16=lazy(()=>import('../features/sign-in/Page'))
