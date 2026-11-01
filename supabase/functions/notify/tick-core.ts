@@ -100,6 +100,9 @@ export async function runNotifyTick(
     if(controller.signal.aborted)break;
     const decisions=decideNotifications(facts.candidates,{...facts.context,now});
     const queued=await within(deps.queue(userId,decisions,controller.signal));
+    // An adapter can resolve in the same turn as external cancellation.
+    // Never credit or start a delivery after the owner-bound signal aborts.
+    if(controller.signal.aborted)break;
     if(!safeCount(queued,decisions.length))throw Error('Invalid queued count');
     summary.queued+=queued;
     summary.skipped+=decisions.filter(row=>row.status==='skipped'||row.status==='suppressed').length;
@@ -109,6 +112,7 @@ export async function runNotifyTick(
     if(controller.signal.aborted)break;
     if(remaining<=0)continue;
     const delivery=await within(deps.deliver(userId,remaining,controller.signal));
+    if(controller.signal.aborted)break;
     if(!delivery||!safeCount(delivery.attempted,remaining)||
        !safeCount(delivery.sent,delivery.attempted)||
        !safeCount(delivery.failed,delivery.attempted)||
