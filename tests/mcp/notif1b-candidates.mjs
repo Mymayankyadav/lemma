@@ -9,11 +9,11 @@ const db=new PGlite()
 // The existing behavioral tests below verify the exact 20-row ordering,
 // distinct-project priority and fallback fill semantics.
 const reuseSql=await readFile(new URL('../../supabase/migrations/20261102052000_notify_candidates_ranked_reuse.sql',import.meta.url),'utf8')
-const tomorrowExtras=reuseSql.match(/tomorrow_extras as \\(\\s*([\\s\\S]*?)\\n\\),\\ntomorrow_rows as \\(/)?.[1]
+const tomorrowExtras=reuseSql.match(/tomorrow_extras as \(\s*([\s\S]*?)\n\),\ntomorrow_rows as \(/)?.[1]
 assert.ok(tomorrowExtras,'K2 extras CTE must exist in the new migration')
-assert.match(tomorrowExtras,/from tomorrow_ranked\\b/,'K2 extras must reuse eligible ranked checkpoints')
-assert.doesNotMatch(tomorrowExtras,/\\b(?:from|join) public\\.checkpoints\\b/i,'K2 extras must not rescan all checkpoints')
-assert.match(tomorrowExtras,/limit \\(select greatest\\(20-count\\(\\*\\),0\\) from tomorrow_primary\\)/i,'K2 extras retains the exact 20-row bound')
+assert.match(tomorrowExtras,/from tomorrow_ranked\b/,'K2 extras must reuse eligible ranked checkpoints')
+assert.doesNotMatch(tomorrowExtras,/\b(?:from|join) public\.checkpoints\b/i,'K2 extras must not rescan all checkpoints')
+assert.match(tomorrowExtras,/limit \(select greatest\(20-count\(\*\),0\) from tomorrow_primary\)/i,'K2 extras retains the exact 20-row bound')
 const owner='11111111-1111-1111-1111-111111111111'
 const other='99999999-9999-9999-9999-999999999999'
 const subject='22222222-2222-2222-2222-222222222222'
