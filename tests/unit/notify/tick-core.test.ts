@@ -48,6 +48,13 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   expect(deps.queue).toHaveBeenCalledTimes(2);
   expect(result).toMatchObject({owners:2,queued:2,sent:45,failed:5});
  });
+ it('allows a queue-only tick with zero sends while still persisting decisions',async()=>{
+  const deps=adapters([A,B]);
+  const result=await runNotifyTick(deps,{now:NOW,maxSends:0});
+  expect(result).toMatchObject({owners:2,queued:2,sent:0,failed:0});
+  expect(deps.queue).toHaveBeenCalledTimes(2);
+  expect(deps.deliver).not.toHaveBeenCalled();
+ });
  it('isolates owner errors and rejects malformed counts without reporting false success',async()=>{
   const deps=adapters([A,B]);
   vi.mocked(deps.load).mockRejectedValueOnce(Error('private endpoint and secret'));
