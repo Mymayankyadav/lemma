@@ -14,6 +14,7 @@ const offline=vi.hoisted(()=>({
  snapshots:new Map<string,{v:1;savedAt:number;entries:{key:string[];data:unknown;savedAt:number}[]}>(),
  reads:[] as string[],
  deletes:[] as string[],
+ delayed:new Map<string,Promise<unknown>>(),
 }))
 vi.mock('../../../src/data/mode',()=>({getMode:()=> 'live',getDemoProfile:()=> 'default'}))
 vi.mock('../../../src/data/live/client',()=>({
@@ -29,7 +30,7 @@ vi.mock('../../../src/lib/offline-cache',()=>({
  isOfflineKey:(key:unknown[])=>key.length===1&&key[0]==='home',
  readOfflineSnapshot:async(owner:string)=>{
   offline.reads.push(owner)
-  return offline.snapshots.get(owner)??null
+  return offline.delayed.get(owner)??offline.snapshots.get(owner)??null
  },
  saveOfflineSnapshot:async()=>{},
  deleteOfflineSnapshot:async(owner:string)=>{
@@ -61,6 +62,7 @@ afterEach(()=>{
  offline.snapshots.clear()
  offline.reads.length=0
  offline.deletes.length=0
+ offline.delayed.clear()
 })
 
 test('AND-8 authenticated A to B switch never hydrates A into B; sign-out erases B',async()=>{
@@ -106,6 +108,48 @@ test('AND-8 authenticated A to B switch never hydrates A into B; sign-out erases
   await flush()
   expect(queryClient.getQueryData(['home'])).toBeUndefined()
   expect(offline.reads.at(-1)).toBe('owner-a')
+ }finally{
+  await act(async()=>root.unmount())
+  router.dispose()
+  host.remove()
+  queryClient.clear()
+  if(oldOnline)Object.defineProperty(navigator,'onLine',oldOnline)
+  else Reflect.deleteProperty(navigator,'onLine')
+  delete document.documentElement.dataset.offlineSavedAt
+ }
+})
+
+test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',async()=>{
+ Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
+ const oldOnline=Object.getOwnPropertyDescriptor(navigator,'onLine')
+ Object.defineProperty(navigator,'onLine',{configurable:true,value:false})
+ let finishA:(snapshot:Snapshot)=>void=()=>{}
+ offline.delayed.set('owner-a',new Promise<Snapshot>(resolve=>{finishA=resolve}))
+ offline.snapshots.set('owner-b',snapshot('Only B'))
+ const queryClient=new QueryClient({defaultOptions:{queries:{retry:false}}})
+ const router=createMemoryRouter([{element:<AppShell/>,children:[{path:'/',element:<p>Offline</p>}]}])
+ const host=document.createElement('div')
+ document.body.append(host)
+ const root=createRoot(host)
+ try{
+  await act(async()=>root.render(
+   <QueryClientProvider client={queryClient}><RouterProvider router={router}/></QueryClientProvider>
+  ))
+  await flush()
+  expect(offline.reads).toContain('owner-a')
+  expect(queryClient.getQueryData(['home'])).toBeUndefined()
+
+  auth.id='owner-b'
+  await act(async()=>{auth.callback?.('SIGNED_IN',{user:{id:'owner-b'}})})
+  await flush()
+  expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
+
+  // IndexedDB can resolve an earlier read after the account has changed.
+  // The identity check must discard that result rather than rehydrate A.
+  await act(async()=>{finishA(snapshot('Only A'))})
+  await flush()
+  expect(queryClient.getQueryData(['home'])).toEqual({title:'Only B'})
+  expect(offline.reads).toContain('owner-b')
  }finally{
   await act(async()=>root.unmount())
   router.dispose()
