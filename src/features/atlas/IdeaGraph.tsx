@@ -59,8 +59,13 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev);if(next.has(id))next.delete(id);else next.add(id);return next});
  const jump=(id:string)=>{
   setExpanded(prev=>new Set([...prev,...ancestors(tree,id)]));setSelectedId(id);setDetails(false);
-  requestAnimationFrame(()=>requestAnimationFrame(()=>box.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`)
-   ?.scrollIntoView({block:'nearest',behavior:'smooth'})));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   const row=box.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`);
+   row?.scrollIntoView({block:'nearest',behavior:'smooth'});
+   // A Details-sheet jump must restore keyboard focus to the newly selected
+   // idea, not the button in the sheet that has just unmounted.
+   row?.querySelector<HTMLButtonElement>('button:last-of-type')?.focus();
+  }));
  };
  const Names=({title,items,tone}:{title:string;items:AtlasNode[];tone:'up'|'down'|'related'})=>items.length?<p className="flex flex-wrap items-center gap-1.5">
   <span className="text-caption font-semibold" style={{color:toneColor[tone]}}>{title}</span>
