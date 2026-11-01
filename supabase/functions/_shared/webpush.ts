@@ -94,6 +94,7 @@ export async function createVapidAuthorization(endpoint:string,keys:VapidKeys,no
 export async function prepareWebPush(
  subscription:{endpoint:string;keys:{p256dh:string;auth:string}},payload:string,vapid:VapidKeys
 ):Promise<{body:Uint8Array;headers:Record<string,string>}>{
+ if(enc(payload).length>3072)throw new Error('Notification JSON payload exceeds 3 KB')
  const [body,auth]=await Promise.all([
   encryptPushMessage(payload,subscription.keys.p256dh,subscription.keys.auth),
   createVapidAuthorization(subscription.endpoint,vapid),
