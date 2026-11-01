@@ -20,6 +20,10 @@ describe('NOTIF-3b deterministic scheduling',()=>{
   expect(result.filter(r=>r.status==='send').map(r=>r.candidate.kind)).toEqual(['tutor'])
   expect(result.slice(1).every(r=>r.reason==='spacing')).toBe(true)
  })
+ it('does not evaluate timezone scheduling when reminders are off or empty',()=>{
+  expect(choose([], {timeZone:'Invalid/Zone'})).toEqual([])
+  expect(choose([due],{mode:'off',timeZone:'Invalid/Zone'})[0]).toMatchObject({status:'skipped',reason:'mode'})
+ })
  it('enforces the daily cap and one-hour spacing',()=>{
   expect(choose([due],{sendsToday:3})[0]).toMatchObject({status:'suppressed',reason:'cap'})
   expect(choose([due],{sendsToday:2})[0].status).toBe('send')
