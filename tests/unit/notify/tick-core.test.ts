@@ -88,6 +88,8 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   const deps=adapters([A]);
   vi.mocked(deps.load).mockImplementation(async()=>new Promise<ReturnType<typeof facts>>(()=>{}));
   const pending=runNotifyTick(deps,{now:NOW,maxMs:10});
+  await vi.advanceTimersByTimeAsync(0);
+  expect(deps.load).toHaveBeenCalledTimes(1);
   await vi.advanceTimersByTimeAsync(10);
   const result=await pending;
   expect(result).toMatchObject({owners:1,queued:0,sent:0,timedOut:true});
