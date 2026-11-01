@@ -70,6 +70,17 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   expect(rendered.body).toBe('A'.repeat(120))
   expect(rendered.body).not.toContain('NEVER-INCLUDE')
  })
+ it('strips Unicode flag, family, keycap and pictographic emoji while retaining mathematical text',()=>{
+  const examples=['Algebra 🇮🇳','Algebra 👨‍👩‍👧‍👦','Algebra 1️⃣','Algebra 🧮','Algebra 👍🏽']
+  for(const project of examples){
+   const rendered=notificationCopy({kind:'behind',project,code:'CP1',dueDate:'2 Nov'})
+   const combined=rendered.title+' '+rendered.body
+   expect(combined).not.toMatch(/[\\p{Regional_Indicator}\\p{Extended_Pictographic}\\p{Emoji_Modifier}\\u200D\\u20E3\\uFE0F]/u)
+   expect(combined).toContain('Algebra')
+  }
+  const math=notificationCopy({kind:'behind',project:'ℝ → ℂ',code:'CP1',dueDate:'2 Nov'})
+  expect(math.title).toContain('ℝ → ℂ')
+ })
  it('requires a checkpoint to construct a tomorrow reminder',()=>{
   expect(()=>notificationCopy({kind:'deadline',checkpoints:[]})).toThrow('Deadline requires a checkpoint')
  })
