@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest'
 import {QueryClient} from '@tanstack/react-query'
-import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient,mergeOfflineSnapshots,hydrateOfflineSnapshot,saveOfflineSnapshot} from '../../../src/lib/offline-cache'
+import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient,mergeOfflineSnapshots,hydrateOfflineSnapshot,saveOfflineSnapshot,stageOfflineHandoff,readOfflineHandoff,clearOfflineHandoff} from '../../../src/lib/offline-cache'
 import type {Settings} from '../../../src/data/types'
 import {canWriteOnline} from '../../../src/ui/useOnlineStatus'
 const now=Date.UTC(2026,10,1)
@@ -211,3 +211,36 @@ describe('AND-8 account-switch save race',()=>{
   }
  })
 })
+
+
+describe('AND-8 rapid full-page navigation handoff',()=>{
+ function memoryStorage():Storage{
+  const values=new Map<string,string>();
+  return {getItem:key=>values.get(key)??null,setItem:(key,value)=>{values.set(key,value)},
+   removeItem:key=>{values.delete(key)},clear:()=>values.clear(),key:index=>[...values.keys()][index]??null,
+   get length(){return values.size}} as Storage;
+ }
+ it('retains separately visited routes across reloads without exposing another owner',()=>{
+  const storage=memoryStorage();
+  stageOfflineHandoff('owner-a',['home'],{title:'Today'},now-3000,now,storage);
+  stageOfflineHandoff('owner-a',['projects'],[{slug:'real-analysis'}],now-2000,now,storage);
+  stageOfflineHandoff('owner-a',['project','real-analysis'],{title:'Analysis'},now-1000,now,storage);
+  expect(readOfflineHandoff('owner-a',now,storage)?.entries.map(e=>e.key.join(':')).sort())
+   .toEqual(['home','project:real-analysis','projects']);
+  expect(readOfflineHandoff('owner-b',now,storage)).toBeNull();
+  clearOfflineHandoff('owner-a',storage);
+  expect(readOfflineHandoff('owner-a',now,storage)).toBeNull();
+ });
+ it('stages only allowlisted, bounded, secret-free records and mode-only settings',()=>{
+  const storage=memoryStorage();
+  stageOfflineHandoff('owner-a',['settings'],settings,now,now,storage);
+  stageOfflineHandoff('owner-a',['auth'],{token:'SENTINEL-SECRET'},now,now,storage);
+  stageOfflineHandoff('owner-a',['decks'],[{title:'Safe',connectorUrl:'SENTINEL-SECRET'}],now,now,storage);
+  const raw=storage.getItem('lemma-offline-handoff:owner-a')??'';
+  expect(raw).not.toMatch(/SENTINEL-SECRET|connectorUrl|density|motion|token/);
+  const snapshot=readOfflineHandoff('owner-a',now,storage);
+  expect(snapshot?.entries.map(e=>e.key[0]).sort()).toEqual(['decks','settings']);
+  expect(snapshot?.entries.find(e=>e.key[0]==='settings')?.data).toEqual(projectOfflineSettings(settings));
+  expect(new TextEncoder().encode(raw).byteLength).toBeLessThanOrEqual(OFFLINE_MAX_BYTES);
+ });
+});
