@@ -49,4 +49,20 @@ describe('NOTIF-4b6a Edge CORS origin allowlist',()=>{
   }
  });
 
+ it('rejects unsupported preflight methods and privileged or malformed requested headers',()=>{
+  const origin='https://mymayankyadav.github.io';
+  for(const method of ['DELETE','PUT','PATCH','TRACE','POST,GET','']){
+   expect(notifyPreflight(origin,method,'authorization').status,method).toBe(403);
+  }
+  for(const headers of ['x-lemma-cron','authorization,x-lemma-cron','x-api-key','authorization,','authorization,,content-type']){
+   expect(notifyPreflight(origin,'POST',headers).status,headers).toBe(403);
+  }
+  for(const method of ['GET','POST','OPTIONS']){
+   expect(notifyPreflight(origin,method,'Authorization, Content-Type').status).toBe(204);
+  }
+  expect(notifyPreflight(origin,'POST','')).toEqual({
+   status:204,headers:notifyCorsHeaders(origin),
+  });
+ });
+
 });
