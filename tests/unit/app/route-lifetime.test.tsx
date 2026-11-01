@@ -1,6 +1,7 @@
 import {act, useEffect, useState} from 'react'
 import {createRoot} from 'react-dom/client'
 import {createMemoryRouter, RouterProvider} from 'react-router'
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query'
 import {expect,test,vi} from 'vitest'
 import AppShell from '../../../src/app/AppShell'
 const motionPreference=vi.hoisted(()=>({reduce:false}))
@@ -23,7 +24,8 @@ test.each([false,true])('incoming route mounts once through exit (reduced motion
  ]}])
  const host=document.createElement('div');document.body.append(host);const root=createRoot(host)
  try{
-  await act(async()=>root.render(<RouterProvider router={router}/>))
+  const client=new QueryClient()
+  await act(async()=>root.render(<QueryClientProvider client={client}><RouterProvider router={router}/></QueryClientProvider>))
   await act(async()=>{await router.navigate('/editor')})
   // The route may still be entering. Every editor that becomes interactive must
   // be the final editor, rather than a transient copy in the exiting wrapper.

@@ -40,7 +40,8 @@ export default function AppShell(){
    if(event.type==='updated'&&event.query.state.status==='success'&&isOfflineKey(event.query.queryKey))
     queueSave();
   });
-  const authSubscription=getMode()==='live'
+  let authSubscription:{unsubscribe:()=>void}|null=null;
+  try{authSubscription=getMode()==='live'
    ?liveClient().auth.onAuthStateChange((event,session)=>{
       if(event==='SIGNED_OUT'){
        if(saveTimer)clearTimeout(saveTimer);
@@ -52,6 +53,7 @@ export default function AppShell(){
        if(!navigator.onLine)void restore();else queueSave();
       }
      }).data.subscription:null;
+  }catch{/* AuthGate reports missing live configuration; no snapshot is opened. */}
   void (async()=>{
    try{
     identity=getMode()==='demo'?'demo-'+getDemoProfile():
