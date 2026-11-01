@@ -1229,6 +1229,7 @@ export class DemoAdapter implements LemmaApi {
   async getProject(slug: string): Promise<ProjectDetail> {
     const profile=this.virtualStressDue!==null;
     const started=profile?performance.now():0;
+    if(profile)performance.measure('lemma-stress-project-prequery',{start:0,end:started});
     const p = this.project(slug);
     // A direct project route needs one project's full detail, not all 30k
     // generated note objects. Reuse the exact bounded Paths summary while
