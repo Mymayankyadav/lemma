@@ -145,6 +145,7 @@ test('the ideas a plan adds fold into clusters and link to the checkpoints that 
  await expect(details).toContainText('Builds on');
  await expect(details).toContainText('Opens up');
  await expect(details).toContainText('Taught in');
+ await expect(details.getByRole('progressbar',{name:'Idea progress'})).toBeVisible();
  // Proposed ideas remain inside plan review: the checkpoint opens the local
  // drawer rather than navigating to an idea not yet in the approved Atlas.
  await details.getByRole('button',{name:'CP4a'}).click();
