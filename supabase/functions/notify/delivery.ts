@@ -46,11 +46,11 @@ export async function sendWebPush(
   return {status:'failed'};
  const id=payload.id;
  if(!(typeof id==='number'&&Number.isSafeInteger(id)&&id>0||
-      typeof id==='string'&&/^[1-9]\\d{0,18}$/.test(id))||
+      typeof id==='string'&&/^[1-9]\d{0,18}$/.test(id))||
     typeof payload.title!=='string'||payload.title.length<1||payload.title.length>48||
     typeof payload.body!=='string'||payload.body.length>140||
     typeof payload.url!=='string'||payload.url.length<1||payload.url.length>2048||
-    /^\\s*javascript:/i.test(payload.url))
+    /^\s*javascript:/i.test(payload.url))
   return {status:'failed'};
  let endpoint:URL;
  try{endpoint=new URL(subscription.endpoint)}
