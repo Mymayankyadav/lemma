@@ -436,8 +436,39 @@ export function budgetArcsUnfocused(
  if(all.length<=limit)return {visible:all.sort(bySpan).map(toArc),hidden:0};
  // Same stable insertion-order tiebreak as budgetArcs. Non-folded arcs are
  // intentionally hidden until the user selects a concept.
- const selected=new Set(all.filter(bundle=>bundle.folded)
-  .sort((a,b)=>bySpan(a,b)||a.index-b.index).slice(0,limit));
+ // Select only the best 60 folded arcs with a worst-first bounded heap.
+ // Sorting every one of 8,000 candidates on each first mount consumed CPU
+ // even though the gutter could never display more than the cap. Preserve
+ // the original stable insertion-order tiebreak for equal spans.
+ const span=(bundle:Bundle)=>Math.abs(bundle.to-bundle.from);
+ const worse=(a:Bundle,b:Bundle)=>span(a)<span(b)||(span(a)===span(b)&&a.index>b.index);
+ const heap:Bundle[]=[];
+ const siftUp=(index:number)=>{
+  while(index>0){
+   const parent=(index-1)>>1;
+   if(!worse(heap[index],heap[parent]))break;
+   [heap[index],heap[parent]]=[heap[parent],heap[index]];
+   index=parent;
+  }
+ };
+ const siftDown=()=>{
+  let index=0;
+  while(true){
+   const left=index*2+1,right=left+1;
+   let worst=index;
+   if(left<heap.length&&worse(heap[left],heap[worst]))worst=left;
+   if(right<heap.length&&worse(heap[right],heap[worst]))worst=right;
+   if(worst===index)break;
+   [heap[index],heap[worst]]=[heap[worst],heap[index]];
+   index=worst;
+  }
+ };
+ for(const bundle of all){
+  if(!bundle.folded||limit<=0)continue;
+  if(heap.length<limit){heap.push(bundle);siftUp(heap.length-1)}
+  else if(worse(heap[0],bundle)){heap[0]=bundle;siftDown()}
+ }
+ const selected=new Set(heap);
  const visible=all.filter(bundle=>selected.has(bundle)).sort(bySpan).map(toArc);
  return {visible,hidden:all.length-visible.length};
 }
