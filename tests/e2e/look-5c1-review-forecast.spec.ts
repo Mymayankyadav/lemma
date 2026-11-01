@@ -10,7 +10,19 @@ for (const width of [360, 390] as const) {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 844 });
     await page.goto(`./?demo=${profile}&theme=${theme}#/`);
-    const chart = page.getByLabel("Seven-day review forecast");
+    // On a large desk the real forecast is deliberately deferred until it
+    // enters view (or its accessible 44px reveal action is used). Test the
+    // actual reading journey rather than expecting off-screen work to run.
+    const forecast = page.locator("[data-forecast-on-demand]");
+    await expect(forecast).toBeAttached({ timeout: 90_000 });
+    await forecast.scrollIntoViewIfNeeded();
+    const reveal = forecast.getByRole("button", { name: "Show seven-day forecast" });
+    if (await reveal.isVisible()) {
+      const bounds = await reveal.boundingBox();
+      expect(bounds?.height ?? 0).toBeGreaterThanOrEqual(44);
+      await reveal.click();
+    }
+    const chart = forecast.getByLabel("Seven-day review forecast");
     await expect(chart).toBeVisible({ timeout: 90_000 });
     await expect(chart.locator(".grid > div")).toHaveCount(7);
     const dayCounts = await chart.locator('[aria-label$="cards due"]').count();
