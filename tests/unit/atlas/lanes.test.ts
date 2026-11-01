@@ -1,4 +1,7 @@
 import {describe,expect,it} from 'vitest';
+import {readFileSync} from 'node:fs';
+import {join} from 'node:path';
+import {buildAtlasRowGeometry} from '../../../src/features/atlas/rowGeometry';
 import type {Arc} from '../../../src/features/atlas/tree';
 import {layoutAtlasLanes} from '../../../src/features/atlas/lanes';
 
@@ -62,5 +65,17 @@ describe('LOOK-4c orthogonal Atlas lanes',()=>{
   expect([...forward].sort()).toEqual([...reverse].sort());
   expect(forward.get('a')?.fromY).toBe(28);
   expect(forward.get('a')?.toY).toBe(254);
+ });
+
+ it('uses the same variable-height row centers for embedded plan-review IdeaGraph wires',()=>{
+  const geometry=buildAtlasRowGeometry(['cluster','galaxy','star']);
+  const lane=layoutAtlasLanes([arc('plan-prerequisite',0,2)],geometry.centers).get('plan-prerequisite')!;
+  expect(lane.fromY).toBe(geometry.centers[0]);
+  expect(lane.toY).toBe(geometry.centers[2]);
+  expect(geometry.centers[0]).not.toBe(22);
+  const source=readFileSync(join(process.cwd(),'src/features/atlas/IdeaGraph.tsx'),'utf8');
+  expect(source).toContain('buildAtlasRowGeometry');
+  expect(source).toContain('centers={geometry.centers}');
+  expect(source).toContain('heightPx={geometry.totalHeight}');
  });
 });
