@@ -40,7 +40,8 @@ for(const width of [360,390] as const){
     .filter(entry=>entry.name.startsWith('lemma-stress-project-'))
     .map(entry=>[entry.name.slice('lemma-stress-project-'.length),Math.round(entry.duration*10)/10]))
   }));
-  console.info('FIX #659 cold Project 4x',JSON.stringify({profile,theme,width,...metrics}));
+  console.info('FIX #659 cold Project 4x',JSON.stringify({profile,theme,width,...metrics,
+   postQueryMs:Math.round((metrics.ms-(metrics.dataPhases.prequery??0)-(metrics.dataPhases.total??0))*10)/10}));
   expect(Number.isFinite(metrics.ms)).toBe(true);
   expect(metrics.ms,'First real Project Route and Stages at 4x CPU').toBeLessThan(1500);
   expect(metrics.nodes).toBeLessThan(1500);
