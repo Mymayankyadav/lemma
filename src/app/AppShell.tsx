@@ -1,4 +1,9 @@
 import {useOutlet,useLocation,useNavigationType} from 'react-router';
+import {useEffect} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
+import {getMode,getDemoProfile} from '../data/mode';
+import {liveClient} from '../data/live/client';
+import {saveOfflineSnapshot,hydrateOfflineSnapshot,deleteOfflineSnapshot,isOfflineKey} from '../lib/offline-cache';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
 import DemoChip from './DemoChip';
@@ -8,6 +13,62 @@ import {easeOut} from '../ui/motion';
 const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
+ const queryClient=useQueryClient();
+ useEffect(()=>{
+  let disposed=false,identity:string|null=null,saveTimer:ReturnType<typeof setTimeout>|null=null;
+  const publish=(savedAt:number|null)=>{
+   if(savedAt===null)delete document.documentElement.dataset.offlineSavedAt;
+   else document.documentElement.dataset.offlineSavedAt=String(savedAt);
+   window.dispatchEvent(new CustomEvent('lemma:offline-snapshot',{detail:{savedAt}}));
+  };
+  const restore=async()=>{
+   if(!identity)return;
+   try{publish(await hydrateOfflineSnapshot(identity,queryClient))}catch{publish(null)}
+  };
+  const save=async()=>{
+   if(disposed||!identity||!navigator.onLine)return;
+   try{await saveOfflineSnapshot(identity,queryClient)}catch{/* Quota/private mode: online use continues. */}
+  };
+  const queueSave=()=>{
+   if(disposed||!identity||!navigator.onLine)return;
+   if(saveTimer)clearTimeout(saveTimer);
+   saveTimer=setTimeout(()=>{saveTimer=null;void save()},150);
+  };
+  const onOffline=()=>{void restore()};
+  const onOnline=()=>{publish(null);queueSave()};
+  const unsubscribe=queryClient.getQueryCache().subscribe(event=>{
+   if(event.type==='updated'&&event.query.state.status==='success'&&isOfflineKey(event.query.queryKey))
+    queueSave();
+  });
+  const authSubscription=getMode()==='live'
+   ?liveClient().auth.onAuthStateChange((event,session)=>{
+      if(event==='SIGNED_OUT'){
+       if(saveTimer)clearTimeout(saveTimer);
+       const previous=identity;identity=null;publish(null);
+       if(previous)void deleteOfflineSnapshot(previous);
+      }else if(session?.user?.id&&identity&&session.user.id!==identity){
+       const previous=identity;identity=session.user.id;publish(null);
+       void deleteOfflineSnapshot(previous);
+       if(!navigator.onLine)void restore();else queueSave();
+      }
+     }).data.subscription:null;
+  void (async()=>{
+   try{
+    identity=getMode()==='demo'?'demo-'+getDemoProfile():
+     (await liveClient().auth.getSession()).data.session?.user.id??null;
+    if(disposed||!identity)return;
+    if(!navigator.onLine)await restore();
+    else queueSave();
+   }catch{/* No authenticated identity: never open another user's snapshot. */}
+  })();
+  window.addEventListener('offline',onOffline);
+  window.addEventListener('online',onOnline);
+  return()=>{
+   disposed=true;if(saveTimer)clearTimeout(saveTimer);
+   unsubscribe();authSubscription?.unsubscribe();
+   window.removeEventListener('offline',onOffline);window.removeEventListener('online',onOnline);
+  };
+ },[queryClient]);
  const showTabs=tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas';
  const tab=showTabs,back=navigation==='POP';
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>

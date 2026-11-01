@@ -5,6 +5,7 @@ import { getApi } from '../data'
 import { useAuth } from '../data/hooks'
 import { getMode } from '../data/mode'
 import { Button } from '../ui/Button'
+import {liveClient} from '../data/live/client'
 
 /** Accept only local hash-router destinations; never return to the sign-in loop. */
 function destination(value: string | null | undefined): string | null {
@@ -47,6 +48,16 @@ function ReadyGate({children, email}: {children: ReactNode; email: string}) {
 }
 function LiveGate({children}: {children: ReactNode}) {
  const auth = useAuth(), location = useLocation()
+ const [offlineSession,setOfflineSession]=useState(false)
+ useEffect(()=>{
+  if(navigator.onLine)return
+  let alive=true
+  void liveClient().auth.getSession().then(({data})=>{if(alive)setOfflineSession(!!data.session?.user.id)}).catch(()=>{})
+  return()=>{alive=false}
+ },[])
+ // A previously authenticated owner may read only their local snapshot while offline.
+ // No offline mutation or unauthenticated cross-user access is permitted.
+ if (!navigator.onLine && offlineSession) return children
  if (auth.isPending) return <p role="status" className="p-6 text-ink-2">Checking sign-in…</p>
  if (auth.isError) return <section className="p-6 text-ink-2">
   <p role="alert">Couldn't check sign-in.</p>
