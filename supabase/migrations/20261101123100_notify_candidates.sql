@@ -80,8 +80,10 @@ answer_speed as (
     and r.reviewed_at>=p_now-interval '30 days'
 ),
 tomorrow_rows as (
+  -- Limit before building JSON: profile X may have thousands of checkpoints
+  -- due tomorrow, but only the first 20 can appear in a notification.
   select c.code,c.title,c.current_step,c.steps,pr.slug,pr.title project,
-    row_number() over(order by c.due_on,pr.slug,c.position,c.id) rn
+    c.due_on,c.position,c.id checkpoint_id
   from public.checkpoints c
   join visible_projects pr on pr.id=c.project_id and pr.user_id=c.user_id
   cross join prefs f
@@ -92,12 +94,15 @@ tomorrow_rows as (
       join public.checkpoints prerequisite on prerequisite.id=edge.prereq_id and prerequisite.user_id=edge.user_id
       where edge.user_id=p_user and edge.checkpoint_id=c.id and prerequisite.status<>'demonstrated'
     ))
+  order by c.due_on,pr.slug,c.position,c.id
+  limit 20
 ),
 tomorrow_json as (
   select coalesce(jsonb_agg(jsonb_build_object(
     'slug',slug,'project',project,'code',code,'title',title,
-    'step',current_step,'steps',jsonb_array_length(steps)) order by rn),'[]'::jsonb) items
-  from tomorrow_rows where rn<=20
+    'step',current_step,'steps',jsonb_array_length(steps))
+    order by due_on,slug,position,checkpoint_id),'[]'::jsonb) items
+  from tomorrow_rows
 ),
 late_ranked as (
   select c.code,c.title,c.current_step,c.steps,c.due_on,pr.slug,pr.title project,
