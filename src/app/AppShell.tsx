@@ -58,9 +58,11 @@ export default function AppShell(){
    const owner=identity;
    // A queued save must not read the next account's React Query data under
    // the previous owner's ID after a rapid sign-out/account switch.
-   const savedAt=Date.now();
    pendingSave=pendingSave.then(async()=>{
     if(identity!==owner||disposed||(!allowOffline&&!navigator.onLine))return;
+    // Use the execution timestamp, not the enqueue timestamp: newer route
+    // reads may have landed while another IndexedDB transaction was pending.
+    const savedAt=Date.now();
     await saveOfflineSnapshot(owner,queryClient,savedAt,()=>!disposed&&identity===owner&&(allowOffline||navigator.onLine));
     // An aborted old-owner/offline write must not advance the next owner's
     // persistence watermark or suppress its first real snapshot.
