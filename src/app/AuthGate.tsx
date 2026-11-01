@@ -60,12 +60,15 @@ function LiveGate({children}: {children: ReactNode}) {
   void import('../data/live/client').then(async({liveClient})=>{
    if(!alive)return
    const client=liveClient()
+   let authEventSeen=false
    const subscription=client.auth.onAuthStateChange((_event,session)=>{
+    authEventSeen=true
     if(alive)setOfflineSession(!!session?.user?.id)
    }).data.subscription
    unsubscribe=()=>subscription.unsubscribe()
    const {data}=await client.auth.getSession()
-   if(alive)setOfflineSession(!!data.session?.user.id)
+   // A SIGNED_OUT or account-switch event wins over a stale getSession read.
+   if(alive&&!authEventSeen)setOfflineSession(!!data.session?.user.id)
   }).catch(()=>{})
   return()=>{alive=false;unsubscribe?.()}
  },[authNetworkFailure])
