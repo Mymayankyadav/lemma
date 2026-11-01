@@ -70,6 +70,31 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   expect(rendered.body).toBe('A'.repeat(120))
   expect(rendered.body).not.toContain('NEVER-INCLUDE')
  })
+ it('groups tomorrow reminders by project rather than consuming slots per checkpoint',()=>{
+  const checkpoints=[
+   {project:'Algebra',code:'CP1',title:'Groups'},
+   {project:'Algebra',code:'CP2',title:'Rings'},
+   {project:'Algebra',code:'CP3',title:'Fields'},
+   {project:'Analysis',code:'CP4',title:'Limits'},
+  ]
+  const copy=notificationCopy({kind:'deadline',checkpoints})
+  expect(copy.title).toBe('4 checkpoints planned for tomorrow')
+  expect(copy.body).toContain('Algebra: CP1 Groups')
+  expect(copy.body).toContain('Analysis: CP4 Limits')
+  expect(copy.body).toContain('+2 checkpoints')
+  expect(copy.body).not.toContain('Algebra: CP2')
+  expect(copy.body.length).toBeLessThanOrEqual(140)
+ })
+ it('reserves space for three distinct projects and counts omitted projects',()=>{
+  const checkpoints=['Algebra','Analysis','Topology','Geometry'].map((project,i)=>({
+   project,code:'CP'+(i+1),title:'A long checkpoint title about compactness and continuous functions'.repeat(2)
+  }))
+  const copy=notificationCopy({kind:'deadline',checkpoints})
+  for(const project of ['Algebra','Analysis','Topology'])expect(copy.body).toContain(project+':')
+  expect(copy.body).toContain('+1 more')
+  expect(copy.body).not.toContain('Geometry:')
+  expect(copy.body.length).toBeLessThanOrEqual(140)
+ })
  it('requires a checkpoint to construct a tomorrow reminder',()=>{
   expect(()=>notificationCopy({kind:'deadline',checkpoints:[]})).toThrow('Deadline requires a checkpoint')
  })
