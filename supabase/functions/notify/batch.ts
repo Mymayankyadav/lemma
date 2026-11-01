@@ -12,6 +12,8 @@ export interface PushBatchOptions {
  /** At most four simultaneous push-service requests. */
  concurrency?:number;
  sender?:typeof fetch;
+ /** Cancels the whole batch, in addition to the hard deadline. */
+ signal?:AbortSignal;
 }
 export interface PushBatchResult {
  attempted:number;
@@ -33,7 +35,8 @@ export async function sendPushBatch(
  options:PushBatchOptions={},
 ):Promise<PushBatchResult>{
  const limit=Math.min(requests.length,bounded(options.maxSends,50,50));
- if(limit===0)return {attempted:0,deferred:requests.length,timedOut:false,results:[]};
+ if(limit===0||options.signal?.aborted)
+  return {attempted:0,deferred:requests.length,timedOut:false,results:[]};
  const maxMs=Math.max(1,bounded(options.maxMs,19_500,19_500));
  const concurrency=Math.max(1,bounded(options.concurrency,4,4));
  const controller=new AbortController();
@@ -58,13 +61,19 @@ export async function sendPushBatch(
  const deadline=new Promise<void>(resolve=>{
   timer=setTimeout(()=>{timedOut=true;controller.abort();resolve()},maxMs);
  });
+ let resolveExternalAbort:()=>void=()=>{};
+ const externalAbort=new Promise<void>(resolve=>{resolveExternalAbort=resolve});
+ const onAbort=()=>{controller.abort();resolveExternalAbort()};
+ options.signal?.addEventListener('abort',onAbort,{once:true});
+ if(options.signal?.aborted)onAbort();
  try{
   await Promise.race([
    Promise.all(Array.from({length:Math.min(concurrency,limit)},()=>worker())).then(()=>{}),
-   deadline,
+   deadline,externalAbort,
   ]);
  }finally{
   if(timer!==undefined)clearTimeout(timer);
+  options.signal?.removeEventListener('abort',onAbort);
  }
  const results=finished.filter((row):row is {index:number;result:DeliveryResult}=>row!==undefined);
  return {attempted:next,deferred:requests.length-results.length,timedOut,results};
