@@ -47,7 +47,12 @@ export async function sendWebPush(
  let endpoint:URL;
  try{endpoint=new URL(subscription.endpoint)}
  catch{return {status:'failed'}}
- if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash)
+ // Push services use public HTTPS origins, never loopback or IP-literal
+ // endpoints. Reject obvious SSRF destinations before signing VAPID or fetch.
+ const host=endpoint.hostname.toLowerCase();
+ if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash||
+    host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||
+    /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host)||host.startsWith('['))
   return {status:'failed'};
  let encoded:string;
  try{
