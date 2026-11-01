@@ -54,21 +54,28 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  </p>:null;
  return <div ref={box} className="flex flex-col gap-2" data-idea-graph="true">
   <div role="toolbar" aria-label={label+' view'} className="flex flex-wrap items-center gap-2">
-   <div role="group" aria-label="Fold to depth" className="flex overflow-hidden rounded-ctl border border-edge">
-    {[1,2,3,99].map(d=><button key={d} type="button" aria-pressed={depth===d}
+   <div role="group" aria-label="Fold ideas to level" className="flex flex-wrap overflow-hidden rounded-ctl border border-edge">
+    {([{depth:1,label:'Fields'},{depth:2,label:'Areas'},{depth:3,label:'Topics'},{depth:99,label:'All'}] as const)
+     .map(({depth:d,label:foldLabel})=><button key={d} type="button" aria-pressed={depth===d}
+     aria-label={'Show '+foldLabel.toLowerCase()+' level'} title={'Show '+foldLabel.toLowerCase()+' level'}
      onClick={()=>setExpanded(d===99?new Set(branches.map(n=>n.id)):expandedToDepth(tree,d))}
-     className={'min-h-11 min-w-11 px-2 text-label '+(depth===d?'bg-amber-tint text-amber':'text-ink-2')}>{d===99?'All':d}</button>)}
+     className={'min-h-11 min-w-11 px-2 text-label '+(depth===d?'bg-amber-tint text-amber':'text-ink-2')}>{foldLabel}</button>)}
    </div>
    <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
     className={'flex min-h-11 items-center gap-1.5 rounded-ctl border px-2.5 text-label '+(related?'border-amber-line-2 text-amber':'border-edge text-ink-2')}>
     <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
   </div>
-  {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge-2 bg-well p-3">
+  {selected&&near&&<div data-idea-selection="true" className="flex flex-col gap-2 rounded-ctl border border-edge bg-paper p-3">
    <div className="flex items-start gap-2">
     <StatusMark node={selected}/>
     <p className="min-w-0 flex-1 text-body font-semibold"><Tex source={selected.name}/></p>
     <button type="button" aria-label="Clear selection" onClick={()=>setSelectedId(null)} className="-m-2 flex size-11 shrink-0 items-center justify-center text-ink-2"><X size={17}/></button>
    </div>
+   <p className="text-label text-ink-2" aria-label="Idea connections">
+    <span className="text-link">Builds on {near.needs.length}</span>
+    <span aria-hidden="true"> · </span>
+    <span className="text-ink-2">Opens up {near.unlocks.length}</span>
+   </p>
    {selected.blurb&&<Tex source={selected.blurb} className="block text-label text-ink-2"/>}
    <Names title="Builds on" items={near.needs} tone="up"/>
    <Names title="Opens up" items={near.unlocks} tone="down"/>
