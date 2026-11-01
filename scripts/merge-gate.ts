@@ -92,11 +92,14 @@ export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
   // FIX #619: an explicit independent-Auditor acceptance gate is not met
   // merely because nobody has filed a BLOCK. The old rule allowed a Ready
   // PR with seven green jobs to merge before its requested independent audit.
-  // Check the CURRENT acceptance section: appended handoff history can still
-  // contain unchecked boxes from earlier heads after the final box is ticked.
-  const currentChecklist = input.body.match(
-    /(?:^|\n)#{2,4}\s+Acceptance checklist[^\n]*\n([\s\S]*?)(?=\n#{2,4}\s|\nNext step:|$)/i,
-  )?.[1] ?? input.body;
+  // Check the most recent acceptance section. PR descriptions can accumulate
+  // multiple complete checklists across handoffs: the first may be checked
+  // while a newer one explicitly revokes clearance (or vice versa).
+  // Looking only at the first section lets stale approval bypass the gate.
+  const acceptanceSections = [...input.body.matchAll(
+    /(?:^|\n)#{2,4}\s+Acceptance checklist[^\n]*\n([\s\S]*?)(?=\n#{2,4}\s|\nNext step:|$)/gi,
+  )];
+  const currentChecklist = acceptanceSections.at(-1)?.[1] ?? input.body;
   if (/(?:^|\n)\s*-\s*\[\s\][^\n]*\bIndependent Auditor CLEAR\b/i.test(currentChecklist))
     return denied("Independent Auditor CLEAR acceptance remains unchecked");
   if (/\bIndependent Auditor CLEAR\b/i.test(input.body)) {
