@@ -68,5 +68,5 @@ jobs:
           path: |
             test-results/stress/
             test-results/screens/stress/
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
