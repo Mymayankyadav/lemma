@@ -80,10 +80,13 @@ test('AND-8 authenticated A to B switch never hydrates A into B; sign-out erases
   await act(async()=>root.render(
    <QueryClientProvider client={queryClient}><RouterProvider router={router}/></QueryClientProvider>
   ))
-  await flush()
-  expect(queryClient.getQueryData(['home'])).toEqual({title:'Only A'})
-  expect(offline.reads).toContain('owner-a')
-  expect(auth.callback).toBeTypeOf('function')
+  // The Supabase client is deliberately a dynamic import. Wait for its
+  // auth/session bootstrap instead of assuming it completes in one microtask.
+  await vi.waitFor(()=>{
+   expect(auth.callback).toBeTypeOf('function')
+   expect(offline.reads).toContain('owner-a')
+   expect(queryClient.getQueryData(['home'])).toEqual({title:'Only A'})
+  },{timeout:4000})
 
   // A real Supabase SIGNED_IN event for a different account must clear the
   // old in-memory React Query cache before hydrating B's own IndexedDB store.
@@ -135,8 +138,10 @@ test('AND-8 delayed A IndexedDB read cannot overwrite B after an auth switch',as
   await act(async()=>root.render(
    <QueryClientProvider client={queryClient}><RouterProvider router={router}/></QueryClientProvider>
   ))
-  await flush()
-  expect(offline.reads).toContain('owner-a')
+  await vi.waitFor(()=>{
+   expect(auth.callback).toBeTypeOf('function')
+   expect(offline.reads).toContain('owner-a')
+  },{timeout:4000})
   expect(queryClient.getQueryData(['home'])).toBeUndefined()
 
   auth.id='owner-b'
