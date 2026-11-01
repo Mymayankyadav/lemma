@@ -119,6 +119,55 @@ export function snapshotFromClient(client:QueryClient,now=Date.now()):OfflineSna
  }
  return {v:1,savedAt:now,entries:boundOfflineEntries(entries,now)}
 }
+/** Tab-local, bounded, redacted handoff: full-page reloads can occur before
+ * an idle IndexedDB save. The next successful save merges this temporary
+ * snapshot into the single permanent IndexedDB store. */
+export const OFFLINE_HANDOFF_PREFIX='lemma-offline-handoff:'
+function handoffStorage(storage?:Storage):Storage|null{
+ try{return storage??(typeof sessionStorage==='undefined'?null:sessionStorage)}catch{return null}
+}
+function handoffKey(userId:string):string|null{
+ return /^[-\\w]{1,128}$/.test(userId)?OFFLINE_HANDOFF_PREFIX+userId:null
+}
+function handoffRecord(userId:string,now:number,storage?:Storage):{snapshot:OfflineSnapshot;raw:string}|null{
+ const key=handoffKey(userId),store=handoffStorage(storage)
+ if(!key||!store)return null
+ try{
+  const raw=store.getItem(key)
+  if(!raw)return null
+  const value=JSON.parse(raw) as Partial<OfflineSnapshot>
+  if(value.v!==1||!Number.isFinite(value.savedAt)||typeof value.savedAt!=='number'||
+   value.savedAt>now||now-value.savedAt>OFFLINE_MAX_AGE_MS||!Array.isArray(value.entries))return null
+  return {snapshot:{v:1,savedAt:value.savedAt,entries:boundOfflineEntries(value.entries,now)},raw}
+ }catch{return null}
+}
+export function readOfflineHandoff(userId:string,now=Date.now(),storage?:Storage):OfflineSnapshot|null{
+ return handoffRecord(userId,now,storage)?.snapshot??null
+}
+export function clearOfflineHandoff(userId:string,storage?:Storage):void{
+ const key=handoffKey(userId),store=handoffStorage(storage)
+ if(!key||!store)return
+ try{store.removeItem(key)}catch{/* Private mode: IDB remains authoritative. */}
+}
+export function stageOfflineHandoff(userId:string,key:readonly unknown[],data:unknown,savedAt=Date.now(),
+ now=Date.now(),storage?:Storage):void{
+ const name=handoffKey(userId),store=handoffStorage(storage)
+ if(!name||!store||!isOfflineKey(key)||!Number.isFinite(savedAt)||savedAt>now||now-savedAt>OFFLINE_MAX_AGE_MS)return
+ try{
+  const prior=handoffRecord(userId,now,store)?.snapshot??null
+  const serializedKey=JSON.stringify(key)
+  if(prior?.entries.some(entry=>JSON.stringify(entry.key)===serializedKey&&entry.savedAt>=savedAt))return
+  const safeData=key[0]==='settings'?projectOfflineSettings(data as Settings):data
+  const next=mergeOfflineSnapshots(prior,{v:1,savedAt:now,
+   entries:[{key:[...key],data:safeData,savedAt}]},now)
+  store.setItem(name,JSON.stringify(next))
+ }catch{/* Quota/private mode: online use and IndexedDB saves continue. */}
+}
+function clearHandoffIfUnchanged(userId:string,raw:string):void{
+ const key=handoffKey(userId),store=handoffStorage()
+ if(!key||!store)return
+ try{if(store.getItem(key)===raw)store.removeItem(key)}catch{/* Best effort. */}
+}
 function openDb(userId:string):Promise<IDBDatabase>{
  if(!userId||!/^[-\w]{1,128}$/.test(userId))return Promise.reject(Error('Invalid offline user'))
  if(typeof indexedDB==='undefined')return Promise.reject(Error('IndexedDB unavailable'))
@@ -146,7 +195,8 @@ export function mergeOfflineSnapshots(previous:unknown,current:OfflineSnapshot,n
 export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=Date.now(),canWrite:()=>boolean=()=>true):Promise<void>{
  if(!canWrite())return;
  // Capture before the async open: account B must never be written under A.
- const snapshot=snapshotFromClient(client,now);
+ const handoff=handoffRecord(userId,now);
+ const snapshot=mergeOfflineSnapshots(handoff?.snapshot??null,snapshotFromClient(client,now),now);
  const db=await openDb(userId);
  try{
   if(!canWrite())return;
@@ -164,6 +214,7 @@ export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=D
    tx.onerror=()=>reject(tx.error??Error('Cannot save offline snapshot'));
    tx.onabort=()=>canWrite()?reject(tx.error??Error('Offline snapshot transaction aborted')):resolve();
   });
+  if(handoff?.raw&&canWrite())clearHandoffIfUnchanged(userId,handoff.raw);
  }finally{db.close()}
 }
 export async function readOfflineSnapshot(userId:string,now=Date.now()):Promise<OfflineSnapshot|null>{
@@ -174,11 +225,13 @@ export async function readOfflineSnapshot(userId:string,now=Date.now()):Promise<
    req.onsuccess=()=>resolve(req.result)
    req.onerror=()=>reject(req.error??Error('Cannot read offline snapshot'))
   })
-  if(!value||typeof value!=='object')return null
+  if(!value||typeof value!=='object')return readOfflineHandoff(userId,now)
   const snapshot=value as Partial<OfflineSnapshot>
   if(snapshot.v!==1||!Number.isFinite(snapshot.savedAt)||!snapshot.savedAt||
    snapshot.savedAt>now||now-snapshot.savedAt>OFFLINE_MAX_AGE_MS||!Array.isArray(snapshot.entries))return null
-  return {v:1,savedAt:snapshot.savedAt,entries:boundOfflineEntries(snapshot.entries,now)}
+  const saved={v:1 as const,savedAt:snapshot.savedAt,entries:boundOfflineEntries(snapshot.entries,now)}
+  const handoff=readOfflineHandoff(userId,now)
+  return handoff?mergeOfflineSnapshots(saved,handoff,now):saved
  }finally{db.close()}
 }
 export async function hydrateOfflineSnapshot(userId:string,client:QueryClient,now=Date.now()):Promise<number|null>{
