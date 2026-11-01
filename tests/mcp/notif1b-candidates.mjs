@@ -83,8 +83,7 @@ try{
  assert.equal(visibleOnly.due.backlog,2)
  console.log('PASS NOTIF-1b archived/system projects excluded from reminders')
  // Removed devices must not suppress reminders through stale/disabled presence.
- await q(`insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform,last_seen_at)
-   values($1,'https://notify.example/enabled','abc','abc','Enabled','other','2026-10-30T12:00:00Z')`,[owner])
+ await q("update public.push_devices set last_seen_at='2026-10-30T12:00:00Z' where user_id=$1 and disabled_at is null",[owner])
  await q(`insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform,last_seen_at,disabled_at,disabled_reason)
    values($1,'https://notify.example/disabled','abc','abc','Removed','other',now(),now(),'removed')`,[owner])
  const deviceFacts=(await facts()).devices
