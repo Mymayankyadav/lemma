@@ -87,3 +87,19 @@ test('blocked notification permission never shows a post-review offer',async({pa
  await finishOneCard(page);
  await expect(page.getByRole('region',{name:'Reminder offer'})).toHaveCount(0);
 });
+
+for(const profile of ['stress','extreme'] as const){
+ for(const theme of ['graph','graph-night'] as const){
+  for(const width of [360,390]){
+   test(`NOTIF-7 ${profile} ${theme} ${width}px Review 5 stays bounded`,async({page})=>{
+    await page.setViewportSize({width,height:844});
+    await page.goto(`/lemma/?demo=${profile}&theme=${theme}#/review?start=5`);
+    await expect(page).toHaveURL(/#\\/review\\/run$/);
+    await expect(page.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuemax','5');
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+    expect(overflow).toBe(false);
+    await page.screenshot({path:`test-results/screens/notif-7-${profile}-${theme}-${width}.png`,fullPage:true});
+   });
+  }
+ }
+}
