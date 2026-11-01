@@ -152,7 +152,7 @@ export default function Page(){
   if(raw===null||handledNotificationLink.current===location.key)return;
   if(!settings.data||!cards.data||!decks.data||cards.error||decks.error)return;
   handledNotificationLink.current=location.key;
-  const numeric=/^\\d+$/.test(raw)?Number(raw):1;
+  const numeric=/^[0-9]+$/.test(raw)?Number(raw):1;
   const count=Number.isFinite(numeric)?Math.min(50,Math.max(1,numeric)):1;
   if(!dueItems.length){
    notify('All clear');
