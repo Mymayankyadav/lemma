@@ -26,7 +26,10 @@ for(const width of [360,390] as const){
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/p/missing-project-659m',{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('heading',{name:'Project unavailable'})).toBeVisible();
   await expect(page.getByRole('img',{name:'Disconnected tutor illustration'})).toBeVisible();
-  const retry=page.getByRole('button',{name:'Try again'});
+  // The error toast also offers Try again; assert the EmptyState's own
+  // accessible action rather than an ambiguous page-global locator.
+  const retry=page.getByRole('heading',{name:'Project unavailable'})
+   .locator('..').getByRole('button',{name:'Try again'});
   await expect(retry).toBeVisible();
   const size=await retry.boundingBox();
   expect(size?.height??0).toBeGreaterThanOrEqual(44);
