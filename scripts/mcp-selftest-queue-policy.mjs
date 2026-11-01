@@ -1,6 +1,6 @@
 // Pure, regression-tested FIFO decision logic for mutating MCP selftests.
 // Ticket IDs are GitHub issue-comment IDs: REST creation totally orders starts.
-const pattern=/^LEMMA-MCP-QUEUE v1 (START|DONE) ([1-9]\\d*)\\/([1-9]\\d*)$/;
+const pattern=/^LEMMA-MCP-QUEUE v1 (START|DONE) ([1-9]\d*)\/([1-9]\d*)$/;
 export function parseQueueTicket(comment){
  const match=pattern.exec(String(comment.body??'').trim());
  if(!match||!Number.isSafeInteger(comment.id)||comment.id<=0)return null;
