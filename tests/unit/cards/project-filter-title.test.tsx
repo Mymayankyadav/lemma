@@ -43,4 +43,15 @@ describe('ST-4 project filters preserve mathematical titles',()=>{
   expect(html).not.toContain('&amp;amp;');
  });
 
+ it('FIX #608: numbered named HTML entities in project titles use the rich parser',()=>{
+  // HTML named references such as &frac12; and &sup2; are valid mathematics
+  // labels. A plain React text node would escape the ampersand a second time.
+  for(const title of ['Fraction &frac12;','Powers &sup2;']){
+   const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title}));
+   expect(html,'named entity must retain rich rendering for '+title).toContain('lemma-tex-inline');
+   expect(html,'named entity must not become literal text for '+title).not.toContain('&amp;frac12;');
+   expect(html,'named entity must not become literal text for '+title).not.toContain('&amp;sup2;');
+  }
+ });
+
 });
