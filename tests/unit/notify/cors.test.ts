@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {notifyCorsHeaders} from '../../../supabase/functions/notify/cors';
+import {notifyCorsHeaders,notifyPreflight} from '../../../supabase/functions/notify/cors';
 
 describe('NOTIF-4b6a Edge CORS origin allowlist',()=>{
  it('permits only the deployed GitHub Pages origin',()=>{
@@ -35,4 +35,18 @@ describe('NOTIF-4b6a Edge CORS origin allowlist',()=>{
   expect(h['Access-Control-Allow-Headers']).toBe('authorization, content-type');
   expect(h['Access-Control-Allow-Credentials']).toBeUndefined();
  });
+ it('returns a no-body preflight only for an allowed origin; disallowed origins fail closed',()=>{
+  for(const origin of ['https://mymayankyadav.github.io','http://localhost:5173']){
+   const response=notifyPreflight(origin);
+   expect(response.status).toBe(204);
+   expect(response.headers['Access-Control-Allow-Origin']).toBe(origin);
+   expect(response.headers['Access-Control-Allow-Headers']).not.toMatch(/cron/i);
+   expect(response).not.toHaveProperty('body');
+  }
+  for(const origin of [null,'null','https://evil.example','http://localhost:0']){
+   const response=notifyPreflight(origin);
+   expect(response).toEqual({status:403,headers:{Vary:'Origin'}});
+  }
+ });
+
 });
