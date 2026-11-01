@@ -58,4 +58,28 @@ describe('FIX-659f direct Project summary',()=>{
    expect(cp.dueCards,cp.code).toBe(queue.filter(card=>
     card.projectSlug==='real-analysis'&&card.checkpointCode===cp.code).length);
  },30_000);
+ it('cold virtual S/X Project counts preserve daily caps without hydrating due-note objects',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  });
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const virtual=vi.spyOn(api as unknown as {reviewNotes:()=>unknown},'reviewNotes')
+   .mockImplementation(()=>{throw Error('Cold Project must not hydrate 4,000 synthetic due-note objects');});
+  const first=await api.getProject('stress-project-3');
+  const last=await api.getProject('stress-project-59');
+  expect(virtual).not.toHaveBeenCalled();
+  virtual.mockRestore();
+  const queue=await api.getReviewItems({decks:[],sessionId:null,conceptSlug:null,
+   includeNew:true,newOnly:false});
+  expect(queue.length).toBe(200);
+  for(const [slug,detail] of [['stress-project-3',first],['stress-project-59',last]] as const){
+   for(const cp of detail.checkpoints){
+    const due=queue.filter(card=>card.projectSlug===slug&&card.checkpointCode===cp.code).length;
+    expect(cp.dueCards,slug+'/'+cp.code).toBe(due);
+   }
+  }
+  const store=(api as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
+ },30_000);
+
 });
