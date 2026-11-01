@@ -1,4 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
+import {useOnlineStatus} from '../../ui/useOnlineStatus';
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
@@ -36,12 +37,7 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 
 export default function Page(){
  const navigate=useNavigate(),notify=useToast();
- const [offline,setOffline]=useState(!navigator.onLine);
- useEffect(()=>{
-  const update=()=>setOffline(!navigator.onLine);
-  window.addEventListener('offline',update);window.addEventListener('online',update);
-  return()=>{window.removeEventListener('offline',update);window.removeEventListener('online',update)};
- },[]);
+ const online=useOnlineStatus(),offline=!online;
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
  const update=useUpdateSettings();
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
