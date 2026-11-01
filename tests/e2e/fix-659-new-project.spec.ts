@@ -55,3 +55,14 @@ for(const width of [360,390] as const){
   await cdp.detach();
  });
 }
+
+test('FIX #659 deferred maths preview still renders on input',async({page})=>{
+ await page.goto('/lemma/?demo=stress&theme=graph#/projects/new');
+ const dialog=page.getByRole('dialog',{name:'New project'});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole('textbox',{name:'Name'}).fill('Algebra $x^2$');
+ await expect(dialog.getByRole('region',{name:'Math preview'})).toBeVisible();
+ await expect(dialog.locator('.katex').first()).toBeVisible();
+ await dialog.getByRole('textbox',{name:'Name'}).fill('Algebra');
+ await expect(dialog.getByRole('region',{name:'Math preview'})).toHaveCount(0);
+});
