@@ -3,7 +3,7 @@ import {useEffect} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {getMode,getDemoProfile} from '../data/mode';
 import {liveClient} from '../data/live/client';
-import {saveOfflineSnapshot,hydrateOfflineSnapshot,deleteOfflineSnapshot,isOfflineKey} from '../lib/offline-cache';
+import {saveOfflineSnapshot,readOfflineSnapshot,deleteOfflineSnapshot,isOfflineKey} from '../lib/offline-cache';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
 import DemoChip from './DemoChip';
@@ -25,8 +25,19 @@ export default function AppShell(){
    window.dispatchEvent(new CustomEvent('lemma:offline-snapshot',{detail:{savedAt}}));
   };
   const restore=async()=>{
-   if(!identity)return;
-   try{publish(await hydrateOfflineSnapshot(identity,queryClient))}catch{publish(null)}
+   const owner=identity;
+   if(!owner)return;
+   try{
+    const snapshot=await readOfflineSnapshot(owner);
+    // Reading IndexedDB is asynchronous. A sign-out or account switch during
+    // that read must never inject the former owner's rows into the new cache.
+    if(disposed||identity!==owner)return;
+    if(snapshot)for(const entry of snapshot.entries){
+     if(queryClient.getQueryData(entry.key)===undefined)
+      queryClient.setQueryData(entry.key,entry.data,{updatedAt:entry.savedAt});
+    }
+    publish(snapshot?.savedAt??null);
+   }catch{if(!disposed&&identity===owner)publish(null)}
   };
   const save=async()=>{
    if(disposed||!identity||!navigator.onLine)return;
