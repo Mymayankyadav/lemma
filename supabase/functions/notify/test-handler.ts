@@ -39,7 +39,7 @@ function testMessage(device:TestDevice):TestPushMessage{
  const end=typeof quiet?.end==='string'&&CLOCK.test(quiet.end)?quiet.end:'07:30';
  // Equal endpoints mean quiet hours are disabled (notifications.md §4a).
  // Do not promise silence during a window that does not exist.
- const cadence=cap===1?'1 time':`${cap} times`;
+ const cadence=cap===1?'once':`${cap} times`;
  const body=start===end
   ?`Lemma will write at most ${cadence} a day. Quiet hours are off.`
   :`Lemma will write at most ${cadence} a day, never between ${start} and ${end}.`;
