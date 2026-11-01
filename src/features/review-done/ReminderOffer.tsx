@@ -88,7 +88,7 @@ export function ReminderOffer({completed}:{completed:boolean}){
   <p className="text-body text-ink-2">Want a reminder when cards are due?</p>
   <div className="mt-2 flex flex-wrap items-center gap-2">
    <Button size="m" loading={busy} onClick={()=>void enable()}>Turn on</Button>
-   <Button size="m" variant="text" disabled={busy} onClick={()=>setVisible(false)}>Not now</Button>
+   <button type="button" className="min-h-11 px-3 text-label font-semibold text-ink-2" disabled={busy} onClick={()=>setVisible(false)}>Not now</button>
   </div>
  </section>;
 }
