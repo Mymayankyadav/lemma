@@ -39,7 +39,7 @@ for(const width of [360,390] as const){
   await expect(current).toContainText('Prove compact sets in a Hausdorff space are closed.');
   const metrics=await page.evaluate(()=>{
    const article=document.querySelector('[aria-label="Current checkpoint CP4"]');
-   const resume=article?.querySelector('button');
+   const resume=Array.from(article?.querySelectorAll('button')??[]).find(button=>button.textContent?.trim()==='Resume');
    const detail=article?.querySelector('a[aria-label="Details for CP4"]');
    const size=(element:Element|null|undefined)=>{
     const box=element?.getBoundingClientRect();
