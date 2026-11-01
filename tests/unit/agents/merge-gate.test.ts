@@ -115,3 +115,33 @@ describe("documented Steward policy cannot regress silently", () => {
     expect(handbook).toContain("scripts/merge-gate.ts");
   });
 });
+
+
+describe("FIX #619: explicit independent Auditor CLEAR is a real merge gate", () => {
+  const gated = { ...ready, body: ready.body + "\n- [x] Independent Auditor CLEAR" };
+  const currentClear = { body: "AUDIT CLEAR — independently reviewed exact head `" + sha.slice(0, 8) + "`", createdAt: "2026-11-01T04:20:00Z" };
+
+  it("rejects a Ready, 7/7 green PR whose external Auditor gate has no CLEAR", () => {
+    const result = evaluateMergeGate({ ...gated, auditComments: [] });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/auditor clear/i);
+    const external = { ...ready, body: ready.body + "\nIndependent Auditor CLEAR remains an external merge gate" };
+    expect(evaluateMergeGate(external).ok).toBe(false);
+  });
+
+  it("rejects an unchecked Auditor acceptance item even if a CLEAR comment exists", () => {
+    const unchecked = { ...gated, body: ready.body + "\n- [ ] Independent Auditor CLEAR" };
+    expect(evaluateMergeGate({ ...unchecked, auditComments: [currentClear] }).ok).toBe(false);
+  });
+
+  it("rejects stale or unscoped CLEAR and accepts an exact-current-head CLEAR", () => {
+    const old = { ...currentClear, body: "AUDIT CLEAR — independently reviewed exact head `" + "b".repeat(8) + "`" };
+    expect(evaluateMergeGate({ ...gated, auditComments: [old] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...gated, auditComments: [{ ...currentClear, body: "AUDIT CLEAR — reviewed" }] }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...gated, auditComments: [old, currentClear] }).ok).toBe(true);
+  });
+
+  it("does not impose a new blanket audit requirement on unrelated Ready PRs", () => {
+    expect(evaluateMergeGate(ready).ok).toBe(true);
+  });
+});
