@@ -42,5 +42,6 @@ describe('FIX #651 cold direct Review-run prefetch',()=>{
   expect(main).toContain('warmReviewRun');
   expect(main).toContain("profile==='stress'||profile==='extreme'");
   expect(main).toContain("window.location.hash==='#/review/run'");
+  expect(main).not.toContain('try{getApi()}');
  });
 });
