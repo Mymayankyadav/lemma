@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {QA3_ROUTES} from '../../../scripts/qa3-report';
-import {CPU_CASES,auditCpuCoverage,type CpuRouteSample} from '../../../scripts/stress-cpu-coverage';
+import {CPU_CASES,auditCpuCoverage,cpuMatrixTimeoutMs,type CpuRouteSample} from '../../../scripts/stress-cpu-coverage';
 
 const samples=():CpuRouteSample[]=>CPU_CASES.flatMap(c=>QA3_ROUTES.map(route=>({
  route,actualRoute:route,profile:c.profile,theme:c.theme,width:c.width,
@@ -9,6 +9,12 @@ const samples=():CpuRouteSample[]=>CPU_CASES.flatMap(c=>QA3_ROUTES.map(route=>({
 })));
 
 describe('AUDIT #540: fail-closed 4x cold-route coverage',()=>{
+ it('allows the full 18-route extreme evidence pass to finish before judging its 1500ms per-route budget',()=>{
+  // A first-attempt extreme run already exceeded 600s after only 11/18 routes.
+  // This is a harness execution ceiling, NOT a relaxation of any route budget.
+  expect(cpuMatrixTimeoutMs('stress')).toBe(600_000);
+  expect(cpuMatrixTimeoutMs('extreme')).toBe(1_800_000);
+ });
  it('requires all 144 matrix cells, not just Today or one worst-case profile',()=>{
   expect(samples()).toHaveLength(144);
   expect(auditCpuCoverage(samples())).toEqual([]);
