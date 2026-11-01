@@ -47,11 +47,16 @@ test('AND-8 pagehide stages successful route queries synchronously before best-e
   // during cold paint; the real pagehide is the synchronous handoff boundary.
   expect(stageOfflineHandoff).not.toHaveBeenCalled()
   vi.mocked(saveOfflineSnapshot).mockClear()
+  const order:string[]=[]
+  vi.mocked(stageOfflineHandoff).mockImplementation(()=>{order.push('stage')})
+  vi.mocked(saveOfflineSnapshot).mockImplementation(async()=>{order.push('save')})
   window.dispatchEvent(new Event('pagehide'))
   expect(stageOfflineHandoff).toHaveBeenCalledWith(
    'demo-stress',['projects'],[{slug:'real-analysis',title:'Real Analysis'}],expect.any(Number)
   )
   await vi.waitFor(()=>expect(saveOfflineSnapshot).toHaveBeenCalled())
+  expect(order[0]).toBe('stage')
+  expect(order).toContain('save')
  }finally{
   await act(async()=>root.unmount())
   router.dispose()
