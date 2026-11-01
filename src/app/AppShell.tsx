@@ -178,9 +178,18 @@ export default function AppShell(){
    }catch{/* No authenticated identity: never open another user's snapshot. */}
   })();
   const onPageHide=()=>{
-   // Best-effort durable flush; the synchronous sanitized handoff survives
-   // even if the browser terminates this asynchronous IDB transaction.
-   if(identity&&navigator.onLine){cancelQueuedSave();void save(true)}
+   if(!identity||!navigator.onLine)return;
+   // A hard navigation may end this document before the idle-save timer or
+   // even the first query-cache subscription callback has persisted a route.
+   // Capture the successful allowlisted queries synchronously in the
+   // redacted, bounded tab-local handoff BEFORE starting an async IDB write.
+   // IndexedDB transactions begun during unload are only best effort.
+   for(const query of queryClient.getQueryCache().findAll()){
+    if(query.state.status==='success'&&query.state.dataUpdatedAt>0&&isOfflineKey(query.queryKey))
+     stageOfflineHandoff(identity,query.queryKey,query.state.data,query.state.dataUpdatedAt);
+   }
+   cancelQueuedSave();
+   void save(true);
   };
   window.addEventListener('offline',onOffline);
   window.addEventListener('online',onOnline);
