@@ -19,6 +19,14 @@ export type CpuRouteSample={
  route:string;actualRoute:string;profile:string;theme:string;width:number;
  cpuThrottle:number;durationMs:number;navigationType:string;ready:boolean;
  nodes:number;screenshot:string;
+ /** Diagnostic only: does not replace the strict 1500ms wall-clock gate. */
+ browserTiming?:{
+  elapsedMs:number;
+  navigationResponseEndMs:number|null;
+  domContentLoadedMs:number|null;
+  firstContentfulPaintMs:number|null;
+  firstStressGoalPaintMs:number|null;
+ };
 };
 export function cpuCaseKey(c:Pick<CpuCase,'profile'|'theme'|'width'>):string{
  return c.profile+'/'+c.theme+'/'+c.width;
