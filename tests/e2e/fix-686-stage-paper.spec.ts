@@ -19,7 +19,7 @@ for(const width of [360,390] as const){
   const stages=paper.locator('[data-stage-card]');
   expect(await stages.count()).toBeGreaterThan(1);
   await expect(paper.locator('[data-stage-card][data-card]')).toHaveCount(0);
-  const expanded=stages.locator('> button[aria-expanded="true"]');
+  const expanded=stages.locator(':scope > button[aria-expanded="true"]');
   await expect(expanded).toHaveCount(1);
   const rows=paper.locator('[data-cp-row]');
   await expect(rows.first()).toBeVisible();
@@ -27,7 +27,7 @@ for(const width of [360,390] as const){
    await expect(row.locator('[data-cp-status-icon]')).toHaveCount(1);
    expect(await row.getAttribute('aria-label')).toMatch(/, (done|re-check|in progress|up next|locked|proposed)$/);
   }
-  const toggle=stages.locator('> button[aria-expanded="true"]').first();
+  const toggle=stages.locator(':scope > button[aria-expanded="true"]').first();
   expect((await toggle.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await toggle.click();
   await expect(paper.locator('[data-cp-row]')).toHaveCount(0);
