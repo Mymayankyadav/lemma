@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
+import {renderAllReady} from '../../helpers/renderAllReady';
 import {describe,expect,it} from 'vitest';
 import {FastTex,canRenderPlainFastTex} from '../../../src/ui/FastTex';
 
@@ -10,7 +11,7 @@ describe('FIX #657c eager-route mathematical labels',()=>{
  it('renders only provably literal text synchronously',()=>{
   for(const name of ['Analysis','Topology and Algebra','A + B','Éléments de géométrie','Idea 7: Definition'])
    expect(canRenderPlainFastTex(name),name).toBe(true);
-  const html=renderToStaticMarkup(createElement(FastTex,{source:'A + B',className:'project-name'}));
+  const html=await renderAllReady(createElement(FastTex,{source:'A + B',className:'project-name'}));
   expect(html).toContain('class="lemma-math lemma-tex-inline project-name"');
   expect(html).toContain('>A + B</span>');
  });
@@ -19,7 +20,7 @@ describe('FIX #657c eager-route mathematical labels',()=>{
    'name@example.org','https://example.org','example.org/path','example.org#proof','<em>idea</em>','Line\\nTwo','\\alpha'])
    expect(canRenderPlainFastTex(name),name).toBe(false);
  });
- it('preserves real KaTeX during synchronous server rendering',()=>{
+ it('preserves real KaTeX after streamed server rendering completes',async()=>{
   const html=renderToStaticMarkup(createElement(FastTex,{source:'$\\frac{1}{2}$'}));
   expect(html).toContain('katex-html');
   expect(html).not.toContain('Rendering mathematical text');
