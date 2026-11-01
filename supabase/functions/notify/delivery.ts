@@ -49,7 +49,7 @@ export async function sendWebPush(
  catch{return {status:'failed'}}
  // Push services use public HTTPS origins, never loopback or IP-literal
  // endpoints. Reject obvious SSRF destinations before signing VAPID or fetch.
- const host=endpoint.hostname.toLowerCase();
+ const host=endpoint.hostname.toLowerCase().replace(/\.$/,'');
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash||
     host==='localhost'||host.endsWith('.localhost')||host.endsWith('.local')||
     /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)||host.startsWith('['))
