@@ -1,9 +1,12 @@
 import {Tex} from '../../ui/Tex';
+import {useQuery} from '@tanstack/react-query';
 import {useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
 import {ArrowLeft,BookOpen,ChevronRight,Check,Layers,MessageCircle,Pause,Play,Waypoints} from 'lucide-react';
-import {useCheckpoint,usePlanRevisions,useProject,useProjects,useSettings} from '../../data/hooks';
+import {usePlanRevisions,useProject,useProjects,useSettings} from '../../data/hooks';
+import {getApi} from '../../data';
+import {afterProjectPaint} from './afterPaint';
 import type {CheckpointView,ProjectDetail,SessionSummary} from '../../data/types';
 import {chatLink,planPrompt,resumePrompt,studyPrompt} from '../../lib/chat';
 import {formatMinutes,relativeTime} from '../../lib/text';
@@ -28,7 +31,11 @@ function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<t
  window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
 }
 function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:CheckpointView}){
- const checkpoint=useCheckpoint(slug,cp.code),settings=useSettings(),notify=useToast();
+ const [detailEnabled,setDetailEnabled]=useState(false);
+ useEffect(()=>afterProjectPaint(()=>setDetailEnabled(true)),[]);
+ const checkpoint=useQuery({queryKey:['checkpoint',slug,cp.code],
+  queryFn:()=>getApi().getCheckpoint(slug,cp.code),enabled:detailEnabled});
+ const settings=useSettings(),notify=useToast();
  const client=settings.data?.preferredChat??'claude';
  const step=(checkpoint.data?.steps??[])[Math.max(0,cp.currentStep-1)]??'Continue working on this checkpoint';
  const url='/p/'+slug+'/cp/'+cp.code;
@@ -165,7 +172,7 @@ export default function Page(){
   <motion.div key={tab} initial={reduce?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.4}}>
    {tab==='path'?
     <div className="flex min-w-0 flex-col gap-4">
-     {now&&<NowCheckpoint slug={slug} cp={now} project={data}/>}
+     {now&&<NowCheckpoint key={slug+'/'+now.code} slug={slug} cp={now} project={data}/>}
      {data.checkpoints.length?<Stages detail={data}/>:<EmptyState art="compass" title="A plan is waiting to be written"
       body="Ask your tutor to break your goal into checkpoints."
       action={{label:'Copy plan prompt',onClick:()=>{void navigator.clipboard.writeText(planPrompt(project.title));
