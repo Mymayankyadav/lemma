@@ -36,6 +36,12 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 
 export default function Page(){
  const navigate=useNavigate(),notify=useToast();
+ const [offline,setOffline]=useState(!navigator.onLine);
+ useEffect(()=>{
+  const update=()=>setOffline(!navigator.onLine);
+  window.addEventListener('offline',update);window.addEventListener('online',update);
+  return()=>{window.removeEventListener('offline',update);window.removeEventListener('online',update)};
+ },[]);
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),sessions=useSessions(),insights=useInsightData(30);
  const update=useUpdateSettings();
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
@@ -147,7 +153,8 @@ export default function Page(){
       <p className="mt-2 flex items-center gap-2 text-label text-ink-3"><Clock3 size={16} aria-hidden="true"/>
        {selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
      </div>
-     <Button aria-label="Start review" icon={Play} disabled={!todayShare} onClick={()=>start()}>Start {todayShare}</Button>
+     <Button aria-label="Start review" icon={Play} needsNetwork disabled={!todayShare&&!offline} onClick={()=>start()}>Start {todayShare}</Button>
+      {offline&&<p className="text-label text-ink-2" role="note">Reviewing needs a connection</p>}
     </div>
     {overdue>0&&<div className="mt-4 text-label text-ink-2">
       <p>{overdue.toLocaleString()} overdue · spread over {spreadDays} {spreadDays===1?'day':'days'}</p>
