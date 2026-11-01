@@ -27,4 +27,9 @@ describe('FIX-659g direct Project session summaries',()=>{
    expect(lookup.mock.calls.length).toBeLessThanOrEqual(2);
   },30_000);
  }
+ it('preserves the empty-slug alias for unscoped session reads',async()=>{
+  const api=new DemoAdapter({now:()=>now,timeZone:'UTC'});
+  expect(await api.listSessions('')).toEqual(await api.listSessions());
+ },30_000);
+
 });
