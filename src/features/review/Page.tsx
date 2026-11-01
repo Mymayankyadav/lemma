@@ -43,7 +43,7 @@ export default function Page(){
  // The session chips are optional: only cards tied to a session can use
  // them. The extreme demo otherwise materializes and sorts 60,000 virtual
  // session summaries on cold Review for a section that renders nothing.
- // Retain the existing useSessions() cache key and query defaults.
+ // Retain the existing session-query cache key and query defaults.
  const sessions=useQuery({
   queryKey:['sessions','all'],
   queryFn:()=>getApi().listSessions(),
