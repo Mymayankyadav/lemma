@@ -77,7 +77,34 @@ function generate(size,maskable=false){
 }
 generate(192);generate(512);generate(512,true);
 
+/** Three 96px monochrome launcher shortcut glyphs; alpha is the Android tint mask. */
+function shortcutInk(kind,x,y){
+ const line=(a,b,c,d)=>distanceLine(x,y,a,b,c,d);
+ const box=(left,top,right,bottom)=>Math.min(Math.abs(x-left),Math.abs(x-right),Math.abs(y-top),Math.abs(y-bottom));
+ if(kind==='review')return x>=.25&&x<=.75&&y>=.21&&y<=.79&&box(.25,.21,.75,.79)<.033
+   ||(x>.36&&x<.67&&Math.abs(y-.39)<.025)||(x>.36&&x<.62&&Math.abs(y-.55)<.025);
+ if(kind==='approve')return Math.min(line(.19,.51,.42,.72),line(.42,.72,.83,.27))<.055;
+ return Math.min(line(.23,.69,.51,.23),line(.51,.23,.79,.65),line(.23,.69,.79,.65))<.027
+  ||[[.23,.69],[.51,.23],[.79,.65]].some(([a,b])=>Math.hypot(x-a,y-b)<.072);
+}
+function generateShortcut(kind){
+ const size=96,bytes=Buffer.alloc(size*(size*4+1));
+ for(let y=0;y<size;y++){
+  const row=y*(size*4+1);
+  for(let x=0;x<size;x++){
+   const offset=row+1+x*4,ink=shortcutInk(kind,(x+.5)/size,(y+.5)/size);
+   bytes[offset]=25;bytes[offset+1]=30;bytes[offset+2]=37;bytes[offset+3]=ink?255:0;
+  }
+ }
+ const header=Buffer.alloc(13);header.writeUInt32BE(size,0);header.writeUInt32BE(size,4);
+ header[8]=8;header[9]=6;
+ const png=Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',header),chunk('IDAT',deflateSync(bytes,{level:9})),chunk('IEND',Buffer.alloc(0))]);
+ writeFileSync(join(out,'shortcut-'+kind+'.png'),png);
+}
+for(const kind of ['review','approve','atlas'])generateShortcut(kind);
 
+
+/** NOTIF-5: transparent monochrome push badge; preserve AND-1 launcher icons. */
 function generateBadge(){
  const size=96,bytes=Buffer.alloc(size*(size*4+1));
  for(let y=0;y<size;y++){

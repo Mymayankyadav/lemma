@@ -1,7 +1,7 @@
 # Agent rules
 
 - Start with `plan.md` §0. It is the only task list; the specs in `docs/spec/` define behaviour.
-- Read `docs/agents/README.md`: how the scheduled agents (Steward, Fixer, Builder, Auditor, Builder-2 and the 12-hourly Planner) coordinate (leases, task board, logs), the owner's decisions not to regress, known traps and the current state. Their prompts are in `docs/agents/prompts.md`.
+- Read `docs/agents/README.md` and `docs/agents/dispatch.md`: the five hourly slots select a **dynamic** Steward/Fixer/Builder/Auditor role on every run using GitHub backlog and leases (the Planner is separate). The role playbooks are in `docs/agents/prompts.md`. Follow their existing audit and merge safety gates.
 - One task per PR (split large tasks into several). Claim it with a PR (never a draft: REST cannot un-draft it) titled `<TASK-ID> <title>` from branch `t/<task-id>` before writing code, with an `Owner: <role> · Lease until <HH:MM IST>` line. An expired lease may be taken over by any agent.
 - Edit only the paths your task owns (`plan.md` §5). Contract changes go through a `CONTRACT` PR (`plan.md` §7).
 - Visual truth: `docs/spec/v4-look.md` (owner-approved v4 look, Route, palette and Atlas; overrides v3 where different), then `docs/spec/v3.md` (Graph paper and remaining UI rules) and `docs/spec/stress.md` (hard budgets), then older specs only where these are silent.

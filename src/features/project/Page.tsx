@@ -1,9 +1,12 @@
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
+import {useQuery} from '@tanstack/react-query';
 import {lazy,Suspense,useEffect,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {motion,useReducedMotion} from 'motion/react';
 import {ArrowLeft,BookOpen,ChevronRight,Check,Layers,MessageCircle,Pause,Play,Waypoints} from 'lucide-react';
-import {useCheckpoint,usePlanRevisions,useProject,useSettings} from '../../data/hooks';
+import {usePlanRevisions,useProject,useSettings} from '../../data/hooks';
+import {getApi} from '../../data';
+import {afterProjectPaint} from './afterPaint';
 import type {CheckpointView,ProjectDetail,SessionSummary} from '../../data/types';
 import {chatLink,planPrompt,resumePrompt,studyPrompt} from '../../lib/chat';
 import {formatMinutes,relativeTime} from '../../lib/text';
@@ -19,7 +22,9 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {GoalOverview,Stages} from './PathsView';
-import {SourcesPanel} from './SourcesPanel';
+// PDF ingestion and transcription are only needed on the Sources tab.
+// Keep the cold Path route free of that module while retaining the complete UI.
+const SourcesPanel=lazy(()=>import('./SourcesPanel').then(module=>({default:module.SourcesPanel})));
 const ProjectSwitcher=lazy(()=>import('./ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
 
 function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<typeof useToast>){
@@ -28,7 +33,12 @@ function copyAndChat(prompt:string,client:'claude'|'chatgpt',notify:ReturnType<t
  window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
 }
 function NowCheckpoint({slug,project,cp}:{slug:string;project:ProjectDetail;cp:CheckpointView}){
- const checkpoint=useCheckpoint(slug,cp.code),settings=useSettings(),notify=useToast();
+ const [detailEnabled,setDetailEnabled]=useState(false);
+ useEffect(()=>afterProjectPaint(()=>setDetailEnabled(true)),[]);
+ const checkpoint=useQuery({queryKey:['checkpoint',slug,cp.code],
+  queryFn:()=>getApi().getCheckpoint(slug,cp.code),enabled:detailEnabled,
+  staleTime:30_000,refetchOnWindowFocus:true});
+ const settings=useSettings(),notify=useToast();
  const client=settings.data?.preferredChat??'claude';
  const step=(checkpoint.data?.steps??[])[Math.max(0,cp.currentStep-1)]??'Continue working on this checkpoint';
  const url='/p/'+slug+'/cp/'+cp.code;
@@ -141,13 +151,13 @@ export default function Page(){
   <motion.div key={tab} initial={reduce?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.4}}>
    {tab==='path'?
     <div className="flex min-w-0 flex-col gap-4">
-     {now&&<NowCheckpoint slug={slug} cp={now} project={data}/>}
+     {now&&<NowCheckpoint key={slug+'/'+now.code} slug={slug} cp={now} project={data}/>}
      {data.checkpoints.length?<Stages detail={data}/>:<EmptyState art="compass" title="A plan is waiting to be written"
       body="Ask your tutor to break your goal into checkpoints."
       action={{label:'Copy plan prompt',onClick:()=>{void navigator.clipboard.writeText(planPrompt(project.title));
        notify('Plan prompt copied',{tone:'success'})}}}/>}
     </div>:tab==='sessions'?
-    <Sessions slug={slug} sessions={data.sessions}/>:<><SourcesPanel sources={data.sources} projectId={project.id}/><PlanHistory slug={slug}/></>}
+    <Sessions slug={slug} sessions={data.sessions}/>:<><Suspense fallback={<Skeleton h={180}/>}><SourcesPanel sources={data.sources} projectId={project.id}/></Suspense><PlanHistory slug={slug}/></>}
   </motion.div>
  </Screen>;
 }

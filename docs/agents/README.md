@@ -2,20 +2,19 @@
 
 This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent can continue without the owner's chat history. Read it together with `AGENTS.md` (the rules), `plan.md` (the task list) and `docs/spec/` (behaviour).
 
-## 1. The team
+## 1. Dynamic team and hourly capacity (OPS-1)
 
-Five scheduled agents run hourly (ChatGPT scheduled tasks) and a Planner runs every 12 hours (a Claude scheduled task); each run is a fresh session with no memory. They coordinate only through GitHub. Their full prompts are in `docs/agents/prompts.md`. **Every agent reads its own section of `docs/agents/prompts.md` at the start of each run; where it differs from the prompt pasted into its schedule, the repo version wins.** That way rule changes reach the agents without anyone re-pasting prompts.
+**The five ChatGPT hourly executions are dynamically dispatched capacity slots, not fixed role assignments.** On **every** run, each starts with lightweight Steward-style triage and chooses Steward, Fixer, Builder (including critical-path Builder-2 work), or independent Auditor based on current GitHub tasks, CI, merges, audit backlog, dispatch claims and PR leases. The complete algorithm, timing and safety rules are in [`dispatch.md`](dispatch.md); it overrides old minute-specific role labels in the role playbooks below. Do not keep a role idle or reserve a Builder, Fixer, Auditor or Steward when its queue is empty. When several runnable tasks are available, multiple slots should become Builders. **One slot can switch roles between runs (or within a run after a handoff).**
 
-| Role | Runs (IST) | Does |
-| --- | --- | --- |
-| Steward | :00 | Builds the task board from `plan.md`; merges every green, complete PR, even if it is behind main, unless it conflicts or overlaps recent changes; flags a red main |
-| Fixer | :15 | Turns every red PR green, fixes `FIX main` and `audit` issues, fixes bugs; works several in parallel |
-| Builder | :30 | Writes as much code as possible across 3–5 tasks in parallel; takes over any stalled PR |
-| Auditor | :45 | Audits every merged and "Ready to merge" PR against the specs and the owner's intent; files `audit` issues; verifies fixes |
-| Planner | every 12 h (about 08:40 and 20:40) | Plans major feature drops, UI and aesthetic changes, the Android app and notifications; writes specs in `docs/spec/` and task sections in `plan.md` through "PLAN …" PRs; never writes app code |
-| Builder-2 | :50 | Unblocks the critical path: takes the 2–4 tasks that hold up the most other work (red, stalled or unstarted), splits large PRs so the most important parts land first |
+| Hourly capacity slot (IST) | Assignment |
+| --- | --- |
+| :00 | Dynamic at run start |
+| :15 | Dynamic at run start |
+| :30 | Dynamic at run start |
+| :45 | Dynamic at run start |
+| :50 | Dynamic at run start |
 
-More agents can be added at any time: copy the Builder or Fixer prompt, give it a new role name (for example "Builder-3") and a different minute. The lease convention below stops agents from colliding.
+The independent **Planner** continues about every 12 hours (08:40 and 20:40 IST) for spec/plan work; this policy does not alter its cadence or owner-approval gates. Role *responsibilities* remain: Steward manages the task board and merges audited/green PRs; Fixer repairs red CI and bugs; Builder implements runnable tasks; Auditor independently checks PRs/merged work. `docs/agents/prompts.md` contains their full role playbooks. All five schedules must use the same **dynamic dispatcher** prompt, rather than selecting one section permanently. Each run reads its chosen role section; the repo version wins over the schedule's cached text.
 
 ## 2. Coordination conventions (all agents)
 

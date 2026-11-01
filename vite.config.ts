@@ -10,7 +10,7 @@ export default defineConfig({
   VitePWA({
    injectRegister:false,
    registerType:'prompt',
-   includeAssets:['icons/lemma-192.png','icons/lemma-512.png','icons/lemma-maskable-512.png'],
+   includeAssets:['icons/lemma-192.png','icons/lemma-512.png','icons/lemma-maskable-512.png','icons/shortcut-review.png','icons/shortcut-approve.png','icons/shortcut-atlas.png'],
    manifest:{
     id:'/lemma/',
     name:'Lemma — A Mathematical Study Environment',
@@ -19,6 +19,20 @@ export default defineConfig({
     start_url:'/lemma/',
     scope:'/lemma/',
     display:'standalone',
+    display_override:['standalone'],
+    launch_handler:{client_mode:'focus-existing'},
+    categories:['education','productivity'],
+    orientation:'any',
+    prefer_related_applications:false,
+    shortcuts:[
+     {name:'Review',short_name:'Review',url:'/lemma/#/review',icons:[{src:'/lemma/icons/shortcut-review.png',sizes:'96x96',type:'image/png'}]},
+     {name:'Approve',short_name:'Approve',url:'/lemma/#/proposals',icons:[{src:'/lemma/icons/shortcut-approve.png',sizes:'96x96',type:'image/png'}]},
+     {name:'Atlas',short_name:'Atlas',url:'/lemma/#/atlas',icons:[{src:'/lemma/icons/shortcut-atlas.png',sizes:'96x96',type:'image/png'}]},
+    ],
+    screenshots:[
+     {src:'/lemma/screenshots/today-day-1080x1920.png',sizes:'1080x1920',type:'image/png',form_factor:'narrow',label:'Today · Graph day'},
+     {src:'/lemma/screenshots/today-night-1080x1920.png',sizes:'1080x1920',type:'image/png',form_factor:'narrow',label:'Today · Graph night'},
+    ],
     theme_color:'#13171D',
     background_color:'#13171D',
     icons:[
@@ -30,6 +44,9 @@ export default defineConfig({
    workbox:{
     importScripts:['push-sw.js'],
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
+    // Store-listing screenshots are published for Play/PWA installability,
+    // not app runtime. Keep them out of first-install Workbox downloads.
+    globIgnores:['**/screenshots/**'],
     cleanupOutdatedCaches:true,
     maximumFileSizeToCacheInBytes:4*1024*1024,
     navigateFallback:'/lemma/index.html',
