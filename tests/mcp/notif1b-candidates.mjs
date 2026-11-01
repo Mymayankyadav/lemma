@@ -115,6 +115,16 @@ try{
  await q("update public.notifications set action_at=now()-interval '31 days' where user_id=$1 and kind='rhythm'",[owner])
  assert.equal((await facts()).history.dismissStreak.rhythm,0,'backoff expires after thirty days')
  console.log('PASS NOTIF-1b independent due/behind/resume/rhythm dismissal streaks and owner isolation')
+ // A bounded history must prefer recent keys, not the first 50 alphabetically.
+ await q(`insert into public.notifications(user_id,kind,key,title,body,url,due_at,status,sent_at)
+   select $1,'due','history:'||g.i,'Test','Hello','#/',now(),'sent',now()-make_interval(mins=>g.i)
+   from generate_series(1,60) g(i)`,[owner])
+ await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at,status,sent_at) values($1,'resume','zz-recent','Test','Hello','#/',now(),'sent',now())",[owner])
+ const recentKeys=(await facts()).history.lastByKey
+ assert.equal(Object.keys(recentKeys).length,50)
+ assert.ok(Object.hasOwn(recentKeys,'zz-recent'),'recent key must not be lost to alphabetical ordering')
+ assert.ok(!Object.hasOwn(recentKeys,'history:60'),'oldest key should be evicted')
+ console.log('PASS NOTIF-1b lastByKey retains fifty most recent keys')
  console.log('PASS NOTIF-1b dismissal streak resets on open and reaches three consecutive')
  await db.exec('reset role')
  await db.exec('set role authenticated')
