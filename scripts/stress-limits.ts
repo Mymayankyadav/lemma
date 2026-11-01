@@ -22,6 +22,7 @@ export function stressViolations(m: StressMeasurement): string[] {
   if (m.smallMath > 0) failures.push('maths below 16px');
   if (m.smallTargets > 0) failures.push('tap target below 44px');
   if (m.minCircleGap !== null && m.minCircleGap < 8) failures.push('marks closer than 8px');
+  if (!Number.isFinite(m.durationMs) || m.durationMs < 0) failures.push('invalid first render timing');
   if (m.cpuThrottle >= 4 && m.durationMs >= 1500) failures.push('4x CPU first render >= 1.5s');
   // The transfer budget applies to live API calls, not downloaded app assets.
   if (m.route === '/' && m.requestCount > 3) failures.push('Today exceeds 3 API requests');
