@@ -97,6 +97,14 @@ export async function runNotifyTick(
     const facts=await within(deps.load(userId,now,controller.signal));
     if(!facts||!Array.isArray(facts.candidates)||!facts.context)
      throw Error('Invalid owner facts');
+    const context=facts.context;
+    // The pure rules expect a normalized owner setting. A malformed database
+    // JSON value must not silently fall through to as-happens delivery.
+    if(!['as-happens','daily','weekly','off'].includes(context.mode)||
+       !Number.isSafeInteger(context.dailyCap)||context.dailyCap<1||context.dailyCap>5||
+       !Number.isSafeInteger(context.sendsToday)||context.sendsToday<0||
+       (context.lastSendAt!==undefined&&!Number.isFinite(context.lastSendAt)))
+     throw Error('Invalid owner notification settings');
     if(controller.signal.aborted)break;
     const decisions=decideNotifications(facts.candidates,{...facts.context,now});
     const queued=await within(deps.queue(userId,decisions,controller.signal));
