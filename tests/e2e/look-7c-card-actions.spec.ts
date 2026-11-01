@@ -14,6 +14,10 @@ test('Card detail actions are explicit, reversible and keyboard accessible',asyn
  const menu=page.getByRole('menu',{name:'Card actions'});
  const suspend=menu.getByRole('menuitem',{name:'Suspend card'});
  await expect(suspend).toBeFocused();
+ await page.keyboard.press('ArrowDown');
+ await expect(menu.getByRole('menuitem',{name:'Delete card'})).toBeFocused();
+ await page.keyboard.press('ArrowUp');
+ await expect(suspend).toBeFocused();
  await suspend.click();
  await expect(page.getByText('Paused',{exact:true})).toBeVisible();
  await actions.click();
