@@ -42,7 +42,7 @@ export async function sendWebPush(
  const priorFailures=request.priorFailures??0;
  if(!Number.isSafeInteger(priorFailures)||priorFailures<0||typeof tag!=='string'||!isTopic(tag)||
     !KINDS.has(kind)||!payload||typeof payload!=='object'||Array.isArray(payload)||
-    payload.kind!==undefined&&payload.kind!==kind||payload.tag!==undefined&&payload.tag!==tag)
+    payload.kind!==kind||payload.tag!==tag)
   return {status:'failed'};
  let endpoint:URL;
  try{endpoint=new URL(subscription.endpoint)}
