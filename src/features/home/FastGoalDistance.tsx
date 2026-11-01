@@ -1,6 +1,6 @@
 // Eager entry for large desks; keeps the exact bounded Metro/goal behaviour.
 // The small-desk GoalDistance remains a separate lazy route chunk.
-import {lazy,Suspense,useState} from 'react'
+import {lazy,Suspense,useEffect,useState} from 'react'
 import {useQuery} from '@tanstack/react-query'
 import {getApi} from '../../data'
 import {getMode,getDemoProfile} from '../../data/mode'
@@ -74,6 +74,13 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
 export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
  const active=projects.filter(project=>project.status==='active').sort(urgency)
  const [showRest,setShowRest]=useState(false)
+ // Record the first committed, data-backed goal UI; this is a local
+ // performance mark, not analytics and not a substitute for the hard gate.
+ useEffect(()=>{
+  if(getMode()==='demo'&&getDemoProfile()!=='default'&&
+     performance.getEntriesByName('lemma-stress-goal-mounted','mark').length===0)
+   performance.mark('lemma-stress-goal-mounted');
+ },[])
  // Live and S/X stress Insights return bounded aggregates with no checkpoint
  // events. Querying them on cold Today cannot improve goal pace, but competes
  // with the first meaningful Route paint under 4x CPU. The small default demo

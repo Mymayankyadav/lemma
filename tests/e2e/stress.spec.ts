@@ -168,7 +168,12 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
      return {fixtureGenerateMs:duration('lemma-stress-fixture-generate'),
       fixtureHydrateMs:duration('lemma-stress-fixture-hydrate'),
       domContentLoadedMs:nav?.domContentLoadedEventEnd??null,
-      loadedResources:performance.getEntriesByType('resource').length};
+      loadedResources:performance.getEntriesByType('resource').length,
+      homeQueryMs:duration('lemma-stress-home-query'),
+      homeQueryStartMs:performance.getEntriesByName('lemma-stress-home-query','measure')[0]?.startTime??null,
+      goalMountedMs:performance.getEntriesByName('lemma-stress-goal-mounted','mark')[0]?.startTime??null,
+      firstContentfulPaintMs:(performance.getEntriesByType('paint') as PerformanceEntry[])
+       .find(entry=>entry.name==='first-contentful-paint')?.startTime??null};
     });
     console.info('ST-0 cold Today phase timings',JSON.stringify({profile,theme,width,...phases}));
    }

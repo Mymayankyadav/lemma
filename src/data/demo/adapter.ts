@@ -1258,6 +1258,7 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   async getHome(): Promise<HomeSummary> {
+    const queryStarted=this.virtualStressDue?performance.now():0;
     const projects = (await this.listProjects(true)).filter(p => p.status !== "archived"),
       open = this.store.sessions
         .filter((s) => s.state === "open" && this.projectById(s.projectId).status !== "archived" && !this.projectById(s.projectId).system)
@@ -1276,6 +1277,10 @@ export class DemoAdapter implements LemmaApi {
             (cp) => cp.projectId === p.id && cp.status === "in_progress",
           )
       : null;
+    // Diagnostic-only User Timing: measure the real data query separately
+    // from browser navigation, React commit and screenshot readiness waits.
+    if(this.virtualStressDue)performance.measure('lemma-stress-home-query',
+      {start:queryStarted,end:performance.now()});
     return {
       resume:
         p && cp
