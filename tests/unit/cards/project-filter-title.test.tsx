@@ -16,4 +16,15 @@ describe('ST-4 project filters preserve mathematical titles',()=>{
   expect(option).not.toContain('$');
   expect(option).not.toContain('\\');
  });
+
+ it('FIX #608: plain stress titles avoid rich renderer but retain escaped text and 16px',()=>{
+  const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title:'Mathematics project 12 & analysis'}));
+  expect(html).toContain('Mathematics project 12 &amp; analysis');
+  expect(html).not.toContain('lemma-tex-inline');
+  expect(html).toContain('text-base');
+ });
+ it('FIX #608: Markdown formatting still uses rich renderer',()=>{
+  const html=renderToStaticMarkup(createElement(ProjectFilterTitle,{title:'**Topology**'}));
+  expect(html).toContain('<strong>Topology</strong>');
+ });
 });
