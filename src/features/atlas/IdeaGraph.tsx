@@ -1,8 +1,10 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {X} from 'lucide-react';
+import {Sheet} from '../../ui/Sheet';
+import {AtlasDetailsPath} from './DetailsMath';
 import {Tex} from '../../ui/Tex';
 import type {AtlasNode,AtlasTree,Link as GraphLink} from './tree';
-import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcsFor,budgetArcs,expandedToDepth,focusOn,levelName,neighbours,rowTone,statusName,visibleRows} from './tree';
 import {Row,StatusMark,Wires,toneColor} from './Outline';
 import {buildAtlasRowGeometry} from './rowGeometry';
 
@@ -17,6 +19,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  const initial=()=>ideas>14?expandedToDepth(tree,2):new Set(branches.map(n=>n.id));
  const [expanded,setExpanded]=useState<Set<string>>(initial);
  const [related,setRelated]=useState(false),[selectedId,setSelectedId]=useState<string|null>(null);
+ const [details,setDetails]=useState(false);
  const box=useRef<HTMLDivElement>(null);
  const previousTree=useRef(tree);
  // The lazy useState initializer already chose the correct folds on mount.
@@ -25,7 +28,7 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  useEffect(()=>{
   if(previousTree.current===tree)return;
   previousTree.current=tree;
-  setExpanded(initial());setSelectedId(null);
+  setExpanded(initial());setSelectedId(null);setDetails(false);
  },[tree]);
  const rows=useMemo(()=>visibleRows(tree,expanded),[tree,expanded]);
  // Match the 56/44px Field/idea rows and notebook gaps in both the embedded
@@ -38,19 +41,30 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
  const arcBudget=useMemo(()=>budgetArcs(tree,rows,expanded,arcs,focus),[tree,rows,expanded,arcs,focus]);
  const selected=selectedId?tree.nodes.get(selectedId)??null:null;
  const near=selected?neighbours(tree,selected.id):null;
+ // The proposed ideas are not in the approved Atlas yet: breadcrumbs and
+ // neighbour controls stay entirely inside this review, never deep-linking
+ // to a nonexistent approved idea.
+ const selectedPath:AtlasNode[]=[];
+ if(selected){
+  const seen=new Set<string>();let current:AtlasNode|undefined=selected;
+  while(current&&!seen.has(current.id)){
+   selectedPath.unshift(current);seen.add(current.id);
+   current=current.parentId?tree.nodes.get(current.parentId):undefined;
+  }
+ }
  const depth=useMemo(()=>{
   for(const d of [1,2,3]){const set=expandedToDepth(tree,d);if(set.size===expanded.size&&[...set].every(x=>expanded.has(x)))return d}
   return branches.every(n=>expanded.has(n.id))?99:null;
  },[tree,expanded,branches]);
  const toggle=(id:string)=>setExpanded(prev=>{const next=new Set(prev);if(next.has(id))next.delete(id);else next.add(id);return next});
  const jump=(id:string)=>{
-  setExpanded(prev=>new Set([...prev,...ancestors(tree,id)]));setSelectedId(id);
+  setExpanded(prev=>new Set([...prev,...ancestors(tree,id)]));setSelectedId(id);setDetails(false);
   requestAnimationFrame(()=>requestAnimationFrame(()=>box.current?.querySelector(`[data-atlas-row="${CSS.escape(id)}"]`)
    ?.scrollIntoView({block:'nearest',behavior:'smooth'})));
  };
  const Names=({title,items,tone}:{title:string;items:AtlasNode[];tone:'up'|'down'})=>items.length?<p className="flex flex-wrap items-center gap-1.5">
   <span className="text-caption font-semibold" style={{color:toneColor[tone]}}>{title}</span>
-  {items.map(n=><button key={n.id} type="button" onClick={()=>jump(n.id)} className="min-h-11 rounded-chip border border-edge px-2 text-label"><Tex source={n.name}/></button>)}
+  {items.map(n=><button key={n.id} type="button" onClick={()=>jump(n.id)} className="min-h-11 rounded-chip border border-edge px-2 text-[16px]"><Tex source={n.name}/></button>)}
  </p>:null;
  return <div ref={box} className="flex flex-col gap-2" data-idea-graph="true">
   <div role="toolbar" aria-label={label+' view'} className="flex flex-wrap items-center gap-2">
@@ -76,19 +90,36 @@ export function IdeaGraph({tree,label,onCheckpoint}:{tree:AtlasTree;label:string
     <span aria-hidden="true"> · </span>
     <span className="text-ink-2">Opens up {near.unlocks.length}</span>
    </p>
-   {selected.blurb&&<Tex source={selected.blurb} className="block text-label text-ink-2"/>}
-   <Names title="Builds on" items={near.needs} tone="up"/>
-   <Names title="Opens up" items={near.unlocks} tone="down"/>
-   {selected.checkpointRefs.length>0&&<p className="flex flex-wrap items-center gap-1.5">
-    <span className="text-caption font-semibold text-ink-3">Taught in</span>
-    {selected.checkpointRefs.map(r=><button key={r.code} type="button" disabled={!onCheckpoint} onClick={()=>onCheckpoint?.(r.code)}
-     className="min-h-11 min-w-11 rounded-s border border-amber-line px-2 text-label font-semibold text-amber">{r.code}</button>)}
-   </p>}
+   <button type="button" onClick={()=>setDetails(true)}
+    className="min-h-11 self-start rounded-ctl border border-edge px-4 text-body font-semibold text-ink">Details</button>
   </div>}
+  <Sheet open={details&&!!selected} onClose={()=>setDetails(false)}
+   title={selected?<Tex source={selected.name}/>:undefined}>
+   {selected&&near&&<div data-proposed-idea-details="true" className="flex flex-col gap-3 rounded-ctl p-3 text-body"
+    style={{background:'var(--paper)'}}>
+    <AtlasDetailsPath names={selectedPath.map(n=>n.name)} onSelect={i=>jump(selectedPath[i].id)}/>
+    <p className="text-label text-ink-2">{levelName[selected.level]} · {statusName[selected.status]}</p>
+    {selected.blurb&&<Tex source={selected.blurb} className="block text-[16px] text-ink-2"/>}
+    <p className="text-label" aria-label="Idea connections">
+     <span style={{color:'var(--link)'}}>Builds on {near.needs.length}</span>
+     <span aria-hidden="true"> · </span>Opens up {near.unlocks.length}
+    </p>
+    <Names title="Builds on" items={near.needs} tone="up"/>
+    <Names title="Opens up" items={near.unlocks} tone="down"/>
+    <Names title="Related" items={near.related} tone="up"/>
+    {selected.children.length>0&&<Names title="Inside" items={selected.children.map(id=>tree.nodes.get(id)!).filter(Boolean)} tone="down"/>}
+    {selected.checkpointRefs.length>0&&<p className="flex flex-wrap items-center gap-1.5">
+     <span className="text-caption font-semibold text-ink-3">Taught in</span>
+     {selected.checkpointRefs.map(r=><button key={r.code} type="button" disabled={!onCheckpoint}
+      onClick={()=>{setDetails(false);onCheckpoint?.(r.code)}}
+      className="min-h-11 min-w-11 rounded-s border border-edge px-3 text-body font-semibold text-ink">{r.code}</button>)}
+    </p>}
+   </div>}
+  </Sheet>
   <div className="relative overflow-hidden rounded-ctl border border-edge" style={{background:'var(--paper)'}} role="tree" aria-label={label}>
    {rows.map(row=>{const node=tree.nodes.get(row.id)!;
     return <Row key={row.id} node={node} open={expanded.has(row.id)} tone={rowTone(tree,row.id,focus,selectedId,!expanded.has(row.id))} match={false}
-     onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id)}}/>})}
+     onToggle={()=>toggle(row.id)} onSelect={()=>{if(node.children.length)toggle(node.id);setSelectedId(selectedId===node.id?null:node.id);setDetails(false)}}/>})}
    <Wires arcs={arcBudget.visible} rows={rows.length} focus={focus}
     centers={geometry.centers} heightPx={geometry.totalHeight}/>
   </div>
