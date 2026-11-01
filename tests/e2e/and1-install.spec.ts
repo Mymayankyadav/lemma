@@ -70,6 +70,9 @@ test.describe('AND-1 real 1080×1920 listing captures',()=>{
    expect([today.readUInt32BE(16),today.readUInt32BE(20)]).toEqual([1080,1920])
    await page.goto(prefix+'#/atlas',{waitUntil:'domcontentloaded'})
    await expect(page.getByRole('heading',{name:'Atlas',exact:true,level:1})).toBeVisible()
+   // A heading-only screenshot could be captured before the knowledge tree
+   // hydrates. The store image must show real navigable Atlas content.
+   await expect(page.getByRole('treeitem').first()).toBeVisible({timeout:60_000})
    const atlas=await page.screenshot({path:`test-results/screens/and1/listing-atlas-${theme}-1080x1920.png`,scale:'device',fullPage:false,animations:'disabled'})
    expect([atlas.readUInt32BE(16),atlas.readUInt32BE(20)]).toEqual([1080,1920])
   })
