@@ -36,6 +36,16 @@ describe('FIX #651 defer noncritical scroll overflow hint',()=>{
   vi.advanceTimersByTime(500);
   expect(measure).not.toHaveBeenCalled();
  });
+ it('guards stale idle callbacks when a browser lacks cancelIdleCallback',()=>{
+  const callbacks:Array<()=>void>=[];
+  vi.stubGlobal('requestIdleCallback',(callback:()=>void)=>{callbacks.push(callback);return 18});
+  vi.stubGlobal('cancelIdleCallback',undefined);
+  const measure=vi.fn();
+  const cancel=scheduleScrollHintMeasure(measure);
+  cancel();
+  callbacks[0]();
+  expect(measure).not.toHaveBeenCalled();
+ });
  it('prefers idle time in supported browsers and cancels the idle task',()=>{
   const callbacks:Array<()=>void>=[];
   const request=vi.fn((callback:()=>void)=>{callbacks.push(callback);return 17});
