@@ -75,6 +75,9 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
   for(const change of [
    {subscription:{...base.subscription,endpoint:'http://push.example.test/sub'}},
    {subscription:{...base.subscription,endpoint:'https://user:pass@push.example.test/sub'}},
+   {subscription:{...base.subscription,endpoint:'https://localhost/push'}},
+   {subscription:{...base.subscription,endpoint:'https://127.0.0.1/push'}},
+   {subscription:{...base.subscription,endpoint:'https://[::1]/push'}},
    {tag:'bad topic'},
    {tag:'x'.repeat(33)},
    {kind:'unexpected' as DeliveryRequest['kind']},
