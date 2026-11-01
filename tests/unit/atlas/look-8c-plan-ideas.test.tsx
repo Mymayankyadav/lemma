@@ -18,6 +18,9 @@ describe('LOOK-8c plan-review Atlas hierarchy',()=>{
   expect(graph).toContain("import {Row,StatusMark,Wires,toneColor,statusName} from './Outline'");
   expect(graph).toContain('buildAtlasRowGeometry');
   expect(graph).toContain('rowTone(tree,row.id,focus,selectedId');
+  expect(graph).toContain('focused={!!focus}');
+  expect(graph).toContain('bg-[var(--ink)] text-[var(--paper)]');
+  expect(graph).toContain('bg-[var(--paper-2)] font-semibold text-ink');
   expect(graph).toContain('<Wires arcs={arcBudget.visible}');
   expect(graph).toContain('centers={geometry.centers}');
   expect(graph).toContain('heightPx={geometry.totalHeight}');
