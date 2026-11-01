@@ -11,7 +11,7 @@ describe('NOTIF-4b6a cron authorization',()=>{
  });
  it('rejects absent and blank configuration without exposing secrets',()=>{
   for(const configured of [undefined,'','short','g'.repeat(64)]){
-   const result=call(SECRET,configured);
+   const result=authorizeCronTick(SECRET,configured);
    expect(result).toEqual({ok:false,status:503,message:'Reminders are not set up yet'});
    expect(JSON.stringify(result)).not.toContain(SECRET);
   }
