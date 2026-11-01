@@ -75,9 +75,20 @@ function ForecastOnDemand({defer}:{defer:boolean}){
   if(target.current)observer.observe(target.current);
   return ()=>observer.disconnect();
  },[mounted]);
- const loading=<div aria-label="Seven-day review forecast" role="status" className="min-h-20"><Skeleton h={80}/></div>;
+ // A below-fold forecast is deliberately deferred on a large demo desk.
+ // Do not leave a pulsing loading skeleton in the finished page: it falsely
+ // advertises a stalled request and invalidates all-route readiness evidence.
+ // The real forecast still mounts on intersection or an explicit 44px action.
+ const waiting=<div aria-label="Seven-day review forecast" role="status"
+  className="flex min-h-20 items-center text-label text-ink-2">
+  Loading seven-day forecast…
+ </div>;
  return <div ref={target} data-forecast-on-demand="">
-  {mounted?<Suspense fallback={loading}><ReviewOutlook/></Suspense>:loading}
+  {mounted?<Suspense fallback={waiting}><ReviewOutlook/></Suspense>:
+   <button type="button" onClick={()=>setMounted(true)}
+    className="flex min-h-20 w-full items-center text-left text-label text-ink-2 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--link)]">
+    Show seven-day forecast
+   </button>}
  </div>;
 }
 
