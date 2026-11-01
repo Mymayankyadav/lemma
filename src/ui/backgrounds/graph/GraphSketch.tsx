@@ -1,5 +1,6 @@
-import {useEffect,useState} from 'react';
-import {useReviewSession} from '../../../features/review-run/store';
+import {lazy,Suspense,useEffect,useState} from 'react';
+
+const ReviewCurve=lazy(()=>import('./ReviewCurve'));
 
 type Sketch='today'|'paths'|'review'|'insights'|'unit';
 /** A static, pointer-free engineering-pad sketch. Nothing animates or tracks the pointer. */
@@ -23,7 +24,6 @@ function kindFor(path:string):Sketch|null {
  return null; // Atlas and active card review show the grid only.
 }
 export function GraphSketch({path}:{path:string}){
- const completedReview=useReviewSession(s=>s.completedRound);
  const [theme,setTheme]=useState(()=>document.documentElement.dataset.theme);
  useEffect(()=>{
   const refresh=()=>setTheme(document.documentElement.dataset.theme);
@@ -42,7 +42,7 @@ export function GraphSketch({path}:{path:string}){
    {Array.from({length:5},(_,i)=><path key={'y'+i} d={`M26 ${45+i*35}h8`}/>)}
   </g>
   <path d={figure.path} fill="none" stroke="var(--accent)" strokeWidth="2" opacity={opacity} strokeLinecap="round"/>
-  {kind==='review'&&completedReview&&figure.second&&<path d={figure.second} fill="none" stroke="var(--accent)" strokeWidth="1.5" opacity={opacity*.7} strokeDasharray="3 5"/>}
+  {kind==='review'&&figure.second&&<Suspense fallback={null}><ReviewCurve path={figure.second} opacity={opacity*.7}/></Suspense>}
   {figure.turns?.map(([x,y],i)=><circle key={i} cx={x} cy={y} r="3" fill="var(--accent)" opacity={opacity}/>)}
  </svg>;
 }

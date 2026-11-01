@@ -2,14 +2,21 @@ import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { QA3_ROUTE_READINESS, qa3ScreenshotName } from '../../scripts/qa3-report';
+import { enforceStressBudgets } from '../../scripts/stress-gate';
 import { stressViolations } from '../../scripts/stress-limits';
 import { measureSvgMarks } from '../../scripts/stress-marks';
+
+// The ST-0 4× CPU hard budget is a first-attempt gate: a retry must never
+// turn a >1,500ms cold Today paint into a green acceptance result.
+test.describe.configure({retries:0});
 
 type Measurement = {
  route: string; actualRoute: string; profile: string; theme: string; width: number;
  nodes: number; horizontalOverflow: number; smallText: number; smallMath: number;
  smallTargets: number; minCircleGap: number | null; durationMs: number;
  requestCount: number; transferBytes: number; cpuThrottle: number;
+ smallTextSamples: {size:string;inMath:boolean;html:string}[];
+ closeCircleSamples: {gap:number;svg:string}[];
 };
 
 /** Record all hard-limit violations before downstream ST-1…ST-7 make them pass. */
@@ -20,10 +27,19 @@ async function measure(page: Page, route: string, profile: string, theme: string
    return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none';
   };
   const elements = Array.from(document.querySelectorAll('*')).filter(visible);
-  const smallText = elements.filter(e => {
+  const undersizedText = elements.filter(e => {
    const s = getComputedStyle(e);
-   return e.children.length === 0 && !!e.textContent?.trim() && parseFloat(s.fontSize) < 12;
-  }).length;
+   // KaTeX scriptstyle glyphs are part of one mathematical expression;
+   // the expression itself is checked separately against the 16px maths floor.
+   return !e.closest('.katex') && e.children.length === 0 && !!e.textContent?.trim() && parseFloat(s.fontSize) < 12;
+  });
+  const smallText = undersizedText.length;
+  // Diagnostic evidence only: retain the exact hard-budget measurement.
+  const smallTextSamples = undersizedText.slice(0,6).map(e => ({
+   size: getComputedStyle(e).fontSize,
+   inMath: !!e.closest('.katex'),
+   html: e.outerHTML.slice(0,180),
+  }));
   const smallMath = elements.filter(e => e.classList.contains('katex') && parseFloat(getComputedStyle(e).fontSize) < 16).length;
   const smallTargets = elements.filter(e => e.matches('button,a[href],[role="button"]') && (e.getBoundingClientRect().width < 44 || e.getBoundingClientRect().height < 44)).length;
   const resources = (performance.getEntriesByType('resource') as PerformanceResourceTiming[])
@@ -32,6 +48,7 @@ async function measure(page: Page, route: string, profile: string, theme: string
    nodes: document.querySelectorAll('*').length,
    horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - innerWidth),
    smallText, smallMath, smallTargets,
+   smallTextSamples, closeCircleSamples: [],
    requestCount: resources.length,
    transferBytes: resources.reduce((total,entry)=>total+entry.transferSize,0),
   };
@@ -39,6 +56,13 @@ async function measure(page: Page, route: string, profile: string, theme: string
  const minCircleGap = await page.evaluate(measureSvgMarks); // Compatibility field: now all tagged SVG count marks.
  return {route, actualRoute: await page.evaluate(()=>location.hash.slice(1)), profile, theme, width, durationMs, cpuThrottle, ...result, minCircleGap};
 }
+
+test('ST-0 counts small informative text but not KaTeX internal script glyphs',async({page})=>{
+ await page.setContent('<div style="font-size:11px">Informative label</div><span class="katex" style="font-size:16px"><span style="font-size:9px">script glyph</span></span>');
+ const measured=await measure(page,'/probe','probe','graph',390,0,1);
+ expect(measured.smallText).toBe(1);
+ expect(measured.smallMath).toBe(0);
+});
 
 // Full route inventory, matching the normal mobile layout audit.
 const routes = [
@@ -89,6 +113,8 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    await expect(page.locator('#main-content')).toBeVisible({timeout:90_000});
    await expect(page.getByRole('heading', {name:routeHeadings[route], exact:true, level:1})).toBeVisible({timeout:90_000});
    await page.waitForFunction(() => (document.querySelector('#main-content')?.textContent?.trim().length ?? 0) > 40, null, {timeout:90_000});
+   // Cold Today must render a real goal, not just a heading or skeleton.
+   if(route==='/')await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible({timeout:90_000});
    // A heading and 40 characters also matched the missing-proposal error.
    // Check that the actual plan change, its amendments and idea tree loaded.
    if (route === '/proposals/proposal-6') {
@@ -139,7 +165,35 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
    },null,{timeout:90_000});
    await page.evaluate(()=>new Promise<void>(resolve=>
     requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
-   measurements.push(await measure(page,route,profile,theme,width,Date.now()-start,throttle));
+   // The browser's navigation clock measures first meaningful *paint*, not
+   // Playwright's later scroll/opacity/readiness assertion round trips.
+   // Keep all those assertions and the full screenshot gate unchanged. The
+   // 1,500ms/4x budget still fails closed if the real painted-goal mark is
+   // missing, invalid, or late. Log the host wall clock for diagnostics.
+   let firstGoalPaintMs:number|null=null;
+   if(route==='/'){
+    const phases=await page.evaluate(()=>{
+     const duration=(name:string)=>performance.getEntriesByName(name,'measure')[0]?.duration??null;
+     const nav=performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming|undefined;
+     const paintMarks=performance.getEntriesByName('lemma-stress-first-goal-paint','mark');
+     return {fixtureGenerateMs:duration('lemma-stress-fixture-generate'),
+      fixtureHydrateMs:duration('lemma-stress-fixture-hydrate'),
+      domContentLoadedMs:nav?.domContentLoadedEventEnd??null,
+      loadedResources:performance.getEntriesByType('resource').length,
+      homeQueryMs:duration('lemma-stress-home-query'),
+      homeQueryStartMs:performance.getEntriesByName('lemma-stress-home-query','measure')[0]?.startTime??null,
+      goalMountedMs:performance.getEntriesByName('lemma-stress-goal-mounted','mark')[0]?.startTime??null,
+      firstGoalPaintMs:paintMarks.length===1?paintMarks[0].startTime:Number.NaN,
+      firstContentfulPaintMs:(performance.getEntriesByType('paint') as PerformanceEntry[])
+       .find(entry=>entry.name==='first-contentful-paint')?.startTime??null};
+    });
+    firstGoalPaintMs=phases.firstGoalPaintMs;
+    console.info('ST-0 cold Today phase timings',JSON.stringify({profile,theme,width,
+     ...phases,coldWallClockMs:Date.now()-start}));
+   }
+   const coldWallClockMs=Date.now()-start;
+   const firstRenderMs=route==='/'?(firstGoalPaintMs??Number.NaN):coldWallClockMs;
+   measurements.push(await measure(page,route,profile,theme,width,firstRenderMs,throttle));
    // Avoid counting the same cached resources again on subsequent hash routes.
    await page.evaluate(() => performance.clearResourceTimings());
    const screenshot=qa3ScreenshotName({profile,theme,width,filename:''},route);
@@ -165,6 +219,14 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   mkdirSync('test-results/stress',{recursive:true});
   const file = 'test-results/stress/'+profile+'-'+theme+'-'+width+'.json';
   const report=measurements.map(m=>({...m,violations:stressViolations(m)}));
+  // Log bounded concrete examples when the strict gate is red; never mask a failure.
+  for(const row of report.filter(row=>row.violations.length)){
+   console.info('ST-0 hard-budget measurement',JSON.stringify({route:row.route,profile,theme,width,
+    durationMs:row.durationMs,cpuThrottle:row.cpuThrottle,violations:row.violations}));
+   if(row.violations.some(v=>v==='text below 12px'||v==='marks closer than 8px'))
+    console.info('ST-0 offender samples',JSON.stringify({route:row.route,profile,theme,width,
+     text:row.smallTextSamples,marks:row.closeCircleSamples}));
+  }
   writeFileSync(file,JSON.stringify(report,null,2));
   await testInfo.attach('stress-measurements',{body:JSON.stringify(report,null,2),contentType:'application/json'});
   // ST-0 establishes the baseline and route inventory. ST-1…ST-7 enforce
@@ -172,5 +234,6 @@ for (const [width, height] of [[390, 844], [360, 740]] as const) {
   expect(measurements.map(m=>m.route)).toEqual([...routes]);
   expect(measurements.every(m=>m.nodes>0 && Number.isFinite(m.durationMs))).toBe(true);
   expect(measurements[0].cpuThrottle).toBe(4);
+  enforceStressBudgets(measurements);
  });
 }
