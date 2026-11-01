@@ -138,12 +138,16 @@ function openDb(userId:string):Promise<IDBDatabase>{
   req.onerror=()=>reject(req.error??Error('Cannot open offline snapshot'))
  })
 }
-export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=Date.now()):Promise<void>{
+export async function saveOfflineSnapshot(userId:string,client:QueryClient,now=Date.now(),canWrite:()=>boolean=()=>true):Promise<void>{
+ // An offline/account switch may occur while IndexedDB is opening. Never
+ // commit a queued online save after the connection or owner has changed.
+ if(!canWrite())return
  // Capture the owner-scoped data before opening IndexedDB asynchronously:
  // another auth event may clear/refill the shared query cache during that await.
  const snapshot=snapshotFromClient(client,now)
  const db=await openDb(userId)
  try{
+  if(!canWrite())return
   await new Promise<void>((resolve,reject)=>{
    const tx=db.transaction(STORE,'readwrite')
    tx.objectStore(STORE).put(snapshot,SLOT)
