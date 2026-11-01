@@ -5,7 +5,7 @@ import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
 import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
 import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
-import {isSourceFile} from '../../pdf/ingest';
+import {isSourceFile} from '../../pdf/validate';
 import {Screen} from '../../ui/Screen';
 import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
