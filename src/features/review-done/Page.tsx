@@ -17,8 +17,8 @@ import {prepareSessionNewRound} from './newSession';
 
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
  return <Tile className="flex min-h-[95px] flex-col items-center justify-center gap-1 px-2 py-3 text-center">
-  <Icon size={18} aria-hidden="true" className="text-amber"/>
-  <strong className="text-card font-semibold tabular-nums">{value}</strong>
+  <Icon size={18} aria-hidden="true" className="text-ink-2"/>
+  <strong className={"text-card font-semibold tabular-nums "+(value==="–"?"text-ink-4":"text-ink")}>{value}</strong>
   <span className="text-label text-ink-3">{label}</span>
  </Tile>;
 }
@@ -51,11 +51,11 @@ export default function Page(){
  const sure=firstAnswers.filter(a=>a.confidence==='sure');
  const sureRight=sure.filter(a=>a.rating>1).length;
  const seconds=Math.max(0,Math.floor(stats.durationMs/1000));
- const roundTime=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+ const roundTime=firstAnswers.length?Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0'):'–';
  const recalledAnswers=firstAnswers.filter(a=>a.rating>1);
  const recalled=recalledAnswers.length;
  const compact=firstAnswers.length>24;
- const firstRecall=firstAnswers.length?Math.round(100*recalled/firstAnswers.length)+'%':'—';
+ const firstRecall=firstAnswers.length?Math.round(100*recalled/firstAnswers.length)+'%':'–';
  function retryMissed(){
   if(!settings.data||!missed.length)return;
   const latest=new Map(answers.map(a=>[a.card.cardId,a]));
@@ -79,19 +79,20 @@ export default function Page(){
  }
  return <Screen className="items-center gap-5">
   <div className="mt-4 flex flex-col items-center text-center">
-   <RoundSeal order={firstAnswers.map(a=>a.card.cardId)} answers={answers}/>
+   {firstAnswers.length>0&&<RoundSeal order={firstAnswers.map(a=>a.card.cardId)} answers={answers}/>}
    <motion.h1 initial={quiet?false:{letterSpacing:'.4em'}} animate={{letterSpacing:'.02em'}} transition={{duration:quiet?0:.7}} className="mt-1 font-[var(--font-display)] text-[44px] italic text-ink">
-    <span className="sr-only">Review complete</span><span aria-hidden="true"><span className="text-amber">Q</span>.E.D.</span>
+    <span className="sr-only">Review complete</span><span aria-hidden="true">Q.E.D<span className="text-amber">.</span></span>
    </motion.h1>
-   <p className="mt-2 text-body-l text-ink-2">{firstAnswers.length} {firstAnswers.length===1?'card':'cards'} reviewed, {missed.length} {missed.length===1?'needed':'needed'} another pass.</p>
+   {!firstAnswers.length&&<p className="mt-2 text-body text-ink-3">Review a round to see stats.</p>}
+   {firstAnswers.length>0&&<p className="mt-2 text-body-l text-ink-2">{firstAnswers.length} {firstAnswers.length===1?'card':'cards'} reviewed, {missed.length} {missed.length===1?'needed':'needed'} another pass.</p>}
   </div>
   <section aria-label="Review statistics" className="grid w-full grid-cols-2 gap-2">
    <Metric icon={Target} label="recalled on the first try" value={firstRecall}/>
    <Metric icon={Clock3} label="time for the round" value={roundTime}/>
-   <Metric icon={RotateCcw} label="right when you were sure" value={sure.length?sureRight+'/'+sure.length:'—'}/>
-   <Metric icon={CalendarDays} label="due tomorrow" value={tomorrow===null?'—':String(tomorrow)}/>
+   <Metric icon={RotateCcw} label="right when you were sure" value={sure.length?sureRight+'/'+sure.length:'–'}/>
+   <Metric icon={CalendarDays} label="due tomorrow" value={firstAnswers.length&&tomorrow!==null?String(tomorrow):'–'}/>
   </section>
-  <section aria-label="Round transcript" className="w-full">
+  {firstAnswers.length>0&&<section aria-label="Round transcript" className="w-full">
    <h2 className="mb-2 font-math italic text-ink-2">Your round</h2>
    <div className="flex flex-col gap-3">
     {missed.length>0&&<div><p className="mb-2 text-label text-ink-3">{missed.length} missed</p>
@@ -110,7 +111,7 @@ export default function Page(){
       title={a.card.projectSlug+' · '+(['','Again','Hard','Good','Easy'][a.rating]??'')} to={'/cards/'+a.card.noteNo} className="flex min-h-11 min-w-11 items-center justify-center rounded-ctl border border-edge bg-raised px-2 text-label text-ink-2">{'N'+a.card.noteNo}</Link>)}</div>}
     </div>}
    </div>
-  </section>
+  </section>}
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>
   <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
