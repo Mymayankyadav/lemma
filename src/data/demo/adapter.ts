@@ -160,6 +160,7 @@ export class DemoAdapter implements LemmaApi {
   private readonly now: () => number;
   private stressDayStart: number | undefined;
   private virtualStressDue: {overdue:number;future:number}|null=null;
+  private virtualReviewNotes: DemoNote[]|null=null;
   // Due dates are immutable ISO values until a card is edited; keying by the
   // timestamp string preserves correctness after edits without invalidation.
   // The 30k-card fixture repeats two dates, so cold Today and DeckTree should
@@ -456,7 +457,35 @@ export class DemoAdapter implements LemmaApi {
       state: clone(card.state),
     };
   }
-  private allItems(include?: (state: CardState) => boolean) {
+  /** Review needs at most today's due synthetic cards. Keep the 26k future
+   * stress notes and unrelated Atlas graph virtual until their own routes ask
+   * for them. This fast path applies only to the private, unedited generated
+   * fixture while its future cohort is not due; all other cases use the full
+   * authored store and exactly the same daily-queue logic.
+   */
+  private reviewNotes(): DemoNote[] {
+    const deferred=typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
+    const template=demoSeedFixture.notes[0];
+    if(!deferred||!this.virtualStressDue||this.now()>=this.virtualStressDue.future||
+       !template||template.cards[0]?.state.state!==2)return this.store.notes;
+    if(!this.virtualReviewNotes){
+      const dueCount=this.store.stressDueCount??0;
+      const notes=makeStressNotes(template,this.store.projects,dueCount,dueCount);
+      // Do not spread the live store here: its notes, sources and concepts
+      // are lazy accessors. A minimal owned shell hydrates only these cards.
+      const staging:DemoStore={
+        version:1,seed:this.store.seed,settings:{...this.store.settings},
+        styles:[],subjects:[],projects:[],checkpoints:[],sources:[],
+        sessions:[],notes,reviews:[],proposals:[],concepts:[],links:[],
+        misconceptions:[],checkpointEvents:[],
+        stressReviewCount:this.store.stressReviewCount,
+      };
+      this.virtualReviewNotes=hydrateFixture(staging,this.now(),
+        this.store.settings.timeZone,{takeOwnership:true}).notes;
+    }
+    return this.virtualReviewNotes;
+  }
+  private allItems(include?: (state: CardState) => boolean, notes?: readonly DemoNote[]) {
     // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
     // identities once instead of scanning all checkpoints for every card.
     const projects = new Map<string, DemoProject>(this.store.projects
@@ -464,7 +493,7 @@ export class DemoAdapter implements LemmaApi {
       .map(p => [p.id, p] as const));
     const checkpoints = new Map<string, DemoCheckpoint>(this.store.checkpoints
       .map(cp => [cpKey(cp.projectId, cp.code), cp] as const));
-    return this.store.notes
+    return (notes??this.store.notes)
       .filter(n => n.note.status === "active" && projects.has(n.projectId))
       .flatMap(n => {
         const project = projects.get(n.projectId)!;
@@ -496,7 +525,7 @@ export class DemoAdapter implements LemmaApi {
     // 26,000 cloned ReviewItems only to discard them in the 30k-card fixture.
     // Keep every new card, plus every due/learning card before study-day end.
     return dueToday(this.allItems(state => state.state === 0 ||
-      this.dueTime(state.due) < end), this.store.settings, {
+      this.dueTime(state.due) < end,this.reviewNotes()), this.store.settings, {
       now: this.now(),
       answeredToday: today.length,
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
@@ -1687,8 +1716,13 @@ export class DemoAdapter implements LemmaApi {
     // Array.find did up to 75 million comparisons before Review could paint.
     // Index concepts once and attach metadata only to the bounded daily
     // queue, never all 30,000 cards. Concept/session filtering is unchanged.
-    const conceptSlugs = new Map(this.store.concepts.map(c => [c.id, c.slug] as const));
-    for (const note of this.store.notes) {
+    const notes=this.reviewNotes();
+    // Generated stress notes have no concept IDs. Avoid hydrating 2,500
+    // unrelated Atlas ideas merely to build a map with no matching keys.
+    const conceptSlugs = notes===this.virtualReviewNotes
+      ?new Map<string,string>()
+      :new Map(this.store.concepts.map(c => [c.id, c.slug] as const));
+    for (const note of notes) {
       const slug = note.conceptId ? conceptSlugs.get(note.conceptId) : undefined;
       const concepts = slug ? [slug] : [];
       for (const card of note.cards) {
