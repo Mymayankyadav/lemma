@@ -45,4 +45,38 @@ describe('FIX #507: extreme Review queue concept indexing',()=>{
    expect(find).not.toHaveBeenCalled();
   }finally{find.mockRestore()}
  },30_000);
+
+ it('keeps 30k synthetic notes and 2.5k Atlas ideas deferred for a bounded Review queue',async()=>{
+  const fixture=makeStressStore(seed,'extreme',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  });
+  const api=new DemoAdapter({fixture,ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const store=(api as unknown as {store:DemoStore}).store;
+  const deferred=(key:'notes'|'concepts'|'sources')=>
+   typeof Object.getOwnPropertyDescriptor(store,key)?.get==='function';
+  expect(deferred('notes')).toBe(true);
+  expect(deferred('concepts')).toBe(true);
+  expect(deferred('sources')).toBe(true);
+  const due=await api.getReviewItems({...filter});
+  expect(due).toHaveLength(200);
+  expect(due.every(item=>item.cardId.startsWith('stress-card-'))).toBe(true);
+  // Review needs only today's bounded cards, not 30k future cards or Atlas.
+  expect(deferred('notes')).toBe(true);
+  expect(deferred('concepts')).toBe(true);
+  expect(deferred('sources')).toBe(true);
+ },30_000);
+
+ it('matches the eager stress Review queue exactly, including note metadata',async()=>{
+  const eager=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const lazy=new DemoAdapter({fixture:makeStressStore(seed,'stress',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const expected=await eager.getReviewItems({...filter});
+  const actual=await lazy.getReviewItems({...filter});
+  expect(actual).toEqual(expected);
+  expect(actual.length).toBeGreaterThan(0);
+  const store=(lazy as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
+ },30_000);
 });
