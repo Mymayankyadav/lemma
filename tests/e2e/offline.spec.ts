@@ -151,6 +151,13 @@ test('AND-8 stale snapshot disables writes even when the browser reports online'
  await blocked.evaluate((button:HTMLButtonElement)=>button.click())
  await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
  await expect(page.getByRole('dialog',{name:/New card/i})).toHaveCount(0)
+ await page.evaluate(()=>{window.location.hash='/review'})
+ await expect(page.getByText('Reviewing needs a connection')).toBeVisible()
+ await expect(page.getByRole('button',{name:/Start review, needs a connection/})).toHaveAttribute('aria-disabled','true')
+ await page.evaluate(()=>{window.location.hash='/settings'})
+ await expect(page.getByRole('heading',{name:/Saved settings · read only/})).toBeVisible()
+ await page.evaluate(()=>{window.location.hash='/cards'})
+ await expect(page.getByRole('button',{name:'New card, needs a connection'})).toHaveAttribute('aria-disabled','true')
  await page.evaluate(()=>{
   delete document.documentElement.dataset.offlineSavedAt
   window.dispatchEvent(new CustomEvent('lemma:offline-snapshot',{detail:{savedAt:null}}))
