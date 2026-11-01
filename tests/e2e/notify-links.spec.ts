@@ -31,7 +31,7 @@ test('notification link with no selected due cards stays on Review and says All 
  for(let i=0;i<count;i++)await projects.nth(i).uncheck();
  await expect(page.getByText('All clear for today')).toBeVisible();
  await page.evaluate(()=>{location.hash='#/review?start=5'});
- await expect(page).toHaveURL(/#\\/review$/);
+ await expect(page).toHaveURL(/#\/review$/);
  await expect(page.getByText('All clear',{exact:true})).toBeVisible();
 });
 
