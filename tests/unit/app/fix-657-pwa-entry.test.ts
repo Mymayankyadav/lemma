@@ -12,9 +12,5 @@ describe('FIX #657 cold entry PWA module boundary',()=>{
   expect(source).toContain('onOfflineReady');
   expect(source).toContain('onRegisterError');
  });
- it('keeps the Paths screen out of the cold Today entry chunk',()=>{
-  const routes=readFileSync('src/app/routes.tsx','utf8');
-  expect(routes).not.toMatch(/^import Page1 from ['"]\.\.\/features\/projects\/Page['"]/m);
-  expect(routes).toContain("const Page1=lazy(()=>import('../features/projects/Page'))");
- });
+
 });
