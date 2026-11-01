@@ -156,8 +156,8 @@ export default function Page(){
        {offline?'Due cards are saved for reading':selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
      </div>
      <Button aria-label="Start review" icon={Play} needsNetwork disabled={!todayShare&&!offline} onClick={()=>start()}>Start {todayShare}</Button>
-      {offline&&<p className="text-label text-ink-2" role="note">Reviewing needs a connection</p>}
     </div>
+    {offline&&<p className="mt-3 text-label text-ink-2" role="note">Reviewing needs a connection</p>}
     {overdue>0&&<div className="mt-4 text-label text-ink-2">
       <p>{overdue.toLocaleString()} overdue · spread over {spreadDays} {spreadDays===1?'day':'days'}</p>
       <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber"
