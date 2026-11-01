@@ -124,8 +124,10 @@ for(const width of [360,390] as const){
 // D6 acceptance: measure the interactive list transition under 4x CPU.
 // Loading the deterministic 30,000-card fixture happens before timing.
 // Unlike normal UI tests, a retry must never certify a failed 1000ms budget.
+// Ordered default mode avoids simultaneous 4x CPU tests on one CI runner,
+// while still executing all four cells even if one exceeds the limit.
 test.describe('D6 strict first-attempt 4x CPU budget',()=>{
- test.describe.configure({retries:0});
+ test.describe.configure({mode:'default',retries:0});
 for(const theme of ['graph','graph-night'] as const)
 for(const [width,height] of [[360,740],[390,844]] as const){
  test('ST-4 extreme cards open under 1s at 4x CPU: '+theme+' '+width,async({page},testInfo)=>{
