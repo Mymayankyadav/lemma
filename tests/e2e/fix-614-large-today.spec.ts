@@ -18,6 +18,7 @@ for(const width of [360,390] as const){
   await expect(card.locator('[data-goal-footnote]')).toBeVisible();
   await expect(card.locator('[data-schedule-chip]')).toBeVisible();
   await expect(card).not.toContainText(/keyboard navigation|checkpoints, now|\d+%/);
+  await expect(page.getByRole('region',{name:'Distance to your goals'})).not.toContainText(/\d+%/);
   const metrics=await card.evaluate(el=>{
    const route=el.querySelector<HTMLElement>('[data-route] a');
    const rect=el.getBoundingClientRect();
