@@ -78,6 +78,13 @@ describe('FIX-659f direct Project summary',()=>{
     expect(cp.dueCards,slug+'/'+cp.code).toBe(due);
    }
   }
+  // Once a card route hydrates the virtual note cache, the shortcut must
+  // fail closed to the ordinary dueToday calculation, not retain stale counts.
+  const fallback=vi.spyOn(api as unknown as {reviewNotes:()=>unknown},'reviewNotes');
+  const hydrated=await api.getProject('stress-project-3');
+  expect(fallback).toHaveBeenCalled();
+  expect(hydrated).toEqual(first);
+  fallback.mockRestore();
   const store=(api as unknown as {store:DemoStore}).store;
   expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
  },30_000);
