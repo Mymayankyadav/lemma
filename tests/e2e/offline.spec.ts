@@ -195,3 +195,40 @@ test('AND-8 stale snapshot disables writes even when the browser reports online'
  })
  await expect(page.getByRole('button',{name:'New card'})).toBeVisible()
 })
+
+/** A cold user can lose connectivity before the idle cache timer fires.
+ * The pending read-only snapshot must be committed before offline restore;
+ * deferring expensive serialization must not sacrifice immediate offline use.
+ */
+test('AND-8 immediate disconnect flushes a pending online snapshot',async({page,context})=>{
+ test.setTimeout(90_000)
+ await page.setViewportSize({width:360,height:740})
+ await page.goto('/lemma/?demo=1&theme=graph#/projects',{waitUntil:'domcontentloaded'})
+ await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible()
+ await expect(page.getByRole('link',{name:/Real Analysis/}).first()).toBeVisible()
+ await page.evaluate(()=>navigator.serviceWorker.ready)
+ // Do not wait for the idle debounce. The offline event must persist the
+ // successful project query even when its scheduled save has not run.
+ await context.setOffline(true)
+ await expect.poll(()=>page.evaluate(async()=>{
+  const request=indexedDB.open('lemma-offline:demo-default',1)
+  return await new Promise<boolean>(resolve=>{
+   request.onerror=()=>resolve(false)
+   request.onsuccess=()=>{
+    const db=request.result
+    const get=db.transaction('snapshot','readonly').objectStore('snapshot').get('latest')
+    get.onsuccess=()=>{
+     const snapshot=get.result as {entries?:{key:string[]}[]}|undefined
+     resolve(!!snapshot?.entries?.some(entry=>entry.key[0]==='projects'))
+     db.close()
+    }
+    get.onerror=()=>{resolve(false);db.close()}
+   }
+  })
+ }),{timeout:30_000}).toBe(true)
+ await page.reload({waitUntil:'domcontentloaded',timeout:30_000})
+ await expect(page.getByRole('heading',{name:'Paths',exact:true,level:1})).toBeVisible()
+ await expect(page.getByRole('status').filter({hasText:/You're offline/})).toBeVisible()
+ await expect(page.getByRole('link',{name:/Real Analysis/}).first()).toBeVisible()
+ await context.setOffline(false)
+})
