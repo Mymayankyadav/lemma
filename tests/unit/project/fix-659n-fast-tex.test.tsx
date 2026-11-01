@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {createElement} from 'react';
 import {describe,expect,it} from 'vitest';
-import {renderToStaticMarkup} from 'react-dom/server';
+import {renderAllReady} from '../../helpers/renderAllReady';
 import {FastTex} from '../../../src/ui/FastTex';
 
 // A cold Project Route should not statically evaluate the full Markdown/KaTeX
@@ -18,16 +18,14 @@ describe('FIX-659n direct Project FastTex adoption',()=>{
    expect(source,path).not.toMatch(/import\s*\{\s*Tex\s*\}\s*from\s*['"][^'"]*\/Tex['"]/);
   }
  });
- it('keeps actual KaTeX synchronously under renderToStaticMarkup',()=>{
-  const math=renderToStaticMarkup(createElement(FastTex,{source:'$\\frac{1}{2}
-});
-}));
+ it('keeps actual KaTeX in completed React streaming SSR and escapes markup',async()=>{
+  const math=await renderAllReady(createElement(FastTex,{source:'$\\frac{1}{2}$'}));
   expect(math).toContain('katex-html');
   expect(math).not.toContain('Rendering mathematical text');
-  const literal=renderToStaticMarkup(createElement(FastTex,{source:'A < B'}));
+  const literal=await renderAllReady(createElement(FastTex,{source:'A < B'}));
   expect(literal).not.toContain('<script');
   expect(literal).toContain('&lt;');
   const fast=readFileSync('src/ui/FastTex.tsx','utf8');
-  expect(fast).toContain('import.meta.env.SSR');
+  expect(fast).toContain("lazy(()=>import('./Tex')");
  });
 });
