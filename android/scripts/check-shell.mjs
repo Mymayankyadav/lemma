@@ -27,6 +27,8 @@ for (const required of [
 ]) ensure(manifest.includes(required), 'manifest missing ' + required)
 const gradle = await get('android/app/build.gradle')
 ensure(gradle.includes('io.github.mymayankyadav.lemma'), 'applicationId/namespace mismatch')
+ensure(gradle.includes("versionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')"),
+  'versionCode must safely parse CI run number with a local fallback')
 ensure(/minSdk\s+23/.test(gradle), 'minSdk 23 required')
 ensure(/targetSdk\s+(3[5-9]|[4-9]\d)/.test(gradle), 'targetSdk must be 35 or newer')
 ensure(gradle.includes('androidbrowserhelper:2.7.3'), 'pin latest minSdk-23-compatible Android Browser Helper 2.7.3')
