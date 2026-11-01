@@ -38,6 +38,8 @@ describe('FIX #507 cold Today goal-summary entry',()=>{
   const stress=readFileSync('tests/e2e/stress.spec.ts','utf8')
   expect(fast).toContain("document.querySelector<HTMLElement>('[data-summary-goal]')")
   expect(fast).toContain('getBoundingClientRect()')
+  expect(fast).toContain('rect.top<window.innerHeight')
+  expect(fast).toContain('rect.left<window.innerWidth')
   expect(fast).toContain("performance.mark('lemma-stress-first-goal-paint')")
   expect(fast).toContain('requestAnimationFrame')
   expect(stress).toContain("performance.getEntriesByName('lemma-stress-first-goal-paint','mark')")
