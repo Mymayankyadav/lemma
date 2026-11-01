@@ -23,6 +23,7 @@ export type DeliveryResult={
  httpStatus?:number;
 };
 const MAX_JSON_BYTES=3072;
+const KINDS=new Set<PushKind>(['due','deadline','behind','resume','tutor','digest','plan','rhythm','confirm','test']);
 const utf8=new TextEncoder();
 const isTopic=(tag:string)=>/^[A-Za-z0-9_-]{1,32}$/.test(tag);
 const canRetry=(failures:number)=>failures<2;
@@ -39,7 +40,9 @@ export async function sendWebPush(
 ):Promise<DeliveryResult>{
  const {subscription,payload,vapid,kind,tag,signal}=request;
  const priorFailures=request.priorFailures??0;
- if(!Number.isSafeInteger(priorFailures)||priorFailures<0||typeof tag!=='string'||!isTopic(tag))
+ if(!Number.isSafeInteger(priorFailures)||priorFailures<0||typeof tag!=='string'||!isTopic(tag)||
+    !KINDS.has(kind)||!payload||typeof payload!=='object'||Array.isArray(payload)||
+    payload.kind!==undefined&&payload.kind!==kind||payload.tag!==undefined&&payload.tag!==tag)
   return {status:'failed'};
  let endpoint:URL;
  try{endpoint=new URL(subscription.endpoint)}
