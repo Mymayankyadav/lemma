@@ -148,10 +148,13 @@ export default function Page(){
   performance.measure('review-run-queue-initialize',{start:queueStart,end:performance.now()});
  },[settings.data,apiCards.data,filter]);
  const intervals=useMemo(()=>{
-  if(!settings.data||!current)return null;
+  // FSRS preview and scheduleConfig are not visible until the answer is
+  // revealed. Defer them off the strict cold first-card paint, then compute
+  // the same intervals for every grade button and committed review.
+  if(!revealed||!settings.data||!current)return null;
   try{return preview(current.state,Date.now(),scheduleConfig(settings.data))}
   catch{return null}
- },[settings.data,current]);
+ },[revealed,settings.data,current]);
  function close(){
   if(answers.length)navigate('/review/done');
   else {useReviewSession.getState().close();navigate('/review')}
