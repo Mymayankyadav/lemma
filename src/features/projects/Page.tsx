@@ -116,6 +116,22 @@ export default function Page(){
  // asynchronously during the unthrottled Paths visit, without evaluating
  // Cards in the cold Today/Atlas entry bundle or issuing a Cards data query.
  useEffect(()=>{void import('../cards/Page').catch(()=>{})},[]);
+ // FIX #647: Paths is the Atlas entry point. In demo mode, build the Atlas
+ // query and immutable outline while Paths is already on screen, before the
+ // user crosses the 4x-CPU-sensitive route boundary. This is a real navigation
+ // optimization, not a timing/test exception. Never issue speculative live
+ // requests, and keep failures non-fatal so Paths stays usable.
+ useEffect(()=>{
+  if(getMode()!=='demo')return;
+  void import('../atlas/Page').catch(()=>{});
+  void prefetchAtlasForPaths(queryClient,'demo',()=>getApi().getAtlas())
+   .then(async()=>{
+    const graph=queryClient.getQueryData<import('../../data/types').AtlasGraph>(['atlas']);
+    if(!graph)return;
+    const {buildAtlasTree}=await import('../atlas/tree');
+    buildAtlasTree(graph);
+   }).catch(()=>{});
+ },[queryClient]);
  const warmAtlas=useCallback(()=>{
   if(getMode()!=='demo')return;
   void import('../atlas/Page');
