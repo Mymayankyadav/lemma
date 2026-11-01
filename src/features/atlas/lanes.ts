@@ -47,8 +47,17 @@ export function layoutAtlasLanes(arcs:readonly Arc[],centers?:readonly number[],
   // independent overlapping intervals and only eight 9px tracks, the ninth
   // becomes an explicit overflow disclosure instead of an unreadable rope.
   const sharesTrunk=(p:Placement)=>p.arc.from===arc.from||p.arc.to===arc.to;
-  const fits=(lane:number)=>(byLane.get(lane)??[]).every(p=>
-   high<p.low||low>p.high||sharesTrunk(p));
+  // All candidates for this arc see the same placed set. Cache each lane's
+  // collision result once rather than rescanning a shared trunk repeatedly.
+  const fitCache=new Map<number,boolean>();
+  const fits=(lane:number):boolean=>{
+   const cached=fitCache.get(lane);
+   if(cached!==undefined)return cached;
+   const clear=(byLane.get(lane)??[]).every(p=>
+    high<p.low||low>p.high||sharesTrunk(p));
+   fitCache.set(lane,clear);
+   return clear;
+  };
   // Merge two insertion-ordered endpoint lists. The first fitting candidate
   // is identical to placed.find(sharesTrunk && fits), without scanning every
   // unrelated prior arc or sorting the candidates.
