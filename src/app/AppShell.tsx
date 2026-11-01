@@ -53,7 +53,14 @@ export default function AppShell(){
   const onOnline=()=>{publish(null);queueSave()};
   const unsubscribe=queryClient.getQueryCache().subscribe(event=>{
    if(event.type!=='updated'||!isOfflineKey(event.query.queryKey))return;
-   if(event.query.state.status==='success'){queueSave();return}
+   if(event.query.state.status==='success'){
+    // A successful fresh network read ends a stale-snapshot fallback. Merely
+    // hydrating old entries must not clear the warning or re-enable writes.
+    const restoredAt=Number(document.documentElement.dataset.offlineSavedAt);
+    if(navigator.onLine&&Number.isFinite(restoredAt)&&restoredAt>0&&
+       event.query.state.dataUpdatedAt>restoredAt)publish(null);
+    queueSave();return
+   }
    // navigator.onLine can be true during DNS/server failure. Restore only
    // when there is no live data, never after an authentication failure.
    const error=event.query.state.error as {code?:string}|null;
