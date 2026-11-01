@@ -437,7 +437,7 @@ export class DemoAdapter implements LemmaApi {
     if(!this.virtualStressDue ||
        typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get!=='function')
       return null;
-    const cp=Number(/^CP([1-9]\\d*)$/.exec(code)?.[1]);
+    const cp=Number(/^CP([1-9]\d*)$/.exec(code)?.[1]);
     if(!Number.isSafeInteger(cp)||cp<1||cp>36)return 0;
     const projectIndex=this.store.projects.findIndex(p=>p.id===project.id);
     const projectTotal=this.store.projects.length;
@@ -666,7 +666,7 @@ export class DemoAdapter implements LemmaApi {
   private checkpointSessions(project:DemoProject,code:string):DemoSession[]{
     if(!this.store.stressSessionCount)
       return this.store.sessions.filter(s=>s.projectId===project.id&&s.checkpointCode===code);
-    const cp=Number(/^CP([1-9]\\d*)$/.exec(code)?.[1]);
+    const cp=Number(/^CP([1-9]\d*)$/.exec(code)?.[1]);
     if(!Number.isSafeInteger(cp)||cp<1||cp>36)return [];
     const result:DemoSession[]=[];
     for(let number=cp;number<=this.store.stressSessionCount;number+=36)
