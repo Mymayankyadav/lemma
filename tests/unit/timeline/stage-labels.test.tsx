@@ -1,5 +1,5 @@
 import {describe,expect,it} from 'vitest';
-import {renderToStaticMarkup} from 'react-dom/server';
+import {renderAllReady} from '../../helpers/renderAllReady';
 import {MemoryRouter} from 'react-router';
 import {ProjectTimeline} from '../../../src/ui/timeline/ProjectTimeline';
 import type {CheckpointView} from '../../../src/data/types';
@@ -12,8 +12,8 @@ const checkpoints:CheckpointView[]=Array.from({length:20},(_,index)=>({
 }));
 
 describe('ST-1 stage Metro mathematical labels',()=>{
- it('renders the original stage names as maths, not raw or Stage N placeholders',()=>{
-  const html=renderToStaticMarkup(
+ it('renders the original stage names as maths, not raw or Stage N placeholders',async()=>{
+  const html=await renderAllReady(
    <MemoryRouter>
     <ProjectTimeline project={{title:'Math',slug:'math',done:0,total:20}} checkpoints={checkpoints}/>
    </MemoryRouter>
