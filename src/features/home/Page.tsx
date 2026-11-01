@@ -108,6 +108,25 @@ export function ReviewDesk({due}:{due:number}){
  </section>;
 }
 
+/** Tutor inbox and last-chat handoff are one paper surface. An empty
+ * inbox disappears rather than repeating the navigation dot's status. */
+export function TutorHandoff({home,onCopy}:{home:HomeSummary;onCopy:(projectTitle:string)=>void}){
+ return <Slab as="section" aria-label="Study handoff" className="flex min-w-0 flex-col gap-0 p-3">
+   {home.pendingProposals>0&&<section aria-label="From your tutor" className="flex min-w-0 flex-col gap-2">
+    <SectionHeading className="text-ink">From your tutor</SectionHeading>
+    <Link to="/proposals" aria-label={'Review '+home.pendingProposals+' tutor proposals'}
+     className="flex min-h-11 min-w-0 items-center justify-between gap-3 rounded-ctl px-1 py-2 text-label text-ink-2 focus-visible:outline-2 focus-visible:outline-amber">
+     <span className="min-w-0 break-words">{home.pendingProposals} tutor proposals awaiting your decision</span>
+     <ChevronRight size={16} className="shrink-0 text-ink-2" aria-hidden="true"/>
+    </Link>
+   </section>}
+   <section aria-label="Continue" className={'flex min-w-0 flex-col gap-2'+(home.pendingProposals>0?' mt-3 border-t border-edge pt-3':'')}>
+    <SectionHeading className="text-ink">Continue</SectionHeading>
+    <ResumeCard home={home} onCopy={onCopy}/>
+   </section>
+  </Slab>;
+}
+
 export default function Page(){
  const home=useHome(),settings=useSettings(),notify=useToast();
  const [offline,setOffline]=useState(typeof navigator!=='undefined'&&!navigator.onLine);
@@ -144,19 +163,6 @@ export default function Page(){
   </Link>}
   <GoalDistance projects={projects} variant="metro"/>
   <ReviewDesk due={home.data.due}/>
-  <Slab as="section" aria-label="Study handoff" className="flex min-w-0 flex-col gap-0 p-3">
-   {home.data.pendingProposals>0&&<section aria-label="From your tutor" className="flex min-w-0 flex-col gap-2">
-    <SectionHeading className="text-ink">From your tutor</SectionHeading>
-    <Link to="/proposals" aria-label={'Review '+home.data.pendingProposals+' tutor proposals'}
-     className="flex min-h-11 min-w-0 items-center justify-between gap-3 rounded-ctl px-1 py-2 text-label text-ink-2 focus-visible:outline-2 focus-visible:outline-amber">
-     <span className="min-w-0 break-words">{home.data.pendingProposals} tutor proposals awaiting your decision</span>
-     <ChevronRight size={16} className="shrink-0 text-ink-2" aria-hidden="true"/>
-    </Link>
-   </section>}
-   <section aria-label="Continue" className={'flex min-w-0 flex-col gap-2'+(home.data.pendingProposals>0?' mt-3 border-t border-edge pt-3':'')}>
-    <SectionHeading className="text-ink">Continue</SectionHeading>
-    <ResumeCard home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
-   </section>
-  </Slab>
+  <TutorHandoff home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
  </Screen>;
 }
