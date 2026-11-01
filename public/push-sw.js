@@ -80,6 +80,14 @@ self.addEventListener('notificationclick',event=>{
   const decision=core.clickDecision(data,event.action||'',self.registration.scope);
   if(!decision)return;
   const passiveReceipt=!event.action||decision.action==='open';
+  if(passiveReceipt){
+   // Attempt the signed receipt before navigation, but do not wait for the
+   // network to settle before opening the destination. The outer waitUntil
+   // keeps the best-effort receipt alive while navigation proceeds.
+   const receipt=decision.token?act(decision.token).catch(()=>{}):Promise.resolve();
+   await Promise.all([receipt,navigate(decision.url)]);
+   return;
+  }
   if(decision.token){
    try{
     const reply=await act(decision.token);
