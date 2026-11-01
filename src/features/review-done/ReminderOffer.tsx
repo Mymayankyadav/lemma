@@ -2,16 +2,13 @@ import {useEffect,useRef,useState} from 'react';
 import {getApi} from '../../data';
 import {getMode} from '../../data/mode';
 import {vapidPublicKey} from '../../data/env';
+import {isTwa,pushSupport} from '../../lib/platform';
 import {useSettings,useUpdateSettings} from '../../data/hooks';
 import type {PushDevice} from '../../data/types';
 import {Button} from '../../ui/Button';
 import {useToast} from '../../ui/Toast';
 
-function canOffer(){
- return typeof window!=='undefined' && 'Notification' in window &&
-  'PushManager' in window && 'serviceWorker' in navigator &&
-  Notification.permission!=='denied';
-}
+function canOffer(){return pushSupport()==='yes'}
 
 /** The VAPID public key is not a secret. Return an owned ArrayBuffer-backed view. */
 function applicationServerKey(value:string):Uint8Array<ArrayBuffer>{
@@ -22,6 +19,7 @@ function applicationServerKey(value:string):Uint8Array<ArrayBuffer>{
  return bytes;
 }
 function devicePlatform():PushDevice['platform']{
+ if(isTwa())return 'android_app';
  const agent=navigator.userAgent;
  return /Android/i.test(agent)?'android_web':/iPhone|iPad|iPod/i.test(agent)?'ios':'desktop';
 }
@@ -38,7 +36,7 @@ export function ReminderOffer({completed}:{completed:boolean}){
   if(counted.current||!completed||!settings.data||!canOffer())return;
   const prefs=settings.data.notify??{};
   const offered=Number(prefs.offered??0);
-  if(prefs.enabled||!Number.isFinite(offered)||offered>=2)return;
+  if((prefs.enabled&&prefs.mode!=='off')||!Number.isFinite(offered)||offered>=2)return;
   // Count the display, not a click, and persist before showing it. This
   // prevents a dismissed offer from reappearing indefinitely after reload.
   counted.current=true;
@@ -72,10 +70,11 @@ export function ReminderOffer({completed}:{completed:boolean}){
    const platform=devicePlatform();
    const device=await getApi().addPushDevice({
     endpoint:serialized.endpoint,p256dh:serialized.keys.p256dh,auth:serialized.keys.auth,
-    label:platform==='android_web'?'This phone · Chrome':platform==='ios'?'This phone · Safari':'This browser',
+    label:platform==='android_app'?'This phone · Lemma app':platform==='android_web'?'This phone · Chrome':platform==='ios'?'This phone · Safari':'This browser',
     platform,
    });
-   await update.mutateAsync({notify:{...(settings.data.notify??{}),enabled:true}});
+   await update.mutateAsync({notify:{...(settings.data.notify??{}),enabled:true,
+    mode:settings.data.notify?.mode==='off'?'live':settings.data.notify?.mode}});
    setVisible(false);
    toast('Reminders are on');
    try{await getApi().sendTestNotification(device.id)}
@@ -84,7 +83,7 @@ export function ReminderOffer({completed}:{completed:boolean}){
    toast("Couldn't turn on reminders. Try Settings.",{tone:'danger'});
   }finally{setBusy(false)}
  }
- if(!visible)return null;
+ if(!visible||!canOffer()||(settings.data?.notify?.enabled&&settings.data.notify.mode!=='off'))return null;
  return <section aria-label="Reminder offer" className="w-full border-t border-edge pt-3">
   <p className="text-body text-ink-2">Want a reminder when cards are due?</p>
   <div className="mt-2 flex flex-wrap items-center gap-2">
