@@ -1,6 +1,6 @@
 import {beforeAll,describe,expect,it,vi} from 'vitest';
 import {webcrypto} from 'node:crypto';
-import {ActionTokenError,signActionToken,verifyActionToken} from '../../../supabase/functions/notify/action-token';
+import {ActionTokenError,signActionToken,verifyActionToken,verifyCronHeader} from '../../../supabase/functions/notify/action-token';
 
 beforeAll(()=>vi.stubGlobal('crypto',webcrypto));
 const secret='a-local-test-only-secret-that-is-at-least-32-bytes-long';
@@ -55,5 +55,17 @@ describe('NOTIF-4a authenticated action links',()=>{
   await expect(verifyActionToken('x'.repeat(4097),secret,now)).rejects.toMatchObject({status:400});
   await expect(verifyActionToken('bad.token.with.dots',secret,now)).rejects.toMatchObject({status:400});
   await expect(signActionToken(basic,'short',now)).rejects.toBeInstanceOf(ActionTokenError);
+ });
+});
+
+describe('NOTIF-4a cron secret header',()=>{
+ it('accepts the exact secret and rejects missing, wrong, empty or oversized headers',async()=>{
+  expect(await verifyCronHeader(secret,secret)).toBe(true);
+  expect(await verifyCronHeader(null,secret)).toBe(false);
+  expect(await verifyCronHeader('',secret)).toBe(false);
+  expect(await verifyCronHeader(secret+'x',secret)).toBe(false);
+  expect(await verifyCronHeader(secret.slice(0,-1),secret)).toBe(false);
+  expect(await verifyCronHeader('x'.repeat(513),secret)).toBe(false);
+  expect(await verifyCronHeader(secret,'')).toBe(false);
  });
 });
