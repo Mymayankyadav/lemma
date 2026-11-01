@@ -1,4 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
+import {scheduleForVisibleProject} from './scheduleCache';
 import {Tex} from '../../ui/Tex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
@@ -10,7 +11,7 @@ import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
 import {scheduleHeadline,scheduleDate,scheduleColor,type ScheduledCheckpoint} from '../../lib/schedule';
-import {currentCheckpointIndex,scheduleForProject,groupCheckpointStages,type ProgressStage} from '../../ui/timeline/progress';
+import {currentCheckpointIndex,groupCheckpointStages,type ProgressStage} from '../../ui/timeline/progress';
 
 type Stage=ProgressStage;
 
@@ -33,7 +34,7 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
 export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'metro'}){
  const insight=useInsightData(30);
  const {project,subject,checkpoints,done,total}=detail;
- const {estimate,rows:schedule}=scheduleForProject(detail,insight.data?.checkpointEvents);
+ const {estimate,rows:schedule}=scheduleForVisibleProject(detail,insight.data?.checkpointEvents);
  const headline=scheduleHeadline(schedule);
  const current=checkpoints.findIndex(cp=>cp.ui==='now');
  const pct=total?Math.round(done/total*100):0;
@@ -135,7 +136,7 @@ export function Stages({detail}:{detail:ProjectDetail}){
  const [openStage,setOpenStage]=useState(initial);
  useEffect(()=>{setOpenStage(initial)},[detail.project.slug,initial]);
  const insight=useInsightData(30);
- const {rows}=scheduleForProject(detail,insight.data?.checkpointEvents);
+ const {rows}=scheduleForVisibleProject(detail,insight.data?.checkpointEvents);
  const schedule=new Map(rows.map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
