@@ -36,16 +36,19 @@ test('AND-1 manifest, service worker and installability contracts',async({page,r
  expect(new URL(sw.scope).pathname).toBe('/lemma/')
 })
 
-for(const world of ['day','night'] as const){
+test.describe('AND-1 actual 1080×1920 phone captures',()=>{
+ test.use({deviceScaleFactor:3})
+ for(const world of ['day','night'] as const){
  test('AND-1 genuine demo Today store screenshot '+world,async({page})=>{
   test.setTimeout(120_000)
-  await page.setViewportSize({width:1080,height:1920})
+  await page.setViewportSize({width:360,height:640})
   await page.emulateMedia({colorScheme:world==='day'?'light':'dark',reducedMotion:'reduce'})
   await page.goto('/lemma/?demo=1#/',{waitUntil:'domcontentloaded'})
   await expect(page.getByRole('heading',{name:'Home',level:1})).toBeVisible({timeout:60_000})
   await expect(page.getByRole('article',{name:/Goal progress for/}).first()).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
   await page.screenshot({path:'test-results/screens/and-1/today-'+world+'-1080x1920.png',
-   scale:'css',animations:'disabled',fullPage:false})
+   scale:'device',animations:'disabled',fullPage:false})
  })
-}
+ }
+})
