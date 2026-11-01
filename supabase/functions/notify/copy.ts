@@ -1,11 +1,11 @@
-import {notifyTitle,notifyBody} from '../_shared/notify-text.ts'
+import {notifyTitle,notifyBody,notifyText} from '../_shared/notify-text.ts'
 
 /** NOTIF-3a: one central, pure copy surface for every reminder kind.
  * All dates are preformatted in the owner's time zone as "d MMM" by the caller.
  * Never pass HTML, raw LaTeX or connector/auth data into system notifications.
  */
 export interface NoticeCopy {kind:string;tag:string;title:string;body:string}
-interface Checkpoint {project:string;code:string;title:string;step?:number;steps?:number}
+interface Checkpoint {project:string;slug?:string;code:string;title:string;step?:number;steps?:number}
 export type NoticeCopyInput =
  | {kind:'due';count:number;backlog:number;minutes:number}
  | {kind:'deadline';checkpoints:Checkpoint[]}
@@ -28,7 +28,8 @@ const toneSafe=(value:string)=>value
   only:'just',still:'currently',again:'next',hurry:'take your time'
  } as Record<string,string>)[word.toLowerCase()]??word)
  .replace(/!/g,'.')
- .replace(/[\u2600-\u27BF\u{1F300}-\u{1FAFF}\uFE0F]/gu,'')
+ .replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}\p{Emoji_Modifier}\u2600-\u27BF\u{1F300}-\u{1FAFF}\uFE0E\uFE0F\u200D\u20E3\u{E0020}-\u{E007F}]/gu,'')
+ .replace(/\s+([:;,.?])/g,'$1')
 const asCopy=(kind:string,tag:string,title:string,body:string):NoticeCopy=>({
  kind,tag,title:notifyTitle(toneSafe(title)),body:notifyBody(toneSafe(body))
 })
@@ -56,9 +57,34 @@ export function notificationCopy(input:NoticeCopyInput):NoticeCopy {
       ?"You're on step "+step+' of '+(cp.steps??step)+'; about 20 min today keeps it on time.'
       :'Starting today keeps it on time.'))
    }
-   const first=checkpoints.slice(0,3).map(cp=>cp.project+': '+cp.code+' '+cp.title)
-   if(checkpoints.length>3)first.push('+'+(checkpoints.length-3)+' more')
-   return asCopy('deadline','deadline',quantity(checkpoints.length,'checkpoint','checkpoints')+' planned for tomorrow',first.join(' · '))
+   // The three visible slots belong to projects, not checkpoint rows.
+   const projects=new Map<string,{first:Checkpoint;count:number}>()
+   for(const cp of checkpoints){
+    // Slugs identify projects; titles need not be unique. Older callers
+    // without a slug retain the original display-title grouping.
+    const key=cp.slug??cp.project
+    const group=projects.get(key)
+    if(group)group.count++
+    else projects.set(key,{first:cp,count:1})
+   }
+   const visible=Array.from(projects.entries()).slice(0,3)
+   const omitted=projects.size-visible.length
+   const suffix=omitted?'+'+omitted+' more':''
+   const separators=3*(visible.length-1+(suffix?1:0)) // ' · '
+   const perProject=Math.floor((140-separators-suffix.length)/visible.length)
+   const lines=visible.map(([,group])=>{
+    const project=group.first.project
+    const extras=group.count>1?' (+'+(group.count-1)+' '+
+     ((group.count-1)===1?'checkpoint':'checkpoints')+')':''
+    // Reserve the count before truncating a long title, otherwise the
+    // compact OS body silently loses how many checkpoints were grouped.
+    const name=notifyText(project,Math.max(2,perProject-group.first.code.length-extras.length-7))
+    const prefix=name+': '+group.first.code+' '
+    const title=notifyText(group.first.title,Math.max(2,perProject-prefix.length-extras.length))
+    return notifyText(prefix+title+extras,perProject)
+   })
+   if(suffix)lines.push(suffix)
+   return asCopy('deadline','deadline',quantity(checkpoints.length,'checkpoint','checkpoints')+' planned for tomorrow',lines.join(' · '))
   }
   case 'behind':
    return asCopy('behind','behind',input.project+': a smaller step today?',
