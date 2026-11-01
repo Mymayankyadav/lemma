@@ -57,6 +57,13 @@ for(const width of [360,390] as const){
   }
   await page.evaluate(()=>{window.location.hash='/review'})
   await expect(page.getByText('Reviewing needs a connection')).toBeVisible({timeout:30_000})
+  await page.evaluate(()=>{window.location.hash='/settings'})
+  await expect(page.getByRole('heading',{name:'Settings',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('heading',{name:/Saved settings · read only/})).toBeVisible()
+  await expect(page.getByText(/Needs a connection to change settings or view your connector address/)).toBeVisible()
+  await expect(page.getByRole('button',{name:'Copy connector address'})).toHaveCount(0)
+  await page.evaluate(()=>{window.location.hash='/review'})
+  await expect(page.getByText('Reviewing needs a connection')).toBeVisible()
   const start=page.getByRole('button',{name:/Start review, needs a connection/})
   await expect(start).toHaveAttribute('aria-disabled','true')
   await start.click()
