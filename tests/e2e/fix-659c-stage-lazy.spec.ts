@@ -17,7 +17,12 @@ for(const width of [360,390] as const){
   expect(await cards.count()).toBeGreaterThan(1)
   const expanded=page.locator('[data-stage-card] > button[aria-expanded="true"]').locator('..')
   await expect(expanded).toHaveCount(1)
-  const active=expanded.first()
+  // Resolve the stage by its fixed DOM index. A locator filtered by
+  // aria-expanded=true stops matching as soon as the stage is collapsed,
+  // making the second click impossible even though the control still exists.
+  const activeIndex=await cards.evaluateAll(nodes=>nodes.findIndex(node=>node.querySelector(':scope > button[aria-expanded="true"]')))
+  expect(activeIndex).toBeGreaterThanOrEqual(0)
+  const active=cards.nth(activeIndex)
   await expect(active.locator('[data-cp-row]').first()).toBeVisible()
   const collapsed=page.locator('[data-stage-card] > button[aria-expanded="false"]').locator('..')
   expect(await collapsed.count()).toBeGreaterThan(0)
@@ -27,8 +32,10 @@ for(const width of [360,390] as const){
   expect(rect).not.toBeNull()
   expect(rect!.height).toBeGreaterThanOrEqual(44)
   await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded','false')
   await expect(active.locator('[data-cp-row]')).toHaveCount(0)
   await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded','true')
   await expect(active.locator('[data-cp-row]').first()).toBeVisible()
   expect(await page.locator('*').count()).toBeLessThan(1500)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
