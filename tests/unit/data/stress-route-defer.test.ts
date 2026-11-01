@@ -109,6 +109,21 @@ describe('FIX #507 direct-route cold stress hydration',()=>{
   expect(generated).toBeLessThan(40);
  },30_000);
 
+
+ it('reads a generated session without hydrating unrelated synthetic notes',async()=>{
+  const eager=new DemoAdapter({fixture:makeStressStore(seed,'stress',{deferSessions:true}),
+   ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  const lazy=new DemoAdapter({fixture:makeStressStore(seed,'stress',{
+   deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
+  }),ownedFixture:true,now:()=>now,timeZone:'UTC'});
+  expect(await lazy.getSession('stress-project-3',7))
+   .toEqual(await eager.getSession('stress-project-3',7));
+  const store=(lazy as unknown as {store:DemoStore}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
+  expect(typeof Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBe('function');
+  expect(typeof Object.getOwnPropertyDescriptor(store,'sources')?.get).toBe('function');
+ },30_000);
+
  it('reads a direct extreme Card detail without materializing 30k unrelated notes',async()=>{
   const fixture=makeStressStore(seed,'extreme',{
    deferSessions:true,deferNotes:true,deferAtlas:true,deferSources:true,
