@@ -1,4 +1,4 @@
-import {decideNotifications,type ReminderCandidate,type ReminderContext,type RuleResult} from './rules.ts';
+import {decideNotifications,type ReminderCandidate,type ReminderContext,type ReminderKind,type RuleResult} from './rules.ts';
 
 /**
  * NOTIF-4b6b: orchestration only. The Edge route supplies authenticated
@@ -41,6 +41,7 @@ export interface TickOptions {
  signal?:AbortSignal;
 }
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const KINDS=new Set<ReminderKind>(['due','deadline','behind','resume','tutor','digest','plan','rhythm']);
 const safeCount=(value:unknown,max:number):value is number=>
  typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=max;
 const bound=(value:number|undefined,fallback:number,max:number)=>
@@ -97,6 +98,14 @@ export async function runNotifyTick(
     const facts=await within(deps.load(userId,now,controller.signal));
     if(!facts||!Array.isArray(facts.candidates)||!facts.context)
      throw Error('Invalid owner facts');
+    // Candidate facts come from an owner-scoped RPC, but malformed JSON must
+    // never create an arbitrary kind/key in the durable notification outbox.
+    // Array.from materializes sparse holes so they cannot evade validation.
+    if(!Array.from(facts.candidates).every(candidate=>
+     candidate&&typeof candidate==='object'&&
+     KINDS.has(candidate.kind)&&typeof candidate.key==='string'&&
+     candidate.key.trim().length>0))
+     throw Error('Invalid notification candidate');
     const context=facts.context;
     // The pure rules expect a normalized owner setting. A malformed database
     // JSON value must not silently fall through to as-happens delivery.
