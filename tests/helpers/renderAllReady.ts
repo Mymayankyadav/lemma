@@ -14,9 +14,10 @@ export function renderAllReady(element:ReactElement):Promise<string>{
   output.on('data',(chunk:string)=>{html+=chunk});
   output.on('end',()=>resolve(html));
   output.on('error',reject);
-  const stream=renderToPipeableStream(element,{
-   onAllReady(){stream.pipe(output)},
-   onError(error){stream.abort();reject(error)},
+  let stream:ReturnType<typeof renderToPipeableStream>|null=null;
+  stream=renderToPipeableStream(element,{
+   onAllReady(){stream?.pipe(output)},
+   onError(error){stream?.abort();reject(error)},
   });
  });
 }
