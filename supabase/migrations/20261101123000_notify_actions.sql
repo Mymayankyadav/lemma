@@ -121,9 +121,9 @@ begin
   elsif p_action='approve_cards' then
     if jsonb_typeof(p_extra->'ids') is distinct from 'array'
       or jsonb_array_length(p_extra->'ids')>50
-      or exists(select 1 from jsonb_array_elements(p_extra->'ids') v
-        where jsonb_typeof(v)<>'string'
-          or (v #>> '{}') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') then
+      or exists(select 1 from jsonb_array_elements(p_extra->'ids') as item(value)
+        where jsonb_typeof(item.value)<>'string'
+          or (item.value #>> '{}') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') then
       raise exception 'bad_action';
     end if;
     select coalesce(array_agg(value::uuid),'{}'::uuid[]) into ids
