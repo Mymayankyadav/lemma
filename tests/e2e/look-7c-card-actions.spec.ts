@@ -44,6 +44,7 @@ test('Saved tutor notes render their mathematical notation, not raw dollar delim
  await expect(note).toBeVisible();
  await expect(note.locator('.katex')).toBeVisible();
  await expect(note).not.toContainText('$\\forall');
+ await page.screenshot({path:'test-results/screens/review/look-7c-tutor-note-math.png',fullPage:true});
 });
 
 test('Card detail never carries a destructive dialog or overflow action to another card',async({page})=>{
