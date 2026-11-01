@@ -24,8 +24,11 @@ test("search, notes, editing and pause work for a card", async ({ page }) => {
   await expect(
     page.getByText("Next time you ask to update cards").first(),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Pause card" }).click();
-  await expect(page.getByRole("button", { name: "Resume card" })).toBeVisible();
+  await page.getByRole("button", { name: "Card actions" }).click();
+  await page.getByRole("menuitem", { name: "Suspend card" }).click();
+  await page.getByRole("button", { name: "Card actions" }).click();
+  await expect(page.getByRole("menuitem", { name: "Resume card" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Edit card" }).click();
   const dialog = page.getByRole("dialog", { name: "Edit card" });
   await dialog
@@ -153,7 +156,7 @@ for(const world of ['graph','graph-night'] as const){
   await expect(page.getByRole('article',{name:'Card front and answer'})).toBeVisible();
   const note=page.getByText('Too wordy. Make the hypotheses a cloze.');
   await expect(note).toBeVisible();
-  expect(await note.locator('..').evaluate(el=>getComputedStyle(el).borderLeftWidth)).toBe('2px');
+  expect(await note.locator('xpath=ancestor::*[@data-comment-row][1]').evaluate(el=>getComputedStyle(el).borderLeftWidth)).toBe('2px');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1)).toBe(false);
   await page.screenshot({path:`test-results/screens/ui-5g-card-detail-${world}.png`,fullPage:true});
  });

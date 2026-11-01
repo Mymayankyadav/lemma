@@ -4,7 +4,8 @@ import {Tex} from '../../ui/Tex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
 import {ChevronRight,Check,RotateCcw,CircleDot,ArrowRight,Lock,CircleDashed} from 'lucide-react';
-import {useInsightData,useProjects} from '../../data/hooks';
+import {useProjects} from '../../data/hooks';
+import {useProjectInsight} from './useProjectInsight';
 import type {CheckpointUi,CheckpointView,ProjectDetail} from '../../data/types';
 import {Route} from '../../ui/timeline/Route';
 import {Slab} from '../../ui/Slab';
@@ -32,7 +33,7 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
 }
 
 export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'metro'}){
- const insight=useInsightData(30);
+ const insight=useProjectInsight();
  const {project,subject,checkpoints,done,total}=detail;
  const {estimate,rows:schedule}=scheduleForVisibleProject(detail,insight.data?.checkpointEvents);
  const headline=scheduleHeadline(schedule);
@@ -142,7 +143,7 @@ export function Stages({detail}:{detail:ProjectDetail}){
  const initial=Math.max(0,stages.findIndex(stage=>stage.start<=currentIndex&&stage.end>=currentIndex));
  const [openStage,setOpenStage]=useState(initial);
  useEffect(()=>{setOpenStage(initial)},[detail.project.slug,initial]);
- const insight=useInsightData(30);
+ const insight=useProjectInsight();
  const {rows}=scheduleForVisibleProject(detail,insight.data?.checkpointEvents);
  const schedule=new Map(rows.map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
