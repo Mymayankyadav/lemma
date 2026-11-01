@@ -8,7 +8,7 @@ import type {SchedulingState} from '../../data/types';
 import {Button} from '../../ui/Button';
 import {Chip} from '../../ui/Chip';
 import {IconButton} from '../../ui/IconButton';
-import {useOnlineStatus} from '../../ui/useOnlineStatus';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {Screen} from '../../ui/Screen';
 import {Sheet} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
@@ -89,7 +89,7 @@ export default function Page(){
  const last=Math.min(rows.length,Math.ceil((scrollTop+viewportHeight)/ROW_HEIGHT)+OVERSCAN);
  const visible=rows.slice(first,last);
  const save=async(v:EditorValue)=>{
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   try{
    const result=await create.mutateAsync({front:v.front,back:v.back,type:v.type,kind:v.kind,
     projectSlug:v.projectSlug,checkpointCode:v.checkpointCode});
@@ -105,7 +105,7 @@ export default function Page(){
    :filterFade.right
     ?'linear-gradient(to right, black 0%, black calc(100% - 16px), transparent)'
     :undefined;
- return <Screen title="Cards" back="/" actions={<IconButton icon={Plus} label={online?'New card':'New card, needs a connection'} aria-disabled={!online||undefined} tone="amber" onClick={()=>{if(!navigator.onLine){notify('Needs a connection');return}setCreating(true)}}/>}>
+ return <Screen title="Cards" back="/" actions={<IconButton icon={Plus} label={online?'New card':'New card, needs a connection'} aria-disabled={!online||undefined} tone="amber" onClick={()=>{if(!networkWritable()){notify('Needs a connection');return}setCreating(true)}}/>}>
   <label className="flex min-h-[var(--row)] min-w-0 items-center gap-3 rounded-ctl border border-edge bg-well px-4 text-ink-3">
    <Search size={19}/><span className="sr-only">Search cards</span>
    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search cards" className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-3"/>
