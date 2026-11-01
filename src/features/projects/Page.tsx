@@ -1,8 +1,12 @@
 import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
 import {useProjects,useUpdateProject} from '../../data/hooks';
+import {getApi} from '../../data';
+import {getMode} from '../../data/mode';
+import {prefetchAtlasForPaths} from './atlasPrefetch';
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
 import {Screen} from '../../ui/Screen';
@@ -107,6 +111,13 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 }
 
 export default function Page(){
+ const queryClient=useQueryClient();
+ // Only demo Paths warms Atlas; no live-network request and no Today cost.
+ useEffect(()=>{
+  if(getMode()!=='demo')return;
+  void import('../atlas/Page');
+  void prefetchAtlasForPaths(queryClient,getMode(),()=>getApi().getAtlas());
+ },[queryClient]);
  const projects=useProjects(),notify=useToast(),[params,setParams]=useSearchParams();
  const [search,setSearch]=useState(''),[collapsed,setCollapsed]=useState<string[]>([]),[page,setPage]=useState(0);
  const filter=(['active','paused','done','archived'].includes(params.get('status')??'')?params.get('status'):'active') as Filter;
