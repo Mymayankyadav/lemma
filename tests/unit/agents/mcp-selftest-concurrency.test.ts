@@ -39,7 +39,7 @@ describe('FIX #636: deployed MCP selftests cannot overlap',()=>{
   expect((smoke.match(/exit 1/g)??[]).length).toBeGreaterThanOrEqual(2);
  });
  it('actually exits nonzero without a secret or executable smoke script',()=>{
-  const section=smoke.match(/      - name: Verify deployed connector\\n        shell: bash\\n        run: \\|\\n((?:          .*\\n)+)/)?.[1];
+  const section=smoke.match(/      - name: Verify deployed connector\n        shell: bash\n        run: \|\n((?:          .*\n)+)/)?.[1];
   expect(section).toBeTruthy();
   const script=section!.replace(/^ {10}/gm,'');
   const missingSecret=spawnSync('bash',['-e','-c',script],{
