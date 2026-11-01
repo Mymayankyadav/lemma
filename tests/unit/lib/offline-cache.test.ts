@@ -2,6 +2,7 @@ import {describe,it,expect} from 'vitest'
 import {QueryClient} from '@tanstack/react-query'
 import {OFFLINE_MAX_BYTES,OFFLINE_MAX_AGE_MS,projectOfflineSettings,isOfflineSettings,isOfflineKey,scrubOfflineData,boundOfflineEntries,snapshotFromClient} from '../../../src/lib/offline-cache'
 import type {Settings} from '../../../src/data/types'
+import {canWriteOnline} from '../../../src/ui/useOnlineStatus'
 const now=Date.UTC(2026,10,1)
 const settings={
  timeZone:'Asia/Kolkata',rolloverHour:4,ui:{mode:'night',density:'compact',connectorUrl:'SENTINEL-SECRET-UI'},
@@ -58,6 +59,13 @@ describe('AND-8 strict offline snapshot',()=>{
   expect(bounded.some(e=>e.key[0]==='decks')).toBe(false)
   expect(new TextEncoder().encode(JSON.stringify({v:1,savedAt:now,entries:bounded})).byteLength).toBeLessThanOrEqual(OFFLINE_MAX_BYTES)
   expect(bounded.some(e=>e.key[1]==='p6')).toBe(false)
+ })
+ it('treats stale snapshot fallback as read-only even with navigator.onLine true',()=>{
+  expect(canWriteOnline(true,undefined)).toBe(true)
+  expect(canWriteOnline(false,undefined)).toBe(false)
+  expect(canWriteOnline(true,String(now))).toBe(false)
+  expect(canWriteOnline(true,'0')).toBe(true)
+  expect(canWriteOnline(true,'invalid')).toBe(true)
  })
  it('never stores auth, card faces, raw settings or other queries',()=>{
   const client=new QueryClient()
