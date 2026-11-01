@@ -15,13 +15,20 @@ for (const width of [360, 390] as const) {
     // actual reading journey rather than expecting off-screen work to run.
     const forecast = page.locator("[data-forecast-on-demand]");
     await expect(forecast).toBeAttached({ timeout: 90_000 });
+    // Read the optional reveal's hit target atomically before scrolling.
+    // Scrolling triggers IntersectionObserver, which can unmount the button
+    // between isVisible() and boundingBox(); that race is not a zero-height
+    // target. When the button is present it must still meet the 44px budget.
+    const revealHeight = await forecast.evaluate((container) => {
+      const reveal = [...container.querySelectorAll("button")].find(
+        (button) => button.textContent?.trim() === "Show seven-day forecast",
+      );
+      return reveal ? reveal.getBoundingClientRect().height : null;
+    });
+    if (revealHeight !== null) expect(revealHeight).toBeGreaterThanOrEqual(44);
+    // The real user journey is scrolling to the below-fold forecast. The
+    // observer may mount the chart before an explicit click is possible.
     await forecast.scrollIntoViewIfNeeded();
-    const reveal = forecast.getByRole("button", { name: "Show seven-day forecast" });
-    if (await reveal.isVisible()) {
-      const bounds = await reveal.boundingBox();
-      expect(bounds?.height ?? 0).toBeGreaterThanOrEqual(44);
-      await reveal.click();
-    }
     const chart = forecast.getByLabel("Seven-day review forecast");
     await expect(chart).toBeVisible({ timeout: 90_000 });
     await expect(chart.locator(".grid > div")).toHaveCount(7);
