@@ -18,6 +18,8 @@ describe('AUDIT #606: project history owner boundary',()=>{
   expect(sql).toMatch(/create\s+view\s+public\.v_action_changes_owner\s+with\s*\(security_invoker\s*=\s*true\)/i);
   expect(sql).toMatch(/join\s+public\.actions\s+as\s+a\s+on\s+a\.no\s*=\s*c\.action_no/i);
   expect(sql).toMatch(/a\.user_id/i);
+  for(const field of ['old_project_id','old_id','new_project_id','new_id'])expect(sql).toContain(field);
+  expect(sql).not.toMatch(/c\.old\s*,\s*c\.new\b/i);
   expect(sql).toMatch(/revoke\s+all\s+on\s+public\.v_action_changes_owner\s+from\s+public\s*,\s*anon/i);
  });
 });
