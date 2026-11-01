@@ -1,4 +1,5 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
+import {readFileSync} from 'node:fs';
 import {scheduleScrollHintMeasure} from '../../../src/features/review-run/scrollHint';
 
 // FIX #651: the first real card must not synchronously read scrollHeight or
@@ -7,6 +8,11 @@ import {scheduleScrollHintMeasure} from '../../../src/features/review-run/scroll
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals()});
 
 describe('FIX #651 defer noncritical scroll overflow hint',()=>{
+ it('uses the deferred helper for the actual first-card effect',()=>{
+  const page=readFileSync('src/features/review-run/Page.tsx','utf8');
+  expect(page).toContain('return scheduleScrollHintMeasure(measure);');
+  expect(page).not.toContain('requestAnimationFrame(measure)');
+ });
  it('defers the fallback layout read and supports cleanup',()=>{
   vi.stubGlobal('requestIdleCallback',undefined);
   vi.useFakeTimers();
