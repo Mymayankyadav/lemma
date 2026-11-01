@@ -1,3 +1,4 @@
+import {renderToStaticMarkup} from 'react-dom/server';
 import {renderAllReady} from '../helpers/renderAllReady';
 import {MemoryRouter} from 'react-router';
 import {describe,expect,it,vi} from 'vitest';
@@ -50,7 +51,14 @@ describe('project stage jump navigation',()=>{
   const detail={project:{id:'long-stage',slug:'long-stage',targetDate:null},
    checkpoints,done:0,total:6,sources:[],sessions:[],pendingProposals:0} as unknown as ProjectDetail;
   const container=document.createElement('div');
-  container.innerHTML=await renderAllReady(<MemoryRouter><Stages detail={detail}/></MemoryRouter>);
+  const stageTree=<MemoryRouter><Stages detail={detail}/></MemoryRouter>;
+  // React's streaming SSR can place a completed lazy boundary in a later
+  // script-driven segment. jsdom innerHTML does not execute that script.
+  // Resolve the *actual* rich KaTeX module first, then assert the original
+  // in-place stage chip produced by synchronous static markup.
+  const streamed=await renderAllReady(stageTree);
+  expect(streamed).toContain('katex-html');
+  container.innerHTML=renderToStaticMarkup(stageTree);
   const chip=container.querySelector('[data-stage-chip="0"]');
   const label=chip?.querySelector('[data-stage-chip-label]') as HTMLElement|null;
   expect(label).not.toBeNull();
