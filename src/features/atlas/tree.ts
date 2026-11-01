@@ -116,14 +116,14 @@ function prerequisiteRank(ids:Iterable<string>,links:readonly Link[]):Map<string
 function checkpointNumber(node:AtlasNode):number{
  // Most ideas have no checkpoint refs. Avoid allocating two arrays and a
  // spread call per idea during the 2,500-node first Atlas mount.
- let minimum=Number.MAX_SAFE_INTEGER;
+ let minimum=Number.POSITIVE_INFINITY;
  for(const ref of node.checkpointRefs){
   const match=/\d+/.exec(ref.code);
   if(!match)continue;
   const value=Number(match[0]);
   if(Number.isFinite(value)&&value<minimum)minimum=value;
  }
- return minimum;
+ return Number.isFinite(minimum)?minimum:Number.MAX_SAFE_INTEGER;
 }
 
 /** Proposed flat ideas are synthetic topics named after the teaching checkpoint. */
