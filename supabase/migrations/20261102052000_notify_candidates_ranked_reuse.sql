@@ -1,9 +1,17 @@
 -- FIX #679b: reuse tomorrow_ranked in the bounded K2 fallback.
 -- No data rewrite; only replaces the owner-scoped notify_candidates RPC body.
--- Down: reapply 20261101171500_notify_candidates_card_first.sql's function
+-- Down: drop index public.cards_notify_owner_note_priority, then reapply
+-- 20261101171500_notify_candidates_card_first.sql's function
 -- body and service_role-only grant; the covering card index remains intact.
 -- This is a candidate optimization; strict 30k-card cold first-attempt CI
 -- decides whether it provides sufficient headroom. Do not relax the budget.
+-- Match the stable leading sibling-rank keys so PostgreSQL can use an
+-- owner-scoped ordered scan/incremental sort instead of a full UUID sort.
+-- The p_now-dependent rank remains evaluated exactly at query time.
+create index if not exists cards_notify_owner_note_priority
+  on public.cards(user_id,note_id,(case when state=0 then 1 else 0 end))
+  include (state,due,id);
+
 create or replace function public.notify_candidates(p_user uuid,p_now timestamptz)
 -- The 30k-card X snapshot must not use one cards_note_id_owner probe per note.
 -- Prefer hash joins for the 30k-card X candidate path, but avoid the
