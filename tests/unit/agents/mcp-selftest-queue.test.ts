@@ -1,4 +1,6 @@
 import {describe,expect,it} from 'vitest';
+import {spawnSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
 import {queueDecision,parseQueueTicket} from '../../../scripts/mcp-selftest-queue-policy.mjs';
 
 // FIX #636: GitHub Actions concurrency keeps one running and only one pending;
@@ -8,6 +10,14 @@ const start=(id:number,run:number,attempt=1)=>({id,body:`LEMMA-MCP-QUEUE v1 STAR
 const done=(id:number,run:number,attempt=1)=>({id,body:`LEMMA-MCP-QUEUE v1 DONE ${run}/${attempt}`});
 
 describe('FIX #636 durable MCP selftest queue',()=>{
+ it('parses the operational Node script and checks exact run-attempt status',()=>{
+  const result=spawnSync(process.execPath,['--check','scripts/mcp-selftest-queue.mjs'],{encoding:'utf8'});
+  expect(result.status,result.stderr).toBe(0);
+  const source=readFileSync('scripts/mcp-selftest-queue.mjs','utf8');
+  expect(source).toContain('/actions/runs/${ticket.runId}/attempts/${ticket.attempt}');
+  expect(source).toContain('MCP queue wait exceeded 55 minutes');
+  expect(source).not.toContain('MCP_URL');
+ });
  it('accepts only well-formed public run-attempt tickets',()=>{
   expect(parseQueueTicket(start(10,100))).toEqual({id:10,kind:'START',key:'100/1',runId:100,attempt:1});
   expect(parseQueueTicket({id:12,body:'MCP_URL=secret'})).toBeNull();
