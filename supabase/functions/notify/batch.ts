@@ -62,7 +62,7 @@ export async function sendPushBatch(
   timer=setTimeout(()=>{timedOut=true;controller.abort();resolve()},maxMs);
  });
  let resolveExternalAbort:()=>void=()=>{};
- const externalAbort=new Promise<void>(resolve=>{resolveExternalAbort=resolve});
+ const externalAbort=new Promise<void>(resolve=>{resolveExternalAbort=()=>resolve()});
  const onAbort=()=>{controller.abort();resolveExternalAbort()};
  options.signal?.addEventListener('abort',onAbort,{once:true});
  if(options.signal?.aborted)onAbort();
