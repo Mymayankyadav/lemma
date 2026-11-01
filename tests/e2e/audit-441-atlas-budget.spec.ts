@@ -1,9 +1,13 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
+import {waitForLoadedPaths} from './helpers/waitForLoadedPaths';
 
 // C2 is a hard first-attempt 4× CPU budget. Global CI retries must not
 // turn an over-budget transition into a green performance acceptance.
-test.describe.configure({retries:0});
+// The four 4x CPU cases run in default (ordered) mode rather than fullyParallel:
+// two simultaneously throttled browsers contend for the same runner CPU.
+// Unlike serial mode, default still executes every case after a failure.
+test.describe.configure({mode:'default',retries:0});
 
 // Measure a real extreme-profile Atlas route transition, not a screenshot
 // counter or an unthrottled Today route. Initial 30k-card fixture load is
@@ -11,11 +15,14 @@ test.describe.configure({retries:0});
 for(const theme of ['graph','graph-night'] as const)
 for(const [width,height] of [[390,844],[360,740]] as const){
  test('AUDIT #441 extreme Atlas opens within 1s at 4x CPU, '+theme+' '+width+'px',async({page},testInfo)=>{
+  // Extreme fixture hydration and screenshot capture are outside the 1s
+  // timed Atlas transition. Keep the measured 1000ms cap unchanged.
+  test.setTimeout(120_000);
   await page.setViewportSize({width,height});
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
   await page.goto('/lemma/?demo=extreme&theme='+theme+'#/projects',{waitUntil:'domcontentloaded',timeout:90_000});
-  await expect(page.getByRole('heading',{name:'Paths',level:1})).toBeVisible({timeout:90_000});
+  await waitForLoadedPaths(page);
   const cdp=await page.context().newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
   try{
