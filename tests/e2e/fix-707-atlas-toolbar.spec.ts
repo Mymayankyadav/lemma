@@ -40,6 +40,10 @@ for(const width of [360,390] as const){
   const recheck=toolbar.getByRole("button",{name:/^Re-check \d+$/});
   await expect(recheck).toBeVisible();
   const box=await recheck.boundingBox();
+  const relatedBox=await toolbar.getByRole("button",{name:"Related",exact:true}).boundingBox();
+  const foldBox=await group.boundingBox();
+  expect(foldBox!.y+foldBox!.height).toBeLessThanOrEqual(relatedBox!.y+1);
+  expect(relatedBox!.x+relatedBox!.width).toBeLessThanOrEqual(box!.x+1);
   expect(box!.width).toBeGreaterThanOrEqual(44);
   expect(box!.height).toBeGreaterThanOrEqual(44);
   expect(box!.x+box!.width).toBeLessThanOrEqual(width+1);
