@@ -37,8 +37,8 @@ const parseClock=(value:string):number=>{
  if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value))throw Error('Invalid quiet-hour clock')
  const [h,m]=value.split(':').map(Number);return h*60+m
 }
-const localMinute=(now:number,timeZone:string):number=>{
- const parts=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now)
+const localMinute=(now:number,formatter:Intl.DateTimeFormat):number=>{
+ const parts=formatter.formatToParts(now)
  const hour=Number(parts.find(p=>p.type==='hour')?.value),minute=Number(parts.find(p=>p.type==='minute')?.value)
  return hour*60+minute
 }
@@ -52,11 +52,18 @@ const hashOffset=(key:string):number=>{
 /** Scan the owner's actual local clock so DST transitions do not shift quiet-hour end. */
 export function quietUntil(context:ReminderContext,key:string):number|null{
  const start=parseClock(context.quietStart),end=parseClock(context.quietEnd)
- if(!inQuiet(localMinute(context.now,context.timeZone),start,end))return null
- // Move by one real minute across DST changes, finding the first non-quiet minute.
+ if(start===end)return null
+ // Reuse the formatter across all minute probes; constructing it for each
+ // minute multiplied by a 50-candidate tick can exhaust the 20s tick budget.
+ const formatter=new Intl.DateTimeFormat('en-GB',{
+  timeZone:context.timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+ })
+ if(!inQuiet(localMinute(context.now,formatter),start,end))return null
+ // Search actual UTC minutes across DST gaps/folds, aligned to :00 seconds.
+ const minuteStart=Math.floor(context.now/MIN)*MIN
  for(let step=1;step<=1500;step++){
-  const at=context.now+step*MIN
-  if(!inQuiet(localMinute(at,context.timeZone),start,end))return at+hashOffset(key)*MIN
+  const at=minuteStart+step*MIN
+  if(!inQuiet(localMinute(at,formatter),start,end))return at+hashOffset(key)*MIN
  }
  throw Error('Quiet hours did not end within 25 hours')
 }
