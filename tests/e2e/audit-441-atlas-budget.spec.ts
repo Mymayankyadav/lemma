@@ -15,6 +15,9 @@ test.describe.configure({mode:'default',retries:0});
 for(const theme of ['graph','graph-night'] as const)
 for(const [width,height] of [[390,844],[360,740]] as const){
  test('AUDIT #441 extreme Atlas opens within 1s at 4x CPU, '+theme+' '+width+'px',async({page},testInfo)=>{
+  // Extreme fixture hydration and screenshot capture are outside the 1s
+  // timed Atlas transition. Keep the measured 1000ms cap unchanged.
+  test.setTimeout(120_000);
   await page.setViewportSize({width,height});
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
