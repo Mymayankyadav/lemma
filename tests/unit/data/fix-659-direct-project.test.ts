@@ -21,7 +21,13 @@ describe('FIX-659f direct Project summary',()=>{
   const library=vi.spyOn(api,'listProjects').mockImplementation(()=>{
    throw Error('Direct Project must not build all 60 library summaries');
   });
+  // getProject needs only the daily-limited counts, not thousands of fully
+  // materialized ReviewItem objects (rich card text, subject glyph, state clones).
+  // The existing queue assertion below guards the exact daily-cap semantics.
+  const eligible=vi.spyOn(api as unknown as {eligible:()=>unknown},'eligible')
+   .mockImplementation(()=>{throw Error('Direct Project must not hydrate ReviewItem queue');});
   const actual=await api.getProject('stress-project-3');
+  eligible.mockRestore();
   expect(library).not.toHaveBeenCalled();
   expect(actual).toEqual(expected);
   // Project badge counts are the daily-limited queue, not the full backlog.
