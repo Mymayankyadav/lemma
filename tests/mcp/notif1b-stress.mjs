@@ -47,7 +47,7 @@ try{
  await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
  // Exercise the diagnostic-only EXPLAIN syntax on every CI run, even when
  // the strict first-attempt query is fast and the failure branch is skipped.
- const explainSmoke=await q(buildReadOnlyExplain('select 1'))
+ const explainSmoke=await q(buildReadOnlyExplain('select $1::uuid'),[owner])
  assert.ok(explainSmoke.length>0,'planner-only EXPLAIN must parse on PGlite')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
