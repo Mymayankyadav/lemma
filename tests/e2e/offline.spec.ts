@@ -36,18 +36,32 @@ for(const width of [360,390] as const){
    }catch{return ['invalid-handoff']}
   },profile)))
   const durableKeys=()=>page.evaluate(async(profile)=>{
+   // An absent snapshot is a real acceptance failure, not a reason for the
+   // probe itself to hang. indexedDB.open() can create a new empty database:
+   // trying to transact its nonexistent store throws inside onsuccess and
+   // leaves a Promise unresolved until the entire 180s test times out.
    const req=indexedDB.open('lemma-offline:demo-'+profile,1)
    return await new Promise<string[][]>(resolve=>{
-    req.onerror=()=>resolve([])
+    let settled=false
+    const finish=(keys:string[][]=[])=>{if(!settled){settled=true;resolve(keys)}}
+    const deadline=setTimeout(()=>finish(),3000)
+    const done=(keys:string[][]=[])=>{clearTimeout(deadline);finish(keys)}
+    req.onupgradeneeded=()=>req.transaction?.abort() // Never create a fake cache.
+    req.onblocked=()=>done()
+    req.onerror=()=>done()
     req.onsuccess=()=>{
      const db=req.result
-     const get=db.transaction('snapshot','readonly').objectStore('snapshot').get('latest')
-     get.onsuccess=()=>{
-      const value=get.result as {entries?:{key:string[]}[]}|undefined
-      resolve(value?.entries?.map(entry=>entry.key)??[])
-      db.close()
-     }
-     get.onerror=()=>{resolve([]);db.close()}
+     if(!db.objectStoreNames.contains('snapshot')){db.close();done();return}
+     try{
+      const tx=db.transaction('snapshot','readonly')
+      const get=tx.objectStore('snapshot').get('latest')
+      get.onsuccess=()=>{
+       const value=get.result as {entries?:{key:string[]}[]}|undefined
+       db.close();done(value?.entries?.map(entry=>entry.key)??[])
+      }
+      get.onerror=()=>{db.close();done()}
+      tx.onabort=()=>{db.close();done()}
+     }catch{db.close();done()}
     }
    })
   },profile)
