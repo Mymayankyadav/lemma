@@ -11,7 +11,7 @@ import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
 import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
-import {useOnlineStatus} from '../../ui/useOnlineStatus';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 
 type UploadState='queued'|'reading'|'uploading'|'saving'|'ready'|'failed';
 type QueueItem={id:number;file:File|null;name:string;size:number;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
@@ -31,7 +31,7 @@ export default function Page(){
  const input=useRef<HTMLInputElement>(null),nextId=useRef(0);
  const close=useCallback(()=>navigate('/projects'),[navigate]);
  function enqueue(files:FileList|File[]){
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   const incoming=Array.from(files),accepted:QueueItem[]=[],invalid:string[]=[];
   for(const file of incoming){
    if(!validPdf(file)){invalid.push(file.name);continue}
@@ -45,7 +45,7 @@ export default function Page(){
  }
  async function submit(event:React.FormEvent){
   event.preventDefault();
-  if(!navigator.onLine){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(saving||!name.trim())return;
   setSaving(true);setError(null);
   let project=created;
@@ -57,7 +57,7 @@ export default function Page(){
    const hashes=new Set(items.filter(item=>item.status==='ready'&&item.sha256).map(item=>item.sha256));
    let failed=false;
    for(const item of items){
-    if(!navigator.onLine){setError('Needs a connection');notify('Needs a connection');return}
+    if(!networkWritable()){setError('Needs a connection');notify('Needs a connection');return}
     if(item.status==='ready')continue;
     try{
      const file=item.file;
@@ -112,7 +112,7 @@ export default function Page(){
      </div>
      <input ref={input} hidden type="file" multiple accept=".pdf,application/pdf,.tex,.latex,.ltx,application/x-tex,text/x-tex,.md,.markdown,text/markdown"
       onChange={event=>{if(event.currentTarget.files)enqueue(event.currentTarget.files);event.currentTarget.value=''}}/>
-     <button type="button" aria-disabled={!online||undefined} disabled={saving} onClick={()=>{if(!navigator.onLine){notify("Needs a connection");return}input.current?.click()}}
+     <button type="button" aria-disabled={!online||undefined} disabled={saving} onClick={()=>{if(!networkWritable()){notify("Needs a connection");return}input.current?.click()}}
       className="flex min-h-24 items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
       <Plus size={20} className="text-ink-2"/>Add PDFs, .tex or .md files
      </button>
