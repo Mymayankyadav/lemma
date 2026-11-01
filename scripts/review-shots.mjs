@@ -156,6 +156,15 @@ try {
       const heading=v4Headings[name];
       if(!heading)throw Error('No QA-4 route heading contract for '+name);
       await phone.getByRole('heading',{name:heading,level:1,exact:true}).waitFor({state:'visible'});
+      // FIX #614: S-profile Today must capture the real 36/40-CP folded
+      // goal card, not the Home heading while home_summary is still loading.
+      // QA-4 already includes both demo worlds; make this one meaningful.
+      if(name==='today'&&demo==='stress'){
+       const goal=phone.locator('[data-summary-goal][data-goal-card]').first();
+       await goal.waitFor({state:'visible'});
+       await goal.locator('[data-route-track]').waitFor({state:'visible'});
+       await goal.locator('[data-goal-footnote]').waitFor({state:'visible'});
+      }
       if(name==='paths')await checkMiniRoutes(phone,theme+'/'+demo+'/'+width);
       if(name==='review-run'||name==='review-run-answer')
        await phone.locator('[data-review-card-scroll]').waitFor({state:'visible'});
