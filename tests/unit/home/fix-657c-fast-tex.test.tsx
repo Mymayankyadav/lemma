@@ -11,7 +11,7 @@ describe('FIX #657c eager-route mathematical labels',()=>{
  it('renders only provably literal text synchronously',()=>{
   for(const name of ['Analysis','Topology and Algebra','A + B','Éléments de géométrie','Idea 7: Definition'])
    expect(canRenderPlainFastTex(name),name).toBe(true);
-  const html=await renderAllReady(createElement(FastTex,{source:'A + B',className:'project-name'}));
+  const html=renderToStaticMarkup(createElement(FastTex,{source:'A + B',className:'project-name'}));
   expect(html).toContain('class="lemma-math lemma-tex-inline project-name"');
   expect(html).toContain('>A + B</span>');
  });
@@ -21,7 +21,7 @@ describe('FIX #657c eager-route mathematical labels',()=>{
    expect(canRenderPlainFastTex(name),name).toBe(false);
  });
  it('preserves real KaTeX after streamed server rendering completes',async()=>{
-  const html=renderToStaticMarkup(createElement(FastTex,{source:'$\\frac{1}{2}$'}));
+  const html=await renderAllReady(createElement(FastTex,{source:'$\\frac{1}{2}$'}));
   expect(html).toContain('katex-html');
   expect(html).not.toContain('Rendering mathematical text');
  });
