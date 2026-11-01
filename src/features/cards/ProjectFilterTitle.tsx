@@ -12,7 +12,12 @@ export function projectFilterOptionLabel(title:string):string{
  * React escapes plain text itself; retain Tex for any math or Markdown syntax.
  */
 function needsRichTitle(title:string):boolean{
- return /[\\$*_`\[\]<>~#!\n]/.test(title);
+ // Marked/GFM also linkifies bare domains and email addresses, while HTML
+ // entities and cloze markup must be parsed rather than escaped twice.
+ // Keep ordinary stress titles (including a standalone &) on the fast path.
+ return /[\\$*_`\[\]<>~#!\r\n{}|]/.test(title)
+  || /https?:\/\/|www\.|(?:^|[\s(])[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}(?=$|[\s),.!?;:])|[^\s@]+@[^\s@]+\.[a-z]{2,}/i.test(title)
+  || /&(?:#\d+|#x[0-9a-f]+|[a-z]+);/i.test(title);
 }
 
 /** Visible project chips keep mathematical names typeset at >=16px. */
