@@ -36,7 +36,7 @@ const NON_PUBLIC_SUFFIXES=[
  'localdomain','lan','home','corp','intranet','onion',
 ];
 const nonPublicHost=(hostname:string):boolean=>{
- const host=hostname.toLowerCase().replace(/\.$/,'');
+ const host=hostname.toLowerCase().replace(/\.+$/,'');
  return !host||host.startsWith('[')||/^[0-9.]+$/.test(host)||
   !host.includes('.')||NON_PUBLIC_SUFFIXES.some(suffix=>
    host===suffix||host.endsWith('.'+suffix));
