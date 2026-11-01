@@ -1,7 +1,8 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
-import {ChevronRight, Copy, Inbox, Plus, SlidersHorizontal, Waypoints} from 'lucide-react';
+import {ChevronRight, Copy, Inbox, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {resumePrompt} from '../../lib/chat';
 import {relativeTime,formatCount} from '../../lib/text';
@@ -12,13 +13,11 @@ import {Slab} from '../../ui/Slab';
 import {Tile} from '../../ui/Tile';
 import {IconButton} from '../../ui/IconButton';
 import {Glyph} from '../../ui/Glyph';
-import {Rail} from '../../ui/Rail';
-import {Chip} from '../../ui/Chip';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {Tex} from '../../ui/Tex';
-import type {HomeSummary, ProjectSummary} from '../../data/types';
+import type {HomeSummary} from '../../data/types';
 import {GoalDistance} from './GoalDistance';
 import {ReviewOutlook} from './ReviewOutlook';
 
@@ -48,22 +47,6 @@ function LoadingDesk(){
   <div className="grid grid-cols-2 gap-3"><Skeleton h={100} radius={22}/><Skeleton h={100} radius={22}/></div>
   <Skeleton w="38%" h={22}/><Skeleton h={56}/><Skeleton h={56}/>
  </Screen>;
-}
-
-function ProjectLink({project}:{project:ProjectSummary}){
- return <div>
-  <Link to={'/p/'+project.slug} aria-label={project.title+', '+project.done+' of '+project.total+' checkpoints'}
-   className="group grid min-h-[var(--row)] grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-ctl px-0.5 text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber">
-   <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
-   <span className="flex min-w-0 flex-col gap-1">
-    <span className="truncate text-headline font-medium"><Tex source={project.title}/></span>
-    <Rail label={project.title+' progress'} value={project.total?project.done/project.total:0}/>
-   </span>
-   <span className="flex items-center gap-1 text-body tabular-nums text-ink-2">
-    {project.total===0?'Needs a plan':project.done+'/'+project.total}<ChevronRight size={15} aria-hidden="true" className="text-ink-3"/>
-   </span>
-  </Link>
- </div>;
 }
 
 const clip={overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} as const;
@@ -152,12 +135,12 @@ export default function Page(){
   </Link>}
   <GoalDistance projects={projects} variant="metro"/>
   <section aria-label="Cards" className="flex flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Cards</h2>
+   <SectionHeading className="text-ink">Cards</SectionHeading>
    <SummaryTiles due={home.data.due} pending={home.data.pendingProposals}/>
    <ReviewOutlook/>
   </section>
   <section aria-label="From your tutor" className="flex min-w-0 flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">From your tutor</h2>
+   <SectionHeading className="text-ink">From your tutor</SectionHeading>
    <Link to="/proposals" aria-label="Review tutor suggestions"
     className="flex min-h-11 items-center justify-between gap-3 rounded-ctl border border-edge bg-raised px-4 py-3 text-label text-ink-2">
     <span className="min-w-0 break-words">
@@ -167,19 +150,8 @@ export default function Page(){
     <ChevronRight size={16} className="shrink-0 text-amber"/>
    </Link>
   </section>
-  <section aria-label="Projects" className="flex flex-col gap-2">
-   <div className="flex min-h-11 items-center justify-between">
-    <h2 className="text-body-l font-semibold text-ink-2">Projects</h2>
-    <IconButton tone="plain" icon={Plus} label="New project" to="/projects/new" className="text-amber"/>
-   </div>
-   <div className="flex flex-col gap-1">
-    {projects.slice(0,4).map(p=><ProjectLink key={p.id} project={p}/>)}
-   </div>
-   <Link to="/projects" className="min-h-11 self-start pt-3 text-label font-medium text-amber">All paths</Link>
-   {projects.length===0&&<Chip tone="quiet">Create your first project to begin</Chip>}
-  </section>
   <section aria-label="Continue" className="flex flex-col gap-3">
-   <h2 className="font-[var(--font-display)] text-title-s italic text-ink">Continue</h2>
+   <SectionHeading className="text-ink">Continue</SectionHeading>
    <ResumeCard home={home.data} onCopy={title=>{void copyPrompt(resumePrompt(title))}}/>
   </section>
  </Screen>;

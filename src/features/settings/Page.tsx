@@ -1,3 +1,4 @@
+import {SectionHeading} from '../../ui/SectionHeading';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
@@ -34,6 +35,7 @@ import type {
 } from "../../lib/optimizer.worker";
 import { Button } from "../../ui/Button";
 import { EuclidAppearance } from "./EuclidAppearance";
+import { ConnectorAddress } from "./ConnectorAddress";
 import { SubjectsPanel } from "./SubjectsPanel";
 import { Chip } from "../../ui/Chip";
 import { IconButton } from "../../ui/IconButton";
@@ -59,7 +61,7 @@ function StyleIcon({ name }: { name: string }) {
     <Icon
       aria-hidden="true"
       size={19}
-      className="mr-2 inline-block text-amber"
+      className="shrink-0 text-ink-2"
     />
   );
 }
@@ -225,9 +227,9 @@ export default function Page() {
         <div className="flex items-center gap-4">
           <PlugArt connected={connected} size={92} />
           <div>
-            <h2 className="font-semibold">
+            <h3 className="text-[16px] leading-5 font-semibold" style={{fontFamily:"var(--font-ui)",fontWeight:600,lineHeight:"20px"}}>
               {connected ? "Connected" : "Not connected yet"}
-            </h2>
+            </h3>
             <p className="mt-1 text-label text-ink-3">
               {s.connectorLastSeenAt
                 ? `Last call ${elapsed(s.connectorLastSeenAt)}${s.connectorLastClient ? `, ${s.connectorLastClient === "claude" ? "Claude" : s.connectorLastClient === "chatgpt" ? "ChatGPT" : s.connectorLastClient}` : ""}`
@@ -236,9 +238,7 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-4 flex items-center gap-1 rounded-ctl bg-well p-2">
-          <span className="min-w-0 flex-1 break-all pl-2 font-mono text-label text-ink-2">
-            {revealed ? s.connectorUrl : masked}
-          </span>
+          <ConnectorAddress value={revealed ? s.connectorUrl : masked} />
           <IconButton
             icon={revealed ? EyeOff : Eye}
             label={
@@ -250,19 +250,19 @@ export default function Page() {
           <IconButton
             icon={Copy}
             label="Copy connector address"
-            tone="amber"
+            tone="plain"
             onClick={() => void copy(s.connectorUrl)}
           />
         </div>
         <button
-          className="mt-3 min-h-11 text-label font-semibold text-amber"
+          className="mt-3 min-h-11 text-label font-semibold text-ink-2"
           onClick={() => setSheet("rotate")}
         >
           Make a new address
         </button>
       </Slab>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Apps</h2>
+        <SectionHeading className="mb-3">Apps</SectionHeading>
         <Slab className="divide-y divide-edge px-4">
           <div className="flex min-h-[68px] items-center gap-3">
             <Sparkles className="text-amber" size={20} />
@@ -307,7 +307,7 @@ export default function Page() {
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Say this to start</h2>
+        <SectionHeading className="mb-3">Say this to start</SectionHeading>
         <div className="flex flex-wrap gap-2">
           {home.data?.resume && (
             <Chip
@@ -335,12 +335,9 @@ export default function Page() {
         </div>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Teaching style</h2>
-        <div
-          role="radiogroup"
-          aria-label="Teaching style"
-          className="grid grid-cols-2 gap-3"
-        >
+        <SectionHeading className="mb-3">Teaching style</SectionHeading>
+        <div role="radiogroup" aria-label="Teaching style" data-teaching-style-list="true"
+          className="divide-y divide-edge rounded-slab border border-edge bg-[var(--paper)]">
           {styles.data?.map((style) => (
             <button
               role="radio"
@@ -348,15 +345,16 @@ export default function Page() {
               key={style.key}
               disabled={busy}
               onClick={() => void save({ defaultStyle: style.key })}
-              className={`min-h-[70px] rounded-slab border p-4 text-left ${s.defaultStyle === style.key ? "border-amber-line-2 bg-amber-tint" : "border-edge bg-tile"}`}
+              className={`flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left text-body ${s.defaultStyle === style.key ? "bg-[var(--fill-1)] font-semibold text-ink" : "text-ink-2"}`}
             >
               <StyleIcon name={style.icon} />
-              {style.name}
+              <span className="min-w-0 flex-1">{style.name}</span>
+              {s.defaultStyle === style.key && <Check size={18} className="shrink-0 text-ink" aria-hidden="true" />}
             </button>
           ))}
         </div>
         <button
-          className="mt-3 min-h-11 text-body font-semibold text-amber"
+          className="mt-3 min-h-11 text-body font-semibold text-ink-2"
           onClick={() => {
             setRules(s.tutorRules ?? "");
             setSheet("rules");
@@ -366,13 +364,13 @@ export default function Page() {
         </button>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">Memory</h2>
+        <SectionHeading className="mb-3">Memory</SectionHeading>
         <Slab className="p-5">
           <div className="flex justify-between">
             <label htmlFor="retention" className="font-semibold">
               Target recall
             </label>
-            <span className="font-semibold text-amber">
+            <span className="font-semibold text-ink">
               {Math.round((retention ?? s.desiredRetention) * 100)}%
             </span>
           </div>
@@ -441,39 +439,31 @@ export default function Page() {
         </Slab>
       </section>
       <section>
-        <h2 className="mb-3 text-headline font-semibold">More</h2>
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setMacros(s.macros);
-              setSheet("macros");
-            }}
-          >
+        <SectionHeading className="mb-3">More</SectionHeading>
+        <div data-settings-actions="true" className="divide-y divide-edge rounded-slab border border-edge bg-[var(--paper)]">
+          <button type="button" className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-body text-ink"
+            onClick={() => { setMacros(s.macros); setSheet("macros"); }}>
+            <PencilLine size={18} className="shrink-0 text-ink-2" aria-hidden="true" />
             Math shortcuts
-          </Button>
-          <Button
-            variant="ghost"
-            icon={Download}
-            onClick={() => void download()}
-          >
+          </button>
+          <button type="button" className="flex min-h-14 w-full items-center gap-3 px-4 text-left text-body text-ink"
+            onClick={() => void download()}>
+            <Download size={18} className="shrink-0 text-ink-2" aria-hidden="true" />
             Download a backup
-          </Button>
-          <Button
-            variant="danger"
-            disabled={signOut.isPending}
-            onClick={async () => {
-              try {
-                await signOut.mutateAsync();
-                if (getMode() !== "demo") void navigate("/sign-in");
-              } catch {
-                notify("Couldn't sign out.", { tone: "danger" });
-              }
-            }}
-          >
-            Sign out
-          </Button>
+          </button>
         </div>
+        <button type="button" data-sign-out="true" disabled={signOut.isPending}
+          className="mt-3 flex min-h-11 items-center text-left text-body font-semibold text-[var(--danger)] underline-offset-4 hover:underline focus-visible:underline"
+          onClick={async () => {
+            try {
+              await signOut.mutateAsync();
+              if (getMode() !== "demo") void navigate("/sign-in");
+            } catch {
+              notify("Couldn't sign out.", { tone: "danger" });
+            }
+          }}>
+          Sign out
+        </button>
       </section>
       <p className="text-label text-ink-3">
         Lemma · {getMode() === "demo" ? "Demo data" : "Your study record"}

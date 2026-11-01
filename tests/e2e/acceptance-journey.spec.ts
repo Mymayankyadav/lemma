@@ -21,7 +21,7 @@ test('acceptance 1–6: Home -> proposals -> plan approval -> project -> session
  await expect(page.getByRole('region',{name:'Resume where you stopped'})).toContainText('Compactness, step 2 of 4')
  await expect(page.getByRole('link',{name:/23 cards due/})).toBeVisible()
  await expect(page.getByRole('link',{name:/6 proposals to approve/})).toBeVisible()
- await expect(page.getByRole('link',{name:/Real Analysis, 3 of 12/})).toBeVisible()
+ await expect(page.getByRole('article',{name:'Goal progress for Real Analysis'}).getByRole('link',{name:'Real Analysis',exact:true})).toBeVisible()
  await screenshot(page,'01-home')
  // 2–3: review each proposal explicitly, no implicit tutor approval.
  await page.getByRole('navigation',{name:'Desk actions'}).getByRole('link',{name:'Open proposals'}).click()
@@ -85,6 +85,7 @@ test('acceptance 10–13: Atlas, Insights, Settings and mobile viewport',async({
  await page.goto(demo+'atlas')
  await expect(page.getByRole('heading',{name:'Atlas',level:1})).toBeVisible()
  await expect(page.locator('[data-level="cluster"]')).toHaveCount(3)
+ await expect(page.getByRole('tree',{name:'Ideas and their links'})).toHaveAttribute('data-atlas-field-count','3')
  await expect(page.locator('[data-atlas-details]')).toHaveCount(0)
  await page.getByRole('button',{name:'Find an idea'}).click()
  await page.getByRole('textbox',{name:'Find an idea'}).fill('Compactness')

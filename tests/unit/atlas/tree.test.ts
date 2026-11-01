@@ -1,4 +1,4 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import type {AtlasGraph} from '../../../src/data/types';
 import {arcsFor,arcTone,buildAtlasTree,defaultExpanded,expandedToDepth,focusOn,neighbours,visibleRows} from '../../../src/features/atlas/tree';
 
@@ -19,6 +19,16 @@ const graph:AtlasGraph={
   {fromId:'open set',toId:'cauchy',kind:'related'},
  ],
 };
+
+describe('LOOK-4b cold Atlas tree identity cache',()=>{
+ it("does not rebuild an unchanged query graph on repeated render",()=>{
+  const first=buildAtlasTree(graph);
+  expect(buildAtlasTree(graph)).toBe(first);
+  // A new immutable query snapshot must produce a new derived tree.
+  const updated:AtlasGraph={...graph,concepts:graph.concepts.map(c=>({...c}))};
+  expect(buildAtlasTree(updated)).not.toBe(first);
+ });
+});
 
 describe('Atlas tree',()=>{
  const tree=buildAtlasTree(graph);
@@ -62,6 +72,24 @@ describe('Atlas tree',()=>{
  });
 });
 
+describe('LOOK-4b sorted Atlas child fast path',()=>{
+ it('produces identical child order from already sorted and reverse-ordered immutable graphs',()=>{
+  const concepts=Array.from({length:80},(_,i)=>({
+   ...idea('ordered-'+i,null,'planet'),
+   name:'Idea '+String(i).padStart(3,'0'),
+  }));
+  const source:AtlasGraph={subjects:graph.subjects.slice(0,1),concepts,links:[]};
+  const sorted=buildAtlasTree(source);
+  const reversed=buildAtlasTree({...source,concepts:[...concepts].reverse()});
+  const root='atlas:root:analysis';
+  const expected=sorted.nodes.get(root)!.children;
+  expect(expected).toHaveLength(80);
+  expect(reversed.nodes.get(root)!.children).toEqual(expected);
+  expect(expected[0]).toBe('ordered-0');
+  expect(expected[79]).toBe('ordered-79');
+ });
+});
+
 describe('Atlas tree with several fields in one subject',()=>{
  it('keeps every field as a root instead of dropping all but the first',()=>{
   const two=buildAtlasTree({subjects:[{id:'s',name:'Maths',glyph:'M',hue:'amber',position:0}],links:[],
@@ -86,4 +114,23 @@ describe('Proposed plan synthetic checkpoint topics',()=>{
    Array.from({length:40},(_,i)=>'Taught in CP'+(i+1)),
   );
  });
+});
+
+describe('FIX #519 extreme Atlas sibling ordering cost',()=>{
+ it('reuses a locale collator across 2,500 siblings without changing their order',()=>{
+  const concepts=Array.from({length:2500},(_,i)=>({
+   ...idea('bulk-'+i,null,'planet'),topic:'Bulk',name:'Idea '+i,
+  }));
+  const locale=vi.spyOn(String.prototype,'localeCompare');
+  try{
+   const tree=buildAtlasTree({subjects:graph.subjects.slice(0,1),concepts,links:[]});
+   const parent=tree.nodes.get('atlas:topic:analysis:bulk')!;
+   expect(parent.children).toHaveLength(2500);
+   const names=parent.children.map(id=>tree.nodes.get(id)!.name);
+   expect(names).toEqual([...names].sort(new Intl.Collator().compare));
+   // Recreating ICU locale comparison for each of thousands of sort pairs
+   // delays the strict extreme Atlas 4x CPU first paint.
+   expect(locale.mock.calls.length).toBeLessThan(100);
+  }finally{locale.mockRestore()}
+ },30_000);
 });

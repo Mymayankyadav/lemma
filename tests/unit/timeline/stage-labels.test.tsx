@@ -18,12 +18,16 @@ describe('ST-1 stage Metro mathematical labels',()=>{
     <ProjectTimeline project={{title:'Math',slug:'math',done:0,total:20}} checkpoints={checkpoints}/>
    </MemoryRouter>
   );
-  expect(html).toContain('data-timeline="stage-metro"');
-  expect(html.match(/data-stage-name=/g)).toHaveLength(2);
+  expect(html).toContain('data-route-layout="folded"');
+  expect(html).toContain('data-route-stage-count="2"');
+  expect(html).toContain('data-route-stage-disclosure');
   expect(html).toContain('class="katex"');
   expect(html).not.toContain('>$L^p$<');
-  expect(html).not.toContain('>Stage 1<');
   expect(html).not.toContain('>Stage 2<');
+  // A short stage identifier is permitted on the 80px line, but its
+  // full mathematical name must remain typeset and horizontally accessible.
+  expect(html).toContain('Show full stage name');
   expect(html).toContain('overflow-x-auto');
+  expect(html).not.toContain('data-stage-rail');
  });
 });

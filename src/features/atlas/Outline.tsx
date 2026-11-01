@@ -2,8 +2,10 @@ import {ChevronRight} from 'lucide-react';
 import {Tex} from '../../ui/Tex';
 import {plainMath} from '../../lib/plain-math';
 import type {Arc,AtlasNode,Focus,Tone} from './tree';
-import {arcTone} from './tree';
+import {arcTone,isPlainAtlasLabel} from './tree';
+import {atlasRowGap,atlasRowHeight} from './rowGeometry';
 import {layoutAtlasLanes} from './lanes';
+import './rowMath.css';
 
 /** Shared pieces of the collapsible idea graph: used by the Atlas and by plan review. */
 export const ROW=44,GUTTER=84,INDENT=16;
@@ -227,33 +229,50 @@ export function Wires({arcs,rows,focus,centers,heightPx}:{arcs:Arc[];rows:number
  </>;
 }
 
-export function Row({node,open,tone,match,onToggle,onSelect}:{
- node:AtlasNode;open:boolean;tone:Tone;match:boolean;onToggle:()=>void;onSelect:()=>void;
+/** Distinct hierarchy without shortening any interactive target. The full
+ * mathematical name stays in the button's accessible label and details sheet.
+ */
+export function Row({node,open,tone,match,focused=false,sticky=true,onToggle,onSelect}:{
+ node:AtlasNode;open:boolean;tone:Tone;match:boolean;focused?:boolean;sticky?:boolean;onToggle:()=>void;onSelect:()=>void;
 }){
- const parent=node.children.length>0,root=node.depth===0,selected=tone==='self';
- // Preserve room for names on 360px phones beyond the third nesting level.
+ const parent=node.children.length>0,root=node.level==='cluster',area=node.level==='galaxy';
+ const selected=tone==='self',height=atlasRowHeight(node.level);
  const indentation=(depth:number)=>Math.min(depth,3)*INDENT+Math.max(0,depth-3)*8;
  const lead=12+indentation(node.depth);
+ const textStyle=node.level==='cluster'?'font-serif italic text-[21px] leading-[24px] font-medium':
+  area?'text-[12px] leading-[18px] font-semibold tracking-[0.05em] [font-variant:small-caps]':
+  node.level==='system'?'text-[15px] leading-5 font-semibold':
+  node.level==='moon'?'text-[13px] leading-[18px] text-ink-2':'text-[15px] leading-[22px]';
+ const showProgress=root||area;
  return <div role="treeitem" aria-level={node.depth+1} aria-expanded={parent?open:undefined} aria-selected={selected}
   data-atlas-row={node.id} data-level={node.level} data-tone={tone}
-  className={'group relative flex items-center shadow-[inset_0_-1px_0_var(--line)] '+(selected?'bg-amber-tint':match?'bg-fill-1':'')}
-  style={{height:ROW,paddingLeft:lead,paddingRight:GUTTER+4}}>
-  {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px bg-edge"
-   style={{left:12+indentation(d)+6}}/>)}
-  {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-0 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
+  className={'group relative flex items-center bg-[var(--paper)] '+(root&&sticky?'sticky top-0 z-10 ':'')+(match?'bg-fill-1':'')}
+  style={{height,marginTop:atlasRowGap(node.level),paddingLeft:lead,paddingRight:GUTTER+4,
+   // Inset rule keeps the 44px button's painted hitbox intact (border-box lost 1px).
+   boxShadow:root||area?'inset 0 1px var(--hair)':undefined,
+   backgroundColor:selected?'color-mix(in srgb, var(--accent) 12%, var(--paper))':undefined,
+   opacity:focused&&tone==='none'?0.42:1}}>
+  {Array.from({length:node.depth},(_,d)=><span key={d} aria-hidden="true" className="absolute inset-y-0 w-px"
+   style={{left:12+indentation(d)+6,background:'color-mix(in srgb,var(--ink) 6%,transparent)'}}/>)}
+  {tone!=='none'&&<span aria-hidden="true" className="absolute inset-y-1 left-1 w-[3px] rounded-r" style={{background:toneColor[tone]}}/>}
   {parent?<button type="button" aria-label={(open?'Fold ':'Unfold ')+plainMath(node.name)} onClick={onToggle}
    className="-ml-3 flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2">
    <ChevronRight size={16} style={{transform:open?'rotate(90deg)':'none',transition:'transform 140ms ease'}}/>
   </button>:<span className="flex size-7 shrink-0 items-center justify-center"><StatusMark node={node}/></span>}
   <button type="button" onClick={onSelect} aria-label={plainMath(node.name)+(parent?', '+node.done+' of '+node.total+' ideas':', '+statusName[node.status])}
    className="flex h-full min-w-0 flex-1 items-center gap-2 text-left">
-   {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-title-s text-amber">{node.glyph}</span>}
-   <span style={clip} className={'min-w-0 [&_*]:whitespace-nowrap '+(root?'font-serif text-body-l':parent?'text-body font-medium':'text-body')}><Tex source={node.name}/></span>
-   {parent&&<span className="ml-auto flex shrink-0 items-center gap-1.5 pl-1 text-caption tabular-nums text-ink-3">
-    {node.revisit>0&&<span aria-label={node.revisit+' to re-check'} className="size-1.5 rounded-full bg-[var(--hard)]"/>}
-    {node.done}/{node.total}
+   {root&&node.glyph&&<span aria-hidden="true" className="shrink-0 font-math text-[22px] text-[var(--accent)]">{node.glyph}</span>}
+   <span title={plainMath(node.name)} data-atlas-title-scroll
+    style={{...clip,overflowX:'auto',textOverflow:'clip',scrollbarWidth:'none'}}
+    className={'atlas-row-title-scroll min-w-0 flex-1 [&_*]:whitespace-nowrap '+textStyle}>{isPlainAtlasLabel(node.name)?node.name:<Tex source={node.name}/>}</span>
+   {showProgress&&<span className="flex shrink-0 items-center gap-1.5 pl-1 text-[12px] tabular-nums text-ink-3">
+    <span aria-hidden="true" className="h-1.5 w-11 overflow-hidden rounded-full bg-[var(--paper-2)]">
+     <span className="block h-full rounded-full bg-[var(--ink-2)]" style={{width:(node.total?100*node.done/node.total:0)+'%'}}/>
+    </span>
+    <span>{node.done}/{node.total}</span>
    </span>}
+   {!showProgress&&parent&&<span className="ml-auto shrink-0 text-[12px] tabular-nums text-ink-3">{node.total}</span>}
+   {node.revisit>0&&parent&&<span aria-label={node.revisit+' to re-check'} className="size-3 shrink-0 rounded-full bg-[var(--late)]"/>}
   </button>
  </div>;
 }
-

@@ -16,7 +16,9 @@ for (const profile of ['stress','extreme'] as const) {
     await page.route('https://fonts.gstatic.com/**',route=>route.fulfill({body:''}));
     await page.goto(`./?demo=${profile}&theme=${theme}#/atlas`);
     await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
-    await page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'2',exact:true}).click();
+    const areas=page.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'Areas',exact:true});
+    await areas.click();
+    await expect(areas).toHaveAttribute('aria-pressed','true');
     const labels=page.locator('[data-atlas-bundle-count]');
     await expect.poll(()=>labels.count()).toBeGreaterThan(0);
     const sizes=await labels.evaluateAll(elements=>elements.map(element=>parseFloat(getComputedStyle(element).fontSize)));
