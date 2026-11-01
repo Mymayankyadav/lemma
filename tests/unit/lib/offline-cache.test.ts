@@ -45,7 +45,9 @@ describe('AND-8 strict offline snapshot',()=>{
    {key:['settings'],savedAt:now,data:{...good,ui:{mode:'night',density:'compact'}}},
    {key:['decks'],savedAt:now,data:[{key:'project:analysis',due:3}]},
    {key:['home'],savedAt:now,data:{title:'Today',push_key:'opaque-push-credential',
-    nested:{widget_key:'opaque-widget-credential',author:'Ada'}}},
+    nested:{widget_key:'opaque-widget-credential',author:'Ada',
+     vapid_private_key:'opaque-vapid-credential',private_key:'opaque-private-credential',
+     service_role_key:'opaque-service-credential',access_key:'opaque-access-credential'}}},
   ]}
   const old=Object.getOwnPropertyDescriptor(globalThis,'indexedDB')
   const read={result:snapshot,onsuccess:null as null|(()=>void),onerror:null as null|(()=>void)}
@@ -145,13 +147,18 @@ describe('AND-8 rapid full-page navigation handoff',()=>{
   clearOfflineHandoff('owner-a',storage);
   expect(readOfflineHandoff('owner-a',now,storage)).toBeNull();
  });
- it('redacts snake_case, kebab-case and flat push credentials across all cache surfaces',()=>{
+ it('redacts separator variants and opaque private/VAPID/service-role/access credentials across all cache surfaces',()=>{
   const unsafe={title:'ℝ → ℂ',author:'Ada',nested:{
    push_key:'opaque-push-credential',widget_key:'opaque-widget-credential',
    session_key:'opaque-session-credential',refresh_key:'opaque-refresh-credential',
    api_key:'opaque-api-credential','x-api-key':'opaque-header-credential',
    'api.key':'opaque-api-dot-credential','push.key':'opaque-push-dot-credential',
    'widget key':'opaque-widget-space-credential',
+   vapid_private_key:'opaque-vapid-credential',private_key:'opaque-private-credential',
+   service_role_key:'opaque-service-credential',access_key:'opaque-access-credential',
+   'VAPID.Private-Key':'opaque-vapid-dot-credential',
+   'service role key':'opaque-service-space-credential',
+   'ACCESS.KEY':'opaque-access-dot-credential',
    p256dh:'opaque-p256dh-credential',auth:'opaque-auth-credential',
    endpoint:'https://push.invalid/opaque-endpoint-credential',safe:'keep me',
   }};
