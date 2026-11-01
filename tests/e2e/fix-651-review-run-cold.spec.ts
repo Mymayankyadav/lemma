@@ -42,7 +42,16 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     const measures=performance.getEntriesByType('measure')
      .filter(entry=>entry.name.startsWith('review-run-')||entry.name.startsWith('lemma-stress-fixture-'))
      .map(entry=>({name:entry.name,durationMs:Math.round(entry.duration)}));
-    return {domContentLoadedMs:nav?.domContentLoadedEventEnd??null,firstContentfulPaintMs:fcp?.startTime??null,marks,measures};
+    // Diagnostic-only: collect the slowest module fetches after the strict
+    // first-card duration has already been captured. Do not move the start,
+    // add retries, or alter the first-attempt CPU/DOM assertions.
+    const topModuleResources=performance.getEntriesByType('resource')
+     .filter(entry=>/\\.(?:js|ts|tsx)(?:\\?|$)/.test(entry.name))
+     .sort((a,b)=>b.duration-a.duration).slice(0,12)
+     .map(entry=>({path:new URL(entry.name).pathname,
+      startMs:Math.round(entry.startTime),durationMs:Math.round(entry.duration),
+      transferBytes:(entry as PerformanceResourceTiming).transferSize}));
+    return {domContentLoadedMs:nav?.domContentLoadedEventEnd??null,firstContentfulPaintMs:fcp?.startTime??null,marks,measures,topModuleResources};
    });
    const phases={navigationMs,themeReadyMs,headingReadyMs,cardReadyMs,browserTiming};
    await testInfo.attach('review-run-cold-4x',{
