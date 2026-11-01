@@ -36,9 +36,11 @@ function validate(raw:unknown,nowSeconds:number):ActionTokenPayload{
   if(!p.x||typeof p.x!=='object'||Array.isArray(p.x))bad();
   const x=p.x as Record<string,unknown>;
   if(Object.keys(x).some(k=>!['ids','action','scope'].includes(k)))bad();
-  if(x.ids!==undefined&&(!Array.isArray(x.ids)||x.ids.length>50||x.ids.some(v=>typeof v!=='string'||!UUID.test(v))))bad();
+  if(x.ids!==undefined&&(!Array.isArray(x.ids)||x.ids.length>50||Array.from(x.ids).some(v=>typeof v!=='string'||!UUID.test(v))))bad();
+  // Avoid duplicate approvals, including case-only variants of a UUID.
+  if(Array.isArray(x.ids)&&new Set((x.ids as string[]).map(id=>id.toLowerCase())).size!==x.ids.length)bad();
   if(x.action!==undefined&&(!Number.isSafeInteger(x.action)||Number(x.action)<1))bad();
-  if(x.scope!==undefined&&(typeof x.scope!=='string'||x.scope.length<1||x.scope.length>120))bad();
+  if(x.scope!==undefined&&(typeof x.scope!=='string'||x.scope.trim().length===0||x.scope.length>120||/[\x00-\x1f\x7f]/u.test(x.scope)))bad();
   // An authenticated token must not smuggle fields the selected RPC action ignores.
   // Keep each signed instruction unambiguous when the Edge route forwards x.
   if((p.a==='open'||p.a==='dismiss')&&Object.keys(x).length>0)bad();
