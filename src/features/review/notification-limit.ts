@@ -5,3 +5,12 @@ export function notificationRoundCap(reviewsPerDay:number|undefined,requested?:n
  if(!Number.isFinite(requested))return 1;
  return Math.max(1,Math.min(50,Math.trunc(requested)));
 }
+
+/** The review queue applies its own daily cap after the page selects cards.
+ * An explicit notification round must not be capped a second time. */
+export function notificationQueueSettings<T extends {reviewsPerDay:number}>(
+ settings:T,requested?:number,
+):T{
+ if(requested===undefined)return settings;
+ return {...settings,reviewsPerDay:Math.max(settings.reviewsPerDay,notificationRoundCap(settings.reviewsPerDay,requested))};
+}
