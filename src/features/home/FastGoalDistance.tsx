@@ -77,9 +77,35 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
  // Record the first committed, data-backed goal UI; this is a local
  // performance mark, not analytics and not a substitute for the hard gate.
  useEffect(()=>{
-  if(getMode()==='demo'&&getDemoProfile()!=='default'&&
-     performance.getEntriesByName('lemma-stress-goal-mounted','mark').length===0)
+  if(getMode()!=='demo'||getDemoProfile()==='default')return
+  if(performance.getEntriesByName('lemma-stress-goal-mounted','mark').length===0)
    performance.mark('lemma-stress-goal-mounted');
+  // A React commit is not a painted screen. Record the first *visible* goal
+  // after two consecutive animation frames, including initial navigation,
+  // fixture hydration and the actual shell fade. No live-user analytics.
+  // The strict ST-0 budget consumes this browser-clock mark, never a timer
+  // that includes Playwright's separate scroll and screenshot preparations.
+  let frame=0,previousFrameVisible=false
+  const inspect=()=>{
+   const goal=document.querySelector<HTMLElement>('[data-summary-goal]')
+   const rect=goal?.getBoundingClientRect()
+   let visible=!!rect&&rect.width>0&&rect.height>0
+   for(let el:Element|null=goal??null;visible&&el;el=el.parentElement){
+    const style=getComputedStyle(el)
+    if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)<0.99)
+     visible=false
+    if(el.id==='main-content')break
+   }
+   if(visible&&previousFrameVisible){
+    if(performance.getEntriesByName('lemma-stress-first-goal-paint','mark').length===0)
+     performance.mark('lemma-stress-first-goal-paint')
+    return
+   }
+   previousFrameVisible=visible
+   frame=requestAnimationFrame(inspect)
+  }
+  frame=requestAnimationFrame(inspect)
+  return ()=>cancelAnimationFrame(frame)
  },[])
  // Live and S/X stress Insights return bounded aggregates with no checkpoint
  // events. Querying them on cold Today cannot improve goal pace, but competes
