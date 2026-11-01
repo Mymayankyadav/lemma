@@ -4,7 +4,7 @@ export type Frequency='as-happens'|'daily'|'weekly'|'off'
 export interface ReminderCandidate {
  kind:ReminderKind; key:string; dueAt?:number; condition?:boolean; enabled?:boolean
  /** For digest, daily or weekly. */
- period?:'daily'|'weekly'
+ period?:'daily'|'weekly'; periodKey?:string; lastSentPeriodKey?:string
  /** Per-kind state from the owner-scoped notifications table. */
  lastSentAt?:number; sentToday?:number; deferrals?:number; dismissals?:number
  cardsDue?:number; threshold?:number; studiedToday?:boolean
@@ -153,8 +153,15 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext,quietBase:number|nu
  if(c.kind==='rhythm'&&(c.dismissals??0)>=3)return result(c,'skipped','disabled')
  if(c.kind==='rhythm'&&c.lastSentAt!==undefined&&now-c.lastSentAt<3*DAY)
   return result(c,'suppressed','frequency')
- if(c.kind==='digest'&&c.lastSentAt!==undefined&&now-c.lastSentAt<(c.period==='weekly'?7*DAY:DAY))
-  return result(c,'suppressed','frequency')
+ if(c.kind==='digest'&&c.lastSentAt!==undefined){
+  // A local study day can be 23 or 25 hours at a DST boundary; a week
+  // containing a clock change can be 167 or 169 hours. Prefer the period
+  // identities from the owner-scoped scheduler over elapsed UTC durations.
+  const samePeriod=c.periodKey!==undefined&&c.lastSentPeriodKey!==undefined
+   ?c.periodKey===c.lastSentPeriodKey
+   :now-c.lastSentAt<(c.period==='weekly'?7*DAY:DAY)
+  if(samePeriod)return result(c,'suppressed','frequency')
+ }
  const quiet=quietBase===null?null:quietBase+hashOffset(c.key)*MIN
  if(quiet!==null)return result(c,'defer','quiet',quiet)
  if(['due','deadline','behind','resume','plan','rhythm'].includes(c.kind)&&
