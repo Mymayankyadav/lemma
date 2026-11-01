@@ -105,7 +105,7 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
    <ChevronRight size={16} aria-hidden="true" className={'shrink-0 text-ink-3 transition-transform '+(open?'rotate-90':'')}/>
    <strong className="min-w-0 flex-1 break-words font-[var(--font-display)] text-headline font-semibold"><Tex source={stage.name}/></strong>
    <span role="img" aria-label={progress+' percent complete'} className="h-1 w-16 shrink-0 overflow-hidden rounded-[1px] bg-fill-2">
-    <span className="block h-full bg-amber" style={{width:progress+'%'}}/>
+    <span className="block h-full bg-ink-2" style={{width:progress+'%'}}/>
    </span>
    <span className="w-9 shrink-0 text-right text-label tabular-nums text-ink-2">{done}/{total}</span>
   </button>
@@ -113,7 +113,7 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
    {open&&finished.length>0&&<button type="button" data-done-summary=""
     aria-expanded={showFinished} onClick={()=>setShowFinished(value=>!value)}
     className="flex min-h-11 w-full items-center justify-between rounded-ctl border-t border-edge px-2 text-left text-label text-ink-2">
-    <span>{finished.length} done ✓</span><span className="text-amber">{showFinished?'Hide':'Show'}</span>
+    <span>{finished.length} done ✓</span><span className="text-ink-2">{showFinished?'Hide':'Show'}</span>
    </button>}
    {rows.map((cp,index)=><Link key={cp.id} to={'/p/'+slug+'/cp/'+encodeURIComponent(cp.code)}
     data-cp-row="" aria-label={cp.code+' '+cp.title+', '+labels[cp.ui]}
