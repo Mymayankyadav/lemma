@@ -132,3 +132,28 @@ test('AND-8 offline mutation guards retain the card and project state',async({pa
  await expect.poll(()=>row.getByText('Pinned',{exact:true}).count()).toBe(pinnedBefore)
  await context.setOffline(false)
 })
+
+/** A server/DNS failure can leave navigator.onLine true while a stale snapshot
+ * is rendered. Mutations must stay disabled until live data is recovered.
+ */
+test('AND-8 stale snapshot disables writes even when the browser reports online',async({page})=>{
+ await page.goto('/lemma/?demo=1&theme=graph#/cards',{waitUntil:'domcontentloaded'})
+ await expect(page.getByRole('heading',{name:'Cards',exact:true,level:1})).toBeVisible()
+ await expect(page.getByRole('button',{name:'New card'})).toBeVisible()
+ await page.evaluate(()=>{
+  const savedAt=Date.now()
+  document.documentElement.dataset.offlineSavedAt=String(savedAt)
+  window.dispatchEvent(new CustomEvent('lemma:offline-snapshot',{detail:{savedAt}}))
+ })
+ expect(await page.evaluate(()=>navigator.onLine)).toBe(true)
+ const blocked=page.getByRole('button',{name:'New card, needs a connection'})
+ await expect(blocked).toHaveAttribute('aria-disabled','true')
+ await blocked.evaluate((button:HTMLButtonElement)=>button.click())
+ await expect(page.getByText('Needs a connection',{exact:true})).toBeVisible()
+ await expect(page.getByRole('dialog',{name:/New card/i})).toHaveCount(0)
+ await page.evaluate(()=>{
+  delete document.documentElement.dataset.offlineSavedAt
+  window.dispatchEvent(new CustomEvent('lemma:offline-snapshot',{detail:{savedAt:null}}))
+ })
+ await expect(page.getByRole('button',{name:'New card'})).toBeVisible()
+})
