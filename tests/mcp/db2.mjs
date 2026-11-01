@@ -132,22 +132,29 @@ try {
    values ('${other}','${otherProject}','Other-only history')`);
  const ownerRows=await q(`select v.action_no,v.user_id from public.v_action_changes_owner v
    where v.user_id='${owner}' and
-   (v.new->>'project_id'='${project}' or v.new->>'id'='${project}')
+   (v.new_project_id='${project}' or v.new_id='${project}')
    order by v.id limit 500 offset 0`);
  const otherRows=await q(`select v.action_no,v.user_id from public.v_action_changes_owner v
    where v.user_id='${other}' and
-   (v.new->>'project_id'='${otherProject}' or v.new->>'id'='${otherProject}')
+   (v.new_project_id='${otherProject}' or v.new_id='${otherProject}')
    order by v.id limit 500 offset 0`);
  assert.ok(ownerRows.length>0 && otherRows.length>0);
  assert.ok(ownerRows.every(x=>x.user_id===owner));
  assert.ok(otherRows.every(x=>x.user_id===other));
+ // A deleted child must remain discoverable through the old identifier
+ // projection, without exposing the original row JSON to this view.
+ await db.exec(`delete from public.notes where user_id='${other}' and front='Other-only history'`);
+ const removed=await q(`select action_no,user_id from public.v_action_changes_owner
+   where user_id='${other}' and old_project_id='${otherProject}'`);
+ assert.ok(removed.length>0 && removed.every(x=>x.user_id===other));
+
  assert.equal(ownerRows.some(x=>otherRows.some(y=>x.action_no===y.action_no)),false);
  // Model the privileged connector's RLS-bypassing service role. An explicit
  // user_id predicate is still required to protect project-history pagination.
  await db.exec('alter role service_role bypassrls; set role service_role');
  const privileged=await q(`select distinct action_no,user_id from public.v_action_changes_owner
    where user_id='${owner}' and
-   (new->>'project_id'='${project}' or new->>'id'='${project}')
+   (new_project_id='${project}' or new_id='${project}')
    order by action_no limit 500 offset 0`);
  assert.ok(privileged.length>0 && privileged.every(x=>x.user_id===owner));
  assert.ok(privileged.every(x=>!otherRows.some(y=>y.action_no===x.action_no)));
