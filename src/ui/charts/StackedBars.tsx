@@ -7,13 +7,16 @@ export interface StackedBarsProps extends ChartSize{data:StackedBarDatum[]}
 // v4 roles: Good uses green --grade-good; Easy uses distinct blue --easy.
 const parts=[['again','var(--bad)'],['hard','var(--warn)'],['good','var(--grade-good)'],['easy','var(--easy)']] as const;
 export function StackedBars({data,width=316,height=120,title='Reviews by day',className=''}:StackedBarsProps){
- const reduce=!!useReducedMotion(),w=Math.max(120,width),h=Math.max(70,height),top=8,bottom=h-23,left=8,right=w-7;
+ // At 30/90-day scale, retain every period and its totals. Widen the inner
+ // plot instead of shrinking independent day marks below the 8px clearance.
+ const reduce=!!useReducedMotion(),w=Math.max(120,width,data.length*20+16),h=Math.max(70,height),top=8,bottom=h-23,left=8,right=w-7;
  const max=Math.max(1,...data.map(d=>d.again+d.hard+d.good+d.easy));
- const x=scaleBand().domain(data.map((_,i)=>String(i))).range([left,right]).padding(data.length>16?0.18:0.32);
+ // A half-step gap is >=8px at the minimum 20px step.
+ const x=scaleBand().domain(data.map((_,i)=>String(i))).range([left,right]).padding(0.5);
  const y=scaleLinear().domain([0,max]).range([bottom,top]);
  // Labels need >=12px; omit intermediate ticks instead of shrinking them.
- const labelEvery=Math.max(1,Math.ceil(data.length/Math.max(1,Math.floor((right-left)/38))));
- return <svg role="img" aria-label={`${title}: ${data.length} periods and ${data.reduce((n,d)=>n+d.again+d.hard+d.good+d.easy,0)} reviews.`} className={className} width="100%" viewBox={`0 0 ${w} ${h}`} style={{maxWidth:w}}>
+ const labelEvery=Math.max(1,Math.ceil(data.length/Math.max(1,Math.floor((Math.max(120,width)-15)/38))));
+ return <div className="w-full min-w-0 overflow-x-auto"><svg role="img" aria-label={`${title}: ${data.length} periods and ${data.reduce((n,d)=>n+d.again+d.hard+d.good+d.easy,0)} reviews.`} className={className} width={w} viewBox={`0 0 ${w} ${h}`}>
  <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="var(--edge-3)"/>
  {data.map((d,i)=>{let offset=0;return <g key={i}>
  <g data-stress-mark="">
@@ -22,6 +25,6 @@ export function StackedBars({data,width=316,height=120,title='Reviews by day',cl
  initial={reduce?false:{y:bottom,height:0}} animate={{y:topY,height:barHeight}} transition={{duration:0.55,delay:reduce?0:i*(data.length>16?0.018:0.06)}}/>:null})}
  </g>
  {(i%labelEvery===0)&&<text x={(x(String(i))||0)+x.bandwidth()/2} y={h-5} fontSize="14" textAnchor="middle" fill="var(--ink-3)">{d.label}</text>}
- </g>})}</svg>;
+ </g>})}</svg></div>;
 }
 export default StackedBars;
