@@ -68,7 +68,7 @@ try{
    console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
    // Profile individual CTEs only after the strict first-attempt gate fails.
    // No diagnostic rerun can change the first-attempt acceptance measurement.
-   const migrationSql=await readFile(new URL('../../supabase/migrations/20261101123100_notify_candidates.sql',import.meta.url),'utf8')
+   const migrationSql=await readFile(new URL('../../supabase/migrations/20261101171500_notify_candidates_card_first.sql',import.meta.url),'utf8')
    const cteBody=migrationSql.split('\nwith\n')[1]?.split("\nselect jsonb_build_object(\n  'tz'")[0]
    assert.ok(cteBody?.startsWith('prefs as ('),'candidate CTE diagnostics must match the migration')
    const ctes=('with\n'+cteBody).replace(/\bp_user\b/g,'$1::uuid').replace(/\bp_now\b/g,'$2::timestamptz')
