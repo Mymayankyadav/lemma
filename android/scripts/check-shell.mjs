@@ -36,6 +36,43 @@ ensure(await exists('android/gradlew') && await exists('android/gradle/wrapper/g
   'Gradle wrapper required')
 ensure(await exists('android/app/src/main/res/drawable/ic_stat_lemma.xml'),
   'monochrome notification glyph required')
+// Regression-first AND-3 delegated notification and launcher shortcut acceptance.
+const delegatedService = manifest.match(/<service\b[^>]*android:name="com\.google\.androidbrowserhelper\.trusted\.DelegationService"[^>]*>([\s\S]*?)<\/service>/)?.[1]
+ensure(delegatedService &&
+  /<meta-data\b[^>]*android:name="android\.support\.customtabs\.trusted\.SMALL_ICON"\s+android:resource="@drawable\/ic_stat_lemma"\s*\/>/.test(delegatedService),
+  'DelegationService must associate the monochrome SMALL_ICON metadata with ic_stat_lemma')
+
+const shortcutsXml = await get('android/app/src/main/res/xml/shortcuts.xml')
+const shortcutEntries = [...shortcutsXml.matchAll(/<shortcut\b([^>]+)>([\s\S]*?)<\/shortcut>/g)]
+const expectedShortcutUrls = {
+  review: 'https://mymayankyadav.github.io/lemma/#/review',
+  approve: 'https://mymayankyadav.github.io/lemma/#/proposals',
+  atlas: 'https://mymayankyadav.github.io/lemma/#/atlas',
+}
+ensure(shortcutEntries.length === 3, 'exactly three Android shortcuts required')
+const iconReferences = new Set()
+const iconContents = new Set()
+for (const [kind, url] of Object.entries(expectedShortcutUrls)) {
+  const shortcut = shortcutEntries.find(([, attributes]) => attributes.includes('android:shortcutId="' + kind + '"'))
+  ensure(shortcut, 'missing Android shortcut ' + kind)
+  const attributes = shortcut[1]
+  const expectedIcon = '@drawable/shortcut_' + kind
+  ensure(attributes.includes('android:icon="' + expectedIcon + '"'),
+    'Android ' + kind + ' shortcut must use its own glyph')
+  ensure(shortcut[2].includes('android:data="' + url + '"'),
+    'Android ' + kind + ' shortcut deep link mismatch')
+  iconReferences.add(expectedIcon)
+  const pngPath = 'android/app/src/main/res/drawable-nodpi/shortcut_' + kind + '.png'
+  ensure(await exists(pngPath), 'missing Android 96px shortcut glyph ' + kind)
+  const png = await readFile(resolve(root, pngPath))
+  ensure(png.subarray(0, 8).toString('hex') === '89504e470d0a1a0a' &&
+    png.readUInt32BE(16) === 96 && png.readUInt32BE(20) === 96,
+    'Android shortcut glyph must be a 96x96 PNG: ' + kind)
+  iconContents.add(png.toString('base64'))
+}
+ensure(iconReferences.size === 3 && iconContents.size === 3,
+  'Review, Approve and Atlas must have three distinct Android glyphs')
+
 const splash = await get('android/app/src/main/res/drawable/ic_launcher.xml')
 ensure(splash.includes('@color/paper') && splash.includes('@color/ink'),
   'splash glyph and background must use day/night resource colours')
