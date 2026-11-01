@@ -109,6 +109,8 @@ jobs:
         run: node tests/mcp/st5.mjs
       - name: Verify DB-5 transcription provenance and reversible pages
         run: node tests/mcp/db5.mjs
+      - name: Verify NOTIF-1a reminder tables, RLS and device cap
+        run: node tests/mcp/notif1a.mjs
       - name: Verify MCP-2 atomic transactions when available
         if: hashFiles('tests/mcp/transactions.mjs') != ''
         run: node tests/mcp/transactions.mjs
