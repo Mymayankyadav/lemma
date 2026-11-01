@@ -45,6 +45,11 @@ try{
  await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
+ // Regression-first: owner/note lookup must cover the three fields used by
+ // due-card sibling ranking, rather than visiting 30k heap tuples per query.
+ const covering=await q("select indexdef from pg_indexes where schemaname='public' and tablename='cards' and indexname='cards_notify_owner_note_due_cover'")
+ assert.equal(covering.length,1,'notification card lookup needs its covering index')
+ assert.match(covering[0].indexdef,/INCLUDE\\s*\\(state, due, id\\)/i)
  let queryCount=0
  const start=performance.now()
  queryCount++
