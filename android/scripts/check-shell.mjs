@@ -71,7 +71,7 @@ const validShortcutPng = png => {
     const kind = png.toString('ascii', offset + 4, offset + 8)
     const body = png.subarray(offset + 4, offset + 8 + length)
     if (pngCrc32(body) !== png.readUInt32BE(offset + 8 + length)) return false
-    if (kind === 'IHDR') sawHeader = length === 13 && png[offset + 25] === 6
+    if (kind === 'IHDR') sawHeader = length === 13 && png[offset + 17] === 6
     if (kind === 'IDAT') compressed.push(png.subarray(offset + 8, offset + 8 + length))
     offset = end
     if (kind === 'IEND') { sawEnd = length === 0; break }
