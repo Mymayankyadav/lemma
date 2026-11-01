@@ -13,6 +13,8 @@ import type {
   SourcePatch,
 } from "../api";
 import { LemmaError } from "../api";
+import { makeDemoNotifyData } from "./notify-fixture";
+import { mergeNotifyPrefs } from "../notify";
 import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
 import type {
   AtlasGraph,
@@ -131,6 +133,59 @@ interface SummaryIndex {
 /** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
+  private notify: ReturnType<typeof makeDemoNotifyData>;
+  async listPushDevices(): ReturnType<LemmaApi['listPushDevices']> { return clone(this.notify.devices); }
+  async addPushDevice(input: Parameters<LemmaApi['addPushDevice']>[0]): ReturnType<LemmaApi['addPushDevice']> {
+    if (!input.endpoint.startsWith('https://') || !input.label.trim() || input.label.length > 40) invalid('Invalid push device');
+    const existingId=this.notify.endpoints.get(input.endpoint);
+    const existing=this.notify.devices.find(d=>d.id===existingId);
+    if ((!existing || existing.disabledAt) && this.notify.devices.filter(d=>!d.disabledAt).length>=10)
+      invalid('You have 10 devices with reminders. Remove one first.');
+    if (existing) {
+      existing.label=input.label;existing.platform=input.platform;existing.disabledAt=null;existing.disabledReason=null;
+      return clone(existing);
+    }
+    const device={id:'demo-device-'+(this.notify.devices.length+1),label:input.label,platform:input.platform,
+      lastSeenAt:null,lastOkAt:null,disabledAt:null,disabledReason:null,isThisDevice:false} as Awaited<ReturnType<LemmaApi['addPushDevice']>>;
+    this.notify.devices.push(device);
+    this.notify.endpoints.set(input.endpoint,device.id);
+    return clone(device);
+  }
+  async renamePushDevice(id:string,label:string): ReturnType<LemmaApi['renamePushDevice']> {
+    if(!label.trim()||label.length>40)invalid('Invalid device label');
+    const device=found(this.notify.devices.find(d=>d.id===id),'Push device');
+    device.label=label;return clone(device);
+  }
+  async removePushDevice(id:string): ReturnType<LemmaApi['removePushDevice']> {
+    const device=found(this.notify.devices.find(d=>d.id===id),'Push device');
+    device.disabledAt=this.iso();device.disabledReason='removed';return clone(device);
+  }
+  async restorePushDevice(id:string): ReturnType<LemmaApi['restorePushDevice']> {
+    const device=found(this.notify.devices.find(d=>d.id===id),'Push device');
+    if(device.disabledAt && this.notify.devices.filter(d=>!d.disabledAt).length>=10)
+      invalid('You have 10 devices with reminders. Remove one first.');
+    device.disabledAt=null;device.disabledReason=null;return clone(device);
+  }
+  async touchPushDevice(endpoint:string): Promise<void> {
+    const id=this.notify.endpoints.get(endpoint);
+    const device=this.notify.devices.find(d=>d.id===id);
+    if(device)device.lastSeenAt=this.iso();
+  }
+  async listRecentNotifications(): ReturnType<LemmaApi['listRecentNotifications']> {
+    return clone(this.notify.recent.slice(0,20));
+  }
+  async listNotifyHolds(): ReturnType<LemmaApi['listNotifyHolds']> {return clone(this.notify.holds);}
+  async clearNotifyHold(scope:string): Promise<void> {
+    this.notify.holds=this.notify.holds.filter(h=>h.scope!==scope);
+  }
+  async sendTestNotification(deviceId:string): Promise<void> {
+    found(this.notify.devices.find(d=>d.id===deviceId),'Push device');
+    this.notify.recent.unshift({id:Math.max(0,...this.notify.recent.map(n=>n.id))+1,kind:'test',
+      title:'Test from Lemma',body:'Reminders are ready on this device.',sentAt:this.iso(),action:null,actionAt:null});
+  }
+  async previewNotifications(): ReturnType<LemmaApi['previewNotifications']> {
+    return clone(this.notify.preview.map(row=>({...row,held:this.notify.holds.some(h=>h.scope===row.kind)})));
+  }
   /** CONTRACT-546: bounded history pagination remains fail-closed until FIX-546b lands. */
   async getCardHistoryPage(...args: Parameters<LemmaApi["getCardHistoryPage"]>): ReturnType<LemmaApi["getCardHistoryPage"]> {
     const [no,cursor]=args,n=this.readOnlyNote(no),key=decodeCardPageCursor(cursor,'reviews',no);
@@ -289,6 +344,7 @@ export class DemoAdapter implements LemmaApi {
   }
   constructor(options: DemoOptions = {}) {
     this.now = options.now ?? Date.now;
+    this.notify = makeDemoNotifyData(this.now());
     this.store = hydrateFixture(
       options.fixture ?? demoSeedFixture,
       this.now(),
@@ -854,8 +910,11 @@ export class DemoAdapter implements LemmaApi {
         "mixDecks",
         "preferredChat",
         "timeZone",
+        "notify",
       ]);
       const value = { ...this.store.settings, ...clone(patch) };
+      if (patch.notify && typeof patch.notify === "object")
+        value.notify = mergeNotifyPrefs(this.store.settings.notify,patch.notify);
       if (
         value.desiredRetention < 0.8 ||
         value.desiredRetention > 0.97 ||
