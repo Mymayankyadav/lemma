@@ -123,9 +123,12 @@ for(const width of [360,390] as const){
 
 // D6 acceptance: measure the interactive list transition under 4x CPU.
 // Loading the deterministic 30,000-card fixture happens before timing.
+// Unlike normal UI tests, a retry must never certify a failed 1000ms budget.
+test.describe('D6 strict first-attempt 4x CPU budget',()=>{
+ test.describe.configure({retries:0});
 for(const theme of ['graph','graph-night'] as const)
 for(const [width,height] of [[360,740],[390,844]] as const){
- test('ST-4 extreme cards open under 1s at 4x CPU: '+theme+' '+width,async({page})=>{
+ test('ST-4 extreme cards open under 1s at 4x CPU: '+theme+' '+width,async({page},testInfo)=>{
   test.setTimeout(120_000);
   await page.setViewportSize({width,height});
   await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
@@ -146,6 +149,11 @@ for(const [width,height] of [[360,740],[390,844]] as const){
     rows:document.querySelectorAll('[data-card-row]').length,
     overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth),
    }));
+   const evidence={...metrics,theme,width,profile:'extreme',cpuThrottle:4};
+   await testInfo.attach('cards-d6-first-attempt-measurement',{
+    body:JSON.stringify(evidence,null,2),contentType:'application/json',
+   });
+   console.info('Cards D6 cold 4x: '+JSON.stringify(evidence));
    expect(metrics.durationMs,'Card list first interactive render at 4x CPU').toBeLessThan(1000);
    expect(metrics.nodes,'Card list DOM budget').toBeLessThan(1500);
    expect(metrics.rows).toBeLessThanOrEqual(24);
@@ -157,3 +165,5 @@ for(const [width,height] of [[360,740],[390,844]] as const){
   }
  });
 }
+
+});
