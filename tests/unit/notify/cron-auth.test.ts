@@ -1,4 +1,4 @@
-import {describe,expect,it} from 'vitest';
+import {describe,expect,it,vi} from 'vitest';
 import {authorizeCronTick} from '../../../supabase/functions/notify/cron-auth';
 
 const SECRET='a'.repeat(64);
@@ -26,6 +26,19 @@ describe('NOTIF-4b6a cron authorization',()=>{
  it('rejects unicode and unbounded header input without revealing configuration',()=>{
   for(const provided of ['🗝️'.repeat(32),'A'.repeat(2048),SECRET+'\n']){
    expect(call(provided)).toEqual({ok:false,status:401,message:'Unauthorized'});
+  }
+ });
+ it('compares the same 64 positions for correct, early-wrong and short credentials',()=>{
+  const spy=vi.spyOn(String.prototype,'charCodeAt');
+  try{
+   for(const supplied of [SECRET,'b'+SECRET.slice(1),SECRET.slice(0,1),'']){
+    spy.mockClear();
+    authorizeCronTick(supplied,SECRET);
+    const reads=spy.mock.calls.length;
+    expect(reads).toBe(128);
+   }
+  }finally{
+   spy.mockRestore();
   }
  });
  it('requires a full credential rather than a matching prefix',()=>{
