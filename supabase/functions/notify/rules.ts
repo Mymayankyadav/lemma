@@ -84,7 +84,7 @@ export function tutorActions(options:{cards:number;hasPlan:boolean;approveCards:
   return ['Approve '+options.cards+' '+(options.cards===1?'card':'cards'),'Review']
  return ['Review','Later']
 }
-function eligibility(c:ReminderCandidate,ctx:ReminderContext,quietBase:number|null):RuleResult|null{
+function eligibility(c:ReminderCandidate,ctx:ReminderContext,getQuietBase:()=>number|null):RuleResult|null{
  const now=ctx.now
  if(c.enabled===false||c.kind==='rhythm'&&!ctx.rhythmEnabled)return result(c,'skipped','disabled')
  if(c.condition===false)return result(c,'skipped','resolved')
@@ -162,6 +162,7 @@ function eligibility(c:ReminderCandidate,ctx:ReminderContext,quietBase:number|nu
    :now-c.lastSentAt<(c.period==='weekly'?7*DAY:DAY)
   if(samePeriod)return result(c,'suppressed','frequency')
  }
+ const quietBase=getQuietBase()
  const quiet=quietBase===null?null:quietBase+hashOffset(c.key)*MIN
  if(quiet!==null)return result(c,'defer','quiet',quiet)
  if(['due','deadline','behind','resume','plan','rhythm'].includes(c.kind)&&
@@ -182,9 +183,11 @@ export function decideNotifications(candidates:ReminderCandidate[],context:Remin
  let sent=false
  // A 50-candidate tick should not rescan 25 hours of timezone minute parts
  // for every candidate. One shared boundary preserves each key's stable jitter.
- const quietBase=ordered.length?quietBoundary(context):null
+ let quietBase:number|null|undefined
+ const getQuietBase=()=>quietBase===undefined
+  ?(quietBase=quietBoundary(context)):quietBase
  return ordered.map(candidate=>{
-  const preliminary=eligibility(candidate,context,quietBase)
+  const preliminary=eligibility(candidate,context,getQuietBase)
   if(preliminary)return preliminary
   if(context.sendsToday>=Math.max(1,Math.min(5,context.dailyCap)))
    return result(candidate,'suppressed','cap')
