@@ -136,6 +136,8 @@ jobs:
         run: node tests/mcp/notif1b-candidates.mjs
       - name: Verify NOTIF-1b two-connection atomic claim and rollback
         run: node tests/mcp/notif1b-concurrency.mjs
+      - name: Verify NOTIF-1b X 60-project/30k-card first-attempt candidate budget
+        run: node tests/mcp/notif1b-stress.mjs
       - name: Verify MCP-2 atomic transactions when available
         if: hashFiles('tests/mcp/transactions.mjs') != ''
         run: node tests/mcp/transactions.mjs
