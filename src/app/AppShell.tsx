@@ -18,6 +18,14 @@ export default function AppShell(){
   let authEventSeen=false;
   // Serialize writes and deletion so a sign-out cannot resurrect a prior owner's snapshot.
   let pendingSave:Promise<void>=Promise.resolve();
+  // A snapshot read can still hold an IndexedDB connection when an auth
+  // switch arrives. Wait for it before deleteDatabase, otherwise onblocked
+  // can leave the former owner's offline records on disk.
+  const pendingReads=new Set<Promise<unknown>>();
+  const eraseOwner=(owner:string)=>{
+   void Promise.allSettled([pendingSave,...pendingReads])
+    .then(()=>deleteOfflineSnapshot(owner)).catch(()=>{/* Private mode/blocked storage: no data is exposed to the next owner. */});
+  };
   const publish=(savedAt:number|null)=>{
    if(savedAt===null)delete document.documentElement.dataset.offlineSavedAt;
    else document.documentElement.dataset.offlineSavedAt=String(savedAt);
@@ -26,8 +34,10 @@ export default function AppShell(){
   const restore=async()=>{
    const owner=identity;
    if(!owner)return;
+   const reading=readOfflineSnapshot(owner);
+   pendingReads.add(reading);
    try{
-    const snapshot=await readOfflineSnapshot(owner);
+    const snapshot=await reading;
     // Reading IndexedDB is asynchronous. A sign-out or account switch during
     // that read must never inject the former owner's rows into the new cache.
     if(disposed||identity!==owner)return;
@@ -37,6 +47,7 @@ export default function AppShell(){
     }
     publish(snapshot?.savedAt??null);
    }catch{if(!disposed&&identity===owner)publish(null)}
+   finally{pendingReads.delete(reading)}
   };
   const save=async()=>{
    if(disposed||!identity||!navigator.onLine)return;
@@ -87,11 +98,11 @@ export default function AppShell(){
        if(saveTimer)clearTimeout(saveTimer);
        const previous=identity;identity=null;publish(null);
        queryClient.clear(); // No signed-out route may retain the former owner's in-memory queries.
-       if(previous)void pendingSave.then(()=>deleteOfflineSnapshot(previous)).catch(()=>{});
+       if(previous)eraseOwner(previous);
       }else if(session?.user?.id&&session.user.id!==identity){
        const previous=identity;identity=session.user.id;publish(null);
        if(previous)queryClient.clear(); // Switching accounts must also clear live in-memory data.
-       if(previous)void pendingSave.then(()=>deleteOfflineSnapshot(previous)).catch(()=>{});
+       if(previous)eraseOwner(previous);
        if(!navigator.onLine)void restore();else queueSave();
       }
      }).data.subscription;
