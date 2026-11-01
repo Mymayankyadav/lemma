@@ -103,6 +103,18 @@ describe('NOTIF-4b6b owner-scoped tick core',()=>{
   const signal=vi.mocked(deps.load).mock.calls[0][2];
   expect(signal.aborted).toBe(true);
  });
+ it('does not start writes or sends after cancellation during an owner read',async()=>{
+  const controller=new AbortController();
+  const deps=adapters([A]);
+  vi.mocked(deps.load).mockImplementation(async()=>{
+   controller.abort();
+   return facts();
+  });
+  const result=await runNotifyTick(deps,{now:NOW,signal:controller.signal});
+  expect(result).toMatchObject({owners:1,queued:0,sent:0,timedOut:false});
+  expect(deps.queue).not.toHaveBeenCalled();
+  expect(deps.deliver).not.toHaveBeenCalled();
+ });
  it('honors external cancellation before enumerating owners',async()=>{
   const controller=new AbortController();
   controller.abort();
