@@ -1,6 +1,8 @@
 import {test,expect} from '@playwright/test';
 import {mkdirSync} from 'node:fs';
 
+test.describe.configure({retries:0});
+
 // FIX #656: cold plan-change rendering must retain every required region.
 // The independent 144-route FIX #540 matrix enforces the 4x CPU <1500ms
 // budget; these eight cases protect the real content during optimization.
@@ -12,6 +14,19 @@ for(const width of [390,360] as const){
   await page.setViewportSize({width,height:width===360?740:844});
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
+  await page.addInitScript(()=>{
+   const loaded=()=>!!document.querySelector('section[aria-label="Plan errata"]')
+    &&!!document.querySelector('[data-idea-graph] [role="tree"]')
+    &&!!document.querySelector('[aria-label="Checkpoint prerequisites"]');
+   const observer=new MutationObserver(()=>{
+    if(loaded()&&!performance.getEntriesByName('lemma-proposal-loaded','mark').length){
+     performance.mark('lemma-proposal-loaded');observer.disconnect();
+    }
+   });
+   observer.observe(document,{childList:true,subtree:true});
+  });
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
   await page.goto('/lemma/?demo='+profile+'&theme='+theme+'#/proposals/proposal-6',{waitUntil:'domcontentloaded',timeout:90_000});
   await expect(page.getByRole('heading',{name:'Plan proposal',level:1})).toBeVisible({timeout:90_000});
   await expect(page.getByRole('heading',{name:'Plan change',level:2})).toBeVisible({timeout:90_000});
@@ -21,6 +36,12 @@ for(const width of [390,360] as const){
   await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   expect(await page.locator('*').count()).toBeLessThan(1500);
+  const readyMs=await page.evaluate(()=>performance.getEntriesByName('lemma-proposal-loaded','mark')[0]?.startTime??NaN);
+  console.info('FIX #656 proposal cold 4x',JSON.stringify({profile,theme,width,readyMs}));
+  expect(Number.isFinite(readyMs)).toBe(true);
+  expect(readyMs,'First real plan map, errata and Ideas at 4x CPU').toBeLessThan(1500);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
+  await cdp.detach();
   mkdirSync('test-results/screens/fix-656',{recursive:true});
   await page.screenshot({path:'test-results/screens/fix-656/'+profile+'-'+theme+'-'+width+'.png'});
  });
