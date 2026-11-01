@@ -11,7 +11,7 @@ describe('FIX-507c Atlas route-aware prefetch',()=>{
   for(const n of [1,2,3,4,5,6,7,8,9,10,11,12,14,15,16,17])
    expect(routes, 'screen '+n+' must not enter the cold Today chunk').toMatch(new RegExp('const Page'+n+'=lazy\\('))
  })
- it('preloads Atlas only on demo Paths, not on live Paths or Today',()=>{
+ it('prefetches Atlas data only on demo Paths, not live Paths or Today',()=>{
   const projects=readFileSync('src/features/projects/Page.tsx','utf8')
   const section=projects.slice(projects.indexOf('export default function Page(){'))
   expect(section).toContain("if(getMode()!=='demo')return")
