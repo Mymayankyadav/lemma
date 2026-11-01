@@ -95,4 +95,18 @@ describe('NOTIF-4b1 atomic /act handler',()=>{
   expect(result).toEqual({status:409,body:{message:'Open Lemma to finish'}});
   expect(rpc).toHaveBeenCalledTimes(1);
  });
+ it('reports committed approval success if signing the optional Undo link fails',async()=>{
+  const rpc=vi.fn().mockResolvedValue({data:{status:'done',kind:'tutor',approved:[card],skipped:[],action:123,confirmId:84},error:null});
+  const token=await signed('approve_cards',{ids:[card]});
+  // Verification succeeds; only the post-commit signing step fails. The SQL
+  // claim and approvals cannot be rolled back by returning an HTTP 409.
+  const sign=vi.spyOn(webcrypto.subtle,'sign').mockRejectedValueOnce(new Error('crypto unavailable'));
+  try{
+   const response=await handleActionRequest({token},{secret,rpc,nowSeconds:now});
+   expect(response).toEqual({status:200,body:{status:'done',kind:'tutor',approved:[card],skipped:[],action:123,confirmId:84}});
+   expect(response.body).not.toHaveProperty('undoToken');
+   expect(rpc).toHaveBeenCalledTimes(1);
+  }finally{sign.mockRestore()}
+ });
+
 });
