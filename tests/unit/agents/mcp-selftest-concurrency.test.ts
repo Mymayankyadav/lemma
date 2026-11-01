@@ -1,4 +1,7 @@
-import {readFileSync} from 'node:fs';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {describe,expect,it} from 'vitest';
 
 // FIX #636: overlapping deploy and standalone MCP selftests mutate the same
@@ -34,6 +37,25 @@ describe('FIX #636: deployed MCP selftests cannot overlap',()=>{
   expect(smoke).toContain('::error::MCP smoke blocked: MCP_URL');
   expect(smoke).toContain('::error::MCP smoke blocked: missing smoke script');
   expect((smoke.match(/exit 1/g)??[]).length).toBeGreaterThanOrEqual(2);
+ });
+ it('actually exits nonzero without a secret or executable smoke script',()=>{
+  const section=smoke.match(/      - name: Verify deployed connector\\n        shell: bash\\n        run: \\|\\n((?:          .*\\n)+)/)?.[1];
+  expect(section).toBeTruthy();
+  const script=section!.replace(/^ {10}/gm,'');
+  const missingSecret=spawnSync('bash',['-e','-c',script],{
+   encoding:'utf8',env:{...process.env,MCP_URL:''},
+  });
+  expect(missingSecret.status).toBe(1);
+  expect(missingSecret.stdout).toContain('MCP smoke blocked: MCP_URL');
+  const empty=mkdtempSync(join(tmpdir(),'lemma-mcp-missing-'));
+  try{
+   const missingScript=spawnSync('bash',['-e','-c',script],{
+    cwd:empty,encoding:'utf8',env:{...process.env,MCP_URL:'nonsecret-test-value'},
+   });
+   expect(missingScript.status).toBe(1);
+   expect(missingScript.stdout).toContain('MCP smoke blocked: missing smoke script');
+   expect(missingScript.stdout).not.toContain('nonsecret-test-value');
+  }finally{rmSync(empty,{recursive:true,force:true})}
  });
  it('retains deploy and smoke verification rather than bypassing assertions',()=>{
   expect(deploy).toContain('supabase db push');
