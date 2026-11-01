@@ -97,6 +97,7 @@ export async function runNotifyTick(
     const facts=await within(deps.load(userId,now,controller.signal));
     if(!facts||!Array.isArray(facts.candidates)||!facts.context)
      throw Error('Invalid owner facts');
+    if(controller.signal.aborted)break;
     const decisions=decideNotifications(facts.candidates,{...facts.context,now});
     const queued=await within(deps.queue(userId,decisions,controller.signal));
     if(!safeCount(queued,decisions.length))throw Error('Invalid queued count');
@@ -105,6 +106,7 @@ export async function runNotifyTick(
     // Switching reminders off must also block previously queued deliveries.
     if(facts.context.mode==='off')continue;
     const remaining=sendLimit-attempted;
+    if(controller.signal.aborted)break;
     if(remaining<=0)continue;
     const delivery=await within(deps.deliver(userId,remaining,controller.signal));
     if(!delivery||!safeCount(delivery.attempted,remaining)||
