@@ -27,6 +27,7 @@ describe('FIX-507d bounded seven-day forecast',()=>{
    yield {state:2,due:'2026-10-31T12:00:00Z'}
    yield {state:2,due:'2026-10-31T12:00:00Z'}
    yield {state:0,due:'2026-10-31T12:00:00Z'}
+   yield {state:2,due:'not-a-date'}
   }
   expect(reviewForecast(cards(),{timeZone:'UTC',rolloverHour:4},now)[0].due).toBe(2)
  })
