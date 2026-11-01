@@ -1,7 +1,14 @@
 -- FIX #679: optimize NOTIF-1b X cold candidate read; no table/data rewrite.
--- Down: drop function public.notify_candidates(uuid,timestamptz); then
+-- Down: drop index public.cards_notify_owner_note_due_cover; drop function public.notify_candidates(uuid,timestamptz); then
 -- reapply 20261101123100_notify_candidates.sql to restore its original body
 -- and service_role-only EXECUTE grant. No tables or data are changed.
+-- Cover the card-first sibling deduplication with a single owner-scoped
+-- index scan. The existing (user_id,note_id) index lacks state/due/id and
+-- forces heap fetches for every candidate in a 30,000-card cold import.
+-- This index does not change the query result or permissions.
+create index if not exists cards_notify_owner_note_due_cover
+  on public.cards(user_id,note_id) include (state,due,id);
+
 create or replace function public.notify_candidates(p_user uuid,p_now timestamptz)
 -- The 30k-card X snapshot must not use one cards_note_id_owner probe per note.
 -- Owner-scoped hash joins keep the bounded read stable even before auto-ANALYZE
