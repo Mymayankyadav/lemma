@@ -80,4 +80,11 @@ describe('NOTIF-4b3 owner-authenticated test push',()=>{
   expect(send.mock.calls[0][1].body)
    .toBe('Lemma will write at most 3 times a day, never between 22:30 and 07:30.');
  });
+ it('uses the current owner quiet hours and daily limit in the test copy',async()=>{
+  loadDevice.mockResolvedValueOnce({...record,prefs:{maxPerDay:5,quiet:{start:'21:00',end:'06:15'}}});
+  const result=await handleTestPushRequest('Bearer token',{deviceId:device},deps);
+  expect(result.status).toBe(200);
+  expect(send.mock.calls[0][1].body)
+   .toBe('Lemma will write at most 5 times a day, never between 21:00 and 06:15.');
+ });
 });
