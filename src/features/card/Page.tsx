@@ -314,7 +314,7 @@ export default function Page() {
       ) : (
         <>
           <p className="text-label text-ink-3">
-            <span aria-hidden="true" className="mr-1 font-math text-card italic text-amber">{project?.subject.glyph ?? "∫"}</span> {project?.title ?? note.projectSlug}{" "}
+            <span data-card-subject-glyph aria-hidden="true" className="mr-1 font-math text-card italic text-ink-2">{project?.subject.glyph ?? "∫"}</span> {project?.title ?? note.projectSlug}{" "}
             {note.checkpointCode && `· ${note.checkpointCode}`} · N{note.noteNo}
           </p>
           <Slab as="article" className="p-5" aria-label="Card front and answer">
@@ -372,7 +372,7 @@ export default function Page() {
               </div>
               <div>
                 <p className="text-label text-ink-3">Recall now</p>
-                <p className="mt-1 font-medium tabular-nums text-amber" style={{fontFamily:"var(--font-num)"}}>
+                <p data-recall-value className="mt-1 font-medium tabular-nums text-ink" style={{fontFamily:"var(--font-num)"}}>
                   {recall === null ? "—" : `${Math.round(recall * 100)}%`}
                 </p>
               </div>
