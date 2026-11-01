@@ -84,6 +84,8 @@ describe('NOTIF-3a exact kind copy and safe tone',()=>{
   expect(copy.body).toContain('+2 checkpoints')
   expect(copy.body).not.toContain('Algebra: CP2')
   expect(copy.body.length).toBeLessThanOrEqual(140)
+  const long=checkpoints.map((cp,i)=>i===0?{...cp,title:'A very long checkpoint title about compactness and convergence '.repeat(5)}:cp)
+  expect(notificationCopy({kind:'deadline',checkpoints:long}).body).toContain('+2 checkpoints')
  })
  it('reserves space for three distinct projects and counts omitted projects',()=>{
   const checkpoints=['Algebra','Analysis','Topology','Geometry'].map((project,i)=>({
