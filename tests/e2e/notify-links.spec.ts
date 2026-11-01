@@ -76,6 +76,22 @@ test('review-done reminder offer is shown only twice, with Not now dismissing it
  }
 });
 
+test('demo Turn on previews reminders without registering a real push device',async({page})=>{
+ await page.addInitScript(()=>{
+  Object.defineProperty(window,'Notification',{configurable:true,value:{permission:'default',requestPermission:async()=> 'default'}});
+  Object.defineProperty(window,'PushManager',{configurable:true,value:class PushManager{}});
+  if(!('serviceWorker' in navigator))
+   Object.defineProperty(navigator,'serviceWorker',{configurable:true,value:{}});
+ });
+ await page.goto('/lemma/?demo=1#/review');
+ await finishOneCard(page);
+ const offer=page.getByRole('region',{name:'Reminder offer'});
+ await expect(offer).toBeVisible();
+ await offer.getByRole('button',{name:'Turn on'}).click();
+ await expect(offer).toHaveCount(0);
+ await expect(page.getByText('Demo: reminders preview only')).toBeVisible();
+});
+
 test('blocked notification permission never shows a post-review offer',async({page})=>{
  await page.addInitScript(()=>{
   Object.defineProperty(window,'Notification',{configurable:true,value:{permission:'denied',requestPermission:async()=> 'denied'}});
