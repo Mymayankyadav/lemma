@@ -10,6 +10,7 @@ import {useReviewSession} from './store';
 import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
+import {useOnlineStatus} from '../../ui/useOnlineStatus';
 import {MathText} from '../../ui/MathText';
 import {Card} from '../../ui/Card';
 import {Glyph} from '../../ui/Glyph';
@@ -89,6 +90,7 @@ function isInteractiveShortcutTarget(target:EventTarget|null):boolean{
 export default function Page(){
  const navigate=useNavigate(),[search]=useSearchParams(),notify=useToast(),reduced=!!useReducedMotion(),calm=useCalm(),reduce=reduced||calm;
  const settings=useSettings(),sessions=useSessions(),mutate=useRecordReview(),undo=useUndoReview();
+ const online=useOnlineStatus();
  const addComment=useAddComment(),suspend=useSetNoteStatus();
  const current=useReviewSession(s=>s.current),queue=useReviewSession(s=>s.queue);
  const revealed=useReviewSession(s=>s.revealed),confidence=useReviewSession(s=>s.confidence);
@@ -139,6 +141,7 @@ export default function Page(){
   else {useReviewSession.getState().close();navigate('/review')}
  }
  async function grade(rating:Rating){
+  if(!navigator.onLine){notify('Needs a connection');return}
   if(!current||!revealed||!intervals||useReviewSession.getState().submitting)return;
   const durationMs=Math.max(0,Math.min(600000,Date.now()-startTime));
   beginGrade();
@@ -168,6 +171,7 @@ export default function Page(){
   }
  }
  async function undoLast(){
+  if(!navigator.onLine){notify('Needs a connection');return}
   if(!lastUndo||undo.isPending||submitting)return;
   try{
    await undo.mutateAsync(lastUndo.reviewId);
@@ -196,6 +200,7 @@ export default function Page(){
   return ()=>document.removeEventListener('keydown',handler);
  },[current,submitting,revealed,sheetOpen,intervals,confidence,startTime]);
  async function leaveNote(){
+  if(!navigator.onLine){notify('Needs a connection');return}
   if(!current || !note.trim())return;
   try{
    await addComment.mutateAsync({noteNo:current.noteNo,body:note.trim()});
@@ -203,6 +208,7 @@ export default function Page(){
   }catch(error){notify(error instanceof Error?error.message:'Could not add note',{tone:'danger'})}
  }
  async function suspendCard(){
+  if(!navigator.onLine){notify('Needs a connection');return}
   if(!current)return;
   try{
    await suspend.mutateAsync({noteNo:current.noteNo,status:'suspended'});
@@ -239,7 +245,7 @@ export default function Page(){
      <span className="truncate">{current.projectSlug.replaceAll('-',' ')} · {current.checkpointCode}</span>
     </div>
    </div>
-   <IconButton icon={Undo2} label="Undo last answer" disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
+   <IconButton icon={Undo2} label={online?"Undo last answer":"Undo last answer, needs a connection"} aria-disabled={!online||undefined} disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
    <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>setSheetOpen(true)}/>
   </header>
   <div>
@@ -271,7 +277,7 @@ export default function Page(){
   </section>:<section aria-label="Grade answer" className="sticky bottom-0 z-20 grid grid-cols-4 gap-1.5 rounded-ctl bg-obsidian pb-[max(6px,env(safe-area-inset-bottom))] pt-2">
    {gradeNames.map((label,i)=>{
     const rating=(i+1) as Rating;
-    return <button key={rating} type="button" disabled={submitting}
+    return <button key={rating} type="button" aria-disabled={!online||undefined} disabled={submitting}
      onClick={()=>{void grade(rating)}} aria-label={'Grade '+label}
      className="flex min-h-[54px] min-w-0 flex-col items-center justify-center gap-1 rounded-btn border border-edge-2 bg-raised px-1 disabled:opacity-50">
      <span className="flex items-center gap-1 text-label font-semibold" style={{color:gradeColors[i]}}><span className="size-1.5 rounded-full" style={{background:gradeColors[i]}}/>{label}</span>
@@ -284,8 +290,8 @@ export default function Page(){
     <label htmlFor="review-note" className="text-body text-ink-2">Ask your tutor to improve or explain this card</label>
     <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>{if(current)setDraft({cardId:current.cardId,value:e.target.value})}}
      className="w-full rounded-ctl border border-edge-2 bg-well p-3 text-body-l text-ink" placeholder="What should the tutor revisit?"/>
-    <Button disabled={!note.trim()||addComment.isPending} onClick={()=>{void leaveNote()}} icon={Check}>Save note</Button>
-    <Button variant="ghost" onClick={()=>{void suspendCard()}}>Suspend this card</Button>
+    <Button needsNetwork disabled={!note.trim()||addComment.isPending} onClick={()=>{void leaveNote()}} icon={Check}>Save note</Button>
+    <Button needsNetwork variant="ghost" onClick={()=>{void suspendCard()}}>Suspend this card</Button>
    </div>
   </Sheet>
  </Screen>;
