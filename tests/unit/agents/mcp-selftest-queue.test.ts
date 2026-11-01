@@ -6,8 +6,8 @@ import {queueDecision,parseQueueTicket} from '../../../scripts/mcp-selftest-queu
 // FIX #636: GitHub Actions concurrency keeps one running and only one pending;
 // a third trigger replaces the older pending run. All three must instead get
 // durable FIFO tickets and run their original mutating selftests.
-const start=(id:number,run:number,attempt=1)=>({id,body:`LEMMA-MCP-QUEUE v1 START ${run}/${attempt}`});
-const done=(id:number,run:number,attempt=1)=>({id,body:`LEMMA-MCP-QUEUE v1 DONE ${run}/${attempt}`});
+const start=(id:number,run:number,attempt=1)=>({id,user:{login:'github-actions[bot]'},body:`LEMMA-MCP-QUEUE v1 START ${run}/${attempt}`});
+const done=(id:number,run:number,attempt=1)=>({id,user:{login:'github-actions[bot]'},body:`LEMMA-MCP-QUEUE v1 DONE ${run}/${attempt}`});
 
 describe('FIX #636 durable MCP selftest queue',()=>{
  it('parses the operational Node script and checks exact run-attempt status',()=>{
@@ -21,7 +21,10 @@ describe('FIX #636 durable MCP selftest queue',()=>{
  it('accepts only well-formed public run-attempt tickets',()=>{
   expect(parseQueueTicket(start(10,100))).toEqual({id:10,kind:'START',key:'100/1',runId:100,attempt:1});
   expect(parseQueueTicket({id:12,body:'MCP_URL=secret'})).toBeNull();
-  expect(parseQueueTicket({id:13,body:'LEMMA-MCP-QUEUE v1 START 0/1'})).toBeNull();
+  expect(parseQueueTicket({id:13,user:{login:'github-actions[bot]'},body:'LEMMA-MCP-QUEUE v1 START 0/1'})).toBeNull();
+  // The queue issue is public. Arbitrary commenters must never inject a
+  // fake predecessor that blocks all future deployments.
+  expect(parseQueueTicket({id:14,user:{login:'untrusted-user'},body:'LEMMA-MCP-QUEUE v1 START 999/1'})).toBeNull();
  });
  it('never loses the middle run when three workflows trigger while one runs',()=>{
   const tickets=[start(10,100),start(11,101),start(12,102)];
