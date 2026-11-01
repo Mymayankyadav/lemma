@@ -30,8 +30,9 @@ export interface TestPushResponse {
 const reply=(status:TestPushResponse['status'],message:string):TestPushResponse=>({status,body:{message}});
 function testMessage(device:TestDevice):TestPushMessage{
  const prefs=device.prefs;
- const cap=Number.isInteger(prefs?.maxPerDay)&&
-  (prefs?.maxPerDay??0)>=1&&(prefs?.maxPerDay??0)<=5?prefs!.maxPerDay!:3;
+ const requestedCap=prefs?.maxPerDay;
+ const cap=typeof requestedCap==='number'&&Number.isInteger(requestedCap)&&
+  requestedCap>=1&&requestedCap<=5?requestedCap:3;
  const quiet=prefs?.quiet;
  const start=typeof quiet?.start==='string'&&CLOCK.test(quiet.start)?quiet.start:'22:30';
  const end=typeof quiet?.end==='string'&&CLOCK.test(quiet.end)?quiet.end:'07:30';
