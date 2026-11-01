@@ -74,7 +74,7 @@ export function ReminderOffer({completed}:{completed:boolean}){
     platform,
    });
    await update.mutateAsync({notify:{...(settings.data.notify??{}),enabled:true,
-    mode:settings.data.notify?.mode==='off'?'live':settings.data.notify?.mode}});
+    ...(settings.data.notify?.mode==='off'?{mode:'live' as const}:{})}});
    setVisible(false);
    toast('Reminders are on');
    try{await getApi().sendTestNotification(device.id)}
