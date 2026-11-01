@@ -1,5 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
-import {useOnlineStatus} from '../../ui/useOnlineStatus';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
@@ -50,7 +50,7 @@ export default function Page(){
   if(settings.data.reviewsPerDay!==previous)update.mutate({reviewsPerDay:previous});
  },[offline,catchUpUntil,settings.data?.reviewsPerDay]);
  function enableCatchUp(totalDue:number){
-  if(offline){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!settings.data||activeCatchUp)return;
   const prior=settings.data.reviewsPerDay||200;
   const target=Math.max(prior,Math.ceil(totalDue/7));
@@ -113,7 +113,7 @@ export default function Page(){
   setSelected(changed);
  };
  function start(sessionId:string|null=null,onlyNew=false){
-  if(offline){notify('Needs a connection');return}
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!settings.data || !cards.data || !decks.data)return;
   const filter:QueueFilter={...allFilter,sessionId,includeNew:true,newOnly:onlyNew,
    decks:[]};
@@ -165,6 +165,7 @@ export default function Page(){
      <div className="flex items-center gap-2"><Shuffle size={18} aria-hidden="true" className="text-amber"/>
       <div className="flex-1">
        <Switch checked={settings.data?.mixDecks??true} label="Mix decks" disabled={offline} onChange={checked=>{
+        if(!networkWritable()){notify('Needs a connection');return}
         update.mutate({mixDecks:checked},{onError:()=>notify('Could not update review settings',{tone:'danger'})});
        }}/>
       </div>
