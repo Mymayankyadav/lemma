@@ -96,7 +96,9 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
  const done=stage.checkpoints.filter(cp=>cp.ui==='done'||cp.ui==='revisit').length;
  const total=stage.checkpoints.filter(cp=>cp.ui!=='proposed').length;
  const progress=total?Math.round(done/total*100):0;
- const rows=showFinished?stage.checkpoints:pending;
+ // Collapsed stages keep their accessible headers and counts, but never mount
+ // hidden checkpoint links or their potentially expensive KaTeX trees.
+ const rows=open?(showFinished?stage.checkpoints:pending):[];
  return <Slab as="article" aria-label={stage.name+' stage'} className="min-w-0 p-0" data-card="" data-stage-card={stage.key}>
   <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle}
    className="flex min-h-12 w-full items-center gap-2 px-3 py-3 text-left focus-visible:outline-2 focus-visible:outline-amber">
@@ -108,7 +110,7 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
    <span className="w-9 shrink-0 text-right text-label tabular-nums text-ink-2">{done}/{total}</span>
   </button>
   <div id={id} hidden={!open} className="px-2 pb-2">
-   {finished.length>0&&<button type="button" data-done-summary=""
+   {open&&finished.length>0&&<button type="button" data-done-summary=""
     aria-expanded={showFinished} onClick={()=>setShowFinished(value=>!value)}
     className="flex min-h-11 w-full items-center justify-between rounded-ctl border-t border-edge px-2 text-left text-label text-ink-2">
     <span>{finished.length} done ✓</span><span className="text-amber">{showFinished?'Hide':'Show'}</span>
