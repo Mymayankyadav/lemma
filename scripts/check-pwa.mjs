@@ -18,6 +18,10 @@ const index=readFileSync(path('index.html'),'utf8');
 if(!index.includes('manifest.webmanifest'))throw Error('HTML does not link the PWA manifest');
 const worker=readFileSync(path('sw.js'),'utf8');
 if(!worker.includes('lemma')||!worker.includes('precache'))throw Error('Workbox offline asset cache missing');
+// Store-listing PNGs are available at their manifest URLs, but must not be
+// downloaded into the offline app cache during a cold Today first paint.
+if(/screenshots\\?\/today-(?:day|night)-1080x1920\.png/.test(worker))
+ throw Error('Store-listing screenshots must not be Workbox precache entries');
 console.log('PWA release artifacts verified: manifest, service worker, 192/512/maskable icons');
 
 const expectedShortcuts={Review:'#/review',Approve:'#/proposals',Atlas:'#/atlas'};
