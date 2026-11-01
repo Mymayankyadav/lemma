@@ -100,7 +100,8 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
  });
  it('rejects non-public, reserved and split-horizon push hosts before encryption or fetch',async()=>{
   for(const endpoint of [
-   'https://metadata.google.internal/sub','https://push.invalid/sub',
+   'https://metadata.google.internal/sub','https://metadata.google.internal../sub',
+   'https://push.invalid/sub','https://push.invalid./sub',
    'https://push.example/sub','https://push.example.test/sub',
    'https://printer.localdomain/sub','https://router.lan/sub',
    'https://server.home/sub','https://api.corp/sub',
