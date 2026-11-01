@@ -6,7 +6,7 @@ vi.mock('../../../supabase/functions/_shared/webpush',()=>({
  prepareWebPush:prepare,
 }));
 const base:DeliveryRequest={
- subscription:{endpoint:'https://push.example.test/sub/123',keys:{p256dh:'test-key',auth:'test-auth'}},
+ subscription:{endpoint:'https://updates.push.services.mozilla.com/sub/123',keys:{p256dh:'test-key',auth:'test-auth'}},
  payload:{v:1,id:42,kind:'due',tag:'due',title:'23 cards due',body:'Start with five?',url:'#/review',actions:[],ts:1793527200000},
  vapid:{publicKey:'public',privateKey:'private',subject:'mailto:test@example.test'},
  kind:'due',tag:'due',
@@ -97,6 +97,36 @@ describe('NOTIF-4b2 bounded Web Push delivery',()=>{
    expect(await sendWebPush({...base,...change},fetcher)).toEqual({status:'failed'});
   }
   expect(fetcher).not.toHaveBeenCalled();
+ });
+ it('rejects non-public, reserved and split-horizon push hosts before encryption or fetch',async()=>{
+  for(const endpoint of [
+   'https://metadata.google.internal/sub','https://push.invalid/sub',
+   'https://push.example/sub','https://push.example.test/sub',
+   'https://printer.localdomain/sub','https://router.lan/sub',
+   'https://server.home/sub','https://api.corp/sub',
+   'https://hidden.onion/sub','https://printer/sub',
+   'https://127.1/sub','https://0x7f000001/sub',
+   'https://2130706433/sub','https://[fd00::1]/sub',
+   'https://push.example.com/\\nsub',
+  ]){
+   expect(await sendWebPush({...base,subscription:{...base.subscription,endpoint}},fetcher),endpoint)
+    .toEqual({status:'failed'});
+  }
+  expect(prepare).not.toHaveBeenCalled();
+  expect(fetcher).not.toHaveBeenCalled();
+ });
+ it('preserves public HTTPS Web Push origins with the existing encrypted transport',async()=>{
+  fetcher.mockResolvedValue(response(201));
+  for(const endpoint of [
+   'https://updates.push.services.mozilla.com/wpush/v2/example',
+   'https://fcm.googleapis.com/fcm/send/example',
+   'https://web.push.apple.com/example',
+  ]){
+   expect(await sendWebPush({...base,subscription:{...base.subscription,endpoint}},fetcher))
+    .toEqual({status:'sent',httpStatus:201});
+  }
+  expect(prepare).toHaveBeenCalledTimes(3);
+  expect(fetcher).toHaveBeenCalledTimes(3);
  });
  it('does not call the push service when encryption or VAPID preparation fails',async()=>{
   prepare.mockRejectedValueOnce(Error('secret or key details'));
