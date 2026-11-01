@@ -20,6 +20,11 @@ describe('AUDIT #540 cold CPU clock diagnostics',()=>{
    'no-session-error']){
    expect(readiness,'missing loaded-state phase '+phase).toContain("'"+phase+"'");
   }
+  // The expensive wait often happens before the first route-marker check.
+  // Keep independent diagnostics for document load, theme and real heading.
+  for(const phase of ['document-navigation','theme-ready','heading-ready']){
+   expect(cpu,'missing pre-readiness phase '+phase).toContain("'"+phase+"'");
+  }
   expect(cpu).toContain("'two-paint-frames'");
   expect(cpu).toContain('readinessPhases');
   expect(cpu).toContain('const durationMs=Date.now()-start');
