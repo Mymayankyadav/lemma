@@ -210,7 +210,7 @@ describe("AUDIT #748: every merge needs an independent exact-head CLEAR", () => 
     createdAt: "2026-11-02T05:00:00Z",
   };
   it("rejects a Ready 7/7 green PR with no audit request or audit comments", () => {
-    const verdict = evaluateMergeGate({ ...ready, body: "Ready to merge\\n- [x] Tests pass", auditComments: [] });
+    const verdict = evaluateMergeGate({ ...ready, body: "Ready to merge\n- [x] Tests pass", auditComments: [] });
     expect(verdict.ok).toBe(false);
     expect(verdict.reason).toMatch(/auditor clear/i);
   });
