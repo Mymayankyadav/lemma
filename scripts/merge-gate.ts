@@ -100,19 +100,19 @@ export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
   // regardless of whether its body happens to mention an Auditor checklist.
   // Repeated acceptance checklists may revoke an earlier checked item.
   const acceptanceSections = [...input.body.matchAll(
-    /(?:^|\\n)#{2,4}\\s+Acceptance checklist[^\\n]*\\n([\\s\\S]*?)(?=\\n#{2,4}\\s|\\nNext step:|$)/gi,
+    /(?:^|\n)#{2,4}\s+Acceptance checklist[^\n]*\n([\s\S]*?)(?=\n#{2,4}\s|\nNext step:|$)/gi,
   )];
   const currentChecklist = acceptanceSections.at(-1)?.[1] ?? input.body;
-  if (/(?:^|\\n)\\s*-\\s*\\[\\s\\][^\\n]*\\bIndependent Auditor CLEAR\\b/i.test(currentChecklist))
+  if (/(?:^|\n)\s*-\s*\[\s\][^\n]*\bIndependent Auditor CLEAR\b/i.test(currentChecklist))
     return denied("Independent Auditor CLEAR acceptance remains unchecked");
 
-  if (!last || !/^AUDIT CLEAR\\b/.test(last.body.trimStart()))
+  if (!last || !/^AUDIT CLEAR\b/.test(last.body.trimStart()))
     return denied("Missing independent exact-head Auditor CLEAR");
 
   // An old CLEAR cannot approve a newer head. A short SHA prefix of at
   // least eight hexadecimal characters is accepted for legacy Auditor logs.
   const clearedHead = last.body.match(
-    /\\b(?:exact[- ]head|head(?: sha)?)\\s*[:`]*\\s*([a-f0-9]{8,40})\\b/i,
+    /\b(?:exact[- ]head|head(?: sha)?)\s*[:`]*\s*([a-f0-9]{8,40})\b/i,
   )?.[1];
   if (!clearedHead || !input.headSha.toLowerCase().startsWith(clearedHead.toLowerCase()))
     return denied("Independent Auditor CLEAR is missing for exact current head SHA");
