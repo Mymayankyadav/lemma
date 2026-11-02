@@ -26,7 +26,18 @@ for(const width of [360,390] as const)
   await deferred.scrollIntoViewIfNeeded()
   await expect(deferred.locator('[aria-label="Seven-day review forecast"] .grid > div'))
    .toHaveCount(7,{timeout:90_000})
-  await expect(page.locator('[aria-label="Due cards by project"]')).toBeVisible()
+  // Owner-approved v4 Quiet Today replaces the repeated deck-colour strip
+  // with one compact Review row. Preserve the seven real forecast days,
+  // the start action, and the no-skeleton requirement instead of demanding
+  // a visual element the new spec explicitly removed.
+  await expect(page.locator('[aria-label="Due cards by project"]')).toHaveCount(0)
+  const review=page.getByRole('region',{name:'Review',exact:true})
+  const start=review.getByRole('link',{name:/Start review of/})
+  await expect(start).toBeVisible()
+  const target=await start.boundingBox()
+  expect(target).not.toBeNull()
+  expect(target!.height).toBeGreaterThanOrEqual(44)
+  expect(target!.width).toBeGreaterThanOrEqual(44)
   await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0)
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
   mkdirSync('test-results/screens/fix-507-forecast',{recursive:true})
