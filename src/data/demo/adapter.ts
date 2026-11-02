@@ -12,7 +12,7 @@ import type {
   SubjectPatch,
   SourcePatch,
 } from "../api";
-import { LemmaError, notImplemented } from "../api";
+import { LemmaError } from "../api";
 import { makeDemoNotifyData } from "./notify-fixture";
 import { mergeNotifyPrefs } from "../notify";
 import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
@@ -2053,14 +2053,9 @@ export class DemoAdapter implements LemmaApi {
       }
     return count;
   }
-  /** CONTRACT NOTIF-7: bounded one-shot queue implementation follows. */
-  async getNotificationReviewItems(_filter: QueueFilter, _count: number): Promise<ReviewItem[]> {
-    throw notImplemented("getNotificationReviewItems");
-  }
-  async getReviewItems(filter: QueueFilter) {
-    const eligibleStarted=performance.now();
-    const eligible = this.eligible();
-    const eligibleFinished=performance.now();
+  private reviewItemsFromEligible(
+    filter:QueueFilter,eligible:ReviewItem[],eligibleStarted:number,eligibleFinished:number,
+  ):ReviewItem[] {
     const notes=this.reviewNotes();
     const options={...filter,includeNew:filter.includeNew||filter.newOnly};
     // Generated, unedited stress notes have neither session nor concept
@@ -2105,6 +2100,20 @@ export class DemoAdapter implements LemmaApi {
         },
       ),
     );
+  }
+  async getReviewItems(filter: QueueFilter): Promise<ReviewItem[]> {
+    const started=performance.now();
+    const eligible=this.eligible();
+    return this.reviewItemsFromEligible(filter,eligible,started,performance.now());
+  }
+  async getNotificationReviewItems(filter: QueueFilter, count: number): Promise<ReviewItem[]> {
+    if(!Number.isInteger(count)||count<1||count>50)
+      throw new LemmaError('invalid','Notification round size must be 1–50');
+    const started=performance.now();
+    const eligible=this.eligible(count);
+    // The shared filter preserves the ordinary queue order and sibling
+    // deduplication. Slice only after applying the same filters.
+    return this.reviewItemsFromEligible(filter,eligible,started,performance.now()).slice(0,count);
   }
   async getDeckTree(): Promise<DeckNode[]> {
     const activeProjects=new Map(this.store.projects
