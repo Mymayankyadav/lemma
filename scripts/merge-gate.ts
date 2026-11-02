@@ -92,6 +92,10 @@ export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
     .sort((a, b) =>
       Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.index - b.index,
     );
+  // Missing or malformed GitHub timestamps cannot establish which Auditor
+  // verdict came last. Do not silently fall back to caller array order.
+  if (markers.some(comment => !Number.isFinite(Date.parse(comment.createdAt))))
+    return denied("Audit verdict chronology missing or invalid");
   const last = markers.at(-1);
   if (last && /^AUDIT BLOCK\b/.test(last.body.trimStart()))
     return denied("Unresolved AUDIT BLOCK; require later AUDIT CLEAR");
