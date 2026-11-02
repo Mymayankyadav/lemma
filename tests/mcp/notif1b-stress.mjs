@@ -78,17 +78,18 @@ try{
    // is unchanged; cancellation is allowed only for bounded diagnostics.
    await db.exec("set statement_timeout = '3000ms'")
    try{
-   const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,now())',[owner])
+   const plan=await q('explain (verbose, costs) select public.notify_candidates($1,now())',[owner])
    console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
-   // Profile individual CTEs only after the strict first-attempt gate fails.
-   // No diagnostic rerun can change the first-attempt acceptance measurement.
+   // Inspect planned CTE paths without executing 30k-card scans after the strict first-attempt gate fails.
+   // PGlite's WASM execution may ignore statement_timeout during EXPLAIN ANALYZE;
+   // plan-only EXPLAIN cannot hide the first-attempt acceptance failure.
    const migrationSql=await readFile(new URL('../../supabase/migrations/20261101171500_notify_candidates_card_first.sql',import.meta.url),'utf8')
    const cteBody=migrationSql.split('\nwith\n')[1]?.split("\nselect jsonb_build_object(\n  'tz'")[0]
    assert.ok(cteBody?.startsWith('prefs as ('),'candidate CTE diagnostics must match the migration')
    const ctes=('with\n'+cteBody).replace(/\bp_user\b/g,'$1::uuid').replace(/\bp_now\b/g,'$2::timestamptz')
    for(const name of ['due_candidates','top_due','prioritized','quota','tomorrow_rows','study_summary']){
      const t0=performance.now()
-     const detail=await q('explain (analyze,buffers) '+ctes+'\nselect count(*) from '+name,[owner,new Date().toISOString()])
+     const detail=await q('explain (verbose, costs) '+ctes+'\nselect count(*) from '+name,[owner,new Date().toISOString()])
      console.log('NOTIF-1b X CTE '+name+' '+(performance.now()-t0).toFixed(1)+'ms\n'+
        detail.map(row=>row['QUERY PLAN']).join('\n').slice(0,6000))
    }
