@@ -35,3 +35,18 @@ describe('FIX-648b cold Cards rich-render module split',()=>{
   expect(titles).toContain('needsRichTitle(title)?<Tex source={title}/>:title');
  });
 });
+
+
+describe('FIX-648b Cards cold project-title import boundary',()=>{
+ it('does not eagerly load Markdown/KaTeX through the project filter on plain stress titles',()=>{
+  const titles=readFileSync('src/features/cards/ProjectFilterTitle.tsx','utf8');
+  expect(page).not.toContain("from './ProjectFilterTitle'");
+  expect(page).toContain("from './projectTitleSyntax'");
+  expect(page).toContain('needsRichTitle(p.title)?<Tex source={p.title}/>:p.title');
+  expect(page).toContain('plainMath(p.title)');
+  expect(titles).toContain("from './projectTitleSyntax'");
+  // Rich mathematical project labels still have an explicit canonical
+  // fallback; only ordinary titles avoid evaluating the renderer.
+  expect(titles).toContain('<Tex source={title}/>');
+ });
+});
