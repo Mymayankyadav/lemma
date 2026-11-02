@@ -29,7 +29,12 @@ export function applyAppearance(patch:Partial<Appearance>):Appearance {
  return next;
 }
 if(typeof window!=='undefined'&&window.matchMedia){
- window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
+ const dark=window.matchMedia('(prefers-color-scheme: dark)');
+ dark.addEventListener('change',()=>{
   if(readAppearance().mode==='auto'){updateTheme('auto');window.dispatchEvent(new Event('lemma-ui-change'))}
  });
+ // index.html paints the world before App's lazy appearance module loads.
+ // Reconcile an OS switch that occurred before this listener was installed;
+ // the browser does not replay missed matchMedia change events.
+ if(readAppearance().mode==='auto')updateTheme('auto');
 }

@@ -33,7 +33,34 @@
          direct Review-run deep links; never preload this chunk on other routes. -->
     <script type="module" data-review-run-preload>
       if (location.hash.split('?')[0] === '#/review/run') {
-        void import('/src/features/review-run/Page.tsx')
+        void import('/src/features/review-run/Page.tsx').catch(() => {})
+      } else {
+        void import('/src/app/App.tsx').catch(() => {})
+        // Non-review entries fetch App before main.tsx's dynamic import;
+        // the module loader deduplicates the requests. Review-run keeps its
+        // own early route fetch and never preloads the App in this script.
+      }
+    </script>
+    <!-- Request only the active detail module alongside the App graph. The
+         Router owns data, rendering, errors and every later navigation. -->
+    <script type="module" data-detail-route-preload>
+      const route = location.hash.split('?')[0];
+      if (route === '#/' || route === '#' || route === '') {
+        void import('/src/features/home/Page.tsx').catch(() => {});
+      } else if (route === '#/projects') {
+        void import('/src/features/projects/Page.tsx').catch(() => {});
+      } else if (route === '#/atlas') {
+        void import('/src/features/atlas/Page.tsx').catch(() => {});
+      } else if (/^#\/p\/[^/]+\/cp\/[^/]+$/.test(route)) {
+        void import('/src/features/checkpoint/Page.tsx').catch(() => {});
+      } else if (/^#\/proposals\/[^/]+$/.test(route)) {
+        void import('/src/features/plan-proposal/Page.tsx').catch(() => {});
+      } else if (/^#\/p\/[^/]+$/.test(route)) {
+        void import('/src/features/project/Page.tsx').catch(() => {});
+      } else if (route === '#/projects/new') {
+        void import('/src/features/new-project/Page.tsx').catch(() => {});
+      } else if (/^#\/s\/[^/]+\/[^/]+$/.test(route)) {
+        void import('/src/features/session/Page.tsx').catch(() => {});
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
