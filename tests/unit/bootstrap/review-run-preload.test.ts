@@ -13,11 +13,11 @@ function preloadTargets(hash: string): { review: boolean; app: boolean } {
   expect(script).toMatch(/void import\(['"]\/src\/app\/App\.tsx['"]\)/)
 
   // Exercise the actual inline guard, replacing BOTH dynamic imports with
-  // spies. Otherwise Node's VM attempts the non-Review App import and throws
+  // spies, including their no-op rejection handlers. Otherwise Node's VM attempts the App import and throws
   // ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING, hiding a valid branch decision.
   const instrumented = script!
-    .replace(/void import\(['"]\/src\/features\/review-run\/Page\.tsx['"]\)/, 'globalThis.preloadTriggered = true')
-    .replace(/void import\(['"]\/src\/app\/App\.tsx['"]\)/, 'globalThis.appPreloadTriggered = true')
+    .replace(/void import\(['"]\/src\/features\/review-run\/Page\.tsx['"]\)\.catch\(\(\) => \{\}\)/, 'globalThis.preloadTriggered = true')
+    .replace(/void import\(['"]\/src\/app\/App\.tsx['"]\)\.catch\(\(\) => \{\}\)/, 'globalThis.appPreloadTriggered = true')
   const sandbox = { location: { hash }, preloadTriggered: false, appPreloadTriggered: false }
   runInNewContext(instrumented, sandbox, { timeout: 1000 })
   return { review: sandbox.preloadTriggered, app: sandbox.appPreloadTriggered }
