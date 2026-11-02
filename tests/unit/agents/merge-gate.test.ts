@@ -10,7 +10,14 @@ const ok = (name: string, id = 1) => ({
   status: "completed",
   conclusion: "success",
 });
-const required = ["check", "mcp-sql", "e2e-1-of-4", "e2e-2-of-4", "e2e-3-of-4", "e2e-4-of-4", "qa3-screens"] as const;
+// The cold 4x workflow adds eight independent matrix checks plus the
+// 144-route aggregate. Missing checks are not reported by GitHub REST.
+const required = [
+ "check", "mcp-sql", "e2e-1-of-4", "e2e-2-of-4", "e2e-3-of-4", "e2e-4-of-4", "qa3-screens",
+ "cpu-aggregate",
+ ...["stress","extreme"].flatMap(profile=>["graph","graph-night"].flatMap(theme=>
+  [360,390].map(width=>"cpu-matrix ("+profile+", "+theme+", "+width+")"))),
+] as const;
 const greenChecks = required.map(name => ok(name));
 const ready = {
   headSha: sha,

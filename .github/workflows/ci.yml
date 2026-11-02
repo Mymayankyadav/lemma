@@ -91,6 +91,83 @@ jobs:
           path: test-results/screens/
           if-no-files-found: ignore
           retention-days: 14
+  cpu-matrix:
+    runs-on: ubuntu-latest
+    # Each of the eight cells runs independently: no 60m shared-job tail,
+    # no dropped routes, no reduced 4x CPU or 1500ms/1500-node budgets.
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [stress, extreme]
+        theme: [graph, graph-night]
+        width: [360, 390]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Cold 4x first render of all 18 visual routes in this matrix cell
+        run: >
+          npx playwright test --config playwright.cpu.config.ts tests/cpu/stress-cpu.spec.ts
+          --grep "AUDIT #540 cold 4x ${{ matrix.profile }} ${{ matrix.theme }} ${{ matrix.width }}px all 18 routes"
+          --workers=1
+      - name: Require all 18 cold screenshots in this matrix cell
+        run: |
+          count=$(find test-results/screens/stress-cpu -maxdepth 1 -type f -name '${{ matrix.profile }}-${{ matrix.theme }}-${{ matrix.width }}-*.png' | wc -l)
+          test "$count" -eq 18
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cpu-evidence-${{ matrix.profile }}-${{ matrix.theme }}-${{ matrix.width }}
+          path: test-results/stress-cpu/*.json
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cpu-screens-${{ matrix.profile }}-${{ matrix.theme }}-${{ matrix.width }}
+          path: test-results/screens/stress-cpu/*.png
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cpu-playwright-${{ matrix.profile }}-${{ matrix.theme }}-${{ matrix.width }}
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+  cpu-aggregate:
+    # Required independent gate: incomplete or failed cells cannot produce
+    # a 144/144 PASS. Run even after a matrix failure to publish diagnostics.
+    needs: [cpu-matrix]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cpu-evidence-*
+          merge-multiple: true
+          path: test-results/stress-cpu/
+      - name: Fail-closed 144-route cold 4x evidence report
+        run: npx tsx scripts/qa3-cpu-report.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cpu-144-route-report
+          path: test-results/qa3/cpu-route-report.md
+          if-no-files-found: ignore
+          retention-days: 14
   mcp-sql:
     runs-on: ubuntu-latest
     timeout-minutes: 10

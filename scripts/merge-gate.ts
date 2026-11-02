@@ -34,10 +34,20 @@ const denied = (reason: string): MergeGateResult => ({ ok: false, reason });
 // FIX #573: after Playwright moved out of check, absence of even one
 // shard or the merged 144-PNG QA gate must block the Steward. Merely checking
 // every reported job is not enough: GitHub may omit a missing check run.
+// FIX #540: this branch adds eight cold 4x CPU matrix jobs and a
+// 144-route aggregate. They are mandatory checks, not merely optional
+// reported jobs: GitHub REST can omit a missing check run entirely.
+const CPU_REQUIRED_CHECKS = [
+  "cpu-aggregate",
+  ...["stress","extreme"].flatMap(profile =>
+    ["graph","graph-night"].flatMap(theme =>
+      [360,390].map(width => "cpu-matrix ("+profile+", "+theme+", "+width+")"))),
+] as const;
 const DEFAULT_REQUIRED_CHECKS = [
   "check", "mcp-sql",
   "e2e-1-of-4", "e2e-2-of-4", "e2e-3-of-4", "e2e-4-of-4",
   "qa3-screens",
+  ...CPU_REQUIRED_CHECKS,
 ] as const;
 
 /** Reject missing, pending, cancelled, skipped, failed, or blocked CI. */
