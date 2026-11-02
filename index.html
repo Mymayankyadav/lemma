@@ -41,6 +41,22 @@
         // own early route fetch and never preloads the App in this script.
       }
     </script>
+    <!-- Request only the active detail module alongside the App graph. The
+         Router owns data, rendering, errors and every later navigation. -->
+    <script type="module" data-detail-route-preload>
+      const route = location.hash.split('?')[0];
+      if (/^#\/p\/[^/]+\/cp\/[^/]+$/.test(route)) {
+        void import('/src/features/checkpoint/Page.tsx').catch(() => {});
+      } else if (/^#\/proposals\/[^/]+$/.test(route)) {
+        void import('/src/features/plan-proposal/Page.tsx').catch(() => {});
+      } else if (/^#\/p\/[^/]+$/.test(route)) {
+        void import('/src/features/project/Page.tsx').catch(() => {});
+      } else if (route === '#/projects/new') {
+        void import('/src/features/new-project/Page.tsx').catch(() => {});
+      } else if (/^#\/s\/[^/]+\/[^/]+$/.test(route)) {
+        void import('/src/features/session/Page.tsx').catch(() => {});
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet" />

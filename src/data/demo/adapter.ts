@@ -617,10 +617,21 @@ export class DemoAdapter implements LemmaApi {
     const template=demoSeedFixture.notes[0];
     if(!deferred||!this.virtualStressDue||this.now()>=this.virtualStressDue.future||
        !template||template.cards[0]?.state.state!==2)return this.store.notes;
-    if(!this.virtualReviewNotes){
-      const dueCount=this.store.stressDueCount??0;
-      const notes=makeStressNotes(template,this.store.projects,dueCount,dueCount);
+    // The virtual backlog may contain 4,000 overdue cards, but dueToday
+    // admits at most reviewsPerDay (200 in S/X). All generated cards are
+    // single-card mature notes with the same due date, so the stable
+    // earliest-due order is exactly the first dailyShare notes. Materializing
+    // the other 3,800 only delays the first real Review-run card. Backlog
+    // totals remain sourced from the independent full due snapshot.
+    const dueCount=this.store.stressDueCount??0;
+    const dailyShare=Math.min(dueCount,Math.max(0,this.store.settings.reviewsPerDay));
+    if(!this.virtualReviewNotes||this.virtualReviewNotes.length!==dailyShare){
+      const generatedAt=performance.now();
+      const notes=makeStressNotes(template,this.store.projects,dailyShare,dueCount);
+      const hydratedAt=performance.now();
       this.virtualReviewNotes=this.hydrateVirtualNotes(notes);
+      performance.measure('review-run-demo-virtual-generate',{start:generatedAt,end:hydratedAt});
+      performance.measure('review-run-demo-virtual-hydrate',{start:hydratedAt,end:performance.now()});
     }
     return this.virtualReviewNotes;
   }
@@ -630,9 +641,23 @@ export class DemoAdapter implements LemmaApi {
     const projects = new Map<string, DemoProject>(this.store.projects
       .filter(p => p.status !== "archived" && !p.system)
       .map(p => [p.id, p] as const));
-    const checkpoints = new Map<string, DemoCheckpoint>(this.store.checkpoints
-      .map(cp => [cpKey(cp.projectId, cp.code), cp] as const));
-    return (notes??this.store.notes)
+    const sourceNotes=notes??this.store.notes;
+    // A cold private Review-run read supplies only today's bounded cohort.
+    // Resolve titles for those notes, not all 6,000 unrelated checkpoints.
+    // Full-table callers still receive the original complete index.
+    const wantedCheckpointKeys=notes?new Set<string>():null;
+    if(notes&&wantedCheckpointKeys)for(const note of notes){
+      if(note.note.checkpointCode)
+        wantedCheckpointKeys.add(cpKey(note.projectId,note.note.checkpointCode));
+    }
+    const checkpoints=new Map<string,DemoCheckpoint>();
+    if(!wantedCheckpointKeys||wantedCheckpointKeys.size>0)
+      for(const cp of this.store.checkpoints){
+        const key=cpKey(cp.projectId,cp.code);
+        if(wantedCheckpointKeys&&!wantedCheckpointKeys.has(key))continue;
+        checkpoints.set(key,cp);
+      }
+    return sourceNotes
       .filter(n => n.note.status === "active" && projects.has(n.projectId))
       .flatMap(n => {
         const project = projects.get(n.projectId)!;
@@ -808,10 +833,9 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   /** Generate one stress session on demand; the UI never needs 60k hydrated rows. */
-  private virtualStressSession(project: DemoProject, number: number): DemoSession {
+  private virtualStressSession(project: DemoProject, number: number, projectIndex=this.store.projects.findIndex(p=>p.id===project.id)): DemoSession {
     const count = this.store.stressSessionCount ?? 0;
     if (!Number.isInteger(number) || number < 1 || number > count) invalid("Invalid stress session number");
-    const projectIndex = this.store.projects.findIndex(p => p.id === project.id);
     const template = stressSessionTemplate;
     const checkpointCode = `CP${((number - 1) % 36) + 1}`;
     const offset = (number - 1) % 90;
@@ -829,8 +853,12 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   private sessionsForProject(project: DemoProject): DemoSession[] {
-    if (this.store.stressSessionCount) return Array.from(
-      {length:this.store.stressSessionCount}, (_,i) => this.virtualStressSession(project,i+1));
+    if (this.store.stressSessionCount){
+      // One lookup for the project, rather than one per synthetic session.
+      const index=this.store.projects.findIndex(p=>p.id===project.id);
+      return Array.from({length:this.store.stressSessionCount},
+        (_,i)=>this.virtualStressSession(project,i+1,index));
+    }
     return this.store.sessions.filter(s => s.projectId === project.id);
   }
   /** Direct checkpoint details only need sessions in the CP36 residue,
@@ -857,10 +885,10 @@ export class DemoAdapter implements LemmaApi {
     return stressSessionEvents(this.virtualStressSession(project, number),
       this.store.seed === 2026103102 ? 400 : 150);
   }
-  private sessionSummary(s: DemoSession): SessionSummary {
+  private sessionSummary(s: DemoSession, knownProjectSlug?:string): SessionSummary {
     return {
       id: s.id,
-      projectSlug: this.projectById(s.projectId).slug,
+      projectSlug: knownProjectSlug??this.projectById(s.projectId).slug,
       number: s.number,
       goal: s.goal,
       checkpointCode: s.checkpointCode,
@@ -1318,11 +1346,17 @@ export class DemoAdapter implements LemmaApi {
     return (cps[index].position + cps[index + 1].position) / 2;
   }
   private proposed(p: DemoProject): DemoCheckpoint[] {
-    const rows = clone(this.store.checkpoints),
-      result: DemoCheckpoint[] = [];
-    for (const proposal of this.store.proposals.filter(
+    const pending = this.store.proposals.filter(
       (v) => v.status === "pending" && v.projectSlug === p.slug && v.planChange,
-    ))
+    );
+    // Code allocation and position renumbering are project-scoped. Never clone
+    // every project's checkpoints on a single-project read, or clone anything
+    // when there are no pending additions. Keep the working rows private: a
+    // crowded insertion may renumber them, but must not mutate approved data.
+    if (!pending.some(proposal => proposal.planChange!.ops.some(op => op.op === "add"))) return [];
+    const rows = clone(this.store.checkpoints.filter(cp => cp.projectId === p.id)),
+      result: DemoCheckpoint[] = [];
+    for (const proposal of pending)
       for (const [i, op] of proposal.planChange!.ops.entries())
         if (op.op === "add") {
           const cp: DemoCheckpoint = {
@@ -1396,7 +1430,8 @@ export class DemoAdapter implements LemmaApi {
       );
     const sessions = this.checkpointSessions(project,code);
     return {
-      view: this.cpView(cp),
+      view: {...this.cpView(cp,[]),
+        dueCards:this.projectDueCounts(project.id).get(cp.code)??0},
       objective: cp.objective,
       criterion: cp.criterion,
       steps: [...cp.steps],
@@ -1492,7 +1527,9 @@ export class DemoAdapter implements LemmaApi {
         : this.store.projects.flatMap(project => this.sessionsForProject(project)))
       : this.store.sessions.filter(s => !id || s.projectId === id);
     return sessions
-      .map((s) => this.sessionSummary(s))
+      // A scoped route already knows its slug; do not repeat projectById
+      // for each of the 1,000 generated sessions.
+      .map((s) => this.sessionSummary(s,id?slug:undefined))
       .sort(
         (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
       );
@@ -1999,15 +2036,22 @@ export class DemoAdapter implements LemmaApi {
     return count;
   }
   async getReviewItems(filter: QueueFilter) {
+    const eligibleStarted=performance.now();
     const eligible = this.eligible();
+    const eligibleFinished=performance.now();
     const notes=this.reviewNotes();
     const options={...filter,includeNew:filter.includeNew||filter.newOnly};
     // Generated, unedited stress notes have neither session nor concept
     // associations. An empty metadata map has exactly the same filter
     // semantics without a second O(4,000) scan of the virtual due cohort.
     if(notes===this.virtualReviewNotes &&
-       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function')
-      return clone(filterReviewItems(eligible,options));
+       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function'){
+      const cloneStarted=performance.now();
+      const result=clone(filterReviewItems(eligible,options));
+      performance.measure('review-run-demo-eligible',{start:eligibleStarted,end:eligibleFinished});
+      performance.measure('review-run-demo-final-clone',{start:cloneStarted,end:performance.now()});
+      return result;
+    }
     const needed = new Set(eligible.map(card => card.cardId));
     const sessionForCard: Record<string, string> = {},
       conceptsForCard: Record<string, string[]> = {};

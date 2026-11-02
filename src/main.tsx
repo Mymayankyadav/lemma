@@ -7,10 +7,13 @@ import './styles/app.css'
 // an eager App import here defeats the conditional HTML preload on 4x CPU.
 const hash = window.location.hash.split('?')[0]
 if (hash === '#/review/run') {
-  // Fetch code only; the Router still owns data loading and visible errors.
+  // Request the route before warming its adapter; the Router owns visible errors.
   void import('./features/review-run/Page').catch(() => {
     // The normal route import will surface any error to the app.
   })
+  void import('./data').then(({getApi}) => {
+    try{getApi()}catch{/* Router/query surfaces adapter initialization errors. */}
+  }).catch(() => {})
 }
 
 // All routes render the same StrictMode App. Non-review routes do not fetch
