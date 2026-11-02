@@ -12,6 +12,7 @@
 import { readFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { validatePlayPng, assertUniquePlayShots } from './play-png.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const shotsDir = resolve(root, 'docs/android/shots')
@@ -25,7 +26,6 @@ const worlds = [
   ['day', 'graph', 'light'],
   ['night', 'graph-night', 'dark'],
 ]
-const pngMagic = '89504e470d0a1a0a'
 
 function assert(condition, message) {
   if (!condition) throw new Error('AND-4: ' + message)
@@ -35,10 +35,9 @@ function screenshotPath(screen, world) {
 }
 async function checkPng(path) {
   const bytes = await readFile(path)
-  assert(bytes.length > 24, path + ' is empty')
-  assert(bytes.subarray(0, 8).toString('hex') === pngMagic, path + ' is not PNG')
-  assert(bytes.readUInt32BE(16) === 1080 && bytes.readUInt32BE(20) === 1920,
-    path + ' must be 1080x1920, got ' + bytes.readUInt32BE(16) + 'x' + bytes.readUInt32BE(20))
+  try { validatePlayPng(bytes) }
+  catch (error) { throw new Error('AND-4: ' + path + ': ' + error.message) }
+  return bytes
 }
 async function verify() {
   const listing = await readFile(resolve(root, 'docs/android/listing.md'), 'utf8')
@@ -63,10 +62,13 @@ async function verify() {
   assert(external.every(url => /^https:\/\/fonts\.(googleapis|gstatic)\.com\//.test(url)),
     'privacy page must not request third-party resources beyond optional Google Fonts')
 
+  const captures = []
   for (const [screen] of screens) for (const [world] of worlds) {
-    await checkPng(screenshotPath(screen, world))
+    const bytes = await checkPng(screenshotPath(screen, world))
+    captures.push({ name: screen + '/' + world, bytes })
   }
-  console.log('AND-4 verified: Play text limits, privacy contract, eight real-size PNGs')
+  assertUniquePlayShots(captures)
+  console.log('AND-4 verified: Play text limits, privacy contract, eight full-integrity unique PNGs')
 }
 async function capture() {
   const { chromium } = await import('@playwright/test')
