@@ -114,8 +114,16 @@ function prerequisiteRank(ids:Iterable<string>,links:readonly Link[]):Map<string
  return rank;
 }
 function checkpointNumber(node:AtlasNode):number{
- const numbers=node.checkpointRefs.map(r=>Number(r.code.match(/\d+/)?.[0])).filter(Number.isFinite);
- return numbers.length?Math.min(...numbers):Number.MAX_SAFE_INTEGER;
+ // Most ideas have no checkpoint refs. Avoid allocating two arrays and a
+ // spread call per idea during the 2,500-node first Atlas mount.
+ let minimum=Number.POSITIVE_INFINITY;
+ for(const ref of node.checkpointRefs){
+  const match=/\d+/.exec(ref.code);
+  if(!match)continue;
+  const value=Number(match[0]);
+  if(Number.isFinite(value)&&value<minimum)minimum=value;
+ }
+ return Number.isFinite(minimum)?minimum:Number.MAX_SAFE_INTEGER;
 }
 
 /** Proposed flat ideas are synthetic topics named after the teaching checkpoint. */
@@ -176,18 +184,26 @@ export function buildAtlasTree(graph:AtlasGraph):AtlasTree{
  }
  const summarise=(id:string,depth:number):AtlasNode=>{
   const n=nodes.get(id)!;n.depth=depth;
-  const kids=n.children.map(c=>summarise(c,depth+1));
   const own=!n.synthetic&&(n.level==='planet'||n.level==='moon'||n.children.length===0);
-  n.total=(own?1:0)+kids.reduce((s,k)=>s+k.total,0);
-  n.done=(own&&n.status==='demonstrated'?1:0)+kids.reduce((s,k)=>s+k.done,0);
-  n.revisit=(own&&n.status==='revisit'?1:0)+kids.reduce((s,k)=>s+k.revisit,0);
-  n.due=n.dueCards+kids.reduce((s,k)=>s+k.due,0);
-  let minRank=rank.get(id)??Number.MAX_SAFE_INTEGER;
-  for(const child of kids)if(child.rank<minRank)minRank=child.rank;
-  n.rank=minRank;
+  // A single postorder pass accumulates all four counts and child status.
+  // The previous map + four reduce/some passes allocated one child array
+  // per parent and revisited the same 2,500-node cold Atlas tree repeatedly.
+  let total=own?1:0,done=own&&n.status==='demonstrated'?1:0;
+  let revisit=own&&n.status==='revisit'?1:0,due=n.dueCards;
+  let minRank=rank.get(id)??Number.MAX_SAFE_INTEGER,childInProgress=false;
+  for(const childId of n.children){
+   const child=summarise(childId,depth+1);
+   total+=child.total;
+   done+=child.done;
+   revisit+=child.revisit;
+   due+=child.due;
+   if(child.rank<minRank)minRank=child.rank;
+   if(child.status==='in_progress')childInProgress=true;
+  }
+  n.total=total;n.done=done;n.revisit=revisit;n.due=due;n.rank=minRank;
   if(n.synthetic||!own){
-   n.status=n.revisit?'revisit':n.total&&n.done===n.total?'demonstrated':
-    n.done>0||kids.some(k=>k.status==='in_progress')?'in_progress':n.status;
+   n.status=revisit?'revisit':total&&done===total?'demonstrated':
+    done>0||childInProgress?'in_progress':n.status;
   }
   // Study order: what is needed first comes first, so prerequisite links mostly run downwards.
   const compareChildren=(a:string,b:string)=>{
@@ -239,8 +255,17 @@ export function initialExpanded(tree:AtlasTree,stored?:readonly string[]|null):S
 /** First visit: open each field one level and unfold the path to anything in progress or due. */
 export function defaultExpanded(tree:AtlasTree):Set<string>{
  const open=new Set(tree.roots);
- for(const n of tree.nodes.values())if(!n.synthetic&&(n.status==='in_progress'||n.status==='revisit'))
-  for(const a of ancestors(tree,n.id))open.add(a);
+ // Active ideas often share the same five ancestors. Walk upward only until
+ // reaching an already-open branch; its entire ancestor chain was opened by
+ // the previous walk. This avoids allocating a path and visited Set per idea.
+ for(const n of tree.nodes.values()){
+  if(n.synthetic||(n.status!=='in_progress'&&n.status!=='revisit'))continue;
+  let parent=n.parentId;
+  while(parent&&!open.has(parent)){
+   open.add(parent);
+   parent=tree.nodes.get(parent)?.parentId??null;
+  }
+ }
  return open;
 }
 
@@ -379,6 +404,137 @@ export function budgetArcs(
  const chosen=new Set(scored.slice(0,limit).map(x=>x.arc.key));
  const visible=arcs.filter(arc=>chosen.has(arc.key)).sort(bySpan);
  return {visible,hidden:arcs.length-visible.length};
+}
+
+/**
+ * Unfocused first paint needs at most 60 bundled arcs, never their underlying
+ * 8,000 individual Link objects. Aggregate counts and folded priorities in
+ * one pass; materialize only the selected Arc records. The focused path still
+ * uses arcsFor() because arcTone() needs the real underlying links.
+ *
+ * The ordering and hidden count are identical to
+ * budgetArcs(tree, rows, expanded, arcsFor(tree, rows, kinds), null, limit).
+ */
+export function budgetArcsUnfocused(
+ tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
+ kinds:ReadonlySet<Link['kind']>,limit=60,
+):{visible:Arc[];hidden:number}{
+ const index=new Map(rows.map((row,i)=>[row.id,i]));
+ const cache=new Map<string,number|null>();
+ const resolve=(id:string):number|null=>{
+  if(cache.has(id))return cache.get(id)!;
+  const path:string[]=[];
+  let current:string|null=id,found:number|null=null;
+  while(current&&!path.includes(current)){
+   if(cache.has(current)){found=cache.get(current)!;break}
+   path.push(current);
+   const at=index.get(current);
+   if(at!==undefined){found=at;break}
+   current=tree.nodes.get(current)?.parentId??null;
+  }
+  for(const part of path)cache.set(part,found);
+  return found;
+ };
+ type Bundle={from:number;to:number;kind:Link['kind'];count:number;index:number;folded:boolean};
+ const width=rows.length,packed=width<2**26;
+ // Fold membership is per visible row, not per link. On the 8,000-link
+ // stress DAG this replaces repeated Map and Set lookups with two booleans.
+ const foldedRows=rows.map(row=>{
+  const node=tree.nodes.get(row.id);
+  return !!node?.children.length&&!expanded.has(node.id);
+ });
+ const bundles=new Map<number|string,Bundle>();
+ for(const link of tree.links){
+  if(!kinds.has(link.kind))continue;
+  const from=resolve(link.fromId),to=resolve(link.toId);
+  if(from===null||to===null||from===to)continue;
+  // No transient endpoint array per link (8,000 on the extreme graph).
+  const swap=link.kind==='related'&&from>to;
+  const a=swap?to:from,b=swap?from:to;
+  const key=packed?(a*width+b)*2+(link.kind==='related'?1:0):link.kind+':'+a+':'+b;
+  const existing=bundles.get(key);
+  if(existing){existing.count++;continue}
+  // Fold state was indexed once for the entire visible row inventory.
+  const folded=foldedRows[a]||foldedRows[b];
+  bundles.set(key,{from:a,to:b,kind:link.kind,count:1,index:bundles.size,folded});
+ }
+ const all=[...bundles.values()];
+ const bySpan=(a:Bundle,b:Bundle)=>Math.abs(b.to-b.from)-Math.abs(a.to-a.from);
+ const toArc=(bundle:Bundle):Arc=>({
+  key:bundle.kind+':'+bundle.from+':'+bundle.to,
+  from:bundle.from,to:bundle.to,kind:bundle.kind,count:bundle.count,links:[],
+ });
+ if(all.length<=limit)return {visible:all.sort(bySpan).map(toArc),hidden:0};
+ // Same stable insertion-order tiebreak as budgetArcs. Non-folded arcs are
+ // intentionally hidden until the user selects a concept.
+ // Select only the best 60 folded arcs with a worst-first bounded heap.
+ // Sorting every one of 8,000 candidates on each first mount consumed CPU
+ // even though the gutter could never display more than the cap. Preserve
+ // the original stable insertion-order tiebreak for equal spans.
+ const span=(bundle:Bundle)=>Math.abs(bundle.to-bundle.from);
+ const worse=(a:Bundle,b:Bundle)=>span(a)<span(b)||(span(a)===span(b)&&a.index>b.index);
+ const heap:Bundle[]=[];
+ const siftUp=(index:number)=>{
+  while(index>0){
+   const parent=(index-1)>>1;
+   if(!worse(heap[index],heap[parent]))break;
+   [heap[index],heap[parent]]=[heap[parent],heap[index]];
+   index=parent;
+  }
+ };
+ const siftDown=()=>{
+  let index=0;
+  while(true){
+   const left=index*2+1,right=left+1;
+   let worst=index;
+   if(left<heap.length&&worse(heap[left],heap[worst]))worst=left;
+   if(right<heap.length&&worse(heap[right],heap[worst]))worst=right;
+   if(worst===index)break;
+   [heap[index],heap[worst]]=[heap[worst],heap[index]];
+   index=worst;
+  }
+ };
+ for(const bundle of all){
+  if(!bundle.folded||limit<=0)continue;
+  if(heap.length<limit){heap.push(bundle);siftUp(heap.length-1)}
+  else if(worse(heap[0],bundle)){heap[0]=bundle;siftDown()}
+ }
+ const selected=new Set(heap);
+ const visible=all.filter(bundle=>selected.has(bundle)).sort(bySpan).map(toArc);
+ return {visible,hidden:all.length-visible.length};
+}
+
+/**
+ * React StrictMode invokes useMemo calculations twice on the first mount.
+ * The extreme Atlas may aggregate 8,000 links into the same 60-arc gutter
+ * twice before a single interactive frame. Cache only that identical input
+ * snapshot; weak row-array keys do not retain old route or fold states.
+ *
+ * The fold fingerprint checks visible branch membership rather than relying
+ * on Set identity, so even an in-place fold change cannot return stale arcs.
+ * A new query graph, row array, link-kind membership or cap always recomputes.
+ */
+type UnfocusedBudget=ReturnType<typeof budgetArcsUnfocused>;
+const coldArcBudgets=new WeakMap<readonly Row[],{
+ tree:AtlasTree;folded:string;prereq:boolean;related:boolean;limit:number;result:UnfocusedBudget;
+}>();
+export function budgetArcsUnfocusedCached(
+ tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
+ kinds:ReadonlySet<Link['kind']>,limit=60,
+):UnfocusedBudget{
+ let folded='';
+ for(const row of rows){
+  const node=tree.nodes.get(row.id);
+  if(node?.children.length)folded+=expanded.has(row.id)?'1':'0';
+ }
+ const prereq=kinds.has('prereq'),related=kinds.has('related');
+ const previous=coldArcBudgets.get(rows);
+ if(previous&&previous.tree===tree&&previous.folded===folded&&
+    previous.prereq===prereq&&previous.related===related&&previous.limit===limit)
+  return previous.result;
+ const result=budgetArcsUnfocused(tree,rows,expanded,kinds,limit);
+ coldArcBudgets.set(rows,{tree,folded,prereq,related,limit,result});
+ return result;
 }
 
 /** Everything the selected idea (or branch) builds on, and everything it opens up. */

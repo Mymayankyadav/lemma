@@ -12,6 +12,7 @@ import {Slab} from '../../ui/Slab'
 import {Glyph} from '../../ui/Glyph'
 import {Skeleton} from '../../ui/Skeleton'
 import {FastHomeTex} from './FastHomeTex'
+import {shouldStageSecondaryGoals} from './fastGoalPolicy'
 
 type Events=InsightData['checkpointEvents']
 // The full interactive checkpoint Metro is needed only for small projects.
@@ -73,7 +74,22 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
 
 export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:'ascent'|'metro'}){
  const active=projects.filter(project=>project.status==='active').sort(urgency)
+ const stageSecondary=shouldStageSecondaryGoals(active.length)
+ const [stagedReady,setSecondaryReady]=useState(false)
+ const secondaryReady=!stageSecondary||stagedReady
  const [showRest,setShowRest]=useState(false)
+ // Small desks are unchanged. On a large live/default desk, reveal the
+ // below-fold cards after two animation frames. S/X uses the actual visible
+ // first-goal paint signal below instead, so the extra bars/ResizeObservers
+ // cannot compete with the strict first meaningful paint.
+ useEffect(()=>{
+  if(!stageSecondary||(getMode()==='demo'&&getDemoProfile()!=='default'))return
+  let second=0
+  const first=requestAnimationFrame(()=>{
+   second=requestAnimationFrame(()=>setSecondaryReady(true))
+  })
+  return ()=>{cancelAnimationFrame(first);cancelAnimationFrame(second)}
+ },[stageSecondary])
  // Record the first committed, data-backed goal UI; this is a local
  // performance mark, not analytics and not a substitute for the hard gate.
  useEffect(()=>{
@@ -102,6 +118,9 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
    if(visible&&previousFrameVisible){
     if(performance.getEntriesByName('lemma-stress-first-goal-paint','mark').length===0)
      performance.mark('lemma-stress-first-goal-paint')
+    // Do not alter the paint mark or count a skeleton as ready. Secondary
+    // below-fold cards mount only on the next frame after this real paint.
+    if(stageSecondary)frame=requestAnimationFrame(()=>setSecondaryReady(true))
     return
    }
    previousFrameVisible=visible
@@ -109,7 +128,7 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
   }
   frame=requestAnimationFrame(inspect)
   return ()=>cancelAnimationFrame(frame)
- },[])
+ },[stageSecondary])
  // Live and S/X stress Insights return bounded aggregates with no checkpoint
  // events. Querying them on cold Today cannot improve goal pace, but competes
  // with the first meaningful Route paint under 4x CPU. The small default demo
@@ -125,12 +144,12 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
   </div>
   {active.length===0?<p className="text-label text-ink-2">Create a project and plan to begin tracking your goals.</p>:
    <>
-    {featured.map(project=>project.total>14?
+    {(secondaryReady?featured:featured.slice(0,1)).map(project=>project.total>14?
      <SummaryGoalCard key={project.id} project={project} events={insight.data?.checkpointEvents}/>:
      <Suspense key={project.id} fallback={<Skeleton h={200}/>}> 
       <GoalCard project={project} events={insight.data?.checkpointEvents}/>
      </Suspense>)}
-    {rest.length>0&&<div className="min-w-0 rounded-slab border border-edge bg-[var(--card)] p-2" data-compact-goals="">
+    {secondaryReady&&rest.length>0&&<div className="min-w-0 rounded-slab border border-edge bg-[var(--card)] p-2" data-compact-goals="">
      <p className="px-2 py-2 text-label font-semibold text-ink-2">
       {rest.length} more · {rest.length-behindCount} on schedule, {behindCount} behind
      </p>

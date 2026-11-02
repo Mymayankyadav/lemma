@@ -1,22 +1,42 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ArrowLeft,ChevronRight,Info,MessageCircle,RotateCcw,Search,X} from 'lucide-react';
 import {getMode} from '../../data/mode';
 import {useAtlas} from '../../data/hooks';
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {plainMath} from '../../lib/plain-math';
 import {AtlasDetailsPath,AtlasDetailsTitle} from './DetailsMath';
 import {Skeleton} from '../../ui/Skeleton';
-import {EmptyState} from '../../ui/EmptyState';
-import {Sheet} from '../../ui/Sheet';
-import {useToast} from '../../ui/Toast';
+import type {EmptyStateProps} from '../../ui/EmptyState';
+import type {SheetProps} from '../../ui/Sheet';
+
 import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
-import {STORE,clip,statusName,toneColor,StatusMark,Wires,Row} from './Outline';
+import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
+import {coldAtlasRows,coldAtlasGeometry} from './coldCache';
 import {atlasFoldDepth} from './depthOf';
-import {ancestors,arcCountFor,arcsFor,budgetArcs,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
+
+// Optional surfaces should not load motion-backed sheets or four illustration
+// modules on the cold, nonempty 2,500-idea Atlas route. The first real open
+// loads them; after opening, keep Sheet mounted through its exit animation.
+const LazySheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
+const LazyEmptyState=lazy(()=>import('../../ui/EmptyState').then(module=>({default:module.EmptyState})));
+function Sheet(props:SheetProps){
+ const [activated,setActivated]=useState(props.open);
+ useEffect(()=>{if(props.open)setActivated(true)},[props.open]);
+ if(!props.open&&!activated)return null;
+ return <Suspense fallback={<span role="status" className="sr-only">Opening details</span>}>
+  <LazySheet {...props}/>
+ </Suspense>;
+}
+function EmptyState(props:EmptyStateProps){
+ return <Suspense fallback={<p role="status" className="p-4 text-body text-ink-2">Loading view…</p>}>
+  <LazyEmptyState {...props}/>
+ </Suspense>;
+}
 
 interface Saved{expanded:string[];related:boolean}
 function load():Saved|null{
@@ -50,7 +70,10 @@ function NeighbourList({label,items,tone,onTrace,tree}:{label:string;items:Atlas
 }
 
 function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onClose:()=>void;onTrace:(id:string)=>void}){
- const toast=useToast(),near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
+ // Copy feedback is used only after a details-sheet button press. Avoid
+ // evaluating the motion-backed Toast renderer on the cold Atlas route.
+ const toast=(message:string)=>{void import('../../ui/Toast').then(module=>module.toast(message))};
+ const near=neighbours(tree,node.id),path=ancestors(tree,node.id).map(id=>tree.nodes.get(id)!);
  return <Sheet open onClose={onClose} title={<AtlasDetailsTitle name={node.name}/>}>
   <div data-atlas-details="true">
    {path.length>0&&<AtlasDetailsPath names={path.map(p=>p.name)} onSelect={index=>onTrace(path[index].id)}/>}
@@ -107,19 +130,22 @@ export default function Page(){
  const open=expanded??initialOpen;
  useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
- const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
+ const rows=useMemo(()=>tree?coldAtlasRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
- const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
+ const geometry=useMemo(()=>tree?coldAtlasGeometry(tree,rows):buildAtlasRowGeometry([]),[rows,tree]);
  // Window all outlines above 40 rows, including the normal 82-row demo.
  // FIX #519b additionally requires every Field in a moderate (≤150-node)
  // outline to remain keyboard/screen-reader reachable. Mount only those
  // off-window Field rows at their true absolute offsets, rather than
  // disabling virtualization for every child in the moderate outline.
  const virtual=rows.length>40;
- const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-8):0;
- const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+9):rows.length;
+ // Four 44px rows beyond each viewport edge retain 176px of keyboard and
+ // scroll headroom while avoiding 8 unnecessary first-mount rows. The
+ // separate moderate-Field pinning below is unchanged.
+ const first=virtual?Math.max(0,atlasRowAt(geometry.offsets,scrollTop)-4):0;
+ const last=virtual?Math.min(rows.length,atlasRowAt(geometry.offsets,scrollTop+viewportHeight)+5):rows.length;
  // A virtual Field must remain a genuine 56px visual heading even after its
  // original row leaves the mounted window. Derive its identity from logical
  // row offsets, never from the overscan row's nearest (often Topic) ancestor.
@@ -153,6 +179,7 @@ export default function Page(){
    const count=arcCountFor(tree,rows,kinds);
    if(count>60)return {visible:[],hidden:count};
   }
+  if(!focus)return budgetArcsUnfocusedCached(tree,rows,open,kinds);
   return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
  },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
@@ -260,7 +287,7 @@ export default function Page(){
    </div>
    {searching&&<div className="pb-2"><input autoFocus aria-label="Find an idea" placeholder="Find an idea" value={search} onChange={e=>setSearch(e.target.value)}
     className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body"/></div>}
-   <div className="flex flex-wrap items-center gap-2 pb-2" role="toolbar" aria-label="Atlas view">
+   <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-2" role="toolbar" aria-label="Atlas view">
     <div role="group" aria-label="Fold to depth" className="flex max-w-full overflow-x-auto rounded-full bg-[var(--paper-2)]">
      {([['Fields',1],['Areas',2],['Topics',3],['All',99]] as const).map(([label,d])=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to '+label.toLowerCase()} onClick={()=>{if(d===99&&ideas>300){setConfirmAll(true);return}setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}}
       className={'min-h-11 min-w-11 shrink-0 rounded-full px-2 text-label '+(depthOf===d?'bg-[var(--ink)] text-[var(--paper)]':'text-ink-2')}>{label}</button>)}
@@ -295,7 +322,7 @@ export default function Page(){
      className="absolute inset-x-0 flow-root" style={{top:geometry.offsets[index]}}>
      {renderRow(rows[index],false)}
     </div>):rows.map(row=>renderRow(row,true))}
-    {arcBudget.visible.length>0&&<Wires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
+    {arcBudget.visible.length>0&&<MemoWires arcs={arcBudget.visible} rows={rows.length} focus={focus} centers={geometry.centers} heightPx={geometry.totalHeight}/>}
    </div></>}
    {arcBudget.hidden>0&&<p role="status" className="px-4 py-2 text-caption text-ink-3">{arcBudget.hidden} links hidden — fold or select an idea to trace connections.</p>}
    {rows.length>0&&<div aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-caption text-ink-3">

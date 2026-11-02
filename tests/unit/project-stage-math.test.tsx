@@ -1,4 +1,5 @@
 import {renderToStaticMarkup} from 'react-dom/server';
+import {renderAllReady} from '../helpers/renderAllReady';
 import {MemoryRouter} from 'react-router';
 import {describe,expect,it,vi} from 'vitest';
 import type {CheckpointView,ProjectDetail} from '../../src/data/types';
@@ -7,9 +8,14 @@ import {Stages} from '../../src/features/project/PathsView';
 vi.mock('../../src/data/hooks',()=>({
  useInsightData:()=>({data:{checkpointEvents:[]},isPending:false}),
 }));
+// The Project's deferred query retains the same insight data contract.
+// This SSR-only stage math test mocks the hook, not React Query transport.
+vi.mock('../../src/features/project/useProjectInsight',()=>({
+ useProjectInsight:()=>({data:{checkpointEvents:[]},isPending:false}),
+}));
 
 describe('project stage jump navigation',()=>{
- it('typesets mathematical tutor stage names in the jump chips',()=>{
+ it('typesets mathematical tutor stage names in the jump chips',async()=>{
   const checkpoints:CheckpointView[]=Array.from({length:6},(_,index)=>({
    id:'cp-'+index,code:'CP'+(index+1),title:'Checkpoint '+(index+1),position:index,
    stage:index===0?'Topology of $\\mathbb{R}^n$':'Stage '+(index+1),
@@ -22,7 +28,7 @@ describe('project stage jump navigation',()=>{
    pendingProposals:0,
   } as unknown as ProjectDetail;
   const container=document.createElement('div');
-  container.innerHTML=renderToStaticMarkup(<MemoryRouter><Stages detail={detail}/></MemoryRouter>);
+  container.innerHTML=await renderAllReady(<MemoryRouter><Stages detail={detail}/></MemoryRouter>);
   const navigation=container.querySelector('nav[aria-label="Jump to stage"]');
   const firstChip=navigation?.querySelector('[data-stage-chip="0"]');
   expect(navigation?.querySelectorAll('[data-stage-chip]')).toHaveLength(6);
@@ -35,7 +41,7 @@ describe('project stage jump navigation',()=>{
   expect(visibleMath).not.toContain('\\mathbb');
  });
 
- it('bounds an 80-character mathematical stage name in a recoverable chip frame',()=>{
+ it('bounds an 80-character mathematical stage name in a recoverable chip frame',async()=>{
   const longStage='\\operatorname{'+'verylongmathematicalstage'.repeat(5)+'}';
   const checkpoints:CheckpointView[]=Array.from({length:6},(_,i)=>({
    id:'long-cp-'+i,code:'CP'+(i+1),title:'Checkpoint '+i,position:i,
@@ -45,7 +51,14 @@ describe('project stage jump navigation',()=>{
   const detail={project:{id:'long-stage',slug:'long-stage',targetDate:null},
    checkpoints,done:0,total:6,sources:[],sessions:[],pendingProposals:0} as unknown as ProjectDetail;
   const container=document.createElement('div');
-  container.innerHTML=renderToStaticMarkup(<MemoryRouter><Stages detail={detail}/></MemoryRouter>);
+  const stageTree=<MemoryRouter><Stages detail={detail}/></MemoryRouter>;
+  // React's streaming SSR can place a completed lazy boundary in a later
+  // script-driven segment. jsdom innerHTML does not execute that script.
+  // Resolve the *actual* rich KaTeX module first, then assert the original
+  // in-place stage chip produced by synchronous static markup.
+  const streamed=await renderAllReady(stageTree);
+  expect(streamed).toContain('katex-html');
+  container.innerHTML=renderToStaticMarkup(stageTree);
   const chip=container.querySelector('[data-stage-chip="0"]');
   const label=chip?.querySelector('[data-stage-chip-label]') as HTMLElement|null;
   expect(label).not.toBeNull();
@@ -53,6 +66,6 @@ describe('project stage jump navigation',()=>{
   expect(label?.style.whiteSpace).toBe('nowrap');
   expect(label?.style.maskImage).toContain('linear-gradient');
   expect(label?.style.fontSize).toBe('16px');
-  expect(label?.querySelector('.katex')).not.toBeNull();
+  expect(label?.querySelector('.katex'),`Completed stage chip HTML: ${label?.innerHTML??'missing'}`).not.toBeNull();
  });
 });

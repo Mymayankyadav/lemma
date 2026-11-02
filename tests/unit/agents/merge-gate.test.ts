@@ -175,3 +175,35 @@ describe("FIX #619: explicit independent Auditor CLEAR is a real merge gate", ()
     expect(evaluateMergeGate(ready).ok).toBe(true);
   });
 });
+
+describe("FIX #619b: Steward must actually invoke the exact-head gate", () => {
+  it("keeps the canonical Steward prompt tied to the executable gate and logged fail-closed verdict", () => {
+    const prompts = readFileSync("docs/agents/prompts.md", "utf8");
+    const steward = prompts.split("## 2. Fixer")[0];
+    expect(steward).toContain("evaluateMergeGate");
+    expect(steward).toContain("log the gate result");
+    expect(steward).toContain("ok=false");
+    expect(steward).toContain("fresh REST PR body");
+    expect(steward).toContain("chronologically ordered Auditor comments");
+  });
+
+  it.each([
+    ["NOTIF-3a #634", "- [ ] Independent Auditor CLEAR (requested; no outstanding AUDIT BLOCK)"],
+    ["NOTIF-3b #635", "- [ ] Independent Auditor CLEAR"],
+  ])(
+    "replays the actual %s unchecked independent-clearance checklist",
+    (label, clearanceItem) => {
+      const body = [
+        "Owner: builder-2 · Lease until 13:40 IST",
+        "### Acceptance checklist",
+        "- [x] Exact-head npm check and seven required CI jobs green",
+        clearanceItem,
+        "Next step: Auditor independently review exact head before merge",
+        "Ready to merge",
+      ].join("\n");
+      const result = evaluateMergeGate({ ...ready, body, auditComments: [] });
+      expect(result.ok, label).toBe(false);
+      expect(result.reason).toMatch(/independent auditor clear/i);
+    },
+  );
+});

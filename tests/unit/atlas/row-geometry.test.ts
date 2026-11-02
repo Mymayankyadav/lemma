@@ -38,7 +38,13 @@ describe('LOOK-4b Atlas variable row geometry',()=>{
    arcs,rows:3,focus:null,centers:geometry.centers,heightPx:geometry.totalHeight,
   }));
   expect(markup).toContain('height="160"');
-  expect(markup).toContain('M8 36 C');
-  expect(markup).toContain(' 138');
+  // LOOK-4c replaces cubic arcs with rounded right-angle lanes. Preserve
+  // the exact 56/44px physical centers while asserting the approved path.
+  expect(markup).toContain('data-atlas-lane="83"');
+  expect(markup).toContain('M 8 36 H');
+  expect(markup).toContain(' Q 83 36 83 41');
+  expect(markup).toContain(' V 133 Q 83 138');
+  expect(markup).toContain(' H 8');
+  expect(markup).not.toContain(' C');
  });
 });
