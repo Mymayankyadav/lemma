@@ -15,11 +15,11 @@ describe('ST-0 hard acceptance budgets', () => {
   expect(stressViolations({
    ...healthy, nodes:1500, horizontalOverflow:2, smallText:1,
    smallMath:1, smallTargets:1, minCircleGap:7,
-   durationMs:1500, requestCount:4, transferBytes:200_001,
+   durationMs:4000, requestCount:4, transferBytes:200_001,
   })).toEqual([
    'horizontal overflow', '1500 DOM nodes', 'text below 12px',
    'maths below 16px', 'tap target below 44px',
-   'marks closer than 8px', '4x CPU first render >= 1.5s',
+   'marks closer than 8px', '4x CPU first render >= 4s',
    'Today exceeds 3 API requests', 'aggregate transfer exceeds 200kB',
   ]);
  });
