@@ -13,6 +13,7 @@ function targets(hash:string,reject=false){
 }
 describe('direct detail route module requests',()=>{
  for(const [hash,feature] of [
+  ['#/','home'],['#/projects','projects'],['#/atlas','atlas'],
   ['#/p/analysis/cp/CP4','checkpoint'],['#/proposals/plan-1','plan-proposal'],
   ['#/p/analysis','project'],['#/projects/new','new-project'],['#/s/analysis/7','session'],
  ])it('requests only the active '+feature+' module, including filtered URLs',()=>{
@@ -20,7 +21,7 @@ describe('direct detail route module requests',()=>{
    expect(targets(hash+suffix)).toEqual(['/src/features/'+feature+'/Page.tsx']);
  });
  it('does not request detail modules on list routes, Review-run or prefix collisions',()=>{
-  for(const hash of ['#/','#/atlas','#/cards','#/projects','#/proposals','#/review/run',
+  for(const hash of ['#/cards','#/proposals','#/review/run',
    '#/p/a/cp/CP4/extra','#/proposals/x/extra','#/projects/newer','#/s/a/7/extra'])
    expect(targets(hash),hash).toEqual([]);
  });

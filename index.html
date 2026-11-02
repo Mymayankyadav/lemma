@@ -45,7 +45,13 @@
          Router owns data, rendering, errors and every later navigation. -->
     <script type="module" data-detail-route-preload>
       const route = location.hash.split('?')[0];
-      if (/^#\/p\/[^/]+\/cp\/[^/]+$/.test(route)) {
+      if (route === '#/' || route === '#' || route === '') {
+        void import('/src/features/home/Page.tsx').catch(() => {});
+      } else if (route === '#/projects') {
+        void import('/src/features/projects/Page.tsx').catch(() => {});
+      } else if (route === '#/atlas') {
+        void import('/src/features/atlas/Page.tsx').catch(() => {});
+      } else if (/^#\/p\/[^/]+\/cp\/[^/]+$/.test(route)) {
         void import('/src/features/checkpoint/Page.tsx').catch(() => {});
       } else if (/^#\/proposals\/[^/]+$/.test(route)) {
         void import('/src/features/plan-proposal/Page.tsx').catch(() => {});
