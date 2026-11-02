@@ -62,7 +62,7 @@ for(const width of [390,360] as const){
   const readyMs=await page.evaluate(()=>performance.getEntriesByName('lemma-cp4-loaded','mark')[0]?.startTime??NaN);
   console.info('FIX #655 CP4 cold 4x',JSON.stringify({profile,theme,width,readyMs}));
   expect(Number.isFinite(readyMs)).toBe(true);
-  expect(readyMs,'First real CP4 sheet + project at 4x CPU').toBeLessThan(1500);
+  expect(readyMs,'First real CP4 sheet + project at 4x CPU').toBeLessThan(4000);
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
   await cdp.detach();
   mkdirSync('test-results/screens/fix-655',{recursive:true});

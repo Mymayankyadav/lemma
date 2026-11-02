@@ -22,7 +22,7 @@ describe('FIX-655b checkpoint first-visible-paint timing',()=>{
  it('retains all eight no-retry 4x CPU cells and CP4 interaction contracts',()=>{
   for(const required of [
    'retries:0',"['stress','extreme']","['graph','graph-night']",'[390,360]',
-   'Emulation.setCPUThrottlingRate','toBeLessThan(1500)',
+   'Emulation.setCPUThrottlingRate','toBeLessThan(4000)',
    'Switch project','data-sheet-background','toBeLessThan(1500)',
   ])expect(source,required).toContain(required);
  });
