@@ -16,12 +16,13 @@ import {scheduleScrollHintMeasure} from './scrollHint';
 import {Card} from '../../ui/Card';
 import {Glyph} from '../../ui/Glyph';
 import {Chip} from '../../ui/Chip';
-import {Sheet} from '../../ui/Sheet';
+
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {useCalm} from '../../ui/useCalm';
 
 const RichMathText=lazy(()=>import('../../ui/MathText').then(module=>({default:module.MathText})));
+const NoteSheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
 // Local performance entries only; no network/analytics. CI reads these to
 // distinguish module loading, data readiness and queue initialization.
 if(typeof performance!=='undefined')performance.mark('review-run-module-ready');
@@ -115,6 +116,7 @@ export default function Page(){
  const cancelGrade=useReviewSession(s=>s.cancelGrade),committed=useReviewSession(s=>s.committed);
  const undoCommitted=useReviewSession(s=>s.undoCommitted);
  const [sheetOpen,setSheetOpen]=useState(false);
+ const [sheetActivated,setSheetActivated]=useState(false);
  // An unsaved note belongs to its review card, never to the next card dealt.
  const [draft,setDraft]=useState<{cardId:string;value:string}|null>(null);
  const note=draft&&current&&draft.cardId===current.cardId?draft.value:'';
@@ -267,7 +269,7 @@ export default function Page(){
     </div>
    </div>
    <IconButton icon={Undo2} label="Undo last answer" disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
-   <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>setSheetOpen(true)}/>
+   <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>{setSheetActivated(true);setSheetOpen(true)}}/>
   </header>
   <div>
    <motion.div key={current.cardId} initial={firstCard.current?false:reduce?false:{opacity:0,y:34,scale:0.94}} animate={cardMotion}
@@ -308,7 +310,7 @@ export default function Page(){
     </button>
    })}
   </section>}
-  <Sheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="For your tutor">
+  {sheetActivated&&<Suspense fallback={<p role="status" className="text-label text-ink-2">Opening note…</p>}><NoteSheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="For your tutor">
    <div className="flex flex-col gap-4">
     <label htmlFor="review-note" className="text-body text-ink-2">Ask your tutor to improve or explain this card</label>
     <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>{if(current)setDraft({cardId:current.cardId,value:e.target.value})}}
@@ -316,6 +318,6 @@ export default function Page(){
     <Button disabled={!note.trim()||addComment.isPending} onClick={()=>{void leaveNote()}} icon={Check}>Save note</Button>
     <Button variant="ghost" onClick={()=>{void suspendCard()}}>Suspend this card</Button>
    </div>
-  </Sheet>
+  </NoteSheet></Suspense>}
  </Screen>;
 }
