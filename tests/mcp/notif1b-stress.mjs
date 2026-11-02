@@ -8,6 +8,8 @@ const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite')
 const db=new PGlite()
 const owner='11111111-1111-1111-1111-111111111111'
 const subject='22222222-2222-2222-2222-222222222222'
+// One immutable instant for fixture and candidate, even across rollover.
+const snapshotAt=new Date().toISOString()
 const q=async(sql,params=[])=>(await db.query(sql,params)).rows
 try{
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
@@ -40,8 +42,10 @@ try{
  await db.exec('alter table public.notes enable trigger lemma_log_change;alter table public.cards enable trigger lemma_log_change')
  await db.exec('alter table public.checkpoints disable trigger lemma_log_change')
  await q(`insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps,due_on)
- select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,current_date+1
- from public.projects p cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner])
+ select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,
+   ((($2::timestamptz at time zone s.time_zone)-make_interval(hours=>s.rollover_hour))::date+1)
+ from public.projects p join public.settings s on s.user_id=p.user_id
+ cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner,snapshotAt])
  await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
@@ -53,7 +57,7 @@ try{
  let queryCount=0
  const start=performance.now()
  queryCount++
- const snapshot=(await q('select public.notify_candidates($1,now()) data',[owner]))[0].data
+ const snapshot=(await q('select public.notify_candidates($1,$2::timestamptz) data',[owner,snapshotAt]))[0].data
  const elapsed=performance.now()-start
  assert.ok(queryCount<12,'one bounded candidate query, not N+1 project reads')
  assert.equal(snapshot.due.backlog,30000)
@@ -113,5 +117,60 @@ try{
  assert.doesNotMatch(optimizedSql,/join lateral\s*\(\s*select c\.code/i,
    'K2 LATERAL must not be planned under the global non-nested-loop preference');
  assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
+ // The fixture correctness checks run AFTER the single timed cold query,
+ // so they cannot warm checkpoint buffers or improve its first-attempt budget.
+ // Regression-first: the X checkpoint fixture must mean "tomorrow" in the
+ // owner's study-day, not the PostgreSQL session's UTC calendar day.
+ // At UTC 00:00–04:00 with UTC rollover 04:00, current_date+1 is a day late.
+ const dueDateCheck=await q(`select count(*)::int total,
+   count(*) filter(where c.due_on=((($2::timestamptz at time zone s.time_zone)
+     -make_interval(hours=>s.rollover_hour))::date+1))::int matching
+   from public.checkpoints c join public.settings s on s.user_id=c.user_id
+   where c.user_id=$1`,[owner,snapshotAt])
+ assert.deepEqual(dueDateCheck[0],{total:2400,matching:2400},
+   'all X checkpoints must be due tomorrow by the owner study-day, even across UTC midnight')
+ const fixtureSource=await readFile(new URL(import.meta.url),'utf8')
+ assert.doesNotMatch(fixtureSource,/::jsonb,\s*current_date\s*\+\s*1/i,
+   'the X checkpoint insert must not regress to UTC current_date+1')
+ // Deterministic rollover regression, intentionally AFTER the original one-query
+ // first-attempt <150ms acceptance. These extra untimed queries cannot warm
+ // that measurement. Use the same 60 projects, 2,400 checkpoints and 30k cards.
+ // Anchor four fixed clock instants to the snapshot's UTC date, so this test
+ // remains valid in later years without depending on when CI happens to run.
+ const utcDay=snapshotAt.slice(0,10)
+ const previousUtcDay=new Date(Date.parse(utcDay+'T00:00:00Z')-86400000).toISOString().slice(0,10)
+ const followingUtcDay=new Date(Date.parse(utcDay+'T00:00:00Z')+86400000).toISOString().slice(0,10)
+ const boundaryInstants=[
+   ['before UTC midnight',previousUtcDay+'T23:59:59.000Z',utcDay],
+   ['after UTC midnight',utcDay+'T00:00:01.000Z',utcDay],
+   ['before 04:00 rollover',utcDay+'T03:59:59.000Z',utcDay],
+   ['after 04:00 rollover',utcDay+'T04:00:01.000Z',followingUtcDay],
+ ]
+ const ownerClock=await q('select time_zone,rollover_hour from public.settings where user_id=$1',[owner])
+ assert.equal(ownerClock[0].time_zone,'UTC','X fixture boundary assumes the bootstrap UTC time zone')
+ assert.equal(ownerClock[0].rollover_hour,4,'X fixture boundary assumes the bootstrap 04:00 rollover')
+ // The original 2,400-row insert already disables the synthetic action-log
+ // trigger. Keep the same isolation for these test-only date rewrites.
+ await db.exec('alter table public.checkpoints disable trigger lemma_log_change')
+ try{
+   for(const [label,instant,expectedTomorrow] of boundaryInstants){
+     await q(`update public.checkpoints c
+       set due_on=((($2::timestamptz at time zone s.time_zone)
+         -make_interval(hours=>s.rollover_hour))::date+1)
+       from public.settings s
+       where c.user_id=$1 and s.user_id=c.user_id`,[owner,instant])
+     const dates=await q('select min(due_on)::text first,max(due_on)::text last,count(*)::int total from public.checkpoints where user_id=$1',[owner])
+     assert.deepEqual(dates[0],{first:expectedTomorrow,last:expectedTomorrow,total:2400},
+       label+' must create 2,400 owner-study-day tomorrow checkpoints')
+     const boundary=(await q('select public.notify_candidates($1,$2::timestamptz) data',[owner,instant]))[0].data
+     assert.equal(new Set(boundary.tomorrow.map(row=>row.slug)).size,20,
+       label+' must return 20 distinct K2 projects')
+     assert.ok(boundary.tomorrow.length<=20,label+' K2 remains bounded')
+     assert.equal(boundary.due.backlog,30000,label+' retains the 30k-card X fixture')
+     console.log('NOTIF-1b X rollover boundary',JSON.stringify({label,instant,expectedTomorrow,projects:20}))
+   }
+ }finally{
+   await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
+ }
  console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
 }finally{await db.close()}
