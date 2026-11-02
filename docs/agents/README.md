@@ -2,6 +2,18 @@
 
 This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent can continue without the owner's chat history. Read it together with `AGENTS.md` (the rules), `plan.md` (the task list) and `docs/spec/` (behaviour).
 
+## Startup guard
+
+**Repository package prepared; v3 NOT ACTIVE.** No saved task or runtime state has been changed or verified by PR #765. Installing files does not activate v3. In the absence of an adopted OPS3 control chain, use the retained legacy dispatcher; missing/conflicting events after an OPS3 chain exists stop affected new writes. Never fabricate an activation event or schedule identity.
+
+1. Read `AGENTS.md`, this guard and `plan.md` §0. Use GitHub REST (`gh api` when present; REST-backed connector when unavailable). Complete pagination for evidence; a failed/truncated read is unknown.
+2. Resolve Agent Log **#455**, Task Board **#456**, Audit Log **#442**, Plan Intake **#763**, Dispatch State **#764**. IDs are canonical; titles are navigation only. Check adopted control events and current scoped owner holds.
+3. Use [v3 contract](v3.md) only according to its mode. `legacy`/`shadow`: retained [dispatch](dispatch.md) and [playbooks](prompts.md) remain authoritative; shadow tickets cannot claim work. `cutover`/`rollback`: no new affected writable claims. `active`: valid current-instance packet, then assigned role/task/requirements/handoff only. Unknown/conflicting mode/generation: affected read-only containment.
+4. In every mode enforce [release supplement](release.md), existing owner decisions, exact-head CI, independent audit and path ownership. Never invoke historical reset/purge instructions. Mode changes do not weaken those rules.
+5. External installation follows [transition](transition.md), [setup prompt](setup-prompt.md) and [evidence checklist](../changes/OPS3/status.md). Exactly five intended slots are :00/:15/:30/:45/:50 IST; actual identities, enabled state, any extra Planner and runtime capabilities are UNKNOWN until read back externally.
+
+New owner UI/architecture plans enter #763 with exact source/digest and authority, then a scoped package using [templates](templates/README.md). Presence in a PR or a higher filename version is not approval. `plan.md` remains the only runnable task list.
+
 ## 1. Dynamic team and hourly capacity (OPS-1)
 
 **The five ChatGPT hourly executions are dynamically dispatched capacity slots, not fixed role assignments.** On **every** run, each starts with lightweight Steward-style triage and chooses Steward, Fixer, Builder (including critical-path Builder-2 work), or independent Auditor based on current GitHub tasks, CI, merges, audit backlog, dispatch claims and PR leases. The complete algorithm, timing and safety rules are in [`dispatch.md`](dispatch.md); it overrides old minute-specific role labels in the role playbooks below. Do not keep a role idle or reserve a Builder, Fixer, Auditor or Steward when its queue is empty. When several runnable tasks are available, multiple slots should become Builders. **One slot can switch roles between runs (or within a run after a handoff).**
@@ -97,7 +109,7 @@ The independent **Planner** continues about every 12 hours (08:40 and 20:40 IST)
 - The live database only had self-test projects (hidden, `system=true`, slug `zz-selftest-…`) until the owner's Algebra 1 (36 checkpoints, no stages). The self-test sweeps stale fixtures older than 15 minutes.
 - Some agent environments cannot read GitHub Actions logs. Read check-run annotations (`/check-runs/{id}/annotations`), or reproduce locally.
 
-## 7. State at hand-off (31 Oct 2026, 10:25 IST)
+## 7. Historical hand-off (31 Oct 2026, 10:25 IST; NOT current backlog)
 
 - **Merged:** v3 (DB-4, MCP-4, DEMO-2, UI-6a … e, QA-2), UI-7 (Atlas outline, plan drawer, plan ideas graph, plan map tree), ST-0, ST-2, ST-3, ST-5, ST-7, MCP-5, the transcription plan (#436) and its fix (#444).
 - **Open:**
@@ -109,3 +121,4 @@ The independent **Planner** continues about every 12 hours (08:40 and 20:40 IST)
   - audit findings #440 (ST-2 sorts CP10 before CP2), #441 (ST-3 extreme render and DOM budgets not asserted) and #443 (save_pages confidence; spec fixed in #444, awaiting verification).
 - **Not started:** MCP-6 (after DB-5) and QA-3 (after ST-1, ST-2, ST-4 and ST-6).
 - **`.tex` and `.md` uploads:** specified in `transcribe.md` §2b and built in UI-8b.
+

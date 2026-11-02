@@ -1,5 +1,7 @@
 # Dynamic hourly agent dispatch
 
+> **Compatible guard / v3 NOT ACTIVE.** First follow [startup](README.md#startup-guard). The retained text below is live legacy authority in legacy/shadow. After a valid activation, [v3](v3.md) and [v3 playbooks](playbooks-v3.md) replace its allocation, timing and claim mechanics; preserve safety gates and apply [unconditional release policy](release.md) in every mode. Never run a separate Planner merely because retained text mentions it. Its actual schedule state is unknown; only the external setup procedure may reconcile it.
+
 Owner-approved operations policy (OPS-1, 2 Nov 2026). **The five hourly scheduled tasks are capacity slots, not permanently assigned job titles.** Every slot first runs a short, read-only Steward-style triage, then serves the role that currently has useful work. This file overrides the old minute-specific role assignments and stopping times in `docs/agents/prompts.md`; the safety and acceptance rules in the role playbooks are unchanged. The 12-hour Planner is separate and is not reassigned by this policy.
 
 ## Slots, source of truth and timing
@@ -44,3 +46,4 @@ Each run may spend a few minutes on **dispatcher triage** (not a full board rewr
 - Nothing runnable until dependencies merge → **Steward/Auditor/Fixer as needed**, not an idle Builder.
 
 The schedule is a clock; **GitHub backlog determines the role**.
+

@@ -8,4 +8,5 @@ A personal mathematics study app. Claude and ChatGPT teach through a small conne
 - Design references: [docs/design](docs/design)
 - Web app (after Phase 0): https://mymayankyadav.github.io/lemma/ (demo data: add `?demo=1`)
 
-Status: rebuilding from scratch per `plan.md` v1 (29 Oct 2026). The FSRS-6 engine and Markdown/KaTeX renderer from the previous version are kept and move into `src/lib` in task P0-A.
+Current source and acceptance live in `plan.md` and `docs/spec/`. Visual precedence is `docs/spec/v4-look.md`, then `docs/spec/v3.md`, then older references where silent. Agent startup and the inactive OPS3 transition are indexed in `docs/agents/README.md`; current backlog comes from GitHub, not historical hand-off notes.
+
