@@ -217,7 +217,7 @@ export default function Page(){
  const activeGoalCount=projects.filter(project=>project.status==='active').length;
  const featuredGoalCount=Math.min(activeGoalCount,3);
  const goalFallbackHeight=activeGoalCount===0?160:
-  44+featuredGoalCount*200+featuredGoalCount*12+(activeGoalCount>3?92:0);
+  44+featuredGoalCount*200+featuredGoalCount*12+(activeGoalCount>3?100:0);
  return <Screen tabBar className="gap-6 pb-6">
   <TodayHeader pending={home.data.pendingProposals}/>
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
@@ -234,7 +234,7 @@ export default function Page(){
       className="flex min-w-0 flex-col gap-3" style={{minHeight:goalFallbackHeight}}>
       <Skeleton h={44}/>
       {Array.from({length:featuredGoalCount},(_,index)=><Skeleton key={index} h={200}/>)}
-      {activeGoalCount>3&&<Skeleton h={80}/>}
+      {activeGoalCount>3&&<Skeleton h={88}/>}
      </section>}>
       <GoalDistance projects={projects} variant="metro"/>
      </Suspense>}
