@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { copyFile, mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { createHash } from 'node:crypto'
 import { pngHeader } from '../../scripts/qa3-screens'
 
 const execFileAsync = promisify(execFile)
@@ -47,10 +48,14 @@ test('AND-4 captures eight real 1080x1920 Play images with a loaded review card'
   expect(stdout).toContain('READY: review/night real card')
   expect(stdout).toContain('AND-4 verified: Play text limits, privacy contract, eight real-size PNGs')
 
+  const hashes = new Set<string>()
   for (const screen of screens) for (const theme of themes) {
     const bytes = await readFile(resolve(outputDir, `${screen}-${theme}-1080x1920.png`))
     // Reuse the existing QA-3 PNG decoder: validates chunk CRCs, inflated
     // scanlines and the real 3x device-pixel ratio, not just an IHDR header.
     expect(pngHeader(bytes, 360, 640)).toEqual({ width: 1080, height: 1920, scale: 3 })
+    const hash = createHash('sha256').update(bytes).digest('hex')
+    expect(hashes.has(hash), `stale/duplicated capture: ${screen}/${theme}`).toBe(false)
+    hashes.add(hash)
   }
 })
