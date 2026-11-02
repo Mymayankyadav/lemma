@@ -43,16 +43,19 @@
     actions:payload.actions.slice(0,2),openToken:payload.openToken,dismissToken:payload.dismissToken}};
  }
  function clickDecision(data,action='',scope=APP_SCOPE){
-  const chosen=Array.isArray(data?.actions)?data.actions.find(item=>item.action===action):null;
-  const passive=Array.isArray(data?.actions)?data.actions.find(item=>item.action==='open'):null;
+  // A body click is never a visible action. Passive receipts are authorized
+  // only by their dedicated top-level signed token, not a visible action token.
+  const chosen=action&&Array.isArray(data?.actions)?data.actions.find(item=>item.action===action):null;
   const target=destination(chosen?.url||data?.url,scope);
   if(!target)return null;
-  return {url:target.url,chat:target.chat,token:clean(chosen?.token||(action?'':data?.openToken||passive?.token),4096),
+  return {url:target.url,chat:target.chat,
+   token:clean(action?chosen?.token:data?.openToken,4096),
    action:clean(action,64)};
  }
  function dismissToken(data){
-  const action=Array.isArray(data?.actions)?data.actions.find(item=>item.action==='dismiss'):null;
-  return clean(data?.dismissToken||action?.token,4096);
+  // Missing passive receipt token means no /act request. A visible button
+  // named "dismiss" is not permission to send a background dismissal.
+  return clean(data?.dismissToken,4096);
  }
  root.LemmaPushCore=Object.freeze({APP_SCOPE,ACT_URL,destination,parsePayload,notificationOptions,clickDecision,dismissToken});
 })(globalThis);
