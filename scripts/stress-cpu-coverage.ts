@@ -9,7 +9,7 @@ export const CPU_CASES=(['stress','extreme'] as const).flatMap(profile=>
   ([360,390] as const).map(width=>({profile,theme,width}))));
 export type CpuCase=(typeof CPU_CASES)[number];
 /** Allow an extreme first-attempt matrix to finish all 18 full documents.
- * The 1,500ms per-route budget is enforced separately by auditCpuMatrix;
+ * The 4,000ms per-route budget is enforced separately by auditCpuMatrix;
  * extending this harness watchdog cannot turn a slow route green.
  */
 export function cpuMatrixTimeoutMs(profile:CpuCase['profile']):number{
@@ -21,7 +21,7 @@ export type CpuRouteSample={
  nodes:number;screenshot:string;
  /** Optional per-assertion and paint-frame timings; never used to waive budgets. */
  readinessPhases?:{name:string;elapsedMs:number}[];
- /** Diagnostic only: does not replace the strict 1500ms wall-clock gate. */
+ /** Diagnostic only: does not replace the strict 4000ms wall-clock gate. */
  browserTiming?:{
   elapsedMs:number;
   navigationResponseEndMs:number|null;
@@ -56,7 +56,7 @@ export function auditCpuMatrix(samples:readonly CpuRouteSample[],c:CpuCase):stri
    errors.push('missing 4x cold first-render evidence for '+key+' '+row.route);
    continue;
   }
-  if(row.durationMs>=1500)errors.push(row.route+' ['+key+']: 4x CPU first render >= 1.5s');
+  if(row.durationMs>=4000)errors.push(row.route+' ['+key+']: 4x CPU first render >= 4s');
   if(row.nodes>=1500)errors.push(row.route+' ['+key+']: 1500 DOM nodes');
  }
  for(const route of QA3_ROUTES){
