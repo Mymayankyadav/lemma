@@ -2,12 +2,14 @@
 
 Approved by the owner on 29 October 2026. This is the only task list. Behaviour lives in `docs/spec/`, visuals in `docs/design/`. Agents build; this plan does not change unless the owner asks.
 
+**Owner-policy precedence:** `docs/agents/owner-role.md` and `docs/agents/owner-override.md` qualify generic approval/release language throughout this plan. Ordinary autonomous merges retain CI/audit gates; verified owner-authorized integration and explicit owner-approved policy changes follow those addenda without inventing passing tests or completed runtime evidence.
+
 ## 0. Quick start for an agent
 
 1. Follow `docs/agents/README.md` startup guard, `AGENTS.md` and current control mode before selecting work. v3 files are inactive until controlled activation; legacy/shadow uses retained dispatch, active uses current-instance tickets.
 2. `plan.md` is the only task-definition authority. Read assigned accepted specs and current PR/handoff; refresh holds, dependencies, claims and reviewer eligibility. Historical foundation/theme/setup sections cannot authorize a reset, purge or superseded design.
 3. Claim one substantive writable scope with the current protocol, then a non-draft PR titled `<TASK-ID> <title>` on `t/<task-id-lowercase>` before code. Legacy lease rules remain until activation; v3 uses immutable run IDs and dated claims.
-4. Verify owned paths, meaningful tests and required CI. Every merge also requires unconditional independent applicable CLEAR under `docs/agents/release.md`; no omitted phrase bypasses it.
+4. Verify owned paths, meaningful tests and actual CI results. Ordinary autonomous merges require independent applicable CLEAR under `docs/agents/release.md`; no omitted phrase bypasses it. Verified owner-authorized integration instead follows `docs/agents/owner-override.md` and preserves unmet evidence honestly.
 5. Continue only eligible authorized work within the run deadline; preserve a review path and hand off pending verification. Routine work needs no repeated owner permission.
 
 ## 1. Goal
@@ -98,9 +100,9 @@ Use the latest release of each major listed; pin exact versions in `package.json
 - **Scope**: only your owned paths. Need something outside them? Use §7, or leave a note in your PR under "Needs from others" and build against what exists.
 - **Quality bar**: `npm run check` passes; your tests pass; screens match `design.md` and the boards (compare your screenshot from `test-results/screens/` with the board); no `console.error` in the browser; no hard-coded colours outside `src/styles`.
 - **PR description**: what changed, how you verified it (commands and results), screenshot(s) for UI, remaining gaps.
-- **Merge**: exact-head squash only after `scripts/merge-gate.ts` AND `docs/agents/release.md` pass, with eligible independent CLEAR and all applicable acceptance. The old bootstrap CI exception is historical: `ci.yml` exists. On conflicts/semantic overlap, merge main without force/history rewrite and refresh evidence.
+- **Merge**: ordinary autonomous exact-head squash requires `scripts/merge-gate.ts` AND `docs/agents/release.md` to pass with eligible independent CLEAR and acceptance. Verified owner-authorized squash integration follows the separate addendum A route, never a fabricated passing gate. The old bootstrap CI exception is historical: `ci.yml` exists. On conflicts/semantic overlap, merge main without force/history rewrite and refresh evidence.
 - **After merge**: pick the next task in §8. Do not edit this plan to mark progress; merged PR titles are the progress record.
-- **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test, add tracking or analytics.
+- **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test merely to obtain green CI, add tracking or analytics. Explicit owner-approved budget/test-policy amendments follow `docs/agents/owner-override.md` at their accepted scope; a red-CI merge alone changes no threshold.
 - **Models**: use the strongest available model for P0-A/B, DB-1, MCP-1, LIB-1 and DEMO-1 (contracts and logic). Any capable model can do UI-1/2 and screens.
 
 ## 7. Contract changes

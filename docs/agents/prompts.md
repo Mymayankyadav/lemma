@@ -1,5 +1,7 @@
 # Scheduled agent prompts
 
+**Release-route precedence (all modes):** [Owner role](owner-role.md) and [owner squash-merge authority](owner-override.md) qualify retained instructions. CI, independent CLEAR and Ready requirements below govern **ordinary autonomous merges**. A verified personal owner squash merge or specifically owner-directed merge uses the separate `OWNER_OVERRIDE` route; preserve rejected gate results and actual failures. Never fabricate CI/audit success. Retained prohibitions on weakening tests mean no unauthorized changes merely to obtain green CI; legitimate owner-approved policy amendments remain scoped under addendum A. This changes approval authority, not factual installation/runtime/drain evidence.
+
 > **Compatible guard / v3 NOT ACTIVE.** First follow [startup](README.md#startup-guard). The retained text below is live legacy authority in legacy/shadow. After a valid activation, [v3](v3.md) and [v3 playbooks](playbooks-v3.md) replace its allocation, timing and claim mechanics; preserve safety gates and apply [unconditional release policy](release.md) in every mode. Never run a separate Planner merely because retained text mentions it. Its actual schedule state is unknown; only the external setup procedure may reconcile it.
 
 ## Hourly shared dispatcher — use in **all five scheduled tasks** (OPS-1)

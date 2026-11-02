@@ -4,12 +4,14 @@ This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent c
 
 ## Startup guard
 
+**Release-route precedence (all modes):** [Owner role](owner-role.md) and [owner squash-merge authority](owner-override.md) qualify retained instructions. CI, independent CLEAR and Ready requirements below govern **ordinary autonomous merges**. A verified personal owner squash merge or specifically owner-directed merge uses the separate `OWNER_OVERRIDE` route; preserve rejected gate results and actual failures. Never fabricate CI/audit success. Retained prohibitions on weakening tests mean no unauthorized changes merely to obtain green CI; legitimate owner-approved policy amendments remain scoped under addendum A. This changes approval authority, not factual installation/runtime/drain evidence.
+
 **Repository package prepared; v3 NOT ACTIVE.** No saved task or runtime state has been changed or verified by PR #765. Installing files does not activate v3. In the absence of an adopted OPS3 control chain, use the retained legacy dispatcher; missing/conflicting events after an OPS3 chain exists stop affected new writes. Never fabricate an activation event or schedule identity.
 
 1. Read `AGENTS.md`, this guard and `plan.md` §0. Use GitHub REST (`gh api` when present; REST-backed connector when unavailable). Complete pagination for evidence; a failed/truncated read is unknown.
 2. Resolve Agent Log **#455**, Task Board **#456**, Audit Log **#442**, Plan Intake **#763**, Dispatch State **#764**. IDs are canonical; titles are navigation only. Check adopted control events and current scoped owner holds.
 3. Use [v3 contract](v3.md) only according to its mode. `legacy`/`shadow`: retained [dispatch](dispatch.md) and [playbooks](prompts.md) remain authoritative; shadow tickets cannot claim work. `cutover`/`rollback`: no new affected writable claims. `active`: valid current-instance packet, then assigned role/task/requirements/handoff only. Unknown/conflicting mode/generation: affected read-only containment.
-4. In every mode enforce [release supplement](release.md), existing owner decisions, exact-head CI, independent audit and path ownership. Never invoke historical reset/purge instructions. Mode changes do not weaken those rules.
+4. In every mode follow the [release supplement](release.md): ordinary autonomous merges require exact-head CI and independent audit; verified owner-authorized exceptions use [addendum A](owner-override.md) without fabricated passing evidence. Follow [Owner directives](owner-role.md), path ownership and factual runtime/transition requirements. Never invoke historical reset/purge instructions. A mode change alone supplies no exception.
 5. External installation follows [transition](transition.md), [setup prompt](setup-prompt.md) and [evidence checklist](../changes/OPS3/status.md). Exactly five intended slots are :00/:15/:30/:45/:50 IST; actual identities, enabled state, any extra Planner and runtime capabilities are UNKNOWN until read back externally.
 
 New owner UI/architecture plans enter #763 with exact source/digest and authority, then a scoped package using [templates](templates/README.md). Presence in a PR or a higher filename version is not approval. `plan.md` remains the only runnable task list.
@@ -49,7 +51,7 @@ The independent **Planner** continues about every 12 hours (08:40 and 20:40 IST)
 - **Planner PRs and owner approval.** The Planner opens "PLAN <name>: …" PRs (docs/spec/ and plan.md only).
   - A major drop says "Owner approval needed" in its description, and its tasks are marked "awaiting owner" in plan.md.
   - **No agent picks a task marked "awaiting owner", and no agent other than the owner writes "Ready to merge" on a PR that says "Owner approval needed".** The Steward never merges a PR whose description still says "Owner approval needed".
-  - The owner approves by replacing "Owner approval needed" with "Ready to merge". After it merges, the "awaiting owner" marks are removed and the tasks join the board like any other.
+  - The owner may approve by that description edit, an attributable scoped comment/direct instruction, or a verified owner squash merge under addenda A/B; no particular marker edit is required for an evidenced owner decision. Reconcile the exact accepted requirements and task marks after approval; do not infer unrelated or unperformed work is complete.
   - Small Planner refinements say "Ready to merge" and merge normally.
 
 ## 3. Ground rules (from AGENTS.md, repeated because they matter)
