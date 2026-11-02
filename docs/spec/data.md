@@ -560,6 +560,17 @@ Reminders are optional and default off until the owner enables them. `Settings.n
 - The demo adapter supplies two in-memory devices, five recent rows, one hold and three preview rows; the live adapter explicitly raises `not_implemented` until NOTIF-6.
 - `VITE_VAPID_PUBLIC_KEY` is a **public** environment variable; no private signing material is stored in the app.
 
+
+### 7.5 CONTRACT NOTIF-7 — bounded one-shot notification Review queue
+
+`docs/spec/notifications.md` §5d permits `#/review?start=N` (1–50) to start N otherwise-due cards, even when the saved `reviewsPerDay` goal is lower. The ordinary `getReviewItems(filter)` API intentionally applies the daily quota upstream, so increasing a client-side queue cap after fetching cannot recover omitted cards. This contract adds a separate read instead of changing the meaning of ordinary Start.
+
+- `LemmaApi.getNotificationReviewItems(filter: QueueFilter, count: number): Promise<ReviewItem[]>` is **additive**. `count` is an integer from 1 through 50; implementations must reject invalid values or bound them safely to this range. The result is at most `count` owner-visible cards.
+- The read uses the same due eligibility, priority, sibling-note deduplication, new-card policy and deck/session/concept filters as `getReviewItems`, with the same first-card order. For a notification round only, the saved `reviewsPerDay` limit does not truncate the requested N; the distinct `newPerDay` safety limit is still respected. The normal `getReviewItems` behavior and stored settings are unchanged.
+- The live implementation uses a separate, bounded, owner-scoped, `security invoker` SQL RPC; it must apply `auth.uid()` and row ownership predicates, keep RLS, never fetch the full 30k-card library or expose another owner's cards, and never write or persist a temporary quota. The demo implementation applies the same ordering/limits in memory and clones only the bounded result.
+- React Query may use the key `['notification-review-items', filter, count]` only while the one-shot link is active. The Review page consumes the link with replace navigation, handles empty/error states and leaves ordinary Start on its original query. Add an end-to-end low-quota regression (at least five otherwise-due review cards, `reviewsPerDay=3`, `start=5` yields five; ordinary Start remains three) and live owner-isolation/50-card-bound tests.
+- **Contract PR only:** both adapters expose `notImplemented` stubs; NOTIF-7 fills them and adds the migration/tests after this contract merges. No existing method, field or hook is renamed or removed.
+
 ## 8. Data API (`src/data/api.ts`, interface `LemmaApi`)
 
 Both adapters (`src/data/live`, `src/data/demo`) implement every method with identical behavior. Errors are thrown as `LemmaError {code, message}` with codes `not_found`, `invalid`, `conflict`, `offline`, `auth`, `server`, `not_implemented` (stubs only).
