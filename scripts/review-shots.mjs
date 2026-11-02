@@ -162,8 +162,17 @@ try {
        const foldedRows=Number(await tree.getAttribute('data-atlas-row-count'));
        if(!Number.isFinite(foldedRows)||foldedRows<1)throw Error('QA-4 Atlas folded baseline has no rows');
        await phone.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All',exact:true}).click();
-       const confirmation=phone.getByRole('dialog',{name:'Unfold every idea?'});
-       if(await confirmation.isVisible())await confirmation.getByRole('button',{name:'Unfold all'}).click();
+       // For >300 ideas the confirmation Sheet is lazy-imported. Checking
+       // isVisible() immediately after click races that import and leaves the
+       // Atlas folded; wait for the real dialog before confirming.
+       const summary=await phone.locator('[data-atlas-summary]').textContent();
+       const ideaCount=Number(summary?.match(/^\\s*([\\d,]+)/)?.[1]?.replace(/,/g,''));
+       if(!Number.isFinite(ideaCount))throw Error('QA-4 Atlas idea count missing');
+       if(ideaCount>300){
+        const confirmation=phone.getByRole('dialog',{name:'Unfold every idea?'});
+        await confirmation.waitFor({state:'visible'});
+        await confirmation.getByRole('button',{name:'Unfold all'}).click();
+       }
        // Verify that the screenshot depicts real newly visible ideas, not
        // a changed toolbar pill or an unrelated pixel difference.
        await phone.waitForFunction(count=>{
