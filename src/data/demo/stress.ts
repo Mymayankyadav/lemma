@@ -126,7 +126,6 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
     transcribedBy: null, transcribedAt: null, confidence: null};
 }
 
-/** Build the real note rows only when a route needs card content. */
 /** Heavy, immutable stress note examples are shared by every 50-row Cards page. */
 const STRESS_LONG_FRONT = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
 const STRESS_LONG_BACK = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
@@ -135,6 +134,7 @@ const STRESS_ALIGNED = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i
 const STRESS_SUM = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
 const STRESS_INLINE = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
 
+/** Build the real note rows only when a route needs card content. */
 export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects'],cardCount:number,dueCount:number,startIndex=0):DemoNote[]{
  const notes:DemoNote[]=[];
   for (let i = startIndex; i < startIndex + cardCount; i++) {
