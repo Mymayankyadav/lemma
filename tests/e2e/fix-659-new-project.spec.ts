@@ -68,3 +68,28 @@ test('FIX #659 deferred maths preview still renders on input',async({page})=>{
  await dialog.getByRole('textbox',{name:'Name'}).fill('Algebra');
  await expect(dialog.getByRole('region',{name:'Math preview'})).toHaveCount(0);
 });
+
+test('FIX #659 lazy Paths backdrop never duplicates its heading during hydration',async({page})=>{
+ // Observe every DOM commit, including the short Suspense transition that a
+ // later toHaveCount(1) can miss. This is a first-attempt functional contract.
+ await page.addInitScript(()=>{
+  (window as Window & {__lemmaBackdropCounts?:number[]}).__lemmaBackdropCounts=[];
+  const sample=()=>{
+   const count=document.querySelectorAll('[data-sheet-background] h1').length;
+   (window as Window & {__lemmaBackdropCounts?:number[]}).__lemmaBackdropCounts!.push(count);
+  };
+  const observer=new MutationObserver(sample);
+  observer.observe(document,{subtree:true,childList:true});
+  sample();
+ });
+ await page.goto('/lemma/?demo=extreme&theme=graph-night#/projects/new',{waitUntil:'domcontentloaded'});
+ const backdrop=page.locator('[data-new-project-backdrop]');
+ await expect(backdrop).toHaveAttribute('inert','');
+ await expect(page.getByRole('dialog',{name:'New project'})).toBeVisible();
+ await expect(backdrop.locator('[data-project-row]').first()).toBeVisible({timeout:30_000});
+ const counts=await page.evaluate(()=>
+  (window as Window & {__lemmaBackdropCounts?:number[]}).__lemmaBackdropCounts??[]);
+ expect(counts.length).toBeGreaterThan(1);
+ expect(Math.max(...counts),'one Paths heading throughout lazy transition, not only after it settles').toBeLessThanOrEqual(1);
+ await expect(backdrop.locator('h1')).toHaveCount(1);
+});
