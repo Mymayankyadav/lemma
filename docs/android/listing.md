@@ -49,7 +49,7 @@ node scripts/play-shots.mjs --capture
 node scripts/play-shots.mjs --verify
 ```
 
-The capture script waits for actual screen content, blocks horizontal overflow, checks PNG headers and dimensions, and writes `docs/android/shots/{today,project,review,atlas}-{day,night}-1080x1920.png`. Commit only genuine browser captures; never replace them with illustrations or empty placeholders.
+The capture script waits for actual screen content, blocks horizontal overflow, validates the complete PNG chunk chain, CRCs, inflated IDAT scanlines, exact 3× DPR dimensions and unique capture hashes, and writes `docs/android/shots/{today,project,review,atlas}-{day,night}-1080x1920.png`. Commit only genuine browser captures; never replace them with illustrations or empty placeholders.
 
 For a checkout without a local Chromium environment, the dedicated
 `tests/e2e/and4-play-shots.spec.ts` acceptance test runs the same capture
@@ -61,7 +61,9 @@ PNGs (and replace the two Today images only if the new captures are correct).
 The test fails if the Review run contains only a loading skeleton or no
 actual card, if a theme is wrong, or if any image is corrupt or not 3× DPR.
 An artifact is evidence, **not** a substitute for committing the verified
-images to `docs/android/shots/` before marking AND-4 Ready.
+images to `docs/android/shots/` before marking AND-4 Ready. Re-capture Atlas
+listing images after the tracked phone-toolbar fix #707/#710 lands: the current
+CI artifact still shows the `Re-check 1` label wrapping at 360 CSS pixels.
 
 ## Owner-only publication checklist
 
