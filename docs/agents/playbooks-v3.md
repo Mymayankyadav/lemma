@@ -2,6 +2,10 @@
 
 Every role follows [v3](v3.md), its exact assigned requirements, current owner holds and [release supplement](release.md). Run identity and deadline persist across role changes. One substantive writable PR at a time; distinct sequential work is allowed after release. Read-only audit executions never push or merge. A private conversation, a role name or this file does not supply product approval, ownership, capabilities or deployment permission.
 
+## owner (human governance; never an assignable agent role)
+
+The Owner is Mayank Yadav (`Mymayankyadav`). [Addendum B](owner-role.md) defines rights, urgent PR/issue/review instructions, discovery/acknowledgement, scope and attribution. Agents cannot select this role, impersonate it through shared GitHub credentials or count it as scheduled capacity. Owner directions take subject-specific precedence; actual runtime/CI facts remain honest. Lead and workers must acknowledge and route observed directives before unrelated routine work, respecting explicit hold/stop instructions immediately for the affected scope. [Addendum A](owner-override.md) defines owner squash-merge exceptions.
+
 ## lead-dispatcher
 
 Claim the epoch and any shared issue-body writer scopes; reconcile current repo/plan/spec refs and intake with overlap/deduplication, active claims/leases, healthy CI, release/verification queues and reviewer/capability availability. Refresh material candidate evidence completely; incomplete scans do not advance watermarks. Publish five precise advisory tickets, preserving occupied claims, and record packet revision before/after readback. Allocate by priority/aging/WIP and useful continuity, not permanent roles. Assign P0/P1 first, drain ready delivery/review, assess owner plans aged two healthy cycles. Include next dispatcher/recovery action and metrics sources. Then release dispatcher scope and perform eligible bounded work. Never overwrite a live dispatcher or authorize product scope through a packet.
@@ -65,3 +69,4 @@ Claim PR/integration release scope, preserve current writer claims and read fres
 ## post-merge-verifier
 
 Claim pending release record, read exact merge SHA and accepted scope, inspect required main/deployment/smoke/live outcomes and actual behavior evidence. Determine pending/pass/fail explicitly; name next eligible slot/action when run ends. Failed relevant integration contains dependent release batches and opens/updates root-cause incident, without unauthorized rollback or live data action. Independently close acceptance/audit findings only with required evidence, retaining exact links. Complete means verified accepted behavior, not merely merged source or successful unrelated deploy.
+

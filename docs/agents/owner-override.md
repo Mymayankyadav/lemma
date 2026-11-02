@@ -2,6 +2,8 @@
 
 **Owner-adopted policy, 2 November 2026. Applies immediately to repository preparation and every operating mode: legacy, shadow, cutover, active and rollback.** This is a subject-specific exception to autonomous agent release gates in `AGENTS.md`, OPS3 source §§1–2,9,12,15–16, the release supplement, retained legacy rules and any saved setup/worker prompt. Those gates remain defaults for autonomous agents; they do not constrain the owner's own merge decision. A prompt requiring pre-merge green CI/CLEAR must recognize the alternative below rather than reject the owner's recorded decision or demand that it be repeated.
 
+See also [addendum B](owner-role.md) for the Owner role, comment priority, attribution and the complete rights table. A lease label `Owner: builder` is not the human Owner.
+
 ## 1. What constitutes permission
 
 The owner, **Mymayankyadav**, may personally squash-merge **any PR** to `Mymayankyadav/lemma`'s `main` to expedite work. A verified owner squash merge is itself **explicit approval and permission to integrate that exact PR's merged contents**, including its plan/spec/task/policy amendments. No additional approval comment, Ready marker, independent CLEAR, successful CI, performance-budget result, lease expiry or protocol-mode transition is required for that owner merge to be legitimate under this protocol. This is `OWNER_OVERRIDE`, a separate valid release route, not an `AUDIT CLEAR` or a successful ordinary gate.
@@ -51,3 +53,4 @@ Ordinary autonomous merges still use `evaluateMergeGate` and `evaluateRelease` u
 PR **#765**, source head `24e76848d2ab8eb1e84d33b5581362398da84442`, was squash-merged as `63a4e59b3bd2b7be1a6e19c3019633abf0e96978` following the owner's explicit instruction **“Merge pr without waiting for ci”**. The instruction and delegated execution are recorded in [PR comment 6572254151](https://github.com/Mymayankyadav/lemma/pull/765#issuecomment-6572254151) and [Agent Log handoff 6572261643](https://github.com/Mymayankyadav/lemma/issues/455#issuecomment-6572261643).
 
 Treat #765 as owner-approved repository preparation. Its missing pre-merge independent review and CI success no longer block compatible guarded installation under the separately given setup request. Report and repair actual CI findings separately. Do not require #765 to be remerged or pretend its historical checks passed. No schedules were changed by that merge and no active-mode evidence is inferred.
+
