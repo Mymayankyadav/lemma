@@ -42,6 +42,17 @@ export default function Page(){
  const navigate=useNavigate(),location=useLocation(),notify=useToast();
  const handledNotificationLink=useRef<string|null>(null);
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
+ const rawNotificationStart=new URLSearchParams(location.search).get('start');
+ const notificationCount=rawNotificationStart===null?null:notificationRoundCap(
+  undefined,/^[0-9]+$/.test(rawNotificationStart)?Number(rawNotificationStart):1);
+ // Ordinary Review keeps its saved daily quota. Only an explicit one-shot
+ // link performs this separate, owner-scoped, <=50-card read.
+ const notificationCards=useQuery({
+  queryKey:['notification-review-items',allFilter,notificationCount],
+  queryFn:()=>getApi().getNotificationReviewItems(allFilter,notificationCount!),
+  enabled:notificationCount!==null&&!!settings.data&&!!decks.data,
+  staleTime:0,refetchOnWindowFocus:false,
+ });
  // The session chips are optional: only cards tied to a session can use
  // them. The extreme demo otherwise materializes and sorts 60,000 virtual
  // session summaries on cold Review for a section that renders nothing.
@@ -92,6 +103,11 @@ export default function Page(){
  const visibleNodes=nodes.filter(n=>!deckSearch||n.label.toLowerCase().includes(deckSearch.toLowerCase())||
    n.children.some(c=>c.label.toLowerCase().includes(deckSearch.toLowerCase())));
  const dueItems=useMemo(()=>reviewEligible(cards.data??[],nodes,enabled),[cards.data,nodes,enabled]);
+ // A fresh notification link selects all eligible decks, including projects
+ // outside the normal three-card daily tree. Explicit user deselection still
+ // applies when the link is opened from an already configured Review screen.
+ const notificationDueItems=selected===null?(notificationCards.data??[]):
+  reviewEligible(notificationCards.data??[],nodes,enabled);
  const selectedCount=dueItems.length;
  const totalDue=nodes.reduce((sum,project)=>{
   const children=project.children.filter(c=>c.due>0);
@@ -131,9 +147,10 @@ export default function Page(){
   const filter:QueueFilter={...allFilter,sessionId,includeNew:true,newOnly:onlyNew,
    decks:[]};
   const fromSession=groupedSessions.find(s=>s.id===sessionId);
+  const source=notificationLimit===undefined?dueItems:notificationDueItems;
   const selection=sessionId?
-   dueItems.filter(c=>c.projectSlug===fromSession?.projectSlug&&c.sessionNumber===fromSession?.number):
-   dueItems;
+   source.filter(c=>c.projectSlug===fromSession?.projectSlug&&c.sessionNumber===fromSession?.number):
+   source;
   const chosen=(onlyNew?selection.filter(c=>c.state.state===0):selection)
    .slice(0,notificationRoundCap(settings.data.reviewsPerDay,notificationLimit));
   if(!chosen.length)return notify(notificationLimit===undefined?'No cards due in this selection':'All clear');
@@ -149,19 +166,22 @@ export default function Page(){
  // preference. Wait for the same loaded deck/filter state as the Start button.
  // React StrictMode may replay effects: the route key prevents double starts.
  useEffect(()=>{
-  const raw=new URLSearchParams(location.search).get('start');
-  if(raw===null||handledNotificationLink.current===location.key)return;
+  if(notificationCount===null||handledNotificationLink.current===location.key)return;
   if(!settings.data||!cards.data||!decks.data||cards.error||decks.error)return;
+  if(notificationCards.isPending&&!notificationCards.data)return;
   handledNotificationLink.current=location.key;
-  const numeric=/^[0-9]+$/.test(raw)?Number(raw):1;
-  const count=Number.isFinite(numeric)?Math.min(50,Math.max(1,numeric)):1;
-  if(!dueItems.length){
+  if(notificationCards.error){
+   notify("Couldn't load notification review cards.",{tone:'danger'});
+   navigate('/review',{replace:true});
+   return;
+  }
+  if(!notificationDueItems.length){
    notify('All clear');
    navigate('/review',{replace:true});
    return;
   }
-  start(null,false,count);
- },[location.key,location.search,settings.data,cards.data,decks.data,cards.error,decks.error,dueItems,home.data,enabled,navigate,notify]);
+  start(null,false,notificationCount);
+ },[location.key,notificationCount,settings.data,cards.data,decks.data,cards.error,decks.error,notificationCards.data,notificationCards.error,notificationCards.isPending,notificationDueItems,home.data,enabled,navigate,notify]);
  useEffect(()=>{
   if(cards.error||decks.error)notify("Couldn't load your review decks.",{tone:'danger'});
  },[cards.error,decks.error,notify]);
