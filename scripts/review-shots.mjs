@@ -70,16 +70,19 @@ async function checkMiniRoutes(page,scene){
  }));
  if(errors.length)throw Error('QA-4 Mini Route geometry '+scene+': '+errors.join('; '));
 }
+// Isolate each screenshot matrix from previous session and service-worker
+// state. This never retries a failed route; first-attempt assertions remain.
+async function newCapturePhone(browser,width=390,height=844){
+ const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:2,colorScheme:'dark'});
+ if(process.env.V4_MATRIX==='1'){
+  await page.addInitScript(()=>{try{localStorage.removeItem('lemma.atlas.v2')}catch{}});
+ }
+ return page;
+}
 mkdirSync('review-shots/sheets',{recursive:true});
 const browser=await chromium.launch();
 try {
- const phone=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,colorScheme:'dark'});
- if(process.env.V4_MATRIX==='1'){
-  // Atlas fold depth is persisted. Without a reset, later idle screenshots
-  // can already be fully unfolded, falsely duplicating the All interaction.
-  // This runs before every navigation, not after the screenshot is taken.
-  await phone.addInitScript(()=>{try{localStorage.removeItem('lemma.atlas.v2')}catch{}});
- }
+ let phone=await newCapturePhone(browser);
  const sheet=await browser.newPage({viewport:{width:1950,height:888},deviceScaleFactor:2,colorScheme:'dark'});
  for(const theme of chosen){
   mkdirSync(join('review-shots',theme),{recursive:true});
@@ -105,7 +108,8 @@ try {
    const routes=JSON.parse(readFileSync(new URL('./v4-capture-inventory.json',import.meta.url),'utf8'));
    for(const demo of ['1','stress']){
     for(const [width,height] of [[360,780],[390,844]]){
-     await phone.setViewportSize({width,height});
+     await phone.close();
+     phone=await newCapturePhone(browser,width,height);
      const dir=join('review-shots','v4',theme,demo,width+'px');
      mkdirSync(dir,{recursive:true});
      for(const {name,route,action} of routes){
@@ -156,6 +160,22 @@ try {
       const heading=v4Headings[name];
       if(!heading)throw Error('No QA-4 route heading contract for '+name);
       await phone.getByRole('heading',{name:heading,level:1,exact:true}).waitFor({state:'visible'});
+      // QA-4 #737: a heading alone is not data-backed Today evidence.
+      // The demo Review forecast can still be inside Suspense after the h1
+      // appears; wait for the seven actual bars instead of capturing its
+      // transient "Loading seven-day forecast" placeholder. All-clear desks
+      // have no due count and deliberately need no forecast bars.
+      if(name==='today'){
+       const review=phone.getByRole('region',{name:'Review',exact:true});
+       const hasDue=(await review.locator('p').filter({hasText:/^\s*[\d,]+\s+due\s*$/}).count())>0;
+       if(hasDue){
+        await review.locator('[data-review-spark-bar]').first().waitFor({state:'visible'});
+        const bars=await review.locator('[data-review-spark-bar]').count();
+        if(bars!==7)throw Error('Today forecast must show seven settled bars');
+       }
+       if(await review.getByText(/Loading (seven-day )?forecast/i).count())
+        throw Error('Loading forecast is not valid QA-4 Today evidence');
+      }
       if(name==='paths')await checkMiniRoutes(phone,theme+'/'+demo+'/'+width);
       if(name==='review-run'||name==='review-run-answer')
        await phone.locator('[data-review-card-scroll]').waitFor({state:'visible'});

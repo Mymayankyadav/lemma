@@ -215,6 +215,7 @@ export class DemoAdapter implements LemmaApi {
   private store: DemoStore;
   private stressSourceSeedTitles:Map<string,string[]>|null=null;
   private stressSourceSeedRows:DemoSource[]|null=null;
+  private stressAtlasSeedRows:DemoConcept[]|null=null;
   private readonly now: () => number;
   private stressDayStart: number | undefined;
   private virtualStressDue: {overdue:number;future:number}|null=null;
@@ -400,6 +401,7 @@ export class DemoAdapter implements LemmaApi {
       }});
     }
     if(options.ownedFixture&&this.store.stressAtlasIdeaCount!==undefined){
+      this.stressAtlasSeedRows=original.concepts;
       const store=this.store,baseConcept=original.concepts[0];
       if(!baseConcept)throw Error('Missing stress Atlas concept template');
       const ideaCount=store.stressAtlasIdeaCount??0,linkCount=store.stressAtlasLinkCount??0;
@@ -542,6 +544,15 @@ export class DemoAdapter implements LemmaApi {
       this.store.proposals.find((p) => p.id === id),
       "Proposal",
     );
+  }
+  /** A seeded concept reference is not a request for the entire Atlas graph.
+   * Once the graph is materialized or mutated, its store remains authoritative. */
+  private readConcept(id:string):DemoConcept|undefined {
+    if(typeof Object.getOwnPropertyDescriptor(this.store,'concepts')?.get==='function'){
+      const seed=this.stressAtlasSeedRows?.find(concept=>concept.id===id);
+      if(seed)return seed;
+    }
+    return this.store.concepts.find(concept=>concept.id===id);
   }
   private projectValue(p: DemoProject): Project {
     const { lastActivityAt, ...value } = p;
@@ -833,10 +844,9 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   /** Generate one stress session on demand; the UI never needs 60k hydrated rows. */
-  private virtualStressSession(project: DemoProject, number: number): DemoSession {
+  private virtualStressSession(project: DemoProject, number: number, projectIndex=this.store.projects.findIndex(p=>p.id===project.id)): DemoSession {
     const count = this.store.stressSessionCount ?? 0;
     if (!Number.isInteger(number) || number < 1 || number > count) invalid("Invalid stress session number");
-    const projectIndex = this.store.projects.findIndex(p => p.id === project.id);
     const template = stressSessionTemplate;
     const checkpointCode = `CP${((number - 1) % 36) + 1}`;
     const offset = (number - 1) % 90;
@@ -854,8 +864,12 @@ export class DemoAdapter implements LemmaApi {
     };
   }
   private sessionsForProject(project: DemoProject): DemoSession[] {
-    if (this.store.stressSessionCount) return Array.from(
-      {length:this.store.stressSessionCount}, (_,i) => this.virtualStressSession(project,i+1));
+    if (this.store.stressSessionCount){
+      // One lookup for the project, rather than one per synthetic session.
+      const index=this.store.projects.findIndex(p=>p.id===project.id);
+      return Array.from({length:this.store.stressSessionCount},
+        (_,i)=>this.virtualStressSession(project,i+1,index));
+    }
     return this.store.sessions.filter(s => s.projectId === project.id);
   }
   /** Direct checkpoint details only need sessions in the CP36 residue,
@@ -882,10 +896,10 @@ export class DemoAdapter implements LemmaApi {
     return stressSessionEvents(this.virtualStressSession(project, number),
       this.store.seed === 2026103102 ? 400 : 150);
   }
-  private sessionSummary(s: DemoSession): SessionSummary {
+  private sessionSummary(s: DemoSession, knownProjectSlug?:string): SessionSummary {
     return {
       id: s.id,
-      projectSlug: this.projectById(s.projectId).slug,
+      projectSlug: knownProjectSlug??this.projectById(s.projectId).slug,
       number: s.number,
       goal: s.goal,
       checkpointCode: s.checkpointCode,
@@ -1343,11 +1357,17 @@ export class DemoAdapter implements LemmaApi {
     return (cps[index].position + cps[index + 1].position) / 2;
   }
   private proposed(p: DemoProject): DemoCheckpoint[] {
-    const rows = clone(this.store.checkpoints),
-      result: DemoCheckpoint[] = [];
-    for (const proposal of this.store.proposals.filter(
+    const pending = this.store.proposals.filter(
       (v) => v.status === "pending" && v.projectSlug === p.slug && v.planChange,
-    ))
+    );
+    // Code allocation and position renumbering are project-scoped. Never clone
+    // every project's checkpoints on a single-project read, or clone anything
+    // when there are no pending additions. Keep the working rows private: a
+    // crowded insertion may renumber them, but must not mutate approved data.
+    if (!pending.some(proposal => proposal.planChange!.ops.some(op => op.op === "add"))) return [];
+    const rows = clone(this.store.checkpoints.filter(cp => cp.projectId === p.id)),
+      result: DemoCheckpoint[] = [];
+    for (const proposal of pending)
       for (const [i, op] of proposal.planChange!.ops.entries())
         if (op.op === "add") {
           const cp: DemoCheckpoint = {
@@ -1421,7 +1441,8 @@ export class DemoAdapter implements LemmaApi {
       );
     const sessions = this.checkpointSessions(project,code);
     return {
-      view: this.cpView(cp),
+      view: {...this.cpView(cp,[]),
+        dueCards:this.projectDueCounts(project.id).get(cp.code)??0},
       objective: cp.objective,
       criterion: cp.criterion,
       steps: [...cp.steps],
@@ -1430,7 +1451,7 @@ export class DemoAdapter implements LemmaApi {
       prereqs: [...cp.prereqs],
       concepts: cp.conceptIds.map((id) => {
         const c = found(
-          this.store.concepts.find((c) => c.id === id),
+          this.readConcept(id),
           "Concept",
         );
         return { slug: c.slug, name: c.name };
@@ -1517,7 +1538,9 @@ export class DemoAdapter implements LemmaApi {
         : this.store.projects.flatMap(project => this.sessionsForProject(project)))
       : this.store.sessions.filter(s => !id || s.projectId === id);
     return sessions
-      .map((s) => this.sessionSummary(s))
+      // A scoped route already knows its slug; do not repeat projectById
+      // for each of the 1,000 generated sessions.
+      .map((s) => this.sessionSummary(s,id?slug:undefined))
       .sort(
         (a, b) => Date.parse(b.lastActivityAt) - Date.parse(a.lastActivityAt),
       );
@@ -2474,7 +2497,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async getInsightData(days: InsightDays): Promise<InsightData> {
     if (![7, 30, 90].includes(days)) invalid("Invalid insight range");
-    const aggregate = makeStressInsightAggregate(this.store,days,this.now(),this.store.settings.timeZone,this.store.settings.rolloverHour);
+    const aggregate = makeStressInsightAggregate(this.store,days,this.now(),this.store.settings.timeZone,this.store.settings.rolloverHour,id=>this.readConcept(id));
     // Match ST-5 live semantics: the browser receives bounded aggregates, not raw history.
     if (aggregate) return {aggregate,reviews:[],sessions:[],checkpointEvents:[],projects:[],misconceptions:[]};
     const bounds = studyDayBounds(

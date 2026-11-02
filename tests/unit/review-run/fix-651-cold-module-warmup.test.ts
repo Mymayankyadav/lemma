@@ -7,12 +7,14 @@ import {describe,expect,it} from 'vitest';
 describe('FIX #651 direct Review-run route module head start',()=>{
  it('starts only the Review-run module import before initial React mount',()=>{
   const main=readFileSync('src/main.tsx','utf8');
-  expect(main).toContain("location.hash.startsWith('#/review/run')");
+  expect(main).toContain("const hash = window.location.hash.split('?')[0]");
+  expect(main).toContain("if (hash === '#/review/run')");
   expect(main).toContain("import('./features/review-run/Page')");
   expect(main).not.toContain('getReviewItems(');
   expect(main).not.toContain('getAtlas(');
   // Cold deep links can create the local adapter while the Review-run
   // route chunk downloads; no actual review/Atlas query is prefetched.
-  expect(main).toMatch(/if\(window\.location\.hash\.startsWith\('#\/review\/run'\)\)\{[\s\S]*getApi\(\)/);
+  expect(main).toMatch(/if \(hash === '#\/review\/run'\) \{[\s\S]*getApi\(\)/);
+  expect(main).not.toMatch(/^import.*from ['"]\.\/data['"]/m);
  });
 });

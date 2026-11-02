@@ -437,19 +437,25 @@ export function budgetArcsUnfocused(
  };
  type Bundle={from:number;to:number;kind:Link['kind'];count:number;index:number;folded:boolean};
  const width=rows.length,packed=width<2**26;
+ // Fold membership is per visible row, not per link. On the 8,000-link
+ // stress DAG this replaces repeated Map and Set lookups with two booleans.
+ const foldedRows=rows.map(row=>{
+  const node=tree.nodes.get(row.id);
+  return !!node?.children.length&&!expanded.has(node.id);
+ });
  const bundles=new Map<number|string,Bundle>();
  for(const link of tree.links){
   if(!kinds.has(link.kind))continue;
   const from=resolve(link.fromId),to=resolve(link.toId);
   if(from===null||to===null||from===to)continue;
-  const [a,b]=link.kind==='related'&&from>to?[to,from]:[from,to];
+  // No transient endpoint array per link (8,000 on the extreme graph).
+  const swap=link.kind==='related'&&from>to;
+  const a=swap?to:from,b=swap?from:to;
   const key=packed?(a*width+b)*2+(link.kind==='related'?1:0):link.kind+':'+a+':'+b;
   const existing=bundles.get(key);
   if(existing){existing.count++;continue}
-  const folded=[a,b].some(i=>{
-   const node=tree.nodes.get(rows[i]?.id??'');
-   return !!node?.children.length&&!expanded.has(node.id);
-  });
+  // Fold state was indexed once for the entire visible row inventory.
+  const folded=foldedRows[a]||foldedRows[b];
   bundles.set(key,{from:a,to:b,kind:link.kind,count:1,index:bundles.size,folded});
  }
  const all=[...bundles.values()];
@@ -496,6 +502,39 @@ export function budgetArcsUnfocused(
  const selected=new Set(heap);
  const visible=all.filter(bundle=>selected.has(bundle)).sort(bySpan).map(toArc);
  return {visible,hidden:all.length-visible.length};
+}
+
+/**
+ * React StrictMode invokes useMemo calculations twice on the first mount.
+ * The extreme Atlas may aggregate 8,000 links into the same 60-arc gutter
+ * twice before a single interactive frame. Cache only that identical input
+ * snapshot; weak row-array keys do not retain old route or fold states.
+ *
+ * The fold fingerprint checks visible branch membership rather than relying
+ * on Set identity, so even an in-place fold change cannot return stale arcs.
+ * A new query graph, row array, link-kind membership or cap always recomputes.
+ */
+type UnfocusedBudget=ReturnType<typeof budgetArcsUnfocused>;
+const coldArcBudgets=new WeakMap<readonly Row[],{
+ tree:AtlasTree;folded:string;prereq:boolean;related:boolean;limit:number;result:UnfocusedBudget;
+}>();
+export function budgetArcsUnfocusedCached(
+ tree:AtlasTree,rows:readonly Row[],expanded:ReadonlySet<string>,
+ kinds:ReadonlySet<Link['kind']>,limit=60,
+):UnfocusedBudget{
+ let folded='';
+ for(const row of rows){
+  const node=tree.nodes.get(row.id);
+  if(node?.children.length)folded+=expanded.has(row.id)?'1':'0';
+ }
+ const prereq=kinds.has('prereq'),related=kinds.has('related');
+ const previous=coldArcBudgets.get(rows);
+ if(previous&&previous.tree===tree&&previous.folded===folded&&
+    previous.prereq===prereq&&previous.related===related&&previous.limit===limit)
+  return previous.result;
+ const result=budgetArcsUnfocused(tree,rows,expanded,kinds,limit);
+ coldArcBudgets.set(rows,{tree,folded,prereq,related,limit,result});
+ return result;
 }
 
 /** Everything the selected idea (or branch) builds on, and everything it opens up. */
