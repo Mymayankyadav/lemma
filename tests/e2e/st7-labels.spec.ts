@@ -28,3 +28,39 @@ for(const theme of ['graph','graph-night'] as const){
   await page.screenshot({path:`test-results/screens/st-7-continue-360-${theme}.png`});
  });
 }
+
+test('FIX #760 Continue remains reachable after real lazy goals hydrate above it',async({page})=>{
+ test.setTimeout(60_000);
+ await page.setViewportSize({width:360,height:740});
+ let unblock!:()=>void;
+ let intercepted!:()=>void;
+ const gate=new Promise<void>(resolve=>{unblock=resolve});
+ const sawChunk=new Promise<void>(resolve=>{intercepted=resolve});
+ // Stall the actual built GoalDistance chunk, not the app's data or a mock
+ // component. The original 160px fallback lets the real cards move Continue
+ // out of view after the owner scrolls to it.
+ await page.route('**/assets/GoalDistance-*.js',async route=>{
+  intercepted();
+  await gate;
+  await route.continue();
+ });
+ try{
+  await page.goto('/lemma/?demo=1&theme=graph#/',{waitUntil:'domcontentloaded'});
+  await sawChunk;
+  const handoff=page.getByRole('region',{name:'Resume where you stopped'});
+  await expect(handoff).toBeVisible();
+  await handoff.scrollIntoViewIfNeeded();
+  await expect(handoff).toBeInViewport();
+  const before=await handoff.evaluate(node=>node.getBoundingClientRect().top);
+  unblock();
+  // Wait for the real three GoalCard components, including nested lazy
+  // modules; only then test whether the earlier scroll was preserved.
+  await expect(page.locator('[data-goal-card]')).toHaveCount(3);
+  const after=await handoff.evaluate(node=>node.getBoundingClientRect().top);
+  expect(after-before,'deferred goal cards must not shift Continue below the viewport').toBeLessThan(80);
+  await expect(handoff).toBeInViewport();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+ }finally{
+  unblock();
+ }
+});
