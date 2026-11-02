@@ -16,10 +16,10 @@ describe('FIX-507b fail-closed browser timing evidence',()=>{
   for(const cpuThrottle of [Number.NaN,Number.POSITIVE_INFINITY,Number.NEGATIVE_INFINITY,0,-1])
    expect(stressViolations({...base,cpuThrottle,durationMs:1800})).toContain('invalid CPU throttling evidence')
  })
- it('retains the unchanged strict 1,500ms at 4x CPU boundary',()=>{
-  expect(stressViolations({...base,durationMs:1499})).toEqual([])
-  expect(stressViolations({...base,durationMs:1500})).toContain('4x CPU first render >= 1.5s')
-  expect(stressViolations({...base,durationMs:1501})).toContain('4x CPU first render >= 1.5s')
+ it('retains the owner-approved 4,000ms at 4x CPU boundary',()=>{
+  expect(stressViolations({...base,durationMs:3999})).toEqual([])
+  expect(stressViolations({...base,durationMs:4000})).toContain('4x CPU first render >= 4s')
+  expect(stressViolations({...base,durationMs:4001})).toContain('4x CPU first render >= 4s')
  })
  it('does not mistake a valid unthrottled measurement for missing evidence',()=>{
   expect(stressViolations({...base,cpuThrottle:1,durationMs:2000})).toEqual([])
