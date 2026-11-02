@@ -25,11 +25,17 @@ describe('QA-3 full 4x CPU evidence addendum',()=>{
   expect(report.status).toBe('INCOMPLETE');
   expect(report.errors).toContain('missing 4x cold first-render evidence for stress/graph/360 /projects');
  });
- it('reports a hard failure at exactly 1500ms',()=>{
+ it('reports a hard failure at exactly the owner-approved 4000ms ceiling',()=>{
   const report=analyzeQa3Cpu(sample().map(row=>row.route==='/atlas'&&row.profile==='extreme'&&row.theme==='graph-night'&&row.width===360
-   ?{...row,durationMs:1500}:row));
+   ?{...row,durationMs:4000}:row));
   expect(report.status).toBe('FAIL');
-  expect(report.errors).toContain('/atlas [extreme/graph-night/360]: 4x CPU first render >= 1.5s');
+  expect(report.errors).toContain('/atlas [extreme/graph-night/360]: 4x CPU first render >= 4s');
+ });
+ it('accepts the strict first-attempt 4x CPU case one millisecond below 4000ms',()=>{
+  const report=analyzeQa3Cpu(sample().map(row=>row.route==='/atlas'&&row.profile==='extreme'&&row.theme==='graph-night'&&row.width===360
+   ?{...row,durationMs:3999}:row));
+  expect(report.status).toBe('PASS');
+  expect(report.errors).toEqual([]);
  });
  it('passes only all 144 cold cells and prints each route',()=>{
   const report=analyzeQa3Cpu(sample());
