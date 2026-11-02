@@ -8,6 +8,8 @@ const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite')
 const db=new PGlite()
 const owner='11111111-1111-1111-1111-111111111111'
 const subject='22222222-2222-2222-2222-222222222222'
+// One immutable instant for fixture and candidate, even across rollover.
+const snapshotAt=new Date().toISOString()
 const q=async(sql,params=[])=>(await db.query(sql,params)).rows
 try{
  await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
@@ -40,8 +42,10 @@ try{
  await db.exec('alter table public.notes enable trigger lemma_log_change;alter table public.cards enable trigger lemma_log_change')
  await db.exec('alter table public.checkpoints disable trigger lemma_log_change')
  await q(`insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps,due_on)
- select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,current_date+1
- from public.projects p cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner])
+ select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,
+   ((($2::timestamptz at time zone s.time_zone)-make_interval(hours=>s.rollover_hour))::date+1)
+ from public.projects p join public.settings s on s.user_id=p.user_id
+ cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner,snapshotAt])
  await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
@@ -49,10 +53,10 @@ try{
  // owner's study-day, not the PostgreSQL session's UTC calendar day.
  // At UTC 00:00–04:00 with UTC rollover 04:00, current_date+1 is a day late.
  const dueDateCheck=await q(`select count(*)::int total,
-   count(*) filter(where c.due_on=(((now() at time zone s.time_zone)
+   count(*) filter(where c.due_on=((($2::timestamptz at time zone s.time_zone)
      -make_interval(hours=>s.rollover_hour))::date+1))::int matching
    from public.checkpoints c join public.settings s on s.user_id=c.user_id
-   where c.user_id=$1`,[owner])
+   where c.user_id=$1`,[owner,snapshotAt])
  assert.deepEqual(dueDateCheck[0],{total:2400,matching:2400},
    'all X checkpoints must be due tomorrow by the owner study-day, even across UTC midnight')
  // Regression-first: owner/note lookup must cover the three fields used by
@@ -63,7 +67,7 @@ try{
  let queryCount=0
  const start=performance.now()
  queryCount++
- const snapshot=(await q('select public.notify_candidates($1,now()) data',[owner]))[0].data
+ const snapshot=(await q('select public.notify_candidates($1,$2::timestamptz) data',[owner,snapshotAt]))[0].data
  const elapsed=performance.now()-start
  assert.ok(queryCount<12,'one bounded candidate query, not N+1 project reads')
  assert.equal(snapshot.due.backlog,30000)
