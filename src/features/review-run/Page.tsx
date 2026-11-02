@@ -11,6 +11,7 @@ import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
 import {isPlainReviewFront} from './plainFront';
+import {reviewInitialLoadFailure} from './loadFailure';
 import {scheduleScrollHintMeasure} from './scrollHint';
 import {Card} from '../../ui/Card';
 import {Glyph} from '../../ui/Glyph';
@@ -244,6 +245,11 @@ export default function Page(){
    notify('Card suspended',{tone:'success'});
   }catch(error){notify(error instanceof Error?error.message:'Could not suspend',{tone:'danger'})}
  }
+ const loadFailure=reviewInitialLoadFailure(settings,apiCards);
+ if(loadFailure)return <Screen title="Card review" back="/review">
+  <p role="alert" className="text-body text-ink-2">Could not load {loadFailure==='settings'?'review settings':'due cards'}. Your saved answers are unchanged.</p>
+  <Button onClick={()=>{void settings.refetch();void apiCards.refetch()}}>Try again</Button>
+ </Screen>;
  if(settings.isPending||apiCards.isPending)return <Screen title="Card review" back="/review"><Skeleton h={50}/><Skeleton h={380}/></Screen>;
  if(!current && !queue)return <Screen title="Card review" back="/review"><div className="text-body text-ink-2">Preparing your cards…</div></Screen>;
  if(!current)return <Screen title="Card review" back="/review"><p className="text-ink-2">Nothing due in this selection.</p>
