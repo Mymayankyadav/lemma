@@ -91,6 +91,23 @@ self.addEventListener('notificationclick',event=>{
   if(decision.token){
    try{
     const reply=await act(decision.token);
+    // notify_act atomically claims the row. A replay returns already_done;
+    // a fully resolved card batch returns action:null and no confirm row.
+    // Neither response is a newly successful approval with an Undo token.
+    if(reply?.status==='already_done'){
+     await navigate(decision.action==='undo'?'#/proposals':decision.url);
+     return;
+    }
+    if(decision.action==='approve_cards'){
+     const confirmId=reply?.confirmId;
+     const hasConfirmId=(typeof confirmId==='number'&&Number.isSafeInteger(confirmId)&&confirmId>0)||
+      (typeof confirmId==='string'&&/^\d{1,16}$/.test(confirmId));
+     if(reply?.status!=='done'||reply.action==null||!Array.isArray(reply.approved)||
+        reply.approved.length===0||!hasConfirmId){
+      await navigate('#/proposals');
+      return;
+     }
+    }
     // Open is a passive receipt, not a user action confirmation. Do not
     // interrupt the owner's navigation with a redundant "Done" notification.
     if(!passiveReceipt){
