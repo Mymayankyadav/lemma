@@ -127,7 +127,7 @@ describe("FIX #619: explicit independent Auditor CLEAR is a real merge gate", ()
     const result = evaluateMergeGate({ ...gated, auditComments: [] });
     expect(result.ok).toBe(false);
     expect(result.reason).toMatch(/auditor clear/i);
-    const external = { ...ready, body: ready.body + "\nIndependent Auditor CLEAR remains an external merge gate" };
+    const external = { ...ready, body: ready.body + "\nIndependent Auditor CLEAR remains an external merge gate", auditComments: [] };
     expect(evaluateMergeGate(external).ok).toBe(false);
   });
 
