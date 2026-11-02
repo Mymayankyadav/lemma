@@ -135,6 +135,16 @@ try {
         await phone.getByRole('heading',{name:'Review complete',level:1}).waitFor({state:'visible'});
        }
       }
+      // A stress Atlas can already be fully unfolded by default (paths to
+      // in-progress/revisit ideas). Capture a genuine Fields-folded idle scene
+      // and begin the All scene from that same user-visible state; otherwise
+      // clicking All may be a no-op and QA-4 correctly rejects duplicate PNGs.
+      if(name==='atlas'||action==='atlas-all'){
+       const fields=phone.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'Fields',exact:true});
+       await fields.click();
+       await phone.waitForFunction(()=>[...document.querySelectorAll('[role="group"][aria-label="Fold to depth"] button')]
+        .some(button=>button.textContent?.trim()==='Fields'&&button.getAttribute('aria-pressed')==='true'));
+      }
       // Interaction variants are separate scenes, not copies of the idle route.
       if(action==='show-answer'){
        await phone.getByRole('button',{name:'Show answer'}).click();
@@ -148,9 +158,20 @@ try {
         await phone.getByRole('dialog',{name:'Compactness'}).waitFor({state:'visible'});
        }
       }else if(action==='atlas-all'){
-       await phone.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All'}).click();
+       const tree=phone.locator('[data-atlas-row-count]');
+       const foldedRows=Number(await tree.getAttribute('data-atlas-row-count'));
+       if(!Number.isFinite(foldedRows)||foldedRows<1)throw Error('QA-4 Atlas folded baseline has no rows');
+       await phone.getByRole('group',{name:'Fold to depth'}).getByRole('button',{name:'All',exact:true}).click();
        const confirmation=phone.getByRole('dialog',{name:'Unfold every idea?'});
        if(await confirmation.isVisible())await confirmation.getByRole('button',{name:'Unfold all'}).click();
+       // Verify that the screenshot depicts real newly visible ideas, not
+       // a changed toolbar pill or an unrelated pixel difference.
+       await phone.waitForFunction(count=>{
+        const rows=Number(document.querySelector('[data-atlas-row-count]')?.getAttribute('data-atlas-row-count'));
+        const all=[...document.querySelectorAll('[role="group"][aria-label="Fold to depth"] button')]
+         .find(button=>button.textContent?.trim()==='All');
+        return rows>count&&all?.getAttribute('aria-pressed')==='true';
+       },foldedRows);
       }
       const actual=await phone.locator('html').getAttribute('data-theme');
       if(actual!==theme)throw Error('Unexpected world for '+name+' '+demo);
