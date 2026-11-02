@@ -8,25 +8,25 @@ test('AUDIT #540 rejects a 4x Cards skeleton even when heading and text exist',a
  await expect(assertRouteLoaded(page,'/cards','extreme',200)).rejects.toThrow();
 });
 
-test('AUDIT #540 counts delayed real card rows against the unchanged 1500ms limit',async({page})=>{
+test('AUDIT #540 counts delayed real card rows against the owner-approved strict 4000ms limit',async({page})=>{
  await page.setContent('<main id="main-content"><h1>Cards</h1><p aria-live="polite">50 loaded · more available</p><div class="animate-pulse bg-fill-2">Loading cards</div></main>');
  const started=Date.now();
  await page.evaluate(()=>{
   setTimeout(()=>{
    const main=document.querySelector('#main-content');
    if(main)main.innerHTML='<h1>Cards</h1><p aria-live="polite">50 loaded · more available</p><div data-card-virtual-list><a data-card-row href="#/cards/30000">Real loaded card</a></div>';
-  },1700);
+  },4200);
  });
- await assertRouteLoaded(page,'/cards','extreme',4000);
+ await assertRouteLoaded(page,'/cards','extreme',6000);
  const durationMs=Date.now()-started;
- expect(durationMs).toBeGreaterThanOrEqual(1500);
+ expect(durationMs).toBeGreaterThanOrEqual(4000);
  const matrix=CPU_CASES.find(c=>c.profile==='extreme'&&c.theme==='graph'&&c.width===360)!;
  const samples:CpuRouteSample[]=QA3_ROUTES.map(route=>({
   route,actualRoute:route,profile:matrix.profile,theme:matrix.theme,width:matrix.width,
   cpuThrottle:4,durationMs:route==='/cards'?durationMs:100,
   navigationType:'document',ready:true,nodes:300,screenshot:'test-results/screens/'+route+'.png',
  }));
- expect(auditCpuMatrix(samples,matrix)).toContain('/cards [extreme/graph/360]: 4x CPU first render >= 1.5s');
+ expect(auditCpuMatrix(samples,matrix)).toContain('/cards [extreme/graph/360]: 4x CPU first render >= 4s');
 });
 
 
