@@ -200,3 +200,32 @@ describe("FIX #619b: Steward must actually invoke the exact-head gate", () => {
     },
   );
 });
+
+describe("AUDIT #748: every merge needs an independent exact-head CLEAR", () => {
+  const independent = {
+    body: "AUDIT CLEAR — independent Auditor slot :15 verified exact head `" + sha.slice(0, 8) + "`",
+    createdAt: "2026-11-02T05:00:00Z",
+  };
+  it("rejects a Ready 7/7 green PR with no audit request or audit comments", () => {
+    const verdict = evaluateMergeGate({ ...ready, body: "Ready to merge\\n- [x] Tests pass", auditComments: [] });
+    expect(verdict.ok).toBe(false);
+    expect(verdict.reason).toMatch(/auditor clear/i);
+  });
+  it("rejects unrelated conversation comments instead of treating silence as approval", () => {
+    expect(evaluateMergeGate({ ...ready, auditComments: [
+      { body: "CI passed; please merge", createdAt: "2026-11-02T05:00:00Z" },
+    ] }).ok).toBe(false);
+  });
+  it("rejects stale-head CLEAR even when the PR body never mentions audit", () => {
+    const stale = { ...independent, body: "AUDIT CLEAR — independent Auditor slot :15 exact head bbbbbbbb" };
+    expect(evaluateMergeGate({ ...ready, auditComments: [stale] }).ok).toBe(false);
+  });
+  it("rejects a later BLOCK after a valid exact-head CLEAR", () => {
+    const block = { body: "AUDIT BLOCK — new defect", createdAt: "2026-11-02T05:10:00Z" };
+    expect(evaluateMergeGate({ ...ready, auditComments: [independent, block] }).ok).toBe(false);
+  });
+  it("accepts a current-head independent CLEAR only when all other merge gates pass", () => {
+    expect(evaluateMergeGate({ ...ready, auditComments: [independent] }).ok).toBe(true);
+    expect(evaluateMergeGate({ ...ready, auditComments: [independent], draft: true }).ok).toBe(false);
+  });
+});
