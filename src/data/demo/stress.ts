@@ -126,15 +126,25 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
     transcribedBy: null, transcribedAt: null, confidence: null};
 }
 
+/** Cards-only long/math fixtures: allocate once on first note request, never on cold Today import. */
+type StressNoteExamples={longFront:string;longBack:string;matrix:string;aligned:string;sum:string;inline:string};
+let stressNoteExamples:StressNoteExamples|null=null;
+function getStressNoteExamples():StressNoteExamples{
+ if(stressNoteExamples)return stressNoteExamples;
+ const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
+ const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
+ const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
+ const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
+ const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
+ const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
+ stressNoteExamples={longFront,longBack,matrix,aligned,sum,inline};
+ return stressNoteExamples;
+}
+
 /** Build the real note rows only when a route needs card content. */
 export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects'],cardCount:number,dueCount:number,startIndex=0):DemoNote[]{
  const notes:DemoNote[]=[];
-  const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
-  const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
-  const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
-  const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
-  const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
-  const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
+ const {longFront,longBack,matrix,aligned,sum,inline}=getStressNoteExamples();
   for (let i = startIndex; i < startIndex + cardCount; i++) {
     const project = projects[i % projects.length];
     const no = i + 1;
