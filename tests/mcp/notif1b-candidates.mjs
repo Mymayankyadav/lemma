@@ -4,12 +4,37 @@ import assert from 'node:assert/strict'
 import {readFile,readdir} from 'node:fs/promises'
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite')
 const db=new PGlite()
+// FIX #679b regression-first: K2 fallback must reuse the already-ranked
+// eligible owner/project checkpoints, not perform a second full scan.
+// The existing behavioral tests below verify the exact 20-row ordering,
+// distinct-project priority and fallback fill semantics.
+const reuseSql=await readFile(new URL('../../supabase/migrations/20261102052000_notify_candidates_ranked_reuse.sql',import.meta.url),'utf8')
+const tomorrowExtras=reuseSql.match(/tomorrow_extras as \(\s*([\s\S]*?)\n\),\ntomorrow_rows as \(/)?.[1]
+assert.ok(tomorrowExtras,'K2 extras CTE must exist in the new migration')
+assert.match(reuseSql,/create index if not exists cards_notify_owner_note_priority\s+on public\.cards\(user_id,note_id,\(case when state=0 then 1 else 0 end\)\)\s+include \(state,due,id\)/i,'owner-scoped sibling priority index must cover ranking fields')
+assert.match(tomorrowExtras,/from tomorrow_ranked\b/,'K2 extras must reuse eligible ranked checkpoints')
+assert.doesNotMatch(tomorrowExtras,/\b(?:from|join) public\.checkpoints\b/i,'K2 extras must not rescan all checkpoints')
+assert.match(tomorrowExtras,/limit \(select greatest\(20-count\(\*\),0\) from tomorrow_primary\)/i,'K2 extras retains the exact 20-row bound')
 const owner='11111111-1111-1111-1111-111111111111'
 const other='99999999-9999-9999-9999-999999999999'
 const subject='22222222-2222-2222-2222-222222222222'
 const project='33333333-3333-3333-3333-333333333333'
 const q=async(sql,params=[])=>(await db.query(sql,params)).rows
 const setUser=async(id)=>db.exec("select set_config('test.uid','"+id+"',false)")
+// Compare the complete owner-visible JSON snapshot against the prior
+// migration at a fixed instant. Restore the candidate function after each
+// comparison; neither path modifies data or broadens EXECUTE grants.
+const assertCandidateParity=async(at)=>{
+  await db.exec('reset role')
+  await db.exec(await readFile(new URL('../../supabase/migrations/20261101171500_notify_candidates_card_first.sql',import.meta.url),'utf8'))
+  await db.exec('set role service_role')
+  const before=await facts(owner,at)
+  await db.exec('reset role')
+  await db.exec(reuseSql)
+  await db.exec('set role service_role')
+  const after=await facts(owner,at)
+  assert.deepEqual(after,before,'ranked K2 fallback must preserve the entire notification candidate snapshot')
+}
 const facts=async(user=owner,at=new Date().toISOString())=>(await q(
  'select public.notify_candidates($1,$2::timestamptz) data',[user,at]))[0].data
 try{
@@ -55,6 +80,9 @@ try{
  await q("insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform) values($1,'https://push.example.test/owner','publickey','authkey','Phone','android_web')",[owner])
  await db.exec('set role service_role')
  const current=await facts()
+ const priorityIndex=await q("select indexname from pg_indexes where schemaname='public' and tablename='cards' and indexname='cards_notify_owner_note_priority'")
+ assert.equal(priorityIndex.length,1,'priority index must exist after all migrations')
+ await assertCandidateParity('2026-11-01T01:00:00Z')
  assert.equal(current.tz,'Asia/Calcutta')
  assert.equal(current.rollover,4)
  assert.equal(current.due.count,2)
@@ -196,6 +224,7 @@ try{
    [owner,geometry])
  await db.exec('set role service_role')
  const diverse=await facts(owner,'2026-11-01T01:00:00Z')
+ await assertCandidateParity('2026-11-01T01:00:00Z')
  assert.equal(diverse.tomorrow.length,20,'K2 stays bounded at 20 checkpoints')
  assert.ok(diverse.tomorrow.some(x=>x.slug==='geometry'),'K2 must not starve another project')
  assert.equal(new Set(diverse.tomorrow.slice(0,2).map(x=>x.slug)).size,2,
