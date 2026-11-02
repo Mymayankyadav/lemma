@@ -109,9 +109,9 @@ export default function Page(){
   {/* Preserve the actual inert Paths background after the modal's first paint.
       A permanent placeholder breaks the existing sheet/layout contract. */}
   <div data-new-project-backdrop data-sheet-background aria-hidden="true" inert>
-   <Suspense fallback={<BackdropFallback/>}>
-    {loadBackdrop?<ProjectsPage/>:<BackdropFallback/>}
-   </Suspense>
+   {loadBackdrop?
+    <Suspense fallback={<BackdropFallback/>}><ProjectsPage/></Suspense>:
+    <BackdropFallback/>}
   </div>
   <h1 className="sr-only">New project</h1>
   <Sheet open onClose={close} title="New project">
