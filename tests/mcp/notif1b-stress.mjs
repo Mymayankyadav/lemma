@@ -132,5 +132,45 @@ try{
  const fixtureSource=await readFile(new URL(import.meta.url),'utf8')
  assert.doesNotMatch(fixtureSource,/::jsonb,\s*current_date\s*\+\s*1/i,
    'the X checkpoint insert must not regress to UTC current_date+1')
+ // Deterministic rollover regression, intentionally AFTER the original one-query
+ // first-attempt <150ms acceptance. These extra untimed queries cannot warm
+ // that measurement. Use the same 60 projects, 2,400 checkpoints and 30k cards.
+ // Anchor four fixed clock instants to the snapshot's UTC date, so this test
+ // remains valid in later years without depending on when CI happens to run.
+ const utcDay=snapshotAt.slice(0,10)
+ const previousUtcDay=new Date(Date.parse(utcDay+'T00:00:00Z')-86400000).toISOString().slice(0,10)
+ const followingUtcDay=new Date(Date.parse(utcDay+'T00:00:00Z')+86400000).toISOString().slice(0,10)
+ const boundaryInstants=[
+   ['before UTC midnight',previousUtcDay+'T23:59:59.000Z',utcDay],
+   ['after UTC midnight',utcDay+'T00:00:01.000Z',utcDay],
+   ['before 04:00 rollover',utcDay+'T03:59:59.000Z',utcDay],
+   ['after 04:00 rollover',utcDay+'T04:00:01.000Z',followingUtcDay],
+ ]
+ const ownerClock=await q('select time_zone,rollover_hour from public.settings where user_id=$1',[owner])
+ assert.equal(ownerClock[0].time_zone,'UTC','X fixture boundary assumes the bootstrap UTC time zone')
+ assert.equal(ownerClock[0].rollover_hour,4,'X fixture boundary assumes the bootstrap 04:00 rollover')
+ // The original 2,400-row insert already disables the synthetic action-log
+ // trigger. Keep the same isolation for these test-only date rewrites.
+ await db.exec('alter table public.checkpoints disable trigger lemma_log_change')
+ try{
+   for(const [label,instant,expectedTomorrow] of boundaryInstants){
+     await q(`update public.checkpoints c
+       set due_on=((($2::timestamptz at time zone s.time_zone)
+         -make_interval(hours=>s.rollover_hour))::date+1)
+       from public.settings s
+       where c.user_id=$1 and s.user_id=c.user_id`,[owner,instant])
+     const dates=await q('select min(due_on)::text first,max(due_on)::text last,count(*)::int total from public.checkpoints where user_id=$1',[owner])
+     assert.deepEqual(dates[0],{first:expectedTomorrow,last:expectedTomorrow,total:2400},
+       label+' must create 2,400 owner-study-day tomorrow checkpoints')
+     const boundary=(await q('select public.notify_candidates($1,$2::timestamptz) data',[owner,instant]))[0].data
+     assert.equal(new Set(boundary.tomorrow.map(row=>row.slug)).size,20,
+       label+' must return 20 distinct K2 projects')
+     assert.ok(boundary.tomorrow.length<=20,label+' K2 remains bounded')
+     assert.equal(boundary.due.backlog,30000,label+' retains the 30k-card X fixture')
+     console.log('NOTIF-1b X rollover boundary',JSON.stringify({label,instant,expectedTomorrow,projects:20}))
+   }
+ }finally{
+   await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
+ }
  console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
 }finally{await db.close()}
