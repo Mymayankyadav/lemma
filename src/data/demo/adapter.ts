@@ -215,6 +215,7 @@ export class DemoAdapter implements LemmaApi {
   private store: DemoStore;
   private stressSourceSeedTitles:Map<string,string[]>|null=null;
   private stressSourceSeedRows:DemoSource[]|null=null;
+  private stressAtlasSeedRows:DemoConcept[]|null=null;
   private readonly now: () => number;
   private stressDayStart: number | undefined;
   private virtualStressDue: {overdue:number;future:number}|null=null;
@@ -400,6 +401,7 @@ export class DemoAdapter implements LemmaApi {
       }});
     }
     if(options.ownedFixture&&this.store.stressAtlasIdeaCount!==undefined){
+      this.stressAtlasSeedRows=original.concepts;
       const store=this.store,baseConcept=original.concepts[0];
       if(!baseConcept)throw Error('Missing stress Atlas concept template');
       const ideaCount=store.stressAtlasIdeaCount??0,linkCount=store.stressAtlasLinkCount??0;
@@ -542,6 +544,15 @@ export class DemoAdapter implements LemmaApi {
       this.store.proposals.find((p) => p.id === id),
       "Proposal",
     );
+  }
+  /** A seeded concept reference is not a request for the entire Atlas graph.
+   * Once the graph is materialized or mutated, its store remains authoritative. */
+  private readConcept(id:string):DemoConcept|undefined {
+    if(typeof Object.getOwnPropertyDescriptor(this.store,'concepts')?.get==='function'){
+      const seed=this.stressAtlasSeedRows?.find(concept=>concept.id===id);
+      if(seed)return seed;
+    }
+    return this.store.concepts.find(concept=>concept.id===id);
   }
   private projectValue(p: DemoProject): Project {
     const { lastActivityAt, ...value } = p;
@@ -1440,7 +1451,7 @@ export class DemoAdapter implements LemmaApi {
       prereqs: [...cp.prereqs],
       concepts: cp.conceptIds.map((id) => {
         const c = found(
-          this.store.concepts.find((c) => c.id === id),
+          this.readConcept(id),
           "Concept",
         );
         return { slug: c.slug, name: c.name };
@@ -2486,7 +2497,7 @@ export class DemoAdapter implements LemmaApi {
   }
   async getInsightData(days: InsightDays): Promise<InsightData> {
     if (![7, 30, 90].includes(days)) invalid("Invalid insight range");
-    const aggregate = makeStressInsightAggregate(this.store,days,this.now(),this.store.settings.timeZone,this.store.settings.rolloverHour);
+    const aggregate = makeStressInsightAggregate(this.store,days,this.now(),this.store.settings.timeZone,this.store.settings.rolloverHour,id=>this.readConcept(id));
     // Match ST-5 live semantics: the browser receives bounded aggregates, not raw history.
     if (aggregate) return {aggregate,reviews:[],sessions:[],checkpointEvents:[],projects:[],misconceptions:[]};
     const bounds = studyDayBounds(

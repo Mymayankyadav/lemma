@@ -12,6 +12,10 @@ describe('single-project proposed checkpoints',()=>{
   const clone=vi.spyOn(globalThis,'structuredClone');
   const project=await api.getProject('real-analysis');
   const sheet=await api.getCheckpoint('real-analysis','CP4');
+  await api.getInsightData(30);
+  const store=(api as unknown as {store:Record<string,unknown>}).store;
+  expect(typeof Object.getOwnPropertyDescriptor(store,'concepts')?.get).toBe('function');
+  expect(typeof Object.getOwnPropertyDescriptor(store,'notes')?.get).toBe('function');
   expect(project.checkpoints.length).toBeGreaterThan(0);
   expect(sheet.view.dueCards).toBe(project.checkpoints.find(cp=>cp.code==='CP4')!.dueCards);
   const cpClones=clone.mock.calls.map(([input])=>input).filter(input=>

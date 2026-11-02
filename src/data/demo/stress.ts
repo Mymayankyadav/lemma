@@ -1,4 +1,4 @@
-import type { DemoStore, DemoCheckpoint, DemoNote, DemoSession, DemoSource } from "./model";
+import type { DemoStore, DemoCheckpoint, DemoNote, DemoSession, DemoSource, DemoConcept } from "./model";
 
 import type {InsightAggregate,Subject} from "../types";
 import {DAY} from "../../lib/calendar";
@@ -13,6 +13,7 @@ import {studyDayBounds} from "../../lib/derive";
  */
 export function makeStressInsightAggregate(
  data:DemoStore, days:7|30|90, now:number, timeZone:string, rolloverHour:number,
+ conceptById:(id:string)=>DemoConcept|undefined=id=>data.concepts.find(c=>c.id===id),
 ):InsightAggregate|null {
  const total=data.stressReviewCount??null;
  if(total===null)return null;
@@ -70,20 +71,28 @@ export function makeStressInsightAggregate(
   const entry=bySubject.get(subject.id)??{subject,minutes:0};
   entry.minutes+=perProjectInWindow*baseMinutes;bySubject.set(subject.id,entry);
  }
+ // Resolve each event's civil day once, rather than repeating the same
+ // time-zone conversion for every day in the 28-day chart.
+ const eventsByDay=new Map<number,{demonstrated:number;rechecked:number}>();
+ for(const event of data.checkpointEvents){
+  const at=Date.parse(event.at);
+  if(!Number.isFinite(at))continue;
+  const index=studyDayBounds(at,timeZone,rolloverHour).index;
+  const counts=eventsByDay.get(index)??{demonstrated:0,rechecked:0};
+  if(event.kind==='demonstrated')counts.demonstrated++;else counts.rechecked++;
+  eventsByDay.set(index,counts);
+ }
  const checkpointDays=Array.from({length:28},(_,i)=>{
   const index=end-27+i;
-  const events=data.checkpointEvents.filter(e=>Number.isFinite(Date.parse(e.at))&&
-   studyDayBounds(Date.parse(e.at),timeZone,rolloverHour).index===index);
   return {date:new Date(index*DAY).toISOString().slice(0,10),
-   demonstrated:events.filter(e=>e.kind==='demonstrated').length,
-   rechecked:events.filter(e=>e.kind!=='demonstrated').length};
+   ...(eventsByDay.get(index)??{demonstrated:0,rechecked:0})};
  });
  const most=data.misconceptions.reduce<(typeof data.misconceptions)[number]|null>(
   (best,item)=>!best||item.times>best.times?item:best,null);
  return {days,reviews,right,reviewDays,calibration,sessions:totalSessions,minutes,typicalSession,
   subjectMinutes:[...bySubject.values()],checkpointDays,
   mostRevisited:most?{label:most.label,times:most.times,
-   conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
+   conceptName:most.conceptId?conceptById(most.conceptId)?.name??null:null}:null};
 }
 
 /** Materialise a single 150/400-event reasoning history only when a session is opened.
