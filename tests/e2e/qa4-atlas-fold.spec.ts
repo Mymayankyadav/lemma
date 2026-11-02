@@ -20,9 +20,11 @@ for(const width of [360,390] as const){
   const folded=Number(await tree.getAttribute("data-atlas-row-count"));
   expect(folded).toBeGreaterThan(0);
   await all.click();
+  // Stress contains >300 ideas; the confirmation Sheet is lazy-loaded.
+  // isVisible() immediately after click races its module import.
   const confirmation=page.getByRole("dialog",{name:"Unfold every idea?"});
-  if(await confirmation.isVisible())
-   await confirmation.getByRole("button",{name:"Unfold all"}).click();
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole("button",{name:"Unfold all"}).click();
   await expect(all).toHaveAttribute("aria-pressed","true");
   await expect.poll(async()=>Number(await tree.getAttribute("data-atlas-row-count")))
    .toBeGreaterThan(folded);
