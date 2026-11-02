@@ -3,9 +3,10 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
+import { resolve } from 'node:path'
 import { validatePlayPng, assertUniquePlayShots } from '../../../scripts/play-png.mjs'
 
-const original = readFileSync(new URL('../../../docs/android/shots/today-day-1080x1920.png', import.meta.url))
+const original = readFileSync(resolve(process.cwd(), 'docs/android/shots/today-day-1080x1920.png'))
 
 describe('AND-4 tracked Play screenshot integrity', () => {
   it('accepts the existing genuine 3× DPR 1080×1920 capture', () => {
@@ -47,7 +48,7 @@ describe('AND-4 tracked Play screenshot integrity', () => {
       for (const world of ['day', 'night']) {
         const name = `docs/android/shots/${screen}-${world}-1080x1920.png`
         expect(tracked.has(name), `missing tracked AND-4 screenshot: ${name}`).toBe(true)
-        const bytes = readFileSync(new URL(`../../../${name}`, import.meta.url))
+        const bytes = readFileSync(resolve(process.cwd(), name))
         expect(validatePlayPng(bytes)).toEqual({ width: 1080, height: 1920, scale: 3 })
         captures.push({ name, bytes })
       }
