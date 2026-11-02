@@ -1,5 +1,5 @@
 import './review.css';
-import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,memo,Suspense,useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
@@ -36,7 +36,7 @@ const confidenceOptions=[
  {value:'guess' as const,label:'Guess',icon:CircleHelp},
 ];
 
-function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;revealed:boolean;confidence:Confidence;quiet:boolean;stamp:boolean}){
+const CardFace=memo(function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;revealed:boolean;confidence:Confidence;quiet:boolean;stamp:boolean}){
  const front=item.type==='reverse'&&item.ord===2?item.back:item.front;
  const back=item.type==='reverse'&&item.ord===2?item.front:item.back;
  const scrollRef=useRef<HTMLDivElement>(null);
@@ -86,7 +86,7 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
   </div>
   {stamp&&<motion.span aria-hidden="true" data-proof-stamp className="pointer-events-none absolute right-4 top-12 font-math text-title text-amber" initial={quiet?false:{opacity:0,scale:1.8}} animate={{opacity:1,scale:1}} transition={{duration:quiet?0:.12}}>∎</motion.span>}
  </Card>;
-}
+});
 
 /** Preserve native Space/Enter activation for focused controls and editable content. */
 function isInteractiveShortcutTarget(target:EventTarget|null):boolean{
