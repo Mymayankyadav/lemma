@@ -119,6 +119,8 @@ export interface LemmaApi {
  getDeckTree(): Promise<DeckNode[]>
  /** Read the filtered due set with daily limits applied. */
  getReviewItems(filter: QueueFilter): Promise<ReviewItem[]>
+ /** Read at most 50 due cards for a one-shot notification round, independent of reviewsPerDay. */
+ getNotificationReviewItems(filter: QueueFilter, count: number): Promise<ReviewItem[]>
  /** Record a review and its browser-computed next state. */
  recordReview(input: RecordReviewInput): Promise<{ reviewId: number }>
  /** Undo the newest answer for a card. */

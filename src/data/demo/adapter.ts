@@ -12,7 +12,7 @@ import type {
   SubjectPatch,
   SourcePatch,
 } from "../api";
-import { LemmaError } from "../api";
+import { LemmaError, notImplemented } from "../api";
 import { makeDemoNotifyData } from "./notify-fixture";
 import { mergeNotifyPrefs } from "../notify";
 import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
@@ -2045,6 +2045,10 @@ export class DemoAdapter implements LemmaApi {
         count++;
       }
     return count;
+  }
+  /** CONTRACT NOTIF-7: bounded one-shot queue implementation follows. */
+  async getNotificationReviewItems(_filter: QueueFilter, _count: number): Promise<ReviewItem[]> {
+    throw notImplemented("getNotificationReviewItems");
   }
   async getReviewItems(filter: QueueFilter) {
     const eligibleStarted=performance.now();
