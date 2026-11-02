@@ -684,7 +684,7 @@ export class DemoAdapter implements LemmaApi {
     const now = this.now();
     return this.allItems().filter(item => item.state.state > 0 && Date.parse(item.state.due) <= now);
   }
-  private eligible(): ReviewItem[] {
+  private eligible(notificationCount?: number): ReviewItem[] {
     const {start,end} = studyDayBounds(
       this.now(),
       this.store.settings.timeZone,
@@ -705,8 +705,15 @@ export class DemoAdapter implements LemmaApi {
     // 4,000 intermediate CardState objects here only delays cold Review-run.
     const privateVirtual=notes===this.virtualReviewNotes &&
       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
+    // A one-shot Review N notification may request more mature due cards
+    // than the saved reviewsPerDay goal. Never mutate persisted settings:
+    // dueToday receives a local override only for this bounded read.
+    const settings=notificationCount===undefined?this.store.settings:{
+      ...this.store.settings,
+      reviewsPerDay:Math.max(this.store.settings.reviewsPerDay,today.length+notificationCount),
+    };
     return dueToday(this.allItems(state => state.state === 0 ||
-      this.dueTime(state.due) < end,notes,!privateVirtual), this.store.settings, {
+      this.dueTime(state.due) < end,notes,!privateVirtual), settings, {
       now: this.now(),
       answeredToday: today.length,
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
