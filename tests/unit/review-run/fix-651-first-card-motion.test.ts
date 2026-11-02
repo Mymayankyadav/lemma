@@ -11,6 +11,11 @@ describe('FIX #651 cold first card has no entrance animation',()=>{
   expect(source).toContain('firstCard.current=false');
   expect(source).toContain('initial={firstCard.current?false:');
   expect(source).toContain('transition={{duration:reduce?0:.48}}');
+  // The first card already renders with initial=false. Starting an imperative
+  // zero-duration MotionControls animation in its mount effect schedules
+  // redundant work before the strict first-real-card paint.
+  expect(source).toContain('if(!first)void cardMotion.start(');
+  expect(source).not.toContain('duration:reduce||first?0:.48');
  });
  it('defers unused FSRS interval preview until answer reveal, then recomputes it',()=>{
   const source=readFileSync('src/features/review-run/Page.tsx','utf8');
