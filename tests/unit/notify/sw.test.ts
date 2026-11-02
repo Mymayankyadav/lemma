@@ -246,7 +246,9 @@ describe('NOTIF-5 Workbox push handling',()=>{
   },scope)).data;
   h.fetchMock.mockResolvedValueOnce({ok:true,json:async()=>({status:'already_done'})} as any);
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
-  expect(h.posted).toEqual([{token:'signed-approve'}]);
+  expect(h.fetchMock).toHaveBeenCalledWith(h.core.ACT_URL,expect.objectContaining({
+   method:'POST',body:JSON.stringify({token:'signed-approve'}),
+  }));
   expect(h.shown).toHaveLength(0);
   expect(h.navigated).toEqual([scope+'#/proposals']);
  });
@@ -260,7 +262,9 @@ describe('NOTIF-5 Workbox push handling',()=>{
    status:'done',kind:'tutor',approved:[],skipped:['P1','P2','P3'],action:null,
   })} as any);
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
-  expect(h.posted).toEqual([{token:'signed-approve'}]);
+  expect(h.fetchMock).toHaveBeenCalledWith(h.core.ACT_URL,expect.objectContaining({
+   method:'POST',body:JSON.stringify({token:'signed-approve'}),
+  }));
   expect(h.shown).toHaveLength(0);
   expect(h.navigated).toEqual([scope+'#/proposals']);
  });
