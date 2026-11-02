@@ -3,6 +3,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { copyFile, mkdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { pngHeader } from '../../scripts/qa3-screens'
 
 const execFileAsync = promisify(execFile)
 const screens = ['today', 'project', 'review', 'atlas'] as const
@@ -48,8 +49,8 @@ test('AND-4 captures eight real 1080x1920 Play images with a loaded review card'
 
   for (const screen of screens) for (const theme of themes) {
     const bytes = await readFile(resolve(outputDir, `${screen}-${theme}-1080x1920.png`))
-    expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
-    expect(bytes.readUInt32BE(16)).toBe(1080)
-    expect(bytes.readUInt32BE(20)).toBe(1920)
+    // Reuse the existing QA-3 PNG decoder: validates chunk CRCs, inflated
+    // scanlines and the real 3x device-pixel ratio, not just an IHDR header.
+    expect(pngHeader(bytes, 360, 640)).toEqual({ width: 1080, height: 1920, scale: 3 })
   }
 })
