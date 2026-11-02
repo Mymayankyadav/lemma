@@ -13,10 +13,10 @@ import type {SheetProps} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {FastTex as Tex} from '../../ui/FastTex';
-import {hasMathPreview} from '../../lib/plain-math';
+import {hasMathPreview,plainMath} from '../../lib/plain-math';
 import {canRenderPlainCardFront} from './plainCardFront';
 import type {EditorValue} from './Editor';
-import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
+import {needsRichTitle} from './projectTitleSyntax';
 
 const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
 // Motion-backed creation UI is optional. Keep it out of the cold Cards route
@@ -64,10 +64,10 @@ export default function Page(){
  const hasMoreProjects=(projects.data?.length??0)>12;
  const projectChips=useMemo(()=>projects.data?.slice().sort((a,b)=>a.title.localeCompare(b.title,undefined,{numeric:true})).slice(0,12).map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
   <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
-   <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
+   <span aria-hidden="true">{p.subject.glyph}</span><span className="whitespace-nowrap text-base">{needsRichTitle(p.title)?<Tex source={p.title}/>:p.title}</span>
   </Chip>
  </span>),[projects.data,project]);
- const projectOptions=useMemo(()=>projects.data?.map(p=><option key={p.id} value={p.slug}>{projectFilterOptionLabel(p.title)}</option>),[projects.data]);
+ const projectOptions=useMemo(()=>projects.data?.map(p=><option key={p.id} value={p.slug}>{plainMath(p.title)}</option>),[projects.data]);
 
  useEffect(()=>{
   const element=filterScroller.current;if(!element)return;
