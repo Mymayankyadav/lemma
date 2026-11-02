@@ -16,6 +16,9 @@ describe('FIX-655b checkpoint first-visible-paint timing',()=>{
   expect(source).toContain('Checkpoint progress');
   expect(source).toContain('Checkpoint steps');
  });
+ it('waits for the asynchronous paint mark before reading readyMs',()=>{
+  expect(source).toContain("page.waitForFunction(()=>performance.getEntriesByName('lemma-cp4-loaded','mark').length===1");
+ });
  it('retains all eight no-retry 4x CPU cells and CP4 interaction contracts',()=>{
   for(const required of [
    'retries:0',"['stress','extreme']","['graph','graph-night']",'[390,360]',
