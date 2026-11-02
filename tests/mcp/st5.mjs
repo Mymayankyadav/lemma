@@ -184,7 +184,8 @@ try {
   "insert into public.sessions(id,user_id,project_id,checkpoint_id,number,state,last_activity_at) values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaab1','"+owner+"','12121212-1212-1212-1212-1212121212b1','77777777-7777-7777-7777-777777777774',7,'open',now());",
   "insert into public.concepts(id,user_id,name,slug) values('ffffffff-ffff-ffff-ffff-fffffffffff1','"+owner+"','Filtered concept','filtered-concept');",
   "insert into public.notes(id,user_id,project_id,checkpoint_id,session_id,concept_id,no,front,back,type,kind,status) values('88888888-8888-8888-8888-8888888888b1','"+owner+"','12121212-1212-1212-1212-1212121212b1','77777777-7777-7777-7777-777777777774','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaab1','ffffffff-ffff-ffff-ffff-fffffffffff1',99,'Later filtered card','Answer','basic','why','active');",
-  "insert into public.cards(id,user_id,note_id,state,due) values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7','"+owner+"','88888888-8888-8888-8888-8888888888b1',2,now()-interval '30 minutes');"
+  "insert into public.cards(id,user_id,note_id,state,due) values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7','"+owner+"','88888888-8888-8888-8888-8888888888b1',2,now()-interval '30 minutes');",
+  "update public.settings set new_per_day=1 where user_id='"+owner+"';"
  ].join('\n'))
  await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
  const notes=async(args)=>(await review(args)).map(x=>x.item.noteNo)
