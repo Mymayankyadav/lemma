@@ -227,6 +227,11 @@ describe("AUDIT #748: every merge needs an independent exact-head CLEAR", () => 
     const block = { body: "AUDIT BLOCK — new defect", createdAt: "2026-11-02T05:10:00Z" };
     expect(evaluateMergeGate({ ...ready, auditComments: [independent, block] }).ok).toBe(false);
   });
+  it("fails closed when Auditor verdict chronology cannot be established", () => {
+    expect(evaluateMergeGate({ ...ready, auditComments: [
+      { ...independent, createdAt: "not-a-timestamp" },
+    ] }).ok).toBe(false);
+  });
   it("fails closed when independent Auditor provenance is unverified", () => {
     expect(evaluateMergeGate({ ...ready, auditComments: [independent], auditIndependenceVerified: false }).ok).toBe(false);
     expect(evaluateMergeGate({ ...ready, auditComments: [independent], auditIndependenceVerified: undefined }).ok).toBe(false);
