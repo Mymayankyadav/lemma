@@ -122,6 +122,7 @@ export default function Page(){
  const {slug:rawSlug}=useParams(),slug=rawSlug??'';
  const [params,setParams]=useSearchParams(),query=useProject(slug),navigate=useNavigate(),notify=useToast(),reduce=!!useReducedMotion();
  const [switcherOpen,setSwitcherOpen]=useState(false);
+ const [tabInteracted,setTabInteracted]=useState(false);
  const tab=params.get('tab')==='sessions'?'sessions':params.get('tab')==='sources'?'sources':'path';
  useEffect(()=>{
   if(query.error)notify("Couldn't load this project",{tone:'danger',action:{label:'Try again',onClick:()=>{void query.refetch()}}});
@@ -131,7 +132,7 @@ export default function Page(){
   body="Check your connection or try again." action={{label:'Try again',onClick:()=>{void query.refetch()}}}/></Screen>;
  const data=query.data,project=data.project;
  const now=data.checkpoints.find(cp=>cp.ui==='now');
- function setTab(value:string){const next=new URLSearchParams(params);if(value==='path')next.delete('tab');else next.set('tab',value);setParams(next)}
+ function setTab(value:string){setTabInteracted(true);const next=new URLSearchParams(params);if(value==='path')next.delete('tab');else next.set('tab',value);setParams(next)}
  return <Screen className="gap-6" >
   <header className="flex items-center gap-3">
    <IconButton icon={ArrowLeft} label="Back to projects" onClick={()=>navigate('/projects')}/>
@@ -148,7 +149,7 @@ export default function Page(){
    {value:'path',label:'Path'},{value:'sessions',label:'Sessions',count:data.sessions.length},
    {value:'sources',label:'Sources',count:data.sources.length}
   ]}/>
-  <motion.div key={tab} initial={reduce?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.4}}>
+  <motion.div key={tab} data-project-tab-panel="" initial={reduce||!tabInteracted?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:reduce?0.15:0.4}}>
    {tab==='path'?
     <div className="flex min-w-0 flex-col gap-4">
      {now&&<NowCheckpoint key={slug+'/'+now.code} slug={slug} cp={now} project={data}/>}

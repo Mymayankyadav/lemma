@@ -14,6 +14,7 @@ import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
+import {coldAtlasRows,coldAtlasGeometry} from './coldCache';
 import {atlasFoldDepth} from './depthOf';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
@@ -129,11 +130,11 @@ export default function Page(){
  const open=expanded??initialOpen;
  useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
- const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
+ const rows=useMemo(()=>tree?coldAtlasRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
- const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
+ const geometry=useMemo(()=>tree?coldAtlasGeometry(tree,rows):buildAtlasRowGeometry([]),[rows,tree]);
  // Window all outlines above 40 rows, including the normal 82-row demo.
  // FIX #519b additionally requires every Field in a moderate (≤150-node)
  // outline to remain keyboard/screen-reader reachable. Mount only those

@@ -1,16 +1,26 @@
-import {MathPreview} from '../../ui/MathPreview';
-import {useCallback,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
 import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
 import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
-import {isSourceFile} from '../../pdf/ingest';
-import ProjectsPage from '../projects/Page';
+import {isSourceFile} from '../../pdf/validate';
+import {Screen} from '../../ui/Screen';
 import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
 import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
+
+// The KaTeX preview is only needed after the owner types maths. Do not
+// evaluate its renderer on an empty cold New project form.
+const MathPreview=lazy(()=>import('../../ui/MathPreview').then(module=>({default:module.MathPreview})));
+const ProjectsPage=lazy(()=>import('../projects/Page'));
+
+function BackdropFallback(){
+ return <Screen tabBar className="gap-4"><header className="flex min-h-11 items-center">
+  <h1 className="font-[var(--font-display)] text-title-s font-semibold">Paths</h1>
+ </header></Screen>;
+}
 
 type UploadState='queued'|'reading'|'uploading'|'saving'|'ready'|'failed';
 type QueueItem={id:number;file:File|null;name:string;size:number;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
@@ -27,6 +37,16 @@ export default function Page(){
  const [name,setName]=useState(''),[items,setItems]=useState<QueueItem[]>([]),[error,setError]=useState<string|null>(null),
   [saving,setSaving]=useState(false),[created,setCreated]=useState<Project|null>(null);
  const input=useRef<HTMLInputElement>(null),nextId=useRef(0);
+ const [loadBackdrop,setLoadBackdrop]=useState(false);
+ // The real Paths page is part of the existing sheet contract (and visible
+ // behind it). Hydrate it only after the first modal paint, never in the
+ // initial cold-route render; keep its rows and behavior intact thereafter.
+ useEffect(()=>{
+  // Give the actual modal two paints before hydrating the blurred library;
+  // 400ms keeps heavy 60-project parsing out of the strict cold paint budget.
+  const id=window.setTimeout(()=>setLoadBackdrop(true),400);
+  return ()=>window.clearTimeout(id);
+ },[]);
  const close=useCallback(()=>navigate('/projects'),[navigate]);
  function enqueue(files:FileList|File[]){
   const incoming=Array.from(files),accepted:QueueItem[]=[],invalid:string[]=[];
@@ -86,7 +106,13 @@ export default function Page(){
  }
  const remaining=items.filter(item=>item.status!=='ready').length;
  return <>
-  <div data-sheet-background aria-hidden="true" inert><ProjectsPage/></div>
+  {/* Preserve the actual inert Paths background after the modal's first paint.
+      A permanent placeholder breaks the existing sheet/layout contract. */}
+  <div data-new-project-backdrop data-sheet-background aria-hidden="true" inert>
+   <Suspense fallback={<BackdropFallback/>}>
+    {loadBackdrop?<ProjectsPage/>:<BackdropFallback/>}
+   </Suspense>
+  </div>
   <h1 className="sr-only">New project</h1>
   <Sheet open onClose={close} title="New project">
    <form onSubmit={event=>{void submit(event)}} className="flex flex-col gap-5">
@@ -95,7 +121,8 @@ export default function Page(){
      <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
       value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
       placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
-     <MathPreview source={name}/>
+     {(name.includes('$')||name.includes('\\(')||name.includes('\\['))&&
+      <Suspense fallback={null}><MathPreview source={name}/></Suspense>}
      <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
     </section>
     <section aria-label="Sources" className="flex flex-col gap-3"
