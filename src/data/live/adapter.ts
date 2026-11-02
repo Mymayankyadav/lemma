@@ -529,6 +529,10 @@ export class LiveAdapter implements LemmaApi {
   const db=liveClient(),uid=await owner(db)
   return (await homeReviewOutlook(db,uid)).decks
  }
+ /** CONTRACT NOTIF-7: one-shot owner-scoped bounded read; implementation follows after contract merge. */
+ async getNotificationReviewItems(..._args: Parameters<LemmaApi['getNotificationReviewItems']>): ReturnType<LemmaApi['getNotificationReviewItems']> {
+  throw notImplemented('getNotificationReviewItems')
+ }
  async getReviewItems(...args: Parameters<LemmaApi['getReviewItems']>): ReturnType<LemmaApi['getReviewItems']> {
   const [filter]=args,db=liveClient()
   await owner(db)
