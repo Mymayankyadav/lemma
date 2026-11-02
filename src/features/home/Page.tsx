@@ -210,6 +210,14 @@ export default function Page(){
  const projects=home.data.projects.filter(p=>!p.system&&p.status!=='archived')
   .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
    (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
+ // A cold small desk suspends its GoalDistance chunk. Reserve the same
+ // header/three-card footprint as the real list before hydration, otherwise
+ // the cards can push an already-scrolled Continue handoff out of the viewport.
+ // Keep the actual goal cards lazy; no network or timeline work is added.
+ const activeGoalCount=projects.filter(project=>project.status==='active').length;
+ const featuredGoalCount=Math.min(activeGoalCount,3);
+ const goalFallbackHeight=activeGoalCount===0?160:
+  44+featuredGoalCount*200+featuredGoalCount*12+(activeGoalCount>3?92:0);
  return <Screen tabBar className="gap-6 pb-6">
   <TodayHeader pending={home.data.pendingProposals}/>
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
@@ -222,7 +230,12 @@ export default function Page(){
   </Link>}
   {shouldUseFastGoals(projects)
    ? <FastGoalDistance projects={projects}/>
-   : <Suspense fallback={<section aria-label="Distance to your goals" className="min-h-[160px]"><Skeleton h={160}/></section>}>
+   : <Suspense fallback={<section aria-label="Distance to your goals"
+      className="flex min-w-0 flex-col gap-3" style={{minHeight:goalFallbackHeight}}>
+      <Skeleton h={44}/>
+      {Array.from({length:featuredGoalCount},(_,index)=><Skeleton key={index} h={200}/>)}
+      {activeGoalCount>3&&<Skeleton h={80}/>}
+     </section>}>
       <GoalDistance projects={projects} variant="metro"/>
      </Suspense>}
   <ReviewDesk due={home.data.due} roundLimit={settings.data?.reviewsPerDay??200}/>
