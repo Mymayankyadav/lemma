@@ -49,16 +49,6 @@ try{
  await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
- // Regression-first: the X checkpoint fixture must mean "tomorrow" in the
- // owner's study-day, not the PostgreSQL session's UTC calendar day.
- // At UTC 00:00–04:00 with UTC rollover 04:00, current_date+1 is a day late.
- const dueDateCheck=await q(`select count(*)::int total,
-   count(*) filter(where c.due_on=((($2::timestamptz at time zone s.time_zone)
-     -make_interval(hours=>s.rollover_hour))::date+1))::int matching
-   from public.checkpoints c join public.settings s on s.user_id=c.user_id
-   where c.user_id=$1`,[owner,snapshotAt])
- assert.deepEqual(dueDateCheck[0],{total:2400,matching:2400},
-   'all X checkpoints must be due tomorrow by the owner study-day, even across UTC midnight')
  // Regression-first: owner/note lookup must cover the three fields used by
  // due-card sibling ranking, rather than visiting 30k heap tuples per query.
  const covering=await q("select indexdef from pg_indexes where schemaname='public' and tablename='cards' and indexname='cards_notify_owner_note_due_cover'")
@@ -127,5 +117,20 @@ try{
  assert.doesNotMatch(optimizedSql,/join lateral\s*\(\s*select c\.code/i,
    'K2 LATERAL must not be planned under the global non-nested-loop preference');
  assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
+ // The fixture correctness checks run AFTER the single timed cold query,
+ // so they cannot warm checkpoint buffers or improve its first-attempt budget.
+ // Regression-first: the X checkpoint fixture must mean "tomorrow" in the
+ // owner's study-day, not the PostgreSQL session's UTC calendar day.
+ // At UTC 00:00–04:00 with UTC rollover 04:00, current_date+1 is a day late.
+ const dueDateCheck=await q(`select count(*)::int total,
+   count(*) filter(where c.due_on=((($2::timestamptz at time zone s.time_zone)
+     -make_interval(hours=>s.rollover_hour))::date+1))::int matching
+   from public.checkpoints c join public.settings s on s.user_id=c.user_id
+   where c.user_id=$1`,[owner,snapshotAt])
+ assert.deepEqual(dueDateCheck[0],{total:2400,matching:2400},
+   'all X checkpoints must be due tomorrow by the owner study-day, even across UTC midnight')
+ const fixtureSource=await readFile(new URL(import.meta.url),'utf8')
+ assert.doesNotMatch(fixtureSource,/::jsonb,\s*current_date\s*\+\s*1/i,
+   'the X checkpoint insert must not regress to UTC current_date+1')
  console.log('PASS NOTIF-1b X 60-project/30k-card first-attempt query budget')
 }finally{await db.close()}
