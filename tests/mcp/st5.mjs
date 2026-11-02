@@ -43,6 +43,7 @@ try {
   await db.exec('alter table public.'+name+' enable row level security; create policy owner_read on public.'+name+' for select to authenticated using(user_id=(select auth.uid()));')
  }
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031012600_st5_paged_reads.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261102104500_notification_review_items.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031142000_fix_524_deleted_cards_page.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031124500_home_review_outlook.sql',import.meta.url),'utf8'))
  await db.exec([
@@ -321,6 +322,145 @@ try {
  assert.ok(Buffer.byteLength(JSON.stringify(scaleInsights),'utf8')<200000,
   'Insights aggregate must transfer under 200 kB')
  console.log('PASS ST-5 60-project/5,900-checkpoint aggregate transfer budgets')
+
+
+ // NOTIF-7a: a notification's one-shot N read must not be pre-truncated by
+ // the saved reviews_per_day=3 goal. Ordinary Start stays at three, and
+ // neither path changes settings or fetches another owner's cards.
+ await db.exec('reset role')
+ // Earlier Insights assertions deliberately inserted a same-day answer;
+ // isolate this queue-contract fixture from that completed scenario.
+ await db.exec("update public.reviews set undone_at=now() where user_id='"+owner+"' and undone_at is null")
+ await db.exec("update public.settings set reviews_per_day=3,new_per_day=0 where user_id='"+owner+"'")
+ await db.exec(
+  "insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) "+
+  "select md5('notif7-note-'||n)::uuid,'"+owner+"','33333333-3333-3333-3333-333333333333',null,3000+n,"+
+  "'Notification review '||n,'Answer','basic','why','active' from generate_series(1,5) n"
+ )
+ await db.exec(
+  "insert into public.cards(id,user_id,note_id,state,due) "+
+  "select md5('notif7-card-'||n)::uuid,'"+owner+"',md5('notif7-note-'||n)::uuid,2,now()-interval '1 hour' "+
+  "from generate_series(1,5) n"
+ )
+ await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
+ const ordinaryThree=(await review("array[]::text[],null,null,true,false")).map(x=>x.item)
+ const oneShot=async(count,decks="array[]::text[]")=>
+  (await q("select public.notification_review_items("+count+","+decks+",null,null,true,false) item")).map(x=>x.item)
+ const notifiedFive=await oneShot(5)
+ assert.equal(ordinaryThree.length,3,'ordinary Start retains the saved quota')
+ assert.equal(notifiedFive.length,5,'Review 5 bypasses only the one-shot daily review quota')
+ assert.deepEqual(notifiedFive.slice(0,3).map(x=>x.cardId),ordinaryThree.map(x=>x.cardId),
+  'the notification round preserves the ordinary due-order prefix')
+ assert.equal((await oneShot(0)).length,1,'invalid zero request is bounded to one')
+ assert.deepEqual((await oneShot(5,"array['project:algebra']")).map(x=>x.cardId),
+  notifiedFive.map(x=>x.cardId),'project filter retains the original queue order')
+ assert.deepEqual(await oneShot(5,"array['project:private']"),[],
+  'a filter for another owner never leaks private cards')
+ assert.equal((await q("select reviews_per_day n from public.settings where user_id='"+owner+"'"))[0].n,3,
+  'notification read never persists a daily quota override')
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ const foreignRound=await oneShot(5)
+ assert.ok(foreignRound.length<=1)
+ assert.ok(foreignRound.every(x=>x.projectSlug==='private'),
+  'auth.uid owner isolation holds for notification rounds')
+ await db.exec("select set_config('test.uid','"+owner+"',false)")
+ await db.exec('reset role')
+ // More than 50 eligible notes prove that even a malicious oversized
+ // p_count cannot transfer a 30k-card library to the browser.
+ await db.exec(
+  "insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) "+
+  "select md5('notif7-scale-note-'||n)::uuid,'"+owner+"','33333333-3333-3333-3333-333333333333',null,4000+n,"+
+  "'Extra due '||n,'Answer','basic','why','active' from generate_series(1,60) n"
+ )
+ await db.exec(
+  "insert into public.cards(id,user_id,note_id,state,due) "+
+  "select md5('notif7-scale-card-'||n)::uuid,'"+owner+"',md5('notif7-scale-note-'||n)::uuid,2,now()-interval '1 hour' "+
+  "from generate_series(1,60) n"
+ )
+ await db.exec('set role authenticated')
+ assert.equal((await oneShot(500)).length,50,'SQL caps even oversized requests at 50')
+ assert.equal((await oneShot(50)).length,50)
+ assert.equal((await oneShot(-2)).length,1,'negative requests cannot become unbounded')
+ assert.equal((await review("array[]::text[],null,null,true,false")).length,3,
+  'the ordinary RPC remains capped after a notification read')
+ const grant=(await q("select prosecdef as definer from pg_proc where oid='public.notification_review_items(integer,text[],uuid,text,boolean,boolean)'::regprocedure"))[0]
+ assert.equal(grant.definer,false,'notification RPC must run as security invoker')
+ assert.equal((await q("select has_function_privilege('anon','public.notification_review_items(integer,text[],uuid,text,boolean,boolean)','EXECUTE') allowed"))[0].allowed,false)
+
+ // AUDIT #746 regression: a filtered deck must receive its own first five
+ // eligible cards, even when many earlier-priority cards exist in project A.
+ // The filter must run before DISTINCT ON, new-card quota and p_count LIMIT.
+ const projectB='abababab-abab-abab-abab-abababababab'
+ const checkpointB='bcbcbcbc-bcbc-bcbc-bcbc-bcbcbcbcbcbc'
+ const sessionB='cdcdcdcd-cdcd-cdcd-cdcd-cdcdcdcdcdcd'
+ const conceptB='dededede-dede-dede-dede-dededededede'
+ await db.exec('reset role')
+ await db.exec(
+  "insert into public.projects(id,user_id,subject_id,slug,title,status,pinned,system,last_activity_at) values('"+
+  projectB+"','"+owner+"','22222222-2222-2222-2222-222222222222','notif-b','Notification B','active',false,false,now())"
+ )
+ await db.exec(
+  "insert into public.checkpoints(id,user_id,project_id,code,title,position,status,current_step,steps,objective) values('"+
+  checkpointB+"','"+owner+"','"+projectB+"','CP1','B checkpoint',1,'in_progress',0,'[]','Review')"
+ )
+ await db.exec(
+  "insert into public.sessions(id,user_id,project_id,number,state,started_at,last_activity_at) values('"+
+  sessionB+"','"+owner+"','"+projectB+"',1,'open',now(),now())"
+ )
+ await db.exec(
+  "insert into public.concepts(id,user_id,name,slug) values('"+
+  conceptB+"','"+owner+"','Notification concept','notif-topic')"
+ )
+ await db.exec(
+  "insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status,session_id,concept_id) "+
+  "select md5('notif7-b-note-'||n)::uuid,'"+owner+"','"+projectB+"','"+checkpointB+"',5000+n,"+
+  "'Project B due '||n,'Answer','basic','why','active','"+sessionB+"','"+conceptB+"' "+
+  "from generate_series(1,5) n"
+ )
+ await db.exec(
+  "insert into public.cards(id,user_id,note_id,state,due) "+
+  "select md5('notif7-b-card-'||n)::uuid,'"+owner+"',md5('notif7-b-note-'||n)::uuid,2,now()-interval '10 minutes' "+
+  "from generate_series(1,5) n"
+ )
+ await db.exec('set role authenticated')
+ const filteredB=await oneShot(5,"array['project:notif-b']")
+ assert.equal(filteredB.length,5,'project B has five due even after A fills the unfiltered first 50')
+ assert.ok(filteredB.every(x=>x.projectSlug==='notif-b'))
+ assert.deepEqual((await oneShot(5,"array['cp:notif-b:CP1']")).map(x=>x.cardId),
+  filteredB.map(x=>x.cardId),'checkpoint filter is applied before N')
+ const sessionBItems=(await q("select public.notification_review_items(5,array[]::text[],'"+
+  sessionB+"',null,true,false) item")).map(x=>x.item)
+ assert.deepEqual(sessionBItems.map(x=>x.cardId),filteredB.map(x=>x.cardId),
+  'session filter is applied before N')
+ const conceptBItems=(await q("select public.notification_review_items(5,array[]::text[],null,'notif-topic',true,false) item")).map(x=>x.item)
+ assert.deepEqual(conceptBItems.map(x=>x.cardId),filteredB.map(x=>x.cardId),
+  'concept filter is applied before N')
+ await db.exec('reset role')
+ await db.exec("update public.settings set new_per_day=5 where user_id='"+owner+"'")
+ await db.exec(
+  "insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) "+
+  "select md5('notif7-new-note-'||n)::uuid,'"+owner+"','"+projectB+"','"+checkpointB+"',6000+n,"+
+  "'Fresh B '||n,'Answer','basic','why','active' from generate_series(1,5) n"
+ )
+ await db.exec(
+  "insert into public.cards(id,user_id,note_id,state,due) "+
+  "select md5('notif7-new-card-'||n)::uuid,'"+owner+"',md5('notif7-new-note-'||n)::uuid,0,now() "+
+  "from generate_series(1,5) n"
+ )
+ await db.exec('set role authenticated')
+ const newOnly=(await q("select public.notification_review_items(5,array[]::text[],null,null,true,true) item")).map(x=>x.item)
+ assert.equal(newOnly.length,5,'newOnly selects five eligible new cards after mature cards')
+ assert.ok(newOnly.every(x=>x.state.state===0))
+ const matureOnly=(await q("select public.notification_review_items(5,array[]::text[],null,null,false,false) item")).map(x=>x.item)
+ assert.equal(matureOnly.length,5)
+ assert.ok(matureOnly.every(x=>x.state.state!==0),'includeNew=false excludes fresh cards before N')
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ assert.deepEqual(await oneShot(5,"array['project:notif-b']"),[],
+  'other owner cannot select project B by its public slug')
+ await db.exec("select set_config('test.uid','"+owner+"',false)")
+ console.log('PASS NOTIF-7a audit multi-project deck/checkpoint/session/concept/new-only filters before N, owner isolation')
+
+ console.log('PASS NOTIF-7a one-shot 5 vs daily 3, owner isolation, stable prefix, SQL 50 cap and unchanged settings')
 
 
 } finally {await db.close()}
