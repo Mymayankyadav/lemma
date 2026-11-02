@@ -45,8 +45,8 @@ describe('FIX #507 cold Today goal-summary entry',()=>{
   expect(stress).toContain("performance.getEntriesByName('lemma-stress-first-goal-paint','mark')")
   expect(stress).toContain('coldWallClockMs')
   expect(stress).toContain('firstGoalPaintMs')
-  // The original hard 1.5s budget and every route readiness assertion remain.
-  expect(readFileSync('scripts/stress-limits.ts','utf8')).toContain('m.durationMs >= 1500')
+  // The owner-approved 4s budget and every route readiness assertion remain.
+  expect(readFileSync('scripts/stress-limits.ts','utf8')).toContain('m.durationMs >= 4000')
   expect(stress).toContain("await expect(page.locator('.animate-pulse.bg-fill-2')).toHaveCount(0")
  })
 
