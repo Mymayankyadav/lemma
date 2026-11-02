@@ -15,12 +15,34 @@ for(const width of [390,360] as const){
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
   await page.addInitScript(()=>{
-   const loaded=()=>!!document.querySelector('[data-sheet-background] section[aria-label="Checkpoint progress"]')
-    &&!!document.querySelector('section[aria-label="Checkpoint steps"]');
-   const observer=new MutationObserver(()=>{
-    if(loaded()&&!performance.getEntriesByName('lemma-cp4-loaded','mark').length){
-     performance.mark('lemma-cp4-loaded');observer.disconnect();
+   const progress=()=>document.querySelector('[data-sheet-background] section[aria-label="Checkpoint progress"]');
+   const steps=()=>document.querySelector('section[aria-label="Checkpoint steps"]');
+   const loaded=()=>!!progress()&&!!steps();
+   const visible=(element:Element|null)=>{
+    if(!element)return false;
+    const bounds=element.getBoundingClientRect();
+    if(bounds.width<=0||bounds.height<=0)return false;
+    for(let node:Element|null=element;node;node=node.parentElement){
+     const style=getComputedStyle(node);
+     if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)return false;
     }
+    return true;
+   };
+   let scheduled=false;
+   const observer=new MutationObserver(()=>{
+    if(scheduled||!loaded())return;
+    scheduled=true;
+    observer.disconnect();
+    // DOM insertion is not first visible paint. Wait for a rendered frame
+    // containing the real inert Project backdrop and interactive CP4 steps.
+    const afterPaint=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
+     if(visible(progress())&&visible(steps())){
+      performance.mark('lemma-cp4-loaded');
+     }else{
+      afterPaint();
+     }
+    }));
+    afterPaint();
    });
    observer.observe(document,{childList:true,subtree:true});
   });
