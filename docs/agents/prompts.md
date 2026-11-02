@@ -1,5 +1,7 @@
 # Scheduled agent prompts
 
+> **Compatible guard / v3 NOT ACTIVE.** First follow [startup](README.md#startup-guard). The retained text below is live legacy authority in legacy/shadow. After a valid activation, [v3](v3.md) and [v3 playbooks](playbooks-v3.md) replace its allocation, timing and claim mechanics; preserve safety gates and apply [unconditional release policy](release.md) in every mode. Never run a separate Planner merely because retained text mentions it. Its actual schedule state is unknown; only the external setup procedure may reconcile it.
+
 ## Hourly shared dispatcher — use in **all five scheduled tasks** (OPS-1)
 
 The five slots at :00, :15, :30, :45 and :50 IST are **role-agnostic**. Each starts with a fresh, lightweight Steward-style triage, reads `AGENTS.md`, `plan.md`, `docs/agents/README.md`, `docs/agents/dispatch.md` and current GitHub Task board #456, Agent log #455, Audit log #442, open PRs/issues and CI. Choose role dynamically from the independent ready-to-merge, ready-to-audit, red/fix and runnable-build queues and active claims. Before role work, log a `DISPATCH CLAIM` comment with slot/role/scope/expiry in Agent log #455. Then **execute the entire corresponding role playbook below**, honoring all safety gates. Prefer extra Builders when building is the bottleneck, but allocate more Fixers, Stewards or Auditors when their live queues warrant them. Switch roles after a handoff as capacity permits.
@@ -293,3 +295,4 @@ Rules:
 - Use `gh api` REST if GraphQL is blocked.
 - Commits and PR descriptions end with the repo's attribution lines.
 ```
+

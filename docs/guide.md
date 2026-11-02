@@ -40,3 +40,8 @@ Run `npm ci`, `npm run check` and `npm run e2e` on the repository. `predev` and 
 The owner-authenticated smoke command `npx tsx scripts/live-read-check.ts` requires a short-lived **local** `LEMMA_TOKEN` and the project's public `VITE_SUPABASE_PUBLISHABLE_KEY` environment variable. Do not copy a token into a chat or CI log. Test MCP with `node tests/mcp/smoke.mjs` in a trusted environment with its required secret in local environment variables. These live checks are separate from the deterministic demo and cannot be inferred from passing build or Playwright tests.
 
 If a migration/deployment or sign-in test fails, diagnose it before real owner data is migrated. Production data must not be reset to make a smoke test pass.
+
+
+## Maintainer coordination
+
+Start with `docs/agents/README.md`; source behavior is in accepted specs and runnable tasks in `plan.md`. OPS3 is prepared but NOT ACTIVE until external setup and transition evidence pass. Historical setup and canvas notes cannot authorize resets, branch purges or superseded UI directions.

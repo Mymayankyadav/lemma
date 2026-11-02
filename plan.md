@@ -4,11 +4,11 @@ Approved by the owner on 29 October 2026. This is the only task list. Behaviour 
 
 ## 0. Quick start for an agent
 
-1. Read this file, then `AGENTS.md`, then only the spec sections your task lists.
-2. Pick a task from §8 whose dependencies are merged and that has no open PR (search open PRs for its ID).
-3. Open a PR (never a draft: REST-only agents cannot un-draft it) named `<TASK-ID> <title>` from branch `t/<task-id-lowercase>` before writing code, with the line `Owner: <role> · Lease until <HH:MM IST>`. That is your claim (see `docs/agents/README.md` §2).
-4. Touch only the paths your task owns. Run `npm run check` and your tests. Write "Ready to merge" in the description when complete; the Steward merges when every check is green and there is no unresolved "AUDIT BLOCK".
-5. Then pick the next task. Never wait for permission between tasks.
+1. Follow `docs/agents/README.md` startup guard, `AGENTS.md` and current control mode before selecting work. v3 files are inactive until controlled activation; legacy/shadow uses retained dispatch, active uses current-instance tickets.
+2. `plan.md` is the only task-definition authority. Read assigned accepted specs and current PR/handoff; refresh holds, dependencies, claims and reviewer eligibility. Historical foundation/theme/setup sections cannot authorize a reset, purge or superseded design.
+3. Claim one substantive writable scope with the current protocol, then a non-draft PR titled `<TASK-ID> <title>` on `t/<task-id-lowercase>` before code. Legacy lease rules remain until activation; v3 uses immutable run IDs and dated claims.
+4. Verify owned paths, meaningful tests and required CI. Every merge also requires unconditional independent applicable CLEAR under `docs/agents/release.md`; no omitted phrase bypasses it.
+5. Continue only eligible authorized work within the run deadline; preserve a review path and hand off pending verification. Routine work needs no repeated owner permission.
 
 ## 1. Goal
 
@@ -89,7 +89,7 @@ Use the latest release of each major listed; pin exact versions in `package.json
 | `supabase/functions/mcp/**`, `tests/mcp/**` | MCP-1 | |
 | `.github/**` | P0-C | |
 | `tests/unit/<area>/**`, `tests/e2e/<screen>.spec.ts` | the task named in `testing.md` | |
-| `legacy/**` | read-only reference; INT-1 deletes it at the end | |
+| `legacy/**` | read-only reference; deletion deferred pending current parity/reference audit and scoped approval | |
 | `docs/**`, `plan.md`, `AGENTS.md`, `README.md` | owner (agents edit only when a task says so) | |
 
 ## 6. Working protocol
@@ -98,7 +98,7 @@ Use the latest release of each major listed; pin exact versions in `package.json
 - **Scope**: only your owned paths. Need something outside them? Use §7, or leave a note in your PR under "Needs from others" and build against what exists.
 - **Quality bar**: `npm run check` passes; your tests pass; screens match `design.md` and the boards (compare your screenshot from `test-results/screens/` with the board); no `console.error` in the browser; no hard-coded colours outside `src/styles`.
 - **PR description**: what changed, how you verified it (commands and results), screenshot(s) for UI, remaining gaps.
-- **Merge**: squash merge when CI is green on the last commit and there are no conflicts. Bootstrap exception: until `.github/workflows/ci.yml` exists on `main` (P0-A, P0-C itself, and chat-first PRs that land earlier), merge when `npm ci && npm run check` passes locally and the PR description pastes that output. On conflicts, merge `main` into your branch (never force-push, never rewrite history).
+- **Merge**: exact-head squash only after `scripts/merge-gate.ts` AND `docs/agents/release.md` pass, with eligible independent CLEAR and all applicable acceptance. The old bootstrap CI exception is historical: `ci.yml` exists. On conflicts/semantic overlap, merge main without force/history rewrite and refresh evidence.
 - **After merge**: pick the next task in §8. Do not edit this plan to mark progress; merged PR titles are the progress record.
 - **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test, add tracking or analytics.
 - **Models**: use the strongest available model for P0-A/B, DB-1, MCP-1, LIB-1 and DEMO-1 (contracts and logic). Any capable model can do UI-1/2 and screens.
@@ -111,6 +111,22 @@ Use the latest release of each major listed; pin exact versions in `package.json
 3. Merge when green. Continue your task on top of it.
 
 ## 8. Task board
+
+### Agent system v3 repository preparation (owner request, 2 Nov 2026)
+
+The owner authorized implementation of the exact supplied `Lemma_Agent_System_v3_Adaptive_Plans_and_Transition.md`, excluding all scheduled-task mutations in this session. Agent-authored authorization handoff: Agent Log #455 comment 6571926727. This permission covers repository preparation and the setup-prompt deliverable; scheduled inventory, installation, shadow runtime evidence and activation remain separate uncompleted gates.
+
+| Task | Requirement / acceptance | Depends on | Owned paths | State |
+| --- | --- | --- | --- | --- |
+| OPS3-PREP | Source snapshot, baseline/cleanup manifest, compatible inactive startup, complete protocol/playbooks/templates, executable control/claim/packet/release validators, adversarial scenarios and setup prompt; independent audit + required CI before merge | Current policy; release enforcement uses existing #749 and mandatory supplement | `AGENTS.md`, `plan.md`, `README.md`, `docs/agents/**`, `docs/changes/OPS3/**`, `docs/design/README.md`, `docs/guide.md`, `scripts/agent-protocol.mjs`, `tests/unit/agents/protocol.test.ts`, `tests/agents/**` | repository implementation authorized; review pending |
+| OPS3-5 | Same five identities, old/new prompt snapshots and readback, startup acknowledgements, measured capabilities | OPS3-PREP merged | Schedule installation evidence in `docs/changes/OPS3/`; external setup only | not executed here |
+| OPS3-6 | Shadow assignment/intake evidence and failure rehearsal; no shadow write authority | OPS3-5 | `docs/changes/OPS3/` evidence | gated |
+| OPS3-7 | Drain incompatible writers/queued starts, canonical protocol digest, first future packet, authorized control chain and first receipts | OPS3-6; independent release enforcement; all activation gates | `docs/changes/OPS3/` evidence and #455/#764 | gated; NOT ACTIVE |
+| OPS3-8 | At least 24 healthy epochs, measurements and pending release verification accounted for | OPS3-7 | stabilization evidence | gated |
+| CLN3-4/5 | Optional historical retirement and branch/issue hygiene | OPS3-8; separately approved deletion/supersession scope | explicitly approved paths only | deferred; no branch purge authorized |
+
+`OPS3-PREP` is the single scoped preparation task covering source packages OPS3-0/1/2/4 and mandatory CLN3-0/1/2. OPS3-3 reuses #749 plus the mandatory supplemental decision instead of a competing code fix. No product UI or architecture plan is approved by this coordination change. Intake #763; Dispatch State #764.
+
 
 Phases run in order; tasks inside a phase run in parallel. "Done when" items are the acceptance checks for the PR.
 
@@ -138,10 +154,10 @@ Agents on this track touch only `supabase/**` and `tests/mcp/**`, so they never 
 
 ### Phase 0: foundation (one agent, three PRs, in order)
 
-#### P0-A Clean slate and scaffold
+#### P0-A Clean slate and scaffold (historical foundation; no reset/purge authority)
 - Depends on: none. Owns: repo root config, `src/styles/**`, `legacy/**` moves.
 - Read: this plan §4–5; `design.md` §2–3.
-1. Delete every remote branch except `main` (`git ls-remote --heads origin`, then `git push origin --delete <name>` in batches). If your environment refuses, skip and say so in the PR; the owner will do it (§10).
+1. **HISTORICAL FOUNDATION ONLY — NOT RUNNABLE:** the original clean-slate branch purge is retired. Preserve current branches and unmerged source; any later deletion needs fresh narrow authorization, source/reference parity and reviewed scope.
 2. Move `src/app/*.js` and `test/*` to `legacy/app/` and `legacy/test/`. Move `src/fsrs.js` to `src/lib/fsrs/fsrs.js` and `src/render.js` to `src/lib/render/render.js`; change only their last line (`if (typeof module …) module.exports = X;`) to `export default FSRS;` / `export default Render;` so they load as ES modules. Delete `build.js`, `src/index.html`, `src/config.js`, `src/service-worker.js`, `src/manifest.webmanifest`, `src/icons/`, the old `package.json` and lockfile.
 3. Create a Vite React TypeScript app at the repo root with `base: '/lemma/'` and strict TypeScript. Install the packages in §4 at their latest versions within the given majors; pin exact versions.
 4. Scripts: `dev`, `build` (`tsc -b && vite build`), `preview`, `typecheck`, `test` (`vitest run`), `e2e` (`playwright test`), `check` (typecheck, test, build), `format` (Prettier).
@@ -310,7 +326,7 @@ Notes per task:
 
 ### Owner requests after the first build (30 Oct)
 
-#### UI-3 Themes, density and calm (priority for the app)
+#### UI-3 Themes, density and calm (historical; superseded by v3/v4 presentation)
 - Depends on: everything merged so far. Owns: `src/styles/**`, `src/ui/**`, `index.html` boot script, `scripts/make-themes.ts`, `scripts/review-shots.mjs`, `.github/workflows/review-shots.yml`, `src/features/settings/Appearance*.tsx`, and size/colour classes in every `src/features/**` file (coordinate: touch only class names there).
 - Read: `docs/spec/themes.md` (all); it overrides sizes, elevations and motion defaults in `design.md`.
 - PR 1 `UI-3 tokens and density`: semantic type and spacing tokens, replace every `text-[Npx]` and hard-coded size; densities compact/cozy/comfortable; default compact.
@@ -320,7 +336,7 @@ Notes per task:
 - Done when: `themes.md` §7.
 
 #### How work runs now (31 Oct 10:25)
-- Four hourly agents (Steward :00, Fixer :15, Builder :30, Auditor :45) coordinate through GitHub: leases in PR descriptions and the issues "Task board", "Audit log" and "Agent log". See `docs/agents/README.md` and `docs/agents/prompts.md`. Add work by adding a section here with task IDs, specs and "depends on".
+- Historical four-role snapshot is superseded by the compatible startup guard in `docs/agents/README.md`. Five intended capacity slots consume the current mode; actual schedule state must be verified externally. New approved task definitions go here, not into competing issue lists.
 
 #### Reminders and notifications (Planner, 31 Oct 22:40): NOTIF-0 … NOTIF-7, QA-5 — **owner-requested 31 Oct 23:33 IST; audit first**
 - Spec: `docs/spec/notifications.md`. Web Push reminders that work in the browser, the installed PWA and the Android app (`android.md`). They cover cards due, checkpoints planned for tomorrow, a kind "smaller step" when a project is behind plan, picking up a paused session, tutor proposals (approve cards from the notification, with Undo), plan-past-target and a weekly digest.
@@ -392,7 +408,7 @@ Notes per task:
 - The owner's Algebra 1 project was deleted on 30 Oct (undo action A4882); its orphaned ideas are cleaned up by DB-4.
 - **30 Oct 22:38, owner:** the cosmos Atlas (UI-6c) is replaced by a foldable outline with links drawn in the margin (`v3.md` §4), and plan review opens each checkpoint in a drawer (`v3.md` §4a). Both shipped together as UI-7.
 
-#### UI v2, Euclid (owner's final choice, 30 Oct 10:48): UI-5a … UI-5h, DB-3, MCP-3
+#### UI v2, Euclid (historical presentation, superseded by v3/v4 where different; owner choice, 30 Oct 10:48): UI-5a … UI-5h, DB-3, MCP-3
 - Spec: `docs/spec/ui-euclid.md` (overrides `design.md`, `themes.md` and `lab.md` where they differ). Choice: Euclid by day and Euclid at night by night (follow the phone), Ascent timeline (Metro kept), Orbits Atlas (Branches, Outline kept), compact, lively; eight worlds selectable.
 - UI-5a first (tokens and components in PR 1, then backgrounds and the layout check); UI-5b … UI-5h in parallel after it; DB-3 now; MCP-3 after DB-3. UI-4a, UI-4b and UI-4c below are superseded: do not start them.
 - **Approved by the owner (30 Oct, 11:06)**: the review round design in `ui-euclid.md` §8.7–8.8 and the icon-first tab bar in §8.0 (Today, Paths, Review, Insights; label only on the active tab). Build them exactly as the lab's Review tab behaves (`docs/design/lab/lemma-lab.html`, functions `viewReview`, `renderRV`, `reveal`, `grade`, `bindSwipe`, `finishRV`).
@@ -424,8 +440,8 @@ Status on 29 Oct 2026, 21:30 IST:
 | --- | --- |
 | Google sign-in in Supabase | Done; verified from the auth logs (sign-in from `https://mymayankyadav.github.io/lemma/` today). Keep `http://localhost:5173/**` in the redirect URLs for local runs. After your first sign-in on the new app, turn off "Allow new users to sign up". |
 | GitHub secrets `SUPABASE_ACCESS_TOKEN` and the DB password | Reported done by the owner; P0-C's setup check confirms. Either `SUPABASE_DB_PASSWORD` or the old `LEMMA_SUPABASE_DB_PASSWORD` works. Variables are no longer needed. |
-| Delete old branches | Pending: delete every branch except `main` (GitHub › Branches, or in a local clone `git ls-remote --heads origin \| awk '{print $2}' \| sed 's#refs/heads/##' \| grep -vx main \| xargs -n 20 git push origin --delete`). Also turn on Settings › General › "Automatically delete head branches". |
-| Confirm the database reset | Pending: approve the confirmation when DB-1 asks. |
+| Delete old branches | **RETIRED historical setup — not pending or runnable.** No bulk deletion authorized. Later hygiene needs explicit branch scope, parity/reference audit and preserved replacements. |
+| Confirm the database reset | **RETIRED historical bootstrap — no current reset authorization.** Preserve migrations and live data; new destructive scope requires a fresh decision. |
 | `MCP_URL` secret | After MCP-1 is live: copy the address from Lemma › Settings into a repository secret. |
 | Connect Claude and ChatGPT | After MCP-1: `connector.md` §10. |
 | Install on the phone | Open the site, Share › Add to Home Screen. |
@@ -458,3 +474,4 @@ App screens for the master prompt (Settings) and the action history with undo bu
 - Design boards: `docs/design/canvas/*.dc.html` (exported from the owner's canvas; inline styles hold the exact values; open in a browser for the visual, though interactive parts need the canvas runtime) and the owner's original reference `docs/design/reference-amber-on-obsidian.png`.
 - Owner-only links (private to the owner): design canvas https://claude.ai/artifact/NjsHYBnmuZYgphy3mY13Qu, research notes https://claude.ai/artifact/EQiFLZfqa1ewaHTR1vbCdo.
 - Legacy code kept for reference until INT-1: `legacy/` (FSRS engine and renderer already moved into `src/lib`).
+
