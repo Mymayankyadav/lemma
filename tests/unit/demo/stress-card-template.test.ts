@@ -6,17 +6,20 @@ import type {DemoStore} from '../../../src/data/demo/model';
 const source=readFileSync('src/data/demo/stress.ts','utf8');
 
 describe('FIX-648c generated stress-card template headroom',()=>{
- it('constructs immutable long fronts and math examples once, outside the per-page generator',()=>{
+ it('memoizes long/math examples on first use, not during unrelated Today module loading',()=>{
   const start=source.indexOf('export function makeStressNotes(');
   const end=source.indexOf('/** Deterministic full Atlas',start);
   expect(start).toBeGreaterThanOrEqual(0);
   expect(end).toBeGreaterThan(start);
   const generator=source.slice(start,end);
   expect(generator).not.toMatch(/\.repeat\(|Array\.from\(/);
-  for(const name of ['STRESS_LONG_FRONT','STRESS_LONG_BACK','STRESS_MATRIX','STRESS_ALIGNED','STRESS_SUM','STRESS_INLINE']){
-   expect(source,name).toContain('const '+name+' =');
-   expect(generator,name).toContain(name);
-  }
+  expect(generator).toContain('getStressNoteExamples()');
+  expect(source).toContain('let stressNoteExamples:StressNoteExamples|null=null;');
+  expect(source).toContain('if(stressNoteExamples)return stressNoteExamples;');
+  expect(source).toContain('stressNoteExamples={longFront,longBack,matrix,aligned,sum,inline};');
+  // Do not move expensive templates to eager module scope: Today/Paths load
+  // this module but should not pay for Cards-only long mathematical examples.
+  expect(source).not.toMatch(/^const STRESS_LONG_FRONT =/m);
  });
  it('preserves all six representative long/math fronts and due semantics',()=>{
   const fixture=JSON.parse(readFileSync('src/data/demo/fixture.json','utf8')) as DemoStore;
