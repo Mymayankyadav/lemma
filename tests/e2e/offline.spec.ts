@@ -189,6 +189,11 @@ test('AND-8 offline mutation guards retain the card and project state',async({pa
  await page.setViewportSize({width:360,height:740})
  await page.goto('/lemma/?demo=1&theme=graph#/cards',{waitUntil:'domcontentloaded'})
  await expect(page.getByRole('heading',{name:'Cards',exact:true,level:1})).toBeVisible()
+ // A first online visit must finish installing and controlling this page
+ // before it can serve an unvisited lazy route without a network. Do not
+ // silently reload or pre-visit Paths: both would hide a first-visit PWA bug.
+ await page.evaluate(()=>navigator.serviceWorker.ready)
+ await expect.poll(()=>page.evaluate(()=>Boolean(navigator.serviceWorker.controller)),{timeout:20_000}).toBe(true)
  await context.setOffline(true)
  const create=page.getByRole('button',{name:'New card, needs a connection'})
  await expect(create).toHaveAttribute('aria-disabled','true')
