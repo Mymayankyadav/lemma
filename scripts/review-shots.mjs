@@ -172,6 +172,8 @@ try {
         const confirmation=phone.getByRole('dialog',{name:'Unfold every idea?'});
         await confirmation.waitFor({state:'visible'});
         await confirmation.getByRole('button',{name:'Unfold all'}).click();
+        // Do not capture the exit-animation overlay as fake All evidence.
+        await confirmation.waitFor({state:'hidden'});
        }
        // Verify that the screenshot depicts real newly visible ideas, not
        // a changed toolbar pill or an unrelated pixel difference.
