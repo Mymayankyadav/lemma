@@ -127,14 +127,16 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
 }
 
 /** Build the real note rows only when a route needs card content. */
+/** Heavy, immutable stress note examples are shared by every 50-row Cards page. */
+const STRESS_LONG_FRONT = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
+const STRESS_LONG_BACK = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
+const STRESS_MATRIX = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
+const STRESS_ALIGNED = String.raw`$$\begin{STRESS_ALIGNED}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{STRESS_ALIGNED}$$`;
+const STRESS_SUM = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
+const STRESS_INLINE = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
+
 export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects'],cardCount:number,dueCount:number,startIndex=0):DemoNote[]{
  const notes:DemoNote[]=[];
-  const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
-  const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
-  const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
-  const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
-  const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
-  const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
   for (let i = startIndex; i < startIndex + cardCount; i++) {
     const project = projects[i % projects.length];
     const no = i + 1;
@@ -143,8 +145,8 @@ export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects']
       note: {
         ...baseNote.note, noteId: `stress-note-${no}`, noteNo: no,
         projectSlug: project.slug, checkpointCode: `CP${(i % 36) + 1}`,
-        front: i === 0 ? longFront : i === 2 ? matrix : i === 3 ? aligned : i === 4 ? sum : i === 5 ? inline : `Recall the definition in card ${no}?`,
-        back: i === 0 ? longBack : `Prove the statement for card ${no}.`,
+        front: i === 0 ? STRESS_LONG_FRONT : i === 2 ? STRESS_MATRIX : i === 3 ? STRESS_ALIGNED : i === 4 ? STRESS_SUM : i === 5 ? STRESS_INLINE : `Recall the definition in card ${no}?`,
+        back: i === 0 ? STRESS_LONG_BACK : `Prove the statement for card ${no}.`,
         status: "active", sessionNumber: null, sourceShort: null, pageLabel: null,
       },
       cards: [{ id: `stress-card-${no}`, ord: 1, state: {
