@@ -133,7 +133,7 @@ try {
  assert.deepEqual(deck[0].children.map(x=>x.due),[1])
  console.log('PASS ST-5 deck hierarchy, daily due counts and unassigned notes')
  // Review must fetch only the selected daily queue, not the 30,000-card
- // library or historical review rows. Filters apply after daily quotas.
+ // library or historical review rows. Requested filters apply before daily quotas.
  const review=async(args)=>q('select public.review_items('+args+') item')
  const queue=(await review("array[]::text[],null,null,true,false")).map(x=>x.item)
  assert.deepEqual(queue.map(x=>x.noteNo),[12,13])
