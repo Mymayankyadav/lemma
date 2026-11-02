@@ -1,5 +1,7 @@
 # Agent rules
 
+**Owner authority:** [OPS3 addendum A](docs/agents/owner-override.md) applies in every mode, including preparation. A verified personal owner squash merge or specifically owner-directed squash merge is explicit scoped integration approval even with red/pending CI or missing audit. Autonomous agents retain normal gates; sharing the owner account supplies no bypass. Read the addendum before treating a merged prerequisite as approval-blocked.
+
 - Read `docs/agents/README.md` first for the compatible startup guard and pinned record IDs; v3 is NOT ACTIVE until its transition gates and control chain are verified. Then read `plan.md` §0. It is the only task list; the specs in `docs/spec/` define behaviour.
 - Read `docs/agents/README.md` and `docs/agents/dispatch.md`: the five hourly slots select a **dynamic** Steward/Fixer/Builder/Auditor role on every run using GitHub backlog and leases (v3 absorbs planning into these five slots only after controlled activation). The role playbooks are in `docs/agents/prompts.md`. Follow their existing audit and merge safety gates.
 - One task per PR (split large tasks into several). Claim it with a PR (never a draft: REST cannot un-draft it) titled `<TASK-ID> <title>` from branch `t/<task-id>` before writing code, with an `Owner: <role> · Lease until <HH:MM IST>` line. An expired lease may be taken over by any agent.
@@ -17,3 +19,4 @@
 Owner-authorized repository preparation: PR #765. No schedules or active mode are changed by this PR. `docs/agents/v3.md` is the candidate contract; legacy/shadow retains the existing dispatcher below its guard. Never infer activation from a file, packet or higher generation number. Unknown/conflicting control stops affected new writes.
 
 Historical reset/branch-purge and superseded design instructions in `plan.md` are reference only. No current deletion authority follows from them. For every release, apply `docs/agents/release.md` unconditionally as well as `scripts/merge-gate.ts`; a missing checklist phrase never waives audit.
+
