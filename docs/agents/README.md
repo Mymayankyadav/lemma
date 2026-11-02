@@ -1,121 +1,24 @@
-# Agent handbook
+# Agent startup
 
-This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent can continue without the owner's chat history. Read it together with `AGENTS.md` (the rules), `plan.md` (the task list) and `docs/spec/` (behaviour).
+Read `AGENTS.md`, [Owner authority](owner-role.md), [v3](v3.md), [registry](registry.md), current scoped owner directives and `plan.md` §0. Follow owner-amended v3 within actual authorization. The seeding exception in owner-role.md is not a claim that other agents or schedules are active.
 
-## Startup guard
+## Current records
 
-**Release-route precedence (all modes):** [Owner role](owner-role.md) and [owner squash-merge authority](owner-override.md) qualify retained instructions. CI, independent CLEAR and Ready requirements below govern **ordinary autonomous merges**. A verified personal owner squash merge or specifically owner-directed merge uses the separate `OWNER_OVERRIDE` route; preserve rejected gate results and actual failures. Never fabricate CI/audit success. Retained prohibitions on weakening tests mean no unauthorized changes merely to obtain green CI; legitimate owner-approved policy amendments remain scoped under addendum A. This changes approval authority, not factual installation/runtime/drain evidence.
+- Agent Registry #770: actual enrolled sources/capabilities; no presumed count or scheduler.
+- Agent Log #455: one append-only source for RUN/claim/control/owner handoffs. Do not maintain duplicate role logs.
+- Dispatch State #764: current registry-bound advisory assignments.
+- Plan Intake #763: owner plans and approved-source/change references.
+- Task Board #456: optional projection of canonical `plan.md`, never separate authority.
+- Current audit verdicts belong on the affected PR; substantive findings belong in their linked fix issue/PR. Audit Log #442, Planner Log #585 and archive #691 are historical, retired indexes; no new writes or mandatory full-history startup scan.
 
-**Repository package prepared; v3 NOT ACTIVE.** No saved task or runtime state has been changed or verified by PR #765. Installing files does not activate v3. In the absence of an adopted OPS3 control chain, use the retained legacy dispatcher; missing/conflicting events after an OPS3 chain exists stop affected new writes. Never fabricate an activation event or schedule identity.
+[Playbooks](playbooks-v3.md) define roles; [release](release.md) distinguishes ordinary autonomous gates from scoped owner exceptions; [transition](transition.md) separates repository preparation from factual runtime activation. [Setup](setup-prompt.md) applies only to actual authorized target sources. Evidence/source recovery links and current dispositions are in [OPS3 record](../changes/OPS3/README.md).
 
-1. Read `AGENTS.md`, this guard and `plan.md` §0. Use GitHub REST (`gh api` when present; REST-backed connector when unavailable). Complete pagination for evidence; a failed/truncated read is unknown.
-2. Resolve Agent Log **#455**, Task Board **#456**, Audit Log **#442**, Plan Intake **#763**, Dispatch State **#764**. IDs are canonical; titles are navigation only. Check adopted control events and current scoped owner holds.
-3. Use [v3 contract](v3.md) only according to its mode. `legacy`/`shadow`: retained [dispatch](dispatch.md) and [playbooks](prompts.md) remain authoritative; shadow tickets cannot claim work. `cutover`/`rollback`: no new affected writable claims. `active`: valid current-instance packet, then assigned role/task/requirements/handoff only. Unknown/conflicting mode/generation: affected read-only containment.
-4. In every mode follow the [release supplement](release.md): ordinary autonomous merges require exact-head CI and independent audit; verified owner-authorized exceptions use [addendum A](owner-override.md) without fabricated passing evidence. Follow [Owner directives](owner-role.md), path ownership and factual runtime/transition requirements. Never invoke historical reset/purge instructions. A mode change alone supplies no exception.
-5. Setup/expansion follows [transition](transition.md), [setup prompt](setup-prompt.md), [registry](registry.md) and [evidence checklist](../changes/OPS3/status.md). Discover actual authorized target agents and source-specific configuration/runtime; no count, scheduler, cadence or worker census is presumed.
+## Required behavior
 
-New owner UI/architecture plans enter #763 with exact source/digest and authority, then a scoped package using [templates](templates/README.md). Presence in a PR or a higher filename version is not approval. `plan.md` remains the only runnable task list.
+No fixed participant count, clock slot, scheduler or universal runtime. Use real agent/run/invocation identity, scoped one-writer claims and actual capabilities. Refresh attributable Owner instructions before consequential actions; acknowledge observed directives in the same healthy run and act or name the next capable execution. Never open draft PRs in REST-only workflows. No force/direct-main push, secrets exposure, invented CI/CLEAR or fake runtime evidence.
 
-## 1. Actual capacity and role assignment
+Ordinary autonomous releases require **nonempty** exact-head CI and applicable independent acceptance via `scripts/merge-gate.ts` plus the release supplement. Verified scoped owner instructions supersede conflicting repository SOP through addenda A/B; record the actual waiver/result without pretending normal gates passed. Closing a finding as owner-accepted/deferred is not claiming a technical fix.
 
-[Registry #770](registry.md) defines positively verified owner-authorized participants and source capabilities. There is no fixed workforce size, scheduler, minute-slot allocation or universal run duration. Scheduled, interactive, CI and external agents can enroll; manual participants need not impersonate scheduled workers. Unknown inventory remains unknown.
+## Owner product decisions
 
-The appointed claimed Lead reconciles global work once per agreed epoch; workers consume exact agent/invocation tickets or bounded eligible fallback. Any capable unconflicted participant can serve Planner, Builder, Fixer, Auditor, specialist, release or verification role. The Owner is human governance, not executable capacity. Keep one writer per scope, future independent reviewer availability and truthful exact-head/revision evidence as capacity grows.
-
-Old role names or cadence references are historical illustrations only. No participant is disabled, renamed or created to match a remembered roster. Setup/expansion follows actual authorization and [transition.md](transition.md), preserving source identities, claims, configuration and lineage.
-
-## 2. Coordination conventions (all agents)
-
-- **One task, one PR.** Each task is one PR titled `<TASK-ID> <title>` from branch `t/<task-id>`. A large task may be split into `<TASK-ID>a`, `b` and so on, each able to land on its own.
-- **Lease.** Every PR description carries the line `Owner: <role> · Lease until <HH:MM IST>`.
-  - Only the lease holder pushes to that PR.
-  - When the lease has expired, any agent may take over the PR, and comments "<role> taking this" when it does.
-  - There are no "my PR" exceptions: every open PR belongs to the team.
-- **PR description.** It holds a checklist of the spec's acceptance items, a line "Next step: …", and "Ready to merge" once the owner of the lease believes it is complete.
-- **Do not wait for CI.** Push, move on to the next task, and come back later (in the same run or the next) to read the results.
-- **Merging.** Squash-merge only. **Fail closed:** use GitHub REST on the exact current PR head SHA; require a **nonempty** set of completed-success checks including **all seven** required jobs: `check` (npm typecheck/unit/build), `mcp-sql`, `e2e-1-of-4`, `e2e-2-of-4`, `e2e-3-of-4`, `e2e-4-of-4` (the complete Playwright suite), and `qa3-screens` (all 144 screenshots merged and validated). Missing any required job blocks merging, even if all reported checks are green. Missing checks, failed API reads, queued/in-progress/pending, cancelled, skipped, neutral, timed-out or failed checks block the merge. Every reported commit status must also be successful. The description must have a standalone "Ready to merge" line, the lease must be eligible, and no unresolved "AUDIT BLOCK" may remain (only a later "AUDIT CLEAR" lifts it). `scripts/merge-gate.ts` contains regression-tested decision logic for this rule; re-read checks and blockers immediately before merging. Being behind main is not a blocker unless GitHub reports a conflict or overlapping changed files. Never push to main, force-push or rebase; bring main in with a merge.
-- **Auditor blocks.** The Auditor blocks a PR with a comment starting "AUDIT BLOCK" (listing the findings) and lifts it with a later comment starting "AUDIT CLEAR". The Steward never merges while the latest of the two is a block.
-- **Tests.** Never weaken, skip or delete a test to make CI pass. Fix the code.
-- **Shared issues.**
-  - "Task board": the Steward rewrites its body each run.
-  - "Audit log": the Auditor's verdict table.
-  - "Agent log": every run appends one line.
-  - Issues labelled `audit` are the Auditor's findings. The Fixer fixes them and the Auditor closes them.
-- **Adding work.** Add a section to `plan.md` with task IDs, spec references and "depends on". The Steward puts it on the board and the Builder starts it.
-- **Planner PRs and owner approval.** The Planner opens "PLAN <name>: …" PRs (docs/spec/ and plan.md only).
-  - A major drop says "Owner approval needed" in its description, and its tasks are marked "awaiting owner" in plan.md.
-  - **No agent picks a task marked "awaiting owner", and no agent other than the owner writes "Ready to merge" on a PR that says "Owner approval needed".** The Steward never merges a PR whose description still says "Owner approval needed".
-  - The owner may approve by that description edit, an attributable scoped comment/direct instruction, or a verified owner squash merge under addenda A/B; no particular marker edit is required for an evidenced owner decision. Reconcile the exact accepted requirements and task marks after approval; do not infer unrelated or unperformed work is complete.
-  - Small Planner refinements say "Ready to merge" and merge normally.
-
-## 3. Ground rules (from AGENTS.md, repeated because they matter)
-
-- **Supabase:** project `yemqnhnztlbyxmjxidis` only, never any other project. Schema changes go through migrations only. Connector code filters every query by `user_id`. Every write is reversible through the action log (`undo`).
-- **Secrets:** none in code, PRs, issues or comments. Never print the connector URL (it contains a secret).
-- **GitHub:** use `gh api` REST.
-  - **Never open draft PRs.** Create every PR with `draft: false`. Work in progress is signalled by the lease line and by the absence of "Ready to merge", not by GitHub's draft flag. REST cannot mark a draft ready (only the web UI or GraphQL can), so a draft is a PR that REST-only agents can never merge.
-  - Merge with `PUT /repos/{o}/{r}/pulls/{n}/merge` (`merge_method=squash`, `sha=<head>`).
-  - If you find an old draft that is green and "Ready to merge", list it on the Task board under "Owner action: mark ready for review". The owner clicks "Ready for review" on GitHub, and the next Steward run merges it.
-  - Some agent runtimes cannot clone github.com. They edit through the contents API (`PUT /repos/{o}/{r}/contents/{path}` on the task branch) and rely on CI for tests. That is fine: never claim that a local test run happened when it did not.
-- **Commits and PRs** end with the attribution lines your environment specifies.
-
-## 4. Owner's decisions to protect (do not regress)
-
-- **Look:** Graph paper only, day and night, chosen automatically from the device, with an Automatic/Day/Night override. Compact text, calm motion, a docked tab bar with icon-first tabs and a label on the active tab only. No other themes or appearance controls. A simple graph-paper background with one curve per screen (Atlas and card review: grid only).
-- **v4 look (owner, 31 Oct 13:59):** `docs/spec/v4-look.md` is approved, including its §8 decision changes:
-  - red is reserved for "you are here", the primary action and real danger;
-  - lateness is ochre and dashed;
-  - the background curve is a letterhead that scrolls away;
-  - checkpoints are one Route line at any size;
-  - Atlas levels differ, and links are drawn as lanes.
-
-  It overrides `v3.md` where they differ. Do not reintroduce button rails, boxes inside boxes, or red for lateness.
-- **LaTeX everywhere:** every displayed text and every input renders LaTeX (`$…$`, `$$…$$`).
-- **Metro timeline** with schedule colours between stations (early, on time, late). Above about 14 checkpoints it becomes a stage Metro (stress.md A1).
-- **Atlas** (v3.md §4): a foldable outline of ideas (Field › Area › Topic › Idea › Detail) with prerequisite links drawn as arcs in a right-hand margin.
-  - Folding redraws links to the folded branch and bundles them with counts.
-  - Selecting an idea marks what it builds on (blue) and opens up (accent).
-  - No zoom camera, orbits or minimap: the solar-system words were an analogy only.
-- **Plan review:**
-  - The checkpoint map is a left-to-right tree: every prerequisite is a dashed line, columns are prerequisite depth and are centred, and the tree spans out from its root.
-  - Tapping a checkpoint opens a drawer with previous/next.
-  - "Ideas in this plan" uses the same collapsible graph as the Atlas.
-- **Sources-first projects:** create a project with a name plus many PDFs, and append sources any time. The tutor fills in goal, subject and target, and appends plans.
-- **No permanent hint bars, no style tabs, no blank screens.**
-- **Stress principle** (stress.md): every element keeps its job at 100× data by changing form above a measured switch point, never by shrinking marks.
-
-## 5. Where things are
-
-- **Plan and specs:**
-  - `plan.md`: the tasks; the newest sections are "Tutor transcriptions" and "Stress".
-  - `docs/spec/v3.md`: the final look, the Atlas, plan review and sources-first projects.
-  - `docs/spec/stress.md`: the stress test and tasks ST-0 … ST-7, MCP-5 and QA-3.
-  - `docs/spec/transcribe.md`: tutor transcriptions (DB-5, MCP-6, UI-8).
-  - `docs/spec/connector.md`: the MCP connector (Supabase Edge Function `mcp`); its `tools/list` must stay under 15,000 characters, and each self-test part under 150 s.
-  - `docs/acceptance/`: QA reports.
-- **CI:** `ci.yml` (check and e2e), `pages.yml` (GitHub Pages under `/lemma/`), `supabase.yml` (deploy plus the post-deploy MCP smoke check), `mcp-smoke.yml`.
-- **Demo mode:**
-  - `?demo=1` (fixture in `src/data/demo/fixture.json`, generated by `scripts/make-demo-data.ts`).
-  - Stress profiles: `?demo=stress` and `?demo=extreme` (ST-0).
-
-## 6. Known traps
-
-- The graph theme deliberately un-truncates `.truncate` app-wide (`src/styles/graph.css`) to keep formulas whole. In fixed-height rows, clip explicitly (see `clip` in `src/features/atlas/Outline.tsx`).
-- Plan-change previews: checkpoints the project shows as "proposed" are excluded from the base, so they don't appear twice. Existing checkpoints carry no prerequisites in `CheckpointView`, so a plan-change map shows them in the first column.
-- The live database only had self-test projects (hidden, `system=true`, slug `zz-selftest-…`) until the owner's Algebra 1 (36 checkpoints, no stages). The self-test sweeps stale fixtures older than 15 minutes.
-- Some agent environments cannot read GitHub Actions logs. Read check-run annotations (`/check-runs/{id}/annotations`), or reproduce locally.
-
-## 7. Historical hand-off (31 Oct 2026, 10:25 IST; NOT current backlog)
-
-- **Merged:** v3 (DB-4, MCP-4, DEMO-2, UI-6a … e, QA-2), UI-7 (Atlas outline, plan drawer, plan ideas graph, plan map tree), ST-0, ST-2, ST-3, ST-5, ST-7, MCP-5, the transcription plan (#436) and its fix (#444).
-- **Open:**
-  - ST-1 (#432);
-  - ST-4 (#433, red);
-  - ST-6 (#435, red);
-  - DB-5 (#437);
-  - UI-8 (#439);
-  - audit findings #440 (ST-2 sorts CP10 before CP2), #441 (ST-3 extreme render and DOM budgets not asserted) and #443 (save_pages confidence; spec fixed in #444, awaiting verification).
-- **Not started:** MCP-6 (after DB-5) and QA-3 (after ST-1, ST-2, ST-4 and ST-6).
-- **`.tex` and `.md` uploads:** specified in `transcribe.md` §2b and built in UI-8b.
-
-
+Accepted specs are authoritative: `docs/spec/v4-look.md` overrides v3 where different, then `docs/spec/v3.md`, stress constraints and older specs where silent. Preserve Graph day/night, math rendering, project-progress content, the Route/Atlas behavior and actual product data/contract requirements. Historical canvas/setup directions are not current reset, theme or branch-purge authority. Product decisions are in specs and attributable owner records, not duplicated legacy handoff lists.

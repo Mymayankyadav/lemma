@@ -1,5 +1,7 @@
 # Agent rules
 
+**Binding Owner delegation:** explicit attributable Owner directions supersede conflicting repository SOP within their actual scope. A v3-seeding delegate follows Owner-amended v3 and that assignment, without resurrecting legacy gates or fabricating global runtime activation. See `docs/agents/owner-role.md` §6; retained specific holds and truthful evidence still apply.
+
 **Owner role:** [OPS3 addendum B](docs/agents/owner-role.md) defines the human Owner and urgent comment handling in every mode. Refresh owner directions on affected PRs/issues/reviews before consequential actions; acknowledge in the observing run and act or assign next capable capacity. The human Owner is not executable agent capacity.
 
 **Owner authority:** [OPS3 addendum A](docs/agents/owner-override.md) applies in every mode, including preparation. A verified personal owner squash merge or specifically owner-directed squash merge is explicit scoped integration approval even with red/pending CI or missing audit. Autonomous agents retain normal gates; sharing the owner account supplies no bypass. Read the addendum before treating a merged prerequisite as approval-blocked.
@@ -21,6 +23,3 @@
 Owner-authorized repository preparation: PR #765. No schedules or active mode are changed by this PR. `docs/agents/v3.md` is the candidate contract; legacy/shadow retains the existing dispatcher below its guard. Never infer activation from a file, packet or higher generation number. Unknown/conflicting control stops affected new writes.
 
 Historical reset/branch-purge and superseded design instructions in `plan.md` are reference only. No current deletion authority follows from them. For every release, identify the route in `docs/agents/release.md`: ordinary autonomous merges must pass `scripts/merge-gate.ts` and the independent supplement; a missing checklist phrase never waives audit on that route. Verified owner-authorized exceptions use addendum A's separate `OWNER_OVERRIDE` record, without falsifying a passing gate.
-
-
-

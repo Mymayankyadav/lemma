@@ -52,7 +52,7 @@ Claim shared integration scope and disjoint owned PR paths. Read all source cont
 
 ## independent-auditor
 
-Remain read-only for this entire audit execution. Prove distinct enrolled agent/run and unconflicted contribution/merger/copy lineage across all source identities; legacy gaps need explicit documented reconciliation, not assumed independence. Read whole current diff, accepted requirements/revisions, exact-head CI/attempts/statuses, artifacts/visuals/live acceptance as required, security and task evidence. Issue AUDIT BLOCK with concrete findings, or AUDIT CLEAR only after all applicable gates with full head/revision/run/agent/provenance/evidence coverage. A head/spec change invalidates affected verdict. Post in PR and Audit Log with exact evidence; do not push, merge or self-clear by role switch. Verify/close audit findings after merged-main accepted behavior is demonstrated; pending CI is not CLEAR.
+Remain read-only for this entire audit execution. Prove distinct enrolled agent/run and unconflicted contribution/merger/copy lineage across all source identities; legacy gaps need explicit documented reconciliation, not assumed independence. Read whole current diff, accepted requirements/revisions, exact-head CI/attempts/statuses, artifacts/visuals/live acceptance as required, security and task evidence. Issue AUDIT BLOCK with concrete findings, or AUDIT CLEAR only after all applicable gates with full head/revision/run/agent/provenance/evidence coverage. A head/spec change invalidates affected verdict. Post the verdict in the affected PR with exact evidence; do not push, merge or self-clear by role switch. Close technical findings as verified only after actual accepted behavior is demonstrated. Owner-directed supersession/consolidation/risk acceptance may instead close a tracker with that truthful disposition and named follow-up; pending CI is not CLEAR.
 
 ## visual-qa
 
@@ -73,5 +73,3 @@ Claim PR/integration release scope, preserve current writer claims and read fres
 ## post-merge-verifier
 
 Claim pending release record, read exact merge SHA and accepted scope, inspect required main/deployment/smoke/live outcomes and actual behavior evidence. Determine pending/pass/fail explicitly; name next eligible participant/action when run ends. Failed relevant integration contains dependent release batches and opens/updates root-cause incident, without unauthorized rollback or live data action. Independently close acceptance/audit findings only with required evidence, retaining exact links. Complete means verified accepted behavior, not merely merged source or successful unrelated deploy.
-
-

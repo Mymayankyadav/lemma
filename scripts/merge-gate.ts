@@ -22,6 +22,13 @@ export interface MergeGateInput {
   }>;
   commitStatuses: Array<{ context: string; state: string }>;
   auditComments: Array<{ body: string; createdAt: string }>;
+  /**
+   * Explicit fail-closed provenance attestation from the Steward after checking
+   * GitHub's PR/Agent-log authoring and Auditor slot timeline. A comment alone
+   * cannot prove independence when several agents share one GitHub identity.
+   * Omitted/unknown/false always blocks the merge.
+   */
+  auditIndependenceVerified?: boolean;
   requiredChecks?: readonly string[];
 }
 
@@ -85,35 +92,42 @@ export function evaluateMergeGate(input: MergeGateInput): MergeGateResult {
     .sort((a, b) =>
       Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.index - b.index,
     );
+  // Missing or malformed GitHub timestamps cannot establish which Auditor
+  // verdict came last. Do not silently fall back to caller array order.
+  if (markers.some(comment => !Number.isFinite(Date.parse(comment.createdAt))))
+    return denied("Audit verdict chronology missing or invalid");
   const last = markers.at(-1);
   if (last && /^AUDIT BLOCK\b/.test(last.body.trimStart()))
     return denied("Unresolved AUDIT BLOCK; require later AUDIT CLEAR");
 
-  // FIX #619: an explicit independent-Auditor acceptance gate is not met
-  // merely because nobody has filed a BLOCK. The old rule allowed a Ready
-  // PR with seven green jobs to merge before its requested independent audit.
-  // Check the most recent acceptance section. PR descriptions can accumulate
-  // multiple complete checklists across handoffs: the first may be checked
-  // while a newer one explicitly revokes clearance (or vice versa).
-  // Looking only at the first section lets stale approval bypass the gate.
+  // FIX #619/#748: the independent audit is mandatory for *every* Ready PR,
+  // regardless of whether its body happens to mention an Auditor checklist.
+  // Repeated acceptance checklists may revoke an earlier checked item.
   const acceptanceSections = [...input.body.matchAll(
     /(?:^|\n)#{2,4}\s+Acceptance checklist[^\n]*\n([\s\S]*?)(?=\n#{2,4}\s|\nNext step:|$)/gi,
   )];
   const currentChecklist = acceptanceSections.at(-1)?.[1] ?? input.body;
   if (/(?:^|\n)\s*-\s*\[\s\][^\n]*\bIndependent Auditor CLEAR\b/i.test(currentChecklist))
     return denied("Independent Auditor CLEAR acceptance remains unchecked");
-  if (/\bIndependent Auditor CLEAR\b/i.test(input.body)) {
-    if (!last || !/^AUDIT CLEAR\b/.test(last.body.trimStart()))
-      return denied("Independent Auditor CLEAR required before merging");
-    // An old CLEAR cannot approve a newer head. Require the Auditor's last
-    // clearance to identify at least eight hex digits of the current head.
-    // Short SHA prefixes are accepted because Auditor comments use them.
-    const clearedHead = last.body.match(
-      /\b(?:exact[- ]head|head(?: sha)?)\s*[:`]*\s*([a-f0-9]{8,40})\b/i,
-    )?.[1];
-    if (!clearedHead || !input.headSha.toLowerCase().startsWith(clearedHead.toLowerCase()))
-      return denied("Independent Auditor CLEAR is missing for exact current head SHA");
-  }
+
+  if (!last || !/^AUDIT CLEAR\b/.test(last.body.trimStart()))
+    return denied("Missing independent exact-head Auditor CLEAR");
+
+  // An old CLEAR cannot approve a newer head. A short SHA prefix of at
+  // least eight hexadecimal characters is accepted for legacy Auditor logs.
+  const clearedHead = last.body.match(
+    /\b(?:exact[- ]head|head(?: sha)?)\s*[:`]*\s*([a-f0-9]{8,40})\b/i,
+  )?.[1];
+  if (!clearedHead || !input.headSha.toLowerCase().startsWith(clearedHead.toLowerCase()))
+    return denied("Independent Auditor CLEAR is missing for exact current head SHA");
+
+  // GitHub issue comments alone do not authenticate which *execution/slot*
+  // wrote a CLEAR: all agents may share the same GitHub login. The Steward
+  // must independently inspect authoring/merge provenance in the Agent log
+  // and PR timeline and explicitly attest it for this exact head.
+  // Never infer independence from silence, comment text, or an unchecked item.
+  if (input.auditIndependenceVerified !== true)
+    return denied("Independent Auditor provenance not verified for exact current head");
 
   return { ok: true, reason: "Exact-head checks, audit, lease and mergeability passed" };
 }

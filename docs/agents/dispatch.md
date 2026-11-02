@@ -4,7 +4,7 @@ Follow [registry](registry.md), [v3](v3.md), [Owner directives](owner-role.md) a
 
 ## Startup and mode
 
-Read AGENTS, plan.md §0, registry/control/holds and assigned source/task evidence. GitHub REST coordination: Registry #770, Agent Log #455, Task Board #456, Audit Log #442, Intake #763 and Dispatch State #764. Complete required pages; a failed read is unknown, never an absent claimant or passing check. Establish actual enrolled agent identity, unique invocation, immutable run, source-specific runtime/deadline and capability.
+Read AGENTS, plan.md §0, registry/control/holds and assigned source/task evidence. GitHub REST coordination: Registry #770, Agent Log #455, Task Board #456, Intake #763 and Dispatch State #764. Complete required pages; a failed read is unknown, never an absent claimant or passing check. Establish actual enrolled agent identity, unique invocation, immutable run, source-specific runtime/deadline and capability.
 
 Legacy/shadow uses compatible retained role responsibilities plus owner amendments and actual registry membership; shadow packets grant no write authority. Cutover/rollback stops new affected claims and checkpoints as authorized. Active mode consumes validated registry/control-bound exact-agent/invocation tickets. Unknown adopted authority contains affected scopes, not an invented mode or global census.
 
