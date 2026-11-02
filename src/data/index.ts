@@ -32,7 +32,7 @@ const lazyLive: LemmaApi = new Proxy({ mode: 'live' } as LemmaApi, {
   },
 })
 
-const adapters: Partial<Record<'live' | 'default' | 'stress' | 'extreme', LemmaApi>> = {}
+const adapters: Partial<Record<'live' | 'default' | 'stress' | 'extreme' | 'quota3', LemmaApi>> = {}
 function createStressAdapter(profile: 'stress' | 'extreme'): LemmaApi {
  // Diagnostic-only User Timing entries distinguish 5k/30k fixture creation
  // from date hydration. They do not alter readiness or any hard CPU budget.
@@ -53,6 +53,14 @@ export function getApi(): LemmaApi {
  if (getMode() === 'live') return adapters.live ??= lazyLive
  const profile = getDemoProfile()
  if (profile === 'default') return adapters.default ??= new DemoAdapter()
+ // Testable low-quota profile for NOTIF-7: the owner can open Review 5
+ // without changing the saved daily goal or mocking any API response.
+ if (profile === 'quota3') {
+  return adapters.quota3 ??= new DemoAdapter({
+   fixture:{...structuredClone(demoSeedFixture),settings:{...demoSeedFixture.settings,reviewsPerDay:3}},
+   ownedFixture:true,
+  })
+ }
  return adapters[profile] ??= createStressAdapter(profile)
 }
 export * from './types'
