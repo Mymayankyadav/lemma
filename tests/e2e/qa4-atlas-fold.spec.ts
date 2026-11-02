@@ -25,6 +25,7 @@ for(const width of [360,390] as const){
   const confirmation=page.getByRole("dialog",{name:"Unfold every idea?"});
   await expect(confirmation).toBeVisible();
   await confirmation.getByRole("button",{name:"Unfold all"}).click();
+  await expect(confirmation).toBeHidden();
   await expect(all).toHaveAttribute("aria-pressed","true");
   await expect.poll(async()=>Number(await tree.getAttribute("data-atlas-row-count")))
    .toBeGreaterThan(folded);
