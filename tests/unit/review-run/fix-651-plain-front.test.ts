@@ -31,7 +31,7 @@ describe('FIX #651 safe plain Review front fast path',()=>{
  it('preserves lone-CR CommonMark line endings rather than flattening them to plain prose',()=>{
   // CommonMark normalizes CR, LF and CRLF to line endings. A literal <p> fast
   // path collapses a lone CR to whitespace and changes authored card content.
-  for(const source of ['First line\\rSecond line','First line\\r\\nSecond line']){
+  for(const source of ['First line\rSecond line','First line\r\nSecond line']){
    expect(isPlainReviewFront(source,'basic'),JSON.stringify(source)).toBe(false);
   }
   expect(isPlainReviewFront('Ordinary single-line question?','basic')).toBe(true);
