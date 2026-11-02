@@ -1,5 +1,17 @@
 # Stress test: when the UI stops doing its job (owner, 31 Oct 2026)
 
+## Owner-approved CI timing revision — 2 November 2026
+
+The owner authorized relaxing performance conditions after identical code passed local checks but repeatedly exceeded timing limits on GitHub runners. This section supersedes older timing ceilings in this spec and task handoffs.
+
+- Run the shared CI browser suite with one worker to avoid competing timed browsers on the same runner.
+- Keep 4× CPU throttling, full S/X datasets, actual visible content and the first navigation/paint timing origin.
+- Atlas C2 and Cards D6 transitions: under 2,000 ms (previously 1,000 ms).
+- Cold first renders, including the 144-cell matrix: under 4,000 ms (previously 1,500 ms).
+- Retain zero retries for performance cases and continue recording individual measurements. These are CI regression ceilings, not measured phone latency or a guarantee of smoothness.
+- DOM <1,500, overflow, font sizes, tap targets, resource budgets, SQL correctness, security, owner isolation and all functional assertions remain unchanged. SQL timing budgets are unchanged.
+
+
 The owner's live Algebra 1 project (36 checkpoints, no stages) showed two failures:
 
 - On **Paths**, the mini Metro is a barcode of 36 ticks. The 0 % beside it is the only readable part.
