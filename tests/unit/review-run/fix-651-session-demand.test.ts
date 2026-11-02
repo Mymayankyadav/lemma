@@ -12,7 +12,7 @@ describe('FIX #651 Review runner cold session-demand boundary',()=>{
  it('commits a ready queue before the first real-card paint',()=>{
   // Query data is already loaded; a passive effect costs another frame of
   // skeleton/Preparing state before the first real review card appears.
-  expect(source).toContain('useLayoutEffect(()=>{\\n  if(init.current||!settings.data||!apiCards.data)return;');
+  expect(source).toMatch(/useLayoutEffect\\(\\(\\)=>\\{\\s*if\\(init\\.current\\|\\|!settings\\.data\\|\\|!apiCards\\.data\\)return;/);
  });
  it('keeps session filtering and the review queue intact',()=>{
   expect(source).toContain("const sessionId=search.get('session')");
