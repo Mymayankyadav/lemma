@@ -1,16 +1,18 @@
 import {SectionHeading} from '../../ui/SectionHeading';
-import {Tex} from '../../ui/Tex';
+import {scheduleForVisibleProject} from './scheduleCache';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
-import {ChevronRight} from 'lucide-react';
-import {useInsightData,useProjects} from '../../data/hooks';
+import {ChevronRight,Check,RotateCcw,CircleDot,ArrowRight,Lock,CircleDashed} from 'lucide-react';
+import {useProjects} from '../../data/hooks';
+import {useProjectInsight} from './useProjectInsight';
 import type {CheckpointUi,CheckpointView,ProjectDetail} from '../../data/types';
 import {Route} from '../../ui/timeline/Route';
 import {Slab} from '../../ui/Slab';
 import {Glyph} from '../../ui/Glyph';
 import {Skeleton} from '../../ui/Skeleton';
 import {scheduleHeadline,scheduleDate,scheduleColor,type ScheduledCheckpoint} from '../../lib/schedule';
-import {currentCheckpointIndex,scheduleForProject,groupCheckpointStages,type ProgressStage} from '../../ui/timeline/progress';
+import {currentCheckpointIndex,groupCheckpointStages,type ProgressStage} from '../../ui/timeline/progress';
 
 type Stage=ProgressStage;
 
@@ -31,9 +33,9 @@ export function ProjectChips({detail,mode='project'}:{detail:ProjectDetail;mode?
 }
 
 export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'metro'}){
- const insight=useInsightData(30);
+ const insight=useProjectInsight();
  const {project,subject,checkpoints,done,total}=detail;
- const {estimate,rows:schedule}=scheduleForProject(detail,insight.data?.checkpointEvents);
+ const {estimate,rows:schedule}=scheduleForVisibleProject(detail,insight.data?.checkpointEvents);
  const headline=scheduleHeadline(schedule);
  const current=checkpoints.findIndex(cp=>cp.ui==='now');
  const pct=total?Math.round(done/total*100):0;
@@ -47,7 +49,7 @@ export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'m
      <h2 className="break-words font-[var(--font-display)] text-title-s font-semibold"><Tex source={project.title}/></h2>
      <p className="mt-1 break-words text-label leading-relaxed text-ink-2"><Tex source={project.goal?.trim()||'Your tutor fills this in'}/></p>
     </div>
-    <div className="flex shrink-0 flex-col items-end gap-1"><strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-amber">{pct}%</strong>
+    <div className="flex shrink-0 flex-col items-end gap-1"><strong data-count-role="" className="font-[var(--font-ui)] text-title-s tabular-nums text-ink-2">{pct}%</strong>
      {headline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{headline}</span>}</div>
    </div>
    <section aria-label="Checkpoint progress" className="flex flex-wrap items-baseline gap-1 text-label text-ink-2">
@@ -67,7 +69,7 @@ export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'m
      className="font-semibold text-ink">{displayDate(estimate.finish)}</time></span>}
     {estimate.finish&&<span>{estimate.source==='plan'?'from your plan':'measured pace'}{estimate.pace!==null?' · '+estimate.pace.toFixed(2)+'/wk':''}</span>}
     {target&&<span className="basis-full">
-     <span className="font-semibold text-amber">{project.targetLabel??'Target'}:</span>{' '}
+     <span className="font-semibold text-ink-2">{project.targetLabel??'Target'}:</span>{' '}
      <time dateTime={project.targetDate!}>{displayDate(target)}</time>
      {estimate.spare!==null&&<span className={estimate.spare>=0?'text-easy':'text-hard'}>
       {' · '+(estimate.spare>=0?estimate.spare+' days spare':Math.abs(estimate.spare)+' days late')}
@@ -82,10 +84,15 @@ export function GoalOverview({detail}:{detail:ProjectDetail;variant?:'ascent'|'m
 const labels:Record<CheckpointUi,string>={
  done:'done',revisit:'re-check',now:'in progress',next:'up next',locked:'locked',proposed:'proposed'
 };
+const statusIcons={done:Check,revisit:RotateCcw,now:CircleDot,next:ArrowRight,locked:Lock,proposed:CircleDashed} as const;
+function StatusGlyph({ui}:{ui:CheckpointUi}){
+ const Icon=statusIcons[ui];
+ return <Icon size={16} strokeWidth={1.8} aria-hidden="true"/>;
+}
 const marks:Record<CheckpointUi,string>={
- done:'border-amber bg-amber',revisit:'border-hard bg-amber-tint',
+ done:'border-ink-2 bg-ink-2',revisit:'border-hard bg-amber-tint',
  now:'border-[3px] border-amber bg-raised',next:'border-ink-2 bg-raised',
- locked:'border-dotted border-edge-3 opacity-70',proposed:'border-dashed border-amber'
+ locked:'border-dotted border-edge-3 opacity-70',proposed:'border-dashed border-ink-3'
 };
 
 function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;open:boolean;onToggle:()=>void;schedule:Map<string,ScheduledCheckpoint>}){
@@ -95,22 +102,24 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
  const done=stage.checkpoints.filter(cp=>cp.ui==='done'||cp.ui==='revisit').length;
  const total=stage.checkpoints.filter(cp=>cp.ui!=='proposed').length;
  const progress=total?Math.round(done/total*100):0;
- const rows=showFinished?stage.checkpoints:pending;
- return <Slab as="article" aria-label={stage.name+' stage'} className="min-w-0 p-0" data-card="" data-stage-card={stage.key}>
+ // Collapsed stages keep their accessible headers and counts, but never mount
+ // hidden checkpoint links or their potentially expensive KaTeX trees.
+ const rows=open?(showFinished?stage.checkpoints:pending):[];
+ return <article aria-label={stage.name+' stage'} className="min-w-0 border-t border-edge first:border-t-0" data-stage-card={stage.key}>
   <button type="button" aria-expanded={open} aria-controls={id} onClick={onToggle}
    className="flex min-h-12 w-full items-center gap-2 px-3 py-3 text-left focus-visible:outline-2 focus-visible:outline-amber">
    <ChevronRight size={16} aria-hidden="true" className={'shrink-0 text-ink-3 transition-transform '+(open?'rotate-90':'')}/>
    <strong className="min-w-0 flex-1 break-words font-[var(--font-display)] text-headline font-semibold"><Tex source={stage.name}/></strong>
    <span role="img" aria-label={progress+' percent complete'} className="h-1 w-16 shrink-0 overflow-hidden rounded-[1px] bg-fill-2">
-    <span className="block h-full bg-amber" style={{width:progress+'%'}}/>
+    <span className="block h-full bg-ink-2" style={{width:progress+'%'}}/>
    </span>
    <span className="w-9 shrink-0 text-right text-label tabular-nums text-ink-2">{done}/{total}</span>
   </button>
   <div id={id} hidden={!open} className="px-2 pb-2">
-   {finished.length>0&&<button type="button" data-done-summary=""
+   {open&&finished.length>0&&<button type="button" data-done-summary=""
     aria-expanded={showFinished} onClick={()=>setShowFinished(value=>!value)}
     className="flex min-h-11 w-full items-center justify-between rounded-ctl border-t border-edge px-2 text-left text-label text-ink-2">
-    <span>{finished.length} done ✓</span><span className="text-amber">{showFinished?'Hide':'Show'}</span>
+    <span>{finished.length} done ✓</span><span className="text-ink-2">{showFinished?'Hide':'Show'}</span>
    </button>}
    {rows.map((cp,index)=><Link key={cp.id} to={'/p/'+slug+'/cp/'+encodeURIComponent(cp.code)}
     data-cp-row="" aria-label={cp.code+' '+cp.title+', '+labels[cp.ui]}
@@ -120,12 +129,12 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
     <span className="w-[46px] shrink-0 rounded-code text-label tabular-nums text-ink-3">{cp.code}</span>
     <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}><Tex source={cp.title}/>
      {schedule.get(cp.id)?.dueOn&&<span className="block text-caption text-ink-3">Planned {scheduleDate(schedule.get(cp.id)!.dueOn!)}</span>}</span>
-    <span className={'max-w-[84px] shrink-0 text-right text-caption '+(cp.ui==='revisit'?'text-hard':cp.ui==='proposed'||cp.ui==='now'?'text-amber':'text-ink-3')}>
-     {cp.ui==='now'&&cp.stepsTotal>0?cp.currentStep+'/'+cp.stepsTotal:labels[cp.ui]}
+    <span data-cp-status-icon="" aria-hidden="true" className={'flex min-w-[24px] shrink-0 items-center justify-end gap-1 text-caption '+(cp.ui==='revisit'?'text-hard':cp.ui==='now'?'text-amber':'text-ink-3')}>
+     <StatusGlyph ui={cp.ui}/>{cp.ui==='now'&&cp.stepsTotal>0&&<span className="tabular-nums">{cp.currentStep}/{cp.stepsTotal}</span>}
     </span>
    </Link>)}
   </div>
- </Slab>;
+ </article>;
 }
 
 export function Stages({detail}:{detail:ProjectDetail}){
@@ -134,8 +143,8 @@ export function Stages({detail}:{detail:ProjectDetail}){
  const initial=Math.max(0,stages.findIndex(stage=>stage.start<=currentIndex&&stage.end>=currentIndex));
  const [openStage,setOpenStage]=useState(initial);
  useEffect(()=>{setOpenStage(initial)},[detail.project.slug,initial]);
- const insight=useInsightData(30);
- const {rows}=scheduleForProject(detail,insight.data?.checkpointEvents);
+ const insight=useProjectInsight();
+ const {rows}=scheduleForVisibleProject(detail,insight.data?.checkpointEvents);
  const schedule=new Map(rows.map(row=>[row.checkpoint.id,row]));
  return <section aria-label="Stages" className="flex min-w-0 flex-col gap-2">
   <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
@@ -155,7 +164,9 @@ export function Stages({detail}:{detail:ProjectDetail}){
     </span>
    </button>)}
   </nav>}
-  {stages.map((stage,i)=><StageCard key={detail.project.slug+'/'+stage.key} slug={detail.project.slug}
-   stage={stage} schedule={schedule} open={openStage===i} onToggle={()=>setOpenStage(value=>value===i?-1:i)}/>)}
+  <Slab as="div" data-stage-paper="" className="min-w-0 p-0">
+   {stages.map((stage,i)=><StageCard key={detail.project.slug+'/'+stage.key} slug={detail.project.slug}
+    stage={stage} schedule={schedule} open={openStage===i} onToggle={()=>setOpenStage(value=>value===i?-1:i)}/>)}
+  </Slab>
  </section>;
 }

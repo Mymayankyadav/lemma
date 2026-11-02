@@ -84,6 +84,9 @@ export function planReviewNodes(
       const i = nodes.findIndex(n => n.code === op.code);
       if (i >= 0) {
         const [node] = nodes.splice(i, 1);
+        // A move changes the plan even if the checkpoint's text is untouched.
+        // Keep that visible in the map, list and drawer.
+        if (!node.change) node.change = "updated";
         const at = nodes.findIndex(n => n.code === op.after);
         nodes.splice(at < 0 ? nodes.length : at + 1, 0, node);
       }

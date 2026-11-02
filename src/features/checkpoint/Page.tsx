@@ -5,7 +5,7 @@ import {useCheckpoint,useInsightData,useProject,useSettings} from '../../data/ho
 import type {CheckpointView} from '../../data/types';
 import {chatLink,studyPrompt} from '../../lib/chat';
 import {scheduleDetail} from '../../lib/schedule';
-import {scheduleForProject} from '../../ui/timeline/progress';
+import {scheduleForVisibleProject} from '../project/scheduleCache';
 import ProjectPage from '../project/Page';
 import {Sheet} from '../../ui/Sheet';
 import {SectionHeading} from '../../ui/SectionHeading';
@@ -31,7 +31,7 @@ export default function Page(){
   window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
  }
  const detail=query.data,view=detail?.view;
- const schedule=project.data?scheduleForProject(project.data,insight.data?.checkpointEvents).rows:[];
+ const schedule=project.data?scheduleForVisibleProject(project.data,insight.data?.checkpointEvents).rows:[];
  const scheduled=schedule.find(row=>row.checkpoint.code===view?.code);
  const scheduleText=scheduled?scheduleDetail(scheduled):null;
  return <>
