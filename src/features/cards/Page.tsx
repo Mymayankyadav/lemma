@@ -9,16 +9,27 @@ import {Button} from '../../ui/Button';
 import {Chip} from '../../ui/Chip';
 import {IconButton} from '../../ui/IconButton';
 import {Screen} from '../../ui/Screen';
-import {Sheet} from '../../ui/Sheet';
+import type {SheetProps} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
-import {Tex} from '../../ui/Tex';
-import {hasMathPreview} from '../../lib/plain-math';
+import {FastTex as Tex} from '../../ui/FastTex';
+import {hasMathPreview,plainMath} from '../../lib/plain-math';
 import {canRenderPlainCardFront} from './plainCardFront';
 import type {EditorValue} from './Editor';
-import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
+import {needsRichTitle} from './projectTitleSyntax';
 
 const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
+// Motion-backed creation UI is optional. Keep it out of the cold Cards route
+// until New card is pressed; retain it after first open for exit animation.
+const LazySheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
+function CreateSheet(props:SheetProps){
+ const [activated,setActivated]=useState(props.open);
+ useEffect(()=>{if(props.open)setActivated(true)},[props.open]);
+ if(!props.open&&!activated)return null;
+ return <Suspense fallback={<Skeleton h={180}/>}>
+  <LazySheet {...props}/>
+ </Suspense>;
+}
 const ROW_HEIGHT=92,OVERSCAN=6;
 function relative(due:string|null){
  if(!due)return 'New';
@@ -45,12 +56,18 @@ export default function Page(){
  // S/X contains 60 project filters. Cards query, viewport and scroll state
  // update independently; keep the chip and native-option subtrees stable so
  // they do not rerun 60 rich-title/plainMath conversions on each page paint.
- const projectChips=useMemo(()=>projects.data?.map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
+ // Preserve the first twelve rich mathematical chips (FIX #523's accessible
+ // project 12) while bounding the S/X first paint. Choose quick chips in
+ // natural title order, independent of volatile last-activity ordering; the
+ // Project selector below
+ // retains all remaining choices without mounting 60 rich chip titles.
+ const hasMoreProjects=(projects.data?.length??0)>12;
+ const projectChips=useMemo(()=>projects.data?.slice().sort((a,b)=>a.title.localeCompare(b.title,undefined,{numeric:true})).slice(0,12).map(p=><span key={p.id} data-project-slug={p.slug} className="inline-flex shrink-0">
   <Chip className="shrink-0 whitespace-nowrap" selected={project===p.slug} onClick={()=>{setProject(p.slug);setCheckpoint('')}}>
-   <span aria-hidden="true">{p.subject.glyph}</span><ProjectFilterTitle title={p.title}/>
+   <span aria-hidden="true">{p.subject.glyph}</span><span className="whitespace-nowrap text-base">{needsRichTitle(p.title)?<Tex source={p.title}/>:p.title}</span>
   </Chip>
  </span>),[projects.data,project]);
- const projectOptions=useMemo(()=>projects.data?.map(p=><option key={p.id} value={p.slug}>{projectFilterOptionLabel(p.title)}</option>),[projects.data]);
+ const projectOptions=useMemo(()=>projects.data?.map(p=><option key={p.id} value={p.slug}>{plainMath(p.title)}</option>),[projects.data]);
 
  useEffect(()=>{
   const element=filterScroller.current;if(!element)return;
@@ -110,6 +127,7 @@ export default function Page(){
   <div ref={filterScroller} role="group" aria-label="Card filters" data-filter-fade-left={String(filterFade.left)} data-filter-fade-right={String(filterFade.right)} onScroll={updateFilterFade} style={{maskImage:filterMask}} className="flex w-full min-w-0 flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1">
    <Chip className="shrink-0 whitespace-nowrap" selected={!project&&!onlyComments&&noteStatus!== 'suspended'} onClick={()=>{setProject('');setCheckpoint('');setNoteStatus('');setOnlyComments(false);setState('')}}>All</Chip>
    {projectChips}
+   {hasMoreProjects&&<span className="self-center shrink-0 text-[12px] text-ink-3">More projects in selector below</span>}
    <Chip className="shrink-0 whitespace-nowrap" selected={onlyComments} onClick={()=>setOnlyComments(v=>!v)}>Has notes</Chip>
    <Chip className="shrink-0 whitespace-nowrap" selected={noteStatus==='suspended'} onClick={()=>setNoteStatus(v=>v==='suspended'?'':'suspended')}>Paused</Chip>
   </div>
@@ -182,8 +200,8 @@ export default function Page(){
   {cards.hasNextPage&&<Button variant="ghost" disabled={cards.isFetchingNextPage} onClick={()=>void cards.fetchNextPage()}>
    {cards.isFetchingNextPage?'Loading 50 more…':'Load 50 more'}
   </Button>}
-  <Sheet open={creating} onClose={closeCreating} title="New card">
+  <CreateSheet open={creating} onClose={closeCreating} title="New card">
    <Suspense fallback={<Skeleton h={180}/>}>{creating&&<Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>}</Suspense>
-  </Sheet>
+  </CreateSheet>
  </Screen>;
 }
