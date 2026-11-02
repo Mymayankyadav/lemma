@@ -122,11 +122,25 @@ async function capture() {
           } else if (screen === 'review') {
             await page.getByRole('button', { name: 'Start review' }).click()
             await page.getByRole('heading', { name: 'Card review', level: 1 }).waitFor()
+            // The heading also exists on the loading skeleton and empty queue.
+            // Play screenshots must show an actual review card, never a spinner
+            // or a misleading "Nothing due" screen.
+            await page.getByRole('progressbar', { name: 'Review progress' }).waitFor()
+            const card = page.locator('[data-review-card-scroll]')
+            await card.waitFor({ state: 'visible' })
+            assert((await card.innerText()).trim().length > 0,
+              'review/' + world + ' has no rendered card content')
+            assert(new URL(page.url()).hash.startsWith('#/review/run'),
+              'review/' + world + ' did not navigate to the review-run route')
+            console.log('READY: review/' + world + ' real card')
           } else {
             await page.getByRole('tree', { name: 'Ideas and their links' }).waitFor()
             await page.getByRole('treeitem').first().waitFor()
           }
           await page.evaluate(() => document.fonts.ready)
+          const actualTheme = await page.evaluate(() => document.documentElement.dataset.theme)
+          assert(actualTheme === theme,
+            screen + '/' + world + ' rendered theme ' + actualTheme + ' instead of ' + theme)
           const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
           assert(overflow <= 1, screen + '/' + world + ' has horizontal overflow: ' + overflow)
           const path = screenshotPath(screen, world)
