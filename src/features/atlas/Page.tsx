@@ -14,6 +14,7 @@ import type {AtlasNode,AtlasTree,Link as GraphLink,Tone} from './tree';
 import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outline';
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
+import {coldAtlasRows,coldAtlasGeometry} from './coldCache';
 import {atlasFoldDepth} from './depthOf';
 import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
@@ -129,11 +130,11 @@ export default function Page(){
  const open=expanded??initialOpen;
  useEffect(()=>{if(expanded)save({expanded:[...expanded],related})},[expanded,related]);
  const filter=useMemo(()=>search.trim()?(n:AtlasNode)=>matches(n,search):recheckOnly?(n:AtlasNode)=>!n.synthetic&&n.status==='revisit'&&!n.children.length:undefined,[search,recheckOnly]);
- const rows=useMemo(()=>tree?visibleRows(tree,open,filter):[],[tree,open,filter]);
+ const rows=useMemo(()=>tree?coldAtlasRows(tree,open,filter):[],[tree,open,filter]);
  const kinds=useMemo(()=>new Set<GraphLink['kind']>(related?['prereq','related']:['prereq']),[related]);
  // Fixed 44px rows allow windowing without a new dependency. Keep a generous
  // overscan for keyboard focus and scrolling, and preserve total scroll height.
- const geometry=useMemo(()=>buildAtlasRowGeometry(rows.map(row=>tree?.nodes.get(row.id)?.level??'planet')),[rows,tree]);
+ const geometry=useMemo(()=>tree?coldAtlasGeometry(tree,rows):buildAtlasRowGeometry([]),[rows,tree]);
  // Window all outlines above 40 rows, including the normal 82-row demo.
  // FIX #519b additionally requires every Field in a moderate (≤150-node)
  // outline to remain keyboard/screen-reader reachable. Mount only those
@@ -286,16 +287,16 @@ export default function Page(){
    </div>
    {searching&&<div className="pb-2"><input autoFocus aria-label="Find an idea" placeholder="Find an idea" value={search} onChange={e=>setSearch(e.target.value)}
     className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body"/></div>}
-   <div className="flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overscroll-x-contain pb-2" role="toolbar" aria-label="Atlas view">
-    <div role="group" aria-label="Fold to depth" className="flex max-w-full overflow-x-auto rounded-full bg-[var(--paper-2)]">
+   <div className="flex min-w-0 flex-wrap items-center gap-2 pb-2" role="toolbar" aria-label="Atlas view">
+    <div role="group" aria-label="Fold to depth" className="flex w-full min-w-0 rounded-full bg-[var(--paper-2)]">
      {([['Fields',1],['Areas',2],['Topics',3],['All',99]] as const).map(([label,d])=><button key={d} type="button" aria-pressed={depthOf===d} title={d===99?'Unfold everything':'Fold to '+label.toLowerCase()} onClick={()=>{if(d===99&&ideas>300){setConfirmAll(true);return}setExpanded(d===99?new Set([...tree.nodes.values()].filter(n=>n.children.length).map(n=>n.id)):expandedToDepth(tree,d))}}
-      className={'min-h-11 min-w-11 shrink-0 rounded-full px-2 text-label '+(depthOf===d?'bg-[var(--ink)] text-[var(--paper)]':'text-ink-2')}>{label}</button>)}
+      className={'min-h-11 min-w-11 flex-1 whitespace-nowrap rounded-full px-2 text-label '+(depthOf===d?'bg-[var(--ink)] text-[var(--paper)]':'text-ink-2')}>{label}</button>)}
     </div>
     <button type="button" aria-pressed={related} onClick={()=>setRelated(v=>!v)}
-     className={'flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 text-label '+(related?'bg-[var(--paper-2)] font-semibold text-ink':'text-ink-2')}>
+     className={'flex min-h-11 min-w-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-label '+(related?'bg-[var(--paper-2)] font-semibold text-ink':'text-ink-2')}>
      <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
     {recheckCount>0&&<button type="button" aria-pressed={recheckOnly} aria-label={'Re-check '+recheckCount} title="Ideas due for a re-check" onClick={()=>setRecheckOnly(v=>!v)}
-     className={'flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-3 text-label tabular-nums '+(recheckOnly?'bg-[var(--paper-2)] font-semibold text-[var(--late)]':'text-[var(--late)]')}>
+     className={'flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-3 text-label tabular-nums '+(recheckOnly?'bg-[var(--paper-2)] font-semibold text-[var(--late)]':'text-[var(--late)]')}>
      <RotateCcw size={14}/>Re-check {recheckCount}</button>}
    </div>
   </header>
