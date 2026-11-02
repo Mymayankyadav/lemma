@@ -1,9 +1,10 @@
 import {SectionHeading} from '../../ui/SectionHeading';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {getApi} from '../../data/index';
 import {groupReviewSessions,shouldFetchReviewSessions} from './session-demand';
-import {useNavigate} from 'react-router';
+import {notificationRoundCap,notificationQueueSettings} from './notification-limit';
+import {useLocation,useNavigate} from 'react-router';
 import {ChevronDown,ChevronRight,Clock3,Play,Search,Shuffle} from 'lucide-react';
 import {useDeckTree,useHome,useReviewItems,useSettings,useUpdateSettings,useInsightData} from '../../data/hooks';
 import type {DeckNode,ReviewItem,QueueFilter} from '../../data/types';
@@ -38,7 +39,8 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 }
 
 export default function Page(){
- const navigate=useNavigate(),notify=useToast();
+ const navigate=useNavigate(),location=useLocation(),notify=useToast();
+ const handledNotificationLink=useRef<string|null>(null);
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
  // The session chips are optional: only cards tied to a session can use
  // them. The extreme demo otherwise materializes and sorts 60,000 virtual
@@ -124,7 +126,7 @@ export default function Page(){
   else changed.delete(project.key);
   setSelected(changed);
  };
- function start(sessionId:string|null=null,onlyNew=false){
+ function start(sessionId:string|null=null,onlyNew=false,notificationLimit?:number){
   if(!settings.data || !cards.data || !decks.data)return;
   const filter:QueueFilter={...allFilter,sessionId,includeNew:true,newOnly:onlyNew,
    decks:[]};
@@ -132,16 +134,34 @@ export default function Page(){
   const selection=sessionId?
    dueItems.filter(c=>c.projectSlug===fromSession?.projectSlug&&c.sessionNumber===fromSession?.number):
    dueItems;
-  const chosen=(onlyNew?selection.filter(c=>c.state.state===0):selection).slice(0,settings.data.reviewsPerDay||200);
-  if(!chosen.length)return notify('No cards due in this selection');
+  const chosen=(onlyNew?selection.filter(c=>c.state.state===0):selection)
+   .slice(0,notificationRoundCap(settings.data.reviewsPerDay,notificationLimit));
+  if(!chosen.length)return notify(notificationLimit===undefined?'No cards due in this selection':'All clear');
   const target=home.data?.resume;
-  useReviewSession.getState().initialize(chosen,settings.data,filter,
+  useReviewSession.getState().initialize(chosen,notificationQueueSettings(settings.data,notificationLimit),filter,
    target?{projectSlug:target.projectSlug,checkpointCode:target.checkpointCode}:undefined);
   const qs=new URLSearchParams();
   if(sessionId)qs.set('session',sessionId);
   if(onlyNew)qs.set('new','1');
-  navigate('/review/run'+(qs.size?'?'+qs.toString():''));
+  navigate('/review/run'+(qs.size?'?'+qs.toString():''),{replace:notificationLimit!==undefined});
  }
+ // A notification is an explicit one-shot request, not a persistent Review
+ // preference. Wait for the same loaded deck/filter state as the Start button.
+ // React StrictMode may replay effects: the route key prevents double starts.
+ useEffect(()=>{
+  const raw=new URLSearchParams(location.search).get('start');
+  if(raw===null||handledNotificationLink.current===location.key)return;
+  if(!settings.data||!cards.data||!decks.data||cards.error||decks.error)return;
+  handledNotificationLink.current=location.key;
+  const numeric=/^[0-9]+$/.test(raw)?Number(raw):1;
+  const count=Number.isFinite(numeric)?Math.min(50,Math.max(1,numeric)):1;
+  if(!dueItems.length){
+   notify('All clear');
+   navigate('/review',{replace:true});
+   return;
+  }
+  start(null,false,count);
+ },[location.key,location.search,settings.data,cards.data,decks.data,cards.error,decks.error,dueItems,home.data,enabled,navigate,notify]);
  useEffect(()=>{
   if(cards.error||decks.error)notify("Couldn't load your review decks.",{tone:'danger'});
  },[cards.error,decks.error,notify]);

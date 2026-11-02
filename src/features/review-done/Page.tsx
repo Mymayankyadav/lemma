@@ -14,6 +14,7 @@ import {Slab} from '../../ui/Slab';
 import {Button} from '../../ui/Button';
 import {RoundSeal} from './RoundSeal';
 import {prepareSessionNewRound} from './newSession';
+import {ReminderOffer} from './ReminderOffer';
 
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
  return <Tile className="flex min-h-[95px] flex-col items-center justify-center gap-1 px-2 py-3 text-center">
@@ -92,6 +93,7 @@ export default function Page(){
    <Metric icon={RotateCcw} label="right when you were sure" value={sure.length?sureRight+'/'+sure.length:'–'}/>
    <Metric icon={CalendarDays} label="due tomorrow" value={firstAnswers.length&&tomorrow!==null?String(tomorrow):'–'}/>
   </section>
+  <ReminderOffer completed={firstAnswers.length>0}/>
   {firstAnswers.length>0&&<section aria-label="Round transcript" className="w-full">
    <h2 className="mb-2 font-math italic text-ink-2">Your round</h2>
    <div className="flex flex-col gap-3">
