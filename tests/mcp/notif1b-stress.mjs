@@ -117,6 +117,15 @@ try{
    'K2 must rank eligible checkpoints once per project, without per-project LATERAL scans');
  assert.doesNotMatch(optimizedSql,/join lateral\s*\(\s*select c\.code/i,
    'K2 LATERAL must not be planned under the global non-nested-loop preference');
+ // FIX #679c: the cold 30k-card DISTINCT ON + priority sorts must use
+ // bounded function-local memory, never a session-wide setting. This avoids
+ // temp-file spills without changing owner scoping, ordering, or quotas.
+ const config=await q(`select array_to_string(proconfig,',') settings
+   from pg_proc where oid='public.notify_candidates(uuid,timestamptz)'::regprocedure`)
+ assert.match(config[0].settings,/work_mem=16MB/i,
+   'NOTIF X function must provide bounded in-memory sorting headroom')
+ assert.match(config[0].settings,/enable_nestloop=off/i,
+   'NOTIF X must preserve its function-local join planner preference')
  assert.ok(elapsed<150,'X candidate query must finish under 150ms (first attempt)')
  // The fixture correctness checks run AFTER the single timed cold query,
  // so they cannot warm checkpoint buffers or improve its first-attempt budget.
