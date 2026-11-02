@@ -166,7 +166,7 @@ try {
        // isVisible() immediately after click races that import and leaves the
        // Atlas folded; wait for the real dialog before confirming.
        const summary=await phone.locator('[data-atlas-summary]').textContent();
-       const ideaCount=Number(summary?.match(/^\\s*([\\d,]+)/)?.[1]?.replace(/,/g,''));
+       const ideaCount=Number(summary?.match(/^\s*([\d,]+)/)?.[1]?.replace(/,/g,''));
        if(!Number.isFinite(ideaCount))throw Error('QA-4 Atlas idea count missing');
        if(ideaCount>300){
         const confirmation=phone.getByRole('dialog',{name:'Unfold every idea?'});
