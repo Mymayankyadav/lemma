@@ -51,6 +51,18 @@ node scripts/play-shots.mjs --verify
 
 The capture script waits for actual screen content, blocks horizontal overflow, checks PNG headers and dimensions, and writes `docs/android/shots/{today,project,review,atlas}-{day,night}-1080x1920.png`. Commit only genuine browser captures; never replace them with illustrations or empty placeholders.
 
+For a checkout without a local Chromium environment, the dedicated
+`tests/e2e/and4-play-shots.spec.ts` acceptance test runs the same capture
+script in GitHub's Playwright CI and copies **actual Chromium PNG bytes** into
+`test-results/screens/android/`. Download the corresponding
+`screens-shard-<n>` artifact from the **exact-head** CI run, visually inspect
+all eight images, and commit the six missing Project/Review/Atlas day/night
+PNGs (and replace the two Today images only if the new captures are correct).
+The test fails if the Review run contains only a loading skeleton or no
+actual card, if a theme is wrong, or if any image is corrupt or not 3× DPR.
+An artifact is evidence, **not** a substitute for committing the verified
+images to `docs/android/shots/` before marking AND-4 Ready.
+
 ## Owner-only publication checklist
 
 - [ ] Confirm the developer contact email and privacy/deletion process in Play Console.
