@@ -68,7 +68,7 @@ async function verify() {
     captures.push({ name: screen + '/' + world, bytes })
   }
   assertUniquePlayShots(captures)
-  console.log('AND-4 verified: Play text limits, privacy contract, eight full-integrity unique PNGs')
+  console.log('AND-4 verified: Play text limits, privacy contract, eight real-size PNGs')
 }
 async function capture() {
   const { chromium } = await import('@playwright/test')
