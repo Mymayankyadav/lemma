@@ -1,23 +1,31 @@
 import './review.css';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,memo,Suspense,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
-import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatus,useUndoReview,useSessions} from '../../data/hooks';
+import {useAddComment,useRecordReview,useReviewItems,useSettings,useSetNoteStatus,useUndoReview} from '../../data/hooks';
 import type {Confidence,QueueFilter,Rating,ReviewItem} from '../../data/types';
 import {preview,scheduleConfig} from '../../lib/fsrs';
 import {useReviewSession} from './store';
 import {Screen} from '../../ui/Screen';
 import {IconButton} from '../../ui/IconButton';
 import {Button} from '../../ui/Button';
-import {MathText} from '../../ui/MathText';
+import {isPlainReviewFront} from './plainFront';
+import {reviewInitialLoadFailure} from './loadFailure';
+import {scheduleScrollHintMeasure} from './scrollHint';
 import {Card} from '../../ui/Card';
 import {Glyph} from '../../ui/Glyph';
 import {Chip} from '../../ui/Chip';
-import {Sheet} from '../../ui/Sheet';
+
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {useCalm} from '../../ui/useCalm';
+
+const RichMathText=lazy(()=>import('../../ui/MathText').then(module=>({default:module.MathText})));
+const NoteSheet=lazy(()=>import('../../ui/Sheet').then(module=>({default:module.Sheet})));
+// Local performance entries only; no network/analytics. CI reads these to
+// distinguish module loading, data readiness and queue initialization.
+if(typeof performance!=='undefined')performance.mark('review-run-module-ready');
 
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
@@ -28,18 +36,19 @@ const confidenceOptions=[
  {value:'guess' as const,label:'Guess',icon:CircleHelp},
 ];
 
-function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;revealed:boolean;confidence:Confidence;quiet:boolean;stamp:boolean}){
+const CardFace=memo(function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;revealed:boolean;confidence:Confidence;quiet:boolean;stamp:boolean}){
  const front=item.type==='reverse'&&item.ord===2?item.back:item.front;
  const back=item.type==='reverse'&&item.ord===2?item.front:item.back;
  const scrollRef=useRef<HTMLDivElement>(null);
  const [more,setMore]=useState(0);
  const fontSize=front.length>200?18:21;
+ const plainFront=isPlainReviewFront(front,item.type);
  useEffect(()=>{
   const el=scrollRef.current;
   if(!el)return;
   const measure=()=>setMore(Math.max(0,Math.ceil((el.scrollHeight-el.scrollTop-el.clientHeight)/28)));
-  const id=requestAnimationFrame(measure);
-  return ()=>cancelAnimationFrame(id);
+  if(typeof performance!=='undefined')performance.mark('review-run-card-mounted');
+  return scheduleScrollHintMeasure(measure);
  },[front,back,revealed]);
  return <Card stack className="relative flex min-w-0 flex-col gap-2 overflow-hidden rounded-[6px] px-[18px] pb-3 pt-3"
   style={{height:'clamp(208px,42dvh,350px)',minHeight:208,backgroundImage:'repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, var(--line) 28px)'}}>
@@ -53,13 +62,16 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
     onScroll={e=>{const el=e.currentTarget;setMore(Math.max(0,Math.ceil((el.scrollHeight-el.scrollTop-el.clientHeight)/28)))}}
     className="h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-1 pb-6">
     <div className="review-front min-w-0 font-math" style={{fontSize,lineHeight:'28px'}}>
-     <MathText className={fontSize===21?'!text-[21px] !leading-[28px]':'!text-[18px] !leading-[28px]'} source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined} interactiveMath/>
+     {plainFront?<div className={'lemma-math prose-invert min-w-0 max-w-none wrap-break-word font-math text-card leading-[1.3] text-ink '+(fontSize===21?'!text-[21px] !leading-[28px]':'!text-[18px] !leading-[28px]')}><p>{front}</p></div>:
+      <RichMathText className={fontSize===21?'!text-[21px] !leading-[28px]':'!text-[18px] !leading-[28px]'} source={front} variant="card" cloze={item.type==='cloze'?{ord:item.ord,revealed}:undefined} interactiveMath/>}
     </div>
     {revealed&&<div className="mt-4 min-w-0 font-math text-[18px] leading-[28px]">
      <motion.div initial={quiet?false:{scaleX:0}} animate={{scaleX:1}} transition={{duration:quiet?0:0.32}} className="mb-4 h-[1.5px] origin-left bg-amber"/>
      <motion.div initial={quiet?false:{opacity:0}} animate={{opacity:1}} transition={{duration:quiet?0:.3}}>
-      {back?<MathText className="!text-[18px] !leading-[28px]" source={back} variant="answer" interactiveMath/>:item.type==='cloze'?<MathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}} interactiveMath/>:
+      <Suspense fallback={<p role="status" className="text-label text-ink-2">Rendering mathematical answer…</p>}>
+      {back?<RichMathText className="!text-[18px] !leading-[28px]" source={back} variant="answer" interactiveMath/>:item.type==='cloze'?<RichMathText source={front} variant="answer" cloze={{ord:item.ord,revealed:true}} interactiveMath/>:
        <p className="font-math text-title-s text-ink-2">See the highlighted answer above.</p>}
+      </Suspense>
      </motion.div>
     </div>}
    </div>
@@ -74,7 +86,7 @@ function CardFace({item,revealed,confidence,quiet,stamp}:{item:ReviewItem;reveal
   </div>
   {stamp&&<motion.span aria-hidden="true" data-proof-stamp className="pointer-events-none absolute right-4 top-12 font-math text-title text-amber" initial={quiet?false:{opacity:0,scale:1.8}} animate={{opacity:1,scale:1}} transition={{duration:quiet?0:.12}}>∎</motion.span>}
  </Card>;
-}
+});
 
 /** Preserve native Space/Enter activation for focused controls and editable content. */
 function isInteractiveShortcutTarget(target:EventTarget|null):boolean{
@@ -87,8 +99,10 @@ function isInteractiveShortcutTarget(target:EventTarget|null):boolean{
 }
 
 export default function Page(){
+ const firstRender=useRef(false);
+ if(!firstRender.current){firstRender.current=true;if(typeof performance!=='undefined')performance.mark('review-run-first-render')}
  const navigate=useNavigate(),[search]=useSearchParams(),notify=useToast(),reduced=!!useReducedMotion(),calm=useCalm(),reduce=reduced||calm;
- const settings=useSettings(),sessions=useSessions(),mutate=useRecordReview(),undo=useUndoReview();
+ const settings=useSettings(),mutate=useRecordReview(),undo=useUndoReview();
  const addComment=useAddComment(),suspend=useSetNoteStatus();
  const current=useReviewSession(s=>s.current),queue=useReviewSession(s=>s.queue);
  const revealed=useReviewSession(s=>s.revealed),confidence=useReviewSession(s=>s.confidence);
@@ -102,6 +116,7 @@ export default function Page(){
  const cancelGrade=useReviewSession(s=>s.cancelGrade),committed=useReviewSession(s=>s.committed);
  const undoCommitted=useReviewSession(s=>s.undoCommitted);
  const [sheetOpen,setSheetOpen]=useState(false);
+ const [sheetActivated,setSheetActivated]=useState(false);
  // An unsaved note belongs to its review card, never to the next card dealt.
  const [draft,setDraft]=useState<{cardId:string;value:string}|null>(null);
  const note=draft&&current&&draft.cardId===current.cardId?draft.value:'';
@@ -110,12 +125,18 @@ export default function Page(){
  const cardMotion=useAnimationControls();
  const [stamp,setStamp]=useState(false),[calibrationNote,setCalibrationNote]=useState<string|null>(null);
  const previousCardId=useRef<string|null>(null);
+ const firstCard=useRef(true);
  useEffect(()=>{
   const cardId=current?current.cardId+':'+answers.length:null;
   if(previousCardId.current===cardId)return;
   previousCardId.current=cardId;
+  const first=firstCard.current;
+  firstCard.current=false;
   dragX.set(0);dragY.set(0);setStamp(false);
-  void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:reduce?0:.48}});
+  // The cold first card already mounts with initial=false: do not enqueue a
+  // redundant zero-duration MotionControls update before its first paint.
+  // Subsequent cards keep their existing reset and entrance animation.
+  if(!first)void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:reduce?0:.48}});
   setDraft(null);
   setSheetOpen(false);
  },[current?.cardId,answers.length,reduce]);
@@ -123,17 +144,25 @@ export default function Page(){
  const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
  const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
  const apiCards=useReviewItems(filter);
- useEffect(()=>{
+ // Loaded settings/cards must initialize the first real card in the layout
+ // phase, not after a passive-effect frame of skeleton/Preparing UI.
+ useLayoutEffect(()=>{
   if(init.current||!settings.data||!apiCards.data)return;
   init.current=true;
   if(useReviewSession.getState().queue)return;
+  const queueStart=performance.now();
+  performance.mark('review-run-data-ready');
   useReviewSession.getState().initialize(apiCards.data,settings.data,filter);
+  performance.measure('review-run-queue-initialize',{start:queueStart,end:performance.now()});
  },[settings.data,apiCards.data,filter]);
  const intervals=useMemo(()=>{
-  if(!settings.data||!current)return null;
+  // FSRS preview and scheduleConfig are not visible until the answer is
+  // revealed. Defer them off the strict cold first-card paint, then compute
+  // the same intervals for every grade button and committed review.
+  if(!revealed||!settings.data||!current)return null;
   try{return preview(current.state,Date.now(),scheduleConfig(settings.data))}
   catch{return null}
- },[settings.data,current]);
+ },[revealed,settings.data,current]);
  function close(){
   if(answers.length)navigate('/review/done');
   else {useReviewSession.getState().close();navigate('/review')}
@@ -223,6 +252,11 @@ export default function Page(){
    notify('Card suspended',{tone:'success'});
   }catch(error){notify(error instanceof Error?error.message:'Could not suspend',{tone:'danger'})}
  }
+ const loadFailure=reviewInitialLoadFailure(settings,apiCards);
+ if(loadFailure)return <Screen title="Card review" back="/review">
+  <p role="alert" className="text-body text-ink-2">Could not load {loadFailure==='settings'?'review settings':'due cards'}. Your saved answers are unchanged.</p>
+  <Button onClick={()=>{void settings.refetch();void apiCards.refetch()}}>Try again</Button>
+ </Screen>;
  if(settings.isPending||apiCards.isPending)return <Screen title="Card review" back="/review"><Skeleton h={50}/><Skeleton h={380}/></Screen>;
  if(!current && !queue)return <Screen title="Card review" back="/review"><div className="text-body text-ink-2">Preparing your cards…</div></Screen>;
  if(!current)return <Screen title="Card review" back="/review"><p className="text-ink-2">Nothing due in this selection.</p>
@@ -240,10 +274,10 @@ export default function Page(){
     </div>
    </div>
    <IconButton icon={Undo2} label="Undo last answer" disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
-   <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>setSheetOpen(true)}/>
+   <IconButton icon={MessageSquarePlus} label="Note for tutor" onClick={()=>{setSheetActivated(true);setSheetOpen(true)}}/>
   </header>
   <div>
-   <motion.div key={current.cardId} initial={reduce?false:{opacity:0,y:34,scale:0.94}} animate={cardMotion}
+   <motion.div key={current.cardId} initial={firstCard.current?false:reduce?false:{opacity:0,y:34,scale:0.94}} animate={cardMotion}
     exit={{opacity:0,transition:{duration:0}}} transition={{duration:reduce?0:.48}}
     drag={revealed&&!submitting&&current.front.length<500&&current.back.length<500} dragElastic={0.6} dragSnapToOrigin
     dragConstraints={{left:0,right:0,top:0,bottom:0}}
@@ -255,7 +289,9 @@ export default function Page(){
      else if(info.offset.y< -110)void grade(4);
     }}>
     <motion.span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 z-10 text-center font-math text-num italic text-amber">{swipeLabel}</motion.span>
-    <CardFace item={current} revealed={revealed} confidence={confidence} quiet={reduce} stamp={stamp}/>
+    <Suspense fallback={<Skeleton h={208}/>}> 
+     <CardFace item={current} revealed={revealed} confidence={confidence} quiet={reduce} stamp={stamp}/>
+    </Suspense>
    </motion.div>
   </div>
   <p className="text-center text-caption text-ink-3">{Math.max(0,total-new Set(answers.map(a=>a.card.cardId)).size-1)} after this</p>
@@ -279,7 +315,7 @@ export default function Page(){
     </button>
    })}
   </section>}
-  <Sheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="For your tutor">
+  {sheetActivated&&<Suspense fallback={<p role="status" className="text-label text-ink-2">Opening note…</p>}><NoteSheet open={sheetOpen} onClose={()=>setSheetOpen(false)} title="For your tutor">
    <div className="flex flex-col gap-4">
     <label htmlFor="review-note" className="text-body text-ink-2">Ask your tutor to improve or explain this card</label>
     <textarea id="review-note" maxLength={500} rows={4} value={note} onChange={e=>{if(current)setDraft({cardId:current.cardId,value:e.target.value})}}
@@ -287,6 +323,6 @@ export default function Page(){
     <Button disabled={!note.trim()||addComment.isPending} onClick={()=>{void leaveNote()}} icon={Check}>Save note</Button>
     <Button variant="ghost" onClick={()=>{void suspendCard()}}>Suspend this card</Button>
    </div>
-  </Sheet>
+  </NoteSheet></Suspense>}
  </Screen>;
 }

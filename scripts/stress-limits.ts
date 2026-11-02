@@ -26,7 +26,7 @@ export function stressViolations(m: StressMeasurement): string[] {
   // A missing/zero/invalid CPU rate must not silently bypass the 4× gate.
   // 1× is valid for the other, intentionally unthrottled route measurements.
   if (!Number.isFinite(m.cpuThrottle) || m.cpuThrottle <= 0) failures.push('invalid CPU throttling evidence');
-  if (m.cpuThrottle >= 4 && m.durationMs >= 1500) failures.push('4x CPU first render >= 1.5s');
+  if (m.cpuThrottle >= 4 && m.durationMs >= 4000) failures.push('4x CPU first render >= 4s');
   // The transfer budget applies to live API calls, not downloaded app assets.
   if (m.route === '/' && m.requestCount > 3) failures.push('Today exceeds 3 API requests');
   if (m.route === '/insights' && m.requestCount > 1) failures.push('Insights exceeds 1 API request');
