@@ -173,6 +173,42 @@ try {
   'cross-owner outlook must not expose the other owner deck')
  console.log('PASS ST-5 review caps and cross-owner isolation')
 
+ // AUDIT #747 regression-first: daily quota is applied to the requested
+ // deck/session/concept/new-only candidate set, not the global first N cards.
+ // This transaction leaves the subsequent ST-5 scale fixtures unchanged.
+ await db.exec('begin')
+ await db.exec('reset role')
+ await db.exec([
+  "insert into public.projects(id,user_id,subject_id,slug,title,status,pinned,system,last_activity_at) values('12121212-1212-1212-1212-1212121212b1','"+owner+"','22222222-2222-2222-2222-222222222222','filtered-b','Filtered B','active',false,false,now());",
+  "insert into public.checkpoints(id,user_id,project_id,code,title,position,status,current_step,steps,objective) values('77777777-7777-7777-7777-777777777774','"+owner+"','12121212-1212-1212-1212-1212121212b1','CP1','Filtered checkpoint',1,'in_progress',1,'[\"Read\"]','Study');",
+  "insert into public.sessions(id,user_id,project_id,checkpoint_id,number,state,last_activity_at) values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaab1','"+owner+"','12121212-1212-1212-1212-1212121212b1','77777777-7777-7777-7777-777777777774',7,'open',now());",
+  "insert into public.concepts(id,user_id,name,slug) values('ffffffff-ffff-ffff-ffff-fffffffffff1','"+owner+"','Filtered concept','filtered-concept');",
+  "insert into public.notes(id,user_id,project_id,checkpoint_id,session_id,concept_id,no,front,back,type,kind,status) values('88888888-8888-8888-8888-8888888888b1','"+owner+"','12121212-1212-1212-1212-1212121212b1','77777777-7777-7777-7777-777777777774','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaab1','ffffffff-ffff-ffff-ffff-fffffffffff1',99,'Later filtered card','Answer','basic','why','active');",
+  "insert into public.cards(id,user_id,note_id,state,due) values('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7','"+owner+"','88888888-8888-8888-8888-8888888888b1',2,now()-interval '30 minutes');"
+ ].join('\n'))
+ await db.exec("select set_config('test.uid','"+owner+"',false); set role authenticated;")
+ const notes=async(args)=>(await review(args)).map(x=>x.item.noteNo)
+ assert.deepEqual(await notes("array[]::text[],null,null,true,false"),[12],
+   'ordinary unfiltered Start keeps its one-card daily quota')
+ assert.deepEqual(await notes("array['project:filtered-b'],null,null,true,false"),[99],
+   'project B must not be starved by earlier project A quota')
+ assert.deepEqual(await notes("array['cp:filtered-b:CP1'],null,null,true,false"),[99],
+   'checkpoint deck filter must apply before the daily quota')
+ assert.deepEqual(await notes("array[]::text[],'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaab1'::uuid,null,true,false"),[99],
+   'session filter must apply before the daily quota')
+ assert.deepEqual(await notes("array[]::text[],null,'filtered-concept',true,false"),[99],
+   'concept filter must apply before the daily quota')
+ assert.deepEqual(await notes("array[]::text[],null,null,true,true"),[13],
+   'new-only must select the eligible fresh note before daily truncation')
+ assert.deepEqual(await notes("array[]::text[],null,null,false,false"),[12],
+   'excluding new cards must retain the due review note')
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ assert.deepEqual(await notes("array[]::text[],null,null,true,false"),[14],
+   'filter-before-quota must not reveal another owner')
+ await db.exec('reset role; rollback')
+ console.log('PASS FIX #747 ordinary Review filters before quota, sibling/owner parity')
+
+
  // Scale regression: 100 unstaged checkpoints must produce 13 bounded groups,
  // not 100 barcode ticks or a second checkpoint download.
  await db.exec('reset role')
