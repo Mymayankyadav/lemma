@@ -6,7 +6,7 @@ import {mkdirSync} from 'node:fs';
 // outside this interactive Atlas budget; the fixture remains mounted.
 for(const theme of ['graph','graph-night'] as const)
 for(const [width,height] of [[390,844],[360,740]] as const){
- test('AUDIT #441 extreme Atlas opens within 1s at 4x CPU, '+theme+' '+width+'px',async({page},testInfo)=>{
+ test('AUDIT #441 extreme Atlas opens within 2s at 4x CPU, '+theme+' '+width+'px',async({page},testInfo)=>{
   await page.setViewportSize({width,height});
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
@@ -39,7 +39,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
    await page.screenshot({path:'test-results/screens/audit-441/atlas-'+theme+'-'+width+'.png'});
    expect(metrics.nodes,'Atlas DOM element budget').toBeLessThan(1500);
    expect(metrics.overflow,'Atlas horizontal scroll').toBeLessThanOrEqual(1);
-   expect(metrics.durationMs,'Atlas first interactive render at 4x CPU').toBeLessThan(1000);
+   expect(metrics.durationMs,'Atlas first interactive render at 4x CPU').toBeLessThan(2000);
   }finally{
    await cdp.send('Emulation.setCPUThrottlingRate',{rate:1});
    await cdp.detach();

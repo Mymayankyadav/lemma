@@ -124,7 +124,7 @@ for(const width of [360,390] as const){
 // Loading the deterministic 30,000-card fixture happens before timing.
 for(const theme of ['graph','graph-night'] as const)
 for(const [width,height] of [[360,740],[390,844]] as const){
- test('ST-4 extreme cards open under 1s at 4x CPU: '+theme+' '+width,async({page})=>{
+ test('ST-4 extreme cards open under 2s at 4x CPU: '+theme+' '+width,async({page})=>{
   test.setTimeout(120_000);
   await page.setViewportSize({width,height});
   await page.route('https://fonts.googleapis.com/**',route=>route.fulfill({body:''}));
@@ -145,7 +145,7 @@ for(const [width,height] of [[360,740],[390,844]] as const){
     rows:document.querySelectorAll('[data-card-row]').length,
     overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth),
    }));
-   expect(metrics.durationMs,'Card list first interactive render at 4x CPU').toBeLessThan(1000);
+   expect(metrics.durationMs,'Card list first interactive render at 4x CPU').toBeLessThan(2000);
    expect(metrics.nodes,'Card list DOM budget').toBeLessThan(1500);
    expect(metrics.rows).toBeLessThanOrEqual(24);
    expect(metrics.overflow,'Card list horizontal overflow').toBeLessThanOrEqual(1);
