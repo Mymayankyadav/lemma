@@ -49,7 +49,7 @@ function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:st
         {layout.edges.map(e => {
           const a = at.get(e.from)!, b = at.get(e.to)!;
           return <line key={e.from+">"+e.to} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-            stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4"/>;
+            stroke="var(--line)" strokeWidth="1.5" strokeDasharray="3 4"/>;
         })}
         {layout.nodes.map(pos => {
           const n = byCode.get(pos.code)!, on = selected === n.code;
@@ -58,7 +58,7 @@ function CheckpointTree({nodes, selected, onSelect}: {nodes: Node[]; selected:st
               onKeyDown={e => {if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(n.code)}}}>
             <circle cx={pos.x} cy={pos.y} r={R+5} fill="transparent"/>
             <circle cx={pos.x} cy={pos.y} r={R} fill={on?"var(--amber)":"var(--raised)"}
-              stroke={n.change?"var(--amber)":"var(--amber-line-2)"} strokeWidth={n.change?2:1}
+              stroke={on?"var(--amber)":n.change?"var(--ink-3)":"var(--line)"} strokeWidth={n.change?2:1}
               strokeDasharray={n.change==="added"?"4 3":undefined}/>
             <text x={pos.x} y={pos.y+3} textAnchor="middle" fontSize={n.code.length>4?12:12} fontWeight="600"
               fill={on?"var(--amber-ink)":"var(--ink)"}>{n.code}</text>
@@ -84,7 +84,7 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
   return <section aria-label="Checkpoint prerequisites" className="flex min-w-0 flex-col gap-2">
     <div className="flex items-center justify-between gap-3">
       <span className="text-caption text-ink-3">Stages · {nodes.length} checkpoints</span>
-      <button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-label text-amber"
+      <button type="button" className="min-h-11 rounded-ctl border border-edge px-3 text-label text-ink-2"
         onClick={() => {setShowAll(v => !v);setExpandedStage(null)}}>
         {showAll ? "Show stages" : "Expand all"}
       </button>
@@ -99,9 +99,9 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
             const offset = from.x===to.x?18:0;
             return <g key={edge.from+">"+edge.to} aria-label={`${edge.count} prerequisite links from ${plainMath(from.name)} to ${plainMath(to.name)}`}>
               <line x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-                stroke="var(--amber-line-2)" strokeWidth="1.5" strokeDasharray="3 4" />
+                stroke="var(--line)" strokeWidth="1.5" strokeDasharray="3 4" />
               <rect x={mx-13+offset} y={my-10} width="26" height="20" rx="7"
-                fill="var(--raised)" stroke="var(--amber-line-2)" />
+                fill="var(--raised)" stroke="var(--line)" />
               <text x={mx+offset} y={my+4} fill="var(--ink)" textAnchor="middle" fontSize="12" fontWeight="600">{edge.count}</text>
             </g>;
           })}
@@ -115,14 +115,14 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
               <title>{plainMath(stage.name)} · {stage.count} checkpoints</title>
               <rect x={stage.x-65} y={stage.y-44} width="130" height="88" rx="12"
                 fill={on?"var(--amber-tint)":"var(--raised)"}
-                stroke={on?"var(--amber)":"var(--amber-line-2)"} strokeWidth={on?2:1.5}/>
+                stroke={on?"var(--amber)":"var(--line)"} strokeWidth={on?2:1.5}/>
               <foreignObject data-stage-label="" x={stage.x-60} y={stage.y-38} width="120" height="54">
                 <div className="flex h-full w-full items-center overflow-x-auto overflow-y-hidden whitespace-nowrap px-1 text-center text-[16px] leading-10 text-ink"
                   title={plainMath(stage.name)}>
                   <Tex source={stage.name} className="mx-auto" />
                 </div>
               </foreignObject>
-              <text x={stage.x} y={stage.y+33} textAnchor="middle" fontSize="12" fill="var(--amber)">
+              <text x={stage.x} y={stage.y+33} textAnchor="middle" fontSize="12" fill={on?"var(--amber)":"var(--ink-3)"}>
                 {stage.count} {stage.count===1?"checkpoint":"checkpoints"}
               </text>
             </g>;
@@ -143,10 +143,11 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
   </section>;
 }
 
+const dueDateFormatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 function dueLabel(date?: string | null) {
   if (!date) return null;
   const d = new Date(date + "T12:00:00Z");
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  return Number.isNaN(d.getTime()) ? null : dueDateFormatter.format(d);
 }
 /** Everything one checkpoint covers, one tap from the map or the list; steps through the plan in order. */
 export function CheckpointDrawer({
