@@ -328,6 +328,9 @@ try {
  // the saved reviews_per_day=3 goal. Ordinary Start stays at three, and
  // neither path changes settings or fetches another owner's cards.
  await db.exec('reset role')
+ // Earlier Insights assertions deliberately inserted a same-day answer;
+ // isolate this queue-contract fixture from that completed scenario.
+ await db.exec("update public.reviews set undone_at=now() where user_id='"+owner+"' and undone_at is null")
  await db.exec("update public.settings set reviews_per_day=3,new_per_day=0 where user_id='"+owner+"'")
  await db.exec(
   "insert into public.notes(id,user_id,project_id,checkpoint_id,no,front,back,type,kind,status) "+
