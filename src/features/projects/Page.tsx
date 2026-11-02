@@ -7,6 +7,7 @@ import {useProjects,useUpdateProject} from '../../data/hooks';
 import {getApi} from '../../data';
 import {getMode} from '../../data/mode';
 import {prefetchAtlasForPaths} from './atlasPrefetch';
+import {scheduleCardsWarmup} from './cardsWarmup';
 import {MiniStageBar} from '../../ui/timeline/MiniStageBar';
 import type {ProjectSummary,ProjectStatus} from '../../data/types';
 import {Screen} from '../../ui/Screen';
@@ -14,7 +15,7 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
-import {Tex} from '../../ui/Tex';
+import {FastTex as Tex} from '../../ui/FastTex';
 import {countPinnedProjects} from './pinnedCount';
 
 type Filter='active'|'paused'|'done'|'archived';
@@ -115,13 +116,10 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 
 export default function Page(){
  const queryClient=useQueryClient();
- // Cards is the common next stop from Paths. Warm the small route chunk
- // during the Paths visit without issuing a Cards data query.
- useEffect(()=>{void import('../cards/Page').catch(()=>{})},[]);
- // The 2,500-idea demo Atlas must not compete with first paint of Paths.
- // Warm its module and canonical data query on genuine Atlas navigation
- // intent (hover, keyboard focus, or touch/pointer down), not on mount.
- // Live Paths never issues an extra Atlas network request.
+ // Cards is the common next stop from Paths. Warm its small route chunk
+ // asynchronously during the unthrottled Paths visit, without evaluating
+ // Cards in the cold Today/Atlas entry bundle or issuing a Cards data query.
+ useEffect(()=>scheduleCardsWarmup(()=>{void import('../cards/Page').catch(()=>{})}),[]);
  const warmAtlas=useCallback(()=>{
   if(getMode()!=='demo')return;
   void import('../atlas/Page');
