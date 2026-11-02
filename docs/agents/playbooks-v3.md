@@ -4,13 +4,15 @@ Every role follows [v3](v3.md), its exact assigned requirements, current owner h
 
 **Release-route precedence (all modes):** [Owner role](owner-role.md) and [owner squash-merge authority](owner-override.md) qualify retained instructions. CI, independent CLEAR and Ready requirements below govern **ordinary autonomous merges**. A verified personal owner squash merge or specifically owner-directed merge uses the separate `OWNER_OVERRIDE` route; preserve rejected gate results and actual failures. Never fabricate CI/audit success. Retained prohibitions on weakening tests mean no unauthorized changes merely to obtain green CI; legitimate owner-approved policy amendments remain scoped under addendum A. This changes approval authority, not factual installation/runtime/drain evidence.
 
+[Capacity amendment C](registry.md) governs enrollment, actual agent/invocation identity, runtime bounds and dispatch at any workforce size. Roles never imply a scheduler slot.
+
 ## owner (human governance; never an assignable agent role)
 
 The Owner is Mayank Yadav (`Mymayankyadav`). [Addendum B](owner-role.md) defines rights, urgent PR/issue/review instructions, discovery/acknowledgement, scope and attribution. Agents cannot select this role, impersonate it through shared GitHub credentials or count it as scheduled capacity. Owner directions take subject-specific precedence; actual runtime/CI facts remain honest. Lead and workers must acknowledge and route observed directives before unrelated routine work, respecting explicit hold/stop instructions immediately for the affected scope. [Addendum A](owner-override.md) defines owner squash-merge exceptions.
 
 ## lead-dispatcher
 
-Claim the epoch and any shared issue-body writer scopes; reconcile current repo/plan/spec refs and intake with overlap/deduplication, active claims/leases, healthy CI, release/verification queues and reviewer/capability availability. Refresh material candidate evidence completely; incomplete scans do not advance watermarks. Publish five precise advisory tickets, preserving occupied claims, and record packet revision before/after readback. Allocate by priority/aging/WIP and useful continuity, not permanent roles. Assign P0/P1 first, drain ready delivery/review, assess owner plans aged two healthy cycles. Include next dispatcher/recovery action and metrics sources. Then release dispatcher scope and perform eligible bounded work. Never overwrite a live dispatcher or authorize product scope through a packet.
+Claim the epoch and any shared issue-body writer scopes; reconcile current repo/plan/spec refs and intake with overlap/deduplication, active claims/leases, healthy CI, release/verification queues and reviewer/capability availability. Refresh material candidate evidence completely; incomplete scans do not advance watermarks. Publish precise advisory tickets for actual eligible agent/invocation pairs, preserving occupied claims, and record packet revision before/after readback. Allocate by priority/aging/WIP and useful continuity, not permanent roles. Assign P0/P1 first, drain ready delivery/review, assess owner plans aged two healthy cycles. Include next dispatcher/recovery action and metrics sources. Then release dispatcher scope and perform eligible bounded work. Never overwrite a live dispatcher or authorize product scope through a packet.
 
 ## intake-steward
 
@@ -46,11 +48,11 @@ Claim main/security/shared-root-cause incident first, then scoped red PR/defect.
 
 ## integration-engineer
 
-Claim shared integration scope and disjoint owned PR paths. Read all source contribution lineage, accepted contracts/revisions, migration order and base interactions; plan sequential integration rather than combining incompatible old-green heads. Bring main in non-force where conflict/semantic overlap requires; copied source retains author exclusions. Re-run affected tests and independent audit for new heads. A composite cannot launder all-slot provenance. Publish exact parent/head/base and remaining release ordering, keeping a reviewer available. No merge without separate current release authority/evidence.
+Claim shared integration scope and disjoint owned PR paths. Read all source contribution lineage, accepted contracts/revisions, migration order and base interactions; plan sequential integration rather than combining incompatible old-green heads. Bring main in non-force where conflict/semantic overlap requires; copied source retains author exclusions. Re-run affected tests and independent audit for new heads. A composite cannot launder multi-source provenance. Publish exact parent/head/base and remaining release ordering, keeping a reviewer available. No merge without separate current release authority/evidence.
 
 ## independent-auditor
 
-Remain read-only for this entire audit execution. Prove distinct run/slot and unconflicted contribution/merger/copy lineage; legacy gaps need explicit documented reconciliation, not assumed independence. Read whole current diff, accepted requirements/revisions, exact-head CI/attempts/statuses, artifacts/visuals/live acceptance as required, security and task evidence. Issue AUDIT BLOCK with concrete findings, or AUDIT CLEAR only after all applicable gates with full head/revision/run/slot/provenance/evidence coverage. A head/spec change invalidates affected verdict. Post in PR and Audit Log with exact evidence; do not push, merge or self-clear by role switch. Verify/close audit findings after merged-main accepted behavior is demonstrated; pending CI is not CLEAR.
+Remain read-only for this entire audit execution. Prove distinct enrolled agent/run and unconflicted contribution/merger/copy lineage across all source identities; legacy gaps need explicit documented reconciliation, not assumed independence. Read whole current diff, accepted requirements/revisions, exact-head CI/attempts/statuses, artifacts/visuals/live acceptance as required, security and task evidence. Issue AUDIT BLOCK with concrete findings, or AUDIT CLEAR only after all applicable gates with full head/revision/run/agent/provenance/evidence coverage. A head/spec change invalidates affected verdict. Post in PR and Audit Log with exact evidence; do not push, merge or self-clear by role switch. Verify/close audit findings after merged-main accepted behavior is demonstrated; pending CI is not CLEAR.
 
 ## visual-qa
 
@@ -70,5 +72,6 @@ Claim PR/integration release scope, preserve current writer claims and read fres
 
 ## post-merge-verifier
 
-Claim pending release record, read exact merge SHA and accepted scope, inspect required main/deployment/smoke/live outcomes and actual behavior evidence. Determine pending/pass/fail explicitly; name next eligible slot/action when run ends. Failed relevant integration contains dependent release batches and opens/updates root-cause incident, without unauthorized rollback or live data action. Independently close acceptance/audit findings only with required evidence, retaining exact links. Complete means verified accepted behavior, not merely merged source or successful unrelated deploy.
+Claim pending release record, read exact merge SHA and accepted scope, inspect required main/deployment/smoke/live outcomes and actual behavior evidence. Determine pending/pass/fail explicitly; name next eligible participant/action when run ends. Failed relevant integration contains dependent release batches and opens/updates root-cause incident, without unauthorized rollback or live data action. Independently close acceptance/audit findings only with required evidence, retaining exact links. Complete means verified accepted behavior, not merely merged source or successful unrelated deploy.
+
 

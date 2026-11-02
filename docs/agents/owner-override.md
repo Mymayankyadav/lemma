@@ -38,7 +38,7 @@ No owner merge is automatic permission to access another project, reveal secrets
 
 For OPS3 prerequisites accept **either** (a) ordinary CI/independent-release acceptance **or** (b) verified `OWNER_OVERRIDE` for the exact merged package. A stricter retained sentence is qualified by this addendum. Do not require green historical checks or a retroactive independent CLEAR merely to install compatible guarded prompts, assess plans or continue unrelated authorized work.
 
-Install the same five prompts under the existing explicit setup authorization, preserve initial enabled states and legacy/shadow authority, read back actual identities/text/digests, then collect runtime capabilities and guard acknowledgements through existing invocations. No one must first prove runtime acknowledgements from uninstalled v3 prompts. If any required identity/access is unavailable, report that concrete blocker; an owner merge cannot manufacture tool access or task IDs.
+Install compatible startup/configuration for the actual owner-authorized cohort under the existing setup authorization, preserve initial enabled states and legacy/shadow authority, read back actual identities/text/digests, then collect runtime capabilities and guard acknowledgements through existing invocations. No one must first prove runtime acknowledgements from uninstalled v3 prompts. If required identity/access is unavailable, report that concrete blocker; an owner merge cannot manufacture tool access or source IDs. Follow [capacity amendment C](registry.md), not a fixed-count or scheduled-only assumption.
 
 A preparation/policy merge is **not automatic active mode**. Actual installed-prompt coherence, control events, live/queued writer reconciliation and factual capability/drain evidence remain required before consequential active-mode operation. If the owner explicitly directs a different transition, record that scope accurately; never describe a waived prerequisite as evidence that it was completed.
 
@@ -53,4 +53,5 @@ Ordinary autonomous merges still use `evaluateMergeGate` and `evaluateRelease` u
 PR **#765**, source head `24e76848d2ab8eb1e84d33b5581362398da84442`, was squash-merged as `63a4e59b3bd2b7be1a6e19c3019633abf0e96978` following the owner's explicit instruction **“Merge pr without waiting for ci”**. The instruction and delegated execution are recorded in [PR comment 6572254151](https://github.com/Mymayankyadav/lemma/pull/765#issuecomment-6572254151) and [Agent Log handoff 6572261643](https://github.com/Mymayankyadav/lemma/issues/455#issuecomment-6572261643).
 
 Treat #765 as owner-approved repository preparation. Its missing pre-merge independent review and CI success no longer block compatible guarded installation under the separately given setup request. Report and repair actual CI findings separately. Do not require #765 to be remerged or pretend its historical checks passed. No schedules were changed by that merge and no active-mode evidence is inferred.
+
 

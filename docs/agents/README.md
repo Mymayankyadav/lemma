@@ -12,23 +12,17 @@ This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent c
 2. Resolve Agent Log **#455**, Task Board **#456**, Audit Log **#442**, Plan Intake **#763**, Dispatch State **#764**. IDs are canonical; titles are navigation only. Check adopted control events and current scoped owner holds.
 3. Use [v3 contract](v3.md) only according to its mode. `legacy`/`shadow`: retained [dispatch](dispatch.md) and [playbooks](prompts.md) remain authoritative; shadow tickets cannot claim work. `cutover`/`rollback`: no new affected writable claims. `active`: valid current-instance packet, then assigned role/task/requirements/handoff only. Unknown/conflicting mode/generation: affected read-only containment.
 4. In every mode follow the [release supplement](release.md): ordinary autonomous merges require exact-head CI and independent audit; verified owner-authorized exceptions use [addendum A](owner-override.md) without fabricated passing evidence. Follow [Owner directives](owner-role.md), path ownership and factual runtime/transition requirements. Never invoke historical reset/purge instructions. A mode change alone supplies no exception.
-5. External installation follows [transition](transition.md), [setup prompt](setup-prompt.md) and [evidence checklist](../changes/OPS3/status.md). Exactly five intended slots are :00/:15/:30/:45/:50 IST; actual identities, enabled state, any extra Planner and runtime capabilities are UNKNOWN until read back externally.
+5. Setup/expansion follows [transition](transition.md), [setup prompt](setup-prompt.md), [registry](registry.md) and [evidence checklist](../changes/OPS3/status.md). Discover actual authorized target agents and source-specific configuration/runtime; no count, scheduler, cadence or worker census is presumed.
 
 New owner UI/architecture plans enter #763 with exact source/digest and authority, then a scoped package using [templates](templates/README.md). Presence in a PR or a higher filename version is not approval. `plan.md` remains the only runnable task list.
 
-## 1. Dynamic team and hourly capacity (OPS-1)
+## 1. Actual capacity and role assignment
 
-**The five ChatGPT hourly executions are dynamically dispatched capacity slots, not fixed role assignments.** On **every** run, each starts with lightweight Steward-style triage and chooses Steward, Fixer, Builder (including critical-path Builder-2 work), or independent Auditor based on current GitHub tasks, CI, merges, audit backlog, dispatch claims and PR leases. The complete algorithm, timing and safety rules are in [`dispatch.md`](dispatch.md); it overrides old minute-specific role labels in the role playbooks below. Do not keep a role idle or reserve a Builder, Fixer, Auditor or Steward when its queue is empty. When several runnable tasks are available, multiple slots should become Builders. **One slot can switch roles between runs (or within a run after a handoff).**
+[Registry #770](registry.md) defines positively verified owner-authorized participants and source capabilities. There is no fixed workforce size, scheduler, minute-slot allocation or universal run duration. Scheduled, interactive, CI and external agents can enroll; manual participants need not impersonate scheduled workers. Unknown inventory remains unknown.
 
-| Hourly capacity slot (IST) | Assignment |
-| --- | --- |
-| :00 | Dynamic at run start |
-| :15 | Dynamic at run start |
-| :30 | Dynamic at run start |
-| :45 | Dynamic at run start |
-| :50 | Dynamic at run start |
+The appointed claimed Lead reconciles global work once per agreed epoch; workers consume exact agent/invocation tickets or bounded eligible fallback. Any capable unconflicted participant can serve Planner, Builder, Fixer, Auditor, specialist, release or verification role. The Owner is human governance, not executable capacity. Keep one writer per scope, future independent reviewer availability and truthful exact-head/revision evidence as capacity grows.
 
-The independent **Planner** continues about every 12 hours (08:40 and 20:40 IST) for spec/plan work; this policy does not alter its cadence or owner-approval gates. Role *responsibilities* remain: Steward manages the task board and merges audited/green PRs; Fixer repairs red CI and bugs; Builder implements runnable tasks; Auditor independently checks PRs/merged work. `docs/agents/prompts.md` contains their full role playbooks. All five schedules must use the same **dynamic dispatcher** prompt, rather than selecting one section permanently. Each run reads its chosen role section; the repo version wins over the schedule's cached text.
+Old role names or cadence references are historical illustrations only. No participant is disabled, renamed or created to match a remembered roster. Setup/expansion follows actual authorization and [transition.md](transition.md), preserving source identities, claims, configuration and lineage.
 
 ## 2. Coordination conventions (all agents)
 
@@ -123,4 +117,5 @@ The independent **Planner** continues about every 12 hours (08:40 and 20:40 IST)
   - audit findings #440 (ST-2 sorts CP10 before CP2), #441 (ST-3 extreme render and DOM budgets not asserted) and #443 (save_pages confidence; spec fixed in #444, awaiting verification).
 - **Not started:** MCP-6 (after DB-5) and QA-3 (after ST-1, ST-2, ST-4 and ST-6).
 - **`.tex` and `.md` uploads:** specified in `transcribe.md` §2b and built in UI-8b.
+
 

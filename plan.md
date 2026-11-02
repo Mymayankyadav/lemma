@@ -121,7 +121,7 @@ The owner authorized implementation of the exact supplied `Lemma_Agent_System_v3
 | Task | Requirement / acceptance | Depends on | Owned paths | State |
 | --- | --- | --- | --- | --- |
 | OPS3-PREP | Source snapshot, baseline/cleanup manifest, compatible inactive startup, complete protocol/playbooks/templates, executable control/claim/packet/release validators, adversarial scenarios and setup prompt; independent audit + required CI before merge | Current policy; release enforcement uses existing #749 and mandatory supplement | `AGENTS.md`, `plan.md`, `README.md`, `docs/agents/**`, `docs/changes/OPS3/**`, `docs/design/README.md`, `docs/guide.md`, `scripts/agent-protocol.mjs`, `tests/unit/agents/protocol.test.ts`, `tests/agents/**` | repository implementation authorized; review pending |
-| OPS3-5 | Same five identities, old/new prompt snapshots and readback, startup acknowledgements, measured capabilities | OPS3-PREP merged | Schedule installation evidence in `docs/changes/OPS3/`; external setup only | not executed here |
+| OPS3-5 | Actual owner-authorized registry cohort, source/config snapshots and readback, startup acknowledgements, measured per-source capabilities | OPS3-PREP merged | Schedule installation evidence in `docs/changes/OPS3/`; external setup only | not executed here |
 | OPS3-6 | Shadow assignment/intake evidence and failure rehearsal; no shadow write authority | OPS3-5 | `docs/changes/OPS3/` evidence | gated |
 | OPS3-7 | Drain incompatible writers/queued starts, canonical protocol digest, first future packet, authorized control chain and first receipts | OPS3-6; independent release enforcement; all activation gates | `docs/changes/OPS3/` evidence and #455/#764 | gated; NOT ACTIVE |
 | OPS3-8 | At least 24 healthy epochs, measurements and pending release verification accounted for | OPS3-7 | stabilization evidence | gated |
@@ -338,7 +338,7 @@ Notes per task:
 - Done when: `themes.md` §7.
 
 #### How work runs now (31 Oct 10:25)
-- Historical four-role snapshot is superseded by the compatible startup guard in `docs/agents/README.md`. Five intended capacity slots consume the current mode; actual schedule state must be verified externally. New approved task definitions go here, not into competing issue lists.
+- Historical four-role snapshot is superseded by the compatible startup guard in `docs/agents/README.md`. Actual enrolled execution sources consume the current mode; count, identities and source-specific configuration must be verified, never inferred from historical slot examples. New approved task definitions go here, not into competing issue lists.
 
 #### Reminders and notifications (Planner, 31 Oct 22:40): NOTIF-0 … NOTIF-7, QA-5 — **owner-requested 31 Oct 23:33 IST; audit first**
 - Spec: `docs/spec/notifications.md`. Web Push reminders that work in the browser, the installed PWA and the Android app (`android.md`). They cover cards due, checkpoints planned for tomorrow, a kind "smaller step" when a project is behind plan, picking up a paused session, tutor proposals (approve cards from the notification, with Undo), plan-past-target and a weekly digest.
@@ -476,4 +476,5 @@ App screens for the master prompt (Settings) and the action history with undo bu
 - Design boards: `docs/design/canvas/*.dc.html` (exported from the owner's canvas; inline styles hold the exact values; open in a browser for the visual, though interactive parts need the canvas runtime) and the owner's original reference `docs/design/reference-amber-on-obsidian.png`.
 - Owner-only links (private to the owner): design canvas https://claude.ai/artifact/NjsHYBnmuZYgphy3mY13Qu, research notes https://claude.ai/artifact/EQiFLZfqa1ewaHTR1vbCdo.
 - Legacy code kept for reference until INT-1: `legacy/` (FSRS engine and renderer already moved into `src/lib`).
+
 
