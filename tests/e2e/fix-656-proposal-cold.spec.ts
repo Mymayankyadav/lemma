@@ -15,13 +15,35 @@ for(const width of [390,360] as const){
   await page.route('https://fonts.googleapis.com/**',r=>r.fulfill({body:''}));
   await page.route('https://fonts.gstatic.com/**',r=>r.fulfill({body:''}));
   await page.addInitScript(()=>{
-   const loaded=()=>!!document.querySelector('section[aria-label="Plan errata"]')
-    &&!!document.querySelector('[data-idea-graph] [role="tree"]')
-    &&!!document.querySelector('[aria-label="Checkpoint prerequisites"]');
-   const observer=new MutationObserver(()=>{
-    if(loaded()&&!performance.getEntriesByName('lemma-proposal-loaded','mark').length){
-     performance.mark('lemma-proposal-loaded');observer.disconnect();
+   const errata=()=>document.querySelector('section[aria-label="Plan errata"]');
+   const ideas=()=>document.querySelector('[data-idea-graph] [role="tree"]');
+   const map=()=>document.querySelector('[aria-label="Checkpoint prerequisites"]');
+   const loaded=()=>!!errata()&&!!ideas()&&!!map();
+   const visible=(element:Element|null)=>{
+    if(!element)return false;
+    const bounds=element.getBoundingClientRect();
+    if(bounds.width<=0||bounds.height<=0)return false;
+    for(let node:Element|null=element;node;node=node.parentElement){
+     const style=getComputedStyle(node);
+     if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)return false;
     }
+    return true;
+   };
+   let scheduled=false;
+   const observer=new MutationObserver(()=>{
+    if(scheduled||!loaded())return;
+    scheduled=true;
+    observer.disconnect();
+    // A mutation is a DOM commit, not a painted frame. Wait for at least one
+    // browser paint and for the real map/errata/Ideas to have visible geometry.
+    const afterPaint=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
+     if(visible(errata())&&visible(ideas())&&visible(map())){
+      performance.mark('lemma-proposal-loaded');
+     }else{
+      afterPaint();
+     }
+    }));
+    afterPaint();
    });
    observer.observe(document,{childList:true,subtree:true});
   });
