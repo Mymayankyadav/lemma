@@ -9,6 +9,7 @@ import {cancelIngest,isSourceFile,resetIngestCancellation} from '../../pdf/inges
 import {Rail} from '../../ui/Rail';
 import {visibleUploadQueue} from './uploadQueue';
 import {useToast} from '../../ui/Toast';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 
 type QueueEntry={id:number;file:File|null;name:string;bytes:number;pagesRead:number;phase:'queued'|'reading'|'uploading'|'saving'|'ready'|'failed'|'cancelled';progress:IngestProgress|null;error:string|null};
 const kinds:SourceKind[]=['book','notes','slides','problems','syllabus','exam','other'];
@@ -17,6 +18,7 @@ const formatSize=(bytes:number)=>bytes<=0?'0 KB':bytes>=1024*1024?(bytes/1024/10
 const storageLimit=1024*1024*1024;
 export function SourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
+ const online=useOnlineStatus();
  const transcriptStats=useSourceTranscriptionStats(projectId);
  const summary=new Map((transcriptStats.data??[]).map(item=>[item.sourceId,item]));
  const picker=useRef<HTMLInputElement>(null),running=useRef(false),id=useRef(0),cancelled=useRef(new Set<number>());
@@ -27,6 +29,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
    pagesRead:changes.progress?Math.max(x.pagesRead,changes.progress.phase==='reading'||changes.progress.phase==='done'?changes.progress.page:0):x.pagesRead
   }:x));
  function enqueue(files:FileList|File[]){
+  if(!networkWritable()){notify('Needs a connection');return}
   const accepted:QueueEntry[]=[];
   for(const file of Array.from(files)){
    if(!isSourceFile(file)||!file.size||file.size>limit){notify('Choose a nonempty PDF, .tex or .md file under 50 MB: '+file.name,{tone:'danger'});continue}
@@ -38,6 +41,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   if(running.current)return;
   const next=queue.find(x=>x.phase==='queued'&&x.file);
   if(!next)return;
+  if(!networkWritable()){patch(next.id,{phase:'failed',error:'Needs a connection'});return}
   const file=next.file!;
   cancelled.current.delete(next.id);
   resetIngestCancellation(file);
@@ -51,6 +55,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
     if(sources.some(source=>source.sha256===hash)){
      patch(next.id,{phase:'failed',file:null,error:'Already added'});return;
     }
+    if(!networkWritable())throw Error('Needs a connection');
     await add.mutateAsync({projectId,file,onProgress:p=>{
      patch(next.id,{progress:p,phase:p.phase==='done'?'saving':p.phase==='failed'?'failed':p.phase});
     }});
@@ -67,10 +72,12 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[queue,projectId,tick]);
  async function save(source:Source){
+  if(!networkWritable()){notify('Needs a connection');return}
   try{await update.mutateAsync({id:source.id,patch:{title:title.trim()||source.title,kind}});setEditing(null);notify('Source updated',{tone:'success'})}
   catch(error){notify(error instanceof Error?error.message:'Could not update source',{tone:'danger'})}
  }
  async function erase(source:Source){
+  if(!networkWritable()){notify('Needs a connection');return}
   try{await remove.mutateAsync(source.id);setConfirm(null);notify('Source deleted (undo available in history)',{tone:'success'})}
   catch(error){notify(error instanceof Error?error.message:'Could not delete source',{tone:'danger'})}
  }
@@ -117,11 +124,11 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
      <label className="text-label text-ink-2">Title<input aria-label="Source title" value={title} onChange={e=>setTitle(e.target.value)} maxLength={150} className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well p-2 text-ink"/></label>
      <MathPreview source={title}/>
      <label className="text-label text-ink-2">Kind<select aria-label="Source kind" value={kind} onChange={e=>setKind(e.target.value as SourceKind)} className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well p-2 text-ink">{kinds.map(k=><option key={k} value={k}>{k}</option>)}</select></label>
-     <div className="flex gap-3"><button type="button" className="min-h-11 min-w-11 px-2 text-label text-amber" disabled={update.isPending} onClick={()=>{void save(source)}}>Save</button><button type="button" className="min-h-11 min-w-11 px-2 text-label text-ink-2" onClick={()=>setEditing(null)}>Cancel</button></div>
+     <div className="flex gap-3"><button type="button" className="min-h-11 min-w-11 px-2 text-label text-amber" aria-disabled={!online||undefined} disabled={update.isPending} onClick={()=>{void save(source)}}>Save</button><button type="button" className="min-h-11 min-w-11 px-2 text-label text-ink-2" onClick={()=>setEditing(null)}>Cancel</button></div>
     </div>}
     {confirm===source.id&&<div role="group" aria-label={'Confirm deletion of '+source.title} className="flex flex-wrap items-center gap-2">
      <span className="min-w-0 flex-1 basis-40 text-label text-ink-2">Delete this source and its pages?</span>
-     <button type="button" className="min-h-11 min-w-11 px-2 text-label text-again" disabled={remove.isPending} onClick={()=>{void erase(source)}}>Delete</button>
+     <button type="button" className="min-h-11 min-w-11 px-2 text-label text-again" aria-disabled={!online||undefined} disabled={remove.isPending} onClick={()=>{void erase(source)}}>Delete</button>
      <button type="button" className="min-h-11 min-w-11 px-2 text-label text-ink-2" onClick={()=>setConfirm(null)}>Cancel</button>
     </div>}
     <SourceTranscriptionView source={source} stat={summary.get(source.id)}/>
@@ -134,7 +141,7 @@ export function SourcesPanel({projectId,sources}:{projectId:string;sources:Sourc
   </div>)}
   <input ref={picker} hidden type="file" multiple accept=".pdf,application/pdf,.tex,.latex,.ltx,application/x-tex,text/x-tex,.md,.markdown,text/markdown" onChange={e=>{if(e.currentTarget.files)enqueue(e.currentTarget.files);e.currentTarget.value=''}}/>
   <div onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();enqueue(e.dataTransfer.files)}}>
-   <button type="button" onClick={()=>picker.current?.click()} className="flex min-h-24 w-full items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
+   <button type="button" aria-disabled={!online||undefined} onClick={()=>{if(!networkWritable()){notify("Needs a connection");return}picker.current?.click()}} className="flex min-h-24 w-full items-center justify-center gap-2 rounded-slab border border-dashed border-edge-3 bg-fill-1 text-body text-ink-2">
     <Plus size={22} className="text-amber"/>Add sources · PDF, .tex or .md
    </button>
   </div>

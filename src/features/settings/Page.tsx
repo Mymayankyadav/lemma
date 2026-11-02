@@ -1,4 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
+import {useOnlineStatus} from '../../ui/useOnlineStatus';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
@@ -88,6 +89,7 @@ export default function Page() {
     signOut = useSignOut(),
     notify = useToast(),
     navigate = useNavigate();
+  const online = useOnlineStatus(), offline = !online;
   const [revealed, setRevealed] = useState(false),
     [setup, setSetup] = useState(false),
     [sheet, setSheet] = useState<
@@ -216,6 +218,27 @@ export default function Page() {
         </Button>
       </Screen>
     );
+  if (offline) return <Screen title="Settings" back="/" className="pb-8">
+    <Slab className="p-5" aria-label="Saved settings">
+      <h2 className="text-headline font-semibold">Saved settings · read only</h2>
+      <p className="mt-2 text-body text-ink-2">Needs a connection to change settings or view your connector address.</p>
+      <dl className="mt-4 grid grid-cols-2 gap-3 text-body">
+        <div><dt className="text-ink-3">Time zone</dt><dd>{s.timeZone}</dd></div>
+        <div><dt className="text-ink-3">Rollover hour</dt><dd>{s.rolloverHour}:00</dd></div>
+        <div><dt className="text-ink-3">Tutor</dt><dd>{s.preferredChat}</dd></div>
+        <div><dt className="text-ink-3">Style</dt><dd>{s.defaultStyle}</dd></div>
+        <div><dt className="text-ink-3">Mix decks</dt><dd>{s.mixDecks ? 'On' : 'Off'}</dd></div>
+        <div><dt className="text-ink-3">New cards per day</dt><dd>{s.newPerDay}</dd></div>
+      </dl>
+    </Slab>
+  </Screen>;
+  // The offline projection deliberately omits the connector and all write-only
+  // preferences. Never enable online settings actions until the live record arrives.
+  if (typeof s.connectorUrl !== 'string') return <Screen title="Settings" back="/">
+    <Slab className="p-5"><p className="text-ink-2">Refreshing settings from Lemma…</p>
+      <Button className="mt-3" needsNetwork onClick={() => void settings.refetch()}>Try again</Button>
+    </Slab>
+  </Screen>;
   const connected = !!s.connectorLastSeenAt,
     masked = s.connectorUrl.replace(/\/[^/]+$/, "/••••••"),
     busy = update.isPending;

@@ -1,4 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {getApi} from '../../data/index';
@@ -39,11 +40,10 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
 
 export default function Page(){
  const navigate=useNavigate(),notify=useToast();
+ const online=useOnlineStatus(),offline=!online;
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
- // The session chips are optional: only cards tied to a session can use
- // them. The extreme demo otherwise materializes and sorts 60,000 virtual
- // session summaries on cold Review for a section that renders nothing.
- // Retain the existing session-query cache key and query defaults.
+ // Session chips are optional. Only load the potentially 60k-row session list
+ // when due cards actually reference sessions; preserve the canonical cache key.
  const sessions=useQuery({
   queryKey:['sessions','all'],
   queryFn:()=>getApi().listSessions(),
@@ -55,13 +55,14 @@ export default function Page(){
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
  const activeCatchUp=catchUpUntil>Date.now();
  useEffect(()=>{
-  if(!catchUpUntil||catchUpUntil>Date.now()||!settings.data)return;
+  if(offline||!catchUpUntil||catchUpUntil>Date.now()||!settings.data)return;
   const previous=Number(localStorage.getItem('lemma.catch-up-original')||200);
   localStorage.removeItem('lemma.catch-up-until');localStorage.removeItem('lemma.catch-up-original');
   setCatchUpUntil(0);
   if(settings.data.reviewsPerDay!==previous)update.mutate({reviewsPerDay:previous});
- },[catchUpUntil,settings.data?.reviewsPerDay]);
+ },[offline,catchUpUntil,settings.data?.reviewsPerDay]);
  function enableCatchUp(totalDue:number){
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!settings.data||activeCatchUp)return;
   const prior=settings.data.reviewsPerDay||200;
   const target=Math.max(prior,Math.ceil(totalDue/7));
@@ -97,15 +98,14 @@ export default function Page(){
   return sum+(enabled.has(project.key)?Math.max(0,project.due-counted):0)
    +children.reduce((n,c)=>n+(enabled.has(c.key)?c.due:0),0);
  },0);
- const todayShare=Math.min(selectedCount,Math.max(1,settings.data?.reviewsPerDay??200));
+ const todayShare=Math.min(offline?totalDue:selectedCount,Math.max(1,settings.data?.reviewsPerDay??200));
  const overdue=Math.max(0,totalDue-todayShare);
  const spreadDays=Math.ceil(overdue/Math.max(1,settings.data?.reviewsPerDay??200));
  // Without reliable timed review history, estimate 4.5 seconds per quick recall.
  const history=insights.data?.reviews??[];
  const estimated=history.length?estimatedReviewMinutes(todayShare,history):Math.max(1,Math.ceil(todayShare*4.5/60));
  const groupedSessions=useMemo(()=>{
-  // A disabled query may still expose a previously cached 60k-session list.
-  // No session-backed due card means this section is necessarily empty.
+  // A disabled query may still expose a previously cached large session list.
   if(!shouldFetchReviewSessions(cards.data))return [];
   return groupReviewSessions(sessions.data??[],dueItems);
  },[sessions.data,dueItems,cards.data]);
@@ -125,6 +125,7 @@ export default function Page(){
   setSelected(changed);
  };
  function start(sessionId:string|null=null,onlyNew=false){
+  if(!networkWritable()){notify('Needs a connection');return}
   if(!settings.data || !cards.data || !decks.data)return;
   const filter:QueueFilter={...allFilter,sessionId,includeNew:true,newOnly:onlyNew,
    decks:[]};
@@ -143,12 +144,12 @@ export default function Page(){
   navigate('/review/run'+(qs.size?'?'+qs.toString():''));
  }
  useEffect(()=>{
-  if(cards.error||decks.error)notify("Couldn't load your review decks.",{tone:'danger'});
- },[cards.error,decks.error,notify]);
- if(decks.isPending||settings.isPending||cards.isPending)return <Screen title="Review" tabBar actions={<IconButton icon={Search} label="Search cards" to="/cards"/>}>
+  if(!offline&&(cards.error||decks.error))notify("Couldn't load your review decks.",{tone:'danger'});
+ },[offline,cards.error,decks.error,notify]);
+ if(decks.isPending||settings.isPending||(!offline&&cards.isPending))return <Screen title="Review" tabBar actions={<IconButton icon={Search} label="Search cards" to="/cards"/>}>
   <Slab className="flex flex-col gap-4 p-6"><Skeleton h={75} w="55%"/><Skeleton h={50}/></Slab><Skeleton h={52}/><Skeleton h={56}/></Screen>;
  return <Screen title="Review" tabBar actions={<IconButton icon={Search} label="Search cards" to="/cards"/>}>
-  {decks.error||cards.error||settings.error?
+  {(!offline&&(decks.error||cards.error||settings.error))||(!decks.data&&!settings.data)?
    <EmptyState art="plug" title="Your decks could not load" body="Check your connection and try again."
     action={{label:'Try again',onClick:()=>{void decks.refetch();void cards.refetch();void settings.refetch()}}}/>:
    <>
@@ -160,21 +161,23 @@ export default function Page(){
        <span className="text-answer text-ink-2">due</span>
       </div>
       <p className="mt-2 flex items-center gap-2 text-label text-ink-3"><Clock3 size={16} aria-hidden="true"/>
-       {selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
+       {offline?'Due cards are saved for reading':selectedCount>0?'Today: '+todayShare+' · about '+estimated+' min':'All clear for today'}</p>
      </div>
-     <Button aria-label="Start review" icon={Play} disabled={!todayShare} onClick={()=>start()}>Start {todayShare}</Button>
+     <Button aria-label="Start review" icon={Play} needsNetwork disabled={!todayShare&&!offline} onClick={()=>start()}>Start {todayShare}</Button>
     </div>
+    {offline&&<p className="mt-3 text-label text-ink-2" role="note">Reviewing needs a connection</p>}
     {overdue>0&&<div className="mt-4 text-label text-ink-2">
       <p>{overdue.toLocaleString()} overdue · spread over {spreadDays} {spreadDays===1?'day':'days'}</p>
       <button type="button" className="mt-2 min-h-11 text-label font-semibold text-amber"
-       onClick={()=>enableCatchUp(totalDue)} disabled={activeCatchUp||update.isPending}>
+       onClick={()=>enableCatchUp(totalDue)} disabled={offline||activeCatchUp||update.isPending}>
        {activeCatchUp?'Catch-up active · restores your target after seven days':'Catch-up plan · raise daily share for a week'}
       </button>
      </div>}
     <div className="mt-5 border-t border-edge pt-3">
      <div className="flex items-center gap-2"><Shuffle size={18} aria-hidden="true" className="text-amber"/>
       <div className="flex-1">
-       <Switch checked={settings.data?.mixDecks??true} label="Mix decks" onChange={checked=>{
+       <Switch checked={settings.data?.mixDecks??true} label="Mix decks" disabled={offline} onChange={checked=>{
+        if(!networkWritable()){notify('Needs a connection');return}
         update.mutate({mixDecks:checked},{onError:()=>notify('Could not update review settings',{tone:'danger'})});
        }}/>
       </div>
@@ -227,7 +230,7 @@ export default function Page(){
      onClick={()=>start(s.id)}>
      <span className="min-w-0 max-w-[min(16rem,60vw)] truncate">{'S'+s.number+' · '+s.goal}</span><span className="tabular-nums text-ink-3">{s.count}</span></Chip>)}</div>
    </section>}
-   {selectedCount===0&&<p className="text-label text-ink-3">No cards due in these decks. Choose another deck or return tomorrow.</p>}
+   {!offline&&selectedCount===0&&<p className="text-label text-ink-3">No cards due in these decks. Choose another deck or return tomorrow.</p>}
    </>
   }
  </Screen>;

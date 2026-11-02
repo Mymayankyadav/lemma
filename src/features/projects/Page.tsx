@@ -14,6 +14,7 @@ import {Screen} from '../../ui/Screen';
 import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {FastTex as Tex} from '../../ui/FastTex';
 import {countPinnedProjects} from './pinnedCount';
 
@@ -37,6 +38,7 @@ function MiniMetro({project}:{project:ProjectSummary}){
 
 function ProjectRow({project,showSubject=false,pinnedCount}:{project:ProjectSummary;showSubject?:boolean;pinnedCount:number}){
  const update=useUpdateProject(),notify=useToast(),[menu,setMenu]=useState(false);
+ const online=useOnlineStatus();
  const hold=useRef<ReturnType<typeof setTimeout>|null>(null);
  const longPressed=useRef(false);
  const clear=()=>{if(hold.current!==null){clearTimeout(hold.current);hold.current=null}};
@@ -51,6 +53,7 @@ function ProjectRow({project,showSubject=false,pinnedCount}:{project:ProjectSumm
   ];
  async function act(label:string,patch:{pinned?:boolean;status?:ProjectStatus}){
   setMenu(false);
+  if(!networkWritable()){notify('Needs a connection');return}
   if(patch.pinned&&pinnedCount>=4){
    notify('At most four projects can be pinned. Unpin one first.',{tone:'danger'});return;
   }
@@ -89,7 +92,7 @@ function ProjectRow({project,showSubject=false,pinnedCount}:{project:ProjectSumm
   <MiniMetro project={project}/>
   {menu&&<div role="menu" aria-label={'Manage '+project.title} className="mt-2 grid grid-cols-2 gap-2 border-t border-edge pt-2">
    {actions.filter(a=>!(a.label==='Pin'&&project.pinned)).map(action=><button type="button" role="menuitem" key={action.label}
-    disabled={update.isPending||((action.patch.status===project.status))}
+    aria-disabled={!online||undefined} disabled={update.isPending||((action.patch.status===project.status))}
     onClick={()=>void act(action.label,action.patch)}
     className="min-h-11 rounded-ctl border border-edge bg-[var(--card-2)] px-2 text-left text-label disabled:opacity-40">{action.label}</button>)}
    <button type="button" role="menuitem" onClick={()=>setMenu(false)}

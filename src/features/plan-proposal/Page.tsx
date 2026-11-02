@@ -1,4 +1,5 @@
 import {MathPreview} from '../../ui/MathPreview';
+import {networkWritable} from '../../ui/useOnlineStatus';
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -143,10 +144,11 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
   </section>;
 }
 
+const dueDateFormatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 function dueLabel(date?: string | null) {
   if (!date) return null;
   const d = new Date(date + "T12:00:00Z");
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  return Number.isNaN(d.getTime()) ? null : dueDateFormatter.format(d);
 }
 /** Everything one checkpoint covers, one tap from the map or the list; steps through the plan in order. */
 export function CheckpointDrawer({
@@ -322,6 +324,7 @@ export default function Page() {
   const openCheckpoint = useCallback((code: string) => { setSelected(code); setDrawer(code); },[]);
   const pending = approve.isPending || reject.isPending;
   const doApprove = async () => {
+    if(!networkWritable()){notify('Needs a connection');return}
     if (!p) return;
     try {
       await approve.mutateAsync({ id: p.id });
@@ -332,6 +335,7 @@ export default function Page() {
     }
   };
   const askChanges = async () => {
+    if(!networkWritable()){notify('Needs a connection');return}
     if (!p || !request.trim() || pending) return;
     const prompt = revisePlanPrompt(
       p.projectSlug.replaceAll("-", " "),
@@ -505,12 +509,13 @@ export default function Page() {
           <div className="grid grid-cols-2 gap-3">
             <Button
               variant="ghost"
+              needsNetwork
               disabled={pending}
               onClick={() => setAsking(true)}
             >
               Ask for changes
             </Button>
-            <Button disabled={pending} onClick={() => void doApprove()}>
+            <Button needsNetwork disabled={pending} onClick={() => void doApprove()}>
               Approve plan
             </Button>
           </div>
@@ -537,6 +542,7 @@ export default function Page() {
             </p>
             <Button
               className="w-full"
+              needsNetwork
               disabled={pending || !request.trim()}
               onClick={() => void askChanges()}
             >

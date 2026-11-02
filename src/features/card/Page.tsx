@@ -32,6 +32,7 @@ import { Skeleton } from "../../ui/Skeleton";
 import { Slab } from "../../ui/Slab";
 import { Sparkline } from "../../ui/charts/Sparkline";
 import { useToast } from "../../ui/Toast";
+import {useOnlineStatus,networkWritable} from "../../ui/useOnlineStatus";
 const reviewInk = ['var(--ink-2)', 'var(--danger)', 'var(--late)', 'var(--early)', 'var(--link)'] as const;
 function next(due: string | null) {
   if (!due) return "New";
@@ -54,6 +55,7 @@ export default function Page() {
     status = useSetNoteStatus(),
     notify = useToast(),
     navigate = useNavigate();
+  const online = useOnlineStatus();
   const [editing, setEditing] = useState(false),
     [deleting, setDeleting] = useState(false),
     [message, setMessage] = useState(""),
@@ -189,6 +191,7 @@ export default function Page() {
         )
       : null;
   const save = async (v: EditorValue) => {
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!note) return;
     try {
       await update.mutateAsync({
@@ -208,6 +211,7 @@ export default function Page() {
     }
   };
   const setStatus = async (nextStatus: "active" | "suspended" | "deleted") => {
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!note) return;
     try {
       await status.mutateAsync({ noteNo: note.noteNo, status: nextStatus });
@@ -225,6 +229,7 @@ export default function Page() {
     }
   };
   const submit = async () => {
+    if(!networkWritable()){notify("Needs a connection");return}
     if (!note || !message.trim() || add.isPending) return;
     try {
       await add.mutateAsync({ noteNo: note.noteNo, body: message.trim() });
@@ -235,6 +240,7 @@ export default function Page() {
     }
   };
   const remove = async (no: number) => {
+    if(!networkWritable()){notify("Needs a connection");return}
     try {
       await dismiss.mutateAsync(no);
       notify("Note dismissed");
@@ -252,9 +258,10 @@ export default function Page() {
           <>
             <IconButton
               icon={PencilLine}
-              label="Edit card"
+              label={online?"Edit card":"Edit card, needs a connection"}
+              aria-disabled={!online||undefined}
               tone="plain"
-              onClick={() => setEditing(true)}
+              onClick={() => {if(!networkWritable()){notify("Needs a connection");return}setEditing(true)}}
             />
             <div ref={actionRoot} className="relative" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setActionMenu(false); }}>
               <IconButton
@@ -292,7 +299,7 @@ export default function Page() {
                     className="flex min-h-11 w-full items-center rounded-ctl px-3 text-left text-label font-medium text-again hover:bg-fill-1"
                     onClick={() => {
                       setActionMenu(false);
-                      setDeleting(true);
+                      if(!networkWritable()){notify("Needs a connection");return}setDeleting(true);
                     }}
                   >
                     Delete card
@@ -489,7 +496,8 @@ export default function Page() {
             />
             <button
               type="submit"
-              aria-label="Save note for your tutor"
+              aria-label={online?"Save note for your tutor":"Save note for your tutor, needs a connection"}
+              aria-disabled={!online||undefined}
               disabled={!message.trim() || add.isPending}
               className="flex size-11 items-center justify-center rounded-ctl bg-amber text-amber-ink disabled:opacity-40"
             >
@@ -522,6 +530,7 @@ export default function Page() {
               </Button>
               <Button
                 variant="danger"
+                needsNetwork
                 disabled={status.isPending}
                 onClick={() => void setStatus("deleted")}
               >

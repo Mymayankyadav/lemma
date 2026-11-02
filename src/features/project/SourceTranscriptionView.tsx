@@ -6,6 +6,7 @@ import {useSourcePage,useSourcePdfUrl,useUpdateSourcePage} from '../../data/hook
 import {MathText} from '../../ui/MathText';
 import {MathPreview} from '../../ui/MathPreview';
 import {useToast} from '../../ui/Toast';
+import {useOnlineStatus,networkWritable} from '../../ui/useOnlineStatus';
 import {sourceMarkdown,sourceTex} from './transcriptionExport';
 
 export function SourceTranscriptionView({source,stat}:{
@@ -15,6 +16,7 @@ export function SourceTranscriptionView({source,stat}:{
  const [editing,setEditing]=useState(false),[draft,setDraft]=useState('');
  const [exporting,setExporting]=useState(false);
  const notify=useToast(),edit=useUpdateSourcePage();
+ const online=useOnlineStatus();
  const count=Math.max(1,source.pageCount??1);
  const current=useSourcePage(open?source.id:'',page);
  const pdf=useSourcePdfUrl(open?source.id:'');
@@ -22,6 +24,7 @@ export function SourceTranscriptionView({source,stat}:{
  useEffect(()=>{setEditing(false);setDraft(current.data?.body??'')},[current.data?.body,page]);
  const go=(next:number)=>{setPage(Math.min(count,Math.max(1,next)));setEditing(false)};
  const save=async(patch:{body?:string;confidence?:'high'|'check'})=>{
+  if(!networkWritable()){notify('Needs a connection');return}
   try{
    await edit.mutateAsync({sourceId:source.id,page,patch});
    setEditing(false);
@@ -104,16 +107,16 @@ export function SourceTranscriptionView({source,stat}:{
          onChange={e=>setDraft(e.target.value)} className="w-full rounded-ctl border border-edge bg-raised p-2 text-ink"/>
         <MathPreview source={draft} className="min-w-0 max-w-full overflow-x-auto" />
         <div className="flex flex-wrap gap-3">
-         <button type="button" disabled={edit.isPending} onClick={()=>void save({body:draft})}
+         <button type="button" aria-disabled={!online||undefined} disabled={edit.isPending} onClick={()=>void save({body:draft})}
           className="min-h-11 min-w-11 px-2 text-amber">Save page</button>
          <button type="button" onClick={()=>setEditing(false)} className="min-h-11 min-w-11 px-2 text-ink-2">Cancel</button>
         </div>
        </div>:
         <div className="max-h-96 overflow-auto rounded-s bg-raised p-3"><MathText source={current.data.body}/></div>}
      {current.data?.body&&transcribed&&!editing&&<div className="mt-2 flex flex-wrap gap-3">
-      <button type="button" onClick={()=>setEditing(true)}
+      <button type="button" aria-disabled={!online||undefined} onClick={()=>{if(!networkWritable()){notify("Needs a connection");return}setEditing(true)}}
        className="flex min-h-11 min-w-11 items-center gap-1 px-2 text-ink-2"><PenLine size={15}/>Edit page</button>
-      {current.data.confidence==='check'&&<button type="button" disabled={edit.isPending}
+      {current.data.confidence==='check'&&<button type="button" aria-disabled={!online||undefined} disabled={edit.isPending}
        onClick={()=>void save({confidence:'high'})}
        className="flex min-h-11 min-w-11 items-center gap-1 px-2 text-ink-2"><Check size={15}/>Mark checked</button>}
      </div>}

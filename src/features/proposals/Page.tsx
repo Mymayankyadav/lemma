@@ -22,6 +22,7 @@ import {
 } from "../../data/hooks";
 import type { Proposal, PlanChangeOp } from "../../data/types";
 import { Button } from "../../ui/Button";
+import {useOnlineStatus,networkWritable} from "../../ui/useOnlineStatus";
 import { Card } from "../../ui/Card";
 import { EmptyState } from "../../ui/EmptyState";
 import { Glyph } from "../../ui/Glyph";
@@ -231,6 +232,7 @@ export default function Page() {
     [back, setBack] = useState(""),
     [slow, setSlow] = useState(false),
     [completed, setCompleted] = useState(0);
+  const online = useOnlineStatus();
   const pending = approve.isPending || reject.isPending || !!staged;
   useEffect(() => {
     if (!query.isLoading) {
@@ -263,9 +265,11 @@ export default function Page() {
     const timer=window.setTimeout(()=>{
       const ids=staged.ids;
       setStaged(null);
+      if(!networkWritable()){notify("Needs a connection");return;}
       void (async()=>{
         let succeeded=0;
         for(const id of ids){
+          if(!networkWritable()){notify("Needs a connection");break}
           try{await approve.mutateAsync({id});succeeded++}
           catch{break}
         }
@@ -282,6 +286,7 @@ export default function Page() {
     edit?: { front: string; back: string },
   ) => {
     if (pending) return;
+    if(!networkWritable()){notify("Needs a connection");return}
     try {
       if (accept) await approve.mutateAsync({ id: p.id, edit });
       else await reject.mutateAsync(p.id);
@@ -372,6 +377,7 @@ export default function Page() {
               <button
                 type="button"
                 aria-label="Reject card"
+                aria-disabled={!online||undefined}
                 disabled={pending}
                 onClick={() => void commit(active, false)}
                 className="flex min-h-12 items-center justify-center gap-1 rounded-ctl border border-again bg-danger-tint px-2 text-again disabled:opacity-50"
@@ -387,7 +393,7 @@ export default function Page() {
               >
                 <PencilLine size={17} /><span className="text-label">Edit</span>
               </button>
-              <button type="button" aria-label="Approve card" disabled={pending}
+              <button type="button" aria-label="Approve card" aria-disabled={!online||undefined} disabled={pending}
                 onClick={() => void commit(active, true)}
                 className="flex min-h-12 items-center justify-center gap-1 rounded-ctl bg-amber px-2 text-amber-ink disabled:opacity-50">
                 <Check size={18}/><span className="text-label font-semibold">Approve</span>
@@ -454,12 +460,13 @@ export default function Page() {
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <Button
                   variant="ghost"
+                  needsNetwork
                   disabled={pending}
                   onClick={() => void commit(p, false)}
                 >
                   Reject
                 </Button>
-                <Button disabled={pending} onClick={() => void commit(p, true)}>
+                <Button needsNetwork disabled={pending} onClick={() => void commit(p, true)}>
                   Approve
                 </Button>
               </div>
@@ -482,7 +489,7 @@ export default function Page() {
         <ul className="mb-4 max-h-56 min-w-0 overflow-y-auto text-ink-2">{batch?.proposals.filter(p=>p.kind==="card").slice(0,10).map(p=><li key={p.id} className="min-w-0 max-w-full overflow-x-auto border-b border-edge py-2"><MathText source={p.card?.front??""} variant="body" className="min-w-0 max-w-full text-base" /></li>)}</ul>
         {(batch?.proposals.filter(p=>p.kind==="card").length??0)>10&&<p className="mb-3 text-label text-ink-3">Showing 10 of {batch?.proposals.filter(p=>p.kind==="card").length} cards in this batch.</p>}
         <div className="grid grid-cols-2 gap-3"><Button variant="ghost" onClick={()=>setConfirm(false)}>Cancel</Button>
-         <Button disabled={pending || !batch?.proposals.some(p=>p.kind==="card")} onClick={()=>{
+         <Button needsNetwork disabled={pending || !batch?.proposals.some(p=>p.kind==="card")} onClick={()=>{
           if(!batch)return;
           setStaged({ids:batch.proposals.filter(p=>p.kind==="card").map(p=>p.id),label:batch.label});
           setBatch(null);setConfirm(false);
@@ -510,6 +517,7 @@ export default function Page() {
           <MathText source={front} variant="card" />
           <MathText source={back} variant="answer" />
           <Button
+            needsNetwork
             disabled={pending || !front.trim()}
             onClick={() => active && void commit(active, true, { front, back })}
           >
