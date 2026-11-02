@@ -6,7 +6,7 @@ Approved by the owner on 29 October 2026. This is the only task list. Behaviour 
 
 1. Follow `docs/agents/README.md` startup guard, `AGENTS.md` and current control mode before selecting work. v3 files are inactive until controlled activation; legacy/shadow uses retained dispatch, active uses current-instance tickets.
 2. `plan.md` is the only task-definition authority. Read assigned accepted specs and current PR/handoff; refresh holds, dependencies, claims and reviewer eligibility. Historical foundation/theme/setup sections cannot authorize a reset, purge or superseded design.
-3. Claim one substantive writable scope with the current protocol, then a non-draft PR titled `<TASK-ID> <title>` on `t/<task-id-lowercase>` before code. Legacy lease rules remain until activation; v3 uses immutable run IDs and dated claims.
+3. Claim one substantive writable scope with the current protocol, then a PR (never a draft) titled `<TASK-ID> <title>` on `t/<task-id-lowercase>` before code. Legacy lease rules remain until activation; v3 uses immutable run IDs and dated claims.
 4. Verify owned paths, meaningful tests and required CI. Every merge also requires unconditional independent applicable CLEAR under `docs/agents/release.md`; no omitted phrase bypasses it.
 5. Continue only eligible authorized work within the run deadline; preserve a review path and hand off pending verification. Routine work needs no repeated owner permission.
 
