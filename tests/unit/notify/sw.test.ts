@@ -238,6 +238,53 @@ describe('NOTIF-5 Workbox push handling',()=>{
    options:{tag:'tutor-proposals-42',body:'Undo is in the app, or here for 48 hours.'},
   });
  });
+ it('does not claim success or create an Undo confirmation when an approval token was already used',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,kind:'tutor',url:'#/proposals',
+   actions:[{action:'approve_cards',title:'Approve 3 cards',token:'signed-approve'}],
+  },scope)).data;
+  h.fetchMock.mockResolvedValueOnce({ok:true,json:async()=>({status:'already_done'})} as any);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
+  expect(h.posted).toEqual([{token:'signed-approve'}]);
+  expect(h.shown).toHaveLength(0);
+  expect(h.navigated).toEqual([scope+'#/proposals']);
+ });
+ it('does not show Approved 0 or offer Undo when no pending cards produced an action',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,kind:'tutor',url:'#/proposals',
+   actions:[{action:'approve_cards',title:'Approve 3 cards',token:'signed-approve'}],
+  },scope)).data;
+  h.fetchMock.mockResolvedValueOnce({ok:true,json:async()=>({
+   status:'done',kind:'tutor',approved:[],skipped:['P1','P2','P3'],action:null,
+  })} as any);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
+  expect(h.posted).toEqual([{token:'signed-approve'}]);
+  expect(h.shown).toHaveLength(0);
+  expect(h.navigated).toEqual([scope+'#/proposals']);
+ });
+ it('does not announce a successful action if approval response lacks a confirmation row',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,kind:'tutor',url:'#/proposals',
+   actions:[{action:'approve_cards',title:'Approve 1 card',token:'signed-approve'}],
+  },scope)).data;
+  h.fetchMock.mockResolvedValueOnce({ok:true,json:async()=>({
+   status:'done',kind:'tutor',approved:['P1'],skipped:[],action:123,
+  })} as any);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'approve_cards'});
+  expect(h.shown).toHaveLength(0);
+  expect(h.navigated).toEqual([scope+'#/proposals']);
+ });
+ it('does not show a false Done confirmation for a replayed Later action',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
+  h.fetchMock.mockResolvedValueOnce({ok:true,json:async()=>({status:'already_done'})} as any);
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:'later'});
+  expect(h.shown).toHaveLength(0);
+  expect(h.navigated).toEqual([scope+'#/review']);
+ });
  it('uses the required Undo-conflict copy and recovers at proposals, never at the original deep link',async()=>{
   const h=harness();
   const data={id:'84',tag:'tutor-proposals-42',url:scope+'#/review',
