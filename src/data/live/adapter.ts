@@ -529,9 +529,20 @@ export class LiveAdapter implements LemmaApi {
   const db=liveClient(),uid=await owner(db)
   return (await homeReviewOutlook(db,uid)).decks
  }
- /** CONTRACT NOTIF-7: one-shot owner-scoped bounded read; implementation follows after contract merge. */
- async getNotificationReviewItems(..._args: Parameters<LemmaApi['getNotificationReviewItems']>): ReturnType<LemmaApi['getNotificationReviewItems']> {
-  throw notImplemented('getNotificationReviewItems')
+ /** NOTIF-7: bounded one-shot Review N; ordinary review_items is unchanged. */
+ async getNotificationReviewItems(...args: Parameters<LemmaApi['getNotificationReviewItems']>): ReturnType<LemmaApi['getNotificationReviewItems']> {
+  const [filter,count]=args
+  if(!Number.isInteger(count)||count<1||count>50)
+   throw new LemmaError('invalid','Notification round size must be 1–50')
+  const db=liveClient()
+  await owner(db)
+  // The SQL RPC is security invoker, auth.uid scoped and returns <=50 rows.
+  // It never updates the owner's persisted reviews_per_day setting.
+  return checked(await db.rpc('notification_review_items',{
+   p_count:count,p_decks:filter.decks,p_session_id:filter.sessionId,
+   p_concept_slug:filter.conceptSlug,p_include_new:filter.includeNew,
+   p_new_only:filter.newOnly,
+  })) as ReviewItem[]
  }
  async getReviewItems(...args: Parameters<LemmaApi['getReviewItems']>): ReturnType<LemmaApi['getReviewItems']> {
   const [filter]=args,db=liveClient()
