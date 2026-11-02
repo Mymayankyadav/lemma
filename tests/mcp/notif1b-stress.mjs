@@ -39,9 +39,15 @@ try{
  select $1,id,1,2,now()-interval '1 day' from public.notes where user_id=$1`,[owner])
  await db.exec('alter table public.notes enable trigger lemma_log_change;alter table public.cards enable trigger lemma_log_change')
  await db.exec('alter table public.checkpoints disable trigger lemma_log_change')
+ // Freeze p_now once for the fixture and the measured query. A bare
+ // current_date would flip at 00:00 UTC while the owner's study day defaults
+ // to UTC with a 04:00 rollover, falsely making all K2 rows two days ahead.
+ const snapshotAt=new Date().toISOString()
  await q(`insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps,due_on)
- select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,current_date+1
- from public.projects p cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner])
+ select $1,p.id,'CP'||g.i,g.i*10,'Checkpoint '||g.i,'Study','Prove','["Step"]'::jsonb,
+   ((($2::timestamptz at time zone s.time_zone)-make_interval(hours=>s.rollover_hour))::date+1)
+ from public.projects p join public.settings s on s.user_id=p.user_id
+ cross join generate_series(1,40) as g(i) where p.user_id=$1`,[owner,snapshotAt])
  await db.exec('alter table public.checkpoints enable trigger lemma_log_change')
  const counts=await q('select (select count(*)::int from public.projects where user_id=$1) projects,(select count(*)::int from public.cards where user_id=$1) cards,(select count(*)::int from public.checkpoints where user_id=$1) checkpoints',[owner])
  assert.deepEqual(counts[0],{projects:60,cards:30000,checkpoints:2400})
@@ -53,7 +59,7 @@ try{
  let queryCount=0
  const start=performance.now()
  queryCount++
- const snapshot=(await q('select public.notify_candidates($1,now()) data',[owner]))[0].data
+ const snapshot=(await q('select public.notify_candidates($1,$2::timestamptz) data',[owner,snapshotAt]))[0].data
  const elapsed=performance.now()-start
  assert.ok(queryCount<12,'one bounded candidate query, not N+1 project reads')
  assert.equal(snapshot.due.backlog,30000)
@@ -74,7 +80,7 @@ try{
    // is unchanged; cancellation is allowed only for bounded diagnostics.
    await db.exec("set statement_timeout = '3000ms'")
    try{
-   const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,now())',[owner])
+   const plan=await q('explain (analyze, buffers) select public.notify_candidates($1,$2::timestamptz)',[owner,snapshotAt])
    console.log('NOTIF-1b X diagnostic plan',plan.map(row=>row['QUERY PLAN']).join('\n'))
    // Profile individual CTEs only after the strict first-attempt gate fails.
    // No diagnostic rerun can change the first-attempt acceptance measurement.
@@ -84,7 +90,7 @@ try{
    const ctes=('with\n'+cteBody).replace(/\bp_user\b/g,'$1::uuid').replace(/\bp_now\b/g,'$2::timestamptz')
    for(const name of ['due_candidates','top_due','prioritized','quota','tomorrow_rows','study_summary']){
      const t0=performance.now()
-     const detail=await q('explain (analyze,buffers) '+ctes+'\nselect count(*) from '+name,[owner,new Date().toISOString()])
+     const detail=await q('explain (analyze,buffers) '+ctes+'\nselect count(*) from '+name,[owner,snapshotAt])
      console.log('NOTIF-1b X CTE '+name+' '+(performance.now()-t0).toFixed(1)+'ms\n'+
        detail.map(row=>row['QUERY PLAN']).join('\n').slice(0,6000))
    }
