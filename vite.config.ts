@@ -42,6 +42,7 @@ export default defineConfig({
     ],
    },
    workbox:{
+    importScripts:['push-sw.js'],
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
