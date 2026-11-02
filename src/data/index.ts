@@ -56,10 +56,13 @@ export function getApi(): LemmaApi {
  // Testable low-quota profile for NOTIF-7: the owner can open Review 5
  // without changing the saved daily goal or mocking any API response.
  if (profile === 'quota3') {
-  return adapters.quota3 ??= new DemoAdapter({
-   fixture:{...structuredClone(demoSeedFixture),settings:{...demoSeedFixture.settings,reviewsPerDay:3}},
-   ownedFixture:true,
-  })
+  const fixture=structuredClone(demoSeedFixture)
+  fixture.settings.reviewsPerDay=3
+  // The standard demo contains 14 reviews already answered today. The
+  // low-quota acceptance profile models a fresh study day instead, so
+  // "three remaining" is real rather than a synthetic API response.
+  fixture.reviews=fixture.reviews.filter(r=>!r.reviewedAt.startsWith('@day:0:'))
+  return adapters.quota3 ??= new DemoAdapter({fixture,ownedFixture:true})
  }
  return adapters[profile] ??= createStressAdapter(profile)
 }
