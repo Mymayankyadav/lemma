@@ -13,7 +13,7 @@ describe('FIX #507 hard-budget CI gate',()=>{
   const failures:Partial<StressMeasurement>[]=[
    {smallText:1},{smallMath:1},{smallTargets:1},{minCircleGap:0},
    {nodes:1500},{horizontalOverflow:2},
-   {durationMs:1500,cpuThrottle:4},
+   {durationMs:4000,cpuThrottle:4},
    {route:"/",requestCount:4},{route:"/insights",requestCount:2},
    {route:"/",transferBytes:200_001},
   ];

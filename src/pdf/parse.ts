@@ -8,6 +8,8 @@ import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { LemmaError } from "../data/api";
 import type { IngestProgress } from "../data/types";
 import { normalizePageText } from "./text";
+import {isPdfFile} from "./validate";
+export {isPdfFile} from "./validate";
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 export interface IngestedPage {
@@ -34,17 +36,6 @@ interface PdfOutline {
   title: string;
   dest: string | unknown[] | null;
   items?: PdfOutline[];
-}
-
-/** Browser document providers sometimes label real PDFs as generic binary files. */
-export function isPdfFile(file: Pick<File, "name" | "type">): boolean {
-  const mime = file.type.toLowerCase();
-  return (
-    mime === "application/pdf" ||
-    mime === "application/x-pdf" ||
-    ((mime === "" || mime === "application/octet-stream" || mime === "binary/octet-stream") &&
-      /\.pdf$/i.test(file.name))
-  );
 }
 
 async function readBytes(file: File): Promise<ArrayBuffer> {

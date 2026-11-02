@@ -26,24 +26,20 @@ const screens = [
 ] as const;
 
 describe('FIX #632: Today entry does not eagerly import unrelated routes', () => {
-  it('keeps Today eager so the first goal is not held behind an extra chunk', () => {
-    expect(routes).toMatch(/import Page0 from ['"]\.\.\/features\/home\/Page['"]/);
+  it('requests the initial Today module directly from HTML before React mounts', () => {
+    const html=readFileSync('index.html','utf8');
+    expect(html).toContain("import('/src/features/home/Page.tsx')");
+    expect(html.indexOf('data-detail-route-preload')).toBeLessThan(html.indexOf('src="/src/main.tsx"'));
   });
 
-  it('keeps Paths and Atlas eager, preloads Cards on Paths, and splits fifteen other pages', () => {
-    expect(routes).toMatch(/import Page1 from ['"]\.\.\/features\/projects\/Page['"]/);
-    expect(routes).toMatch(/import Page13 from ['"]\.\.\/features\/atlas\/Page['"]/);
-    expect(routes).toContain("const Page11=lazy(()=>import('../features/cards/Page'))");
+  it('splits every page while retaining Cards warmup on Paths', () => {
     const paths=readFileSync('src/features/projects/Page.tsx','utf8');
     expect(paths).toContain("void import('../cards/Page').catch(()=>{})");
     for (const [index, [, feature]] of screens.entries()) {
-      if (index === 0 || index === 1 || index === 13) continue;
       expect(routes, feature).toContain(
         `const Page${index}=lazy(()=>import('../features/${feature}/Page'))`,
       );
-      expect(routes, feature).not.toMatch(new RegExp(
-        `import\\s+Page${index}\\s+from\\s+['"]`,
-      ));
+      expect(routes, feature).not.toContain(`import Page${index} from `);
     }
   });
 
