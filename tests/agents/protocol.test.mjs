@@ -19,8 +19,25 @@ test('empty discovery registry is valid but admits no invented worker',()=>{ok(v
 for(const count of [1,2,5,8,25])test(`capacity ${count}: no fixed identity count or clock slots`,()=>{const r={revision:'r'+count,agents:Array.from({length:count},(_,i)=>agent('actual-'+i,i%2?'interactive':'external'))};ok(validateRegistry(r));ok(validateControl({...event,applies_to:r.agents.map(a=>a.id)},null,{...auth,registry:r,agent_ids:r.agents.map(a=>a.id)}));ok(validatePacket({...packet,publisher_agent_id:'actual-0',registry_revision:r.revision,tickets:r.agents.map(a=>ticket(a.id))},{...ctx,registry:r}));});
 test('registry requires unique authorized identities and recognized capability roles',()=>{blocked(validateRegistry({...registry,agents:[agent('same'),agent('same')]}));blocked(validateRegistry({...registry,agents:[{...agent('x'),authorization_ref:''}]}));blocked(validateRegistry({...registry,agents:[{...agent('x'),roles:['owner']}]}));});
 test('arbitrary minute/timezone and actual 90-minute runtime are allowed',()=>{ok(validateRun(run));ok(admitTicket(packet,run,ctx,own.now));});
-for(const patch of [{runtime_verified:false},{runtime_minutes:0},{handoff_minutes:90},{deadline_ceiling:'13:50'},{agent_id:''},{invocation_id:''},{nominal_at:null},{started_at:'2026-11-02T13:06:00+05:30'},{finish_by:'2026-11-02T14:38:00+05:30'}])test('invalid run '+JSON.stringify(patch),()=>blocked(validateRun({...run,...patch})));
+for(const patch of [{runtime_verified:false},{runtime_minutes:0},{handoff_minutes:90},{deadline_ceiling:'13:50'},{agent_id:''},{invocation_id:''},{nominal_at:null},{finish_by:'2026-11-02T14:38:00+05:30'}])test('invalid run '+JSON.stringify(patch),()=>blocked(validateRun({...run,...patch})));
 test('late start cannot extend original invocation ceiling',()=>blocked(validateRun({...run,started_at:'2026-11-02T13:17:00+05:30',finish_by:'2026-11-02T14:47:00+05:30'})));
+
+test('verified scheduler starts early without inventing a nominal-time lower bound or grace',()=>{
+  // Actual observed pre-nominal scheduler offsets include approximately 67s and 175s.
+  for(const started_at of ['2026-11-02T13:05:52.990+05:30','2026-11-02T13:04:04.771+05:30']){
+    const early={...run,started_at,finish_by:'2026-11-02T14:33:00+05:30',deadline_ceiling:'2026-11-02T14:35:00+05:30'};
+    ok(validateRun(early));
+    ok(admitTicket(packet,early,ctx,own.now)); // Exact invocation ticket, no nominal-time rewrite.
+  }
+});
+test('early dispatch still fails closed on unverifiable runtime, actual ceiling and handoff',()=>{
+  const early={...run,started_at:'2026-11-02T13:04:04.771+05:30',finish_by:'2026-11-02T14:33:00+05:30',deadline_ceiling:'2026-11-02T14:35:00+05:30'};
+  blocked(validateRun({...early,runtime_verified:false}));
+  blocked(validateRun({...early,finish_by:'2026-11-02T14:35:00+05:30'})); // Exceeds 90 minutes after actual start.
+  blocked(validateRun({...early,deadline_ceiling:'2026-11-02T14:20:00+05:30'}));
+  blocked(validateRun({...early,finish_by:'2026-11-02T13:08:00+05:30'})); // No handoff reserve.
+  blocked(admitTicket(packet,{...early,invocation_id:'wrong-early-instance'},ctx,own.now));
+});
 test('interactive reviewer need not impersonate a scheduled slot',()=>{const r={...run,kind:'interactive',agent_id:'reviewer-B',runtime_policy_ref:'policy:reviewer-B',nominal_at:null,invocation_id:'manual-nonce'};ok(validateRun(r));ok(admitTicket({...packet,tickets:[ticket('reviewer-B','manual-nonce')]},r,ctx,own.now));ok(evaluateRelease(release));});
 test('mixed sources and multiple distinct invocations of one agent',()=>{ok(validatePacket({...packet,tickets:[ticket('worker-A','one'),ticket('worker-A','two'),ticket('reviewer-B','manual'),ticket('external-C','external')]},ctx));});
 test('idle packet must explain why no assignment exists',()=>{blocked(validatePacket({...packet,tickets:[]},ctx));ok(validatePacket({...packet,tickets:[],idle_reason:'all capable workers held or already claimed'},ctx));});
