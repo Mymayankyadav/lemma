@@ -133,7 +133,10 @@ export default function Page(){
   const first=firstCard.current;
   firstCard.current=false;
   dragX.set(0);dragY.set(0);setStamp(false);
-  void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:reduce||first?0:.48}});
+  // The cold first card already mounts with initial=false: do not enqueue a
+  // redundant zero-duration MotionControls update before its first paint.
+  // Subsequent cards keep their existing reset and entrance animation.
+  if(!first)void cardMotion.start({opacity:1,x:0,y:0,scale:1,transition:{duration:reduce?0:.48}});
   setDraft(null);
   setSheetOpen(false);
  },[current?.cardId,answers.length,reduce]);
