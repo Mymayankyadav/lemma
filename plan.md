@@ -2,12 +2,14 @@
 
 Approved by the owner on 29 October 2026. This is the only task list. Behaviour lives in `docs/spec/`, visuals in `docs/design/`. Agents build; this plan does not change unless the owner asks.
 
+**Owner-policy precedence:** `docs/agents/owner-role.md` and `docs/agents/owner-override.md` qualify generic approval/release language throughout this plan. Ordinary autonomous merges retain CI/audit gates; verified owner-authorized integration and explicit owner-approved policy changes follow those addenda without inventing passing tests or completed runtime evidence.
+
 ## 0. Quick start for an agent
 
-1. Follow `docs/agents/README.md` startup guard, `AGENTS.md` and current control mode before selecting work. v3 files are inactive until controlled activation; legacy/shadow uses retained dispatch, active uses current-instance tickets.
+1. Follow `docs/agents/README.md` startup guard, `AGENTS.md` and current control mode before selecting work. Ordinary runtime activation remains evidence-based; an explicitly delegated seeding execution follows owner-role.md §6 within its actual assignment, while other workers use their applicable compatible mode.
 2. `plan.md` is the only task-definition authority. Read assigned accepted specs and current PR/handoff; refresh holds, dependencies, claims and reviewer eligibility. Historical foundation/theme/setup sections cannot authorize a reset, purge or superseded design.
-3. Claim one substantive writable scope with the current protocol, then a non-draft PR titled `<TASK-ID> <title>` on `t/<task-id-lowercase>` before code. Legacy lease rules remain until activation; v3 uses immutable run IDs and dated claims.
-4. Verify owned paths, meaningful tests and required CI. Every merge also requires unconditional independent applicable CLEAR under `docs/agents/release.md`; no omitted phrase bypasses it.
+3. Claim one substantive writable scope with the current protocol, then a PR (never a draft) titled `<TASK-ID> <title>` on `t/<task-id-lowercase>` before code. Legacy lease rules remain until activation; v3 uses immutable run IDs and dated claims.
+4. Verify owned paths, meaningful tests and actual CI results. Ordinary autonomous merges require independent applicable CLEAR under `docs/agents/release.md`; no omitted phrase bypasses it. Verified owner-authorized integration instead follows `docs/agents/owner-override.md` and preserves unmet evidence honestly.
 5. Continue only eligible authorized work within the run deadline; preserve a review path and hand off pending verification. Routine work needs no repeated owner permission.
 
 ## 1. Goal
@@ -98,9 +100,9 @@ Use the latest release of each major listed; pin exact versions in `package.json
 - **Scope**: only your owned paths. Need something outside them? Use §7, or leave a note in your PR under "Needs from others" and build against what exists.
 - **Quality bar**: `npm run check` passes; your tests pass; screens match `design.md` and the boards (compare your screenshot from `test-results/screens/` with the board); no `console.error` in the browser; no hard-coded colours outside `src/styles`.
 - **PR description**: what changed, how you verified it (commands and results), screenshot(s) for UI, remaining gaps.
-- **Merge**: exact-head squash only after `scripts/merge-gate.ts` AND `docs/agents/release.md` pass, with eligible independent CLEAR and all applicable acceptance. The old bootstrap CI exception is historical: `ci.yml` exists. On conflicts/semantic overlap, merge main without force/history rewrite and refresh evidence.
+- **Merge**: ordinary autonomous exact-head squash requires `scripts/merge-gate.ts` AND `docs/agents/release.md` to pass with eligible independent CLEAR and acceptance. Verified owner-authorized squash integration follows the separate addendum A route, never a fabricated passing gate. The old bootstrap CI exception is historical: `ci.yml` exists. On conflicts/semantic overlap, merge main without force/history rewrite and refresh evidence.
 - **After merge**: pick the next task in §8. Do not edit this plan to mark progress; merged PR titles are the progress record.
-- **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test, add tracking or analytics.
+- **Never**: push to `main` directly, commit secrets or `.env`, touch any Supabase project other than `yemqnhnztlbyxmjxidis`, change the database outside migrations (except DB-1 step 1), weaken or delete a failing test merely to obtain green CI, add tracking or analytics. Explicit owner-approved budget/test-policy amendments follow `docs/agents/owner-override.md` at their accepted scope; a red-CI merge alone changes no threshold.
 - **Models**: use the strongest available model for P0-A/B, DB-1, MCP-1, LIB-1 and DEMO-1 (contracts and logic). Any capable model can do UI-1/2 and screens.
 
 ## 7. Contract changes
@@ -119,7 +121,7 @@ The owner authorized implementation of the exact supplied `Lemma_Agent_System_v3
 | Task | Requirement / acceptance | Depends on | Owned paths | State |
 | --- | --- | --- | --- | --- |
 | OPS3-PREP | Source snapshot, baseline/cleanup manifest, compatible inactive startup, complete protocol/playbooks/templates, executable control/claim/packet/release validators, adversarial scenarios and setup prompt; independent audit + required CI before merge | Current policy; release enforcement uses existing #749 and mandatory supplement | `AGENTS.md`, `plan.md`, `README.md`, `docs/agents/**`, `docs/changes/OPS3/**`, `docs/design/README.md`, `docs/guide.md`, `scripts/agent-protocol.mjs`, `tests/unit/agents/protocol.test.ts`, `tests/agents/**` | repository implementation authorized; review pending |
-| OPS3-5 | Same five identities, old/new prompt snapshots and readback, startup acknowledgements, measured capabilities | OPS3-PREP merged | Schedule installation evidence in `docs/changes/OPS3/`; external setup only | not executed here |
+| OPS3-5 | Actual owner-authorized registry cohort, source/config snapshots and readback, startup acknowledgements, measured per-source capabilities | OPS3-PREP merged | Schedule installation evidence in `docs/changes/OPS3/`; external setup only | not executed here |
 | OPS3-6 | Shadow assignment/intake evidence and failure rehearsal; no shadow write authority | OPS3-5 | `docs/changes/OPS3/` evidence | gated |
 | OPS3-7 | Drain incompatible writers/queued starts, canonical protocol digest, first future packet, authorized control chain and first receipts | OPS3-6; independent release enforcement; all activation gates | `docs/changes/OPS3/` evidence and #455/#764 | gated; NOT ACTIVE |
 | OPS3-8 | At least 24 healthy epochs, measurements and pending release verification accounted for | OPS3-7 | stabilization evidence | gated |
@@ -336,7 +338,7 @@ Notes per task:
 - Done when: `themes.md` §7.
 
 #### How work runs now (31 Oct 10:25)
-- Historical four-role snapshot is superseded by the compatible startup guard in `docs/agents/README.md`. Five intended capacity slots consume the current mode; actual schedule state must be verified externally. New approved task definitions go here, not into competing issue lists.
+- Historical four-role snapshot is superseded by the compatible startup guard in `docs/agents/README.md`. Actual enrolled execution sources consume the current mode; count, identities and source-specific configuration must be verified, never inferred from historical slot examples. New approved task definitions go here, not into competing issue lists.
 
 #### Reminders and notifications (Planner, 31 Oct 22:40): NOTIF-0 … NOTIF-7, QA-5 — **owner-requested 31 Oct 23:33 IST; audit first**
 - Spec: `docs/spec/notifications.md`. Web Push reminders that work in the browser, the installed PWA and the Android app (`android.md`). They cover cards due, checkpoints planned for tomorrow, a kind "smaller step" when a project is behind plan, picking up a paused session, tutor proposals (approve cards from the notification, with Undo), plan-past-target and a weekly digest.
@@ -474,4 +476,3 @@ App screens for the master prompt (Settings) and the action history with undo bu
 - Design boards: `docs/design/canvas/*.dc.html` (exported from the owner's canvas; inline styles hold the exact values; open in a browser for the visual, though interactive parts need the canvas runtime) and the owner's original reference `docs/design/reference-amber-on-obsidian.png`.
 - Owner-only links (private to the owner): design canvas https://claude.ai/artifact/NjsHYBnmuZYgphy3mY13Qu, research notes https://claude.ai/artifact/EQiFLZfqa1ewaHTR1vbCdo.
 - Legacy code kept for reference until INT-1: `legacy/` (FSRS engine and renderer already moved into `src/lib`).
-
