@@ -31,7 +31,10 @@ export function validateRun(r){
   if(![r.started_at,r.finish_by,r.deadline_ceiling].every(instant)||!positive(r.runtime_minutes)||r.runtime_verified!==true||!Number.isFinite(r.handoff_minutes)||r.handoff_minutes<0||r.handoff_minutes>=r.runtime_minutes)return no('Unknown runtime or invalid time policy');
   if((r.kind==='scheduled'&&!instant(r.nominal_at))||(r.nominal_at!=null&&!instant(r.nominal_at)))return no('Invalid scheduled nominal instance');
   const s=Date.parse(r.started_at),f=Date.parse(r.finish_by);
-  if((r.nominal_at!=null&&s<Date.parse(r.nominal_at))||f<=s||f>Date.parse(r.deadline_ceiling)||f>s+r.runtime_minutes*60000||f-s<=r.handoff_minutes*60000)return no('Run exceeds actual invocation/runtime ceiling');
+  // The scheduled nominal timestamp identifies an invocation; it is not a minimum start time.
+  // A scheduler can dispatch early. Independently verified source policy, the actual start,
+  // its deadline ceiling and handoff reserve still bound all new work (no grace or extension).
+  if(f<=s||f>Date.parse(r.deadline_ceiling)||f>s+r.runtime_minutes*60000||f-s<=r.handoff_minutes*60000)return no('Run exceeds actual invocation/runtime ceiling');
   return yes('Run bounded by its actual verified policy');
 }
 export function validateControl(e,previous,a){
