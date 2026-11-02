@@ -1,0 +1,31 @@
+{
+  "packageId": "io.github.mymayankyadav.lemma",
+  "name": "Lemma",
+  "host": "mymayankyadav.github.io",
+  "startUrl": "/lemma/",
+  "scope": "/lemma/",
+  "display": "standalone",
+  "orientation": "any",
+  "themeColor": "#FAFAF6",
+  "themeColorDark": "#13171D",
+  "minSdk": 23,
+  "targetSdk": 35,
+  "appVersionName": "2026.11.02",
+  "appVersionCode": 1,
+  "fallbackType": "customtabs",
+  "enableNotifications": true,
+  "shortcuts": [
+    {
+      "name": "Review",
+      "url": "https://mymayankyadav.github.io/lemma/#/review"
+    },
+    {
+      "name": "Approve",
+      "url": "https://mymayankyadav.github.io/lemma/#/proposals"
+    },
+    {
+      "name": "Atlas",
+      "url": "https://mymayankyadav.github.io/lemma/#/atlas"
+    }
+  ]
+}

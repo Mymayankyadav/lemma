@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+ <shortcut android:shortcutId="review" android:enabled="true" android:icon="@drawable/shortcut_review" android:shortcutShortLabel="@string/shortcut_review">
+  <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity" android:data="https://mymayankyadav.github.io/lemma/#/review"/>
+ </shortcut>
+ <shortcut android:shortcutId="approve" android:enabled="true" android:icon="@drawable/shortcut_approve" android:shortcutShortLabel="@string/shortcut_approve">
+  <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity" android:data="https://mymayankyadav.github.io/lemma/#/proposals"/>
+ </shortcut>
+ <shortcut android:shortcutId="atlas" android:enabled="true" android:icon="@drawable/shortcut_atlas" android:shortcutShortLabel="@string/shortcut_atlas">
+  <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="com.google.androidbrowserhelper.trusted.LauncherActivity" android:data="https://mymayankyadav.github.io/lemma/#/atlas"/>
+ </shortcut>
+</shortcuts>

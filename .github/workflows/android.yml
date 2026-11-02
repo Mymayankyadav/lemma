@@ -1,0 +1,74 @@
+name: Android TWA
+on:
+  workflow_dispatch:
+  push:
+    tags: ['android-v*']
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+      - '.gitignore'
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          # v3 defaults to obsolete `tools`, removed from current SDK indexes.
+          # Install only supported packages; platform 36 is installed below.
+          packages: 'platform-tools'
+      - name: Install Android SDK platform
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'platform-tools'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Fail if any signing material is tracked
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)([^/]*\.jks|[^/]*\.keystore|google-services\.json|local\.properties)$'; then
+            echo "::error::Private Android signing or local configuration is tracked"
+            exit 1
+          fi
+      - name: Static TWA acceptance
+        run: node android/scripts/check-shell.mjs
+      - name: PR builds are always unsigned
+        if: github.event_name == 'pull_request'
+        run: echo 'PR build is unsigned; signing secrets are not exposed'
+      - name: Configure optional release signing
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          if [[ -n "$KEYSTORE_B64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
+            printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/lemma-upload.jks"
+            chmod 600 "$RUNNER_TEMP/lemma-upload.jks"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/lemma-upload.jks" >> "$GITHUB_ENV"
+            echo "ANDROID_UPLOAD_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "ANDROID_UPLOAD_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "ANDROID_UPLOAD_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "Signing configured from private Actions secrets"
+          else
+            echo "No complete signing configuration: building unsigned AAB (not Play-uploadable)"
+          fi
+      - name: Lint and bundle release
+        working-directory: android
+        run: ./gradlew --no-daemon lint bundleRelease
+      - name: Upload Android App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: lemma-android-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
