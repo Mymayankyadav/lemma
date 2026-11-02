@@ -112,6 +112,22 @@ Use the latest release of each major listed; pin exact versions in `package.json
 
 ## 8. Task board
 
+### Agent system v3 repository preparation (owner request, 2 Nov 2026)
+
+The owner authorized implementation of the exact supplied `Lemma_Agent_System_v3_Adaptive_Plans_and_Transition.md`, excluding all scheduled-task mutations in this session. Agent-authored authorization handoff: Agent Log #455 comment 6571926727. This permission covers repository preparation and the setup-prompt deliverable; scheduled inventory, installation, shadow runtime evidence and activation remain separate uncompleted gates.
+
+| Task | Requirement / acceptance | Depends on | Owned paths | State |
+| --- | --- | --- | --- | --- |
+| OPS3-PREP | Source snapshot, baseline/cleanup manifest, compatible inactive startup, complete protocol/playbooks/templates, executable control/claim/packet/release validators, adversarial scenarios and setup prompt; independent audit + required CI before merge | Current policy; release enforcement uses existing #749 and mandatory supplement | `AGENTS.md`, `plan.md`, `README.md`, `docs/agents/**`, `docs/changes/OPS3/**`, `docs/design/README.md`, `docs/guide.md`, `scripts/agent-protocol.mjs`, `tests/unit/agents/protocol.test.ts` | repository implementation authorized; review pending |
+| OPS3-5 | Same five identities, old/new prompt snapshots and readback, startup acknowledgements, measured capabilities | OPS3-PREP merged | Schedule installation evidence in `docs/changes/OPS3/`; external setup only | not executed here |
+| OPS3-6 | Shadow assignment/intake evidence and failure rehearsal; no shadow write authority | OPS3-5 | `docs/changes/OPS3/` evidence | gated |
+| OPS3-7 | Drain incompatible writers/queued starts, canonical protocol digest, first future packet, authorized control chain and first receipts | OPS3-6; independent release enforcement; all activation gates | `docs/changes/OPS3/` evidence and #455/#764 | gated; NOT ACTIVE |
+| OPS3-8 | At least 24 healthy epochs, measurements and pending release verification accounted for | OPS3-7 | stabilization evidence | gated |
+| CLN3-4/5 | Optional historical retirement and branch/issue hygiene | OPS3-8; separately approved deletion/supersession scope | explicitly approved paths only | deferred; no branch purge authorized |
+
+`OPS3-PREP` is the single scoped preparation task covering source packages OPS3-0/1/2/4 and mandatory CLN3-0/1/2. OPS3-3 reuses #749 plus the mandatory supplemental decision instead of a competing code fix. No product UI or architecture plan is approved by this coordination change. Intake #763; Dispatch State #764.
+
+
 Phases run in order; tasks inside a phase run in parallel. "Done when" items are the acceptance checks for the PR.
 
 ### Priority: chat-first track (start now, before everything else)
@@ -458,3 +474,4 @@ App screens for the master prompt (Settings) and the action history with undo bu
 - Design boards: `docs/design/canvas/*.dc.html` (exported from the owner's canvas; inline styles hold the exact values; open in a browser for the visual, though interactive parts need the canvas runtime) and the owner's original reference `docs/design/reference-amber-on-obsidian.png`.
 - Owner-only links (private to the owner): design canvas https://claude.ai/artifact/NjsHYBnmuZYgphy3mY13Qu, research notes https://claude.ai/artifact/EQiFLZfqa1ewaHTR1vbCdo.
 - Legacy code kept for reference until INT-1: `legacy/` (FSRS engine and renderer already moved into `src/lib`).
+
