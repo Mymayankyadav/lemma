@@ -125,7 +125,8 @@ describe('NOTIF-5 Workbox push handling',()=>{
   expect(h.shown.at(-1)?.options.data.actions[0].token).toBe('signed-undo');
  });
  it('posts signed dismissal and opens tutor chat in a new window',async()=>{
-  const h=harness(),data={id:'42',url:'https://claude.ai/new',actions:[{action:'dismiss',token:'signed-dismiss'}]};
+  const h=harness(),data={id:'42',url:'https://claude.ai/new',dismissToken:'signed-dismiss',
+   actions:[{action:'dismiss',token:'visible-dismiss'}]};
   await h.emit('notificationclose',{notification:{data}});
   expect(h.posted).toEqual([{token:'signed-dismiss'}]);
   await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
