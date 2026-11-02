@@ -143,10 +143,11 @@ export function PlanMap({nodes, selected, onSelect}: {nodes:Node[];selected:stri
   </section>;
 }
 
+const dueDateFormatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 function dueLabel(date?: string | null) {
   if (!date) return null;
   const d = new Date(date + "T12:00:00Z");
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  return Number.isNaN(d.getTime()) ? null : dueDateFormatter.format(d);
 }
 /** Everything one checkpoint covers, one tap from the map or the list; steps through the plan in order. */
 export function CheckpointDrawer({

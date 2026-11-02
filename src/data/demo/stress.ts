@@ -1,4 +1,4 @@
-import type { DemoStore, DemoCheckpoint, DemoNote, DemoSession, DemoSource } from "./model";
+import type { DemoStore, DemoCheckpoint, DemoNote, DemoSession, DemoSource, DemoConcept } from "./model";
 
 import type {InsightAggregate,Subject} from "../types";
 import {DAY} from "../../lib/calendar";
@@ -13,6 +13,7 @@ import {studyDayBounds} from "../../lib/derive";
  */
 export function makeStressInsightAggregate(
  data:DemoStore, days:7|30|90, now:number, timeZone:string, rolloverHour:number,
+ conceptById:(id:string)=>DemoConcept|undefined=id=>data.concepts.find(c=>c.id===id),
 ):InsightAggregate|null {
  const total=data.stressReviewCount??null;
  if(total===null)return null;
@@ -70,20 +71,28 @@ export function makeStressInsightAggregate(
   const entry=bySubject.get(subject.id)??{subject,minutes:0};
   entry.minutes+=perProjectInWindow*baseMinutes;bySubject.set(subject.id,entry);
  }
+ // Resolve each event's civil day once, rather than repeating the same
+ // time-zone conversion for every day in the 28-day chart.
+ const eventsByDay=new Map<number,{demonstrated:number;rechecked:number}>();
+ for(const event of data.checkpointEvents){
+  const at=Date.parse(event.at);
+  if(!Number.isFinite(at))continue;
+  const index=studyDayBounds(at,timeZone,rolloverHour).index;
+  const counts=eventsByDay.get(index)??{demonstrated:0,rechecked:0};
+  if(event.kind==='demonstrated')counts.demonstrated++;else counts.rechecked++;
+  eventsByDay.set(index,counts);
+ }
  const checkpointDays=Array.from({length:28},(_,i)=>{
   const index=end-27+i;
-  const events=data.checkpointEvents.filter(e=>Number.isFinite(Date.parse(e.at))&&
-   studyDayBounds(Date.parse(e.at),timeZone,rolloverHour).index===index);
   return {date:new Date(index*DAY).toISOString().slice(0,10),
-   demonstrated:events.filter(e=>e.kind==='demonstrated').length,
-   rechecked:events.filter(e=>e.kind!=='demonstrated').length};
+   ...(eventsByDay.get(index)??{demonstrated:0,rechecked:0})};
  });
  const most=data.misconceptions.reduce<(typeof data.misconceptions)[number]|null>(
   (best,item)=>!best||item.times>best.times?item:best,null);
  return {days,reviews,right,reviewDays,calibration,sessions:totalSessions,minutes,typicalSession,
   subjectMinutes:[...bySubject.values()],checkpointDays,
   mostRevisited:most?{label:most.label,times:most.times,
-   conceptName:data.concepts.find(c=>c.id===most.conceptId)?.name??null}:null};
+   conceptName:most.conceptId?conceptById(most.conceptId)?.name??null:null}:null};
 }
 
 /** Materialise a single 150/400-event reasoning history only when a session is opened.
@@ -126,15 +135,25 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
     transcribedBy: null, transcribedAt: null, confidence: null};
 }
 
+/** Cards-only long/math fixtures: allocate once on first note request, never on cold Today import. */
+type StressNoteExamples={longFront:string;longBack:string;matrix:string;aligned:string;sum:string;inline:string};
+let stressNoteExamples:StressNoteExamples|null=null;
+function getStressNoteExamples():StressNoteExamples{
+ if(stressNoteExamples)return stressNoteExamples;
+ const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
+ const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
+ const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
+ const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
+ const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
+ const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
+ stressNoteExamples={longFront,longBack,matrix,aligned,sum,inline};
+ return stressNoteExamples;
+}
+
 /** Build the real note rows only when a route needs card content. */
 export function makeStressNotes(baseNote:DemoNote,projects:DemoStore['projects'],cardCount:number,dueCount:number,startIndex=0):DemoNote[]{
  const notes:DemoNote[]=[];
-  const longFront = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
-  const longBack = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
-  const matrix = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
-  const aligned = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
-  const sum = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
-  const inline = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
+ const {longFront,longBack,matrix,aligned,sum,inline}=getStressNoteExamples();
   for (let i = startIndex; i < startIndex + cardCount; i++) {
     const project = projects[i % projects.length];
     const no = i + 1;
