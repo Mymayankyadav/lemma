@@ -15,6 +15,9 @@ describe('FIX-656b cold plan proposal first-visible-paint marker',()=>{
   expect(source).toContain('getBoundingClientRect()');
   expect(source).toContain('getComputedStyle(');
  });
+ it('waits for the asynchronous paint mark before reading readyMs',()=>{
+  expect(source).toContain("page.waitForFunction(()=>performance.getEntriesByName('lemma-proposal-loaded','mark').length===1");
+ });
  it('preserves eight no-retry 4x CPU cells and the strict 1500ms budget',()=>{
   expect(source).toContain('retries:0');
   expect(source).toContain("['stress','extreme']");
