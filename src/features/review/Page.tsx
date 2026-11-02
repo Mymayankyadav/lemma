@@ -42,14 +42,22 @@ export default function Page(){
  const navigate=useNavigate(),location=useLocation(),notify=useToast();
  const handledNotificationLink=useRef<string|null>(null);
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
+ const [selected,setSelected]=useState<Set<string>|null>(null);
+ const enabled=useMemo(()=>selected??new Set([
+  ...(decks.data??[]).filter(n=>n.due>0).map(n=>n.key),
+  ...(decks.data??[]).flatMap(n=>n.children.filter(c=>c.due>0).map(c=>c.key))
+ ]),[decks.data,selected]);
+ const notificationFilter=useMemo<QueueFilter>(()=>({
+  ...allFilter,decks:selected===null?[]:Array.from(enabled) as QueueFilter['decks'],
+ }),[selected,enabled]);
  const rawNotificationStart=new URLSearchParams(location.search).get('start');
  const notificationCount=rawNotificationStart===null?null:notificationRoundCap(
   undefined,/^[0-9]+$/.test(rawNotificationStart)?Number(rawNotificationStart):1);
  // Ordinary Review keeps its saved daily quota. Only an explicit one-shot
  // link performs this separate, owner-scoped, <=50-card read.
  const notificationCards=useQuery({
-  queryKey:['notification-review-items',allFilter,notificationCount],
-  queryFn:()=>getApi().getNotificationReviewItems(allFilter,notificationCount!),
+  queryKey:['notification-review-items',notificationFilter,notificationCount],
+  queryFn:()=>getApi().getNotificationReviewItems(notificationFilter,notificationCount!),
   enabled:notificationCount!==null&&!!settings.data&&!!decks.data,
   staleTime:0,refetchOnWindowFocus:false,
  });
@@ -87,7 +95,7 @@ export default function Page(){
    onError:()=>{localStorage.removeItem('lemma.catch-up-until');localStorage.removeItem('lemma.catch-up-original');setCatchUpUntil(0);notify('Could not set catch-up target',{tone:'danger'})}
   });
  }
- const [selected,setSelected]=useState<Set<string>|null>(null);
+
  const [expandedProjects,setExpandedProjects]=useState<Set<string>>(()=>new Set());
  const [showAll,setShowAll]=useState<Set<string>>(()=>new Set());
  const [deckSearch,setDeckSearch]=useState('');
@@ -95,10 +103,7 @@ export default function Page(){
   const setter=more?setShowAll:setExpandedProjects;
   setter(previous=>{const next=new Set(previous);if(next.has(key))next.delete(key);else next.add(key);return next});
  };
- const enabled=useMemo(()=>selected??new Set([
-  ...(decks.data??[]).filter(n=>n.due>0).map(n=>n.key),
-  ...(decks.data??[]).flatMap(n=>n.children.filter(c=>c.due>0).map(c=>c.key))
- ]),[decks.data,selected]);
+
  const nodes=(decks.data??[]).filter(n=>n.due>0||n.children.some(c=>c.due>0));
  const visibleNodes=nodes.filter(n=>!deckSearch||n.label.toLowerCase().includes(deckSearch.toLowerCase())||
    n.children.some(c=>c.label.toLowerCase().includes(deckSearch.toLowerCase())));
