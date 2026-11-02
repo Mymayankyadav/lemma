@@ -1,5 +1,5 @@
 import './review.css';
-import {lazy,memo,Suspense,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,memo,Suspense,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
@@ -144,7 +144,9 @@ export default function Page(){
  const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
  const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
  const apiCards=useReviewItems(filter);
- useEffect(()=>{
+ // Loaded settings/cards must initialize the first real card in the layout
+ // phase, not after a passive-effect frame of skeleton/Preparing UI.
+ useLayoutEffect(()=>{
   if(init.current||!settings.data||!apiCards.data)return;
   init.current=true;
   if(useReviewSession.getState().queue)return;
