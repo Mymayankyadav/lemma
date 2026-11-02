@@ -23,6 +23,10 @@ for(const width of [360,390] as const){
   await trigger.click();
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel('Front')).toHaveValue('');
+  // Capture the actual open Sheet, not only the Cards list after it closes.
+  // Disable finite motion during capture so the four phone screenshots show
+  // the fully presented dialog rather than a partially animated frame.
+  await page.screenshot({path:'test-results/screens/fix-648b-cards-sheet-open-'+theme+'-'+width+'.png',animations:'disabled'});
   await dialog.getByRole('button',{name:'Close'}).click();
   await expect(dialog).toBeHidden();
   expect(errors).toEqual([]);
