@@ -85,6 +85,27 @@ export function mayContinue({run, claim, now, generation, holds_clear, revision_
   return yes('Existing claim may continue; packet expiry does not extend/revoke it');
 }
 
+/**
+ * Pre-activation review may come from a different interactive execution when
+ * no saved scheduled slot is available. This does not authenticate GitHub
+ * authorship: the release actor MUST inspect the linked RUN, nonce, authoring
+ * lineage and explicit owner authorization before asserting the flags below.
+ * A synthetic slot or an interactive self-review can never satisfy this path.
+ */
+function bootstrapReviewerVerified(v, e) {
+  if (v.review_channel !== 'interactive_bootstrap' || v.slot !== 'interactive' ||
+      !['legacy', 'shadow'].includes(e.protocol_mode) ||
+      e.bootstrap_review_authorized !== true ||
+      e.bootstrap_authorization_verified !== true ||
+      !text(e.bootstrap_authorization_ref) ||
+      v.separate_execution_verified !== true ||
+      !text(v.invocation_nonce) || !instant(v.started_at) ||
+      Date.parse(v.started_at) > Date.parse(v.at) ||
+      !text(v.run_record_url)) return false;
+  const match = /^https:\/\/github\.com\/Mymayankyadav\/lemma\/issues\/455#issuecomment-([1-9]\\d*)$/.exec(v.run_record_url);
+  return match !== null && v.run_id === 'run:' + match[1];
+}
+
 export function evaluateRelease(e) {
   if (!object(e) || !sha(e.head_sha) || !sha(e.base_sha) || !text(e.accepted_revision) || e.reads_complete!==true || e.generic_gate_ok!==true) return no('Generic gate or exact evidence missing');
   for (const k of ['ci_identity_verified','attempt_policy_met','acceptance_met','owner_permission_verified','holds_clear','lease_verified','mergeable','dependencies_met','integration_current','verification_assigned']) if (e[k]!==true) return no(`Release prerequisite missing: ${k}`);
@@ -94,6 +115,8 @@ export function evaluateRelease(e) {
   sorted.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at) || a.id-b.id);
   const v=sorted.at(-1);
   if (!v || v.verdict!=='CLEAR' || v.head_sha!==e.head_sha || v.accepted_revision!==e.accepted_revision) return no('Missing full-head/current-requirement CLEAR or unresolved BLOCK');
-  if (!runId(v.run_id) || !SLOTS.includes(v.slot) || v.provenance_verified!==true || !text(v.provenance_ref) || !refList(v.evidence_refs) || e.contributor_runs.includes(v.run_id) || e.contributor_slots.includes(v.slot) || e.merger_runs.includes(v.run_id) || e.merger_slots.includes(v.slot)) return no('Independent reviewer lineage not established');
+  const scheduledReviewer = SLOTS.includes(v.slot) && v.review_channel !== 'interactive_bootstrap';
+  const eligibleReviewer = scheduledReviewer || bootstrapReviewerVerified(v, e);
+  if (!runId(v.run_id) || !eligibleReviewer || v.provenance_verified!==true || !text(v.provenance_ref) || !refList(v.evidence_refs) || e.contributor_runs.includes(v.run_id) || e.contributor_slots.includes(v.slot) || e.merger_runs.includes(v.run_id) || e.merger_slots.includes(v.slot)) return no('Independent reviewer lineage not established');
   return yes('Supplement passed; refresh exact head and remote state before REST squash');
 }
