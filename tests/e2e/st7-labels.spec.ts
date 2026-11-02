@@ -1,5 +1,8 @@
 import {test,expect} from '@playwright/test';
 
+// The original ST-7 failure was first-attempt only. Never hide it by retry.
+test.describe.configure({retries:0});
+
 // ST-7 I3 survives the v4 removal of the stacked due-by-project legend:
 // a long, unbroken mathematical Continue title must still clip within 360px.
 for(const theme of ['graph','graph-night'] as const){
