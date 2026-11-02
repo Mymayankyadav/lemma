@@ -1,27 +1,29 @@
 import {describe,expect,it} from 'vitest';
-import {DemoAdapter} from '../../../src/data/demo/adapter';
-import type {QueueFilter,ReviewItem} from '../../../src/data/types';
+import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter';
+import type {QueueFilter} from '../../../src/data/types';
 
 const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 
-// Compile-time guard: both adapters must implement the additive, bounded
-// read without changing the ordinary getReviewItems(filter) signature.
-type NotificationRead=(filter:QueueFilter,count:number)=>Promise<ReviewItem[]>;
-const demoMethod:NotificationRead=DemoAdapter.prototype.getNotificationReviewItems;
-
-describe('CONTRACT NOTIF-7 one-shot queue',()=>{
- it('does not accidentally expose an unimplemented notification read as an ordinary due queue',async()=>{
-  // A prototype call avoids constructing the large demo fixture; the
-  // contract stub must fail explicitly until NOTIF-7 implements it.
-  const demo=Object.create(DemoAdapter.prototype) as DemoAdapter;
-  await expect(demoMethod.call(demo,filter,5)).rejects.toMatchObject({
-   code:'not_implemented',message:'getNotificationReviewItems is not implemented yet',
-  });
-  // Import the live class only in this test, not during demo bootstrap.
+describe('NOTIF-7 bounded one-shot Review N',()=>{
+ it('returns five due cards with a saved daily goal of three without changing settings',async()=>{
+  const fixture=structuredClone(demoSeedFixture);
+  fixture.settings.reviewsPerDay=3;
+  const api=new DemoAdapter({fixture,ownedFixture:true});
+  const ordinary=await api.getReviewItems(filter);
+  const linked=await api.getNotificationReviewItems(filter,5);
+  expect(ordinary).toHaveLength(3);
+  expect(linked).toHaveLength(5);
+  expect(linked.slice(0,3).map(x=>x.cardId)).toEqual(ordinary.map(x=>x.cardId));
+  expect((await api.getSettings()).reviewsPerDay).toBe(3);
+  expect((await api.getReviewItems(filter)).map(x=>x.cardId)).toEqual(ordinary.map(x=>x.cardId));
+ });
+ it('bounds both adapters to an explicit integer 1–50 and leaves normal Start unchanged',async()=>{
+  const api=new DemoAdapter();
+  await expect(api.getNotificationReviewItems(filter,0)).rejects.toMatchObject({code:'invalid'});
+  await expect(api.getNotificationReviewItems(filter,51)).rejects.toMatchObject({code:'invalid'});
+  await expect(api.getNotificationReviewItems(filter,NaN)).rejects.toMatchObject({code:'invalid'});
   const {LiveAdapter}=await import('../../../src/data/live/adapter');
   const live=Object.create(LiveAdapter.prototype) as InstanceType<typeof LiveAdapter>;
-  await expect(live.getNotificationReviewItems(filter,5)).rejects.toMatchObject({
-   code:'not_implemented',message:'getNotificationReviewItems is not implemented yet',
-  });
+  await expect(live.getNotificationReviewItems(filter,0)).rejects.toMatchObject({code:'invalid'});
  });
 });
