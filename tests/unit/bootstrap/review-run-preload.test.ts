@@ -7,19 +7,24 @@ const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
 const preloadMarker = 'data-review-run-preload'
 const script = html.match(/<script\b[^>]*data-review-run-preload[^>]*>([\s\S]*?)<\/script>/)?.[1]
 
-function preloadsReviewRun(hash: string): boolean {
+function preloadTargets(hash: string): { review: boolean; app: boolean } {
   expect(script).toBeDefined()
   expect(script).toMatch(/void import\(['"]\/src\/features\/review-run\/Page\.tsx['"]\)/)
+  expect(script).toMatch(/void import\(['"]\/src\/app\/App\.tsx['"]\)/)
 
-  // Exercise the actual inline route guard, replacing only its dynamic import
-  // with a spy; this catches query-bearing hashes that source regexes miss.
-  const instrumented = script!.replace(
-    /void import\(['"]\/src\/features\/review-run\/Page\.tsx['"]\)/,
-    'globalThis.preloadTriggered = true',
-  )
-  const sandbox = { location: { hash }, preloadTriggered: false }
+  // Exercise the actual inline guard, replacing BOTH dynamic imports with
+  // spies, including their no-op rejection handlers. Otherwise Node's VM attempts the App import and throws
+  // ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING, hiding a valid branch decision.
+  const instrumented = script!
+    .replace(/void import\(['"]\/src\/features\/review-run\/Page\.tsx['"]\)\.catch\(\(\) => \{\}\)/, 'globalThis.preloadTriggered = true')
+    .replace(/void import\(['"]\/src\/app\/App\.tsx['"]\)\.catch\(\(\) => \{\}\)/, 'globalThis.appPreloadTriggered = true')
+  const sandbox = { location: { hash }, preloadTriggered: false, appPreloadTriggered: false }
   runInNewContext(instrumented, sandbox, { timeout: 1000 })
-  return sandbox.preloadTriggered
+  return { review: sandbox.preloadTriggered, app: sandbox.appPreloadTriggered }
+}
+
+function preloadsReviewRun(hash: string): boolean {
+  return preloadTargets(hash).review
 }
 
 describe('FIX-651a conditional Review-run cold bootstrap', () => {
@@ -60,5 +65,18 @@ describe('FIX-651a conditional Review-run cold bootstrap', () => {
     ]) {
       expect(preloadsReviewRun(hash), hash).toBe(false)
     }
+  })
+
+  it('prefetches the App graph for non-Review entries, never alongside Review-run', () => {
+    for (const hash of [
+      '#/', '#/atlas', '#/cards', '#/review', '#/review?start=5',
+      '#/review/running', '#/review/run-extra', '#/review/run/child',
+      '#/review/running?session=abc',
+    ]) expect(preloadTargets(hash), hash).toEqual({ review: false, app: true })
+    for (const hash of [
+      '#/review/run', '#/review/run?session=abc',
+      '#/review/run?concept=compactness', '#/review/run?new=1',
+      '#/review/run?session=abc&concept=compactness', '#/review/run?',
+    ]) expect(preloadTargets(hash), hash).toEqual({ review: true, app: false })
   })
 })
