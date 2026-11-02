@@ -58,6 +58,7 @@ for(const width of [390,360] as const){
   await expect(page.getByRole('dialog',{name:'Switch project'})).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   expect(await page.locator('*').count()).toBeLessThan(1500);
+  await page.waitForFunction(()=>performance.getEntriesByName('lemma-cp4-loaded','mark').length===1,null,{timeout:90_000});
   const readyMs=await page.evaluate(()=>performance.getEntriesByName('lemma-cp4-loaded','mark')[0]?.startTime??NaN);
   console.info('FIX #655 CP4 cold 4x',JSON.stringify({profile,theme,width,readyMs}));
   expect(Number.isFinite(readyMs)).toBe(true);
