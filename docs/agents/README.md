@@ -12,6 +12,8 @@ This is how work on Lemma is run, written on 31 Oct 2026 so that any new agent c
 4. In every mode enforce [release supplement](release.md), existing owner decisions, exact-head CI, independent audit and path ownership. Never invoke historical reset/purge instructions. Mode changes do not weaken those rules.
 5. External installation follows [transition](transition.md), [setup prompt](setup-prompt.md) and [evidence checklist](../changes/OPS3/status.md). Exactly five intended slots are :00/:15/:30/:45/:50 IST; actual identities, enabled state, any extra Planner and runtime capabilities are UNKNOWN until read back externally.
 
+**Pre-install independent review:** If the actual scheduled tasks cannot yet be accessed, a separate authorized interactive reviewer can audit legacy/shadow changes only through the evidence-bound [bootstrap review](release.md#independent-audit-before-saved-schedules-exist) procedure. No invented :45 slot, shared-session self-CLEAR, green-CI bypass, or protocol activation follows.
+
 New owner UI/architecture plans enter #763 with exact source/digest and authority, then a scoped package using [templates](templates/README.md). Presence in a PR or a higher filename version is not approval. `plan.md` remains the only runnable task list.
 
 ## 1. Dynamic team and hourly capacity (OPS-1)
