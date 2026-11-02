@@ -15,6 +15,29 @@ test('Review 5 deep link starts exactly five cards and consumes the query',async
  await page.screenshot({path:'test-results/screens/notif-review-5.png',fullPage:true})
 })
 
+test('Review 5 exceeds saved daily quota 3 without changing ordinary Start or due order',async({page,context})=>{
+ await page.goto('/lemma/?demo=quota3#/review');
+ const ordinaryStart=page.getByRole('button',{name:'Start review'});
+ await expect(ordinaryStart).toHaveText('Start 3');
+ await ordinaryStart.click();
+ await expect(page.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuemax','3');
+ const ordinaryFront=page.locator('.review-front').first();
+ await expect(ordinaryFront).not.toBeEmpty();
+ const first=await ordinaryFront.innerText();
+ const linked=await context.newPage();
+ try{
+  await linked.goto('/lemma/?demo=quota3#/review?start=5');
+  await expect(linked).toHaveURL(/#\/review\/run$/);
+  await expect(linked.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuemax','5');
+  await expect(linked.getByText('1 of 5',{exact:true})).toBeVisible();
+  const linkedFront=linked.locator('.review-front').first();
+  await expect(linkedFront).not.toBeEmpty();
+  expect(await linkedFront.innerText()).toBe(first);
+  await linked.goto('/lemma/?demo=quota3#/review');
+  await expect(linked.getByRole('button',{name:'Start review'})).toHaveText('Start 3');
+ }finally{await linked.close();}
+});
+
 test('notification Review 5 preserves the first card from ordinary Start',async({page,context})=>{
  await page.goto('/lemma/?demo=1#/review');
  await page.getByRole('button',{name:'Start review'}).click();
