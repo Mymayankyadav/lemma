@@ -58,6 +58,7 @@ for(const width of [390,360] as const){
   await expect(page.getByText('This proposal could not be loaded.')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
   expect(await page.locator('*').count()).toBeLessThan(1500);
+  await page.waitForFunction(()=>performance.getEntriesByName('lemma-proposal-loaded','mark').length===1,null,{timeout:90_000});
   const readyMs=await page.evaluate(()=>performance.getEntriesByName('lemma-proposal-loaded','mark')[0]?.startTime??NaN);
   console.info('FIX #656 proposal cold 4x',JSON.stringify({profile,theme,width,readyMs}));
   expect(Number.isFinite(readyMs)).toBe(true);
