@@ -42,6 +42,10 @@ export default defineConfig({
     ],
    },
    workbox:{
+    // First installation must control the initial client so an already-read
+    // page can navigate to precached lazy routes after a sudden disconnect.
+    // Keep prompt-mode updates: do not enable skipWaiting here.
+    clientsClaim:true,
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
