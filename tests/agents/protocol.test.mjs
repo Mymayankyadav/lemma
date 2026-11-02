@@ -36,3 +36,35 @@ test('rollback restoration needs its own drain/readback gate',()=>{const rollbac
 test('valid incumbent PR holder outranks a later observed conflicting claim',()=>{ok(resolveClaim({...ownership,pr_holder:{run_id:claim.run_id,expires_at:claim.expires_at},claims:[{...claim,id:199,run_id:'run:99'}]}));});
 test('malformed release is unknown evidence, never an exception/ownership grant',()=>blocked(resolveClaim({...ownership,releases:[null]})));
 test('holds, revised acceptance, lost ownership, changed generation and cutover stop continuation',()=>{const c={run,claim,now:'2026-11-02T13:30:00+05:30',generation:1,holds_clear:true,revision_current:true,ownership_verified:true,control_mode:'active'};ok(mayContinue(c));for(const patch of [{holds_clear:false},{revision_current:false},{ownership_verified:false},{generation:2},{control_mode:'cutover'},{now:run.finish_by}])blocked(mayContinue({...c,...patch}));});
+
+test('pre-activation interactive reviewer requires separate immutable RUN and owner authorization',()=>{
+  const interactive={...verdict,slot:'interactive',review_channel:'interactive_bootstrap',
+    run_id:'run:451',run_record_url:'https://github.com/Mymayankyadav/lemma/issues/455#issuecomment-451',
+    invocation_nonce:'independent-interactive-review-451',started_at:at,separate_execution_verified:true};
+  const proof={...release,protocol_mode:'legacy',bootstrap_review_authorized:true,
+    bootstrap_authorization_verified:true,bootstrap_authorization_ref:'authorized owner instruction handoff',
+    verdicts:[interactive]};
+  ok(evaluateRelease(proof));
+  ok(evaluateRelease({...proof,protocol_mode:'shadow'}));
+  for(const patch of [
+    {protocol_mode:'active'}, {protocol_mode:'cutover'}, {bootstrap_review_authorized:false},
+    {bootstrap_authorization_verified:false},{bootstrap_authorization_ref:''},
+    {contributor_runs:['run:451']},{merger_runs:['run:451']},
+    {ci_identity_verified:false},{generic_gate_ok:false},{attempt_policy_met:false},
+  ]) blocked(evaluateRelease({...proof,...patch}));
+  for(const patch of [
+    {run_id:'run:452'}, {run_record_url:'https://github.com/Mymayankyadav/lemma/issues/455#issuecomment-452'},
+    {run_record_url:'https://example.com/issues/455#issuecomment-451'},
+    {run_record_url:'https://github.com/Mymayankyadav/lemma/issues/455#issuecomment-451-fake'},
+    {separate_execution_verified:false}, {invocation_nonce:''},
+    {started_at:'2026-11-02T15:00:00+05:30'}, {slot:':45'},
+    {review_channel:'scheduled'}, {provenance_verified:false},
+  ]) blocked(evaluateRelease({...proof,verdicts:[{...interactive,...patch}]}));
+  blocked(evaluateRelease({...proof,verdicts:[]}));
+  blocked(evaluateRelease({...proof,verdicts:[interactive,{...interactive,id:301,verdict:'BLOCK'}]}));
+});
+
+test('scheduled release remains valid with no interactive bootstrap claims',()=>{
+  ok(evaluateRelease({...release,bootstrap_review_authorized:false}));
+  ok(evaluateRelease({...release,verdicts:[{...verdict,review_channel:'scheduled'}]}));
+});
