@@ -17,6 +17,11 @@ describe('FIX #651 cold first card has no entrance animation',()=>{
   expect(source).toContain('if(!first)void cardMotion.start(');
   expect(source).not.toContain('duration:reduce||first?0:.48');
  });
+ it('memoizes the loaded card face across unrelated session/progress state updates',()=>{
+  const source=readFileSync('src/features/review-run/Page.tsx','utf8');
+  expect(source).toContain('const CardFace=memo(function CardFace(');
+  expect(source).toContain('<CardFace item={current} revealed={revealed} confidence={confidence} quiet={reduce} stamp={stamp}/>');
+ });
  it('defers unused FSRS interval preview until answer reveal, then recomputes it',()=>{
   const source=readFileSync('src/features/review-run/Page.tsx','utf8');
   // Grade interval labels are only rendered after reveal. A cold first-card
