@@ -131,7 +131,7 @@ export function stressSourcePage(source: Pick<DemoSource, "id" | "hasText" | "pa
 const STRESS_LONG_FRONT = "State and prove the necessary and sufficient conditions. ".repeat(30).slice(0, 1500);
 const STRESS_LONG_BACK = "First establish the hypotheses, then prove both directions. ".repeat(60).slice(0, 3000);
 const STRESS_MATRIX = String.raw`$$\begin{pmatrix}${Array.from({length:10},(_,r)=>Array.from({length:10},(_,c)=>r===c?"1":"0").join("&")).join(String.raw`\\`)}\end{pmatrix}$$`;
-const STRESS_ALIGNED = String.raw`$$\begin{STRESS_ALIGNED}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{STRESS_ALIGNED}$$`;
+const STRESS_ALIGNED = String.raw`$$\begin{aligned}${Array.from({length:25},(_,i)=>`a_${i+1}&=a_${i}+1`).join(String.raw`\\`)}\end{aligned}$$`;
 const STRESS_SUM = String.raw`$$\sum_{i=1}^{60} ${Array.from({length:60},(_,i)=>`x_${i+1}`).join("+")}$$`;
 const STRESS_INLINE = String.raw`$\operatorname{${"longexpression".repeat(10)}}$`;
 
