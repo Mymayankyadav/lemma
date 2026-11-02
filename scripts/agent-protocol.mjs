@@ -102,7 +102,7 @@ function bootstrapReviewerVerified(v, e) {
       !text(v.invocation_nonce) || !instant(v.started_at) ||
       Date.parse(v.started_at) > Date.parse(v.at) ||
       !text(v.run_record_url)) return false;
-  const match = /^https:\/\/github\.com\/Mymayankyadav\/lemma\/issues\/455#issuecomment-([1-9]\\d*)$/.exec(v.run_record_url);
+  const match = /^https:\/\/github\.com\/Mymayankyadav\/lemma\/issues\/455#issuecomment-([1-9]\d*)$/.exec(v.run_record_url);
   return match !== null && v.run_id === 'run:' + match[1];
 }
 
