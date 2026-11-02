@@ -141,6 +141,28 @@ describe('NOTIF-5 Workbox push handling',()=>{
   expect(h.posted).toEqual([{token:'signed-dismiss'}]);
   expect(h.shown).toHaveLength(0);
  });
+ it('does not treat visible open or blank-action tokens as passive body-click receipts',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,actions:[
+    {action:'open',title:'Open',token:'visible-open'},
+    {action:'',title:'Blank action',token:'visible-blank'},
+   ],
+  },scope)).data;
+  await h.emit('notificationclick',{notification:{data,close:vi.fn()},action:''});
+  expect(h.posted).toHaveLength(0);
+  expect(h.fetchMock).not.toHaveBeenCalled();
+  expect(h.navigated).toEqual([scope+'#/review']);
+ });
+ it('does not reuse a visible dismiss action as an unsigned passive close receipt',async()=>{
+  const h=harness();
+  const data=h.core.notificationOptions(h.core.parsePayload({
+   ...payload,actions:[{action:'dismiss',title:'Dismiss',token:'visible-dismiss'}],
+  },scope)).data;
+  await h.emit('notificationclose',{notification:{data}});
+  expect(h.posted).toHaveLength(0);
+  expect(h.fetchMock).not.toHaveBeenCalled();
+ });
  it('fails closed on passive dismissal when no signed receipt is present',async()=>{
   const h=harness();
   const data=h.core.notificationOptions(h.core.parsePayload(payload,scope)).data;
