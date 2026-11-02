@@ -42,6 +42,26 @@ as $$
     where c.user_id = s.user_id and n.status = 'active'
       and p.status <> 'archived' and p.system = false
       and (c.state = 0 or c.due < s.day_end)
+      -- Apply all requested filters before sibling selection, ranking,
+      -- new-card quota and the final N bound. A post-LIMIT filter can
+      -- otherwise return zero cards for a deck with five due cards.
+      and (p_new_only is not true or c.state = 0)
+      and (p_include_new is not false or c.state <> 0)
+      and (p_session_id is null or n.session_id = p_session_id)
+      and (p_concept_slug is null or exists (
+        select 1 from public.concepts concept_filter
+        where concept_filter.id = n.concept_id
+          and concept_filter.user_id = n.user_id
+          and concept_filter.slug = p_concept_slug
+      ))
+      and (coalesce(cardinality(p_decks), 0) = 0
+        or 'project:' || p.slug = any(p_decks)
+        or exists (
+          select 1 from public.checkpoints cp_filter
+          where cp_filter.id = n.checkpoint_id
+            and cp_filter.user_id = n.user_id
+            and 'cp:' || p.slug || ':' || cp_filter.code = any(p_decks)
+        ))
     order by n.id, case when c.state = 0 then 1 else 0 end,
       case when c.state in (1,3) and c.due <= now() then 0 else 1 end,
       c.due, c.id
@@ -94,14 +114,6 @@ as $$
   left join public.checkpoints cp on cp.id = n.checkpoint_id and cp.user_id = n.user_id
   left join public.sessions sess on sess.id = n.session_id and sess.user_id = n.user_id
   left join public.sources src on src.id = n.source_id and src.user_id = n.user_id
-  left join public.concepts concept on concept.id = n.concept_id and concept.user_id = n.user_id
-  where (p_new_only is not true or c.state = 0)
-    and (p_include_new is not false or c.state <> 0)
-    and (p_session_id is null or n.session_id = p_session_id)
-    and (p_concept_slug is null or concept.slug = p_concept_slug)
-    and (coalesce(cardinality(p_decks), 0) = 0
-      or 'project:' || p.slug = any(p_decks)
-      or 'cp:' || p.slug || ':' || cp.code = any(p_decks))
   order by sel.review_seq;
 $$;
 revoke all on function public.notification_review_items(integer,text[],uuid,text,boolean,boolean) from public, anon;
