@@ -12,6 +12,7 @@ const ok = (name: string, id = 1) => ({
 });
 const required = ["check", "mcp-sql", "e2e-1-of-4", "e2e-2-of-4", "e2e-3-of-4", "e2e-4-of-4", "qa3-screens"] as const;
 const greenChecks = required.map(name => ok(name));
+const baselineClear = { body: "AUDIT CLEAR — independent Auditor slot :15 verified exact head `" + sha.slice(0, 8) + "`", createdAt: "2026-10-30T05:00:00Z" };
 const ready = {
   headSha: sha,
   draft: false,
@@ -21,7 +22,8 @@ const ready = {
   leaseEligible: true,
   checkRuns: greenChecks,
   commitStatuses: [],
-  auditComments: [],
+  auditComments: [baselineClear],
+  auditIndependenceVerified: true,
 };
 
 describe("Steward exact-head merge gate (audit #493)", () => {
@@ -62,7 +64,7 @@ describe("Steward exact-head merge gate (audit #493)", () => {
 
   it("accepts a later Auditor clear, but not an earlier one", () => {
     const block = { body: "AUDIT BLOCK — fix", createdAt: "2026-10-31T06:10:00Z" };
-    const clear = { body: "AUDIT CLEAR — verified", createdAt: "2026-10-31T06:20:00Z" };
+    const clear = { body: "AUDIT CLEAR — independent Auditor slot :45 verified exact head `" + sha.slice(0, 8) + "`", createdAt: "2026-10-31T06:20:00Z" };
     expect(evaluateMergeGate({ ...ready, auditComments: [block, clear] }).ok).toBe(true);
     const earlyClear = { ...clear, createdAt: "2026-10-31T06:00:00Z" };
     expect(evaluateMergeGate({ ...ready, auditComments: [block, earlyClear] }).ok).toBe(false);
@@ -164,7 +166,8 @@ describe("FIX #619: explicit independent Auditor CLEAR is a real merge gate", ()
     expect(evaluateMergeGate({ ...ready, body, auditComments: [{ ...currentClear, body: "AUDIT CLEAR — old head bbbbbbbb" }] }).ok).toBe(false);
   });
 
-  it("does not impose a new blanket audit requirement on unrelated Ready PRs", () => {
+  it("requires an independent audit for unrelated Ready PRs too (OPS-1)", () => {
+    expect(evaluateMergeGate({ ...ready, auditComments: [] }).ok).toBe(false);
     expect(evaluateMergeGate(ready).ok).toBe(true);
   });
 });
@@ -223,6 +226,11 @@ describe("AUDIT #748: every merge needs an independent exact-head CLEAR", () => 
   it("rejects a later BLOCK after a valid exact-head CLEAR", () => {
     const block = { body: "AUDIT BLOCK — new defect", createdAt: "2026-11-02T05:10:00Z" };
     expect(evaluateMergeGate({ ...ready, auditComments: [independent, block] }).ok).toBe(false);
+  });
+  it("fails closed when independent Auditor provenance is unverified", () => {
+    expect(evaluateMergeGate({ ...ready, auditComments: [independent], auditIndependenceVerified: false }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...ready, auditComments: [independent], auditIndependenceVerified: undefined }).ok).toBe(false);
+    expect(evaluateMergeGate({ ...ready, auditComments: [independent], auditIndependenceVerified: true }).ok).toBe(true);
   });
   it("accepts a current-head independent CLEAR only when all other merge gates pass", () => {
     expect(evaluateMergeGate({ ...ready, auditComments: [independent] }).ok).toBe(true);
