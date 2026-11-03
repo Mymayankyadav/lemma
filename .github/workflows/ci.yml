@@ -119,7 +119,24 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Install pinned isolated PostgreSQL harness
-        run: npm install --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13 pg@8.16.3
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A second npm install inside the application tree can crash Arborist
+          # (edgesOut) after npm ci; use a clean test-only dependency graph.
+          harness="$RUNNER_TEMP/lemma-mcp-sql-harness"
+          mkdir -p "$harness" node_modules/@electric-sql
+          printf '{"name":"lemma-mcp-sql-harness","private":true}\n' > "$harness/package.json"
+          npm install --prefix "$harness" --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13 pg@8.16.3
+          test -f "$harness/node_modules/@electric-sql/pglite/package.json"
+          test -f "$harness/node_modules/pg/package.json"
+          # ESM imports in tests/mcp resolve in the repository. Link only the
+          # two pinned harness entrypoints; their transitive deps remain isolated.
+          test ! -e node_modules/@electric-sql/pglite
+          test ! -e node_modules/pg
+          ln -s "$harness/node_modules/@electric-sql/pglite" node_modules/@electric-sql/pglite
+          ln -s "$harness/node_modules/pg" node_modules/pg
+          node --input-type=module -e "await import('@electric-sql/pglite'); await import('pg')"
       - name: Verify DB-2 action log, undo and owner isolation
         run: node tests/mcp/db2.mjs
       - name: Verify ST-5 owner-scoped aggregate and paging SQL
