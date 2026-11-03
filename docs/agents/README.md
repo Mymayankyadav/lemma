@@ -13,6 +13,8 @@ Read `AGENTS.md`, [Owner authority](owner-role.md), [v3](v3.md), [registry](regi
 
 [Playbooks](playbooks-v3.md) define roles; [release](release.md) distinguishes ordinary autonomous gates from scoped owner exceptions; [transition](transition.md) separates repository preparation from factual runtime activation. [Setup](setup-prompt.md) applies only to actual authorized target sources. Evidence/source recovery links and current dispositions are in [OPS3 record](../changes/OPS3/README.md).
 
+Practical timing and future-ticket admission: [runtime-admission.md](runtime-admission.md) preserves verified-source limits and adds explicit voluntary work budgets plus one-time run-start binding. Missing scheduler maxima or future invocation IDs alone must not cause repeated idle diagnostics once that policy is accepted.
+
 ## Required behavior
 
 No fixed participant count, clock slot, scheduler or universal runtime. Use real agent/run/invocation identity, scoped one-writer claims and actual capabilities. Refresh attributable Owner instructions before consequential actions; acknowledge observed directives in the same healthy run and act or name the next capable execution. Never open draft PRs in REST-only workflows. No force/direct-main push, secrets exposure, invented CI/CLEAR or fake runtime evidence.
@@ -22,3 +24,4 @@ Ordinary autonomous releases require **nonempty** exact-head CI and applicable i
 ## Owner product decisions
 
 Accepted specs are authoritative: `docs/spec/v4-look.md` overrides v3 where different, then `docs/spec/v3.md`, stress constraints and older specs where silent. Preserve Graph day/night, math rendering, project-progress content, the Route/Atlas behavior and actual product data/contract requirements. Historical canvas/setup directions are not current reset, theme or branch-purge authority. Product decisions are in specs and attributable owner records, not duplicated legacy handoff lists.
+

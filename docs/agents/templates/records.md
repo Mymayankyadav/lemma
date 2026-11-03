@@ -4,7 +4,13 @@
 
 `RUN nonce=<invocation-marker> agent_id=<verified enrollment ID> invocation_id=<actual unique source instance> kind=<scheduled|interactive|ci|external> nominal_at=<actual RFC3339 or null when not applicable> started_at=<RFC3339> timing_source=<actual/proxy> runtime_minutes=<verified value/evidence> runtime_policy_ref=<actual policy> deadline_ceiling=<actual source deadline> handoff_minutes=<actual reserve> finish_by=<RFC3339> generation=<adopted> role_history=<roles>`
 
-Returned GitHub comment ID supplies `run_id=run:<id>`. No known runtime budget means read-only capability reconciliation, not an invented common runtime entitlement.
+Returned GitHub comment ID supplies `run_id=run:<id>`. Follow ../runtime-admission.md: use verified source runtime OR an accepted work policy, recording runtime_basis, runtime_verified=false for work-policy, known source ceiling or null, and actual work-policy reference. Missing source maximum alone does not block the accepted work-policy route. Prefer scheduler invocation ID; otherwise use labelled local:<nonce> bound to immutable RUN.
+
+## BIND (future tickets only)
+
+`BIND id=<returned numeric comment ID> packet_reference=<actual packet URL> ticket_id=<actual one-time future ticket> agent_id=<enrolled agent> generation=<adopted> run_id=<actual immutable RUN> invocation_id=<actual scheduler ID or labelled local nonce> bound_at=<actual RFC3339>`
+
+Read all relevant bindings, call resolveTicketBinding, then admitTicket and the independent scope claim. Earliest valid immutable BIND wins; a consumed ticket cannot be reused by another run. A binding does not grant a write lease or merge authority.
 
 ## CLAIM / RELEASE
 
@@ -41,4 +47,3 @@ actual agent/source environment + date; capability; verified/unavailable/unknown
 ## EPOCH MEASUREMENT
 
 epoch + healthy/affected status; scheduled delay with actual/proxy source; first useful action/startup cost; packet ready/admission/current eligibility; intake ready/assessment/task-publication times minus owner waits; claim collisions/fallbacks; preserved reviewer paths; task ready/build/review/merge/verified times; accepted milestone scope; incidents and owner interventions. Raw sample sizes/confounders first; no causal percentage without comparable baseline.
-

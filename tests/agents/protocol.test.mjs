@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {validateRegistry,validateRun,validateControl,validatePacket,admitTicket,resolveClaim,mayContinue,evaluateRelease,ROLES} from '../../scripts/agent-protocol.mjs';
+import {validateRegistry,validateRun,validateControl,validatePacket,admitTicket,resolveTicketBinding,resolveClaim,mayContinue,evaluateRelease,ROLES} from '../../scripts/agent-protocol.mjs';
 const head='a'.repeat(40),base='b'.repeat(40),dg='c'.repeat(64),rd='d'.repeat(64),at='2026-11-02T13:07:00+05:30';
 const agent=(id,kind='scheduled')=>({id,kind,state:'active',authorization_ref:'owner:1',source_ref:'source:'+id,lineage_ref:'lineage:'+id,startup_ref:'startup:'+id,capability_ref:'cap:1',runtime_policy_ref:'policy:'+id,roles:[...ROLES]});
 const registry={revision:'registry:1',agents:[agent('worker-A'),agent('reviewer-B','interactive'),agent('external-C','external')]};
@@ -19,7 +19,7 @@ test('empty discovery registry is valid but admits no invented worker',()=>{ok(v
 for(const count of [1,2,5,8,25])test(`capacity ${count}: no fixed identity count or clock slots`,()=>{const r={revision:'r'+count,agents:Array.from({length:count},(_,i)=>agent('actual-'+i,i%2?'interactive':'external'))};ok(validateRegistry(r));ok(validateControl({...event,applies_to:r.agents.map(a=>a.id)},null,{...auth,registry:r,agent_ids:r.agents.map(a=>a.id)}));ok(validatePacket({...packet,publisher_agent_id:'actual-0',registry_revision:r.revision,tickets:r.agents.map(a=>ticket(a.id))},{...ctx,registry:r}));});
 test('registry requires unique authorized identities and recognized capability roles',()=>{blocked(validateRegistry({...registry,agents:[agent('same'),agent('same')]}));blocked(validateRegistry({...registry,agents:[{...agent('x'),authorization_ref:''}]}));blocked(validateRegistry({...registry,agents:[{...agent('x'),roles:['owner']}]}));});
 test('arbitrary minute/timezone and actual 90-minute runtime are allowed',()=>{ok(validateRun(run));ok(admitTicket(packet,run,ctx,own.now));});
-for(const patch of [{runtime_verified:false},{runtime_minutes:0},{handoff_minutes:90},{deadline_ceiling:'13:50'},{agent_id:''},{invocation_id:''},{nominal_at:null},{started_at:'2026-11-02T13:06:00+05:30'},{finish_by:'2026-11-02T14:38:00+05:30'}])test('invalid run '+JSON.stringify(patch),()=>blocked(validateRun({...run,...patch})));
+for(const patch of [{runtime_verified:false},{runtime_minutes:0},{handoff_minutes:90},{deadline_ceiling:'13:50'},{agent_id:''},{invocation_id:''},{nominal_at:null},{finish_by:'2026-11-02T14:38:00+05:30'}])test('invalid run '+JSON.stringify(patch),()=>blocked(validateRun({...run,...patch})));
 test('late start cannot extend original invocation ceiling',()=>blocked(validateRun({...run,started_at:'2026-11-02T13:17:00+05:30',finish_by:'2026-11-02T14:47:00+05:30'})));
 test('interactive reviewer need not impersonate a scheduled slot',()=>{const r={...run,kind:'interactive',agent_id:'reviewer-B',runtime_policy_ref:'policy:reviewer-B',nominal_at:null,invocation_id:'manual-nonce'};ok(validateRun(r));ok(admitTicket({...packet,tickets:[ticket('reviewer-B','manual-nonce')]},r,ctx,own.now));ok(evaluateRelease(release));});
 test('mixed sources and multiple distinct invocations of one agent',()=>{ok(validatePacket({...packet,tickets:[ticket('worker-A','one'),ticket('worker-A','two'),ticket('reviewer-B','manual'),ticket('external-C','external')]},ctx));});
@@ -52,3 +52,92 @@ test('registry requires source identity, startup and retained lineage references
 test('run runtime policy and ticket capability must match actual enrollment',()=>{blocked(admitTicket(packet,{...run,runtime_policy_ref:'other-policy'},ctx,own.now));blocked(validatePacket({...packet,tickets:[{...packet.tickets[0],capability_ref:'other-capability'}]},ctx));});
 test('CI workflow invocation can join through the same verified enrollment path',()=>{const reg={revision:'registry:ci',agents:[...registry.agents,agent('ci-D','ci')]};const context={...ctx,registry:reg};const r={...run,kind:'ci',agent_id:'ci-D',runtime_policy_ref:'policy:ci-D',nominal_at:null,invocation_id:'workflow:123/attempt:1'};ok(admitTicket({...packet,registry_revision:reg.revision,tickets:[ticket('ci-D',r.invocation_id)]},r,context,own.now));});
 test('compatible capacity growth preserves a valid admitted claim; withdrawal stops writes',()=>{ok(mayContinue({...continuation,registry:{revision:'registry:expanded',agents:[...registry.agents,agent('new-worker')]}}));blocked(mayContinue({...continuation,registry:{revision:'registry:withdrawn',agents:registry.agents.filter(a=>a.id!==run.agent_id)}}));});
+
+
+// Scheduler runtime guarantees and future invocation IDs are deliberately unavailable.
+// Exercise actual admission/continuation, including duplicate arrivals and stale packets.
+const workPolicy={ref:'repo:work-budget-v1',verified:true,authorization_ref:'accepted:OPS3-ACCEPT',max_work_minutes:30,min_handoff_minutes:5};
+const workRun={...run,runtime_basis:'work-policy',runtime_policy_ref:workPolicy.ref,runtime_verified:false,runtime_minutes:30,handoff_minutes:5,deadline_ceiling:null,finish_by:'2026-11-02T13:37:00+05:30'};
+const workRegistry={...registry,agents:[{...registry.agents[0],runtime_basis:'work-policy',runtime_policy_ref:workPolicy.ref},...registry.agents.slice(1)]};
+const workContext={...ctx,registry:workRegistry,runtime_policies_verified:true,runtime_policies:[workPolicy]};
+const workClaim={...claim,expires_at:workRun.finish_by,run_finish_by:workRun.finish_by};
+const workContinuation={...continuation,run:workRun,claim:workClaim,registry:workRegistry,runtime_policies_verified:true,runtime_policies:[workPolicy],now:own.now};
+
+test('verified early dispatch uses actual start plus budget and ceiling, including #772 offsets',()=>{
+  for(const seconds of [67,175]){
+    const start=new Date(Date.parse(run.started_at)-seconds*1000).toISOString();
+    ok(validateRun({...run,started_at:start,finish_by:new Date(Date.parse(start)+90*60000).toISOString()}));
+    blocked(validateRun({...run,started_at:start})); // unchanged finish would exceed observed-start + 90m
+  }
+});
+test('accepted work budget admits and continues without pretending source maximum is known',()=>{
+  ok(validateRun(workRun,workPolicy));ok(admitTicket(packet,workRun,workContext,own.now));ok(mayContinue(workContinuation));
+  assert.equal(workRun.runtime_verified,false);assert.equal(workRun.deadline_ceiling,null);
+});
+for(const patch of [{verified:false},{ref:'other-policy'},{authorization_ref:''},{max_work_minutes:0},{min_handoff_minutes:-1},{min_handoff_minutes:30}])test('reject unaccepted or invalid work policy '+JSON.stringify(patch),()=>blocked(validateRun(workRun,{...workPolicy,...patch})));
+for(const patch of [{runtime_minutes:31},{handoff_minutes:4},{runtime_verified:true},{runtime_basis:'unknown'},{finish_by:'2026-11-02T13:38:00+05:30'},{deadline_ceiling:'2026-11-02T13:36:00+05:30'}])test('work budget cannot fabricate source proof or exceed bounds '+JSON.stringify(patch),()=>blocked(validateRun({...workRun,...patch},workPolicy)));
+test('work admission requires policy evidence and matching registry basis, not a caller assertion alone',()=>{
+  blocked(validateRun(workRun));blocked(admitTicket(packet,workRun,{...workContext,runtime_policies_verified:false},own.now));
+  blocked(admitTicket(packet,workRun,{...workContext,runtime_policies:[]},own.now));
+  blocked(admitTicket(packet,workRun,{...workContext,registry:{...workRegistry,agents:[{...workRegistry.agents[0],runtime_basis:'source'},...workRegistry.agents.slice(1)]}},own.now));
+  blocked(mayContinue({...workContinuation,runtime_policies_verified:false}));
+});
+test('known source ceiling also bounds work-policy route and late starts never extend it',()=>{
+  ok(validateRun({...workRun,deadline_ceiling:workRun.finish_by},workPolicy));
+  blocked(validateRun({...workRun,started_at:'2026-11-02T13:17:00+05:30',finish_by:'2026-11-02T13:47:00+05:30',deadline_ceiling:workRun.finish_by},workPolicy));
+  blocked(mayContinue({...workContinuation,now:workRun.finish_by}));
+  blocked(admitTicket(packet,workRun,workContext,'2026-11-02T13:32:00+05:30'));
+});
+test('local unique invocation is accurately labelled and cannot borrow another nonce',()=>{
+  const local={...workRun,invocation_source:'local-nonce',invocation_id:'local:'+workRun.nonce};
+  ok(validateRun(local,workPolicy));blocked(validateRun({...local,nonce:'another'},workPolicy));
+  blocked(validateRun({...local,invocation_source:'made-up'},workPolicy));
+});
+const futureTicket={...ticket('worker-A'),binding_mode:'claim-on-start',invocation_id:null};
+const futurePacket={...packet,tickets:[futureTicket]};
+const binding={id:400,packet_reference:'comment:packet-1',ticket_id:futureTicket.id,agent_id:run.agent_id,generation:1,run_id:run.run_id,invocation_id:run.invocation_id,bound_at:own.now};
+const bindingContext={...workContext,packet_reference:binding.packet_reference,ticket_binding:binding,ticket_bindings:[binding],binding_reads_complete:true};
+const bindingEvidence={packet:futurePacket,context:bindingContext,run:workRun,candidate:binding,bindings:[binding],now:own.now,reads_complete:true};
+
+test('future packet can bind exactly once after actual invocation exists, then obtain normal claim',()=>{
+  ok(validatePacket(futurePacket,bindingContext));ok(resolveTicketBinding(bindingEvidence));
+  ok(admitTicket(futurePacket,workRun,bindingContext,own.now));ok(resolveClaim({...own,candidate:workClaim}));
+});
+test('duplicate starts cannot consume an already bound ticket, even after old run ends',()=>{
+  const nextRun={...workRun,run_id:'run:101',invocation_id:'second-instance'};
+  const next={...binding,id:401,run_id:nextRun.run_id,invocation_id:nextRun.invocation_id};
+  blocked(resolveTicketBinding({...bindingEvidence,run:nextRun,candidate:next}));
+  blocked(admitTicket(futurePacket,nextRun,{...bindingContext,ticket_binding:next},own.now));
+});
+for(const patch of [{packet_reference:'other-packet'},{ticket_id:'other-ticket'},{agent_id:'external-C'},{generation:2},{run_id:'run:101'},{invocation_id:'other-instance'},{id:99},{bound_at:'2026-11-02T13:06:00+05:30'},{bound_at:'2026-11-02T13:18:00+05:30'}])test('reject binding replay/scope/window '+JSON.stringify(patch),()=>blocked(resolveTicketBinding({...bindingEvidence,candidate:{...binding,...patch}})));
+test('missing/incomplete/forked binding reads and expired admission fail closed',()=>{
+  blocked(resolveTicketBinding({...bindingEvidence,reads_complete:false}));
+  blocked(admitTicket(futurePacket,workRun,{...bindingContext,binding_reads_complete:false},own.now));
+  blocked(admitTicket(futurePacket,workRun,{...bindingContext,ticket_binding:null},own.now));
+  blocked(resolveTicketBinding({...bindingEvidence,bindings:[{...binding,invocation_id:'edited'}]}));
+  blocked(resolveTicketBinding({...bindingEvidence,now:'2026-11-02T14:08:00+05:30'}));
+  blocked(resolveTicketBinding({...bindingEvidence,context:{...bindingContext,mode:'shadow'}}));
+});
+test('future ticket has no wildcard invocation and cannot silently become exact',()=>{
+  blocked(validatePacket({...futurePacket,tickets:[{...futureTicket,invocation_id:'*'}]},bindingContext));
+  blocked(validatePacket({...futurePacket,tickets:[{...futureTicket,binding_mode:'wildcard'}]},bindingContext));
+  blocked(validatePacket({...futurePacket,tickets:[futureTicket,{...futureTicket,id:'other'}]},bindingContext));
+});
+test('bound ticket does not waive paused membership, holds, head revision or independent release',()=>{
+  blocked(admitTicket(futurePacket,workRun,{...bindingContext,registry:{...workRegistry,agents:[{...workRegistry.agents[0],state:'paused'},...workRegistry.agents.slice(1)]}},own.now));
+  blocked(mayContinue({...workContinuation,holds_clear:false}));blocked(mayContinue({...workContinuation,revision_current:false}));
+  blocked(evaluateRelease({...release,verdicts:[]}));
+});
+test('malformed admission inputs return rejection rather than throwing',()=>{
+  blocked(admitTicket(null,null,null,own.now));
+  blocked(resolveTicketBinding({...bindingEvidence,context:null}));
+});
+
+test('registry cannot invent a third runtime authority route',()=>blocked(validateRegistry({...workRegistry,agents:[{...workRegistry.agents[0],runtime_basis:'unlimited'}]})));
+
+test('work-budget early and late dispatch remain usable within actual admission window',()=>{
+  for(const [start,end] of [['13:06:00','13:36:00'],['13:09:00','13:39:00']]){
+    const r={...workRun,started_at:'2026-11-02T'+start+'+05:30',finish_by:'2026-11-02T'+end+'+05:30'};
+    ok(admitTicket(packet,r,workContext,'2026-11-02T13:10:00+05:30'));
+  }
+});
