@@ -59,6 +59,11 @@ for(const [width,height] of [[390,844],[360,740]] as const){
     contentType:'application/json',
    });
    console.info('FIX #651 Review-run cold 4x: '+JSON.stringify({profile,theme,width,durationMs,nodes,phases}));
+   // Evidence collection occurs after the strict first-paint clock is frozen.
+   await expect(page.locator('[data-review-card-scroll] .review-front')).not.toBeEmpty();
+   await testInfo.attach(`review-run-${profile}-${theme}-${width}px`,{
+    body:await page.screenshot({fullPage:true}),contentType:'image/png',
+   });
    expect(nodes,'Review runner DOM budget').toBeLessThan(1500);
    expect(durationMs,'Review runner first real cold render at 4x CPU').toBeLessThan(4000);
   }finally{
