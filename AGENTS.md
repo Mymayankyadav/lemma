@@ -15,6 +15,7 @@
 - Ordinary autonomous merges require exact-head squash after all required CI and independent release evidence pass. Verified owner-authorized squash merges instead follow addendum A; unmet gates remain honestly recorded. The old pre-ci bootstrap exception is historical: `ci.yml` exists. Never force-push, never push to `main`.
 - Supabase: only project `yemqnhnztlbyxmjxidis`. Schema changes only through migrations. Connector code filters every query by `user_id`.
 - No secrets in the repo, no analytics, no dependency outside `plan.md` §4 without a `CONTRACT` PR.
+- For an assigned runnable task, acquire and read back your own eligible claim under `docs/agents/dispatch.md#acquire-the-claim-yourself`; cite the actual conflict/access failure if blocked. Missing an unattempted claim is not `no_eligible_work`.
 - After completing or blocking a task, checkpoint it and take the next eligible task within the same run; one writable PR at a time is not one task per run. Follow `docs/agents/dispatch.md` §“Continue within a run”, including concrete stopping reasons. Ask the owner only for the one-time steps in `plan.md` §10.
 
 

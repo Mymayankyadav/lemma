@@ -31,6 +31,18 @@ Final handoff states work/checkpoints completed, remaining verification, release
 
 ## Ownership and deadlines
 
+### Acquire the claim yourself
+
+For an assigned runnable task, acquiring ownership is part of the worker's job:
+
+1. Check actual task/admission authority, current head, Owner holds and all potentially live overlapping claims/releases. An appointment is permission to seek a claim, not an existing lock.
+2. If a valid conflicting holder or hold exists, link its actual source and scope, seek checkpoint/handoff where authorized, and take another eligible action. Do not infer a live holder from a role label or another agent's appointment.
+3. Otherwise append your own dated CLAIM with the current run, scope/paths, task revision, head and deadline; immediately read back relevant claims/releases and arbitrate with the accepted claim rules. Do not wait for a different “eligible writer” to perform a claim you are authorized and capable of acquiring.
+4. Proceed only after winning and verifying ownership, refreshing authority/head before consequential actions. Claim acquisition does not prove source-write capability, reviewer independence or merge permission; check actual exposed tools and use safe authorized operations to establish those capabilities.
+5. If acquisition cannot proceed, record the exact conflicting claim/hold URL, missing/denied claim tool, failed coordination read or missing admission authority with its named resolver. No claim exists yet is not itself evidence of a blocker. Preserve incomplete reads as unknown; do not push through them.
+
+An ownership-based `no_eligible_work` result must cite that evidence for the rejected candidates, or the attempted claim/readback and its outcome. An unattempted routine claim with no identified barrier cannot justify stopping. If writes remain unavailable, use eligible reads for a precise proposed patch, reproduction or substantive review before checking the remaining queue.
+
 Read all potentially live overlapping claims/releases/PR lease/holds across execution sources. Record run/agent, scope/paths/revision/head and dated start/expiry no later than actual run finish. Existing valid PR holder wins; otherwise earliest eligible claim-comment ID wins after immediate readback. RELEASE names the exact claim/run, never a display label. Revalidate before each consequential mutation. Unknown ownership means no push/CLEAR/merge; comments are not atomic locks and expiry is not process-death proof.
 
 Time boundaries and handoff reserve come from verified source constraints OR an accepted voluntary work policy under runtime-admission.md. An unknown provider maximum is not by itself a write ban; work-policy limits are not scheduler guarantees. Do not extend late invocation deadlines or reserve an idle future lease. An admitted claim may continue after packet expiry only within its own deadline, current membership/holds/revision and ownership. New invocation must match its own ticket. Registry changes do not automatically cancel admitted work; withdrawals/conflicts need scoped checkpoint/reconciliation.
