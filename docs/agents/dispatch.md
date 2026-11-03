@@ -18,9 +18,7 @@ Owner instructions get the urgent acknowledgement/action path in addendum B. The
 
 ## Continue within a run
 
-Completing or blocking one task triggers another work-selection step, not an automatic final response.
-
-**Definitions used in this section.** A *useful action* produces a durable result for an approved task, review, verification, release or Owner direction: a commit, an evidenced review/audit verdict, a reproduction, a precise proposed patch, or a claim/admission that unblocks such work. Re-reading unchanged state, restating status, or posting acknowledgements without new evidence is not a useful action. The *no-new-work boundary* is `finish_by - handoff_minutes` from [practical admission](runtime-admission.md#work-budget-v1). *Authorized bounded fallbacks* are the fallback order in [v3](v3.md#dispatch) plus any fallback named in the current queue entry or packet; nothing else. Optimize verified useful progress, not elapsed time, task count or coordination posts. This rule applies in every mode within its actual authority; it does not activate v3 or grant new product/production permissions.
+Completing or blocking one task triggers another work-selection step, not an automatic final response. Optimize verified useful progress, not elapsed time, task count or coordination posts. This rule applies in every mode within its actual authority; it does not activate v3 or grant new product/production permissions.
 
 1. **Keep a ready queue.** The claimed Lead maintains a compact ordered queue in #764 and packet handoffs: primary work plus useful named fallbacks where available. Each entry links its approved task/revision, next useful step, required role/capability, paths, dependencies/holds and independent reviewer path. A queue entry is not a lease or a substitute for admission. Do not reserve idle scopes or make every worker reconstruct global state.
 2. **Work and checkpoint.** Refresh actual Owner directions, requirements, head and overlapping ownership for the selected scope, then claim and perform a useful bounded slice. Check the tools actually exposed to this execution. Where a bounded operation is already authorized and owned, its first safe task operation can establish capability; “not yet demonstrated” alone is not proof that a tool is unavailable. Record an actual missing tool, denied operation or other concrete limit. A large task can continue through durable incremental checkpoints; it need not fit wholly in one run. On completion or blockage, record exact source/evidence, unmet verification, named resolver and next action. Release or explicitly hand off the old writable scope before claiming another writable PR; an unfinished independent-review/CI step remains pending.
@@ -41,7 +39,7 @@ This section is the authoritative repository rule for voluntarily ending an exec
 
 Before finalizing, ask: **Does any known, authorized, useful next action fit safely before the recorded no-new-work boundary?** If yes, continue. Check the finite known ready queue and authorized bounded fallbacks, including other compatible roles and intermediate actions on blocked tasks. Do not search the entire repository indefinitely. Do not restrict the candidates to the initial role, final verdicts or already-owned scopes. Acquire routine eligible claims under [Acquire the claim yourself](#acquire-the-claim-yourself); preserve complete relevant authority/ownership reads.
 
-Use exactly one primary `stop_reason` from this table and record any secondary blockers. If several apply, the primary is the first that applies in this order: `owner_stop`, `platform_limit`, `deadline`, `access_blocked`, `no_eligible_work`.
+Use exactly one primary `stop_reason` from this table and record any secondary blockers:
 
 | Reason | Required evidence |
 | --- | --- |
@@ -50,10 +48,6 @@ Use exactly one primary `stop_reason` from this table and record any secondary b
 | `platform_limit` | Identify an observed provider/tool limit or failure that actually prevents continuation of remaining useful actions. Duration guesses, a voluntary budget and one unavailable operation are insufficient. If interrupted before a final record is possible, the durable checkpoint remains evidence of partial work. |
 | `access_blocked` | For the remaining known useful actions, cite concrete denied/missing access, unresolved required reads, live conflicting claims/holds or unavailable admission, with source/attempt and resolver. Check permitted analysis, patch preparation, review and other fallbacks before concluding all are blocked. |
 | `no_eligible_work` | Name the bounded queue/fallback candidates checked and show each is completed, has no useful remaining action, or is concretely ineligible under current authority/capability/ownership/independence. Initial role labels, existing branches, pending CI, an unattempted routine claim or a missing final verdict are insufficient by themselves. |
-
-Record the finish as one line in Agent Log #455, linking the HANDOFF record (templates/records.md):
-
-`STOP run_id=<run> agent_id=<actual> at=<RFC3339> finish_by=<RFC3339> stop_reason=<one value above> evidence=<URLs> candidates_checked=<task/PR IDs with one-line action-level blocker each> released=<claim IDs or none> pending=<unverified items or none> next=<resolver + one action>`
 
 The final handoff records completed work and exact head/revision/evidence, pending verification, released or handed-off claims, observed time/budget, primary reason, candidates with action-level blockers and the next resolver/action. Link evidence already recorded rather than duplicate a history. Do not claim the whole repository has no work when only a bounded queue was checked.
 
