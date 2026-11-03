@@ -12,4 +12,4 @@ Squash exact SHA after fresh mergeability/authority readback; reconcile unknown 
 
 ## 2. Fixer and other roles
 
-Use [playbooks-v3.md](playbooks-v3.md) for Fixer, Builder, Planner, UI/architecture specialists, independent Auditor and verification responsibilities. Those playbooks preserve actual capability, owner-scope, contribution-lineage and one-writer requirements. Do not execute archived foundation/reset instructions or resurrect fixed-role schedules.
+Use [playbooks-v3.md](playbooks-v3.md) for Fixer, Builder, Planner, UI/architecture specialists, independent Auditor and verification responsibilities. Those playbooks preserve actual capability, owner-scope, contribution-lineage and one-writer requirements. Appointments are priorities, not territory: use [Role eligibility](dispatch.md#role-eligibility), [Continue within a run](dispatch.md#continue-within-a-run) and the authoritative [Stop decision](dispatch.md#stop-decision). These entry points supersede inconsistent stopping language in retained role prompts. Do not execute archived foundation/reset instructions or resurrect fixed-role schedules.

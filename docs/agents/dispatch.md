@@ -25,9 +25,44 @@ Completing or blocking one task triggers another work-selection step, not an aut
 3. **Select again.** Before the no-new-work boundary, take the next eligible priority item or authorized fallback. Preserve one substantive writable PR at a time, actual capabilities and reviewer availability. Role changes keep the same run/invocation, contribution lineage and deadline. An audit execution stays read-only throughout but can review multiple independent PRs. Lead/activation accountability persists until completed or accepted handoff.
 4. **Avoid idle waits.** Pending CI, a merge/review dependency, missing live-write permission or a tool failure blocks the affected action, not all useful work. Take another eligible task, relevant source/dependency analysis, review or verification. Retry only with new evidence or a changed approach. Refresh task-local changed facts instead of repeating unchanged startup acknowledgements or full-history discovery; required ownership/authority reads must still be complete.
 5. **Preserve admission.** In ACTIVE, each next scope needs current same-agent/invocation authority through a valid assignment or its explicitly authorized bounded fallback and its own claim. Obtain a fresh ticket when required; never reuse a consumed future BIND, broaden a ticket's task/paths or infer authority from the queue. Request the claimed Lead's next admission or recover an eligible vacant Lead under its own claim; meanwhile use an already authorized read-only fallback. Legacy/shadow uses retained authority and applicable scoped Owner recovery. An unavailable next admission is a concrete coordination gap with a named resolver.
-6. **Finish for a reason.** End when the handoff boundary is reached or insufficient usable time remains for a safe useful step; an observed platform limit prevents continuation; an Owner stop applies; actual access/authority gaps block the remaining eligible work; or a bounded check of the known ready/fallback queue finds no useful eligible work. Record the checked candidates and specific blockers rather than claiming the entire repository is empty. “One task done”, “handoff posted”, “role finished”, “CI running” and “the next task needs a claim” are not sufficient reasons by themselves. Acquiring an eligible claim/admission is an executable next step; cite the actual conflicting holder, denied/missing tool or other factual barrier if it cannot be acquired. Another agent's appointment alone is not proof of a live conflicting claim. If source mutation is unavailable, use available reads to prepare a precise patch, reproduction or substantive review instead of another generic writer-needed handoff.
+6. **Apply the stop decision.** Use the single [Stop decision](#stop-decision) below before finalizing. Completion, blockage and handoff all return to work selection unless that decision permits ending the execution.
 
-Final handoff states work/checkpoints completed, remaining verification, released/handed-off claims, next action/resolver, observed elapsed/remaining budget when available, and a specific `stop_reason`: `deadline`, `platform_limit`, `access_blocked`, `no_eligible_work` or `owner_stop`, with evidence. Do not invent an unavailable platform ceiling. Do not pad a run, manufacture work, reduce quality or bypass release gates to satisfy a minimum duration or task quota. The accepted work window is a voluntary maximum, not guaranteed scheduler lifetime.
+## Role eligibility
+
+An appointment sets initial priority, not exclusive territory. Builder/Fixer/Verifier labels alone neither reserve work nor exclude another capable execution. A Builder may repair an approved defect under a new claim when its existing authority and capabilities permit that repair. An existing branch, past contribution or another agent's appointment is not a live ownership lock. Use actual current claims, holds and contribution lineage.
+
+This is not permission to broaden an ACTIVE ticket, self-assert specialist capability, become an independent reviewer of contributed source, or change a read-only audit execution into a writer. Where another appointment or admission is actually required, acquiring or requesting it is useful work; record the exact missing authority and resolver if unavailable. The audit execution may continue source review or review another independent PR without issuing a final CLEAR. A blocked final verdict, merge, deployment or production mutation does not by itself block analysis, a permitted source patch, a precise proposed patch or other authorized work.
+
+## Stop decision
+
+This section is the authoritative repository rule for voluntarily ending an execution, in every mode. Other role playbooks, templates, startup prompts and historical instructions must refer here rather than define a different completion or stopping test. Specific Owner directions, actual permissions/admission, ownership, independence and safety constraints still govern their affected actions; this rule grants none of those permissions.
+
+Before finalizing, ask: **Does any known, authorized, useful next action fit safely before the recorded no-new-work boundary?** If yes, continue. Check the finite known ready queue and authorized bounded fallbacks, including other compatible roles and intermediate actions on blocked tasks. Do not search the entire repository indefinitely. Do not restrict the candidates to the initial role, final verdicts or already-owned scopes. Acquire routine eligible claims under [Acquire the claim yourself](#acquire-the-claim-yourself); preserve complete relevant authority/ownership reads.
+
+Use exactly one primary `stop_reason` from this table and record any secondary blockers:
+
+| Reason | Required evidence |
+| --- | --- |
+| `owner_stop` | Link the attributable Owner direction ending this execution or its entire authorized scope. A hold on one PR/action only excludes that scope/action from work selection. |
+| `deadline` | Record observed time, unchanged `finish_by`, handoff reserve and no-new-work boundary; show the boundary is reached or why no safe useful next step fits. Checkpoint/release within the reserve. Completing a task cannot shorten or reset the budget. |
+| `platform_limit` | Identify an observed provider/tool limit or failure that actually prevents continuation of remaining useful actions. Duration guesses, a voluntary budget and one unavailable operation are insufficient. If interrupted before a final record is possible, the durable checkpoint remains evidence of partial work. |
+| `access_blocked` | For the remaining known useful actions, cite concrete denied/missing access, unresolved required reads, live conflicting claims/holds or unavailable admission, with source/attempt and resolver. Check permitted analysis, patch preparation, review and other fallbacks before concluding all are blocked. |
+| `no_eligible_work` | Name the bounded queue/fallback candidates checked and show each is completed, has no useful remaining action, or is concretely ineligible under current authority/capability/ownership/independence. Initial role labels, existing branches, pending CI, an unattempted routine claim or a missing final verdict are insufficient by themselves. |
+
+The final handoff records completed work and exact head/revision/evidence, pending verification, released or handed-off claims, observed time/budget, primary reason, candidates with action-level blockers and the next resolver/action. Link evidence already recorded rather than duplicate a history. Do not claim the whole repository has no work when only a bounded queue was checked.
+
+A stopping explanation that omits a known eligible useful action or relies only on an insufficient reason above is invalid. The Lead records that continuation gap and carries/reassigns the unfinished action; it must not count the task as completed delivery. These are cooperative decision/reporting rules, not a mechanism guaranteeing provider runtime or preventing process termination. No minimum duration, task quota, repeated empty scans or invented busywork is required.
+
+### Decision examples
+
+| Observed situation | Required next decision |
+| --- | --- |
+| Assigned approved task has no claim and no identified barrier | Acquire/read back your eligible claim, then work; do not hand it to an unnamed writer. |
+| Next approved repair is labelled Fixer; current execution is a capable Builder | Check actual authority/admission, holds and claims; take it if eligible. The label alone is no blocker. |
+| CI is pending or merge/review is held | Check useful source/test analysis, another independent task or another permitted fallback. Preserve the blocked release gate. |
+| Auditor cannot yet issue CLEAR | Continue relevant source review/evidence or another independent audit if useful; remain read-only. |
+| Recorded boundary is reached, or bounded candidates have no eligible useful action | Checkpoint/release and finish with the corresponding evidenced reason. |
+
 
 ## Ownership and deadlines
 
@@ -41,7 +76,7 @@ For an assigned runnable task, acquiring ownership is part of the worker's job:
 4. Proceed only after winning and verifying ownership, refreshing authority/head before consequential actions. Claim acquisition does not prove source-write capability, reviewer independence or merge permission; check actual exposed tools and use safe authorized operations to establish those capabilities.
 5. If acquisition cannot proceed, record the exact conflicting claim/hold URL, missing/denied claim tool, failed coordination read or missing admission authority with its named resolver. No claim exists yet is not itself evidence of a blocker. Preserve incomplete reads as unknown; do not push through them.
 
-An ownership-based `no_eligible_work` result must cite that evidence for the rejected candidates, or the attempted claim/readback and its outcome. An unattempted routine claim with no identified barrier cannot justify stopping. If writes remain unavailable, use eligible reads for a precise proposed patch, reproduction or substantive review before checking the remaining queue.
+Claim acquisition outcomes feed the [Stop decision](#stop-decision); they do not create a separate stopping test.
 
 Read all potentially live overlapping claims/releases/PR lease/holds across execution sources. Record run/agent, scope/paths/revision/head and dated start/expiry no later than actual run finish. Existing valid PR holder wins; otherwise earliest eligible claim-comment ID wins after immediate readback. RELEASE names the exact claim/run, never a display label. Revalidate before each consequential mutation. Unknown ownership means no push/CLEAR/merge; comments are not atomic locks and expiry is not process-death proof.
 
