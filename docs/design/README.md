@@ -1,6 +1,6 @@
 # Design references
 
-Approved by the owner on 29 Oct 2026. Precedence: `docs/spec/design.md`, then these boards, then the reference image.
+Current visual precedence: `docs/spec/v4-look.md`, then `docs/spec/v3.md`, then `docs/spec/stress.md` constraints, then older specs/boards only where silent. The canvas and amber reference below are historical (29 Oct); they do not authorize old themes, camera/orbits or a new redesign. Current v4 references: `v4/`; new owner proposals enter Plan Intake #763 and need exact accepted scope.
 
 - `reference-amber-on-obsidian.png`: the direction the owner chose.
 - `canvas/*.dc.html`: boards exported from the design canvas. Phone screens are 390 px wide; system boards are 1,280 px. They were written for the canvas runtime (`support.js`, `<x-dc>`, `<sc-if>`, `<sc-for>`, `{{holes}}`), so they do not run on their own. Read them for exact sizes, colours, shadows, gradients and the CSS keyframes of each animation; the logic at the bottom of interactive boards shows the intended behaviour.
@@ -27,3 +27,4 @@ Approved by the owner on 29 Oct 2026. Precedence: `docs/spec/design.md`, then th
 | `States.dc.html` | Empty, loading, offline and error states | UI-2 and every screen |
 
 Numbers on the boards match the demo dataset in `docs/spec/data.md` §10.
+

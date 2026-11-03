@@ -3,14 +3,10 @@ import type { IngestProgress } from "../data/types";
 import { parsePdf, isPdfFile } from "./parse";
 import type { IngestOptions, IngestResult } from "./parse";
 import { readTextSource, textKind } from "./text-source";
+export {isSourceFile} from "./validate";
 
 export { flattenOutline, isPdfFile } from "./parse";
 export type { IngestedPage, OutlineItem, IngestOptions, IngestResult } from "./parse";
-
-/** Source picker accepts PDFs, LaTeX and Markdown without weakening MIME checks. */
-export function isSourceFile(file:Pick<File,"name"|"type">):boolean{
- return isPdfFile(file)||textKind(file)!==null;
-}
 
 /** A file's active extraction can be cancelled without changing the existing addSource API. */
 const activeReaders = new WeakMap<File, () => void>();

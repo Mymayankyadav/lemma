@@ -1,0 +1,24 @@
+# Mandatory independent release decision — every mode
+
+**Release-route precedence (all modes):** [Owner role](owner-role.md) and [owner squash-merge authority](owner-override.md) qualify retained instructions. CI, independent CLEAR and Ready requirements below govern **ordinary autonomous merges**. A verified personal owner squash merge or specifically owner-directed merge uses the separate `OWNER_OVERRIDE` route; preserve rejected gate results and actual failures. Never fabricate CI/audit success. Retained prohibitions on weakening tests mean no unauthorized changes merely to obtain green CI; legitimate owner-approved policy amendments remain scoped under addendum A. This changes approval authority, not factual installation/runtime/drain evidence.
+
+This supplement is mandatory for the ordinary autonomous release route on adoption of PR #765, including while v3 is inactive. It closes the known conditional-CLEAR gap without duplicating code owned by #749. No checklist phrase, seven green jobs or role change waives independent review. `scripts/merge-gate.ts` remains mandatory; a positive result is necessary and insufficient. Existing required checks/strict attempt policy remain unchanged by OPS3.
+
+Immediately before **each ordinary autonomous** merge, use fresh REST PR body/head/base, full check/status pages, chronologically ordered Auditor comments, current holds, lease and mergeability. Invoke `evaluateMergeGate` and log the gate result (`ok=false` refuses). Then evaluate `evaluateRelease` in `scripts/agent-protocol.mjs`, recording exact source URLs and **all** supplemental fields. Transport unavailable: apply the identical fail-closed decision and publish explicit inputs/reasons; never invent execution of code.
+
+Require nonempty exact-head CI set, fail closed: all seven `check`, `mcp-sql`, `e2e-1-of-4`, `e2e-2-of-4`, `e2e-3-of-4`, `e2e-4-of-4`, `qa3-screens`; zero check runs, incomplete pages, wrong workflow/app context, non-success latest checks or statuses block. Add task-specific jobs and first-attempt/no-retry evidence where required. The supplement's evidence flags attest to actual linked decisions; they do not replace reading them.
+
+An eligible independent verdict must state AUDIT CLEAR, full current head SHA, exact accepted requirement/task revision, reviewer immutable run/agent identity, provenance basis and evidence URLs/coverage; no later unresolved AUDIT BLOCK. Reject self-authored or self-merged lineage, including copied source. The reviewer cannot be an implementation contributor even through another role. Spec authorship alone does not imply authorship of every future accepted code task. Legacy short-SHA/unknown-slot verdicts need an explicit linked reconciliation to full head/revision/provenance; do not silently invent it.
+
+Refresh dependencies, migration order, changed-path/base integration, contract interactions, owner deployment permission and task acceptance. `auditIndependenceVerified` required by #749 must reflect actual provenance, not a constant. Requirement changes invalidate affected CLEAR even if code head is unchanged. A latest unresolved BLOCK cannot be hidden by filtering its head away.
+
+Publish RELEASE DECISION with PR, full head/base/spec revisions, run/claim, CI/run IDs/attempts, independent verdict URL, holds and permission evidence, gate+supplement results and verification destination. Squash via REST `PUT /pulls/{n}/merge` with exact `sha`, never auto-merge/force/direct main. Re-read before request; changed head/conflict/unknown mergeability stops it. After timeout inspect actual state before retry.
+
+Serialize shared contract/migration/integration merges. After each, refresh downstream base, dependencies and evidence. Being behind main alone is not a blocker under current policy; semantic overlaps/order require integration and renewed checks. Do not add an up-to-date-branch requirement silently.
+
+Record RELEASE VERIFY immediately after success: actual merge SHA; pending main/deployment/smoke/live acceptance; named eligible verifier/next participant; evidence URLs; next action on failure. Pending is not delivered. Failed relevant integration stops dependent release batches and triggers scoped incident work. Code, configuration and database rollback are distinct; no migration-history edits, improvised reset or live-write authority follows from this document.
+
+
+## Execution-source independence
+
+Use verified enrollment in [Registry #770](registry.md) and actual contributor/copy/merger agent/run lineage. Eligible scheduled, interactive, CI or external auditors do not need a historical slot label. Different names do not prove independence; identity aliases retain exclusions. Membership size never waives CI or review, and no owner role can be selected by the release validator. The general registered-source route supersedes scheduled-slot whitelists; preserve independent-review requirements when reconciling #768.

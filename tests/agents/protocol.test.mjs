@@ -1,0 +1,143 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {validateRegistry,validateRun,validateControl,validatePacket,admitTicket,resolveTicketBinding,resolveClaim,mayContinue,evaluateRelease,ROLES} from '../../scripts/agent-protocol.mjs';
+const head='a'.repeat(40),base='b'.repeat(40),dg='c'.repeat(64),rd='d'.repeat(64),at='2026-11-02T13:07:00+05:30';
+const agent=(id,kind='scheduled')=>({id,kind,state:'active',authorization_ref:'owner:1',source_ref:'source:'+id,lineage_ref:'lineage:'+id,startup_ref:'startup:'+id,capability_ref:'cap:1',runtime_policy_ref:'policy:'+id,roles:[...ROLES]});
+const registry={revision:'registry:1',agents:[agent('worker-A'),agent('reviewer-B','interactive'),agent('external-C','external')]};
+const run={run_id:'run:100',agent_id:'worker-A',invocation_id:'actual-schedule:instance-1',kind:'scheduled',nonce:'invocation-a',generation:1,nominal_at:at,started_at:at,finish_by:'2026-11-02T14:37:00+05:30',deadline_ceiling:'2026-11-02T14:37:00+05:30',runtime_minutes:90,runtime_verified:true,handoff_minutes:8,runtime_policy_ref:'policy:worker-A'};
+const ticket=(id,invocation='actual-schedule:instance-1')=>({id:'ticket:'+id+':'+invocation,agent_id:id,invocation_id:invocation,admission_start:at,latest_admission:'2026-11-02T13:17:00+05:30',role:'builder',playbook:'docs/agents/playbooks-v3.md#builder',scope:'task:'+id,next_action:'implement accepted check',accepted_revision:'X@1',task_or_queue:'plan.md#X',authority_refs:['owner:1'],capability_ref:'cap:1',review_path_ref:'reviewer-B',continuity_ref:'new assignment',fallback:'none',writable:true,paths:['src/'+id],branch_or_pr:'t/'+id});
+const ctx={generation:1,mode:'active',control_verified:true,control_reference:'control:3',protocol_digest:dg,registry,registry_verified:true,registry_digest:rd,max_packet_minutes:120};
+const packet={protocol:'lemma.agent.v3',generation:1,mode:'active',epoch:'actual-epoch',publisher_run_id:'run:100',publisher_agent_id:'worker-A',publisher_claim:'claim:1',control_reference:'control:3',protocol_digest:dg,published_at:at,admission_start:at,admission_end:'2026-11-02T14:07:00+05:30',repository_commit:head,plan_blob:base,intake_watermark:at,registry_revision:registry.revision,registry_digest:rd,tickets:[ticket('worker-A')]};
+const claim={id:200,run_id:run.run_id,agent_id:run.agent_id,scope:'PR1',accepted_revision:'X@1',generation:1,starts_at:at,expires_at:run.finish_by,run_finish_by:run.finish_by};
+const own={candidate:claim,claims:[],releases:[],now:'2026-11-02T13:08:00+05:30',reads_complete:true,active_generation:1};
+const verdict={id:300,at,verdict:'CLEAR',head_sha:head,accepted_revision:'X@1',run_id:'run:90',agent_id:'reviewer-B',provenance_verified:true,provenance_ref:'lineage:1',evidence_refs:['ci:1','images:1']};
+const release={head_sha:head,base_sha:base,accepted_revision:'X@1',reads_complete:true,generic_gate_ok:true,ci_identity_verified:true,attempt_policy_met:true,acceptance_met:true,owner_permission_verified:true,holds_clear:true,lease_verified:true,mergeable:true,dependencies_met:true,integration_current:true,verification_assigned:true,draft:false,ready:true,run_id:run.run_id,agent_id:run.agent_id,registry,registry_verified:true,evidence_refs:['release:1'],contributor_runs:['run:1'],contributor_agents:['external-C'],merger_runs:[],merger_agents:[],verdicts:[verdict]};
+const auth={authorized:true,reads_complete:true,chain_unambiguous:true,authorization_reference:'owner:1',controller_run_id:'run:80',protocol_digest:dg,agent_ids:['worker-A'],registry,registry_verified:true,genesis_authorized:true};
+const event={id:10,event_type:'PROTOCOL_CONTROL',generation:1,mode:'legacy',effective_at:at,protocol_digest:dg,repository_commit:head,authorization_reference:'owner:1',controller_run_id:'run:80',applies_to:auth.agent_ids,rollback_reference:'baseline:1',claim_reference:'claim:80',supersedes:null};
+const ok=x=>assert.equal(x.ok,true,x.reason),blocked=x=>assert.equal(x.ok,false,x.reason);
+test('empty discovery registry is valid but admits no invented worker',()=>{ok(validateRegistry({revision:'r0',agents:[]}));blocked(validatePacket(packet,{...ctx,registry:{revision:'registry:1',agents:[]}}));});
+for(const count of [1,2,5,8,25])test(`capacity ${count}: no fixed identity count or clock slots`,()=>{const r={revision:'r'+count,agents:Array.from({length:count},(_,i)=>agent('actual-'+i,i%2?'interactive':'external'))};ok(validateRegistry(r));ok(validateControl({...event,applies_to:r.agents.map(a=>a.id)},null,{...auth,registry:r,agent_ids:r.agents.map(a=>a.id)}));ok(validatePacket({...packet,publisher_agent_id:'actual-0',registry_revision:r.revision,tickets:r.agents.map(a=>ticket(a.id))},{...ctx,registry:r}));});
+test('registry requires unique authorized identities and recognized capability roles',()=>{blocked(validateRegistry({...registry,agents:[agent('same'),agent('same')]}));blocked(validateRegistry({...registry,agents:[{...agent('x'),authorization_ref:''}]}));blocked(validateRegistry({...registry,agents:[{...agent('x'),roles:['owner']}]}));});
+test('arbitrary minute/timezone and actual 90-minute runtime are allowed',()=>{ok(validateRun(run));ok(admitTicket(packet,run,ctx,own.now));});
+for(const patch of [{runtime_verified:false},{runtime_minutes:0},{handoff_minutes:90},{deadline_ceiling:'13:50'},{agent_id:''},{invocation_id:''},{nominal_at:null},{finish_by:'2026-11-02T14:38:00+05:30'}])test('invalid run '+JSON.stringify(patch),()=>blocked(validateRun({...run,...patch})));
+test('late start cannot extend original invocation ceiling',()=>blocked(validateRun({...run,started_at:'2026-11-02T13:17:00+05:30',finish_by:'2026-11-02T14:47:00+05:30'})));
+test('interactive reviewer need not impersonate a scheduled slot',()=>{const r={...run,kind:'interactive',agent_id:'reviewer-B',runtime_policy_ref:'policy:reviewer-B',nominal_at:null,invocation_id:'manual-nonce'};ok(validateRun(r));ok(admitTicket({...packet,tickets:[ticket('reviewer-B','manual-nonce')]},r,ctx,own.now));ok(evaluateRelease(release));});
+test('mixed sources and multiple distinct invocations of one agent',()=>{ok(validatePacket({...packet,tickets:[ticket('worker-A','one'),ticket('worker-A','two'),ticket('reviewer-B','manual'),ticket('external-C','external')]},ctx));});
+test('idle packet must explain why no assignment exists',()=>{blocked(validatePacket({...packet,tickets:[]},ctx));ok(validatePacket({...packet,tickets:[],idle_reason:'all capable workers held or already claimed'},ctx));});
+for(const patch of [{mode:'invented'},{generation:2},{plan_blob:'short'},{control_reference:'other'},{registry_revision:'stale'},{registry_digest:'e'.repeat(64)},{publisher_agent_id:'unknown'},{published_at:'2026-11-02T13:08:00+05:30'}])test('reject packet '+JSON.stringify(patch),()=>blocked(validatePacket({...packet,...patch},ctx)));
+for(const patch of [{agent_id:'unknown'},{role:'invented'},{fallback:'scan-everything'},{accepted_revision:''},{paths:[]},{latest_admission:'2026-11-02T15:00:00+05:30'}])test('reject ticket '+JSON.stringify(patch),()=>blocked(validatePacket({...packet,tickets:[{...packet.tickets[0],...patch}]},ctx)));
+test('paused/retired/unverified membership cannot start new work',()=>{for(const state of ['paused','draining','retired'])blocked(validatePacket(packet,{...ctx,registry:{...registry,agents:[{...registry.agents[0],state},...registry.agents.slice(1)]}}));blocked(validatePacket(packet,{...ctx,registry_verified:false}));});
+test('duplicate ticket IDs or agent/invocation pairs cannot multiply capacity',()=>{blocked(validatePacket({...packet,tickets:[packet.tickets[0],packet.tickets[0]]},ctx));blocked(validatePacket({...packet,tickets:[packet.tickets[0],{...packet.tickets[0],id:'other'}]},ctx));});
+test('control target must be the verified authorized cohort, not every imagined worker',()=>{ok(validateControl(event,null,auth));blocked(validateControl({...event,applies_to:['worker-A','worker-A']},null,auth));blocked(validateControl({...event,applies_to:['unknown']},null,{...auth,agent_ids:['unknown']}));blocked(validateControl(event,null,{...auth,registry_verified:false}));});
+test('control needs authorized genesis and unambiguous chain',()=>{for(const a of [{...auth,authorized:false},{...auth,chain_unambiguous:false}])blocked(validateControl(event,null,a));blocked(validateControl({...event,mode:'active'},null,auth));});
+test('partial install/drain cannot activate and cutover cannot be skipped',()=>{const shadow={...event,id:11,mode:'shadow',supersedes:10};ok(validateControl(shadow,event,auth));blocked(validateControl({...shadow,id:12,mode:'active'},event,{...auth,transition_gates_verified:true}));const cut={...shadow,id:12,mode:'cutover',supersedes:11};ok(validateControl(cut,shadow,auth));const active={...cut,id:13,mode:'active',supersedes:12};blocked(validateControl(active,cut,auth));ok(validateControl(active,cut,{...auth,transition_gates_verified:true}));});
+test('changed protocol digest needs new generation; predecessor cannot fork',()=>{const changed={...event,id:11,mode:'shadow',supersedes:10,protocol_digest:'e'.repeat(64)};blocked(validateControl(changed,event,{...auth,protocol_digest:changed.protocol_digest}));blocked(validateControl({...changed,generation:2,supersedes:8},event,{...auth,protocol_digest:changed.protocol_digest}));});
+test('shadow, future, expired and wrong invocation admission is refused',()=>{blocked(admitTicket({...packet,mode:'shadow'},run,{...ctx,mode:'shadow'},own.now));blocked(admitTicket(packet,run,ctx,'2026-11-02T13:06:00+05:30'));blocked(admitTicket(packet,run,ctx,'2026-11-02T14:08:00+05:30'));blocked(admitTicket(packet,{...run,invocation_id:'next-instance'},ctx,own.now));});
+const continuation={run,claim,now:'2026-11-02T14:20:00+05:30',generation:1,holds_clear:true,revision_current:true,ownership_verified:true,control_mode:'active',registry,registry_verified:true};
+test('admitted claim continues across packet expiry under actual runtime',()=>ok(mayContinue(continuation)));
+for(const patch of [{holds_clear:false},{revision_current:false},{ownership_verified:false},{generation:2},{control_mode:'cutover'},{now:run.finish_by},{registry_verified:false}])test('stop continuation '+JSON.stringify(patch),()=>blocked(mayContinue({...continuation,...patch})));
+test('earliest ID wins; valid PR holder outranks an unbound newcomer',()=>{ok(resolveClaim(own));blocked(resolveClaim({...own,claims:[{...claim,id:199,run_id:'run:99',agent_id:'external-C'}]}));blocked(resolveClaim({...own,pr_holder:{run_id:'run:99',expires_at:claim.expires_at}}));ok(resolveClaim({...own,pr_holder:{run_id:run.run_id,expires_at:claim.expires_at},claims:[{...claim,id:199,run_id:'run:99'}]}));});
+test('release identifies exact claim/run; delayed release cannot cancel later claim',()=>{const other={...claim,id:199,run_id:'run:99'};for(const x of [{claim_id:198,run_id:'run:99',at:own.now},{claim_id:199,run_id:'run:100',at:own.now}])blocked(resolveClaim({...own,claims:[other],releases:[x]}));ok(resolveClaim({...own,claims:[other],releases:[{claim_id:199,run_id:'run:99',at:own.now}]}));});
+test('incomplete/foreign generation/malformed/expired ownership evidence',()=>{blocked(resolveClaim({...own,reads_complete:false}));blocked(resolveClaim({...own,releases:[null]}));blocked(resolveClaim({...own,claims:[{...claim,id:199,generation:2}]}));blocked(resolveClaim({...own,candidate:{...claim,run_finish_by:at}}));ok(resolveClaim({...own,claims:[{...claim,id:199,starts_at:'2026-11-02T06:00:00Z',expires_at:'2026-11-02T06:10:00Z',run_finish_by:'2026-11-02T06:10:00Z'}]}));});
+test('dated claim handles midnight independently of schedule slots',()=>{const c={...claim,starts_at:'2026-11-02T23:50:00+05:30',expires_at:'2026-11-03T01:20:00+05:30',run_finish_by:'2026-11-03T01:20:00+05:30'};ok(resolveClaim({...own,candidate:c,now:'2026-11-03T00:05:00+05:30'}));});
+test('ordinary release never waives CLEAR for green checks/body omissions',()=>{ok(evaluateRelease(release));blocked(evaluateRelease({...release,verdicts:[]}));});
+for(const flag of ['reads_complete','generic_gate_ok','ci_identity_verified','attempt_policy_met','acceptance_met','owner_permission_verified','holds_clear','lease_verified','mergeable','dependencies_met','integration_current','verification_assigned','registry_verified'])test('release missing '+flag,()=>blocked(evaluateRelease({...release,[flag]:false})));
+for(const patch of [{head_sha:base},{head_sha:head.slice(0,8)},{accepted_revision:'X@2'},{agent_id:'external-C'},{agent_id:'unknown'},{run_id:'run:1'},{provenance_verified:false},{at:'invalid'}])test('reject stale/self/unregistered audit '+JSON.stringify(patch),()=>blocked(evaluateRelease({...release,verdicts:[{...verdict,...patch}]})));
+test('later BLOCK at another head/tied timestamp cannot disappear',()=>blocked(evaluateRelease({...release,verdicts:[verdict,{...verdict,id:301,verdict:'BLOCK',head_sha:base}]})));
+test('copied source and merger identities survive role/name changes',()=>{blocked(evaluateRelease({...release,contributor_agents:['reviewer-B']}));blocked(evaluateRelease({...release,merger_runs:[verdict.run_id]}));blocked(evaluateRelease({...release,merger_agents:['reviewer-B']}));});
+test('same head changed requirements invalidate review',()=>blocked(evaluateRelease({...release,accepted_revision:'X@2'})));
+test('rollback restoration needs actual cohort drain/readback gate',()=>{const rollback={...event,id:11,mode:'rollback',supersedes:10};ok(validateControl(rollback,event,auth));const restore={...event,id:12,supersedes:11};blocked(validateControl(restore,rollback,auth));ok(validateControl(restore,rollback,{...auth,transition_gates_verified:true}));});
+
+test('registry requires source identity, startup and retained lineage references',()=>{for(const field of ['source_ref','lineage_ref','startup_ref'])blocked(validateRegistry({...registry,agents:[{...agent('x'),[field]:''}]}));});
+test('run runtime policy and ticket capability must match actual enrollment',()=>{blocked(admitTicket(packet,{...run,runtime_policy_ref:'other-policy'},ctx,own.now));blocked(validatePacket({...packet,tickets:[{...packet.tickets[0],capability_ref:'other-capability'}]},ctx));});
+test('CI workflow invocation can join through the same verified enrollment path',()=>{const reg={revision:'registry:ci',agents:[...registry.agents,agent('ci-D','ci')]};const context={...ctx,registry:reg};const r={...run,kind:'ci',agent_id:'ci-D',runtime_policy_ref:'policy:ci-D',nominal_at:null,invocation_id:'workflow:123/attempt:1'};ok(admitTicket({...packet,registry_revision:reg.revision,tickets:[ticket('ci-D',r.invocation_id)]},r,context,own.now));});
+test('compatible capacity growth preserves a valid admitted claim; withdrawal stops writes',()=>{ok(mayContinue({...continuation,registry:{revision:'registry:expanded',agents:[...registry.agents,agent('new-worker')]}}));blocked(mayContinue({...continuation,registry:{revision:'registry:withdrawn',agents:registry.agents.filter(a=>a.id!==run.agent_id)}}));});
+
+
+// Scheduler runtime guarantees and future invocation IDs are deliberately unavailable.
+// Exercise actual admission/continuation, including duplicate arrivals and stale packets.
+const workPolicy={ref:'repo:work-budget-v1',verified:true,authorization_ref:'accepted:OPS3-ACCEPT',max_work_minutes:30,min_handoff_minutes:5};
+const workRun={...run,runtime_basis:'work-policy',runtime_policy_ref:workPolicy.ref,runtime_verified:false,runtime_minutes:30,handoff_minutes:5,deadline_ceiling:null,finish_by:'2026-11-02T13:37:00+05:30'};
+const workRegistry={...registry,agents:[{...registry.agents[0],runtime_basis:'work-policy',runtime_policy_ref:workPolicy.ref},...registry.agents.slice(1)]};
+const workContext={...ctx,registry:workRegistry,runtime_policies_verified:true,runtime_policies:[workPolicy]};
+const workClaim={...claim,expires_at:workRun.finish_by,run_finish_by:workRun.finish_by};
+const workContinuation={...continuation,run:workRun,claim:workClaim,registry:workRegistry,runtime_policies_verified:true,runtime_policies:[workPolicy],now:own.now};
+
+test('verified early dispatch uses actual start plus budget and ceiling, including #772 offsets',()=>{
+  for(const seconds of [67,175]){
+    const start=new Date(Date.parse(run.started_at)-seconds*1000).toISOString();
+    ok(validateRun({...run,started_at:start,finish_by:new Date(Date.parse(start)+90*60000).toISOString()}));
+    blocked(validateRun({...run,started_at:start})); // unchanged finish would exceed observed-start + 90m
+  }
+});
+test('accepted work budget admits and continues without pretending source maximum is known',()=>{
+  ok(validateRun(workRun,workPolicy));ok(admitTicket(packet,workRun,workContext,own.now));ok(mayContinue(workContinuation));
+  assert.equal(workRun.runtime_verified,false);assert.equal(workRun.deadline_ceiling,null);
+});
+for(const patch of [{verified:false},{ref:'other-policy'},{authorization_ref:''},{max_work_minutes:0},{min_handoff_minutes:-1},{min_handoff_minutes:30}])test('reject unaccepted or invalid work policy '+JSON.stringify(patch),()=>blocked(validateRun(workRun,{...workPolicy,...patch})));
+for(const patch of [{runtime_minutes:31},{handoff_minutes:4},{runtime_verified:true},{runtime_basis:'unknown'},{finish_by:'2026-11-02T13:38:00+05:30'},{deadline_ceiling:'2026-11-02T13:36:00+05:30'}])test('work budget cannot fabricate source proof or exceed bounds '+JSON.stringify(patch),()=>blocked(validateRun({...workRun,...patch},workPolicy)));
+test('work admission requires policy evidence and matching registry basis, not a caller assertion alone',()=>{
+  blocked(validateRun(workRun));blocked(admitTicket(packet,workRun,{...workContext,runtime_policies_verified:false},own.now));
+  blocked(admitTicket(packet,workRun,{...workContext,runtime_policies:[]},own.now));
+  blocked(admitTicket(packet,workRun,{...workContext,registry:{...workRegistry,agents:[{...workRegistry.agents[0],runtime_basis:'source'},...workRegistry.agents.slice(1)]}},own.now));
+  blocked(mayContinue({...workContinuation,runtime_policies_verified:false}));
+});
+test('known source ceiling also bounds work-policy route and late starts never extend it',()=>{
+  ok(validateRun({...workRun,deadline_ceiling:workRun.finish_by},workPolicy));
+  blocked(validateRun({...workRun,started_at:'2026-11-02T13:17:00+05:30',finish_by:'2026-11-02T13:47:00+05:30',deadline_ceiling:workRun.finish_by},workPolicy));
+  blocked(mayContinue({...workContinuation,now:workRun.finish_by}));
+  blocked(admitTicket(packet,workRun,workContext,'2026-11-02T13:32:00+05:30'));
+});
+test('local unique invocation is accurately labelled and cannot borrow another nonce',()=>{
+  const local={...workRun,invocation_source:'local-nonce',invocation_id:'local:'+workRun.nonce};
+  ok(validateRun(local,workPolicy));blocked(validateRun({...local,nonce:'another'},workPolicy));
+  blocked(validateRun({...local,invocation_source:'made-up'},workPolicy));
+});
+const futureTicket={...ticket('worker-A'),binding_mode:'claim-on-start',invocation_id:null};
+const futurePacket={...packet,tickets:[futureTicket]};
+const binding={id:400,packet_reference:'comment:packet-1',ticket_id:futureTicket.id,agent_id:run.agent_id,generation:1,run_id:run.run_id,invocation_id:run.invocation_id,bound_at:own.now};
+const bindingContext={...workContext,packet_reference:binding.packet_reference,ticket_binding:binding,ticket_bindings:[binding],binding_reads_complete:true};
+const bindingEvidence={packet:futurePacket,context:bindingContext,run:workRun,candidate:binding,bindings:[binding],now:own.now,reads_complete:true};
+
+test('future packet can bind exactly once after actual invocation exists, then obtain normal claim',()=>{
+  ok(validatePacket(futurePacket,bindingContext));ok(resolveTicketBinding(bindingEvidence));
+  ok(admitTicket(futurePacket,workRun,bindingContext,own.now));ok(resolveClaim({...own,candidate:workClaim}));
+});
+test('duplicate starts cannot consume an already bound ticket, even after old run ends',()=>{
+  const nextRun={...workRun,run_id:'run:101',invocation_id:'second-instance'};
+  const next={...binding,id:401,run_id:nextRun.run_id,invocation_id:nextRun.invocation_id};
+  blocked(resolveTicketBinding({...bindingEvidence,run:nextRun,candidate:next}));
+  blocked(admitTicket(futurePacket,nextRun,{...bindingContext,ticket_binding:next},own.now));
+});
+for(const patch of [{packet_reference:'other-packet'},{ticket_id:'other-ticket'},{agent_id:'external-C'},{generation:2},{run_id:'run:101'},{invocation_id:'other-instance'},{id:99},{bound_at:'2026-11-02T13:06:00+05:30'},{bound_at:'2026-11-02T13:18:00+05:30'}])test('reject binding replay/scope/window '+JSON.stringify(patch),()=>blocked(resolveTicketBinding({...bindingEvidence,candidate:{...binding,...patch}})));
+test('missing/incomplete/forked binding reads and expired admission fail closed',()=>{
+  blocked(resolveTicketBinding({...bindingEvidence,reads_complete:false}));
+  blocked(admitTicket(futurePacket,workRun,{...bindingContext,binding_reads_complete:false},own.now));
+  blocked(admitTicket(futurePacket,workRun,{...bindingContext,ticket_binding:null},own.now));
+  blocked(resolveTicketBinding({...bindingEvidence,bindings:[{...binding,invocation_id:'edited'}]}));
+  blocked(resolveTicketBinding({...bindingEvidence,now:'2026-11-02T14:08:00+05:30'}));
+  blocked(resolveTicketBinding({...bindingEvidence,context:{...bindingContext,mode:'shadow'}}));
+});
+test('future ticket has no wildcard invocation and cannot silently become exact',()=>{
+  blocked(validatePacket({...futurePacket,tickets:[{...futureTicket,invocation_id:'*'}]},bindingContext));
+  blocked(validatePacket({...futurePacket,tickets:[{...futureTicket,binding_mode:'wildcard'}]},bindingContext));
+  blocked(validatePacket({...futurePacket,tickets:[futureTicket,{...futureTicket,id:'other'}]},bindingContext));
+});
+test('bound ticket does not waive paused membership, holds, head revision or independent release',()=>{
+  blocked(admitTicket(futurePacket,workRun,{...bindingContext,registry:{...workRegistry,agents:[{...workRegistry.agents[0],state:'paused'},...workRegistry.agents.slice(1)]}},own.now));
+  blocked(mayContinue({...workContinuation,holds_clear:false}));blocked(mayContinue({...workContinuation,revision_current:false}));
+  blocked(evaluateRelease({...release,verdicts:[]}));
+});
+test('malformed admission inputs return rejection rather than throwing',()=>{
+  blocked(admitTicket(null,null,null,own.now));
+  blocked(resolveTicketBinding({...bindingEvidence,context:null}));
+});
+
+test('registry cannot invent a third runtime authority route',()=>blocked(validateRegistry({...workRegistry,agents:[{...workRegistry.agents[0],runtime_basis:'unlimited'}]})));
+
+test('work-budget early and late dispatch remain usable within actual admission window',()=>{
+  for(const [start,end] of [['13:06:00','13:36:00'],['13:09:00','13:39:00']]){
+    const r={...workRun,started_at:'2026-11-02T'+start+'+05:30',finish_by:'2026-11-02T'+end+'+05:30'};
+    ok(admitTicket(packet,r,workContext,'2026-11-02T13:10:00+05:30'));
+  }
+});
