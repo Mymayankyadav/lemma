@@ -1,6 +1,6 @@
 /** QA-3b: structural inspection of the 144 ST-0 screenshot artifacts.
  * This catches missing, truncated, wrong-sized and stale/duplicated captures.
- * A structural PASS is NOT a visual/behavioral PASS; see docs/acceptance/qa3b.md.
+ * A structural PASS is NOT a visual/behavioral PASS; visual review is a separate step.
  */
 import {createHash} from 'node:crypto'
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs'
