@@ -61,6 +61,7 @@ for(const [width,height] of [[390,844],[360,740]] as const){
    console.info('FIX #651 Review-run cold 4x: '+JSON.stringify({profile,theme,width,durationMs,nodes,phases}));
    // Evidence collection occurs after the strict first-paint clock is frozen.
    await expect(page.locator('[data-review-card-scroll] .review-front')).not.toBeEmpty();
+   await expect(page.getByText('Real Analysis · CP4',{exact:true})).toBeVisible();
    await testInfo.attach(`review-run-${profile}-${theme}-${width}px`,{
     body:await page.screenshot({fullPage:true}),contentType:'image/png',
    });
