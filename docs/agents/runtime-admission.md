@@ -16,9 +16,11 @@ Accepted repository policy values, to be read from the accepted commit before us
 - policy reference: `docs/agents/runtime-admission.md#work-budget-v1`;
 - maximum voluntary work window: **30 minutes from observed execution start**;
 - minimum handoff reserve: **5 minutes**;
-- workers may select a shorter work window, longer reserve, and earlier finish;
+- workers may select a shorter work window, longer reserve, and earlier finish, recording the actual operational reason; finishing one assignment alone is not a reason to shorten the run while useful eligible work remains;
 - `finish_by` is no later than observed start + selected work window and any known source ceiling;
 - stop admitting new work at `finish_by - handoff_minutes`; checkpoint and release before finish.
+
+Use remaining budget according to [Continue within a run](dispatch.md#continue-within-a-run); after each completed or blocked task, select again before the no-new-work boundary. Role/task changes never reset or extend the run. Do not pad work to reach a duration target.
 
 These are cooperative work limits, not a universal scheduler/runtime claim. A different accepted per-source policy may be registered explicitly. No worker may self-extend a run or turn elapsed observations into provider guarantees.
 

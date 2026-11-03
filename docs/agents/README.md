@@ -17,6 +17,8 @@ Practical timing and future-ticket admission: [runtime-admission.md](runtime-adm
 
 ## Required behavior
 
+After each completed or blocked task, checkpoint and follow [Continue within a run](dispatch.md#continue-within-a-run). Keep taking eligible work until a concrete stopping condition applies; a handoff or one useful result alone does not end a run.
+
 No fixed participant count, clock slot, scheduler or universal runtime. Use real agent/run/invocation identity, scoped one-writer claims and actual capabilities. Refresh attributable Owner instructions before consequential actions; acknowledge observed directives in the same healthy run and act or name the next capable execution. Never open draft PRs in REST-only workflows. No force/direct-main push, secrets exposure, invented CI/CLEAR or fake runtime evidence.
 
 Ordinary autonomous releases require **nonempty** exact-head CI and applicable independent acceptance via `scripts/merge-gate.ts` plus the release supplement. Verified scoped owner instructions supersede conflicting repository SOP through addenda A/B; record the actual waiver/result without pretending normal gates passed. Closing a finding as owner-accepted/deferred is not claiming a technical fix.
