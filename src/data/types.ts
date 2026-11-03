@@ -1,4 +1,4 @@
-/** Domain contract from docs/spec/data.md §7. Dates are ISO strings. */
+/** Domain contract (see CURRENT.md, data model). Dates are ISO strings. */
 export type Glyph = string
 export type Hue = 'amber' | 'violet' | 'cyan' | 'rose' | 'lime' | 'slate'
 export type IsoDate = string

@@ -1,12 +1,20 @@
 # Lemma
 
-A personal mathematics study app. Claude and ChatGPT teach through a small connector; Lemma keeps the projects, PDFs, study plans, session records, flashcards (FSRS) and progress, and asks for one-tap approval of everything a tutor proposes.
+Lemma is a private, proof-first mathematics study app. A React web app (PWA) keeps your plans, cards and reviews in Supabase. An AI tutor connects through an MCP server and can only propose changes, which you approve in the app. Reviews are scheduled with FSRS.
 
-- Build plan and task board: [plan.md](plan.md)
-- Agent rules: [AGENTS.md](AGENTS.md)
-- Specifications: [docs/spec](docs/spec) (product, data, connector, design, testing)
-- Design references: [docs/design](docs/design)
-- Web app (after Phase 0): https://mymayankyadav.github.io/lemma/ (demo data: add `?demo=1`)
+Live app: https://mymayankyadav.github.io/lemma/ (add `?demo=1` for a local demo with no account).
 
-Current source and acceptance live in `plan.md` and `docs/spec/`. Visual precedence is `docs/spec/v4-look.md`, then `docs/spec/v3.md`, then older references where silent. Agent startup and the inactive OPS3 transition are indexed in `docs/agents/README.md`; current backlog comes from GitHub, not historical hand-off notes.
+## Run it
 
+```
+npm ci
+npm run dev      # dev server; demo mode needs no environment variables
+npm run check    # typecheck, unit tests, build
+npm run e2e      # Playwright end-to-end tests
+```
+
+Live mode needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (see `.env.example`).
+
+- `CURRENT.md` — what exists, how it is built and tested, what is broken.
+- `NEXT.md` — the ranked work list.
+- `AGENTS.md` — how agents work in this repo.

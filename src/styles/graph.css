@@ -1,4 +1,4 @@
-/* UI-6a: graph-paper material from docs/spec/v3.md §1 and the Lemma Lab graph worlds.
+/* UI-6a: graph-paper material (see CURRENT.md, UI rules).
    This is deliberately scoped to the final day/night pair. */
 html:is([data-theme="graph"],[data-theme="graph-night"]){
  --s:.92;
