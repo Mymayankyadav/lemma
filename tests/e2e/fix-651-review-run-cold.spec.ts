@@ -61,7 +61,16 @@ for(const [width,height] of [[390,844],[360,740]] as const){
    console.info('FIX #651 Review-run cold 4x: '+JSON.stringify({profile,theme,width,durationMs,nodes,phases}));
    // Evidence collection occurs after the strict first-paint clock is frozen.
    await expect(page.locator('[data-review-card-scroll] .review-front')).not.toBeEmpty();
-   // Stress/extreme fixtures can select a different project/checkpoint from the\n   // v4 example Real Analysis · CP4. Verify the actual displayed label uses\n   // title case rather than assuming a fixed queue item.\n   const reviewLabel=page.locator('header span.truncate');\n   await expect(reviewLabel).toBeVisible();\n   const labelText=(await reviewLabel.textContent())?.trim()??'';\n   expect(labelText).toMatch(/^.+ · CP\\d+$/);\n   const projectTitle=labelText.split(' · ')[0];\n   expect(projectTitle.split(/\\s+/).every(word=>word.length>0&&word[0]===word[0].toLocaleUpperCase()),\n    'Review-run project display title should be title-cased').toBe(true);
+   // Stress/extreme fixtures can select a different project/checkpoint from the
+   // v4 example Real Analysis · CP4. Verify the actual displayed label uses
+   // title case rather than assuming a fixed queue item.
+   const reviewLabel=page.locator('header span.truncate');
+   await expect(reviewLabel).toBeVisible();
+   const labelText=(await reviewLabel.textContent())?.trim()??'';
+   expect(labelText).toMatch(/^.+ · CP\d+$/);
+   const projectTitle=labelText.split(' · ')[0];
+   expect(projectTitle.split(/\s+/).every(word=>word.length>0&&word[0]===word[0].toLocaleUpperCase()),
+    'Review-run project display title should be title-cased').toBe(true);
    await testInfo.attach(`review-run-${profile}-${theme}-${width}px`,{
     body:await page.screenshot({fullPage:true}),contentType:'image/png',
    });
