@@ -265,7 +265,7 @@ export default function Page(){
     <p className="mt-1 text-center text-label tabular-nums text-ink-2">{Math.min(total,settled+1)} of {total}</p>
     <div className="mt-1 flex items-center justify-center gap-1 text-label text-ink-3">
      <span className="font-math italic text-amber">{current.glyph}</span>
-     <span className="truncate">{current.projectSlug.replaceAll('-',' ')} · {current.checkpointCode}</span>
+     <span className="truncate">{current.projectSlug.split('-').filter(Boolean).map(word=>word.charAt(0).toLocaleUpperCase()+word.slice(1)).join(' ')} · {current.checkpointCode}</span>
     </div>
    </div>
    <IconButton icon={Undo2} label="Undo last answer" disabled={!lastUndo||undo.isPending||submitting} onClick={()=>{void undoLast()}}/>
