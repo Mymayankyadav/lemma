@@ -14,6 +14,7 @@ Scope: OPS3-ACCEPT / PR [#775](https://github.com/Mymayankyadav/lemma/pull/775),
 | Future invocation identity | One-time claim-on-start ticket with actual RUN and labelled invocation identity; complete binding readback and normal scope claim remain required |
 | Early dispatch | Source-preserving correction for #771/#772 offsets; nominal timestamp no longer a false lower bound; actual-start budgets and known ceilings still enforced |
 | Independent release | evaluateRelease remains unchanged; missing CLEAR, copied/contributor/merger lineage, stale revision and later BLOCK rejection tests preserved |
+| SQL test setup prerequisite | Main and first candidate both reproduced npm edgesOut before SQL assertions; #774 isolated-prefix installer reused without skipping tests or changing pinned versions/budgets |
 | Functional verification | Native Node 24: 117 scenarios pass; zero failures/skips; new negative admission/binding cases plus retained control/claim/release checks |
 | Real operational trial | Not performed under this candidate amendment; schedules remain paused; tests are synthetic rehearsal, not runtime receipts |
 | Stabilization | 24 healthy post-activation epochs remain to be observed; old idle shadow checks/local loops do not count |
@@ -22,7 +23,7 @@ Scope: OPS3-ACCEPT / PR [#775](https://github.com/Mymayankyadav/lemma/pull/775),
 
 The early-start defect and observed offsets were previously documented by run:6583779308 in #772 at a72b786013be069059a99db647a030a25b0e4b66. This PR reimplements that correction in the broader timing-route validator and adds native tests; retain that source lineage in independent review exclusions. #772 is not declared merged or closed by this PR. #775's author cannot independently CLEAR its implementation.
 
-No application, notification SQL, migrations, production thresholds, deployment workflow, schedule cadence/time zone/enabled state or ordinary autonomous release gate is changed by this amendment. Repository policy values 30 minutes/5 minutes are explicit voluntary work limits, not new claims about platform guarantees. A material runtime policy change requires accepted source/registry updates.
+The CI installer hunk from #774 (run:6584019437; source 97dba889f62a75c042801a64b095429289b17f97) is reused to resolve the existing npm edgesOut crash before SQL assertions. Keep that contributor/source in review exclusions. Apply only that isolated harness hunk to CIg-based main; do not replace the rest of CI policy. No application, notification SQL, migrations, production thresholds, deployment workflow, schedule cadence/time zone/enabled state or ordinary autonomous release gate is changed by this amendment. Repository policy values 30 minutes/5 minutes are explicit voluntary work limits, not new claims about platform guarantees. A material runtime policy change requires accepted source/registry updates.
 
 ## Remaining sequence
 
