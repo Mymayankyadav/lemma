@@ -29,11 +29,11 @@ Done = new `fast-gate` unit tests: `tests/unit/checkpoint/page-states.test.tsx` 
 Scope: src/features/checkpoint/**, src/features/cards/**, src/features/card/**, tests/unit/checkpoint/**, tests/unit/cards/**, CURRENT.md.
 Not: timing assertions, `tests/e2e/**` changes, budgets, Today and Review code.
 
-## N5 Notifications: Web Push handling in the service worker, behind a flag
-Stage: Build · Status: open · Needs: N1 · Assigned: —
-Done = flag `notificationsPush` (default false) added to `src/flags.ts`; with the flag on, the service worker shows a notification from a push payload and, on notification click, focuses or opens the app at the deep link carried in the payload; with it off, behaviour is unchanged. Unit tests: payload parsing (valid, truncated, oversized, unknown fields), click routing (existing window, no window), and flag off = no handler registered. The payload shape must match `supabase/functions/notify/payload.ts`. Reference only: archived PR #713 (head `525a6f12a94f007701b11b8ffdc9e5c8c80ef9f1`, "NOTIF-5 Service worker push handling").
-Scope: src/lib/**, src/data/notify.ts, vite.config.ts only if the service worker must be injected (no new dependency), src/flags.ts, tests/unit/notify/**, tests/unit/flags.test.ts, CURRENT.md.
-Not: supabase/**, `.github/**`, UI settings screens, subscribing to push (the subscribe flow already in `src/data/notify.ts` stays as is), new dependencies.
+## N5.2 Notifications: second half
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = something testable
+Scope: src/lib/**
+Not: supabase/**
 
 ## N6 Notifications: reminder tap opens the right Review screen
 Stage: Build · Status: open · Needs: N5 · Assigned: —
