@@ -2,7 +2,7 @@
 // and into the output summary of the `fast-gate` check run; when fast-gate passes again the comment says so.
 import { existsSync, readFileSync } from 'node:fs';
 import { api, repoPath } from './gh.mjs';
-import { renderFeedback, upsertFeedback, setCheckOutput, fastGateItems } from './feedback.mjs';
+import { renderFeedback, upsertFeedback, setCheckOutput, fastGateItems, isSuperseded } from './feedback.mjs';
 
 const pr = Number(process.env.PR_NUMBER);
 const runId = process.env.GITHUB_RUN_ID;
@@ -14,6 +14,7 @@ const ok = result === 'success';
 let items = [];
 if (!ok) {
   const jobs = (await api('GET', repoPath(`/actions/runs/${runId}/jobs?per_page=100`))).jobs;
+  if (isSuperseded(jobs)) { console.log('this run was cancelled by a newer push: nothing to report'); process.exit(0); }
   const signatures = existsSync('signatures.json') ? JSON.parse(readFileSync('signatures.json', 'utf8')).map((s) => s.sig) : [];
   items = fastGateItems({ jobs, signatures });
 }

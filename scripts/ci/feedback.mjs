@@ -28,12 +28,15 @@ const HINTS = [
 ];
 export const hintFor = (job) => HINTS.find(([re]) => re.test(job))?.[1] || 'open the job and fix the first error.';
 
+/** Pure: true when a failed fast-gate only has cancelled jobs (a newer push cancelled this run): write nothing. */
+export const isSuperseded = (jobs = []) => !jobs.some((j) => ['failure', 'timed_out'].includes(j.conclusion) && !['fast-gate', 'report', 'feedback'].includes(j.name)) && jobs.some((j) => j.conclusion === 'cancelled');
+
 /** Pure: items for a failed fast-gate from the run's jobs ([{name, conclusion, steps:[{name,conclusion}]}]) and failure signatures. */
 export function fastGateItems({ jobs = [], signatures = [] }) {
   const items = [];
   for (const j of jobs) {
     if (['fast-gate', 'report', 'feedback'].includes(j.name)) continue;
-    if (!['failure', 'cancelled', 'timed_out'].includes(j.conclusion)) continue;
+    if (!['failure', 'timed_out'].includes(j.conclusion)) continue; // cancelled = a superseded run, not a failure
     const step = (j.steps || []).find((s) => s.conclusion === 'failure');
     items.push(`\`${j.name}\` ${j.conclusion === 'failure' ? 'failed' : j.conclusion}${step ? ` at step "${step.name}"` : ''}. To comply: ${hintFor(j.name)}`);
   }

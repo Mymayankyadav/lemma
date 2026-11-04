@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
 // @ts-expect-error plain ESM script
-import {renderFeedback,summaryOf,fastGateItems,hintFor,marker} from '../../../scripts/ci/feedback.mjs'
+import {renderFeedback,summaryOf,fastGateItems,hintFor,marker,isSuperseded} from '../../../scripts/ci/feedback.mjs'
 
 describe('gate feedback for agents that cannot read logs',()=>{
  it('renders the failing rules as one marked comment and the same text as the check summary',()=>{
@@ -40,6 +40,13 @@ describe('gate feedback for agents that cannot read logs',()=>{
   expect(items[2]).toContain('unit/tests/unit/a.test.ts::x :: expected 1')
   expect(hintFor('mystery')).toContain('first error')
   expect(fastGateItems({jobs:[{name:'fast-gate',conclusion:'failure'}]})[0]).toContain('no job reports a failure')
+ })
+ it('a run cancelled by a newer push writes no failure feedback',()=>{
+  const jobs=[{name:'e2e-affected-1-of-4',conclusion:'cancelled'},{name:'typecheck-lint',conclusion:'success'},{name:'fast-gate',conclusion:'failure'}]
+  expect(isSuperseded(jobs)).toBe(true)
+  expect(fastGateItems({jobs,signatures:[]})[0]).toContain('no job reports a failure')
+  expect(isSuperseded([...jobs,{name:'unit-affected',conclusion:'failure'}])).toBe(false)
+  expect(isSuperseded([{name:'unit-affected',conclusion:'failure'}])).toBe(false)
  })
  it('the workflows grant what the feedback needs and write it after the gate finishes',()=>{
   const gate=readFileSync('.github/workflows/pr-gate.yml','utf8')
