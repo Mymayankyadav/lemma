@@ -77,6 +77,14 @@ describe('when CI merges (self-test scenarios)',()=>{
   expect(fixed.addChangesLabel).toBe(false)
   expect(fixed.merge).toBe(true)
  })
+ it('after the author pushed, a stale changes request is no longer quoted as the reason',()=>{
+  const changes=c(2,'Changes requested · Agent: lemma-3: add a test','2026-11-04T09:50:00Z')
+  const r=ev({comments:[changes]})
+  expect(r.merge).toBe(false)
+  expect(r.addChangesLabel).toBe(false)
+  expect(r.reasons.join(' ')).not.toContain('changes were requested')
+  expect(r.reasons.join(' ')).toContain('no valid approval')
+ })
  it('an S0 freeze blocks every PR except the incident\'s own fix PR',()=>{
   const r=ev({comments:[approve('lemma-2')],s0:[807]})
   expect(r.merge).toBe(false)
@@ -120,6 +128,11 @@ describe('review-merge workflow',()=>{
   expect(text).not.toContain('head.sha')
   expect(botTokenViolations([{name:'review-merge.yml',text}])).toEqual([])
   expect(botTokenViolations([{name:'sweep.yml',text}]).length).toBeGreaterThan(0)
+ })
+ it('labels.yml may remove the label from a PR (pull-requests: write) and fails loudly otherwise',()=>{
+  const labels=readFileSync('.github/workflows/labels.yml','utf8')
+  expect(labels).toMatch(/permissions:[\s\S]*pull-requests: write/)
+  expect(labels).toContain('could not remove the changes-requested label')
  })
  it('starts only for verdict comments on pull requests',()=>{
   expect(text).toContain("startsWith(github.event.comment.body, 'Approve')")
