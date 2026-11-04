@@ -65,7 +65,7 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
   </div>
   <p className="text-label text-ink-3">
    {project.stageProgress?.length??Math.ceil(project.total/8)} groups ·
-   {' '}Open the path for individual checkpoints and keyboard navigation
+   {' '}· {Math.max(0,project.total-project.done)} checkpoints to goal
   </p>
   {estimate.finish&&<p className="text-label text-ink-2">
    Finish ≈ <strong className="text-ink">{estimate.finish.toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})}</strong>
