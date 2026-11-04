@@ -11,9 +11,15 @@ Owner-authorized 2026-11-04: merging N1 applies these two migrations to producti
 Scope: supabase/migrations/20261102052000_notify_candidates_ranked_reuse.sql (rename only), tests/mcp/notif1b-candidates.mjs (path only), CURRENT.md.
 Not: any change to SQL text, `.github/**`, `--include-all`, other migrations, test thresholds or budgets, app UI, supabase/functions/**. If the deploy then fails at a different step, comment `No progress:` with the failing step and leave the item open.
 
-## N2 Today: goal cards and Continue are correct for large projects
+## N2.1 Today: goal cards for 14, 15 and 40 checkpoints
 Stage: Harden · Status: open · Needs: — · Assigned: —
-Done = two new unit or e2e tests that run in `fast-gate` (no timing assertions): (1) with demo projects of 14, 15 and 40 checkpoints, Today shows for each the same goal-card elements (project title, next checkpoint, distance to goal), the 15 and 40 cases not falling back to the old summary card (archived issue #614); (2) at 360×640 and 390×844 the Continue card's metadata line is fully inside the viewport on the `stress` and `extreme` demo profiles, 5 consecutive runs, no retries (archived issue #760). If a test fails on main, the fix is in the same PR; if both pass on main, the PR adds the tests and records in CURRENT.md that #614 and #760 did not reproduce.
+Done = a new unit or e2e test that runs in `fast-gate` (no timing assertions): with demo projects of 14, 15 and 40 checkpoints, Today shows for each the same goal-card elements (project title, next checkpoint, distance to goal), with the 15 and 40 cases not falling back to the old summary card (archived issue #614). If the test fails on main, fix it in the same PR; if it passes, add the test and record in CURRENT.md that #614 did not reproduce.
+Scope: src/features/home/**, tests/unit/home/**, tests/e2e/home.spec.ts, CURRENT.md (Known breakages 2 only).
+Not: Atlas, Review, budgets or timing assertions, src/data/**.
+
+## N2.2 Today: Continue metadata fits mobile viewports
+Stage: Harden · Status: open · Needs: — · Assigned: —
+Done = a new unit or e2e test that runs in `fast-gate` (no timing assertions): at 360×640 and 390×844, the Continue card's metadata line is fully inside the viewport on the `stress` and `extreme` demo profiles, 5 consecutive runs, no retries (archived issue #760). If the test fails on main, fix it in the same PR; if it passes, add the test and record in CURRENT.md that #760 did not reproduce.
 Scope: src/features/home/**, tests/unit/home/**, tests/e2e/home.spec.ts, CURRENT.md (Known breakages 2 only).
 Not: Atlas, Review, budgets or timing assertions, src/data/**.
 
