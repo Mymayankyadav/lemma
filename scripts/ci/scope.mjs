@@ -7,6 +7,8 @@ import { matchesAny, readJson, parseNext, diffNext, patchLines, isTestFile, adds
 import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
 
 const MAX_OPEN_PRS = 6;
+// Rules v1.3 merged at this instant; the split-needs-code rule (SPLIT-IMPLEMENTS) applies only to PRs opened after it.
+export const SPLIT_RULE_FROM = new Date('2026-11-04T17:02:36Z');
 const NEXT = 'NEXT.md';
 const CALIBRATION = 'ci/perf-calibration.md';
 
@@ -133,7 +135,8 @@ export function evaluateScope(ctx) {
   }
 
   // R5b a split PR must also implement sub-item .1: code (or the CURRENT.md record the sub-item asks for) plus a test
-  if (kind === 'item' && cls.split) {
+  const predatesV13 = ctx.createdAt && new Date(ctx.createdAt).getTime() < SPLIT_RULE_FROM.getTime();
+  if (kind === 'item' && cls.split && !predatesV13) {
     const live = files.filter((f) => f.filename !== NEXT && f.status !== 'removed');
     const hasTest = live.some((f) => isTestFile(f.filename));
     const hasCode = live.some((f) => !isTestFile(f.filename));
@@ -195,6 +198,7 @@ async function main() {
     openPrs: (await paginate(repoPath('/pulls?state=open'))).filter((p) => p.number !== number).map((p) => ({ number: p.number, body: p.body || '' })),
     protectedCfg: readJson('ci/protected.json'),
     headSha: pr.head.sha,
+    createdAt: pr.created_at,
     dispatchSha: process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' ? process.env.GITHUB_SHA : undefined,
   };
   if (cls.kind === 'bug' || cls.kind === 'incident') {

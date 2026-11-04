@@ -95,6 +95,16 @@ describe('scope check',()=>{
   expect(rules(base({title:'N1 split',headNext:headNext.replace('Scope: s\n',''),files:[file,code,test]}))).toContain('NEXT-MD')
   expect(rules(base({title:'N1 split',headNext:headNext.replace('Done = y','Done = z'),files:[file,code,test]}))).toContain('NEXT-MD')
  })
+ it('a split PR opened before v1.3 is exempt from the split-implements rule; one opened after is not',()=>{
+  const sub=(id:string)=>`## N${id} part\nDone = a\nScope: s\nNot: n\n\n`
+  const headNext=NEXT.replace(/## N1[\s\S]*?\n\n## N2/,sub('1.2')+sub('1.3')+'## N2')
+  const file={filename:'NEXT.md',status:'modified',patch:'@@\n-x'}
+  expect(rules(base({title:'N1 split',headNext,files:[file],createdAt:'2026-11-04T10:30:50Z'}))).toEqual([])
+  expect(rules(base({title:'N1 split',headNext,files:[file],createdAt:'2026-11-04T17:02:37Z'}))).toContain('SPLIT-IMPLEMENTS')
+  expect(rules(base({title:'N1 split',headNext,files:[file]}))).toContain('SPLIT-IMPLEMENTS')
+  // the exemption is only for the split rule: the NEXT.md shape rules still apply
+  expect(rules(base({title:'N1 split',headNext:headNext.replace('Scope: s\n',''),files:[file],createdAt:'2026-11-04T10:30:50Z'}))).toContain('NEXT-MD')
+ })
  it('revert PRs from Agent: ci: Reverted: lines and restored items only; files limited to the reverted PR',()=>{
   const ciBody='Agent: ci · Item: revert · Lease until 2026-11-04T09:30:00Z'
   const targets={5:{files:['src/a.ts','NEXT.md'],nextPatch:'@@\n-## N1 Fix deployment\n-Done = x'}}
