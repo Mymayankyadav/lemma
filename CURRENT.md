@@ -98,8 +98,9 @@ PR gate (required checks: **`fast-gate`** and **`scope`**) and the full suite on
 | `review-shots.yml` / `shots` | PR-only (screenshot script paths): captures v4 route screenshots |
 | `review-shots-publish.yml` | On push to `review/**`: commits contact sheets to that branch |
 | `pages.yml` | Builds and deploys the app to GitHub Pages on every push to main |
-| `supabase.yml` / `deploy` | On push to main touching `supabase/**`: `supabase db push`, deploy `mcp`, verify, MCP smoke. **Currently failing.** |
+| `supabase.yml` / `deploy` | On push to main touching `supabase/**` or this workflow: `supabase db push`, deploy `mcp`, verify, MCP smoke. **Currently failing** (see Known breakages 1); a failure opens an S0 incident through `deploy-incident.yml` |
 | `mcp-smoke.yml` / `smoke` | After a successful Supabase workflow: `node tests/mcp/smoke.mjs` against `MCP_URL`. Posts FIFO ticket comments on issue #668 via REST (the issue was closed in the reset; closing is fine, locking would break the queue) |
+| `deploy-incident.yml` / `sync` | After every finished `Supabase` run on main (and manually): a failed run opens or updates ONE S0 incident (`<!-- deploy-incident -->`, title `incident: deploy/supabase:: <failed step> failed`); the newest finished run decides, so an older run's late event is ignored. A run that deployed and passed `Verify deployed MCP endpoint` closes it; a "successful" run whose deploy steps were skipped (no credentials) closes nothing. `scripts/ci/deploy-incident.mjs`; test `tests/unit/ci/guard-deploy-incident.test.ts`. Manual run: Actions → Deploy incident → `run_id` empty = newest finished run, `dry_run` true (default) only prints the writes. `main-green` never closes it (different marker) |
 | `keepalive.yml` | Daily cron: calls the `ping` RPC so the Supabase project does not pause |
 | `setup-check.yml` | Manual: reports whether the four deploy secrets exist (values never printed) |
 

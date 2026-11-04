@@ -1,0 +1,42 @@
+name: Deploy incident
+# A failed `Supabase` deploy run on main opens or updates ONE S0 incident; the next run that deploys and passes
+# MCP verification closes it (scripts/ci/deploy-incident.mjs). Runs main-side code only: workflow_run executes the
+# default branch's copy of this file and of the script, and no PR code is ever checked out here.
+# Manual run: leave run_id empty to judge the newest finished deploy run; dry_run=true only prints the writes.
+on:
+  workflow_run:
+    workflows: [Supabase]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Supabase workflow run id (empty = newest finished run on main)
+        required: false
+        default: ''
+      dry_run:
+        description: Print the issue writes instead of making them
+        type: boolean
+        default: true
+permissions:
+  contents: read
+  actions: read
+  issues: write
+concurrency:
+  group: deploy-incident
+  # Never cancel: a queued event may be the one that closes (or opens) the incident.
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/ci/deploy-incident.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
