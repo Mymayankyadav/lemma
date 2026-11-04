@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { api, paginate, repoPath, ensureLabels, addLabels, GhError } from './gh.mjs';
 import { readJson, plusHours } from './lib.mjs';
-import { landPr } from './automerge.mjs';
+import { landPr, landingComment, botOpts } from './automerge.mjs';
 
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8' }).trim();
 const branch = process.env.GUARD_BRANCH || process.env.GITHUB_REF_NAME;
@@ -91,7 +91,8 @@ async function main() {
     `Automatic revert: \`${branch}\` went red after ${todo.length} merge(s)${prs.length > 1 ? ' (several PRs reverted together in this one PR)' : ''}.`, '',
     `- Failing run: ${runUrl}`, `- Signature: \`${signature}\``, `- Reverted commits: ${todo.map((c) => `${c.sha.slice(0, 8)} ${c.subject}`).join('; ')}`, '',
     'Each reverted item is open again in NEXT.md with a `Reverted:` line.'].join('\n');
-  const pr = await api('POST', repoPath('/pulls'), { title, head: name, base: branch, body });
+  // opened with CI_BOT_TOKEN so the PR's own pull_request / pull_request_target checks really run
+  const pr = await api('POST', repoPath('/pulls'), { title, head: name, base: branch, body }, botOpts());
   await addLabels(pr.number, ['S0']);
   console.log(`opened ${pr.html_url}`);
   await commentMain(`Revert PR opened: ${pr.html_url}`);
@@ -100,7 +101,8 @@ async function main() {
   }
   const res = await landPr({ number: pr.number, branch: name, base: branch, pages: true });
   console.log(`land: ${JSON.stringify(res)}`);
-  await api('POST', repoPath(`/issues/${pr.number}/comments`), { body: `Landing result: **${res.result}**${res.via ? ` via ${res.via}` : ''}. Required checks: ${JSON.stringify(res.states)}. GitHub auto-merge: ${res.autoMerge?.ok ? 'enabled (optional)' : 'not used (' + (res.autoMerge?.why || 'n/a') + ')'}. The full suite was started after the merge.` });
+  await api('POST', repoPath(`/issues/${pr.number}/comments`), { body: landingComment(res) });
+  if (res.result !== 'merged') await commentMain(`Revert PR #${pr.number} did not land: ${res.result}. ${res.message || ''}`.trim());
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { console.error(e instanceof GhError ? e.message : e); process.exit(1); });

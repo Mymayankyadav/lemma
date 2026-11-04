@@ -80,3 +80,18 @@ export const countExpects = (lines) =>
 
 export function isoNow() { return new Date().toISOString(); }
 export function plusHours(h, from = new Date()) { return new Date(from.getTime() + h * 3600e3).toISOString().replace(/\.\d+Z$/, 'Z'); }
+
+/**
+ * CI_BOT_TOKEN may appear only in main-side workflows (push / schedule / dispatch): never in a workflow that a
+ * pull request can trigger, and only in the files listed here. Returns a list of problems (pure).
+ */
+export const BOT_TOKEN_ALLOWED = ['ci.yml', 'calibrate.yml'];
+export function botTokenViolations(workflows) {
+  const out = [];
+  for (const { name, text } of workflows) {
+    if (!/CI_BOT_TOKEN/.test(text)) continue;
+    if (!BOT_TOKEN_ALLOWED.includes(name)) out.push(`${name}: CI_BOT_TOKEN is only allowed in ${BOT_TOKEN_ALLOWED.join(', ')}`);
+    if (/^\s{2}pull_request(_target)?:/m.test(text)) out.push(`${name}: CI_BOT_TOKEN must never be used in a workflow triggered by pull_request or pull_request_target`);
+  }
+  return out;
+}

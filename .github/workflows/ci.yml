@@ -222,11 +222,15 @@ jobs:
     env:
       GUARD_BRANCH: ${{ github.ref_name }}
       GITHUB_TOKEN: ${{ github.token }}
+      # Only main-side events reach this job (push to main / selftest/main, dispatch). The bot token opens and
+      # merges CI's own revert PR so it gets its real checks; it is never used by a pull_request job.
+      CI_BOT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
       FAILED_JOBS: ${{ needs.check.result == 'failure' && 'check ' || '' }}${{ needs.e2e.result == 'failure' && 'e2e ' || '' }}${{ needs.mcp-sql.result == 'failure' && 'mcp-sql' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.CI_BOT_TOKEN || github.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
