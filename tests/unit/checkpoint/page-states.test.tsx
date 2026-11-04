@@ -1,5 +1,6 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
-import {render,screen} from '@testing-library/react';
+import {act} from 'react';
+import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Route,Routes} from 'react-router';
 import Page from '../../../src/features/checkpoint/Page';
 
@@ -18,10 +19,18 @@ vi.mock('../../../src/ui/Sheet',()=>({Sheet:({children,title}:any)=><div><h2>{ti
 vi.mock('../../../src/ui/Toast',()=>({useToast:()=>vi.fn()}));
 
 function show(){
- return render(<MemoryRouter initialEntries={['/p/demo/cp/CP1']}>
+ const container=document.createElement('div');
+ document.body.appendChild(container);
+ const root=createRoot(container);
+ act(()=>root.render(<MemoryRouter initialEntries={['/p/demo/cp/CP1']}>
   <Routes><Route path="/p/:slug/cp/:code" element={<Page/>}/></Routes>
- </MemoryRouter>);
+ </MemoryRouter>));
+ return {container};
 }
+const screen={
+ getByText:(text:string)=>{const node=Array.from(document.body.querySelectorAll('*')).find(el=>el.textContent===text && !Array.from(el.children).some(child=>child.textContent===text));if(!node)throw new Error('Missing text: '+text);return node;},
+ queryByText:(text:string)=>Array.from(document.body.querySelectorAll('*')).find(el=>el.textContent===text && !Array.from(el.children).some(child=>child.textContent===text))??null,
+};
 function detail(ui:'now'|'locked'|'proposed'){
  return {
   view:{code:'CP1',title:'Checkpoint fixture',ui,currentStep:0,stage:null},
@@ -37,6 +46,7 @@ describe('Checkpoint page states',()=>{
   mocks.checkpoint.data=null;
   mocks.project.data=null;
   mocks.checkpoint.refetch.mockReset();
+  document.body.replaceChildren();
  });
  it('renders a loading skeleton instead of evidence',()=>{
   mocks.checkpoint.isPending=true;
