@@ -37,7 +37,7 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
   targetDate:project.targetDate,events,
  })
  return <Slab as="article" aria-label={'Goal progress for '+project.title}
-  className="flex min-w-0 flex-col gap-3 p-4" data-summary-goal="">
+  className="flex min-w-0 flex-col gap-3 p-4" data-goal-card="">
   <div className="flex min-w-0 items-start gap-3">
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <div className="min-w-0 flex-1">
@@ -55,6 +55,11 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
     {project.scheduleHeadline&&<span data-schedule-chip="" className="text-caption font-semibold text-ink-2">{project.scheduleHeadline}</span>}
    </div>
   </div>
+  {project.current&&<div data-goal-now="" className="flex min-w-0 items-center gap-2 text-label text-ink-2">
+   <span data-code="" className="shrink-0">{project.current.code}</span>
+   <span className="min-w-0 flex-1 break-words"><FastHomeTex source={project.current.title}/></span>
+   <span className="shrink-0 tabular-nums">{project.done} of {project.total}</span>
+  </div>}
   <div className="flex min-h-11 items-center gap-3" aria-label={'Stage Metro for '+project.title}>
    <MiniStageBar project={project}/>
   </div>
