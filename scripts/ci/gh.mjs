@@ -63,16 +63,18 @@ export function appendSummary(markdown) {
   appendFileSync(file, markdown + '\n');
 }
 
-const LINE1 = /^Agent:\s*(.+?)\s*·\s*Item:\s*(.+?)\s*·\s*Lease until\s+(\S+)\s*$/;
-/** Parse `Agent: <name> · Item: <id> · Lease until <ISO-8601>` from the first line of a body. */
+// Line 1 of an agent PR body: `Agent: <name> · Item: <id>`. The older `… · Lease until <ISO-8601>` form is still
+// accepted (PRs opened before v1.3); its lease value is ignored, the claim is the open PR.
+const LINE1 = /^Agent:\s*([^·]+?)\s*·\s*Item:\s*([^·]+?)\s*(?:·\s*Lease until\s+(\S+))?\s*$/;
 export function parseLine1(body) {
-  const first = String(body || '').replace(/^﻿/, '').split(/\r?\n/)[0] ?? '';
+  const first = String(body || '').replace(/^\uFEFF/, '').split(/\r?\n/)[0] ?? '';
   const m = LINE1.exec(first);
   if (!m) return null;
-  const lease = new Date(m[3]);
-  const isoShape = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/.test(m[3]);
-  if (!isoShape || Number.isNaN(lease.getTime())) return null;
-  return { agent: m[1], item: m[2], lease };
+  if (m[3] !== undefined) {
+    const isoShape = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/.test(m[3]);
+    if (!isoShape || Number.isNaN(new Date(m[3]).getTime())) return null;
+  }
+  return { agent: m[1], item: m[2], legacyLease: m[3] ?? null };
 }
 
 /** Make sure every label in ci/labels.json exists. Idempotent. */

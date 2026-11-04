@@ -261,3 +261,38 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
         run: node scripts/ci/incident.mjs pr
+
+  feedback:
+    # Agents cannot read CI logs: say exactly what failed and how to fix it (one PR comment, edited in place, plus the
+    # output summary of the fast-gate check).
+    needs: [fast-gate]
+    if: always() && (needs.fast-gate.result == 'success' || needs.fast-gate.result == 'failure') && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      actions: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        if: needs.fast-gate.result == 'failure'
+        with:
+          pattern: junit-*
+          path: junit
+        continue-on-error: true
+      - name: Failure signatures
+        if: needs.fast-gate.result == 'failure'
+        run: node scripts/ci/signatures.mjs junit signatures.json || true
+      - name: Write the feedback
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+          FAST_GATE_RESULT: ${{ needs.fast-gate.result }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/ci/fast-gate-feedback.mjs

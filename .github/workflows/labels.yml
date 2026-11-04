@@ -1,6 +1,9 @@
 name: labels
-# Creates any label from ci/labels.json that is missing (idempotent).
+# Creates any label from ci/labels.json that is missing (idempotent), and removes changes-requested when the
+# author pushes a fix (a fresh approval is then needed). Neither job runs PR code.
 on:
+  pull_request_target:
+    types: [synchronize]
   push:
     branches: [main]
     paths: ['ci/labels.json']
@@ -9,7 +12,21 @@ permissions:
   contents: read
   issues: write
 jobs:
+  clear-changes-requested:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Remove changes-requested after a push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          curl -sS -o /dev/null -w 'DELETE changes-requested -> %{http_code}\n' -X DELETE \
+            -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues/$PR/labels/changes-requested"
   labels:
+    if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

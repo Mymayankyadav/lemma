@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { parseJUnit, jobKind } from './signatures.mjs';
 import { api, paginate, repoPath, ensureLabels, GhError } from './gh.mjs';
-import { readJson, plusHours } from './lib.mjs';
+import { readJson } from './lib.mjs';
 import { landPr, landingComment, botOpts } from './automerge.mjs';
 
 export const QUARANTINE_BELOW = 0.95;
@@ -60,7 +60,7 @@ async function publish(mdFile) {
     if (/^ci: perf calibration/.test(p.title)) await api('PATCH', repoPath(`/pulls/${p.number}`), { state: 'closed' });
   }
   const pr = await api('POST', repoPath('/pulls'), { title: `ci: perf calibration ${new Date().toISOString().slice(0, 10)}`, head: name, base,
-    body: `Agent: ci · Item: calibration · Lease until ${plusHours(3)}\n\nNew calibration table from run ${process.env.GITHUB_RUN_ID}. Changes only ci/perf-calibration.md.` }, botOpts());
+    body: `Agent: ci · Item: calibration\n\nNew calibration table from run ${process.env.GITHUB_RUN_ID}. Changes only ci/perf-calibration.md.` }, botOpts());
   console.log(`opened ${pr.html_url}`);
   const res = await landPr({ number: pr.number, branch: name, base });
   console.log(`land: ${JSON.stringify(res)}`);

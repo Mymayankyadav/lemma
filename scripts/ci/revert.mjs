@@ -7,7 +7,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { api, paginate, repoPath, ensureLabels, addLabels, GhError } from './gh.mjs';
-import { readJson, plusHours } from './lib.mjs';
+import { readJson } from './lib.mjs';
 import { landPr, landingComment, botOpts } from './automerge.mjs';
 
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8' }).trim();
@@ -87,7 +87,7 @@ async function main() {
   git('push', 'origin', `HEAD:refs/heads/${name}`);
 
   const title = `revert ${prs.map((n) => '#' + n).join(' ')}`.trim() || `revert #${todo[0].sha.slice(0, 7)}`;
-  const body = [`Agent: ci · Item: revert · Lease until ${plusHours(3)}`, '',
+  const body = [`Agent: ci · Item: revert`, '',
     `Automatic revert: \`${branch}\` went red after ${todo.length} merge(s)${prs.length > 1 ? ' (several PRs reverted together in this one PR)' : ''}.`, '',
     `- Failing run: ${runUrl}`, `- Signature: \`${signature}\``, `- Reverted commits: ${todo.map((c) => `${c.sha.slice(0, 8)} ${c.subject}`).join('; ')}`, '',
     'Each reverted item is open again in NEXT.md with a `Reverted:` line.'].join('\n');
