@@ -14,7 +14,8 @@ env:
   CI_JUNIT_DIR: ${{ github.workspace }}/junit
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel a run on main: a newer push must not kill the revert job of an older red one.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   check:
     runs-on: ubuntu-latest
