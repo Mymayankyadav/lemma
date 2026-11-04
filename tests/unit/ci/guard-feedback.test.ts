@@ -14,6 +14,11 @@ describe('gate feedback for agents that cannot read logs',()=>{
   expect(summaryOf(text)).not.toContain('<!--')
   expect(summaryOf(text)).toContain('[PROTECTED-PATH]')
  })
+ it('the merge status comment does not claim a check summary',()=>{
+  const t=renderFeedback({gate:'merge',sha:'abcdef0123',ok:false,items:['x']})
+  expect(t).not.toContain('check summary')
+  expect(t).not.toContain('output summary')
+ })
  it('the same comment is rewritten when the gate passes again',()=>{
   const text=renderFeedback({gate:'scope',sha:'abcdef0123',ok:true})
   expect(text.startsWith(marker('scope'))).toBe(true)

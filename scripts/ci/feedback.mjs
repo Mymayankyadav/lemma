@@ -10,7 +10,9 @@ const short = (sha) => String(sha || '').slice(0, 7);
 export function renderFeedback({ gate, sha, ok, items = [], note = '' }) {
   const head = ok ? `### ${gate}: passes on \`${short(sha)}\`` : `### ${gate}: FAILED on \`${short(sha)}\``;
   const body = ok ? [note || 'Nothing to do.'] : items.map((i) => `- ${i}`);
-  const foot = `_CI edits this comment in place when the check runs again, and the same text is in the output summary of the \`${gate}\` check. No reply is needed._`;
+  const foot = gate === 'merge'
+    ? '_CI edits this comment in place each time it re-evaluates the merge. No reply is needed._'
+    : `_CI edits this comment in place when the check runs again, and the same text is in the output summary of the \`${gate}\` check. No reply is needed._`;
   return [marker(gate), head, '', ...body, '', foot].join('\n');
 }
 

@@ -45,6 +45,11 @@ describe('when CI merges (self-test scenarios)',()=>{
   expect(r.reasons.join(' ')).toContain('same Agent name as the PR author')
   expect(ev({comments:[approve('LEMMA-1')]}).merge).toBe(false)
  })
+ it('a valid approval by another Agent merges even when the author also "approved" its own PR',()=>{
+  const r=ev({comments:[approve('lemma-1'),approve('lemma-2','2026-11-04T10:06:00Z',2)]})
+  expect(r.merge).toBe(true)
+  expect(r.reasons).toEqual([])
+ })
  it('an approval is voided by a later push; a fresh approval merges',()=>{
   const voided=ev({comments:[approve('lemma-2')],headCommitDate:'2026-11-04T10:30:00Z'})
   expect(voided.merge).toBe(false)

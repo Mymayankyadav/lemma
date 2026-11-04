@@ -75,9 +75,9 @@ export function evaluateMerge(ctx) {
       lastChanges = { agent: v.agent, at, what: v.what };
     }
   }
-  reasons.push(...notes);
   const addChangesLabel = !!lastChanges && lastChanges.at > headAt && !labels.has('changes-requested');
   if (!approval) {
+    reasons.push(...notes); // an ignored self-approval is only worth mentioning when nothing else approves
     if (attempted || lastChanges) reasons.push(lastChanges ? `changes were requested by ${lastChanges.agent}: ${lastChanges.what}` : 'there is no valid approval (comment exactly "Approve · Agent: <your name>", with a name different from the PR author)');
   } else if (approval.at <= headAt) {
     reasons.push(`the approval by ${approval.agent} is void: a commit was pushed after it. Approve again after reviewing the new head`);
