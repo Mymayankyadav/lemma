@@ -96,6 +96,15 @@ async function main() {
   }
   const res = await landPr({ number: pr.number, branch: name, base: branch });
   console.log(`land: ${JSON.stringify(res)}`);
+  if (res.result === 'merged') {
+    // A merge made with GITHUB_TOKEN does not start push workflows, so run the full suite (and, on the real
+    // default branch, Pages) ourselves; a green run is what closes the S0 incident (main-green).
+    const flows = ['ci.yml', ...(branch === (process.env.DEFAULT_BRANCH || 'main') ? ['pages.yml'] : [])];
+    for (const wf of flows) {
+      try { await api('POST', repoPath(`/actions/workflows/${wf}/dispatches`), { ref: branch }); console.log(`dispatched ${wf} on ${branch}`); }
+      catch (e) { console.log(`could not dispatch ${wf}: ${e.message}`); }
+    }
+  }
   await api('POST', repoPath(`/issues/${pr.number}/comments`), { body: `Landing result: **${res.result}**${res.via ? ` via ${res.via}` : ''}. Required checks: ${JSON.stringify(res.states)}. GitHub auto-merge ${res.autoMerge?.ok ? 'was enabled' : 'was not available (' + (res.autoMerge?.why || 'n/a') + ')'}.` });
 }
 
