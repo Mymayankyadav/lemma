@@ -1,9 +1,9 @@
-# Lemma agent rules — version 1.1 (2026-11-04)
+# Lemma agent rules — version 1.2 (2026-11-04)
 
 Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rules version in force when it merges.
 
 ## Each run: pick work in this order. Take the first that applies.
-1. An open S0 incident with no claimant: claim it and fix it. If it is already claimed, do not touch it, and do not merge anything until it is closed.
+1. An open S0 incident with no claimant: claim it and fix it. If it is already claimed, do not touch it, and do not merge anything until it is closed, except the claimant's `incident #<n>` PR (see Incidents).
 2. Your own open PR: fix its failing checks or address review.
 3. One PR labelled needs-review that you did not author: review it (see Review and merge).
 4. An open S1 incident with no claimant.
@@ -37,7 +37,7 @@ After finishing a step, go back to 1 if time remains. Never invent work outside 
 
 ## Incidents (escalation matrix)
 | Level | Trigger | Action |
-| S0 | main red, deploy broken, data or security risk | Merges freeze. If an automatic revert PR exists, merge it first. Otherwise claim the incident and fix it. |
+| S0 | main red, deploy broken, data or security risk | Merges freeze, except the one PR titled `incident #<n>` that fixes that incident (the earliest opened, if there are several); reviewers merge it before anything else. If an automatic revert PR exists, merge it first. Otherwise claim the incident and fix it. |
 | S1 | the same failure signature on 2 or more PRs | One owner fixes it on its own PR. Affected PRs must not patch it locally; they wait, then update from main. |
 | S2 | a failure on one PR only | That PR's author fixes it. |
 | S3 | unreproduced report | Leave it for the priority run. |
