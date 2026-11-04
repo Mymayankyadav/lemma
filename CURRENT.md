@@ -88,9 +88,9 @@ PR gate (required checks: **`fast-gate`** and **`scope`**) and the full suite on
 | `pr-gate.yml` / `fast-gate` | Aggregates: `typecheck-lint` (`tsc -b` + `scripts/ci/lint.mjs`), `unit-affected` (`scripts/ci/affected.mjs` + `ci/test-map.json`; shared code runs all), `smoke-e2e` (6 specs in `ci/test-map.json` `smoke`), `e2e-affected` (4 shards), `sql` (only when `supabase/**` or SQL tests changed). On failure `report` records signatures and opens `incident: <signature>` issues |
 | `scope.yml` / `scope` | AGENTS.md mechanics (`scripts/ci/scope.mjs`, runs from the base branch): title, item/issue ids, body line 1, 1 PR per agent and at most 6 open, protected paths (`ci/protected.json`), test deletion/skips, NEXT.md edits, `revert`/`ci: perf calibration` rules. An `expect(` count drop is a warning only |
 | `ci.yml` / `check`, `e2e-N-of-4`, `mcp-sql`, `qa3-screens` | The full suite, **on push to main only**. `LEMMA_PERF=off` skips the timing-based checks. `qa3-screens` is skipped unless the repo variable `LEMMA_QA3_IN_CI` is `true` (pinned by `tests/unit/ci/workflow-sharding.test.ts`) |
-| `ci.yml` / `revert`, `main-green` | Red main: one `revert #<pr>` PR (`Agent: ci`, label S0, auto-merge) + one S0 incident; green main closes the incident |
+| `ci.yml` / `revert`, `main-green` | Red main: one `revert #<pr>` PR (`Agent: ci`, label S0) + one S0 incident. CI merges the revert itself (squash) once `fast-gate` and `scope` pass, attached by `workflow_dispatch`; GitHub auto-merge is optional (`CI_AUTO_MERGE=1`). It then starts the full suite itself (token merges do not trigger push workflows); a green run closes the incident. Commits touching only `ci/perf-calibration.md` are never reverted |
 | `perf-report.yml` | **Non-blocking.** The checks in `ci/perf-checks.json` (4×-CPU renders, ST-0 budgets, `notif1b-stress.mjs` 150 ms, `stress-home-perf` unit) and `qa3-screens`; posts a summary |
-| `calibrate.yml` | Manual + nightly: runs each perf check N=10 times on main, writes `ci/perf-calibration.md` through a `ci: perf calibration` PR (only this job writes that file); pass rate under 95% = quarantined |
+| `calibrate.yml` | Manual + nightly: runs each perf check N=10 times on main, writes `ci/perf-calibration.md` through a `ci: perf calibration` PR (only this job writes that file; scope accepts it only from `Agent: ci` with only that file changed). CI merges it directly once `fast-gate` and `scope` pass, then starts the full suite. Pass rate under 95% = quarantined |
 | `sweep.yml` | Every 30 min: `escalate` label, S1→S0 after 2 h with no fix PR, `lease-expired` label |
 | `labels.yml` | Creates the labels in `ci/labels.json` |
 | `review-shots.yml` / `shots` | PR-only (screenshot script paths): captures v4 route screenshots |
@@ -101,7 +101,7 @@ PR gate (required checks: **`fast-gate`** and **`scope`**) and the full suite on
 | `keepalive.yml` | Daily cron: calls the `ping` RPC so the Supabase project does not pause |
 | `setup-check.yml` | Manual: reports whether the four deploy secrets exist (values never printed) |
 
-Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright, SQL scripts via `scripts/ci/sql-reporter.cjs`) and makes `<kind>/<test file>::<test> :: <normalized first error line>`. State lives in one closed issue labelled `ci-registry` (CI edits its body; agents ignore it). Branch protection settings are outside the repo (**unverified**).
+Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright, SQL scripts via `scripts/ci/sql-reporter.cjs`) and makes `<kind>/<test file>::<test> :: <normalized first error line>`. State lives in one closed issue labelled `ci-registry` (CI edits its body; agents ignore it). Branch protection is outside the repo (**unverified**); the intended setting is: `main` requires the status checks `fast-gate` and `scope` only, no required reviews.
 
 ## Known breakages
 

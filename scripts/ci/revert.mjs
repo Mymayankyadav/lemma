@@ -16,6 +16,10 @@ const head = process.env.GITHUB_SHA;
 const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
 const runUrl = `${server}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 const prNumberOf = (subject) => Number(/\(#(\d+)\)\s*$/.exec(subject)?.[1]) || null;
+const CALIBRATION = 'ci/perf-calibration.md';
+/** A commit that touches only the calibration table is never a culprit (pure). */
+export const onlyCalibration = (files) => files.length > 0 && files.every((f) => f === CALIBRATION);
+const filesOf = (sha) => git('diff', '--name-only', `${sha}^1`, sha).split('\n').filter(Boolean);
 const isRevertSubject = (s) => /^revert\b/i.test(s) || /^Revert "/.test(s);
 
 /** Insert `Reverted: …` as the last line of the item block `## N<id>` (pure). */
@@ -53,7 +57,7 @@ async function main() {
   if (!green) return note('No earlier green run found on this branch; cannot choose commits. The S0 incident stays open.');
   const commits = git('rev-list', '--first-parent', '--reverse', `${green}..${head}`).split('\n').filter(Boolean)
     .map((sha) => ({ sha, subject: git('log', '-1', '--format=%s', sha), parents: git('log', '-1', '--format=%P', sha).split(' ').length }));
-  const todo = commits.filter((c) => !isRevertSubject(c.subject));
+  const todo = commits.filter((c) => !isRevertSubject(c.subject) && !onlyCalibration(filesOf(c.sha)));
   if (!todo.length) return note('No revertable commits since the last green run. The S0 incident stays open.');
   const prs = [...new Set(todo.map((c) => prNumberOf(c.subject)).filter(Boolean))];
 
@@ -94,18 +98,9 @@ async function main() {
   for (const n of prs) {
     await api('POST', repoPath(`/issues/${n}/comments`), { body: `Reverted automatically: \`${branch}\` was red after this PR merged.\n\n- Signature: \`${signature}\`\n- Run: ${runUrl}\n- Revert PR: #${pr.number}\n\nThe item is open again in NEXT.md.` });
   }
-  const res = await landPr({ number: pr.number, branch: name, base: branch });
+  const res = await landPr({ number: pr.number, branch: name, base: branch, pages: true });
   console.log(`land: ${JSON.stringify(res)}`);
-  if (res.result === 'merged') {
-    // A merge made with GITHUB_TOKEN does not start push workflows, so run the full suite (and, on the real
-    // default branch, Pages) ourselves; a green run is what closes the S0 incident (main-green).
-    const flows = ['ci.yml', ...(branch === (process.env.DEFAULT_BRANCH || 'main') ? ['pages.yml'] : [])];
-    for (const wf of flows) {
-      try { await api('POST', repoPath(`/actions/workflows/${wf}/dispatches`), { ref: branch }); console.log(`dispatched ${wf} on ${branch}`); }
-      catch (e) { console.log(`could not dispatch ${wf}: ${e.message}`); }
-    }
-  }
-  await api('POST', repoPath(`/issues/${pr.number}/comments`), { body: `Landing result: **${res.result}**${res.via ? ` via ${res.via}` : ''}. Required checks: ${JSON.stringify(res.states)}. GitHub auto-merge ${res.autoMerge?.ok ? 'was enabled' : 'was not available (' + (res.autoMerge?.why || 'n/a') + ')'}.` });
+  await api('POST', repoPath(`/issues/${pr.number}/comments`), { body: `Landing result: **${res.result}**${res.via ? ` via ${res.via}` : ''}. Required checks: ${JSON.stringify(res.states)}. GitHub auto-merge: ${res.autoMerge?.ok ? 'enabled (optional)' : 'not used (' + (res.autoMerge?.why || 'n/a') + ')'}. The full suite was started after the merge.` });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main().catch((e) => { console.error(e instanceof GhError ? e.message : e); process.exit(1); });
