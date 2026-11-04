@@ -101,11 +101,18 @@ export function botTokenViolations(workflows) {
  * carries `· Agent: <name>` (Approve, Changes requested, No progress:) or `Taking over: Agent <name>`.
  */
 export function commentAgent(body) {
-  const lines = String(body || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = stripFooter(body).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const re = /(?:^|·\s*|^Taking over:\s*)Agent:?\s*([^\s·:][^·:\n]*?)\s*(?::.*|·.*)?$/;
   for (const l of [lines[lines.length - 1], lines[0]]) {
     const m = l ? re.exec(l) : null;
     if (m) return m[1].trim();
   }
   return null;
+}
+
+/** A comment without its footer: everything from the first line that is exactly `---` is dropped (connectors append signatures there). */
+export function stripFooter(body) {
+  const lines = String(body || '').split(/\r?\n/);
+  const i = lines.findIndex((l) => l.trim() === '---');
+  return (i >= 0 ? lines.slice(0, i) : lines).join('\n').trim();
 }

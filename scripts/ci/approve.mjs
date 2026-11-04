@@ -17,15 +17,16 @@ import { api, paginate, repoPath, addLabels, parseLine1, GhError, REPO, appendSu
 import { classifyTitle } from './scope.mjs';
 import { botToken, botOpts, requiredStates, classifyMergeError } from './automerge.mjs';
 import { renderFeedback, upsertFeedback } from './feedback.mjs';
+import { stripFooter } from './lib.mjs';
 
 const TRUSTED = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
 const NAME = '([^\\s·:][^·:\\n]*?)';
 const APPROVE = new RegExp(`^Approve\\s*·\\s*Agent:\\s*${NAME}\\s*$`);
 const CHANGES = new RegExp(`^Changes requested\\s*·\\s*Agent:\\s*${NAME}\\s*:\\s*(\\S[\\s\\S]*)$`);
 
-/** Pure: a verdict comment, or null. An Approve must be the whole comment. */
+/** Pure: a verdict comment, or null. An Approve must be the whole comment apart from a footer after a `---` line. */
 export function parseVerdict(body) {
-  const text = String(body || '').trim();
+  const text = stripFooter(body);
   let m = APPROVE.exec(text);
   if (m) return { kind: 'approve', agent: m[1].trim() };
   m = CHANGES.exec(text);
