@@ -11,6 +11,8 @@
 export const FLAG_DEFAULTS = {
   /** Placeholder used by tests to prove the mechanism; remove when the first real flag lands. */
   ciSelfTest: false,
+  /** Service-worker notification handling remains opt-in until N5 is complete. */
+  notificationsPush: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;
