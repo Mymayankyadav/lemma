@@ -36,9 +36,10 @@ export default function GoalCard({project,events}:{project:ProjectSummary;events
    <Route project={project} checkpoints={detail.data.checkpoints} mode="today" pacePerWeek={estimate.pace??undefined}/>:
    <p className="text-label text-ink-3">No checkpoints yet. Ask your tutor to create a plan.</p>}
   {project.current&&<div data-goal-now="" className="flex min-w-0 items-center gap-2 text-[12px] leading-[18px] text-ink-2">
+   <span className="sr-only">Next checkpoint: </span>
    <span data-code="" className="shrink-0 font-[var(--font-num)] text-[12px] text-[var(--accent)]">{project.current.code}</span>
    <span className="min-w-0 flex-1 break-words text-[16px] leading-5 text-ink-2"><Tex source={project.current.title}/></span>
-   <span className="shrink-0 tabular-nums">{project.done} of {project.total}</span>
+   <span data-goal-distance="" aria-label={'Distance to goal: '+Math.max(0,project.total-project.done)+' checkpoints remaining'} className="shrink-0 tabular-nums">{project.done} of {project.total}</span>
   </div>}
   {(finishDisplay||targetDisplay)&&<p data-goal-footnote="" className="min-w-0 border-t border-[var(--hair)] pt-1 text-[12px] leading-[16px] text-ink-3">
    {finishDisplay&&<>Finish ≈ <span className="text-ink">{finishDisplay}</span></>}
