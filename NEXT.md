@@ -23,11 +23,17 @@ Done = a new unit test in `tests/unit/review/` for the demo adapter and the revi
 Scope: src/features/review/**, src/features/review-run/**, src/data/demo/adapter.ts, src/data/live/helpers.ts, tests/unit/review/**, CURRENT.md (Known breakages 2 only).
 Not: supabase/**, FSRS code in src/lib/fsrs, budgets.
 
-## N4 Cards and Checkpoint: blocking tests for every page state
+## N4.1 Checkpoint: blocking tests for every page state
 Stage: Harden · Status: open · Needs: — · Assigned: —
-Done = new `fast-gate` unit tests: `tests/unit/checkpoint/page-states.test.tsx` covering loading, not found, empty, active and deferred (at least 5 distinct assertions on visible text or roles), and `tests/unit/cards/page-states.test.tsx` covering loading, empty library, filtered-to-zero, and filters combined (project + state) in the demo adapter. Any bug a test exposes is fixed in the same PR with the test failing before the fix. CURRENT.md Main tests column updated for both features.
-Scope: src/features/checkpoint/**, src/features/cards/**, src/features/card/**, tests/unit/checkpoint/**, tests/unit/cards/**, CURRENT.md.
-Not: timing assertions, `tests/e2e/**` changes, budgets, Today and Review code.
+Done = new `fast-gate` unit test `tests/unit/checkpoint/page-states.test.tsx` covering loading, not found, empty, active and deferred (at least 5 distinct assertions on visible text or roles). Any bug a test exposes is fixed in the same PR with the test failing before the fix. CURRENT.md Main tests column updated for Checkpoint.
+Scope: src/features/checkpoint/**, tests/unit/checkpoint/**, CURRENT.md.
+Not: timing assertions, `tests/e2e/**` changes, budgets, Today and Review code, Cards code.
+
+## N4.2 Cards: blocking tests for every page state
+Stage: Harden · Status: open · Needs: — · Assigned: —
+Done = new `fast-gate` unit test `tests/unit/cards/page-states.test.tsx` covering loading, empty library, filtered-to-zero, and filters combined (project + state) in the demo adapter. Any bug a test exposes is fixed in the same PR with the test failing before the fix. CURRENT.md Main tests column updated for Cards.
+Scope: src/features/cards/**, src/features/card/**, tests/unit/cards/**, CURRENT.md.
+Not: timing assertions, `tests/e2e/**` changes, budgets, Today and Review code, Checkpoint code.
 
 ## N5 Notifications: Web Push handling in the service worker, behind a flag
 Stage: Build · Status: open · Needs: N1 · Assigned: —
