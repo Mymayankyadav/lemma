@@ -12,11 +12,11 @@ describe('Review selection before daily quota',()=>{
    expect(source).toMatch(/const dueItems=useMemo\(\(\)=>reviewEligible\(cards\.data/);
    expect(source).toMatch(/const chosen=\(onlyNew\?selection\.filter\([\s\S]*?\):selection\)\.slice\(0,settings\.data\.reviewsPerDay\|\|200\)/);
    const cards=Array.from({length:10},(_,i)=>({
-    cardId:'card-'+i,projectSlug:i<matching?'included':'excluded',
+    cardId:'card-'+i,noteId:'note-'+i,noteNo:i+1,ord:0,projectSlug:i<matching?'included':'excluded',
     checkpointCode:null,state:{state:2,due:new Date(0).toISOString()},
    })) as unknown as ReviewItem[];
    const selected=cards.filter(c=>c.projectSlug==='included').slice(0,quota);
-   useReviewSession.getState().initialize(selected,{reviewsPerDay:quota,mixDecks:false} as any,filter);
+   useReviewSession.getState().initialize(selected,{reviewsPerDay:quota,newPerDay:quota,rolloverHour:4,timeZone:'UTC',learnAheadMinutes:0,mixDecks:false} as any,filter);
    const state=useReviewSession.getState();
    expect(state.total).toBe(Math.min(matching,quota));
    expect(state.queue?.total).toBe(state.total);
