@@ -8,7 +8,7 @@ const db=new PGlite()
 // eligible owner/project checkpoints, not perform a second full scan.
 // The existing behavioral tests below verify the exact 20-row ordering,
 // distinct-project priority and fallback fill semantics.
-const reuseSql=await readFile(new URL('../../supabase/migrations/20261102052000_notify_candidates_ranked_reuse.sql',import.meta.url),'utf8')
+const reuseSql=await readFile(new URL('../../supabase/migrations/20261102105000_notify_candidates_ranked_reuse.sql',import.meta.url),'utf8')
 const tomorrowExtras=reuseSql.match(/tomorrow_extras as \(\s*([\s\S]*?)\n\),\ntomorrow_rows as \(/)?.[1]
 assert.ok(tomorrowExtras,'K2 extras CTE must exist in the new migration')
 assert.match(reuseSql,/create index if not exists cards_notify_owner_note_priority\s+on public\.cards\(user_id,note_id,\(case when state=0 then 1 else 0 end\)\)\s+include \(state,due,id\)/i,'owner-scoped sibling priority index must cover ranking fields')
