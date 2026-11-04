@@ -6,6 +6,11 @@ describe('feature flags',()=>{
   expect(Object.values(FLAG_DEFAULTS).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
+ it('notificationsPush is off by default and only enabled through permitted overrides',()=>{
+  expect(FLAG_DEFAULTS.notificationsPush).toBe(false)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=notificationsPush'}).notificationsPush).toBe(true)
+  expect(resolveFlags({allowOverrides:false,search:'?flags=notificationsPush'}).notificationsPush).toBe(false)
+ })
  it('?flags=a,b and the env variable turn known flags on when overrides are allowed',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?demo=1&flags=ciSelfTest'}).ciSelfTest).toBe(true)
   expect(resolveFlags({allowOverrides:true,envFlags:' ciSelfTest , nope'}).ciSelfTest).toBe(true)
