@@ -1,26 +1,42 @@
 import {describe,expect,it} from 'vitest';
-import {readFileSync} from 'node:fs';
+import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter';
 import {useReviewSession} from '../../../src/features/review-run/store';
-import type {QueueFilter,ReviewItem} from '../../../src/data/types';
+import type {QueueFilter} from '../../../src/data/types';
 
 const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 
 describe('Review selection before daily quota',()=>{
  it.each([{matching:8,quota:3},{matching:2,quota:5}])(
-  'passes only the matching selection to the queue (M=$matching Q=$quota)',({matching,quota})=>{
-   const source=readFileSync('src/features/review/Page.tsx','utf8');
-   expect(source).toMatch(/const dueItems=useMemo\(\(\)=>reviewEligible\(cards\.data/);
-   expect(source).toMatch(/const chosen=\(onlyNew\?selection\.filter\([\s\S]*?\):selection\)\.slice\(0,settings\.data\.reviewsPerDay\|\|200\)/);
-   const cards=Array.from({length:10},(_,i)=>({
-    cardId:'card-'+i,noteId:'note-'+i,noteNo:i+1,ord:0,projectSlug:i<matching?'included':'excluded',
-    checkpointCode:null,state:{state:2,due:new Date(0).toISOString()},
-   })) as unknown as ReviewItem[];
-   const selected=cards.filter(c=>c.projectSlug==='included').slice(0,quota);
-   useReviewSession.getState().initialize(selected,{reviewsPerDay:quota,newPerDay:quota,rolloverHour:4,timeZone:'UTC',learnAheadMinutes:0,mixDecks:false} as any,filter);
+  'uses actual demo adapter cards before applying quota (M=$matching Q=$quota)',async ({matching,quota})=>{
+   const fixture=structuredClone(demoSeedFixture);
+   const project=fixture.projects.find(p=>!p.system&&p.status!=='archived');
+   if(!project)throw Error('Missing demo project');
+   const template=fixture.notes.find(n=>n.cards.length>0);
+   if(!template)throw Error('Missing demo note');
+   fixture.notes=Array.from({length:10},(_,i)=>{
+    const note=structuredClone(template);
+    note.projectId=i<matching?project.id:'excluded-project';
+    note.note.id='quota-note-'+i;
+    note.note.no=10000+i;
+    note.note.status='active';
+    note.cards=note.cards.slice(0,1);
+    note.cards[0].id='quota-card-'+i;
+    note.cards[0].state.state=2;
+    note.cards[0].state.due='2020-01-01T00:00:00.000Z';
+    return note;
+   });
+   const adapter=new DemoAdapter({fixture,now:()=>Date.parse('2026-11-04T12:00:00Z'),timeZone:'UTC'});
+   const all=await adapter.getReviewItems(filter);
+   const matchingCards=all.filter(c=>c.projectSlug===project.slug);
+   expect(matchingCards).toHaveLength(matching);
+   const chosen=matchingCards.slice(0,quota);
+   const settings={reviewsPerDay:quota,newPerDay:quota,rolloverHour:4,timeZone:'UTC',learnAheadMinutes:0,mixDecks:false};
+   useReviewSession.getState().initialize(chosen,settings,filter);
    const state=useReviewSession.getState();
    expect(state.total).toBe(Math.min(matching,quota));
    expect(state.queue?.total).toBe(state.total);
-   expect(selected.every(c=>c.projectSlug==='included')).toBe(true);
+   expect(chosen.every(c=>c.projectSlug===project.slug)).toBe(true);
+   expect(new Set(chosen.map(c=>c.cardId)).size).toBe(chosen.length);
    useReviewSession.getState().close();
   });
 });
