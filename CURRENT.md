@@ -30,7 +30,7 @@ Last run on main `a68d15c` and on this cleanup: `npm run check` passes (main: 18
 
 ## FEATURES
 
-Stage: Stable = works and has tests on main. Harden = exists but is reported broken, or untested. Harden reasons are under "Known breakages". Flag column is "—" because no feature flags exist (`src/flags.ts` does not exist).
+Stage: Stable = works and has tests on main. Harden = exists but is reported broken, or untested. Harden reasons are under "Known breakages". Flag column is "—" because no feature uses a flag yet (`src/flags.ts` is the mechanism).
 
 | Feature | Source folders | Main tests | Stage | Flag |
 |---|---|---|---|---|
@@ -81,21 +81,27 @@ Registered in `supabase/functions/mcp/server.ts` (`TOOL_NAMES`, 23): `resume`, `
 
 ## CI (`.github/workflows/`)
 
+PR gate (required checks: **`fast-gate`** and **`scope`**) and the full suite on main:
+
 | Workflow / job | What it checks |
 |---|---|
-| `ci.yml` / `check` | `npm ci && npm run check` (typecheck, vitest, build, PWA artifacts) |
-| `ci.yml` / `e2e-N-of-4` | Playwright suite in 4 shards (115 spec files), uploads screenshots |
-| `ci.yml` / `qa3-screens` | After all shards: validates the 144 ST-0 screenshot PNG envelopes (`scripts/qa3-screens.ts`) |
-| `ci.yml` / `mcp-sql` | Isolated Postgres (pglite harness): `tests/mcp/db2, st5, db5, notif1a*, notif1b*` SQL checks |
-| `review-shots.yml` / `shots` | PR-only (paths: screenshot scripts, `tests/unit/qa4/**`): captures v4 route screenshots |
-| `review-shots-publish.yml` | On push to `review/**`: builds contact sheets and commits them to that branch (this is what created the `review/*` branches) |
+| `pr-gate.yml` / `fast-gate` | Aggregates: `typecheck-lint` (`tsc -b` + `scripts/ci/lint.mjs`), `unit-affected` (`scripts/ci/affected.mjs` + `ci/test-map.json`; shared code runs all), `smoke-e2e` (6 specs in `ci/test-map.json` `smoke`), `e2e-affected` (4 shards), `sql` (only when `supabase/**` or SQL tests changed). On failure `report` records signatures and opens `incident: <signature>` issues |
+| `scope.yml` / `scope` | AGENTS.md mechanics (`scripts/ci/scope.mjs`, runs from the base branch): title, item/issue ids, body line 1, 1 PR per agent and at most 6 open, protected paths (`ci/protected.json`), test deletion/skips, NEXT.md edits, `revert`/`ci: perf calibration` rules. An `expect(` count drop is a warning only |
+| `ci.yml` / `check`, `e2e-N-of-4`, `mcp-sql`, `qa3-screens` | The full suite, **on push to main only**. `LEMMA_PERF=off` skips the timing-based checks. `qa3-screens` is skipped unless the repo variable `LEMMA_QA3_IN_CI` is `true` (pinned by `tests/unit/ci/workflow-sharding.test.ts`) |
+| `ci.yml` / `revert`, `main-green` | Red main: one `revert #<pr>` PR (`Agent: ci`, label S0, auto-merge) + one S0 incident; green main closes the incident |
+| `perf-report.yml` | **Non-blocking.** The checks in `ci/perf-checks.json` (4×-CPU renders, ST-0 budgets, `notif1b-stress.mjs` 150 ms, `stress-home-perf` unit) and `qa3-screens`; posts a summary |
+| `calibrate.yml` | Manual + nightly: runs each perf check N=10 times on main, writes `ci/perf-calibration.md` through a `ci: perf calibration` PR (only this job writes that file); pass rate under 95% = quarantined |
+| `sweep.yml` | Every 30 min: `escalate` label, S1→S0 after 2 h with no fix PR, `lease-expired` label |
+| `labels.yml` | Creates the labels in `ci/labels.json` |
+| `review-shots.yml` / `shots` | PR-only (screenshot script paths): captures v4 route screenshots |
+| `review-shots-publish.yml` | On push to `review/**`: commits contact sheets to that branch |
 | `pages.yml` | Builds and deploys the app to GitHub Pages on every push to main |
 | `supabase.yml` / `deploy` | On push to main touching `supabase/**`: `supabase db push`, deploy `mcp`, verify, MCP smoke. **Currently failing.** |
-| `mcp-smoke.yml` / `smoke` | After a successful Supabase workflow: `node tests/mcp/smoke.mjs` against `MCP_URL`. Posts FIFO ticket comments on issue #668 via REST (closing that issue is fine; locking it would break the queue) |
+| `mcp-smoke.yml` / `smoke` | After a successful Supabase workflow: `node tests/mcp/smoke.mjs` against `MCP_URL`. Posts FIFO ticket comments on issue #668 via REST (the issue was closed in the reset; closing is fine, locking would break the queue) |
 | `keepalive.yml` | Daily cron: calls the `ping` RPC so the Supabase project does not pause |
 | `setup-check.yml` | Manual: reports whether the four deploy secrets exist (values never printed) |
 
-No required-status or branch-protection configuration was read (it is outside the repo; **unverified**).
+Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright, SQL scripts via `scripts/ci/sql-reporter.cjs`) and makes `<kind>/<test file>::<test> :: <normalized first error line>`. State lives in one closed issue labelled `ci-registry` (CI edits its body; agents ignore it). Branch protection settings are outside the repo (**unverified**).
 
 ## Known breakages
 
@@ -105,7 +111,7 @@ No required-status or branch-protection configuration was read (it is outside th
 
    The migration `20261102104500_notification_review_items.sql` between them is already applied remotely. The workflow runs plain `supabase db push` (no `--include-all`). This is NEXT item N1. A merge of the reset PR does not touch `supabase/**`, so it does not trigger this workflow.
 2. **Reported on main by archived issues, not re-verified** (these set Stage = Harden): Today goal cards for projects with more than 14 checkpoints still use the old summary card (#614); intermittent ST-7 Continue metadata outside viewport (#760); Atlas C2 4×-CPU cold-route first attempt over 1,000 ms (#647); Cards D6 first attempt over 1,000 ms (#648); Checkpoint CP4 and Plan-proposal cold 4×-CPU renders over budget (#655, #656); mcp-sql NOTIF-1b candidate query over 150 ms (#679); first-visit PWA client not controlled for offline lazy routes (#751); Review filters applied after the daily quota (archived PR #750 / issue #747, unverified).
-3. `src/flags.ts` does not exist (no feature-flag mechanism).
+3. Feature flags: `src/flags.ts` exists (typed, all off by default; override with `?flags=a,b` or `VITE_FLAGS` only in dev, tests and the e2e build; ignored in production). It has one placeholder flag, `ciSelfTest`, and no real flags yet; test: `tests/unit/flags.test.ts`.
 4. `legacy/` (old vanilla-JS app and three scripts) is not imported by `src`, `tests` or `scripts` (grep); it is dead code, left alone (**unverified** whether anything outside the repo uses it).
 5. Code comments in a few files still cite deleted specs (`data.md §5.4` in `src/data/types.ts`, `v4-look.md §2a` in `src/lib/schedule.ts` and `scripts/make-themes.ts`, `stress.md` in `scripts/qa3-report.ts` and `tests/e2e/look-4b-row-fade.spec.ts`, `design.md §6` in `src/app/routes.tsx`, `notifications.md §4a` in `supabase/functions/notify/test-handler.ts`). The tests are the authority now. `supabase/**` was not edited in the reset so as not to trigger a deploy.
 6. `docs/spec/data.md` and `docs/spec/connector.md` were kept only because `scripts/make-demo-data.ts` reads the default KaTeX macros and teaching-style presets from them. Treat them as data inputs, not specs.
@@ -119,7 +125,7 @@ No required-status or branch-protection configuration was read (it is outside th
 - Visual palette: two graph-paper themes (`graph`, `graph-night`) in `src/styles/themes.css`, generated by `scripts/make-themes.ts`; colour distance (CIEDE2000) and token rules in `tests/unit/look-0.test.ts`; `tests/e2e/ui6a-graph-material.spec.ts`, `fix-686-stage-paper.spec.ts`, `fix-687-stage-palette.spec.ts`.
 - Typography and layout: `tests/e2e/look-1c-typography.spec.ts`, `look-1d-typography.spec.ts`, `layout.spec.ts`, `chart-labels.spec.ts`; maths rendering caches: `tests/unit/ui/tex-cache.test.tsx`.
 - Screenshot structure (144 ST-0 PNGs, all routes × themes): `tests/unit/stress/qa3-screens.test.ts`, `qa3-report.test.ts`; v4 capture inventory: `tests/unit/qa4/capture-inventory.test.ts` (reads `docs/design/v4/capture-routes.md` and `scripts/v4-capture-inventory.json`).
-- CI sharding contract: `tests/unit/ci/workflow-sharding.test.ts` (reads `ci.yml`).
+- CI sharding contract: `tests/unit/ci/workflow-sharding.test.ts` (reads `ci.yml`). Guardrail logic: `tests/unit/ci/guard-*.test.ts` and `scope.test.ts`.
 - PWA release artifacts: `scripts/check-pwa.mjs` (postbuild).
 
 ## Repo layout

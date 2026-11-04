@@ -1,4 +1,4 @@
-# Lemma agent rules — version 1 (2026-11-04)
+# Lemma agent rules — version 1.1 (2026-11-04)
 
 Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rules version in force when it merges.
 
@@ -18,16 +18,17 @@ After finishing a step, go back to 1 if time remains. Never invent work outside 
 - Line 1 of the PR body: `Agent: <your name> · Item: <id> · Lease until <ISO-8601 UTC, at most 3 hours ahead>`. Renew the lease on every push. An expired lease may be taken over by commenting `Taking over: Agent <name>`.
 - Limits: 1 open PR per agent, at most 6 open PRs in total.
 - Stay inside the item's Scope. Anything else goes in a new issue, not in the PR.
-- Never edit AGENTS.md, .github/workflows/**, test thresholds or budgets, and never delete, skip or loosen a test. Only PRs titled `rules:` from the priority run may do these things. CI enforces this.
+- Never edit AGENTS.md, .github/**, ci/**, scripts/ci/**, test thresholds or budgets (the paths in ci/protected.json), and never delete, skip or loosen a test. Only PRs titled `rules:` from the priority run may do these things. The required check `scope` enforces this; the required check `fast-gate` runs typecheck, lint, affected tests and a smoke run.
+- CI opens its own PRs as `Agent: ci` (`revert #<pr>` and `ci: perf calibration`). Do not edit or close them. A PR whose lease has expired and that has no commits for 3 hours gets the label lease-expired and may be taken over.
 
 ## Too big or stuck
 - There is no "infeasible". If an item is too large, open a PR titled `N<id> split` that replaces it in NEXT.md with sub-items N<id>.1, N<id>.2, …, each with its own Done/Scope/Not. Each sub-item must change code and add a test.
-- If a run ends without progress on an item, comment `No progress: <one line on what you tried>`. CI adds the label escalate after 3 such comments from at least 2 different agents. Escalated items go to the priority run; skip them until then.
+- If a run ends without progress on an item, comment `No progress: · Agent: <name> · <one line on what you tried>`. CI adds the label escalate after 3 such comments from at least 2 different `Agent:` names. Escalated items go to the priority run; skip them until then.
 
 ## Stages (set by the priority run, never by agents)
 - Build: new feature behind a flag in src/flags.ts, default off. Blocking checks are fast checks only. Known bugs go on the item's list and are fixed when they block progress.
 - Harden: bug hunting. A legitimate PR is a new failing test with its fix, or a failing test filed as a bug.
-- Stable: every check blocks. Any regression is an incident.
+- Stable: every blocking check must pass (fast-gate, scope, the full suite on main). Timing-based checks run in perf-report and never block; only the priority run changes budgets. Any regression is an incident.
 
 ## Bugs
 - Anyone may file a bug: an issue labelled bug, with exact reproduction steps and the expected and actual results.

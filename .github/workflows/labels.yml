@@ -1,0 +1,22 @@
+name: labels
+# Creates any label from ci/labels.json that is missing (idempotent).
+on:
+  push:
+    branches: [main]
+    paths: ['ci/labels.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/ci/labels.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

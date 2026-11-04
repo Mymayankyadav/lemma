@@ -1,11 +1,17 @@
 name: CI
-# FIX #255: isolated PostgreSQL acceptance gate follows in this PR.
+# The FULL suite. Runs on every push to main (and on selftest/** branches used to test the guardrails),
+# not on PRs: PRs run the fast gate (pr-gate.yml) instead. If this run is red the `revert` job reverts the
+# merge(s) since the last green run and opens/updates the S0 incident. Timing-based checks run in
+# perf-report.yml (non-blocking); LEMMA_PERF=off makes the runners skip them here.
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches: [main, 'selftest/**']
+  workflow_dispatch:
 permissions:
   contents: read
+env:
+  LEMMA_PERF: 'off'
+  CI_JUNIT_DIR: ${{ github.workspace }}/junit
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -21,6 +27,13 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-check
+          path: junit/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # Each Playwright case runs exactly once; separate runners keep the growing
   # S/X × Graph day/night suite below the 30-minute per-job limit. All four
@@ -33,6 +46,8 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
+    env:
+      CI_JUNIT_NAME: e2e-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -42,6 +57,13 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-e2e-${{ matrix.shard }}
+          path: junit/
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -59,8 +81,12 @@ jobs:
 
   # Do not validate an incomplete shard: the 144 ST-0 PNG envelopes are
   # checked only after every shard succeeds and all artifacts are combined.
+  # Moved to perf-report.yml: it validates the 144 ST-0 screenshots written by the timing-based stress spec,
+  # which no longer runs here. Kept (skipped unless the repo variable LEMMA_QA3_IN_CI is 'true') because
+  # tests/unit/ci/workflow-sharding.test.ts pins this job.
   qa3-screens:
     needs: e2e
+    if: ${{ vars.LEMMA_QA3_IN_CI == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -111,6 +137,7 @@ jobs:
           --health-retries 10
     env:
       NOTIF_TEST_DATABASE_URL: postgres://postgres:test-only@localhost:5432/lemma_test
+      NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -153,8 +180,65 @@ jobs:
         run: node tests/mcp/notif1b-candidates.mjs
       - name: Verify NOTIF-1b two-connection atomic claim and rollback
         run: node tests/mcp/notif1b-concurrency.mjs
-      - name: Verify NOTIF-1b X 60-project/30k-card first-attempt candidate budget
-        run: node tests/mcp/notif1b-stress.mjs
       - name: Verify MCP-2 atomic transactions when available
         if: hashFiles('tests/mcp/transactions.mjs') != ''
         run: node tests/mcp/transactions.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-sql
+          path: junit/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Red main -> one revert PR + one S0 incident (see scripts/ci/revert.mjs, incident.mjs).
+  revert:
+    needs: [check, e2e, mcp-sql]
+    if: always() && (needs.check.result == 'failure' || needs.e2e.result == 'failure' || needs.mcp-sql.result == 'failure') && (github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'selftest/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    env:
+      GUARD_BRANCH: ${{ github.ref_name }}
+      GITHUB_TOKEN: ${{ github.token }}
+      FAILED_JOBS: ${{ needs.check.result == 'failure' && 'check ' || '' }}${{ needs.e2e.result == 'failure' && 'e2e ' || '' }}${{ needs.mcp-sql.result == 'failure' && 'mcp-sql' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          path: junit
+        continue-on-error: true
+      - run: node scripts/ci/signatures.mjs junit signatures.json
+      - name: Open or update the S0 incident
+        run: node scripts/ci/incident.mjs main
+      - name: Revert the merge(s) since the last green run
+        run: node scripts/ci/revert.mjs
+
+  # Green main -> close the main incident automatically.
+  main-green:
+    needs: [check, e2e, mcp-sql]
+    if: needs.check.result == 'success' && needs.e2e.result == 'success' && needs.mcp-sql.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/ci/incident.mjs main-green
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

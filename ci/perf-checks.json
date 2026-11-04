@@ -1,0 +1,16 @@
+{
+ "_comment": "Checks whose result depends on wall-clock time, CPU throttling or screenshot timing. They run in perf-report (non-blocking) and calibrate; the blocking gates skip them (LEMMA_PERF=off). Deterministic budgets (bytes, request counts, node counts, text-source contracts) stay blocking. Do not change any budget here.",
+ "e2e": [
+  {"path":"tests/e2e/stress.spec.ts","why":"ST-0 budgets incl. 4x-CPU first render; also writes the 144 screenshots qa3-screens validates"},
+  {"path":"tests/e2e/st-4.spec.ts","why":"Card list first interactive render at 4x CPU < 2000 ms"},
+  {"path":"tests/e2e/audit-441-atlas-budget.spec.ts","why":"Atlas first interactive render at 4x CPU < 2000 ms"},
+  {"path":"tests/e2e/fix-659-new-project.spec.ts","why":"New project sheet paint at 4x CPU < 4000 ms"}
+ ],
+ "unit": [
+  {"path":"tests/unit/data/stress-home-perf.test.ts","why":"elapsed < 1500 ms assertions"}
+ ],
+ "sql": [
+  {"path":"tests/mcp/notif1b-stress.mjs","why":"NOTIF-1b X candidate query elapsed < 150 ms on first attempt"}
+ ],
+ "screenshotValidation": "qa3-screens (needs stress.spec screenshots)"
+}

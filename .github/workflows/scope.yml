@@ -1,0 +1,40 @@
+name: scope
+# Required check: `scope`. Runs the checker from the BASE branch and reads the PR through the API only,
+# so a PR can never change the code that judges it. workflow_dispatch (inputs pr/base) lets CI attach the
+# same check to PRs it opens itself (revert, calibration).
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number
+        required: true
+      base:
+        description: Base branch to run the checker from
+        required: false
+        default: main
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+concurrency:
+  group: scope-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+jobs:
+  scope:
+    name: scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref || inputs.base || github.event.repository.default_branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scope rules (AGENTS.md)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+        run: node scripts/ci/scope.mjs

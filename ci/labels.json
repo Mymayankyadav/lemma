@@ -1,0 +1,16 @@
+[
+ {"name":"S0","color":"b60205","description":"Incident: main red, deploy broken, data or security risk"},
+ {"name":"S1","color":"d93f0b","description":"Incident: same failure signature on 2+ PRs"},
+ {"name":"S2","color":"fbca04","description":"Incident: failure on one PR only"},
+ {"name":"S3","color":"c5def5","description":"Incident: unreproduced report"},
+ {"name":"incident","color":"b60205","description":"Incident issue (opened by CI or an agent)"},
+ {"name":"bug","color":"d73a4a","description":"Bug report with reproduction steps"},
+ {"name":"confirmed","color":"0e8a16","description":"Bug reproduced by a different agent or shown by a failing test"},
+ {"name":"needs-review","color":"1d76db","description":"PR ready for an independent review"},
+ {"name":"changes-requested","color":"e99695","description":"Review failed; see the exact required changes"},
+ {"name":"blocked","color":"5319e7","description":"Blocked on something outside the PR"},
+ {"name":"escalate","color":"ff9f1c","description":"3+ No-progress comments from 2+ agents: priority run decides"},
+ {"name":"quarantined","color":"bfd4f2","description":"Perf check with <95% pass rate on unchanged main"},
+ {"name":"lease-expired","color":"cccccc","description":"Lease passed and no commits for 3 hours; may be taken over"},
+ {"name":"ci-registry","color":"ededed","description":"CI-maintained state issue; not work"}
+]
