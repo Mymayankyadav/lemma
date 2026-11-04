@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { appendSummary, api, paginate, repoPath, parseLine1, GhError } from './gh.mjs';
 import { matchesAny, readJson, parseNext, diffNext, patchLines, isTestFile, addsSkipOnly, countExpects } from './lib.mjs';
+import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
 
 const MAX_OPEN_PRS = 6;
 const NEXT = 'NEXT.md';
@@ -54,12 +55,10 @@ export function evaluateScope(ctx) {
       'rename the PR, e.g. "N2 <summary>", "bug #12 <summary>", "incident #7 <summary>" or "rules: <summary>".'));
   }
 
-  // R3 body line 1
+  // R3 body line 1 (the claim is the open PR: no lease; the older "· Lease until …" form is still accepted and ignored)
   if (!line1) {
-    failures.push(fail('BODY-LINE-1', 'Line 1 of the PR body must be exactly "Agent: <name> · Item: <id> · Lease until <ISO-8601>".',
-      'make the very first line of the body e.g. "Agent: codex-1 · Item: N1 · Lease until 2026-11-04T09:30:00Z" (lease at most 3 hours ahead).'));
-  } else if (line1.lease.getTime() > now.getTime() + 3 * 3600e3 + 10 * 60e3) {
-    failures.push(fail('LEASE', `The lease (${line1.lease.toISOString()}) is more than 3 hours ahead.`, 'set "Lease until" to at most 3 hours from now and renew it on every push.'));
+    failures.push(fail('BODY-LINE-1', 'Line 1 of the PR body must be exactly "Agent: <name> · Item: <id>".',
+      'make the very first line of the body e.g. "Agent: codex-1 · Item: N1" (no lease needed; the older "· Lease until <ISO-8601>" form of PRs opened before v1.3 is still accepted).'));
   }
 
   // R2 ids
@@ -133,6 +132,17 @@ export function evaluateScope(ctx) {
     }
   }
 
+  // R5b a split PR must also implement sub-item .1: code (or the CURRENT.md record the sub-item asks for) plus a test
+  if (kind === 'item' && cls.split) {
+    const live = files.filter((f) => f.filename !== NEXT && f.status !== 'removed');
+    const hasTest = live.some((f) => isTestFile(f.filename));
+    const hasCode = live.some((f) => !isTestFile(f.filename));
+    if (!hasTest || !hasCode) {
+      failures.push(fail('SPLIT-IMPLEMENTS', `An "N${cls.id} split" PR must also implement sub-item N${cls.id}.1 in the same PR, but it changes ${live.length ? live.map((f) => f.filename).join(', ') : 'only ' + NEXT}${hasTest ? ' (no code or CURRENT.md change)' : ' (no test file)'}.`,
+        `in this same PR add the code for N${cls.id}.1 (or, if its test passes on main, the CURRENT.md note its Done asks for) and its test; ${NEXT} alone is not enough.`));
+    }
+  }
+
   // R6 NEXT.md
   const nextFile = files.find((f) => f.filename === NEXT);
   if (nextFile && kind !== 'rules' && kind !== 'calibration') {
@@ -148,8 +158,8 @@ export function evaluateScope(ctx) {
     } else if (kind === 'item' && cls.split) {
       const subs = d.added;
       const okSubs = subs.length >= 1 && subs.every((id) => id.startsWith(cls.id + '.') && /Done\s*=/.test(d.head.blocks.get(id)) && /Scope:/.test(d.head.blocks.get(id)) && /Not:/.test(d.head.blocks.get(id)));
-      ok = clean && only(d.removed, [cls.id]) && okSubs && paths.length === 1;
-      how = `an "N${cls.id} split" PR must change only ${NEXT}: remove N${cls.id} and add sub-items N${cls.id}.1, N${cls.id}.2 … each with Done =, Scope: and Not: lines.`;
+      ok = clean && only(d.removed, [cls.id]) && okSubs;
+      how = `an "N${cls.id} split" PR must remove N${cls.id} from ${NEXT} and add its remaining sub-items N${cls.id}.2, N${cls.id}.3 … each with Done =, Scope: and Not: lines (N${cls.id}.1 is implemented in the same PR and is not listed).`;
     } else if (kind === 'revert' && isCi) {
       const mine = patchLines(nextFile.patch);
       const tAdded = new Set();
@@ -210,6 +220,13 @@ async function main() {
   for (const w of res.warnings) { lines.push(`- ⚠️ ${w}`); console.log(`::warning title=scope review hint::${w}`); }
   if (!res.failures.length && !res.warnings.length) lines.push('- ✅ all scope rules satisfied');
   appendSummary(lines.join('\n'));
+  // Agents cannot read logs: put the exact rule(s) into one PR comment (edited in place) and the check output.
+  try {
+    const ok = res.failures.length === 0;
+    const text = renderFeedback({ gate: 'scope', sha: pr.head.sha, ok, items: res.failures.map((f) => f.msg), note: res.warnings.length ? `Reviewer hints: ${res.warnings.join(' ')}` : 'Nothing to do.' });
+    await upsertFeedback({ pr: number, gate: 'scope', text, createIfMissing: !ok });
+    if (process.env.GITHUB_RUN_ID) await setCheckOutput({ runId: process.env.GITHUB_RUN_ID, jobName: 'scope', title: ok ? 'scope passed' : `scope failed: ${res.failures.map((f) => f.rule).join(', ')}`, text });
+  } catch (e) { console.log(`feedback not written: ${e.message}`); }
   if (res.failures.length) process.exit(1);
 }
 

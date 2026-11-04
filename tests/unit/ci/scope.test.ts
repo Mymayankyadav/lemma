@@ -5,7 +5,7 @@ import {evaluateScope,classifyTitle} from '../../../scripts/ci/scope.mjs'
 const NEXT='# NEXT\n\n## N1 Fix deployment\nStage: Stable\nDone = x\nScope: a\nNot: b\n\n## N2 Other\nDone = y\n\n(More items are added by the priority run.)\n'
 const NOW=new Date('2026-11-04T08:00:00Z')
 const PROT={paths:['AGENTS.md','.github/**','ci/**','scripts/ci/**','scripts/stress-limits.ts','vitest.config.ts'],testGlobs:[]}
-const line1=(agent='codex-1')=>`Agent: ${agent} · Item: N1 · Lease until 2026-11-04T09:30:00Z\n\nbody`
+const line1=(agent='codex-1')=>`Agent: ${agent} · Item: N1\n\nbody`
 const base=(over={})=>({title:'N1 fix it',body:line1(),files:[{filename:'src/a.ts',status:'modified',patch:'@@\n+x'}],baseNext:NEXT,headNext:NEXT,openPrs:[],protectedCfg:PROT,now:NOW,...over})
 const rules=(ctx:any)=>evaluateScope(ctx).failures.map((f:any)=>f.rule)
 
@@ -27,8 +27,13 @@ describe('scope check',()=>{
   expect(r.failures.map((f:any)=>f.rule)).toEqual(['TITLE','BODY-LINE-1'])
   expect(r.failures[0].msg).toContain('To comply:')
  })
- it('rejects a lease more than 3 hours ahead',()=>{
-  expect(rules(base({body:'Agent: a · Item: N1 · Lease until 2026-11-04T13:00:00Z'}))).toContain('LEASE')
+ it('line 1 needs no lease; the old lease form is accepted and its value ignored (no LEASE rule any more)',()=>{
+  expect(rules(base({body:'Agent: a · Item: N1'}))).toEqual([])
+  expect(rules(base({body:'Agent: a · Item: N1 · Lease until 2026-11-04T13:00:00Z'}))).toEqual([])
+  expect(rules(base({body:'Agent: a · Item: N1 · Lease until 2027-01-01T00:00:00Z'}))).toEqual([])
+  const r=evaluateScope(base({body:'Agent: a'}))
+  expect(r.failures.map((f:any)=>f.rule)).toEqual(['BODY-LINE-1'])
+  expect(r.failures[0].msg).toContain('Agent: <name> · Item: <id>')
  })
  it('rejects an N id that is not in NEXT.md, unless it is an Owner task adding that item',()=>{
   expect(rules(base({title:'N9 new thing'}))).toContain('ITEM-ID')
@@ -69,13 +74,26 @@ describe('scope check',()=>{
   expect(rules(base({headNext:NEXT.replace('Done = x','Done = changed'),files:[file]}))).toContain('NEXT-MD')
   expect(rules(base({title:'bug #3 x',issue:{state:'open',isPr:false,labels:['bug','confirmed']},headNext:without('1'),files:[file]}))).toContain('NEXT-MD')
  })
- it('N<id> split: only NEXT.md, own item replaced by sub-items with Done/Scope/Not',()=>{
+ it('N<id> split: own item replaced by sub-items with Done/Scope/Not AND sub-item .1 implemented (code plus test) in the same PR',()=>{
   const sub=(id:string)=>`## N${id} part\nDone = a\nScope: s\nNot: n\n\n`
-  const headNext=NEXT.replace(/## N1[\s\S]*?\n\n## N2/,sub('1.1')+sub('1.2')+'## N2')
+  const headNext=NEXT.replace(/## N1[\s\S]*?\n\n## N2/,sub('1.2')+sub('1.3')+'## N2')
   const file={filename:'NEXT.md',status:'modified',patch:'@@\n-x'}
-  expect(rules(base({title:'N1 split',headNext,files:[file]}))).toEqual([])
-  expect(rules(base({title:'N1 split',headNext,files:[file,{filename:'src/a.ts',status:'modified',patch:'@@\n+x'}]}))).toContain('NEXT-MD')
-  expect(rules(base({title:'N1 split',headNext:headNext.replace('Scope: s\n','') ,files:[file]}))).toContain('NEXT-MD')
+  const code={filename:'src/a.ts',status:'modified',patch:'@@\n+x'}
+  const test={filename:'tests/unit/a.test.ts',status:'added',patch:'@@\n+it("x",()=>{})'}
+  const note={filename:'CURRENT.md',status:'modified',patch:'@@\n+x'}
+  expect(rules(base({title:'N1 split',headNext,files:[file,code,test]}))).toEqual([])
+  // the sub-item may be test + the CURRENT.md note its Done asks for, when the test passes on main
+  expect(rules(base({title:'N1 split',headNext,files:[file,note,test]}))).toEqual([])
+  // NEXT.md only: scope fails with a clear message
+  const only=evaluateScope(base({title:'N1 split',headNext,files:[file]}))
+  expect(only.failures.map((f:any)=>f.rule)).toEqual(['SPLIT-IMPLEMENTS'])
+  expect(only.failures[0].msg).toContain('must also implement sub-item N1.1')
+  expect(only.failures[0].msg).toContain('To comply:')
+  expect(rules(base({title:'N1 split',headNext,files:[file,code]}))).toContain('SPLIT-IMPLEMENTS')
+  expect(rules(base({title:'N1 split',headNext,files:[file,test]}))).toContain('SPLIT-IMPLEMENTS')
+  // the sub-items still need Done/Scope/Not, and the other items stay untouched
+  expect(rules(base({title:'N1 split',headNext:headNext.replace('Scope: s\n',''),files:[file,code,test]}))).toContain('NEXT-MD')
+  expect(rules(base({title:'N1 split',headNext:headNext.replace('Done = y','Done = z'),files:[file,code,test]}))).toContain('NEXT-MD')
  })
  it('revert PRs from Agent: ci: Reverted: lines and restored items only; files limited to the reverted PR',()=>{
   const ciBody='Agent: ci · Item: revert · Lease until 2026-11-04T09:30:00Z'

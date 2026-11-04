@@ -16,8 +16,10 @@ on:
         default: main
 permissions:
   contents: read
-  pull-requests: read
-  issues: read
+  pull-requests: write
+  issues: write
+  actions: read
+  checks: write
 concurrency:
   group: scope-${{ github.event.pull_request.number || inputs.pr }}
   cancel-in-progress: true
@@ -37,4 +39,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: node scripts/ci/scope.mjs

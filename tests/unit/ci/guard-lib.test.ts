@@ -3,6 +3,8 @@ import {describe,expect,it} from 'vitest'
 import {matches,matchesAny,parseNext,diffNext,patchLines,addsSkipOnly,countExpects,isTestFile} from '../../../scripts/ci/lib.mjs'
 // @ts-expect-error plain ESM script
 import {parseLine1} from '../../../scripts/ci/gh.mjs'
+// @ts-expect-error plain ESM script
+import {commentAgent} from '../../../scripts/ci/lib.mjs'
 
 const NEXT=`# NEXT
 
@@ -46,11 +48,25 @@ describe('guardrail helpers',()=>{
   expect(isTestFile('tests/e2e/a.spec.ts')).toBe(true)
   expect(isTestFile('src/a.ts')).toBe(false)
  })
- it('parses line 1 of the PR body',()=>{
+ it('parses line 1 of the PR body (v1.3: no lease; the old lease form is still accepted and ignored)',()=>{
+  expect(parseLine1('Agent: lemma-3 · Item: N1')).toEqual({agent:'lemma-3',item:'N1',legacyLease:null})
+  expect(parseLine1('Agent: lemma-3 · Item: N1\n\nbody')?.item).toBe('N1')
+  expect(parseLine1('Agent: lemma-3 · Item: N1 · Lease until 2026-11-04T16:07:00Z')).toEqual({agent:'lemma-3',item:'N1',legacyLease:'2026-11-04T16:07:00Z'})
+  expect(parseLine1('Agent: lemma-3 · Item: N1 ·')).toBeNull()
+  expect(parseLine1('Agent: lemma-3')).toBeNull()
   expect(parseLine1('Agent: codex-1 · Item: N1 · Lease until 2026-11-04T09:30:00Z\nmore')?.agent).toBe('codex-1')
   expect(parseLine1('Agent: ci · Item: revert · Lease until 2026-11-04T09:30:00+05:30')?.agent).toBe('ci')
   expect(parseLine1('Agent: a · Item: N1 · Lease until tomorrow')).toBeNull()
   expect(parseLine1('Hello\nAgent: a · Item: N1 · Lease until 2026-11-04T09:30:00Z')).toBeNull()
   expect(parseLine1('')).toBeNull()
+ })
+ it('names the Agent that wrote a comment',()=>{
+  expect(commentAgent('Done: pushed\nPending: -\nNext: -\nAgent: lemma-1')).toBe('lemma-1')
+  expect(commentAgent('Approve · Agent: lemma-2')).toBe('lemma-2')
+  expect(commentAgent('Changes requested · Agent: lemma-2: fix the test')).toBe('lemma-2')
+  expect(commentAgent('No progress: · Agent: lemma-4 · tried X')).toBe('lemma-4')
+  expect(commentAgent('Taking over: Agent lemma-5')).toBe('lemma-5')
+  expect(commentAgent('just chatting')).toBeNull()
+  expect(commentAgent('')).toBeNull()
  })
 })

@@ -85,7 +85,7 @@ export function plusHours(h, from = new Date()) { return new Date(from.getTime()
  * CI_BOT_TOKEN may appear only in main-side workflows (push / schedule / dispatch): never in a workflow that a
  * pull request can trigger, and only in the files listed here. Returns a list of problems (pure).
  */
-export const BOT_TOKEN_ALLOWED = ['ci.yml', 'calibrate.yml'];
+export const BOT_TOKEN_ALLOWED = ['ci.yml', 'calibrate.yml', 'review-merge.yml'];
 export function botTokenViolations(workflows) {
   const out = [];
   for (const { name, text } of workflows) {
@@ -94,4 +94,18 @@ export function botTokenViolations(workflows) {
     if (/^\s{2}pull_request(_target)?:/m.test(text)) out.push(`${name}: CI_BOT_TOKEN must never be used in a workflow triggered by pull_request or pull_request_target`);
   }
   return out;
+}
+
+/**
+ * Name of the Agent that wrote a comment: the last non-empty line `Agent: <name>`, or the first line when it
+ * carries `· Agent: <name>` (Approve, Changes requested, No progress:) or `Taking over: Agent <name>`.
+ */
+export function commentAgent(body) {
+  const lines = String(body || '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const re = /(?:^|·\s*|^Taking over:\s*)Agent:?\s*([^\s·:][^·:\n]*?)\s*(?::.*|·.*)?$/;
+  for (const l of [lines[lines.length - 1], lines[0]]) {
+    const m = l ? re.exec(l) : null;
+    if (m) return m[1].trim();
+  }
+  return null;
 }
