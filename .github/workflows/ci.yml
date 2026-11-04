@@ -1,11 +1,11 @@
 name: CI
-# The FULL suite. Runs on every push to main (and on selftest/** branches used to test the guardrails),
+# The FULL suite. Runs on every push to main (and on the throwaway branch selftest/main used to test the revert path),
 # not on PRs: PRs run the fast gate (pr-gate.yml) instead. If this run is red the `revert` job reverts the
 # merge(s) since the last green run and opens/updates the S0 incident. Timing-based checks run in
 # perf-report.yml (non-blocking); LEMMA_PERF=off makes the runners skip them here.
 on:
   push:
-    branches: [main, 'selftest/**']
+    branches: [main, 'selftest/main']
   workflow_dispatch:
 permissions:
   contents: read
@@ -137,7 +137,6 @@ jobs:
           --health-retries 10
     env:
       NOTIF_TEST_DATABASE_URL: postgres://postgres:test-only@localhost:5432/lemma_test
-      NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -165,23 +164,41 @@ jobs:
           ln -s "$harness/node_modules/pg" node_modules/pg
           node --input-type=module -e "await import('@electric-sql/pglite'); await import('pg')"
       - name: Verify DB-2 action log, undo and owner isolation
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/db2.mjs
       - name: Verify ST-5 owner-scoped aggregate and paging SQL
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/st5.mjs
       - name: Verify DB-5 transcription provenance and reversible pages
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/db5.mjs
       - name: Verify NOTIF-1a reminder tables, RLS and device cap
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/notif1a.mjs
       - name: Verify NOTIF-1a two-connection insert and restore races
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/notif1a-concurrency.mjs
       - name: Verify NOTIF-1b atomic notification actions, undo and owner isolation
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/notif1b.mjs
       - name: Verify NOTIF-1b bounded candidates, due quota and time zones
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/notif1b-candidates.mjs
       - name: Verify NOTIF-1b two-connection atomic claim and rollback
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/notif1b-concurrency.mjs
       - name: Verify MCP-2 atomic transactions when available
         if: hashFiles('tests/mcp/transactions.mjs') != ''
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/transactions.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -194,7 +211,7 @@ jobs:
   # Red main -> one revert PR + one S0 incident (see scripts/ci/revert.mjs, incident.mjs).
   revert:
     needs: [check, e2e, mcp-sql]
-    if: always() && (needs.check.result == 'failure' || needs.e2e.result == 'failure' || needs.mcp-sql.result == 'failure') && (github.ref_name == github.event.repository.default_branch || startsWith(github.ref_name, 'selftest/'))
+    if: always() && (needs.check.result == 'failure' || needs.e2e.result == 'failure' || needs.mcp-sql.result == 'failure') && (github.ref_name == github.event.repository.default_branch || github.ref_name == 'selftest/main')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
