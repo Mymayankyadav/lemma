@@ -17,10 +17,16 @@ Done = two new unit or e2e tests that run in `fast-gate` (no timing assertions):
 Scope: src/features/home/**, tests/unit/home/**, tests/e2e/home.spec.ts, CURRENT.md (Known breakages 2 only).
 Not: Atlas, Review, budgets or timing assertions, src/data/**.
 
-## N3 Review: filters apply before the daily quota
+## N3.1 Review: filter eligible cards before the demo daily quota
 Stage: Harden · Status: open · Needs: — · Assigned: —
-Done = a new unit test in `tests/unit/review/` for the demo adapter and the review-run store: with a daily limit of Q cards and a filter that matches M cards (M > Q and M < Q, both cases), the queue holds min(Q, M) cards, all matching the filter, and the count shown on the Review page equals the queue length. The test fails on main if archived issue #747 is real (then the fix is in the same PR); if it passes, the PR adds the test and records that #747 did not reproduce. If the live path needs SQL, do not change it: file a bug issue with the failing SQL case.
-Scope: src/features/review/**, src/features/review-run/**, src/data/demo/adapter.ts, src/data/live/helpers.ts, tests/unit/review/**, CURRENT.md (Known breakages 2 only).
+Done = a new fast-gate unit test in `tests/unit/review/` that exercises the demo adapter with daily limit Q and a deck filter matching M cards, for both M > Q and M < Q; `getReviewItems` returns exactly min(Q, M) matching cards. Fix the demo adapter if the test fails on main; if it passes, add the regression test and record that archived issue #747 did not reproduce in this path.
+Scope: src/data/demo/adapter.ts, tests/unit/review/**, CURRENT.md (Known breakages 2 only).
+Not: supabase/**, FSRS code in src/lib/fsrs, budgets, Review UI.
+
+## N3.2 Review: session queue and visible count match filtered quota
+Stage: Harden · Status: open · Needs: N3.1 · Assigned: —
+Done = a new fast-gate unit test in `tests/unit/review/` for the review-run store and Review page selection with daily limit Q and a filter matching M cards (M > Q and M < Q): the queue contains min(Q, M) matching cards and the count shown on the Review page equals queue length. Fix any failing behaviour in the same PR; if the test passes, record that archived issue #747 did not reproduce in this path. If the live path needs SQL, do not change it: file a bug issue with the failing SQL case.
+Scope: src/features/review/**, src/features/review-run/**, src/data/live/helpers.ts, tests/unit/review/**, CURRENT.md (Known breakages 2 only).
 Not: supabase/**, FSRS code in src/lib/fsrs, budgets.
 
 ## N4 Cards and Checkpoint: blocking tests for every page state
