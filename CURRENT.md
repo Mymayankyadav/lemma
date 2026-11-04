@@ -30,7 +30,7 @@ Last run on main `a68d15c` and on this cleanup: `npm run check` passes (main: 18
 
 ## FEATURES
 
-Stage: Stable = works and has tests on main. Harden = exists but is reported broken, or untested. Harden reasons are under "Known breakages". Flag column is "—" because no feature uses a flag yet (`src/flags.ts` is the mechanism).
+Stage: Stable = works and has tests on main. Harden = exists but is reported broken, or untested. Harden reasons are under "Known breakages". Build = planned or new, behind a flag that its first item adds to `src/flags.ts` (default off). Flag column is "—" for features on main because none uses a flag yet. Stages last reviewed by the priority run on 2026-11-04: no promotions (no Harden feature has its bug-hunting items closed yet), no demotions (the 2 reverts since the reset, #792 and #798, undid CI self-test PRs, not features).
 
 | Feature | Source folders | Main tests | Stage | Flag |
 |---|---|---|---|---|
@@ -52,7 +52,9 @@ Stage: Stable = works and has tests on main. Harden = exists but is reported bro
 | PDF sources: upload, text extraction, storage | `src/pdf`, `src/lib/queue.ts` | `tests/unit/pdf`, `tests/unit/data/archive.test.ts`, `tests/e2e/source-*.spec.ts` | Stable | — |
 | PWA shell, install, offline cache | `vite.config.ts`, `src/app/PwaStatus.tsx`, `src/lib/offline-cache.ts`, `scripts/check-pwa.mjs` | `tests/unit/app/pwa-status.test.tsx`, `tests/unit/lib/offline-cache.test.ts`, `tests/e2e/and1-install.spec.ts` | Harden | — |
 | MCP connector (23 tools) | `supabase/functions/mcp` | `tests/unit/mcp`, `tests/unit/mcp4`, `tests/mcp/*.mjs`, CI `mcp-sql` | Harden | — |
-| Notifications (reminders, push, `notify` function) | `supabase/functions/notify`, `src/data/notify.ts` | `tests/unit/notify` (15 files), `tests/mcp/notif1*.mjs` | Harden | — |
+| Notifications server side (reminders, `notify` function, subscribe flow) | `supabase/functions/notify`, `src/data/notify.ts` | `tests/unit/notify` (15 files), `tests/mcp/notif1*.mjs` | Harden | — |
+| Notifications in the app (service-worker push handling, reminder deep links) — not on main yet | planned: `src/lib`, `src/features/review*` | none yet | Build | `notificationsPush` (added by N5, default off) |
+| Android Trusted Web Activity shell and store kit — not on main yet | planned: `android/`, `docs/android`, `public/privacy.html` | none yet | Build | `androidShell` (added by N7, default off) |
 | Deploy pipeline (Supabase workflow, MCP smoke) | `.github/workflows/supabase.yml`, `mcp-smoke.yml`, `scripts/mcp-selftest-queue*.mjs` | `tests/unit/agents/mcp-selftest-*.test.ts`, `tests/mcp/smoke.mjs` | Harden | — |
 | Stress and screenshot harness (ST-0 budgets, QA captures) | `scripts/stress-*.ts`, `scripts/qa3-*.ts`, `scripts/qa4-screens.ts`, `scripts/review-shots.mjs` | `tests/unit/stress`, `tests/unit/qa4`, `tests/e2e/stress*.spec.ts` | Stable | — |
 
