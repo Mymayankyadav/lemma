@@ -87,3 +87,25 @@ for(const theme of ['graph','graph-night'] as const){
   await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\//)
  })
 }
+
+
+test('Continue metadata remains inside mobile viewports on stress profiles across five visits',async({page})=>{
+ for(const profile of ['stress','extreme'] as const){
+  for(const viewport of [{width:360,height:640},{width:390,height:844}]){
+   await page.setViewportSize(viewport)
+   for(let run=0;run<5;run++){
+    await page.goto(`./?demo=${profile}#/`)
+    const handoff=page.getByRole('region',{name:'Resume where you stopped'})
+    await expect(handoff).toBeVisible()
+    const metadata=handoff.getByText(/step \\d+ of \\d+/)
+    await expect(metadata).toBeVisible()
+    const box=await metadata.boundingBox()
+    expect(box,`${profile} ${viewport.width}x${viewport.height} run ${run+1}`).not.toBeNull()
+    expect(box!.x).toBeGreaterThanOrEqual(0)
+    expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width)
+    expect(box!.y).toBeGreaterThanOrEqual(0)
+    expect(box!.y+box!.height).toBeLessThanOrEqual(viewport.height)
+   }
+  }
+ }
+})
