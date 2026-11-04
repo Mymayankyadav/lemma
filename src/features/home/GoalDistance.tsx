@@ -37,7 +37,7 @@ function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|
   targetDate:project.targetDate,events,
  })
  return <Slab as="article" aria-label={'Goal progress for '+project.title}
-  className="flex min-w-0 flex-col gap-3 p-4" data-goal-card="">
+  className="flex min-w-0 flex-col gap-3 p-4" data-goal-card="" data-summary-goal="">
   <div className="flex min-w-0 items-start gap-3">
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <div className="min-w-0 flex-1">
