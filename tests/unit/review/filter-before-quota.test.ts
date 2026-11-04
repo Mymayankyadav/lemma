@@ -16,7 +16,7 @@ describe('Review selection before daily quota',()=>{
     checkpointCode:null,state:{state:2,due:new Date(0).toISOString()},
    })) as unknown as ReviewItem[];
    const selected=cards.filter(c=>c.projectSlug==='included').slice(0,quota);
-   useReviewSession.getState().initialize(selected,{reviewsPerDay:quota,mixDecks:false} as Parameters<typeof useReviewSession.getState> extends never ? never : any,filter);
+   useReviewSession.getState().initialize(selected,{reviewsPerDay:quota,mixDecks:false} as any,filter);
    const state=useReviewSession.getState();
    expect(state.total).toBe(Math.min(matching,quota));
    expect(state.queue?.total).toBe(state.total);
