@@ -33,7 +33,7 @@ const urgency=(a:ProjectSummary,b:ProjectSummary)=>{
  * summary already returned by home_summary(). Loading full project details
  * for each of 60 projects would violate the three-request Today budget.
  * The project page retains the full interactive stage Metro. */
-function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|undefined}){
+export function SummaryGoalCard({project,events}:{project:ProjectSummary;events:Events|undefined}){
  const pct=project.total?Math.round(100*project.done/project.total):0
  const estimate=estimateFinish({
   projectId:project.id,total:project.total,done:project.done,
