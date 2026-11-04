@@ -97,7 +97,7 @@ test('Continue metadata remains inside mobile viewports on stress profiles acros
     await page.goto(`./?demo=${profile}#/`)
     const handoff=page.getByRole('region',{name:'Resume where you stopped'})
     await expect(handoff).toBeVisible()
-    const metadata=handoff.getByText(/step \\d+ of \\d+/)
+    const metadata=handoff.getByText(/step \d+ of \d+/)
     await expect(metadata).toBeVisible()
     const box=await metadata.boundingBox()
     expect(box,`${profile} ${viewport.width}x${viewport.height} run ${run+1}`).not.toBeNull()
