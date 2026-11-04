@@ -41,6 +41,13 @@ export function evaluateScope(ctx) {
   const isCi = line1?.agent?.toLowerCase() === 'ci';
   const kind = cls.kind;
 
+  // A dispatched run attaches its check to the commit it runs on: it must be the PR's own head commit,
+  // so a run can never vouch for a different PR.
+  if (ctx.dispatchSha && ctx.headSha && ctx.dispatchSha !== ctx.headSha) {
+    failures.push(fail('DISPATCH-HEAD', `This run was dispatched on ${String(ctx.dispatchSha).slice(0, 7)} but the PR head is ${String(ctx.headSha).slice(0, 7)}.`,
+      "dispatch scope.yml on the PR's own head branch, with that PR's number."));
+  }
+
   // R1 title
   if (!kind) {
     failures.push(fail('TITLE', `The title "${ctx.title}" does not start with N<id>, bug #<n>, incident #<n>, revert #<n> or rules:.`,
@@ -177,6 +184,8 @@ async function main() {
     baseNext: await getText(NEXT, pr.base.sha), headNext: await getText(NEXT, pr.head.sha),
     openPrs: (await paginate(repoPath('/pulls?state=open'))).filter((p) => p.number !== number).map((p) => ({ number: p.number, body: p.body || '' })),
     protectedCfg: readJson('ci/protected.json'),
+    headSha: pr.head.sha,
+    dispatchSha: process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' ? process.env.GITHUB_SHA : undefined,
   };
   if (cls.kind === 'bug' || cls.kind === 'incident') {
     try {

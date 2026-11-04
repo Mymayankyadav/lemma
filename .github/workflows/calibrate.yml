@@ -157,6 +157,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.CI_BOT_TOKEN || github.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -176,5 +177,7 @@ jobs:
       - name: Open the calibration PR and land it
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # schedule / dispatch only: the bot token opens and merges the calibration PR so it gets real checks
+          CI_BOT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
           GUARD_BRANCH: main
         run: node scripts/ci/calibrate.mjs publish "$RUNNER_TEMP/perf-calibration.md"

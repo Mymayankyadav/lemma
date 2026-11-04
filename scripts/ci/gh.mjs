@@ -13,13 +13,15 @@ export class GhError extends Error {
   }
 }
 
-export async function api(method, path, body) {
-  if (!TOKEN) throw new Error('GITHUB_TOKEN is not set');
+/** `opts.token` overrides the default token for this one call (used only for CI_BOT_TOKEN, see automerge.mjs). */
+export async function api(method, path, body, opts = {}) {
+  const token = opts.token || TOKEN;
+  if (!token) throw new Error('GITHUB_TOKEN is not set');
   const url = path.startsWith('http') ? path : `${API}${path}`;
   const res = await fetch(url, {
     method,
     headers: {
-      authorization: `Bearer ${TOKEN}`,
+      authorization: `Bearer ${token}`,
       accept: 'application/vnd.github+json',
       'x-github-api-version': '2022-11-28',
       'content-type': 'application/json',

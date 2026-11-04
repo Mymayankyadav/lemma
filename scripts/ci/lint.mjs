@@ -3,7 +3,7 @@
 // and rotten globs/paths in ci/*.json. Run: node scripts/ci/lint.mjs
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { matches, readJson, addsSkipOnly } from './lib.mjs';
+import { matches, readJson, addsSkipOnly, botTokenViolations } from './lib.mjs';
 
 const problems = [];
 const bad = (file, line, msg) => problems.push(`${file}${line ? ':' + line : ''}  ${msg}`);
@@ -30,6 +30,9 @@ for (const f of code) {
   if (f.endsWith('.json')) { try { JSON.parse(lines.join('\n')); } catch (e) { bad(f, 0, `invalid JSON: ${e.message}`); } }
 }
 try { JSON.parse(readFileSync('package.json', 'utf8')); } catch (e) { bad('package.json', 0, `invalid JSON: ${e.message}`); }
+
+// CI_BOT_TOKEN only in main-side workflows (see lib.mjs).
+for (const m of botTokenViolations(readdirSync('.github/workflows').filter((n) => n.endsWith('.yml')).map((n) => ({ name: n, text: readFileSync(`.github/workflows/${n}`, 'utf8') })))) bad('.github/workflows', 0, m);
 
 // ci/*.json must not rot: every glob matches something, every listed path exists.
 if (existsSync('ci/test-map.json')) {
