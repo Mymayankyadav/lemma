@@ -1,0 +1,94 @@
+name: perf-report
+# NON-BLOCKING. Runs the timing-based checks listed in ci/perf-checks.json (4x-CPU renders, ST-0 budgets,
+# elapsed-time asserts, the NOTIF-1b X SQL budget) plus the screenshot-envelope validation that needs the
+# ST-0 screenshots. Posts a short summary, never blocks a merge. Budgets are unchanged.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'supabase/**'
+      - 'scripts/stress-*'
+      - 'scripts/qa3-*'
+      - 'tests/e2e/stress.spec.ts'
+      - 'tests/e2e/st-4.spec.ts'
+      - 'tests/e2e/audit-441-atlas-budget.spec.ts'
+      - 'tests/e2e/fix-659-new-project.spec.ts'
+      - 'tests/unit/data/stress-home-perf.test.ts'
+      - 'tests/mcp/notif1b-stress.mjs'
+      - 'ci/perf-checks.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+concurrency:
+  group: perf-report-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  CI_JUNIT_DIR: ${{ github.workspace }}/junit
+  NOTIF_TEST_DATABASE_URL: postgres://postgres:test-only@localhost:5432/lemma_test
+jobs:
+  perf-report:
+    name: perf-report
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: lemma_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lemma_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Install pinned isolated PostgreSQL harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          harness="$RUNNER_TEMP/lemma-mcp-sql-harness"
+          mkdir -p "$harness" node_modules/@electric-sql
+          printf '{"name":"lemma-mcp-sql-harness","private":true}\n' > "$harness/package.json"
+          npm install --prefix "$harness" --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13 pg@8.16.3
+          ln -s "$harness/node_modules/@electric-sql/pglite" node_modules/@electric-sql/pglite
+          ln -s "$harness/node_modules/pg" node_modules/pg
+      - name: Perf unit checks
+        env:
+          CI_JUNIT_NAME: perf-unit
+        run: npx vitest run $(node -p "require('./ci/perf-checks.json').unit.map(e=>e.path).join(' ')") || true
+      - name: Perf e2e checks (4x CPU, ST-0 budgets)
+        env:
+          CI_JUNIT_NAME: perf-e2e
+        run: npm run e2e -- $(node -p "require('./ci/perf-checks.json').e2e.map(e=>e.path).join(' ')") || true
+      - name: Perf SQL check (NOTIF-1b X candidate budget)
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
+        run: node tests/mcp/notif1b-stress.mjs || true
+      - name: ST-0 screenshot envelopes (needs stress.spec screenshots)
+        run: npx tsx scripts/qa3-screens.ts || true
+      - name: Summary
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/ci/perf-summary.mjs junit || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-report-junit
+          path: junit/
+          if-no-files-found: ignore
+          retention-days: 14

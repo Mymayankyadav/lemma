@@ -1,0 +1,25 @@
+name: sweep
+# Every 30 minutes: escalate label, S1 -> S0 after 2 h without a fix PR, lease-expired label.
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+concurrency:
+  group: sweep
+  cancel-in-progress: false
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/ci/sweep.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

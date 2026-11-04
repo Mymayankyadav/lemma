@@ -1,0 +1,16 @@
+{
+ "_comment": "Paths a PR may change only if titled `rules:`. Budget and threshold constants live in the stress-* and qa3-report scripts; config files carry the perf and junit switches.",
+ "paths": [
+  "AGENTS.md",
+  ".github/**",
+  "ci/**",
+  "scripts/ci/**",
+  "scripts/stress-limits.ts",
+  "scripts/stress-gate.ts",
+  "scripts/stress-marks.ts",
+  "scripts/qa3-report.ts",
+  "vitest.config.ts",
+  "playwright.config.ts"
+ ],
+ "testGlobs": ["tests/**", "**/*.test.*", "**/*.spec.*"]
+}

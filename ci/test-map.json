@@ -1,0 +1,537 @@
+{
+ "_comment": "Maps changed paths to test groups. 'all' = shared code: run every test. 'ignore' = no test impact. For each group: src globs -> unit test globs (the import graph in scripts/ci/affected.mjs adds more unit tests) and e2e spec files (specs are mapped by the routes they visit, generated once from the current specs; over-inclusion is intentional). Anything matching nothing runs everything. Perf-timing specs (ci/perf-checks.json) and the smoke specs are handled separately.",
+ "all": [
+  "package.json",
+  "package-lock.json",
+  "tsconfig*.json",
+  "vite.config.ts",
+  "vitest.config.ts",
+  "playwright.config.ts",
+  "index.html",
+  ".env*",
+  "public/**",
+  "src/flags.ts",
+  "src/main.tsx",
+  "src/vite-env.d.ts",
+  "src/ui/**",
+  "src/lib/**",
+  "src/data/**",
+  "src/app/**",
+  "src/styles/**",
+  "src/pdf/**",
+  "ci/test-map.json",
+  "ci/perf-checks.json",
+  "ci/protected.json",
+  ".github/**",
+  "scripts/ci/**",
+  "tests/helpers/**",
+  "tests/e2e/helpers/**",
+  "tests/fixtures/**",
+  "scripts/generate-icons.mjs",
+  "scripts/check-pwa.mjs"
+ ],
+ "ignore": [
+  "*.md",
+  "docs/**",
+  "ci/perf-calibration.md",
+  "ci/labels.json",
+  "legacy/**",
+  ".gitignore"
+ ],
+ "smoke": [
+  "tests/e2e/projects.spec.ts",
+  "tests/e2e/project.spec.ts",
+  "tests/e2e/session.spec.ts",
+  "tests/e2e/proposals.spec.ts",
+  "tests/e2e/insights.spec.ts",
+  "tests/e2e/settings.spec.ts"
+ ],
+ "groups": [
+  {
+   "name": "home",
+   "src": [
+    "src/features/home/**"
+   ],
+   "unit": [
+    "tests/unit/home/**",
+    "tests/unit/insights-study-total.test.ts"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/and1-install.spec.ts",
+    "tests/e2e/android-install.spec.ts",
+    "tests/e2e/fix-507-deferred-forecast.spec.ts",
+    "tests/e2e/fix-521.spec.ts",
+    "tests/e2e/fix-657d-goal-staging.spec.ts",
+    "tests/e2e/home.spec.ts",
+    "tests/e2e/integration.spec.ts",
+    "tests/e2e/kit.spec.ts",
+    "tests/e2e/live-api-budget.spec.ts",
+    "tests/e2e/look-0.spec.ts",
+    "tests/e2e/look-1b-paper.spec.ts",
+    "tests/e2e/look-3c.spec.ts",
+    "tests/e2e/look-5b-today-duplicates.spec.ts",
+    "tests/e2e/look-5c1-review-forecast.spec.ts",
+    "tests/e2e/look-5c2-quiet-today.spec.ts",
+    "tests/e2e/look-9a.spec.ts",
+    "tests/e2e/metro.spec.ts",
+    "tests/e2e/qa-atlas-handoff.spec.ts",
+    "tests/e2e/qa-euclid-journey.spec.ts",
+    "tests/e2e/qa-v3.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/st7-labels.spec.ts",
+    "tests/e2e/stage-identity.spec.ts",
+    "tests/e2e/tab-bar-euclid.spec.ts",
+    "tests/e2e/ui6a-graph-material.spec.ts"
+   ]
+  },
+  {
+   "name": "projects",
+   "src": [
+    "src/features/projects/**",
+    "src/features/new-project/**"
+   ],
+   "unit": [
+    "tests/unit/projects/**"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/fix-402.spec.ts",
+    "tests/e2e/fix-404.spec.ts",
+    "tests/e2e/fix-507c-paths-atlas.spec.ts",
+    "tests/e2e/fix-517-insights-math.spec.ts",
+    "tests/e2e/fix-527-project-dom.spec.ts",
+    "tests/e2e/fix-546b-live-budget.spec.ts",
+    "tests/e2e/latex.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-1c-typography.spec.ts",
+    "tests/e2e/look-2-letterhead.spec.ts",
+    "tests/e2e/look-3a-mini-route.spec.ts",
+    "tests/e2e/look-5a-paths-status.spec.ts",
+    "tests/e2e/look-9a.spec.ts",
+    "tests/e2e/metro.spec.ts",
+    "tests/e2e/projects.spec.ts",
+    "tests/e2e/qa-v3.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/source-transcription-stats.spec.ts",
+    "tests/e2e/st-1-progress.spec.ts",
+    "tests/e2e/st-4-project-filter-math.spec.ts",
+    "tests/e2e/tab-bar-euclid.spec.ts",
+    "tests/e2e/ui6a-graph-material.spec.ts"
+   ]
+  },
+  {
+   "name": "project",
+   "src": [
+    "src/features/project/**"
+   ],
+   "unit": [
+    "tests/unit/project/**",
+    "tests/unit/timeline/**",
+    "tests/unit/project-stage-math.test.tsx"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/atlas.spec.ts",
+    "tests/e2e/audit-445-unstaged.spec.ts",
+    "tests/e2e/cards.spec.ts",
+    "tests/e2e/fix-404.spec.ts",
+    "tests/e2e/fix-476.spec.ts",
+    "tests/e2e/fix-478.spec.ts",
+    "tests/e2e/fix-492.spec.ts",
+    "tests/e2e/fix-505.spec.ts",
+    "tests/e2e/fix-522.spec.ts",
+    "tests/e2e/fix-536-stage-jumps.spec.ts",
+    "tests/e2e/fix-576-demo-badge.spec.ts",
+    "tests/e2e/fix-600-sources-ink.spec.ts",
+    "tests/e2e/fix-659-sources-lazy.spec.ts",
+    "tests/e2e/fix-659c-stage-lazy.spec.ts",
+    "tests/e2e/fix-659i-checkpoint-defer.spec.ts",
+    "tests/e2e/fix-659j-project-switcher.spec.ts",
+    "tests/e2e/fix-659k-insight-defer.spec.ts",
+    "tests/e2e/fix-659n-project-fast-tex.spec.ts",
+    "tests/e2e/fix-686-stage-paper.spec.ts",
+    "tests/e2e/fix-687-stage-palette.spec.ts",
+    "tests/e2e/home.spec.ts",
+    "tests/e2e/latex.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-1c-typography.spec.ts",
+    "tests/e2e/look-1f-checkpoint.spec.ts",
+    "tests/e2e/look-2-letterhead.spec.ts",
+    "tests/e2e/look-3c.spec.ts",
+    "tests/e2e/look-5a-paths-status.spec.ts",
+    "tests/e2e/look-6-session-actions.spec.ts",
+    "tests/e2e/metro.spec.ts",
+    "tests/e2e/project.spec.ts",
+    "tests/e2e/projects.spec.ts",
+    "tests/e2e/proposals.spec.ts",
+    "tests/e2e/qa-atlas-handoff.spec.ts",
+    "tests/e2e/qa-euclid-journey.spec.ts",
+    "tests/e2e/qa-v3.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/session.spec.ts",
+    "tests/e2e/source-queue.spec.ts",
+    "tests/e2e/source-storage.spec.ts",
+    "tests/e2e/source-transcription-stats.spec.ts",
+    "tests/e2e/st-1-progress.spec.ts",
+    "tests/e2e/st6-lists.spec.ts",
+    "tests/e2e/stage-identity.spec.ts",
+    "tests/e2e/stress-sessions.spec.ts",
+    "tests/e2e/stress-sources.spec.ts",
+    "tests/e2e/ui8-sources.spec.ts",
+    "tests/e2e/look-3b.spec.ts",
+    "tests/e2e/st1-stage-math.spec.ts"
+   ]
+  },
+  {
+   "name": "checkpoint",
+   "src": [
+    "src/features/checkpoint/**"
+   ],
+   "unit": [],
+   "e2e": [
+    "tests/e2e/atlas.spec.ts",
+    "tests/e2e/fix-522.spec.ts",
+    "tests/e2e/home.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-1f-checkpoint.spec.ts",
+    "tests/e2e/look-3c.spec.ts",
+    "tests/e2e/metro.spec.ts",
+    "tests/e2e/project.spec.ts",
+    "tests/e2e/qa-atlas-handoff.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/fix-659i-checkpoint-defer.spec.ts"
+   ]
+  },
+  {
+   "name": "session",
+   "src": [
+    "src/features/session/**"
+   ],
+   "unit": [
+    "tests/unit/session/**"
+   ],
+   "e2e": [
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-6-session-actions.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/session.spec.ts",
+    "tests/e2e/st6-lists.spec.ts",
+    "tests/e2e/stress-sessions.spec.ts"
+   ]
+  },
+  {
+   "name": "proposals",
+   "src": [
+    "src/features/proposals/**",
+    "src/features/plan-proposal/**"
+   ],
+   "unit": [
+    "tests/unit/proposals/**",
+    "tests/unit/plan-proposal/**"
+   ],
+   "e2e": [
+    "tests/e2e/and1-install.spec.ts",
+    "tests/e2e/android-install.spec.ts",
+    "tests/e2e/fix-494.spec.ts",
+    "tests/e2e/fix-505.spec.ts",
+    "tests/e2e/fix-705-plan-code-color.spec.ts",
+    "tests/e2e/home.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-6-session-actions.spec.ts",
+    "tests/e2e/look-8a-project-group.spec.ts",
+    "tests/e2e/look-8b-plan-change-map.spec.ts",
+    "tests/e2e/proposals.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/source-transcription-stats.spec.ts",
+    "tests/e2e/st2-plan-review.spec.ts",
+    "tests/e2e/st6-lists.spec.ts"
+   ]
+  },
+  {
+   "name": "review",
+   "src": [
+    "src/features/review/**",
+    "src/features/review-run/**",
+    "src/features/review-done/**"
+   ],
+   "unit": [
+    "tests/unit/review/**",
+    "tests/unit/review-*.test.ts"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/and1-install.spec.ts",
+    "tests/e2e/android-install.spec.ts",
+    "tests/e2e/cards.spec.ts",
+    "tests/e2e/fix-468.spec.ts",
+    "tests/e2e/fix-469.spec.ts",
+    "tests/e2e/fix-505.spec.ts",
+    "tests/e2e/home.spec.ts",
+    "tests/e2e/integration.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-0.spec.ts",
+    "tests/e2e/look-1d-typography.spec.ts",
+    "tests/e2e/look-2-letterhead.spec.ts",
+    "tests/e2e/look-7a-stress.spec.ts",
+    "tests/e2e/look-7c-card-actions.spec.ts",
+    "tests/e2e/project.spec.ts",
+    "tests/e2e/projects.spec.ts",
+    "tests/e2e/proposals.spec.ts",
+    "tests/e2e/qa-atlas-handoff.spec.ts",
+    "tests/e2e/qa-euclid-journey.spec.ts",
+    "tests/e2e/qa-v3.spec.ts",
+    "tests/e2e/review-new-session.spec.ts",
+    "tests/e2e/review-suspend.spec.ts",
+    "tests/e2e/review.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/session.spec.ts",
+    "tests/e2e/settings.spec.ts",
+    "tests/e2e/tab-bar-euclid.spec.ts",
+    "tests/e2e/ui6a-graph-material.spec.ts"
+   ]
+  },
+  {
+   "name": "cards",
+   "src": [
+    "src/features/cards/**",
+    "src/features/card/**"
+   ],
+   "unit": [
+    "tests/unit/cards/**"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/cards.spec.ts",
+    "tests/e2e/fix-517-insights-math.spec.ts",
+    "tests/e2e/fix-523.spec.ts",
+    "tests/e2e/fix-546b-card-paging.spec.ts",
+    "tests/e2e/fix-546b-live-budget.spec.ts",
+    "tests/e2e/fix-593-cards-ink.spec.ts",
+    "tests/e2e/fix-632-direct-routes.spec.ts",
+    "tests/e2e/fix-648-cards-filters.spec.ts",
+    "tests/e2e/latex.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-5c1-review-forecast.spec.ts",
+    "tests/e2e/look-7b-card-filter-fade.spec.ts",
+    "tests/e2e/look-7c-card-actions.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/st-4-project-filter-math.spec.ts"
+   ]
+  },
+  {
+   "name": "atlas",
+   "src": [
+    "src/features/atlas/**"
+   ],
+   "unit": [
+    "tests/unit/atlas/**"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/and1-install.spec.ts",
+    "tests/e2e/android-install.spec.ts",
+    "tests/e2e/atlas.spec.ts",
+    "tests/e2e/fix-483.spec.ts",
+    "tests/e2e/fix-489.spec.ts",
+    "tests/e2e/fix-505.spec.ts",
+    "tests/e2e/fix-517-insights-math.spec.ts",
+    "tests/e2e/integration.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-2-letterhead.spec.ts",
+    "tests/e2e/look-4a-atlas.spec.ts",
+    "tests/e2e/look-4b-atlas.spec.ts",
+    "tests/e2e/look-4b-row-fade.spec.ts",
+    "tests/e2e/look-4c-atlas.spec.ts",
+    "tests/e2e/qa-atlas-handoff.spec.ts",
+    "tests/e2e/qa-v3.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/st2-stage-visual.spec.ts",
+    "tests/e2e/ui6a-graph-material.spec.ts"
+   ]
+  },
+  {
+   "name": "insights",
+   "src": [
+    "src/features/insights/**"
+   ],
+   "unit": [
+    "tests/unit/charts/**",
+    "tests/unit/features/**",
+    "tests/unit/insights-study-total.test.ts"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/chart-labels.spec.ts",
+    "tests/e2e/fix-460.spec.ts",
+    "tests/e2e/fix-505.spec.ts",
+    "tests/e2e/fix-507-chart-marks.spec.ts",
+    "tests/e2e/fix-517-insights-math.spec.ts",
+    "tests/e2e/fix-579-insights-totals.spec.ts",
+    "tests/e2e/insights.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/live-api-budget.spec.ts",
+    "tests/e2e/look-1e-insights.spec.ts",
+    "tests/e2e/look-2-letterhead.spec.ts",
+    "tests/e2e/qa-v3.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/source-transcription-stats.spec.ts",
+    "tests/e2e/ui6a-graph-material.spec.ts"
+   ]
+  },
+  {
+   "name": "settings",
+   "src": [
+    "src/features/settings/**",
+    "src/features/sign-in/**"
+   ],
+   "unit": [
+    "tests/unit/settings/**"
+   ],
+   "e2e": [
+    "tests/e2e/acceptance-journey.spec.ts",
+    "tests/e2e/fix-489.spec.ts",
+    "tests/e2e/fix-517-insights-math.spec.ts",
+    "tests/e2e/fix-546b-live-budget.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/live-api-budget.spec.ts",
+    "tests/e2e/look-1d-typography.spec.ts",
+    "tests/e2e/look-2-letterhead.spec.ts",
+    "tests/e2e/look-9a.spec.ts",
+    "tests/e2e/look-9b-settings.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/settings.spec.ts",
+    "tests/e2e/source-transcription-stats.spec.ts",
+    "tests/e2e/ui6a-graph-material.spec.ts"
+   ]
+  },
+  {
+   "name": "kit",
+   "src": [
+    "src/features/kit/**"
+   ],
+   "unit": [
+    "tests/unit/ui/**"
+   ],
+   "e2e": [
+    "tests/e2e/chart-labels.spec.ts",
+    "tests/e2e/fix-507-chart-marks.spec.ts",
+    "tests/e2e/fix-632-direct-routes.spec.ts",
+    "tests/e2e/kit.spec.ts",
+    "tests/e2e/layout.spec.ts",
+    "tests/e2e/look-1a.spec.ts",
+    "tests/e2e/look-1b-paper.spec.ts",
+    "tests/e2e/routes.spec.ts",
+    "tests/e2e/st7-toast.spec.ts",
+    "tests/e2e/ui2.spec.ts",
+    "tests/e2e/ui6a-graph-material.spec.ts"
+   ]
+  },
+  {
+   "name": "mcp",
+   "src": [
+    "supabase/functions/mcp/**"
+   ],
+   "unit": [
+    "tests/unit/mcp/**",
+    "tests/unit/mcp4/**"
+   ],
+   "e2e": [],
+   "sql": true
+  },
+  {
+   "name": "notify",
+   "src": [
+    "supabase/functions/notify/**"
+   ],
+   "unit": [
+    "tests/unit/notify/**"
+   ],
+   "e2e": [],
+   "sql": true
+  },
+  {
+   "name": "supabase-shared",
+   "src": [
+    "supabase/functions/_shared/**"
+   ],
+   "unit": [
+    "tests/unit/mcp/**",
+    "tests/unit/mcp4/**",
+    "tests/unit/notify/**"
+   ],
+   "e2e": [],
+   "sql": true
+  },
+  {
+   "name": "database",
+   "src": [
+    "supabase/migrations/**",
+    "supabase/tests/**",
+    "supabase/config.toml",
+    "tests/mcp/**"
+   ],
+   "unit": [
+    "tests/unit/db4/**",
+    "tests/unit/notify/**"
+   ],
+   "e2e": [],
+   "sql": true
+  },
+  {
+   "name": "stress-tooling",
+   "src": [
+    "scripts/stress-*.ts",
+    "scripts/qa3-*.ts",
+    "scripts/qa4-screens.ts",
+    "scripts/review-shots.mjs",
+    "scripts/v4-capture-inventory.json",
+    "scripts/make-*.ts"
+   ],
+   "unit": [
+    "tests/unit/stress/**",
+    "tests/unit/qa4/**",
+    "tests/unit/stress-*.test.ts",
+    "tests/unit/look-0.test.ts"
+   ],
+   "e2e": []
+  },
+  {
+   "name": "mcp-selftest-queue",
+   "src": [
+    "scripts/mcp-selftest-*.mjs"
+   ],
+   "unit": [
+    "tests/unit/agents/**"
+   ],
+   "e2e": []
+  },
+  {
+   "name": "unit-tests-only",
+   "src": [
+    "tests/unit/**"
+   ],
+   "unit": [],
+   "e2e": []
+  },
+  {
+   "name": "e2e-specs-only",
+   "src": [
+    "tests/e2e/**"
+   ],
+   "unit": [],
+   "e2e": []
+  },
+  {
+   "name": "workflow-contracts",
+   "src": [
+    "tests/unit/ci/**"
+   ],
+   "unit": [
+    "tests/unit/ci/**"
+   ],
+   "e2e": []
+  }
+ ],
+ "unmappedE2e": []
+}

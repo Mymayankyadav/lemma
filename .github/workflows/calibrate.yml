@@ -1,0 +1,180 @@
+name: calibrate
+# Manual and nightly. Runs every perf check N times on unchanged main and writes the median, p10-p90 and
+# pass rate per check to ci/perf-calibration.md (through a `ci: perf calibration` PR from Agent: ci; only
+# this job writes that file). Checks below 95% pass rate are marked quarantined. Never changes a budget.
+on:
+  workflow_dispatch:
+    inputs:
+      n:
+        description: Repetitions per check
+        required: false
+        default: '10'
+  schedule:
+    - cron: '37 2 * * *'
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+concurrency:
+  group: calibrate
+  cancel-in-progress: false
+env:
+  N: ${{ inputs.n || '10' }}
+  CALIBRATE_N: ${{ inputs.n || '10' }}
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      specs: ${{ steps.p.outputs.specs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - id: p
+        run: |
+          echo "specs=$(node -p "JSON.stringify(require('./ci/perf-checks.json').e2e.map(e=>({path:e.path,name:e.path.split('/').pop().replace('.spec.ts','')})))")" >> "$GITHUB_OUTPUT"
+
+  measure-e2e:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        spec: ${{ fromJSON(needs.plan.outputs.specs) }}
+    env:
+      CI_JUNIT_DIR: ${{ github.workspace }}/junit
+      CI_JUNIT_NAME: calib-${{ matrix.spec.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Repeat ${{ matrix.spec.path }} N times (first attempts only)
+        run: npm run e2e -- ${{ matrix.spec.path }} --repeat-each=$N --retries=0 --workers=1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: calib-e2e-${{ matrix.spec.name }}
+          path: junit/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  measure-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI_JUNIT_DIR: ${{ github.workspace }}/junit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Repeat the perf unit checks N times
+        run: |
+          files=$(node -p "require('./ci/perf-checks.json').unit.map(e=>e.path).join(' ')")
+          for i in $(seq 1 "$N"); do CI_JUNIT_NAME=calib-$i npx vitest run $files || true; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: calib-unit
+          path: junit/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  measure-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: lemma_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lemma_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NOTIF_TEST_DATABASE_URL: postgres://postgres:test-only@localhost:5432/lemma_test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install pinned isolated PostgreSQL harness
+        shell: bash
+        run: |
+          set -euo pipefail
+          harness="$RUNNER_TEMP/lemma-mcp-sql-harness"
+          mkdir -p "$harness" node_modules/@electric-sql
+          printf '{"name":"lemma-mcp-sql-harness","private":true}\n' > "$harness/package.json"
+          npm install --prefix "$harness" --no-save --no-package-lock --ignore-scripts @electric-sql/pglite@0.5.13 pg@8.16.3
+          ln -s "$harness/node_modules/@electric-sql/pglite" node_modules/@electric-sql/pglite
+          ln -s "$harness/node_modules/pg" node_modules/pg
+      - name: Repeat the perf SQL checks N times
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
+        run: |
+          for i in $(seq 1 "$N"); do
+            for f in $(node -p "require('./ci/perf-checks.json').sql.map(e=>e.path).join(' ')"); do
+              CI_JUNIT_DIR="$GITHUB_WORKSPACE/junit/iter-$i" node "$f" || true
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: calib-sql
+          path: junit/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  publish:
+    needs: [measure-e2e, measure-unit, measure-sql]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: calib-*
+          path: calib
+      - name: Aggregate
+        run: node scripts/ci/calibrate.mjs aggregate calib "$RUNNER_TEMP/perf-calibration.md" "$RUNNER_TEMP/perf-calibration.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: perf-calibration
+          path: |
+            ${{ runner.temp }}/perf-calibration.md
+            ${{ runner.temp }}/perf-calibration.json
+          retention-days: 90
+      - name: Open the calibration PR and land it
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GUARD_BRANCH: main
+        run: node scripts/ci/calibrate.mjs publish "$RUNNER_TEMP/perf-calibration.md"
