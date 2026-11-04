@@ -63,3 +63,5 @@ CI merges. Agents never merge, never update a branch from main for the sake of m
 - Supabase: project yemqnhnztlbyxmjxidis only, with schema changes only through migrations.
 - No new dependencies unless the item says so.
 - If you change what exists or what is broken, update CURRENT.md in the same PR.
+
+selftest protected path edit
