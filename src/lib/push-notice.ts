@@ -25,7 +25,7 @@ export function parsePushNotice(raw:string):PushNotice|null {
   const x=p as Record<string,unknown>;
   const id=x.id;
   const validId=typeof id==='number'?Number.isSafeInteger(id)&&id>0:
-   typeof id==='string'&&/^[1-9]\\d{0,18}$/.test(id)&&BigInt(id)<=maxId;
+   typeof id==='string'&&/^[1-9]\d{0,18}$/.test(id)&&BigInt(id)<=maxId;
   if(x.v!==1||!validId||!kinds.has(x.kind as string)||
    typeof x.tag!=='string'||!/^[A-Za-z0-9_-]{1,32}$/.test(x.tag)||
    typeof x.title!=='string'||!x.title.trim()||x.title.length>1000||
@@ -38,7 +38,7 @@ export function parsePushNotice(raw:string):PushNotice|null {
     !/^[a-z][a-z0-9_-]{0,31}$/.test(action.action)||
     typeof action.title!=='string'||!action.title.trim()||action.title.length>1000||
     (action.url!==undefined&&(typeof action.url!=='string'||!pushDeepLink(action.url)))||
-    (action.token!==undefined&&(typeof action.token!=='string'||action.token.length>4096||!/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(action.token))))return null;
+    (action.token!==undefined&&(typeof action.token!=='string'||action.token.length>4096||!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(action.token))))return null;
   }
   return x as unknown as PushNotice;
  }catch{return null}
