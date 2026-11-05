@@ -7,11 +7,11 @@ import { renderFeedback, upsertFeedback } from './feedback.mjs';
 export const GATE = 'merge-conflict';
 
 /** Pure: comment text for a conflict (files = paths changed by both the PR and the base since the merge base). */
-export function conflictText({ sha, files = [], conflict }) {
+export function conflictText({ sha, files = [], conflict, base = 'main' }) {
   if (!conflict) return renderFeedback({ gate: GATE, sha, ok: true, note: 'No merge conflict with the base branch any more; fast-gate can run.' });
-  const list = files.length ? files.map((f) => `\`${f}\``).join(', ') : '(GitHub did not say which files; compare your branch with main)';
+  const list = files.length ? files.map((f) => `\`${f}\``).join(', ') : `(GitHub did not say which files; compare your branch with ${base})`;
   return renderFeedback({ gate: GATE, sha, ok: false, items: [
-    `This PR conflicts with \`main\` in: ${list}. fast-gate cannot run until this is resolved. To comply: on your branch, rewrite each listed file so it contains both main's and your changes, then push.`,
+    `This PR conflicts with \`${base}\` in: ${list}. fast-gate cannot run until this is resolved. To comply: on your branch, rewrite each listed file so it contains both ${base}'s and your changes, then push.`,
   ] });
 }
 
@@ -42,7 +42,7 @@ export async function checkConflict(number, { pr = null, tries = 3, waitMs = 400
     const prFiles = (await paginate(repoPath(`/pulls/${number}/files`))).map((f) => f.filename);
     let baseFiles = [];
     try { baseFiles = ((await api('GET', repoPath(`/compare/${p.head.sha}...${encodeURIComponent(p.base.ref)}`))).files || []).map((f) => f.filename); } catch { /* list stays empty */ }
-    await upsertFeedback({ pr: number, gate: GATE, text: conflictText({ sha: p.head.sha, files: overlap(prFiles, baseFiles), conflict: true }) });
+    await upsertFeedback({ pr: number, gate: GATE, text: conflictText({ sha: p.head.sha, files: overlap(prFiles, baseFiles), conflict: true, base: p.base.ref }) });
     return state;
   } catch (e) { console.log(`merge-conflict feedback skipped for #${number}: ${e.message}`); return 'unknown'; }
 }

@@ -92,6 +92,7 @@ describe('R3 merge-conflict feedback',()=>{
   expect(t).toContain('`CURRENT.md`, `src/flags.ts`')
   expect(t).toContain('fast-gate cannot run until this is resolved. To comply: on your branch, rewrite each listed file')
   expect(conflictText({sha:'abc',conflict:false})).toContain('merge-conflict: passes')
+  expect(conflictText({sha:'abc',files:['a'],conflict:true,base:'release'})).toContain('conflicts with `release` in: `a`')
  })
 })
 
