@@ -3,7 +3,7 @@
 // through the API, so a PR can never edit the checker that judges it.
 import { readFileSync } from 'node:fs';
 import { appendSummary, api, paginate, repoPath, parseLine1, GhError } from './gh.mjs';
-import { matchesAny, readJson, parseNext, diffNext, patchLines, isTestFile, addsSkipOnly, countExpects, validAgentName, agentKey, NAME_FORMATS, chatParts } from './lib.mjs';
+import { matchesAny, readJson, parseNext, diffNext, needsOf, isNeedsRewrite, patchLines, isTestFile, addsSkipOnly, countExpects, validAgentName, agentKey, NAME_FORMATS, chatParts } from './lib.mjs';
 import { checkSession, lockMessage, loadSessions, saveSessions, touchSession } from './sessions.mjs';
 import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
 import { migrationFindings, existingFunctionNames } from './migrations.mjs';
@@ -182,8 +182,12 @@ export function evaluateScope(ctx) {
     } else if (kind === 'item' && cls.split) {
       const subs = d.added;
       const okSubs = subs.length >= 1 && subs.every((id) => id.startsWith(cls.id + '.') && /Done\s*=/.test(d.head.blocks.get(id)) && /Scope:/.test(d.head.blocks.get(id)) && /Not:/.test(d.head.blocks.get(id)));
-      ok = clean && only(d.removed, [cls.id]) && okSubs;
-      how = `an "N${cls.id} split" PR must remove N${cls.id} from ${NEXT} and add its remaining sub-items N${cls.id}.2, N${cls.id}.3 … each with Done =, Scope: and Not: lines (N${cls.id}.1 is implemented in the same PR and is not listed).`;
+      // v1.6: the only edit allowed to another item is rewriting its `Needs: N<id>` to sub-item(s) of this split,
+      // and no item may be left needing the removed N<id> (it would read as done while its sub-items are open)
+      const rewrites = d.changed.every((id) => isNeedsRewrite(d.base.blocks.get(id), d.head.blocks.get(id), cls.id, subs));
+      const dangling = [...d.head.blocks.keys()].filter((id) => needsOf(d.head.blocks.get(id)).includes(cls.id));
+      ok = !d.otherChanged && rewrites && !dangling.length && only(d.removed, [cls.id]) && okSubs;
+      how = `an "N${cls.id} split" PR must remove N${cls.id} from ${NEXT} and add its remaining sub-items N${cls.id}.2, N${cls.id}.3 … each with Done =, Scope: and Not: lines (N${cls.id}.1 is implemented in the same PR and is not listed). In every other item, the only allowed edit is replacing N${cls.id} in its Needs: line with the sub-item(s) that finish the work (usually the last one)${dangling.length ? `; still needing N${cls.id}: ${dangling.map((id) => 'N' + id).join(', ')}` : ''}.`;
     } else if (kind === 'revert' && isCi) {
       const mine = patchLines(nextFile.patch);
       const tAdded = new Set();

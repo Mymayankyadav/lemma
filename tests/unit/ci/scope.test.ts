@@ -141,6 +141,35 @@ describe('scope check',()=>{
   expect(rules(base({title:'N1 split',headNext:headNext.replace('Scope: s\n',''),files:[file,code,test]}))).toContain('NEXT-MD')
   expect(rules(base({title:'N1 split',headNext:headNext.replace('Done = y','Done = z'),files:[file,code,test]}))).toContain('NEXT-MD')
  })
+ it('N<id> split (v1.6): other items may only have Needs: N<id> rewritten to sub-items, and none may be left needing N<id> (#866)',()=>{
+  const B='# NEXT\n\n## N1 Fix\nStage: Build · Status: open · Needs: — · Assigned: —\nDone = x\nScope: a\nNot: b\n\n## N2 Other\nStage: Build · Status: open · Needs: N9, N1 · Assigned: —\nDone = y\n\n(More items are added by the priority run.)\n'
+  const sub=(id:string,needs='—')=>`## N${id} part\nStage: Build · Status: open · Needs: ${needs} · Assigned: —\nDone = a\nScope: s\nNot: n\n\n`
+  const split=(n2:string)=>B.replace(/## N1[\s\S]*?\n\n## N2/,sub('1.2')+sub('1.3','N1.2')+'## N2').replace('Needs: N9, N1 ·',`Needs: ${n2} ·`)
+  const file={filename:'NEXT.md',status:'modified',patch:'@@\n-x'}
+  const code={filename:'src/a.ts',status:'modified',patch:'@@\n+x'}
+  const test={filename:'tests/unit/a.test.ts',status:'added',patch:'@@\n+it("x",()=>{})'}
+  const run=(headNext:string)=>evaluateScope(base({title:'N1 split',baseNext:B,headNext,files:[file,code,test]}))
+  const r=(h:string)=>run(h).failures.map((f:any)=>f.rule)
+  // the reviewer-requested repair passes: N1 -> N1.3, other ids kept
+  expect(r(split('N9, N1.3'))).toEqual([])
+  expect(r(split('N1.3, N9'))).toEqual([])
+  expect(r(split('N9, N1.2, N1.3'))).toEqual([])
+  // leaving N2 needing the removed N1 fails, and the message names it
+  const left=run(split('N9, N1'))
+  expect(left.failures.map((f:any)=>f.rule)).toEqual(['NEXT-MD'])
+  expect(left.failures[0].msg).toContain('still needing N1: N2')
+  // anything else in another item still fails
+  expect(r(split('N1.3'))).toContain('NEXT-MD')                 // dropped N9
+  expect(r(split('N9, N1.3, N4'))).toContain('NEXT-MD')         // added an unrelated id
+  expect(r(split('N9, N7.2'))).toContain('NEXT-MD')             // not a sub-item of this split
+  expect(r(split('N9, N1.3').replace('Done = y','Done = z'))).toContain('NEXT-MD')
+  expect(r(split('N9, N1.3').replace('Needs: N9, N1.3 · Assigned: —','Needs: N9, N1.3 · Assigned: lemma-1'))).toContain('NEXT-MD')
+  // an item that never needed N1 may not be edited at all
+  const B2=B.replace('Needs: N9, N1 ·','Needs: N9 ·')
+  expect(evaluateScope(base({title:'N1 split',baseNext:B2,headNext:split('N9, N1.3'),files:[file,code,test]})).failures.map((f:any)=>f.rule)).toContain('NEXT-MD')
+  // a non-split item PR still may not touch other items' Needs
+  expect(rules(base({baseNext:B,headNext:B.replace(/## N1[\s\S]*?\n\n## N2/,'## N2').replace('Needs: N9, N1 ·','Needs: N9 ·'),files:[file]}))).toContain('NEXT-MD')
+ })
  it('revert PRs from Agent: ci: Reverted: lines and restored items only; files limited to the reverted PR',()=>{
   const ciBody='Agent: ci · Item: revert · Lease until 2026-11-04T09:30:00Z'
   const targets={5:{files:['src/a.ts','NEXT.md'],nextPatch:'@@\n-## N1 Fix deployment\n-Done = x'}}

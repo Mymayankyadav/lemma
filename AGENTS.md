@@ -1,4 +1,4 @@
-# Lemma agent rules — version 1.5 (2026-11-05)
+# Lemma agent rules — version 1.6 (2026-11-05)
 
 Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rules version in force when it merges.
 
@@ -13,7 +13,7 @@ After reading CURRENT.md and NEXT.md, post one comment on your closed issue `run
 1. An open S0 incident with no claimant: claim it and fix it. If it is already claimed, do not touch it. While an S0 is open CI merges nothing, except the claimant's `incident #<n>` PR (see Incidents).
 2. Your own open PR with a failing check, a `merge-conflict: FAILED` comment, or the changes-requested label: fix it. Read the CI comment on the PR first: it names the exact failing rule, check or conflicting files and how to comply. A conflicted PR gets no fast-gate run at all until the conflict is resolved.
 3. Review one PR labelled needs-review that you did not author (see Review and merge). Review only PRs with that label.
-4. Continue your own unfinished PR toward its Done. When you believe Done is met, comment exactly `Ready · Agent: <name>`.
+4. Continue your own unfinished PR toward its Done. When you believe Done is met, push and comment exactly `Ready · Agent: <name>` in the same run. Do not wait for checks (see Review and merge).
 5. An open S1 incident with no claimant.
 6. An issue labelled bug + confirmed with no open PR, if no other bug PR is open.
 7. The top NEXT.md item with Status open, all Needs done, and Assigned empty or your name, only if you have no open PR.
@@ -32,7 +32,7 @@ After finishing a step, continue to the next applicable step in the same run. Ne
 - CI opens its own PRs as `Agent: ci` (`revert #<pr>` and `ci: perf calibration`). Do not edit or close them.
 
 ## Too big or stuck
-- There is no "infeasible". If an item is too large, open a PR titled `N<id> split` that replaces it in NEXT.md with sub-items N<id>.1, N<id>.2, …, each with its own Done/Scope/Not, and that also implements sub-item N<id>.1 (code plus its test) in the same PR; list only the remaining sub-items N<id>.2, N<id>.3, … in NEXT.md. `scope` fails a split PR that changes only NEXT.md. Each sub-item must change code and add a test.
+- There is no "infeasible". If an item is too large, open a PR titled `N<id> split` that replaces it in NEXT.md with sub-items N<id>.1, N<id>.2, …, each with its own Done/Scope/Not, and that also implements sub-item N<id>.1 (code plus its test) in the same PR; list only the remaining sub-items N<id>.2, N<id>.3, … in NEXT.md. In every other item whose Needs lists N<id>, replace N<id> with the sub-item(s) that finish the work (usually the last one); that is the only edit to other items `scope` allows, and it fails a split that leaves any item needing N<id>. `scope` fails a split PR that changes only NEXT.md. Each sub-item must change code and add a test.
 - If a run ends without progress on an item, comment `No progress: · Agent: <name> · <one line on what you tried>`. CI adds the label escalate after 3 such comments from at least 2 different `Agent:` names. Escalated items go to the priority run; skip them until then.
 
 ## Stages (set by the priority run, never by agents)
@@ -55,7 +55,7 @@ CI creates incidents and names them by failure signature. Before acting on any f
 
 ## Review and merge
 CI merges. Agents never merge, never update a branch from main for the sake of merging, and never remove labels.
-- Ready: when you believe your PR's Done is met, comment exactly `Ready · Agent: <your name>`. CI adds the label needs-review when that comment is newer than your last push and fast-gate and scope pass. Any new push removes needs-review: post Ready again. Reviewers review only PRs labelled needs-review.
+- Ready: when you believe your PR's Done is met, comment exactly `Ready · Agent: <your name>` right after your last push, in the same run. Do not wait for checks, and "checks still running" is never a reason to hold Ready back or to end a run: CI re-evaluates when fast-gate and scope finish and adds the label needs-review when that comment is newer than your last push and both pass. If one fails, CI comments the failure on the PR, and fixing it is step 2 of your next run (fix, push, Ready again). Any new push removes needs-review: post Ready again. Reviewers review only PRs labelled needs-review.
 - The reviewer reads the whole diff. It checks that the scope matches the item, the tests are meaningful, and the PR complies with the current rules version.
 - To pass: comment exactly `Approve · Agent: <your name>` (nothing else in the comment).
 - To fail: comment exactly `Changes requested · Agent: <your name>: <what to change>`. CI adds the label changes-requested; the author's next push removes it, and the PR then needs a fresh Ready and a fresh approval.
