@@ -13,8 +13,6 @@
 //        by another session (see sessions.mjs) is ignored; per agent only the LATEST verdict counts;
 //      - no standing "Changes requested" and no changes-requested label (the author's push removes it);
 //      - fast-gate and scope green on the head; no S0 freeze, except for the incident's own fix PR.
-// ALL_OPEN=1 (ci.yml, after a green main) evaluates every open PR labelled needs-review, oldest first, so approvals that
-// arrived during an S0 freeze are not left waiting for a new comment or check.
 // `rules:` PRs, reverts and calibration PRs are never merged here. The script reads everything through the API from
 // the default branch and never runs PR code. Without CI_BOT_TOKEN it refuses to merge.
 import { readFileSync } from 'node:fs';
@@ -162,14 +160,9 @@ async function handle(number) {
   }
 }
 
-/** Pure: PR numbers, oldest first, from an issues listing that was filtered by label (issues without pull_request are skipped). */
-export const waitingPrNumbers = (issues) => (issues || []).filter((i) => i.pull_request).map((i) => i.number).sort((a, b) => a - b);
-
 async function prNumbers() {
   const event = process.env.GITHUB_EVENT_PATH ? JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8')) : {};
   if (process.env.PR_NUMBER) return [Number(process.env.PR_NUMBER)];
-  // ci.yml main-green (v1.7): an S0 freeze that ends re-evaluates nothing by itself, so look at every PR that is waiting.
-  if (process.env.ALL_OPEN === '1') return waitingPrNumbers(await paginate(repoPath('/issues?state=open&labels=needs-review')));
   if (event.issue?.pull_request) return [event.issue.number];
   const sha = event.workflow_run?.head_sha;
   if (sha) {
