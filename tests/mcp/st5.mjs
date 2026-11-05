@@ -43,6 +43,7 @@ try {
   await db.exec('alter table public.'+name+' enable row level security; create policy owner_read on public.'+name+' for select to authenticated using(user_id=(select auth.uid()));')
  }
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031012600_st5_paged_reads.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261105153000_fix_review_items_prequota.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261102104500_notification_review_items.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031142000_fix_524_deleted_cards_page.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031124500_home_review_outlook.sql',import.meta.url),'utf8'))
@@ -133,7 +134,7 @@ try {
  assert.deepEqual(deck[0].children.map(x=>x.due),[1])
  console.log('PASS ST-5 deck hierarchy, daily due counts and unassigned notes')
  // Review must fetch only the selected daily queue, not the 30,000-card
- // library or historical review rows. Filters apply after daily quotas.
+ // library or historical review rows. Filters apply before daily quotas.
  const review=async(args)=>q('select public.review_items('+args+') item')
  const queue=(await review("array[]::text[],null,null,true,false")).map(x=>x.item)
  assert.deepEqual(queue.map(x=>x.noteNo),[12,13])
@@ -458,6 +459,33 @@ try {
  assert.deepEqual(await oneShot(5,"array['project:notif-b']"),[],
   'other owner cannot select project B by its public slug')
  await db.exec("select set_config('test.uid','"+owner+"',false)")
+ // BUG #843: the ordinary daily quota must be applied AFTER all filters.
+ // Project A has >50 earlier due cards; project B still has five matching
+ // mature cards and five fresh cards. A three-card daily cap must choose
+ // three matching B cards, not spend the cap on filtered-out A cards.
+ const dailyB=(await review("array['project:notif-b'],null,null,false,false")).map(x=>x.item)
+ assert.deepEqual(dailyB.map(x=>x.cardId),filteredB.slice(0,3).map(x=>x.cardId),
+  'BUG #843: a deck gets three matching reviews even when earlier cards fill the global quota')
+ const dailyCp=(await review("array['cp:notif-b:CP1'],null,null,false,false")).map(x=>x.item)
+ assert.deepEqual(dailyCp.map(x=>x.cardId),dailyB.map(x=>x.cardId),
+  'BUG #843: checkpoint filtering happens before the daily cap')
+ const dailySession=(await review("array[]::text[],'"+sessionB+"',null,false,false")).map(x=>x.item)
+ assert.deepEqual(dailySession.map(x=>x.cardId),dailyB.map(x=>x.cardId),
+  'BUG #843: session filtering happens before the daily cap')
+ const dailyConcept=(await review("array[]::text[],null,'notif-topic',false,false")).map(x=>x.item)
+ assert.deepEqual(dailyConcept.map(x=>x.cardId),dailyB.map(x=>x.cardId),
+  'BUG #843: concept filtering happens before the daily cap')
+ const freshB=(await review("array['project:notif-b'],null,null,true,true")).map(x=>x.item)
+ assert.equal(freshB.length,3,'BUG #843: new-only chooses matching new cards before the cap')
+ assert.ok(freshB.every(x=>x.projectSlug==='notif-b' && x.state.state===0))
+ assert.deepEqual((await review("array['project:notif-b'],null,null,false,false")).map(x=>x.item.cardId),
+  dailyB.map(x=>x.cardId),'BUG #843: exclude-new does not consume quota with new cards')
+ await db.exec("select set_config('test.uid','"+other+"',false)")
+ assert.deepEqual((await review("array['project:notif-b'],null,null,true,false")).map(x=>x.item),[],
+  'BUG #843: pre-quota filters cannot leak another owner\'s deck')
+ await db.exec("select set_config('test.uid','"+owner+"',false)")
+ console.log('PASS BUG #843 ordinary Review filters before daily quotas and owner isolation')
+ 
  console.log('PASS NOTIF-7a audit multi-project deck/checkpoint/session/concept/new-only filters before N, owner isolation')
 
  console.log('PASS NOTIF-7a one-shot 5 vs daily 3, owner isolation, stable prefix, SQL 50 cap and unchanged settings')
