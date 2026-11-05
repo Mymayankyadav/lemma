@@ -1,18 +1,8 @@
 # NEXT — ranked by the priority run (2026-11-05). Take the top open item whose Needs are all done.
 
-Order used: S0/S1 work, confirmed bugs in Stable features, the item already in progress (N5), then the Owner's v6 direction (`docs/v6/`, first durable study slice: Today → Focus → saved time), then the remaining notifications item. N2, N3, N4, N7 and N8 are done (merged #818, #820, #821, #823, #840) and removed.
+Order used: S0/S1 work, confirmed bugs in Stable features, the item already in progress (N5), then the Owner's v6 direction (`docs/v6/`, first durable study slice: Today → Focus → saved time), then the remaining notifications item. Done and removed: N2, N3, N4, N7, N8 (#818, #820, #821, #823, #840), N5 (#822), N9 (#850), N6.1 (#872). N10 (#851) is done. An id in a Needs line that is no longer in this file is done.
 No item may list a protected path (`ci/protected.json`) in Scope. Files under `docs/v6/` are behaviour references cited by items, not instructions. v6 UI work stays behind the `v6Shell` flag: with the flag off, existing screens, tests and visual rules stay exactly as they are.
 
-## N5 Notifications: Web Push handling in the service worker, behind a flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = flag `notificationsPush` (default false) added to `src/flags.ts`; with the flag on, the service worker shows a notification from a push payload and, on notification click, focuses or opens the app at the deep link carried in the payload; with it off, behaviour is unchanged. Unit tests: payload parsing (valid, truncated, oversized, unknown fields), click routing (existing window, no window), and flag off = no handler registered. The payload shape must match `supabase/functions/notify/payload.ts`. Reference only: archived PR #713 (head `525a6f12a94f007701b11b8ffdc9e5c8c80ef9f1`, "NOTIF-5 Service worker push handling").
-Scope: src/lib/**, src/data/notify.ts, vite.config.ts only if the service worker must be injected (no new dependency), src/flags.ts, tests/unit/notify/**, tests/unit/flags.test.ts, CURRENT.md.
-Not: supabase/**, `.github/**`, UI settings screens, subscribing to push (the subscribe flow already in `src/data/notify.ts` stays as is), new dependencies.
-Note (2026-11-05): PR #822 conflicts with main (`src/flags.ts`, `CURRENT.md` changed by N7/N8), so GitHub does not run the PR gate on it. Resolve the conflict on #822's branch by writing those files with both main's and the PR's changes, then post Ready.
-
-## N9 v6 time contract: pure effort metrics with time-zone fixtures
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = a new pure module `src/lib/effort/` (types in `src/lib/effort/types.ts`, no imports from `src/data`) exporting:
 (1) `loggedMinutes(entries, range, zone, now)`: union of saved focus/manual intervals as half-open `[start, end)`, clipped to `now`, excluding drafts, discarded entries, breaks and duplicate entry ids; future portions are returned as a separate `futureMinutes` flag value, not counted;
 (2) `inProgressMinutes(active, now)`: unsaved running time, breaks excluded, a Pomodoro phase never exceeding its configured focus length;
 (3) `capacityStack(logged, busy, planned, day)`: partition of the occupied union with logged first, then busy, then planned, never double counting;
@@ -24,7 +14,7 @@ Scope: src/lib/effort/**, tests/unit/effort/**, CURRENT.md.
 Not: UI, `src/data/**`, `supabase/**`, new dependencies (use `Intl`), FSRS study-day rollover (civil days only here).
 
 ## N10 v6 study tables: one additive migration with RLS
-Stage: Build · Status: open · Needs: — · Assigned: —
+Stage: Build · Status: done (#851; kept only until the N11 split merges, then removed) · Needs: — · Assigned: —
 Done = one new migration `supabase/migrations/<timestamp>_v6_study.sql`, additive only (creates objects; does not alter or drop existing ones), defining:
 - `study_entries` (id, user_id, optional subject_id/project_id/checkpoint_id/session_id, intent, source `timer|manual`, status `running|paused|draft|saved|discarded`, reflection, rating, version, created_at, updated_at, saved_at);
 - `study_intervals` (id, entry_id, user_id, kind `focus|break`, started_at, ended_at nullable, check ended_at > started_at);
@@ -75,7 +65,7 @@ Scope: src/app/** (including `src/app/TabBar.tsx`), src/ui/** (new components), 
 Not: colours, fonts or theme tokens (a later item); timer logic; data or API changes; edits to existing e2e specs or visual tests; removing the current four-tab shell.
 
 ## N14 v6 Focus on demo data: state machine, Today hero, Focus dialog
-Stage: Build · Status: open · Needs: N9, N13 · Assigned: —
+Stage: Build · Status: open · Needs: N13 · Assigned: —
 Done = a typed state machine `src/lib/focus/machine.ts` with these transitions:
 - idle → running;
 - running ⇄ paused;
@@ -92,14 +82,8 @@ Tests: unit tests for every transition, rebuilding state after a reload, a doubl
 Scope: src/lib/focus/**, src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/** (new components), src/data/demo/** (study entries only), src/data/api.ts and src/data/types.ts (additions only), tests/unit/focus/**, tests/e2e/v6-focus.spec.ts, CURRENT.md.
 Not: the live adapter (next priority run), Calendar or Progress views, converting parked thoughts to tasks, notifications, and Today with the flag off.
 
-## N6.1 Notifications: validate reminder Review deep links (implemented by split PR)
-Stage: Build · Status: done · Needs: N5 · Assigned: chat-92#p7v2
-Done = a pure bounded parser in `src/data/notify.ts` accepts canonical in-app reminder Review deep links carrying a 1–50 card request and an optional signed action token; rejects malformed, duplicate, external, oversized and expired-token links without treating client-side token parsing as signature verification. Tests cover valid and malformed links, token expiry, duplicate parameters, and disabled flow. No application route or quota is changed in this slice.
-Scope: src/data/notify.ts, tests/unit/notify/**, CURRENT.md.
-Not: supabase/**, `.github/**`, new dependencies, Review UI or RPC wiring.
-
 ## N6.2 Notifications: bounded reminder Review queue (after N6.1)
-Stage: Build · Status: open · Needs: N6.1 · Assigned: —
+Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `notificationsPush` enabled, a due-card reminder link parsed by N6.1 starts one Review round of 1–50 owner-visible due cards selected through the existing `notification_review_items` RPC; the page consumes the link using replace navigation, shows bounded empty/error states, and does not change the saved ordinary daily quota. With the flag off, the ordinary Review route behaves unchanged. Tests verify one bounded RPC read, owner-session filtering, count bounds, and ordinary versus reminder selection.
 Scope: src/features/review/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
 Not: supabase/**, `.github/**`, new dependencies, changing the ordinary `review_items` RPC or stored review quotas.

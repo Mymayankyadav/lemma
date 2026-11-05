@@ -167,6 +167,15 @@ export function evaluateScope(ctx) {
     }
   }
 
+  // R6a v1.7: an item PR removes its own item from NEXT.md, so the item leaves main exactly when CI merges the PR.
+  // (Before v1.7 merged items stayed listed as open, and agents could pick done work again.) Owner-task PRs that add
+  // their item and splits (handled below) are exempt.
+  if (kind === 'item' && !cls.split && !ownerTask) {
+    const stillListed = parseNext(ctx.baseNext).blocks.has(cls.id) && parseNext(ctx.headNext).blocks.has(cls.id);
+    if (stillListed) failures.push(fail('NEXT-MD-DONE', `N${cls.id} is still listed in ${NEXT}.`,
+      `delete the whole "## N${cls.id} …" block from ${NEXT} in this PR (from your first push is fine): the item is done when CI merges the PR, and an open PR is already the claim.`));
+  }
+
   // R6 NEXT.md
   const nextFile = files.find((f) => f.filename === NEXT);
   if (nextFile && kind !== 'rules' && kind !== 'calibration') {

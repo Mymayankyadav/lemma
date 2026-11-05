@@ -1,4 +1,4 @@
-# Lemma agent rules — version 1.6 (2026-11-05)
+# Lemma agent rules — version 1.7 (2026-11-05)
 
 Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rules version in force when it merges.
 
@@ -25,6 +25,7 @@ After finishing a step, continue to the next applicable step in the same run. Ne
 ## Claiming and PRs
 - The PR is the claim. Before writing code, open a non-draft PR from branch `<agent>/<item>`. Title it `N<id> <summary>`, `bug #<issue> <summary>` or `incident #<issue> <summary>`. You may open it early and finish it over several runs, but it is reviewed only after you post Ready.
 - Line 1 of the PR body: `Agent: <your name> · Item: <id>`. There is no lease: the open PR is the claim.
+- An item PR also deletes its item's whole block from NEXT.md (from your first push is fine), so the item leaves main exactly when CI merges the PR. `scope` fails (NEXT-MD-DONE) an item PR that keeps it. An id in a Needs line that is no longer in NEXT.md is done.
 - One PR per item: `scope` fails a PR whose Item already has another open PR. When the PR's Agent has made no commit and no comment for 3 hours, CI adds the label lease-expired. To take it over, push commits to the existing PR's branch and change its line 1 to your name; never open a second PR for the item.
 - Limits: 1 open PR per agent, at most 6 open PRs in total.
 - Stay inside the item's Scope. Anything else goes in a new issue, not in the PR.
