@@ -105,15 +105,17 @@ describe('Cards page states (demo adapter)',()=>{
   const expectedNos=new Set(expected.rows.map(row=>row.noteNo));
   expect(initial.rows.some(row=>!expectedNos.has(row.noteNo))).toBe(true);
   expect(expected.rows.every(row=>row.projectSlug===project!.slug)).toBe(true);
-  // React Query resolves the new filter key asynchronously after the select
-  // events; wait for the filtered result instead of reading the pending paint.
-  for(let attempt=0;attempt<20 && rows().length!==expected.rows.length;attempt++){
+  // The page virtualizes the list: only a viewport-sized prefix is mounted,
+  // even when the filtered query has more matching cards.
+  const loadedLabel=expected.rows.length.toLocaleString()+' loaded';
+  for(let attempt=0;attempt<50 && !container.textContent?.includes(loadedLabel);attempt++){
    await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10))});
   }
-  expect(rows()).toHaveLength(expected.rows.length);
+  expect(container.textContent).toContain(loadedLabel);
   const renderedIds=rows().map(row=>row.getAttribute('href'));
   const expectedIds=expected.rows.map(row=>'/cards/'+row.noteNo);
-  expect(renderedIds).toEqual(expectedIds);
-  expect(container.textContent).toContain(expected.rows.length.toLocaleString()+' loaded');
+  expect(renderedIds.length).toBeGreaterThan(0);
+  expect(renderedIds.length).toBeLessThanOrEqual(expectedIds.length);
+  expect(renderedIds).toEqual(expectedIds.slice(0,renderedIds.length));
  });
 });
