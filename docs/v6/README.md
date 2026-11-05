@@ -16,3 +16,10 @@ Added by the priority run on 2026-11-05 from the Owner's "Lemma Mobile UI v6 Rev
 | `prototype/effort-metrics.js`, `prototype/notebook-runtime.js` | Prototype logic for the time metrics and the browser store. They are references for behaviour and test cases only. |
 
 Precedence when they disagree: a test on main, then NEXT.md item text, then CURRENT.md, then this folder.
+
+## Owner decisions (2026-11-05)
+
+- **D1 Production deploys.** Agent items that add database objects or MCP tools (N10–N12 and later) may deploy to production on merge, provided they pass the additive-only migration guard in AGENTS.md "Safety".
+- **D2 Release gates.** Full app/MCP parity (contract gates G1–G7) is required for the **new** v6 study resources before each is turned on. Parity for the existing columns listed in `Lemma_v6_Capability_Registry.json` is a separate later track and does **not** block v6.
+- **D3 Chat as approval.** An explicit instruction in chat authorizes the same change as the app would, only for changes that can be undone, or that are shown as a preview and confirmed first. Anything that cannot be undone needs a preview.
+- **D4 Sync.** Start with refresh-based sync: the app re-reads changed records on focus, on visibility change, or after its own writes. No live push or Realtime subscription yet.

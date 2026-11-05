@@ -32,7 +32,7 @@ Done = one new migration `supabase/migrations/<timestamp>_v6_study.sql`, additiv
 - `command_receipts` (user_id, operation_id unique per user, resource, result jsonb, created_at).
 RLS on all four with owner policies in the style of existing tables. Every optional link must belong to the same owner (enforce with constraint or trigger). A partial unique index allows at most one `running|paused` entry per owner. Indexes on (user_id, started_at) and (user_id, starts_at).
 Test `tests/mcp/sql/study-schema.mjs` (PGlite, same pattern as `tests/mcp/db5.mjs`, applying all migrations): owner CRUD works; a second owner can neither read the rows nor link to the first owner's subject; a second active entry is rejected; an interval ending before it starts is rejected. The test must run in the PR gate's `sql` job: if `tests/mcp/sql/` is not yet run there, comment `No progress:` and wait (Owner CI change pending). `src/data/live/database.types.ts` gains the four tables. CURRENT.md data model is updated.
-Merging deploys this migration to production (the tables stay unused while `v6Shell` is off). The reviewer must confirm the file is additive only.
+Owner-authorized 2026-11-05 (decision D1): merging deploys this migration to production (the tables stay unused while `v6Shell` is off). It must pass the additive-only migration guard, and the reviewer confirms that.
 Scope: supabase/migrations/<the new file only>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
 Not: any change to existing tables, functions or policies; app code; MCP code; edge functions; importing tutor-session minutes as focus time.
 
@@ -48,7 +48,7 @@ Done = a new migration adding `public.study_command(p jsonb) returns jsonb` (sec
 
 The receipt shape is `{operationId, status, changed: [{id, version}], actionNo, conflict?}`.
 Test `tests/mcp/sql/study-command.mjs` (PGlite): one or more cases per rule, plus a retry after a lost acknowledgement, two saves of the same entry giving one saved entry, a cross-owner target rejected, and undo restoring a deleted block.
-Merging deploys to production; the reviewer confirms that existing functions are untouched.
+Owner-authorized 2026-11-05 (D1): merging deploys to production. It must pass the additive-only migration guard; the reviewer confirms that existing functions are untouched.
 Scope: supabase/migrations/<the new file only>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
 Not: MCP, app UI, a change feed, existing functions.
 
@@ -56,7 +56,7 @@ Not: MCP, app UI, a change feed, existing functions.
 Stage: Build · Status: open · Needs: N11 · Assigned: —
 Done = the connector reads study records through existing `get`/`search` (resources `study_entries`, `calendar_blocks`; bounded pages with a cursor; totals reported separately from the page) and gains ONE new tool `study` that forwards a command envelope to `public.study_command` and returns its receipt. The owner comes from the authenticated connection, never from arguments. Existing tools and the `resume` packet are unchanged. `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
 Tests: unit tests in `tests/unit/mcp/` (argument validation, owner not taken from arguments, receipt passed through unchanged) and `tests/mcp/sql/study-mcp.mjs`, where an entry created through the `study` tool is read back by `get` with the same version, and an app-side `study_command` change is seen by the next `get`.
-Merging deploys the MCP function; the reviewer confirms that no existing tool's input or output changed.
+Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production. The reviewer confirms that no existing tool's input or output changed. Per D3, the `study` tool acts on explicit instructions in chat only for changes that can be undone (every write returns an `actionNo` for `undo`).
 Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.md (MCP tools list).
 Not: changes to existing tool behaviour, the `resume` packet, the `notify` function, migrations.
 
