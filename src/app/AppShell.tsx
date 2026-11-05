@@ -1,6 +1,8 @@
 import {useOutlet,useLocation,useNavigationType} from 'react-router';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
+import V6Header from './V6Header';
+import FocusAccessorySlot from './FocusAccessorySlot';
 import {isFlagOn} from '../flags';
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
@@ -11,11 +13,13 @@ export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
  const v6=isFlagOn('v6Shell');
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas';
+ const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  {fullBleed&&<DemoChip floating/>}
- <main id="main-content" className={fullBleed?'relative min-h-dvh w-full overflow-hidden':'relative mx-auto min-h-dvh max-w-[528px] px-6 pt-[calc(max(env(safe-area-inset-top),12px)+16px)] '+(showTabs?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+24px)]':'pb-6')}>
+ <main id="main-content" className={fullBleed?'relative min-h-dvh w-full overflow-hidden':'relative mx-auto min-h-dvh max-w-[528px] px-6 pt-[calc(max(env(safe-area-inset-top),12px)+16px)] '+(inboxActions?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+112px)]':showTabs?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+24px)]':'pb-6')}>
  {!fullBleed&&<DemoChip/>}
+ {v6&&location.pathname!=='/sign-in'&&<V6Header pathname={location.pathname}/>}
  {!fullBleed&&<GraphSketch path={location.pathname}/>}
  {fullBleed||reduce?<div key={location.pathname}>{outlet}</div>:<AnimatePresence key={fullBleed?'atlas':'standard'} mode="wait" initial={false}>
  <motion.div key={location.pathname} initial={fullBleed?false:reduce?{opacity:0}:tab?{opacity:0,y:8}:{opacity:0,x:back?-30:'24%'}}
@@ -25,5 +29,6 @@ export default function AppShell(){
  {outlet}
  </motion.div>
  </AnimatePresence>}</main>
+ {v6&&showTabs&&<FocusAccessorySlot/>}
  {showTabs&&<TabBar/>}</>;
 }
