@@ -4,6 +4,8 @@ import {describe,expect,it} from 'vitest'
 import {waitingPrNumbers} from '../../../scripts/ci/approve.mjs'
 // @ts-expect-error plain ESM script
 import {botTokenViolations} from '../../../scripts/ci/lib.mjs'
+// @ts-expect-error plain ESM script
+import {keepMainMarker} from '../../../scripts/ci/incident.mjs'
 
 const ci=readFileSync('.github/workflows/ci.yml','utf8')
 const job=(name:string)=>{
@@ -35,18 +37,19 @@ describe('v1.7: approved PRs are not left waiting after an S0 freeze',()=>{
  })
 })
 
-describe('v1.7: an e2e-only red main is re-run once on fresh runners before any incident or revert',()=>{
+describe('v1.7: a red main is re-run once on fresh runners before any incident or revert',()=>{
  const y=job('revert')
  const step=(name:string)=>{const i=y.indexOf('- name: '+name);if(i<0)throw Error('no step '+name);const n=y.indexOf('\n      - ',i+1);return y.slice(i,n<0?undefined:n)}
  it('ci.yml accepts the recheck input',()=>{
   expect(ci).toMatch(/workflow_dispatch:\n    inputs:\n      recheck:/)
  })
- it('the recheck step is first, only for e2e-only failures, never for a recheck run',()=>{
-  const r=step('Re-run once on fresh runners before declaring main red (e2e-only failure)')
+ it('the recheck step is first, for any failing job (check included), never for a recheck run',()=>{
+  const r=step('Re-run once on fresh runners before declaring main red')
   expect(y.indexOf(r)).toBeLessThan(y.indexOf('uses: actions/checkout@v4'))
   expect(r).toContain("inputs.recheck != 'true'")
-  expect(r).toContain("needs.check.result != 'failure'")
-  expect(r).toContain("needs.mcp-sql.result != 'failure'")
+  expect(r).not.toContain('needs.check.result')
+  expect(r).not.toContain('needs.mcp-sql.result')
+  expect(r).not.toContain('needs.e2e.result')
   expect(r).toContain('github.ref_name == github.event.repository.default_branch')
   expect(r).toContain('gh workflow run ci.yml --ref "$GITHUB_REF_NAME" -f recheck=true')
  })
@@ -59,5 +62,18 @@ describe('v1.7: an e2e-only red main is re-run once on fresh runners before any 
  it('the job still has the permission to start the re-run, and the selftest branch reverts at once',()=>{
   expect(y).toContain('actions: write')
   expect(job('revert')).toContain("github.ref_name == 'selftest/main'")
+ })
+})
+
+describe('v1.7: a PR report of a main signature keeps the incident closable by main-green (#877)',()=>{
+ const TAG='<!-- main-incident -->'
+ it('keeps the main-incident tag when the existing body has it and the rewrite carries none',()=>{
+  expect(keepMainMarker(`<!-- sig:abc -->\n${TAG}\n**Signature:**`,'')).toBe(TAG+'\n')
+  expect(keepMainMarker(`<!-- sig:abc -->\n${TAG}\n`,'**All failing signatures (2):**\n- a\n\n')).toBe(TAG+'\n**All failing signatures (2):**\n- a\n\n')
+ })
+ it('does not duplicate the tag, and adds none to a PR-only incident',()=>{
+  expect(keepMainMarker('x',TAG+'\nrest')).toBe(TAG+'\nrest')
+  expect(keepMainMarker('<!-- sig:abc -->\n**Signature:**','')).toBe('')
+  expect(keepMainMarker(undefined,'')).toBe('')
  })
 })

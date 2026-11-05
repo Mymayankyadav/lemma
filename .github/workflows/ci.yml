@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       recheck:
-        description: 'Set by CI: the one automatic re-run of a red main (an e2e-only failure) on fresh runners'
+        description: 'Set by CI: the one automatic re-run of a red main on fresh runners'
         required: false
         default: 'false'
 permissions:
@@ -246,14 +246,15 @@ jobs:
       CI_BOT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
       FAILED_JOBS: ${{ needs.check.result == 'failure' && 'check ' || '' }}${{ needs.e2e.result == 'failure' && 'e2e ' || '' }}${{ needs.mcp-sql.result == 'failure' && 'mcp-sql' || '' }}
     steps:
-      # v1.7: a browser or runner glitch (for example "Unable to capture screenshot") must not freeze every merge and
-      # revert an innocent PR. When ONLY e2e failed on main, run the suite once more on fresh runners first; the
-      # incident and the revert happen only if that second run is red as well. check and mcp-sql are deterministic
-      # and quick, so a failure there is real at once. The re-run is a workflow_dispatch of this workflow
-      # (recheck=true), which never re-checks again.
-      - name: Re-run once on fresh runners before declaring main red (e2e-only failure)
+      # v1.7: a browser, runner or timing glitch (for example "Unable to capture screenshot", or a unit test that
+      # asserts before async state renders) must not freeze every merge and revert an innocent PR. When main goes red,
+      # run the whole suite once more on fresh runners first; the incident and the revert happen only if that second
+      # run is red as well. Any failing job counts: on 2026-11-05 a flaky unit test in `check` reverted an unrelated
+      # merge, so `check` is not exempt. The re-run is a workflow_dispatch of this workflow (recheck=true), which never
+      # re-checks again.
+      - name: Re-run once on fresh runners before declaring main red
         id: recheck
-        if: github.ref_name == github.event.repository.default_branch && inputs.recheck != 'true' && needs.check.result != 'failure' && needs.mcp-sql.result != 'failure'
+        if: github.ref_name == github.event.repository.default_branch && inputs.recheck != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
