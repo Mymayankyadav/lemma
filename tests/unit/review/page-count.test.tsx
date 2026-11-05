@@ -73,7 +73,7 @@ describe('Review displayed count agrees with filtered quota-limited run',()=>{
   const session=useReviewSession.getState();
   expect(session.total).toBe(expected);
   expect(session.queue?.total).toBe(expected);
-  expect(session.queue?.items?.every((item:any)=>item.projectSlug===project.slug)).toBe(true);
+  expect([session.current,...(session.queue?.learning??[]),...(session.queue?.reviews??[]),...(session.queue?.fresh??[])].filter(Boolean).every(item=>item!.projectSlug===project.slug)).toBe(true);
   expect(mocks.navigate).toHaveBeenCalledWith('/review/run');
  });
 });
