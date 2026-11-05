@@ -87,7 +87,15 @@ describe('Cards page states (demo adapter)',()=>{
   await mount(api,projects);
   await change('Filter project',project!.slug);
   await change('Filter scheduling state',state);
+  // The seeded library must contain both matching and nonmatching cards, so
+  // a page that ignores either filter cannot pass by coincidental row count.
+  expect(expected.rows.length).toBeGreaterThan(0);
+  expect(initial.rows.some(row=>row.projectSlug!==project!.slug||row.state!==0)).toBe(true);
+  expect(expected.rows.every(row=>row.projectSlug===project!.slug&&row.state===0)).toBe(true);
   expect(rows()).toHaveLength(expected.rows.length);
+  const renderedIds=rows().map(row=>row.getAttribute('href'));
+  const expectedIds=expected.rows.map(row=>'/cards/'+row.noteNo);
+  expect(renderedIds).toEqual(expectedIds);
   expect(container.textContent).toContain(expected.rows.length.toLocaleString()+' loaded');
  });
 });
