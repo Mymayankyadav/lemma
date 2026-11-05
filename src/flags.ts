@@ -11,6 +11,8 @@
 export const FLAG_DEFAULTS = {
   /** Placeholder used by tests to prove the mechanism; remove when the first real flag lands. */
   ciSelfTest: false,
+  /** Android TWA shell remains opt-in until N7 is complete. */
+  androidShell: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

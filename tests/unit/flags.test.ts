@@ -6,6 +6,11 @@ describe('feature flags',()=>{
   expect(Object.values(FLAG_DEFAULTS).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
+ it('androidShell is off by default and cannot be enabled in production',()=>{
+  expect(FLAG_DEFAULTS.androidShell).toBe(false)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=androidShell'}).androidShell).toBe(true)
+  expect(resolveFlags({allowOverrides:false,search:'?flags=androidShell',envFlags:'androidShell'}).androidShell).toBe(false)
+ })
  it('?flags=a,b and the env variable turn known flags on when overrides are allowed',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?demo=1&flags=ciSelfTest'}).ciSelfTest).toBe(true)
   expect(resolveFlags({allowOverrides:true,envFlags:' ciSelfTest , nope'}).ciSelfTest).toBe(true)
