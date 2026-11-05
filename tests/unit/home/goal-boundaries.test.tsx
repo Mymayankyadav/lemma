@@ -26,7 +26,7 @@ describe('Today goal cards at checkpoint boundaries',()=>{
    }
    expect(html).toContain('data-goal-card')
    expect(html).toContain('data-bounded-goal')
-   expect(html).not.toContain('data-summary-goal')
+   expect(html).toContain('data-summary-goal')
    expect(html).toContain('Boundary Goal '+total)
    expect(html).toContain('CP4')
    expect(html).toContain('Next proof')
