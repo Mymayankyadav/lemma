@@ -43,6 +43,7 @@ try {
   await db.exec('alter table public.'+name+' enable row level security; create policy owner_read on public.'+name+' for select to authenticated using(user_id=(select auth.uid()));')
  }
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031012600_st5_paged_reads.sql',import.meta.url),'utf8'))
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261105153000_fix_review_items_prequota.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261102104500_notification_review_items.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031142000_fix_524_deleted_cards_page.sql',import.meta.url),'utf8'))
  await db.exec(await readFile(new URL('../../supabase/migrations/20261031124500_home_review_outlook.sql',import.meta.url),'utf8'))
@@ -133,7 +134,7 @@ try {
  assert.deepEqual(deck[0].children.map(x=>x.due),[1])
  console.log('PASS ST-5 deck hierarchy, daily due counts and unassigned notes')
  // Review must fetch only the selected daily queue, not the 30,000-card
- // library or historical review rows. Filters apply after daily quotas.
+ // library or historical review rows. Filters apply before daily quotas.
  const review=async(args)=>q('select public.review_items('+args+') item')
  const queue=(await review("array[]::text[],null,null,true,false")).map(x=>x.item)
  assert.deepEqual(queue.map(x=>x.noteNo),[12,13])
