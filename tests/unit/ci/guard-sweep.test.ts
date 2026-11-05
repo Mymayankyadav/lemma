@@ -71,6 +71,12 @@ describe('sweep: run plans and agent-metrics',()=>{
   const a=analysePlan({plan:done,createdAt:T0,now})
   expect([a.planned,a.done,a.noResult,a.share]).toEqual([3,2,false,2/3])
  })
+ it('rows only for valid names; other names are summed on one line',()=>{
+  const m=buildMetrics({plans:[{agent:'ChatGPT',at:now,planned:1,done:1,planShort:false,noResult:false}],reviews:[{agent:'selftest-a',at:now}],commits:[{agent:'ChatGPT',at:now},{agent:'ChatGPT',at:now},{agent:'lemma-1',at:now}],now})
+  expect(m.rows.map((r:any)=>r.agent)).toEqual(['lemma-1'])
+  expect(m.markdown).not.toContain('| chatgpt |')
+  expect(m.markdown).toContain('Activity under invalid names (not counted above): chatgpt (3), selftest-a (1).')
+ })
  it('builds the per-agent table (base names, 24 h columns)',()=>{
   const day=24*3600e3
   const plans=[{agent:'lemma-2',at:now-3600e3,planned:3,done:2,planShort:true,noResult:false},{agent:'lemma-2',at:now-2*day,planned:2,done:0,planShort:false,noResult:true},{agent:'chat-3#k7q3',at:now-3600e3,planned:1,done:1,planShort:false,noResult:false},{agent:'chat-3#zzzz',at:now-2*day,planned:0,done:0,planShort:false,noResult:false}]

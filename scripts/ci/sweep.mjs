@@ -85,10 +85,18 @@ export function analysePlan({ plan, createdAt, now, needsReviewPrs = [], noResul
 /** Pure: per-agent rows (key = base name) and the markdown table. */
 export function buildMetrics({ plans, reviews = [], commits = [], now }) {
   const rows = new Map();
-  const row = (name) => { const k = baseName(name).toLowerCase(); if (!rows.has(k)) rows.set(k, { agent: k, runs: 0, plans: 0, planned: 0, done: 0, planShort: 0, noResult: 0, reviews: 0, commits: 0, runs24: 0, reviews24: 0, commits24: 0 }); return rows.get(k); };
+  const invalid = new Map();
+  // rows only for valid agent names; activity under other names is summed on one line below the table
+  const row = (name) => {
+    if (!validAgentName(name)) { invalid.set(baseName(name).toLowerCase(), (invalid.get(baseName(name).toLowerCase()) || 0) + 1); return null; }
+    const k = baseName(name).toLowerCase();
+    if (!rows.has(k)) rows.set(k, { agent: k, runs: 0, plans: 0, planned: 0, done: 0, planShort: 0, noResult: 0, reviews: 0, commits: 0, runs24: 0, reviews24: 0, commits24: 0 });
+    return rows.get(k);
+  };
   const day = now - 24 * HOUR;
   for (const p of plans) {
     const r = row(p.agent);
+    if (!r) continue;
     r.runs++;
     if (p.at >= day) r.runs24++;
     if (p.planned > 0) r.plans++;
@@ -97,13 +105,14 @@ export function buildMetrics({ plans, reviews = [], commits = [], now }) {
     if (p.planShort) r.planShort++;
     if (p.noResult) r.noResult++;
   }
-  for (const v of reviews) { const r = row(v.agent); r.reviews++; if (v.at >= day) r.reviews24++; }
-  for (const c of commits) { const r = row(c.agent); r.commits++; if (c.at >= day) r.commits24++; }
+  for (const v of reviews) { const r = row(v.agent); if (!r) continue; r.reviews++; if (v.at >= day) r.reviews24++; }
+  for (const c of commits) { const r = row(c.agent); if (!r) continue; r.commits++; if (c.at >= day) r.commits24++; }
   const list = [...rows.values()].sort((a, b) => a.agent.localeCompare(b.agent, 'en', { numeric: true }));
   const pct = (r) => (r.planned ? `${Math.round((100 * r.done) / r.planned)}%` : '–');
   const md = ['| Agent | Runs | Plans | Planned steps | Done | Done % | plan-short | no-result | Reviews | Commits | Runs 24h | Reviews 24h | Commits 24h |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|',
     ...list.map((r) => `| ${r.agent} | ${r.runs} | ${r.plans} | ${r.planned} | ${r.done} | ${pct(r)} | ${r.planShort} | ${r.noResult} | ${r.reviews} | ${r.commits} | ${r.runs24} | ${r.reviews24} | ${r.commits24} |`)].join('\n');
-  return { rows: list, markdown: md };
+  const ignored = [...invalid.entries()].sort().map(([n, c]) => `${n} (${c})`).join(', ');
+  return { rows: list, markdown: ignored ? `${md}\n\nActivity under invalid names (not counted above): ${ignored}.` : md, invalid: Object.fromEntries(invalid) };
 }
 
 export function renderMetricsBody(markdown, now = Date.now()) {
