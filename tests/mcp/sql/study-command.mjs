@@ -54,7 +54,7 @@ try {
  assert.equal(current.subject_id,subject);
  assert.deepEqual(await command(request(secondId,'update',{
    target:{id:blockId},expectedVersion:1,patch:{title:'retry'}
- )),updated,'retry after update returns the receipt even with a stale version');
+ })),updated,'retry after update returns the receipt even with a stale version');
  const conflictId='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3';
  const stale=await command(request(conflictId,'update',{
    target:{id:blockId},expectedVersion:1,patch:{title:'stale'}
