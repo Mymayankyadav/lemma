@@ -1,12 +1,23 @@
+import {readFileSync} from 'node:fs';
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
+const pushEnabled = process.env.VITE_ALLOW_FLAG_OVERRIDES === '1' &&
+  (process.env.VITE_FLAGS ?? '').split(',').map(s => s.trim()).includes('notificationsPush');
+
 export default defineConfig({
  base:'/lemma/',
  plugins:[
   react(),tailwindcss(),
+  ...(pushEnabled ? [{
+   name: 'lemma-push-worker-asset',
+   generateBundle() {
+    this.emitFile({type:'asset',fileName:'lemma-push-worker.js',
+     source:readFileSync(new URL('./src/lib/lemma-push-worker.js', import.meta.url),'utf8')});
+   },
+  }] : []),
   VitePWA({
    injectRegister:false,
    registerType:'prompt',
@@ -42,6 +53,7 @@ export default defineConfig({
     ],
    },
    workbox:{
+    ...(pushEnabled ? {importScripts:['/lemma/lemma-push-worker.js']} : {}),
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
