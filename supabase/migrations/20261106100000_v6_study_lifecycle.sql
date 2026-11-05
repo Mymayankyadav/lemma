@@ -44,7 +44,7 @@ begin
      insert into public.study_intervals(id,user_id,entry_id,kind,started_at,ended_at)
      values(changed,v_owner,(patch->>'entry_id')::uuid,patch->>'kind',
        (patch->>'started_at')::timestamptz,(patch->>'ended_at')::timestamptz);
-     ver:=1;
+     update public.study_entries set version=version+1,updated_at=ts where id=entry.id and user_id=v_owner returning version into ver;
    end if;
  else
    if target is null then raise exception 'target.id required'; end if;
@@ -54,9 +54,12 @@ begin
      if op not in ('update','delete') then raise exception 'Unsupported interval operation: %',op; end if;
      select * into interval_row from public.study_intervals where id=target and user_id=v_owner for update;
      if not found then raise exception 'Study interval not found'; end if;
-     if expected <> 1 then
+     select * into entry from public.study_entries where id=interval_row.entry_id and user_id=v_owner for update;
+     if not found then raise exception 'Study entry not found'; end if;
+     if entry.status in ('saved','discarded') then raise exception 'Terminal study entry'; end if;
+     if expected <> entry.version then
        receipt:=jsonb_build_object('operationId',v_operation_id,'status','conflict','changed','[]'::jsonb,'actionNo',null,
-         'current',to_jsonb(interval_row),'conflict',jsonb_build_object('expectedVersion',expected,'currentVersion',1));
+         'current',to_jsonb(interval_row),'conflict',jsonb_build_object('expectedVersion',expected,'currentVersion',entry.version));
      elsif op='delete' then
        delete from public.study_intervals where id=target and user_id=v_owner;
      else
@@ -66,7 +69,10 @@ begin
          ended_at=case when patch ? 'ended_at' then (patch->>'ended_at')::timestamptz else ended_at end
        where id=target and user_id=v_owner;
      end if;
-     changed:=target; ver:=1;
+     if receipt is null then
+       update public.study_entries set version=version+1,updated_at=ts where id=entry.id and user_id=v_owner returning version into ver;
+     end if;
+     changed:=target;
    else
      select * into entry from public.study_entries where id=target and user_id=v_owner for update;
      if not found then raise exception 'Study entry not found'; end if;
