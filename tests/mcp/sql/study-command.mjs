@@ -186,7 +186,7 @@ try {
  })),/not found/);
  await assert.rejects(command(intervalRequest('ffffffff-ffff-ffff-ffff-fffffffffff5','create',{
    patch:{entry_id:intervalId,kind:'focus',started_at:'2026-11-05T12:00:00Z',ended_at:'2026-11-05T13:00:00Z'}
- })),/foreign key|row-level security/);
+ })),/Study entry not found|foreign key|row-level security/);
  await as(owner);
  const intervalDeleted=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee9','delete',{target:{id:iid},expectedVersion:1,patch:{}}));
  assert.equal(intervalDeleted.status,'ok');
