@@ -18,6 +18,8 @@ describe('gate feedback for agents that cannot read logs',()=>{
   const t=renderFeedback({gate:'merge',sha:'abcdef0123',ok:false,items:['x']})
   expect(t).not.toContain('check summary')
   expect(t).not.toContain('output summary')
+  expect(renderFeedback({gate:'agent-names',sha:'abcdef0',ok:false,items:['x']})).not.toContain('output summary')
+  expect(renderFeedback({gate:'fast-gate',sha:'abcdef0',ok:false,items:['x']})).toContain('output summary of the `fast-gate` check')
  })
  it('the same comment is rewritten when the gate passes again',()=>{
   const text=renderFeedback({gate:'scope',sha:'abcdef0123',ok:true})

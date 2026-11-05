@@ -62,8 +62,9 @@ export function evaluateMerge(ctx) {
     reasons.push(`changes were requested by ${changes[0].agent}: ${changes[0].what}`);
   } else if (!approvals.length) {
     for (const s of selfApprovals) reasons.push(`the approval by "${s.agent}" is ignored: it has the same Agent name as the PR author`);
-    for (const n of v.invalid) reasons.push(`the verdict by "${n}" is ignored: not a valid Agent name (use ${NAME_FORMATS})`);
-    for (const l of v.locked) reasons.push(`a verdict is ignored: ${lockMessage(l)}`);
+    // the valid formats and the lock message are explained once, in the agent-names comment
+    for (const n of v.invalid) reasons.push(`the verdict by "${n}" is ignored: not a valid Agent name (see the agent-names comment)`);
+    for (const l of v.locked) reasons.push(`a verdict by ${l.base} is ignored: that chat number is in use by another session (see the agent-names comment)`);
     if (v.stale.some((x) => x.kind === 'approve')) reasons.push(`the approval by ${v.stale.filter((x) => x.kind === 'approve').pop().agent} is void: a commit was pushed after it. Approve again after reviewing the new head`);
     if (v.attempted) reasons.push('there is no valid approval (comment exactly "Approve · Agent: <your name>", with a valid name different from the PR author)');
   }

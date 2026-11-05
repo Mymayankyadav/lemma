@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs'
 import {parseVerdict,parseReady,evaluateMerge} from '../../../scripts/ci/approve.mjs'
 // @ts-expect-error plain ESM script
 import {botTokenViolations} from '../../../scripts/ci/lib.mjs'
+// @ts-expect-error plain ESM script
+import {lockMessage} from '../../../scripts/ci/sessions.mjs'
 
 const HEAD='2026-11-04T10:00:00Z'
 const c=(id:number,body:string,at:string,assoc='OWNER')=>({id,body,created_at:at,author_association:assoc})
@@ -170,7 +172,7 @@ describe('v1.4: Ready signal, names, session lock and duplicate verdicts',()=>{
   expect(r.merge).toBe(false)
   expect(r.ignored.invalid).toEqual(['ChatGPT'])
   expect(r.reasons.join(' ')).toContain('not a valid Agent name')
-  expect(r.reasons.join(' ')).toContain('chat-<n>#<tag>')
+  expect(r.reasons.join(' ')).toContain('see the agent-names comment')
   for (const ok of ['lemma-3','chat-4#k7q3','owner-setup','owner-setup-2','priority']) expect(ev({comments:[approve(ok)]}).merge).toBe(true)
   for (const bad of ['chat-4','chat-4#K7Q3','chat-4#k7q','lemma','codex-1','ChatGPT#abcd']) expect(ev({comments:[approve(bad)]}).merge).toBe(false)
   // a PR whose own name is invalid is not merged by CI either
@@ -182,7 +184,8 @@ describe('v1.4: Ready signal, names, session lock and duplicate verdicts',()=>{
   const other=ev({comments:[approve('chat-4#bbbb','2026-11-04T10:05:00Z')],sessions,now})
   expect(other.merge).toBe(false)
   expect(other.ignored.locked).toHaveLength(1)
-  expect(other.reasons.join(' ')).toContain('chat-4 is in use by session aaaa until 2026-11-04T14:00:00.000Z; pick another number')
+  expect(other.reasons.join(' ')).toContain('chat-4 is ignored'.replace('chat-4 is ignored','a verdict by chat-4 is ignored'))
+  expect(lockMessage(other.ignored.locked[0])).toBe('chat-4 is in use by session aaaa until 2026-11-04T14:00:00.000Z; pick another number')
   expect(ev({comments:[approve('chat-4#aaaa','2026-11-04T10:05:00Z')],sessions,now}).merge).toBe(true)
   expect(ev({comments:[approve('chat-4#bbbb','2026-11-04T10:05:00Z')],sessions:{'chat-4':{tag:'aaaa',seen:'2026-11-04T08:59:00Z'}},now}).merge).toBe(true)
   expect(ev({comments:[approve('chat-5#bbbb','2026-11-04T10:05:00Z')],sessions,now}).merge).toBe(true)
