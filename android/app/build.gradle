@@ -1,0 +1,42 @@
+import groovy.json.JsonSlurper
+plugins { id 'com.android.application' }
+def twa = new JsonSlurper().parse(file('../twa-manifest.json'))
+def keystoreFile = System.getenv('ANDROID_KEYSTORE_FILE')
+android {
+ namespace 'io.github.mymayankyadav.lemma'
+ compileSdk 36
+ defaultConfig {
+  applicationId twa.packageId
+  minSdk 23
+  targetSdk 35
+  versionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
+  versionName twa.appVersionName
+  resValue 'string', 'app_name', twa.name
+ }
+ signingConfigs {
+  release {
+   if (keystoreFile) {
+    storeFile file(keystoreFile)
+    storePassword System.getenv('ANDROID_UPLOAD_KEYSTORE_PASSWORD')
+    keyAlias System.getenv('ANDROID_UPLOAD_KEY_ALIAS')
+    keyPassword System.getenv('ANDROID_UPLOAD_KEY_PASSWORD')
+   }
+  }
+ }
+ buildTypes {
+  release {
+   minifyEnabled false
+   if (keystoreFile) signingConfig signingConfigs.release
+  }
+ }
+ compileOptions {
+  sourceCompatibility JavaVersion.VERSION_17
+  targetCompatibility JavaVersion.VERSION_17
+ }
+ lint { abortOnError true; checkReleaseBuilds true }
+}
+dependencies {
+ implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
+ implementation 'androidx.browser:browser:1.10.0'
+ implementation 'androidx.core:core:1.17.0'
+}
