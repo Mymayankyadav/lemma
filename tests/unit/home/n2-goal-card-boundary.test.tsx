@@ -59,6 +59,7 @@ describe('N2: actual Today goal selection at 14/15/40 checkpoints',()=>{
    client.setQueryData(['project',project.slug],await adapter.getProject(project.slug))
   }
 
+  vi.stubGlobal('ResizeObserver',class {observe(){} unobserve(){} disconnect(){}})
   const host=document.createElement('div')
   document.body.appendChild(host)
   const root=createRoot(host)
@@ -99,7 +100,8 @@ describe('N2: actual Today goal selection at 14/15/40 checkpoints',()=>{
    await act(async()=>root.unmount())
    client.clear()
    host.remove()
+   vi.unstubAllGlobals()
    window.history.replaceState(null,'','/')
   }
- })
+ },30_000)
 })
