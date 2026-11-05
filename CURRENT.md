@@ -66,6 +66,8 @@ Not on main (existed only in archived, unmerged PRs): read-only offline snapshot
 
 v6 direction (Owner, 2026-11-05): the reference set is in `docs/v6/` (mockup, screenshots, direction plan, data/MCP contract). It describes the target, not what exists; NEXT.md items N9–N14 implement the first durable study slice behind `v6Shell`.
 
+N10 in-progress PR #851 adds four owner-scoped v6 study tables (study_entries, study_intervals, calendar_blocks, command_receipts), additive only; not yet on main or deployed. The study UI and commands are not wired yet.
+
 ## Data model
 
 Tables in `public` (from `supabase/migrations/20261029164215_lemma_tables.sql` and later), every row carries `user_id` with RLS; connector and app code must filter by `user_id`:

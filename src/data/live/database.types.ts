@@ -14,6 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
+      study_entries: {
+        Row: {
+          id: string
+          user_id: string
+          subject_id: string | null
+          project_id: string | null
+          checkpoint_id: string | null
+          session_id: string | null
+          intent: string
+          source: string
+          status: string
+          reflection: string | null
+          rating: number | null
+          version: number
+          created_at: string
+          updated_at: string
+          saved_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          subject_id?: string | null
+          project_id?: string | null
+          checkpoint_id?: string | null
+          session_id?: string | null
+          intent?: string
+          source: string
+          status?: string
+          reflection?: string | null
+          rating?: number | null
+          version?: number
+          created_at?: string
+          updated_at?: string
+          saved_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          subject_id?: string | null
+          project_id?: string | null
+          checkpoint_id?: string | null
+          session_id?: string | null
+          intent?: string
+          source?: string
+          status?: string
+          reflection?: string | null
+          rating?: number | null
+          version?: number
+          created_at?: string
+          updated_at?: string
+          saved_at?: string | null
+        }
+        Relationships: []
+      }
+      study_intervals: {
+        Row: {
+          id: string
+          entry_id: string
+          user_id: string
+          kind: string
+          started_at: string
+          ended_at: string | null
+        }
+        Insert: {
+          id?: string
+          entry_id: string
+          user_id?: string
+          kind: string
+          started_at: string
+          ended_at?: string | null
+        }
+        Update: {
+          id?: string
+          entry_id?: string
+          user_id?: string
+          kind?: string
+          started_at?: string
+          ended_at?: string | null
+        }
+        Relationships: []
+      }
+      calendar_blocks: {
+        Row: {
+          id: string
+          user_id: string
+          kind: string
+          title: string
+          starts_at: string
+          ends_at: string
+          time_zone: string
+          status: string
+          version: number
+          subject_id: string | null
+          project_id: string | null
+          checkpoint_id: string | null
+          session_id: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          kind: string
+          title: string
+          starts_at: string
+          ends_at: string
+          time_zone: string
+          status?: string
+          version?: number
+          subject_id?: string | null
+          project_id?: string | null
+          checkpoint_id?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          kind?: string
+          title?: string
+          starts_at?: string
+          ends_at?: string
+          time_zone?: string
+          status?: string
+          version?: number
+          subject_id?: string | null
+          project_id?: string | null
+          checkpoint_id?: string | null
+          session_id?: string | null
+        }
+        Relationships: []
+      }
+      command_receipts: {
+        Row: {
+          user_id: string
+          operation_id: string
+          resource: string
+          result: Json
+          created_at: string
+        }
+        Insert: {
+          user_id?: string
+          operation_id: string
+          resource: string
+          result: Json
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          operation_id?: string
+          resource?: string
+          result?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       card_comments: {
         Row: {
           body: string
