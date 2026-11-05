@@ -161,6 +161,28 @@ try {
  const intervalUpdated=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee8','update',{target:{id:iid},expectedVersion:1,patch:{kind:'break'}}));
  assert.equal(intervalUpdated.status,'ok');
  assert.equal((await q('select kind from public.study_intervals where id=$1',[iid]))[0].kind,'break');
+ // Reject invalid transitions without mutating state or consuming the operation ID.
+ await assert.rejects(command(study('ffffffff-ffff-ffff-ffff-fffffffffff1','resume',{
+   target:{id:intervalId},expectedVersion:1,patch:{}
+ })),/Invalid resume transition/);
+ const partial=await command(study('ffffffff-ffff-ffff-ffff-fffffffffff2','update',{
+   target:{id:intervalId},expectedVersion:1,patch:{intent:'Updated intent'}
+ }));
+ assert.equal(partial.changed[0].version,2);
+ const unchanged=(await q('select source,intent from public.study_entries where id=$1',[intervalId]))[0];
+ assert.equal(unchanged.source,'manual','omitted patch field is preserved');
+ assert.equal(unchanged.intent,'Updated intent');
+ await assert.rejects(command(study('ffffffff-ffff-ffff-ffff-fffffffffff3','pause',{
+   target:{id:intervalId},expectedVersion:2,patch:{}
+ })),/Invalid pause transition/);
+ await as(other);
+ await assert.rejects(command(intervalRequest('ffffffff-ffff-ffff-ffff-fffffffffff4','update',{
+   target:{id:iid},expectedVersion:1,patch:{kind:'focus'}
+ })),/not found/);
+ await assert.rejects(command(intervalRequest('ffffffff-ffff-ffff-ffff-fffffffffff5','create',{
+   patch:{entry_id:intervalId,kind:'focus',started_at:'2026-11-05T12:00:00Z',ended_at:'2026-11-05T13:00:00Z'}
+ })),/foreign key|row-level security/);
+ await as(owner);
  const intervalDeleted=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee9','delete',{target:{id:iid},expectedVersion:1,patch:{}}));
  assert.equal(intervalDeleted.status,'ok');
  assert.equal((await q('select count(*)::int n from public.study_intervals where id=$1',[iid]))[0].n,0);
