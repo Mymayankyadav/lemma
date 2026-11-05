@@ -138,3 +138,7 @@ Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright,
 ## Repo layout
 
 `src/app` shell and routes · `src/features/*` one folder per screen · `src/ui` shared components · `src/data` data layer (`live/` Supabase, `demo/` fixture) · `src/lib` FSRS, schedule, rendering, offline cache · `src/pdf` PDF parsing · `supabase/` migrations, functions, SQL tests · `scripts/` build, screenshot and stress tooling · `tests/{unit,e2e,mcp}` · `docs/` the files that code reads, the owner guide, and `docs/v6/` (v6 reference set, not instructions) · `legacy/` dead (see above).
+
+## N9 effort metrics (PR #850)
+
+The pure `src/lib/effort/` module provides interval-union logged minutes (with separate future minutes), capped active focus that retains accumulated minutes during pauses and breaks, priority capacity partition, per-subject partition, and IANA civil-day boundaries including skipped midnights and DST transitions. Unit coverage is in `tests/unit/effort/metrics.test.ts`. The module is not wired to the UI. Current CI status is tracked by the PR checks rather than this document.
