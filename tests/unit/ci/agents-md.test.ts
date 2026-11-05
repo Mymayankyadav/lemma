@@ -2,8 +2,8 @@ import {describe,expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
 
 const md=readFileSync('AGENTS.md','utf8')
-describe('AGENTS.md v1.5 contract',()=>{
- it('is version 1.5 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 1\.5 \(2026-11-05\)$/))
+describe('AGENTS.md v1.6 contract',()=>{
+ it('is version 1.6 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 1\.6 \(2026-11-05\)$/))
  it('has the nine steps in the specified order',()=>{
   const run=md.slice(md.indexOf('## Each run'),md.indexOf('## Claiming and PRs'))
   const steps=[...run.matchAll(/^(\d)\. (.*)$/gm)].map((m)=>[m[1],m[2]])
@@ -36,6 +36,19 @@ describe('AGENTS.md v1.5 contract',()=>{
   expect(safety).toContain('Never edit, rename or delete an existing migration.')
   expect(safety).toContain('MIGRATION-ADDITIVE')
   expect(safety).toContain('Replaces function: <name> (reviewer verified signature and behaviour)')
+ })
+ it('v1.6: Ready is posted in the same run as the push, without waiting for checks',()=>{
+  const run=md.slice(md.indexOf('## Each run'),md.indexOf('## Claiming and PRs'))
+  expect(run).toMatch(/^4\. .*push and comment exactly `Ready · Agent: <name>` in the same run\. Do not wait for checks/m)
+  const review=md.slice(md.indexOf('## Review and merge'),md.indexOf('## Communication'))
+  expect(review).toContain('right after your last push, in the same run. Do not wait for checks')
+  expect(review).toContain('CI re-evaluates when fast-gate and scope finish')
+  expect(review).toContain('fixing it is step 2 of your next run')
+ })
+ it('v1.6: a split rewrites other items\' Needs: N<id> and may edit nothing else in them (#866)',()=>{
+  const split=md.slice(md.indexOf('## Too big or stuck'),md.indexOf('## Stages'))
+  expect(split).toContain('In every other item whose Needs lists N<id>, replace N<id> with the sub-item(s) that finish the work')
+  expect(split).toContain('it fails a split that leaves any item needing N<id>')
  })
  it('tells agents nothing about merging, leases or the old label wait',()=>{
   expect(md).not.toMatch(/squash-merge, then|Lease until|do not wait for it/i)

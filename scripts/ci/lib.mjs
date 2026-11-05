@@ -57,6 +57,30 @@ export function diffNext(baseMd, headMd) {
   return { removed, added, changed, otherChanged, base: a, head: b };
 }
 
+/** Pure: the item ids an item block's `Needs:` field lists ("N9, N13" -> ['9','13']; "—" -> []). */
+export function needsOf(block) {
+  const m = /\bNeeds:\s*([^·\n]*)/.exec(String(block || ''));
+  if (!m) return [];
+  return [...m[1].matchAll(/\bN(\d+(?:\.\d+)*)\b/g)].map((x) => x[1]);
+}
+
+/** Pure: the block with its `Needs:` value blanked, to compare two blocks apart from that field. */
+export const withoutNeeds = (block) => String(block || '').replace(/(\bNeeds:)[^·\n]*/, '$1');
+
+/**
+ * Pure: is head a split's allowed edit of base? Only the `Needs:` value may change, by replacing the split item
+ * N<parent> with one or more of its new sub-items; every other id and every other line stay as they were.
+ */
+export function isNeedsRewrite(baseBlock, headBlock, parent, subIds) {
+  if (withoutNeeds(baseBlock) !== withoutNeeds(headBlock)) return false;
+  const was = needsOf(baseBlock);
+  const now = needsOf(headBlock);
+  if (!was.includes(parent)) return false;
+  const kept = was.filter((id) => id !== parent);
+  const added = now.filter((id) => !kept.includes(id));
+  return kept.every((id) => now.includes(id)) && added.length >= 1 && added.every((id) => subIds.includes(id)) && !now.includes(parent);
+}
+
 /** Added and removed lines of a unified-diff patch (without the +/- markers and headers). */
 export function patchLines(patch) {
   const added = [];
