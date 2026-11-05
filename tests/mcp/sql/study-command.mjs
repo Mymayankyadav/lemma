@@ -1,4 +1,4 @@
-// N11 isolated command acceptance. Never connect to the owner's Supabase.
+// N11.1 isolated calendar-command acceptance. Never connect to production.
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
@@ -106,5 +106,5 @@ try {
  await as(owner);
  assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,1);
  assert.equal((await q('select count(*)::int n from public.command_receipts'))[0].n,4);
- console.log('PASS N11 calendar command: receipts, version conflicts, patch distinction, validation and owner isolation');
+ console.log('PASS N11.1 calendar command: receipts, version conflicts, patch distinction, validation and owner isolation');
 } finally {await db.close()}

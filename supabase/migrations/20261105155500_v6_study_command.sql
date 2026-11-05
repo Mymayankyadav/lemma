@@ -1,5 +1,5 @@
--- N11 in-progress: calendar_blocks create/update command foundation.
--- Not Ready: study lifecycle, deletion and undo journal remain unimplemented.
+-- N11.1: calendar_blocks create/update command foundation (first split slice).
+-- N11.2 covers study lifecycle; N11.3 will add deletion/undo journaling.
 -- Security invoker and explicit auth.uid() checks preserve N10 owner RLS.
 create function public.study_command(p jsonb)
 returns jsonb

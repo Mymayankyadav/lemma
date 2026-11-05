@@ -36,21 +36,17 @@ Owner-authorized 2026-11-05 (decision D1): merging deploys this migration to pro
 Scope: supabase/migrations/<the new file only>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
 Not: any change to existing tables, functions or policies; app code; MCP code; edge functions; importing tutor-session minutes as focus time.
 
-## N11 v6 study commands: one SQL entry point with receipts and versions
-Stage: Build · Status: open · Needs: N10 · Assigned: —
-Done = a new migration adding `public.study_command(p jsonb) returns jsonb` (security invoker; owner from `auth.uid()`, never from the payload) for the envelope `{operationId, schemaVersion: 1, resource: study_entries|study_intervals|calendar_blocks, operation, target: {id}, expectedVersion, patch}`, with operations create, update, delete, start, pause, resume, break, save, discard. Rules:
-- a repeated operationId returns the stored receipt (checked before the version);
-- a stale expectedVersion returns `{status: "conflict", current}`;
-- unknown patch fields are rejected, and an omitted field differs from an explicit null;
-- `save` is one transaction (closes the open interval, sets saved status, saved_at and reflection);
-- `discard` leaves zero logged minutes;
-- update, delete and save write `actions`/`action_changes` rows so the existing `undo_action` can reverse them.
+## N11.2 v6 study entry and interval commands, consistent lifecycle
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = extend `public.study_command(p jsonb)` using one new additive migration to accept `study_entries` and `study_intervals` and the operations create, update, delete, start, pause, resume, break, save, discard. Enforce owner from `auth.uid()`, allow-listed patch fields, expectedVersion conflicts, idempotency before version checks, and record status transitions. Save must close an open interval atomically, set saved_at and reflection and never double-save; discard must produce zero logged focus minutes. Validate open interval ownership and transitions, including breaks. Keep the existing calendar-block N11.1 response contract and `command_receipts` behaviour. Extend `tests/mcp/sql/study-command.mjs` (PGlite) with one case per operation and tests for lost acknowledgement, two saves, invalid transitions, partial patches, and cross-owner targets.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
+Not: modifying existing migrations or functions outside `study_command`, undo_action changes, MCP, app UI, changing the N10 table schema, or new dependencies. Existing `study_command` is replaced only compatibly, with a PR-body `Replaces function: study_command (reviewer verified signature and behaviour)` line.
 
-The receipt shape is `{operationId, status, changed: [{id, version}], actionNo, conflict?}`.
-Test `tests/mcp/sql/study-command.mjs` (PGlite): one or more cases per rule, plus a retry after a lost acknowledgement, two saves of the same entry giving one saved entry, a cross-owner target rejected, and undo restoring a deleted block.
-Owner-authorized 2026-11-05 (D1): merging deploys to production. It must pass the additive-only migration guard; the reviewer confirms that existing functions are untouched.
-Scope: supabase/migrations/<the new file only>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
-Not: MCP, app UI, a change feed, existing functions.
+## N11.3 v6 reversible study commands and existing undo support
+Stage: Build · Status: open · Needs: N11.2 · Assigned: —
+Done = complete N11 by recording `actions` and `action_changes` for study update/delete/save and returning a real `actionNo` for every reversible write. `public.undo_action` restores a deleted calendar block and reverts saved or updated study records without cross-owner writes. Add PGlite regression tests covering undo of deleted blocks, conflict after newer edits, restored study data, exact receipt replay and owner isolation. Resolve blocker #861 first: existing `undo_action` has hard-coded table allow-lists, so the Owner/priority run must explicitly authorize a compatible replacement or specify an alternative that meets the original N11 Done. Preserve the public command envelope and N11.1/N11.2 semantics.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/**, CURRENT.md, src/data/live/database.types.ts (signature only if needed).
+Not: changing existing migration files, existing functions without Owner authorization, client UI, MCP, disabling RLS, deleting or weakening tests, or new dependencies.
 
 ## N12 MCP: study records through the same command
 Stage: Build · Status: open · Needs: N11 · Assigned: —
