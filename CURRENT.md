@@ -54,7 +54,7 @@ Stage: Stable = works and has tests on main. Harden = exists but is reported bro
 | MCP connector (23 tools) | `supabase/functions/mcp` | `tests/unit/mcp`, `tests/unit/mcp4`, `tests/mcp/*.mjs`, CI `mcp-sql` | Harden | — |
 | Notifications server side (reminders, `notify` function, subscribe flow) | `supabase/functions/notify`, `src/data/notify.ts` | `tests/unit/notify` (15 files), `tests/mcp/notif1*.mjs` | Harden | — |
 | Notifications in the app (service-worker push handling, reminder deep links) — not on main yet | planned: `src/lib`, `src/features/review*` | none yet | Build | `notificationsPush` (added by N5, default off) |
-| Android Trusted Web Activity shell and store kit — not on main yet | planned: `android/`, `docs/android`, `public/privacy.html` | none yet | Build | `androidShell` (added by N7, default off) |
+| Android Trusted Web Activity shell and store kit — N7 shell metadata in PR #823, not on main yet | `android/`, planned: `docs/android`, `public/privacy.html` | `tests/unit/android/twa-shell.test.ts` (PR only) | Build | `androidShell` (added by N7, default off) |
 | Deploy pipeline (Supabase workflow, MCP smoke) | `.github/workflows/supabase.yml`, `mcp-smoke.yml`, `scripts/mcp-selftest-queue*.mjs` | `tests/unit/agents/mcp-selftest-*.test.ts`, `tests/mcp/smoke.mjs` | Harden | — |
 | Stress and screenshot harness (ST-0 budgets, QA captures) | `scripts/stress-*.ts`, `scripts/qa3-*.ts`, `scripts/qa4-screens.ts`, `scripts/review-shots.mjs` | `tests/unit/stress`, `tests/unit/qa4`, `tests/e2e/stress*.spec.ts` | Stable | — |
 
