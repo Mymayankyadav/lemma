@@ -13,3 +13,12 @@ public/icons/
 # CI scratch output
 junit/
 signatures.json
+
+# Android local build outputs and signing material
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.jks
+*.keystore
+google-services.json
