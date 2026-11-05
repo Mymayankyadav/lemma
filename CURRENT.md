@@ -68,7 +68,7 @@ v6 direction (Owner, 2026-11-05): the reference set is in `docs/v6/` (mockup, sc
 
 N10 in-progress PR #851 adds four owner-scoped v6 study tables (study_entries, study_intervals, calendar_blocks, command_receipts), additive only; not yet on main or deployed. The study UI and commands are not wired yet.
 
-## Data model
+N11 in-progress PR #860 (not Ready or deployed) introduces an owner-scoped, receipt-backed `study_command` entry point for calendar-block create/update, expected-version conflicts, and strict patch validation. Study-entry/interval lifecycle, deletes, and journal-backed undo are **not implemented yet**. Existing `undo_action` has a fixed table allow-list excluding the new study tables; its integration must be resolved before N11 is Done.\n\n## Data model
 
 Tables in `public` (from `supabase/migrations/20261029164215_lemma_tables.sql` and later), every row carries `user_id` with RLS; connector and app code must filter by `user_id`:
 
