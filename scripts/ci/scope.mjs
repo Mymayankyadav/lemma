@@ -3,7 +3,8 @@
 // through the API, so a PR can never edit the checker that judges it.
 import { readFileSync } from 'node:fs';
 import { appendSummary, api, paginate, repoPath, parseLine1, GhError } from './gh.mjs';
-import { matchesAny, readJson, parseNext, diffNext, patchLines, isTestFile, addsSkipOnly, countExpects } from './lib.mjs';
+import { matchesAny, readJson, parseNext, diffNext, patchLines, isTestFile, addsSkipOnly, countExpects, validAgentName, agentKey, NAME_FORMATS, chatParts } from './lib.mjs';
+import { checkSession, lockMessage, loadSessions, saveSessions, touchSession } from './sessions.mjs';
 import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
 
 const MAX_OPEN_PRS = 6;
@@ -58,7 +59,13 @@ export function evaluateScope(ctx) {
   // R3 body line 1 (the claim is the open PR: no lease; the older "· Lease until …" form is still accepted and ignored)
   if (!line1) {
     failures.push(fail('BODY-LINE-1', 'Line 1 of the PR body must be exactly "Agent: <name> · Item: <id>".',
-      'make the very first line of the body e.g. "Agent: codex-1 · Item: N1" (no lease needed; the older "· Lease until <ISO-8601>" form of PRs opened before v1.3 is still accepted).'));
+      'make the very first line of the body e.g. "Agent: lemma-1 · Item: N1" (no lease needed; the older "· Lease until <ISO-8601>" form of PRs opened before v1.3 is still accepted).'));
+  } else if (!validAgentName(line1.agent)) {
+    failures.push(fail('AGENT-NAME', `The Agent name "${line1.agent}" is not valid.`,
+      `sign with one of: ${NAME_FORMATS}. Chat agents choose a 4-character tag at their first run and keep it for the whole conversation (e.g. chat-2#k7q3).`));
+  } else {
+    const lock = checkSession(ctx.sessions || {}, line1.agent, now.getTime());
+    if (!lock.ok) failures.push(fail('SESSION-LOCK', `${lockMessage(lock)}.`, `sign as chat-<another number>#${chatParts(line1.agent)?.tag ?? '<tag>'} and keep that name for the whole conversation, or wait until ${lock.until}.`));
   }
 
   // R2 ids
@@ -96,11 +103,19 @@ export function evaluateScope(ctx) {
   // R4 limits (CI itself is exempt so revert PRs can always open)
   if (line1 && !isCi) {
     const others = ctx.openPrs || [];
-    const same = others.filter((p) => parseLine1(p.body)?.agent?.toLowerCase() === line1.agent.toLowerCase());
+    const me = agentKey(line1.agent);
+    const same = others.filter((p) => { const l = parseLine1(p.body); return l && agentKey(l.agent) === me; });
     if (same.length) failures.push(fail('ONE-PR-PER-AGENT', `Agent "${line1.agent}" already has open PR(s): ${same.map((p) => '#' + p.number).join(', ')}.`,
       'finish or close your other PR first (limit: 1 open PR per agent).'));
     const nonCi = others.filter((p) => parseLine1(p.body)?.agent?.toLowerCase() !== 'ci').length + 1;
-    if (nonCi > MAX_OPEN_PRS) failures.push(fail('MAX-OPEN-PRS', `${nonCi} non-CI PRs are open (limit ${MAX_OPEN_PRS}).`, 'wait until another PR is merged or closed.'));
+    const max = ctx.maxOpenPrs ?? MAX_OPEN_PRS;
+    if (nonCi > max) failures.push(fail('MAX-OPEN-PRS', `${nonCi} non-CI PRs are open (limit ${max}).`, 'wait until another PR is merged or closed.'));
+    // one PR per item: a second PR for the same Item is never allowed (the Owner's `rules` item is exempt)
+    if (line1.item.toLowerCase() !== 'rules') {
+      const dup = others.filter((p) => { const l = parseLine1(p.body); return l && l.agent.toLowerCase() !== 'ci' && l.item.toLowerCase() === line1.item.toLowerCase(); });
+      if (dup.length) failures.push(fail('ONE-PR-PER-ITEM', `Item ${line1.item} already has open PR(s): ${dup.map((p) => '#' + p.number).join(', ')}.`,
+        `do not open a second PR for an item: close this one and push commits to the existing PR's branch; if the existing PR has the lease-expired label, change its line 1 to your name.`));
+    }
   }
 
   // R5 protected paths / tests
@@ -195,6 +210,7 @@ async function main() {
     openPrs: (await paginate(repoPath('/pulls?state=open'))).filter((p) => p.number !== number).map((p) => ({ number: p.number, body: p.body || '' })),
     protectedCfg: readJson('ci/protected.json'),
     headSha: pr.head.sha,
+    maxOpenPrs: Number(process.env.MAX_OPEN_PRS) || undefined,
     dispatchSha: process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' ? process.env.GITHUB_SHA : undefined,
   };
   if (cls.kind === 'bug' || cls.kind === 'incident') {
@@ -214,12 +230,17 @@ async function main() {
       } catch { /* leave undefined -> rule failure */ }
     }
   }
+  const author = parseLine1(pr.body || '')?.agent;
+  let reg = null;
+  if (author && chatParts(author)) { reg = await loadSessions(); ctx.sessions = reg.map; }
   const res = evaluateScope(ctx);
   const lines = [`## scope: ${res.failures.length ? 'FAILED' : 'passed'}`, '', `PR #${number} "${pr.title}" (type: ${res.kind ?? 'unknown'})`, ''];
   for (const f of res.failures) { lines.push(`- ❌ ${f.msg}`); console.log(`::error title=scope ${f.rule}::${f.msg.replace(/\n/g, ' ')}`); }
   for (const w of res.warnings) { lines.push(`- ⚠️ ${w}`); console.log(`::warning title=scope review hint::${w}`); }
   if (!res.failures.length && !res.warnings.length) lines.push('- ✅ all scope rules satisfied');
   appendSummary(lines.join('\n'));
+  // Session lock: remember the chat session that is allowed to use this chat number.
+  if (reg && !res.failures.some((f) => f.rule === 'SESSION-LOCK' || f.rule === 'AGENT-NAME') && touchSession(reg.map, author, Date.now())) await saveSessions(reg.issue, reg.map);
   // Agents cannot read logs: put the exact rule(s) into one PR comment (edited in place) and the check output.
   try {
     const ok = res.failures.length === 0;

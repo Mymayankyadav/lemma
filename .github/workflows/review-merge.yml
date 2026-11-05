@@ -1,6 +1,7 @@
 name: review-merge
 # CI merges, agents do not. A reviewer comments exactly `Approve · Agent: <name>` or
-# `Changes requested · Agent: <name>: <what to change>`; scripts/ci/approve.mjs squash-merges with CI_BOT_TOKEN when
+# `Changes requested · Agent: <name>: <what to change>`; an author comments `Ready · Agent: <author>` when Done is met
+# (CI then adds needs-review once fast-gate and scope pass). scripts/ci/approve.mjs squash-merges with CI_BOT_TOKEN when
 # the approval is valid and fast-gate and scope are green on the current head (rules in AGENTS.md "Review and merge").
 # Runs from the default branch only and never checks out or runs PR code. CI_BOT_TOKEN is used here because a merge
 # by GITHUB_TOKEN would not start the full suite on main. Re-evaluated when PR gate / scope finish, so an approval
@@ -27,11 +28,11 @@ concurrency:
   cancel-in-progress: false
 jobs:
   review-merge:
-    # Only verdict comments on pull requests start a run; any other comment is ignored without a runner.
+    # Only verdict and Ready comments on pull requests start a run; any other comment is ignored without a runner.
     if: >-
       github.event_name != 'issue_comment' ||
       (github.event.issue.pull_request &&
-       (startsWith(github.event.comment.body, 'Approve') || startsWith(github.event.comment.body, 'Changes requested')))
+       (startsWith(github.event.comment.body, 'Approve') || startsWith(github.event.comment.body, 'Changes requested') || startsWith(github.event.comment.body, 'Ready')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

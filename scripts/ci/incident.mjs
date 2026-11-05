@@ -19,8 +19,9 @@ const hashOf = (sig) => createHash('sha1').update(sig).digest('hex').slice(0, 12
 const titleOf = (sig) => `incident: ${sig.length > 200 ? sig.slice(0, 200) + '…' : sig}`;
 
 export async function loadRegistry() {
-  const found = await api('GET', repoPath('/issues?labels=ci-registry&state=all&per_page=5'));
-  let issue = found.find((i) => !i.pull_request);
+  // Other CI state issues carry the same label (chat sessions, agent-metrics, run-logs): match by title.
+  const found = await api('GET', repoPath('/issues?labels=ci-registry&state=all&per_page=100'));
+  let issue = found.find((i) => !i.pull_request && i.title === REG_TITLE);
   if (!issue) {
     issue = await api('POST', repoPath('/issues'), { title: REG_TITLE, body: renderRegistry({ version: 1, signatures: {} }), labels: ['ci-registry'] });
     issue = await api('PATCH', repoPath(`/issues/${issue.number}`), { state: 'closed', state_reason: 'not_planned' });
