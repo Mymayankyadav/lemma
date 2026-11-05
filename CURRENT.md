@@ -56,7 +56,7 @@ Stage: Stable = works and has tests on main. Harden = exists but is reported bro
 | Notifications in the app (service-worker push handling, reminder deep links) — not on main yet | planned: `src/lib`, `src/features/review*` | none yet | Build | `notificationsPush` (added by N5, default off) |
 | Android Trusted Web Activity shell (N7, #823) and store kit (N8, #840); unsigned debug build workflow `.github/workflows/android.yml` | `android/`, `docs/android`, `public/privacy.html`, `scripts/play-shots.mjs`, `scripts/play-png.mjs` | `tests/unit/android/twa-shell.test.ts`, `tests/unit/android/play-png.test.ts` | Harden | `androidShell` (default off) |
 | v6 shell: five destinations (adds Calendar, Insights shown as Progress), shared header, focus accessory — planned N13 | planned: `src/app`, `src/ui`, `src/features/calendar` | none yet | Build | `v6Shell` (added by N13, default off) |
-| v6 study model: N10 tables merged on main; effort metrics (N9), study commands (N11), MCP `study` tool (N12), Focus on demo data (N14) pending | N10: `supabase/migrations/20261105141000_v6_study.sql`, `src/data/live/database.types.ts`; pending: `src/lib/effort`, `src/lib/focus`, `src/features/focus` | N10: `tests/mcp/sql/study-schema.mjs`; remaining items pending | Build | `v6Shell` |
+| v6 study model: effort metrics (N9), study tables (N10), study commands (N11), MCP `study` tool (N12), Focus on demo data (N14) — planned | planned: `src/lib/effort`, `src/lib/focus`, `src/features/focus`, `supabase/migrations` | none yet | Build | `v6Shell` |
 | Deploy pipeline (Supabase workflow, MCP smoke) | `.github/workflows/supabase.yml`, `mcp-smoke.yml`, `scripts/mcp-selftest-queue*.mjs` | `tests/unit/agents/mcp-selftest-*.test.ts`, `tests/mcp/smoke.mjs` | Harden | — |
 | Stress and screenshot harness (ST-0 budgets, QA captures) | `scripts/stress-*.ts`, `scripts/qa3-*.ts`, `scripts/qa4-screens.ts`, `scripts/review-shots.mjs` | `tests/unit/stress`, `tests/unit/qa4`, `tests/e2e/stress*.spec.ts` | Stable | — |
 
@@ -66,7 +66,7 @@ Not on main (existed only in archived, unmerged PRs): read-only offline snapshot
 
 v6 direction (Owner, 2026-11-05): the reference set is in `docs/v6/` (mockup, screenshots, direction plan, data/MCP contract). It describes the target, not what exists; NEXT.md items N9–N14 implement the first durable study slice behind `v6Shell`.
 
-N10 merged in PR #851 on 2026-11-05: the additive migration `supabase/migrations/20261105141000_v6_study.sql` is on main and defines four owner-scoped v6 study tables (`study_entries`, `study_intervals`, `calendar_blocks`, `command_receipts`), with database types and schema tests. **Merged into main does not prove deployment:** application of this migration to the remote Supabase database has not been verified here. The study commands, MCP integration, and study UI remain pending.
+N10 in-progress PR #851 adds four owner-scoped v6 study tables (study_entries, study_intervals, calendar_blocks, command_receipts), additive only; not yet on main or deployed. The study UI and commands are not wired yet.
 
 ## Data model
 
