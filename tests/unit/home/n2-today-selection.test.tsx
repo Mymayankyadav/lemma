@@ -1,14 +1,16 @@
-import React from 'react'
+import React,{act} from 'react'
+import {createRoot} from 'react-dom/client'
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query'
 import {MemoryRouter} from 'react-router'
 import {describe,expect,it,vi} from 'vitest'
 import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter'
 import type {DemoCheckpoint,DemoStore} from '../../../src/data/demo/model'
 import Today from '../../../src/features/home/Page'
-import {renderAllReady} from '../../helpers/renderAllReady'
 
 // A server-rendered demo page needs the same mode as the real ?demo=1 route.
 // Do not mock Page, the Today goal selector, the hooks or the card components.
+let selectedApi:DemoAdapter
+vi.mock('../../../src/data',()=>({getApi:()=>selectedApi}))
 vi.mock('../../../src/data/mode',()=>({
  getMode:()=> 'demo',
  getDemoProfile:()=> 'default',
@@ -49,9 +51,10 @@ function boundaryDemo():DemoAdapter{
 
 describe('N2: real Today selection for 14, 15 and 40 checkpoint demo projects',()=>{
  it('renders the same title, next checkpoint and distance on both sides of the cutoff',async()=>{
-  const api=boundaryDemo()
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
+  const api=selectedApi=boundaryDemo()
   const home=await api.getHome()
-  const client=new QueryClient({defaultOptions:{queries:{retry:false}}})
+  const client=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:60_000}}})
   client.setQueryData(['home'],home)
   client.setQueryData(['settings'],await api.getSettings())
   for(const project of home.projects){
@@ -62,15 +65,23 @@ describe('N2: real Today selection for 14, 15 and 40 checkpoint demo projects',(
 
   // Render the actual Page: it decides between GoalDistance and
   // FastGoalDistance, then between GoalCard and SummaryGoalCard.
-  const html=await renderAllReady(
-   <QueryClientProvider client={client}>
-    <MemoryRouter initialEntries={['/']}><Today/></MemoryRouter>
-   </QueryClientProvider>
-  )
-  const view=new DOMParser().parseFromString(html,'text/html')
-  const goals=view.querySelector('[aria-label="Distance to your goals"]')
-  expect(goals).not.toBeNull()
-  expect(goals?.querySelectorAll('article[aria-label^="Goal progress for"]')).toHaveLength(3)
+  const host=document.createElement('div')
+  document.body.appendChild(host)
+  const root=createRoot(host)
+  try{
+   await act(async()=>{
+    root.render(<QueryClientProvider client={client}>
+     <MemoryRouter initialEntries={['/']}><Today/></MemoryRouter>
+    </QueryClientProvider>)
+   })
+   // React.lazy routes must finish mounting before counting real Today cards.
+   // This intentionally tests the page DOM, not the streamed SSR fallback.
+   await vi.waitFor(()=>{
+    const region=host.querySelector('[aria-label="Distance to your goals"]')
+    expect(region).not.toBeNull()
+    expect(region?.querySelectorAll('article[aria-label^="Goal progress for"]')).toHaveLength(3)
+   },{timeout:15_000,interval:50})
+   const goals=host.querySelector('[aria-label="Distance to your goals"]')
 
   for(const project of home.projects){
    const card=Array.from(goals?.querySelectorAll('article')??[])
@@ -91,6 +102,11 @@ describe('N2: real Today selection for 14, 15 and 40 checkpoint demo projects',(
    }else{
     expect(card?.hasAttribute('data-summary-goal')).toBe(false)
    }
+  }
+  }finally{
+   await act(async()=>root.unmount())
+   client.clear()
+   host.remove()
   }
  })
 })
