@@ -129,6 +129,11 @@ try {
  assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[entryId]))[0].n,0);
  assert.deepEqual(await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc5','save',{target:{id:entryId},expectedVersion:4,patch:{}})),saved);
  await assert.rejects(command(study('cccccccc-cccc-cccc-cccc-ccccccccccc6','save',{target:{id:entryId},expectedVersion:5,patch:{}})),/Terminal/);
+ await assert.rejects(command({
+   operationId:'ffffffff-ffff-ffff-ffff-fffffffffff6',schemaVersion:1,
+   resource:'study_intervals',operation:'create',
+   patch:{entry_id:entryId,kind:'focus',started_at:'2026-11-05T10:00:00Z',ended_at:'2026-11-05T11:00:00Z'}
+ }),/Terminal study entry/);
  const draft=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc7','create',{patch:{source:'manual',intent:'Scratch'}}));
  const draftId=draft.changed[0].id;
  const discarded=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc8','discard',{target:{id:draftId},expectedVersion:1,patch:{}}));
