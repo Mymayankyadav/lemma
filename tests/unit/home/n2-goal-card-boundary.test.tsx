@@ -69,13 +69,11 @@ describe('N2: actual Today goal selection at 14/15/40 checkpoints',()=>{
      <MemoryRouter><Page/></MemoryRouter>
     </QueryClientProvider>)
    })
-   // The small-desk GoalDistance and its 14-checkpoint GoalCard are lazy.
-   // Flush their real imports instead of testing their components in isolation.
-   for(let i=0;i<10&&host.querySelectorAll('[data-goal-card]').length<3;i++){
-    await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0))})
-   }
-
-   expect(host.querySelectorAll('[data-goal-card]')).toHaveLength(3)
+   // Wait for the real lazy GoalDistance and GoalCard imports to mount.
+   // A fixed number of zero-delay ticks can return before React commits them.
+   await vi.waitFor(()=>{
+    expect(host.querySelectorAll('[data-goal-card]')).toHaveLength(3)
+   },{timeout:15_000,interval:50})
    for(const [index,project] of home.projects.entries()){
     const total=sizes[index]
     expect(project.total).toBe(total)
