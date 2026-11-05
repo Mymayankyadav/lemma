@@ -53,7 +53,7 @@ export function inProgressMinutes(active: ActiveEffort | null, now: string): num
 }
 export function capacityStack(logged: Occupied[], busy: Occupied[], planned: Occupied[], day: Range) {
   const bounds: Span = [ms(day.start),ms(day.end)];
-  const toSpans=(xs:Occupied[])=>clip(xs.map(x=>[ms(x.start),ms(x.end)]),...bounds);
+  const toSpans=(xs:Occupied[])=>clip(xs.map(x=>[ms(x.start),ms(x.end)] as Span),...bounds);
   const l=union(toSpans(logged)), b=subtract(toSpans(busy),l), p=subtract(toSpans(planned),[...l,...b]);
   return { logged:duration(l),busy:duration(b),planned:duration(p),free:Math.max(0,minutes(bounds[1]-bounds[0])-duration([...l,...b,...p])) };
 }
