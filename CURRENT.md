@@ -145,3 +145,7 @@ Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright,
 ## N9 effort metrics (PR #850)
 
 The pure `src/lib/effort/` module provides interval-union logged minutes (with separate future minutes), capped active focus that retains accumulated minutes during pauses and breaks, priority capacity partition, per-subject partition, and IANA civil-day boundaries including skipped midnights and DST transitions. Unit coverage is in `tests/unit/effort/metrics.test.ts`. The module is not wired to the UI. Current CI status is tracked by the PR checks rather than this document.
+
+## N6.2 reminder Review queue (PR #881)
+
+The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. This is pending PR review and CI verification; it is not yet on main.
