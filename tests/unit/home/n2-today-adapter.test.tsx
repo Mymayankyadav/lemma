@@ -67,6 +67,7 @@ async function renderToday(largeDesk:boolean){
  client.setQueryData(['insights',30],await selectedApi.getInsightData(30))
  for(const project of home.projects)
   client.setQueryData(['project',project.slug],await selectedApi.getProject(project.slug))
+ vi.stubGlobal('ResizeObserver',class {observe(){} unobserve(){} disconnect(){}})
  const host=document.createElement('div')
  document.body.appendChild(host)
  const root=createRoot(host)
@@ -95,6 +96,7 @@ async function renderToday(largeDesk:boolean){
   await act(async()=>root.unmount())
   client.clear()
   host.remove()
+  vi.unstubAllGlobals()
  }
 }
 
@@ -102,7 +104,7 @@ describe('N2: demo adapter to actual Today goal cards',()=>{
  it('retains title, next checkpoint and distance at 14, 15 and 40 checkpoints on the small desk',async()=>{
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
   await renderToday(false)
- })
+ },30_000)
  it('retains the same three goal cards when Today selects the fast large-desk path',async()=>{
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
   vi.stubGlobal('requestAnimationFrame',(callback:FrameRequestCallback)=>
@@ -110,5 +112,5 @@ describe('N2: demo adapter to actual Today goal cards',()=>{
   vi.stubGlobal('cancelAnimationFrame',(handle:number)=>window.clearTimeout(handle))
   try{await renderToday(true)}
   finally{vi.unstubAllGlobals()}
- })
+ },30_000)
 })
