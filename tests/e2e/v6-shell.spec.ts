@@ -66,6 +66,28 @@ for(const viewport of [
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
    }
   }
+  // Atlas is full-bleed but its selection actions must clear the persistent dock.
+  await page.goto('./?demo=1&flags=v6Shell#/atlas');
+  await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
+  await page.getByRole('button',{name:'Find an idea'}).click();
+  await page.getByRole('textbox',{name:'Find an idea'}).fill('Compactness');
+  await page.getByRole('button',{name:/^Compactness, /}).click();
+  const peek=page.locator('[data-atlas-peek]');
+  await expect(peek).toContainText('Compactness');
+  await page.locator('[data-atlas-stage]').evaluate(el=>el.scrollTop=el.scrollHeight);
+  const details=peek.getByRole('button',{name:'Details'});
+  const dock=page.getByRole('navigation',{name:'Main navigation'});
+  await expect.poll(async()=>{
+   const [buttonRect,dockRect]=await Promise.all([details.boundingBox(),dock.boundingBox()]);
+   return !!buttonRect&&!!dockRect&&buttonRect.y+buttonRect.height<=dockRect.y+1;
+  }).toBe(true);
+  expect(await details.evaluate(el=>{
+   const r=el.getBoundingClientRect();
+   return el===document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)
+    ||el.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2));
+  })).toBe(true);
+  await details.click();
+  await expect(page.getByRole('dialog',{name:'Compactness'})).toBeVisible();
   await page.goto('./?demo=stress&flags=v6Shell#/sign-in');
   await expect(page.getByRole('navigation',{name:'Main navigation'})).toHaveCount(0);
  });
