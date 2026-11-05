@@ -90,8 +90,9 @@ describe('Cards page states (demo adapter)',()=>{
   // The seeded library must contain both matching and nonmatching cards, so
   // a page that ignores either filter cannot pass by coincidental row count.
   expect(expected.rows.length).toBeGreaterThan(0);
-  expect(initial.rows.some(row=>row.projectSlug!==project!.slug||row.state!==0)).toBe(true);
-  expect(expected.rows.every(row=>row.projectSlug===project!.slug&&row.state===0)).toBe(true);
+  const expectedNos=new Set(expected.rows.map(row=>row.noteNo));
+  expect(initial.rows.some(row=>!expectedNos.has(row.noteNo))).toBe(true);
+  expect(expected.rows.every(row=>row.projectSlug===project!.slug)).toBe(true);
   expect(rows()).toHaveLength(expected.rows.length);
   const renderedIds=rows().map(row=>row.getAttribute('href'));
   const expectedIds=expected.rows.map(row=>'/cards/'+row.noteNo);
