@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { isFlagOn } from "../../flags";
 import { Link, useSearchParams } from "react-router";
 import {
   motion,
@@ -231,6 +233,7 @@ export default function Page() {
     [back, setBack] = useState(""),
     [slow, setSlow] = useState(false),
     [completed, setCompleted] = useState(0);
+  const v6=isFlagOn('v6Shell');
   const pending = approve.isPending || reject.isPending || !!staged;
   useEffect(() => {
     if (!query.isLoading) {
@@ -368,6 +371,9 @@ export default function Page() {
                 ),
               )}
             </div>
+            {v6?createPortal(
+              <div data-v6-proposal-actions="" aria-label="Proposal decisions" className="fixed inset-x-0 z-40 mx-auto max-w-[528px] border-t border-edge bg-[var(--tab-bg)] px-3 py-2 shadow-lg"
+                style={{bottom:'calc(var(--tab) + env(safe-area-inset-bottom))'}}>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
@@ -393,6 +399,35 @@ export default function Page() {
                 <Check size={18}/><span className="text-label font-semibold">Approve</span>
               </button>
             </div>
+              </div>,
+              document.body
+            ):(
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                aria-label="Reject card"
+                disabled={pending}
+                onClick={() => void commit(active, false)}
+                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl border border-again bg-danger-tint px-2 text-again disabled:opacity-50"
+              >
+                <X size={18} /><span className="text-label">Reject</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Edit card"
+                disabled={pending || !active.card}
+                onClick={openEdit}
+                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl border border-edge bg-fill-1 px-2 text-ink-2 disabled:opacity-40"
+              >
+                <PencilLine size={17} /><span className="text-label">Edit</span>
+              </button>
+              <button type="button" aria-label="Approve card" disabled={pending}
+                onClick={() => void commit(active, true)}
+                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl bg-amber px-2 text-amber-ink disabled:opacity-50">
+                <Check size={18}/><span className="text-label font-semibold">Approve</span>
+              </button>
+            </div>
+            )}
           </>
         ) : (
           <EmptyState
