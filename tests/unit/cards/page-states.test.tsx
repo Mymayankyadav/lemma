@@ -78,13 +78,13 @@ describe('Cards page states (demo adapter)',()=>{
  it('combines project and scheduling state before rendering demo cards',async()=>{
   const api=new DemoAdapter();
   const projects=await api.listProjects();
-  const initial=await api.searchCardsPage({});
+  const initial=await api.searchCardsPage({query:''});
   expect(initial.rows.length).toBeGreaterThan(0);
   const selected=initial.rows[0];
   const project=projects.find(p=>p.slug===selected.projectSlug);
   expect(project).toBeDefined();
-  const state=String(selected.state);
-  const expected=await api.searchCardsPage({projectSlug:project!.slug,state:Number(state) as 0|1|2|3});
+  const state='0';
+  const expected=await api.searchCardsPage({query:'',projectSlug:project!.slug,state:0});
   await mount(api,projects);
   await change('Filter project',project!.slug);
   await change('Filter scheduling state',state);
