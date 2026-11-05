@@ -32,7 +32,9 @@ export function useReminderRound(settings:Settings|undefined){
      :boundedReminderItems(await api.getReviewItems(filter),link.count);
     if(cancelled)return;
     if(!items.length){setError('No cards are due for this reminder.');return}
-    useReviewSession.getState().initialize(items,settings,filter);
+    // The ordinary daily quota must not truncate a reminder-selected round.
+    // Override only the in-memory queue settings; never persist this value.
+    useReviewSession.getState().initialize(items,{...settings,reviewsPerDay:50,newPerDay:50},filter);
     navigate('/review/run?reminder=1');
    }catch{
     if(!cancelled)setError('Could not load reminder cards. Try again from your reminder.');
