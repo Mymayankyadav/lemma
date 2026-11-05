@@ -1,8 +1,10 @@
 import {describe, expect, it, vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
+import {fileURLToPath} from 'node:url';
+import {resolve, dirname} from 'node:path';
 
-const source = readFileSync(new URL('../../../src/lib/lemma-push-worker.js', import.meta.url), 'utf8');
+const source = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../src/lib/lemma-push-worker.js'), 'utf8');
 const valid = JSON.stringify({v:1,id:'123',kind:'due',tag:'due_123',title:'Review',body:'Cards due',
  url:'/lemma/#/review',actions:[{action:'open',title:'Review',url:'#/review/run'}],ts:1790000000});
 function boot(enabled: boolean, windows: unknown[] = []) {
