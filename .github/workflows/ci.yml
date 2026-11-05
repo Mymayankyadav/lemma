@@ -7,6 +7,11 @@ on:
   push:
     branches: [main, 'selftest/main']
   workflow_dispatch:
+    inputs:
+      recheck:
+        description: 'Set by CI: the one automatic re-run of a red main on fresh runners'
+        required: false
+        default: 'false'
 permissions:
   contents: read
 env:
@@ -241,22 +246,43 @@ jobs:
       CI_BOT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
       FAILED_JOBS: ${{ needs.check.result == 'failure' && 'check ' || '' }}${{ needs.e2e.result == 'failure' && 'e2e ' || '' }}${{ needs.mcp-sql.result == 'failure' && 'mcp-sql' || '' }}
     steps:
+      # v1.7: a browser, runner or timing glitch (for example "Unable to capture screenshot", or a unit test that
+      # asserts before async state renders) must not freeze every merge and revert an innocent PR. When main goes red,
+      # run the whole suite once more on fresh runners first; the incident and the revert happen only if that second
+      # run is red as well. Any failing job counts: on 2026-11-05 a flaky unit test in `check` reverted an unrelated
+      # merge, so `check` is not exempt. The re-run is a workflow_dispatch of this workflow (recheck=true), which never
+      # re-checks again.
+      - name: Re-run once on fresh runners before declaring main red
+        id: recheck
+        if: github.ref_name == github.event.repository.default_branch && inputs.recheck != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run ci.yml --ref "$GITHUB_REF_NAME" -f recheck=true -R "$GITHUB_REPOSITORY"
+          echo "rechecking=true" >> "$GITHUB_OUTPUT"
+          echo "::warning::e2e failed on main; no incident or revert yet. CI runs the full suite once more on fresh runners and acts only if that is red too."
       - uses: actions/checkout@v4
+        if: steps.recheck.outputs.rechecking != 'true'
         with:
           fetch-depth: 0
           token: ${{ secrets.CI_BOT_TOKEN || github.token }}
       - uses: actions/setup-node@v4
+        if: steps.recheck.outputs.rechecking != 'true'
         with:
           node-version: 22
       - uses: actions/download-artifact@v4
+        if: steps.recheck.outputs.rechecking != 'true'
         with:
           pattern: junit-*
           path: junit
         continue-on-error: true
-      - run: node scripts/ci/signatures.mjs junit signatures.json
+      - if: steps.recheck.outputs.rechecking != 'true'
+        run: node scripts/ci/signatures.mjs junit signatures.json
       - name: Open or update the S0 incident
+        if: steps.recheck.outputs.rechecking != 'true'
         run: node scripts/ci/incident.mjs main
       - name: Revert the merge(s) since the last green run
+        if: steps.recheck.outputs.rechecking != 'true'
         run: node scripts/ci/revert.mjs
 
   # Green main -> close the main incident automatically.
@@ -268,7 +294,9 @@ jobs:
     permissions:
       contents: read
       issues: write
-      pull-requests: read
+      pull-requests: write
+      checks: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -277,3 +305,13 @@ jobs:
       - run: node scripts/ci/incident.mjs main-green
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      # v1.7: PRs approved while an S0 freeze was on are not re-evaluated by anything else. Now that main is green,
+      # evaluate every open PR labelled needs-review (same rules as review-merge.yml; the bot token merges, so the
+      # merge starts the full suite). Main-side only: this job runs on push to main, never for a pull request.
+      - name: Re-evaluate PRs that were waiting (approved during a freeze)
+        if: github.ref_name == github.event.repository.default_branch
+        run: node scripts/ci/approve.mjs
+        env:
+          ALL_OPEN: '1'
+          GITHUB_TOKEN: ${{ github.token }}
+          CI_BOT_TOKEN: ${{ secrets.CI_BOT_TOKEN }}
