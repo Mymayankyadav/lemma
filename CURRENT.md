@@ -64,6 +64,8 @@ Routes (`src/app/routes.tsx`): `/`, `/projects`, `/projects/new`, `/p/:slug`, `/
 
 Not on main (existed only in archived, unmerged PRs): read-only offline snapshot (AND-8). The Android shell and store kit were ported by N7 and N8.
 
+N13 PR #853 in progress (not on main): the default-off `v6Shell` flag now gates five navigation destinations, persistent tabs on detail routes, and a Calendar placeholder. Shared header, focus accessory, Inbox clearance and E2E validation remain pending.
+
 v6 direction (Owner, 2026-11-05): the reference set is in `docs/v6/` (mockup, screenshots, direction plan, data/MCP contract). It describes the target, not what exists; NEXT.md items N9–N14 implement the first durable study slice behind `v6Shell`.
 
 ## Data model
