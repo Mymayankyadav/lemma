@@ -40,7 +40,7 @@ export function SummaryGoalCard({project,events}:{project:ProjectSummary;events:
   targetDate:project.targetDate,events,
  })
  return <Slab as="article" aria-label={'Goal progress for '+project.title}
-  className="flex min-w-0 flex-col gap-3 p-4" data-goal-card="" data-summary-goal="">
+  className="flex min-w-0 flex-col gap-3 p-4" data-goal-card="" data-bounded-goal="">
   <div className="flex min-w-0 items-start gap-3">
    <Glyph subject={project.subject?.glyph??'∫'} hue={project.subject?.hue??'slate'} size={32}/>
    <div className="min-w-0 flex-1">
@@ -108,7 +108,7 @@ export function FastGoalDistance({projects}:{projects:ProjectSummary[];variant?:
   // that includes Playwright's separate scroll and screenshot preparations.
   let frame=0,previousFrameVisible=false
   const inspect=()=>{
-   const goal=document.querySelector<HTMLElement>('[data-summary-goal]')
+   const goal=document.querySelector<HTMLElement>('[data-bounded-goal]')
    const rect=goal?.getBoundingClientRect()
    // The first goal must actually intersect the painted viewport, not
    // merely exist below the fold or in an offscreen cached subtree.
