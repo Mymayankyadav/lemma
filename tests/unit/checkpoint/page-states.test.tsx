@@ -50,8 +50,14 @@ describe('Checkpoint page states',()=>{
  });
  it('renders a loading skeleton instead of evidence',()=>{
   mocks.checkpoint.isPending=true;
-  const {container}=show();
-  expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBeGreaterThan(0);
+  vi.useFakeTimers();
+  try {
+   const {container}=show();
+   act(()=>{vi.advanceTimersByTime(301)});
+   expect(container.querySelectorAll('[class*="animate-pulse"]').length).toBe(3);
+  } finally {
+   vi.useRealTimers();
+  }
   expect(screen.queryByText('Evidence required')).toBeNull();
  });
  it('shows the not-found fallback',()=>{
