@@ -63,17 +63,14 @@ describe('Cards page states (demo adapter)',()=>{
   expect(container.textContent).toContain('No cards match');
   expect(rows()).toHaveLength(0);
  });
- it('shows filtered-to-zero when the search matches no demo card',async()=>{
-  const api=new DemoAdapter();
+ it('shows filtered-to-zero when no demo notes have the selected status',async()=>{
+  const fixture=structuredClone(demoSeedFixture);
+  fixture.notes.forEach(note=>{note.note.status='active'});
+  const api=new DemoAdapter({fixture});
+  expect((await api.searchCardsPage({query:''})).rows.length).toBeGreaterThan(0);
+  expect((await api.searchCardsPage({query:'',noteStatus:'suspended'})).rows).toHaveLength(0);
   await mount(api,[]);
-  const input=container.querySelector<HTMLInputElement>('input[placeholder="Search cards"]')!;
-  await act(async()=>{
-   const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!;
-   setter.call(input,'unmatchable-card-query-xyz-987654');
-   input.dispatchEvent(new Event('input',{bubbles:true}));
-   input.dispatchEvent(new Event('change',{bubbles:true}));
-  });
-  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,300))});
+  await change('Filter note status','suspended');
   expect(container.textContent).toContain('No cards match');
   expect(rows()).toHaveLength(0);
  });
