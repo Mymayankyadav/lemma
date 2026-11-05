@@ -29,6 +29,7 @@ describe('effort metrics',()=>{
     expect(inProgressMinutes({startedAt:t(0),focusMinutes:25,phase:'paused'},t(10))).toBe(0);
     expect(inProgressMinutes(null,t(10))).toBe(0);
     expect(inProgressMinutes({startedAt:t(0),focusMinutes:25,phase:'focus',intervals:[interval(0,10),interval(10,20,'break'),interval(20,25)]},t(25))).toBe(15);
+    expect(inProgressMinutes({startedAt:t(0),focusMinutes:60,phase:'focus',intervals:[interval(0,30),interval(10,20,'break')]},t(30))).toBe(20);
   });
   it('partitions capacity by priority',()=>{
     const day={start:t(0),end:t(60)};
@@ -48,6 +49,13 @@ describe('effort metrics',()=>{
     expect(parts.unassigned).toBe(10);
     expect(Object.values(parts).reduce((a,b)=>a+b,0)).toBe(loggedMinutes(entries,range,'UTC',t(120)).minutes);
     expect(subjectPartition([entry('x',[interval(0,10)],'math'),entry('x',[interval(0,10)],'math')],range,'UTC').math).toBe(10);
+  });
+  it('keeps subject totals equal to logged time when breaks overlap other entries',()=>{
+    const entries=[entry('a',[interval(0,30),interval(10,20,'break')],'math'),entry('b',[interval(10,25)],'physics')];
+    const parts=subjectPartition(entries,range,'UTC');
+    expect(parts.math).toBe(20);
+    expect(parts.physics).toBe(0);
+    expect(Object.values(parts).reduce((a,b)=>a+b,0)).toBe(loggedMinutes(entries,range,'UTC',t(120)).minutes);
   });
   it('uses civil days, including DST transitions',()=>{
     const londonSpring=dayBounds('2026-03-29','Europe/London');
