@@ -13,6 +13,8 @@ export const FLAG_DEFAULTS = {
   ciSelfTest: false,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
+  /** Service-worker notification handling remains opt-in until N5 is complete. */
+  notificationsPush: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;
