@@ -53,7 +53,7 @@ export function inProgressMinutes(active: ActiveEffort | null, now: string): num
 }
 export function capacityStack(logged: Occupied[], busy: Occupied[], planned: Occupied[], day: Range) {
   const bounds: Span = [ms(day.start),ms(day.end)];
-  const toSpans=(xs:Occupied[])=>clip(xs.map(x=>[ms(x.start),ms(x.end)] as Span),...bounds);
+  const toSpans=(xs:Occupied[])=>clip(xs.map(x=>[ms(x.start),ms(x.end)] as Span),bounds[0],bounds[1]);
   const l=union(toSpans(logged)), b=subtract(toSpans(busy),l), p=subtract(toSpans(planned),[...l,...b]);
   return { logged:duration(l),busy:duration(b),planned:duration(p),free:Math.max(0,minutes(bounds[1]-bounds[0])-duration([...l,...b,...p])) };
 }
@@ -77,7 +77,7 @@ function offset(instant:number,zone:string) {
   const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant));
   const get=(t:string)=>Number(parts.find(p=>p.type===t)?.value);
   const wall=Date.UTC(get('year'),get('month')-1,get('day'),get('hour'),get('minute'),get('second'));
-  return wall-instant;
+  return wall-Math.floor(instant/1000)*1000;
 }
 function midnight(date:string,zone:string) {
   const [y,m,d]=date.split('-').map(Number);
