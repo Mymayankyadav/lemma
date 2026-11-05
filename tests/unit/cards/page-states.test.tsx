@@ -105,6 +105,11 @@ describe('Cards page states (demo adapter)',()=>{
   const expectedNos=new Set(expected.rows.map(row=>row.noteNo));
   expect(initial.rows.some(row=>!expectedNos.has(row.noteNo))).toBe(true);
   expect(expected.rows.every(row=>row.projectSlug===project!.slug)).toBe(true);
+  // React Query resolves the new filter key asynchronously after the select
+  // events; wait for the filtered result instead of reading the pending paint.
+  for(let attempt=0;attempt<20 && rows().length!==expected.rows.length;attempt++){
+   await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10))});
+  }
   expect(rows()).toHaveLength(expected.rows.length);
   const renderedIds=rows().map(row=>row.getAttribute('href'));
   const expectedIds=expected.rows.map(row=>'/cards/'+row.noteNo);
