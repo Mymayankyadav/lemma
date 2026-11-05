@@ -30,6 +30,9 @@ describe('effort metrics',()=>{
     expect(inProgressMinutes(null,t(10))).toBe(0);
     expect(inProgressMinutes({startedAt:t(0),focusMinutes:25,phase:'focus',intervals:[interval(0,10),interval(10,20,'break'),interval(20,25)]},t(25))).toBe(15);
     expect(inProgressMinutes({startedAt:t(0),focusMinutes:60,phase:'focus',intervals:[interval(0,30),interval(10,20,'break')]},t(30))).toBe(20);
+    expect(inProgressMinutes({startedAt:t(0),focusMinutes:25,phase:'break',intervals:[interval(0,20),interval(20,30,'break')]},t(90))).toBe(20);
+    expect(inProgressMinutes({startedAt:t(0),focusMinutes:25,phase:'paused',intervals:[interval(0,20)]},t(90))).toBe(20);
+    expect(inProgressMinutes({startedAt:t(0),focusMinutes:25,phase:'paused',intervals:[]},t(90))).toBe(0);
   });
   it('partitions capacity by priority',()=>{
     const day={start:t(0),end:t(60)};
