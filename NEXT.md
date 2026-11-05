@@ -26,24 +26,20 @@ Owner-authorized 2026-11-05 (decision D1): merging deploys this migration to pro
 Scope: supabase/migrations/<the new file only>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
 Not: any change to existing tables, functions or policies; app code; MCP code; edge functions; importing tutor-session minutes as focus time.
 
-## N11 v6 study commands: one SQL entry point with receipts and versions
-Stage: Build · Status: open · Needs: N10 · Assigned: —
-Done = a new migration adding `public.study_command(p jsonb) returns jsonb` (security invoker; owner from `auth.uid()`, never from the payload) for the envelope `{operationId, schemaVersion: 1, resource: study_entries|study_intervals|calendar_blocks, operation, target: {id}, expectedVersion, patch}`, with operations create, update, delete, start, pause, resume, break, save, discard. Rules:
-- a repeated operationId returns the stored receipt (checked before the version);
-- a stale expectedVersion returns `{status: "conflict", current}`;
-- unknown patch fields are rejected, and an omitted field differs from an explicit null;
-- `save` is one transaction (closes the open interval, sets saved status, saved_at and reflection);
-- `discard` leaves zero logged minutes;
-- update, delete and save write `actions`/`action_changes` rows so the existing `undo_action` can reverse them.
+## N11.2 v6 study entry and interval commands, consistent lifecycle
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = extend `public.study_command(p jsonb)` using one new additive migration to accept `study_entries` and `study_intervals` and the operations create, update, delete, start, pause, resume, break, save, discard. Enforce owner from `auth.uid()`, allow-listed patch fields, expectedVersion conflicts, idempotency before version checks, and record status transitions. Save must close an open interval atomically, set saved_at and reflection and never double-save; discard must produce zero logged focus minutes. Validate open interval ownership and transitions, including breaks. Keep the existing calendar-block N11.1 response contract and `command_receipts` behaviour. Extend `tests/mcp/sql/study-command.mjs` (PGlite) with one case per operation and tests for lost acknowledgement, two saves, invalid transitions, partial patches, and cross-owner targets.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
+Not: modifying existing migrations or functions outside `study_command`, undo_action changes, MCP, app UI, changing the N10 table schema, or new dependencies. Existing `study_command` is replaced only compatibly, with a PR-body `Replaces function: study_command (reviewer verified signature and behaviour)` line.
 
-The receipt shape is `{operationId, status, changed: [{id, version}], actionNo, conflict?}`.
-Test `tests/mcp/sql/study-command.mjs` (PGlite): one or more cases per rule, plus a retry after a lost acknowledgement, two saves of the same entry giving one saved entry, a cross-owner target rejected, and undo restoring a deleted block.
-Owner-authorized 2026-11-05 (D1): merging deploys to production. It must pass the additive-only migration guard; the reviewer confirms that existing functions are untouched.
-Scope: supabase/migrations/<the new file only>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
-Not: MCP, app UI, a change feed, existing functions.
+## N11.3 v6 reversible study commands and existing undo support
+Stage: Build · Status: open · Needs: N11.2 · Assigned: —
+Done = complete N11 by recording `actions` and `action_changes` for study update/delete/save and returning a real `actionNo` for every reversible write. `public.undo_action` restores a deleted calendar block and reverts saved or updated study records without cross-owner writes. Add PGlite regression tests covering undo of deleted blocks, conflict after newer edits, restored study data, exact receipt replay and owner isolation. Per Owner decision D5 (`docs/v6/README.md`): compatible `undo_action` replacement limited to adding the three study tables. Preserve the public command envelope and N11.1/N11.2 semantics.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/**, CURRENT.md, src/data/live/database.types.ts (signature only if needed).
+Not: changing existing migration files, existing functions without Owner authorization, client UI, MCP, disabling RLS, deleting or weakening tests, or new dependencies.
 
 ## N12 MCP: study records through the same command
-Stage: Build · Status: open · Needs: N11 · Assigned: —
+Stage: Build · Status: open · Needs: N11.3 · Assigned: —
 Done = the connector reads study records through existing `get`/`search` (resources `study_entries`, `calendar_blocks`; bounded pages with a cursor; totals reported separately from the page) and gains ONE new tool `study` that forwards a command envelope to `public.study_command` and returns its receipt. The owner comes from the authenticated connection, never from arguments. Existing tools and the `resume` packet are unchanged. `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
 Tests: unit tests in `tests/unit/mcp/` (argument validation, owner not taken from arguments, receipt passed through unchanged) and `tests/mcp/sql/study-mcp.mjs`, where an entry created through the `study` tool is read back by `get` with the same version, and an app-side `study_command` change is seen by the next `get`.
 Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production. The reviewer confirms that no existing tool's input or output changed. Per D3, the `study` tool acts on explicit instructions in chat only for changes that can be undone (every write returns an `actionNo` for `undo`).
@@ -83,7 +79,7 @@ Scope: src/lib/focus/**, src/features/home/** (the v6 branch only), src/features
 Not: the live adapter (next priority run), Calendar or Progress views, converting parked thoughts to tasks, notifications, and Today with the flag off.
 
 ## N6.3 Notifications: Review completion reminder-time offer (after N6.2)
-Stage: Build · Status: open · Needs: — · Assigned: —
+Stage: Build · Status: open · Needs: N6.2 · Assigned: —
 Done = after a reminder-driven Review queue is finished, the Review-done screen offers the next reminder time from current notification settings rather than an invented schedule; the offer is absent for ordinary Review and when `notificationsPush` is off. Tests cover eligible reminder completion, ordinary round, missing/unavailable scheduling data, and correct finishing navigation.
 Scope: src/features/review-done/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
 Not: supabase/**, `.github/**`, new dependencies, mutation of persisted reminder settings.
