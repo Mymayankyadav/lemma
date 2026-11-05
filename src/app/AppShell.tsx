@@ -1,6 +1,7 @@
 import {useOutlet,useLocation,useNavigationType} from 'react-router';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
+import {isFlagOn} from '../flags';
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
 import {GraphSketch} from '../ui/backgrounds/graph/GraphSketch';
@@ -8,7 +9,8 @@ import {easeOut} from '../ui/motion';
 const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
- const showTabs=tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas';
+ const v6=isFlagOn('v6Shell');
+ const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas';
  const tab=showTabs,back=navigation==='POP';
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  {fullBleed&&<DemoChip floating/>}
