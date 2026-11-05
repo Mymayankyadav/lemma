@@ -68,6 +68,8 @@ v6 direction (Owner, 2026-11-05): the reference set is in `docs/v6/` (mockup, sc
 
 N10 merged in PR #851 on 2026-11-05: the additive migration `supabase/migrations/20261105141000_v6_study.sql` is on main and defines four owner-scoped v6 study tables (`study_entries`, `study_intervals`, `calendar_blocks`, `command_receipts`), with database types and schema tests. **Merged into main does not prove deployment:** application of this migration to the remote Supabase database has not been verified here. The study commands, MCP integration, and study UI remain pending.
 
+N6.1 (split PR #872): notification Review link parsing in `src/data/notify.ts` accepts only bounded app-local `#/review?start=1..50` links and optional syntactically valid, unexpired action tokens. It does not verify signatures; server authorization remains mandatory. The one-shot RPC integration (N6.2) and Review-done next-time offer (N6.3) are not wired yet. No route behavior is changed by this slice.
+
 ## Data model
 
 Tables in `public` (from `supabase/migrations/20261029164215_lemma_tables.sql` and later), every row carries `user_id` with RLS; connector and app code must filter by `user_id`:
