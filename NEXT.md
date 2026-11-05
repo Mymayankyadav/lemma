@@ -71,7 +71,7 @@ Done = flag `v6Shell` (default false) in `src/flags.ts`. With it on:
 
 With the flag off, nothing changes.
 Tests: a unit test of the tab set in both flag states, and `tests/e2e/v6-shell.spec.ts` (`?demo=stress&flags=v6Shell`) at 320×640, 390×844 and 844×390. It checks that the five tabs are reachable on Today, Review, Inbox and a card detail, with no horizontal overflow and tap targets of at least 44 px. It also checks that the Inbox decision bar's box does not overlap the tab bar, and that Today has under 1,500 DOM nodes.
-Scope: src/app/**, src/ui/** (new components; TabBar), src/features/calendar/** (new), src/features/proposals/** (decision-bar placement only), src/flags.ts, tests/unit/app/**, tests/unit/flags.test.ts, tests/e2e/v6-shell.spec.ts, CURRENT.md.
+Scope: src/app/** (including `src/app/TabBar.tsx`), src/ui/** (new components), src/features/calendar/** (new), src/features/proposals/** (decision-bar placement only), src/flags.ts, tests/unit/app/**, tests/unit/flags.test.ts, tests/e2e/v6-shell.spec.ts, CURRENT.md.
 Not: colours, fonts or theme tokens (a later item); timer logic; data or API changes; edits to existing e2e specs or visual tests; removing the current four-tab shell.
 
 ## N14 v6 Focus on demo data: state machine, Today hero, Focus dialog
