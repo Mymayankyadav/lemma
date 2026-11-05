@@ -90,21 +90,30 @@ export function subjectPartition(entries: StudyEntry[], range: Range, zone: stri
   }
   return result;
 }
-function offset(instant:number,zone:string) {
-  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant));
-  const get=(t:string)=>Number(parts.find(p=>p.type===t)?.value);
-  const wall=Date.UTC(get('year'),get('month')-1,get('day'),get('hour'),get('minute'),get('second'));
-  return wall-Math.floor(instant/1000)*1000;
-}
-function midnight(date:string,zone:string) {
+function midnight(date:string,formatter:Intl.DateTimeFormat) {
   const [y,m,d]=date.split('-').map(Number);
   const target=Date.UTC(y,m-1,d);
-  let guess=target;
-  for(let i=0;i<4;i++) guess=target-offset(guess,zone);
-  return new Date(guess).toISOString();
+  const localDate=(instant:number) => {
+    const parts=formatter.formatToParts(new Date(instant));
+    const get=(type:string)=>Number(parts.find(part=>part.type===type)?.value);
+    return Date.UTC(get('year'),get('month')-1,get('day'));
+  };
+  // Find the first instant in this civil date, not a hypothetical 00:00.
+  // Some zones (e.g. America/Santiago) skip midnight during a DST jump.
+  // The 48-hour bracket covers all current IANA offsets and skipped dates.
+  let before=target-48*60*60*1000, after=target+48*60*60*1000;
+  while (after-before>1) {
+    const mid=before+Math.floor((after-before)/2);
+    if (localDate(mid)>=target) after=mid;
+    else before=mid;
+  }
+  return new Date(after).toISOString();
 }
 export function dayBounds(date:string,zone:string): Range {
   const [y,m,d]=date.split('-').map(Number);
   const next=new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);
-  return {start:midnight(date,zone),end:midnight(next,zone)};
+  const formatter=new Intl.DateTimeFormat('en-US',{
+    timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'
+  });
+  return {start:midnight(date,formatter),end:midnight(next,formatter)};
 }
