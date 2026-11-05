@@ -49,7 +49,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/**, CURRENT.md
 Not: changing existing migration files, existing functions without Owner authorization, client UI, MCP, disabling RLS, deleting or weakening tests, or new dependencies.
 
 ## N12 MCP: study records through the same command
-Stage: Build · Status: open · Needs: N11 · Assigned: —
+Stage: Build · Status: open · Needs: N11.3 · Assigned: —
 Done = the connector reads study records through existing `get`/`search` (resources `study_entries`, `calendar_blocks`; bounded pages with a cursor; totals reported separately from the page) and gains ONE new tool `study` that forwards a command envelope to `public.study_command` and returns its receipt. The owner comes from the authenticated connection, never from arguments. Existing tools and the `resume` packet are unchanged. `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
 Tests: unit tests in `tests/unit/mcp/` (argument validation, owner not taken from arguments, receipt passed through unchanged) and `tests/mcp/sql/study-mcp.mjs`, where an entry created through the `study` tool is read back by `get` with the same version, and an app-side `study_command` change is seen by the next `get`.
 Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production. The reviewer confirms that no existing tool's input or output changed. Per D3, the `study` tool acts on explicit instructions in chat only for changes that can be undone (every write returns an `actionNo` for `undo`).
