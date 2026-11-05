@@ -11,6 +11,11 @@ describe('feature flags',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?flags=androidShell'}).androidShell).toBe(true)
   expect(resolveFlags({allowOverrides:false,search:'?flags=androidShell',envFlags:'androidShell'}).androidShell).toBe(false)
  })
+ it('v6Shell is off by default and only accepts development/test overrides',()=>{
+  expect(FLAG_DEFAULTS.v6Shell).toBe(false)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=v6Shell'}).v6Shell).toBe(true)
+  expect(resolveFlags({allowOverrides:false,search:'?flags=v6Shell',envFlags:'v6Shell'}).v6Shell).toBe(false)
+ })
  it('?flags=a,b and the env variable turn known flags on when overrides are allowed',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?demo=1&flags=ciSelfTest'}).ciSelfTest).toBe(true)
   expect(resolveFlags({allowOverrides:true,envFlags:' ciSelfTest , nope'}).ciSelfTest).toBe(true)
