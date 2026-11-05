@@ -37,12 +37,12 @@ Stage: Stable = works and has tests on main. Harden = exists but is reported bro
 | Today (home, Continue, goal cards, review outlook) | `src/features/home` | `tests/unit/home`, `tests/e2e/home.spec.ts`, `look-5b-today-duplicates.spec.ts` | Harden | — |
 | Projects list and New project | `src/features/projects`, `src/features/new-project` | `tests/unit/projects`, `tests/e2e/projects.spec.ts`, `fix-659-new-project.spec.ts` | Stable | — |
 | Project page (stages, plan route, sources) | `src/features/project`, `src/ui/timeline` | `tests/unit/project`, `tests/unit/timeline`, `tests/e2e/project.spec.ts` | Stable | — |
-| Checkpoint page | `src/features/checkpoint` | `tests/e2e/look-1f-checkpoint.spec.ts`, `fix-659i-checkpoint-defer.spec.ts` | Harden | — |
+| Checkpoint page | `src/features/checkpoint` | `tests/unit/checkpoint/page-states.test.tsx`, `tests/e2e/look-1f-checkpoint.spec.ts`, `fix-659i-checkpoint-defer.spec.ts` | Harden | — |
 | Tutor sessions | `src/features/session` | `tests/unit/session`, `tests/e2e/session.spec.ts` | Stable | — |
 | Proposals (card approvals) | `src/features/proposals` | `tests/unit/proposals`, `tests/e2e/proposals.spec.ts` | Stable | — |
 | Plan proposal review (plan map, change map, ideas) | `src/features/plan-proposal` | `tests/unit/plan-proposal`, `tests/e2e/st2-plan-review.spec.ts` | Harden | — |
 | Review (queue, run, done) | `src/features/review`, `review-run`, `review-done` | `tests/unit/review`, `review-*.test.ts`, `tests/e2e/review.spec.ts` | Harden | — |
-| Cards browser and card detail | `src/features/cards`, `src/features/card` | `tests/unit/cards`, `tests/e2e/cards.spec.ts`, `fix-648-cards-filters.spec.ts` | Harden | — |
+| Cards browser and card detail | `src/features/cards`, `src/features/card` | `tests/unit/cards` (including `page-states.test.tsx`), `tests/e2e/cards.spec.ts`, `fix-648-cards-filters.spec.ts` | Harden | — |
 | Atlas (concept graph) | `src/features/atlas` | `tests/unit/atlas` (23 files), `tests/e2e/atlas.spec.ts`, `look-4*-atlas.spec.ts` | Harden | — |
 | Insights (charts) | `src/features/insights`, `src/ui/charts` | `tests/unit/features/insights-math.test.tsx`, `tests/unit/charts`, `tests/e2e/insights.spec.ts` | Stable | — |
 | Settings | `src/features/settings` | `tests/unit/settings`, `tests/e2e/settings.spec.ts` | Stable | — |
