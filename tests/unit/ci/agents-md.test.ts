@@ -2,8 +2,8 @@ import {describe,expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
 
 const md=readFileSync('AGENTS.md','utf8')
-describe('AGENTS.md v1.6 contract',()=>{
- it('is version 1.6 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 1\.6 \(2026-11-05\)$/))
+describe('AGENTS.md v1.7 contract',()=>{
+ it('is version 1.7 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 1\.7 \(2026-11-05\)$/))
  it('has the nine steps in the specified order',()=>{
   const run=md.slice(md.indexOf('## Each run'),md.indexOf('## Claiming and PRs'))
   const steps=[...run.matchAll(/^(\d)\. (.*)$/gm)].map((m)=>[m[1],m[2]])
@@ -49,6 +49,12 @@ describe('AGENTS.md v1.6 contract',()=>{
   const split=md.slice(md.indexOf('## Too big or stuck'),md.indexOf('## Stages'))
   expect(split).toContain('In every other item whose Needs lists N<id>, replace N<id> with the sub-item(s) that finish the work')
   expect(split).toContain('it fails a split that leaves any item needing N<id>')
+ })
+ it('v1.7: an item PR deletes its own NEXT.md block; ids missing from NEXT.md are done',()=>{
+  const claim=md.slice(md.indexOf('## Claiming and PRs'),md.indexOf('## Too big or stuck'))
+  expect(claim).toContain("An item PR also deletes its item's whole block from NEXT.md")
+  expect(claim).toContain('NEXT-MD-DONE')
+  expect(claim).toContain('An id in a Needs line that is no longer in NEXT.md is done.')
  })
  it('tells agents nothing about merging, leases or the old label wait',()=>{
   expect(md).not.toMatch(/squash-merge, then|Lease until|do not wait for it/i)

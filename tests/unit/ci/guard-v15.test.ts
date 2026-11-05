@@ -67,7 +67,7 @@ comment on table public.study_entries is 'drop nothing';`
  })
  it('scope applies it to agent PRs only (rules: and CI reverts are exempt)',()=>{
   const NEXT='# NEXT\n\n## N10 Study tables\nDone = x\nScope: a\nNot: b\n'
-  const ctx=(over:any)=>({title:'N10 study tables',body:'Agent: lemma-2 · Item: N10',files:[mig('drop table public.cards;')],baseNext:NEXT,headNext:NEXT,openPrs:[],
+  const ctx=(over:any)=>({title:'N10 study tables',body:'Agent: lemma-2 · Item: N10',files:[mig('drop table public.cards;')],baseNext:NEXT,headNext:'# NEXT\n',openPrs:[],
    protectedCfg:{paths:['AGENTS.md','.github/**'],testGlobs:[]},existingFunctions:new Set(['review_items']),now:new Date('2026-11-06T00:00:00Z'),...over})
   const r=evaluateScope(ctx({}))
   expect(r.failures.map((f:any)=>f.rule)).toEqual(['MIGRATION-ADDITIVE'])

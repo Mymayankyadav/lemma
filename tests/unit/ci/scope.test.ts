@@ -8,7 +8,9 @@ const NEXT='# NEXT\n\n## N1 Fix deployment\nStage: Stable\nDone = x\nScope: a\nN
 const NOW=new Date('2026-11-04T08:00:00Z')
 const PROT={paths:['AGENTS.md','.github/**','ci/**','scripts/ci/**','scripts/stress-limits.ts','vitest.config.ts'],testGlobs:[]}
 const line1=(agent='lemma-1')=>`Agent: ${agent} · Item: N1\n\nbody`
-const base=(over={})=>({title:'N1 fix it',body:line1(),files:[{filename:'src/a.ts',status:'modified',patch:'@@\n+x'}],baseNext:NEXT,headNext:NEXT,openPrs:[],protectedCfg:PROT,now:NOW,...over})
+// v1.7: an item PR removes its own item from NEXT.md (NEXT-MD-DONE), so the default head has N1 removed
+const NEXT_DONE=NEXT.replace(/## N1[\s\S]*?(?=\n## N)/,'')
+const base=(over={})=>({title:'N1 fix it',body:line1(),files:[{filename:'src/a.ts',status:'modified',patch:'@@\n+x'}],baseNext:NEXT,headNext:NEXT_DONE,openPrs:[],protectedCfg:PROT,now:NOW,...over})
 const rules=(ctx:any)=>evaluateScope(ctx).failures.map((f:any)=>f.rule)
 
 describe('scope check',()=>{
@@ -169,6 +171,16 @@ describe('scope check',()=>{
   expect(evaluateScope(base({title:'N1 split',baseNext:B2,headNext:split('N9, N1.3'),files:[file,code,test]})).failures.map((f:any)=>f.rule)).toContain('NEXT-MD')
   // a non-split item PR still may not touch other items' Needs
   expect(rules(base({baseNext:B,headNext:B.replace(/## N1[\s\S]*?\n\n## N2/,'## N2').replace('Needs: N9, N1 ·','Needs: N9 ·'),files:[file]}))).toContain('NEXT-MD')
+ })
+ it('v1.7 NEXT-MD-DONE: an item PR must remove its own item; splits, Owner tasks, bugs and rules are exempt',()=>{
+  const r=evaluateScope(base({headNext:NEXT}))
+  expect(r.failures.map((f:any)=>f.rule)).toEqual(['NEXT-MD-DONE'])
+  expect(r.failures[0].msg).toContain('delete the whole "## N1 …" block')
+  expect(r.failures[0].msg).toContain('To comply:')
+  expect(rules(base())).toEqual([])
+  expect(rules(base({title:'bug #3 x',body:'Agent: lemma-1 · Item: bug #3',issue:{state:'open',isPr:false,labels:['bug','confirmed']},headNext:NEXT}))).not.toContain('NEXT-MD-DONE')
+  expect(rules(base({title:'rules: x',body:'Agent: owner-setup · Item: rules',headNext:NEXT}))).not.toContain('NEXT-MD-DONE')
+  expect(rules(base({body:'Agent: lemma-1 · Item: N1\nOwner task: "do it"',headNext:NEXT}))).not.toContain('NEXT-MD-DONE')
  })
  it('revert PRs from Agent: ci: Reverted: lines and restored items only; files limited to the reverted PR',()=>{
   const ciBody='Agent: ci · Item: revert · Lease until 2026-11-04T09:30:00Z'
