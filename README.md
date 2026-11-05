@@ -1,4 +1,4 @@
-# Lemma
+# Lemma (selftest b)
 
 Lemma is a private, proof-first mathematics study app. A React web app (PWA) keeps your plans, cards and reviews in Supabase. An AI tutor connects through an MCP server and can only propose changes, which you approve in the app. Reviews are scheduled with FSRS.
 
