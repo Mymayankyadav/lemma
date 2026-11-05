@@ -106,5 +106,39 @@ try {
  await as(owner);
  assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,1);
  assert.equal((await q('select count(*)::int n from public.command_receipts'))[0].n,4);
+
+ // N11.2 entry lifecycle and receipt replay.
+ const study=(id,operation,extra={})=>({operationId:id,schemaVersion:1,resource:'study_entries',operation,...extra});
+ const entryCreate=study('cccccccc-cccc-cccc-cccc-ccccccccccc1','create',{patch:{source:'timer',intent:'Proof practice',subject_id:subject}});
+ const entryCreated=await command(entryCreate);
+ assert.equal(entryCreated.status,'ok');
+ const entryId=entryCreated.changed[0].id;
+ assert.equal(entryCreated.changed[0].version,1);
+ assert.deepEqual(await command({...entryCreate,patch:{source:'manual',intent:'different'}}),entryCreated);
+ const started=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc2','start',{target:{id:entryId},expectedVersion:1,patch:{}}));
+ assert.equal(started.changed[0].version,2);
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1',[entryId]))[0].n,1);
+ const paused=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc3','pause',{target:{id:entryId},expectedVersion:2,patch:{}}));
+ assert.equal(paused.changed[0].version,3);
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[entryId]))[0].n,0);
+ const resumed=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc4','resume',{target:{id:entryId},expectedVersion:3,patch:{}}));
+ assert.equal(resumed.changed[0].version,4);
+ const saved=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc5','save',{target:{id:entryId},expectedVersion:4,patch:{reflection:'Completed proof'}}));
+ assert.equal(saved.changed[0].version,5);
+ assert.equal((await q('select status from public.study_entries where id=$1',[entryId]))[0].status,'saved');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[entryId]))[0].n,0);
+ assert.deepEqual(await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc5','save',{target:{id:entryId},expectedVersion:4,patch:{}})),saved);
+ await assert.rejects(command(study('cccccccc-cccc-cccc-cccc-ccccccccccc6','save',{target:{id:entryId},expectedVersion:5,patch:{}})),/Terminal/);
+ const draft=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc7','create',{patch:{source:'manual',intent:'Scratch'}}));
+ const draftId=draft.changed[0].id;
+ const discarded=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc8','discard',{target:{id:draftId},expectedVersion:1,patch:{}}));
+ assert.equal(discarded.status,'ok');
+ assert.equal((await q('select status from public.study_entries where id=$1',[draftId]))[0].status,'discarded');
+ const staleStudy=await command(study('cccccccc-cccc-cccc-cccc-ccccccccccc9','update',{target:{id:entryId},expectedVersion:1,patch:{intent:'stale'}}));
+ assert.equal(staleStudy.status,'conflict');
+ await assert.rejects(command(study('cccccccc-cccc-cccc-cccc-cccccccccc10','create',{patch:{source:'manual',user_id:other}})),/Unknown patch field/);
+ await as(other);
+ await assert.rejects(command(study('dddddddd-dddd-dddd-dddd-ddddddddddd1','update',{target:{id:entryId},expectedVersion:5,patch:{intent:'steal'}})),/not found/);
+ await as(owner);
  console.log('PASS N11.1 calendar command: receipts, version conflicts, patch distinction, validation and owner isolation');
 } finally {await db.close()}
