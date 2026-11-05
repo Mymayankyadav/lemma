@@ -31,12 +31,18 @@ export async function routeNotificationClick(
 ): Promise<void> {
  const target = pushDeepLink(data.actions.find(a => a.action === action)?.url ?? data.url);
  if (!target) return;
+ // Preserve the app tab when the server explicitly supplies an allowed assistant URL.
+ if (target.startsWith('https:') && ['chatgpt.com','claude.ai'].includes(new URL(target).hostname)) {
+  await clients.openWindow(target);
+  return;
+ }
  const windows = await clients.matchAll({type: 'window', includeUncontrolled: true});
  const existing = windows.find(w => {
   try {
    const current = new URL(w.url);
    return current.pathname.startsWith('/lemma/') &&
-    (current.protocol === 'https:' || (current.protocol === 'http:' && ['localhost','127.0.0.1'].includes(current.hostname)));
+    ((current.protocol === 'https:' && current.hostname === 'mymayankyadav.github.io') ||
+     (current.protocol === 'http:' && ['localhost','127.0.0.1'].includes(current.hostname)));
   } catch {return false;}
  });
  if (existing) {

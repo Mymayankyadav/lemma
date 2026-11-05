@@ -39,6 +39,20 @@ describe('N5 real service worker event listeners',()=>{
   await dispatch(worker.listeners.get('push')!,{data:{text:()=>'{broken'}});
   expect(worker.showNotification).toHaveBeenCalledTimes(1);
  });
+ it('displays server-allowed external links and opens their actions separately', async () => {
+  const worker=boot(true);
+  const external=JSON.stringify({...JSON.parse(valid),url:'https://chatgpt.com/',
+   actions:[{action:'open',title:'Open',url:'https://claude.ai/new'}]});
+  await dispatch(worker.listeners.get('push')!,{data:{text:()=>external}});
+  expect(worker.showNotification).toHaveBeenCalledTimes(1);
+  const options=worker.showNotification.mock.calls[0][1];
+  expect(options.data.url).toBe('https://chatgpt.com/');
+  expect(options.data.actions[0].url).toBe('https://claude.ai/new');
+  await dispatch(worker.listeners.get('notificationclick')!,
+   {action:'open',notification:{data:options.data,close:vi.fn()}});
+  expect(worker.openWindow).toHaveBeenCalledWith('https://claude.ai/new');
+  expect(worker.matchAll).not.toHaveBeenCalled();
+ });
  it('routes click to an existing window, then opens a new one when none exists',async()=>{
   const navigate=vi.fn().mockResolvedValue(undefined);
   const focus=vi.fn().mockResolvedValue(undefined);
@@ -58,8 +72,14 @@ import {mkdtempSync, rmSync, existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {execFileSync} from 'node:child_process';
 import {join} from 'node:path';
+import {shouldBundlePushWorker} from '../../../src/lib/push-build-flag';
 
 describe('N5 generated Workbox build integration', () => {
+ it('bundles push worker when the reviewed default is enabled without env overrides', () => {
+  expect(shouldBundlePushWorker(true, false, '')).toBe(true);
+  expect(shouldBundlePushWorker(false, false, 'notificationsPush')).toBe(false);
+  expect(shouldBundlePushWorker(false, true, 'ciSelfTest, notificationsPush')).toBe(true);
+ });
  it('emits and imports push handlers only in opt-in builds', () => {
   const root = mkdtempSync(join(tmpdir(), 'lemma-push-build-'));
   try {

@@ -30,6 +30,18 @@ describe('push notification handlers', () => {
    {url:'/lemma/#/review',actions:[]});
   expect(openWindow).toHaveBeenCalledWith('/lemma/#/review');
  });
+ it('opens server-allowed external destinations without redirecting the app tab', async () => {
+  const navigate = vi.fn();
+  const focus = vi.fn();
+  const openWindow = vi.fn().mockResolvedValue(undefined);
+  const matchAll = vi.fn().mockResolvedValue([{url:'https://mymayankyadav.github.io/lemma/#/',navigate,focus}]);
+  await routeNotificationClick({matchAll,openWindow},
+   {url:'/lemma/#/review',actions:[{action:'open',url:'https://claude.ai/new'}]}, 'open');
+  expect(openWindow).toHaveBeenCalledWith('https://claude.ai/new');
+  expect(matchAll).not.toHaveBeenCalled();
+  expect(navigate).not.toHaveBeenCalled();
+  expect(focus).not.toHaveBeenCalled();
+ });
  it('does not navigate for an unsafe link', async () => {
   const openWindow=vi.fn();
   const matchAll=vi.fn();

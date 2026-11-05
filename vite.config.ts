@@ -3,9 +3,14 @@ import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
+import {FLAG_DEFAULTS} from './src/flags';
+import {shouldBundlePushWorker} from './src/lib/push-build-flag';
 
-const pushEnabled = process.env.VITE_ALLOW_FLAG_OVERRIDES === '1' &&
-  (process.env.VITE_FLAGS ?? '').split(',').map(s => s.trim()).includes('notificationsPush');
+const pushEnabled = shouldBundlePushWorker(
+  FLAG_DEFAULTS.notificationsPush,
+  process.env.VITE_ALLOW_FLAG_OVERRIDES === '1',
+  process.env.VITE_FLAGS ?? '',
+);
 
 export default defineConfig({
  base:'/lemma/',

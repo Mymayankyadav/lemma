@@ -12,8 +12,9 @@ export function pushDeepLink(value:string):string|null {
  try {
   const url=new URL(value);
   if(url.username||url.password)return null;
+  if(url.protocol==='https:'&&['chatgpt.com','claude.ai'].includes(url.hostname))return url.href;
   if(url.protocol==='https:'&&url.hostname==='mymayankyadav.github.io'&&url.pathname.startsWith('/lemma/')&&url.hash.startsWith('#/'))return url.href;
-  if(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)&&url.pathname.startsWith('/lemma/')&&url.hash.startsWith('#/'))return url.href;
+  if(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)&&url.pathname.startsWith('/lemma/'))return url.href;
  }catch{/* invalid URL */}
  return null;
 }

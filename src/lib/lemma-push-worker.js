@@ -8,8 +8,9 @@
     try {
       const url = new URL(value);
       if (url.username || url.password) return null;
+      if (url.protocol === 'https:' && ['chatgpt.com', 'claude.ai'].includes(url.hostname)) return url.href;
       if (url.protocol === 'https:' && url.hostname === 'mymayankyadav.github.io' && url.pathname.startsWith('/lemma/') && url.hash.startsWith('#/')) return url.href;
-      if (url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname) && url.pathname.startsWith('/lemma/') && url.hash.startsWith('#/')) return url.href;
+      if (url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname) && url.pathname.startsWith('/lemma/')) return url.href;
     } catch { /* reject */ }
     return null;
   };
@@ -51,6 +52,11 @@
       const data = event.notification.data;
       const target = safeLink(data?.actions?.find(a => a.action === event.action)?.url ?? data?.url);
       if (!target) return;
+      // External URLs accepted by notify/payload.ts open separately, rather than navigating away from the app.
+      if (target.startsWith('https:') && ['chatgpt.com','claude.ai'].includes(new URL(target).hostname)) {
+        await scope.clients.openWindow(target);
+        return;
+      }
       const windows = await scope.clients.matchAll({type:'window',includeUncontrolled:true});
       const existing = windows.find(w => {
         try {
