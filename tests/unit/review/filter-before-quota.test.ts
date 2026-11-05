@@ -11,11 +11,13 @@ describe('Review selection before daily quota',()=>{
    const fixture=structuredClone(demoSeedFixture);
    const project=fixture.projects.find(p=>!p.system&&p.status!=='archived');
    if(!project)throw Error('Missing demo project');
+   const otherProject=fixture.projects.find(p=>p.id!==project.id&&!p.system);
+   if(!otherProject)throw Error('Missing second demo project');
    const template=fixture.notes.find(n=>n.cards.length>0);
    if(!template)throw Error('Missing demo note');
    fixture.notes=Array.from({length:10},(_,i)=>{
     const note=structuredClone(template);
-    note.projectId=project.id;
+    note.projectId=i<matching?project.id:otherProject.id;
     note.note.noteId='quota-note-'+i;
     note.note.noteNo=10000+i;
     note.note.status='active';
