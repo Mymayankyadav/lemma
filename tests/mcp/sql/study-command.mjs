@@ -99,7 +99,7 @@ try {
  })),/not found/);
  await assert.rejects(command(request('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2','create',{
    patch:{...patch,subject_id:subject}
- })),/foreign key|row-level security/);
+ })),/Study entry not found/);
  const ownedByOther=await command(request(firstId,'create',{patch:{...patch,kind:'busy',title:'Private'}}));
  assert.equal(ownedByOther.status,'ok','operation IDs are scoped to authenticated owners');
  assert.notEqual(ownedByOther.changed[0].id,blockId);
