@@ -1,6 +1,12 @@
-/* Classic Workbox importScripts companion. Registered only in flag-enabled builds. */
+/* Classic Workbox importScripts companion. URL-only flags select a separate SW URL. */
 (function () {
   const scope = self;
+  // Decide at startup, so push handlers are never registered in flag-off workers.
+  const url = new URL(scope.location.href);
+  const queryFlagOn = scope.__lemmaPushAllowUrlOverride === true &&
+    url.pathname === '/lemma/sw.js' &&
+    (new URLSearchParams(url.search).get('flags') ?? '').split(',').map(s => s.trim()).includes('notificationsPush');
+  if (scope.__lemmaPushAutoStart !== true && !queryFlagOn) return;
   const safeLink = (value) => {
     if (typeof value !== 'string' || value.length > 2048 || value.trim() !== value || /[\u0000-\u001f\u007f]/.test(value)) return null;
     if (value.startsWith('#/')) return '/lemma/' + value;
