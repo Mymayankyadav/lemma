@@ -93,7 +93,7 @@ Scope: src/lib/focus/**, src/features/home/** (the v6 branch only), src/features
 Not: the live adapter (next priority run), Calendar or Progress views, converting parked thoughts to tasks, notifications, and Today with the flag off.
 
 ## N6.1 Notifications: validate reminder Review deep links (implemented by split PR)
-Stage: Build · Status: in progress · Needs: N5 · Assigned: chat-92#p7v2
+Stage: Build · Status: done · Needs: N5 · Assigned: chat-92#p7v2
 Done = a pure bounded parser in `src/data/notify.ts` accepts canonical in-app reminder Review deep links carrying a 1–50 card request and an optional signed action token; rejects malformed, duplicate, external, oversized and expired-token links without treating client-side token parsing as signature verification. Tests cover valid and malformed links, token expiry, duplicate parameters, and disabled flow. No application route or quota is changed in this slice.
 Scope: src/data/notify.ts, tests/unit/notify/**, CURRENT.md.
 Not: supabase/**, `.github/**`, new dependencies, Review UI or RPC wiring.
