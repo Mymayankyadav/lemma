@@ -7,6 +7,7 @@ import { api, repoPath, appendSummary } from './gh.mjs';
 
 export const WINDOW_MIN = { push: 3, issue_comment: 10, workflow_run: 10 };
 export const SWEEP_STEP = 'sweep';
+const MAX_LOOKUPS = 10; // job lookups per throttle check (each is one API call)
 
 /** Pure: did this run's job really sweep? jobs = /actions/runs/{id}/jobs .jobs. A step that is still running counts. */
 export function didSweep(jobs = []) {
@@ -30,10 +31,17 @@ async function main() {
   try {
     const win = WINDOW_MIN[event];
     if (win) {
-      const runs = ((await api('GET', repoPath('/actions/workflows/sweep.yml/runs?per_page=10'))).workflow_runs || [])
-        .filter((r) => r.id !== selfId && now - new Date(r.created_at).getTime() < win * 60e3).slice(0, 4);
-      for (const r of runs) r.swept = didSweep((await api('GET', repoPath(`/actions/runs/${r.id}/jobs`))).jobs);
-      skip = shouldSkip({ event, runs, now, selfId });
+      // newest first; stop at the first run that really swept (throttled runs in between are skipped over)
+      const runs = ((await api('GET', repoPath('/actions/workflows/sweep.yml/runs?per_page=20'))).workflow_runs || [])
+        .filter((r) => r.id !== selfId && now - new Date(r.created_at).getTime() < win * 60e3)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, MAX_LOOKUPS);
+      const checked = [];
+      for (const r of runs) {
+        r.swept = didSweep((await api('GET', repoPath(`/actions/runs/${r.id}/jobs`))).jobs);
+        checked.push(r);
+        if (r.swept) break;
+      }
+      skip = shouldSkip({ event, runs: checked, now, selfId });
     }
   } catch (e) { console.log(`throttle check failed (${e.message}); sweeping anyway`); }
   console.log(`event=${event} skip=${skip}`);
