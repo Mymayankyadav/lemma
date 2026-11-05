@@ -75,9 +75,12 @@ begin
        if op in ('pause','break') and entry.status <> 'running' then raise exception 'Invalid pause transition'; end if;
        if op='resume' and entry.status <> 'paused' then raise exception 'Invalid resume transition'; end if;
        if op='save' and entry.status not in ('running','paused','draft') then raise exception 'Invalid save transition'; end if;
-       if op in ('pause','break','save','discard') then
+       if op in ('pause','break','resume','save','discard') then
          update public.study_intervals set ended_at=ts
          where entry_id=target and user_id=v_owner and ended_at is null and started_at<ts;
+       end if;
+       if op='discard' then
+         delete from public.study_intervals where entry_id=target and user_id=v_owner;
        end if;
        if op in ('start','resume','break') then
          if exists(select 1 from public.study_intervals where entry_id=target and user_id=v_owner and ended_at is null) then
