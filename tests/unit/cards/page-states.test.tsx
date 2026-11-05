@@ -42,10 +42,11 @@ function fixtureWithoutNotes():DemoStore{
  return {...structuredClone(demoSeedFixture),notes:[]};
 }
 describe('Cards page states (demo adapter)',()=>{
- beforeEach(()=>{document.body.replaceChildren()});
+ beforeEach(()=>{document.body.replaceChildren();vi.stubGlobal('ResizeObserver',class {observe(){} disconnect(){} unobserve(){}})});
  afterEach(async()=>{
   if(root)await act(async()=>root.unmount());
   document.body.replaceChildren();
+  vi.unstubAllGlobals();
  });
  it('shows loading placeholders while the demo read is pending',async()=>{
   const api=new DemoAdapter();
@@ -58,6 +59,7 @@ describe('Cards page states (demo adapter)',()=>{
  it('shows an empty library with no cards',async()=>{
   const api=new DemoAdapter({fixture:fixtureWithoutNotes()});
   await mount(api,[]);
+  await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0))});
   expect(container.textContent).toContain('No cards match');
   expect(rows()).toHaveLength(0);
  });
