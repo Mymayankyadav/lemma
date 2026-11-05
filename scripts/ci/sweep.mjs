@@ -140,7 +140,7 @@ async function runPlans(now) {
   const found = await paginate(repoPath('/issues?labels=ci-registry&state=all'));
   const titles = new Set(found.map((i) => i.title));
   for (const a of SCHEDULED_AGENTS) {
-    const title = `${RUNLOG_PREFIX()}${a}`;
+    const title = `run-log: ${a}`; // always the real titles, whatever prefix a test scans
     if (!titles.has(title)) { await ensureClosedIssue(title, `Run log of \`${a}\`. CI-created, closed on purpose, not work. The agent posts one \`Plan · Agent: ${a}: 1) … 2) …\` comment per run and edits \`Result: 1) done|skipped because …\` into it.`); console.log(`created ${title}`); }
   }
   // run-log issues: CI-created ones carry ci-registry; agent-created ones are found by title search
@@ -188,6 +188,7 @@ async function runPlans(now) {
 async function main() {
   const now = Date.now();
   await ensureLabels(readJson('ci/labels.json'));
+  if (process.env.SWEEP_ONLY === 'plans') { await runPlans(now); return; } // dry runs of the metrics (self-tests)
   const open = (await paginate(repoPath('/issues?state=open'))).filter((i) => !i.labels.some((l) => l.name === 'ci-registry'));
   const labelsOf = (i) => new Set(i.labels.map((l) => l.name));
 
