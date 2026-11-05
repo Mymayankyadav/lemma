@@ -5,7 +5,7 @@ import {stripSql,functionNames,sqlFindings,declaredReplacements,addedSql,migrati
 // @ts-expect-error plain ESM script
 import {conflictText,overlap,stateOf,GATE} from '../../../scripts/ci/conflicts.mjs'
 // @ts-expect-error plain ESM script
-import {shouldSkip,sweptRuns,WINDOW_MIN} from '../../../scripts/ci/sweep-throttle.mjs'
+import {shouldSkip,didSweep,WINDOW_MIN,SWEEP_STEP} from '../../../scripts/ci/sweep-throttle.mjs'
 // @ts-expect-error plain ESM script
 import {isStale} from '../../../scripts/ci/sweep.mjs'
 // @ts-expect-error plain ESM script
@@ -98,22 +98,30 @@ describe('R3 merge-conflict feedback',()=>{
 
 describe('R2 sweep cadence within the token budget',()=>{
  const now=Date.parse('2026-11-06T10:00:00Z')
- const run=(id:number,minAgo:number,secs=60,status='completed')=>({id,status,created_at:new Date(now-minAgo*60e3).toISOString(),run_started_at:new Date(now-minAgo*60e3).toISOString(),updated_at:new Date(now-minAgo*60e3+secs*1000).toISOString()})
+ const run=(id:number,minAgo:number,swept=true)=>({id,swept,created_at:new Date(now-minAgo*60e3).toISOString()})
  it('never skips scheduled or manual sweeps',()=>{
   expect(shouldSkip({event:'schedule',runs:[run(1,1)],now,selfId:9})).toBe(false)
   expect(shouldSkip({event:'workflow_dispatch',runs:[run(1,1)],now,selfId:9})).toBe(false)
  })
- it('skips an event sweep when another real sweep started inside the window',()=>{
+ it('skips an event sweep when another run really swept inside the window',()=>{
   expect(WINDOW_MIN).toEqual({push:3,issue_comment:10,workflow_run:10})
   expect(shouldSkip({event:'issue_comment',runs:[run(1,4)],now,selfId:9})).toBe(true)
   expect(shouldSkip({event:'issue_comment',runs:[run(1,11)],now,selfId:9})).toBe(false)
   expect(shouldSkip({event:'push',runs:[run(1,4)],now,selfId:9})).toBe(false)
-  expect(shouldSkip({event:'workflow_run',runs:[run(1,2,0,'in_progress')],now,selfId:9})).toBe(true)
+  expect(shouldSkip({event:'push',runs:[run(1,2)],now,selfId:9})).toBe(true)
   expect(shouldSkip({event:'issue_comment',runs:[run(9,1)],now,selfId:9})).toBe(false)
  })
- it('throttled runs do not count as sweeps',()=>{
-  expect(sweptRuns([run(1,2,12),run(2,3,80)]).map((r:any)=>r.id)).toEqual([2])
-  expect(shouldSkip({event:'issue_comment',runs:[run(1,2,12)],now,selfId:9})).toBe(false)
+ it('throttled runs never count, so frequent events cannot starve the sweep',()=>{
+  expect(shouldSkip({event:'issue_comment',runs:[run(1,2,false),run(2,6,false)],now,selfId:9})).toBe(false)
+ })
+ it('reads from the jobs whether the sweep step really ran (fast light sweeps included)',()=>{
+  const job=(conclusion:string|null,status='completed')=>[{status:'completed',steps:[{name:'throttle',status:'completed',conclusion:'success'},{name:SWEEP_STEP,status,conclusion}]}]
+  expect(didSweep(job('success'))).toBe(true)
+  expect(didSweep(job('failure'))).toBe(true)
+  expect(didSweep(job('skipped'))).toBe(false)
+  expect(didSweep(job(null,'in_progress'))).toBe(true)
+  expect(didSweep([{status:'queued',steps:[]}])).toBe(true)
+  expect(didSweep([{status:'completed',steps:[]}])).toBe(false)
  })
  it('light sweeps refresh metrics only when they are 30+ minutes old',()=>{
   expect(isStale(undefined,now,30)).toBe(true)
@@ -127,6 +135,7 @@ describe('R2 sweep cadence within the token budget',()=>{
   expect(y).toContain('ref: ${{ github.event.repository.default_branch }}')
   expect(y).toContain('node scripts/ci/sweep-throttle.mjs')
   expect(y).toContain("steps.throttle.outputs.skip != 'true'")
+  expect(y).toContain('      - name: sweep\n        if:')
   expect(y).not.toContain('CI_BOT_TOKEN')
  })
 })
