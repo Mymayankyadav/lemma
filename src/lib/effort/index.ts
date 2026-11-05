@@ -50,7 +50,10 @@ export function loggedMinutes(entries: StudyEntry[], range: Range, zone: string,
   return { minutes: duration(past), futureMinutes: duration(future) };
 }
 export function inProgressMinutes(active: ActiveEffort | null, now: string): number {
-  if (!active || active.phase === 'break' || active.phase === 'paused') return 0;
+  if (!active) return 0;
+  // A paused or breaking timer stops advancing, but earlier focus still counts.
+  // Without interval history there is no duration to reconstruct in those phases.
+  if (!active.intervals && (active.phase === 'break' || active.phase === 'paused')) return 0;
   const cap = Math.max(0,active.focusMinutes);
   const spans: Span[] = active.intervals
     ? subtract(
