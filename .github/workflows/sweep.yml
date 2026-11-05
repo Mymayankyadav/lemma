@@ -33,11 +33,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - id: throttle
+      - name: throttle
+        id: throttle
         run: node scripts/ci/sweep-throttle.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - if: steps.throttle.outputs.skip != 'true'
+      - name: sweep
+        if: steps.throttle.outputs.skip != 'true'
         run: node scripts/ci/sweep.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
