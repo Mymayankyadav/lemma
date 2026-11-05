@@ -70,6 +70,8 @@ N10 merged in PR #851 on 2026-11-05: the additive migration `supabase/migrations
 
 N6.1 (split PR #872): notification Review link parsing in `src/data/notify.ts` accepts only bounded app-local `#/review?start=1..50` links and optional syntactically valid, unexpired action tokens. It does not verify signatures; server authorization remains mandatory. The one-shot RPC integration (N6.2) and Review-done next-time offer (N6.3) are not wired yet. No route behavior is changed by this slice.
 
+N11 split PR #860 implements the first calendar-block command slice (N11.1): owner-scoped create/update, idempotent receipts, expected-version conflicts, strict patch validation and isolated PGlite tests. The first slice is defined in an additive `study_command` migration; it deploys only after CI merge, and the remote deployment state has not been independently verified here. Remaining N11.2 covers study-entry/interval lifecycle; N11.3 adds action journaling and undo after blocker #861 is resolved. The original `undo_action` has a fixed table allow-list excluding the study tables. No app or MCP client uses these commands yet.
+
 ## Data model
 
 Tables in `public` (from `supabase/migrations/20261029164215_lemma_tables.sql` and later), every row carries `user_id` with RLS; connector and app code must filter by `user_id`:
