@@ -69,5 +69,11 @@ describe('effort metrics',()=>{
     expect(dayBounds('2026-01-01','Asia/Kolkata').end).toBe('2026-01-01T18:30:00.000Z');
     const kolkata=dayBounds('2026-01-01','Asia/Kolkata');
     expect(loggedMinutes([entry('x',[{start:'2025-12-31T18:00:00.000Z',end:'2025-12-31T19:00:00.000Z'}])],kolkata,'Asia/Kolkata',kolkata.end).minutes).toBe(30);
+    const santiago=dayBounds('2026-09-06','America/Santiago');
+    // Midnight is skipped: local civil day starts at 01:00, not the previous day's 23:00.
+    expect(santiago.start).toBe('2026-09-06T04:00:00.000Z');
+    expect(santiago.end).toBe('2026-09-07T03:00:00.000Z');
+    expect((Date.parse(santiago.end)-Date.parse(santiago.start))/3600000).toBe(23);
+    expect(loggedMinutes([entry('s',[{start:'2026-09-06T03:30:00.000Z',end:'2026-09-06T04:30:00.000Z'}])],santiago,'America/Santiago',santiago.end).minutes).toBe(30);
   });
 });
