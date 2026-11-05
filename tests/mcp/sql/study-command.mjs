@@ -140,5 +140,29 @@ try {
  await as(other);
  await assert.rejects(command(study('dddddddd-dddd-dddd-dddd-ddddddddddd1','update',{target:{id:entryId},expectedVersion:5,patch:{intent:'steal'}})),/not found/);
  await as(owner);
+
+ const breakEntry=await command(study('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1','create',{patch:{source:'timer',intent:'Break test'}}));
+ const breakId=breakEntry.changed[0].id;
+ await command(study('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2','start',{target:{id:breakId},expectedVersion:1,patch:{}}));
+ await command(study('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee3','break',{target:{id:breakId},expectedVersion:2,patch:{}}));
+ assert.equal((await q("select count(*)::int n from public.study_intervals where entry_id=$1 and kind='break' and ended_at is null",[breakId]))[0].n,1);
+ await command(study('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee4','resume',{target:{id:breakId},expectedVersion:3,patch:{}}));
+ assert.equal((await q("select count(*)::int n from public.study_intervals where entry_id=$1 and kind='break' and ended_at is null",[breakId]))[0].n,0);
+ const discardBreak=await command(study('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee5','discard',{target:{id:breakId},expectedVersion:4,patch:{}}));
+ assert.equal(discardBreak.status,'ok');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1',[breakId]))[0].n,0);
+ const intervalEntry=await command(study('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee6','create',{patch:{source:'manual'}}));
+ const intervalId=intervalEntry.changed[0].id;
+ const intervalRequest=(id,operation,extra={})=>({operationId:id,schemaVersion:1,resource:'study_intervals',operation,...extra});
+ const intervalCreated=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee7','create',{patch:{entry_id:intervalId,kind:'focus',started_at:'2026-11-05T10:00:00Z',ended_at:'2026-11-05T11:00:00Z'}}));
+ assert.equal(intervalCreated.status,'ok');
+ const iid=intervalCreated.changed[0].id;
+ assert.deepEqual(await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee7','create',{patch:{entry_id:intervalId,kind:'break',started_at:'2026-11-05T10:00:00Z'}})),intervalCreated);
+ const intervalUpdated=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee8','update',{target:{id:iid},expectedVersion:1,patch:{kind:'break'}}));
+ assert.equal(intervalUpdated.status,'ok');
+ assert.equal((await q('select kind from public.study_intervals where id=$1',[iid]))[0].kind,'break');
+ const intervalDeleted=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee9','delete',{target:{id:iid},expectedVersion:1,patch:{}}));
+ assert.equal(intervalDeleted.status,'ok');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where id=$1',[iid]))[0].n,0);
  console.log('PASS N11.1 calendar command: receipts, version conflicts, patch distinction, validation and owner isolation');
 } finally {await db.close()}
