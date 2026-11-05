@@ -6,6 +6,11 @@ describe('feature flags',()=>{
   expect(Object.values(FLAG_DEFAULTS).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
+ it('androidShell is off by default and cannot be enabled in production',()=>{
+  expect(FLAG_DEFAULTS.androidShell).toBe(false)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=androidShell'}).androidShell).toBe(true)
+  expect(resolveFlags({allowOverrides:false,search:'?flags=androidShell',envFlags:'androidShell'}).androidShell).toBe(false)
+ })
  it('notificationsPush is off by default and only enabled through permitted overrides',()=>{
   expect(FLAG_DEFAULTS.notificationsPush).toBe(false)
   expect(resolveFlags({allowOverrides:true,search:'?flags=notificationsPush'}).notificationsPush).toBe(true)

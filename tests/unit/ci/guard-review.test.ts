@@ -1,9 +1,11 @@
 import {describe,expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
 // @ts-expect-error plain ESM script
-import {parseVerdict,evaluateMerge} from '../../../scripts/ci/approve.mjs'
+import {parseVerdict,parseReady,evaluateMerge} from '../../../scripts/ci/approve.mjs'
 // @ts-expect-error plain ESM script
 import {botTokenViolations} from '../../../scripts/ci/lib.mjs'
+// @ts-expect-error plain ESM script
+import {lockMessage} from '../../../scripts/ci/sessions.mjs'
 
 const HEAD='2026-11-04T10:00:00Z'
 const c=(id:number,body:string,at:string,assoc='OWNER')=>({id,body,created_at:at,author_association:assoc})
@@ -132,11 +134,74 @@ describe('review-merge workflow',()=>{
  it('labels.yml may remove the label from a PR (pull-requests: write) and fails loudly otherwise',()=>{
   const labels=readFileSync('.github/workflows/labels.yml','utf8')
   expect(labels).toMatch(/permissions:[\s\S]*pull-requests: write/)
-  expect(labels).toContain('could not remove the changes-requested label')
+  expect(labels).toContain('could not remove the $label label')
+  expect(labels).toMatch(/for label in changes-requested needs-review/)
  })
  it('starts only for verdict comments on pull requests',()=>{
   expect(text).toContain("startsWith(github.event.comment.body, 'Approve')")
   expect(text).toContain("startsWith(github.event.comment.body, 'Changes requested')")
+  expect(text).toContain("startsWith(github.event.comment.body, 'Ready')")
   expect(text).toContain('github.event.issue.pull_request')
+ })
+})
+
+const ready=(agent:string,at:string,id=50)=>c(id,`Ready · Agent: ${agent}`,at)
+describe('v1.4: Ready signal, names, session lock and duplicate verdicts',()=>{
+ it('parses Ready exactly, with a connector footer ignored',()=>{
+  expect(parseReady('Ready · Agent: lemma-1')).toEqual({agent:'lemma-1'})
+  expect(parseReady('Ready · Agent: chat-2#k7q3\n\n---\n_footer_')).toEqual({agent:'chat-2#k7q3'})
+  expect(parseReady('Ready · Agent: lemma-1\nplease look')).toBeNull()
+  expect(parseReady('Not ready · Agent: lemma-1')).toBeNull()
+ })
+ it('needs-review: only when the author said Ready after the last push and both checks pass',()=>{
+  expect(ev({comments:[ready('lemma-1','2026-11-04T10:05:00Z')]}).needsReview).toBe(true)
+  // green checks alone are not enough
+  expect(ev({comments:[]}).needsReview).toBe(false)
+  // a push after Ready removes it (the author must post Ready again)
+  expect(ev({comments:[ready('lemma-1','2026-11-04T10:05:00Z')],headCommitDate:'2026-11-04T10:30:00Z'}).needsReview).toBe(false)
+  // not while a check is red or pending, nor with changes-requested
+  expect(ev({comments:[ready('lemma-1','2026-11-04T10:05:00Z')],checks:{'fast-gate':'success',scope:'failure'}}).needsReview).toBe(false)
+  expect(ev({comments:[ready('lemma-1','2026-11-04T10:05:00Z')],pr:{...base().pr,labels:['changes-requested']}}).needsReview).toBe(false)
+  // only the AUTHOR's Ready counts, and only from a trusted commenter with a valid name
+  expect(ev({comments:[ready('lemma-2','2026-11-04T10:05:00Z')]}).needsReview).toBe(false)
+  expect(ev({comments:[c(50,'Ready · Agent: lemma-1','2026-11-04T10:05:00Z','NONE')]}).needsReview).toBe(false)
+  expect(ev({comments:[ready('ChatGPT','2026-11-04T10:05:00Z')],pr:{...base().pr,body:'Agent: ChatGPT · Item: N2'}}).needsReview).toBe(false)
+ })
+ it('an invalid name such as ChatGPT: its verdict is ignored and the reason names the valid formats',()=>{
+  const r=ev({comments:[approve('ChatGPT')]})
+  expect(r.merge).toBe(false)
+  expect(r.ignored.invalid).toEqual(['ChatGPT'])
+  expect(r.reasons.join(' ')).toContain('not a valid Agent name')
+  expect(r.reasons.join(' ')).toContain('see the agent-names comment')
+  for (const ok of ['lemma-3','chat-4#k7q3','owner-setup','owner-setup-2','priority']) expect(ev({comments:[approve(ok)]}).merge).toBe(true)
+  for (const bad of ['chat-4','chat-4#K7Q3','chat-4#k7q','lemma','codex-1','ChatGPT#abcd']) expect(ev({comments:[approve(bad)]}).merge).toBe(false)
+  // a PR whose own name is invalid is not merged by CI either
+  expect(ev({comments:[approve('lemma-2')],pr:{...base().pr,body:'Agent: ChatGPT · Item: N2'}}).merge).toBe(false)
+ })
+ it('session lock: a second tag on the same chat number is ignored while the first is active, and allowed after 3 hours',()=>{
+  const now=new Date('2026-11-04T12:00:00Z').getTime()
+  const sessions={'chat-4':{tag:'aaaa',seen:'2026-11-04T11:00:00Z'}}
+  const other=ev({comments:[approve('chat-4#bbbb','2026-11-04T10:05:00Z')],sessions,now})
+  expect(other.merge).toBe(false)
+  expect(other.ignored.locked).toHaveLength(1)
+  expect(other.reasons.join(' ')).toContain('chat-4 is ignored'.replace('chat-4 is ignored','a verdict by chat-4 is ignored'))
+  expect(lockMessage(other.ignored.locked[0])).toBe('chat-4 is in use by session aaaa until 2026-11-04T14:00:00.000Z; pick another number')
+  expect(ev({comments:[approve('chat-4#aaaa','2026-11-04T10:05:00Z')],sessions,now}).merge).toBe(true)
+  expect(ev({comments:[approve('chat-4#bbbb','2026-11-04T10:05:00Z')],sessions:{'chat-4':{tag:'aaaa',seen:'2026-11-04T08:59:00Z'}},now}).merge).toBe(true)
+  expect(ev({comments:[approve('chat-5#bbbb','2026-11-04T10:05:00Z')],sessions,now}).merge).toBe(true)
+ })
+ it('duplicate verdicts: only the latest per agent counts',()=>{
+  const dup=[approve('lemma-2','2026-11-04T10:05:00Z',1),approve('lemma-2','2026-11-04T10:06:00Z',2)]
+  expect(ev({comments:dup}).merge).toBe(true)
+  // the same agent's later Changes requested replaces its earlier Approve
+  const flip=[...dup,c(3,'Changes requested · Agent: lemma-2: wrong file','2026-11-04T10:07:00Z')]
+  const r=ev({comments:flip})
+  expect(r.merge).toBe(false)
+  expect(r.reasons.join(' ')).toContain('changes were requested by lemma-2: wrong file')
+  // and a later Approve replaces that Changes requested
+  const back=[...flip,approve('lemma-2','2026-11-04T10:08:00Z',4)]
+  expect(ev({comments:back,pr:{...base().pr}}).merge).toBe(true)
+  // another agent's Approve does not override a standing Changes requested
+  expect(ev({comments:[approve('lemma-2','2026-11-04T10:05:00Z',1),c(2,'Changes requested · Agent: lemma-3: x','2026-11-04T10:06:00Z'),approve('lemma-4','2026-11-04T10:07:00Z',3)]}).merge).toBe(false)
  })
 })

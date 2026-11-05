@@ -1,0 +1,4143 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Normative planning registry, not an installed MCP permission or implementation claim",
+  "repositoryRef": "bbc5fdbd5f08caa4ab2d7543def415acad72bab5",
+  "project": "yemqnhnztlbyxmjxidis",
+  "requirements": {
+    "allOwnerDataMaintainableThroughMcp": true,
+    "sameServerCommandsForAppAndMcp": true,
+    "explicitChatInstructionIsAuthorization": true,
+    "unknownColumnsFailCoverage": true,
+    "noSilentFixedRowCaps": true
+  },
+  "currentTableCount": 26,
+  "currentColumnCount": 310,
+  "unclassifiedColumns": [],
+  "resources": [
+    {
+      "resource": "settings",
+      "table": "public.settings",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "read",
+        "patch",
+        "reset",
+        "set_weights",
+        "tune_weights",
+        "rotate_connector",
+        "set_or_tune_weights"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "desired_retention",
+          "type": "float4",
+          "nullable": false,
+          "constraint": "desired_retention >= 0.80::double precision AND desired_retention <= 0.97::double precision",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "new_per_day",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "new_per_day >= 0 AND new_per_day <= 200",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "reviews_per_day",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "reviews_per_day >= 0 AND reviews_per_day <= 2000",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "learn_steps",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "relearn_steps",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "rollover_hour",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "rollover_hour >= 0 AND rollover_hour <= 23",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "max_interval_days",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "max_interval_days > 0",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "fuzz",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "load_balance",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "learn_ahead_minutes",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "learn_ahead_minutes >= 0",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "fsrs_weights",
+          "type": "_float4",
+          "nullable": true,
+          "constraint": "fsrs_weights IS NULL OR cardinality(fsrs_weights) = 21",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.set_weights",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "fsrs_tuned_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.set_or_tune_weights",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "macros",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "default_style",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "tutor_rules",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "mix_decks",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "preferred_chat",
+          "type": "text",
+          "nullable": false,
+          "constraint": "preferred_chat = ANY (ARRAY['claude'::text, 'chatgpt'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "connector_secret",
+          "type": "text",
+          "nullable": false,
+          "constraint": "connector_secret ~ '^[a-f0-9]{48}$'::text",
+          "classification": "credential_or_transport",
+          "read": "safe metadata; register/rotate/revoke workflow; no plaintext secret response",
+          "mutation": "settings.rotate_connector",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "connector_last_seen_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "connector.heartbeat",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "connector_last_client",
+          "type": "text",
+          "nullable": true,
+          "constraint": "connector_last_client = ANY (ARRAY['claude'::text, 'chatgpt'::text, 'other'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "connector.heartbeat",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "time_zone",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "master_prompt",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(master_prompt) <= 2000",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "ui",
+          "type": "jsonb",
+          "nullable": true,
+          "constraint": "jsonb_typeof(ui) = 'object'::text",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "notify",
+          "type": "jsonb",
+          "nullable": true,
+          "constraint": "notify IS NULL OR jsonb_typeof(notify) = 'object'::text AND pg_column_size(notify) <= 4096",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "settings.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "subjects",
+      "table": "public.subjects",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "reorder",
+        "merge",
+        "delete",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "name",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(name) >= 1 AND char_length(name) <= 40",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "subjects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "glyph",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(glyph) >= 1 AND char_length(glyph) <= 2",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "subjects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "hue",
+          "type": "text",
+          "nullable": false,
+          "constraint": "hue = ANY (ARRAY['amber'::text, 'violet'::text, 'cyan'::text, 'rose'::text, 'lime'::text, 'slate'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "subjects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "position",
+          "type": "int4",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "subjects.reorder",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "projects",
+      "table": "public.projects",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "set_status",
+        "set_backlog_role",
+        "rename",
+        "archive",
+        "restore",
+        "delete",
+        "record_activity"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "slug",
+          "type": "text",
+          "nullable": false,
+          "constraint": "slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text AND char_length(slug) >= 2 AND char_length(slug) <= 40",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.rename",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "subject_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "title",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(title) >= 1 AND char_length(title) <= 80",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "goal",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(goal) >= 1 AND char_length(goal) <= 1200",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "style",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['planning'::text, 'active'::text, 'paused'::text, 'done'::text, 'archived'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "next_session_number",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "next_session_number > 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.start",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "last_activity_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.record_activity",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "prompt",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(prompt) <= 1000",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "target_date",
+          "type": "date",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "target_label",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(target_label) <= 20",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "system",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.set_backlog_role",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "pinned",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "projects.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "sources",
+      "table": "public.sources",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "move",
+        "upload",
+        "replace_file",
+        "extract",
+        "reorder",
+        "delete",
+        "restore",
+        "commit_upload",
+        "commit_extraction",
+        "transition_job",
+        "mark_plan_coverage",
+        "record_provenance"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.move",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "title",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(title) >= 1 AND char_length(title) <= 120",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "short",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(short) >= 1 AND char_length(short) <= 20",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "filename",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.commit_upload",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "storage_path",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.commit_upload",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "bytes",
+          "type": "int8",
+          "nullable": true,
+          "constraint": "bytes >= 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.commit_upload",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "page_count",
+          "type": "int4",
+          "nullable": true,
+          "constraint": "page_count >= 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.commit_extraction",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['uploading'::text, 'extracting'::text, 'ready'::text, 'failed'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.transition_job",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "has_text",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.commit_extraction",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "outline",
+          "type": "jsonb",
+          "nullable": false,
+          "constraint": "jsonb_typeof(outline) = 'array'::text",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "error",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.transition_job",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "plan_checked_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.mark_plan_coverage",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "kind",
+          "type": "text",
+          "nullable": false,
+          "constraint": "kind = ANY (ARRAY['book'::text, 'notes'::text, 'slides'::text, 'problems'::text, 'syllabus'::text, 'exam'::text, 'other'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "sha256",
+          "type": "text",
+          "nullable": true,
+          "constraint": "sha256 IS NULL OR sha256 ~ '^[0-9a-f]{64}$'::text",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.commit_upload",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "position",
+          "type": "int4",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.reorder",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "added_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "origin",
+          "type": "text",
+          "nullable": false,
+          "constraint": "origin = ANY (ARRAY['user'::text, 'claude'::text, 'chatgpt'::text, 'other'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sources.record_provenance",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "source_pages",
+      "table": "public.source_pages",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "move",
+        "verify",
+        "delete",
+        "restore",
+        "export",
+        "record_transcription"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "source_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.move",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "page",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "page > 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.move",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "label",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "body",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(body) <= 20000",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "chars",
+          "type": "int4",
+          "nullable": true,
+          "constraint": null,
+          "classification": "derived",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.patch; database regenerates column",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "tsv",
+          "type": "tsvector",
+          "nullable": true,
+          "constraint": null,
+          "classification": "derived",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.patch; database regenerates column",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "transcribed_by",
+          "type": "text",
+          "nullable": true,
+          "constraint": "transcribed_by = ANY (ARRAY['claude'::text, 'chatgpt'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.record_transcription",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "transcribed_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.record_transcription",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "confidence",
+          "type": "text",
+          "nullable": true,
+          "constraint": "confidence = ANY (ARRAY['high'::text, 'check'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "source_pages.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "concepts",
+      "table": "public.concepts",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "reparent",
+        "pin",
+        "unpin",
+        "merge",
+        "delete",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "subject_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "slug",
+          "type": "text",
+          "nullable": false,
+          "constraint": "slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "name",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(name) >= 1 AND char_length(name) <= 60",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "blurb",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(blurb) <= 200",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "pin_x",
+          "type": "float4",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.pin",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "pin_y",
+          "type": "float4",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.pin",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "topic",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(topic) <= 40",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "level",
+          "type": "text",
+          "nullable": false,
+          "constraint": "level = ANY (ARRAY['cluster'::text, 'galaxy'::text, 'system'::text, 'planet'::text, 'moon'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "parent_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.reparent",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "is_star",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concepts.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "concept_links",
+      "table": "public.concept_links",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "replace",
+        "delete",
+        "restore",
+        "patch"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "from_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concept_links.replace",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "to_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concept_links.replace",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "kind",
+          "type": "text",
+          "nullable": false,
+          "constraint": "kind = ANY (ARRAY['prereq'::text, 'related'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "concept_links.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "checkpoints",
+      "table": "public.checkpoints",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "move",
+        "reorder",
+        "transition_or_correct",
+        "delete",
+        "restore",
+        "rename",
+        "correct_evidence",
+        "recheck_or_correct"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.move",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "code",
+          "type": "text",
+          "nullable": false,
+          "constraint": "code ~ '^CP[0-9]{1,3}[a-z]?$'::text",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.rename",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "position",
+          "type": "float4",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.reorder",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "title",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(title) >= 1 AND char_length(title) <= 80",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "objective",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(objective) >= 1 AND char_length(objective) <= 400",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "criterion",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(criterion) >= 1 AND char_length(criterion) <= 400",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "steps",
+          "type": "jsonb",
+          "nullable": false,
+          "constraint": "lemma_valid_steps(steps)",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "pages",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "source_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'demonstrated'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.transition_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "current_step",
+          "type": "int4",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "demonstrated_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.correct_evidence",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "recheck_level",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "recheck_level >= 0 AND recheck_level <= 4",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.recheck_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "recheck_due",
+          "type": "date",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "recheck_prompt",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(recheck_prompt) <= 300",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "needs_revisit",
+          "type": "bool",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.recheck_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "stage",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(stage) <= 40",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "due_on",
+          "type": "date",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoints.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "checkpoint_prereqs",
+      "table": "public.checkpoint_prereqs",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "replace",
+        "delete",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "checkpoint_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoint_prereqs.replace",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "prereq_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoint_prereqs.replace",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "checkpoint_concepts",
+      "table": "public.checkpoint_concepts",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "replace",
+        "delete",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "checkpoint_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoint_concepts.replace",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "concept_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoint_concepts.replace",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "styles",
+      "table": "public.styles",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "rename",
+        "reorder",
+        "delete",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "key",
+          "type": "text",
+          "nullable": false,
+          "constraint": "key ~ '^[a-z_]{2,20}$'::text",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "styles.rename",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "name",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(name) >= 1 AND char_length(name) <= 24",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "styles.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "icon",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "styles.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "instructions",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(instructions) >= 1 AND char_length(instructions) <= 500",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "styles.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "position",
+          "type": "int4",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "styles.reorder",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "sessions",
+      "table": "public.sessions",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "start",
+        "read",
+        "patch",
+        "move",
+        "renumber",
+        "transition_or_correct",
+        "correct_times",
+        "delete",
+        "restore",
+        "record_provenance",
+        "record_activity"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.move",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "number",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "number > 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.renumber",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "goal",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(goal) >= 1 AND char_length(goal) <= 200",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "style",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "client",
+          "type": "text",
+          "nullable": false,
+          "constraint": "client = ANY (ARRAY['claude'::text, 'chatgpt'::text, 'other'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.record_provenance",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "state",
+          "type": "text",
+          "nullable": false,
+          "constraint": "state = ANY (ARRAY['open'::text, 'ended'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.transition_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "goal_met",
+          "type": "text",
+          "nullable": true,
+          "constraint": "goal_met = ANY (ARRAY['yes'::text, 'partial'::text, 'no'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "summary",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(summary) <= 600",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "resume_step",
+          "type": "int4",
+          "nullable": true,
+          "constraint": "resume_step >= 1 AND resume_step <= 8",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "resume_question",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(resume_question) <= 300",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "resume_note",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(resume_note) <= 300",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "started_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.correct_times",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "last_activity_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.record_activity",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "ended_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.correct_times",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "minutes",
+          "type": "int4",
+          "nullable": true,
+          "constraint": "minutes >= 0 AND minutes <= 600",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "sessions.correct_times",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "session_events",
+      "table": "public.session_events",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "correct",
+        "void",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "session_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "session_events.correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "session_events.correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "kind",
+          "type": "text",
+          "nullable": false,
+          "constraint": "kind = ANY (ARRAY['pretest'::text, 'attempt'::text, 'hint'::text, 'explanation'::text, 'misconception'::text, 'evidence'::text, 'recheck'::text, 'note'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "session_events.correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "body",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(body) >= 1 AND char_length(body) <= 600",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "session_events.correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "outcome",
+          "type": "text",
+          "nullable": true,
+          "constraint": "outcome = ANY (ARRAY['demonstrated'::text, 'partial'::text, 'failed'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "session_events.correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "hint_level",
+          "type": "int2",
+          "nullable": true,
+          "constraint": "hint_level >= 1 AND hint_level <= 4",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "session_events.correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "misconceptions",
+      "table": "public.misconceptions",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "merge",
+        "resolve_or_reopen",
+        "correct_occurrences",
+        "delete",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "misconceptions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "concept_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "misconceptions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "label",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(label) >= 1 AND char_length(label) <= 120",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "misconceptions.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "times",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "times > 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "misconceptions.correct_occurrences",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "last_seen_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "misconceptions.correct_occurrences",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "resolved_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "misconceptions.resolve_or_reopen",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "notes",
+      "table": "public.notes",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "reconcile_variants",
+        "delete",
+        "restore",
+        "allocate_number",
+        "record_provenance"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "no",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.allocate_number",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "session_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "concept_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "kind",
+          "type": "text",
+          "nullable": false,
+          "constraint": "kind = ANY (ARRAY['definition'::text, 'theorem'::text, 'why'::text, 'example'::text, 'counterexample'::text, 'proof'::text, 'other'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "type",
+          "type": "text",
+          "nullable": false,
+          "constraint": "type = ANY (ARRAY['basic'::text, 'cloze'::text, 'reverse'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "front",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(front) >= 1 AND char_length(front) <= 1500",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "back",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(back) <= 3000",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "source_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "page_label",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "tags",
+          "type": "_text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['active'::text, 'suspended'::text, 'deleted'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "origin",
+          "type": "text",
+          "nullable": false,
+          "constraint": "origin = ANY (ARRAY['user'::text, 'claude'::text, 'chatgpt'::text, 'other'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.record_provenance",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "cards",
+      "table": "public.cards",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "read",
+        "grade_or_override",
+        "reset",
+        "restore",
+        "reconcile_via_note"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "note_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.reconcile_variants",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "ord",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "ord > 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notes.reconcile_variants",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "state",
+          "type": "int2",
+          "nullable": false,
+          "constraint": "state >= 0 AND state <= 3",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "cards.grade_or_override",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "due",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "cards.grade_or_override",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "stability",
+          "type": "float4",
+          "nullable": false,
+          "constraint": "stability >= 0::double precision",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "cards.grade_or_override",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "difficulty",
+          "type": "float4",
+          "nullable": false,
+          "constraint": "difficulty >= 0::double precision AND difficulty <= 10::double precision",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "cards.grade_or_override",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "last_review",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "step",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "step >= 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "cards.grade_or_override",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "reps",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "reps >= 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "lapses",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "lapses >= 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "reviews",
+      "table": "public.reviews",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "record",
+        "read",
+        "correct_and_rebuild",
+        "undo",
+        "restore",
+        "import",
+        "void",
+        "move_or_correct",
+        "undo_or_restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "card_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.move_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "reviewed_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "rating",
+          "type": "int2",
+          "nullable": false,
+          "constraint": "rating >= 1 AND rating <= 4",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "state_before",
+          "type": "int2",
+          "nullable": false,
+          "constraint": "state_before >= 0 AND state_before <= 3",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "confidence",
+          "type": "text",
+          "nullable": true,
+          "constraint": "confidence = ANY (ARRAY['sure'::text, 'unsure'::text, 'guess'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "duration_ms",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "duration_ms >= 0 AND duration_ms <= 600000",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "prev",
+          "type": "jsonb",
+          "nullable": false,
+          "constraint": "jsonb_typeof(prev) = 'object'::text",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.correct_and_rebuild",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "undone_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "reviews.undo_or_restore",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "proposals",
+      "table": "public.proposals",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "revise",
+        "decide_or_reopen",
+        "withdraw",
+        "delete",
+        "undo",
+        "allocate_number",
+        "record_provenance",
+        "decide_or_undo"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "no",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.allocate_number",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.revise",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "session_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.revise",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "kind",
+          "type": "text",
+          "nullable": false,
+          "constraint": "kind = ANY (ARRAY['card'::text, 'card_edit'::text, 'plan'::text, 'plan_change'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.revise",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "payload",
+          "type": "jsonb",
+          "nullable": false,
+          "constraint": "jsonb_typeof(payload) = 'object'::text",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.revise",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "reason",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(reason) <= 300",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.revise",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.decide_or_reopen",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "origin",
+          "type": "text",
+          "nullable": false,
+          "constraint": "origin = ANY (ARRAY['claude'::text, 'chatgpt'::text, 'other'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.record_provenance",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "decided_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.decide_or_reopen",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "result",
+          "type": "jsonb",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "proposals.decide_or_undo",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "card_comments",
+      "table": "public.card_comments",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "resolve_or_reopen",
+        "delete",
+        "restore",
+        "allocate_number"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "no",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "card_comments.allocate_number",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "note_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "card_comments.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "body",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(body) >= 1 AND char_length(body) <= 500",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "card_comments.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['open'::text, 'addressed'::text, 'dismissed'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "card_comments.resolve_or_reopen",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "resolved_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "card_comments.resolve_or_reopen",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "resolved_by_proposal",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "card_comments.resolve_or_reopen",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "diagnostics",
+      "table": "public.diagnostics",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "confirm",
+        "resolve",
+        "merge",
+        "delete",
+        "restore",
+        "allocate_number",
+        "correct_occurrences"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "no",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.allocate_number",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "session_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "kind",
+          "type": "text",
+          "nullable": false,
+          "constraint": "kind = ANY (ARRAY['gap'::text, 'strength'::text, 'material'::text, 'pace'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "topic",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(topic) >= 1 AND char_length(topic) <= 120",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "evidence",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(evidence) <= 600",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "severity",
+          "type": "int2",
+          "nullable": false,
+          "constraint": "severity >= 1 AND severity <= 3",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "times",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "times > 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.correct_occurrences",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['open'::text, 'confirmed'::text, 'planned'::text, 'resolved'::text, 'dismissed'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "proposal_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "last_seen_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "diagnostics.correct_occurrences",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "actions",
+      "table": "public.actions",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "read",
+        "inspect",
+        "undo",
+        "redo",
+        "annotate",
+        "export",
+        "purge"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "undo/reconstruct or explicit history/account purge",
+      "fields": [
+        {
+          "column": "no",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append_or_purge",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "txid",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "source",
+          "type": "text",
+          "nullable": false,
+          "constraint": "source = ANY (ARRAY['app'::text, 'claude'::text, 'chatgpt'::text, 'other'::text, 'system'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "tool",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "summary",
+          "type": "text",
+          "nullable": true,
+          "constraint": "char_length(summary) <= 200",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append_or_annotate",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "undoes",
+          "type": "int8",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.undo_or_redo",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "undone_by",
+          "type": "int8",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.undo_or_redo",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "action_changes",
+      "table": "public.action_changes",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "through owner-scoped parent action",
+      "operations": [
+        "read",
+        "inspect",
+        "reconstruct",
+        "undo",
+        "export",
+        "purge"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "undo/reconstruct or explicit history/account purge",
+      "fields": [
+        {
+          "column": "id",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "action_no",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append_or_purge",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "seq",
+          "type": "int4",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "table_name",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "row_pk",
+          "type": "jsonb",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "op",
+          "type": "text",
+          "nullable": false,
+          "constraint": "op = ANY (ARRAY['insert'::text, 'update'::text, 'delete'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "old",
+          "type": "jsonb",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append_or_purge",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "new",
+          "type": "jsonb",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "history.append_or_purge",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "checkpoint_sources",
+      "table": "public.checkpoint_sources",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "move",
+        "delete",
+        "restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "checkpoint_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoint_sources.move",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "source_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoint_sources.move",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "pages",
+          "type": "text",
+          "nullable": true,
+          "constraint": "pages IS NULL OR char_length(pages) <= 120",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "checkpoint_sources.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "push_devices",
+      "table": "public.push_devices",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "read",
+        "register",
+        "rename",
+        "disable",
+        "remove",
+        "restore",
+        "test",
+        "patch",
+        "touch",
+        "record_delivery",
+        "disable_or_restore"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "endpoint",
+          "type": "text",
+          "nullable": false,
+          "constraint": "endpoint ~ '^https://'::text AND char_length(endpoint) <= 1000",
+          "classification": "credential_or_transport",
+          "read": "safe metadata; register/rotate/revoke workflow; no plaintext secret response",
+          "mutation": "push_devices.register",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "p256dh",
+          "type": "text",
+          "nullable": false,
+          "constraint": "p256dh ~ '^[A-Za-z0-9_-]+$'::text AND char_length(p256dh) <= 200",
+          "classification": "credential_or_transport",
+          "read": "safe metadata; register/rotate/revoke workflow; no plaintext secret response",
+          "mutation": "push_devices.register",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "auth",
+          "type": "text",
+          "nullable": false,
+          "constraint": "auth ~ '^[A-Za-z0-9_-]+$'::text AND char_length(auth) <= 50",
+          "classification": "credential_or_transport",
+          "read": "safe metadata; register/rotate/revoke workflow; no plaintext secret response",
+          "mutation": "push_devices.register",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "label",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(label) >= 1 AND char_length(label) <= 40",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "push_devices.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "platform",
+          "type": "text",
+          "nullable": false,
+          "constraint": "platform = ANY (ARRAY['android_app'::text, 'android_web'::text, 'desktop'::text, 'ios'::text, 'other'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "push_devices.register",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "last_seen_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "push_devices.touch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "last_ok_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "push_devices.record_delivery",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "failures",
+          "type": "int4",
+          "nullable": false,
+          "constraint": "failures >= 0",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "push_devices.record_delivery",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "disabled_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "push_devices.disable_or_restore",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "disabled_reason",
+          "type": "text",
+          "nullable": true,
+          "constraint": "disabled_reason = ANY (ARRAY['gone'::text, 'removed'::text, 'failing'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "push_devices.disable_or_restore",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "notifications",
+      "table": "public.notifications",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "preview",
+        "schedule",
+        "read",
+        "update",
+        "cancel",
+        "mark_opened",
+        "act",
+        "snooze",
+        "retry",
+        "delete",
+        "update_or_correct",
+        "record_projection",
+        "transition_or_correct",
+        "record_delivery"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "id",
+          "type": "int8",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "kind",
+          "type": "text",
+          "nullable": false,
+          "constraint": "kind = ANY (ARRAY['due'::text, 'deadline'::text, 'behind'::text, 'resume'::text, 'tutor'::text, 'digest'::text, 'plan'::text, 'rhythm'::text, 'confirm'::text, 'test'::text])",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.update_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "key",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(key) >= 1 AND char_length(key) <= 200",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.schedule",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "project_id",
+          "type": "uuid",
+          "nullable": true,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.update_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "title",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(title) <= 48",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.update_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "body",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(body) <= 140",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.update_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "url",
+          "type": "text",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.update_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "actions",
+          "type": "jsonb",
+          "nullable": false,
+          "constraint": "jsonb_typeof(actions) = 'array'::text",
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.update_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "facts",
+          "type": "jsonb",
+          "nullable": false,
+          "constraint": "jsonb_typeof(facts) = 'object'::text AND pg_column_size(facts) <= 2048",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.record_projection",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "due_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.update_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "status",
+          "type": "text",
+          "nullable": false,
+          "constraint": "status = ANY (ARRAY['queued'::text, 'sent'::text, 'skipped'::text, 'suppressed'::text, 'failed'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.transition_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "reason",
+          "type": "text",
+          "nullable": true,
+          "constraint": "reason = ANY (ARRAY['resolved'::text, 'cap'::text, 'spacing'::text, 'active'::text, 'quiet'::text, 'kind_off'::text, 'mode'::text, 'no_device'::text, 'push_error'::text])",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.transition_or_correct",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "sent_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.record_delivery",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "opened_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.mark_opened",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "action",
+          "type": "text",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.act",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "action_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "constraint": null,
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notifications.act",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    },
+    {
+      "resource": "notify_holds",
+      "table": "public.notify_holds",
+      "status": "required-plan-contract; runtime completeness not yet verified",
+      "ownerScope": "authenticated owner; never supplied by chatbot",
+      "operations": [
+        "create",
+        "read",
+        "patch",
+        "replace_scope",
+        "clear"
+      ],
+      "read": {
+        "search": true,
+        "pagination": "stable cursor; no silent cap",
+        "export": true
+      },
+      "deletionPolicy": "domain delete/void/archive with dependency preview and restore policy",
+      "fields": [
+        {
+          "column": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "scope",
+          "type": "text",
+          "nullable": false,
+          "constraint": "char_length(scope) >= 1 AND char_length(scope) <= 120",
+          "classification": "command_managed",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notify_holds.replace_scope",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "until",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "owner_editable",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "notify_holds.patch",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        },
+        {
+          "column": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "constraint": null,
+          "classification": "server_identity_or_audit",
+          "read": "owner read via resource/history projection; redact credentials inside audit JSON",
+          "mutation": "assigned/updated by domain transaction; business-time corrections use explicit event/record commands",
+          "parityRequired": true,
+          "implementationStatus": "required; not asserted complete in current app/MCP"
+        }
+      ]
+    }
+  ],
+  "prototypeState": {
+    "S.allowedOverlaps": "overlap_acknowledgements",
+    "S.blocks": "calendar_blocks plus derived saved interval projections",
+    "S.carryIds": "day_plans.selectedCarryIds",
+    "S.coachAccepted": "day_plans.coachDecision",
+    "S.coachAsk": "day_plans.coachRequest",
+    "S.coachDismissed": "day_plans.coachDecision",
+    "S.customActivities": "activity_presets",
+    "S.deadlines": "deadlines plus existing project/checkpoint target projections",
+    "S.drift": "derived reported drift minutes from study_events; explicit interval correction for any deduction",
+    "S.driftLog": "study_events",
+    "S.entries": "study_entries and study_intervals",
+    "S.integration": "read-only projection of typed canonical settings/links/goals",
+    "S.intention": "day_plans.intention",
+    "S.notebookRevision": "owner sync checkpoint/change-feed cursor",
+    "S.notices": "derived count from study_events",
+    "S.parked": "parked_thoughts",
+    "S.ritualDone": "day_plans.ritualCompletedAt (dated)",
+    "S.ritualPicks": "day_plans.selectedTaskIds",
+    "S.ritualSchedule": "day_plans.versionedPlacementPreview",
+    "S.settings": "typed owner settings",
+    "S.shutdownDone": "day_plans.closedAt (dated)",
+    "S.tasks": "tasks",
+    "S.timer": "study_entries active lifecycle and intervals",
+    "S.tomorrowFirst": "next day_plans.firstTaskId",
+    "S.topics": "practice_topics",
+    "U.autoLink": "settings.planning.linkPolicy using real subject/path IDs",
+    "U.goals": "study_goals in minutes",
+    "U.insightTab": "device-local view; optional saved-view preference",
+    "U.linkRecall": "settings.planning.linkRecall; same desired_retention source",
+    "U.links": "typed subject default-path associations; no name matching",
+    "U.memory": "existing settings desired_retention/new_per_day; no duplicate memory object",
+    "U.reserveReviews": "settings.planning.reserveReviews",
+    "U.reviewMinutes": "settings.planning.reviewReservationMinutes",
+    "U.reviewOffer": "settings.planning.offerReviewReservation",
+    "U.dayMargin": "settings.focus.showAccessory"
+  },
+  "plannedResources": [
+    "study_entries",
+    "study_intervals",
+    "study_events",
+    "activity_presets",
+    "tasks",
+    "calendar_blocks",
+    "deadlines",
+    "practice_topics",
+    "parked_thoughts",
+    "study_goals",
+    "day_plans",
+    "overlap_acknowledgements",
+    "review_runs",
+    "proposal_drafts",
+    "commands_and_receipts",
+    "owner_change_feed"
+  ],
+  "plannedContracts": "Lemma_v6_Data_MCP_Contract.md section 5; each requires full app/MCP maintenance before release",
+  "runtimeAcceptanceGates": [
+    "G1 schema coverage",
+    "G2 command parity",
+    "G3 complete UI inputs",
+    "G4 consistency",
+    "G5 history preservation",
+    "G6 ownership/deletion",
+    "G7 visible behavior"
+  ],
+  "commandOwnership": "Owner commands may act on all application data. Internal audit/heartbeat/provenance transitions execute as consequences of validated domain commands, not arbitrary MCP audit fabrication.",
+  "virtualCommandFamilies": {
+    "connector": [
+      "heartbeat"
+    ],
+    "sessions": [
+      "start"
+    ],
+    "notes": [
+      "reconcile_variants"
+    ],
+    "reviews": [
+      "correct_and_rebuild"
+    ],
+    "history": [
+      "append_or_purge",
+      "append",
+      "append_or_annotate",
+      "undo_or_redo"
+    ]
+  }
+}

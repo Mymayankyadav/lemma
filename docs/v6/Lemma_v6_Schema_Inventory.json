@@ -1,0 +1,3430 @@
+{
+  "reviewedAt": "2026-11-05",
+  "repository": "Mymayankyadav/lemma",
+  "repositoryRef": "bbc5fdbd5f08caa4ab2d7543def415acad72bab5",
+  "project": "yemqnhnztlbyxmjxidis",
+  "purpose": "Read-only application schema inventory; no row data or credential values.",
+  "tables": [
+    {
+      "name": "public.settings",
+      "rls": true,
+      "primaryKey": [
+        "user_id"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "desired_retention",
+          "type": "float4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "new_per_day",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "reviews_per_day",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "learn_steps",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "relearn_steps",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "rollover_hour",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "max_interval_days",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "fuzz",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "load_balance",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "learn_ahead_minutes",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "fsrs_weights",
+          "type": "_float4",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "fsrs_tuned_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "macros",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "default_style",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "tutor_rules",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "mix_decks",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "preferred_chat",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "connector_secret",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "connector_last_seen_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "connector_last_client",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "time_zone",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "master_prompt",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "ui",
+          "type": "jsonb",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "notify",
+          "type": "jsonb",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "settings_user_id_fkey",
+          "source_table": "public.settings",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.subjects",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "glyph",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "hue",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "position",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "projects_user_id_subject_id_fkey",
+          "source_table": "public.projects",
+          "source_columns": [
+            "user_id",
+            "subject_id"
+          ],
+          "target_table": "public.subjects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "subjects_user_id_fkey",
+          "source_table": "public.subjects",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "concepts_user_id_subject_id_fkey",
+          "source_table": "public.concepts",
+          "source_columns": [
+            "user_id",
+            "subject_id"
+          ],
+          "target_table": "public.subjects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.projects",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "subject_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "goal",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "style",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "next_session_number",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "last_activity_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "prompt",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "target_date",
+          "type": "date",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "target_label",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "system",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "pinned",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "diagnostics_user_id_project_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_project_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "misconceptions_user_id_project_id_fkey",
+          "source_table": "public.misconceptions",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "sessions_user_id_project_id_fkey",
+          "source_table": "public.sessions",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoints_user_id_project_id_fkey",
+          "source_table": "public.checkpoints",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "sources_user_id_project_id_fkey",
+          "source_table": "public.sources",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "projects_user_id_subject_id_fkey",
+          "source_table": "public.projects",
+          "source_columns": [
+            "user_id",
+            "subject_id"
+          ],
+          "target_table": "public.subjects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "projects_user_id_fkey",
+          "source_table": "public.projects",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "notifications_user_id_project_id_fkey",
+          "source_table": "public.notifications",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "proposals_user_id_project_id_fkey",
+          "source_table": "public.proposals",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.sources",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "short",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "filename",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "storage_path",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "bytes",
+          "type": "int8",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "page_count",
+          "type": "int4",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "has_text",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "outline",
+          "type": "jsonb",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "error",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "plan_checked_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "sha256",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "position",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "added_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "checkpoint_sources_user_id_source_id_fkey",
+          "source_table": "public.checkpoint_sources",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "sources_user_id_fkey",
+          "source_table": "public.sources",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "sources_user_id_project_id_fkey",
+          "source_table": "public.sources",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "source_pages_user_id_source_id_fkey",
+          "source_table": "public.source_pages",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoints_user_id_source_id_fkey",
+          "source_table": "public.checkpoints",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_source_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.source_pages",
+      "rls": true,
+      "primaryKey": [
+        "source_id",
+        "page"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "page",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "chars",
+          "type": "int4",
+          "nullable": true,
+          "generated": true
+        },
+        {
+          "name": "tsv",
+          "type": "tsvector",
+          "nullable": true,
+          "generated": true
+        },
+        {
+          "name": "transcribed_by",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "transcribed_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "confidence",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "source_pages_user_id_fkey",
+          "source_table": "public.source_pages",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "source_pages_user_id_source_id_fkey",
+          "source_table": "public.source_pages",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.concepts",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "subject_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "blurb",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "pin_x",
+          "type": "float4",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "pin_y",
+          "type": "float4",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "topic",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "level",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "parent_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "is_star",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "notes_user_id_concept_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "concept_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "concepts_user_id_fkey",
+          "source_table": "public.concepts",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "concepts_user_id_subject_id_fkey",
+          "source_table": "public.concepts",
+          "source_columns": [
+            "user_id",
+            "subject_id"
+          ],
+          "target_table": "public.subjects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "concept_links_user_id_from_id_fkey",
+          "source_table": "public.concept_links",
+          "source_columns": [
+            "user_id",
+            "from_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "concept_links_user_id_to_id_fkey",
+          "source_table": "public.concept_links",
+          "source_columns": [
+            "user_id",
+            "to_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_concepts_user_id_concept_id_fkey",
+          "source_table": "public.checkpoint_concepts",
+          "source_columns": [
+            "user_id",
+            "concept_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "misconceptions_user_id_concept_id_fkey",
+          "source_table": "public.misconceptions",
+          "source_columns": [
+            "user_id",
+            "concept_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "concepts_owner_parent_fk",
+          "source_table": "public.concepts",
+          "source_columns": [
+            "user_id",
+            "parent_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.concept_links",
+      "rls": true,
+      "primaryKey": [
+        "from_id",
+        "to_id"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "from_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "to_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "concept_links_user_id_fkey",
+          "source_table": "public.concept_links",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "concept_links_user_id_to_id_fkey",
+          "source_table": "public.concept_links",
+          "source_columns": [
+            "user_id",
+            "to_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "concept_links_user_id_from_id_fkey",
+          "source_table": "public.concept_links",
+          "source_columns": [
+            "user_id",
+            "from_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.checkpoints",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "position",
+          "type": "float4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "objective",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "criterion",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "steps",
+          "type": "jsonb",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "pages",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "current_step",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "demonstrated_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "recheck_level",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "recheck_due",
+          "type": "date",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "recheck_prompt",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "needs_revisit",
+          "type": "bool",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "stage",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "due_on",
+          "type": "date",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "checkpoints_user_id_source_id_fkey",
+          "source_table": "public.checkpoints",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_prereqs_user_id_checkpoint_id_fkey",
+          "source_table": "public.checkpoint_prereqs",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_prereqs_user_id_prereq_id_fkey",
+          "source_table": "public.checkpoint_prereqs",
+          "source_columns": [
+            "user_id",
+            "prereq_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_concepts_user_id_checkpoint_id_fkey",
+          "source_table": "public.checkpoint_concepts",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "sessions_user_id_checkpoint_id_fkey",
+          "source_table": "public.sessions",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "session_events_user_id_checkpoint_id_fkey",
+          "source_table": "public.session_events",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_checkpoint_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostics_user_id_checkpoint_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_sources_user_id_checkpoint_id_fkey",
+          "source_table": "public.checkpoint_sources",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoints_user_id_fkey",
+          "source_table": "public.checkpoints",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoints_user_id_project_id_fkey",
+          "source_table": "public.checkpoints",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.checkpoint_prereqs",
+      "rls": true,
+      "primaryKey": [
+        "checkpoint_id",
+        "prereq_id"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "prereq_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "checkpoint_prereqs_user_id_checkpoint_id_fkey",
+          "source_table": "public.checkpoint_prereqs",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_prereqs_user_id_fkey",
+          "source_table": "public.checkpoint_prereqs",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_prereqs_user_id_prereq_id_fkey",
+          "source_table": "public.checkpoint_prereqs",
+          "source_columns": [
+            "user_id",
+            "prereq_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.checkpoint_concepts",
+      "rls": true,
+      "primaryKey": [
+        "checkpoint_id",
+        "concept_id"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "concept_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "checkpoint_concepts_user_id_checkpoint_id_fkey",
+          "source_table": "public.checkpoint_concepts",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_concepts_user_id_fkey",
+          "source_table": "public.checkpoint_concepts",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_concepts_user_id_concept_id_fkey",
+          "source_table": "public.checkpoint_concepts",
+          "source_columns": [
+            "user_id",
+            "concept_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.styles",
+      "rls": true,
+      "primaryKey": [
+        "user_id",
+        "key"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "icon",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "instructions",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "position",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "styles_user_id_fkey",
+          "source_table": "public.styles",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.sessions",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "number",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "goal",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "style",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "client",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "state",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "goal_met",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "summary",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "resume_step",
+          "type": "int4",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "resume_question",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "resume_note",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "started_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "last_activity_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "ended_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "minutes",
+          "type": "int4",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "sessions_user_id_fkey",
+          "source_table": "public.sessions",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "session_events_user_id_session_id_fkey",
+          "source_table": "public.session_events",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "sessions_user_id_checkpoint_id_fkey",
+          "source_table": "public.sessions",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "sessions_user_id_project_id_fkey",
+          "source_table": "public.sessions",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_session_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostics_user_id_session_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "proposals_user_id_session_id_fkey",
+          "source_table": "public.proposals",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.session_events",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "outcome",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "hint_level",
+          "type": "int2",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "session_events_user_id_fkey",
+          "source_table": "public.session_events",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "session_events_user_id_session_id_fkey",
+          "source_table": "public.session_events",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "session_events_user_id_checkpoint_id_fkey",
+          "source_table": "public.session_events",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.misconceptions",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "concept_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "times",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "resolved_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "misconceptions_user_id_project_id_fkey",
+          "source_table": "public.misconceptions",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "misconceptions_user_id_fkey",
+          "source_table": "public.misconceptions",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "misconceptions_user_id_concept_id_fkey",
+          "source_table": "public.misconceptions",
+          "source_columns": [
+            "user_id",
+            "concept_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.notes",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "no",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "concept_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "front",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "back",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "page_label",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "tags",
+          "type": "_text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "cards_user_id_note_id_fkey",
+          "source_table": "public.cards",
+          "source_columns": [
+            "user_id",
+            "note_id"
+          ],
+          "target_table": "public.notes",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_source_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_concept_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "concept_id"
+          ],
+          "target_table": "public.concepts",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_session_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_checkpoint_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_project_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notes_user_id_fkey",
+          "source_table": "public.notes",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "card_comments_user_id_note_id_fkey",
+          "source_table": "public.card_comments",
+          "source_columns": [
+            "user_id",
+            "note_id"
+          ],
+          "target_table": "public.notes",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.cards",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "note_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "ord",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "state",
+          "type": "int2",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "due",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "stability",
+          "type": "float4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "difficulty",
+          "type": "float4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "last_review",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "step",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "reps",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "lapses",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "reviews_user_id_card_id_fkey",
+          "source_table": "public.reviews",
+          "source_columns": [
+            "user_id",
+            "card_id"
+          ],
+          "target_table": "public.cards",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "cards_user_id_fkey",
+          "source_table": "public.cards",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cards_user_id_note_id_fkey",
+          "source_table": "public.cards",
+          "source_columns": [
+            "user_id",
+            "note_id"
+          ],
+          "target_table": "public.notes",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.reviews",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "card_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "reviewed_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "rating",
+          "type": "int2",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "state_before",
+          "type": "int2",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "confidence",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "duration_ms",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "prev",
+          "type": "jsonb",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "undone_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "reviews_user_id_card_id_fkey",
+          "source_table": "public.reviews",
+          "source_columns": [
+            "user_id",
+            "card_id"
+          ],
+          "target_table": "public.cards",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "reviews_user_id_fkey",
+          "source_table": "public.reviews",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.proposals",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "no",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "payload",
+          "type": "jsonb",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "origin",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "decided_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "result",
+          "type": "jsonb",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "card_comments_user_id_resolved_by_proposal_fkey",
+          "source_table": "public.card_comments",
+          "source_columns": [
+            "user_id",
+            "resolved_by_proposal"
+          ],
+          "target_table": "public.proposals",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "proposals_user_id_project_id_fkey",
+          "source_table": "public.proposals",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "proposals_user_id_fkey",
+          "source_table": "public.proposals",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "proposals_user_id_session_id_fkey",
+          "source_table": "public.proposals",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostics_user_id_proposal_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "proposal_id"
+          ],
+          "target_table": "public.proposals",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.card_comments",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "no",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "note_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "resolved_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "resolved_by_proposal",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "card_comments_user_id_note_id_fkey",
+          "source_table": "public.card_comments",
+          "source_columns": [
+            "user_id",
+            "note_id"
+          ],
+          "target_table": "public.notes",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "card_comments_user_id_fkey",
+          "source_table": "public.card_comments",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "card_comments_user_id_resolved_by_proposal_fkey",
+          "source_table": "public.card_comments",
+          "source_columns": [
+            "user_id",
+            "resolved_by_proposal"
+          ],
+          "target_table": "public.proposals",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.diagnostics",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "no",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "session_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "topic",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "evidence",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "severity",
+          "type": "int2",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "times",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "proposal_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "diagnostics_user_id_proposal_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "proposal_id"
+          ],
+          "target_table": "public.proposals",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostics_user_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostics_user_id_project_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostics_user_id_checkpoint_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostics_user_id_session_id_fkey",
+          "source_table": "public.diagnostics",
+          "source_columns": [
+            "user_id",
+            "session_id"
+          ],
+          "target_table": "public.sessions",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.actions",
+      "rls": true,
+      "primaryKey": [
+        "no"
+      ],
+      "columns": [
+        {
+          "name": "no",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "txid",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "tool",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "summary",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "undoes",
+          "type": "int8",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "undone_by",
+          "type": "int8",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "actions_user_id_fkey",
+          "source_table": "public.actions",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "actions_undoes_fkey",
+          "source_table": "public.actions",
+          "source_columns": [
+            "undoes"
+          ],
+          "target_table": "public.actions",
+          "target_columns": [
+            "no"
+          ]
+        },
+        {
+          "name": "actions_undone_by_fkey",
+          "source_table": "public.actions",
+          "source_columns": [
+            "undone_by"
+          ],
+          "target_table": "public.actions",
+          "target_columns": [
+            "no"
+          ]
+        },
+        {
+          "name": "action_changes_action_no_fkey",
+          "source_table": "public.action_changes",
+          "source_columns": [
+            "action_no"
+          ],
+          "target_table": "public.actions",
+          "target_columns": [
+            "no"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.action_changes",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "action_no",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "seq",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "table_name",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "row_pk",
+          "type": "jsonb",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "op",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "old",
+          "type": "jsonb",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "new",
+          "type": "jsonb",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "action_changes_action_no_fkey",
+          "source_table": "public.action_changes",
+          "source_columns": [
+            "action_no"
+          ],
+          "target_table": "public.actions",
+          "target_columns": [
+            "no"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.checkpoint_sources",
+      "rls": true,
+      "primaryKey": [
+        "checkpoint_id",
+        "source_id"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "checkpoint_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "source_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "pages",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "checkpoint_sources_user_id_source_id_fkey",
+          "source_table": "public.checkpoint_sources",
+          "source_columns": [
+            "user_id",
+            "source_id"
+          ],
+          "target_table": "public.sources",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_sources_user_id_fkey",
+          "source_table": "public.checkpoint_sources",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "checkpoint_sources_user_id_checkpoint_id_fkey",
+          "source_table": "public.checkpoint_sources",
+          "source_columns": [
+            "user_id",
+            "checkpoint_id"
+          ],
+          "target_table": "public.checkpoints",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.push_devices",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "endpoint",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "p256dh",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "auth",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "platform",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "last_seen_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "last_ok_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "failures",
+          "type": "int4",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "disabled_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "disabled_reason",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "push_devices_user_id_fkey",
+          "source_table": "public.push_devices",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.notifications",
+      "rls": true,
+      "primaryKey": [
+        "id"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "int8",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "kind",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "body",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "url",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "actions",
+          "type": "jsonb",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "facts",
+          "type": "jsonb",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "due_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "reason",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "sent_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "opened_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": true,
+          "generated": false
+        },
+        {
+          "name": "action_at",
+          "type": "timestamptz",
+          "nullable": true,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "notifications_user_id_project_id_fkey",
+          "source_table": "public.notifications",
+          "source_columns": [
+            "user_id",
+            "project_id"
+          ],
+          "target_table": "public.projects",
+          "target_columns": [
+            "user_id",
+            "id"
+          ]
+        },
+        {
+          "name": "notifications_user_id_fkey",
+          "source_table": "public.notifications",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.notify_holds",
+      "rls": true,
+      "primaryKey": [
+        "user_id",
+        "scope"
+      ],
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "scope",
+          "type": "text",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "until",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "generated": false
+        }
+      ],
+      "relationships": [
+        {
+          "name": "notify_holds_user_id_fkey",
+          "source_table": "public.notify_holds",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "auth.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    }
+  ]
+}

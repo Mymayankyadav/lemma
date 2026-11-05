@@ -87,3 +87,42 @@ for(const theme of ['graph','graph-night'] as const){
   await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\//)
  })
 }
+
+
+test.describe('N2 Continue metadata stays inside the viewport',()=>{
+ test.describe.configure({retries:0})
+ for(const profile of ['stress','extreme'] as const){
+  for(const [width,height] of [[360,640],[390,844]] as const){
+   test(`Continue line fits ${profile} at ${width}×${height} in five consecutive runs`,async({page})=>{
+    test.setTimeout(90_000)
+    await page.setViewportSize({width,height})
+    for(let run=1;run<=5;run++){
+     await page.goto(`./?demo=${profile}#/`)
+     const meta=page.locator('[data-resume-meta]')
+     await expect(meta).toBeVisible()
+     await meta.scrollIntoViewIfNeeded()
+     const bounds=await meta.evaluate(element=>{
+      const rect=element.getBoundingClientRect()
+      const row=element.closest('[aria-label="Resume where you stopped"]')?.getBoundingClientRect()
+      const style=getComputedStyle(element)
+      return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,
+       rowLeft:row?.left??NaN,rowRight:row?.right??NaN,
+       clientWidth:element.clientWidth,overflowX:style.overflowX,
+       textOverflow:style.textOverflow,whiteSpace:style.whiteSpace,
+       viewportWidth:innerWidth,viewportHeight:innerHeight}
+     })
+     expect(bounds.clientWidth,`run ${run}: nonempty metadata`).toBeGreaterThan(0)
+     expect(bounds.left,`run ${run}: left viewport edge`).toBeGreaterThanOrEqual(-1)
+     expect(bounds.right,`run ${run}: right viewport edge`).toBeLessThanOrEqual(bounds.viewportWidth+1)
+     expect(bounds.top,`run ${run}: top viewport edge`).toBeGreaterThanOrEqual(-1)
+     expect(bounds.bottom,`run ${run}: bottom viewport edge`).toBeLessThanOrEqual(bounds.viewportHeight+1)
+     expect(bounds.left,`run ${run}: inside Continue row`).toBeGreaterThanOrEqual(bounds.rowLeft-1)
+     expect(bounds.right,`run ${run}: inside Continue row`).toBeLessThanOrEqual(bounds.rowRight+1)
+     expect(bounds.overflowX,`run ${run}: long text is clipped`).toBe('hidden')
+     expect(bounds.textOverflow,`run ${run}: clipping is legible`).toBe('ellipsis')
+     expect(bounds.whiteSpace,`run ${run}: one metadata line`).toBe('nowrap')
+    }
+   })
+  }
+ }
+})

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="How Lemma stores and protects your mathematics study information.">
+  <title>Privacy · Lemma</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fafaf6;
+      --card: #fff;
+      --ink: #1b2a41;
+      --muted: #4a5a70;
+      --rule: rgba(27,42,65,.22);
+      --grid: rgba(40,90,170,.075);
+      --major: rgba(40,90,170,.15);
+      --accent: #c8372d;
+      --shadow: #1b2a41;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --paper: #13171d;
+        --card: #1a2028;
+        --ink: #e8edf4;
+        --muted: #aeb9c7;
+        --rule: rgba(232,237,244,.2);
+        --grid: rgba(120,160,220,.07);
+        --major: rgba(120,160,220,.15);
+        --accent: #ff7b6b;
+        --shadow: #05070a;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 0; }
+    body {
+      margin: 0;
+      min-width: 0;
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(var(--major) 1px, transparent 1px),
+        linear-gradient(90deg, var(--major) 1px, transparent 1px),
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+      color: var(--ink);
+      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+      overflow-wrap: anywhere;
+    }
+    a { color: var(--accent); text-underline-offset: .2em; }
+    a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .wrap { width: min(100% - 32px, 700px); margin: 0 auto; padding: 28px 0 72px; }
+    .masthead {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 20px;
+      font-size: .875rem;
+    }
+    .brand { font-family: Georgia, serif; font-size: 1.35rem; font-weight: 700; letter-spacing: -.03em; }
+    .brand span { color: var(--accent); }
+    .back { white-space: nowrap; }
+    .eyebrow { margin: 36px 0 8px; font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    h1, h2 { font-family: Georgia, "Times New Roman", serif; letter-spacing: -.025em; line-height: 1.18; }
+    h1 { font-size: clamp(2.25rem, 9vw, 3.5rem); margin: 0 0 18px; }
+    h2 { font-size: 1.35rem; margin: 0 0 12px; }
+    p { margin: 0 0 16px; }
+    .lead { font-size: 1.08rem; color: var(--muted); max-width: 58ch; }
+    .sheet {
+      background: var(--card); border: 1.5px solid var(--ink);
+      border-radius: 6px; box-shadow: 3px 3px 0 var(--shadow);
+      margin-top: 28px; padding: clamp(18px, 5vw, 30px);
+    }
+    section + section { border-top: 1px solid var(--rule); margin-top: 24px; padding-top: 24px; }
+    ul { padding-left: 1.35em; margin: 0 0 14px; }
+    li + li { margin-top: 8px; }
+    footer { margin-top: 32px; font-size: .85rem; color: var(--muted); }
+    @media (max-width: 380px) { .wrap { width: calc(100% - 28px); } .sheet { padding: 18px; } }
+    @media (prefers-reduced-motion: no-preference) { a { transition: color .15s ease; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="masthead">
+      <div class="brand">L<span>∂</span>mma</div>
+      <a class="back" href="/lemma/#/">Back to Lemma</a>
+    </header>
+    <p class="eyebrow">The small print</p>
+    <h1>Privacy, in plain language.</h1>
+    <p class="lead">Lemma is a personal mathematics study organiser. Your projects and notes belong to you; the app does not sell them or use them for advertising.</p>
+    <div class="sheet">
+      <section aria-labelledby="stored">
+        <h2 id="stored">What we store</h2>
+        <ul>
+          <li><strong>Account:</strong> your email address and sign-in information needed for authentication.</li>
+          <li><strong>Study activity:</strong> projects, plans, checkpoints, flashcards, review results, sessions, tutor notes, settings and optional reminder preferences.</li>
+          <li><strong>Files:</strong> PDFs you upload and their extracted page text, attached to your study projects.</li>
+        </ul>
+        <p>Data is stored through <strong>Supabase</strong> in the <strong>ap-south-1 (Mumbai)</strong> region. Access to study records is restricted to your account.</p>
+      </section>
+      <section aria-labelledby="used">
+        <h2 id="used">How it is used</h2>
+        <p>Lemma uses this information to show your study plan, resume progress, schedule card reviews and sync your records across sessions. When you use a connected tutor, relevant study information is shared with that tutor service at your request; that service has its own privacy terms.</p>
+        <p>There are <strong>no ads, no analytics and no sale of personal data</strong>. Lemma does not share your study records with advertisers or data brokers. Supabase provides the storage and authentication infrastructure.</p>
+      </section>
+      <section aria-labelledby="control">
+        <h2 id="control">Export and deletion</h2>
+        <p>Use <a href="/lemma/#/settings">Settings</a> → <strong>Export</strong> to keep a copy of your study information. To request deletion of your account, projects and uploaded PDFs, <strong>email the app owner using the developer contact address in the Google Play listing</strong>. Do not post personal data in a public issue.</p>
+        <p>Deletion is handled on request. Some minimal service records may be retained where required for security or legal obligations.</p>
+      </section>
+      <section aria-labelledby="security">
+        <h2 id="security">Security and changes</h2>
+        <p>Connections use HTTPS. Account access controls protect private study records; avoid sharing your connector address or sign-in credentials. This policy will be updated if the app's data practices change.</p>
+      </section>
+    </div>
+    <footer>Lemma · Privacy information · Updated 2 November 2026</footer>
+  </main>
+</body>
+</html>

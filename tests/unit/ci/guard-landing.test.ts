@@ -44,7 +44,7 @@ describe('landing a CI-opened PR never bypasses the ruleset',()=>{
 })
 
 describe('a dispatched scope run must target the PR head',()=>{
- const base={title:'rules: x',body:'Agent: a · Item: rules · Lease until 2026-11-04T09:00:00Z',files:[],baseNext:'',headNext:'',openPrs:[],protectedCfg:{paths:[],testGlobs:[]},now:new Date('2026-11-04T08:00:00Z')}
+ const base={title:'rules: x',body:'Agent: lemma-1 · Item: rules · Lease until 2026-11-04T09:00:00Z',files:[],baseNext:'',headNext:'',openPrs:[],protectedCfg:{paths:[],testGlobs:[]},now:new Date('2026-11-04T08:00:00Z')}
  it('fails on a mismatched commit, passes on a matching one and on non-dispatch events',()=>{
   const rules=(c:any)=>evaluateScope(c).failures.map((f:any)=>f.rule)
   expect(rules({...base,headSha:'a'.repeat(40),dispatchSha:'b'.repeat(40)})).toContain('DISPATCH-HEAD')
