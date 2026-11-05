@@ -40,4 +40,5 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
           GITHUB_RUN_ID: ${{ github.run_id }}
+          MAX_OPEN_PRS: '99'
         run: node scripts/ci/scope.mjs
