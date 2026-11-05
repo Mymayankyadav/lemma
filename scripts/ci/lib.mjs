@@ -116,3 +116,16 @@ export function stripFooter(body) {
   const i = lines.findIndex((l) => l.trim() === '---');
   return (i >= 0 ? lines.slice(0, i) : lines).join('\n').trim();
 }
+
+// ---- Agent names (AGENTS.md v1.4 "Names") ----
+export const NAME_FORMATS = '`lemma-<n>` (scheduled tasks), `chat-<n>#<tag>` (ordinary chats; <tag> = 4 random lowercase letters or digits chosen at the first run and kept for the whole conversation), `owner-setup*`, `priority`, `ci`';
+const NAME_RES = [/^lemma-\d+$/, /^chat-\d+#[a-z0-9]{4}$/, /^owner-setup[A-Za-z0-9_-]*$/, /^priority$/, /^ci$/];
+export const validAgentName = (n) => NAME_RES.some((re) => re.test(String(n ?? '').trim()));
+/** `chat-3#ab12` -> `chat-3`; every other name is its own base name. */
+export const baseName = (n) => String(n ?? '').trim().split('#')[0];
+/** Identity used to compare agents: lemma-<n> by base name, chat sessions by their full name (tag included). */
+export const agentKey = (n) => { const s = String(n ?? '').trim(); return (/^chat-/.test(s) ? s : baseName(s)).toLowerCase(); };
+export function chatParts(n) {
+  const m = /^chat-(\d+)#([a-z0-9]{4})$/.exec(String(n ?? '').trim());
+  return m ? { base: `chat-${m[1]}`, tag: m[2] } : null;
+}

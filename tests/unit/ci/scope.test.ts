@@ -1,11 +1,13 @@
 import {describe,expect,it} from 'vitest'
 // @ts-expect-error plain ESM script
 import {evaluateScope,classifyTitle} from '../../../scripts/ci/scope.mjs'
+// @ts-expect-error plain ESM script
+import {checkSession,touchSession,lockMessage} from '../../../scripts/ci/sessions.mjs'
 
 const NEXT='# NEXT\n\n## N1 Fix deployment\nStage: Stable\nDone = x\nScope: a\nNot: b\n\n## N2 Other\nDone = y\n\n(More items are added by the priority run.)\n'
 const NOW=new Date('2026-11-04T08:00:00Z')
 const PROT={paths:['AGENTS.md','.github/**','ci/**','scripts/ci/**','scripts/stress-limits.ts','vitest.config.ts'],testGlobs:[]}
-const line1=(agent='codex-1')=>`Agent: ${agent} · Item: N1\n\nbody`
+const line1=(agent='lemma-1')=>`Agent: ${agent} · Item: N1\n\nbody`
 const base=(over={})=>({title:'N1 fix it',body:line1(),files:[{filename:'src/a.ts',status:'modified',patch:'@@\n+x'}],baseNext:NEXT,headNext:NEXT,openPrs:[],protectedCfg:PROT,now:NOW,...over})
 const rules=(ctx:any)=>evaluateScope(ctx).failures.map((f:any)=>f.rule)
 
@@ -28,10 +30,10 @@ describe('scope check',()=>{
   expect(r.failures[0].msg).toContain('To comply:')
  })
  it('line 1 needs no lease; the old lease form is accepted and its value ignored (no LEASE rule any more)',()=>{
-  expect(rules(base({body:'Agent: a · Item: N1'}))).toEqual([])
-  expect(rules(base({body:'Agent: a · Item: N1 · Lease until 2026-11-04T13:00:00Z'}))).toEqual([])
-  expect(rules(base({body:'Agent: a · Item: N1 · Lease until 2027-01-01T00:00:00Z'}))).toEqual([])
-  const r=evaluateScope(base({body:'Agent: a'}))
+  expect(rules(base({body:'Agent: lemma-9 · Item: N1'}))).toEqual([])
+  expect(rules(base({body:'Agent: lemma-9 · Item: N1 · Lease until 2026-11-04T13:00:00Z'}))).toEqual([])
+  expect(rules(base({body:'Agent: lemma-9 · Item: N1 · Lease until 2027-01-01T00:00:00Z'}))).toEqual([])
+  const r=evaluateScope(base({body:'Agent: lemma-9'}))
   expect(r.failures.map((f:any)=>f.rule)).toEqual(['BODY-LINE-1'])
   expect(r.failures[0].msg).toContain('Agent: <name> · Item: <id>')
  })
@@ -49,9 +51,53 @@ describe('scope check',()=>{
  })
  it('limits: one PR per agent and at most 6 open PRs (CI exempt)',()=>{
   const open=(n:number,agent:string)=>({number:n,body:`Agent: ${agent} · Item: N1 · Lease until 2026-11-04T09:00:00Z`})
-  expect(rules(base({openPrs:[open(2,'codex-1')]}))).toContain('ONE-PR-PER-AGENT')
-  expect(rules(base({openPrs:[1,2,3,4,5,6].map((n)=>open(n,'a'+n))}))).toContain('MAX-OPEN-PRS')
-  expect(rules(base({body:'Agent: ci · Item: N1 · Lease until 2026-11-04T09:00:00Z',openPrs:[1,2,3,4,5,6].map((n)=>open(n,'a'+n))}))).toEqual([])
+  expect(rules(base({openPrs:[open(2,'lemma-1')]}))).toContain('ONE-PR-PER-AGENT')
+  expect(rules(base({openPrs:[1,2,3,4,5,6].map((n)=>open(n,'lemma-'+(10+n)))}))).toContain('MAX-OPEN-PRS')
+  expect(rules(base({body:'Agent: ci · Item: N1 · Lease until 2026-11-04T09:00:00Z',openPrs:[1,2,3,4,5,6].map((n)=>open(n,'lemma-'+(10+n)))}))).toEqual([])
+ })
+ it('one PR per item: a second PR for an Item that already has an open PR fails',()=>{
+  const open=(n:number,agent:string,item:string)=>({number:n,body:`Agent: ${agent} · Item: ${item}`})
+  const r=evaluateScope(base({body:'Agent: lemma-1 · Item: N2',openPrs:[open(5,'lemma-2','N2')]}))
+  expect(r.failures.map((f:any)=>f.rule)).toEqual(['ONE-PR-PER-ITEM'])
+  expect(r.failures[0].msg).toContain('#5')
+  expect(r.failures[0].msg).toContain('push commits to the existing PR')
+  expect(rules(base({body:'Agent: lemma-1 · Item: N2',openPrs:[open(5,'lemma-2','N3')]}))).toEqual([])
+  // CI PRs and the Owner's rules item are exempt
+  expect(rules(base({body:'Agent: ci · Item: N2',openPrs:[open(5,'lemma-2','N2')]}))).toEqual([])
+  expect(rules(base({title:'rules: x',body:'Agent: owner-setup · Item: rules',openPrs:[open(5,'owner-setup-2','rules')]}))).toEqual([])
+ })
+ it('agent names: an invalid name fails with the valid formats; identities compare by key',()=>{
+  const r=evaluateScope(base({body:'Agent: ChatGPT · Item: N1'}))
+  expect(r.failures.map((f:any)=>f.rule)).toEqual(['AGENT-NAME'])
+  expect(r.failures[0].msg).toContain('chat-<n>#<tag>')
+  expect(rules(base({body:'Agent: chat-2#k7q3 · Item: N1'}))).toEqual([])
+  expect(rules(base({body:'Agent: chat-2 · Item: N1'}))).toContain('AGENT-NAME')
+  // the same chat session twice is the same agent; two sessions on one number are two agents
+  const open=(n:number,agent:string)=>({number:n,body:`Agent: ${agent} · Item: N${n}`})
+  expect(rules(base({body:'Agent: chat-2#k7q3 · Item: N1',openPrs:[open(5,'chat-2#k7q3')]}))).toContain('ONE-PR-PER-AGENT')
+  expect(rules(base({body:'Agent: chat-2#k7q3 · Item: N1',openPrs:[open(5,'chat-2#zzzz')]}))).not.toContain('ONE-PR-PER-AGENT')
+ })
+ it('session lock: a second tag on a chat number within 3 hours fails with the explanation',()=>{
+  const sessions={'chat-2':{tag:'aaaa',seen:'2026-11-04T07:00:00Z'}}
+  const r=evaluateScope(base({body:'Agent: chat-2#bbbb · Item: N1',sessions}))
+  expect(r.failures.map((f:any)=>f.rule)).toEqual(['SESSION-LOCK'])
+  expect(r.failures[0].msg).toContain('chat-2 is in use by session aaaa until 2026-11-04T10:00:00.000Z; pick another number')
+  expect(rules(base({body:'Agent: chat-2#aaaa · Item: N1',sessions}))).toEqual([])
+  expect(rules(base({body:'Agent: chat-2#bbbb · Item: N1',sessions:{'chat-2':{tag:'aaaa',seen:'2026-11-04T04:59:00Z'}}}))).toEqual([])
+  expect(rules(base({body:'Agent: chat-3#bbbb · Item: N1',sessions}))).toEqual([])
+  expect(rules(base({body:'Agent: lemma-2 · Item: N1',sessions}))).toEqual([])
+ })
+ it('the session registry is plain data: check, touch, lock message',()=>{
+  const map:any={}
+  const t=new Date('2026-11-04T08:00:00Z').getTime()
+  expect(checkSession(map,'chat-2#aaaa',t).ok).toBe(true)
+  expect(touchSession(map,'chat-2#aaaa',t)).toBe(true)
+  expect(touchSession(map,'chat-2#aaaa',t-1000)).toBe(false)
+  expect(touchSession(map,'lemma-1',t)).toBe(false)
+  const lock=checkSession(map,'chat-2#bbbb',t+3600e3)
+  expect(lock.ok).toBe(false)
+  expect(lockMessage(lock)).toBe('chat-2 is in use by session aaaa until 2026-11-04T11:00:00.000Z; pick another number')
+  expect(checkSession(map,'chat-2#bbbb',t+3*3600e3).ok).toBe(true)
  })
  it('protected paths, deleted tests and skipped tests fail unless titled rules:',()=>{
   expect(rules(base({files:[{filename:'AGENTS.md',status:'modified',patch:'@@\n+x'}]}))).toContain('PROTECTED-PATH')
