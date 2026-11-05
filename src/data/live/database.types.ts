@@ -1308,6 +1308,7 @@ export type Database = {
       lemma_slug: { Args: { value: string }; Returns: string }
       lemma_valid_steps: { Args: { value: Json }; Returns: boolean }
       ping: { Args: never; Returns: string }
+      study_command: { Args: { p: Json }; Returns: Json }
       record_review: {
         Args: {
           p_card: string
