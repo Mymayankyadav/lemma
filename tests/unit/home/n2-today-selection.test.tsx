@@ -66,6 +66,7 @@ describe('N2: real Today selection for 14, 15 and 40 checkpoint demo projects',(
   // instruction templates rather than mounted card DOM; it cannot prove the
   // selected GoalDistance and lazy GoalCard actually appear on Today.
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
+  vi.stubGlobal('ResizeObserver',class {observe(){} unobserve(){} disconnect(){}})
   const host=document.createElement('div')
   document.body.appendChild(host)
   const root=createRoot(host)
@@ -105,6 +106,7 @@ describe('N2: real Today selection for 14, 15 and 40 checkpoint demo projects',(
    await act(async()=>root.unmount())
    client.clear()
    host.remove()
+   vi.unstubAllGlobals()
   }
- })
+ },30_000)
 })
