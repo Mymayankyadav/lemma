@@ -53,3 +53,35 @@ describe('N5 real service worker event listeners',()=>{
   expect(fresh.openWindow).toHaveBeenCalledWith('/lemma/#/review');
  });
 });
+
+import {mkdtempSync, rmSync, existsSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {execFileSync} from 'node:child_process';
+import {join} from 'node:path';
+
+describe('N5 generated Workbox build integration', () => {
+ it('emits and imports push handlers only in opt-in builds', () => {
+  const root = mkdtempSync(join(tmpdir(), 'lemma-push-build-'));
+  try {
+   for (const enabled of [false, true]) {
+    const out = join(root, enabled ? 'enabled' : 'disabled');
+    execFileSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build', '--outDir', out, '--emptyOutDir'], {
+     cwd: resolve(dirname(fileURLToPath(import.meta.url)), '../../..'),
+     env: {...process.env, VITE_ALLOW_FLAG_OVERRIDES: enabled ? '1' : '0', VITE_FLAGS: enabled ? 'notificationsPush' : ''},
+     stdio: 'pipe',
+     timeout: 120000,
+    });
+    const sw = readFileSync(join(out, 'sw.js'), 'utf8');
+    expect(sw.includes('lemma-push-worker.js')).toBe(enabled);
+    expect(existsSync(join(out, 'lemma-push-worker.js'))).toBe(enabled);
+    if (enabled) {
+     const companion = readFileSync(join(out, 'lemma-push-worker.js'), 'utf8');
+     expect(companion).toContain("addEventListener('push'");
+     expect(companion).toContain("addEventListener('notificationclick'");
+    }
+   }
+  } finally {
+   rmSync(root, {recursive:true, force:true});
+  }
+ }, 240000);
+});
