@@ -19,7 +19,11 @@ const duration = (spans: Span[]) => minutes(union(spans).reduce((n,[a,b]) => n+b
 function subtract(source: Span[], excluded: Span[]): Span[] {
   let remaining = union(source);
   for (const [a,b] of union(excluded)) {
-    remaining = remaining.flatMap(([s,e]): Span[] => e <= a || s >= b ? [[s,e]] : [[s,Math.min(e,a)],[Math.max(s,b),e]].filter(valid));
+    remaining = remaining.flatMap(([s,e]): Span[] => {
+      if (e <= a || s >= b) return [[s,e]];
+      const fragments: Span[] = [[s,Math.min(e,a)],[Math.max(s,b),e]];
+      return fragments.filter(valid);
+    });
   }
   return remaining;
 }
@@ -48,7 +52,12 @@ export function loggedMinutes(entries: StudyEntry[], range: Range, zone: string,
 export function inProgressMinutes(active: ActiveEffort | null, now: string): number {
   if (!active || active.phase === 'break' || active.phase === 'paused') return 0;
   const cap = Math.max(0,active.focusMinutes);
-  const spans: Span[] = active.intervals?.filter(i=>i.kind !== 'break').map(i=>[ms(i.start),Math.min(ms(i.end),ms(now))]) ?? [[ms(active.startedAt),ms(now)]];
+  const spans: Span[] = active.intervals
+    ? subtract(
+        active.intervals.filter(i=>i.kind !== 'break').map(i=>[ms(i.start),Math.min(ms(i.end),ms(now))] as Span),
+        active.intervals.filter(i=>i.kind === 'break').map(i=>[ms(i.start),Math.min(ms(i.end),ms(now))] as Span)
+      )
+    : [[ms(active.startedAt),ms(now)]];
   return Math.min(cap,duration(spans));
 }
 export function capacityStack(logged: Occupied[], busy: Occupied[], planned: Occupied[], day: Range) {
@@ -61,11 +70,16 @@ export function subjectPartition(entries: StudyEntry[], range: Range, zone: stri
   void zone;
   const result: Record<string,number> = {};
   const assigned: Span[] = [], seen = new Set<string>();
-  for (const entry of entries) {
-    if (entry.status !== 'saved' || seen.has(entry.id)) continue;
+  const saved = entries.filter(entry => {
+    if (entry.status !== 'saved' || seen.has(entry.id)) return false;
     seen.add(entry.id);
+    return true;
+  });
+  const breaks: Span[] = saved.flatMap(entry =>
+    entry.intervals.filter(i => i.kind === 'break').map(i => [ms(i.start), ms(i.end)] as Span)
+  );
+  for (const entry of saved) {
     const focus=entry.intervals.filter(i=>i.kind !== 'break').map(i=>[ms(i.start),ms(i.end)] as Span);
-    const breaks=entry.intervals.filter(i=>i.kind === 'break').map(i=>[ms(i.start),ms(i.end)] as Span);
     const spans=subtract(subtract(clip(focus,ms(range.start),Math.min(ms(range.end),ms(now))),breaks),assigned);
     const key=entry.subjectId || 'unassigned';
     result[key]=(result[key]||0)+duration(spans);
