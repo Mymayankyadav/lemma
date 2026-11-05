@@ -1,12 +1,39 @@
+import {readFileSync} from 'node:fs';
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
+import {FLAG_DEFAULTS} from './src/flags';
+import {shouldBundlePushWorker, shouldStartPushWorker} from './src/lib/push-build-flag';
+
+const allowOverrides = process.env.VITE_ALLOW_FLAG_OVERRIDES === '1';
+const pushEnabled = shouldBundlePushWorker(FLAG_DEFAULTS.notificationsPush, allowOverrides);
+const pushAutoStart = shouldStartPushWorker(FLAG_DEFAULTS.notificationsPush, allowOverrides, process.env.VITE_FLAGS ?? '');
 
 export default defineConfig({
  base:'/lemma/',
  plugins:[
   react(),tailwindcss(),
+  // URL-only overrides require a distinct SW script URL: query params on the page
+  // are not available to the service worker when it first evaluates.
+  ...(allowOverrides ? [{
+   name: 'lemma-push-query-registration',
+   transformIndexHtml() {
+    return [{tag:'script',attrs:{src:'/lemma/lemma-push-query.js',defer:true},injectTo:'head' as const}];
+   },
+   generateBundle() {
+    this.emitFile({type:'asset',fileName:'lemma-push-query.js',
+     source:readFileSync(new URL('./src/lib/lemma-push-query.js',import.meta.url),'utf8')});
+   },
+  }] : []),
+  ...(pushEnabled ? [{
+   name: 'lemma-push-worker-asset',
+   generateBundle() {
+    this.emitFile({type:'asset',fileName:'lemma-push-worker.js',
+     source:`self.__lemmaPushAutoStart=${JSON.stringify(pushAutoStart)};self.__lemmaPushAllowUrlOverride=${JSON.stringify(allowOverrides)};\n`+
+      readFileSync(new URL('./src/lib/lemma-push-worker.js', import.meta.url),'utf8')});
+   },
+  }] : []),
   VitePWA({
    injectRegister:false,
    registerType:'prompt',
@@ -42,6 +69,7 @@ export default defineConfig({
     ],
    },
    workbox:{
+    ...(pushEnabled ? {importScripts:['/lemma/lemma-push-worker.js']} : {}),
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
