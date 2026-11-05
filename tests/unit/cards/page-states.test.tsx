@@ -79,11 +79,23 @@ describe('Cards page states (demo adapter)',()=>{
   const projects=await api.listProjects();
   const initial=await api.searchCardsPage({query:''});
   expect(initial.rows.length).toBeGreaterThan(0);
-  const selected=initial.rows[0];
-  const project=projects.find(p=>p.slug===selected.projectSlug);
-  expect(project).toBeDefined();
-  const state='0';
-  const expected=await api.searchCardsPage({query:'',projectSlug:project!.slug,state:0});
+  // Choose a populated project/state pair from the fixture instead of assuming
+  // the first card is New (state 0); the seed may contain only review cards.
+  let chosen: {slug:string;state:number;rows:typeof initial.rows}|undefined;
+  for(const project of projects){
+   for(const state of [0,1,2,3]){
+    const result=await api.searchCardsPage({query:'',projectSlug:project.slug,state});
+    if(result.rows.length>0 && result.rows.length<initial.rows.length){
+     chosen={slug:project.slug,state,rows:result.rows};
+     break;
+    }
+   }
+   if(chosen)break;
+  }
+  expect(chosen).toBeDefined();
+  const project=projects.find(p=>p.slug===chosen!.slug)!;
+  const state=String(chosen!.state);
+  const expected=await api.searchCardsPage({query:'',projectSlug:project.slug,state:chosen!.state});
   await mount(api,projects);
   await change('Filter project',project!.slug);
   await change('Filter scheduling state',state);
