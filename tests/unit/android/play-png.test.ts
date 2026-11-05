@@ -1,12 +1,27 @@
 // AND-4 regression-first: the standalone --verify path must reject corrupt
 // or duplicated tracked Play PNGs, not merely trust an IHDR size header.
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, cpSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { validatePlayPng, assertUniquePlayShots } from '../../../scripts/play-png.mjs'
 
 const original = readFileSync(resolve(process.cwd(), 'docs/android/shots/today-day-1080x1920.png'))
+
+function makeVerifierFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'lemma-play-verify-'))
+  for (const dir of ['scripts', 'docs/android/shots', 'public']) {
+    mkdirSync(resolve(root, dir), { recursive: true })
+  }
+  for (const path of ['scripts/play-shots.mjs', 'scripts/play-png.mjs',
+    'docs/android/listing.md', 'public/privacy.html']) {
+    cpSync(resolve(process.cwd(), path), resolve(root, path))
+  }
+  cpSync(resolve(process.cwd(), 'docs/android/shots'),
+    resolve(root, 'docs/android/shots'), { recursive: true })
+  return root
+}
 
 describe('AND-4 tracked Play screenshot integrity', () => {
   it('accepts the existing genuine 3× DPR 1080×1920 capture', () => {
@@ -55,4 +70,28 @@ describe('AND-4 tracked Play screenshot integrity', () => {
     }
     expect(() => assertUniquePlayShots(captures)).not.toThrow()
   })
+  it('rejects over-limit Play listing text through the standalone verifier', () => {
+    const fixture = makeVerifierFixture()
+    try {
+      const listingPath = resolve(fixture, 'docs/android/listing.md')
+      const listing = readFileSync(listingPath, 'utf8')
+      writeFileSync(listingPath, listing.replace(/^Title:.*$/m, 'Title: ' + 'L'.repeat(31)))
+      expect(() => execFileSync('node', [resolve(fixture, 'scripts/play-shots.mjs'), '--verify'], {
+        cwd: fixture, stdio: 'pipe',
+      })).toThrow()
+    } finally { rmSync(fixture, { recursive: true, force: true }) }
+  })
+
+  it('rejects an external privacy-page resource through the standalone verifier', () => {
+    const fixture = makeVerifierFixture()
+    try {
+      const privacyPath = resolve(fixture, 'public/privacy.html')
+      const privacy = readFileSync(privacyPath, 'utf8')
+      writeFileSync(privacyPath, privacy.replace('</head>', '<img src="https://example.org/tracker.png"></head>'))
+      expect(() => execFileSync('node', [resolve(fixture, 'scripts/play-shots.mjs'), '--verify'], {
+        cwd: fixture, stdio: 'pipe',
+      })).toThrow()
+    } finally { rmSync(fixture, { recursive: true, force: true }) }
+  })
+
 })
