@@ -37,6 +37,10 @@ begin
        (patch->>'project_id')::uuid,(patch->>'checkpoint_id')::uuid,(patch->>'session_id')::uuid,
        patch->>'reflection',(patch->>'rating')::smallint) returning version into ver;
    else
+     select * into entry from public.study_entries
+       where id=(patch->>'entry_id')::uuid and user_id=v_owner for update;
+     if not found then raise exception 'Study entry not found'; end if;
+     if entry.status in ('saved','discarded') then raise exception 'Terminal study entry'; end if;
      insert into public.study_intervals(id,user_id,entry_id,kind,started_at,ended_at)
      values(changed,v_owner,(patch->>'entry_id')::uuid,patch->>'kind',
        (patch->>'started_at')::timestamptz,(patch->>'ended_at')::timestamptz);
