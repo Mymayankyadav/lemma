@@ -15,9 +15,9 @@ describe('Review selection before daily quota',()=>{
    if(!template)throw Error('Missing demo note');
    fixture.notes=Array.from({length:10},(_,i)=>{
     const note=structuredClone(template);
-    note.projectId=i<matching?project.id:'excluded-project';
-    note.note.id='quota-note-'+i;
-    note.note.no=10000+i;
+    note.projectId=project.id;
+    note.note.noteId='quota-note-'+i;
+    note.note.noteNo=10000+i;
     note.note.status='active';
     note.cards=note.cards.slice(0,1);
     note.cards[0].id='quota-card-'+i;
