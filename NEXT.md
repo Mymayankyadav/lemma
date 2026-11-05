@@ -92,10 +92,23 @@ Tests: unit tests for every transition, rebuilding state after a reload, a doubl
 Scope: src/lib/focus/**, src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/** (new components), src/data/demo/** (study entries only), src/data/api.ts and src/data/types.ts (additions only), tests/unit/focus/**, tests/e2e/v6-focus.spec.ts, CURRENT.md.
 Not: the live adapter (next priority run), Calendar or Progress views, converting parked thoughts to tasks, notifications, and Today with the flag off.
 
-## N6 Notifications: reminder tap opens the right Review screen
-Stage: Build · Status: open · Needs: N5 · Assigned: —
-Done = with `notificationsPush` on, tapping a due-card reminder opens the Review queue at the cards named in the notification (one bounded read through the existing `notification_review_items` RPC) and, when that queue is finished, Review done offers the next reminder time; with the flag off nothing changes. Unit tests for: deep-link parsing (valid, malformed, expired token), the bounded read (limit respected, owner filter present), and the done-screen offer. Reference only: archived PR #717 (head `ce6b8718237cb7078414a48b076952c369083952`, "NOTIF-7 Notification deep links and review-done offer") and #745 (head `e65590e23541275dbc992575ffb4692686164863`).
-Scope: src/features/review/**, src/features/review-run/**, src/features/review-done/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
-Not: supabase/** (the RPC already exists on main and on the remote), `.github/**`, new dependencies.
+## N6.1 Notifications: validate reminder Review deep links (implemented by split PR)
+Stage: Build · Status: in progress · Needs: N5 · Assigned: chat-92#p7v2
+Done = a pure bounded parser in `src/data/notify.ts` accepts canonical in-app reminder Review deep links carrying a 1–50 card request and an optional signed action token; rejects malformed, duplicate, external, oversized and expired-token links without treating client-side token parsing as signature verification. Tests cover valid and malformed links, token expiry, duplicate parameters, and disabled flow. No application route or quota is changed in this slice.
+Scope: src/data/notify.ts, tests/unit/notify/**, CURRENT.md.
+Not: supabase/**, `.github/**`, new dependencies, Review UI or RPC wiring.
+
+## N6.2 Notifications: bounded reminder Review queue (after N6.1)
+Stage: Build · Status: open · Needs: N6.1 · Assigned: —
+Done = with `notificationsPush` enabled, a due-card reminder link parsed by N6.1 starts one Review round of 1–50 owner-visible due cards selected through the existing `notification_review_items` RPC; the page consumes the link using replace navigation, shows bounded empty/error states, and does not change the saved ordinary daily quota. With the flag off, the ordinary Review route behaves unchanged. Tests verify one bounded RPC read, owner-session filtering, count bounds, and ordinary versus reminder selection.
+Scope: src/features/review/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
+Not: supabase/**, `.github/**`, new dependencies, changing the ordinary `review_items` RPC or stored review quotas.
+
+## N6.3 Notifications: Review completion reminder-time offer (after N6.2)
+Stage: Build · Status: open · Needs: N6.2 · Assigned: —
+Done = after a reminder-driven Review queue is finished, the Review-done screen offers the next reminder time from current notification settings rather than an invented schedule; the offer is absent for ordinary Review and when `notificationsPush` is off. Tests cover eligible reminder completion, ordinary round, missing/unavailable scheduling data, and correct finishing navigation.
+Scope: src/features/review-done/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
+Not: supabase/**, `.github/**`, new dependencies, mutation of persisted reminder settings.
+
 
 (Next priority run: live adapter for study entries, v6 visual tokens and fonts, Calendar Agenda/Day, Progress effort selector, tasks. Next free ID: N15.)
