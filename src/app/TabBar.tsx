@@ -1,11 +1,15 @@
 import {NavLink} from 'react-router';
-import {House,Folder,Layers,ChartColumn} from 'lucide-react';
+import {House,Folder,Layers,ChartColumn,CalendarDays} from 'lucide-react';
 import {motion,useReducedMotion} from 'motion/react';
 import {useHome} from '../data/hooks';
-const tabs=[{to:'/',label:'Today',icon:House},{to:'/projects',label:'Paths',icon:Folder},{to:'/review',label:'Review',icon:Layers},{to:'/insights',label:'Insights',icon:ChartColumn}] as const;
+import {isFlagOn} from '../flags';
+export const legacyTabs=[{to:'/',label:'Today',icon:House},{to:'/projects',label:'Paths',icon:Folder},{to:'/review',label:'Review',icon:Layers},{to:'/insights',label:'Insights',icon:ChartColumn}] as const;
+export const v6Tabs=[...legacyTabs.slice(0,3),{to:'/calendar',label:'Calendar',icon:CalendarDays},{to:'/insights',label:'Progress',icon:ChartColumn}];
+export function navigationTabs(v6:boolean){return v6?v6Tabs:legacyTabs;}
 /** A four-action dock: active labels only, large hit regions and a live due badge. */
 export default function TabBar(){
  const reduce=!!useReducedMotion();
+ const tabs=navigationTabs(isFlagOn('v6Shell'));
  const {data}=useHome();
  return <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-30 flex h-[calc(var(--tab)+env(safe-area-inset-bottom))] w-full items-center justify-around border-t border-edge-2 bg-[var(--tab-bg)] px-2 pb-[env(safe-area-inset-bottom)]">
  {tabs.map(({to,label,icon:Icon})=><NavLink key={to} to={to} end aria-label={label}
