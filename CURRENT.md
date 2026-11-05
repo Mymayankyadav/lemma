@@ -147,3 +147,7 @@ Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright,
 ## N9 effort metrics (PR #850)
 
 The pure `src/lib/effort/` module provides interval-union logged minutes (with separate future minutes), capped active focus that retains accumulated minutes during pauses and breaks, priority capacity partition, per-subject partition, and IANA civil-day boundaries including skipped midnights and DST transitions. Unit coverage is in `tests/unit/effort/metrics.test.ts`. The module is not wired to the UI. Current CI status is tracked by the PR checks rather than this document.
+
+## N11.2 study lifecycle (PR #882)
+
+An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 journaling and undo remain pending. This is an unmerged work-in-progress and has not been validated on production.
