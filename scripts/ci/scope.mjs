@@ -6,6 +6,8 @@ import { appendSummary, api, paginate, repoPath, parseLine1, GhError } from './g
 import { matchesAny, readJson, parseNext, diffNext, patchLines, isTestFile, addsSkipOnly, countExpects, validAgentName, agentKey, NAME_FORMATS, chatParts } from './lib.mjs';
 import { checkSession, lockMessage, loadSessions, saveSessions, touchSession } from './sessions.mjs';
 import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
+import { migrationFindings, existingFunctionNames } from './migrations.mjs';
+import { checkConflict } from './conflicts.mjs';
 
 const MAX_OPEN_PRS = 6;
 const NEXT = 'NEXT.md';
@@ -147,6 +149,13 @@ export function evaluateScope(ctx) {
     }
   }
 
+  // R5a additive-only migrations: agent PRs merge straight to production (AGENTS.md "Safety")
+  if (kind === 'item' || kind === 'bug' || kind === 'incident') {
+    const found = migrationFindings(files, { existing: ctx.existingFunctions || new Set(), body: ctx.body });
+    if (found.length) failures.push(fail('MIGRATION-ADDITIVE', `Agent migrations deploy to production on merge and may only add objects, but: ${found.join('; ')}.`,
+      'never edit, rename or delete an existing migration; in a NEW migration only create things (tables, columns, indexes, policies, new functions, grants). To change an existing function, keep its signature and behaviour compatible and add the PR body line "Replaces function: <name> (reviewer verified signature and behaviour)". Anything that drops, renames, retypes, deletes, revokes or rewrites existing data needs an Owner `rules:` PR.'));
+  }
+
   // R5b a split PR must also implement sub-item .1: code (or the CURRENT.md record the sub-item asks for) plus a test
   if (kind === 'item' && cls.split) {
     const live = files.filter((f) => f.filename !== NEXT && f.status !== 'removed');
@@ -209,6 +218,7 @@ async function main() {
     baseNext: await getText(NEXT, pr.base.sha), headNext: await getText(NEXT, pr.head.sha),
     openPrs: (await paginate(repoPath('/pulls?state=open'))).filter((p) => p.number !== number).map((p) => ({ number: p.number, body: p.body || '' })),
     protectedCfg: readJson('ci/protected.json'),
+    existingFunctions: existingFunctionNames(), // from the checked-out BASE branch
     headSha: pr.head.sha,
     maxOpenPrs: Number(process.env.MAX_OPEN_PRS) || undefined,
     dispatchSha: process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' ? process.env.GITHUB_SHA : undefined,
@@ -248,6 +258,8 @@ async function main() {
     await upsertFeedback({ pr: number, gate: 'scope', text, createIfMissing: !ok });
     if (process.env.GITHUB_RUN_ID) await setCheckOutput({ runId: process.env.GITHUB_RUN_ID, jobName: 'scope', title: ok ? 'scope passed' : `scope failed: ${res.failures.map((f) => f.rule).join(', ')}`, text });
   } catch (e) { console.log(`feedback not written: ${e.message}`); }
+  // Conflicted PRs get no fast-gate run at all: tell the agent why, in one comment (never fails scope).
+  await checkConflict(number, { pr });
   if (res.failures.length) process.exit(1);
 }
 

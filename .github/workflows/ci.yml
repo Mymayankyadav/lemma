@@ -201,6 +201,19 @@ jobs:
         env:
           NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
         run: node tests/mcp/transactions.mjs
+      - name: Verify every tests/mcp/sql/*.mjs (new SQL tests run without a workflow change)
+        env:
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/ci/sql-reporter.cjs
+        shell: bash
+        run: |
+          shopt -s nullglob
+          rc=0
+          for f in $(printf '%s\n' tests/mcp/sql/*.mjs | sort); do
+            echo "::group::$f"
+            node "$f" || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
       - uses: actions/upload-artifact@v4
         if: always()
         with:

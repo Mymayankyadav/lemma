@@ -210,6 +210,13 @@ jobs:
             echo "::endgroup::"
           done
           if [ -f tests/mcp/transactions.mjs ]; then node tests/mcp/transactions.mjs || rc=1; fi
+          # every tests/mcp/sql/*.mjs runs too, so new SQL tests need no workflow change
+          shopt -s nullglob
+          for f in $(printf '%s\n' tests/mcp/sql/*.mjs | sort); do
+            echo "::group::$f"
+            node "$f" || rc=1
+            echo "::endgroup::"
+          done
           exit $rc
       - uses: actions/upload-artifact@v4
         if: always() && needs.changes.outputs.sql == 'true'

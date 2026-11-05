@@ -11,6 +11,7 @@ import { api, paginate, repoPath, ensureLabels, addLabels, parseLine1, GhError }
 import { readJson, commentAgent, stripFooter, agentKey, baseName, chatParts, validAgentName } from './lib.mjs';
 import { parseVerdict, needsReviewWanted } from './verdicts.mjs';
 import { loadSessions, saveSessions, checkSession, touchSession } from './sessions.mjs';
+import { checkConflict } from './conflicts.mjs';
 
 const NO_PROGRESS = /^No progress:\s*(?:·\s*)?Agent:\s*([^·\n]+?)\s*(?:·|$)/;
 const HOUR = 3600e3;
@@ -222,6 +223,15 @@ async function runPlans(now) {
   console.log(`agent-metrics #${issue.number}: ${plans.length} plan(s)\n${markdown}`);
 }
 
+/** Pure: true when the agent-metrics issue was last updated longer ago than `everyMin` (or never). */
+export const isStale = (updatedAt, now, everyMin) => !updatedAt || now - new Date(updatedAt).getTime() >= everyMin * 60e3;
+
+async function metricsStale(now) {
+  const everyMin = Number(process.env.METRICS_EVERY_MIN) || 30;
+  const found = (await paginate(repoPath('/issues?labels=ci-registry&state=all'))).find((i) => i.title === METRICS_TITLE());
+  return isStale(found?.updated_at, now, everyMin);
+}
+
 async function main() {
   const now = Date.now();
   await ensureLabels(readJson('ci/labels.json'));
@@ -264,8 +274,13 @@ async function main() {
     const want = needsReviewWanted({ authorKey: line1 ? agentKey(line1.agent) : null, comments, headAt: new Date(head.commit.committer.date).getTime(), checks: await checksOf(pr.head.sha), labels, draft: pr.draft, isCi, sessions: sessions?.map || {}, now });
     if (want && !labels.has('needs-review')) { await addLabels(i.number, ['needs-review']); console.log(`needs-review #${i.number}`); }
     if (!want && labels.has('needs-review')) await dropLabel(i.number, 'needs-review');
+    // merge conflicts appear when main moves (no PR event), so the sweep re-checks every open PR
+    await checkConflict(i.number, { pr, tries: 1 });
   }
-  // 5. run plans and metrics (never lets a metrics problem break the labels above)
+  // 5. run plans and metrics (never lets a metrics problem break the labels above). Event-triggered
+  // ("light") sweeps skip the heavy metrics pass unless agent-metrics is older than METRICS_EVERY_MIN, so
+  // frequent sweeps stay within the Actions token's hourly API budget.
+  if (process.env.SWEEP_MODE === 'light' && !(await metricsStale(now))) { console.log('light sweep: agent-metrics is fresh, metrics pass skipped'); return; }
   try { await runPlans(now); } catch (e) { console.log(`::warning::run-plan metrics failed: ${e instanceof GhError ? e.message : e}`); }
 }
 

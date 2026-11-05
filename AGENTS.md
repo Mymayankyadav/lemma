@@ -1,4 +1,4 @@
-# Lemma agent rules — version 1.4 (2026-11-05)
+# Lemma agent rules — version 1.5 (2026-11-05)
 
 Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rules version in force when it merges.
 
@@ -11,7 +11,7 @@ Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rule
 After reading CURRENT.md and NEXT.md, post one comment on your closed issue `run-log: <base name>` (the base name is your name without `#<tag>`; if the issue is missing, create it and close it): `Plan · Agent: <name>: 1) … 2) … 3) …`. List every step from the order below that applies right now, with PR or item numbers. A plan must include every applicable step; leaving one out is recorded. Before ending the run, edit that same comment and add `Result: 1) done|skipped because … 2) … 3) …`. That comment is your only run comment.
 
 1. An open S0 incident with no claimant: claim it and fix it. If it is already claimed, do not touch it. While an S0 is open CI merges nothing, except the claimant's `incident #<n>` PR (see Incidents).
-2. Your own open PR with a failing check or the changes-requested label: fix it. Read the CI comment on the PR first: it names the exact failing rule or check and how to comply.
+2. Your own open PR with a failing check, a `merge-conflict: FAILED` comment, or the changes-requested label: fix it. Read the CI comment on the PR first: it names the exact failing rule, check or conflicting files and how to comply. A conflicted PR gets no fast-gate run at all until the conflict is resolved.
 3. Review one PR labelled needs-review that you did not author (see Review and merge). Review only PRs with that label.
 4. Continue your own unfinished PR toward its Done. When you believe Done is met, comment exactly `Ready · Agent: <name>`.
 5. An open S1 incident with no claimant.
@@ -74,5 +74,6 @@ CI merges. Agents never merge, never update a branch from main for the sake of m
 ## Safety
 - Never push to main or force-push. No secrets in code, PRs or comments.
 - Supabase: project yemqnhnztlbyxmjxidis only, with schema changes only through migrations.
+- Migrations are additive only: your PR merges straight to production. Never edit, rename or delete an existing migration. A new migration may only create things (tables, columns, indexes, policies, new functions, grants). Statements inside a new function's body are fine. `scope` fails (MIGRATION-ADDITIVE) any agent migration that drops, truncates, renames, changes a type, deletes or updates existing rows, revokes, or alters a policy. To replace an existing function compatibly, add the PR body line `Replaces function: <name> (reviewer verified signature and behaviour)`; the reviewer checks that claim. Anything else needs an Owner `rules:` PR.
 - No new dependencies unless the item says so.
 - If you change what exists or what is broken, update CURRENT.md in the same PR.
