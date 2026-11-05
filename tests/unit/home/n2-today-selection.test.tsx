@@ -1,4 +1,4 @@
-import React,{act} from 'react'
+import React, {act} from 'react'
 import {createRoot} from 'react-dom/client'
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query'
 import {MemoryRouter} from 'react-router'
@@ -7,8 +7,8 @@ import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter'
 import type {DemoCheckpoint,DemoStore} from '../../../src/data/demo/model'
 import Today from '../../../src/features/home/Page'
 
-// A server-rendered demo page needs the same mode as the real ?demo=1 route.
-// Do not mock Page, the Today goal selector, the hooks or the card components.
+// Use the actual Today page, its real hooks, and real component selection.
+// Only supply a deterministic DemoAdapter fixture through getApi.
 let selectedApi:DemoAdapter
 vi.mock('../../../src/data',()=>({getApi:()=>selectedApi}))
 vi.mock('../../../src/data/mode',()=>({
@@ -51,20 +51,21 @@ function boundaryDemo():DemoAdapter{
 
 describe('N2: real Today selection for 14, 15 and 40 checkpoint demo projects',()=>{
  it('renders the same title, next checkpoint and distance on both sides of the cutoff',async()=>{
-  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
-  const api=selectedApi=boundaryDemo()
-  const home=await api.getHome()
+  selectedApi=boundaryDemo()
+  const home=await selectedApi.getHome()
   const client=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:60_000}}})
   client.setQueryData(['home'],home)
-  client.setQueryData(['settings'],await api.getSettings())
+  client.setQueryData(['settings'],await selectedApi.getSettings())
   for(const project of home.projects){
-   client.setQueryData(['project',project.slug],await api.getProject(project.slug))
+   client.setQueryData(['project',project.slug],await selectedApi.getProject(project.slug))
   }
   expect(home.projects.map(project=>project.total).sort((a,b)=>a-b)).toEqual([14,15,40])
   expect(home.projects).toHaveLength(3)
 
-  // Render the actual Page: it decides between GoalDistance and
-  // FastGoalDistance, then between GoalCard and SummaryGoalCard.
+  // Client-mount the actual Page. Streaming SSR HTML may contain Suspense
+  // instruction templates rather than mounted card DOM; it cannot prove the
+  // selected GoalDistance and lazy GoalCard actually appear on Today.
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true})
   const host=document.createElement('div')
   document.body.appendChild(host)
   const root=createRoot(host)
@@ -74,35 +75,32 @@ describe('N2: real Today selection for 14, 15 and 40 checkpoint demo projects',(
      <MemoryRouter initialEntries={['/']}><Today/></MemoryRouter>
     </QueryClientProvider>)
    })
-   // React.lazy routes must finish mounting before counting real Today cards.
-   // This intentionally tests the page DOM, not the streamed SSR fallback.
    await vi.waitFor(()=>{
-    const region=host.querySelector('[aria-label="Distance to your goals"]')
-    expect(region).not.toBeNull()
-    expect(region?.querySelectorAll('article[aria-label^="Goal progress for"]')).toHaveLength(3)
+    const goals=host.querySelector('[aria-label="Distance to your goals"]')
+    expect(goals).not.toBeNull()
+    expect(goals?.querySelectorAll('article[aria-label^="Goal progress for"]')).toHaveLength(3)
    },{timeout:15_000,interval:50})
-   const goals=host.querySelector('[aria-label="Distance to your goals"]')
-
-  for(const project of home.projects){
-   const card=Array.from(goals?.querySelectorAll('article')??[])
-    .find(node=>node.getAttribute('aria-label')==='Goal progress for '+project.title)
-   expect(card,'Today card for '+project.title).toBeDefined()
-   expect(card?.getAttribute('data-goal-card')).toBe('')
-   expect(card?.querySelector('a')?.textContent).toContain(project.title)
-   expect(card?.querySelector('[data-goal-now]')?.textContent).toContain('CP4')
-   expect(card?.querySelector('[data-goal-now]')?.textContent)
-    .toContain('Next proof for '+project.title)
-   expect(card?.querySelector('[data-goal-distance]')?.textContent)
-    .toContain('3 of '+project.total)
-   expect(card?.querySelector('[data-goal-distance]')?.getAttribute('aria-label'))
-    .toBe('Distance to goal: '+(project.total-3)+' checkpoints remaining')
-   if(project.total>14){
-    expect(card?.hasAttribute('data-summary-goal')).toBe(true)
-    expect(card?.textContent).not.toContain('Open the path for individual checkpoints')
-   }else{
-    expect(card?.hasAttribute('data-summary-goal')).toBe(false)
+   const goals=host.querySelector('[aria-label="Distance to your goals"]')!
+   for(const project of home.projects){
+    const card=Array.from(goals.querySelectorAll('article'))
+     .find(node=>node.getAttribute('aria-label')==='Goal progress for '+project.title)
+    expect(card,'Today card for '+project.title).toBeDefined()
+    expect(card?.getAttribute('data-goal-card')).toBe('')
+    expect(card?.querySelector('a')?.textContent).toContain(project.title)
+    expect(card?.querySelector('[data-goal-now]')?.textContent).toContain('CP4')
+    expect(card?.querySelector('[data-goal-now]')?.textContent)
+     .toContain('Next proof for '+project.title)
+    expect(card?.querySelector('[data-goal-distance]')?.textContent)
+     .toContain('3 of '+project.total)
+    expect(card?.querySelector('[data-goal-distance]')?.getAttribute('aria-label'))
+     .toBe('Distance to goal: '+(project.total-3)+' checkpoints remaining')
+    if(project.total>14){
+     expect(card?.hasAttribute('data-summary-goal')).toBe(true)
+     expect(card?.textContent).not.toContain('Open the path for individual checkpoints')
+    }else{
+     expect(card?.hasAttribute('data-summary-goal')).toBe(false)
+    }
    }
-  }
   }finally{
    await act(async()=>root.unmount())
    client.clear()
