@@ -13,6 +13,8 @@ export const FLAG_DEFAULTS = {
   ciSelfTest: false,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
+  /** Service-worker notification handling remains opt-in until N5 is complete. */
+  notificationsPush: false,
   /** v6 navigation and shared shell remain opt-in until N13 is complete. */
   v6Shell: false,
 } as const satisfies Record<string, boolean>;

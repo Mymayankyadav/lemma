@@ -11,6 +11,11 @@ describe('feature flags',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?flags=androidShell'}).androidShell).toBe(true)
   expect(resolveFlags({allowOverrides:false,search:'?flags=androidShell',envFlags:'androidShell'}).androidShell).toBe(false)
  })
+ it('notificationsPush is off by default and only enabled through permitted overrides',()=>{
+  expect(FLAG_DEFAULTS.notificationsPush).toBe(false)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=notificationsPush'}).notificationsPush).toBe(true)
+  expect(resolveFlags({allowOverrides:false,search:'?flags=notificationsPush'}).notificationsPush).toBe(false)
+ })
  it('v6Shell is off by default and only accepts development/test overrides',()=>{
   expect(FLAG_DEFAULTS.v6Shell).toBe(false)
   expect(resolveFlags({allowOverrides:true,search:'?flags=v6Shell'}).v6Shell).toBe(true)
