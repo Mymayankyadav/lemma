@@ -115,8 +115,18 @@ export function buildMetrics({ plans, reviews = [], commits = [], now }) {
   return { rows: list, markdown: ignored ? `${md}\n\nActivity under invalid names (not counted above): ${ignored}.` : md, invalid: Object.fromEntries(invalid) };
 }
 
-export function renderMetricsBody(markdown, now = Date.now()) {
-  return `CI-maintained state. **Not work; do not edit.** Closed on purpose. Read by the priority run.\n\nUpdated ${new Date(now).toISOString()} by the sweep from the Plan/Result comments on the \`run-log: <agent>\` issues, review verdicts and commits on PRs.\n\n- **plan-short**: a needs-review PR not authored by the agent existed when its plan was posted and the plan has no review step.\n- **no-result**: no \`Result:\` ${NO_RESULT_MIN()} minutes after the plan.\n- **Done %**: done steps / planned steps over all plans.\n\n${markdown}\n`;
+/** Pure: keep only activity at or after `since` (ms). Older activity is never credited to anyone. */
+export const filterSince = (items, since) => items.filter((x) => x.at >= since);
+export const parseSince = (body) => { const m = /<!-- since: (\S+) -->/.exec(body || ''); return m ? new Date(m[1]).getTime() : null; };
+/** Pure: the oldest commit (list is newest first) of an unbroken run of commits whose AGENTS.md is version >= 1.4. */
+export function v14Start(commits) {
+  let since = null;
+  for (const c of commits) { if (c.v14) since = c.date; else break; }
+  return since ? new Date(since).getTime() : null;
+}
+
+export function renderMetricsBody(markdown, now = Date.now(), since = null) {
+  return `<!-- since: ${new Date(since ?? now).toISOString()} -->\nCI-maintained state. **Not work; do not edit.** Closed on purpose. Read by the priority run.\n\nUpdated ${new Date(now).toISOString()} by the sweep from the Plan/Result comments on the \`run-log: <agent>\` issues, review verdicts and commits on PRs. Only activity since ${new Date(since ?? now).toISOString()} (the v1.4 merge) is counted; earlier commits and comments are not credited to anyone.\n\n- **plan-short**: a needs-review PR not authored by the agent existed when its plan was posted and the plan has no review step.\n- **no-result**: no \`Result:\` ${NO_RESULT_MIN()} minutes after the plan.\n- **Done %**: done steps / planned steps over all plans.\n\n${markdown}\n`;
 }
 
 async function ensureClosedIssue(title, body) {
@@ -142,6 +152,23 @@ async function checksOf(sha) {
     checks[n] = mine ? (mine.status === 'completed' ? mine.conclusion : 'pending') : 'missing';
   }
   return checks;
+}
+
+/** When v1.4 went live: the stored marker, else the commit that first put AGENTS.md at version 1.4 or later on the default branch. */
+async function metricsStart(issue, now) {
+  if (process.env.METRICS_FROM) return new Date(process.env.METRICS_FROM).getTime();
+  const stored = parseSince(issue.body);
+  if (stored) return stored;
+  const commits = await api('GET', repoPath('/commits?path=AGENTS.md&per_page=30'));
+  const info = [];
+  for (const c of commits) {
+    const f = await api('GET', repoPath(`/contents/AGENTS.md?ref=${c.sha}`));
+    const v = /version (\d+)\.(\d+)/.exec(Buffer.from(f.content, 'base64').toString('utf8').split('\n')[0]);
+    const ok = !!v && (Number(v[1]) > 1 || Number(v[2]) >= 4);
+    info.push({ v14: ok, date: c.commit.committer.date });
+    if (!ok) break;
+  }
+  return v14Start(info) ?? now; // v1.4 not on the default branch yet: nothing counts
 }
 
 async function runPlans(now) {
@@ -188,9 +215,10 @@ async function runPlans(now) {
       }
     }
   }
-  const { markdown } = buildMetrics({ plans, reviews, commits, now });
   const { issue } = await ensureClosedIssue(METRICS_TITLE(), 'pending');
-  await api('PATCH', repoPath(`/issues/${issue.number}`), { body: renderMetricsBody(markdown, now) });
+  const since = await metricsStart(issue, now);
+  const { markdown } = buildMetrics({ plans: filterSince(plans, since), reviews: filterSince(reviews, since), commits: filterSince(commits, since), now });
+  await api('PATCH', repoPath(`/issues/${issue.number}`), { body: renderMetricsBody(markdown, now, since) });
   console.log(`agent-metrics #${issue.number}: ${plans.length} plan(s)\n${markdown}`);
 }
 

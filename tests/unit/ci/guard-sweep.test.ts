@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest'
 // @ts-expect-error plain ESM script
-import {lastAgentActivity,isLeaseExpired,parsePlan,needsReviewIntervals,analysePlan,buildMetrics,renderMetricsBody} from '../../../scripts/ci/sweep.mjs'
+import {lastAgentActivity,isLeaseExpired,parsePlan,needsReviewIntervals,analysePlan,buildMetrics,renderMetricsBody,filterSince,parseSince,v14Start} from '../../../scripts/ci/sweep.mjs'
 
 const H=3600e3
 const t0=new Date('2026-11-04T10:00:00Z').getTime()
@@ -70,6 +70,24 @@ describe('sweep: run plans and agent-metrics',()=>{
   const done=parsePlan('Plan · Agent: lemma-2: 1) review #1 2) continue #2 3) bug\nResult: 1) done 2) skipped because CI red 3) done')
   const a=analysePlan({plan:done,createdAt:T0,now})
   expect([a.planned,a.done,a.noResult,a.share]).toEqual([3,2,false,2/3])
+ })
+ it('counts only activity after the v1.4 merge: older commits, reviews and plans are not credited',()=>{
+  const since=new Date('2026-11-05T03:00:00Z').getTime()
+  const old=since-3600e3, fresh=since+3600e3
+  const commits=filterSince([{agent:'lemma-2',at:old},{agent:'lemma-2',at:old},{agent:'lemma-2',at:fresh}],since)
+  const m=buildMetrics({plans:filterSince([{agent:'lemma-2',at:old,planned:2,done:2,planShort:false,noResult:false}],since),reviews:filterSince([{agent:'lemma-2',at:old}],since),commits,now:fresh+60e3})
+  expect(m.rows.find((r:any)=>r.agent==='lemma-2')).toMatchObject({runs:0,planned:0,reviews:0,commits:1})
+  expect(filterSince([{at:since}],since)).toHaveLength(1)
+  const body=renderMetricsBody(m.markdown,fresh,since)
+  expect(parseSince(body)).toBe(since)
+  expect(body).toContain('Only activity since 2026-11-05T03:00:00.000Z (the v1.4 merge) is counted')
+  expect(parseSince('no marker')).toBeNull()
+ })
+ it('finds the v1.4 start as the oldest commit of the newest run of v1.4 commits',()=>{
+  const c=(v14:boolean,date:string)=>({v14,date})
+  expect(v14Start([c(true,'2026-11-05T05:00:00Z'),c(true,'2026-11-05T03:00:00Z'),c(false,'2026-11-04T10:00:00Z'),c(false,'2026-11-04T09:00:00Z')])).toBe(new Date('2026-11-05T03:00:00Z').getTime())
+  expect(v14Start([c(false,'2026-11-04T10:00:00Z')])).toBeNull()
+  expect(v14Start([])).toBeNull()
  })
  it('rows only for valid names; other names are summed on one line',()=>{
   const m=buildMetrics({plans:[{agent:'ChatGPT',at:now,planned:1,done:1,planShort:false,noResult:false}],reviews:[{agent:'selftest-a',at:now}],commits:[{agent:'ChatGPT',at:now},{agent:'ChatGPT',at:now},{agent:'lemma-1',at:now}],now})
