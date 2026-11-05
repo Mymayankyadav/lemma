@@ -13,10 +13,14 @@ const filter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:f
 export function useReminderRound(settings:Settings|undefined){
  const navigate=useNavigate();
  const attempted=useRef(false);
+ const settingsRef=useRef(settings);
+ settingsRef.current=settings;
+ const settingsReady=settings!==undefined;
  const [error,setError]=useState<string|null>(null);
  const [loading,setLoading]=useState(false);
  useEffect(()=>{
-  if(attempted.current||!settings)return;
+  if(attempted.current||!settingsReady)return;
+  const initialSettings=settingsRef.current!;
   const link=enabledNotificationReviewLink(window.location.href,isFlagOn('notificationsPush'));
   if(!link)return;
   attempted.current=true;
@@ -34,13 +38,13 @@ export function useReminderRound(settings:Settings|undefined){
     if(!items.length){setError('No cards are due for this reminder.');return}
     // The ordinary daily quota must not truncate a reminder-selected round.
     // Override only the in-memory queue settings; never persist this value.
-    useReviewSession.getState().initialize(items,{...settings,reviewsPerDay:50,newPerDay:50},filter);
+    useReviewSession.getState().initialize(items,{...initialSettings,reviewsPerDay:50,newPerDay:50},filter);
     navigate('/review/run?reminder=1');
    }catch{
     if(!cancelled)setError('Could not load reminder cards. Try again from your reminder.');
    }finally{if(!cancelled)setLoading(false)}
   })();
   return ()=>{cancelled=true};
- },[settings,navigate]);
+ },[settingsReady,navigate]);
  return {loading,error};
 }
