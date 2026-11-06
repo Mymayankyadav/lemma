@@ -1,4 +1,4 @@
-// autoresolve (v1.9): merge main into open PRs whose ONLY merge conflicts are in CURRENT.md / NEXT.md, keeping both
+// autoresolve (v1.9, v2.1 waits for a running PR gate): merge main into open PRs whose ONLY merge conflicts are in CURRENT.md / NEXT.md, keeping both
 // sides (scripts/ci/bookkeeping.mjs). Runs from autoresolve.yml on the default branch. It never runs PR code: it only
 // merges files with git. Pushes use CI_BOT_TOKEN so the PR gate runs on the new head; the `bookkeeping-merge` check
 // run (Actions token) marks the commit so Ready and approvals given before it stay valid.
@@ -19,6 +19,10 @@ const git = (args, opts = {}) => {
 };
 const must = (args, opts) => { const r = git(args, opts); if (r.code !== 0) throw new Error(`git ${args.join(' ')}: ${r.err || r.out}`); return r.out; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Pure (v2.1): is a PR gate run still going for this head? Merging main now would cancel it and restart every test,
+ *  and with main moving every few minutes a Ready PR could loop forever. Wait; autoresolve runs again when it ends. */
+export const gateRunning = (runs, head) => (runs || []).some((r) => r.name === 'PR gate' && r.head_sha === head && r.status !== 'completed');
 
 /** Pure: the decision for a PR from the files git reports as conflicted. */
 export function planFor(conflicted) {
@@ -42,6 +46,8 @@ async function handle(number, baseSha, dry) {
   must(['fetch', '--quiet', 'origin', `+refs/heads/${branch}:refs/remotes/pr/${number}`]);
   const head = must(['rev-parse', `refs/remotes/pr/${number}`]);
   if (head !== pr.head.sha) return `#${number}: branch moved while checking, next run`;
+  const runs = (await api('GET', repoPath(`/actions/runs?head_sha=${head}&per_page=30`))).workflow_runs;
+  if (gateRunning(runs, head)) return `#${number}: PR gate still running on ${head.slice(0, 7)}; merging main after it finishes`;
   const tree = git(['merge-tree', '--write-tree', '--name-only', '--no-messages', head, baseSha]);
   const conflicted = tree.code === 1 ? tree.out.split('\n').slice(1).filter(Boolean) : [];
   const plan = planFor(conflicted);
