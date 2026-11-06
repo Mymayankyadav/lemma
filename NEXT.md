@@ -47,13 +47,6 @@ Tests: `tests/unit/tasks/demo.test.ts` covering each sentence above, including a
 Scope: src/data/tasks/demo.ts, tests/unit/tasks/demo.test.ts, CURRENT.md.
 Not: `src/data/tasks/contract.ts` (additive changes only, with a note in the PR body), `src/data/study/**`, UI, supabase/**.
 
-## N24 Tasks: live adapter over task_command
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/tasks/live.ts` implements `TaskApi` for live mode: reads `public.tasks` as the signed-in owner with bounded keyset pages (limit 1–50, default 20), an opaque cursor and an exact `total`; writes only through `rpc('task_command', envelope)` with a fresh `operationId` per user action (reused on retry), mapping receipts to `StudyReceipt` and conflicts to a typed error; due fields mapped to and from `due_kind`/`due_date`/`due_at` without converting one into the other. The envelope is the one D7 specifies, so this item runs in parallel with N22; integration against the real function is N22's SQL test plus N35.
-Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bounds and cursor, envelope shape per operation, retry reuses the `operationId`, conflict mapping, due mapping round trip, no owner field ever sent.
-Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
-Not: migrations, `src/data/study/**`, UI.
-
 ## N25 Tasks: global task sheet and backlog view behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the header Add action offers "Task" (and keeps "New path"); "Task" opens a titled native dialog over the current route (`docs/v6/DESIGN_HANDOFF.md` "Global Task …" and sheet rules: 90-dvh max, safe-area padding, Escape and focus restoration) with title, optional estimate in minutes, priority, due (none / date / date and time, kept distinct) and optional subject/path links from existing hooks; it validates, saves through `getTaskApi().createTask`, shows one feedback toast with Undo (delete with the returned version) and an explicit "View in backlog". A backlog view at `/tasks` (lazy route registered beside the Calendar route the way `src/app/calendarRoute.tsx` does it) lists tasks in pages of 20 with "Show more", grouped by status, with complete/reopen, edit in the same dialog, and reorder up/down, each through `updateTask` with the record's version; a conflict reloads the row and says so. Flag off: no Task option, `/tasks` redirects to `/`.
