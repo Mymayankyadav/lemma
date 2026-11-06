@@ -128,7 +128,7 @@ try{
  assert.equal((await inspect('select version from public.tasks where id=$1',[task.changed[0].id]))[0].version,1);
  const direct=await oldTask(owner,'claude',envelope('tasks','create',{patch:{title:'Original bridge'}}));
  realAction(direct);
- const journal=(await q('select user_id,source,tool from public.actions where no=$1',[task.actionNo]))[0];
+ const journal=(await inspect('select user_id,source,tool from public.actions where no=$1',[task.actionNo]))[0];
  assert.equal(journal.user_id,owner,'dispatcher journals the authenticated owner');
  assert.equal(journal.source,'chatgpt','dispatcher journals the connector source');
  assert.equal(journal.tool,'study','dispatcher retains the bridge tool context');
