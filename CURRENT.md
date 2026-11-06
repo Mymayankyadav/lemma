@@ -269,3 +269,7 @@ The live task adapter reads public.tasks as the signed-in owner through Supabase
 ## N30.1 Review start selection contract (split from N30)
 
 The additive pure `reviewBatch` helper in `src/features/review/v6/selection.ts` derives the all-due count separately from selected eligible cards and slices exactly the quota-limited batch that the v6 start action will initialize. It respects project and checkpoint deck keys, and `defaultSelection` selects all due deck keys. Unit regressions cover due-versus-batch labels, unchecked checkpoints and empty/quota-zero cases. N30.2 retains the flagged screen, accessible selection controls, navigation and actual queue handoff. The flag-off Review page, card scheduling and stored state are untouched.
+
+## N33.1 v6 Paths list (N33 split, PR pending)
+
+With v6Shell enabled, Paths uses existing useProjects/useSubjects hooks to group projects by their real subject, including pinned/archived status, search and accessible status filters. Existing useUpdateProject handles Pin/Unpin, Archive/Restore and the 4-pin limit; the creation action stays at /projects/new. The list shows 20 projects at a time, distinguishes loading, empty, filtered-empty and errors, and labels forecasts unavailable where source data is missing. Flag off preserves the existing Paths page. N33.2 remains for the project-detail stage rail and session/source counts.
