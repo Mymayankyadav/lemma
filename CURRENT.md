@@ -164,4 +164,4 @@ N14 is being split into small tested slices. The first slice is a pure typed sta
 
 ## N6.2 reminder Review queue (PR #881)
 
-The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. The ordinary Review route remains unchanged when `notificationsPush` is off.
+The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. The ordinary Review route remains unchanged when `notificationsPush` is off. The in-flight reminder read is shared across React StrictMode effect replay so the initial link consumption, owner-scoped RPC and initialization occur once; completed empty/error states remain visible, and saved review quotas remain unchanged.
