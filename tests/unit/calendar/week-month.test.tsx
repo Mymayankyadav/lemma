@@ -3,7 +3,7 @@ import {createRoot, type Root} from 'react-dom/client';
 import {MemoryRouter,Route,Routes,useLocation} from 'react-router';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import CalendarPage from '../../../src/features/calendar/Page';
-import {blockLanes,calendarRange,dayCapacity,weekDays,weekStartDay} from '../../../src/features/calendar/model';
+import {blockLanes,calendarRange,dayCapacity,monthBounds,monthDays,shiftMonth,weekDays,weekStartDay} from '../../../src/features/calendar/model';
 import {emptyStudyApi,type CalendarBlockRecord,type StudyEntryRecord} from '../../../src/data/study/contract';
 import {setStudyApiForTests} from '../../../src/data/study';
 
@@ -137,6 +137,88 @@ describe('N26.1 seven-civil-day Week slice',()=>{
     const f=fake();
     await render('/calendar?view=week&date=2026-11-06');
     expect(host.querySelector('[data-home]')?.textContent).toBe('Legacy home');
+    expect(f.listCalendarBlocks).not.toHaveBeenCalled();
+  });
+});
+
+describe('N26.2 DST-safe Calendar Month grid',()=>{
+  it('covers the aligned adjacent-week days without fixed 24h arithmetic',()=>{
+    const november=monthBounds('2026-11-06','UTC');
+    expect(november).toMatchObject({first:'2026-10-26',last:'2026-12-06',count:42});
+    expect(november.range).toEqual(calendarRange('2026-10-26','UTC',42));
+    const march=monthBounds('2026-03-29','Europe/London');
+    expect(march).toMatchObject({first:'2026-02-23',last:'2026-04-05',count:42});
+    expect((Date.parse(march.range.end)-Date.parse(march.range.start))/3600000).toBe(1007);
+    expect(monthBounds('2026-11-06','UTC',0).first).toBe('2026-11-01');
+    expect(()=>monthBounds('2026-02-30','UTC')).toThrow();
+  });
+  it('keeps civil-day totals equal to Day and Week, including midnight focus',()=>{
+    const month=monthDays('2026-11-06','UTC',[entry],blocks);
+    const friday=month.days.find(row=>row.day==='2026-11-06')!;
+    const week=weekDays('2026-11-06','UTC',[entry],blocks);
+    expect(friday.capacity).toEqual(dayCapacity('2026-11-06','UTC',[entry],blocks));
+    expect(friday.capacity).toEqual(week[4].capacity);
+    expect(friday.capacity.logged).toBe(60);
+    expect(friday.blocks.map(block=>block.id)).toEqual(['busy-a','busy-b','study']);
+    expect(month.days.filter(row=>row.inMonth)).toHaveLength(30);
+    const crossing={...entry,intervals:[{id:'cross',kind:'focus' as const,
+      start:'2026-11-06T18:25:00Z',end:'2026-11-06T18:40:00Z'}]};
+    const local=monthDays('2026-11-06','Asia/Kolkata',[crossing],[]);
+    expect(local.days.find(row=>row.day==='2026-11-06')?.capacity.logged).toBe(5);
+    expect(local.days.find(row=>row.day==='2026-11-07')?.capacity.logged).toBe(10);
+  });
+  it('clamps month navigation on short months instead of skipping them',()=>{
+    expect(shiftMonth('2026-01-31',1)).toBe('2026-02-28');
+    expect(shiftMonth('2028-01-31',1)).toBe('2028-02-29');
+    expect(shiftMonth('2026-03-31',-1)).toBe('2026-02-28');
+    expect(shiftMonth('2026-12-15',1)).toBe('2027-01-15');
+  });
+  it('loads one bounded month-grid range, includes outside dates and opens Day',async()=>{
+    const f=fake();
+    await render('/calendar?view=month&date=2026-11-06');
+    expect(host.querySelector('[aria-label="Calendar month"]')).not.toBeNull();
+    expect(host.querySelectorAll('[data-month-day]')).toHaveLength(42);
+    expect(host.querySelectorAll('[data-outside-month]')).toHaveLength(12);
+    const target=host.querySelector('[data-month-day="2026-11-06"]');
+    expect(target?.textContent).toContain('60m');
+    expect(target?.textContent).toContain('3 blocks');
+    expect(target?.getAttribute('aria-label')).toBe('Open 2026-11-06 in Day view');
+    const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+    expect(f.listStudyEntries).toHaveBeenCalledWith(monthBounds('2026-11-06',zone).range);
+    expect(f.listCalendarBlocks).toHaveBeenCalledWith(monthBounds('2026-11-06',zone).range);
+    await press('Open 2026-10-27 in Day view');
+    expect(host.querySelector('[data-url]')?.textContent).toContain('view=day');
+    expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-10-27');
+  });
+  it('navigates Month with the existing keyboard switcher and calendar month steps',async()=>{
+    fake();
+    await render('/calendar?view=week&date=2026-01-31');
+    const week=[...host.querySelectorAll('button')].find(button=>button.textContent?.trim()==='Week')!;
+    await act(async()=>week.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
+    expect(host.querySelector('[data-url]')?.textContent).toContain('view=month');
+    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Calendar month"]')).not.toBeNull());
+    await press('Next dates');
+    expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-02-28');
+    await vi.waitFor(()=>expect(host.querySelector('[data-month-day="2026-02-28"]')).not.toBeNull());
+    await press('Previous dates');
+    expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-01-28');
+  });
+  it('distinguishes failed data from an actually loaded empty month',async()=>{
+    setStudyApiForTests({...emptyStudyApi('demo'),
+      listStudyEntries:vi.fn(async()=>{throw new Error('Source unavailable');}),
+      listCalendarBlocks:vi.fn(async()=>[]),
+    });
+    await render('/calendar?view=month&date=2026-11-06');
+    expect(host.querySelector('[role="alert"]')?.textContent).toContain('Source unavailable');
+    expect(host.querySelector('[aria-label="Calendar month"]')).toBeNull();
+    expect(host.textContent).not.toContain('0m');
+  });
+  it('keeps the legacy flag-off route without reading any month data',async()=>{
+    flag.enabled=false;
+    const f=fake();
+    await render('/calendar?view=month&date=2026-11-06');
+    expect(host.querySelector('[data-home]')?.textContent).toBe('Legacy home');
+    expect(f.listStudyEntries).not.toHaveBeenCalled();
     expect(f.listCalendarBlocks).not.toHaveBeenCalled();
   });
 });
