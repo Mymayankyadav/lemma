@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "source": "D7 final undo_action lock and journal allowlists",
+  "version": 2,
+  "source": "D8(a) final registry-backed undo_action allowlist (D7 compatibility)",
   "scope": "public",
   "tables": [
     {
@@ -76,7 +76,7 @@
       "table_name": "tasks"
     }
   ],
-  "access": "database functions only; no client RLS policy",
+  "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",
   "table": "lemma_undo_tables",
   "columns": {
     "table_name": {
