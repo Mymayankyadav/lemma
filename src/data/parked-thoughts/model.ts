@@ -29,10 +29,13 @@ export function thoughtTransition(
   return{status:'open',destinationKind:null,destinationId:null,resolvedAt:null};
  }
  if(thought.status!=='open')invalid('Only open thoughts may be resolved');
- if(!resolvedAt||!Number.isFinite(Date.parse(resolvedAt)))invalid('Resolution requires an actual instant');
+ // A direct guard keeps the instant non-null for all subsequent Date calls.
+ if(typeof resolvedAt!=='string'||!Number.isFinite(Date.parse(resolvedAt)))
+  throw new ThoughtError('invalid','Resolution requires an actual instant');
+ const normalizedAt=new Date(resolvedAt).toISOString();
  if(action==='dismiss')return{status:'dismissed',destinationKind:null,destinationId:null,
-  resolvedAt:new Date(resolvedAt).toISOString()};
+  resolvedAt:normalizedAt};
  if(!taskId||!taskId.trim())invalid('Conversion requires a newly created task ID');
  return{status:'converted',destinationKind:'task',destinationId:taskId,
-  resolvedAt:new Date(resolvedAt).toISOString()};
+  resolvedAt:normalizedAt};
 }

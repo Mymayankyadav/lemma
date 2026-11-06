@@ -28,6 +28,8 @@ describe('N58.1 typed parked thoughts and atomic destination contract',()=>{
  });
  it('prevents terminal-state edits and invalid resolution instants',()=>{
   expect(()=>thoughtTransition(open,'dismiss','not a time')).toThrow();
+  expect(()=>thoughtTransition(open,'dismiss',null)).toThrow();
+  expect(()=>thoughtTransition(open,'convert',null,'task-123')).toThrow();
   expect(()=>thoughtTransition(open,'reopen')).toThrow();
   expect(()=>thoughtTransition(thoughtTransition(open,'dismiss',at),'dismiss',at)).toThrow();
  });
