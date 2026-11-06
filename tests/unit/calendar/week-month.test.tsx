@@ -9,6 +9,9 @@ import {setStudyApiForTests} from '../../../src/data/study';
 
 const flag=vi.hoisted(()=>({enabled:true}));
 vi.mock('../../../src/flags',()=>({isFlagOn:()=>flag.enabled}));
+// The injected fake StudyApi is for demo mode; the mode guard replaces fakes
+// whose mode disagrees with the active runtime mode.
+vi.mock('../../../src/data/mode',()=>({getMode:()=> 'demo'}));
 const entry:StudyEntryRecord={
   id:'entry',intent:'Practice proofs',status:'saved',source:'timer',version:1,
   rating:null,reflection:null,createdAt:'2026-11-06T09:00:00Z',updatedAt:'2026-11-06T10:00:00Z',
