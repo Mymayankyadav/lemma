@@ -57,6 +57,23 @@ describe('N17 Calendar civil days, entries and capacity', () => {
     const range = calendarRange('2026-11-06', 'UTC');
     expect(savedSlices([entry, { ...entry, id: 'draft', status: 'draft' }, { ...entry, id: 'discarded', status: 'discarded' }, breakOnly], range)).toHaveLength(1);
   });
+  it('subtracts saved breaks from Calendar slices and capacity, even with overlapping focus and duplicate rows', () => {
+    const original: StudyEntryRecord = {
+      ...entry, intervals: [
+        { id: 'focus-one', kind: 'focus', start: '2026-11-06T09:00:00Z', end: '2026-11-06T10:00:00Z' },
+        { id: 'break', kind: 'break', start: '2026-11-06T09:20:00Z', end: '2026-11-06T09:35:00Z' },
+        { id: 'focus-two', kind: 'focus', start: '2026-11-06T09:45:00Z', end: '2026-11-06T10:15:00Z' },
+      ],
+    };
+    const rows = [original, { ...original }];
+    const range = calendarRange('2026-11-06', 'UTC');
+    expect(savedSlices(rows, range).map(s => [
+      s.start.slice(11, 16), s.end.slice(11, 16),
+    ])).toEqual([['09:00', '09:20'], ['09:35', '10:00'], ['09:45', '10:15']]);
+    expect(dayCapacity('2026-11-06', 'UTC', rows, []).logged).toBe(60);
+    expect(dayCapacity('2026-11-06', 'UTC', rows, []).free).toBe(1380);
+    expect(daySlots('2026-11-06', 'UTC', rows, []).flatMap(row => row.entries)).toHaveLength(3);
+  });
   it('stacks overlapping time logged first, busy second, planned third without double counting', () => {
     const study = { ...block, id: 'study', kind: 'study' as const,
       startsAt: '2026-11-06T10:15:00Z', endsAt: '2026-11-06T11:00:00Z' };
