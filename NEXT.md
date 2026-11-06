@@ -16,12 +16,12 @@ Tests: tests/unit/settings-v6/reminders-export.test.tsx covering reminder prefer
 Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new fields, autosave/retention logic changes, src/data/**, new dependencies, other screens, existing tests' expectations.
 
-## N32.2 v6 Inbox selected decisions and full page states
-Stage: Build · Status: open · Needs: N32.1 · Assigned: —
-Done = finish N32 after N32.1's v6-only evidence/rationale panel: proposals continue grouped by session and checkpoint, with selected card and plan batches. Implement selection-aware approve/reject using the existing atomic decision calls and their receipts, preserve Undo/recovery, and reuse existing plan/change/ideas previews; never invent missing rationale or citations. Keep the existing flag-off proposals UI unchanged and distinguish loading, empty, failed and filtered-empty states. Ensure every action is keyboard accessible with 44-pixel targets and appropriate focus.
-Tests: tests/unit/proposals-v6/** for selection-aware approve/reject, true receipts and conflicts, Undo/recovery, flag on/off, loading/empty/failed/filtered states and keyboard access, while retaining N32.1 evidence tests.
-Scope: src/features/proposals/v6/**, src/features/proposals/Page.tsx (the existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
-Not: src/features/plan-proposal/**, new draft storage, decision data APIs, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
+## N32.2.2 v6 Inbox complete states, recovery and focus (remaining after N32.2 split)
+Stage: Build · Status: open · Needs: N32.2.1 · Assigned: —
+Done = finish the N32.2 Inbox after N32.2.1's selection-aware 20-proposal approve/reject staging. With v6Shell on, distinguish loading (never blank), genuine empty inbox, the filtered-empty Cards or Plan tab (while the other has proposals), stale/failed decision recovery with accurate committed/remaining counts, and retryable fetch failure. Keep the existing grouping by session/checkpoint, plan/change/ideas previews, N32.1 genuine evidence and rationale, and the six-second pre-write Undo; selection remains keyboard-operable and focus returns to the appropriate row or action after a batch. Every action is at least 44px. Flag off retains the legacy Inbox unchanged.
+Tests: tests/unit/proposals-v6/page-states.test.tsx including flag on/off, loading/empty/filtered-empty/failed states, selected batch conflict recovery and focus/keyboard, and existing evidence/selection tests retained.
+Scope: src/features/proposals/v6/** (additive state/focus helpers only), src/features/proposals/Page.tsx (v6-specific page states and focus only), tests/unit/proposals-v6/**, CURRENT.md.
+Not: rewriting N32.2.1's batch executor or six-second Undo, src/features/plan-proposal/**, new draft storage, src/data/**, new dependencies, other screens or existing tests' expectations.
 
 ## N35.2 v6 live Focus → Today/Calendar/Progress end-to-end
 Stage: Build · Status: open · Needs: N35.1 · Assigned: —
