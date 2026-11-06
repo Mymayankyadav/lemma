@@ -36,13 +36,12 @@ Tests: `tests/mcp/sql/presets.mjs` per the lane rules, plus the lifecycle rules 
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N42 Deadlines and milestones: migration (deadlines)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.deadlines` with title, `kind` (`exam`/`seminar`/`assignment`/`milestone`/`other`), exactly one of `due_date` or `due_at`, optional subject/project/checkpoint links, `remaining_minutes` with `estimate_source` (`owner`/`derived`), `status` (`open`/`done`/`cancelled`). Operations create, update, complete, reopen, cancel, restore, delete. Project target dates and checkpoint due dates are projected into the same reads (a read function returning both, labelled by origin) and never copied into rows.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/deadlines.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N42.2 Deadlines: registered owner command and projected target reads (after N42 split)
+Stage: Build · Status: open · Needs: N42.2.1 · Assigned: —
+Done = finish D8(b) deadlines after N42.1 creates the owner-scoped, journalled and undo-registered table. Add one additive migration creating public.deadlines_command(p jsonb), security invoker and auth.uid() owner, standard operationId receipt/retry/conflict/stale expectedVersion rules. Support create/update/complete/reopen/cancel/restore/delete, exact owner links, and service-role mcp_command dispatch by inserting deadlines into lemma_command_resources with its operations/fields schema. Provide a bounded, owner-scoped read function that projects existing project target dates and checkpoint due dates alongside own deadline rows, explicitly labelled by origin without copying rows.
+Tests: extend tests/mcp/sql/deadlines.mjs with all operations, retry and changed-payload conflicts, stale expectedVersion, owner RLS and foreign links, undo for actual command writes, service_role mcp_command, projected due records never duplicated, and retain N42.1 constraints/undo tests.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/deadlines.json, CURRENT.md.
+Not: existing migrations or other table definitions, study_command, task_command, undo_action, MCP function code, app code.
 
 ## N43 Manual practice topics and practice events: migration (practice_topics)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —

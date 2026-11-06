@@ -1,0 +1,119 @@
+{
+  "table": "deadlines",
+  "version": 1,
+  "description": "N42.1 owner-scoped deadline storage. The command and projected target reads are N42.2.",
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "server-managed owner identity/version/provenance",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "server-managed owner identity/version/provenance",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "title": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "kind": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "due_date": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "due_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "subject_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "checkpoint_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "remaining_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "estimate_source": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "status": {
+      "classification": "owner-editable",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "N42.2 deadlines_command; N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "server-managed owner identity/version/provenance",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "source": {
+      "classification": "derived",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "server-managed owner identity/version/provenance",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "server-managed owner identity/version/provenance",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/deadlines/live.ts (N56)",
+      "mcpPath": "server-managed owner identity/version/provenance",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N42.2 domain delete, restore and N36.2 undo; N103 owner purge planned"
+    }
+  }
+}
