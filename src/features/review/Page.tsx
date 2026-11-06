@@ -22,6 +22,8 @@ import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {useReviewSession} from '../review-run/store';
 import {useReminderRound} from './reminder-round';
+import {isFlagOn} from '../../flags';
+import ReviewV6 from './v6/ReviewV6';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 
@@ -38,7 +40,7 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
  });
 }
 
-export default function Page(){
+function LegacyReviewPage(){
  const navigate=useNavigate(),notify=useToast();
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
  // The session chips are optional: only cards tied to a session can use
@@ -235,4 +237,9 @@ export default function Page(){
    </>
   }
  </Screen>;
+}
+
+/** The feature branch leaves the established Review and reminder path untouched. */
+export default function Page(){
+ return isFlagOn('v6Shell')?<ReviewV6/>:<LegacyReviewPage/>;
 }
