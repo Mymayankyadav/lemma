@@ -39,21 +39,24 @@ function closedEntries(entries: StudyEntryRecord[]): EffortEntry[] {
 
 /** Integer display minutes are assigned by largest remainder; the parts always sum to total. */
 export function partitionWholeMinutes(parts: Record<string, number>, total: number) {
-  const names = Object.keys(parts);
   const wanted = Math.max(0, Math.round(total));
-  const out = names.map(id => ({
-    id,
-    minutes: Math.max(0, Math.floor(parts[id])),
-    fraction: Math.max(0, parts[id] - Math.floor(parts[id])),
-  }));
-  let missing = Math.max(0, wanted - out.reduce((sum, item) => sum + item.minutes, 0));
-  for (const item of [...out].sort((a, b) => b.fraction - a.fraction)) {
-    if (!missing) break;
-    item.minutes++; missing--;
+  if (wanted === 0) return [];
+  const out = Object.entries(parts).filter(([, value]) => Number.isFinite(value) && value > 0)
+    .map(([id, value]) => ({ id, minutes: Math.floor(value), fraction: value % 1 }));
+  let assigned = out.reduce((sum, item) => sum + item.minutes, 0);
+  // Defensively handle slight measurement drift without ever exceeding the displayed total.
+  for (const item of [...out].sort((a, b) => a.fraction - b.fraction)) {
+    if (assigned <= wanted) break;
+    const remove = Math.min(assigned - wanted, item.minutes);
+    item.minutes -= remove; assigned -= remove;
   }
-  // A minute-wise user correction should never be lost even if input partitions undercount.
-  if (missing && out.length) out[0].minutes += missing;
-  return out.map(({ id, minutes }) => ({ id, label: id === 'unassigned' ? 'Unassigned' : id, minutes }));
+  const ordered = [...out].sort((a, b) => b.fraction - a.fraction);
+  for (let i = 0; assigned < wanted && ordered.length; i++) {
+    ordered[i % ordered.length].minutes++;
+    assigned++;
+  }
+  return out.filter(item => item.minutes > 0)
+    .map(({ id, minutes }) => ({ id, label: id === 'unassigned' ? 'Unassigned' : id, minutes }));
 }
 
 export function effortSummary(entries: StudyEntryRecord[], period: EffortPeriod, zone: string, now: string) {

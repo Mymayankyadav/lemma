@@ -65,6 +65,13 @@ describe('N18 Progress saved-time calculations', () => {
     expect(parts.reduce((sum,p) => sum + p.minutes, 0)).toBe(2);
     expect(parts.find(p => p.id === 'unassigned')?.label).toBe('Unassigned');
   });
+  it('omits empty subject rows and never rounds parts beyond the displayed total', () => {
+    expect(partitionWholeMinutes({ Algebra: 0, unassigned: 0 }, 0)).toEqual([]);
+    expect(partitionWholeMinutes({ Algebra: 0.4, unassigned: 0 }, 0.4)).toEqual([]);
+    const over = partitionWholeMinutes({ Algebra: 2.2, Geometry: 1.8 }, 2.1);
+    expect(over.reduce((sum, part) => sum + part.minutes, 0)).toBe(2);
+    expect(over.every(part => part.minutes > 0)).toBe(true);
+  });
   it('uses real elapsed bounds for the short London spring day', () => {
     const day = periodFor('day', new Date('2026-03-29T12:00:00Z'), 'Europe/London');
     expect((Date.parse(day.span.end) - Date.parse(day.span.start)) / 3600000).toBe(23);
