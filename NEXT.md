@@ -11,13 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N36.2 Final registry-backed undo and MCP command dispatcher (D8 a)
-Stage: Build · Status: open · Needs: N36.1 · Assigned: —
-Done = complete D8(a) after N36.1's two seeded registry tables. In one new additive migration, replace public.undo_action(uuid,bigint,boolean) compatibly and for the last time: both its table-lock list and journal allowlist read public.lemma_undo_tables with the same authorization, conflict, concurrency, force, inverse, and return behavior for all 24 existing tables. A new registered table becomes undoable without replacing the function. Create public.mcp_command(p_user uuid,p_source text,p jsonb) using only the command_fn resolved from the registry for p->>'resource', schema-qualified/identifier-quoted, honoring mcp_ok, refusing unknown or disabled resources, requiring service_role, forwarding owner/source with the existing command receipt and journal behavior. Existing mcp_study_command and mcp_task_command remain unchanged and callable. PR body must include Replaces function: undo_action (reviewer verified signature and behaviour). Production SQL review required.
-Tests: tests/mcp/sql/registries-dispatch.mjs using full-migration PGlite to prove undo for all current resource types, a newly registered table, D7 compatibility, service-role-only dispatch for study entries, intervals, calendar blocks and tasks, unknown/disabled refusal, ignored caller-supplied function names, owner parity, versions and receipts; existing study/task/undo SQL tests unchanged and passing.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries-dispatch.mjs, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: changes to existing migrations, MCP function/tool code, app code, unrelated tables/functions, expanded client access or new dependencies.
-
 ## N38 Versions and provenance on existing mutable records
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = one additive migration adds `version int not null default 1`, `updated_source text` (`app`/`mcp`/`worker`, null for history) and a trigger that bumps `version` and `updated_at` on every update to `settings`, `subjects`, `projects`, `sources`, `source_pages`, `concepts`, `checkpoints`, `styles`, `notes`, `cards`, `proposals`, `card_comments`, `diagnostics` and `misconceptions`. Existing writers keep working unchanged (they do not send a version); expected-version checks are added by later items. No existing row is updated by the migration.
@@ -25,14 +18,7 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/record-versions.mjs`: every listed table bumps once per update and not on a no-op insert; existing app, MCP, undo and review SQL tests pass unchanged; `mcp_commit` writes still succeed
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/record-versions.mjs, docs/v6/capability-registry/** (the listed tables' files only), CURRENT.md.
 Not: app or MCP code, other tables, changing existing functions.
-
-
-## N40 Capability registry and schema-coverage check (G1)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `docs/v6/capability-registry/<table>.json`, one file per table, classifies every column of every table created by `supabase/migrations/**` as `owner-editable`, `command-managed`, `derived` or `credential` (contract §3), with its app path, MCP path (or the item that will add it), export policy and deletion behaviour, following `docs/v6/Lemma_v6_Data_MCP_Contract.md` §4–§5; and a check that parses all migrations (`create table`, `add column`) and fails, naming the table and column, when any column has no classification. One file per table keeps parallel items from conflicting; a table first created after this item merges is classified by the item that creates it.
-Tests: `tests/unit/contract/capability-registry.test.ts` (passes on main, fails on a fixture migration with an unclassified column, ignores dropped columns)
-Scope: docs/v6/capability-registry/** (new), tests/unit/contract/capability-registry.test.ts, CURRENT.md.
-Not: migrations, app or MCP code, protected paths.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N41 Activity presets: migration (presets)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -120,6 +106,7 @@ Done = per D8(c) and the lane rules, `src/data/presets/` for the records and ope
 Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N56 Deadlines and milestones: app module (src/data/deadlines)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -127,6 +114,7 @@ Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and o
 Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -148,6 +136,7 @@ Done = per D8(c) and the lane rules, `src/data/study-goals/` for the records and
 Tests: `tests/unit/study-goals/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/study-goals/** (new), tests/unit/study-goals/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N60 Dated day plans and closures: app module (src/data/day-plans)
 Stage: Build · Status: open · Needs: — · Assigned: —

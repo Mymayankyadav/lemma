@@ -26,8 +26,10 @@ try {
  for(const file of migrations) {
   if(file===migration) {
    await q('insert into auth.users(id) values($1),($2)',[owner,other]);
-   await q('insert into public.settings(user_id,connector_secret) values($1,$2),($3,$4)',
-    [owner,'1'.repeat(48),other,'2'.repeat(48)]);
+   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
+    [owner,'1'.repeat(48)]);
+   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
+    [other,'2'.repeat(48)]);
    beforeUpdated=(await q('select updated_at from public.settings where user_id=$1',[owner]))[0].updated_at;
   }
   await db.exec(await readFile(new URL(file,migrationDir),'utf8'));
