@@ -64,3 +64,13 @@ describe('v2.1 autoresolve waits for a running PR gate',()=>{
   expect(y).toContain('actions: read')
  })
 })
+
+describe('v2.1 perf-report never competes with the PR gate for runners',()=>{
+ it('runs on main and by hand, not on pull requests',()=>{
+  const y=readFileSync('.github/workflows/perf-report.yml','utf8')
+  const on=y.slice(y.indexOf('\non:'),y.indexOf('\npermissions:'))
+  expect(on).toContain('push:')
+  expect(on).toContain('workflow_dispatch:')
+  expect(on).not.toContain('pull_request')
+ })
+})
