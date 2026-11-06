@@ -44,13 +44,6 @@ Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders th
 Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N29 v6 Atlas list behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/atlas` renders the v6 Atlas from `docs/v6/screens/atlas-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Atlas row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. The phone default is a list of real concepts with hierarchy, checkpoint links and due counts from the existing Atlas data; the existing graph/tree view stays reachable as the map, with saved pins untouched; synthetic grouping rows are labelled and excluded from concept totals.
-Tests: `tests/unit/atlas-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/atlas/v6/** (new), src/features/atlas/Page.tsx (the flag branch only), tests/unit/atlas-v6/**, CURRENT.md.
-Not: changing the existing graph, layout or pin code, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
 ## N30 v6 Review start behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
 Done = with `v6Shell` on, `/review` renders the v6 Review from `docs/v6/screens/review-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Review row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Deck selection and the start panel: all-due and selected-batch counts are separate named numbers, the selection count equals the cards a round will contain, and starting uses the existing round start; long mathematics wraps.
