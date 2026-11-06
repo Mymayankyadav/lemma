@@ -106,13 +106,6 @@ Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle r
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N55 Activity presets: app module (src/data/presets)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/presets/` for the records and operations of N41, including every lifecycle operation it names.
-Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-
 ## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
 Stage: Build · Status: open · Needs: N56.1, N42 · Assigned: —
 Done = complete the N56 app module after N56.1's contract, isolated demo adapter and stable getDeadlineApi/setDeadlineApiForTests facade. Implement the owner-RLS live deadline adapter for all N42 operations: create, update, complete, reopen, cancel, restore, delete via public.deadlines_command with v1 operationId, retries reusing that ID, optimistic expectedVersion, actionNo receipts, typed conflict mapping, civil due dates versus instants, owner-scoped projected project/checkpoint targets (read-only, no new rows), and exact status-filtered bounded 1–50 keyset pages; never send owner IDs in browser commands. Replace the live placeholder in the existing module facade. Preserve demo semantics and separate storage.
