@@ -1,0 +1,15 @@
+/* The v6 title/action header and persistent dock leave little height for Atlas
+   search results in landscape. Scroll Atlas's own controls instead of putting
+   its result rows underneath the dock or the outline's sticky group row.
+   This class exists only when v6Shell is enabled; legacy Atlas is untouched. */
+@media (max-height: 500px) {
+  .v6-atlas-shell > [data-v6-header] {
+    margin-bottom: 0;
+  }
+
+  .v6-atlas-shell > div > main[aria-label="Atlas"] > header {
+    max-height: 64px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}

@@ -9,6 +9,7 @@ import ToastHost from './ToastHost'
 import OfflineBanner from './OfflineBanner'
 import PwaStatus from './PwaStatus'
 import { screenRoutes } from './routes'
+import { calendarRoute } from './calendarRoute'
 const queryClient = new QueryClient({defaultOptions: {queries: {
  staleTime: 30_000, refetchOnWindowFocus: true,
  retry: (count, error) => !(error instanceof LemmaError && ['auth', 'not_found', 'invalid', 'not_implemented'].includes(error.code)) && count < 2,
@@ -16,6 +17,7 @@ const queryClient = new QueryClient({defaultOptions: {queries: {
 }, mutations: {retry: false}}})
 const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, errorElement: <RouteError />, children: [
  ...screenRoutes,
+ calendarRoute,
  {path: '*', element: <Navigate to="/" replace />},
 ]}])
 export default function App() {
