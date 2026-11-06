@@ -22,7 +22,7 @@ async function seedHistoricalAccount(){
  const source=await create("insert into public.sources(user_id,project_id,title,short) values($1,$2,'Lecture notes','NOTES') returning id",[owner,project.id]);
  await query("insert into public.source_pages(user_id,source_id,page,body) values($1,$2,1,'Proof of the lemma')",[owner,source.id]);
  const concept=await create("insert into public.concepts(user_id,subject_id,slug,name) values($1,$2,'limits','Limits') returning id",[owner,subject.id]);
- const checkpoint=await create("insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps) values($1,$2,'CP1',1,'Prove theorem','Understand','Show proof','["Read proof"]'::jsonb) returning id",[owner,project.id]);
+ const checkpoint=await create("insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps) values($1,$2,'CP1',1,'Prove theorem','Understand','Show proof',jsonb_build_array('Read proof')) returning id",[owner,project.id]);
  await query("insert into public.styles(user_id,key,name,icon,instructions) values($1,'socratic','Socratic','?','Ask why')",[owner]);
  const note=await create("insert into public.notes(user_id,project_id,front,back) values($1,$2,'State a theorem','Proof') returning id",[owner,project.id]);
  const card=await create("insert into public.cards(user_id,note_id,ord) values($1,$2,1) returning id",[owner,note.id]);
