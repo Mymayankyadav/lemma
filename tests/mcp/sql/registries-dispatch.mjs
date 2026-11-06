@@ -215,5 +215,58 @@ try{
  const afterDef=(await q("select pg_get_functiondef('public.undo_action(uuid,bigint,boolean)'::regprocedure) sql"))[0].sql;
  assert.equal(afterDef,beforeDef,'new table is undoable without changing the function body');
  assert.equal((await q('select count(*)::int n from public.lemma_undo_tables'))[0].n,25);
+ // A command registered only in this test must route through the same
+ // dispatcher without any new per-resource MCP wrapper or function replacement.
+ await db.exec(`create function public.registry_fixture_command(p jsonb)
+ returns jsonb language plpgsql security invoker set search_path='' as $fixture$
+ declare
+  v_owner uuid; v_id uuid; v_action bigint; v_result jsonb;
+ begin
+  v_owner:=auth.uid();
+  if v_owner is null then raise exception 'Authentication required'; end if;
+  if p ->> 'resource' is distinct from 'registry_undo_fixture' then
+   raise exception 'Unexpected fixture resource';
+  end if;
+  v_id:=(p -> 'target' ->> 'id')::uuid;
+  insert into public.registry_undo_fixture(id,user_id,title)
+   values(v_id,v_owner,p -> 'patch' ->> 'title');
+  select no into v_action from public.actions
+   where txid=txid_current() and user_id=v_owner;
+  if v_action is null then raise exception 'Fixture command not journalled'; end if;
+  v_result:=pg_catalog.jsonb_build_object(
+   'operationId',p ->> 'operationId','status','ok','actionNo',v_action,
+   'changed',pg_catalog.jsonb_build_array(
+    pg_catalog.jsonb_build_object('id',v_id,'version',1)));
+  insert into public.command_receipts(user_id,operation_id,resource,result)
+   values(v_owner,(p ->> 'operationId')::uuid,'registry_undo_fixture',v_result);
+  return v_result;
+ end $fixture$;
+ insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
+ values('registry_undo_fixture','registry_fixture_command',true,
+ '{"operations":["create"],"fields":["title"]}'::jsonb);`);
+ const nextId='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+ const newCommand=envelope('registry_undo_fixture','create',{
+  target:{id:nextId},patch:{title:'Registered future command'},
+ });
+ await role('service_role');
+ const future=await call(owner,'chatgpt',newCommand);
+ realAction(future);
+ assert.equal(future.changed[0].id,nextId);
+ const futureRow=(await inspect('select user_id,title from public.registry_undo_fixture where id=$1',[nextId]))[0];
+ assert.equal(futureRow.user_id,owner);
+ assert.equal(futureRow.title,'Registered future command');
+ const receiptRow=(await inspect('select result from public.command_receipts where operation_id=$1',
+  [newCommand.operationId]))[0];
+ assert.deepEqual(receiptRow.result,future,'new command preserves the standard receipt');
+ const futureAction=(await inspect('select user_id,source,tool from public.actions where no=$1',
+  [future.actionNo]))[0];
+ assert.equal(futureAction.user_id,owner);
+ assert.equal(futureAction.source,'chatgpt');
+ assert.equal(futureAction.tool,'study');
+ await as(owner);
+ assert.equal((await undo(owner,future.actionNo)).undone,future.actionNo);
+ await role(null);
+ assert.equal(await count('registry_undo_fixture',nextId),0);
+ console.log('PASS newly registered command routes through registry without a new MCP wrapper');
  console.log('PASS dynamic allowlist and locking for an additional journalled table');
 }finally{await db.close();}

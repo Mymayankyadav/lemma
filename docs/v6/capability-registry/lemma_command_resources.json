@@ -99,7 +99,7 @@
       }
     }
   ],
-  "access": "service_role only for dispatcher; no unauthenticated or authenticated client privilege",
+  "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",
   "table": "lemma_command_resources",
   "columns": {
     "resource": {
@@ -131,5 +131,5 @@
       "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
     }
   },
-  "dispatch": "public.mcp_command resolves a resource only from this registry; it routes through the existing owner-bound public.mcp_<command_fn>(uuid,text,jsonb) bridge; no caller-supplied function name"
+  "dispatch": "public.mcp_command validates service_role and the owner, resolves only administrator-seeded command_fn for the supplied resource, sets D6/D7 owner/source/audit context and calls public.<command_fn>(jsonb) by a schema-qualified quoted identifier; it never accepts caller-supplied function names and never requires a per-resource MCP wrapper"
 }

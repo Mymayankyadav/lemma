@@ -65,7 +65,9 @@ begin
   return jsonb_build_object('undone',p_no,'as',inverse_no,'changes',changed);
 end $$;
 
--- N36.2: service-role-only registry MCP dispatcher. D7 bridges remain unchanged.
+-- D8(a): service-role-only owner-bound dispatcher for registered commands.
+-- Do not introduce per-resource MCP wrappers: new resources register only a
+-- command function and schema, and this same dispatcher can call them.
 create function public.mcp_command(p_user uuid, p_source text, p jsonb)
 returns jsonb
 language plpgsql security definer set search_path = ''
@@ -75,6 +77,7 @@ declare
   v_command_fn text;
   v_mcp_ok boolean;
   v_receipt jsonb;
+  v_summary text;
 begin
   if coalesce(current_setting('role',true),'') <> 'service_role' then
     raise exception 'Service role required';
@@ -88,13 +91,30 @@ begin
     from public.lemma_command_resources r where r.resource=v_resource;
   if not found then raise exception 'Unknown command resource'; end if;
   if not v_mcp_ok then raise exception 'Resource disabled for MCP'; end if;
-  -- Only administrator-controlled, validated command_fn metadata selects a
-  -- bridge; neither the payload nor the owner can supply a function name.
-  -- D7 bridges establish transaction-local authenticated owner/source and
-  -- preserve original command receipts, journal rows and connector audit.
-  execute pg_catalog.format('select public.%I($1::uuid,$2::text,$3::jsonb)',
-    'mcp_'||v_command_fn)
-    into v_receipt using p_user,p_source,p;
+  -- The connector validates this owner before dispatch; never trust a claimed
+  -- owner or function name in the user-provided command envelope.
+  if not exists (select 1 from public.settings where user_id=p_user) then
+    raise exception 'Owner not found';
+  end if;
+  v_summary := case v_command_fn
+    when 'study_command' then pg_catalog.concat('Study ',v_resource,' ',p ->> 'operation')
+    when 'task_command' then pg_catalog.concat('Task ',p ->> 'operation')
+    else pg_catalog.concat(v_resource,' ',p ->> 'operation')
+  end;
+  -- Preserve D6/D7 MCP bridge owner/source, audit and transaction semantics.
+  perform pg_catalog.set_config('lemma.source',p_source,true);
+  perform pg_catalog.set_config('lemma.tool','study',true);
+  perform pg_catalog.set_config('lemma.summary',pg_catalog.left(v_summary,200),true);
+  perform pg_catalog.set_config('request.jwt.claims',
+    pg_catalog.jsonb_build_object('sub',p_user,'role','authenticated')::text,true);
+  -- The command function, never its name from p, owns the ordinary optimistic
+  -- version, idempotent receipt, journal action and conflict semantics.
+  execute pg_catalog.format('select public.%I($1::jsonb)',v_command_fn)
+    into v_receipt using p;
+  update public.settings set connector_last_seen_at=now(),
+    connector_last_client=case when p_source in ('claude','chatgpt','other')
+      then p_source else connector_last_client end
+    where user_id=p_user;
   return v_receipt;
 end
 $mcp_dispatch$;
