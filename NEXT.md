@@ -123,12 +123,13 @@ Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, inc
 Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
 Not: other data folders, UI, supabase/**, new dependencies.
 
-## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/practice-topics/` for the records and operations of N43, including every lifecycle operation it names.
-Tests: `tests/unit/practice-topics/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/practice-topics/** (new), tests/unit/practice-topics/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N57.2 Manual practice topics: demo and live adapters (remaining after N57 split)
+Stage: Build · Status: open · Needs: N57.2.1 · Assigned: —
+Done = complete D8(c) for N43's manual practice topics/events using the N57.1 typed contract and civil-day cadence helpers. Add src/data/practice-topics/demo.ts, live.ts, index.ts. Demo: fixture/reload persistence, versioned create/update/archive/restore/delete, record and void event with prior due-date restoration, bounded opaque pages and exact total. Live: owner-scoped reads and rpc('practice_topics_command', envelope) for every topic/event operation, version checks, fresh operationId per action reused on uncertain retry, typed errors, no owner field; do not touch FSRS reviews or cards. Expose getPracticeApi()/setPracticeApiForTests().
+Tests: tests/unit/practice-topics/** for demo reload and lifecycle, topic/event linked version and due progression/void, live envelopes, retry identity, conflict, owner isolation and bounded pagination; retain N57.1 cadence tests.
+Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
+Not: other src/data/** modules, UI, supabase/**, new dependencies.
+
 
 ## N58 Parked thoughts: app module (src/data/parked-thoughts)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -283,7 +284,7 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56.2, N57 · Assigned: —
+Stage: Build · Status: open · Needs: N56.2, N57.2 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
@@ -311,7 +312,7 @@ Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/P
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N78 v6 practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N57 · Assigned: —
+Stage: Build · Status: open · Needs: N57.2 · Assigned: —
 Done = with `v6Shell` on, `/practice` (lazy route) lists topics due first, with record practice (rating, optional response, minutes), cadence edit, archive/restore and event void; it never touches card review. Flag off: nothing changes.
 Tests: `tests/unit/practice-ui/**`
 Scope: src/features/practice/** (new), src/app/App.tsx (registering the route only), tests/unit/practice-ui/**, CURRENT.md.
