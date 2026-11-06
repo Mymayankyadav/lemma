@@ -2,7 +2,7 @@ import type {DeckNode,ReviewItem} from '../../../data/types';
 /** One shared selection for the rendered count and the actual queue. */
 export function reviewBatch(nodes:DeckNode[],items:ReviewItem[],
  selected:ReadonlySet<string>,quota:number){
- const byProject=new Map(nodes.map(n=>[n.key,n]));
+ const byProject=new Map<string,DeckNode>(nodes.map(n=>[n.key,n]));
  const available=items.filter(item=>{
   const node=byProject.get('project:'+item.projectSlug);
   if(!node)return false;
