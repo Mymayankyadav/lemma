@@ -148,4 +148,4 @@ The pure `src/lib/effort/` module provides interval-union logged minutes (with s
 
 ## N6.2 reminder Review queue (PR #881)
 
-The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. This is pending PR review and CI verification; it is not yet on main.
+The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. The ordinary Review route remains unchanged when `notificationsPush` is off.
