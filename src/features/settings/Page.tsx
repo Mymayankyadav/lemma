@@ -1,3 +1,5 @@
+import {isFlagOn} from '../../flags';
+import V6Settings from './v6/Page';
 import {SectionHeading} from '../../ui/SectionHeading';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -78,7 +80,7 @@ function elapsed(at: string) {
       ? `${Math.floor(minutes / 60)} h ago`
       : `${Math.floor(minutes / 1440)} days ago`;
 }
-export default function Page() {
+function LegacySettingsPage() {
   const settings = useSettings(),
     styles = useStyles(),
     home = useHome(),
@@ -607,4 +609,9 @@ export default function Page() {
       </Sheet>
     </Screen>
   );
+}
+
+/** N28: the existing Settings implementation remains untouched when v6Shell is off. */
+export default function Page(){
+  return isFlagOn('v6Shell') ? <V6Settings legacy={<LegacySettingsPage/>}/> : <LegacySettingsPage/>;
 }

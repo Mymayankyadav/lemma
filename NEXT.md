@@ -9,20 +9,6 @@ Task lanes (priority run 2026-11-06). Tasks follow the same pattern with their o
 
 v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: it adds `src/features/<screen>/v6/**` and, in that screen's existing `Page.tsx`, one branch `if (isFlagOn('v6Shell')) return <…V6/>` (or the equivalent for a page that already branches). It reads through the existing hooks in `src/data/**` unchanged (no new queries, no `src/data/**` edits); a field the hooks do not provide is shown as unavailable, never invented. It distinguishes loading, empty, filtered-empty and failed states, keeps 44-pixel targets, uses the N19 tokens under `[data-v6]`, and leaves the flag-off page, its tests and its visual rules exactly as they are. Exact-pixel polish and device audits are the Harden stage, not these items.
 
-## N23 Tasks: demo adapter with reload persistence
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/tasks/demo.ts` implements `TaskApi` from `src/data/tasks/contract.ts` for demo mode: a small fixed fixture (about 6 tasks across statuses, linked to demo subjects/projects where the demo data has them), bounded pages with an opaque cursor and a separate `total`, ordering by status, position, createdAt, optimistic versions (stale `expectedVersion` rejects with a conflict and changes nothing), `completedAt` set exactly while completed, due date versus due instant kept distinct, receipts with `actionNo: null`, and persistence across reload in the same storage the demo study adapter uses (its own key). Live mode never reads the demo store.
-Tests: `tests/unit/tasks/demo.test.ts` covering each sentence above, including a reload round trip and a 50-task page walk.
-Scope: src/data/tasks/demo.ts, tests/unit/tasks/demo.test.ts, CURRENT.md.
-Not: `src/data/tasks/contract.ts` (additive changes only, with a note in the PR body), `src/data/study/**`, UI, supabase/**.
-
-## N24 Tasks: live adapter over task_command
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/tasks/live.ts` implements `TaskApi` for live mode: reads `public.tasks` as the signed-in owner with bounded keyset pages (limit 1–50, default 20), an opaque cursor and an exact `total`; writes only through `rpc('task_command', envelope)` with a fresh `operationId` per user action (reused on retry), mapping receipts to `StudyReceipt` and conflicts to a typed error; due fields mapped to and from `due_kind`/`due_date`/`due_at` without converting one into the other. The envelope is the one D7 specifies, so this item runs in parallel with N22; integration against the real function is N22's SQL test plus N35.
-Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bounds and cursor, envelope shape per operation, retry reuses the `operationId`, conflict mapping, due mapping round trip, no owner field ever sent.
-Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
-Not: migrations, `src/data/study/**`, UI.
-
 ## N27 v6 Calendar block create, edit and delete sheet
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
@@ -30,12 +16,12 @@ Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (cr
 Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
 Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
 
-## N28 v6 Settings behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/screens/settings-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Settings row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Section navigation (account, appearance, study defaults, reminders, subjects, connector, export) over the existing settings controls, which keep their current save behaviour; the connector address and subjects panels are reused, not rewritten.
-Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
-Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N28.2 v6 Settings: study defaults, reminders and export controls
+Stage: Build · Status: open · Needs: N28.1 · Assigned: —
+Done = finish N28 after N28.1's flag-gated seven-section navigation and the working Account/Appearance/Subjects/Connector panels: replace the temporary legacy-settings fallback for Study defaults, Reminders and Export with dedicated v6 panels. Preserve all existing Settings behaviour and the same underlying hooks, update calls and error/Saved feedback, including teaching styles and tutor rules, retention, cards/day, memory tuning eligibility, notification settings, math shortcuts, export/download, connector setup and sign-out. Ensure each section loads only from existing hooks, distinguishes loading, empty and failure states, is keyboard accessible, and no control silently loses its save action. Keep the legacy flag-off page unchanged.
+Tests: tests/unit/settings-v6/** covering flag on/off, all seven reachable sections, valid writes/errors, loading/empty/failed states, keyboard access and unchanged legacy save paths.
+Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
+Not: new settings fields, autosave or retention logic changes, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
 
 ## N30 v6 Review start behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —

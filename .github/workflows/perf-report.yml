@@ -2,22 +2,11 @@ name: perf-report
 # NON-BLOCKING. Runs the timing-based checks listed in ci/perf-checks.json (4x-CPU renders, ST-0 budgets,
 # elapsed-time asserts, the NOTIF-1b X SQL budget) plus the screenshot-envelope validation that needs the
 # ST-0 screenshots. Posts a short summary, never blocks a merge. Budgets are unchanged.
+# v2.1: main and by hand only. On PRs it held up to 8 runners for up to 60 minutes per push while the blocking PR
+# gate queued behind it; a regression still shows on main after the merge. Run it for a PR by hand if needed.
 on:
   push:
     branches: [main]
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'supabase/**'
-      - 'scripts/stress-*'
-      - 'scripts/qa3-*'
-      - 'tests/e2e/stress.spec.ts'
-      - 'tests/e2e/st-4.spec.ts'
-      - 'tests/e2e/audit-441-atlas-budget.spec.ts'
-      - 'tests/e2e/fix-659-new-project.spec.ts'
-      - 'tests/unit/data/stress-home-perf.test.ts'
-      - 'tests/mcp/notif1b-stress.mjs'
-      - 'ci/perf-checks.json'
   workflow_dispatch:
 permissions:
   contents: read
