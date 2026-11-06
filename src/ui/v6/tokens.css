@@ -1,7 +1,7 @@
 /*
  * N19 — v6 visual contract. Nothing in this sheet applies without data-v6.
  * The three named font families are preferred only when available locally;
- * no remote @import, font-face URL, or third-party font request is introduced.
+ * no external stylesheet or font loading, or third-party font request is introduced.
  */
 :root[data-v6] {
  color-scheme: light;
