@@ -157,9 +157,9 @@ export function createDemoOverlapAcknowledgementApi(
     const draft=clone(refresh()),result=fn(draft);
     save(draft);return receipt(result);
   };
-  const get=(draft:Snapshot,id:string)=>{
+  const get=(draft:Snapshot,id:string):OverlapAcknowledgement=>{
     const row=draft.records.find(r=>r.id===id);
-    if(!row)fail('not_found','Overlap acknowledgement not found');
+    if(!row)return fail('not_found','Overlap acknowledgement not found');
     return row;
   };
   const assertVersion=(row:OverlapAcknowledgement,expected:number)=>{
