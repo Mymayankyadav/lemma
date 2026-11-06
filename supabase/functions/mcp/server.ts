@@ -38,10 +38,18 @@ export function lean(schema:any):any{
     output:(o:any)=>prune(std.jsonSchema.output(o))
   }}};
 }
-export function buildServer(c:Context):McpServer{
+// Keep the MCP tools/list payload within the deployed 15,000-character gate.
+ // Preserve tool argument schemas and runtime validation; only descriptions shrink.
+ const toolSummary: Record<string,string> = {
+   resume:'Resume study or menu.',get:'Read study records.',
+   search:'Search PDF and study.',read_pages:'Read PDF pages.',
+   save_pages:'Save PDF pages.',decide:'Decide with user consent.'
+ };
+ const briefDescription=(name:string)=>toolSummary[name]??name.replaceAll('_',' ');
+ export function buildServer(c:Context):McpServer{
   const m=new McpServer({name:'lemma',version:'1.0.0'}, {instructions:INSTRUCTIONS});
-  const register=(n:string,description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
-    m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any)=>{
+  const register=(n:string,_description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
+    m.registerTool(n,{description:briefDescription(n),inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any)=>{
       try{
         const ctx:Context=readOnly?c:{...c,batch:[]};
         let result=await fn(a,ctx);
@@ -69,7 +77,7 @@ export function buildServer(c:Context):McpServer{
     patch:z.record(S(),z.unknown()).optional()
   }).strict();
   m.registerTool('study',{
-    description:'Execute one explicit, owner-bound, undoable v6 study command and return its receipt (actionNo for undo).',
+    description:'Owner-scoped study command.',
     inputSchema:lean(z.object({
       command:studyEnvelope,
       client:z.enum(['claude','chatgpt','other']).optional()
