@@ -131,7 +131,6 @@ Tests: tests/unit/practice-topics/** for demo reload and lifecycle, topic/event 
 Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
 Not: other src/data/** modules, UI, supabase/**, new dependencies.
 
-
 ## N58 Parked thoughts: app module (src/data/parked-thoughts)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = per D8(c) and the lane rules, `src/data/parked-thoughts/` for the records and operations of N44, including every lifecycle operation it names.
@@ -145,13 +144,6 @@ Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorag
 Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
 Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
 Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
-
-## N60 Dated day plans and closures: app module (src/data/day-plans)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/day-plans/` for the records and operations of N46, including every lifecycle operation it names.
-Tests: `tests/unit/day-plans/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/day-plans/** (new), tests/unit/day-plans/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
 
 ## N61.2 Overlap acknowledgement live adapter and cross-client parity
 Stage: Build · Status: open · Needs: N61.2.1 · Assigned: —
