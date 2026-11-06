@@ -12,6 +12,7 @@ import { readJson, commentAgent, stripFooter, agentKey, baseName, chatParts, val
 import { parseVerdict, needsReviewWanted } from './verdicts.mjs';
 import { loadSessions, saveSessions, checkSession, touchSession } from './sessions.mjs';
 import { checkConflict } from './conflicts.mjs';
+import { effectiveHeadDate, verifiedBookkeepingShas } from './bookkeeping.mjs';
 
 const NO_PROGRESS = /^No progress:\s*(?:·\s*)?Agent:\s*([^·\n]+?)\s*(?:·|$)/;
 const HOUR = 3600e3;
@@ -263,15 +264,15 @@ async function main() {
     const isCi = line1?.agent?.toLowerCase() === 'ci';
     const comments = await paginate(repoPath(`/issues/${i.number}/comments`));
     const commits = await paginate(repoPath(`/pulls/${i.number}/commits`));
+    const bookkeeping = await verifiedBookkeepingShas(commits, api, repoPath); // v1.9: CI merges are not author activity
     if (line1 && !isCi) {
-      const lastActivity = lastAgentActivity({ agent: line1.agent, createdAt: pr.created_at, commitDates: commits.map((c) => c.commit.committer.date), comments });
+      const lastActivity = lastAgentActivity({ agent: line1.agent, createdAt: pr.created_at, commitDates: commits.filter((c) => !bookkeeping.has(c.sha)).map((c) => c.commit.committer.date), comments });
       const expired = isLeaseExpired({ lastActivity, now });
       if (expired && !labels.has('lease-expired')) { await addLabels(i.number, ['lease-expired']); console.log(`lease-expired #${i.number}`); }
       if (!expired && labels.has('lease-expired')) await dropLabel(i.number, 'lease-expired');
     }
-    const head = await api('GET', repoPath(`/commits/${pr.head.sha}`));
     if (line1 && chatParts(line1.agent) && !sessions) sessions = await loadSessions();
-    const want = needsReviewWanted({ authorKey: line1 ? agentKey(line1.agent) : null, comments, headAt: new Date(head.commit.committer.date).getTime(), checks: await checksOf(pr.head.sha), labels, draft: pr.draft, isCi, sessions: sessions?.map || {}, now });
+    const want = needsReviewWanted({ authorKey: line1 ? agentKey(line1.agent) : null, comments, headAt: effectiveHeadDate(commits, bookkeeping), checks: await checksOf(pr.head.sha), labels, draft: pr.draft, isCi, sessions: sessions?.map || {}, now });
     if (want && !labels.has('needs-review')) { await addLabels(i.number, ['needs-review']); console.log(`needs-review #${i.number}`); }
     if (!want && labels.has('needs-review')) await dropLabel(i.number, 'needs-review');
     // merge conflicts appear when main moves (no PR event), so the sweep re-checks every open PR
