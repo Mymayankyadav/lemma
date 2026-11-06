@@ -16,6 +16,8 @@ import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {FastTex as Tex} from '../../ui/FastTex';
 import {countPinnedProjects} from './pinnedCount';
+import {isFlagOn} from '../../flags';
+import V6Paths from './v6/V6Paths';
 
 type Filter='active'|'paused'|'done'|'archived';
 const filters:Filter[]=['active','paused','done'];
@@ -111,7 +113,7 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
  </section>;
 }
 
-export default function Page(){
+function LegacyPaths(){
  const queryClient=useQueryClient();
  // Cards is the common next stop from Paths. Warm its small route chunk
  // asynchronously during the unthrottled Paths visit, without evaluating
@@ -233,3 +235,6 @@ export default function Page(){
   {filter==='archived'&&<p className="text-caption text-ink-3">Archived projects are preserved for undo. Your library may hide them until restored.</p>}
  </Screen>;
 }
+
+/** Legacy Paths is unchanged unless the v6 shell is enabled. */
+export default function Page(){return isFlagOn('v6Shell')?<V6Paths/>:<LegacyPaths/>;}
