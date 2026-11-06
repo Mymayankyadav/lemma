@@ -258,6 +258,22 @@ try {
    patch:{entry_id:futureId,kind:'focus',started_at:'2099-01-01T11:00:00Z'}
  })),/Future interval start/);
  assert.equal((await q('select version from public.study_entries where id=$1',[futureId]))[0].version,1);
+ // A pre-existing future interval (e.g. legacy/corrupt data) cannot be saved.
+ // The rejected save must not change the entry or consume its operation ID.
+ const beforeFutureSaveReceipts=await receiptCount();
+ await q('insert into public.study_intervals(entry_id,user_id,kind,started_at) values ($1,$2,$3,$4)',[
+   futureId,owner,'focus','2099-01-01T11:00:00Z'
+ ]);
+ await assert.rejects(command(study('ffffffff-ffff-ffff-ffff-000000000059','save',{
+   target:{id:futureId},expectedVersion:1,patch:{reflection:'must not save'}
+ })),/Future open interval/);
+ const unchangedFuture=(await q('select status,version,saved_at from public.study_entries where id=$1',[futureId]))[0];
+ assert.equal(unchangedFuture.status,'draft');
+ assert.equal(unchangedFuture.version,1);
+ assert.equal(unchangedFuture.saved_at,null);
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[futureId]))[0].n,1);
+ assert.equal(await receiptCount(),beforeFutureSaveReceipts);
+ await q('delete from public.study_intervals where entry_id=$1 and user_id=$2',[futureId,owner]);
  const futureSaved=await command(study('ffffffff-ffff-ffff-ffff-000000000058','save',{
    target:{id:futureId},expectedVersion:1,patch:{}
  }));
