@@ -173,3 +173,6 @@ N14 is being split into small tested slices. The first slice is a pure typed sta
 ## N6.2 reminder Review queue (PR #881)
 
 The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. The ordinary Review route remains unchanged when `notificationsPush` is off. The in-flight reminder read is shared across React StrictMode effect replay so the initial link consumption, owner-scoped RPC and initialization occur once; completed empty/error states remain visible, and saved review quotas remain unchanged.
+
+## N14.3.1 v6 Today focus hero (split PR, pending)
+With `v6Shell` enabled only, the Today page lazily mounts a study hero. It calls `getStudyApi().listStudyEntries` for the device's civil day and `activeStudyEntry`, reports saved, break-excluding `loggedMinutes`, and starts one new focus entry through `startStudyEntry` or returns to the active session in a native preliminary dialog. The flag-off DOM and initial dynamic-import path are unchanged. Focus controls and the N13 accessory integration remain in N14.3.2. Tests use a fake `StudyApi`. No production Supabase calls or end-to-end verification were performed.

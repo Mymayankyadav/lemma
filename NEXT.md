@@ -19,12 +19,12 @@ Tests: `tests/unit/study/live.test.ts` with a stubbed client: row mapping both w
 Scope: src/data/study/live.ts, src/data/live/database.types.ts (only if a generated type is missing), tests/unit/study/**, CURRENT.md.
 Not: supabase/**, MCP, screens, the existing `LiveAdapter`, new dependencies.
 
-## N14.3 v6 Today hero and Focus dialog behind the shell flag
+## N14.3.2 v6 Focus controls and accessory from Today
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Today shows a current-action hero (Start focus, or Return to focus while an entry is active) and "logged today" from `loggedMinutes` over `getStudyApi().listStudyEntries(today)`. The N13 focus-accessory slot shows the active entry's intent, remaining time (N14.1 `remainingFocusMinutes`) and Pause. A native `<dialog>` Focus panel offers Pause, Take a break, Park a thought (text field kept with the entry's reflection), and Finish → editable minutes and an optional note → Save or Discard; it drives the N14.1 machine and calls the matching `StudyApi` writes. Escape closes it and focus returns to the trigger. Layout per `docs/v6/screens/today-day.png` and `focus-day.png`. With the flag off, Today is unchanged.
-Tests: unit tests in `tests/unit/focus/` with a fake `StudyApi` (`setStudyApiForTests`): start → pause → resume → finish → save calls the right methods once each, discard calls discard, logged-today shows the fake's saved minutes, the dialog returns focus on Escape.
-Scope: src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/v6/focus/** (new), tests/unit/focus/**, CURRENT.md.
-Not: adapters, Calendar or Progress, end-to-end specs (N20), parked thoughts as tasks, notifications, Today with the flag off.
+Done = with `v6Shell` on, complete the N14.3.1 Today hero's native Focus dialog with Pause, Resume, Take a break, Park a thought (persisted as reflection with the entry), Finish → editable minutes, optional note → Save or Discard. Reconstruct remaining time with N14.1 `remainingFocusMinutes` and surface the active intent, remaining time and Pause in the N13 focus-accessory slot. Escape closes the dialog and focus returns to the trigger. All actions use the matching `getStudyApi()` methods and N14.1 focus machine; render the full layout in `docs/v6/screens/today-day.png` and `focus-day.png`. The v6 flag off still produces the original Today unchanged.
+Tests: `tests/unit/focus/` with fake `StudyApi` via `setStudyApiForTests`: start → pause → resume → finish → save calls exactly the expected write methods, break and reflection, discard, remaining-focus reconstruction and Escape focus return. New code and tests are required.
+Scope: src/features/home/** (v6 branch only), src/features/focus/** (new), src/ui/v6/focus/** (new), tests/unit/focus/**, CURRENT.md.
+Not: adapters, Calendar, Progress, e2e (N20), parked thoughts as tasks, notifications, flag-off Today.
 
 ## N17 v6 Calendar: Agenda and Day views behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -72,7 +72,7 @@ Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.m
 Not: changes to existing tool behaviour, the `resume` packet, the `notify` function, migrations.
 
 ## N20 v6 first slice end to end on demo data
-Stage: Build · Status: open · Needs: N14.2, N14.3, N17, N18 · Assigned: —
+Stage: Build · Status: open · Needs: N14.2, N14.3.2, N17, N18 · Assigned: —
 Done = with `?demo=1&flags=v6Shell`, the whole slice works in the browser: start focus on Today → pause → resume → finish → save; Today's "logged today" rises by the saved minutes; the Calendar Day view shows the saved entry at its time; Progress Day shows the same total; reloading mid-focus returns to the running entry; discarding adds nothing. Fix the wiring bugs this exposes in the N14.2/N14.3/N17/N18 files.
 Tests: `tests/e2e/v6-focus.spec.ts` and `tests/e2e/v6-slice.spec.ts` covering each sentence above at 390×844, plus 320×640 for the Focus dialog; Escape closes the dialog and focus returns to the trigger.
 Scope: tests/e2e/v6-focus.spec.ts, tests/e2e/v6-slice.spec.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/**, src/features/progress-v6/**, src/data/study/demo.ts, src/ui/v6/**, CURRENT.md.

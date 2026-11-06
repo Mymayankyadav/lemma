@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {Link} from 'react-router';
 import {getMode} from '../../data/mode';
+import {isFlagOn} from '../../flags';
 import {Check, ChevronRight, Copy, Inbox, SlidersHorizontal, Waypoints} from 'lucide-react';
 import {useHome, useSettings} from '../../data/hooks';
 import {getApi} from '../../data';
@@ -23,6 +24,7 @@ import {shouldUseFastGoals} from './fastGoalPolicy'
 import type {HomeSummary} from '../../data/types';
 
 
+const V6StudyHero=lazy(()=>import('./V6StudyHero'));
 const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
 const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
 
@@ -212,6 +214,7 @@ export default function Page(){
    (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
  return <Screen tabBar className="gap-6 pb-6">
   <TodayHeader pending={home.data.pendingProposals}/>
+  {isFlagOn('v6Shell')&&<Suspense fallback={null}><V6StudyHero/></Suspense>}
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
    You're offline. Changes cannot be saved until you're connected.
   </div>}
