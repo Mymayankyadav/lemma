@@ -51,13 +51,6 @@ Tests: `tests/unit/review-v6/**` with the flag on and off (flag off renders the 
 Scope: src/features/review/v6/** (new), src/features/review/Page.tsx (the flag branch only), tests/unit/review-v6/**, CURRENT.md.
 Not: `src/features/review-run/**` and `src/features/review-done/**` (N6.3 owns them), FSRS or quota logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N31 v6 Cards behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/cards` renders the v6 Cards from `docs/v6/screens/cards-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Cards row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. A filter sheet (titled native dialog) over the existing search filters and a progressive list that reveals 20 rows at a time from the existing paged search; the shown count is labelled as shown, the total only where the API gives one.
-Tests: `tests/unit/cards-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/cards/v6/** (new), src/features/cards/Page.tsx (the flag branch only), tests/unit/cards-v6/**, CURRENT.md.
-Not: the card detail page, the card editor, search API changes, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
 ## N32.2 v6 Inbox selected decisions and full page states
 Stage: Build · Status: open · Needs: N32.1 · Assigned: —
 Done = finish N32 after N32.1's v6-only evidence/rationale panel: proposals continue grouped by session and checkpoint, with selected card and plan batches. Implement selection-aware approve/reject using the existing atomic decision calls and their receipts, preserve Undo/recovery, and reuse existing plan/change/ideas previews; never invent missing rationale or citations. Keep the existing flag-off proposals UI unchanged and distinguish loading, empty, failed and filtered-empty states. Ensure every action is keyboard accessible with 44-pixel targets and appropriate focus.
