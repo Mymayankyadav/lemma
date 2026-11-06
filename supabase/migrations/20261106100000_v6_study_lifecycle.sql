@@ -20,12 +20,22 @@ begin
  if r not in ('study_entries','study_intervals') or r is null then raise exception 'Unsupported resource: %',r; end if;
  if jsonb_typeof(patch) <> 'object' then raise exception 'patch must be an object'; end if;
  if op not in ('create','update','delete','start','pause','resume','break','save','discard') or op is null then raise exception 'Unsupported operation: %',op; end if;
+ -- source and entry_id identify the record at creation and cannot change later.
+ -- Deletion consumes no patch; never acknowledge keys that the write ignores.
  if r='study_entries' then
    select k into bad from jsonb_object_keys(patch) t(k)
-    where k <> all(array['intent','source','subject_id','project_id','checkpoint_id','session_id','reflection','rating']) limit 1;
+    where k <> all(case op
+      when 'create' then array['intent','source','subject_id','project_id','checkpoint_id','session_id','reflection','rating']
+      when 'delete' then array[]::text[]
+      else array['intent','subject_id','project_id','checkpoint_id','session_id','reflection','rating']
+    end) limit 1;
  else
    select k into bad from jsonb_object_keys(patch) t(k)
-    where k <> all(array['entry_id','kind','started_at','ended_at']) limit 1;
+    where k <> all(case op
+      when 'create' then array['entry_id','kind','started_at','ended_at']
+      when 'delete' then array[]::text[]
+      else array['kind','started_at','ended_at']
+    end) limit 1;
  end if;
  if bad is not null then raise exception 'Unknown patch field: %',bad; end if;
  if op='create' then
