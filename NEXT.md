@@ -93,14 +93,6 @@ Tests: `tests/unit/paths-v6/**` with the flag on and off (flag off renders the e
 Scope: src/features/projects/v6/** (new), src/features/project/v6/** (new), src/features/projects/Page.tsx and src/features/project/Page.tsx (the flag branches only), tests/unit/paths-v6/**, CURRENT.md.
 Not: checkpoint and session pages, new-project flow, stage or plan logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N34 MCP: tasks through get, search and a task write tool
-Stage: Build · Status: open · Needs: N12, N15, N22 · Assigned: —
-Done = the connector's `get` and `search` accept the resource `tasks` (bounded pages, cursor, status filter, total reported separately) the way N15 added study records, and the `study` tool from N12 routes envelopes whose `resource` is `tasks` (no new tool; `tools/list` stays under 15,000 characters) to `public.mcp_task_command` with `p_user = Context.userId`, returning the receipt unchanged; per D3 only undoable writes act on explicit chat instructions.
-Tests: unit tests in `tests/unit/mcp/` and `tests/mcp/sql/task-mcp.mjs` (a task created in chat is read by the app adapter's query with the same version, and the reverse; a second owner is invisible; undo through the existing `undo` tool reverts a task write).
-Owner-authorized (D1, D7): deploys the MCP function on merge, so this PR needs a review.
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/task-mcp.mjs, CURRENT.md (MCP tools list).
-Not: migrations, existing tools' inputs or outputs, the `resume` packet.
-
 ## N35 v6 first slice on live data
 Stage: Build · Status: open · Needs: N20, N12 · Assigned: —
 Done = the N20 journey (start focus → pause → resume → finish → save, Today/Calendar/Progress agree, reload mid-focus resumes, discard adds nothing) passes against the live adapters, and an entry saved through the MCP `study` tool appears in Today, Calendar and Progress after refresh (D4), and the reverse. Fix the wiring bugs this exposes in the study live adapter and the v6 screens.
