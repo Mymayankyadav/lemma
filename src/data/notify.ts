@@ -104,3 +104,34 @@ export async function fetchNotificationReviewItems(count:number):Promise<import(
  const {boundedReminderItems}=await import('../features/review/reminder-queue');
  return boundedReminderItems(data as import('./types').ReviewItem[],count);
 }
+
+
+/** N6.3: a configured reminder time, not a forecast of notification delivery.
+ * The server can still suppress a send for no due work, quiet hours or caps. */
+export interface ConfiguredReminderOffer {
+ label: string;
+ time: string;
+}
+const REMINDER_CLOCK = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const REMINDER_WEEKDAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+/** No invented fallback such as 9am. An absent/invalid setting is no offer. */
+export function configuredReminderOffer(prefs:NotifyPrefs|null|undefined):ConfiguredReminderOffer|null {
+ if(!prefs||prefs.enabled===false||prefs.mode==='off')return null;
+ if(prefs.mode==='daily'){
+  const time=prefs.digest?.time;
+  return time&&REMINDER_CLOCK.test(time)?{label:'Daily digest time',time}:null;
+ }
+ if(prefs.mode==='weekly'){
+  const digest=prefs.digest;
+  return digest&&REMINDER_CLOCK.test(digest.time)&&Number.isInteger(digest.weekday)&&
+   digest.weekday>=0&&digest.weekday<=6
+   ?{label:'Weekly digest · '+REMINDER_WEEKDAYS[digest.weekday],time:digest.time}:null;
+ }
+ if(prefs.mode==='live'||prefs.mode===undefined){
+  if(prefs.kinds?.due===false)return null;
+  const time=prefs.studyTime;
+  return time&&REMINDER_CLOCK.test(time)?{label:'Configured study-time window',time}:null;
+ }
+ return null;
+}

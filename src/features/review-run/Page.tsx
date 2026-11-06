@@ -18,6 +18,7 @@ import {Sheet} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
 import {useToast} from '../../ui/Toast';
 import {useCalm} from '../../ui/useCalm';
+import {isFlagOn} from '../../flags';
 
 const fallback:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const gradeNames=['Again','Hard','Good','Easy'] as const;
@@ -123,6 +124,12 @@ export default function Page(){
  const sessionId=search.get('session'),conceptSlug=search.get('concept'),onlyNew=search.get('new')==='1';
  const filter=useMemo<QueueFilter>(()=>({...fallback,sessionId,conceptSlug,newOnly:onlyNew}),[sessionId,conceptSlug,onlyNew]);
  const apiCards=useReviewItems(filter);
+ // The N6.2 reminder route is a one-shot navigation marker. Keep its origin
+ // in the in-memory round so the completion screen need not trust a URL flag.
+ useEffect(()=>{
+  if(search.get('reminder')==='1'&&queue&&isFlagOn('notificationsPush'))
+   useReviewSession.getState().markReminderDriven();
+ },[search,queue]);
  useEffect(()=>{
   if(init.current||!settings.data||!apiCards.data)return;
   init.current=true;

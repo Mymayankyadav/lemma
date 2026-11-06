@@ -8,6 +8,8 @@ import {motion,useReducedMotion} from 'motion/react';
 import {useCalm} from '../../ui/useCalm';
 import {formatMinutes} from '../../lib/text';
 import {useReviewSession} from '../review-run/store';
+import {isFlagOn} from '../../flags';
+import {configuredReminderOffer} from '../../data/notify';
 import {Screen} from '../../ui/Screen';
 import {Tile} from '../../ui/Tile';
 import {Slab} from '../../ui/Slab';
@@ -25,12 +27,15 @@ function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:s
 export default function Page(){
  const reduced=!!useReducedMotion(),calm=useCalm(),quiet=reduced||calm;
  const navigate=useNavigate(),answers=useReviewSession(s=>s.answers),filter=useReviewSession(s=>s.filter);
+ const reminderDriven=useReviewSession(s=>s.reminderDriven),current=useReviewSession(s=>s.current);
  const markCompleted=useReviewSession(s=>s.markCompleted);
  useEffect(()=>{if(answers.length>0)markCompleted()},[answers.length,markCompleted]);
  const settings=useSettings(),[tomorrow,setTomorrow]=useState<number|null>(null);
  const [newPending,setNewPending]=useState(false),[newMessage,setNewMessage]=useState<string|null>(null);
  const [showRecalled,setShowRecalled]=useState(false);
  const [showAllMissed,setShowAllMissed]=useState(false);
+ const reminderOffer=isFlagOn('notificationsPush')&&reminderDriven&&!current&&answers.length>0
+  ?configuredReminderOffer(settings.data?.notify):null;
  const stats=useMemo(()=>summarizeReviewSession(answers.map(a=>({rating:a.rating,confidence:a.confidence,
   durationMs:a.durationMs,stateBefore:a.card.state.state}))),[answers]);
  useEffect(()=>{
@@ -112,6 +117,14 @@ export default function Page(){
     </div>}
    </div>
   </section>}
+  {reminderOffer&&<Slab className="w-full p-4" >
+   <section aria-label="Next reminder time" className="flex flex-col gap-2">
+    <h2 className="font-semibold text-ink">Your reminder setting</h2>
+    <p className="text-label text-ink-2">{reminderOffer.label}: <strong className="text-ink">{reminderOffer.time}</strong></p>
+    <p className="text-caption text-ink-3">Delivery depends on what is due and your reminder rules.</p>
+    <Link to="/settings" className="flex min-h-11 items-center text-label font-semibold text-amber">See reminder settings</Link>
+   </section>
+  </Slab>}
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>
   <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
