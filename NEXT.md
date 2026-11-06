@@ -27,13 +27,6 @@ Tests: unit tests in `tests/unit/mcp/` (argument validation, owner not taken fro
 Owner-authorized 2026-11-05 (D1) and 2026-11-06 (D6): merging deploys the migration and the MCP function to production, so this PR needs a review; the reviewer checks the function against D6 line by line and confirms no existing tool's input or output changed. Per D3, the `study` tool acts on explicit instructions in chat only for changes that can be undone (every write returns an `actionNo` for `undo`).
 Scope: supabase/functions/mcp/**, supabase/migrations/<one new additive file creating only public.mcp_study_command>, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.md (MCP tools list).
 Not: changes to `mcp_commit`, `study_command` or any existing function, policy or table; changes to existing tool behaviour; the `resume` packet; the `notify` function.
-## N20 v6 first slice end to end on demo data
-Stage: Build · Status: open · Needs: N14.2, N14.3, N17, N18 · Assigned: —
-Done = with `?demo=1&flags=v6Shell`, the whole slice works in the browser: start focus on Today → pause → resume → finish → save; Today's "logged today" rises by the saved minutes; the Calendar Day view shows the saved entry at its time; Progress Day shows the same total; reloading mid-focus returns to the running entry; discarding adds nothing. Fix the wiring bugs this exposes in the N14.2/N14.3/N17/N18 files.
-Tests: `tests/e2e/v6-focus.spec.ts` and `tests/e2e/v6-slice.spec.ts` covering each sentence above at 390×844, plus 320×640 for the Focus dialog; Escape closes the dialog and focus returns to the trigger.
-Scope: tests/e2e/v6-focus.spec.ts, tests/e2e/v6-slice.spec.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/**, src/features/progress-v6/**, src/data/study/demo.ts, src/ui/v6/**, CURRENT.md.
-Not: the live adapter (a later live slice item), new screens, existing e2e specs, new dependencies.
-
 ## N6.3 Notifications: Review completion reminder-time offer (after N6.2)
 Stage: Build · Status: open · Needs: N6.2 · Assigned: —
 Done = after a reminder-driven Review queue is finished, the Review-done screen offers the next reminder time from current notification settings rather than an invented schedule; the offer is absent for ordinary Review and when `notificationsPush` is off. Tests cover eligible reminder completion, ordinary round, missing/unavailable scheduling data, and correct finishing navigation.
