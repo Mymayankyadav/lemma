@@ -106,13 +106,6 @@ Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle r
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N55 Activity presets: app module (src/data/presets)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/presets/` for the records and operations of N41, including every lifecycle operation it names.
-Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-
 ## N56 Deadlines and milestones: app module (src/data/deadlines)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and operations of N42, including every lifecycle operation it names.
