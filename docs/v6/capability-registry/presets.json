@@ -1,0 +1,125 @@
+{
+  "table": "presets",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "label": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "subject_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "checkpoint_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "mode": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "focus_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "break_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "long_break_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "cycles": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "position": {
+      "classification": "owner-editable",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "archived_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    },
+    "source": {
+      "classification": "command-managed",
+      "appPath": "src/data/presets/live.ts (N55)",
+      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+    }
+  }
+}
