@@ -35,7 +35,7 @@ try {
  assert.equal(created.operationId,firstId);
  assert.equal(created.changed.length,1);
  assert.equal(created.changed[0].version,1);
- assert.equal(created.actionNo,null,'journal is deferred to remaining N11 work');
+ assert.ok(Number.isSafeInteger(created.actionNo)&&created.actionNo>0,'calendar create is now journalled with a real actionNo');
  const blockId=created.changed[0].id;
  assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,1);
  assert.equal((await q('select title from public.calendar_blocks where id=$1',[blockId]))[0].title,'Read proofs');
