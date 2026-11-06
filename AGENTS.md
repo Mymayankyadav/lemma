@@ -1,4 +1,4 @@
-# Lemma agent rules — version 1.9 (2026-11-06)
+# Lemma agent rules — version 2.0 (2026-11-06)
 
 Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rules version in force when it merges.
 
@@ -12,22 +12,23 @@ After reading CURRENT.md and NEXT.md, post one comment on your closed issue `run
 
 1. An open S0 incident with no claimant: claim it and fix it. If it is already claimed, do not touch it. While an S0 is open CI merges nothing, except the claimant's `incident #<n>` PR (see Incidents).
 2. Your own open PR with a failing check, a `merge-conflict: FAILED` comment, or the changes-requested label: fix it. Read the CI comment on the PR first: it names the exact failing rule, check or conflicting files and how to comply. A conflicted PR gets no fast-gate run at all until the conflict is resolved. Conflicts only in CURRENT.md or NEXT.md you never fix: CI merges main into your branch and keeps both sides (commit `ci: merge main (bookkeeping only: …)`); your Ready and approvals still count. Pull before your next push. Fix a conflict yourself only when CI's comment says it could not.
-3. Review one PR labelled needs-review that you did not author (see Review and merge). Review only PRs with that label.
-4. Continue your own unfinished PR toward its Done. When you believe Done is met, push and comment exactly `Ready · Agent: <name>` in the same run. Do not wait for checks (see Review and merge).
+3. Review one PR labelled needs-review that you did not author (see Review and merge). Review only PRs with that label; CI adds it only to PRs that need a review.
+4. Continue your own unfinished PR toward its Done. When you believe Done is met, push and comment exactly `Ready · Agent: <name>` in the same run. Do not wait for checks (see Review and merge): go straight on to the next step.
 5. An open S1 incident with no claimant.
 6. An issue labelled bug + confirmed with no open PR, if no other bug PR is open.
-7. The top NEXT.md item with Status open, all Needs done, and Assigned empty or your name, only if you have no open PR.
-8. One issue labelled bug without confirmed: try to reproduce it (see Bugs).
+7. The top NEXT.md item with Status open, all Needs done, and Assigned empty or your name, if you have fewer than 2 open PRs.
+8. One issue labelled bug without confirmed: try to reproduce it (see Bugs). Do this at most once per bug; if you cannot run tests, skip it.
 9. Nothing applies: end the run.
 
-After finishing a step, continue to the next applicable step in the same run. Never invent work outside this list. If you notice a problem, file it as an issue (see Bugs) and continue.
+After finishing a step, continue to the next applicable step in the same run. Keep working: posting Ready, pushing, or checks still running are never reasons to end a run; after Ready, take the next item (step 7). End the run only when no step applies or after about 30 minutes of work. Never invent work outside this list. If you notice a problem, file it as an issue (see Bugs) and continue.
 
 ## Claiming and PRs
 - The PR is the claim. Before writing code, open a non-draft PR from branch `<agent>/<item>`. Title it `N<id> <summary>`, `bug #<issue> <summary>` or `incident #<issue> <summary>`. You may open it early and finish it over several runs, but it is reviewed only after you post Ready.
 - Line 1 of the PR body: `Agent: <your name> · Item: <id>`. There is no lease: the open PR is the claim.
 - An item PR also deletes its item's whole block from NEXT.md (from your first push is fine), so the item leaves main exactly when CI merges the PR. `scope` fails (NEXT-MD-DONE) an item PR that keeps it. An id in a Needs line that is no longer in NEXT.md is done.
 - One PR per item: `scope` fails a PR whose Item already has another open PR. When the PR's Agent has made no commit and no comment for 3 hours, CI adds the label lease-expired. To take it over, push commits to the existing PR's branch and change its line 1 to your name; never open a second PR for the item.
-- Limits: 1 open PR per agent, at most 6 open PRs in total.
+- Limits: 2 open PRs per agent, at most 12 open PRs in total.
+- Push as rarely as you can: every push re-runs CI. Put all your changes for a PR into one commit per run, including CURRENT.md and NEXT.md (with the REST API: create one tree with every changed file, one commit on top of the branch head, then update the branch ref). Never push a commit that only changes CURRENT.md or NEXT.md; when that is all that changed since a green fast-gate, CI reuses the earlier result anyway.
 - Stay inside the item's Scope. Anything else goes in a new issue, not in the PR.
 - Never edit AGENTS.md, .github/**, ci/**, scripts/ci/**, test thresholds or budgets (the paths in ci/protected.json), and never delete, skip or loosen a test. Only PRs titled `rules:` from the priority run may do these things. The required check `scope` enforces this; the required check `fast-gate` runs typecheck, lint, affected tests and a smoke run. When either fails, CI writes the exact failing rule or check and how to comply into one comment on the PR (edited in place on later failures) and into the check's output summary; you cannot read CI logs, so use that comment.
 - CI opens its own PRs as `Agent: ci` (`revert #<pr>` and `ci: perf calibration`). Do not edit or close them.
@@ -37,13 +38,13 @@ After finishing a step, continue to the next applicable step in the same run. Ne
 - If a run ends without progress on an item, comment `No progress: · Agent: <name> · <one line on what you tried>`. CI adds the label escalate after 3 such comments from at least 2 different `Agent:` names. Escalated items go to the priority run; skip them until then.
 
 ## Stages (set by the priority run, never by agents)
-- Build: new feature behind a flag in src/flags.ts, default off. Blocking checks are fast checks only. Known bugs go on the item's list and are fixed when they block progress.
-- Harden: bug hunting. A legitimate PR is a new failing test with its fix, or a failing test filed as a bug.
+- Build: new feature behind a flag in src/flags.ts, default off. Speed first: CI merges on Ready and green fast checks, without review, and imperfect code is fine as long as the checks pass. Known bugs go on the item's list or into issues and are fixed when they block progress or in Harden.
+- Harden: bug hunting and review, once per feature. A reviewer reads the feature's merged code and files bugs; a legitimate PR is a new failing test with its fix, or a failing test filed as a bug. A flag may default on only after Harden.
 - Stable: every blocking check must pass (fast-gate, scope, the full suite on main). Timing-based checks run in perf-report and never block; only the priority run changes budgets. Any regression is an incident.
 
 ## Bugs
 - Anyone may file a bug: an issue labelled bug, with exact reproduction steps and the expected and actual results.
-- It becomes confirmed when a different agent reproduces it and adds confirmed plus a severity label, or when a failing test shows it.
+- It becomes confirmed when a different agent reproduces it and adds confirmed plus a severity label, or when a failing test shows it, including the same test failing in CI on main or on 2 or more PRs.
 - A fix PR must add a regression test that fails without the fix.
 
 ## Incidents (escalation matrix)
@@ -56,17 +57,19 @@ CI creates incidents and names them by failure signature. Before acting on any f
 
 ## Review and merge
 CI merges. Agents never merge, never update a branch from main for the sake of merging, and never remove labels.
-- Ready: when you believe your PR's Done is met, comment exactly `Ready · Agent: <your name>` right after your last push, in the same run. Do not wait for checks, and "checks still running" is never a reason to hold Ready back or to end a run: CI re-evaluates when fast-gate and scope finish and adds the label needs-review when that comment is newer than your last push and both pass. If one fails, CI comments the failure on the PR, and fixing it is step 2 of your next run (fix, push, Ready again). Any new push of yours removes needs-review: post Ready again (CI's bookkeeping merges do not). Reviewers review only PRs labelled needs-review.
-- The reviewer reads the whole diff. It checks that the scope matches the item, the tests are meaningful, and the PR complies with the current rules version.
+- Ready: when you believe your PR's Done is met, comment exactly `Ready · Agent: <your name>` right after your last push, in the same run. Do not wait for checks, and "checks still running" is never a reason to hold Ready back or to end a run: CI re-evaluates when fast-gate and scope finish. If one fails, CI comments the failure on the PR, and fixing it is step 2 of your next run (fix, push, Ready again). Any new push of yours voids your Ready: post Ready again (CI's bookkeeping merges do not void it).
+- Most PRs need no review. CI squash-merges an item, bug or incident PR when all of these hold: your Ready is newer than your last push; fast-gate and scope are green on the current head; no standing changes-requested; no S0 freeze applies (except for the incident's own fix PR).
+- A review is required only when the PR changes `supabase/**` (it deploys to production on merge) or turns a flag on by default in src/flags.ts (`ci/review-required.json`). For those, CI adds the label needs-review after Ready and green checks, and also needs an approval whose Agent name differs from the PR's `Agent:` line. Flagged Build work is reviewed once per feature in Harden instead.
+- The reviewer reads the whole diff. It checks that the scope matches the item, the tests are meaningful, the migration is additive, and the PR complies with the current rules version. Request changes only for a real defect in the diff; never for a merge conflict, style, or anything Harden can catch later.
 - To pass: comment exactly `Approve · Agent: <your name>` (nothing else in the comment).
-- To fail: comment exactly `Changes requested · Agent: <your name>: <what to change>`. CI adds the label changes-requested; the author's next push removes it, and the PR then needs a fresh Ready and a fresh approval.
-- CI squash-merges when all of these hold: an approval whose Agent name differs from the PR's `Agent:` line; fast-gate and scope are green on the current head; no standing changes-requested; no S0 freeze applies (except for the incident's own fix PR). Any push after a verdict voids it. Per agent only the latest verdict on the current head counts; duplicates are ignored. Verdicts from an invalid name or a locked chat session are ignored, and CI posts one comment explaining the valid formats. `rules:` PRs are merged by the Owner only. Revert and calibration PRs keep their own CI path.
+- To fail: comment exactly `Changes requested · Agent: <your name>: <what to change>`. CI adds the label changes-requested; the author's next push removes it, and the PR then needs a fresh Ready (and, if required, a fresh approval).
+- Any push after a verdict voids it. Per agent only the latest verdict on the current head counts; duplicates are ignored. Verdicts from an invalid name or a locked chat session are ignored, and CI posts one comment explaining the valid formats. `rules:` PRs are merged by the Owner only. Revert and calibration PRs keep their own CI path.
 - Never approve your own PR. The full suite runs on main after merging. If it fails, CI reverts the culprit PR automatically and reopens its item. Do not fix forward.
 
 ## Communication
 - The per-run comment is the Plan and Result on `run-log: <base name>` (see "Each run"). It is the only comment you post outside a PR.
 - Comment on a PR only when you pushed a commit, posted Ready, gave a review verdict (`Approve` or `Changes requested`, exact formats above), or wrote `No progress:`. Never post a status-only comment, and re-checking your own PR is not work.
-- After a push, one comment in this format: `Done: … / Pending: … / Next: …` (5 lines maximum), signed with a last line `Agent: <your name>`.
+- After a push, at most one comment in this format: `Done: … / Pending: … / Next: …` (5 lines maximum), signed with a last line `Agent: <your name>`. If you also post Ready, the Ready comment is enough.
 - CI keeps `agent-metrics` (plans, steps done, plans that left out a review, plans with no Result). Only the priority run reads it; agents never edit it.
 
 ## Owner tasks given directly

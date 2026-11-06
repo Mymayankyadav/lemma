@@ -9,7 +9,8 @@ import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
 import { migrationFindings, existingFunctionNames } from './migrations.mjs';
 import { checkConflict } from './conflicts.mjs';
 
-const MAX_OPEN_PRS = 6;
+const MAX_OPEN_PRS = 12;
+const MAX_PRS_PER_AGENT = 2; // v2.0: start the next item while CI checks the first
 const NEXT = 'NEXT.md';
 const CALIBRATION = 'ci/perf-calibration.md';
 
@@ -107,8 +108,8 @@ export function evaluateScope(ctx) {
     const others = ctx.openPrs || [];
     const me = agentKey(line1.agent);
     const same = others.filter((p) => { const l = parseLine1(p.body); return l && agentKey(l.agent) === me; });
-    if (same.length) failures.push(fail('ONE-PR-PER-AGENT', `Agent "${line1.agent}" already has open PR(s): ${same.map((p) => '#' + p.number).join(', ')}.`,
-      'finish or close your other PR first (limit: 1 open PR per agent).'));
+    if (same.length >= MAX_PRS_PER_AGENT) failures.push(fail('ONE-PR-PER-AGENT', `Agent "${line1.agent}" already has ${same.length} open PRs: ${same.map((p) => '#' + p.number).join(', ')}.`,
+      `finish one of them first (limit: ${MAX_PRS_PER_AGENT} open PRs per agent).`));
     const nonCi = others.filter((p) => parseLine1(p.body)?.agent?.toLowerCase() !== 'ci').length + 1;
     const max = ctx.maxOpenPrs ?? MAX_OPEN_PRS;
     if (nonCi > max) failures.push(fail('MAX-OPEN-PRS', `${nonCi} non-CI PRs are open (limit ${max}).`, 'wait until another PR is merged or closed.'));

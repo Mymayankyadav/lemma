@@ -27,13 +27,20 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
     outputs:
-      all: ${{ steps.aff.outputs.all }}
-      sql: ${{ steps.aff.outputs.sql }}
+      # v2.0: reuse=true when only CURRENT.md / NEXT.md changed since the PR's last green fast-gate; every test job
+      # below is then skipped and fast-gate passes on that earlier result (scripts/ci/reuse.mjs).
+      reuse: ${{ steps.reuse.outputs.reuse || 'false' }}
+      all: ${{ steps.aff.outputs.all || 'false' }}
+      sql: ${{ steps.aff.outputs.sql || 'false' }}
       unit: ${{ steps.aff.outputs.unit }}
       e2e: ${{ steps.aff.outputs.e2e }}
-      unit_count: ${{ steps.aff.outputs.unit_count }}
-      e2e_count: ${{ steps.aff.outputs.e2e_count }}
+      unit_count: ${{ steps.aff.outputs.unit_count || '0' }}
+      e2e_count: ${{ steps.aff.outputs.e2e_count || '0' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,12 +48,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - id: reuse
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/ci/reuse.mjs
       - id: aff
+        if: steps.reuse.outputs.reuse != 'true'
         env:
           BASE: ${{ github.event.pull_request.base.ref || inputs.base || 'main' }}
         run: node scripts/ci/affected.mjs --base "origin/$BASE" --head HEAD
 
   typecheck-lint:
+    needs: changes
+    if: needs.changes.outputs.reuse != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -88,6 +105,8 @@ jobs:
           retention-days: 7
 
   smoke-e2e:
+    needs: changes
+    if: needs.changes.outputs.reuse != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -238,7 +257,9 @@ jobs:
           NEEDS: ${{ toJSON(needs) }}
         run: |
           echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
-          bad=$(echo "$NEEDS" | jq -r 'to_entries[] | select(.value.result != "success" and (.value.result != "skipped" or (.key|IN("changes","typecheck-lint","smoke-e2e")))) | .key')
+          # v2.0: when only CURRENT.md / NEXT.md changed since a green fast-gate, every test job is skipped on purpose
+          if [ "$(echo "$NEEDS" | jq -r '.changes.outputs.reuse // "false"')" = "true" ]; then must='["changes"]'; echo "Reusing an earlier green fast-gate: only bookkeeping files changed."; else must='["changes","typecheck-lint","smoke-e2e"]'; fi
+          bad=$(echo "$NEEDS" | jq -r --argjson must "$must" 'to_entries[] | select(.value.result != "success" and (.value.result != "skipped" or (.key|IN($must[])))) | .key')
           if [ -n "$bad" ]; then echo "::error::fast-gate failed because of: $bad"; exit 1; fi
 
   report:

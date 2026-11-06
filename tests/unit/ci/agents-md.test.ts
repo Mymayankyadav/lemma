@@ -2,8 +2,8 @@ import {describe,expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
 
 const md=readFileSync('AGENTS.md','utf8')
-describe('AGENTS.md v1.9 contract',()=>{
- it('is version 1.9 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 1\.9 \(2026-11-06\)$/))
+describe('AGENTS.md v2.0 contract',()=>{
+ it('is version 2.0 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 2\.0 \(2026-11-06\)$/))
  it('has the nine steps in the specified order',()=>{
   const run=md.slice(md.indexOf('## Each run'),md.indexOf('## Claiming and PRs'))
   const steps=[...run.matchAll(/^(\d)\. (.*)$/gm)].map((m)=>[m[1],m[2]])
@@ -15,7 +15,7 @@ describe('AGENTS.md v1.9 contract',()=>{
   expect(steps[3][1]).toMatch(/Continue your own unfinished PR toward its Done.*Ready · Agent: <name>/)
   expect(steps[4][1]).toMatch(/S1 incident/)
   expect(steps[5][1]).toMatch(/bug \+ confirmed/)
-  expect(steps[6][1]).toMatch(/top NEXT\.md item.*only if you have no open PR/)
+  expect(steps[6][1]).toMatch(/top NEXT\.md item.*if you have fewer than 2 open PRs/)
   expect(steps[7][1]).toMatch(/without confirmed/)
   expect(steps[8][1]).toMatch(/end the run/)
   expect(run).toContain('After finishing a step, continue to the next applicable step in the same run.')
@@ -61,6 +61,19 @@ describe('AGENTS.md v1.9 contract',()=>{
   expect(run).toContain('Conflicts only in CURRENT.md or NEXT.md you never fix: CI merges main into your branch and keeps both sides')
   expect(run).toContain('your Ready and approvals still count')
   expect(run).toContain('Fix a conflict yourself only when CI\'s comment says it could not.')
+ })
+ it('v2.0: agents keep working, push rarely, and most PRs merge on Ready without review',()=>{
+  const run=md.slice(md.indexOf('## Each run'),md.indexOf('## Claiming and PRs'))
+  expect(run).toContain('Keep working: posting Ready, pushing, or checks still running are never reasons to end a run')
+  expect(run).toContain('after Ready, take the next item (step 7)')
+  const claim=md.slice(md.indexOf('## Claiming and PRs'),md.indexOf('## Too big or stuck'))
+  expect(claim).toContain('- Limits: 2 open PRs per agent, at most 12 open PRs in total.')
+  expect(claim).toContain('Put all your changes for a PR into one commit per run, including CURRENT.md and NEXT.md')
+  const review=md.slice(md.indexOf('## Review and merge'),md.indexOf('## Communication'))
+  expect(review).toContain('Most PRs need no review. CI squash-merges an item, bug or incident PR when all of these hold: your Ready is newer than your last push')
+  expect(review).toContain('A review is required only when the PR changes `supabase/**`')
+  expect(review).toContain('Request changes only for a real defect in the diff; never for a merge conflict')
+  expect(md).toContain('A flag may default on only after Harden.')
  })
  it('tells agents nothing about merging, leases or the old label wait',()=>{
   expect(md).not.toMatch(/squash-merge, then|Lease until|do not wait for it/i)
