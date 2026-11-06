@@ -155,7 +155,24 @@ export function createLiveStudyApi(): StudyApi {
         intent: input.intent.trim(), source: input.source, ...linkColumns(input),
       }});
       const row = created.changed[0];
-      const started = await command('study_entries','start', {target:{id:row.id}, expectedVersion:row.version, patch:{}});
+      let started: CommandReceipt;
+      try {
+        started = await command('study_entries','start', {
+          target:{id:row.id}, expectedVersion:row.version, patch:{},
+        });
+      } catch (error) {
+        // The two RPCs are separate transactions. If the start conflicts with
+        // another active timer, do not strand this freshly created draft.
+        // Delete only its original version: if start actually succeeded but
+        // its acknowledgement was lost, version 2 prevents this cleanup from
+        // deleting a running timer. Preserve the original start error.
+        try {
+          await command('study_entries','delete', {
+            target:{id:row.id}, expectedVersion:row.version, patch:{},
+          });
+        } catch { /* best effort; a changed draft is not ours to overwrite */ }
+        throw error;
+      }
       return receipt(await readStudy(row.id), started);
     },
     pauseStudyEntry(key, expectedVersion, at) {
