@@ -1,3 +1,5 @@
+import {isFlagOn} from '../../flags';
+import V6ReviewStart from './v6/Page';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -38,7 +40,7 @@ function reviewEligible(items:ReviewItem[],nodes:DeckNode[],selected:Set<string>
  });
 }
 
-export default function Page(){
+function LegacyReviewPage(){
  const navigate=useNavigate(),notify=useToast();
  const decks=useDeckTree(),home=useHome(),settings=useSettings(),cards=useReviewItems(allFilter),insights=useInsightData(30);
  // The session chips are optional: only cards tied to a session can use
@@ -235,4 +237,10 @@ export default function Page(){
    </>
   }
  </Screen>;
+}
+
+
+/** The flag-off Review route remains the unchanged legacy implementation. */
+export default function Page(){
+ return isFlagOn('v6Shell')?<V6ReviewStart/>:<LegacyReviewPage/>;
 }
