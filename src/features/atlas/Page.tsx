@@ -1,7 +1,5 @@
 import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
-import {isFlagOn} from '../../flags';
-import AtlasV6 from './v6/AtlasV6';
+import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ArrowLeft,ChevronRight,Info,MessageCircle,RotateCcw,Search,X} from 'lucide-react';
 import {getMode} from '../../data/mode';
 import {useAtlas} from '../../data/hooks';
@@ -105,7 +103,7 @@ function Details({tree,node,onClose,onTrace}:{tree:AtlasTree;node:AtlasNode;onCl
  </Sheet>;
 }
 
-function LegacyAtlasPage(){
+export default function Page(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams();
  const query=useAtlas(),graph=query.data;
  const tree=useMemo(()=>graph?buildAtlasTree(graph):null,[graph]);
@@ -370,11 +368,4 @@ function LegacyAtlasPage(){
    </div>
   </Sheet>
  </main>;
-}
-
-/** Keep the entire existing Atlas map unchanged and accessible as ?view=map. */
-export default function Page(){
- const location=useLocation();
- return isFlagOn('v6Shell')&&new URLSearchParams(location.search).get('view')!=='map'
-  ?<AtlasV6/>:<LegacyAtlasPage/>;
 }
