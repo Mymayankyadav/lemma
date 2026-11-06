@@ -1,3 +1,5 @@
+import {isFlagOn} from '../../flags';
+import ProgressV6 from '../progress-v6/Page';
 import {useMemo,useState} from 'react';
 import {Clock,MessageCircle,Layers,Target} from 'lucide-react';
 import {useInsightData,useSettings} from '../../data/hooks';
@@ -14,7 +16,7 @@ import {StackedBars} from '../../ui/charts/StackedBars';
 import {GroupedBars} from '../../ui/charts/GroupedBars';
 import type {InsightDays} from '../../data/api';
 const percent=(n:number|null)=>n===null?'—':`${Math.round(n*100)}%`;
-export default function Page(){
+function LegacyInsights(){
  const [days,setDays]=useState<InsightDays>(30);
  const query=useInsightData(days),settings=useSettings();
  const values=useMemo(()=>query.data?buildInsights(query.data,days,{timeZone:settings.data?.timeZone??'UTC',rolloverHour:settings.data?.rolloverHour??4}):null,[query.data,days,settings.data?.timeZone,settings.data?.rolloverHour]);
@@ -48,3 +50,6 @@ export default function Page(){
   </>}
  </section>;
 }
+
+/** Flag-off Insights stays exactly as before; v6 adds effort above it. */
+export default function Page(){return isFlagOn('v6Shell')?<><ProgressV6/><LegacyInsights/></>:<LegacyInsights/>;}
