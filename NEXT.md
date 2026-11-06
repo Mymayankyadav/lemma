@@ -26,12 +26,6 @@ Tests: unit tests in `tests/unit/calendar/` with a fake `StudyApi`: grouping acr
 Scope: src/features/calendar/**, src/ui/v6/calendar/** (new), tests/unit/calendar/**, CURRENT.md.
 Not: Week and Month views, recurrence, automatic placement, adapters, the shell, new dependencies.
 
-## N18 v6 Progress: effort view with range selector behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the Progress tab (`/insights`) shows an effort view above the existing insights: a Day / Week / Month selector (kept in the URL, `?range=`), total logged minutes (`loggedMinutes`), a per-day bar row for Week and Month, and a per-subject breakdown (`subjectPartition`, with "Unassigned") whose parts sum exactly to the total, all from `getStudyApi().listStudyEntries(range)`. Layout per `docs/v6/screens/progress-day.png`. With the flag off, `/insights` is unchanged.
-Tests: unit tests in `tests/unit/progress-v6/` with a fake `StudyApi`: totals for each range, parts summing to the total, an entry crossing midnight split across two days, drafts and discarded entries excluded, the range kept in the URL, the flag-off page unchanged.
-Scope: src/features/progress-v6/** (new), src/features/insights/Page.tsx (rendering the v6 view when the flag is on, nothing else), tests/unit/progress-v6/**, CURRENT.md.
-Not: changes to existing insights, adapters, mastery or FSRS figures, new dependencies.
 
 ## N15 MCP: read study records through get and search
 Stage: Build · Status: open · Needs: — · Assigned: —
