@@ -1,4 +1,4 @@
-# Lemma agent rules — version 1.7 (2026-11-05)
+# Lemma agent rules — version 1.9 (2026-11-06)
 
 Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rules version in force when it merges.
 
@@ -11,7 +11,7 @@ Read CURRENT.md and NEXT.md, then follow these rules. A PR must satisfy the rule
 After reading CURRENT.md and NEXT.md, post one comment on your closed issue `run-log: <base name>` (the base name is your name without `#<tag>`; if the issue is missing, create it and close it): `Plan · Agent: <name>: 1) … 2) … 3) …`. List every step from the order below that applies right now, with PR or item numbers. A plan must include every applicable step; leaving one out is recorded. Before ending the run, edit that same comment and add `Result: 1) done|skipped because … 2) … 3) …`. That comment is your only run comment.
 
 1. An open S0 incident with no claimant: claim it and fix it. If it is already claimed, do not touch it. While an S0 is open CI merges nothing, except the claimant's `incident #<n>` PR (see Incidents).
-2. Your own open PR with a failing check, a `merge-conflict: FAILED` comment, or the changes-requested label: fix it. Read the CI comment on the PR first: it names the exact failing rule, check or conflicting files and how to comply. A conflicted PR gets no fast-gate run at all until the conflict is resolved.
+2. Your own open PR with a failing check, a `merge-conflict: FAILED` comment, or the changes-requested label: fix it. Read the CI comment on the PR first: it names the exact failing rule, check or conflicting files and how to comply. A conflicted PR gets no fast-gate run at all until the conflict is resolved. Conflicts only in CURRENT.md or NEXT.md you never fix: CI merges main into your branch and keeps both sides (commit `ci: merge main (bookkeeping only: …)`); your Ready and approvals still count. Pull before your next push. Fix a conflict yourself only when CI's comment says it could not.
 3. Review one PR labelled needs-review that you did not author (see Review and merge). Review only PRs with that label.
 4. Continue your own unfinished PR toward its Done. When you believe Done is met, push and comment exactly `Ready · Agent: <name>` in the same run. Do not wait for checks (see Review and merge).
 5. An open S1 incident with no claimant.
@@ -56,7 +56,7 @@ CI creates incidents and names them by failure signature. Before acting on any f
 
 ## Review and merge
 CI merges. Agents never merge, never update a branch from main for the sake of merging, and never remove labels.
-- Ready: when you believe your PR's Done is met, comment exactly `Ready · Agent: <your name>` right after your last push, in the same run. Do not wait for checks, and "checks still running" is never a reason to hold Ready back or to end a run: CI re-evaluates when fast-gate and scope finish and adds the label needs-review when that comment is newer than your last push and both pass. If one fails, CI comments the failure on the PR, and fixing it is step 2 of your next run (fix, push, Ready again). Any new push removes needs-review: post Ready again. Reviewers review only PRs labelled needs-review.
+- Ready: when you believe your PR's Done is met, comment exactly `Ready · Agent: <your name>` right after your last push, in the same run. Do not wait for checks, and "checks still running" is never a reason to hold Ready back or to end a run: CI re-evaluates when fast-gate and scope finish and adds the label needs-review when that comment is newer than your last push and both pass. If one fails, CI comments the failure on the PR, and fixing it is step 2 of your next run (fix, push, Ready again). Any new push of yours removes needs-review: post Ready again (CI's bookkeeping merges do not). Reviewers review only PRs labelled needs-review.
 - The reviewer reads the whole diff. It checks that the scope matches the item, the tests are meaningful, and the PR complies with the current rules version.
 - To pass: comment exactly `Approve · Agent: <your name>` (nothing else in the comment).
 - To fail: comment exactly `Changes requested · Agent: <your name>: <what to change>`. CI adds the label changes-requested; the author's next push removes it, and the PR then needs a fresh Ready and a fresh approval.
