@@ -73,7 +73,7 @@ function harness(){
   calls:[] as Array<{fn:string;payload:Record<string,unknown>}>,
  };
  const client={
-  from:vi.fn((table:string)=>new Builder(table,state as ReturnType<typeof harness>)),
+  from:vi.fn((table:string)=>new Builder(table,state)),
   rpc:vi.fn(async(fn:string,args:{p:Record<string,unknown>}):Promise<Result>=>{
    state.calls.push({fn,payload:args.p});
    const queued=state.rpcQueue.shift();
@@ -189,7 +189,9 @@ describe('N60 live day plan RPC and owner-bound reads',()=>{
   expect(envelope(0,'update').expectedVersion).toBe(1);
   await expect(api.updateDayPlan(uuid(1),0,{intention:'Bad'}))
    .rejects.toMatchObject({code:'invalid'});
-  await expect(api.updateDayPlan(uuid(1),1,{})).rejects.toMatchObject({code:'invalid'});
+  const invalidUpdate=api.updateDayPlan(uuid(1),1,{});
+  expect(invalidUpdate).toBeInstanceOf(Promise);
+  await expect(invalidUpdate).rejects.toMatchObject({code:'invalid'});
   await expect(api.createDayPlan({...input,user_id:'another-user'} as never))
    .rejects.toMatchObject({code:'invalid'});
   fake.rpcQueue=[{data:null,error:{code:'23514',message:'constraint violated'}}];

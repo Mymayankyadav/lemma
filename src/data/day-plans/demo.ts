@@ -3,8 +3,8 @@ import {LemmaError} from '../api';
 import type {StudyReceipt} from '../study/contract';
 import type {DayPlanApi,DayPlanRecord,DayPlanItem,DayPlanQuery,NewDayPlanItem,NewDayPlan,DayPlanPatch,DayClosure,
   DaySourceKind} from './contract';
-import {availability,closure,date,decodeCursor,emptyRitual,encodeCursor,id,items,newPlan,order,patch,query,
-  validatePersisted,version,invalid} from './validate';
+import {closure,decodeCursor,emptyRitual,encodeCursor,id,items,newPlan,order,patch,query,
+  validatePersisted,version} from './validate';
 
 const KEY='lemma.v6.demo.day-plans.v1';
 type Snapshot={schema:1;plans:DayPlanRecord[]};

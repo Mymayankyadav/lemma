@@ -4,7 +4,7 @@ import {LemmaError} from '../api';
 import type {StudyReceipt} from '../study/contract';
 import type {DayAvailability,DayClosure,DayPlanApi,DayPlanItem,DayPlanPatch,
  DayPlanQuery,DayPlanRecord,DayPlanRitual,NewDayPlan,NewDayPlanItem} from './contract';
-import {closure,date,decodeCursor,encodeCursor,id,invalid,newPlan,patch,query,version} from './validate';
+import {closure,decodeCursor,encodeCursor,id,invalid,newPlan,patch,query,version} from './validate';
 
 type Row=Record<string,unknown>;
 type SqlError={code?:string;message?:string};
@@ -170,9 +170,17 @@ export function createLiveDayPlanApi():DayPlanApi{
    const n=newPlan(input);
    return write('create',{patch:payload(n)});
   },
-  updateDayPlan:(planId,expected,p)=>change('update',planId,expected,patch(p)),
+  async updateDayPlan(planId,expected,p){
+   // Validate inside the async boundary: even malformed patches must reject
+   // the Promise instead of throwing before the caller can handle it.
+   const validated=patch(p);
+   return change('update',planId,expected,validated);
+  },
   commitDayPlan:(planId,expected)=>change('commit',planId,expected),
-  closeDayPlan:(planId,expected,detail:DayClosure={})=>change('close',planId,expected,closure(detail)),
+  async closeDayPlan(planId,expected,detail:DayClosure={}){
+   const validated=closure(detail);
+   return change('close',planId,expected,validated);
+  },
   reopenDayPlan:(planId,expected)=>change('reopen',planId,expected),
  };
 }
