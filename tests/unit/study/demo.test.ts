@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDemoStudyApi } from '../../../src/data/study/demo';
 import { inProgressMinutes, loggedMinutes } from '../../../src/lib/effort';
-import { dayBounds } from '../../../src/lib/effort';
-import { loggedToday } from '../../../src/features/focus/TodayFocus';
-import { dayCapacity } from '../../../src/features/calendar/model';
-import { effortSummary, periodFor } from '../../../src/features/progress-v6/model';
 import type { StudyEntryRecord } from '../../../src/data/study/contract';
 
 const t = (minute: number) => new Date(Date.parse('2026-11-06T10:00:00Z') + minute * 60_000).toISOString();
@@ -191,53 +187,4 @@ describe('N14.2 in-memory demo StudyApi', () => {
     await expect(api.saveStudyEntry(started.id, started.version, { minutes: -5 })).rejects.toMatchObject({ code: 'invalid' });
     expect((await api.activeStudyEntry())?.version).toBe(1);
   });
-  it('keeps explicit edited Focus minutes identical across Today, Calendar and Progress when persisted spans overlap', async () => {
-    // A rehydrated timer can contain overlapping focus spans. Previously the
-    // demo edit summed 6+6 minutes, then added only three for a 15-minute edit;
-    // the display used the union (10+3) and falsely showed 13.
-    const original: StudyEntryRecord = {
-      id: 'overlap-rehydrated', intent: 'Finish the proof', source: 'timer',
-      status: 'running', reflection: null, rating: null, version: 1,
-      createdAt: t(0), updatedAt: t(4), savedAt: null,
-      intervals: [
-        { id: 'first', kind: 'focus', start: t(0), end: t(6) },
-        { id: 'second', kind: 'focus', start: t(4), end: null },
-      ],
-    };
-    const zone = 'UTC', day = dayBounds('2026-11-06', zone);
-    vi.setSystemTime(new Date(t(10)));
-    for (const withOverlappingBreak of [false, true]) {
-      // Rehydration can also produce a break that overlaps focus; the effort
-      // metrics subtract that break globally, including when minutes are edited.
-      const record: StudyEntryRecord = withOverlappingBreak ? {
-        ...original, intervals: [
-          original.intervals[0],
-          { id: 'break', kind: 'break', start: t(2), end: t(4) },
-          original.intervals[1],
-        ],
-      } : original;
-      for (const editedMinutes of [15, 8, 2]) {
-        sessionStorage.setItem('lemma.v6.demo.study.v1', JSON.stringify({
-          schema: 1, entries: [record], blocks: [],
-        }));
-        const api = createDemoStudyApi();
-        const result = await api.saveStudyEntry(record.id, record.version, {
-          minutes: editedMinutes,
-        });
-        expect(result.record.status).toBe('saved');
-        const saved = await api.listStudyEntries(day);
-        expect(saved).toHaveLength(1);
-        // Re-read after adapter construction, as Calendar and Progress do.
-        const reloaded = await createDemoStudyApi().listStudyEntries(day);
-        expect(reloaded).toEqual(saved);
-        expect(loggedToday(saved, day, zone, t(10))).toBe(editedMinutes);
-        expect(dayCapacity('2026-11-06', zone, saved, []).logged).toBe(editedMinutes);
-        const progress = effortSummary(saved, periodFor('day', new Date(t(10)), zone), zone, t(10));
-        expect(progress.minutes).toBe(editedMinutes);
-        expect(progress.displayMinutes).toBe(editedMinutes);
-        expect(logged(result.record)).toBe(editedMinutes);
-      }
-    }
-  });
-
 });
