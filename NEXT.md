@@ -16,12 +16,12 @@ Tests: tests/unit/settings-v6/** covering flag on/off, all seven reachable secti
 Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new settings fields, autosave or retention logic changes, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
 
-## N32 v6 Inbox behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/proposals` renders the v6 Inbox from `docs/v6/screens/inbox-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Inbox row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Proposals grouped as today, with selection-aware approve/reject using the existing atomic decision calls and their receipts; rationale and citations shown where the proposal has them and "Rationale unavailable" where it does not; the existing plan/change/ideas previews are reused.
-Tests: `tests/unit/proposals-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/proposals/v6/** (new), src/features/proposals/Page.tsx (the existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
-Not: `src/features/plan-proposal/**`, proposal drafts (a later item), decision logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N32.2 v6 Inbox selected decisions and full page states
+Stage: Build · Status: open · Needs: N32.1 · Assigned: —
+Done = finish N32 after N32.1's v6-only evidence/rationale panel: proposals continue grouped by session and checkpoint, with selected card and plan batches. Implement selection-aware approve/reject using the existing atomic decision calls and their receipts, preserve Undo/recovery, and reuse existing plan/change/ideas previews; never invent missing rationale or citations. Keep the existing flag-off proposals UI unchanged and distinguish loading, empty, failed and filtered-empty states. Ensure every action is keyboard accessible with 44-pixel targets and appropriate focus.
+Tests: tests/unit/proposals-v6/** for selection-aware approve/reject, true receipts and conflicts, Undo/recovery, flag on/off, loading/empty/failed/filtered states and keyboard access, while retaining N32.1 evidence tests.
+Scope: src/features/proposals/v6/**, src/features/proposals/Page.tsx (the existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
+Not: src/features/plan-proposal/**, new draft storage, decision data APIs, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
 
 ## N35.2 v6 live Focus → Today/Calendar/Progress end-to-end
 Stage: Build · Status: open · Needs: N35.1 · Assigned: —
