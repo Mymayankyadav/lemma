@@ -38,12 +38,13 @@ Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bound
 Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
 Not: migrations, `src/data/study/**`, UI.
 
-## N25 Tasks: global task sheet and backlog view behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the header Add action offers "Task" (and keeps "New path"); "Task" opens a titled native dialog over the current route (`docs/v6/DESIGN_HANDOFF.md` "Global Task …" and sheet rules: 90-dvh max, safe-area padding, Escape and focus restoration) with title, optional estimate in minutes, priority, due (none / date / date and time, kept distinct) and optional subject/path links from existing hooks; it validates, saves through `getTaskApi().createTask`, shows one feedback toast with Undo (delete with the returned version) and an explicit "View in backlog". A backlog view at `/tasks` (lazy route registered beside the Calendar route the way `src/app/calendarRoute.tsx` does it) lists tasks in pages of 20 with "Show more", grouped by status, with complete/reopen, edit in the same dialog, and reorder up/down, each through `updateTask` with the record's version; a conflict reloads the row and says so. Flag off: no Task option, `/tasks` redirects to `/`.
-Tests: `tests/unit/tasks-ui/**` using `setTaskApiForTests` (validation, save, Undo, conflict, paging, status changes, flag off).
-Scope: src/features/tasks/** (new), src/app/V6Header.tsx (the Add action only), src/app/tasksRoute.tsx (new), src/app/App.tsx (registering the route only), tests/unit/tasks-ui/**, CURRENT.md.
-Not: `src/data/tasks/**`, Today/Calendar placement of tasks (later planner items), supabase/**, new dependencies.
+## N25.2 Tasks: paginated backlog and Task-sheet handoff
+Stage: Build · Status: open · Needs: N25.1 · Assigned: —
+Done = the task sheet from N25.1 adds an explicit "View in backlog" action after save, without replacing its single Undo toast. With `v6Shell` on, a new lazy `/tasks` route beside Calendar lists tasks in bounded pages of 20 with "Show more", grouped by status (backlog, in progress, completed, cancelled). Each row can complete/reopen, edit title/estimate/priority/due/links in the existing native sheet, and move up/down within its status using `TaskApi.updateTask(id,version,patch)`; a conflict reloads the record and says it changed elsewhere. Flag off: `/tasks` redirects to `/`, and the existing header and screens remain unchanged. The existing task sheet continues to restore focus and validate inputs.
+Tests: `tests/unit/tasks-ui/backlog.test.tsx` using `setTaskApiForTests` (20-row paging and grouped statuses, versioned complete/reopen, edits and ordering, stale conflict, explicit View in backlog, flag-off /tasks redirect).
+Scope: src/features/tasks/**, src/app/V6Header.tsx (only Task sheet handoff), src/app/tasksRoute.tsx (new), src/app/App.tsx (adding the route only), tests/unit/tasks-ui/**, CURRENT.md.
+Not: `src/data/tasks/**`, other app routes or screens, Supabase, new dependencies, touching flag-off UI.
+
 
 ## N26 v6 Calendar Week and Month views
 Stage: Build · Status: open · Needs: — · Assigned: —
