@@ -37,9 +37,13 @@ function isRecord(x:unknown):x is PresetRecord {
   if (!x || typeof x!=='object') return false;
   const p=x as PresetRecord;
   return typeof p.id==='string' && !!p.id && typeof p.label==='string' && !!p.label.trim() &&
-    modes.includes(p.mode) && Number.isSafeInteger(p.position) && p.position>=0 &&
+    modes.includes(p.mode) && p.label.trim().length<=120 &&
+    Number.isSafeInteger(p.position) && p.position>=0 && p.position<=2147483647 &&
     Number.isSafeInteger(p.version) && p.version>0 &&
-    [p.focusMinutes,p.breakMinutes,p.longBreakMinutes,p.cycles].every(n=>Number.isSafeInteger(n)&&n>0) &&
+    Number.isSafeInteger(p.focusMinutes) && p.focusMinutes>=1 && p.focusMinutes<=480 &&
+    Number.isSafeInteger(p.breakMinutes) && p.breakMinutes>=1 && p.breakMinutes<=180 &&
+    Number.isSafeInteger(p.longBreakMinutes) && p.longBreakMinutes>=1 && p.longBreakMinutes<=240 &&
+    Number.isSafeInteger(p.cycles) && p.cycles>=1 && p.cycles<=24 &&
     [p.subjectId,p.projectId,p.checkpointId].every(v=>v===null || typeof v==='string'&&!!v) &&
     typeof p.createdAt==='string' && Number.isFinite(Date.parse(p.createdAt)) &&
     typeof p.updatedAt==='string' && Number.isFinite(Date.parse(p.updatedAt)) &&

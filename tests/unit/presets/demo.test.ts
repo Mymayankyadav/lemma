@@ -142,6 +142,12 @@ describe('N55 demo activity presets',()=>{
     expect((await createDemoPresetApi().listPresets()).total).toBe(3);
     sessionStorage.setItem(key,JSON.stringify({schema:10,presets:[]}));
     expect((await createDemoPresetApi().listPresets()).total).toBe(3);
+    // A structurally valid snapshot with impossible captured timer limits is
+    // corrupt too; it must not restore a session with unsafe durations.
+    const valid=JSON.parse(sessionStorage.getItem(key)!);
+    valid.presets[0].focusMinutes=99999;
+    sessionStorage.setItem(key,JSON.stringify(valid));
+    expect((await createDemoPresetApi().getPreset('demo-preset-1'))?.focusMinutes).toBe(25);
     const fake=createDemoPresetApi();
     setPresetApiForTests(fake);
     // Mode is demo while the test API is injected, not a live service session.
