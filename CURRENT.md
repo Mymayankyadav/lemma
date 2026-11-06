@@ -150,4 +150,4 @@ The pure `src/lib/effort/` module provides interval-union logged minutes (with s
 
 ## N11.2 study lifecycle (PR #882)
 
-An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 journaling and undo remain pending. This is an unmerged work-in-progress and has not been validated on production.
+An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 journaling and undo remain pending. The SQL regression suite covers lifecycle transitions, version conflicts, interval invariants and owner isolation. Deployment to the remote Supabase database is not independently verified; no application or MCP client uses these commands yet.
