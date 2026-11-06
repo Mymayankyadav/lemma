@@ -66,8 +66,9 @@ for(const viewport of [
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
    }
   }
-  // Atlas is full-bleed but its selection actions must clear the persistent dock.
-  await page.goto('./?demo=1&flags=v6Shell#/atlas');
+  // Atlas is full-bleed but its selection actions must clear the persistent dock. Since N29 the v6 Atlas opens on the
+  // phone list; the graph (with the dock-clearance contract tested here) is the Map view.
+  await page.goto('./?demo=1&flags=v6Shell#/atlas?view=map');
   await expect(page.getByRole('tree',{name:'Ideas and their links'})).toBeVisible();
   await page.getByRole('button',{name:'Find an idea'}).click();
   await page.getByRole('textbox',{name:'Find an idea'}).fill('Compactness');
