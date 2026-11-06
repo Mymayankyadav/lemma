@@ -23,13 +23,6 @@ Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bound
 Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
 Not: migrations, `src/data/study/**`, UI.
 
-## N25.2 Tasks: paginated backlog and Task-sheet handoff
-Stage: Build · Status: open · Needs: N25.1 · Assigned: —
-Done = the task sheet from N25.1 adds an explicit "View in backlog" action after save, without replacing its single Undo toast. With `v6Shell` on, a new lazy `/tasks` route beside Calendar lists tasks in bounded pages of 20 with "Show more", grouped by status (backlog, in progress, completed, cancelled). Each row can complete/reopen, edit title/estimate/priority/due/links in the existing native sheet, and move up/down within its status using `TaskApi.updateTask(id,version,patch)`; a conflict reloads the record and says it changed elsewhere. Flag off: `/tasks` redirects to `/`, and the existing header and screens remain unchanged. The existing task sheet continues to restore focus and validate inputs.
-Tests: `tests/unit/tasks-ui/backlog.test.tsx` using `setTaskApiForTests` (20-row paging and grouped statuses, versioned complete/reopen, edits and ordering, stale conflict, explicit View in backlog, flag-off /tasks redirect).
-Scope: src/features/tasks/**, src/app/V6Header.tsx (only Task sheet handoff), src/app/tasksRoute.tsx (new), src/app/App.tsx (adding the route only), tests/unit/tasks-ui/**, CURRENT.md.
-Not: `src/data/tasks/**`, other app routes or screens, Supabase, new dependencies, touching flag-off UI.
-
 ## N26 v6 Calendar Week and Month views
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, Calendar gains Week and Month beside Agenda and Day (keyboard view tabs, the choice kept in the URL query), built from the same `getStudyApi()` records and the same model helpers in `src/features/calendar/model.ts` so all four views agree on totals: Week shows seven day columns from the owner's week start with planned/busy blocks and saved-effort totals per day, dense overlaps stacked rather than hidden; Month shows a date grid with per-day saved minutes and block counts, tapping a day opens Day. Each view loads only its bounded range. "Source not loaded" is never shown as zero.
