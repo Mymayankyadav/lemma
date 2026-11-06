@@ -99,7 +99,7 @@ try {
  })),/not found/);
  await assert.rejects(command(request('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2','create',{
    patch:{...patch,subject_id:subject}
- })),/foreign key|row-level security/);
+ })),error=>/subject.*(owner|belong|found)|foreign key|row-level security/i.test(String(error)));
  assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,1,'cross-owner insert leaves no row');
  const ownedByOther=await command(request(firstId,'create',{patch:{...patch,kind:'busy',title:'Private'}}));
  assert.equal(ownedByOther.status,'ok','operation IDs are scoped to authenticated owners');
