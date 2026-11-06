@@ -2,8 +2,8 @@ import {describe,expect,it} from 'vitest'
 import {readFileSync} from 'node:fs'
 
 const md=readFileSync('AGENTS.md','utf8')
-describe('AGENTS.md v1.7 contract',()=>{
- it('is version 1.7 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 1\.7 \(2026-11-05\)$/))
+describe('AGENTS.md v1.9 contract',()=>{
+ it('is version 1.9 and dated',()=>expect(md.split('\n')[0]).toMatch(/^# Lemma agent rules — version 1\.9 \(2026-11-06\)$/))
  it('has the nine steps in the specified order',()=>{
   const run=md.slice(md.indexOf('## Each run'),md.indexOf('## Claiming and PRs'))
   const steps=[...run.matchAll(/^(\d)\. (.*)$/gm)].map((m)=>[m[1],m[2]])
@@ -55,6 +55,12 @@ describe('AGENTS.md v1.7 contract',()=>{
   expect(claim).toContain("An item PR also deletes its item's whole block from NEXT.md")
   expect(claim).toContain('NEXT-MD-DONE')
   expect(claim).toContain('An id in a Needs line that is no longer in NEXT.md is done.')
+ })
+ it('v1.9: agents leave CURRENT.md / NEXT.md-only conflicts to CI',()=>{
+  const run=md.slice(md.indexOf('## Each run'),md.indexOf('## Claiming and PRs'))
+  expect(run).toContain('Conflicts only in CURRENT.md or NEXT.md you never fix: CI merges main into your branch and keeps both sides')
+  expect(run).toContain('your Ready and approvals still count')
+  expect(run).toContain('Fix a conflict yourself only when CI\'s comment says it could not.')
  })
  it('tells agents nothing about merging, leases or the old label wait',()=>{
   expect(md).not.toMatch(/squash-merge, then|Lease until|do not wait for it/i)

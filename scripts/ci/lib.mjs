@@ -109,7 +109,7 @@ export function plusHours(h, from = new Date()) { return new Date(from.getTime()
  * CI_BOT_TOKEN may appear only in main-side workflows (push / schedule / dispatch): never in a workflow that a
  * pull request can trigger, and only in the files listed here. Returns a list of problems (pure).
  */
-export const BOT_TOKEN_ALLOWED = ['ci.yml', 'calibrate.yml', 'review-merge.yml'];
+export const BOT_TOKEN_ALLOWED = ['ci.yml', 'calibrate.yml', 'review-merge.yml', 'autoresolve.yml'];
 export function botTokenViolations(workflows) {
   const out = [];
   for (const { name, text } of workflows) {
