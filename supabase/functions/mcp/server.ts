@@ -5,6 +5,7 @@ import {cut} from './text.ts';
 import { INSTRUCTIONS } from './rules.ts';
 import { packet } from './packet.ts';
 import { get, readPages, search } from './tools/read.ts';
+import { study } from './tools/study.ts';
 import { savePages } from './tools/transcribe.ts';
 import { startSession, saveProgress, endSession, proposeCards, proposeCardEdits, proposePlan, proposePlanChange, createProject, proposals, decide } from './tools/write.ts';
 const S=z.string;
@@ -13,7 +14,7 @@ const cp=S().max(20);
 const optProject=name.optional();
 const noop={readOnlyHint:true};
 const write={readOnlyHint:false,destructiveHint:false,openWorldHint:false};
-export const TOOL_NAMES=['resume','get','read_pages','search','save_pages','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
+export const TOOL_NAMES=['resume','get','read_pages','search','save_pages','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade','study'];
 // tools/list is sent with every chat turn (budget 15,000 chars). Advertise
 // the same zod schema without the per-tool "$schema" dialect line (2020-12 is
 // the MCP default) and without the ±2^53-1 bounds zod adds to plain integers.
@@ -57,6 +58,31 @@ export function buildServer(c:Context):McpServer{
       }catch(err){return {isError:true,content:[{type:'text' as const,text:err instanceof Error?err.message:'Request failed'}]}}
     });
   };
+  // Study commands are already journalled in study_command. Return the exact
+  // receipt, not the legacy 160-char write summary or a second mcp_commit.
+  const studyEnvelope=z.object({
+    operationId:S().uuid(),schemaVersion:z.literal(1),
+    resource:z.enum(['study_entries','study_intervals','calendar_blocks']),
+    operation:z.enum(['create','update','delete','start','pause','resume','break','save','discard']),
+    target:z.object({id:S().uuid()}).strict().optional(),
+    expectedVersion:z.number().int().min(0).optional(),
+    patch:z.record(S(),z.unknown()).optional()
+  }).strict();
+  m.registerTool('study',{
+    description:'Execute one explicit, owner-bound, undoable v6 study command and return its receipt (actionNo for undo).',
+    inputSchema:lean(z.object({
+      command:studyEnvelope,
+      client:z.enum(['claude','chatgpt','other']).optional()
+    }).strict()),
+    annotations:write
+  },async (args:any)=>{
+    try{
+      const receipt=await study(c,args);
+      return {content:[{type:'text' as const,text:JSON.stringify(receipt)}]};
+    }catch(err){
+      return {isError:true,content:[{type:'text' as const,text:err instanceof Error?err.message:'Request failed'}]};
+    }
+  });
   register('resume',"Resume study with checkpoint, warm-up and rules; omit project for menu.",z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
