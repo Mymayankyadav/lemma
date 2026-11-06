@@ -44,12 +44,12 @@ Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (cr
 Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
 Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
 
-## N28 v6 Settings behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/screens/settings-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Settings row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Section navigation (account, appearance, study defaults, reminders, subjects, connector, export) over the existing settings controls, which keep their current save behaviour; the connector address and subjects panels are reused, not rewritten.
-Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
-Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N28.2 v6 Settings: study defaults, reminders and export controls
+Stage: Build · Status: open · Needs: N28.1 · Assigned: —
+Done = finish N28 after N28.1's flag-gated seven-section navigation and the working Account/Appearance/Subjects/Connector panels: replace the temporary legacy-settings fallback for Study defaults, Reminders and Export with dedicated v6 panels. Preserve all existing Settings behaviour and the same underlying hooks, update calls and error/Saved feedback, including teaching styles and tutor rules, retention, cards/day, memory tuning eligibility, notification settings, math shortcuts, export/download, connector setup and sign-out. Ensure each section loads only from existing hooks, distinguishes loading, empty and failure states, is keyboard accessible, and no control silently loses its save action. Keep the legacy flag-off page unchanged.
+Tests: tests/unit/settings-v6/** covering flag on/off, all seven reachable sections, valid writes/errors, loading/empty/failed states, keyboard access and unchanged legacy save paths.
+Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
+Not: new settings fields, autosave or retention logic changes, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
 
 ## N29 v6 Atlas list behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
@@ -85,14 +85,6 @@ Done = with `v6Shell` on, `/projects` and `/p/:slug` renders the v6 Paths list a
 Tests: `tests/unit/paths-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
 Scope: src/features/projects/v6/** (new), src/features/project/v6/** (new), src/features/projects/Page.tsx and src/features/project/Page.tsx (the flag branches only), tests/unit/paths-v6/**, CURRENT.md.
 Not: checkpoint and session pages, new-project flow, stage or plan logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
-## N34 MCP: tasks through get, search and a task write tool
-Stage: Build · Status: open · Needs: N12, N15, N22 · Assigned: —
-Done = the connector's `get` and `search` accept the resource `tasks` (bounded pages, cursor, status filter, total reported separately) the way N15 added study records, and the `study` tool from N12 routes envelopes whose `resource` is `tasks` (no new tool; `tools/list` stays under 15,000 characters) to `public.mcp_task_command` with `p_user = Context.userId`, returning the receipt unchanged; per D3 only undoable writes act on explicit chat instructions.
-Tests: unit tests in `tests/unit/mcp/` and `tests/mcp/sql/task-mcp.mjs` (a task created in chat is read by the app adapter's query with the same version, and the reverse; a second owner is invisible; undo through the existing `undo` tool reverts a task write).
-Owner-authorized (D1, D7): deploys the MCP function on merge, so this PR needs a review.
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/task-mcp.mjs, CURRENT.md (MCP tools list).
-Not: migrations, existing tools' inputs or outputs, the `resume` packet.
 
 ## N35 v6 first slice on live data
 Stage: Build · Status: open · Needs: N20, N12 · Assigned: —
