@@ -36,8 +36,12 @@ try {
   assert.ok(files.includes('20261106170000_mcp_study_command.sql'), 'D6 migration must exist');
   for (const file of files) await db.exec(await readFile(new URL(file, dir), 'utf8'));
   await q('insert into auth.users(id) values ($1),($2)', [owner, other]);
-  await q('insert into public.settings(user_id,connector_secret) values ($1,$3),($2,$4)',
-    [owner, other, '1'.repeat(48), '2'.repeat(48)]);
+  // log_change enforces one owner per transaction; seed distinct owners
+  // in separate statements without relaxing that production invariant.
+  await q('insert into public.settings(user_id,connector_secret) values ($1,$2)',
+    [owner, '1'.repeat(48)]);
+  await q('insert into public.settings(user_id,connector_secret) values ($1,$2)',
+    [other, '2'.repeat(48)]);
   // SECURITY DEFINER is not a license for ordinary users to supply a p_user.
   const acl = await q(`select
     has_function_privilege('anon','public.mcp_study_command(uuid,text,jsonb)','EXECUTE') as anon,
