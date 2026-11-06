@@ -92,3 +92,28 @@ export function dayCapacity(date: string, zone: string, entries: StudyEntryRecor
     .map(b => ({ start: b.startsAt, end: b.endsAt }));
   return capacityStack(logged, busy, planned, range);
 }
+
+/** N26.1: shared DST-safe seven-day Week model; N26.2 adds Week/Month UI. */
+export function weekGrid(date:string,zone:string,entries:StudyEntryRecord[],
+ blocks:CalendarBlockRecord[],weekStartsOn=1){
+ if(!validDayKey(date)||!Number.isInteger(weekStartsOn)||weekStartsOn<0||weekStartsOn>6)
+  throw new Error('Invalid week date or week start');
+ const weekday=new Date(date+'T00:00:00Z').getUTCDay();
+ const first=shiftDay(date,-((weekday-weekStartsOn+7)%7));
+ const days=Array.from({length:7},(_,offset)=>{
+  const day=shiftDay(first,offset),range=calendarRange(day,zone);
+  const visible=visibleBlocks(blocks,range);
+  const lanes:{block:CalendarBlockRecord;lane:number}[]=[];
+  const ends:number[]=[];
+  for(const block of visible){
+   const start=Math.max(millis(block.startsAt),millis(range.start));
+   const end=Math.min(millis(block.endsAt),millis(range.end));
+   let lane=ends.findIndex(free=>free<=start);
+   if(lane<0){lane=ends.length;ends.push(end)}else ends[lane]=end;
+   lanes.push({block,lane});
+  }
+  return {day,range,capacity:dayCapacity(day,zone,entries,blocks),
+   saved:savedSlices(entries,range),blocks:lanes};
+ });
+ return {first,days};
+}
