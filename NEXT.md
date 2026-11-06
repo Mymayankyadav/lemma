@@ -17,6 +17,7 @@ Done = complete D8(a) after N36.1's two seeded registry tables. In one new addit
 Tests: tests/mcp/sql/registries-dispatch.mjs using full-migration PGlite to prove undo for all current resource types, a newly registered table, D7 compatibility, service-role-only dispatch for study entries, intervals, calendar blocks and tasks, unknown/disabled refusal, ignored caller-supplied function names, owner parity, versions and receipts; existing study/task/undo SQL tests unchanged and passing.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries-dispatch.mjs, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: changes to existing migrations, MCP function/tool code, app code, unrelated tables/functions, expanded client access or new dependencies.
+Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
 ## N38 Versions and provenance on existing mutable records
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -137,6 +138,7 @@ Done = per D8(c) and the lane rules, `src/data/practice-topics/` for the records
 Tests: `tests/unit/practice-topics/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/practice-topics/** (new), tests/unit/practice-topics/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
 ## N58 Parked thoughts: app module (src/data/parked-thoughts)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -159,6 +161,7 @@ Done = per D8(c) and the lane rules, `src/data/day-plans/` for the records and o
 Tests: `tests/unit/day-plans/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/day-plans/** (new), tests/unit/day-plans/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
 ## N61 Overlap acknowledgements: app module (src/data/overlap-acknowledgements)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -166,6 +169,7 @@ Done = per D8(c) and the lane rules, `src/data/overlap-acknowledgements/` for th
 Tests: `tests/unit/overlap-acknowledgements/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/overlap-acknowledgements/** (new), tests/unit/overlap-acknowledgements/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
 ## N62 Durable review runs: app module (src/data/review-runs)
 Stage: Build · Status: open · Needs: — · Assigned: —
