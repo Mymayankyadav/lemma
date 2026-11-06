@@ -1,0 +1,209 @@
+{
+  "version": 1,
+  "table": "public.settings",
+  "source": "N39 typed planning and focus settings; schema extends existing settings without a data backfill",
+  "notes": "Future unknown JSON keys are preserved on each UPDATE by public.lemma_v6_settings_merge. App/MCP write paths are planned in N79/N87; not claimed present.",
+  "columns": {
+    "week_start": {
+      "classification": "owner-editable",
+      "appPath": "N79 (planned v6 Settings UI)",
+      "mcpPath": "N87 (planned settings MCP)",
+      "export": "include",
+      "delete": "with owner account",
+      "validation": "public.lemma_v6_settings_valid",
+      "type": "integer",
+      "unit": "weekday (0=Sunday, 6=Saturday)",
+      "bounds": "0–6 inclusive",
+      "default": 1
+    },
+    "clock_24h": {
+      "classification": "owner-editable",
+      "appPath": "N79 (planned v6 Settings UI)",
+      "mcpPath": "N87 (planned settings MCP)",
+      "export": "include",
+      "delete": "with owner account",
+      "validation": "public.lemma_v6_settings_valid",
+      "type": "boolean",
+      "unit": "24-hour clock toggle",
+      "default": true
+    },
+    "focus_defaults": {
+      "classification": "owner-editable",
+      "appPath": "N79 (planned v6 Settings UI)",
+      "mcpPath": "N87 (planned settings MCP)",
+      "export": "include",
+      "delete": "with owner account",
+      "validation": "public.lemma_v6_settings_valid",
+      "type": "JSON object",
+      "fields": {
+        "mode": {
+          "type": "enum",
+          "unit": "pomodoro | flowtime | open",
+          "bounds": null,
+          "description": "timer mode"
+        },
+        "focus_minutes": {
+          "type": "integer",
+          "unit": "minutes",
+          "bounds": "1–240",
+          "description": "focused duration"
+        },
+        "break_minutes": {
+          "type": "integer",
+          "unit": "minutes",
+          "bounds": "1–120",
+          "description": "short break"
+        },
+        "long_break_minutes": {
+          "type": "integer",
+          "unit": "minutes",
+          "bounds": "1–240",
+          "description": "long break"
+        },
+        "cycles": {
+          "type": "integer",
+          "unit": "cycles",
+          "bounds": "1–24",
+          "description": "cycles per round"
+        },
+        "flowtime_break_ratio": {
+          "type": "number",
+          "unit": "break/focus fraction",
+          "bounds": "(0,1]",
+          "description": "Flowtime break ratio"
+        },
+        "long_session_guard_minutes": {
+          "type": "integer",
+          "unit": "minutes",
+          "bounds": "30–720",
+          "description": "long session guard"
+        }
+      },
+      "default": {
+        "mode": "pomodoro",
+        "focus_minutes": 25,
+        "break_minutes": 5,
+        "long_break_minutes": 15,
+        "cycles": 4,
+        "flowtime_break_ratio": 0.2,
+        "long_session_guard_minutes": 120
+      }
+    },
+    "planning": {
+      "classification": "owner-editable",
+      "appPath": "N79 (planned v6 Settings UI)",
+      "mcpPath": "N87 (planned settings MCP)",
+      "export": "include",
+      "delete": "with owner account",
+      "validation": "public.lemma_v6_settings_valid",
+      "type": "JSON object",
+      "fields": {
+        "window_start": {
+          "type": "HH:MM local",
+          "unit": "24-hour local time",
+          "bounds": "00:00–23:59",
+          "description": "daily planning window start"
+        },
+        "window_end": {
+          "type": "HH:MM local",
+          "unit": "24-hour local time",
+          "bounds": "00:00–23:59",
+          "description": "daily planning window end"
+        },
+        "gap_minutes": {
+          "type": "integer",
+          "unit": "minutes",
+          "bounds": "0–120",
+          "description": "gap between blocks"
+        },
+        "max_consecutive_minutes": {
+          "type": "integer",
+          "unit": "minutes",
+          "bounds": "15–600",
+          "description": "maximum consecutive study"
+        },
+        "daily_minimum_minutes": {
+          "type": "integer",
+          "unit": "minutes",
+          "bounds": "0–600",
+          "description": "minimum qualifying effort"
+        },
+        "daily_intention": {
+          "type": "boolean",
+          "unit": "enabled toggle",
+          "bounds": null,
+          "description": "daily intention"
+        }
+      },
+      "default": {
+        "window_start": "08:00",
+        "window_end": "22:00",
+        "gap_minutes": 10,
+        "max_consecutive_minutes": 120,
+        "daily_minimum_minutes": 20,
+        "daily_intention": true
+      }
+    },
+    "review_budget": {
+      "classification": "owner-editable",
+      "appPath": "N79 (planned v6 Settings UI)",
+      "mcpPath": "N87 (planned settings MCP)",
+      "export": "include",
+      "delete": "with owner account",
+      "validation": "public.lemma_v6_settings_valid",
+      "type": "JSON object",
+      "fields": {
+        "cards": {
+          "type": "integer",
+          "unit": "cards per day",
+          "bounds": "0–2000",
+          "description": "daily card budget"
+        },
+        "minutes": {
+          "type": "integer",
+          "unit": "minutes per day",
+          "bounds": "0–720",
+          "description": "daily review duration budget"
+        },
+        "reserve_in_plans": {
+          "type": "boolean",
+          "unit": "enabled toggle",
+          "bounds": null,
+          "description": "reserve review time in plans"
+        }
+      },
+      "default": {
+        "cards": 20,
+        "minutes": 20,
+        "reserve_in_plans": true
+      }
+    },
+    "attention": {
+      "classification": "owner-editable",
+      "appPath": "N79 (planned v6 Settings UI)",
+      "mcpPath": "N87 (planned settings MCP)",
+      "export": "include",
+      "delete": "with owner account",
+      "validation": "public.lemma_v6_settings_valid",
+      "type": "JSON object",
+      "fields": {
+        "drift_prompt": {
+          "type": "boolean",
+          "unit": "enabled toggle",
+          "bounds": null,
+          "description": "opt in to drift notice"
+        },
+        "urge_prompt": {
+          "type": "boolean",
+          "unit": "enabled toggle",
+          "bounds": null,
+          "description": "opt in to urge notice"
+        }
+      },
+      "default": {
+        "drift_prompt": false,
+        "urge_prompt": false
+      }
+    }
+  }
+}
