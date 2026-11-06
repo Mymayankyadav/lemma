@@ -1,3 +1,4 @@
+import BlockSheet from './block-sheet/BlockSheet';
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 import { isFlagOn } from '../../flags';
@@ -6,7 +7,6 @@ import type { CalendarBlockRecord, CalendarBlockKind, StudyEntryRecord } from '.
 import { Segmented } from '../../ui/Segmented';
 import { Slab } from '../../ui/Slab';
 import { WeekView } from './views/WeekView';
-import BlockSheet from './block-sheet/BlockSheet';
 import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, shiftDay, validDayKey, weekStartDay, type LoggedSlice } from './model';
 
 const actionClass = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
