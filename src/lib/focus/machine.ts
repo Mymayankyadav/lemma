@@ -37,7 +37,8 @@ function instant(value: string): number {
 function checkTime(session: FocusSession, at: string): void {
   const latest = session.intervals.at(-1);
   const previous = latest ? (latest.end ?? latest.start) : session.startedAt;
-  if (instant(at) < instant(previous)) throw new Error('Focus time cannot go backwards');
+  const boundary = Math.max(instant(previous), session.finishedAt ? instant(session.finishedAt) : -Infinity);
+  if (instant(at) < boundary) throw new Error('Focus time cannot go backwards');
 }
 function closeOpen(session: FocusSession, at: string): FocusSpan[] {
   const index = session.intervals.length - 1;
