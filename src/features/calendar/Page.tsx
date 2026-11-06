@@ -71,18 +71,6 @@ function V6Calendar() {
   const [moveEnd, setMoveEnd] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  // N27 owns only the sheet/openers; N26 retains the Week range, view and URL logic.
-  const [sheetBlock, setSheetBlock] = useState<CalendarBlockRecord | null | undefined>(undefined);
-  const sheetOpener = useRef<HTMLButtonElement | null>(null);
-  function openSheet(event: MouseEvent<HTMLButtonElement>, block: CalendarBlockRecord | null) {
-    sheetOpener.current = event.currentTarget;
-    setSheetBlock(block);
-  }
-  function closeSheet() {
-    setSheetBlock(undefined);
-    queueMicrotask(() => sheetOpener.current?.focus());
-  }
-
   useEffect(() => {
     let active = true;
     setPhase('loading'); setReadError('');
@@ -115,6 +103,18 @@ function V6Calendar() {
     setStart(date + 'T09:00'); setEnd(date + 'T10:00');
     setEditing(null); setConfirmDelete(null); setActionError('');
   }, [date]);
+
+  // N27 owns only the sheet/openers; N26 retains the Week range, view and URL logic.
+  const [sheetBlock, setSheetBlock] = useState<CalendarBlockRecord | null | undefined>(undefined);
+  const sheetOpener = useRef<HTMLButtonElement | null>(null);
+  function openSheet(event: MouseEvent<HTMLButtonElement>, block: CalendarBlockRecord | null) {
+    sheetOpener.current = event.currentTarget;
+    setSheetBlock(block);
+  }
+  function closeSheet() {
+    setSheetBlock(undefined);
+    queueMicrotask(() => sheetOpener.current?.focus());
+  }
 
   function updateUrl(key: 'view' | 'date', value: string) {
     const next = new URLSearchParams(params);
@@ -193,8 +193,6 @@ function V6Calendar() {
       <strong className="text-center text-label text-ink">{dateLabel(date, zone)}</strong>
       <button type="button" className={actionClass} aria-label="Next dates" onClick={() => updateUrl('date', shiftDay(date, step))}>›</button>
       <button type="button" className={actionClass} onClick={() => updateUrl('date', dayKey(new Date(), zone))}>Today</button>
-      {phase === 'ready' && <button type="button" className={actionClass}
-        onClick={event => openSheet(event, null)}>Plan block in sheet</button>}
     </nav>
 
     {phase === 'loading' && <p role="status">Loading calendar…</p>}
@@ -206,10 +204,7 @@ function V6Calendar() {
         <h2 className="text-body font-semibold text-ink">{dateLabel(group.day, zone)}</h2>
         {group.entries.length === 0 && group.blocks.length === 0 && <p className="text-label text-ink-2">Nothing planned.</p>}
         {group.entries.map((entry, index) => <SavedRow key={entry.entry.id + ':' + index} slice={entry} zone={zone} />)}
-        {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label">
-          <button type="button" className="min-h-11 w-full text-left" aria-label={'Edit block ' + block.title}
-            onClick={event => openSheet(event, block)}><BlockSummary block={block} zone={zone}/></button>
-        </article>)}
+        {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><BlockSummary block={block} zone={zone}/></article>)}
       </Slab>)}
     </div>}
 
@@ -272,6 +267,12 @@ function V6Calendar() {
         </div>)}
       </Slab>
     </>}
+    {phase === 'ready' && <nav aria-label="Calendar block sheet actions" className="flex flex-wrap gap-2">
+      <button type="button" className={actionClass} onClick={event => openSheet(event, null)}>Plan block in sheet</button>
+      {view !== 'day' && blocks.filter(block => block.status !== 'cancelled').map(block =>
+        <button key={block.id} type="button" className={actionClass} aria-label={'Edit block ' + block.title}
+          onClick={event => openSheet(event, block)}>Edit {block.title}</button>)}
+    </nav>}
     {sheetBlock !== undefined && <BlockSheet key={sheetBlock?.id ?? 'new'} block={sheetBlock} date={date} zone={zone}
       onClose={closeSheet} onRefresh={() => setReload(n => n + 1)}/>}
   </section>;
