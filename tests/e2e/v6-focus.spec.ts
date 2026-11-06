@@ -2,6 +2,13 @@ import {test,expect,type Page} from '@playwright/test';
 
 // N20: exercise the real demo StudyApi, not a mocked browser-side store.
 const home='./?demo=1&flags=v6Shell#/';
+// The demo seed puts saved entries at fixed weekday/hour slots (for example Friday 14:00-14:30). A run inside one of
+// them overlaps the entry this test saves, so the interval union adds nothing and the total does not move. Start from
+// an account with no seeded time, only when nothing is stored yet, so a reload still keeps what the test saved.
+const emptyStudy=(page:Page)=>page.addInitScript(()=>{
+ try{if(!sessionStorage.getItem('lemma.v6.demo.study.v1'))sessionStorage.setItem('lemma.v6.demo.study.v1',JSON.stringify({schema:1,entries:[],blocks:[]}))}catch{/* storage blocked */}
+});
+
 const loggedOutput=(page:Page)=>page.locator('output[aria-label="Logged today"]');
 async function loggedMinutes(page:Page):Promise<number>{
  const output=loggedOutput(page);
@@ -15,6 +22,7 @@ async function loggedMinutes(page:Page):Promise<number>{
 test('N20 demo Focus starts, pauses, resumes, finishes and saves logged time at 390×844',async({page})=>{
  test.setTimeout(90_000);
  await page.setViewportSize({width:390,height:844});
+ await emptyStudy(page);
  await page.goto(home);
  const before=await loggedMinutes(page);
  await page.getByRole('textbox',{name:'Focus intention'}).fill('N20 focus flow');
@@ -40,6 +48,7 @@ test('N20 demo Focus starts, pauses, resumes, finishes and saves logged time at 
 test('N20 Focus restores a running draft, Escape returns focus and discard logs nothing at 320×640',async({page})=>{
  test.setTimeout(90_000);
  await page.setViewportSize({width:320,height:640});
+ await emptyStudy(page);
  await page.goto(home);
  const before=await loggedMinutes(page);
  await page.getByRole('textbox',{name:'Focus intention'}).fill('Discardable focus');
