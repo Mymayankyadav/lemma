@@ -60,6 +60,9 @@ export function normalize(input: NewPreset | PresetPatch, create: boolean): Inpu
   return out;
 }
 export function normalizeQuery(query: PresetQuery = {}): { archived: PresetArchive; limit: number } {
+  if (!query || typeof query !== 'object' || Array.isArray(query) ||
+      Object.keys(query).some(key => !['archived','limit','cursor'].includes(key)))
+    invalid('Invalid preset query');
   const archived = query.archived ?? 'active';
   if (!['active','archived','all'].includes(archived)) invalid('Invalid preset archive filter');
   const limit = query.limit ?? 20;

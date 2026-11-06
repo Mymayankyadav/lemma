@@ -70,6 +70,8 @@ describe('N55 demo activity presets',()=>{
     await expect(api.listPresets({limit:0})).rejects.toMatchObject({code:'invalid'});
     await expect(api.listPresets({limit:51})).rejects.toMatchObject({code:'invalid'});
     await expect(api.listPresets({limit:1.5})).rejects.toMatchObject({code:'invalid'});
+    await expect(api.listPresets({user_id:'forged-owner'} as never)).rejects.toMatchObject({code:'invalid'});
+    await expect(api.listPresets(null as never)).rejects.toMatchObject({code:'invalid'});
     await expect(api.listPresets({archived:'gone' as never})).rejects.toMatchObject({code:'invalid'});
     await expect(api.listPresets({cursor:'bad!'})).rejects.toMatchObject({code:'invalid'});
     const page=await api.listPresets({limit:1});
