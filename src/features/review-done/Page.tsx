@@ -14,6 +14,8 @@ import {Slab} from '../../ui/Slab';
 import {Button} from '../../ui/Button';
 import {RoundSeal} from './RoundSeal';
 import {prepareSessionNewRound} from './newSession';
+import {isFlagOn} from '../../flags';
+import {nextReminderTime} from '../../data/notify';
 
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
  return <Tile className="flex min-h-[95px] flex-col items-center justify-center gap-1 px-2 py-3 text-center">
@@ -26,8 +28,21 @@ export default function Page(){
  const reduced=!!useReducedMotion(),calm=useCalm(),quiet=reduced||calm;
  const navigate=useNavigate(),answers=useReviewSession(s=>s.answers),filter=useReviewSession(s=>s.filter);
  const markCompleted=useReviewSession(s=>s.markCompleted);
+ const reminderDriven=useReviewSession(s=>s.reminderDriven);
+ const pendingCard=useReviewSession(s=>s.current!==null);
  useEffect(()=>{if(answers.length>0)markCompleted()},[answers.length,markCompleted]);
  const settings=useSettings(),[tomorrow,setTomorrow]=useState<number|null>(null);
+ const [nextReminder,setNextReminder]=useState<string|null>(null);
+ useEffect(()=>{
+  let cancelled=false;
+  setNextReminder(null);
+  if(!reminderDriven||!answers.length||pendingCard||!isFlagOn('notificationsPush')||settings.data?.notify?.enabled!==true||!settings.data.notify.mode||settings.data.notify.mode==='off')return;
+  const prefs=settings.data.notify;
+  void getApi().previewNotifications().then(rows=>{
+   if(!cancelled)setNextReminder(nextReminderTime(prefs,rows));
+  }).catch(()=>{if(!cancelled)setNextReminder(null)});
+  return()=>{cancelled=true};
+ },[reminderDriven,answers.length,pendingCard,settings.data]);
  const [newPending,setNewPending]=useState(false),[newMessage,setNewMessage]=useState<string|null>(null);
  const [showRecalled,setShowRecalled]=useState(false);
  const [showAllMissed,setShowAllMissed]=useState(false);
@@ -113,6 +128,16 @@ export default function Page(){
    </div>
   </section>}
   {missed.length>0&&<Button className="w-full" variant="ghost" onClick={retryMissed}>Go over the {missed.length} missed</Button>}
+  {nextReminder&&<Slab as="section" aria-label="Next reminder" className="w-full p-4">
+   <h2 className="text-body font-semibold">Next reminder</h2>
+   <p className="mt-1 text-label text-ink-2">
+    {new Intl.DateTimeFormat(undefined,{timeZone:settings.data?.timeZone||'UTC',
+     weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})
+     .format(new Date(nextReminder))}
+   </p>
+   <p className="mt-1 text-caption text-ink-3">From your current reminder settings.</p>
+   <Link className="inline-flex min-h-11 items-center text-label font-semibold text-amber" to="/settings">Change reminder settings</Link>
+  </Slab>}
   <Button className="w-full" size="xl" onClick={()=>{useReviewSession.getState().close();navigate('/')}}>Done</Button>
   <Link className="flex min-h-11 items-center justify-center text-body text-amber" to="/review">
    Review more
