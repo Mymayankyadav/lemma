@@ -40,12 +40,6 @@ Owner-authorized 2026-11-06 (D1, D7): merging deploys the migration to productio
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/task-command.mjs, CURRENT.md.
 Not: changes to `study_command`, `mcp_commit`, `mcp_study_command` or existing tables, policies or migrations; MCP function code (N34); app code.
 
-## N23 Tasks: demo adapter with reload persistence
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/tasks/demo.ts` implements `TaskApi` from `src/data/tasks/contract.ts` for demo mode: a small fixed fixture (about 6 tasks across statuses, linked to demo subjects/projects where the demo data has them), bounded pages with an opaque cursor and a separate `total`, ordering by status, position, createdAt, optimistic versions (stale `expectedVersion` rejects with a conflict and changes nothing), `completedAt` set exactly while completed, due date versus due instant kept distinct, receipts with `actionNo: null`, and persistence across reload in the same storage the demo study adapter uses (its own key). Live mode never reads the demo store.
-Tests: `tests/unit/tasks/demo.test.ts` covering each sentence above, including a reload round trip and a 50-task page walk.
-Scope: src/data/tasks/demo.ts, tests/unit/tasks/demo.test.ts, CURRENT.md.
-Not: `src/data/tasks/contract.ts` (additive changes only, with a note in the PR body), `src/data/study/**`, UI, supabase/**.
 
 ## N24 Tasks: live adapter over task_command
 Stage: Build · Status: open · Needs: — · Assigned: —
