@@ -72,12 +72,12 @@ Tests: `tests/unit/cards-v6/**` with the flag on and off (flag off renders the e
 Scope: src/features/cards/v6/** (new), src/features/cards/Page.tsx (the flag branch only), tests/unit/cards-v6/**, CURRENT.md.
 Not: the card detail page, the card editor, search API changes, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N32 v6 Inbox behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/proposals` renders the v6 Inbox from `docs/v6/screens/inbox-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Inbox row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Proposals grouped as today, with selection-aware approve/reject using the existing atomic decision calls and their receipts; rationale and citations shown where the proposal has them and "Rationale unavailable" where it does not; the existing plan/change/ideas previews are reused.
-Tests: `tests/unit/proposals-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/proposals/v6/** (new), src/features/proposals/Page.tsx (the existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
-Not: `src/features/plan-proposal/**`, proposal drafts (a later item), decision logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N32.2 v6 Inbox screen behind the shell flag
+Stage: Build · Status: open · Needs: N32.1 · Assigned: —
+Done = with v6Shell on, /proposals renders the v6 Inbox using the N32.1 owner-day Today grouping and reason fallback from docs/v6/screens/inbox-day.png and -night.png and the design handoff. Keep existing atomic per-proposal approve/reject hooks and their receipts and a selection-aware batch UI; show citations and rationale only where available, and Rationale unavailable otherwise. Reuse the existing plan, change and ideas previews. Distinguish loading/empty/filtered-empty/error states and provide accessible 44px controls and complete keyboard access. With flag off the existing Inbox is unchanged.
+Tests: tests/unit/proposals-v6/** for flag on/off, grouping, state distinctions, selection-aware decisions, and keyboard access.
+Scope: src/features/proposals/v6/**, src/features/proposals/Page.tsx (existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
+Not: src/features/plan-proposal/**, proposal drafts, decision logic, src/data/**, dependencies, other screen files or existing test expectations.
 
 ## N33 v6 Paths and project behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
