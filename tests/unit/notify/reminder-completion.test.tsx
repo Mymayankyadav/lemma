@@ -16,7 +16,7 @@ const fake=vi.hoisted(()=>({
 vi.mock('../../../src/flags',()=>({isFlagOn:()=>fake.enabled}));
 vi.mock('../../../src/data/hooks',()=>({useSettings:()=>({data:fake.settings})}));
 vi.mock('../../../src/data',()=>({getApi:()=>({previewNotifications:fake.preview,getReviewForecast:fake.forecast})}));
-vi.mock('../../../src/ui/useCalm',()=>({useCalm:()=>true}));
+vi.mock('../../../src/ui/useCalm',()=>({useCalm:()=>true,isCalm:()=>true}));
 vi.mock('../../../src/features/review-done/RoundSeal',()=>({RoundSeal:()=>null}));
 
 const now=Date.UTC(2026,10,6,12);
