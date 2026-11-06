@@ -137,5 +137,103 @@ try {
  assert.equal(audit.user_id,owner);
  assert.equal(audit.source,'chatgpt');
  assert.equal(audit.tool,'study');
- console.log('PASS N35.1 owner-scoped app/MCP parity, stale version and Calendar/Progress totals');
+
+ 
+ // N35.2: the real versioned SQL lifecycle that the live Focus UI uses.
+ // Every clock boundary is server-owned; tiny gaps make close/open strict
+ // ordering deterministic even in PGlite's fast in-process transactions.
+ const tick=()=>new Promise(resolve=>setTimeout(resolve,5));
+ const changed=receipt=>{
+   assert.equal(receipt.status,'ok');
+   assert.equal(receipt.changed.length,1);
+   return receipt.changed[0];
+ };
+ await as(owner);
+ const focusCreated=changed(await app(env('study_entries','create',{
+   patch:{source:'timer',intent:'Live focus proof'}
+ })));
+ await tick();
+ const focusStarted=changed(await app(env('study_entries','start',{
+   target:{id:focusCreated.id},expectedVersion:focusCreated.version,patch:{}
+ })));
+ assert.equal(focusStarted.version,focusCreated.version+1);
+ assert.equal((await q('select status from public.study_entries where id=$1',[focusCreated.id]))[0].status,'running');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[focusCreated.id]))[0].n,1);
+ await tick();
+ const focusPaused=changed(await app(env('study_entries','pause',{
+   target:{id:focusCreated.id},expectedVersion:focusStarted.version,patch:{}
+ })));
+ assert.equal((await q('select status from public.study_entries where id=$1',[focusCreated.id]))[0].status,'paused');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[focusCreated.id]))[0].n,0);
+ await tick();
+ const focusResumed=changed(await app(env('study_entries','resume',{
+   target:{id:focusCreated.id},expectedVersion:focusPaused.version,patch:{}
+ })));
+ await tick();
+ const focusBreak=changed(await app(env('study_entries','break',{
+   target:{id:focusCreated.id},expectedVersion:focusResumed.version,patch:{}
+ })));
+ const persistedBreak=(await q('select kind,ended_at from public.study_intervals where entry_id=$1 order by started_at desc limit 1',[focusCreated.id]))[0];
+ assert.equal(persistedBreak.kind,'break');
+ assert.equal(persistedBreak.ended_at,null);
+ assert.equal((await q('select status from public.study_entries where id=$1',[focusCreated.id]))[0].status,'paused');
+ await tick();
+ const focusAfterBreak=changed(await app(env('study_entries','resume',{
+   target:{id:focusCreated.id},expectedVersion:focusBreak.version,patch:{}
+ })));
+ await tick();
+ const focusLastPause=changed(await app(env('study_entries','pause',{
+   target:{id:focusCreated.id},expectedVersion:focusAfterBreak.version,patch:{}
+ })));
+ await tick();
+ const focusSaved=changed(await app(env('study_entries','save',{
+   target:{id:focusCreated.id},expectedVersion:focusLastPause.version,
+   patch:{reflection:'Completed the focus proof'}
+ })));
+ assert.equal(focusSaved.version,focusLastPause.version+1);
+ const focusRecord=(await q('select status,reflection,saved_at from public.study_entries where id=$1',[focusCreated.id]))[0];
+ assert.equal(focusRecord.status,'saved');
+ assert.equal(focusRecord.reflection,'Completed the focus proof');
+ assert.ok(focusRecord.saved_at);
+ const focusSpans=await q('select kind,started_at,ended_at from public.study_intervals where entry_id=$1 order by started_at',[focusCreated.id]);
+ assert.deepEqual(focusSpans.map(i=>i.kind),['focus','focus','break','focus']);
+ assert.ok(focusSpans.every(i=>i.ended_at!==null));
+ assert.equal((await q("select count(*)::int n from public.study_entries where status in ('running','paused')"))[0].n,0);
+ 
+ // A discarded timer never contributes to Today/Calendar/Progress and leaves
+ // neither a running entry nor an open interval on a later page refresh.
+ await tick();
+ const dropped=changed(await app(env('study_entries','create',{
+   patch:{source:'timer',intent:'Discarded focus'}
+ })));
+ await tick();
+ const droppedStarted=changed(await app(env('study_entries','start',{
+   target:{id:dropped.id},expectedVersion:dropped.version,patch:{}
+ })));
+ await tick();
+ changed(await app(env('study_entries','discard',{
+   target:{id:dropped.id},expectedVersion:droppedStarted.version,patch:{}
+ })));
+ assert.equal((await q('select status from public.study_entries where id=$1',[dropped.id]))[0].status,'discarded');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1',[dropped.id]))[0].n,0);
+ const refreshed=await readEntries();
+ const calendarAfter=dayCapacity('2026-11-05','UTC',refreshed,[]);
+ const progressAfter=effortSummary(refreshed,periodFor('day',new Date('2026-11-05T12:00:00Z'),'UTC'),
+   'UTC','2026-11-06T00:00:00Z');
+ assert.equal(calendarAfter.logged,50);
+ assert.equal(progressAfter.displayMinutes,50);
+ assert.equal(refreshed.find(r=>r.id===dropped.id).intervals.length,0);
+ assert.ok(refreshed.find(r=>r.id===focusCreated.id).intervals.length===4);
+ // Re-read the same saved rows with a service-role connector view, then
+ // verify the owner-authenticated browser sees the connector's earlier entry.
+ await role('service_role');
+ const connectorView=await q('select id,status from public.study_entries where id=$1',[focusCreated.id]);
+ assert.equal(connectorView[0].status,'saved');
+ await as(owner);
+ const ownerView=await readEntries();
+ assert.ok(ownerView.some(r=>r.id===fromChat.id&&r.status==='saved'));
+ assert.ok(ownerView.some(r=>r.id===focusCreated.id&&r.status==='saved'));
+ assert.equal(ownerView.some(r=>r.id===foreign.id),false);
+
+ console.log('PASS N35.2 live Focus lifecycle, owner-scoped app/MCP parity and Calendar/Progress totals');
 } finally { await db.close(); }
