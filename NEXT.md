@@ -23,12 +23,12 @@ Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (cr
 Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
 Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
 
-## N28 v6 Settings behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/screens/settings-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Settings row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Section navigation (account, appearance, study defaults, reminders, subjects, connector, export) over the existing settings controls, which keep their current save behaviour; the connector address and subjects panels are reused, not rewritten.
-Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
-Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N28.2 v6 Settings: study defaults, reminders and export controls
+Stage: Build · Status: open · Needs: N28.1 · Assigned: —
+Done = finish N28 after N28.1's flag-gated seven-section navigation and the working Account/Appearance/Subjects/Connector panels: replace the temporary legacy-settings fallback for Study defaults, Reminders and Export with dedicated v6 panels. Preserve all existing Settings behaviour and the same underlying hooks, update calls and error/Saved feedback, including teaching styles and tutor rules, retention, cards/day, memory tuning eligibility, notification settings, math shortcuts, export/download, connector setup and sign-out. Ensure each section loads only from existing hooks, distinguishes loading, empty and failure states, is keyboard accessible, and no control silently loses its save action. Keep the legacy flag-off page unchanged.
+Tests: tests/unit/settings-v6/** covering flag on/off, all seven reachable sections, valid writes/errors, loading/empty/failed states, keyboard access and unchanged legacy save paths.
+Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
+Not: new settings fields, autosave or retention logic changes, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
 
 ## N30.2 v6 Review start screen behind shell flag
 Stage: Build · Status: open · Needs: N30.1 · Assigned: —
