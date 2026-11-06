@@ -62,7 +62,7 @@ export function buildServer(c:Context):McpServer{
   // receipt, not the legacy 160-char write summary or a second mcp_commit.
   const studyEnvelope=z.object({
     operationId:S().uuid(),schemaVersion:z.literal(1),
-    resource:z.enum(['study_entries','study_intervals','calendar_blocks']),
+    resource:z.enum(['study_entries','study_intervals','calendar_blocks','tasks']),
     operation:z.enum(['create','update','delete','start','pause','resume','break','save','discard']),
     target:z.object({id:S().uuid()}).strict().optional(),
     expectedVersion:z.number().int().min(0).optional(),
@@ -87,9 +87,9 @@ export function buildServer(c:Context):McpServer{
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
   register('get',"Read records.",z.object({
-    what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks']),project:optProject,
+    what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks','tasks']),project:optProject,
     id:S().max(20).optional(),limit:z.number().int().min(1).max(50).optional(),
-    start:S().optional(),end:S().optional(),cursor:S().optional()
+    start:S().optional(),end:S().optional(),cursor:S().optional(),status:S().optional()
   }),true,(a,ctx)=>get(ctx,a));
   register('read_pages',"Read PDF pages.",z.object({
     project:optProject,source:S().optional(),from:S().min(1).max(12),
@@ -97,8 +97,8 @@ export function buildServer(c:Context):McpServer{
   }),true,(a,ctx)=>readPages(ctx,a));
   register('search',"Search records.",z.object({
     query:S().min(2).max(120),project:optProject,source:S().max(20).optional(),limit:z.number().int().min(1).max(8).optional(),
-    resource:z.enum(['study_entries','calendar_blocks']).optional(),
-    start:S().optional(),end:S().optional(),cursor:S().optional()
+    resource:z.enum(['study_entries','calendar_blocks','tasks']).optional(),
+    start:S().optional(),end:S().optional(),cursor:S().optional(),status:S().optional()
   }),true,(a,ctx)=>search(ctx,a));
   register('save_pages',"Save PDF text.",z.object({
     project:name,source:S().max(20).optional(),title:S().max(120).optional(),
