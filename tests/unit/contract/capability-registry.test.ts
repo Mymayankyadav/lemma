@@ -150,7 +150,8 @@ function inventoryDocs():Map<string,Inventory>{
     const parsed=JSON.parse(readFileSync(root+'/'+file,'utf8')) as Partial<Inventory>;
     if(!parsed.table)continue; // Other registries describe command/undo metadata.
     expect(file).toBe(parsed.table+'.json');
-    expect(parsed.version).toBe(1);
+    const expectedVersion = parsed.table==='lemma_undo_tables'||parsed.table==='lemma_command_resources' ? 2 : 1;
+    expect(parsed.version).toBe(expectedVersion);
     expect(typeof parsed.columns).toBe('object');
     docs.set(parsed.table,parsed as Inventory);
   }
@@ -169,6 +170,15 @@ describe('N40 complete capability registry',()=>{
       'alter table public.settings add column capability_fixture_new_minutes int;']);
     expect(()=>enforceCoverage(schema,inventoryDocs()))
       .toThrow('Unclassified column settings.capability_fixture_new_minutes');
+  });
+  it('requires v2 for the two system registries and v1 for owner-table inventories',()=>{
+    const docs=inventoryDocs();
+    expect([...docs.values()].filter(doc=>doc.version===2).map(doc=>doc.table).sort())
+      .toEqual(['lemma_command_resources','lemma_undo_tables']);
+    expect(Object.keys(docs.get('lemma_command_resources')!.columns).sort())
+      .toEqual(['command_fn','mcp_ok','resource','schema']);
+    expect(Object.keys(docs.get('lemma_undo_tables')!.columns))
+      .toEqual(['table_name']);
   });
   it('handles a table created in a future migration, multiple adds and dropped columns',()=>{
     const schema=columnsFromMigrations([
