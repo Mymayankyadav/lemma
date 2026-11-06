@@ -58,12 +58,12 @@ Tests: `tests/unit/atlas-v6/**` with the flag on and off (flag off renders the e
 Scope: src/features/atlas/v6/** (new), src/features/atlas/Page.tsx (the flag branch only), tests/unit/atlas-v6/**, CURRENT.md.
 Not: changing the existing graph, layout or pin code, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N30 v6 Review start behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/review` renders the v6 Review from `docs/v6/screens/review-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Review row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Deck selection and the start panel: all-due and selected-batch counts are separate named numbers, the selection count equals the cards a round will contain, and starting uses the existing round start; long mathematics wraps.
-Tests: `tests/unit/review-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/review/v6/** (new), src/features/review/Page.tsx (the flag branch only), tests/unit/review-v6/**, CURRENT.md.
-Not: `src/features/review-run/**` and `src/features/review-done/**` (N6.3 owns them), FSRS or quota logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N30.2 v6 Review start screen behind shell flag
+Stage: Build · Status: open · Needs: N30.1 · Assigned: —
+Done = with v6Shell on, /review shows the v6 Review from docs/v6/screens/review-day.png and -night.png and the v6 design handoff, using the N30.1 pure selected-batch helper to keep the all-due total, selected-eligible count and actual quota-limited queue distinct. Include complete-label deck/checkpoint selection, visible checks, a keyboard-accessible start action that initializes exactly the displayed batch with the existing useReviewSession, and long maths wrapping. Distinguish loading, empty, filtered-empty and failed states with 44px controls. Flag off leaves the legacy Review page and its tests unchanged.
+Tests: tests/unit/review-v6/** with the flag on and off, loading/empty/failed states, exact queue-to-label count, and keyboard selection/access.
+Scope: src/features/review/v6/**, src/features/review/Page.tsx (v6 branch only), tests/unit/review-v6/**, CURRENT.md.
+Not: src/features/review-run/**, src/features/review-done/**, FSRS/quota logic, src/data/**, new dependencies or existing tests' expectations.
 
 ## N31 v6 Cards behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —

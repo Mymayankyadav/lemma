@@ -233,3 +233,7 @@ Under the default-off `v6Shell` flag, AppShell marks the document root with `dat
 ## N34 MCP task get/search and write routing (PR pending)
 
 The existing 24-tool MCP connector extends `get(what=tasks)` and `search(resource=tasks)` with owner-scoped exact totals, bounded pages, opaque cursors and optional status filtering. The existing `study` tool routes `resource=tasks` command envelopes to the service-role-only, owner-bound `mcp_task_command`; non-task envelopes still use `mcp_study_command`. Task writes require explicit chat instructions and return the full reversible receipt. The `undo` tool remains unchanged. New unit and PGlite acceptance tests cover owner isolation, connector/app version parity, pagination and task undo. No additional MCP tool or database migration is introduced.
+
+## N30.1 Review start selection contract (split from N30)
+
+The additive pure `reviewBatch` helper in `src/features/review/v6/selection.ts` derives the all-due count separately from selected eligible cards and slices exactly the quota-limited batch that the v6 start action will initialize. It respects project and checkpoint deck keys, and `defaultSelection` selects all due deck keys. Unit regressions cover due-versus-batch labels, unchecked checkpoints and empty/quota-zero cases. N30.2 retains the flagged screen, accessible selection controls, navigation and actual queue handoff. The flag-off Review page, card scheduling and stored state are untouched.
