@@ -55,6 +55,37 @@ function tableBody(statement:string,open:number):string{
   }
   throw new Error('Unclosed CREATE TABLE definition');
 }
+/** A DO block can execute deterministic ALTER TABLE statements over a literal
+ * table-name list. They are real schema mutations despite the dollar quote.
+ * Only accept a constant FOREACH list and an identifier-quoted format %I;
+ * do not mistake arbitrary dynamic SQL inside stored functions for DDL. */
+function collectConstantLoopAdds(source:string,schema:Map<string,Set<string>>):void{
+  for(const block of source.matchAll(/\bdo\s+\$([a-z_][a-z0-9_]*)?\$([\s\S]*?)\$\1\$\s*;/gi)){
+    for(const loop of block[2].matchAll(
+      /\bforeach\s+([a-z_][a-z0-9_]*)\s+in\s+array\s+array\s*\[([^\]]+)\]\s+loop([\s\S]*?)\bend\s+loop\s*;/gi)){
+      const variable=loop[1].toLowerCase();
+      const names=[...loop[2].matchAll(/'([a-z_][a-z0-9_]*)'/gi)]
+        .map(m=>m[1].toLowerCase());
+      if(!names.length||loop[2].replace(/'([a-z_][a-z0-9_]*)'|[\s,]/gi,''))
+        continue; // Non-constant loop targets require separate review.
+      for(const executed of loop[3].matchAll(
+        /\bexecute\s+(?:pg_catalog\.)?format\s*\(\s*'((?:''|[^'])*)'\s*,\s*([a-z_][a-z0-9_]*)\s*\)/gi)){
+        if(executed[2].toLowerCase()!==variable)continue;
+        const template=executed[1];
+        if(!/^\s*alter\s+table\s+public\.%I\s+add\s+column\b/i.test(template))continue;
+        const additions=[...template.matchAll(
+          /\badd\s+column\s+(?:if\s+not\s+exists\s+)?([a-z_][a-z0-9_]*)\b/gi)]
+          .map(m=>m[1].toLowerCase());
+        for(const table of names){
+          const columns=schema.get(table);
+          if(!columns)continue;
+          additions.forEach(column=>columns.add(column));
+        }
+      }
+    }
+  }
+}
+
 /** Recover public table/column names from additive SQL, not an informal schema list. */
 export function columnsFromMigrations(sources:readonly string[]):Map<string,Set<string>>{
   const schema=new Map<string,Set<string>>();
@@ -87,6 +118,7 @@ export function columnsFromMigrations(sources:readonly string[]):Map<string,Set<
           columns.delete(drop[1].toLowerCase());
       }
     }
+    collectConstantLoopAdds(source,schema);
   }
   return schema;
 }
@@ -146,6 +178,26 @@ describe('N40 complete capability registry',()=>{
     ]);
     expect([...schema.get('coverage_fixture')!].sort()).toEqual(['id','one','two']);
     expect(()=>enforceCoverage(schema,new Map())).toThrow('Missing capability registry for table coverage_fixture');
+  });
+  it('detects bounded DO-block schema additions and rejects an unclassified field',()=>{
+    const migration=[
+      'do $literal_loop$ begin',
+      "foreach tbl in array array['settings'] loop",
+      "execute pg_catalog.format('alter table public.%I add column undocumented_loop_minutes int',tbl);",
+      'end loop; end $literal_loop$;'
+    ].join('\n');
+    const schema=columnsFromMigrations([...migrationSources(),migration]);
+    expect(schema.get('settings')?.has('undocumented_loop_minutes')).toBe(true);
+    expect(()=>enforceCoverage(schema,inventoryDocs()))
+      .toThrow('Unclassified column settings.undocumented_loop_minutes');
+  });
+  it('recognizes the restored record-version DO-block as real schema DDL',()=>{
+    const schema=columnsFromMigrations(migrationSources());
+    for(const table of ['settings','subjects','cards','proposals']){
+      expect(schema.get(table)?.has('version')).toBe(true);
+      expect(schema.get(table)?.has('updated_source')).toBe(true);
+    }
+    expect(schema.get('cards')?.has('updated_at')).toBe(true);
   });
   it('ignores commented SQL and dollar-quoted function bodies',()=>{
     const schema=columnsFromMigrations([
