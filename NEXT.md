@@ -11,12 +11,6 @@ Done = with `notificationsPush` enabled, a due-card reminder link parsed by N6.1
 Scope: src/features/review/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
 Not: supabase/**, `.github/**`, new dependencies, changing the ordinary `review_items` RPC or stored review quotas.
 
-## N14.2 v6 demo study adapter: in-memory StudyApi with reload persistence
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/study/demo.ts` implements every `StudyApi` method of `src/data/study/contract.ts` in memory for demo mode, seeded with a few saved entries and calendar blocks for the current week (fixed relative to the current date). Running, paused and break state survive a reload (sessionStorage, the same tab-scoped pattern as `src/data/mode.ts`); elapsed time is rebuilt from interval timestamps. At most one running/paused entry (`startStudyEntry` rejects a second with a conflict error); `expectedVersion` mismatches reject with a conflict error; saving twice returns the same saved entry; discard leaves 0 logged minutes; breaks never count as focus (`src/lib/effort`). Every write returns `actionNo: null`.
-Tests: `tests/unit/study/demo.test.ts`, at least 15 assertions covering each rule above and a reload rebuild.
-Scope: src/data/study/demo.ts, src/data/demo/** (new study fixture files only), tests/unit/study/**, CURRENT.md.
-Not: the live adapter, `src/data/api.ts` or `src/data/types.ts`, screens, server code, new dependencies.
 
 ## N16 v6 live study adapter: N10 tables and study_command
 Stage: Build · Status: open · Needs: — · Assigned: —

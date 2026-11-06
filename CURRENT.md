@@ -169,3 +169,7 @@ N14 is being split into small tested slices. The first slice is a pure typed sta
 ## v6 study data contract (rules v2.0)
 
 `src/data/study/contract.ts` defines `StudyApi` and the study entry, interval and calendar block records (camelCase shapes of the N10 tables). `getStudyApi()` in `src/data/study/index.ts` picks the demo or live adapter by data mode; both (`demo.ts`, `live.ts`) are empty placeholders that read nothing and refuse writes until N14.2 and N16 land. Screens use only this API; unit tests swap in a fake with `setStudyApiForTests`.
+
+## N14.2 v6 demo study adapter (PR #893)
+
+`src/data/study/demo.ts` implements all twelve `StudyApi` methods in demo mode. Three saved entries linked to the existing demo subjects/projects and two calendar blocks are seeded relative to the device's current week; a versioned sessionStorage snapshot persists across reloads in the same tab. Running, paused and break states retain their timestamped intervals; optimistic version conflicts, one-active-entry enforcement and immutable returned records are handled in memory. All demo receipts have `actionNo: null`; repeated saves return the unchanged saved record; discarded entries have no intervals. Explicit saved-minute edits adjust focus spans while preserving break spans so the existing effort calculations exclude breaks. `tests/unit/study/demo.test.ts` covers the lifecycle, persistence, bounds, edits and calendar writes. The live adapter and all v6 screens remain separate items; this change does not alter flag-off behavior.
