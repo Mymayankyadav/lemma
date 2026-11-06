@@ -131,6 +131,7 @@ Tests: tests/unit/practice-topics/** for demo reload and lifecycle, topic/event 
 Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
 Not: other src/data/** modules, UI, supabase/**, new dependencies.
 
+
 ## N58 Parked thoughts: app module (src/data/parked-thoughts)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = per D8(c) and the lane rules, `src/data/parked-thoughts/` for the records and operations of N44, including every lifecycle operation it names.
@@ -145,6 +146,13 @@ Tests: `tests/unit/study-goals/**` (demo behaviour and reload, live envelope per
 Scope: src/data/study-goals/** (new), tests/unit/study-goals/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
+
+## N60 Dated day plans and closures: app module (src/data/day-plans)
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = per D8(c) and the lane rules, `src/data/day-plans/` for the records and operations of N46, including every lifecycle operation it names.
+Tests: `tests/unit/day-plans/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/day-plans/** (new), tests/unit/day-plans/**, CURRENT.md.
+Not: other `src/data/**` folders, UI, supabase/**.
 
 ## N61.2 Overlap acknowledgement live adapter and cross-client parity
 Stage: Build · Status: open · Needs: N61.2.1 · Assigned: —
