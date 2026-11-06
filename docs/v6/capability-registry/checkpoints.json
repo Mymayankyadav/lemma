@@ -155,22 +155,6 @@
       "mcpPath": "N37 generic MCP commands (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
-    },
-    "version": {
-      "classification": "command-managed",
-      "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N37 generic MCP commands (planned)",
-      "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
-      "description": "N38: server trigger advances version once on every UPDATE; optimistic validation follows"
-    },
-    "updated_source": {
-      "classification": "derived",
-      "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N37 generic MCP commands (planned)",
-      "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
-      "description": "N38: server-derived app/mcp/worker actor, null on historical rows"
     }
   }
 }
