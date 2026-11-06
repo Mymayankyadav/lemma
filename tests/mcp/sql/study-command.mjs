@@ -242,8 +242,12 @@ try {
    target:{id:openId},expectedVersion:5,patch:{ended_at:'2026-11-05T15:00:00Z'}
  }));
  assert.equal(closed.changed[0].version,6);
+ const intervalDeleted=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee9','delete',{target:{id:iid},expectedVersion:6,patch:{}}));
+ assert.equal(intervalDeleted.status,'ok');
+ assert.equal(intervalDeleted.changed[0].version,7);
+ assert.equal((await q('select count(*)::int n from public.study_intervals where id=$1',[iid]))[0].n,0);
  const finalSaved=await command(study('ffffffff-ffff-ffff-ffff-000000000055','save',{
-   target:{id:intervalId},expectedVersion:6,patch:{reflection:'Finished'}
+   target:{id:intervalId},expectedVersion:7,patch:{reflection:'Finished'}
  }));
  assert.equal(finalSaved.status,'ok');
  assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[intervalId]))[0].n,0);
@@ -259,9 +263,5 @@ try {
  }));
  assert.equal(futureSaved.status,'ok');
  assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[futureId]))[0].n,0);
- const intervalDeleted=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee9','delete',{target:{id:iid},expectedVersion:7,patch:{}}));
- assert.equal(intervalDeleted.status,'ok');
- assert.equal(intervalDeleted.changed[0].version,8);
- assert.equal((await q('select count(*)::int n from public.study_intervals where id=$1',[iid]))[0].n,0);
  console.log('PASS N11.1 calendar command: receipts, version conflicts, patch distinction, validation and owner isolation');
 } finally {await db.close()}
