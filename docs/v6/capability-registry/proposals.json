@@ -1,44 +1,121 @@
 {
   "table": "proposals",
-  "coverage": "N38 additive fields only; N40 must classify all other legacy columns",
+  "version": 1,
   "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "no": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "session_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "kind": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "payload": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "reason": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "origin": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "decided_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "result": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
     "version": {
       "classification": "command-managed",
-      "type": "integer",
-      "nullable": false,
-      "default": 1,
-      "write": "database trigger on every UPDATE; optimistic expectedVersion checks deferred to later commands",
-      "app_path": "existing app write (implicit)",
-      "mcp_path": "existing MCP write (implicit)",
-      "export": "include",
-      "deletion": "follows owner record"
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
+      "description": "N38: server trigger advances version once on every UPDATE; optimistic validation follows"
     },
     "updated_source": {
       "classification": "derived",
-      "type": "text",
-      "nullable": true,
-      "default": null,
-      "allowed": [
-        "app",
-        "mcp",
-        "worker"
-      ],
-      "write": "database trigger maps lemma.source to actor category; null means no update since adoption",
-      "app_path": "read owner record",
-      "mcp_path": "read owner record",
-      "export": "include",
-      "deletion": "follows owner record"
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
+      "description": "N38: server-derived app/mcp/worker actor, null on historical rows"
     },
     "updated_at": {
       "classification": "derived",
-      "type": "timestamptz",
-      "nullable": false,
-      "default": "now()",
-      "write": "database trigger clock_timestamp on every UPDATE",
-      "app_path": "read owner record",
-      "mcp_path": "read owner record",
-      "export": "include",
-      "deletion": "follows owner record"
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 proposal versions (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
+      "description": "N38: server timestamp set on UPDATE"
     }
   }
 }
