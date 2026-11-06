@@ -99,7 +99,8 @@ try {
  })),/not found/);
  await assert.rejects(command(request('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2','create',{
    patch:{...patch,subject_id:subject}
- })),/subject|owner|foreign key|row-level security|not found/i);
+ })),/foreign key|row-level security/);
+ assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,1,'cross-owner insert leaves no row');
  const ownedByOther=await command(request(firstId,'create',{patch:{...patch,kind:'busy',title:'Private'}}));
  assert.equal(ownedByOther.status,'ok','operation IDs are scoped to authenticated owners');
  assert.notEqual(ownedByOther.changed[0].id,blockId);
@@ -193,9 +194,74 @@ try {
    patch:{entry_id:intervalId,kind:'focus',started_at:'2026-11-05T12:00:00Z',ended_at:'2026-11-05T13:00:00Z'}
  })),/Study entry not found|foreign key|row-level security/);
  await as(owner);
- const intervalDeleted=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee9','delete',{target:{id:iid},expectedVersion:4,patch:{}}));
+ // Missing and null expectedVersion must never mutate an entry, interval or receipt.
+ const receiptCount=async()=>(await q('select count(*)::int n from public.command_receipts'))[0].n;
+ const version=async()=>(await q('select version from public.study_entries where id=$1',[intervalId]))[0].version;
+ let nonce=20;
+ for(const operation of ['update','delete','start','pause','resume','break','save','discard']){
+   for(const invalid of [undefined,null]){
+     const operationId='ffffffff-ffff-ffff-ffff-'+String(nonce++).padStart(12,'0');
+     const payload=study(operationId,operation,{target:{id:intervalId},patch:{intent:'must not write'}});
+     if(invalid!==undefined) payload.expectedVersion=invalid;
+     const before=await receiptCount();
+     await assert.rejects(command(payload),/expectedVersion/);
+     assert.equal(await version(),4,'invalid version leaves entry unchanged');
+     assert.equal(await receiptCount(),before,'rejected operation has no receipt');
+   }
+ }
+ for(const operation of ['update','delete']){
+   for(const invalid of [undefined,null]){
+     const operationId='ffffffff-ffff-ffff-ffff-'+String(nonce++).padStart(12,'0');
+     const payload=intervalRequest(operationId,operation,{target:{id:iid},patch:{kind:'focus'}});
+     if(invalid!==undefined) payload.expectedVersion=invalid;
+     const before=await receiptCount();
+     await assert.rejects(command(payload),/expectedVersion/);
+     assert.equal(await version(),4);
+     assert.equal((await q('select kind from public.study_intervals where id=$1',[iid]))[0].kind,'break');
+     assert.equal(await receiptCount(),before);
+   }
+ }
+ // One open interval per entry; a future open interval is invalid.
+ const openStart='2026-11-05T14:00:00Z';
+ const open=await command(intervalRequest('ffffffff-ffff-ffff-ffff-000000000050','create',{
+   patch:{entry_id:intervalId,kind:'focus',started_at:openStart}
+ }));
+ assert.equal(open.changed[0].version,5);
+ const openId=open.changed[0].id;
+ await assert.rejects(command(intervalRequest('ffffffff-ffff-ffff-ffff-000000000051','create',{
+   patch:{entry_id:intervalId,kind:'focus',started_at:openStart}
+ })),/Open interval exists/);
+ await assert.rejects(command(intervalRequest('ffffffff-ffff-ffff-ffff-000000000052','create',{
+   patch:{entry_id:intervalId,kind:'focus',started_at:'2099-01-01T10:00:00Z'}
+ })),/Future interval start/);
+ await assert.rejects(command(intervalRequest('ffffffff-ffff-ffff-ffff-000000000053','update',{
+   target:{id:iid},expectedVersion:5,patch:{ended_at:null}
+ })),/Open interval exists/);
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[intervalId]))[0].n,1);
+ const closed=await command(intervalRequest('ffffffff-ffff-ffff-ffff-000000000054','update',{
+   target:{id:openId},expectedVersion:5,patch:{ended_at:'2026-11-05T15:00:00Z'}
+ }));
+ assert.equal(closed.changed[0].version,6);
+ const finalSaved=await command(study('ffffffff-ffff-ffff-ffff-000000000055','save',{
+   target:{id:intervalId},expectedVersion:6,patch:{reflection:'Finished'}
+ }));
+ assert.equal(finalSaved.status,'ok');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[intervalId]))[0].n,0);
+ // A saved entry never retains an open interval.
+ const futureEntry=await command(study('ffffffff-ffff-ffff-ffff-000000000056','create',{patch:{source:'manual'}}));
+ const futureId=futureEntry.changed[0].id;
+ await assert.rejects(command(intervalRequest('ffffffff-ffff-ffff-ffff-000000000057','create',{
+   patch:{entry_id:futureId,kind:'focus',started_at:'2099-01-01T11:00:00Z'}
+ })),/Future interval start/);
+ assert.equal((await q('select version from public.study_entries where id=$1',[futureId]))[0].version,1);
+ const futureSaved=await command(study('ffffffff-ffff-ffff-ffff-000000000058','save',{
+   target:{id:futureId},expectedVersion:1,patch:{}
+ }));
+ assert.equal(futureSaved.status,'ok');
+ assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1 and ended_at is null',[futureId]))[0].n,0);
+ const intervalDeleted=await command(intervalRequest('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee9','delete',{target:{id:iid},expectedVersion:7,patch:{}}));
  assert.equal(intervalDeleted.status,'ok');
- assert.equal(intervalDeleted.changed[0].version,5);
+ assert.equal(intervalDeleted.changed[0].version,8);
  assert.equal((await q('select count(*)::int n from public.study_intervals where id=$1',[iid]))[0].n,0);
  console.log('PASS N11.1 calendar command: receipts, version conflicts, patch distinction, validation and owner isolation');
 } finally {await db.close()}
