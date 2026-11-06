@@ -100,7 +100,7 @@ try {
  await assert.rejects(command(request('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2','create',{
    patch:{...patch,subject_id:subject}
  })),error=>/subject.*(owner|belong|found)|foreign key|row-level security/i.test(String(error)));
- assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,1,'cross-owner insert leaves no row');
+ assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,0,'RLS hides the owner block and the rejected cross-owner insert');
  const ownedByOther=await command(request(firstId,'create',{patch:{...patch,kind:'busy',title:'Private'}}));
  assert.equal(ownedByOther.status,'ok','operation IDs are scoped to authenticated owners');
  assert.notEqual(ownedByOther.changed[0].id,blockId);
