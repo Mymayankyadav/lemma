@@ -23,13 +23,6 @@ Tests: `tests/unit/tasks-ui/backlog.test.tsx` using `setTaskApiForTests` (20-row
 Scope: src/features/tasks/**, src/app/V6Header.tsx (only Task sheet handoff), src/app/tasksRoute.tsx (new), src/app/App.tsx (adding the route only), tests/unit/tasks-ui/**, CURRENT.md.
 Not: `src/data/tasks/**`, other app routes or screens, Supabase, new dependencies, touching flag-off UI.
 
-## N26.2 v6 Calendar Month grid (remaining after N26 split)
-Stage: Build · Status: open · Needs: N26.1 · Assigned: —
-Done = with v6Shell on, Calendar adds Month alongside Agenda, Day and the N26.1 Week view. From the same getStudyApi() owner-visible entries/blocks and civil-day helpers in src/features/calendar/model.ts, show a true month date grid aligned to the owner's week start, per-day saved effort minutes and block counts; tapping a date opens Day and retains ?view=day&date=YYYY-MM-DD. Month reads only its bounded grid range (including adjacent-week cells). A loading or failed data source is never displayed as zero. The Month totals must match Day and Week for the same date, including midnight and DST crossings, and keyboard view navigation must continue to work with all four options.
-Tests: extend tests/unit/calendar/week-month.test.tsx for the Month range, counts, day/Week parity, keyboard, URL and loading/failed states.
-Scope: src/features/calendar/views/** (Month view only), src/features/calendar/Page.tsx (view switcher only), src/features/calendar/model.ts (additive Month helpers only), tests/unit/calendar/week-month.test.tsx, CURRENT.md.
-Not: rewriting the N26.1 Week view, block editing (N27), src/data/study/**, other screens, new dependencies.
-
 ## N27 v6 Calendar block create, edit and delete sheet
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
