@@ -70,7 +70,8 @@ function harness() {
       };
     }),
   };
-  return { ...state, client };
+  // Keep the returned harness and RPC closure on the same mutable response queue.
+  return Object.assign(state, { client });
 }
 function expectCommand(envelope: Record<string, unknown>, resource:string, operation:string) {
   expect(envelope).toMatchObject({schemaVersion:1,resource,operation});
