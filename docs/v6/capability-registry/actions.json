@@ -1,0 +1,69 @@
+{
+  "table": "actions",
+  "version": 1,
+  "columns": {
+    "no": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "txid": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "source": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "tool": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "summary": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "undoes": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "undone_by": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "supabase/functions/mcp/tools/undo.ts",
+      "exportPolicy": "owner-scoped audit history with sensitive payload redaction (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    }
+  }
+}

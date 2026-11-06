@@ -1,0 +1,97 @@
+{
+  "table": "concepts",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "subject_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "slug": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "name": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "blurb": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "pin_x": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "pin_y": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "topic": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "level": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "parent_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "is_star": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 Atlas coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    }
+  }
+}
