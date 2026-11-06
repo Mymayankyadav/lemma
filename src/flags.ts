@@ -15,6 +15,8 @@ export const FLAG_DEFAULTS = {
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */
   notificationsPush: false,
+  /** v6 navigation and shared shell remain opt-in until N13 is complete. */
+  v6Shell: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

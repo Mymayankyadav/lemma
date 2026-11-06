@@ -46,19 +46,6 @@ Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production
 Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.md (MCP tools list).
 Not: changes to existing tool behaviour, the `resume` packet, the `notify` function, migrations.
 
-## N13 v6 shell behind a flag: five destinations, shared header, accessory slot
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = flag `v6Shell` (default false) in `src/flags.ts`. With it on:
-- the tab bar has five destinations: Today `/`, Paths `/projects`, Review `/review`, Calendar `/calendar` (new route; placeholder page titled "Calendar" with the empty state "Your planned and logged study will appear here."), and Progress `/insights` (label change only; route unchanged);
-- the tabs show on every route except `/sign-in`, including detail routes and `/proposals`;
-- a shared page header has a title row and an action row with Inbox (pending-count badge), Add and Menu, matching `docs/v6/screens/*-day.png`;
-- an empty "focus accessory" slot sits above the tabs and renders nothing until N14;
-- on `/proposals`, the Reject / Edit / Approve bar sits above accessory and tabs, and the last content scrolls clear of the whole stack (`docs/v6/INBOX_FIX_REPORT.md`).
-
-With the flag off, nothing changes.
-Tests: a unit test of the tab set in both flag states, and `tests/e2e/v6-shell.spec.ts` (`?demo=stress&flags=v6Shell`) at 320×640, 390×844 and 844×390. It checks that the five tabs are reachable on Today, Review, Inbox and a card detail, with no horizontal overflow and tap targets of at least 44 px. It also checks that the Inbox decision bar's box does not overlap the tab bar, and that Today has under 1,500 DOM nodes.
-Scope: src/app/** (including `src/app/TabBar.tsx`), src/ui/** (new components), src/features/calendar/** (new), src/features/proposals/** (decision-bar placement only), src/flags.ts, tests/unit/app/**, tests/unit/flags.test.ts, tests/e2e/v6-shell.spec.ts, CURRENT.md.
-Not: colours, fonts or theme tokens (a later item); timer logic; data or API changes; edits to existing e2e specs or visual tests; removing the current four-tab shell.
 
 ## N14 v6 Focus on demo data: state machine, Today hero, Focus dialog
 Stage: Build · Status: open · Needs: N13 · Assigned: —
