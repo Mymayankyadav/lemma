@@ -33,14 +33,6 @@ Tests: unit tests in `tests/unit/progress-v6/` with a fake `StudyApi`: totals fo
 Scope: src/features/progress-v6/** (new), src/features/insights/Page.tsx (rendering the v6 view when the flag is on, nothing else), tests/unit/progress-v6/**, CURRENT.md.
 Not: changes to existing insights, adapters, mastery or FSRS figures, new dependencies.
 
-## N15 MCP: read study records through get and search
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = the connector's existing `get` and `search` tools accept the resources `study_entries` (with intervals) and `calendar_blocks`, reading the N10 tables as the authenticated owner: bounded pages with a cursor, a range filter, totals reported separately from the page. No new tool and no write path (writes are N12). Existing resources, tools and the `resume` packet are unchanged; `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
-Tests: unit tests in `tests/unit/mcp/` (argument validation, owner never taken from arguments, page bounds) and `tests/mcp/sql/study-mcp-read.mjs` (rows written through `study_command` are read back by `get` and `search` with the same version; a second owner's rows are invisible).
-Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production, so this PR needs a review; the reviewer confirms no existing tool's input or output changed.
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/study-mcp-read.mjs, CURRENT.md (MCP tools list).
-Not: the `study` write tool (N12), migrations, the `notify` function.
-
 ## N19 v6 visual tokens and fonts behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the app root carries `data-v6` and one stylesheet `src/ui/v6/tokens.css` defines the v6 colour, type, spacing, radius and elevation tokens for day and night (`prefers-color-scheme` plus the existing theme setting) from `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the `docs/v6/screens/*-day.png` / `*-night.png` pairs, as CSS custom properties scoped under `[data-v6]`. The v6 shell parts from N13 (tab bar, header, accessory slot) use the tokens. Fonts: the families the handoff names, self-hosted as woff2 under `public/fonts/v6/` only if their licence allows it (record the licence in CURRENT.md), otherwise the stated fallback stack; no external font requests. With the flag off nothing changes.

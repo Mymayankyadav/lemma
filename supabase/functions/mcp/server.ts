@@ -60,16 +60,19 @@ export function buildServer(c:Context):McpServer{
   register('resume',"Resume study with checkpoint, warm-up and rules; omit project for menu.",z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
-  register('get',"Read project plans, cards, sources, sessions, feedback and diagnostics.",z.object({
-    what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics']),project:optProject,
-    id:S().max(20).optional(),limit:z.number().int().min(1).max(50).optional()
+  register('get',"Read project plans, cards, sources, sessions, feedback, diagnostics, and v6 study records.",z.object({
+    what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks']),project:optProject,
+    id:S().max(20).optional(),limit:z.number().int().min(1).max(50).optional(),
+    start:S().max(40).optional(),end:S().max(40).optional(),cursor:S().max(20).optional()
   }),true,(a,ctx)=>get(ctx,a));
   register('read_pages',"Read up to 5 PDF pages by label or index.",z.object({
     project:optProject,source:S().optional(),from:S().min(1).max(12),
     to:S().max(12).optional(),pdf:z.boolean().optional()
   }),true,(a,ctx)=>readPages(ctx,a));
-  register('search',"Search project PDF text.",z.object({
-    query:S().min(2).max(120),project:optProject,source:S().max(20).optional(),limit:z.number().int().min(1).max(8).optional()
+  register('search',"Search project PDF text or v6 study records.",z.object({
+    query:S().min(2).max(120),project:optProject,source:S().max(20).optional(),limit:z.number().int().min(1).max(8).optional(),
+    resource:z.enum(['study_entries','calendar_blocks']).optional(),
+    start:S().max(40).optional(),end:S().max(40).optional(),cursor:S().max(20).optional()
   }),true,(a,ctx)=>search(ctx,a));
   register('save_pages',"Save up to 10 exact Markdown/LaTeX transcriptions; undoable.",z.object({
     project:name,source:S().max(20).optional(),title:S().max(120).optional(),
