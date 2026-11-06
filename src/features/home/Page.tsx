@@ -20,11 +20,13 @@ import {useToast} from '../../ui/Toast';
 import {FastHomeTex} from './FastHomeTex'
 import {FastGoalDistance} from './FastGoalDistance'
 import {shouldUseFastGoals} from './fastGoalPolicy'
+import {isFlagOn} from '../../flags';
 import type {HomeSummary} from '../../data/types';
 
 
 const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
 const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
+const TodayFocus=lazy(()=>import('../focus/TodayFocus'));
 
 function TodayHeader({pending}: {pending:number}) {
  const today=new Date();
@@ -212,6 +214,7 @@ export default function Page(){
    (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
  return <Screen tabBar className="gap-6 pb-6">
   <TodayHeader pending={home.data.pendingProposals}/>
+  {isFlagOn('v6Shell')&&<Suspense fallback={null}><TodayFocus/></Suspense>}
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
    You're offline. Changes cannot be saved until you're connected.
   </div>}
