@@ -9,20 +9,12 @@ Task lanes (priority run 2026-11-06). Tasks follow the same pattern with their o
 
 v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: it adds `src/features/<screen>/v6/**` and, in that screen's existing `Page.tsx`, one branch `if (isFlagOn('v6Shell')) return <…V6/>` (or the equivalent for a page that already branches). It reads through the existing hooks in `src/data/**` unchanged (no new queries, no `src/data/**` edits); a field the hooks do not provide is shown as unavailable, never invented. It distinguishes loading, empty, filtered-empty and failed states, keeps 44-pixel targets, uses the N19 tokens under `[data-v6]`, and leaves the flag-off page, its tests and its visual rules exactly as they are. Exact-pixel polish and device audits are the Harden stage, not these items.
 
-## N27 v6 Calendar block create, edit and delete sheet
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
-Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (create, edit, delete, validation, conflict, Undo, Escape and focus return).
-Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
-Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
-
 ## N28.2.2 v6 Settings: Reminders and Export controls
 Stage: Build · Status: open · Needs: N28.2.1 · Assigned: —
 Done = complete N28 after the seven-section navigation (N28.1) and Study defaults (N28.2.1). Replace the temporary legacy-settings fallback for Reminders and Export with dedicated v6 panels using existing settings hooks and mutation calls. Reminders shows and edits existing notify preferences without inventing fields, follows the legacy auto-save/error/Saved contract and reports empty/loading/failure correctly; Export uses the existing exportAll download with error feedback. Preserve the existing connector setup, sign-out, subjects, appearance, teaching styles, tutor rules, recall retention, new cards/day, math shortcuts and optimizer. All seven destinations are keyboard-accessible, with coverage for valid writes, error feedback and all states; no original flag-off behavior changes.
 Tests: tests/unit/settings-v6/reminders-export.test.tsx covering reminder preferences and unchanged server writes, export/download and failure feedback, all seven sections, keyboard controls, loading/empty/failure states and legacy flag-off behavior.
 Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new fields, autosave/retention logic changes, src/data/**, new dependencies, other screens, existing tests' expectations.
-
 
 ## N30.2 v6 Review start screen behind shell flag
 Stage: Build · Status: open · Needs: N30.1 · Assigned: —
@@ -38,12 +30,12 @@ Tests: `tests/unit/proposals-v6/**` with the flag on and off (flag off renders t
 Scope: src/features/proposals/v6/** (new), src/features/proposals/Page.tsx (the existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
 Not: `src/features/plan-proposal/**`, proposal drafts (a later item), decision logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N33 v6 Paths and project behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/projects` and `/p/:slug` renders the v6 Paths list and project page from `docs/v6/screens/paths-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Paths list and project page row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Paths shows subjects and projects with pinned/archived states and one creation entry point; the project page shows the stage rail with checkpoint statuses and scoped session/source counts from the existing project data; a forecast without enough evidence is shown as unavailable.
-Tests: `tests/unit/paths-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/projects/v6/** (new), src/features/project/v6/** (new), src/features/projects/Page.tsx and src/features/project/Page.tsx (the flag branches only), tests/unit/paths-v6/**, CURRENT.md.
-Not: checkpoint and session pages, new-project flow, stage or plan logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N33.2 v6 Project detail behind the shell flag
+Stage: Build · Status: open · Needs: N33.1 · Assigned: —
+Done = with v6Shell on, /p/:slug renders the v6 project detail guided by docs/v6/screens/paths-day.png and paths-night.png, docs/v6/DESIGN_HANDOFF.md Shared design contracts, and the Paths project-page row of docs/v6/Lemma_UI_v6_Direction_Plan.md §9. Follow v6 screen lane rules: existing useProject hooks only, stage rail with real checkpoint statuses, checkpoint navigation and project-scoped session/source counts from ProjectDetail; insufficient schedule evidence is Forecast unavailable. Distinguish loading, no checkpoints and failed states, preserve flag-off UI and 44px keyboard targets.
+Tests: tests/unit/paths-v6/project.test.tsx with flag on/off, real statuses, scoped counts, loading, empty, failure and keyboard navigation.
+Scope: src/features/project/v6/** (new), src/features/project/Page.tsx (flag branch only), tests/unit/paths-v6/project.test.tsx, CURRENT.md.
+Not: src/features/projects/** (N33.1), src/data/**, checkpoint/session detail pages, stage/plan logic, new dependencies, other screens or original tests.
 
 ## N35 v6 first slice on live data
 Stage: Build · Status: open · Needs: N20, N12 · Assigned: —
