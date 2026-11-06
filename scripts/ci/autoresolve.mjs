@@ -50,8 +50,11 @@ async function handle(number, baseSha, dry) {
   const wt = mkdtempSync(join(tmpdir(), `ar-${number}-`));
   try {
     must(['worktree', 'add', '--quiet', '--detach', wt, head]);
-    const g = (args) => git(args, { cwd: wt });
-    g(['-c', 'merge.conflictStyle=diff3', 'merge', '--no-ff', '--no-commit', '--quiet', baseSha]);
+    const ID = ['-c', 'user.name=lemma-ci', '-c', 'user.email=lemma-ci@users.noreply.github.com'];
+    const g = (args) => git([...ID, ...args], { cwd: wt });
+    // git merge needs an identity even with --no-commit; exit 1 = conflicts (expected), anything else is a real error
+    const merged = g(['-c', 'merge.conflictStyle=diff3', 'merge', '--no-ff', '--no-commit', '--quiet', baseSha]);
+    if (merged.code !== 1) return `#${number}: git merge exited ${merged.code}, expected conflicts: ${merged.err || merged.out}`;
     for (const f of plan.files) {
       const side = (n) => { const r = g(['show', `:${n}:${f}`]); return r.code === 0 ? r.out + '\n' : null; };
       const [b, o, t] = [side(1), side(2), side(3)];
@@ -68,7 +71,7 @@ async function handle(number, baseSha, dry) {
     const left = g(['diff', '--name-only', '--diff-filter=U']).out;
     if (left) return `#${number}: still unmerged after resolving: ${left}`;
     const msg = `${COMMIT_PREFIX} ${plan.files.join(', ')})\n\nAgent: ci · Item: autoresolve\n\nMerged ${pr.base.ref} (${baseSha.slice(0, 7)}) into ${branch}. Only ${plan.files.join(' and ')} conflicted; CI kept both sides section by section. No other file was resolved by hand.`;
-    must(['-c', 'user.name=lemma-ci', '-c', 'user.email=lemma-ci@users.noreply.github.com', 'commit', '--quiet', '-m', msg], { cwd: wt });
+    must([...ID, 'commit', '--quiet', '-m', msg], { cwd: wt });
     const sha = must(['rev-parse', 'HEAD'], { cwd: wt });
     if (dry) return `#${number}: would push ${sha.slice(0, 7)} (${plan.files.join(', ')})`;
     const url = `https://x-access-token:${process.env.CI_BOT_TOKEN}@github.com/${REPO}.git`;
