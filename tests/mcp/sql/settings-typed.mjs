@@ -78,6 +78,10 @@ try {
  assert.deepEqual(updated,{week_start:0,clock_24h:false});
  await q('update public.settings set focus_defaults=focus_defaults || $1::jsonb where user_id=$2',
    [JSON.stringify({future_pref:{future_nested:true},mode:'flowtime'}),owner]);
+ await q('update public.settings set planning=planning || $1::jsonb,review_budget=review_budget || $2::jsonb,attention=attention || $3::jsonb where user_id=$4',
+   [JSON.stringify({future_window:{source:'calendar'}}),
+    JSON.stringify({future_review_policy:'reserved'}),
+    JSON.stringify({future_opt_in:{reason:'owner'}}),owner]);
  // A client with an older schema sends only its recognized field. The trigger
  // merges into the latest row rather than replacing unknown preference keys.
  await q('update public.settings set focus_defaults=$1::jsonb where user_id=$2',
@@ -95,6 +99,9 @@ try {
  assert.equal(parsed(updated.review_budget).minutes,20);
  assert.equal(parsed(updated.attention).drift_prompts,true);
  assert.equal(parsed(updated.attention).urge_prompts,false);
+ assert.deepEqual(parsed(updated.planning).future_window,{source:'calendar'});
+ assert.equal(parsed(updated.review_budget).future_review_policy,'reserved');
+ assert.deepEqual(parsed(updated.attention).future_opt_in,{reason:'owner'});
  // Existing app/MCP setting writers may still patch their original scalar columns.
  await q('update public.settings set desired_retention=0.91,rollover_hour=5 where user_id=$1',[owner]);
  const legacy=(await q('select desired_retention,rollover_hour from public.settings where user_id=$1',[owner]))[0];
