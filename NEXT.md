@@ -23,13 +23,6 @@ Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bound
 Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
 Not: migrations, `src/data/study/**`, UI.
 
-## N26.2 v6 Calendar Month grid (remaining after N26 split)
-Stage: Build · Status: open · Needs: N26.1 · Assigned: —
-Done = with v6Shell on, Calendar adds Month alongside Agenda, Day and the N26.1 Week view. From the same getStudyApi() owner-visible entries/blocks and civil-day helpers in src/features/calendar/model.ts, show a true month date grid aligned to the owner's week start, per-day saved effort minutes and block counts; tapping a date opens Day and retains ?view=day&date=YYYY-MM-DD. Month reads only its bounded grid range (including adjacent-week cells). A loading or failed data source is never displayed as zero. The Month totals must match Day and Week for the same date, including midnight and DST crossings, and keyboard view navigation must continue to work with all four options.
-Tests: extend tests/unit/calendar/week-month.test.tsx for the Month range, counts, day/Week parity, keyboard, URL and loading/failed states.
-Scope: src/features/calendar/views/** (Month view only), src/features/calendar/Page.tsx (view switcher only), src/features/calendar/model.ts (additive Month helpers only), tests/unit/calendar/week-month.test.tsx, CURRENT.md.
-Not: rewriting the N26.1 Week view, block editing (N27), src/data/study/**, other screens, new dependencies.
-
 ## N27 v6 Calendar block create, edit and delete sheet
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
@@ -50,13 +43,6 @@ Done = with `v6Shell` on, `/review` renders the v6 Review from `docs/v6/screens/
 Tests: `tests/unit/review-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
 Scope: src/features/review/v6/** (new), src/features/review/Page.tsx (the flag branch only), tests/unit/review-v6/**, CURRENT.md.
 Not: `src/features/review-run/**` and `src/features/review-done/**` (N6.3 owns them), FSRS or quota logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
-## N31 v6 Cards behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/cards` renders the v6 Cards from `docs/v6/screens/cards-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Cards row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. A filter sheet (titled native dialog) over the existing search filters and a progressive list that reveals 20 rows at a time from the existing paged search; the shown count is labelled as shown, the total only where the API gives one.
-Tests: `tests/unit/cards-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/cards/v6/** (new), src/features/cards/Page.tsx (the flag branch only), tests/unit/cards-v6/**, CURRENT.md.
-Not: the card detail page, the card editor, search API changes, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
 ## N32 v6 Inbox behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
