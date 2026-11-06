@@ -38,6 +38,7 @@ import { useToast } from "../../ui/Toast";
 import { groupProposals, pageProposals, type ProposalGroup } from "./groups";
 import { firstProposalFrontLine } from "./frontPreview";
 import ProposalEvidence from "./v6/Evidence";
+import SelectionPanel,{applySelectedDecisions,selectedPending,type Decision} from "./v6/Selection";
 
 function describe(op: PlanChangeOp) {
   switch (op.op) {
@@ -224,7 +225,9 @@ export default function Page() {
   const [params, setParams] = useSearchParams(),
     tab = params.get("tab") === "plan" ? "plan" : "cards";
   const [batch, setBatch] = useState<ProposalGroup | null>(null),
-    [staged, setStaged] = useState<{ ids: string[]; label: string } | null>(null),
+    [staged, setStaged] = useState<{ ids: string[]; label: string; action: Decision } | null>(null),
+    [bulkBusy, setBulkBusy] = useState(false),
+    [selectionIds, setSelectionIds] = useState<Set<string>>(()=>new Set()),
     [selected, setSelected] = useState<string | null>(null),
     [cardPage, setCardPage] = useState(0),
     [planPage, setPlanPage] = useState(0),
@@ -235,7 +238,7 @@ export default function Page() {
     [slow, setSlow] = useState(false),
     [completed, setCompleted] = useState(0);
   const v6=isFlagOn('v6Shell');
-  const pending = approve.isPending || reject.isPending || !!staged;
+  const pending = approve.isPending || reject.isPending || !!staged || bulkBusy;
   useEffect(() => {
     if (!query.isLoading) {
       setSlow(false);
@@ -265,17 +268,31 @@ export default function Page() {
   useEffect(()=>{
     if(!staged)return;
     const timer=window.setTimeout(()=>{
-      const ids=staged.ids;
+      const {ids,action}=staged;
       setStaged(null);
+      setBulkBusy(true);
       void (async()=>{
-        let succeeded=0;
-        for(const id of ids){
-          try{await approve.mutateAsync({id});succeeded++}
-          catch{break}
+        try{
+          const result=await applySelectedDecisions(ids,action,
+            id=>approve.mutateAsync({id}),id=>reject.mutateAsync(id));
+          // A successful decision is persisted; never re-send it on retry.
+          setSelectionIds(previous=>{
+            const next=new Set(previous);
+            for(const id of result.succeeded)next.delete(id);
+            return next;
+          });
+          if(!result.failed){
+            notify(action==='approve'?result.succeeded.length+' cards approved':
+              result.succeeded.length+' proposals rejected',{tone:'success'});
+          }else{
+            notify(result.succeeded.length+' '+(action==='approve'?'approved':'rejected')+
+              '; '+result.remaining.length+' not saved. Refresh before retrying.',
+              {tone:'danger'});
+          }
+        }finally{
+          setBulkBusy(false);
+          void query.refetch();
         }
-        if(succeeded===ids.length)notify(`${succeeded} cards approved`,{tone:"success"});
-        else notify(`${succeeded} approved; ${ids.length-succeeded} not saved. Refresh before retrying.`,{tone:"danger"});
-        void query.refetch();
       })();
     },6000);
     return ()=>window.clearTimeout(timer);
@@ -318,9 +335,40 @@ export default function Page() {
           { value: "plan", label: "Plan", count: plans.length },
         ]}
       />
+      {v6&&!query.isLoading&&!query.isError&&<SelectionPanel
+        kind={tab} visible={tab==='cards'?cards.slice(cardPage*20,(cardPage+1)*20):
+          plans.slice(planPage*20,(planPage+1)*20)}
+        all={tab==='cards'?cards:plans} ids={selectionIds} busy={pending}
+        onToggle={id=>setSelectionIds(previous=>{
+          const next=new Set(previous);
+          if(next.has(id))next.delete(id);
+          else if(next.size<20)next.add(id);
+          else notify('Select at most 20 proposals');
+          return next;
+        })}
+        onSelectPage={()=>setSelectionIds(previous=>{
+          const next=new Set(previous);
+          for(const proposal of (tab==='cards'?cards.slice(cardPage*20,(cardPage+1)*20):
+            plans.slice(planPage*20,(planPage+1)*20))){
+            if(next.size>=20)break;
+            next.add(proposal.id);
+          }
+          return next;
+        })}
+        onClear={()=>setSelectionIds(previous=>{
+          const next=new Set(previous);
+          for(const proposal of (tab==='cards'?cards:plans))next.delete(proposal.id);
+          return next;
+        })}
+        onStage={action=>{
+          const ids=selectedPending(tab==='cards'?cards:plans,selectionIds).map(p=>p.id);
+          if(!ids.length)return;
+          setStaged({ids,action,label:tab==='cards'?'selected cards':'selected plans'});
+        }}
+      />}
       {staged&&<div role="status" className="flex min-h-14 items-center gap-2 rounded-ctl border border-amber-line bg-fill-1 px-3 text-label">
        <span className="min-w-0 flex-1">{staged.ids.length} from {staged.label} queued · saving in 6 s</span>
-       <button type="button" className="min-h-11 shrink-0 px-3 font-semibold text-amber" onClick={()=>{setStaged(null);notify("Batch approval cancelled")}}>Undo</button>
+       <button type="button" className="min-h-11 shrink-0 px-3 font-semibold text-amber" onClick={()=>{const action=staged.action;setStaged(null);notify(action==="approve"?"Batch approval cancelled":"Batch rejection cancelled")}}>Undo</button>
       </div>}
       {query.isLoading ? (
         slow ? (
@@ -522,7 +570,7 @@ export default function Page() {
         <div className="grid grid-cols-2 gap-3"><Button variant="ghost" onClick={()=>setConfirm(false)}>Cancel</Button>
          <Button disabled={pending || !batch?.proposals.some(p=>p.kind==="card")} onClick={()=>{
           if(!batch)return;
-          setStaged({ids:batch.proposals.filter(p=>p.kind==="card").map(p=>p.id),label:batch.label});
+          setStaged({ids:batch.proposals.filter(p=>p.kind==="card").map(p=>p.id),label:batch.label,action:"approve"});
           setBatch(null);setConfirm(false);
          }}>Queue approvals</Button></div>
       </Sheet>
