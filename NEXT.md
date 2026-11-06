@@ -57,6 +57,7 @@ Done = with `v6Shell` on, `/atlas` renders the v6 Atlas from `docs/v6/screens/at
 Tests: `tests/unit/atlas-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
 Scope: src/features/atlas/v6/** (new), src/features/atlas/Page.tsx (the flag branch only), tests/unit/atlas-v6/**, CURRENT.md.
 Not: changing the existing graph, layout or pin code, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+Reverted: 2026-11-06 — e2e/v6-shell.spec.ts::N13 v6 shell navigation and Inbox clearance at 320x640 :: expect(locator).toBeVisible() failed
 
 ## N30 v6 Review start behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
