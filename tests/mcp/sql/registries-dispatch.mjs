@@ -109,7 +109,10 @@ try{
  realAction(task);
  assert.equal(task.changed[0].version,1);
  assert.equal((await inspect('select user_id from public.tasks where id=$1',[task.changed[0].id]))[0].user_id,owner);
+ const beforeTaskRetry=(await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
  assert.deepEqual(await call(owner,'chatgpt',taskReq),task,'exact retry must preserve receipt');
+ assert.equal((await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
+  beforeTaskRetry,'an exact task retry must not create an extra connector-audit action');
  const conflict=await call(owner,'chatgpt',{...taskReq,patch:{title:'Changed payload'}});
  assert.equal(conflict.status,'conflict','different payload must not reuse a task operationId');
  const stale=await call(owner,'chatgpt',envelope('tasks','update',{
@@ -142,7 +145,10 @@ try{
  }});
  const block=await call(owner,'chatgpt',calendar);realAction(block);
  assert.equal((await inspect('select title from public.calendar_blocks where id=$1',[block.changed[0].id]))[0].title,'Morning block');
+ const beforeCalendarRetry=(await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
  assert.deepEqual(await call(owner,'chatgpt',calendar),block,'study bridge retries retain receipt');
+ assert.equal((await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
+  beforeCalendarRetry,'an exact calendar retry must not journal connector telemetry or block undo');
  const bundo=await undo(owner,block.actionNo);
  assert.equal(bundo.undone,block.actionNo);
  assert.equal((await inspect('select count(*)::int n from public.calendar_blocks where id=$1',[block.changed[0].id]))[0].n,0);
