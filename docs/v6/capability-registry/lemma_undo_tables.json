@@ -76,5 +76,15 @@
       "table_name": "tasks"
     }
   ],
-  "access": "database functions only; no client RLS policy"
+  "access": "database functions only; no client RLS policy",
+  "table": "lemma_undo_tables",
+  "columns": {
+    "table_name": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 undo registry discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    }
+  }
 }
