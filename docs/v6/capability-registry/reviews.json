@@ -1,0 +1,83 @@
+{
+  "table": "reviews",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "card_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "reviewed_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "rating": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "state_before": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "confidence": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "duration_ms": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "prev": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "undone_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N90 historical corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    }
+  }
+}

@@ -99,5 +99,36 @@
       }
     }
   ],
-  "access": "database functions only; no client RLS policy"
+  "access": "database functions only; no client RLS policy",
+  "table": "lemma_command_resources",
+  "columns": {
+    "resource": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    },
+    "command_fn": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    },
+    "mcp_ok": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    },
+    "schema": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    }
+  }
 }

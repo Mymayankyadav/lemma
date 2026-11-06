@@ -1,0 +1,125 @@
+{
+  "table": "projects",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "slug": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "subject_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "title": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "goal": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "style": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "next_session_number": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "last_activity_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "prompt": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "target_date": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "target_label": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "system": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "pinned": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 paths coverage (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    }
+  }
+}
