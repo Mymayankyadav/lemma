@@ -1,9 +1,12 @@
+import {useEffect} from 'react';
 import {useOutlet,useLocation,useNavigationType} from 'react-router';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
 import V6Header from './V6Header';
 import FocusAccessorySlot from './FocusAccessorySlot';
 import {isFlagOn} from '../flags';
+import {setV6Root} from './v6Root';
+import '../ui/v6/tokens.css';
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
 import {GraphSketch} from '../ui/backgrounds/graph/GraphSketch';
@@ -13,6 +16,7 @@ const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
  const v6=isFlagOn('v6Shell');
+ useEffect(()=>{setV6Root(v6);return ()=>setV6Root(false);},[v6]);
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas';
  const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';
