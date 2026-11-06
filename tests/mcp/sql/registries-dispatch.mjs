@@ -8,6 +8,13 @@ const db=new PGlite();
 const owner='11111111-1111-1111-1111-111111111111';
 const other='99999999-9999-9999-9999-999999999999';
 const q=async (sql,values=[])=>(await db.query(sql,values)).rows;
+/** Test-only privileged inspector. The service_role RPC exercises its real
+ * grants; owner-row assertions run as fixture administrator then restore it. */
+const inspect=async (sql,values=[])=>{
+ await db.exec('reset role');
+ try{return await q(sql,values)}
+ finally{await db.exec('set role service_role')}
+};
 let counter=0;
 function envelope(resource,operation,extra={}){
  return {
@@ -99,7 +106,7 @@ try{
  const task=await call(owner,'chatgpt',taskReq);
  realAction(task);
  assert.equal(task.changed[0].version,1);
- assert.equal((await q('select user_id from public.tasks where id=$1',[task.changed[0].id]))[0].user_id,owner);
+ assert.equal((await inspect('select user_id from public.tasks where id=$1',[task.changed[0].id]))[0].user_id,owner);
  assert.deepEqual(await call(owner,'chatgpt',taskReq),task,'exact retry must preserve receipt');
  const conflict=await call(owner,'chatgpt',{...taskReq,patch:{title:'Changed payload'}});
  assert.equal(conflict.status,'conflict','different payload must not reuse a task operationId');
@@ -115,13 +122,13 @@ try{
  assert.equal(updated.changed[0].version,2);
  const inverse=await undo(owner,updated.actionNo);
  assert.equal(inverse.undone,updated.actionNo);
- assert.equal((await q('select title from public.tasks where id=$1',[task.changed[0].id]))[0].title,'Owner task');
- assert.equal((await q('select version from public.tasks where id=$1',[task.changed[0].id]))[0].version,1);
+ assert.equal((await inspect('select title from public.tasks where id=$1',[task.changed[0].id]))[0].title,'Owner task');
+ assert.equal((await inspect('select version from public.tasks where id=$1',[task.changed[0].id]))[0].version,1);
  const direct=await oldTask(owner,'claude',envelope('tasks','create',{patch:{title:'Original bridge'}}));
  realAction(direct);
  const journal=(await q('select user_id,source,tool from public.actions where no=$1',[task.actionNo]))[0];
  assert.deepEqual(journal,{user_id:owner,source:'chatgpt',tool:'study'});
- const connector=(await q('select connector_last_client from public.settings where user_id=$1',[owner]))[0];
+ const connector=(await inspect('select connector_last_client from public.settings where user_id=$1',[owner]))[0];
  assert.equal(connector.connector_last_client,'claude');
  console.log('PASS registered task dispatch, owner attribution, operation retry, version conflict and undo');
 
@@ -130,11 +137,11 @@ try{
   ends_at:'2026-11-06T09:00:00Z',time_zone:'Asia/Kolkata',
  }});
  const block=await call(owner,'chatgpt',calendar);realAction(block);
- assert.equal((await q('select title from public.calendar_blocks where id=$1',[block.changed[0].id]))[0].title,'Morning block');
+ assert.equal((await inspect('select title from public.calendar_blocks where id=$1',[block.changed[0].id]))[0].title,'Morning block');
  assert.deepEqual(await call(owner,'chatgpt',calendar),block,'study bridge retries retain receipt');
  const bundo=await undo(owner,block.actionNo);
  assert.equal(bundo.undone,block.actionNo);
- assert.equal(await count('calendar_blocks',block.changed[0].id),0);
+ assert.equal((await inspect('select count(*)::int n from public.calendar_blocks where id=$1',[block.changed[0].id]))[0].n,0);
 
  const study=await call(owner,'chatgpt',envelope('study_entries','create',{
   patch:{source:'timer',intent:'Registry study'},
@@ -146,10 +153,10 @@ try{
    started_at:'2026-11-06T08:00:00Z',ended_at:'2026-11-06T08:20:00Z'},
  }));
  realAction(interval);
- assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1',[entryId]))[0].n,1);
+ assert.equal((await inspect('select count(*)::int n from public.study_intervals where entry_id=$1',[entryId]))[0].n,1);
  const iundo=await undo(owner,interval.actionNo);
  assert.equal(iundo.undone,interval.actionNo);
- assert.equal((await q('select count(*)::int n from public.study_intervals where entry_id=$1',[entryId]))[0].n,0);
+ assert.equal((await inspect('select count(*)::int n from public.study_intervals where entry_id=$1',[entryId]))[0].n,0);
  const old=await oldStudy(owner,'chatgpt',envelope('study_entries','create',{
   patch:{source:'manual',intent:'Original study bridge'},
  }));
