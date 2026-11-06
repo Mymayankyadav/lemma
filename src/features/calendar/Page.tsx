@@ -1,5 +1,5 @@
-import BlockSheet from './block-sheet/BlockSheet';
-import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
+import BlockSheetActions from './block-sheet/BlockSheetActions';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 import { isFlagOn } from '../../flags';
 import { getStudyApi } from '../../data/study';
@@ -107,17 +107,6 @@ function V6Calendar() {
     setEditing(null); setConfirmDelete(null); setActionError('');
   }, [date]);
 
-  // N27 owns only the sheet/openers; N26 retains the Week range, view and URL logic.
-  const [sheetBlock, setSheetBlock] = useState<CalendarBlockRecord | null | undefined>(undefined);
-  const sheetOpener = useRef<HTMLButtonElement | null>(null);
-  function openSheet(event: MouseEvent<HTMLButtonElement>, block: CalendarBlockRecord | null) {
-    sheetOpener.current = event.currentTarget;
-    setSheetBlock(block);
-  }
-  function closeSheet() {
-    setSheetBlock(undefined);
-    queueMicrotask(() => sheetOpener.current?.focus());
-  }
   function updateUrl(key: 'view' | 'date', value: string) {
     const next = new URLSearchParams(params);
     next.set('view', view); next.set('date', date);
@@ -255,8 +244,7 @@ function V6Calendar() {
           <time dateTime={row.at} className="break-words text-caption tabular-nums text-ink-2">{row.label}</time>
           <div className="min-w-0 space-y-2">{row.entries.map((slice, index) => <SavedRow key={slice.entry.id + ':' + index} slice={slice} zone={zone}/>)}</div>
           <div className="min-w-0 space-y-2">{row.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label">
-            <button type="button" className="min-h-11 w-full text-left" aria-label={'Edit block ' + block.title}
-              onClick={event => openSheet(event, block)}><BlockSummary block={block} zone={zone}/></button>
+            <BlockSummary block={block} zone={zone}/>
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" className={actionClass} disabled={saving} onClick={() => beginMove(block)} aria-label={'Move ' + block.title}>Move</button>
               {block.status !== 'done' && <button type="button" className={actionClass} disabled={saving} onClick={() => doneBlock(block)} aria-label={'Mark ' + block.title + ' done'}>Done</button>}
@@ -275,14 +263,8 @@ function V6Calendar() {
         </div>)}
       </Slab>
     </>}
-    {phase === 'ready' && <nav aria-label="Calendar block sheet actions" className="flex flex-wrap gap-2">
-      <button type="button" className={actionClass} onClick={event => openSheet(event, null)}>Plan block in sheet</button>
-      {(view === 'agenda' || view === 'week') && blocks.filter(block => block.status !== 'cancelled').map(block =>
-        <button key={block.id} type="button" className={actionClass} aria-label={'Edit block ' + block.title}
-          onClick={event => openSheet(event, block)}>Edit {block.title}</button>)}
-    </nav>}
-    {sheetBlock !== undefined && <BlockSheet key={sheetBlock?.id ?? 'new'} block={sheetBlock} date={date} zone={zone}
-      onClose={closeSheet} onRefresh={() => setReload(n => n + 1)}/>}
+    {phase === 'ready' && <BlockSheetActions blocks={blocks} date={date} zone={zone}
+      onRefresh={() => setReload(n => n + 1)}/>}
   </section>;
 }
 
