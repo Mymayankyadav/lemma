@@ -9,13 +9,6 @@ Task lanes (priority run 2026-11-06). Tasks follow the same pattern with their o
 
 v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: it adds `src/features/<screen>/v6/**` and, in that screen's existing `Page.tsx`, one branch `if (isFlagOn('v6Shell')) return <…V6/>` (or the equivalent for a page that already branches). It reads through the existing hooks in `src/data/**` unchanged (no new queries, no `src/data/**` edits); a field the hooks do not provide is shown as unavailable, never invented. It distinguishes loading, empty, filtered-empty and failed states, keeps 44-pixel targets, uses the N19 tokens under `[data-v6]`, and leaves the flag-off page, its tests and its visual rules exactly as they are. Exact-pixel polish and device audits are the Harden stage, not these items.
 
-## N27 v6 Calendar block create, edit and delete sheet
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
-Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (create, edit, delete, validation, conflict, Undo, Escape and focus return).
-Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
-Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
-
 ## N28.2 v6 Settings: study defaults, reminders and export controls
 Stage: Build · Status: open · Needs: N28.1 · Assigned: —
 Done = finish N28 after N28.1's flag-gated seven-section navigation and the working Account/Appearance/Subjects/Connector panels: replace the temporary legacy-settings fallback for Study defaults, Reminders and Export with dedicated v6 panels. Preserve all existing Settings behaviour and the same underlying hooks, update calls and error/Saved feedback, including teaching styles and tutor rules, retention, cards/day, memory tuning eligibility, notification settings, math shortcuts, export/download, connector setup and sign-out. Ensure each section loads only from existing hooks, distinguishes loading, empty and failure states, is keyboard accessible, and no control silently loses its save action. Keep the legacy flag-off page unchanged.
@@ -44,11 +37,12 @@ Tests: tests/unit/paths-v6/project.test.tsx with flag on/off, real statuses, sco
 Scope: src/features/project/v6/** (new), src/features/project/Page.tsx (flag branch only), tests/unit/paths-v6/project.test.tsx, CURRENT.md.
 Not: src/features/projects/** (N33.1), src/data/**, checkpoint/session detail pages, stage/plan logic, new dependencies, other screens or original tests.
 
-## N35 v6 first slice on live data
-Stage: Build · Status: open · Needs: N20, N12 · Assigned: —
-Done = the N20 journey (start focus → pause → resume → finish → save, Today/Calendar/Progress agree, reload mid-focus resumes, discard adds nothing) passes against the live adapters, and an entry saved through the MCP `study` tool appears in Today, Calendar and Progress after refresh (D4), and the reverse. Fix the wiring bugs this exposes in the study live adapter and the v6 screens.
-Tests: a PGlite-backed integration test in `tests/unit/study/live-slice.test.ts` driving `createLiveStudyApi` against the real migrations (or the existing SQL test harness if that fits better), plus the observation check through `mcp_study_command`.
+## N35.2 v6 live Focus → Today/Calendar/Progress end-to-end
+Stage: Build · Status: open · Needs: N35.1 · Assigned: —
+Done = complete the N20 v6 journey against live StudyApi: start focus → pause → resume → finish → save, Today/Calendar/Progress show exactly the same persisted effort, refresh and reload mid-focus resume the same owner session, and discard adds no saved work. Both directions of MCP study ↔ live UI visibility are exercised after refresh. Build on N35.1's real-migration PGlite owner-parity, version/conflict and native Calendar/Progress model acceptance; keep the live adapter's version-safe cleanup for interrupted starts. Fix only the StudyApi and flagged v6 screen wiring defects exposed by live acceptance. No duplicate store or fabricated progress.
+Tests: tests/unit/study/live-slice.test.ts for live adapter and full flow, tests/mcp/sql/study-live-slice.mjs extending the real SQL parity checks, plus any focused screen regressions in existing v6 feature test folders where allowed.
 Scope: src/data/study/live.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/Page.tsx, src/features/progress-v6/**, tests/unit/study/live-slice.test.ts, tests/mcp/sql/study-live-slice.mjs, CURRENT.md.
-Not: migrations, MCP function code, the demo adapter, new screens.
+Not: migrations, MCP function code, demo adapter, flag-off screen branches, new dependencies.
+
 
 (Next priority run: Harden pass for the v6 first slice and the new lanes, planner previews and capacity (V6-05) on N22–N27, parked thoughts and day plans (new tables, Owner decision first), study entry correction in Calendar, checkpoint/session/source v6 pages, proposal drafts. Next free ID: N36.)
