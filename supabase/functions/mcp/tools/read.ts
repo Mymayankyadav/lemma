@@ -5,8 +5,10 @@ import { day, ui, display } from '../derive.ts';
 import { cut, capped, date, pageRange, number, validPdfPageIndex } from '../text.ts';
 import { sourceLine } from '../v3.ts';
 import {readStudyRecords} from './study-read.ts';
+import {readTaskRecords} from './task-read.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
+  if(a.what==='tasks')return readTaskRecords(c,a,'get');
   if(a.what==='study_entries'||a.what==='calendar_blocks')return readStudyRecords(c,a,'get');
   if(a.what==='prompt'){const st=await settings(c),p=a.project?await project(c,a.project):null;return ['OWNER',st.master_prompt||'(no master prompt)',p?.prompt||''].filter(Boolean).join('\n');}
   if(a.what==='diagnostics'){const p=await project(c,a.project);return (await all(c,'diagnostics')).filter(x=>x.project_id===p.id).map(x=>'D'+x.no+' '+x.kind+' '+x.topic+' ('+x.times+'x, '+x.status+'): '+x.evidence).join('\n')||'No diagnostics.';}
@@ -143,6 +145,7 @@ export async function readPages(c:Context,a:any):Promise<string>{
  return parts.join('\\n').slice(0,12000);
 }
 export async function search(c:Context,a:any):Promise<string>{
+  if(a.resource==='tasks')return readTaskRecords(c,a,'search');
   if(a.resource==='study_entries'||a.resource==='calendar_blocks')return readStudyRecords(c,a,'search');
   const p=await project(c,a.project);
   const allSources=(await scoped(c,'sources').eq('project_id',p.id)).data||[];
