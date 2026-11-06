@@ -23,13 +23,6 @@ Tests: `tests/unit/proposals-v6/**` with the flag on and off (flag off renders t
 Scope: src/features/proposals/v6/** (new), src/features/proposals/Page.tsx (the existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
 Not: `src/features/plan-proposal/**`, proposal drafts (a later item), decision logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N33.2 v6 Project detail behind the shell flag
-Stage: Build · Status: open · Needs: N33.1 · Assigned: —
-Done = with v6Shell on, /p/:slug renders the v6 project detail guided by docs/v6/screens/paths-day.png and paths-night.png, docs/v6/DESIGN_HANDOFF.md Shared design contracts, and the Paths project-page row of docs/v6/Lemma_UI_v6_Direction_Plan.md §9. Follow v6 screen lane rules: existing useProject hooks only, stage rail with real checkpoint statuses, checkpoint navigation and project-scoped session/source counts from ProjectDetail; insufficient schedule evidence is Forecast unavailable. Distinguish loading, no checkpoints and failed states, preserve flag-off UI and 44px keyboard targets.
-Tests: tests/unit/paths-v6/project.test.tsx with flag on/off, real statuses, scoped counts, loading, empty, failure and keyboard navigation.
-Scope: src/features/project/v6/** (new), src/features/project/Page.tsx (flag branch only), tests/unit/paths-v6/project.test.tsx, CURRENT.md.
-Not: src/features/projects/** (N33.1), src/data/**, checkpoint/session detail pages, stage/plan logic, new dependencies, other screens or original tests.
-
 ## N35 v6 first slice on live data
 Stage: Build · Status: open · Needs: N20, N12 · Assigned: —
 Done = the N20 journey (start focus → pause → resume → finish → save, Today/Calendar/Progress agree, reload mid-focus resumes, discard adds nothing) passes against the live adapters, and an entry saved through the MCP `study` tool appears in Today, Calendar and Progress after refresh (D4), and the reverse. Fix the wiring bugs this exposes in the study live adapter and the v6 screens.
