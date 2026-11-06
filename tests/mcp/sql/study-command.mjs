@@ -35,7 +35,7 @@ try {
  assert.equal(created.operationId,firstId);
  assert.equal(created.changed.length,1);
  assert.equal(created.changed[0].version,1);
- assert.equal(created.actionNo,null,'journal is deferred to remaining N11 work');
+ assert.ok(Number.isSafeInteger(created.actionNo)&&created.actionNo>0,'calendar create is now journalled with a real actionNo');
  const blockId=created.changed[0].id;
  assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,1);
  assert.equal((await q('select title from public.calendar_blocks where id=$1',[blockId]))[0].title,'Read proofs');
@@ -89,8 +89,10 @@ try {
    patch:{...patch},schemaVersion:2
  })),/schemaVersion/);
  await assert.rejects(command(request('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa10','delete',{
-   target:{id:blockId},expectedVersion:3,patch:{}
- })),/Unsupported operation/);
+   target:{id:blockId},patch:{}
+ })),/expectedVersion/);
+ assert.equal((await q('select version from public.calendar_blocks where id=$1',[blockId]))[0].version,3,
+  'versionless calendar delete must not remove or mutate the block');
  await as(other);
  assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.command_receipts'))[0].n,0);

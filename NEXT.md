@@ -5,12 +5,6 @@ No item may list a protected path (`ci/protected.json`) in Scope. Files under `d
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
 
-## N11.3 v6 reversible study commands and existing undo support
-Stage: Build · Status: open · Needs: N11.2 · Assigned: —
-Done = complete N11 by recording `actions` and `action_changes` for study update/delete/save and returning a real `actionNo` for every reversible write. `public.undo_action` restores a deleted calendar block and reverts saved or updated study records without cross-owner writes. Add PGlite regression tests covering undo of deleted blocks, conflict after newer edits, restored study data, exact receipt replay and owner isolation. Per Owner decision D5 (`docs/v6/README.md`): compatible `undo_action` replacement limited to adding the three study tables. Preserve the public command envelope and N11.1/N11.2 semantics.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/**, CURRENT.md, src/data/live/database.types.ts (signature only if needed).
-Not: changing existing migration files, existing functions without Owner authorization, client UI, MCP, disabling RLS, deleting or weakening tests, or new dependencies.
-
 ## N6.2 Notifications: bounded reminder Review queue (after N6.1)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `notificationsPush` enabled, a due-card reminder link parsed by N6.1 starts one Review round of 1–50 owner-visible due cards selected through the existing `notification_review_items` RPC; the page consumes the link using replace navigation, shows bounded empty/error states, and does not change the saved ordinary daily quota. With the flag off, the ordinary Review route behaves unchanged. Tests verify one bounded RPC read, owner-session filtering, count bounds, and ordinary versus reminder selection.
@@ -95,6 +89,5 @@ Stage: Build · Status: open · Needs: N6.2 · Assigned: —
 Done = after a reminder-driven Review queue is finished, the Review-done screen offers the next reminder time from current notification settings rather than an invented schedule; the offer is absent for ordinary Review and when `notificationsPush` is off. Tests cover eligible reminder completion, ordinary round, missing/unavailable scheduling data, and correct finishing navigation.
 Scope: src/features/review-done/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
 Not: supabase/**, `.github/**`, new dependencies, mutation of persisted reminder settings.
-
 
 (Next priority run: the live first slice (N16 + N11.3 wired into Today/Calendar/Progress), Calendar Week/Month, tasks UI on N21, Harden pass for the v6 slice. Next free ID: N22.)
