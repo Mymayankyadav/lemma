@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { formatSelftestHttpFailure } from './smoke-diagnostics.mjs';
 const url=process.env.MCP_URL;
 if(!url)throw Error('MCP_URL environment variable is required');
-const names=['resume','get','read_pages','search','save_pages','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade'];
+const names=['resume','get','read_pages','search','save_pages','start_session','save_progress','end_session','propose_cards','propose_card_edits','propose_plan','propose_plan_change','create_project','proposals','decide','set_prompt','history','undo','edit','add','delete','review','grade','study'];
 const readTools=new Set(['resume','get','read_pages','search','proposals','history','review']);
 let seq=0;
 let sessionId;
@@ -78,7 +78,7 @@ const notify=await fetch(url,{method:'POST',headers:headers(),
   body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})});
 assert.equal(notify.ok,true,'initialized notification returned HTTP '+notify.status);
 const tools=await call('tools/list');
-assert.equal(tools.tools.length,23,'wrong tool count');
+assert.equal(tools.tools.length,24,'wrong tool count');
 assert.deepEqual(tools.tools.map(t=>t.name).sort(),names.sort(),'tool names differ');
 assert.ok(JSON.stringify(tools).length<=15000,'tools/list exceeds 15,000 characters');
 for(const t of tools.tools){
@@ -90,7 +90,7 @@ for(const t of tools.tools){
     assert.equal(t.annotations?.openWorldHint,false,t.name+' must not be open-world');
   }
 }
-console.log('PASS tools/list: 23 tools, '+JSON.stringify(tools).length+' characters');
+console.log('PASS tools/list: 24 tools, '+JSON.stringify(tools).length+' characters');
 const resumed=await call('tools/call',{name:'resume',arguments:{}});
 const resumeText=(resumed.content||[]).map(item=>item.text||'').join('\n');
 assert.doesNotMatch(resumeText,/zz-selftest/i,'self-test leaked into owner resume packet');
