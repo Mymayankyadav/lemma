@@ -157,3 +157,7 @@ The cards page-states filtered-to-zero regression now waits for the asynchronous
 ## N11.2 study lifecycle (PR #882)
 
 An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 journaling and undo remain pending. The SQL regression suite covers lifecycle transitions, version conflicts, interval invariants and owner isolation. Deployment to the remote Supabase database is not independently verified; no application or MCP client uses these commands yet.
+
+## N14.1 Focus state-machine foundation (PR #887)
+
+N14 is being split into small tested slices. The first slice is a pure typed state machine in `src/lib/focus/machine.ts`. It records running, paused, break, finishing, saved and discarded transitions, with immutable timestamped intervals rather than counting timer ticks. N9's `inProgressMinutes` caps the open Pomodoro and excludes breaks while retaining accumulated focus across pauses; finished sessions retain their closed intervals and an optional editable saved-minute value and reflection. Tests cover invalid transitions, monotonic timestamps, reload reconstruction, capping, saving twice, and discard. No UI or live data path is changed in this slice. NEXT.md retains N14.2 demo persistence and N14.3 flagged UI integration.

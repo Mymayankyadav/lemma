@@ -41,23 +41,17 @@ Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.m
 Not: changes to existing tool behaviour, the `resume` packet, the `notify` function, migrations.
 
 
-## N14 v6 Focus on demo data: state machine, Today hero, Focus dialog
-Stage: Build · Status: open · Needs: N13 · Assigned: —
-Done = a typed state machine `src/lib/focus/machine.ts` with these transitions:
-- idle → running;
-- running ⇄ paused;
-- running ⇄ break;
-- running or paused → finishing → saved or discarded.
+## N14.2 v6 demo study entries and saved-time persistence
+Stage: Build · Status: open · Needs: N14.1 · Assigned: —
+Done = connect the typed N14.1 Focus machine to an in-memory demo study-entry adapter whose data shapes match the N10 study entry and interval columns. Add study types to `src/data/types.ts` and the additive demo-only command/read contract to `src/data/api.ts`, preserving all existing methods. Store intent, interval timestamps, pauses and breaks, and saved/discarded terminal states. Rebuilding from stored timestamps must preserve in-progress effort after a reload. Saving twice creates one saved entry; discarded focus counts as zero logged minutes; breaks never count as focus. Add unit regressions for save idempotence, discard, reload and break exclusion, using N9's saved-time calculations.
+Scope: src/data/demo/** (study entries only), src/data/types.ts and src/data/api.ts (additions only), tests/unit/focus/**, CURRENT.md.
+Not: live adapter, server migrations, Calendar, new dependencies, existing FSRS or review quotas, app UI.
 
-Elapsed time is rebuilt from timestamps, never from tick counts, and the Pomodoro cap comes from N9. The demo adapter stores study entries in memory, with shapes matching N10's columns and no live wiring. Study types are added to `src/data/types.ts` and `src/data/api.ts` (additions only).
-With `v6Shell` on:
-- Today shows the current-action hero (Start / Return to focus) and "logged today" from N9's `loggedMinutes`;
-- the accessory shows the intent, the remaining time and Pause;
-- the Focus native dialog offers Pause, Take a break and Park a thought (text field), and Finish leads to editable minutes and an optional note, then Save or Discard (`docs/v6/screens/focus-day.png`, `today-day.png`).
-
-Tests: unit tests for every transition, rebuilding state after a reload, a double save giving one saved entry, a discard giving 0 logged minutes, and break exclusion. Also `tests/e2e/v6-focus.spec.ts` (`?demo=1&flags=v6Shell`): start → pause → resume → finish → save, after which Today's logged time rises by the saved minutes; Escape closes the dialog and focus returns to the trigger.
-Scope: src/lib/focus/**, src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/** (new components), src/data/demo/** (study entries only), src/data/api.ts and src/data/types.ts (additions only), tests/unit/focus/**, tests/e2e/v6-focus.spec.ts, CURRENT.md.
-Not: the live adapter (next priority run), Calendar or Progress views, converting parked thoughts to tasks, notifications, and Today with the flag off.
+## N14.3 v6 Today and Focus dialog behind the shell flag
+Stage: Build · Status: open · Needs: N14.2 · Assigned: —
+Done = with `v6Shell` on, Today shows a current-action hero with Start/Return to focus and logged-today minutes from N9; the empty N13 focus-accessory slot shows intent, remaining time and Pause only while a focus entry is active. Implement a native Focus dialog offering Pause, Take a break, Park a thought (text field), and Finish with editable minutes and an optional note followed by Save or Discard. Escape closes the dialog and restores focus to its trigger. Use N14.1's state transitions and N14.2's demo adapter only. Add unit tests for dialog state and `tests/e2e/v6-focus.spec.ts` (`?demo=1&flags=v6Shell`) proving start → pause → resume → finish → save increases Today's logged time and Escape restores focus. With the flag off existing Today behavior and tests must remain unchanged.
+Scope: src/features/home/** (v6 branch only), src/features/focus/** (new), src/ui/** (new components), tests/unit/focus/**, tests/e2e/v6-focus.spec.ts, CURRENT.md.
+Not: live adapter, Calendar or Progress views, turning parked thoughts into tasks, notifications, new dependencies, current Today when the flag is off.
 
 ## N6.2 Notifications: bounded reminder Review queue (after N6.1)
 Stage: Build · Status: open · Needs: — · Assigned: —
