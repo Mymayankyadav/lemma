@@ -33,7 +33,8 @@ try{
   assert.deepEqual(Object.keys(doc.columns).sort(),columns,'exact registry coverage for '+table);
   assert.equal((await q("select relrowsecurity from pg_class where oid=('public.'||$1)::regclass",[table]))[0].relrowsecurity,true);
   assert.equal((await q("select count(*)::int n from pg_policies where tablename=$1",[table]))[0].n,4);
-  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,1);
+  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,0,
+   'N43.1 must not register owner rows for undo before the N43.2 command exists');
  }
  const constraints=await q("select conname,condeferrable from pg_constraint where conrelid in ('public.practice_topics'::regclass,'public.practice_events'::regclass) and contype='f'");
  for(const name of ['practice_topics_subject_owner_fk','practice_topics_concept_owner_fk','practice_topics_checkpoint_owner_fk','practice_events_topic_owner_fk'])
@@ -48,7 +49,7 @@ try{
  const topic=(await q("insert into public.practice_topics(title,subject_id,concept_id,checkpoint_id,next_due_date,cadence) values('Daily proofs',$1,$2,$3,'2026-11-10',$4::jsonb) returning *",
   [subject.id,concept.id,checkpoint.id,JSON.stringify({kind:'after_rating',daysByRating:[1,3,7,14]})]))[0];
  assert.equal(topic.user_id,owner);assert.equal(topic.version,1);
- assert.equal(topic.next_due_date,'2026-11-10');assert.equal(topic.last_practiced_at,null);
+ assert.equal(new Date(topic.next_due_date).toISOString().slice(0,10),'2026-11-10');assert.equal(topic.last_practiced_at,null);
  assert.deepEqual(topic.cadence.daysByRating,[1,3,7,14]);
  const fixed=(await q("insert into public.practice_topics(title) values('Weekly drill') returning *"))[0];
  assert.deepEqual(fixed.cadence,{kind:'fixed_days',days:7});
@@ -66,7 +67,8 @@ try{
  await rejects("insert into public.practice_topics(title) values($1)",['x'.repeat(201)]);
  const event=(await q("insert into public.practice_events(topic_id,occurred_at,rating,response,minutes) values($1,'2026-11-07T10:00:00Z',4,'Completed proof',45) returning *",[topic.id]))[0];
  assert.equal(event.user_id,owner);assert.equal(event.version,1);assert.equal(event.voided_at,null);
- assert.equal((await q('select next_due_date from public.practice_topics where id=$1',[topic.id]))[0].next_due_date,'2026-11-10','N43.1 does not invent N43.2 due-date command');
+ assert.equal(new Date((await q('select next_due_date from public.practice_topics where id=$1',[topic.id]))[0].next_due_date).toISOString().slice(0,10),
+  '2026-11-10','N43.1 does not invent N43.2 due-date command');
  for(const rating of [0,5])await rejects("insert into public.practice_events(topic_id,occurred_at,rating) values($1,now(),$2)",[topic.id,rating]);
  for(const minutes of [-1,1441])await rejects("insert into public.practice_events(topic_id,occurred_at,rating,minutes) values($1,now(),2,$2)",[topic.id,minutes]);
  await rejects("insert into public.practice_events(topic_id,occurred_at,rating,response) values($1,now(),2,$2)",[topic.id,'x'.repeat(4001)]);
@@ -81,6 +83,6 @@ try{
  await assert.rejects(q('insert into public.practice_topics(title,subject_id) values($1,$2)', ['Wrong owner',foreign.id]),/foreign key/i);
  await admin();
  const journal=await q("select distinct table_name from public.action_changes where table_name in ('practice_topics','practice_events')");
- assert.deepEqual(journal.map(x=>x.table_name).sort(),[...tables].sort());
- console.log('PASS N43.1 cadence, practice topic/event schemas, owner isolation, journal and registry');
+ assert.deepEqual(journal,[],'N43.1 must defer journal registration until its inverse exists');
+ console.log('PASS N43.1 cadence, practice topic/event schemas and owner isolation');
 }finally{await db.close();}

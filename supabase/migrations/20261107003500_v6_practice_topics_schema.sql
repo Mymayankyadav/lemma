@@ -1,5 +1,6 @@
 -- N43.1 / D8(b): additive owner-scoped practice topics/events; FSRS untouched.
--- N43.2 will implement versioned command, record/void and due-date inverse.
+-- N43.2 will add journal triggers, undo registry entries, versioned commands,
+-- record/void and due-date inverse together to avoid un-undoable staged writes.
 create function public.lemma_valid_practice_cadence(p jsonb) returns boolean
 language plpgsql immutable security invoker set search_path = '' as $cadence$
 declare n numeric; idx integer; part jsonb;
@@ -93,8 +94,3 @@ create policy practice_events_owner_delete on public.practice_events for delete
  to authenticated using (user_id=(select auth.uid()));
 grant select,insert,update,delete on public.practice_topics to authenticated;
 grant select,insert,update,delete on public.practice_events to authenticated;
-create trigger lemma_log_change after insert or update or delete on public.practice_topics
- for each row execute function public.log_change();
-create trigger lemma_log_change after insert or update or delete on public.practice_events
- for each row execute function public.log_change();
-insert into public.lemma_undo_tables(table_name) values ('practice_topics'),('practice_events');
