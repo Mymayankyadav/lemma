@@ -1,7 +1,8 @@
-import {useEffect,useRef} from 'react';
+import {lazy,Suspense,useEffect,useRef,useState} from 'react';
 import {Link,useLocation} from 'react-router';
 import {Inbox,Menu,Plus} from 'lucide-react';
 import {useHome} from '../data/hooks';
+const TaskSheet=lazy(()=>import('../features/tasks/TaskSheet'));
 
 /** N13's shared v6 title and actions; the legacy page headers stay unchanged when the flag is off. */
 export function v6PageTitle(pathname:string){
@@ -20,6 +21,9 @@ export default function V6Header({pathname}:{pathname:string}){
  const {data}=useHome();
  const location=useLocation();
  const menu=useRef<HTMLDetailsElement>(null);
+ const addMenu=useRef<HTMLDetailsElement>(null);
+ const [taskOpen,setTaskOpen]=useState(false);
+ const closeTask=()=>{setTaskOpen(false);queueMicrotask(()=>addMenu.current?.querySelector('summary')?.focus());};
  useEffect(()=>{if(menu.current)menu.current.open=false;},[location.pathname]);
  const pending=Math.max(0,data?.pendingProposals??0);
  const action='flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-ctl border border-edge px-3 text-label font-semibold text-ink-2 hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber';
@@ -32,7 +36,16 @@ export default function V6Header({pathname}:{pathname:string}){
     <Inbox size={18} aria-hidden="true"/><span>Inbox</span>
     {pending>0&&<span aria-label={pending+' pending'} className="rounded-ctl bg-amber px-1.5 text-[12px] font-bold text-amber-ink tabular-nums">{pending>99?'99+':pending}</span>}
    </Link>
-   <Link to="/projects/new" className={action+' flex-1'}><Plus size={18} aria-hidden="true"/>Add</Link>
+   <details ref={addMenu} className="relative min-w-0 flex-1">
+    <summary className={action+' h-full cursor-pointer list-none [&::-webkit-details-marker]:hidden'}>
+      <Plus size={18} aria-hidden="true"/>Add
+    </summary>
+    <div className="absolute right-0 top-full z-40 mt-1 w-40 rounded-ctl border border-edge bg-[var(--paper)] p-1 shadow-lg">
+      <button type="button" className="flex min-h-11 w-full items-center rounded-ctl px-3 text-label font-semibold text-ink-2"
+        onClick={()=>{addMenu.current!.open=false;setTaskOpen(true);}}>Task</button>
+      <Link to="/projects/new" className="flex min-h-11 items-center rounded-ctl px-3 text-label font-semibold text-ink-2">New path</Link>
+    </div>
+   </details>
    <details ref={menu} className="relative min-w-0 flex-1">
     <summary className={action+' h-full cursor-pointer list-none [&::-webkit-details-marker]:hidden'}><Menu size={18} aria-hidden="true"/>Menu</summary>
     <div className="absolute right-0 top-full z-40 mt-1 w-44 rounded-ctl border border-edge bg-[var(--paper)] p-1 shadow-lg">
@@ -41,5 +54,6 @@ export default function V6Header({pathname}:{pathname:string}){
     </div>
    </details>
   </nav>
+  {taskOpen&&<Suspense fallback={null}><TaskSheet onDismiss={closeTask}/></Suspense>}
  </header>;
 }
