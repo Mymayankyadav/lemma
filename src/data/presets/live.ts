@@ -90,9 +90,12 @@ export function createLivePresetApi():PresetApi {
   // A confirmed response or validation conflict releases that ID.
   const retries=new Map<string,string>();
   async function read(id:string):Promise<PresetRecord|null> {
+    // Validate before creating a query builder: malformed IDs must never
+    // initiate even an owner-scoped read from the live SDK.
+    const validId=liveId(id);
     const api=await client();
     const row=unwrap<Row|null>(await api.from('presets').select('*')
-      .eq('id',liveId(id)).maybeSingle());
+      .eq('id',validId).maybeSingle());
     return row?mapPreset(row):null;
   }
   async function requiredRead(id:string):Promise<PresetRecord> {
