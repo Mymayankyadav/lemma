@@ -197,6 +197,39 @@ try {
  // Missing and null expectedVersion must never mutate an entry, interval or receipt.
  const receiptCount=async()=>(await q('select count(*)::int n from public.command_receipts'))[0].n;
  const version=async()=>(await q('select version from public.study_entries where id=$1',[intervalId]))[0].version;
+ // Create-only fields must not return ok for acknowledged no-op updates.
+ // Mixed valid/invalid patches and patched deletes also roll back cleanly.
+ const studyBefore=(await q('select source,intent,version from public.study_entries where id=$1',[intervalId]))[0];
+ const intervalBefore=(await q('select entry_id,kind,started_at,ended_at from public.study_intervals where id=$1',[iid]))[0];
+ for(const [i,patch] of [{source:'timer'},{source:'timer',intent:'silently ignored'}].entries()){
+   const operationId='ffffffff-ffff-ffff-ffff-'+String(60+i).padStart(12,'0');
+   const before=await receiptCount();
+   await assert.rejects(command(study(operationId,'update',{
+     target:{id:intervalId},expectedVersion:4,patch
+   })),/Unknown patch field: source/);
+   assert.deepEqual((await q('select source,intent,version from public.study_entries where id=$1',[intervalId]))[0],studyBefore);
+   assert.equal(await receiptCount(),before,'invalid study patch stores no success receipt');
+ }
+ for(const [i,patch] of [{entry_id:entryId},{entry_id:entryId,kind:'focus'}].entries()){
+   const operationId='ffffffff-ffff-ffff-ffff-'+String(62+i).padStart(12,'0');
+   const before=await receiptCount();
+   await assert.rejects(command(intervalRequest(operationId,'update',{
+     target:{id:iid},expectedVersion:4,patch
+   })),/Unknown patch field: entry_id/);
+   assert.deepEqual((await q('select entry_id,kind,started_at,ended_at from public.study_intervals where id=$1',[iid]))[0],intervalBefore);
+   assert.equal(await version(),4,'invalid interval patch leaves parent version unchanged');
+   assert.equal(await receiptCount(),before,'invalid interval patch stores no success receipt');
+ }
+ for(const [operationId,payload] of [
+   ['ffffffff-ffff-ffff-ffff-000000000064',study('ffffffff-ffff-ffff-ffff-000000000064','delete',{target:{id:intervalId},expectedVersion:4,patch:{intent:'ignored'}})],
+   ['ffffffff-ffff-ffff-ffff-000000000065',intervalRequest('ffffffff-ffff-ffff-ffff-000000000065','delete',{target:{id:iid},expectedVersion:4,patch:{kind:'focus'}})]
+ ]){
+   const before=await receiptCount();
+   await assert.rejects(command(payload),/Unknown patch field/);
+   assert.deepEqual((await q('select source,intent,version from public.study_entries where id=$1',[intervalId]))[0],studyBefore);
+   assert.deepEqual((await q('select entry_id,kind,started_at,ended_at from public.study_intervals where id=$1',[iid]))[0],intervalBefore);
+   assert.equal(await receiptCount(),before,'patched delete does not consume operationId '+operationId);
+ }
  let nonce=20;
  for(const operation of ['update','delete','start','pause','resume','break','save','discard']){
    for(const invalid of [undefined,null]){
