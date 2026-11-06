@@ -3,8 +3,8 @@ import {afterEach,describe,expect,it} from 'vitest';
 import {resolveFlags} from '../../../src/flags';
 import {setV6Root} from '../../../src/app/v6Root';
 
-const css=readFileSync(new URL('../../../src/ui/v6/tokens.css',import.meta.url),'utf8');
-const app=readFileSync(new URL('../../../src/app/AppShell.tsx',import.meta.url),'utf8');
+const css=readFileSync('src/ui/v6/tokens.css','utf8');
+const app=readFileSync('src/app/AppShell.tsx','utf8');
 const base=':root[data-v6]';
 const day=':root[data-v6][data-theme="graph"]';
 const night=':root[data-v6][data-theme="graph-night"]';
