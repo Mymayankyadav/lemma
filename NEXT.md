@@ -138,13 +138,12 @@ Tests: `tests/unit/parked-thoughts/**` (demo behaviour and reload, live envelope
 Scope: src/data/parked-thoughts/** (new), tests/unit/parked-thoughts/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
-## N59 Study goals: app module (src/data/study-goals)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/study-goals/` for the records and operations of N45, including every lifecycle operation it names.
-Tests: `tests/unit/study-goals/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/study-goals/** (new), tests/unit/study-goals/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
+## N59.2 Study goals live adapter (remaining after N59 split)
+Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
+Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
+Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
+Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
+Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
 
 ## N60 Dated day plans and closures: app module (src/data/day-plans)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -298,7 +297,7 @@ Scope: src/features/calendar/overlaps/** (new), src/features/calendar/views/** (
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N76 v6 Progress: goals and range-correct statistics behind the shell flag
-Stage: Build · Status: open · Needs: N59 · Assigned: —
+Stage: Build · Status: open · Needs: N59.2 · Assigned: —
 Done = with `v6Shell` on, Progress shows weekly/monthly goals against saved minutes for their exact scope and range, 7/30/90-day ranges computed for that range (never a fixed 28-day series under another label), subject partitions that sum to the total, exact values on charts, and goal create/edit/archive. Flag off: nothing changes.
 Tests: `tests/unit/progress-v6/goals.test.tsx`
 Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
