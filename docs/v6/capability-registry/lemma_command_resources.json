@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "source": "D8(a) registered service-role-only public.mcp_command dispatcher",
+  "version": 1,
+  "source": "D8(a) existing v6 command resources",
   "resources": [
     {
       "resource": "study_entries",
@@ -99,7 +99,7 @@
       }
     }
   ],
-  "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",
+  "access": "database functions only; no client RLS policy",
   "table": "lemma_command_resources",
   "columns": {
     "resource": {
@@ -130,6 +130,5 @@
       "exportPolicy": "system registry metadata in schema manifest (not owner records)",
       "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
     }
-  },
-  "dispatch": "public.mcp_command validates service_role and the owner, resolves only administrator-seeded command_fn for the supplied resource, sets D6/D7 owner/source/audit context and calls public.<command_fn>(jsonb) by a schema-qualified quoted identifier; it never accepts caller-supplied function names and never requires a per-resource MCP wrapper"
+  }
 }
