@@ -51,13 +51,6 @@ Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders th
 Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N29 v6 Atlas list behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/atlas` renders the v6 Atlas from `docs/v6/screens/atlas-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Atlas row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. The phone default is a list of real concepts with hierarchy, checkpoint links and due counts from the existing Atlas data; the existing graph/tree view stays reachable as the map, with saved pins untouched; synthetic grouping rows are labelled and excluded from concept totals.
-Tests: `tests/unit/atlas-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/atlas/v6/** (new), src/features/atlas/Page.tsx (the flag branch only), tests/unit/atlas-v6/**, CURRENT.md.
-Not: changing the existing graph, layout or pin code, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
 ## N30.2 v6 Review start screen behind shell flag
 Stage: Build · Status: open · Needs: N30.1 · Assigned: —
 Done = with v6Shell on, /review shows the v6 Review from docs/v6/screens/review-day.png and -night.png and the v6 design handoff, using the N30.1 pure selected-batch helper to keep the all-due total, selected-eligible count and actual quota-limited queue distinct. Include complete-label deck/checkpoint selection, visible checks, a keyboard-accessible start action that initializes exactly the displayed batch with the existing useReviewSession, and long maths wrapping. Distinguish loading, empty, filtered-empty and failed states with 44px controls. Flag off leaves the legacy Review page and its tests unchanged.
