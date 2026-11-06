@@ -2,6 +2,13 @@ import {test,expect,type Page} from '@playwright/test';
 
 // N20 integration: Today, Calendar Day and Progress Day must read one demo snapshot.
 const visit=(page:Page,hash:string)=>page.goto('./?demo=1&flags=v6Shell#'+hash);
+// The demo seed puts saved entries at fixed weekday/hour slots (for example Friday 14:00-14:30). A run inside one of
+// them overlaps the entry this test saves, so the interval union adds nothing and the total does not move. Start from
+// an account with no seeded time, only when nothing is stored yet, so a reload still keeps what the test saved.
+const emptyStudy=(page:Page)=>page.addInitScript(()=>{
+ try{if(!sessionStorage.getItem('lemma.v6.demo.study.v1'))sessionStorage.setItem('lemma.v6.demo.study.v1',JSON.stringify({schema:1,entries:[],blocks:[]}))}catch{/* storage blocked */}
+});
+
 async function displayedMinutes(page:Page):Promise<number>{
  const el=page.locator('output[aria-label="Logged today"]');
  await expect(el).toBeVisible();
@@ -13,6 +20,7 @@ async function displayedMinutes(page:Page):Promise<number>{
 test('N20 saved Focus appears in Today, Calendar Day and Progress Day with the same minutes',async({page})=>{
  test.setTimeout(90_000);
  await page.setViewportSize({width:390,height:844});
+ await emptyStudy(page);
  await visit(page,'/');
  const original=await displayedMinutes(page);
  const intent='N20 cross-screen proof';
@@ -42,6 +50,7 @@ test('N20 saved Focus appears in Today, Calendar Day and Progress Day with the s
 test('N20 discarded Focus never contributes to Calendar or Progress totals',async({page})=>{
  test.setTimeout(90_000);
  await page.setViewportSize({width:390,height:844});
+ await emptyStudy(page);
  await visit(page,'/');
  const before=await displayedMinutes(page);
  const intent='N20 discarded proof';
