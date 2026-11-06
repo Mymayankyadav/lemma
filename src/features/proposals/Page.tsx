@@ -37,6 +37,7 @@ import { Slab } from "../../ui/Slab";
 import { useToast } from "../../ui/Toast";
 import { groupProposals, pageProposals, type ProposalGroup } from "./groups";
 import { firstProposalFrontLine } from "./frontPreview";
+import ProposalEvidence from "./v6/Evidence";
 
 function describe(op: PlanChangeOp) {
   switch (op.op) {
@@ -357,6 +358,7 @@ export default function Page() {
               busy={pending}
               commit={(accepted) => void commit(active, accepted)}
             />
+            {v6&&<ProposalEvidence proposal={active}/>} 
             <div
               aria-label={`${completed} reviewed, ${cards.length} remaining`}
               className="flex justify-center gap-2"
@@ -474,12 +476,13 @@ export default function Page() {
                   </p>
                 )}
               </div>
-              {p.reason && (
+              {!v6 && p.reason && (
                 <p className="mb-4 flex gap-2 text-label italic text-ink-3">
                   <Sparkles size={15} />
                   {p.reason}
                 </p>
               )}
+              {v6&&<ProposalEvidence proposal={p}/>}
               <Link
                 to={`/proposals/${p.id}`}
                 className="inline-flex min-h-11 items-center text-body font-semibold text-amber"
