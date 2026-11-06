@@ -1,7 +1,7 @@
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import TodayFocus,{focusFromEntry} from '../../../src/features/focus/TodayFocus';
+import TodayFocus,{focusFromEntry,loggedToday} from '../../../src/features/focus/TodayFocus';
 import {setStudyApiForTests} from '../../../src/data/study';
 import type {StudyApi,StudyEntryRecord} from '../../../src/data/study/contract';
 
@@ -126,6 +126,11 @@ describe('N14.3 v6 Today Focus UI and StudyApi contract',()=>{
    expect(api.listStudyEntries).toHaveBeenCalledTimes(1);
    expect(button(view.host,'Start focus')).toBeDefined();
   }finally{await view.cleanup();}
+ });
+ it('converts nullable intervals to closed saved effort and ignores active entries',()=>{
+  const closed=entry('saved'),open=entry('running');
+  expect(loggedToday([open,closed],{start:iso(-20),end:iso(20)},'UTC',iso())).toBeCloseTo(8,4);
+  expect(loggedToday([open],{start:iso(-20),end:iso(20)},'UTC',iso())).toBe(0);
  });
  it('excludes a draft even when it is returned in the day query',async()=>{
   const api=adapter();

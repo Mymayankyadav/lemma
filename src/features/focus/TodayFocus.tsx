@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {getStudyApi} from '../../data/study';
-import type {StudyEntryRecord} from '../../data/study/contract';
+import type {StudyEntryRecord,StudyRange} from '../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../lib/effort';
 import {idleFocus,inProgressFocusMinutes,remainingFocusMinutes,transitionFocus,type FocusState} from '../../lib/focus/machine';
 import FocusDialog from '../../ui/v6/focus/FocusDialog';
@@ -12,6 +12,18 @@ function civilDate(zone:string){
  const value=(key:string)=>parts.find(p=>p.type===key)?.value??'';
  return value('year')+'-'+value('month')+'-'+value('day');
 }
+/** StudyApi keeps open intervals (null end), whereas effort metrics require closed spans. */
+export function loggedToday(entries:StudyEntryRecord[],range:StudyRange,zone:string,now:string):number {
+ const completed=entries.filter(entry=>entry.status==='saved').map(entry=>({
+  id:entry.id,
+  status:'saved' as const,
+  subjectId:entry.subjectId,
+  intervals:entry.intervals.flatMap(interval=>interval.end===null?[]:
+   [{start:interval.start,end:interval.end,kind:interval.kind}]),
+ }));
+ return loggedMinutes(completed,range,zone,now).minutes;
+}
+
 /** Restore N14.1's timestamped machine from the persisted StudyApi entry. */
 export function focusFromEntry(entry:StudyEntryRecord):FocusState {
  const last=entry.intervals.at(-1);
@@ -40,7 +52,7 @@ export default function TodayFocus(){
   const [current,entries]=await Promise.all([api.activeStudyEntry(),api.listStudyEntries(range)]);
   setActive(current);
   setFocus(current?focusFromEntry(current):idleFocus());
-  setLogged(loggedMinutes(entries,range,zone,new Date().toISOString()).minutes);
+  setLogged(loggedToday(entries,range,zone,new Date().toISOString()));
   if(current)setNote(current.reflection??'');
  }
  useEffect(()=>{
@@ -49,7 +61,7 @@ export default function TodayFocus(){
    if(!alive)return;
    setActive(current);
    setFocus(current?focusFromEntry(current):idleFocus());
-   setLogged(loggedMinutes(entries,range,zone,new Date().toISOString()).minutes);
+   setLogged(loggedToday(entries,range,zone,new Date().toISOString()));
    if(current)setNote(current.reflection??'');
   }).catch(e=>{if(alive)setError(e instanceof Error?e.message:String(e));})
    .finally(()=>{if(alive)setLoading(false);});
