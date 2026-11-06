@@ -92,3 +92,40 @@ export function dayCapacity(date: string, zone: string, entries: StudyEntryRecor
     .map(b => ({ start: b.startsAt, end: b.endsAt }));
   return capacityStack(logged, busy, planned, range);
 }
+
+
+/** Calendar weeks are civil days, not multiples of 24 elapsed hours (DST-safe). */
+export function weekStartDay(date: string, firstDay: number = 1): string {
+  if (!validDayKey(date) || !Number.isInteger(firstDay) || firstDay < 0 || firstDay > 6)
+    throw new Error('Invalid week date or first weekday');
+  const weekday = new Date(date + 'T00:00:00.000Z').getUTCDay();
+  return shiftDay(date, -((weekday - firstDay + 7) % 7));
+}
+
+/** Give every simultaneously visible block its own lane; never hide an overlap. */
+export function blockLanes(blocks: CalendarBlockRecord[], range: StudyRange) {
+  const ends: number[] = [];
+  return visibleBlocks(blocks, range).map(block => {
+    const start = Math.max(millis(range.start), millis(block.startsAt));
+    const end = Math.min(millis(range.end), millis(block.endsAt));
+    let lane = ends.findIndex(lastEnd => lastEnd <= start);
+    if (lane < 0) lane = ends.length;
+    ends[lane] = end;
+    return { block, lane };
+  });
+}
+
+/** Same civil-day helpers and capacity arithmetic as Calendar Day. */
+export function weekDays(date: string, zone: string, entries: StudyEntryRecord[],
+  blocks: CalendarBlockRecord[], firstDay = 1) {
+  const first = weekStartDay(date, firstDay);
+  return Array.from({length: 7}, (_, offset) => {
+    const day = shiftDay(first, offset);
+    const range = calendarRange(day, zone);
+    return {
+      day, range, capacity: dayCapacity(day, zone, entries, blocks),
+      logged: savedSlices(entries, range),
+      blocks: blockLanes(blocks, range),
+    };
+  });
+}

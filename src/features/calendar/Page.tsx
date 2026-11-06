@@ -5,7 +5,8 @@ import { getStudyApi } from '../../data/study';
 import type { CalendarBlockRecord, CalendarBlockKind, StudyEntryRecord } from '../../data/study/contract';
 import { Segmented } from '../../ui/Segmented';
 import { Slab } from '../../ui/Slab';
-import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, shiftDay, validDayKey, type LoggedSlice } from './model';
+import { WeekView } from './views/WeekView';
+import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, shiftDay, validDayKey, weekStartDay, type LoggedSlice } from './model';
 
 const actionClass = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
 const fieldClass = 'min-h-11 min-w-0 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink';
@@ -51,7 +52,7 @@ function BlockSummary({ block, zone }: { block: CalendarBlockRecord; zone: strin
 function V6Calendar() {
   const [params, setParams] = useSearchParams();
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const view = params.get('view') === 'day' ? 'day' : 'agenda';
+  const view = params.get('view') === 'day' ? 'day' : params.get('view') === 'week' ? 'week' : 'agenda';
   const rawDay = params.get('date');
   const date = validDayKey(rawDay) ? rawDay : dayKey(new Date(), zone);
   const [entries, setEntries] = useState<StudyEntryRecord[]>([]);
@@ -73,7 +74,7 @@ function V6Calendar() {
   useEffect(() => {
     let active = true;
     setPhase('loading'); setReadError('');
-    const range = calendarRange(date, zone, view === 'agenda' ? 7 : 1);
+    const range = calendarRange(view === 'week' ? weekStartDay(date) : date, zone, view === 'day' ? 1 : 7);
     const api = getStudyApi();
     void Promise.all([api.listStudyEntries(range), api.listCalendarBlocks(range)])
       .then(([nextEntries, nextBlocks]) => {
@@ -159,12 +160,22 @@ function V6Calendar() {
   const groups = phase === 'ready' && view === 'agenda' ? agendaGroups(date, zone, entries, blocks) : [];
   const slots = phase === 'ready' && view === 'day' ? daySlots(date, zone, entries, blocks) : [];
   const capacity = phase === 'ready' && view === 'day' ? dayCapacity(date, zone, entries, blocks) : null;
-  const step = view === 'agenda' ? 7 : 1;
+  const step = view === 'day' ? 1 : 7;
 
   return <section aria-labelledby="calendar-title" className="flex flex-col gap-4 pb-8">
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
-    <Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
-      options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }]} />
+    <div onKeyDown={event => {
+      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+      const choices = ['agenda', 'day', 'week'];
+      const offset = event.key === 'ArrowRight' ? 1 : -1;
+      const next = (choices.indexOf(view) + offset + choices.length) % choices.length;
+      event.preventDefault();
+      updateUrl('view', choices[next]);
+      event.currentTarget.querySelectorAll('button')[next]?.focus();
+    }}>
+      <Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
+        options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }]} />
+    </div>
     <nav aria-label="Calendar date" className="flex flex-wrap items-center justify-between gap-2">
       <button type="button" className={actionClass} aria-label="Previous dates" onClick={() => updateUrl('date', shiftDay(date, -step))}>‹</button>
       <strong className="text-center text-label text-ink">{dateLabel(date, zone)}</strong>
@@ -184,6 +195,12 @@ function V6Calendar() {
         {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><BlockSummary block={block} zone={zone}/></article>)}
       </Slab>)}
     </div>}
+
+    {phase === 'ready' && view === 'week' && <WeekView date={date} zone={zone}
+      entries={entries} blocks={blocks} onDay={selected => {
+        const next = new URLSearchParams(params);
+        next.set('view', 'day'); next.set('date', selected); setParams(next);
+      }} />}
 
     {phase === 'ready' && view === 'day' && <>
       {capacity && <Slab as="section" aria-label="Day capacity" className="p-3">
