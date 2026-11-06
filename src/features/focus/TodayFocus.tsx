@@ -27,7 +27,8 @@ export function loggedToday(entries:StudyEntryRecord[],range:StudyRange,zone:str
 /** Restore N14.1's timestamped machine from the persisted StudyApi entry. */
 export function focusFromEntry(entry:StudyEntryRecord):FocusState {
  const last=entry.intervals.at(-1);
- const phase=entry.status==='paused'?'paused':last?.kind==='break'&&last.end===null?'break':'running';
+ // SQL records breaks with status=paused; an open break interval wins.
+ const phase=last?.kind==='break'&&last.end===null?'break':entry.status==='paused'?'paused':'running';
  return {phase,session:{
   id:entry.id,intent:entry.intent,focusMinutes:FOCUS_CAP,
   startedAt:entry.intervals[0]?.start??entry.createdAt,
@@ -82,9 +83,8 @@ export default function TodayFocus(){
   const at=new Date().toISOString();
   try{
    const result=await api.startStudyEntry({intent:intent.trim()||'Focused study',source:'timer',startedAt:at});
-   const startedAt=result.record.intervals[0]?.start??at;
-   const next=transitionFocus(idleFocus(),{type:'start',id:result.record.id,intent:result.record.intent,focusMinutes:FOCUS_CAP,at:startedAt});
-   setActive(result.record);setFocus(next);setNote(result.record.reflection??'');
+   // Server-owned interval timestamps are authoritative in live mode.
+   setActive(result.record);setFocus(focusFromEntry(result.record));setNote(result.record.reflection??'');
    setNow(at);setOpened(true);
   }catch(e){report(e);}
   finally{setBusy(false);}
@@ -93,18 +93,24 @@ export default function TodayFocus(){
   if(!active||busy)return;
   const at=new Date().toISOString();
   try{
-   const next=transitionFocus(focus,{type,at});
+   // The versioned command validates transitions on the server; local clock
+   // skew must never reject a valid pause, resume or break before the RPC.
    setBusy(true);setError('');
    const result=type==='pause'?await api.pauseStudyEntry(active.id,active.version,at):
     type==='resume'?await api.resumeStudyEntry(active.id,active.version,at):
     await api.breakStudyEntry(active.id,active.version,at);
-   setActive(result.record);setFocus(next);setNow(at);
+   setActive(result.record);setFocus(focusFromEntry(result.record));setNow(new Date().toISOString());
   }catch(e){report(e);}
   finally{setBusy(false);}
  }
  function finish(){
   if(!active||busy)return;
-  const at=new Date().toISOString();
+  const localNow=new Date().toISOString();
+  // A fast server clock may have started the newest interval after the phone's
+  // current time. Clamp UI-only finish to that persisted boundary.
+  const last=focus.session?.intervals.at(-1);
+  const boundary=last?.end??last?.start??localNow;
+  const at=new Date(Math.max(Date.parse(localNow),Date.parse(boundary))).toISOString();
   try{
    const finished=transitionFocus(focus,{type:'finish',at});
    setFocus(finished);
@@ -119,7 +125,8 @@ export default function TodayFocus(){
    const minutes=Number(editedMinutes);
    if(!discard&&(!editedMinutes.trim()||!Number.isFinite(minutes)||minutes<0))
     throw new Error('Enter a valid number of minutes.');
-   transitionFocus(focus,discard?{type:'discard',at}:{type:'save',at,minutes,reflection:note.trim()});
+   // Save/discard is authoritative in StudyApi; don't gate a versioned RPC on
+   // the phone's wall clock after a server-timestamped finish.
    setBusy(true);setError('');
    if(discard)await api.discardStudyEntry(active.id,active.version);
    else await api.saveStudyEntry(active.id,active.version,{minutes,reflection:note.trim()||null});
