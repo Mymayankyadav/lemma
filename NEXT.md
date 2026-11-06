@@ -16,13 +16,6 @@ Tests: tests/unit/settings-v6/reminders-export.test.tsx covering reminder prefer
 Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new fields, autosave/retention logic changes, src/data/**, new dependencies, other screens, existing tests' expectations.
 
-## N30.2 v6 Review start screen behind shell flag
-Stage: Build · Status: open · Needs: N30.1 · Assigned: —
-Done = with v6Shell on, /review shows the v6 Review from docs/v6/screens/review-day.png and -night.png and the v6 design handoff, using the N30.1 pure selected-batch helper to keep the all-due total, selected-eligible count and actual quota-limited queue distinct. Include complete-label deck/checkpoint selection, visible checks, a keyboard-accessible start action that initializes exactly the displayed batch with the existing useReviewSession, and long maths wrapping. Distinguish loading, empty, filtered-empty and failed states with 44px controls. Flag off leaves the legacy Review page and its tests unchanged.
-Tests: tests/unit/review-v6/** with the flag on and off, loading/empty/failed states, exact queue-to-label count, and keyboard selection/access.
-Scope: src/features/review/v6/**, src/features/review/Page.tsx (v6 branch only), tests/unit/review-v6/**, CURRENT.md.
-Not: src/features/review-run/**, src/features/review-done/**, FSRS/quota logic, src/data/**, new dependencies or existing tests' expectations.
-
 ## N32 v6 Inbox behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
 Done = with `v6Shell` on, `/proposals` renders the v6 Inbox from `docs/v6/screens/inbox-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Inbox row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Proposals grouped as today, with selection-aware approve/reject using the existing atomic decision calls and their receipts; rationale and citations shown where the proposal has them and "Rationale unavailable" where it does not; the existing plan/change/ideas previews are reused.

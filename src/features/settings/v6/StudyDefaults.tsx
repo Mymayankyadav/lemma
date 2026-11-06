@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useReviewLog, useStyles, useUpdateSettings } from '../../../data/hooks';
 import type { SettingsPatch } from '../../../data/api';
 import type { Settings } from '../../../data/types';
@@ -11,6 +11,17 @@ const button = 'min-h-11 rounded-ctl border border-edge px-3 py-2 text-label fon
 const field = 'mt-2 min-h-32 w-full rounded-ctl border border-edge bg-well p-3 text-body text-ink';
 type OptimizerResult = Extract<OptimizerMessage, { type: 'result' }>['result'];
 type Editor = 'rules' | 'macros' | 'optimizer' | null;
+
+/** Native-style radio movement for every teaching option, including Home and End. */
+export function teachingStyleDestination(index: number, key: string, count: number): number | null {
+  if (count < 1) return null;
+  if (key === 'Home') return 0;
+  if (key === 'End') return count - 1;
+  if (key === 'ArrowRight' || key === 'ArrowDown') return (index + 1) % count;
+  if (key === 'ArrowLeft' || key === 'ArrowUp') return (index + count - 1) % count;
+  return null;
+}
+
 
 /** N28.2.1: v6 Study defaults. All writes use the existing updateSettings mutation. */
 export default function StudyDefaults({ settings }: { settings: Settings }) {
@@ -43,6 +54,14 @@ export default function StudyDefaults({ settings }: { settings: Settings }) {
       notify("Couldn't save settings.", { tone: 'danger' });
       return false;
     }
+  }
+  function moveStyle(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const available = styles.data ?? [];
+    const destination = teachingStyleDestination(index, event.key, available.length);
+    if (destination === null || busy) return;
+    event.preventDefault();
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[destination]?.focus();
+    void save({ defaultStyle: available[destination].key });
   }
   function saveRetention(value: number) {
     if (busy) return;
@@ -114,9 +133,10 @@ export default function StudyDefaults({ settings }: { settings: Settings }) {
           <button type="button" className={button} onClick={() => void styles.refetch()}>Retry styles</button>
         </div> : !styles.data?.length ? <p>No teaching styles available.</p> :
         <div role="radiogroup" aria-label="Teaching style" className="flex flex-col gap-2">
-          {styles.data.map(style => <button key={style.key} type="button" role="radio"
+          {styles.data.map((style, index) => <button key={style.key} type="button" role="radio"
             aria-checked={settings.defaultStyle === style.key} disabled={busy}
-            className={button + ' w-full text-left'} onClick={() => { void save({ defaultStyle: style.key }); }}>
+            className={button + ' w-full text-left'} onKeyDown={event => moveStyle(event, index)}
+            onClick={() => { void save({ defaultStyle: style.key }); }}>
             {style.name}{settings.defaultStyle === style.key ? ' · Selected' : ''}
           </button>)}
         </div>}

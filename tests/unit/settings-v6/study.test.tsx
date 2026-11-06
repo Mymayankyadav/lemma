@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import StudyDefaults from '../../../src/features/settings/v6/StudyDefaults';
+import StudyDefaults, { teachingStyleDestination } from '../../../src/features/settings/v6/StudyDefaults';
 import type { Settings } from '../../../src/data/types';
 import { useReviewLog, useStyles, useUpdateSettings } from '../../../src/data/hooks';
 import { useToast } from '../../../src/ui/Toast';
@@ -234,6 +234,25 @@ describe('N28.2.1 v6 Study defaults', () => {
     expect(stopped).toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
     root = createRoot(host);
+  });
+
+  it('moves teaching-style radio focus and saves with arrow, Home and End keys', async () => {
+    expect(teachingStyleDestination(0, 'ArrowLeft', 2)).toBe(1);
+    expect(teachingStyleDestination(1, 'ArrowRight', 2)).toBe(0);
+    expect(teachingStyleDestination(1, 'Home', 2)).toBe(0);
+    expect(teachingStyleDestination(0, 'End', 2)).toBe(1);
+    expect(teachingStyleDestination(0, 'Enter', 2)).toBeNull();
+    expect(teachingStyleDestination(0, 'ArrowRight', 0)).toBeNull();
+    await render();
+    const first = button('Socratic · Selected');
+    first.focus();
+    await act(async () => first.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowRight' })));
+    expect(document.activeElement).toBe(button('Worked examples'));
+    expect(update).toHaveBeenCalledWith({ defaultStyle: 'examples' });
+    const last = button('Worked examples');
+    await act(async () => last.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Home' })));
+    expect(document.activeElement).toBe(first);
+    expect(update).toHaveBeenCalledWith({ defaultStyle: 'socratic' });
   });
 
   it('exposes keyboard-operable native buttons without creating dead actions', async () => {
