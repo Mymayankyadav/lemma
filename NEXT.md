@@ -44,13 +44,12 @@ Tests: `tests/mcp/sql/deadlines.mjs` per the lane rules, plus the lifecycle rule
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N43 Manual practice topics and practice events: migration (practice_topics)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.practice_topics` with title, optional subject/concept/checkpoint links, `next_due_date`, `cadence jsonb` (`fixed_days` with days, or `after_rating` with days per rating), `last_practiced_at`, `archived_at`; and child table `public.practice_events` (topic, `occurred_at`, rating 1–4, optional response text, minutes, `voided_at`). Operations topic create/update/archive/restore/delete, `record` (inserts an event, advances `next_due_date` by the cadence, undoable), `void_event` (restores the previous due date). Never reads or writes cards, reviews or FSRS state.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/practice_topics.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice_topics.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N43.2 Practice topic commands, record and void-event due-date inverse (D8 b)
+Stage: Build · Status: open · Needs: N43.1 · Assigned: —
+Done = finish N43 after N43.1's two owner-scoped, RLS-protected tables. Add a versioned, owner-authorized transactional practice_topics_command for topic create/update/archive/restore/delete, and record/void_event. On record, insert practice_events with rating 1–4, optional response/minutes and occurred_at, advance the topic's next_due_date by fixed_days or daysByRating[rating-1] using civil-day arithmetic, and persist enough previous due/last-practiced values for a precise void-event inverse. On void_event, mark the event voided, restore the prior next_due_date and last_practiced_at consistently even across multiple events, with explicit stale-version conflict behavior, idempotent operationId receipts and an owner action journal. Enforce owner-only linked subjects/concepts/checkpoints and topic/event owner equality. Keep cards, reviews and FSRS untouched. Register the new command resource so MCP and app share one command after N37. Preserve compatible undo_action behavior and never modify existing migrations.
+Tests: tests/mcp/sql/practice-topics-commands.mjs with real full-migration PGlite, owner isolation, cadence boundaries, record and void inverses, conflict/reties, registered undo receipts and cross-client parity.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice-topics-commands.mjs, docs/v6/capability-registry/practice_topics.json, docs/v6/capability-registry/practice_events.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: existing migrations, src/data/**, UI, card reviews, FSRS, unrelated RPCs or tables.
 
 ## N44 Parked thoughts: migration (parked_thoughts)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
