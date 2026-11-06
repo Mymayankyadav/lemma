@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      tasks: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          body: string
+          subject_id: string | null
+          project_id: string | null
+          checkpoint_id: string | null
+          estimate_minutes: number | null
+          priority: string
+          due_kind: string
+          due_date: string | null
+          due_at: string | null
+          position: number
+          status: string
+          completed_at: string | null
+          version: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          title: string
+          body?: string
+          subject_id?: string | null
+          project_id?: string | null
+          checkpoint_id?: string | null
+          estimate_minutes?: number | null
+          priority?: string
+          due_kind?: string
+          due_date?: string | null
+          due_at?: string | null
+          position?: number
+          status?: string
+          completed_at?: string | null
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          body?: string
+          subject_id?: string | null
+          project_id?: string | null
+          checkpoint_id?: string | null
+          estimate_minutes?: number | null
+          priority?: string
+          due_kind?: string
+          due_date?: string | null
+          due_at?: string | null
+          position?: number
+          status?: string
+          completed_at?: string | null
+          version?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       study_entries: {
         Row: {
           id: string
