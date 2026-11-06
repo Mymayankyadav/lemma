@@ -127,6 +127,13 @@ Tests: `tests/unit/parked-thoughts/**` (demo behaviour and reload, live envelope
 Scope: src/data/parked-thoughts/** (new), tests/unit/parked-thoughts/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
+## N59 Study goals: app module (src/data/study-goals)
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = per D8(c) and the lane rules, `src/data/study-goals/` for the records and operations of N45, including every lifecycle operation it names.
+Tests: `tests/unit/study-goals/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/study-goals/** (new), tests/unit/study-goals/**, CURRENT.md.
+Not: other `src/data/**` folders, UI, supabase/**.
+
 ## N60 Dated day plans and closures: app module (src/data/day-plans)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = per D8(c) and the lane rules, `src/data/day-plans/` for the records and operations of N46, including every lifecycle operation it names.
