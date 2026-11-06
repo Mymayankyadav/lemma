@@ -7,7 +7,8 @@ import type { CalendarBlockRecord, CalendarBlockKind, StudyEntryRecord } from '.
 import { Segmented } from '../../ui/Segmented';
 import { Slab } from '../../ui/Slab';
 import { WeekView } from './views/WeekView';
-import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, shiftDay, validDayKey, weekStartDay, type LoggedSlice } from './model';
+import { MonthView } from './views/MonthView';
+import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, monthBounds, shiftDay, shiftMonth, validDayKey, weekStartDay, type LoggedSlice } from './model';
 
 const actionClass = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
 const fieldClass = 'min-h-11 min-w-0 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink';
@@ -53,7 +54,7 @@ function BlockSummary({ block, zone }: { block: CalendarBlockRecord; zone: strin
 function V6Calendar() {
   const [params, setParams] = useSearchParams();
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const view = params.get('view') === 'day' ? 'day' : params.get('view') === 'week' ? 'week' : 'agenda';
+  const view = params.get('view') === 'day' ? 'day' : params.get('view') === 'week' ? 'week' : params.get('view') === 'month' ? 'month' : 'agenda';
   const rawDay = params.get('date');
   const date = validDayKey(rawDay) ? rawDay : dayKey(new Date(), zone);
   const [entries, setEntries] = useState<StudyEntryRecord[]>([]);
@@ -71,10 +72,12 @@ function V6Calendar() {
   const [moveEnd, setMoveEnd] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
   useEffect(() => {
     let active = true;
     setPhase('loading'); setReadError('');
-    const range = calendarRange(view === 'week' ? weekStartDay(date) : date, zone, view === 'day' ? 1 : 7);
+    const range = view === 'month' ? monthBounds(date, zone).range :
+      calendarRange(view === 'week' ? weekStartDay(date) : date, zone, view === 'day' ? 1 : 7);
     const api = getStudyApi();
     void Promise.all([api.listStudyEntries(range), api.listCalendarBlocks(range)])
       .then(([nextEntries, nextBlocks]) => {
@@ -115,7 +118,6 @@ function V6Calendar() {
     setSheetBlock(undefined);
     queueMicrotask(() => sheetOpener.current?.focus());
   }
-
   function updateUrl(key: 'view' | 'date', value: string) {
     const next = new URLSearchParams(params);
     next.set('view', view); next.set('date', date);
@@ -178,7 +180,7 @@ function V6Calendar() {
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
     <div onKeyDown={event => {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-      const choices = ['agenda', 'day', 'week'];
+      const choices = ['agenda', 'day', 'week', 'month'];
       const offset = event.key === 'ArrowRight' ? 1 : -1;
       const next = (choices.indexOf(view) + offset + choices.length) % choices.length;
       event.preventDefault();
@@ -186,12 +188,12 @@ function V6Calendar() {
       event.currentTarget.querySelectorAll('button')[next]?.focus();
     }}>
       <Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
-        options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }]} />
+        options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
     </div>
     <nav aria-label="Calendar date" className="flex flex-wrap items-center justify-between gap-2">
-      <button type="button" className={actionClass} aria-label="Previous dates" onClick={() => updateUrl('date', shiftDay(date, -step))}>‹</button>
+      <button type="button" className={actionClass} aria-label="Previous dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, -1) : shiftDay(date, -step))}>‹</button>
       <strong className="text-center text-label text-ink">{dateLabel(date, zone)}</strong>
-      <button type="button" className={actionClass} aria-label="Next dates" onClick={() => updateUrl('date', shiftDay(date, step))}>›</button>
+      <button type="button" className={actionClass} aria-label="Next dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, 1) : shiftDay(date, step))}>›</button>
       <button type="button" className={actionClass} onClick={() => updateUrl('date', dayKey(new Date(), zone))}>Today</button>
     </nav>
 
@@ -209,6 +211,12 @@ function V6Calendar() {
     </div>}
 
     {phase === 'ready' && view === 'week' && <WeekView date={date} zone={zone}
+      entries={entries} blocks={blocks} onDay={selected => {
+        const next = new URLSearchParams(params);
+        next.set('view', 'day'); next.set('date', selected); setParams(next);
+      }} />}
+
+    {phase === 'ready' && view === 'month' && <MonthView date={date} zone={zone}
       entries={entries} blocks={blocks} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
@@ -269,7 +277,7 @@ function V6Calendar() {
     </>}
     {phase === 'ready' && <nav aria-label="Calendar block sheet actions" className="flex flex-wrap gap-2">
       <button type="button" className={actionClass} onClick={event => openSheet(event, null)}>Plan block in sheet</button>
-      {view !== 'day' && blocks.filter(block => block.status !== 'cancelled').map(block =>
+      {(view === 'agenda' || view === 'week') && blocks.filter(block => block.status !== 'cancelled').map(block =>
         <button key={block.id} type="button" className={actionClass} aria-label={'Edit block ' + block.title}
           onClick={event => openSheet(event, block)}>Edit {block.title}</button>)}
     </nav>}
