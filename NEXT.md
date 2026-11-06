@@ -5,13 +5,6 @@ No item may list a protected path (`ci/protected.json`) in Scope. Files under `d
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
 
-## N17 v6 Calendar: Agenda and Day views behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/calendar` (the N13 placeholder in `src/features/calendar/Page.tsx`) shows an Agenda view (the next 7 days, grouped by civil day in the device zone, with `dayBounds` from `src/lib/effort`) and a Day view (hours with planned blocks and saved study entries side by side, logged time first as in `capacityStack`), switchable by a segmented control and remembered in the URL (`?view=agenda|day&date=YYYY-MM-DD`). From the Day view the user can add a study or busy block (title, start, end), move it to another time, mark it done, and delete it, all through `getStudyApi()`; a version conflict shows a "changed elsewhere, reload" message. Empty days show "Nothing planned." Layout per `docs/v6/screens/calendar-day.png` and `calendar-night.png`.
-Tests: unit tests in `tests/unit/calendar/` with a fake `StudyApi`: grouping across a midnight in `Asia/Kolkata`, the 23-hour `Europe/London` day 2026-03-29, create/move/done/delete calling the fake once each, the conflict message, the empty state, view and date kept in the URL.
-Scope: src/features/calendar/**, src/ui/v6/calendar/** (new), tests/unit/calendar/**, CURRENT.md.
-Not: Week and Month views, recurrence, automatic placement, adapters, the shell, new dependencies.
-
 ## N18 v6 Progress: effort view with range selector behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the Progress tab (`/insights`) shows an effort view above the existing insights: a Day / Week / Month selector (kept in the URL, `?range=`), total logged minutes (`loggedMinutes`), a per-day bar row for Week and Month, and a per-subject breakdown (`subjectPartition`, with "Unassigned") whose parts sum exactly to the total, all from `getStudyApi().listStudyEntries(range)`. Layout per `docs/v6/screens/progress-day.png`. With the flag off, `/insights` is unchanged.
