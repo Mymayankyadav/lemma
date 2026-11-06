@@ -48,7 +48,7 @@ describe('N32.1 v6 Inbox proposal evidence',()=>{
     ]);
     const html=render(proposal);
     expect(html).toContain('Plan follows the syllabus');
-    expect((html.match(/pp. 9–11/g)??[]).toHaveLength(1);
+    expect(html.match(/pp. 9–11/g)??[]).toHaveLength(1);
   });
   it('does not claim absent plan-change rationale or unsupported sources',()=>{
     const proposal:Proposal={...base,kind:'plan_change',card:null,plan:null,
