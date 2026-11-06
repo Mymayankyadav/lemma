@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "source": "D8(a) existing v6 command resources",
+  "version": 2,
+  "source": "D8(a) registered service-role-only public.mcp_command dispatcher",
   "resources": [
     {
       "resource": "study_entries",
@@ -99,5 +99,6 @@
       }
     }
   ],
-  "access": "database functions only; no client RLS policy"
+  "access": "service_role only for dispatcher; no unauthenticated or authenticated client privilege",
+  "dispatch": "public.mcp_command resolves a resource only from this registry; it routes through the existing owner-bound public.mcp_<command_fn>(uuid,text,jsonb) bridge; no caller-supplied function name"
 }
