@@ -10,6 +10,7 @@ import {useToast} from '../../../src/ui/Toast';
 
 const flags=vi.hoisted(()=>({enabled:true}));
 vi.mock('../../../src/flags',()=>({isFlagOn:()=>flags.enabled}));
+vi.mock('../../../src/data/mode',()=>({getMode:()=> 'demo'}));
 vi.mock('../../../src/ui/Toast',()=>({useToast:vi.fn()}));
 const original:CalendarBlockRecord={
  id:'block-1',kind:'study',title:'Work through notes',status:'planned',

@@ -30,12 +30,12 @@ Tests: `tests/unit/tasks-ui/backlog.test.tsx` using `setTaskApiForTests` (20-row
 Scope: src/features/tasks/**, src/app/V6Header.tsx (only Task sheet handoff), src/app/tasksRoute.tsx (new), src/app/App.tsx (adding the route only), tests/unit/tasks-ui/**, CURRENT.md.
 Not: `src/data/tasks/**`, other app routes or screens, Supabase, new dependencies, touching flag-off UI.
 
-## N26 v6 Calendar Week and Month views
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Calendar gains Week and Month beside Agenda and Day (keyboard view tabs, the choice kept in the URL query), built from the same `getStudyApi()` records and the same model helpers in `src/features/calendar/model.ts` so all four views agree on totals: Week shows seven day columns from the owner's week start with planned/busy blocks and saved-effort totals per day, dense overlaps stacked rather than hidden; Month shows a date grid with per-day saved minutes and block counts, tapping a day opens Day. Each view loads only its bounded range. "Source not loaded" is never shown as zero.
-Tests: `tests/unit/calendar/week-month.test.tsx` (range bounds, totals equal to Day for the same date, overlap stacking, week start, view switching by keyboard).
-Scope: src/features/calendar/views/** (new), src/features/calendar/Page.tsx (the view switcher only), src/features/calendar/model.ts (additive helpers only), tests/unit/calendar/week-month.test.tsx, CURRENT.md.
-Not: block editing (N27), `src/data/study/**`, other screens, new dependencies.
+## N26.2 v6 Calendar Month grid (remaining after N26 split)
+Stage: Build · Status: open · Needs: N26.1 · Assigned: —
+Done = with v6Shell on, Calendar adds Month alongside Agenda, Day and the N26.1 Week view. From the same getStudyApi() owner-visible entries/blocks and civil-day helpers in src/features/calendar/model.ts, show a true month date grid aligned to the owner's week start, per-day saved effort minutes and block counts; tapping a date opens Day and retains ?view=day&date=YYYY-MM-DD. Month reads only its bounded grid range (including adjacent-week cells). A loading or failed data source is never displayed as zero. The Month totals must match Day and Week for the same date, including midnight and DST crossings, and keyboard view navigation must continue to work with all four options.
+Tests: extend tests/unit/calendar/week-month.test.tsx for the Month range, counts, day/Week parity, keyboard, URL and loading/failed states.
+Scope: src/features/calendar/views/** (Month view only), src/features/calendar/Page.tsx (view switcher only), src/features/calendar/model.ts (additive Month helpers only), tests/unit/calendar/week-month.test.tsx, CURRENT.md.
+Not: rewriting the N26.1 Week view, block editing (N27), src/data/study/**, other screens, new dependencies.
 
 
 ## N28 v6 Settings behind the shell flag
@@ -44,13 +44,6 @@ Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/scre
 Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
 Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
-## N29 v6 Atlas list behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/atlas` renders the v6 Atlas from `docs/v6/screens/atlas-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Atlas row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. The phone default is a list of real concepts with hierarchy, checkpoint links and due counts from the existing Atlas data; the existing graph/tree view stays reachable as the map, with saved pins untouched; synthetic grouping rows are labelled and excluded from concept totals.
-Tests: `tests/unit/atlas-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/atlas/v6/** (new), src/features/atlas/Page.tsx (the flag branch only), tests/unit/atlas-v6/**, CURRENT.md.
-Not: changing the existing graph, layout or pin code, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
 ## N30 v6 Review start behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
