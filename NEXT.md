@@ -16,14 +16,6 @@ Tests: `tests/unit/app/v6-tokens.test.ts`: the attribute appears only with the f
 Scope: src/ui/v6/tokens.css (new), src/ui/v6/** (token use in shell parts), src/app/** (setting the attribute and importing the stylesheet only), public/fonts/v6/** (new), tests/unit/app/**, CURRENT.md.
 Not: changing any colour or font with the flag off, existing visual tests, screens other than the shell parts, new dependencies.
 
-## N20 v6 first slice end to end on demo data
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `?demo=1&flags=v6Shell`, the whole slice works in the browser: start focus on Today → pause → resume → finish → save; Today's "logged today" rises by the saved minutes; the Calendar Day view shows the saved entry at its time; Progress Day shows the same total; reloading mid-focus returns to the running entry; discarding adds nothing. Fix the wiring bugs this exposes in the N14.2/N14.3/N17/N18 files.
-Tests: `tests/e2e/v6-focus.spec.ts` and `tests/e2e/v6-slice.spec.ts` covering each sentence above at 390×844, plus 320×640 for the Focus dialog; Escape closes the dialog and focus returns to the trigger.
-Scope: tests/e2e/v6-focus.spec.ts, tests/e2e/v6-slice.spec.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/**, src/features/progress-v6/**, src/data/study/demo.ts, src/ui/v6/**, CURRENT.md.
-Not: the live adapter (a later live slice item), new screens, existing e2e specs, new dependencies.
-
-
 ## N22 Tasks: server command layer, undo and connector wrapper (D7)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = per Owner decision D7 (`docs/v6/README.md`), ONE new additive migration adds `public.task_command(p jsonb) returns jsonb` (security invoker, `set search_path=''`, owner from `auth.uid()`), the `command_receipts` envelope of `public.study_command` with `resource` `tasks` and `operation` `create`, `update` or `delete`: same `operationId` retry and conflict rules, `expectedVersion` checks, version bump, `updated_at`, `completed_at` set exactly when status becomes `completed` and cleared when it leaves it, and a receipt shaped like `study_command`'s `calendar_blocks` receipts including `actionNo`; `lemma_log_change` journal triggers on `public.tasks` and the foreign keys made `deferrable initially immediate`, so `undo` reverts task writes; the compatible replacement of `public.undo_action(uuid,bigint,boolean)` that only appends `'tasks'` to both table lists (PR body line `Replaces function: undo_action (reviewer verified signature and behaviour)`); and `public.mcp_task_command(p_user uuid, p_source text, p jsonb)` exactly like D6's `mcp_study_command` but calling `task_command`, service_role only.
