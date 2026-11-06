@@ -36,6 +36,22 @@ comment on table public.study_entries is 'drop nothing';`
    'alter policy own on public.cards using (true)','alter table public.cards drop column due']
   for(const s of bad) expect(sqlFindings(s+';'),s).toHaveLength(1)
  })
+ it('allows REVOKE on a function created in the same migration (D6), nothing else',()=>{
+  const mk='create function public.mcp_study_command(p_user uuid, p_source text, p jsonb) returns jsonb language plpgsql security definer set search_path = \'\' as $$ begin return p; end $$;'
+  const rv='revoke all on function public.mcp_study_command(uuid, text, jsonb) from public, anon, authenticated;'
+  const gr='grant execute on function public.mcp_study_command(uuid, text, jsonb) to service_role;'
+  expect(sqlFindings([mk,rv,gr].join('\n'))).toEqual([])
+  expect(sqlFindings([mk,rv.replace('revoke all','revoke execute'),gr].join('\n'))).toEqual([])
+  // revoke on a function that already exists on the base branch stays rejected
+  expect(sqlFindings([mk,rv].join('\n'),{existing:new Set(['mcp_study_command'])})).toHaveLength(1)
+  // revoke without creating the function in this migration, on another function, on tables, schemas or all functions
+  expect(sqlFindings(rv)).toHaveLength(1)
+  expect(sqlFindings([mk,'revoke all on function public.study_command(jsonb) from authenticated;'].join('\n'))).toHaveLength(1)
+  expect(sqlFindings([mk,'revoke all on all functions in schema public from authenticated;'].join('\n'))).toHaveLength(1)
+  expect(sqlFindings([mk,'revoke select on public.cards from authenticated;'].join('\n'))).toHaveLength(1)
+  // one new function and one existing one in the same revoke is rejected
+  expect(sqlFindings([mk,'revoke all on function public.mcp_study_command(uuid, text, jsonb), public.study_command(jsonb) from public;'].join('\n'))).toHaveLength(1)
+ })
  it('replacing an EXISTING function needs the exact reviewed-replacement line; new functions do not',()=>{
   const sql='create or replace function public.review_items(p int) returns int language sql as $$ select 1 $$;'
   const existing=new Set(['review_items'])
