@@ -1,0 +1,41 @@
+{
+  "table": "command_receipts",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "N37 generic MCP command receipts (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "operation_id": {
+      "classification": "derived",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "N37 generic MCP command receipts (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "resource": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "N37 generic MCP command receipts (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "result": {
+      "classification": "derived",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "N37 generic MCP command receipts (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "N37 generic MCP command receipts (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    }
+  }
+}

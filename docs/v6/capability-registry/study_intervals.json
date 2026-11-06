@@ -1,0 +1,48 @@
+{
+  "table": "study_intervals",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "entry_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "kind": {
+      "classification": "command-managed",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "started_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "ended_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study/live.ts",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    }
+  }
+}
