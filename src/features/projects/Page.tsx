@@ -113,6 +113,9 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
  </section>;
 }
 
+/** Keep the flag wrapper above the legacy implementation: cold-route prefetch source checks inspect this section. */
+export default function Page(){return isFlagOn('v6Shell')?<V6Paths/>:<LegacyPaths/>;}
+
 function LegacyPaths(){
  const queryClient=useQueryClient();
  // Cards is the common next stop from Paths. Warm its small route chunk
@@ -235,6 +238,3 @@ function LegacyPaths(){
   {filter==='archived'&&<p className="text-caption text-ink-3">Archived projects are preserved for undo. Your library may hide them until restored.</p>}
  </Screen>;
 }
-
-/** Legacy Paths is unchanged unless the v6 shell is enabled. */
-export default function Page(){return isFlagOn('v6Shell')?<V6Paths/>:<LegacyPaths/>;}
