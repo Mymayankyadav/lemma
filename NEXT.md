@@ -128,12 +128,12 @@ Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per ope
 Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
-## N56 Deadlines and milestones: app module (src/data/deadlines)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and operations of N42, including every lifecycle operation it names.
-Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N56.2 Deadlines live adapter and command parity
+Stage: Build · Status: open · Needs: N56.1 · Assigned: —
+Done = complete N56 after the N56.1 typed contract and persistent demo adapter. In src/data/deadlines/live.ts implement owner-bound, bounded and cursor-scoped reads of standalone deadlines and projected project/checkpoint target dates, without duplicating projected records. Map every N42 deadline operation (create, update, complete, reopen, cancel, restore, delete) into validated versioned rpc('deadline_command', ...) envelopes; a retried uncertain write reuses its operationId, maps conflict and not-found errors, and never supplies an owner ID. Preserve explicit civil due dates versus timezone-aware instants and N56.1's types and read-only projections.
+Tests: tests/unit/deadlines/live.test.ts using a mocked RLS client for all command envelopes, retries/versions and typed error mapping; owner isolation, bounded paging and projection reads.
+Scope: src/data/deadlines/live.ts, src/data/deadlines/index.ts (live selection only), tests/unit/deadlines/live.test.ts, CURRENT.md.
+Not: migrations, MCP code, other data folders or UI, modifications to N56.1's passing demo test.
 
 ## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -294,7 +294,7 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56, N57 · Assigned: —
+Stage: Build · Status: open · Needs: N56.2, N57 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
