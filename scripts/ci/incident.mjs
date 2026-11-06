@@ -72,10 +72,20 @@ function incidentBody(sig, v, extra = '') {
   return `<!-- sig:${hashOf(sig)} -->\n${extra}**Signature:** \`${sig}\`\n\n**Seen on**\n${lines.join('\n')}\n\nMaintained by CI. It closes when main is green, or when a fix lands and the signature stops appearing.\n`;
 }
 
+/**
+ * Pure: the `extra` text for an incident body rewrite. A PR run that reports the signature of an open main incident
+ * rewrites that issue with no extra text; without this the `<!-- main-incident -->` tag was lost, main-green could not
+ * find the incident to close it, and the S0 merge freeze stayed on after main was green again (#877).
+ */
+export function keepMainMarker(existingBody, extra = '') {
+  const tag = '<!-- main-incident -->';
+  return String(existingBody || '').includes(tag) && !extra.includes(tag) ? `${tag}\n${extra}` : extra;
+}
+
 async function upsertIncident(sig, v, labels, extra = '') {
   const found = await findIncident(hashOf(sig));
   if (found) {
-    const body = incidentBody(sig, v, extra);
+    const body = incidentBody(sig, v, keepMainMarker(found.body, extra));
     if (body !== found.body) await api('PATCH', repoPath(`/issues/${found.number}`), { body });
     const have = new Set(found.labels.map((l) => l.name));
     await addLabels(found.number, labels.filter((l) => !have.has(l)));

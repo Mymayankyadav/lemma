@@ -71,6 +71,9 @@ describe('Cards page states (demo adapter)',()=>{
   expect((await api.searchCardsPage({query:'',noteStatus:'suspended'})).rows).toHaveLength(0);
   await mount(api,[]);
   await change('Filter note status','suspended');
+  for(let attempt=0;attempt<50 && !container.textContent?.includes('No cards match');attempt++){
+   await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10))});
+  }
   expect(container.textContent).toContain('No cards match');
   expect(rows()).toHaveLength(0);
  });
