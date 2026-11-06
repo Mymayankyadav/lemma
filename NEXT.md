@@ -5,15 +5,6 @@ No item may list a protected path (`ci/protected.json`) in Scope. Files under `d
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
 
-## N14.3 v6 Today hero and Focus dialog behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Today shows a current-action hero (Start focus, or Return to focus while an entry is active) and "logged today" from `loggedMinutes` over `getStudyApi().listStudyEntries(today)`. The N13 focus-accessory slot shows the active entry's intent, remaining time (N14.1 `remainingFocusMinutes`) and Pause. A native `<dialog>` Focus panel offers Pause, Take a break, Park a thought (text field kept with the entry's reflection), and Finish → editable minutes and an optional note → Save or Discard; it drives the N14.1 machine and calls the matching `StudyApi` writes. Escape closes it and focus returns to the trigger. Layout per `docs/v6/screens/today-day.png` and `focus-day.png`. With the flag off, Today is unchanged.
-Tests: unit tests in `tests/unit/focus/` with a fake `StudyApi` (`setStudyApiForTests`): start → pause → resume → finish → save calls the right methods once each, discard calls discard, logged-today shows the fake's saved minutes, the dialog returns focus on Escape.
-Scope: src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/v6/focus/** (new), tests/unit/focus/**, CURRENT.md.
-Not: adapters, Calendar or Progress, end-to-end specs (N20), parked thoughts as tasks, notifications, Today with the flag off.
-
-
-
 ## N19 v6 visual tokens and fonts behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the app root carries `data-v6` and one stylesheet `src/ui/v6/tokens.css` defines the v6 colour, type, spacing, radius and elevation tokens for day and night (`prefers-color-scheme` plus the existing theme setting) from `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the `docs/v6/screens/*-day.png` / `*-night.png` pairs, as CSS custom properties scoped under `[data-v6]`. The v6 shell parts from N13 (tab bar, header, accessory slot) use the tokens. Fonts: the families the handoff names, self-hosted as woff2 under `public/fonts/v6/` only if their licence allows it (record the licence in CURRENT.md), otherwise the stated fallback stack; no external font requests. With the flag off nothing changes.
@@ -28,6 +19,7 @@ Tests: unit tests in `tests/unit/mcp/` (argument validation, owner not taken fro
 Owner-authorized 2026-11-05 (D1) and 2026-11-06 (D6): merging deploys the migration and the MCP function to production, so this PR needs a review; the reviewer checks the function against D6 line by line and confirms no existing tool's input or output changed. Per D3, the `study` tool acts on explicit instructions in chat only for changes that can be undone (every write returns an `actionNo` for `undo`).
 Scope: supabase/functions/mcp/**, supabase/migrations/<one new additive file creating only public.mcp_study_command>, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.md (MCP tools list).
 Not: changes to `mcp_commit`, `study_command` or any existing function, policy or table; changes to existing tool behaviour; the `resume` packet; the `notify` function.
+
 ## N20 v6 first slice end to end on demo data
 Stage: Build · Status: open · Needs: N14.2, N14.3, N17, N18 · Assigned: —
 Done = with `?demo=1&flags=v6Shell`, the whole slice works in the browser: start focus on Today → pause → resume → finish → save; Today's "logged today" rises by the saved minutes; the Calendar Day view shows the saved entry at its time; Progress Day shows the same total; reloading mid-focus returns to the running entry; discarding adds nothing. Fix the wiring bugs this exposes in the N14.2/N14.3/N17/N18 files.

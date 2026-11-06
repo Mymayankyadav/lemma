@@ -47,15 +47,31 @@ const RULES = [
   [/\balter\s+policy\b/i, 'ALTER POLICY'],
 ];
 
+/** Pure: true for `revoke all|execute on function f(...)[, g(...)] from …` where EVERY listed function is created by this
+ *  same migration and does not already exist on the base branch. Locking down a function you just created only removes
+ *  default access from it (Postgres grants EXECUTE to PUBLIC by default), so it cannot harm anything that exists. Revoking
+ *  on existing functions, tables, schemas or `all functions in schema` stays rejected. */
+export function isRevokeOnNewFunction(stmt, created) {
+  const m = /^\s*revoke\s+(?:all(?:\s+privileges)?|execute)\s+on\s+function\s+([\s\S]+?)\s+from\s+/i.exec(stmt);
+  if (!m) return false;
+  const names = [...m[1].matchAll(/(?:"?\w+"?\.)?"?(\w+)"?\s*\(/g)].map((x) => x[1].toLowerCase());
+  return names.length > 0 && names.every((n) => created.has(n));
+}
+
 /** Pure: findings for one new migration's SQL. replacesOk = names the PR body declares with
  *  `Replaces function: <name> (reviewer verified signature and behaviour)`. */
 export function sqlFindings(sql, { existing = new Set(), replacesOk = new Set() } = {}) {
   const findings = [];
   const stripped = stripSql(sql);
+  const created = new Set([...functionNames(sql)].filter((n) => !existing.has(n)));
   for (const stmt of stripped.split(';')) {
     const st = stmt.trim();
     if (!st) continue;
-    for (const [re, label] of RULES) if (re.test(st)) { findings.push(`${label}: \`${st.replace(/\s+/g, ' ').slice(0, 90)}\``); break; }
+    for (const [re, label] of RULES) {
+      if (!re.test(st)) continue;
+      if (!(label === 'REVOKE' && isRevokeOnNewFunction(st, created))) findings.push(`${label}: \`${st.replace(/\s+/g, ' ').slice(0, 90)}\``);
+      break;
+    }
     const m = /create\s+or\s+replace\s+function\s+(?:"?\w+"?\.)?"?(\w+)"?\s*\(/i.exec(st);
     if (m && existing.has(m[1].toLowerCase()) && !replacesOk.has(m[1].toLowerCase())) {
       findings.push(`replaces existing function \`${m[1]}\` without a "Replaces function: ${m[1]} (reviewer verified signature and behaviour)" line in the PR body`);
