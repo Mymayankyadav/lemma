@@ -153,3 +153,7 @@ The pure `src/lib/effort/` module provides interval-union logged minutes (with s
 ## Cards empty-state test timing (bug #879)
 
 The cards page-states filtered-to-zero regression now waits for the asynchronous filtered result before asserting the exact `No cards match` empty state and zero rendered card rows. The test's expectations are unchanged; this addresses intermittent premature assertions under load.
+
+## N14.1 Focus state-machine foundation (PR #887)
+
+N14 is being split into small tested slices. The first slice is a pure typed state machine in `src/lib/focus/machine.ts`. It records running, paused, break, finishing, saved and discarded transitions, with immutable timestamped intervals rather than counting timer ticks. N9's `inProgressMinutes` caps the open Pomodoro and excludes breaks while retaining accumulated focus across pauses; finished sessions retain their closed intervals and an optional editable saved-minute value and reflection. Tests cover invalid transitions, monotonic timestamps, reload reconstruction, capping, saving twice, and discard. No UI or live data path is changed in this slice. NEXT.md retains N14.2 demo persistence and N14.3 flagged UI integration.
