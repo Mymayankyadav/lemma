@@ -234,7 +234,7 @@ try {
  for(const operation of ['update','delete','start','pause','resume','break','save','discard']){
    for(const invalid of [undefined,null]){
      const operationId='ffffffff-ffff-ffff-ffff-'+String(nonce++).padStart(12,'0');
-     const payload=study(operationId,operation,{target:{id:intervalId},patch:{intent:'must not write'}});
+     const payload=study(operationId,operation,{target:{id:intervalId},patch:operation==='delete'?{}:{intent:'must not write'}});
      if(invalid!==undefined) payload.expectedVersion=invalid;
      const before=await receiptCount();
      await assert.rejects(command(payload),/expectedVersion/);
@@ -245,7 +245,7 @@ try {
  for(const operation of ['update','delete']){
    for(const invalid of [undefined,null]){
      const operationId='ffffffff-ffff-ffff-ffff-'+String(nonce++).padStart(12,'0');
-     const payload=intervalRequest(operationId,operation,{target:{id:iid},patch:{kind:'focus'}});
+     const payload=intervalRequest(operationId,operation,{target:{id:iid},patch:operation==='delete'?{}:{kind:'focus'}});
      if(invalid!==undefined) payload.expectedVersion=invalid;
      const before=await receiptCount();
      await assert.rejects(command(payload),/expectedVersion/);
