@@ -100,8 +100,11 @@ try {
   assert.ok(new Date(updated.updated_at).getTime()>=new Date(old.updated_at).getTime(),
    table+' refreshes the timestamp');
  }
- // Distinguish worker and browser sources without changing any writer code.
- await query("select set_config('lemma.source','worker',false)");
+ // Existing actions.source allows 'system' for background writes; N38 maps
+ // that unchanged journal source to the 'worker' record provenance category.
+ // 'worker' is not a valid actions.source value, so using it here would
+ // violate the pre-existing action journal constraint before N38 is tested.
+ await query("select set_config('lemma.source','system',false)");
  await query('update public.subjects set name=name where id=$1',records.subjects.args);
  assert.deepEqual({version:(await record('subjects')).version,source:(await record('subjects')).updated_source},
   {version:3,source:'worker'});
