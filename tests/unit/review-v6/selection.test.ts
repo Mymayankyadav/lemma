@@ -29,4 +29,16 @@ describe('N30.1 selected batch counts',()=>{
   expect(reviewBatch(nodes,cards,defaultSelection(nodes),0).batch).toHaveLength(0);
   expect(reviewBatch(nodes,[],defaultSelection(nodes),20)).toMatchObject({allDue:5,eligible:0,batch:[]});
  });
+ it('includes child due cards even when the parent summary has no due count',()=>{
+  const edge=[{key:'project:proofs',due:0,children:[
+   {key:'cp:proofs:C1',due:2,children:[]}
+  ]}] as unknown as DeckNode[];
+  const selected=defaultSelection(edge);
+  expect(selected.has('cp:proofs:C1')).toBe(true);
+  expect(selected.has('project:proofs')).toBe(false);
+  const round=reviewBatch(edge,cards,selected,10);
+  expect(round.allDue).toBe(2);
+  expect(round.batch.map(c=>c.cardId)).toEqual(['1','3']);
+ });
+
 });

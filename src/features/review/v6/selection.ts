@@ -12,9 +12,9 @@ export function reviewBatch(nodes:DeckNode[],items:ReviewItem[],
   return selected.has(node.key);
  });
  const limit=Math.max(0,Math.trunc(Number.isFinite(quota)?quota:0));
- return {allDue:nodes.reduce((n,p)=>n+Math.max(0,p.due),0),
+ return {allDue:nodes.reduce((n,p)=>n+Math.max(0,p.due,p.children.reduce((sum,c)=>sum+Math.max(0,c.due),0)),0),
   eligible:available.length,batch:available.slice(0,limit)};
 }
 export function defaultSelection(nodes:DeckNode[]):Set<string>{
- return new Set(nodes.flatMap(n=>n.due>0?[n.key,...n.children.filter(c=>c.due>0).map(c=>c.key)]:[]));
+ return new Set(nodes.flatMap(n=>[...(n.due>0?[n.key]:[]),...n.children.filter(c=>c.due>0).map(c=>c.key)]));
 }
