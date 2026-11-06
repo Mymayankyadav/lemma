@@ -26,6 +26,8 @@ interface ReviewState {
  startTime:number
  answers:Answer[]
  completedRound:boolean
+ reminderDriven:boolean
+ markReminderDriven:()=>void
  lastUndo:Answer|null
  total:number
  roundOrder:string[]
@@ -42,7 +44,7 @@ interface ReviewState {
 const defaultFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false}
 export const useReviewSession=create<ReviewState>((set,get)=>({
  filter:defaultFilter,queue:null,current:null,confidence:null,revealed:false,submitting:false,
- startTime:Date.now(),answers:[],completedRound:false,lastUndo:null,total:0,roundOrder:[],pendingAgain:[],
+ startTime:Date.now(),answers:[],completedRound:false,reminderDriven:false,lastUndo:null,total:0,roundOrder:[],pendingAgain:[],
  initialize(items,settings,filter,focus){
   const built=buildQueue(items,settings);
   // Selection remains quota-aware; overdue cards in the owner's current
@@ -54,7 +56,7 @@ export const useReviewSession=create<ReviewState>((set,get)=>({
   const first=nextCard({...built,learning:priority(built.learning),reviews:priority(built.reviews),
    fresh:priority(built.fresh)},Date.now())
   set({filter,queue:first.queue,current:first.item,total:first.queue.total,
-   revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],completedRound:false,lastUndo:null,
+   revealed:false,confidence:null,submitting:false,startTime:Date.now(),answers:[],completedRound:false,reminderDriven:false,lastUndo:null,
    roundOrder:first.item?[first.item.cardId]:[],pendingAgain:[]})
  },
  reveal(confidence){if(get().current&&!get().submitting)set({revealed:true,confidence})},
@@ -79,5 +81,6 @@ export const useReviewSession=create<ReviewState>((set,get)=>({
   return lastUndo
  },
  markCompleted(){if(get().answers.length>0)set({completedRound:true})},
- close(){set({current:null,queue:null,roundOrder:[],pendingAgain:[],confidence:null,revealed:false,submitting:false,startTime:Date.now()})},
+ markReminderDriven(){if(get().queue)set({reminderDriven:true})},
+ close(){set({current:null,queue:null,roundOrder:[],pendingAgain:[],reminderDriven:false,confidence:null,revealed:false,submitting:false,startTime:Date.now()})},
 }))

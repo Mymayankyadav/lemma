@@ -104,3 +104,18 @@ export async function fetchNotificationReviewItems(count:number):Promise<import(
  const {boundedReminderItems}=await import('../features/review/reminder-queue');
  return boundedReminderItems(data as import('./types').ReviewItem[],count);
 }
+
+
+/** Display only a server-projected future reminder, never fabricate a schedule
+ * from a local clock or infer one when reminders/previews are unavailable. */
+export function nextReminderTime(
+ prefs: import('./types').NotifyPrefs|null|undefined,
+ previews: import('./types').NotifyPreviewRow[]|null|undefined,
+ nowMs=Date.now(),
+):string|null {
+ if(prefs?.enabled!==true||!prefs.mode||prefs.mode==='off'||!Array.isArray(previews)||!Number.isFinite(nowMs))
+  return null;
+ return previews.filter(row=>!row.held&&typeof row.at==='string'&&
+   Number.isFinite(Date.parse(row.at))&&Date.parse(row.at)>nowMs)
+  .sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0]?.at??null;
+}

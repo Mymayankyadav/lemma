@@ -34,10 +34,5 @@ Tests: `tests/e2e/v6-focus.spec.ts` and `tests/e2e/v6-slice.spec.ts` covering ea
 Scope: tests/e2e/v6-focus.spec.ts, tests/e2e/v6-slice.spec.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/**, src/features/progress-v6/**, src/data/study/demo.ts, src/ui/v6/**, CURRENT.md.
 Not: the live adapter (a later live slice item), new screens, existing e2e specs, new dependencies.
 
-## N6.3 Notifications: Review completion reminder-time offer (after N6.2)
-Stage: Build · Status: open · Needs: N6.2 · Assigned: —
-Done = after a reminder-driven Review queue is finished, the Review-done screen offers the next reminder time from current notification settings rather than an invented schedule; the offer is absent for ordinary Review and when `notificationsPush` is off. Tests cover eligible reminder completion, ordinary round, missing/unavailable scheduling data, and correct finishing navigation.
-Scope: src/features/review-done/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
-Not: supabase/**, `.github/**`, new dependencies, mutation of persisted reminder settings.
 
 (Next priority run: the live first slice (N16 + N11.3 wired into Today/Calendar/Progress), Calendar Week/Month, tasks UI on N21, Harden pass for the v6 slice. Next free ID: N22.)
