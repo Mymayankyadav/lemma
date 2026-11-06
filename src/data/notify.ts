@@ -88,3 +88,19 @@ export function enabledNotificationReviewLink(
 ):NotificationReviewLink|null {
  return enabled?parseNotificationReviewLink(href,nowMs):null;
 }
+
+/** One owner-scoped read; the RPC itself enforces due dates and new-card limits.
+ * The ordinary review_items RPC and persisted daily quota are never modified.
+ */
+export async function fetchNotificationReviewItems(count:number):Promise<import('./types').ReviewItem[]> {
+ if(!Number.isInteger(count)||count<1||count>50)throw new RangeError('Reminder count must be 1–50');
+ const {liveClient}=await import('./live/client');
+ const {data,error}=await liveClient().rpc('notification_review_items',{
+  p_count:count,p_decks:[],p_session_id:null,p_concept_slug:null,
+  p_include_new:true,p_new_only:false
+ });
+ if(error)throw error;
+ if(!Array.isArray(data))throw new Error('Invalid reminder queue response');
+ const {boundedReminderItems}=await import('../features/review/reminder-queue');
+ return boundedReminderItems(data as import('./types').ReviewItem[],count);
+}

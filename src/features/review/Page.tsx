@@ -21,6 +21,7 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {useReviewSession} from '../review-run/store';
+import {useReminderRound} from './reminder-round';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 
@@ -51,6 +52,7 @@ export default function Page(){
   staleTime:30_000,
   refetchOnWindowFocus:true,
  });
+ const reminder=useReminderRound(settings.data);
  const update=useUpdateSettings();
  const [catchUpUntil,setCatchUpUntil]=useState(()=>Number(localStorage.getItem('lemma.catch-up-until')||0));
  const activeCatchUp=catchUpUntil>Date.now();
@@ -148,6 +150,8 @@ export default function Page(){
  if(decks.isPending||settings.isPending||cards.isPending)return <Screen title="Review" tabBar actions={<IconButton icon={Search} label="Search cards" to="/cards"/>}>
   <Slab className="flex flex-col gap-4 p-6"><Skeleton h={75} w="55%"/><Skeleton h={50}/></Slab><Skeleton h={52}/><Skeleton h={56}/></Screen>;
  return <Screen title="Review" tabBar actions={<IconButton icon={Search} label="Search cards" to="/cards"/>}>
+  {reminder.loading&&<p role="status">Loading reminder cards…</p>}
+  {reminder.error&&<p role="alert">{reminder.error}</p>}
   {decks.error||cards.error||settings.error?
    <EmptyState art="plug" title="Your decks could not load" body="Check your connection and try again."
     action={{label:'Try again',onClick:()=>{void decks.refetch();void cards.refetch();void settings.refetch()}}}/>:
