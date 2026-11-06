@@ -18,6 +18,15 @@ Tests: tests/mcp/sql/registries-dispatch.mjs using full-migration PGlite to prov
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries-dispatch.mjs, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: changes to existing migrations, MCP function/tool code, app code, unrelated tables/functions, expanded client access or new dependencies.
 
+## N38 Versions and provenance on existing mutable records
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = one additive migration adds `version int not null default 1`, `updated_source text` (`app`/`mcp`/`worker`, null for history) and a trigger that bumps `version` and `updated_at` on every update to `settings`, `subjects`, `projects`, `sources`, `source_pages`, `concepts`, `checkpoints`, `styles`, `notes`, `cards`, `proposals`, `card_comments`, `diagnostics` and `misconceptions`. Existing writers keep working unchanged (they do not send a version); expected-version checks are added by later items. No existing row is updated by the migration.
+Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
+Tests: `tests/mcp/sql/record-versions.mjs`: every listed table bumps once per update and not on a no-op insert; existing app, MCP, undo and review SQL tests pass unchanged; `mcp_commit` writes still succeed
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/record-versions.mjs, docs/v6/capability-registry/** (the listed tables' files only), CURRENT.md.
+Not: app or MCP code, other tables, changing existing functions.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
+
 ## N39 Typed planning and focus settings
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = one additive migration adds to `public.settings`, with defaults and check constraints in explicit units: `week_start int` (0–6, default 1), `clock_24h boolean`, `focus_defaults jsonb` (mode `pomodoro`/`flowtime`/`open`, focus/break/long-break minutes, cycles, Flowtime break ratio, long-session guard minutes), `planning jsonb` (daily window start/end local times, gap minutes, maximum consecutive minutes, daily minimum qualifying minutes, daily intention on/off), `review_budget jsonb` (cards, minutes, reserve review time in plans), `attention jsonb` (opt-in drift and urge prompts), and a validation function used by the checks. Unknown keys inside these objects are preserved by every writer.
@@ -106,12 +115,21 @@ Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle r
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
-Stage: Build · Status: open · Needs: N56.1, N42 · Assigned: —
-Done = complete the N56 app module after N56.1's contract, isolated demo adapter and stable getDeadlineApi/setDeadlineApiForTests facade. Implement the owner-RLS live deadline adapter for all N42 operations: create, update, complete, reopen, cancel, restore, delete via public.deadlines_command with v1 operationId, retries reusing that ID, optimistic expectedVersion, actionNo receipts, typed conflict mapping, civil due dates versus instants, owner-scoped projected project/checkpoint targets (read-only, no new rows), and exact status-filtered bounded 1–50 keyset pages; never send owner IDs in browser commands. Replace the live placeholder in the existing module facade. Preserve demo semantics and separate storage.
-Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, including retries, each operation, stale conflicts, owner RLS, projected read-only targets and 50+ row cursor walk; existing N56.1 demo tests remain green.
-Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
-Not: src/data/tasks/**, src/data/study/**, other data folders, UI, supabase/**, new dependencies.
+## N55 Activity presets: app module (src/data/presets)
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = per D8(c) and the lane rules, `src/data/presets/` for the records and operations of N41, including every lifecycle operation it names.
+Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
+Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
+
+## N56 Deadlines and milestones: app module (src/data/deadlines)
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and operations of N42, including every lifecycle operation it names.
+Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
+Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -127,12 +145,13 @@ Tests: `tests/unit/parked-thoughts/**` (demo behaviour and reload, live envelope
 Scope: src/data/parked-thoughts/** (new), tests/unit/parked-thoughts/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
-## N60 Dated day plans and closures: app module (src/data/day-plans)
+## N59 Study goals: app module (src/data/study-goals)
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/day-plans/` for the records and operations of N46, including every lifecycle operation it names.
-Tests: `tests/unit/day-plans/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/day-plans/** (new), tests/unit/day-plans/**, CURRENT.md.
+Done = per D8(c) and the lane rules, `src/data/study-goals/` for the records and operations of N45, including every lifecycle operation it names.
+Tests: `tests/unit/study-goals/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/study-goals/** (new), tests/unit/study-goals/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N61 Overlap acknowledgements: app module (src/data/overlap-acknowledgements)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -265,7 +284,7 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56.2, N57 · Assigned: —
+Stage: Build · Status: open · Needs: N56, N57 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
