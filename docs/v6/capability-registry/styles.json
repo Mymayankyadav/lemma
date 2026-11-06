@@ -1,0 +1,44 @@
+{
+  "table": "styles",
+  "coverage": "N38 additive fields only; N40 must classify all other legacy columns",
+  "columns": {
+    "version": {
+      "classification": "command-managed",
+      "type": "integer",
+      "nullable": false,
+      "default": 1,
+      "write": "database trigger on every UPDATE; optimistic expectedVersion checks deferred to later commands",
+      "app_path": "existing app write (implicit)",
+      "mcp_path": "existing MCP write (implicit)",
+      "export": "include",
+      "deletion": "follows owner record"
+    },
+    "updated_source": {
+      "classification": "derived",
+      "type": "text",
+      "nullable": true,
+      "default": null,
+      "allowed": [
+        "app",
+        "mcp",
+        "worker"
+      ],
+      "write": "database trigger maps lemma.source to actor category; null means no update since adoption",
+      "app_path": "read owner record",
+      "mcp_path": "read owner record",
+      "export": "include",
+      "deletion": "follows owner record"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "type": "timestamptz",
+      "nullable": false,
+      "default": "now()",
+      "write": "database trigger clock_timestamp on every UPDATE",
+      "app_path": "read owner record",
+      "mcp_path": "read owner record",
+      "export": "include",
+      "deletion": "follows owner record"
+    }
+  }
+}
