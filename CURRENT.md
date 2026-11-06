@@ -285,3 +285,7 @@ With `v6Shell` on, the Review landing route uses the N30.1 `reviewBatch` and `de
 ## N33.2 v6 Project detail (PR pending)
 
 With v6Shell enabled, the project route now uses the existing owner-scoped useProject detail hook to show the real subject, goal, checkpoint progress, grouped stage rail, checkpoint statuses and navigable checkpoint links. It gives the exact project-scoped session and source counts from ProjectDetail with expandable, bounded lists of real records, native keyboard-operable controls and source titles. Schedule targets are displayed as targets, while an unsupported completion forecast is explicitly unavailable. Loading, missing records, no checkpoints, and read failures are distinct. With v6Shell off, the existing project page (sessions, sources, plan rail and tutor actions) is unchanged. No data hooks, routes or record schemas were changed.
+
+## N32.1 v6 Inbox proposal rationale and citations (PR pending)
+
+With `v6Shell` enabled, the existing Inbox card-selection panel and plan cards now display an evidence section for each visible proposal. It uses the existing proposal's optional `reason` and only source/page fields actually present on the card or proposed plan checkpoints. Missing reasons say `Rationale unavailable`; absent source data generates no fake citation. Plan references are deduplicated; raw reason text is safely escaped by React. The original proposal previews, action hooks and flag-off reason presentation are unchanged. N32.2 completes selection-aware atomic decision/receipt flows and full UI acceptance tests.
