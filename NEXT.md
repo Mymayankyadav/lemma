@@ -5,13 +5,6 @@ No item may list a protected path (`ci/protected.json`) in Scope. Files under `d
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
 
-## N14.2 v6 demo study adapter: in-memory StudyApi with reload persistence
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/study/demo.ts` implements every `StudyApi` method of `src/data/study/contract.ts` in memory for demo mode, seeded with a few saved entries and calendar blocks for the current week (fixed relative to the current date). Running, paused and break state survive a reload (sessionStorage, the same tab-scoped pattern as `src/data/mode.ts`); elapsed time is rebuilt from interval timestamps. At most one running/paused entry (`startStudyEntry` rejects a second with a conflict error); `expectedVersion` mismatches reject with a conflict error; saving twice returns the same saved entry; discard leaves 0 logged minutes; breaks never count as focus (`src/lib/effort`). Every write returns `actionNo: null`.
-Tests: `tests/unit/study/demo.test.ts`, at least 15 assertions covering each rule above and a reload rebuild.
-Scope: src/data/study/demo.ts, src/data/demo/** (new study fixture files only), tests/unit/study/**, CURRENT.md.
-Not: the live adapter, `src/data/api.ts` or `src/data/types.ts`, screens, server code, new dependencies.
-
 ## N16 v6 live study adapter: N10 tables and study_command
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = `src/data/study/live.ts` implements every `StudyApi` method for live mode with the existing Supabase client (`src/data/live/client.ts`), loaded lazily the way `src/data/index.ts` loads the live adapter. Reads select from `study_entries` (with their `study_intervals`) and `calendar_blocks` for the signed-in owner (RLS), bounded by the range. Every write calls `public.study_command` with the command envelope its tests use (`tests/mcp/sql/study-command.mjs`, a fresh `operationId` per call) and maps the receipt into `StudyReceipt` (`actionNo` passed through, null when absent). Rows are mapped to the camelCase records of the contract; database errors map to the same conflict / not-found / invalid errors the demo adapter throws.
@@ -26,12 +19,6 @@ Tests: unit tests in `tests/unit/focus/` with a fake `StudyApi` (`setStudyApiFor
 Scope: src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/v6/focus/** (new), tests/unit/focus/**, CURRENT.md.
 Not: adapters, Calendar or Progress, end-to-end specs (N20), parked thoughts as tasks, notifications, Today with the flag off.
 
-## N17 v6 Calendar: Agenda and Day views behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/calendar` (the N13 placeholder in `src/features/calendar/Page.tsx`) shows an Agenda view (the next 7 days, grouped by civil day in the device zone, with `dayBounds` from `src/lib/effort`) and a Day view (hours with planned blocks and saved study entries side by side, logged time first as in `capacityStack`), switchable by a segmented control and remembered in the URL (`?view=agenda|day&date=YYYY-MM-DD`). From the Day view the user can add a study or busy block (title, start, end), move it to another time, mark it done, and delete it, all through `getStudyApi()`; a version conflict shows a "changed elsewhere, reload" message. Empty days show "Nothing planned." Layout per `docs/v6/screens/calendar-day.png` and `calendar-night.png`.
-Tests: unit tests in `tests/unit/calendar/` with a fake `StudyApi`: grouping across a midnight in `Asia/Kolkata`, the 23-hour `Europe/London` day 2026-03-29, create/move/done/delete calling the fake once each, the conflict message, the empty state, view and date kept in the URL.
-Scope: src/features/calendar/**, src/ui/v6/calendar/** (new), tests/unit/calendar/**, CURRENT.md.
-Not: Week and Month views, recurrence, automatic placement, adapters, the shell, new dependencies.
 
 ## N18 v6 Progress: effort view with range selector behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
