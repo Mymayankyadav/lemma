@@ -16,12 +16,13 @@ Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (cr
 Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
 Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
 
-## N28.2 v6 Settings: study defaults, reminders and export controls
-Stage: Build · Status: open · Needs: N28.1 · Assigned: —
-Done = finish N28 after N28.1's flag-gated seven-section navigation and the working Account/Appearance/Subjects/Connector panels: replace the temporary legacy-settings fallback for Study defaults, Reminders and Export with dedicated v6 panels. Preserve all existing Settings behaviour and the same underlying hooks, update calls and error/Saved feedback, including teaching styles and tutor rules, retention, cards/day, memory tuning eligibility, notification settings, math shortcuts, export/download, connector setup and sign-out. Ensure each section loads only from existing hooks, distinguishes loading, empty and failure states, is keyboard accessible, and no control silently loses its save action. Keep the legacy flag-off page unchanged.
-Tests: tests/unit/settings-v6/** covering flag on/off, all seven reachable sections, valid writes/errors, loading/empty/failed states, keyboard access and unchanged legacy save paths.
+## N28.2.2 v6 Settings: Reminders and Export controls
+Stage: Build · Status: open · Needs: N28.2.1 · Assigned: —
+Done = complete N28 after the seven-section navigation (N28.1) and Study defaults (N28.2.1). Replace the temporary legacy-settings fallback for Reminders and Export with dedicated v6 panels using existing settings hooks and mutation calls. Reminders shows and edits existing notify preferences without inventing fields, follows the legacy auto-save/error/Saved contract and reports empty/loading/failure correctly; Export uses the existing exportAll download with error feedback. Preserve the existing connector setup, sign-out, subjects, appearance, teaching styles, tutor rules, recall retention, new cards/day, math shortcuts and optimizer. All seven destinations are keyboard-accessible, with coverage for valid writes, error feedback and all states; no original flag-off behavior changes.
+Tests: tests/unit/settings-v6/reminders-export.test.tsx covering reminder preferences and unchanged server writes, export/download and failure feedback, all seven sections, keyboard controls, loading/empty/failure states and legacy flag-off behavior.
 Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
-Not: new settings fields, autosave or retention logic changes, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
+Not: new fields, autosave/retention logic changes, src/data/**, new dependencies, other screens, existing tests' expectations.
+
 
 ## N30.2 v6 Review start screen behind shell flag
 Stage: Build · Status: open · Needs: N30.1 · Assigned: —

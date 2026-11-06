@@ -12,9 +12,9 @@ import {useToast} from '../../../ui/Toast';
 import {EuclidAppearance} from '../EuclidAppearance';
 import {SubjectsPanel} from '../SubjectsPanel';
 import {ConnectorAddress} from '../ConnectorAddress';
+import StudyDefaults from './StudyDefaults';
 
-/** N28.1: stable navigation for seven settings destinations. Later panels
- * temporarily preserve the complete, existing settings controls. */
+/** N28.1 navigation; N28.2.1 adds the dedicated Study defaults panel. */
 export const SETTINGS_SECTIONS = [
   {id:'account',label:'Account'},
   {id:'appearance',label:'Appearance'},
@@ -112,6 +112,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
     if(selected==='appearance')return <Slab className="p-5">
       <EuclidAppearance ui={data?.ui} busy={busy} onChange={ui=>save({ui})}/>
     </Slab>;
+    if(selected==='study')return <StudyDefaults settings={data!}/>;
     if(selected==='subjects')return <SubjectsPanel/>;
     if(selected==='connector')return <Slab className="space-y-4 p-5">
       <h2 className="text-title-s font-semibold">Connector</h2>
@@ -161,9 +162,8 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
         </div>
       </Sheet>
     </Slab>;
-    // N28.2 ports these controls into dedicated v6 sections. Until then, show
-    // the actual existing Settings page so autosave, reminders, tuning and
-    // export remain available rather than rendering fake or dead controls.
+    // N28.2.2 ports Reminders and Export into dedicated v6 panels. Their
+    // existing controls stay available here until those panels are ready.
     return <div className="space-y-3">
       <p className="text-label text-ink-2">
         These settings retain their existing controls while the new sections are completed.
