@@ -12,12 +12,6 @@ Tests: unit tests in `tests/unit/focus/` with a fake `StudyApi` (`setStudyApiFor
 Scope: src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/v6/focus/** (new), tests/unit/focus/**, CURRENT.md.
 Not: adapters, Calendar or Progress, end-to-end specs (N20), parked thoughts as tasks, notifications, Today with the flag off.
 
-## N17 v6 Calendar: Agenda and Day views behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/calendar` (the N13 placeholder in `src/features/calendar/Page.tsx`) shows an Agenda view (the next 7 days, grouped by civil day in the device zone, with `dayBounds` from `src/lib/effort`) and a Day view (hours with planned blocks and saved study entries side by side, logged time first as in `capacityStack`), switchable by a segmented control and remembered in the URL (`?view=agenda|day&date=YYYY-MM-DD`). From the Day view the user can add a study or busy block (title, start, end), move it to another time, mark it done, and delete it, all through `getStudyApi()`; a version conflict shows a "changed elsewhere, reload" message. Empty days show "Nothing planned." Layout per `docs/v6/screens/calendar-day.png` and `calendar-night.png`.
-Tests: unit tests in `tests/unit/calendar/` with a fake `StudyApi`: grouping across a midnight in `Asia/Kolkata`, the 23-hour `Europe/London` day 2026-03-29, create/move/done/delete calling the fake once each, the conflict message, the empty state, view and date kept in the URL.
-Scope: src/features/calendar/**, src/ui/v6/calendar/** (new), tests/unit/calendar/**, CURRENT.md.
-Not: Week and Month views, recurrence, automatic placement, adapters, the shell, new dependencies.
 
 ## N18 v6 Progress: effort view with range selector behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
