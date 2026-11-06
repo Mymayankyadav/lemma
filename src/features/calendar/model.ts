@@ -92,3 +92,82 @@ export function dayCapacity(date: string, zone: string, entries: StudyEntryRecor
     .map(b => ({ start: b.startsAt, end: b.endsAt }));
   return capacityStack(logged, busy, planned, range);
 }
+
+
+/** Calendar weeks are civil days, not multiples of 24 elapsed hours (DST-safe). */
+export function weekStartDay(date: string, firstDay: number = 1): string {
+  if (!validDayKey(date) || !Number.isInteger(firstDay) || firstDay < 0 || firstDay > 6)
+    throw new Error('Invalid week date or first weekday');
+  const weekday = new Date(date + 'T00:00:00.000Z').getUTCDay();
+  return shiftDay(date, -((weekday - firstDay + 7) % 7));
+}
+
+/** Give every simultaneously visible block its own lane; never hide an overlap. */
+export function blockLanes(blocks: CalendarBlockRecord[], range: StudyRange) {
+  const ends: number[] = [];
+  return visibleBlocks(blocks, range).map(block => {
+    const start = Math.max(millis(range.start), millis(block.startsAt));
+    const end = Math.min(millis(range.end), millis(block.endsAt));
+    let lane = ends.findIndex(lastEnd => lastEnd <= start);
+    if (lane < 0) lane = ends.length;
+    ends[lane] = end;
+    return { block, lane };
+  });
+}
+
+/** Same civil-day helpers and capacity arithmetic as Calendar Day. */
+export function weekDays(date: string, zone: string, entries: StudyEntryRecord[],
+  blocks: CalendarBlockRecord[], firstDay = 1) {
+  const first = weekStartDay(date, firstDay);
+  return Array.from({length: 7}, (_, offset) => {
+    const day = shiftDay(first, offset);
+    const range = calendarRange(day, zone);
+    return {
+      day, range, capacity: dayCapacity(day, zone, entries, blocks),
+      logged: savedSlices(entries, range),
+      blocks: blockLanes(blocks, range),
+    };
+  });
+}
+
+/** Month navigation preserves the intended date, clamping only short months. */
+export function shiftMonth(date: string, amount: number): string {
+  if (!validDayKey(date) || !Number.isInteger(amount))
+    throw new Error('Invalid calendar month shift');
+  const [year, month, day] = date.split('-').map(Number);
+  const moved = new Date(Date.UTC(year, month - 1 + amount, 1));
+  const last = new Date(Date.UTC(moved.getUTCFullYear(), moved.getUTCMonth() + 1, 0)).getUTCDate();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return moved.getUTCFullYear() + '-' + pad(moved.getUTCMonth() + 1) + '-' + pad(Math.min(day, last));
+}
+
+/** One bounded request covers the entire month grid, including outside-month cells. */
+export function monthBounds(date: string, zone: string, firstDay = 1) {
+  if (!validDayKey(date)) throw new Error('Invalid calendar month');
+  const [year, month] = date.split('-').map(Number);
+  const firstOfMonth = date.slice(0, 7) + '-01';
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const lastOfMonth = date.slice(0, 7) + '-' + String(lastDay).padStart(2, '0');
+  const first = weekStartDay(firstOfMonth, firstDay);
+  const last = shiftDay(weekStartDay(lastOfMonth, firstDay), 6);
+  const count = Math.round((Date.parse(last + 'T00:00:00Z') -
+    Date.parse(first + 'T00:00:00Z')) / 86400000) + 1;
+  return {first, last, count, range: calendarRange(first, zone, count)};
+}
+
+/** Same per-day logged minutes and visible block semantics as Day and Week. */
+export function monthDays(date: string, zone: string, entries: StudyEntryRecord[],
+  blocks: CalendarBlockRecord[], firstDay = 1) {
+  const bounds = monthBounds(date, zone, firstDay);
+  const month = date.slice(0, 7);
+  return {
+    ...bounds,
+    days: Array.from({length: bounds.count}, (_, offset) => {
+      const day = shiftDay(bounds.first, offset);
+      const range = calendarRange(day, zone);
+      return {day, inMonth: day.startsWith(month),
+        capacity: dayCapacity(day, zone, entries, blocks),
+        blocks: visibleBlocks(blocks, range)};
+    }),
+  };
+}

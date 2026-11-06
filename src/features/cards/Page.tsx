@@ -17,6 +17,8 @@ import {hasMathPreview} from '../../lib/plain-math';
 import {canRenderPlainCardFront} from './plainCardFront';
 import type {EditorValue} from './Editor';
 import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
+import {isFlagOn} from '../../flags';
+import V6Cards from './v6/V6Cards';
 
 const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
 const ROW_HEIGHT=92,OVERSCAN=6;
@@ -25,7 +27,7 @@ function relative(due:string|null){
  const days=Math.ceil((Date.parse(due)-Date.now())/86400000);
  return days<=0?'Due':days===1?'in 1d':'in '+days+'d';
 }
-export default function Page(){
+function LegacyCards(){
  const [search,setSearch]=useState(''),[query,setQuery]=useState('');
  const [project,setProject]=useState(''),[checkpoint,setCheckpoint]=useState('');
  const [state,setState]=useState(''),[noteStatus,setNoteStatus]=useState('');
@@ -193,4 +195,9 @@ export default function Page(){
    <Suspense fallback={<Skeleton h={180}/>}>{creating&&<Editor creating busy={create.isPending} onSubmit={v=>void save(v)}/>}</Suspense>
   </Sheet>
  </Screen>;
+}
+
+/** The existing card library is preserved exactly when the v6 shell is off. */
+export default function Page(){
+ return isFlagOn('v6Shell')?<V6Cards/>:<LegacyCards/>;
 }

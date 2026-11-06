@@ -30,14 +30,6 @@ Tests: `tests/unit/tasks-ui/backlog.test.tsx` using `setTaskApiForTests` (20-row
 Scope: src/features/tasks/**, src/app/V6Header.tsx (only Task sheet handoff), src/app/tasksRoute.tsx (new), src/app/App.tsx (adding the route only), tests/unit/tasks-ui/**, CURRENT.md.
 Not: `src/data/tasks/**`, other app routes or screens, Supabase, new dependencies, touching flag-off UI.
 
-## N26 v6 Calendar Week and Month views
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Calendar gains Week and Month beside Agenda and Day (keyboard view tabs, the choice kept in the URL query), built from the same `getStudyApi()` records and the same model helpers in `src/features/calendar/model.ts` so all four views agree on totals: Week shows seven day columns from the owner's week start with planned/busy blocks and saved-effort totals per day, dense overlaps stacked rather than hidden; Month shows a date grid with per-day saved minutes and block counts, tapping a day opens Day. Each view loads only its bounded range. "Source not loaded" is never shown as zero.
-Tests: `tests/unit/calendar/week-month.test.tsx` (range bounds, totals equal to Day for the same date, overlap stacking, week start, view switching by keyboard).
-Scope: src/features/calendar/views/** (new), src/features/calendar/Page.tsx (the view switcher only), src/features/calendar/model.ts (additive helpers only), tests/unit/calendar/week-month.test.tsx, CURRENT.md.
-Not: block editing (N27), `src/data/study/**`, other screens, new dependencies.
-
-
 ## N28 v6 Settings behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
 Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/screens/settings-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Settings row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Section navigation (account, appearance, study defaults, reminders, subjects, connector, export) over the existing settings controls, which keep their current save behaviour; the connector address and subjects panels are reused, not rewritten.
@@ -45,26 +37,12 @@ Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders th
 Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
 Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
-## N29 v6 Atlas list behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/atlas` renders the v6 Atlas from `docs/v6/screens/atlas-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Atlas row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. The phone default is a list of real concepts with hierarchy, checkpoint links and due counts from the existing Atlas data; the existing graph/tree view stays reachable as the map, with saved pins untouched; synthetic grouping rows are labelled and excluded from concept totals.
-Tests: `tests/unit/atlas-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/atlas/v6/** (new), src/features/atlas/Page.tsx (the flag branch only), tests/unit/atlas-v6/**, CURRENT.md.
-Not: changing the existing graph, layout or pin code, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
 ## N30 v6 Review start behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
 Done = with `v6Shell` on, `/review` renders the v6 Review from `docs/v6/screens/review-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Review row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Deck selection and the start panel: all-due and selected-batch counts are separate named numbers, the selection count equals the cards a round will contain, and starting uses the existing round start; long mathematics wraps.
 Tests: `tests/unit/review-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
 Scope: src/features/review/v6/** (new), src/features/review/Page.tsx (the flag branch only), tests/unit/review-v6/**, CURRENT.md.
 Not: `src/features/review-run/**` and `src/features/review-done/**` (N6.3 owns them), FSRS or quota logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
-## N31 v6 Cards behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/cards` renders the v6 Cards from `docs/v6/screens/cards-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Cards row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. A filter sheet (titled native dialog) over the existing search filters and a progressive list that reveals 20 rows at a time from the existing paged search; the shown count is labelled as shown, the total only where the API gives one.
-Tests: `tests/unit/cards-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/cards/v6/** (new), src/features/cards/Page.tsx (the flag branch only), tests/unit/cards-v6/**, CURRENT.md.
-Not: the card detail page, the card editor, search API changes, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
 
 ## N32 v6 Inbox behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —

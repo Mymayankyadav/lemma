@@ -1,12 +1,13 @@
 name: autoresolve
 # v1.9: when an open PR's ONLY merge conflicts are in CURRENT.md / NEXT.md, merge main into it and keep both sides
 # (scripts/ci/autoresolve.mjs). Runs on the default branch only and never runs PR code: it merges files with git.
-# Triggers: main moved (PRs go stale), a PR changed (scope finished), hourly as a backstop, or by hand.
+# Triggers: main moved (PRs go stale), a PR changed (scope finished), a PR gate run finished (v2.1: a PR whose gate is
+# still running is skipped so its tests are not cancelled and restarted), hourly as a backstop, or by hand.
 on:
   push:
     branches: [main]
   workflow_run:
-    workflows: ['scope']
+    workflows: ['scope', 'PR gate']
     types: [completed]
   schedule:
     - cron: '17 * * * *'
@@ -22,6 +23,7 @@ on:
         default: '0'
 permissions:
   contents: read
+  actions: read
   pull-requests: write
   issues: write
   checks: write
