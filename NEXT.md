@@ -5,13 +5,6 @@ No item may list a protected path (`ci/protected.json`) in Scope. Files under `d
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
 
-## N18 v6 Progress: effort view with range selector behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the Progress tab (`/insights`) shows an effort view above the existing insights: a Day / Week / Month selector (kept in the URL, `?range=`), total logged minutes (`loggedMinutes`), a per-day bar row for Week and Month, and a per-subject breakdown (`subjectPartition`, with "Unassigned") whose parts sum exactly to the total, all from `getStudyApi().listStudyEntries(range)`. Layout per `docs/v6/screens/progress-day.png`. With the flag off, `/insights` is unchanged.
-Tests: unit tests in `tests/unit/progress-v6/` with a fake `StudyApi`: totals for each range, parts summing to the total, an entry crossing midnight split across two days, drafts and discarded entries excluded, the range kept in the URL, the flag-off page unchanged.
-Scope: src/features/progress-v6/** (new), src/features/insights/Page.tsx (rendering the v6 view when the flag is on, nothing else), tests/unit/progress-v6/**, CURRENT.md.
-Not: changes to existing insights, adapters, mastery or FSRS figures, new dependencies.
-
 ## N15 MCP: read study records through get and search
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = the connector's existing `get` and `search` tools accept the resources `study_entries` (with intervals) and `calendar_blocks`, reading the N10 tables as the authenticated owner: bounded pages with a cursor, a range filter, totals reported separately from the page. No new tool and no write path (writes are N12). Existing resources, tools and the `resume` packet are unchanged; `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
