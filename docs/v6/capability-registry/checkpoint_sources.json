@@ -1,0 +1,41 @@
+{
+  "table": "checkpoint_sources",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 source citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 source citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "checkpoint_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 source citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "source_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 source citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "pages": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N88 source citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    }
+  }
+}

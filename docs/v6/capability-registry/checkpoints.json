@@ -1,0 +1,160 @@
+{
+  "table": "checkpoints",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "code": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "position": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "title": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "objective": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "criterion": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "steps": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "pages": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "source_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "current_step": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "demonstrated_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "recheck_level": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "recheck_due": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "recheck_prompt": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "needs_revisit": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "stage": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "due_on": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N37 generic MCP commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    }
+  }
+}
