@@ -5,13 +5,6 @@ No item may list a protected path (`ci/protected.json`) in Scope. Files under `d
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
 
-## N6.2 Notifications: bounded reminder Review queue (after N6.1)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `notificationsPush` enabled, a due-card reminder link parsed by N6.1 starts one Review round of 1–50 owner-visible due cards selected through the existing `notification_review_items` RPC; the page consumes the link using replace navigation, shows bounded empty/error states, and does not change the saved ordinary daily quota. With the flag off, the ordinary Review route behaves unchanged. Tests verify one bounded RPC read, owner-session filtering, count bounds, and ordinary versus reminder selection.
-Scope: src/features/review/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
-Not: supabase/**, `.github/**`, new dependencies, changing the ordinary `review_items` RPC or stored review quotas.
-
-
 ## N16 v6 live study adapter: N10 tables and study_command
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = `src/data/study/live.ts` implements every `StudyApi` method for live mode with the existing Supabase client (`src/data/live/client.ts`), loaded lazily the way `src/data/index.ts` loads the live adapter. Reads select from `study_entries` (with their `study_intervals`) and `calendar_blocks` for the signed-in owner (RLS), bounded by the range. Every write calls `public.study_command` with the command envelope its tests use (`tests/mcp/sql/study-command.mjs`, a fresh `operationId` per call) and maps the receipt into `StudyReceipt` (`actionNo` passed through, null when absent). Rows are mapped to the camelCase records of the contract; database errors map to the same conflict / not-found / invalid errors the demo adapter throws.
