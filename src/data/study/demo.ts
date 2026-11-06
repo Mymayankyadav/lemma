@@ -100,33 +100,8 @@ function closeOpen(entry: StudyEntryRecord, at: string): StudyInterval[] {
 function withEditedMinutes(intervals: StudyInterval[], minutes: number, at: string): StudyInterval[] {
   if (!Number.isFinite(minutes) || minutes < 0) fail('invalid', 'Saved minutes must be non-negative');
   const wanted = Math.round(minutes * 60_000);
-  // Match the effort metrics' half-open interval union. Summing raw focus
-  // spans overcounts overlaps (for example after a restored timer or clock
-  // correction), so an explicit 6-minute edit could display as only 4.
-  const focus = intervals.filter(i => i.kind === 'focus' && i.end !== null)
-    .map(i => [Date.parse(i.start), Date.parse(i.end!)] as const)
-    .filter(([start, end]) => Number.isFinite(start) && Number.isFinite(end) && end > start)
-    .sort((a, b) => a[0] - b[0]);
-  const union: Array<[number, number]> = [];
-  for (const [start, end] of focus) {
-    const last = union.at(-1);
-    if (last && start <= last[1]) last[1] = Math.max(end, last[1]);
-    else union.push([start, end]);
-  }
-  // Breaks may overlap rehydrated focus spans. Metrics subtract them, so the
-  // manual adjustment must use that same effective focus union.
-  const breaks = intervals.filter(i => i.kind === 'break' && i.end !== null)
-    .map(i => [Date.parse(i.start), Date.parse(i.end!)] as const)
-    .filter(([start, end]) => Number.isFinite(start) && Number.isFinite(end) && end > start);
-  let effective = union;
-  for (const [breakStart, breakEnd] of breaks) {
-    effective = effective.flatMap(([start, end]): Array<[number, number]> => {
-      if (end <= breakStart || start >= breakEnd) return [[start, end]];
-      return [[start, Math.min(end, breakStart)], [Math.max(start, breakEnd), end]]
-        .filter(([a, b]) => b > a) as Array<[number, number]>;
-    });
-  }
-  const current = effective.reduce((total, [start, end]) => total + end - start, 0);
+  const current = intervals.filter(i => i.kind === 'focus' && i.end !== null)
+    .reduce((n, i) => n + Date.parse(i.end!) - Date.parse(i.start), 0);
   if (wanted === current) return intervals;
   if (wanted > current) {
     // Add a non-overlapping manual adjustment immediately before the first interval.
@@ -135,20 +110,16 @@ function withEditedMinutes(intervals: StudyInterval[], minutes: number, at: stri
     return [{ id: id(), kind: 'focus', start: new Date(anchor - (wanted - current)).toISOString(),
       end: new Date(anchor).toISOString() }, ...intervals];
   }
-  // Keep the earliest wanted portion of the union, rather than trimming
-  // each original span independently (which can leave duplicate overlap).
-  let remaining = wanted, cutoff = effective[0][0];
-  for (const [start, end] of effective) {
-    const span = end - start;
-    if (remaining <= span) { cutoff = start + remaining; break; }
-    remaining -= span;
+  let remove = current - wanted;
+  const result = [...intervals];
+  for (let i = result.length - 1; i >= 0 && remove > 0; i--) {
+    const span = result[i];
+    if (span.kind !== 'focus' || span.end === null) continue;
+    const duration = Date.parse(span.end) - Date.parse(span.start);
+    if (remove >= duration) { result.splice(i, 1); remove -= duration; }
+    else { result[i] = { ...span, end: new Date(Date.parse(span.end) - remove).toISOString() }; remove = 0; }
   }
-  return intervals.flatMap(span => {
-    if (span.kind !== 'focus' || span.end === null) return [span];
-    const end = Math.min(Date.parse(span.end), cutoff);
-    return end > Date.parse(span.start)
-      ? [{ ...span, end: new Date(end).toISOString() }] : [];
-  });
+  return result;
 }
 
 export function createDemoStudyApi(): StudyApi {
