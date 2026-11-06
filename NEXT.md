@@ -23,13 +23,6 @@ Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bound
 Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
 Not: migrations, `src/data/study/**`, UI.
 
-## N25.2 Tasks: paginated backlog and Task-sheet handoff
-Stage: Build · Status: open · Needs: N25.1 · Assigned: —
-Done = the task sheet from N25.1 adds an explicit "View in backlog" action after save, without replacing its single Undo toast. With `v6Shell` on, a new lazy `/tasks` route beside Calendar lists tasks in bounded pages of 20 with "Show more", grouped by status (backlog, in progress, completed, cancelled). Each row can complete/reopen, edit title/estimate/priority/due/links in the existing native sheet, and move up/down within its status using `TaskApi.updateTask(id,version,patch)`; a conflict reloads the record and says it changed elsewhere. Flag off: `/tasks` redirects to `/`, and the existing header and screens remain unchanged. The existing task sheet continues to restore focus and validate inputs.
-Tests: `tests/unit/tasks-ui/backlog.test.tsx` using `setTaskApiForTests` (20-row paging and grouped statuses, versioned complete/reopen, edits and ordering, stale conflict, explicit View in backlog, flag-off /tasks redirect).
-Scope: src/features/tasks/**, src/app/V6Header.tsx (only Task sheet handoff), src/app/tasksRoute.tsx (new), src/app/App.tsx (adding the route only), tests/unit/tasks-ui/**, CURRENT.md.
-Not: `src/data/tasks/**`, other app routes or screens, Supabase, new dependencies, touching flag-off UI.
-
 ## N27 v6 Calendar block create, edit and delete sheet
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
