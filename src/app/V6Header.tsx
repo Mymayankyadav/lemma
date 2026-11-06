@@ -9,7 +9,7 @@ export function v6PageTitle(pathname:string){
  const titles:Record<string,string>={
   '/':'Today','/projects':'Paths','/projects/new':'New path',
   '/review':'Review','/review/run':'Review round','/review/done':'Review complete',
-  '/calendar':'Calendar','/insights':'Progress','/proposals':'Inbox',
+  '/calendar':'Calendar','/insights':'Progress','/proposals':'Inbox','/tasks':'Tasks',
   '/cards':'Cards','/atlas':'Atlas','/settings':'Settings','/kit':'Kit',
  };
  return titles[pathname]??(pathname.startsWith('/proposals/')?'Proposal':
@@ -23,6 +23,7 @@ export default function V6Header({pathname}:{pathname:string}){
  const menu=useRef<HTMLDetailsElement>(null);
  const addMenu=useRef<HTMLDetailsElement>(null);
  const [taskOpen,setTaskOpen]=useState(false);
+ const [taskSaved,setTaskSaved]=useState(false);
  const closeTask=()=>{setTaskOpen(false);queueMicrotask(()=>addMenu.current?.querySelector('summary')?.focus());};
  useEffect(()=>{if(menu.current)menu.current.open=false;},[location.pathname]);
  const pending=Math.max(0,data?.pendingProposals??0);
@@ -54,6 +55,7 @@ export default function V6Header({pathname}:{pathname:string}){
     </div>
    </details>
   </nav>
-  {taskOpen&&<Suspense fallback={null}><TaskSheet onDismiss={closeTask}/></Suspense>}
+  {taskSaved&&<p role="status" className="flex items-center justify-between gap-2 text-label text-ink-2">Task saved. <Link to="/tasks" onClick={()=>setTaskSaved(false)} className="min-h-11 inline-flex items-center font-semibold text-amber underline">View in backlog</Link></p>}
+  {taskOpen&&<Suspense fallback={null}><TaskSheet onDismiss={closeTask} onSaved={()=>setTaskSaved(true)}/></Suspense>}
  </header>;
 }
