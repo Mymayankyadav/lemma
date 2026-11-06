@@ -1,3 +1,4 @@
+import BlockSheetActions from './block-sheet/BlockSheetActions';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 import { isFlagOn } from '../../flags';
@@ -262,6 +263,8 @@ function V6Calendar() {
         </div>)}
       </Slab>
     </>}
+    <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
+      onRefresh={() => setReload(n => n + 1)}/>
   </section>;
 }
 

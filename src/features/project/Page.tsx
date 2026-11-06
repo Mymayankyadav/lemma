@@ -22,6 +22,8 @@ import {Skeleton} from '../../ui/Skeleton';
 import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {GoalOverview,Stages} from './PathsView';
+import {isFlagOn} from '../../flags';
+import V6Project from './v6/V6Project';
 // PDF ingestion and transcription are only needed on the Sources tab.
 // Keep the cold Path route free of that module while retaining the complete UI.
 const SourcesPanel=lazy(()=>import('./SourcesPanel').then(module=>({default:module.SourcesPanel})));
@@ -118,7 +120,10 @@ function PlanHistory({slug}:{slug:string}){
  </section>;
 }
 
-export default function Page(){
+/** The flag-off project page remains an isolated, unchanged component. */
+export default function Page(){return isFlagOn('v6Shell')?<V6Project/>:<LegacyProject/>;}
+
+function LegacyProject(){
  const {slug:rawSlug}=useParams(),slug=rawSlug??'';
  const [params,setParams]=useSearchParams(),query=useProject(slug),navigate=useNavigate(),notify=useToast(),reduce=!!useReducedMotion();
  const [switcherOpen,setSwitcherOpen]=useState(false);
