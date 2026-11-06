@@ -5,6 +5,7 @@ import {join,dirname} from 'node:path'
 import {spawnSync} from 'node:child_process'
 import {sameOwnChanges,ownChanges} from '../../../scripts/ci/reuse.mjs'
 import {gateRunning} from '../../../scripts/ci/autoresolve.mjs'
+import {touchesMigrations} from '../../../scripts/ci/revert.mjs'
 
 const repo=()=>{
  const d=mkdtempSync(join(tmpdir(),'v21-'))
@@ -72,5 +73,18 @@ describe('v2.1 perf-report never competes with the PR gate for runners',()=>{
   expect(on).toContain('push:')
   expect(on).toContain('workflow_dispatch:')
   expect(on).not.toContain('pull_request')
+ })
+})
+
+describe('v2.2 automatic revert never deletes a deployed migration',()=>{
+ it('recognises commits that change migrations',()=>{
+  expect(touchesMigrations(['src/a.ts','supabase/migrations/20261106210000_x.sql'])).toBe(true)
+  expect(touchesMigrations(['supabase/functions/mcp/index.ts','tests/mcp/sql/x.mjs'])).toBe(false)
+  expect(touchesMigrations([])).toBe(false)
+ })
+ it('the revert script stops before reverting when one is found',()=>{
+  const s=readFileSync('scripts/ci/revert.mjs','utf8')
+  expect(s.indexOf('touchesMigrations(filesOf(c.sha))')).toBeGreaterThan(0)
+  expect(s.indexOf('touchesMigrations(filesOf(c.sha))')).toBeLessThan(s.indexOf("git('checkout', '-b', name)"))
  })
 })
