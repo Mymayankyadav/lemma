@@ -16,14 +16,6 @@ Tests: `tests/unit/app/v6-tokens.test.ts`: the attribute appears only with the f
 Scope: src/ui/v6/tokens.css (new), src/ui/v6/** (token use in shell parts), src/app/** (setting the attribute and importing the stylesheet only), public/fonts/v6/** (new), tests/unit/app/**, CURRENT.md.
 Not: changing any colour or font with the flag off, existing visual tests, screens other than the shell parts, new dependencies.
 
-## N20 v6 first slice end to end on demo data
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `?demo=1&flags=v6Shell`, the whole slice works in the browser: start focus on Today → pause → resume → finish → save; Today's "logged today" rises by the saved minutes; the Calendar Day view shows the saved entry at its time; Progress Day shows the same total; reloading mid-focus returns to the running entry; discarding adds nothing. Fix the wiring bugs this exposes in the N14.2/N14.3/N17/N18 files.
-Tests: `tests/e2e/v6-focus.spec.ts` and `tests/e2e/v6-slice.spec.ts` covering each sentence above at 390×844, plus 320×640 for the Focus dialog; Escape closes the dialog and focus returns to the trigger.
-Scope: tests/e2e/v6-focus.spec.ts, tests/e2e/v6-slice.spec.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/**, src/features/progress-v6/**, src/data/study/demo.ts, src/ui/v6/**, CURRENT.md.
-Not: the live adapter (a later live slice item), new screens, existing e2e specs, new dependencies.
-
-
 ## N23 Tasks: demo adapter with reload persistence
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = `src/data/tasks/demo.ts` implements `TaskApi` from `src/data/tasks/contract.ts` for demo mode: a small fixed fixture (about 6 tasks across statuses, linked to demo subjects/projects where the demo data has them), bounded pages with an opaque cursor and a separate `total`, ordering by status, position, createdAt, optimistic versions (stale `expectedVersion` rejects with a conflict and changes nothing), `completedAt` set exactly while completed, due date versus due instant kept distinct, receipts with `actionNo: null`, and persistence across reload in the same storage the demo study adapter uses (its own key). Live mode never reads the demo store.
