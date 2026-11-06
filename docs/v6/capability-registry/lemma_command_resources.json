@@ -100,5 +100,36 @@
     }
   ],
   "access": "service_role only for dispatcher; no unauthenticated or authenticated client privilege",
+  "table": "lemma_command_resources",
+  "columns": {
+    "resource": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    },
+    "command_fn": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    },
+    "mcp_ok": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    },
+    "schema": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    }
+  },
   "dispatch": "public.mcp_command resolves a resource only from this registry; it routes through the existing owner-bound public.mcp_<command_fn>(uuid,text,jsonb) bridge; no caller-supplied function name"
 }

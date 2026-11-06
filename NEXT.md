@@ -27,13 +27,6 @@ Tests: `tests/mcp/sql/settings-typed.mjs`: defaults on an existing settings row,
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/settings-typed.mjs, docs/v6/capability-registry/settings.json, CURRENT.md.
 Not: app or MCP code (N79, N87), other tables.
 
-## N40 Capability registry and schema-coverage check (G1)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `docs/v6/capability-registry/<table>.json`, one file per table, classifies every column of every table created by `supabase/migrations/**` as `owner-editable`, `command-managed`, `derived` or `credential` (contract §3), with its app path, MCP path (or the item that will add it), export policy and deletion behaviour, following `docs/v6/Lemma_v6_Data_MCP_Contract.md` §4–§5; and a check that parses all migrations (`create table`, `add column`) and fails, naming the table and column, when any column has no classification. One file per table keeps parallel items from conflicting; a table first created after this item merges is classified by the item that creates it.
-Tests: `tests/unit/contract/capability-registry.test.ts` (passes on main, fails on a fixture migration with an unclassified column, ignores dropped columns)
-Scope: docs/v6/capability-registry/** (new), tests/unit/contract/capability-registry.test.ts, CURRENT.md.
-Not: migrations, app or MCP code, protected paths.
-
 ## N41 Activity presets: migration (presets)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.presets` with label, optional subject/project/checkpoint links, `mode` (`pomodoro`/`flowtime`/`open`), focus/break/long-break minutes, cycles, `position`, `archived_at`. Operations create, update, reorder, archive, restore and delete (delete only when no study entry references it; otherwise archive). Renaming or archiving never changes past entries.

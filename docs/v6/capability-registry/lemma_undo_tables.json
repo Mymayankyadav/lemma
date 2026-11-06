@@ -76,5 +76,15 @@
       "table_name": "tasks"
     }
   ],
-  "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically"
+  "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",
+  "table": "lemma_undo_tables",
+  "columns": {
+    "table_name": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 undo registry discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
+    }
+  }
 }

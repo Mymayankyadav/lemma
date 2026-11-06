@@ -1,0 +1,132 @@
+{
+  "table": "notifications",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "kind": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "key": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "title": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "body": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "url": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "actions": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "facts": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "due_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "reason": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "sent_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "opened_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "action": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "action_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "N89 notifications (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    }
+  }
+}
