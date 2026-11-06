@@ -173,3 +173,7 @@ N14 is being split into small tested slices. The first slice is a pure typed sta
 ## N6.2 reminder Review queue (PR #881)
 
 The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. The ordinary Review route remains unchanged when `notificationsPush` is off. The in-flight reminder read is shared across React StrictMode effect replay so the initial link consumption, owner-scoped RPC and initialization occur once; completed empty/error states remain visible, and saved review quotas remain unchanged.
+
+## N14.3 Today hero and Focus dialog (PR #903)
+
+With `v6Shell` enabled, Today lazy-loads a current-action hero, reads the active timer and saved time from `getStudyApi()`, and shows a fixed Focus accessory above the tab dock for the active entry. The native Focus dialog drives the N14.1 timestamped machine for pause, break, resume, finish, editable minutes, save and discard, keeping a parked thought in the saved entry reflection. Escape closes the dialog and restores focus to the opener. Active intervals reconstruct the machine after a reload; the flag-off Today layout does not mount the Focus UI. Unit coverage is in `tests/unit/focus/today-focus.test.tsx`. This screen does not change the demo or live adapters owned by N14.2 and N16.
