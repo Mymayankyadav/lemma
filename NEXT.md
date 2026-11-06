@@ -154,12 +154,12 @@ Tests: `tests/unit/day-plans/**` (demo behaviour and reload, live envelope per o
 Scope: src/data/day-plans/** (new), tests/unit/day-plans/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
-## N61 Overlap acknowledgements: app module (src/data/overlap-acknowledgements)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/overlap-acknowledgements/` for the records and operations of N47, including every lifecycle operation it names.
-Tests: `tests/unit/overlap-acknowledgements/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/overlap-acknowledgements/** (new), tests/unit/overlap-acknowledgements/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N61.2 Overlap acknowledgement live adapter and cross-client parity
+Stage: Build · Status: open · Needs: N61.2.1 · Assigned: —
+Done = complete N61 after N61.1's typed acknowledgement contract, exact-overlap freshness checks and persistent demo adapter: implement the signed-in live adapter over N47's public.overlap_acknowledgements_command with owner-RLS reads, stable bounded pages (1–50, exact totals), mapping to the typed camelCase records, create/update/delete optimistic versions and actionNo, retrying an uncertain RPC with the same operationId and rejecting changed-payload retries, typed conflicts, foreign-owner isolation and server-observed stale versions. An acknowledgement applies only to the same participant IDs/versions and overlap window, and no unrelated conflict is suppressed.
+Tests: tests/unit/overlap-acknowledgements/** with live RPC mock for full CRUD, exact receipt, retry, conflict, stale versions and owner-scoped pagination, retaining N61.1 demo/reload tests.
+Scope: src/data/overlap-acknowledgements/**, tests/unit/overlap-acknowledgements/**, CURRENT.md.
+Not: supabase/** migrations or functions, other src/data/** folders, UI, FSRS or tasks code, new dependencies.
 
 ## N62 Durable review runs: app module (src/data/review-runs)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -292,7 +292,7 @@ Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (ne
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
-Stage: Build · Status: open · Needs: N61, N74 · Assigned: —
+Stage: Build · Status: open · Needs: N61.2, N74 · Assigned: —
 Done = with `v6Shell` on, overlapping blocks or saved entries show a conflict marker with the overlap window; Acknowledge records the disposition for exactly those participants (stale acknowledgements show the conflict again); no overbooking is hidden. Flag off: nothing changes.
 Tests: `tests/unit/calendar/overlaps.test.tsx`
 Scope: src/features/calendar/overlaps/** (new), src/features/calendar/views/** (markers only), tests/unit/calendar/overlaps.test.tsx, CURRENT.md.
