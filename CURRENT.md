@@ -169,3 +169,7 @@ N14 is being split into small tested slices. The first slice is a pure typed sta
 ## v6 study data contract (rules v2.0)
 
 `src/data/study/contract.ts` defines `StudyApi` and the study entry, interval and calendar block records (camelCase shapes of the N10 tables). `getStudyApi()` in `src/data/study/index.ts` picks the demo or live adapter by data mode; both (`demo.ts`, `live.ts`) are empty placeholders that read nothing and refuse writes until N14.2 and N16 land. Screens use only this API; unit tests swap in a fake with `setStudyApiForTests`.
+
+## N16 live study adapter (pending PR)
+
+The live v6 StudyApi now loads the existing Supabase browser client lazily, reads owner-visible study entries with their full intervals and calendar blocks by instant range, and sends lifecycle/calendar writes to public.study_command with a new operationId per call. Receipt actionNo and conflict/error codes are mapped to the typed study contract. Editable saved minutes are represented by additional versioned interval commands before saving; those are separate journal actions from the final save action. N11.2's create-then-start sequence uses server clock timestamps, not client-supplied startedAt. No production data was accessed during this work; deployment and full CI remain unverified.

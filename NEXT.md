@@ -18,13 +18,6 @@ Tests: `tests/unit/study/demo.test.ts`, at least 15 assertions covering each rul
 Scope: src/data/study/demo.ts, src/data/demo/** (new study fixture files only), tests/unit/study/**, CURRENT.md.
 Not: the live adapter, `src/data/api.ts` or `src/data/types.ts`, screens, server code, new dependencies.
 
-## N16 v6 live study adapter: N10 tables and study_command
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/study/live.ts` implements every `StudyApi` method for live mode with the existing Supabase client (`src/data/live/client.ts`), loaded lazily the way `src/data/index.ts` loads the live adapter. Reads select from `study_entries` (with their `study_intervals`) and `calendar_blocks` for the signed-in owner (RLS), bounded by the range. Every write calls `public.study_command` with the command envelope its tests use (`tests/mcp/sql/study-command.mjs`, a fresh `operationId` per call) and maps the receipt into `StudyReceipt` (`actionNo` passed through, null when absent). Rows are mapped to the camelCase records of the contract; database errors map to the same conflict / not-found / invalid errors the demo adapter throws.
-Tests: `tests/unit/study/live.test.ts` with a stubbed client: row mapping both ways, the exact envelope for each write, receipt mapping, a version conflict, an RLS-empty read.
-Scope: src/data/study/live.ts, src/data/live/database.types.ts (only if a generated type is missing), tests/unit/study/**, CURRENT.md.
-Not: supabase/**, MCP, screens, the existing `LiveAdapter`, new dependencies.
-
 ## N14.3 v6 Today hero and Focus dialog behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, Today shows a current-action hero (Start focus, or Return to focus while an entry is active) and "logged today" from `loggedMinutes` over `getStudyApi().listStudyEntries(today)`. The N13 focus-accessory slot shows the active entry's intent, remaining time (N14.1 `remainingFocusMinutes`) and Pause. A native `<dialog>` Focus panel offers Pause, Take a break, Park a thought (text field kept with the entry's reflection), and Finish → editable minutes and an optional note → Save or Discard; it drives the N14.1 machine and calls the matching `StudyApi` writes. Escape closes it and focus returns to the trigger. Layout per `docs/v6/screens/today-day.png` and `focus-day.png`. With the flag off, Today is unchanged.
