@@ -87,9 +87,20 @@ export function evaluateMerge(ctx) {
   return {
     merge: reasons.length === 0 && (needReview ? approvals.length > 0 : !!ready),
     reviewRequired: needReview,
-    reasons, approval: approvals[0] || null, addChangesLabel, attempted: v.attempted,
+    reasons, approval: approvals[0] || null, ready: ready || null, addChangesLabel, attempted: v.attempted,
     ignored: { invalid: v.invalid, locked: v.locked }, needsReview,
   };
+}
+
+/**
+ * Pure: the squash commit message and the success note for a merge. A PR that needs no review (v2.0) has no approval,
+ * so the text names the author's Ready instead (#895: reading res.approval.agent crashed the no-review merge).
+ */
+export function mergeTexts(res, prBody) {
+  const author = parseLine1(prBody || '')?.agent ?? 'unknown';
+  const by = res.approval ? `Approved by Agent: ${res.approval.agent}` : `No review required (v2.0); Ready by Agent: ${res.ready?.agent ?? author}`;
+  const note = res.approval ? `Merged by CI after the approval by ${res.approval.agent}.` : `Merged by CI on the author's Ready and green checks (no review required for this PR).`;
+  return { commitMessage: `Agent: ${author}\n${by}\nMerged by CI (scripts/ci/approve.mjs).`, note };
 }
 
 async function loadContext(number) {
@@ -157,13 +168,14 @@ async function handle(number) {
     await upsertFeedback({ pr: number, gate: 'merge', text });
     return { ...res, merge: false };
   }
+  const texts = mergeTexts(res, ctx.pr.body);
   try {
     await api('PUT', repoPath(`/pulls/${number}/merge`), {
       merge_method: 'squash', sha: ctx.pr.headSha, commit_title: `${ctx.pr.title} (#${number})`,
-      commit_message: `Agent: ${parseLine1(ctx.pr.body).agent}\nApproved by Agent: ${res.approval.agent}\nMerged by CI (scripts/ci/approve.mjs).`,
+      commit_message: texts.commitMessage,
     }, botOpts());
     console.log(`#${number}: squash-merged`);
-    await upsertFeedback({ pr: number, gate: 'merge', text: renderFeedback({ gate: 'merge', sha: ctx.pr.headSha, ok: true, note: `Merged by CI after the approval by ${res.approval.agent}.` }), createIfMissing: false });
+    await upsertFeedback({ pr: number, gate: 'merge', text: renderFeedback({ gate: 'merge', sha: ctx.pr.headSha, ok: true, note: texts.note }), createIfMissing: false });
     return res;
   } catch (e) {
     const kind = classifyMergeError(e);

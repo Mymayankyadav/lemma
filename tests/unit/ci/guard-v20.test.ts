@@ -5,7 +5,7 @@ import {reviewRequired,flagsTurnedOn} from '../../../scripts/ci/review-policy.mj
 // @ts-expect-error plain ESM script
 import {canReuse,greenGate} from '../../../scripts/ci/reuse.mjs'
 // @ts-expect-error plain ESM script
-import {evaluateMerge} from '../../../scripts/ci/approve.mjs'
+import {evaluateMerge,mergeTexts} from '../../../scripts/ci/approve.mjs'
 // @ts-expect-error plain ESM script
 import {needsReviewWanted} from '../../../scripts/ci/verdicts.mjs'
 
@@ -74,5 +74,23 @@ describe('v2.0 fast-gate reuse',()=>{
   }
   expect(y).toContain(`must='["changes"]'`)
   expect(y).toContain(`must='["changes","typecheck-lint","smoke-e2e"]'`)
+ })
+})
+
+describe('#895: the no-review merge builds its commit message without an approval',()=>{
+ it('a ready, green, non-production PR merges and its texts name the Ready, not an approver',()=>{
+  const res=evaluateMerge(ctx({reviewRequired:false,comments:[c('Ready · Agent: lemma-2','2026-11-06T02:00:00Z')]}))
+  expect(res.merge).toBe(true)
+  expect(res.approval).toBeNull()
+  const t=mergeTexts(res,'Agent: lemma-2 · Item: N1')
+  expect(t.commitMessage).toBe('Agent: lemma-2\nNo review required (v2.0); Ready by Agent: lemma-2\nMerged by CI (scripts/ci/approve.mjs).')
+  expect(t.note).toContain("author's Ready")
+ })
+ it('a reviewed production PR still names its approver',()=>{
+  const res=evaluateMerge(ctx({reviewRequired:true,comments:[c('Ready · Agent: lemma-2','2026-11-06T02:00:00Z'),c('Approve · Agent: lemma-7','2026-11-06T02:20:00Z')]}))
+  expect(res.merge).toBe(true)
+  const t=mergeTexts(res,'Agent: lemma-2 · Item: N1')
+  expect(t.commitMessage).toBe('Agent: lemma-2\nApproved by Agent: lemma-7\nMerged by CI (scripts/ci/approve.mjs).')
+  expect(t.note).toBe('Merged by CI after the approval by lemma-7.')
  })
 })
