@@ -9,26 +9,19 @@ Task lanes (priority run 2026-11-06). Tasks follow the same pattern with their o
 
 v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: it adds `src/features/<screen>/v6/**` and, in that screen's existing `Page.tsx`, one branch `if (isFlagOn('v6Shell')) return <…V6/>` (or the equivalent for a page that already branches). It reads through the existing hooks in `src/data/**` unchanged (no new queries, no `src/data/**` edits); a field the hooks do not provide is shown as unavailable, never invented. It distinguishes loading, empty, filtered-empty and failed states, keeps 44-pixel targets, uses the N19 tokens under `[data-v6]`, and leaves the flag-off page, its tests and its visual rules exactly as they are. Exact-pixel polish and device audits are the Harden stage, not these items.
 
-## N24 Tasks: live adapter over task_command
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/data/tasks/live.ts` implements `TaskApi` for live mode: reads `public.tasks` as the signed-in owner with bounded keyset pages (limit 1–50, default 20), an opaque cursor and an exact `total`; writes only through `rpc('task_command', envelope)` with a fresh `operationId` per user action (reused on retry), mapping receipts to `StudyReceipt` and conflicts to a typed error; due fields mapped to and from `due_kind`/`due_date`/`due_at` without converting one into the other. The envelope is the one D7 specifies, so this item runs in parallel with N22; integration against the real function is N22's SQL test plus N35.
-Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bounds and cursor, envelope shape per operation, retry reuses the `operationId`, conflict mapping, due mapping round trip, no owner field ever sent.
-Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
-Not: migrations, `src/data/study/**`, UI.
+## N28.2 v6 Settings: study defaults, reminders and export controls
+Stage: Build · Status: open · Needs: N28.1 · Assigned: —
+Done = finish N28 after N28.1's flag-gated seven-section navigation and the working Account/Appearance/Subjects/Connector panels: replace the temporary legacy-settings fallback for Study defaults, Reminders and Export with dedicated v6 panels. Preserve all existing Settings behaviour and the same underlying hooks, update calls and error/Saved feedback, including teaching styles and tutor rules, retention, cards/day, memory tuning eligibility, notification settings, math shortcuts, export/download, connector setup and sign-out. Ensure each section loads only from existing hooks, distinguishes loading, empty and failure states, is keyboard accessible, and no control silently loses its save action. Keep the legacy flag-off page unchanged.
+Tests: tests/unit/settings-v6/** covering flag on/off, all seven reachable sections, valid writes/errors, loading/empty/failed states, keyboard access and unchanged legacy save paths.
+Scope: src/features/settings/v6/**, src/features/settings/Page.tsx (flag branch only), tests/unit/settings-v6/**, CURRENT.md.
+Not: new settings fields, autosave or retention logic changes, src/data/**, new dependencies, other screens' folders, existing tests' expectations.
 
-## N28 v6 Settings behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/screens/settings-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Settings row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Section navigation (account, appearance, study defaults, reminders, subjects, connector, export) over the existing settings controls, which keep their current save behaviour; the connector address and subjects panels are reused, not rewritten.
-Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
-Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
-
-## N30 v6 Review start behind the shell flag
-Stage: Build · Status: open · Needs: N19 · Assigned: —
-Done = with `v6Shell` on, `/review` renders the v6 Review from `docs/v6/screens/review-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Review row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Deck selection and the start panel: all-due and selected-batch counts are separate named numbers, the selection count equals the cards a round will contain, and starting uses the existing round start; long mathematics wraps.
-Tests: `tests/unit/review-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
-Scope: src/features/review/v6/** (new), src/features/review/Page.tsx (the flag branch only), tests/unit/review-v6/**, CURRENT.md.
-Not: `src/features/review-run/**` and `src/features/review-done/**` (N6.3 owns them), FSRS or quota logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+## N30.2 v6 Review start screen behind shell flag
+Stage: Build · Status: open · Needs: N30.1 · Assigned: —
+Done = with v6Shell on, /review shows the v6 Review from docs/v6/screens/review-day.png and -night.png and the v6 design handoff, using the N30.1 pure selected-batch helper to keep the all-due total, selected-eligible count and actual quota-limited queue distinct. Include complete-label deck/checkpoint selection, visible checks, a keyboard-accessible start action that initializes exactly the displayed batch with the existing useReviewSession, and long maths wrapping. Distinguish loading, empty, filtered-empty and failed states with 44px controls. Flag off leaves the legacy Review page and its tests unchanged.
+Tests: tests/unit/review-v6/** with the flag on and off, loading/empty/failed states, exact queue-to-label count, and keyboard selection/access.
+Scope: src/features/review/v6/**, src/features/review/Page.tsx (v6 branch only), tests/unit/review-v6/**, CURRENT.md.
+Not: src/features/review-run/**, src/features/review-done/**, FSRS/quota logic, src/data/**, new dependencies or existing tests' expectations.
 
 ## N32 v6 Inbox behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
