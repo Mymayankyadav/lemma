@@ -1,5 +1,5 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import {act} from 'react';
+import {StrictMode,act} from 'react';
 import {createRoot,type Root} from 'react-dom/client';
 import type {Settings} from '../../../src/data/types';
 import {useReminderRound} from '../../../src/features/review/reminder-round';
@@ -34,32 +34,51 @@ beforeEach(()=>{
 afterEach(()=>{
  act(()=>root.unmount());
  host.remove();
+ vi.restoreAllMocks();
 });
 
-describe('one-time reminder navigation',()=>{
- it('continues the one RPC request after settings refresh and never consumes twice',async()=>{
+describe('one-time reminder navigation under React StrictMode',()=>{
+ it('shares one delayed RPC across effect replay and settings refresh, initializing once without saving quotas',async()=>{
+  const persist=vi.spyOn(Storage.prototype,'setItem');
   let finish!:(value:unknown)=>void;
   mocks.fetch.mockImplementation(()=>new Promise(resolve=>{finish=resolve}));
-  await act(async()=>{root.render(<Probe value={settings}/>);});
+  await act(async()=>{root.render(<StrictMode><Probe value={settings}/></StrictMode>);});
+  expect(host.textContent).toContain('loading');
   expect(mocks.navigate).toHaveBeenCalledWith('/review',{replace:true});
+  expect(mocks.navigate).toHaveBeenCalledTimes(1);
   expect(mocks.fetch).toHaveBeenCalledTimes(1);
-  await act(async()=>{root.render(<Probe value={{...settings,reviewsPerDay:3}}/>);});
+  await act(async()=>{root.render(<StrictMode><Probe value={{...settings,reviewsPerDay:3}}/></StrictMode>);});
   await act(async()=>{finish([{cardId:'one'},{cardId:'two'}]);});
   expect(mocks.initialize).toHaveBeenCalledTimes(1);
-  expect(mocks.initialize.mock.calls[0][1].reviewsPerDay).toBe(50);
+  expect(mocks.initialize.mock.calls[0][1]).toMatchObject({reviewsPerDay:50,newPerDay:50});
   expect(mocks.navigate).toHaveBeenCalledWith('/review/run?reminder=1');
+  expect(mocks.navigate).toHaveBeenCalledTimes(2);
   expect(mocks.fetch).toHaveBeenCalledTimes(1);
+  expect(mocks.getReviewItems).not.toHaveBeenCalled();
+  expect(settings.reviewsPerDay).toBe(1);
+  expect(settings.newPerDay).toBe(1);
+  expect(persist).not.toHaveBeenCalled();
  });
- it('shows an empty queue message without starting a round',async()=>{
+ it('shows an empty queue after StrictMode replay without initiating or persisting a round',async()=>{
+  const persist=vi.spyOn(Storage.prototype,'setItem');
   mocks.fetch.mockResolvedValue([]);
-  await act(async()=>{root.render(<Probe value={settings}/>);});
+  await act(async()=>{root.render(<StrictMode><Probe value={settings}/></StrictMode>);});
   expect(host.textContent).toContain('No cards are due');
+  expect(mocks.fetch).toHaveBeenCalledTimes(1);
   expect(mocks.initialize).not.toHaveBeenCalled();
+  expect(mocks.navigate).toHaveBeenCalledTimes(1);
+  expect(mocks.navigate).toHaveBeenCalledWith('/review',{replace:true});
+  expect(persist).not.toHaveBeenCalled();
  });
- it('shows a failed read without starting an ordinary round',async()=>{
+ it('shows an RPC failure after StrictMode replay without starting an ordinary round',async()=>{
+  const persist=vi.spyOn(Storage.prototype,'setItem');
   mocks.fetch.mockRejectedValue(new Error('network'));
-  await act(async()=>{root.render(<Probe value={settings}/>);});
+  await act(async()=>{root.render(<StrictMode><Probe value={settings}/></StrictMode>);});
   expect(host.textContent).toContain('Could not load reminder cards');
+  expect(mocks.fetch).toHaveBeenCalledTimes(1);
   expect(mocks.initialize).not.toHaveBeenCalled();
+  expect(mocks.getReviewItems).not.toHaveBeenCalled();
+  expect(mocks.navigate).toHaveBeenCalledTimes(1);
+  expect(persist).not.toHaveBeenCalled();
  });
 });
