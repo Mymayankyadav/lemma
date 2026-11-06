@@ -6,6 +6,7 @@ import { proposePlanChange, proposePlan, startSession, saveProgress, proposeCard
 import { createMcpHandler } from './deps.ts';
 import { savePages } from './tools/transcribe.ts';
 import { buildServer, TOOL_NAMES } from './server.ts';
+import {assertStudyReadListContract} from './tools/study-list-contract.ts';
 import { parseMcpReply } from './protocol.ts';
 // Keep each self-test request below the Edge worker's observed wall-clock limit.
 // The smoke runs four independent partitions with their own fixtures and cleanup.
@@ -67,6 +68,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       if(!list||list.length!==TOOL_NAMES.length||TOOL_NAMES.some(n=>!list.some((x:any)=>x.name===n)))throw Error('Not all expected tools registered');
       const chars=JSON.stringify({tools:list}).length;
       if(chars>15000)throw Error('tools/list too large: '+chars);
+      assertStudyReadListContract(list);
     });
     await check('fixtures',async()=>{
       const subject=await insert(c,'subjects',{name:'zz-selftest-'+Date.now(),glyph:'z',hue:'slate'});subjectId=subject.id;
