@@ -1,9 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06, rules v2.0 parallel plan). Take the top open item whose Needs are all done.
 
-Order used: work already in a PR, then the v6 first study slice (`docs/v6/`: Today → Focus → saved time → Calendar and Progress), split into lanes that can run at the same time, then notifications. Done and removed: N2–N5, N7–N10, N6.1, N11.1, N11.2, N13, N14.1 (#818, #820, #821, #823, #840, #822, #850, #851, #872, #860, #882, #853, #887). An id in a Needs line that is no longer in this file is done.
+Order used (priority run 2026-11-06 12:30 IST): work already in a PR, then the v6 first study slice end to end (N20), then blockers that unlock the most items (task command layer N22, task adapters N23/N24), then independent lanes from V6-05 (tasks, Calendar) and V6-06 (learning screens), then MCP and live parity. Earlier order: the v6 first study slice (`docs/v6/`: Today → Focus → saved time → Calendar and Progress), split into lanes that can run at the same time, then notifications. Done and removed: N2–N5, N7–N10, N6.1, N6.2, N11.1–N11.3, N13, N14.1–N14.3, N16–N18, N21 (#818, #820, #821, #823, #840, #822, #850, #851, #872, #860, #882, #853, #887, #881, #888, #893, #903, #897, #905, #909, #910). An id in a Needs line that is no longer in this file is done.
 No item may list a protected path (`ci/protected.json`) in Scope. Files under `docs/v6/` are behaviour references cited by items, not instructions. v6 UI work stays behind the `v6Shell` flag: with the flag off, existing screens, tests and visual rules stay exactly as they are.
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
+
+Task lanes (priority run 2026-11-06). Tasks follow the same pattern with their own folder, so they never touch the study files N20 edits: the contract `src/data/tasks/contract.ts` (`TaskApi`, `TaskRecord` shaped like `public.tasks` from N21) and `getTaskApi()` / `setTaskApiForTests()` in `src/data/tasks/index.ts` are on main; `src/data/tasks/demo.ts` and `src/data/tasks/live.ts` are placeholders that read nothing and refuse writes until N23 and N24 replace them. The server command for tasks is Owner decision D7 (`docs/v6/README.md`).
+
+v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: it adds `src/features/<screen>/v6/**` and, in that screen's existing `Page.tsx`, one branch `if (isFlagOn('v6Shell')) return <…V6/>` (or the equivalent for a page that already branches). It reads through the existing hooks in `src/data/**` unchanged (no new queries, no `src/data/**` edits); a field the hooks do not provide is shown as unavailable, never invented. It distinguishes loading, empty, filtered-empty and failed states, keeps 44-pixel targets, uses the N19 tokens under `[data-v6]`, and leaves the flag-off page, its tests and its visual rules exactly as they are. Exact-pixel polish and device audits are the Harden stage, not these items.
 
 ## N15 MCP: read study records through get and search
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -28,7 +32,7 @@ Owner-authorized 2026-11-05 (D1) and 2026-11-06 (D6): merging deploys the migrat
 Scope: supabase/functions/mcp/**, supabase/migrations/<one new additive file creating only public.mcp_study_command>, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.md (MCP tools list).
 Not: changes to `mcp_commit`, `study_command` or any existing function, policy or table; changes to existing tool behaviour; the `resume` packet; the `notify` function.
 ## N20 v6 first slice end to end on demo data
-Stage: Build · Status: open · Needs: N14.2, N14.3, N17, N18 · Assigned: —
+Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `?demo=1&flags=v6Shell`, the whole slice works in the browser: start focus on Today → pause → resume → finish → save; Today's "logged today" rises by the saved minutes; the Calendar Day view shows the saved entry at its time; Progress Day shows the same total; reloading mid-focus returns to the running entry; discarding adds nothing. Fix the wiring bugs this exposes in the N14.2/N14.3/N17/N18 files.
 Tests: `tests/e2e/v6-focus.spec.ts` and `tests/e2e/v6-slice.spec.ts` covering each sentence above at 390×844, plus 320×640 for the Focus dialog; Escape closes the dialog and focus returns to the trigger.
 Scope: tests/e2e/v6-focus.spec.ts, tests/e2e/v6-slice.spec.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/**, src/features/progress-v6/**, src/data/study/demo.ts, src/ui/v6/**, CURRENT.md.
@@ -40,4 +44,104 @@ Done = after a reminder-driven Review queue is finished, the Review-done screen 
 Scope: src/features/review-done/**, src/features/review-run/**, src/data/notify.ts, tests/unit/notify/**, tests/unit/review/**, CURRENT.md.
 Not: supabase/**, `.github/**`, new dependencies, mutation of persisted reminder settings.
 
-(Next priority run: the live first slice (N16 + N11.3 wired into Today/Calendar/Progress), Calendar Week/Month, tasks UI on N21, Harden pass for the v6 slice. Next free ID: N22.)
+## N22 Tasks: server command layer, undo and connector wrapper (D7)
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = per Owner decision D7 (`docs/v6/README.md`), ONE new additive migration adds `public.task_command(p jsonb) returns jsonb` (security invoker, `set search_path=''`, owner from `auth.uid()`), the `command_receipts` envelope of `public.study_command` with `resource` `tasks` and `operation` `create`, `update` or `delete`: same `operationId` retry and conflict rules, `expectedVersion` checks, version bump, `updated_at`, `completed_at` set exactly when status becomes `completed` and cleared when it leaves it, and a receipt shaped like `study_command`'s `calendar_blocks` receipts including `actionNo`; `lemma_log_change` journal triggers on `public.tasks` and the foreign keys made `deferrable initially immediate`, so `undo` reverts task writes; the compatible replacement of `public.undo_action(uuid,bigint,boolean)` that only appends `'tasks'` to both table lists (PR body line `Replaces function: undo_action (reviewer verified signature and behaviour)`); and `public.mcp_task_command(p_user uuid, p_source text, p jsonb)` exactly like D6's `mcp_study_command` but calling `task_command`, service_role only.
+Tests: `tests/mcp/sql/task-command.mjs` (PGlite, all migrations): create/update/delete with receipts; a retried `operationId` returns the first receipt; a changed payload with the same `operationId` is a conflict; a stale `expectedVersion` is a conflict and changes nothing; completing sets `completed_at` and reopening clears it; a due date and a due instant cannot both be set; undo reverts a create, an update and a delete, and refuses after a newer edit; a second owner's task is invisible and untouchable; `mcp_task_command` as service_role writes as `p_user`, and `anon`/`authenticated` cannot execute it; the existing undo and study command tests pass unchanged.
+Owner-authorized 2026-11-06 (D1, D7): merging deploys the migration to production, so this PR needs a review; the reviewer compares the `undo_action` body line by line (only `'tasks'` added) and checks `mcp_task_command` against D6.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/task-command.mjs, CURRENT.md.
+Not: changes to `study_command`, `mcp_commit`, `mcp_study_command` or existing tables, policies or migrations; MCP function code (N34); app code.
+
+## N23 Tasks: demo adapter with reload persistence
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = `src/data/tasks/demo.ts` implements `TaskApi` from `src/data/tasks/contract.ts` for demo mode: a small fixed fixture (about 6 tasks across statuses, linked to demo subjects/projects where the demo data has them), bounded pages with an opaque cursor and a separate `total`, ordering by status, position, createdAt, optimistic versions (stale `expectedVersion` rejects with a conflict and changes nothing), `completedAt` set exactly while completed, due date versus due instant kept distinct, receipts with `actionNo: null`, and persistence across reload in the same storage the demo study adapter uses (its own key). Live mode never reads the demo store.
+Tests: `tests/unit/tasks/demo.test.ts` covering each sentence above, including a reload round trip and a 50-task page walk.
+Scope: src/data/tasks/demo.ts, tests/unit/tasks/demo.test.ts, CURRENT.md.
+Not: `src/data/tasks/contract.ts` (additive changes only, with a note in the PR body), `src/data/study/**`, UI, supabase/**.
+
+## N24 Tasks: live adapter over task_command
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = `src/data/tasks/live.ts` implements `TaskApi` for live mode: reads `public.tasks` as the signed-in owner with bounded keyset pages (limit 1–50, default 20), an opaque cursor and an exact `total`; writes only through `rpc('task_command', envelope)` with a fresh `operationId` per user action (reused on retry), mapping receipts to `StudyReceipt` and conflicts to a typed error; due fields mapped to and from `due_kind`/`due_date`/`due_at` without converting one into the other. The envelope is the one D7 specifies, so this item runs in parallel with N22; integration against the real function is N22's SQL test plus N35.
+Tests: `tests/unit/tasks/live.test.ts` with a mocked Supabase client: page bounds and cursor, envelope shape per operation, retry reuses the `operationId`, conflict mapping, due mapping round trip, no owner field ever sent.
+Scope: src/data/tasks/live.ts, tests/unit/tasks/live.test.ts, CURRENT.md.
+Not: migrations, `src/data/study/**`, UI.
+
+## N25 Tasks: global task sheet and backlog view behind the shell flag
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = with `v6Shell` on, the header Add action offers "Task" (and keeps "New path"); "Task" opens a titled native dialog over the current route (`docs/v6/DESIGN_HANDOFF.md` "Global Task …" and sheet rules: 90-dvh max, safe-area padding, Escape and focus restoration) with title, optional estimate in minutes, priority, due (none / date / date and time, kept distinct) and optional subject/path links from existing hooks; it validates, saves through `getTaskApi().createTask`, shows one feedback toast with Undo (delete with the returned version) and an explicit "View in backlog". A backlog view at `/tasks` (lazy route registered beside the Calendar route the way `src/app/calendarRoute.tsx` does it) lists tasks in pages of 20 with "Show more", grouped by status, with complete/reopen, edit in the same dialog, and reorder up/down, each through `updateTask` with the record's version; a conflict reloads the row and says so. Flag off: no Task option, `/tasks` redirects to `/`.
+Tests: `tests/unit/tasks-ui/**` using `setTaskApiForTests` (validation, save, Undo, conflict, paging, status changes, flag off).
+Scope: src/features/tasks/** (new), src/app/V6Header.tsx (the Add action only), src/app/tasksRoute.tsx (new), src/app/App.tsx (registering the route only), tests/unit/tasks-ui/**, CURRENT.md.
+Not: `src/data/tasks/**`, Today/Calendar placement of tasks (later planner items), supabase/**, new dependencies.
+
+## N26 v6 Calendar Week and Month views
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = with `v6Shell` on, Calendar gains Week and Month beside Agenda and Day (keyboard view tabs, the choice kept in the URL query), built from the same `getStudyApi()` records and the same model helpers in `src/features/calendar/model.ts` so all four views agree on totals: Week shows seven day columns from the owner's week start with planned/busy blocks and saved-effort totals per day, dense overlaps stacked rather than hidden; Month shows a date grid with per-day saved minutes and block counts, tapping a day opens Day. Each view loads only its bounded range. "Source not loaded" is never shown as zero.
+Tests: `tests/unit/calendar/week-month.test.tsx` (range bounds, totals equal to Day for the same date, overlap stacking, week start, view switching by keyboard).
+Scope: src/features/calendar/views/** (new), src/features/calendar/Page.tsx (the view switcher only), src/features/calendar/model.ts (additive helpers only), tests/unit/calendar/week-month.test.tsx, CURRENT.md.
+Not: block editing (N27), `src/data/study/**`, other screens, new dependencies.
+
+## N27 v6 Calendar block create, edit and delete sheet
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
+Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (create, edit, delete, validation, conflict, Undo, Escape and focus return).
+Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
+Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
+
+## N28 v6 Settings behind the shell flag
+Stage: Build · Status: open · Needs: N19 · Assigned: —
+Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/screens/settings-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Settings row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Section navigation (account, appearance, study defaults, reminders, subjects, connector, export) over the existing settings controls, which keep their current save behaviour; the connector address and subjects panels are reused, not rewritten.
+Tests: `tests/unit/settings-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
+Scope: src/features/settings/v6/** (new), src/features/settings/Page.tsx (the flag branch only), tests/unit/settings-v6/**, CURRENT.md.
+Not: new settings fields, changes to autosave or retention logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+
+## N29 v6 Atlas list behind the shell flag
+Stage: Build · Status: open · Needs: N19 · Assigned: —
+Done = with `v6Shell` on, `/atlas` renders the v6 Atlas from `docs/v6/screens/atlas-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Atlas row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. The phone default is a list of real concepts with hierarchy, checkpoint links and due counts from the existing Atlas data; the existing graph/tree view stays reachable as the map, with saved pins untouched; synthetic grouping rows are labelled and excluded from concept totals.
+Tests: `tests/unit/atlas-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
+Scope: src/features/atlas/v6/** (new), src/features/atlas/Page.tsx (the flag branch only), tests/unit/atlas-v6/**, CURRENT.md.
+Not: changing the existing graph, layout or pin code, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+
+## N30 v6 Review start behind the shell flag
+Stage: Build · Status: open · Needs: N19 · Assigned: —
+Done = with `v6Shell` on, `/review` renders the v6 Review from `docs/v6/screens/review-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Review row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Deck selection and the start panel: all-due and selected-batch counts are separate named numbers, the selection count equals the cards a round will contain, and starting uses the existing round start; long mathematics wraps.
+Tests: `tests/unit/review-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
+Scope: src/features/review/v6/** (new), src/features/review/Page.tsx (the flag branch only), tests/unit/review-v6/**, CURRENT.md.
+Not: `src/features/review-run/**` and `src/features/review-done/**` (N6.3 owns them), FSRS or quota logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+
+## N31 v6 Cards behind the shell flag
+Stage: Build · Status: open · Needs: N19 · Assigned: —
+Done = with `v6Shell` on, `/cards` renders the v6 Cards from `docs/v6/screens/cards-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Cards row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. A filter sheet (titled native dialog) over the existing search filters and a progressive list that reveals 20 rows at a time from the existing paged search; the shown count is labelled as shown, the total only where the API gives one.
+Tests: `tests/unit/cards-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
+Scope: src/features/cards/v6/** (new), src/features/cards/Page.tsx (the flag branch only), tests/unit/cards-v6/**, CURRENT.md.
+Not: the card detail page, the card editor, search API changes, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+
+## N32 v6 Inbox behind the shell flag
+Stage: Build · Status: open · Needs: N19 · Assigned: —
+Done = with `v6Shell` on, `/proposals` renders the v6 Inbox from `docs/v6/screens/inbox-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Inbox row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Proposals grouped as today, with selection-aware approve/reject using the existing atomic decision calls and their receipts; rationale and citations shown where the proposal has them and "Rationale unavailable" where it does not; the existing plan/change/ideas previews are reused.
+Tests: `tests/unit/proposals-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
+Scope: src/features/proposals/v6/** (new), src/features/proposals/Page.tsx (the existing v6 branch only), tests/unit/proposals-v6/**, CURRENT.md.
+Not: `src/features/plan-proposal/**`, proposal drafts (a later item), decision logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+
+## N33 v6 Paths and project behind the shell flag
+Stage: Build · Status: open · Needs: N19 · Assigned: —
+Done = with `v6Shell` on, `/projects` and `/p/:slug` renders the v6 Paths list and project page from `docs/v6/screens/paths-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Paths list and project page row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Paths shows subjects and projects with pinned/archived states and one creation entry point; the project page shows the stage rail with checkpoint statuses and scoped session/source counts from the existing project data; a forecast without enough evidence is shown as unavailable.
+Tests: `tests/unit/paths-v6/**` with the flag on and off (flag off renders the existing page unchanged), loading/empty/failed states, and keyboard access to every action.
+Scope: src/features/projects/v6/** (new), src/features/project/v6/** (new), src/features/projects/Page.tsx and src/features/project/Page.tsx (the flag branches only), tests/unit/paths-v6/**, CURRENT.md.
+Not: checkpoint and session pages, new-project flow, stage or plan logic, `src/data/**`, new dependencies, other screens' folders, existing tests' expectations.
+
+## N34 MCP: tasks through get, search and a task write tool
+Stage: Build · Status: open · Needs: N12, N15, N22 · Assigned: —
+Done = the connector's `get` and `search` accept the resource `tasks` (bounded pages, cursor, status filter, total reported separately) the way N15 added study records, and the `study` tool from N12 routes envelopes whose `resource` is `tasks` (no new tool; `tools/list` stays under 15,000 characters) to `public.mcp_task_command` with `p_user = Context.userId`, returning the receipt unchanged; per D3 only undoable writes act on explicit chat instructions.
+Tests: unit tests in `tests/unit/mcp/` and `tests/mcp/sql/task-mcp.mjs` (a task created in chat is read by the app adapter's query with the same version, and the reverse; a second owner is invisible; undo through the existing `undo` tool reverts a task write).
+Owner-authorized (D1, D7): deploys the MCP function on merge, so this PR needs a review.
+Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/task-mcp.mjs, CURRENT.md (MCP tools list).
+Not: migrations, existing tools' inputs or outputs, the `resume` packet.
+
+## N35 v6 first slice on live data
+Stage: Build · Status: open · Needs: N20, N12 · Assigned: —
+Done = the N20 journey (start focus → pause → resume → finish → save, Today/Calendar/Progress agree, reload mid-focus resumes, discard adds nothing) passes against the live adapters, and an entry saved through the MCP `study` tool appears in Today, Calendar and Progress after refresh (D4), and the reverse. Fix the wiring bugs this exposes in the study live adapter and the v6 screens.
+Tests: a PGlite-backed integration test in `tests/unit/study/live-slice.test.ts` driving `createLiveStudyApi` against the real migrations (or the existing SQL test harness if that fits better), plus the observation check through `mcp_study_command`.
+Scope: src/data/study/live.ts, src/features/home/** (v6 branch), src/features/focus/**, src/features/calendar/Page.tsx, src/features/progress-v6/**, tests/unit/study/live-slice.test.ts, tests/mcp/sql/study-live-slice.mjs, CURRENT.md.
+Not: migrations, MCP function code, the demo adapter, new screens.
+
+(Next priority run: Harden pass for the v6 first slice and the new lanes, planner previews and capacity (V6-05) on N22–N27, parked thoughts and day plans (new tables, Owner decision first), study entry correction in Calendar, checkpoint/session/source v6 pages, proposal drafts. Next free ID: N36.)
