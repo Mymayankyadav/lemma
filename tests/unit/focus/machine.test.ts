@@ -139,6 +139,7 @@ describe('N14.1 timestamp-driven Focus machine', () => {
     expect(() => start(0)).toThrow(/Positive focusMinutes/);
     expect(() => transitionFocus(start(), {type: 'pause', at: 'not-a-time'})).toThrow(/timestamp/);
     const finished = next(start(), 'finish', 2);
+    expect(() => transitionFocus(finished, {type: 'save', at: at(1)})).toThrow(/backwards/);
     expect(() => transitionFocus(finished, {type: 'save', at: at(3), minutes: -1})).toThrow(/saved minutes/);
     expect(() => transitionFocus(finished, {type: 'save', at: at(3), minutes: Infinity})).toThrow(/saved minutes/);
   });
