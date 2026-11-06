@@ -1,6 +1,83 @@
 {
-  "table": "lemma_undo_tables",
   "version": 1,
+  "source": "D7 final undo_action lock and journal allowlists",
+  "scope": "public",
+  "tables": [
+    {
+      "table_name": "settings"
+    },
+    {
+      "table_name": "subjects"
+    },
+    {
+      "table_name": "projects"
+    },
+    {
+      "table_name": "sources"
+    },
+    {
+      "table_name": "source_pages"
+    },
+    {
+      "table_name": "concepts"
+    },
+    {
+      "table_name": "concept_links"
+    },
+    {
+      "table_name": "checkpoints"
+    },
+    {
+      "table_name": "checkpoint_prereqs"
+    },
+    {
+      "table_name": "checkpoint_concepts"
+    },
+    {
+      "table_name": "styles"
+    },
+    {
+      "table_name": "sessions"
+    },
+    {
+      "table_name": "session_events"
+    },
+    {
+      "table_name": "misconceptions"
+    },
+    {
+      "table_name": "notes"
+    },
+    {
+      "table_name": "cards"
+    },
+    {
+      "table_name": "reviews"
+    },
+    {
+      "table_name": "card_comments"
+    },
+    {
+      "table_name": "proposals"
+    },
+    {
+      "table_name": "diagnostics"
+    },
+    {
+      "table_name": "study_entries"
+    },
+    {
+      "table_name": "study_intervals"
+    },
+    {
+      "table_name": "calendar_blocks"
+    },
+    {
+      "table_name": "tasks"
+    }
+  ],
+  "access": "database functions only; no client RLS policy",
+  "table": "lemma_undo_tables",
   "columns": {
     "table_name": {
       "classification": "command-managed",
