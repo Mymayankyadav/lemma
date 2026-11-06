@@ -48,14 +48,6 @@ Tests: `tests/unit/app/v6-tokens.test.ts`: the attribute appears only with the f
 Scope: src/ui/v6/tokens.css (new), src/ui/v6/** (token use in shell parts), src/app/** (setting the attribute and importing the stylesheet only), public/fonts/v6/** (new), tests/unit/app/**, CURRENT.md.
 Not: changing any colour or font with the flag off, existing visual tests, screens other than the shell parts, new dependencies.
 
-## N21 v6 tasks table: one additive migration with RLS
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one new migration `supabase/migrations/<timestamp>_v6_tasks.sql`, additive only, creating `tasks` with the fields of the Tasks row in `docs/v6/Lemma_v6_Data_MCP_Contract.md` (title, body, optional subject/project/checkpoint links owned by the same user, estimate_minutes, priority, due_date or due_at with an explicit `due_kind`, position, status `backlog|in_progress|completed|cancelled`, completed_at, version, created_at, updated_at), owner RLS in the style of the N10 tables, and an index on (user_id, status, position). `calendar_blocks` gains nothing in this item. `src/data/live/database.types.ts` gains the table.
-Tests: `tests/mcp/sql/tasks-schema.mjs` (PGlite, applying all migrations): owner CRUD; a second owner can neither read nor link to the first owner's subject; an invalid status is rejected; completed_at is required exactly when status is completed.
-Owner-authorized 2026-11-05 (D1): merging deploys the migration to production (the table stays unused), so this PR needs a review; it must pass the additive-only guard.
-Scope: supabase/migrations/<the new file only>, tests/mcp/sql/tasks-schema.mjs, src/data/live/database.types.ts, CURRENT.md.
-Not: changes to existing tables or functions, `study_command`, app code, MCP.
-
 ## N12 MCP: study write tool through study_command
 Stage: Build · Status: open · Needs: N11.3 · Assigned: —
 Done = the connector gains ONE new tool `study` that forwards a command envelope to `public.study_command` and returns its receipt unchanged. The owner comes from the authenticated connection, never from arguments. Existing tools, the N15 reads and the `resume` packet are unchanged. `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
