@@ -35,14 +35,37 @@ export function overlaps(start: string, end: string, range: StudyRange): boolean
 export type LoggedSlice = { entry: StudyEntryRecord; start: string; end: string };
 
 export function savedSlices(entries: StudyEntryRecord[], range: StudyRange): LoggedSlice[] {
-  return entries.filter(entry => entry.status === 'saved').flatMap(entry =>
-    entry.intervals.filter(i => i.kind === 'focus' && i.end && overlaps(i.start, i.end, range))
-      .map(i => ({
-        entry,
-        start: new Date(Math.max(millis(i.start), millis(range.start))).toISOString(),
-        end: new Date(Math.min(millis(i.end!), millis(range.end))).toISOString(),
-      })),
-  );
+  // Today and Progress union focus spans and subtract breaks from all saved
+  // entries. Calendar's visible rows and capacity must use the same spans.
+  const seen = new Set<string>();
+  const saved = entries.filter(entry => {
+    if (entry.status !== 'saved' || seen.has(entry.id)) return false;
+    seen.add(entry.id);
+    return true;
+  });
+  const breaks = saved.flatMap(entry => entry.intervals
+    .filter(i => i.kind === 'break' && i.end !== null && overlaps(i.start, i.end, range))
+    .map(i => [Math.max(millis(i.start), millis(range.start)),
+      Math.min(millis(i.end!), millis(range.end))] as [number, number]));
+  return saved.flatMap(entry => entry.intervals
+    .filter(i => i.kind === 'focus' && i.end !== null && overlaps(i.start, i.end, range))
+    .flatMap(i => {
+      let spans: Array<[number, number]> = [[
+        Math.max(millis(i.start), millis(range.start)),
+        Math.min(millis(i.end!), millis(range.end)),
+      ]];
+      for (const [breakStart, breakEnd] of breaks) {
+        spans = spans.flatMap(([start, end]): Array<[number, number]> => {
+          if (end <= breakStart || start >= breakEnd) return [[start, end]];
+          return ([[start, Math.min(end, breakStart)],
+            [Math.max(start, breakEnd), end]] as Array<[number, number]>)
+            .filter(([a, b]) => b > a);
+        });
+      }
+      return spans.map(([start, end]) => ({
+        entry, start: new Date(start).toISOString(), end: new Date(end).toISOString(),
+      }));
+    }));
 }
 
 export function visibleBlocks(blocks: CalendarBlockRecord[], range: StudyRange): CalendarBlockRecord[] {
