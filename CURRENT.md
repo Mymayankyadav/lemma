@@ -154,6 +154,10 @@ The pure `src/lib/effort/` module provides interval-union logged minutes (with s
 
 The cards page-states filtered-to-zero regression now waits for the asynchronous filtered result before asserting the exact `No cards match` empty state and zero rendered card rows. The test's expectations are unchanged; this addresses intermittent premature assertions under load.
 
+## N11.2 study lifecycle (PR #882)
+
+An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 journaling and undo remain pending. The SQL regression suite covers lifecycle transitions, version conflicts, interval invariants and owner isolation. Deployment to the remote Supabase database is not independently verified; no application or MCP client uses these commands yet.
+
 ## N6.2 reminder Review queue (PR #881)
 
 The flag-gated Review route consumes a bounded `start=1..50` reminder link with replace navigation, reads owner-visible due cards through `notification_review_items` in live mode (or the demo adapter in demo mode), and initializes a one-shot Review round without modifying the ordinary daily review quota. The ordinary Review route remains unchanged when `notificationsPush` is off.
