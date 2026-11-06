@@ -128,12 +128,12 @@ Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per ope
 Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
-## N56 Deadlines and milestones: app module (src/data/deadlines)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and operations of N42, including every lifecycle operation it names.
-Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
+Stage: Build · Status: open · Needs: N56.1, N42 · Assigned: —
+Done = complete the N56 app module after N56.1's contract, isolated demo adapter and stable getDeadlineApi/setDeadlineApiForTests facade. Implement the owner-RLS live deadline adapter for all N42 operations: create, update, complete, reopen, cancel, restore, delete via public.deadlines_command with v1 operationId, retries reusing that ID, optimistic expectedVersion, actionNo receipts, typed conflict mapping, civil due dates versus instants, owner-scoped projected project/checkpoint targets (read-only, no new rows), and exact status-filtered bounded 1–50 keyset pages; never send owner IDs in browser commands. Replace the live placeholder in the existing module facade. Preserve demo semantics and separate storage.
+Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, including retries, each operation, stale conflicts, owner RLS, projected read-only targets and 50+ row cursor walk; existing N56.1 demo tests remain green.
+Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
+Not: src/data/tasks/**, src/data/study/**, other data folders, UI, supabase/**, new dependencies.
 
 ## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -294,7 +294,7 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56, N57 · Assigned: —
+Stage: Build · Status: open · Needs: N56.2, N57 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
