@@ -1,12 +1,12 @@
 // N15: run against PGlite only; no production connection or migration writes.
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
-import {register} from 'node:module';
+import {tsImport} from 'tsx/esm/api';
 
-// The existing pinned tsx dev dependency allows importing the same pure TS
-// handler used by the Edge Function; no mock copy of the read algorithm.
-register('tsx/esm', import.meta.url);
-const {readStudyRecords}=await import('../../../supabase/functions/mcp/tools/study-read.ts');
+// Use tsx's supported, scoped ESM import API when CI invokes this with `node`.
+// Do not register tsx as a legacy --loader (rejected by current Node/tsx).
+// This executes the same Edge Function handler, without a mock implementation.
+const {readStudyRecords}=await tsImport('../../../supabase/functions/mcp/tools/study-read.ts', import.meta.url);
 const {PGlite}=await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
 const db=new PGlite();
 const owner='11111111-1111-1111-1111-111111111111';
