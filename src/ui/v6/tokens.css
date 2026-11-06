@@ -1,0 +1,129 @@
+/*
+ * N19 — v6 visual contract. Nothing in this sheet applies without data-v6.
+ * The three named font families are preferred only when available locally;
+ * no remote @import, font-face URL, or third-party font request is introduced.
+ */
+:root[data-v6] {
+ color-scheme: light;
+ --v6-color-background: #F8FAF8;
+ --v6-color-surface: #FFFFFF;
+ --v6-color-surface-soft: #EFF3F6;
+ --v6-color-text: #202F45;
+ --v6-color-muted: #46596F;
+ --v6-color-primary: #203D61;
+ --v6-color-on-primary: #FFFFFF;
+ --v6-color-border: #CBD6DF;
+ --v6-color-danger: #AA2434;
+ --v6-color-on-danger: #FFFFFF;
+ --v6-font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+ --v6-font-ui: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+ --v6-font-clock: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+ --v6-space-1: 0.25rem;
+ --v6-space-2: 0.5rem;
+ --v6-space-3: 0.75rem;
+ --v6-space-4: 1rem;
+ --v6-space-6: 1.5rem;
+ --v6-radius-control: 0.875rem;
+ --v6-radius-card: 1.5rem;
+ --v6-touch-size: 2.75rem;
+ --v6-elevation-card: 0 8px 30px -20px #38485D50;
+ --v6-elevation-float: 0 -8px 32px -22px #1C2C4755;
+}
+/* Explicit theme preference wins over operating-system preference. */
+:root[data-v6][data-theme="graph"] {
+ color-scheme: light;
+ --v6-color-background: #F8FAF8;
+ --v6-color-surface: #FFFFFF;
+ --v6-color-surface-soft: #EFF3F6;
+ --v6-color-text: #202F45;
+ --v6-color-muted: #46596F;
+ --v6-color-primary: #203D61;
+ --v6-color-on-primary: #FFFFFF;
+ --v6-color-border: #CBD6DF;
+ --v6-color-danger: #AA2434;
+ --v6-color-on-danger: #FFFFFF;
+}
+:root[data-v6][data-theme="graph-night"] {
+ color-scheme: dark;
+ --v6-color-background: #101A28;
+ --v6-color-surface: #1A2838;
+ --v6-color-surface-soft: #26394D;
+ --v6-color-text: #EDF5FC;
+ --v6-color-muted: #C0D0E2;
+ --v6-color-primary: #B7DDFF;
+ --v6-color-on-primary: #13273B;
+ --v6-color-border: #50657A;
+ --v6-color-danger: #FF8C93;
+ --v6-color-on-danger: #3B111A;
+}
+@media (prefers-color-scheme: dark) {
+ :root[data-v6]:not([data-theme]) {
+  color-scheme: dark;
+  --v6-color-background: #101A28;
+  --v6-color-surface: #1A2838;
+  --v6-color-surface-soft: #26394D;
+  --v6-color-text: #EDF5FC;
+  --v6-color-muted: #C0D0E2;
+  --v6-color-primary: #B7DDFF;
+  --v6-color-on-primary: #13273B;
+  --v6-color-border: #50657A;
+  --v6-color-danger: #FF8C93;
+  --v6-color-on-danger: #3B111A;
+ }
+}
+:root[data-v6] body {
+ background: var(--v6-color-background);
+ color: var(--v6-color-text);
+ font-family: var(--v6-font-ui);
+}
+:root[data-v6] [data-v6-header] {
+ color: var(--v6-color-text);
+ font-family: var(--v6-font-ui);
+ padding-bottom: var(--v6-space-3);
+ border-bottom: 1px solid var(--v6-color-border);
+}
+:root[data-v6] [data-v6-header] h2 {
+ color: var(--v6-color-text);
+ font-family: var(--v6-font-display);
+}
+:root[data-v6] [data-v6-header] :is(a,summary) {
+ min-height: var(--v6-touch-size);
+ border-radius: var(--v6-radius-control);
+ border-color: var(--v6-color-border);
+ background: var(--v6-color-surface);
+ color: var(--v6-color-text);
+}
+:root[data-v6] [data-v6-header] :is(a,summary):focus-visible,
+:root[data-v6] nav[aria-label="Main navigation"] a:focus-visible {
+ outline: 2px solid var(--v6-color-primary);
+ outline-offset: var(--v6-space-1);
+}
+:root[data-v6] nav[aria-label="Main navigation"] {
+ background: var(--v6-color-surface);
+ border-color: var(--v6-color-border);
+ box-shadow: var(--v6-elevation-float);
+ font-family: var(--v6-font-ui);
+}
+:root[data-v6] nav[aria-label="Main navigation"] a {
+ min-height: var(--v6-touch-size);
+ border-radius: var(--v6-radius-control);
+ color: var(--v6-color-muted);
+}
+:root[data-v6] nav[aria-label="Main navigation"] a[aria-current="page"] {
+ color: var(--v6-color-primary);
+}
+:root[data-v6] [aria-label="Focus accessory"] {
+ background: var(--v6-color-surface);
+ color: var(--v6-color-text);
+ border-color: var(--v6-color-border);
+ box-shadow: var(--v6-elevation-float);
+ font-family: var(--v6-font-ui);
+}
+:root[data-v6] [aria-label="Focus accessory"] [class*="tabular"] {
+ font-family: var(--v6-font-clock);
+}
+@media (prefers-reduced-motion: reduce) {
+ :root[data-v6] :is([data-v6-header],nav[aria-label="Main navigation"]) {
+  transition-duration: 0.01ms;
+ }
+}

@@ -41,13 +41,6 @@ Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production
 Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/study-mcp-read.mjs, CURRENT.md (MCP tools list).
 Not: the `study` write tool (N12), migrations, the `notify` function.
 
-## N19 v6 visual tokens and fonts behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the app root carries `data-v6` and one stylesheet `src/ui/v6/tokens.css` defines the v6 colour, type, spacing, radius and elevation tokens for day and night (`prefers-color-scheme` plus the existing theme setting) from `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the `docs/v6/screens/*-day.png` / `*-night.png` pairs, as CSS custom properties scoped under `[data-v6]`. The v6 shell parts from N13 (tab bar, header, accessory slot) use the tokens. Fonts: the families the handoff names, self-hosted as woff2 under `public/fonts/v6/` only if their licence allows it (record the licence in CURRENT.md), otherwise the stated fallback stack; no external font requests. With the flag off nothing changes.
-Tests: `tests/unit/app/v6-tokens.test.ts`: the attribute appears only with the flag on, every token the shell parts use is defined for both schemes, body text contrast is at least 4.5:1 for both schemes (computed from the token values).
-Scope: src/ui/v6/tokens.css (new), src/ui/v6/** (token use in shell parts), src/app/** (setting the attribute and importing the stylesheet only), public/fonts/v6/** (new), tests/unit/app/**, CURRENT.md.
-Not: changing any colour or font with the flag off, existing visual tests, screens other than the shell parts, new dependencies.
-
 ## N21 v6 tasks table: one additive migration with RLS
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = one new migration `supabase/migrations/<timestamp>_v6_tasks.sql`, additive only, creating `tasks` with the fields of the Tasks row in `docs/v6/Lemma_v6_Data_MCP_Contract.md` (title, body, optional subject/project/checkpoint links owned by the same user, estimate_minutes, priority, due_date or due_at with an explicit `due_kind`, position, status `backlog|in_progress|completed|cancelled`, completed_at, version, created_at, updated_at), owner RLS in the style of the N10 tables, and an index on (user_id, status, position). `calendar_blocks` gains nothing in this item. `src/data/live/database.types.ts` gains the table.
