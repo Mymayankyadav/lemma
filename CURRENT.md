@@ -148,6 +148,10 @@ Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright,
 
 The pure `src/lib/effort/` module provides interval-union logged minutes (with separate future minutes), capped active focus that retains accumulated minutes during pauses and breaks, priority capacity partition, per-subject partition, and IANA civil-day boundaries including skipped midnights and DST transitions. Unit coverage is in `tests/unit/effort/metrics.test.ts`. The module is not wired to the UI. Current CI status is tracked by the PR checks rather than this document.
 
+## Cards empty-state test timing (bug #879)
+
+The cards page-states filtered-to-zero regression now waits for the asynchronous filtered result before asserting the exact `No cards match` empty state and zero rendered card rows. The test's expectations are unchanged; this addresses intermittent premature assertions under load.
+
 ## N11.2 study lifecycle (PR #882)
 
 An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 journaling and undo remain pending. The SQL regression suite covers lifecycle transitions, version conflicts, interval invariants and owner isolation. Deployment to the remote Supabase database is not independently verified; no application or MCP client uses these commands yet.
