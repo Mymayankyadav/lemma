@@ -1,103 +1,34 @@
 {
+  "table": "lemma_command_resources",
   "version": 1,
-  "source": "D8(a) existing v6 command resources",
-  "resources": [
-    {
-      "resource": "study_entries",
-      "command_fn": "study_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "delete",
-          "start",
-          "pause",
-          "resume",
-          "break",
-          "save",
-          "discard"
-        ],
-        "fields": [
-          "intent",
-          "source",
-          "reflection",
-          "rating",
-          "subject_id",
-          "project_id",
-          "checkpoint_id",
-          "session_id"
-        ]
-      }
+  "columns": {
+    "resource": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
     },
-    {
-      "resource": "study_intervals",
-      "command_fn": "study_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "delete"
-        ],
-        "fields": [
-          "entry_id",
-          "kind",
-          "started_at",
-          "ended_at"
-        ]
-      }
+    "command_fn": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
     },
-    {
-      "resource": "calendar_blocks",
-      "command_fn": "study_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "delete"
-        ],
-        "fields": [
-          "kind",
-          "title",
-          "starts_at",
-          "ends_at",
-          "time_zone",
-          "status",
-          "subject_id",
-          "project_id",
-          "checkpoint_id",
-          "session_id"
-        ]
-      }
+    "mcp_ok": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
     },
-    {
-      "resource": "tasks",
-      "command_fn": "task_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "delete"
-        ],
-        "fields": [
-          "title",
-          "body",
-          "subject_id",
-          "project_id",
-          "checkpoint_id",
-          "estimate_minutes",
-          "priority",
-          "due_kind",
-          "due_date",
-          "due_at",
-          "position",
-          "status"
-        ]
-      }
+    "schema": {
+      "classification": "command-managed",
+      "appPath": "reviewed Supabase migrations (system metadata)",
+      "mcpPath": "N37 resource discovery (planned)",
+      "exportPolicy": "system registry metadata in schema manifest (not owner records)",
+      "deletionPolicy": "managed by reviewed schema migrations, not owner account deletion"
     }
-  ],
-  "access": "database functions only; no client RLS policy"
+  }
 }
