@@ -128,13 +128,6 @@ Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per ope
 Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
-## N56 Deadlines and milestones: app module (src/data/deadlines)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and operations of N42, including every lifecycle operation it names.
-Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-
 ## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = per D8(c) and the lane rules, `src/data/practice-topics/` for the records and operations of N43, including every lifecycle operation it names.
