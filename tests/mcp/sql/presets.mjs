@@ -39,10 +39,10 @@ try {
  assert.ok(mine.created_at&&mine.updated_at);
 
  const invalid=[
-  ['mode','unknown'],['focus_minutes',0],['focus_minutes',241],
-  ['break_minutes',-1],['break_minutes',121],
-  ['long_break_minutes',-1],['long_break_minutes',181],['cycles',0],
-  ['cycles',17],['version',0],['source','browser'],
+  ['mode','unknown'],['focus_minutes',0],['focus_minutes',481],
+  ['break_minutes',0],['break_minutes',181],
+  ['long_break_minutes',0],['long_break_minutes',241],['cycles',0],
+  ['cycles',25],['position',-1],['version',0],['source','browser'],
  ];
  await bad('update public.presets set label=$1 where id=$2',[' ',mine.id]);
  for(const [field,value] of invalid) {
@@ -73,6 +73,21 @@ try {
  assert.ok(changed.archived_at);
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n,3,
   'both inserts and archived update are journaled without changing unrelated owners');
+ // The N55 demo/live input validator permits these exact maximums.
+ // Persist them in SQL rather than silently rejecting a valid app command.
+ const upper=(await q('update public.presets set focus_minutes=$1,break_minutes=$2,long_break_minutes=$3,cycles=$4,position=$5 where id=$6 returning *',
+   [480,180,240,24,2147483647,mine.id]))[0];
+ assert.deepEqual([upper.focus_minutes,upper.break_minutes,upper.long_break_minutes,upper.cycles,upper.position],
+  [480,180,240,24,2147483647]);
+ const lower=(await q('update public.presets set focus_minutes=$1,break_minutes=$2,long_break_minutes=$3,cycles=$4,position=$5 where id=$6 returning *',
+   [1,1,1,1,0,mine.id]))[0];
+ assert.deepEqual([lower.focus_minutes,lower.break_minutes,lower.long_break_minutes,lower.cycles,lower.position],
+  [1,1,1,1,0]);
+ await bad('update public.presets set focus_minutes=$1 where id=$2',[481,mine.id]);
+ await bad('update public.presets set break_minutes=$1 where id=$2',[0,mine.id]);
+ await bad('update public.presets set long_break_minutes=$1 where id=$2',[241,mine.id]);
+ await bad('update public.presets set cycles=$1 where id=$2',[25,mine.id]);
+ await bad('update public.presets set position=$1 where id=$2',[-1,mine.id]);
  const fks=await q("select conname,condeferrable from pg_constraint where conrelid='public.presets'::regclass and contype='f'");
  assert.equal(fks.filter(x=>x.condeferrable).length,3,'all owner-composite references are deferrable');
  const table=await q("select relrowsecurity from pg_class where oid='public.presets'::regclass");

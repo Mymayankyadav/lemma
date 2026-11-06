@@ -1,5 +1,6 @@
 -- N41.1: additive owner-scoped activity preset records. N41.2 owns
--- presets_command lifecycle and registry activation; this slice is schema only.
+-- presets_command lifecycle and registry activation; the bounds match N55's
+-- shared app validation contract, including a nonnegative position.
 create table public.presets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
@@ -11,14 +12,15 @@ create table public.presets (
   mode text not null default 'pomodoro'
     constraint presets_mode_valid check (mode in ('pomodoro','flowtime','open')),
   focus_minutes integer not null default 25
-    constraint presets_focus_valid check (focus_minutes between 1 and 240),
+    constraint presets_focus_valid check (focus_minutes between 1 and 480),
   break_minutes integer not null default 5
-    constraint presets_break_valid check (break_minutes between 0 and 120),
+    constraint presets_break_valid check (break_minutes between 1 and 180),
   long_break_minutes integer not null default 15
-    constraint presets_long_break_valid check (long_break_minutes between 0 and 180),
+    constraint presets_long_break_valid check (long_break_minutes between 1 and 240),
   cycles integer not null default 4
-    constraint presets_cycles_valid check (cycles between 1 and 16),
-  position integer not null default 0,
+    constraint presets_cycles_valid check (cycles between 1 and 24),
+  position integer not null default 0
+    constraint presets_position_valid check (position >= 0),
   archived_at timestamptz,
   version integer not null default 1 constraint presets_version_valid check (version > 0),
   created_at timestamptz not null default now(),
