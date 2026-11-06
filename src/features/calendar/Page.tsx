@@ -263,8 +263,8 @@ function V6Calendar() {
         </div>)}
       </Slab>
     </>}
-    {phase === 'ready' && <BlockSheetActions blocks={blocks} date={date} zone={zone}
-      onRefresh={() => setReload(n => n + 1)}/>}
+    <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
+      onRefresh={() => setReload(n => n + 1)}/>
   </section>;
 }
 
