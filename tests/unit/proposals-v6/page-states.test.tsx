@@ -191,7 +191,8 @@ describe('N32.2.2 v6 Inbox distinct states and recovery', () => {
     await click('View Cards proposals');
     expect(host.textContent).toContain('Front card-1');
     expect(host.textContent).toContain('From the tutor');
-    expect(host.querySelector('button[aria-label="Approve card"]')).not.toBeNull();
+    // The v6 decision bar is intentionally portalled outside the page host.
+    expect(document.body.querySelector('button[aria-label="Approve card"]')).not.toBeNull();
   });
 
   it('restores the keyboard cursor to the remaining checkbox after a partial conflict', async () => {
