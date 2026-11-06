@@ -25,6 +25,7 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/record-versions.mjs`: every listed table bumps once per update and not on a no-op insert; existing app, MCP, undo and review SQL tests pass unchanged; `mcp_commit` writes still succeed
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/record-versions.mjs, docs/v6/capability-registry/** (the listed tables' files only), CURRENT.md.
 Not: app or MCP code, other tables, changing existing functions.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N39 Typed planning and focus settings
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -120,6 +121,7 @@ Done = per D8(c) and the lane rules, `src/data/presets/` for the records and ope
 Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N56 Deadlines and milestones: app module (src/data/deadlines)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -127,6 +129,7 @@ Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and o
 Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -148,6 +151,7 @@ Done = per D8(c) and the lane rules, `src/data/study-goals/` for the records and
 Tests: `tests/unit/study-goals/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
 Scope: src/data/study-goals/** (new), tests/unit/study-goals/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
 ## N60 Dated day plans and closures: app module (src/data/day-plans)
 Stage: Build · Status: open · Needs: — · Assigned: —
