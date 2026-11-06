@@ -26,12 +26,6 @@ Owner-authorized 2026-11-05 (decision D1): merging deploys this migration to pro
 Scope: supabase/migrations/<the new file only>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
 Not: any change to existing tables, functions or policies; app code; MCP code; edge functions; importing tutor-session minutes as focus time.
 
-## N11.2 v6 study entry and interval commands, consistent lifecycle
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = extend `public.study_command(p jsonb)` using one new additive migration to accept `study_entries` and `study_intervals` and the operations create, update, delete, start, pause, resume, break, save, discard. Enforce owner from `auth.uid()`, allow-listed patch fields, expectedVersion conflicts, idempotency before version checks, and record status transitions. Save must close an open interval atomically, set saved_at and reflection and never double-save; discard must produce zero logged focus minutes. Validate open interval ownership and transitions, including breaks. Keep the existing calendar-block N11.1 response contract and `command_receipts` behaviour. Extend `tests/mcp/sql/study-command.mjs` (PGlite) with one case per operation and tests for lost acknowledgement, two saves, invalid transitions, partial patches, and cross-owner targets.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/**, src/data/live/database.types.ts, CURRENT.md.
-Not: modifying existing migrations or functions outside `study_command`, undo_action changes, MCP, app UI, changing the N10 table schema, or new dependencies. Existing `study_command` is replaced only compatibly, with a PR-body `Replaces function: study_command (reviewer verified signature and behaviour)` line.
-
 ## N11.3 v6 reversible study commands and existing undo support
 Stage: Build · Status: open · Needs: N11.2 · Assigned: —
 Done = complete N11 by recording `actions` and `action_changes` for study update/delete/save and returning a real `actionNo` for every reversible write. `public.undo_action` restores a deleted calendar block and reverts saved or updated study records without cross-owner writes. Add PGlite regression tests covering undo of deleted blocks, conflict after newer edits, restored study data, exact receipt replay and owner isolation. Per Owner decision D5 (`docs/v6/README.md`): compatible `undo_action` replacement limited to adding the three study tables. Preserve the public command envelope and N11.1/N11.2 semantics.
