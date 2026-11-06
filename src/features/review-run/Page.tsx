@@ -91,6 +91,9 @@ export default function Page(){
  const settings=useSettings(),sessions=useSessions(),mutate=useRecordReview(),undo=useUndoReview();
  const addComment=useAddComment(),suspend=useSetNoteStatus();
  const current=useReviewSession(s=>s.current),queue=useReviewSession(s=>s.queue);
+ const markReminderDriven=useReviewSession(s=>s.markReminderDriven);
+ const isReminderRound=search.get('reminder')==='1';
+ useEffect(()=>{if(isReminderRound&&queue)markReminderDriven()},[isReminderRound,queue,markReminderDriven]);
  const revealed=useReviewSession(s=>s.revealed),confidence=useReviewSession(s=>s.confidence);
  const submitting=useReviewSession(s=>s.submitting),answers=useReviewSession(s=>s.answers);
  const lastUndo=useReviewSession(s=>s.lastUndo),total=useReviewSession(s=>s.total),startTime=useReviewSession(s=>s.startTime);
