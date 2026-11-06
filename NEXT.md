@@ -12,8 +12,6 @@ Tests: unit tests in `tests/unit/focus/` with a fake `StudyApi` (`setStudyApiFor
 Scope: src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/v6/focus/** (new), tests/unit/focus/**, CURRENT.md.
 Not: adapters, Calendar or Progress, end-to-end specs (N20), parked thoughts as tasks, notifications, Today with the flag off.
 
-
-
 ## N15 MCP: read study records through get and search
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = the connector's existing `get` and `search` tools accept the resources `study_entries` (with intervals) and `calendar_blocks`, reading the N10 tables as the authenticated owner: bounded pages with a cursor, a range filter, totals reported separately from the page. No new tool and no write path (writes are N12). Existing resources, tools and the `resume` packet are unchanged; `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
@@ -22,21 +20,13 @@ Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production
 Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/study-mcp-read.mjs, CURRENT.md (MCP tools list).
 Not: the `study` write tool (N12), migrations, the `notify` function.
 
-## N21 v6 tasks table: one additive migration with RLS
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one new migration `supabase/migrations/<timestamp>_v6_tasks.sql`, additive only, creating `tasks` with the fields of the Tasks row in `docs/v6/Lemma_v6_Data_MCP_Contract.md` (title, body, optional subject/project/checkpoint links owned by the same user, estimate_minutes, priority, due_date or due_at with an explicit `due_kind`, position, status `backlog|in_progress|completed|cancelled`, completed_at, version, created_at, updated_at), owner RLS in the style of the N10 tables, and an index on (user_id, status, position). `calendar_blocks` gains nothing in this item. `src/data/live/database.types.ts` gains the table.
-Tests: `tests/mcp/sql/tasks-schema.mjs` (PGlite, applying all migrations): owner CRUD; a second owner can neither read nor link to the first owner's subject; an invalid status is rejected; completed_at is required exactly when status is completed.
-Owner-authorized 2026-11-05 (D1): merging deploys the migration to production (the table stays unused), so this PR needs a review; it must pass the additive-only guard.
-Scope: supabase/migrations/<the new file only>, tests/mcp/sql/tasks-schema.mjs, src/data/live/database.types.ts, CURRENT.md.
-Not: changes to existing tables or functions, `study_command`, app code, MCP.
-
 ## N12 MCP: study write tool through study_command
-Stage: Build · Status: open · Needs: N11.3 · Assigned: —
-Done = the connector gains ONE new tool `study` that forwards a command envelope to `public.study_command` and returns its receipt unchanged. The owner comes from the authenticated connection, never from arguments. Existing tools, the N15 reads and the `resume` packet are unchanged. `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
-Tests: unit tests in `tests/unit/mcp/` (argument validation, owner not taken from arguments, receipt passed through unchanged) and `tests/mcp/sql/study-mcp.mjs`, where an entry created through the `study` tool is read back by `get` with the same version, and an app-side `study_command` change is seen by the next `get`.
-Owner-authorized 2026-11-05 (D1): merging deploys the MCP function to production, so this PR needs a review; the reviewer confirms that no existing tool's input or output changed. Per D3, the `study` tool acts on explicit instructions in chat only for changes that can be undone (every write returns an `actionNo` for `undo`).
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.md (MCP tools list).
-Not: changes to existing tool behaviour, the `resume` packet, the `notify` function, migrations.
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = the connector gains ONE new tool `study` that forwards a command envelope to `public.study_command` on behalf of the authenticated connector owner and returns its receipt unchanged. Fixes #912: `study_command` takes the owner from `auth.uid()`, which is null for the connector's service-role client. Per Owner decision D6 (`docs/v6/README.md`), add one new additive migration creating `public.mcp_study_command(p_user uuid, p_source text, p jsonb) returns jsonb`, `security definer`, `set search_path=''`, which: raises `Owner not found` unless `public.settings` has a row for `p_user`; sets `lemma.source`, `lemma.tool` (`study`) and `lemma.summary` like `public.mcp_commit`; sets `request.jwt.claims` to `{"sub": p_user, "role": "authenticated"}` for the transaction only; returns `public.study_command(p)`; and updates `settings.connector_last_seen_at` / `connector_last_client` as `mcp_commit` does. `revoke all … from public, anon, authenticated; grant execute … to service_role`. The tool calls it with `p_user = Context.userId`; the owner is never taken from tool arguments, and any owner field inside the envelope is ignored by `study_command`. Existing tools, `mcp_commit`, the N15 reads and the `resume` packet are unchanged. `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
+Tests: unit tests in `tests/unit/mcp/` (argument validation, owner not taken from arguments, receipt passed through unchanged) and `tests/mcp/sql/study-mcp.mjs` (PGlite, all migrations): `mcp_study_command` as service_role creates an entry owned by `p_user` that a later `get` reads with the same version; a direct `study_command` call with no claims still raises `Authentication required`; an unknown `p_user` raises `Owner not found`; `anon` and `authenticated` cannot execute `mcp_study_command`; a second owner's rows are untouched; an app-side `study_command` change is seen by the next `get`.
+Owner-authorized 2026-11-05 (D1) and 2026-11-06 (D6): merging deploys the migration and the MCP function to production, so this PR needs a review; the reviewer checks the function against D6 line by line and confirms no existing tool's input or output changed. Per D3, the `study` tool acts on explicit instructions in chat only for changes that can be undone (every write returns an `actionNo` for `undo`).
+Scope: supabase/functions/mcp/**, supabase/migrations/<one new additive file creating only public.mcp_study_command>, tests/unit/mcp/**, tests/mcp/sql/**, CURRENT.md (MCP tools list).
+Not: changes to `mcp_commit`, `study_command` or any existing function, policy or table; changes to existing tool behaviour; the `resume` packet; the `notify` function.
 
 ## N20 v6 first slice end to end on demo data
 Stage: Build · Status: open · Needs: N14.2, N14.3, N17, N18 · Assigned: —
