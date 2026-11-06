@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {lazy,Suspense,useMemo,useState} from 'react';
 import {Clock,MessageCircle,Layers,Target} from 'lucide-react';
 import {useInsightData,useSettings} from '../../data/hooks';
 import {buildInsights} from '../../lib/insights';
@@ -13,6 +13,8 @@ import {CalibrationRules,SubjectRules,MostRevisitedLink} from './InkRules';
 import {StackedBars} from '../../ui/charts/StackedBars';
 import {GroupedBars} from '../../ui/charts/GroupedBars';
 import type {InsightDays} from '../../data/api';
+import {isFlagOn} from '../../flags';
+const V6Progress=lazy(()=>import('../progress-v6/Page'));
 const percent=(n:number|null)=>n===null?'—':`${Math.round(n*100)}%`;
 export default function Page(){
  const [days,setDays]=useState<InsightDays>(30);
@@ -21,6 +23,7 @@ export default function Page(){
  const legend=[{name:'Again',color:'bg-[var(--bad)]'},{name:'Hard',color:'bg-[var(--warn)]'},{name:'Good',color:'bg-[var(--grade-good)]'},{name:'Easy',color:'bg-[var(--easy)]'}];
  const studyTotal=values?compactStudyTotal(values.minutes):null;
  return <section className="flex flex-col gap-5 pb-2">
+  {isFlagOn('v6Shell')&&<Suspense fallback={<p role="status">Loading saved time…</p>}><V6Progress/></Suspense>}
   <h1 className="text-title font-semibold" style={{fontFamily:"var(--font-display)"}}>Insights</h1>
   <Segmented label="Time range" tone="amber" value={String(days)} onChange={value=>setDays(Number(value) as InsightDays)} options={[{value:'7',label:'7 days'},{value:'30',label:'30 days'},{value:'90',label:'90 days'}]}/>
   {query.isPending||settings.isPending?<p role="status" className="text-ink-2">Loading insights…</p>
