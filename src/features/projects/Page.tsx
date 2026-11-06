@@ -16,6 +16,8 @@ import {EmptyState} from '../../ui/EmptyState';
 import {useToast} from '../../ui/Toast';
 import {FastTex as Tex} from '../../ui/FastTex';
 import {countPinnedProjects} from './pinnedCount';
+import {isFlagOn} from '../../flags';
+import V6Paths from './v6/V6Paths';
 
 type Filter='active'|'paused'|'done'|'archived';
 const filters:Filter[]=['active','paused','done'];
@@ -111,7 +113,10 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
  </section>;
 }
 
-export default function Page(){
+/** Keep the flag wrapper above the legacy implementation: cold-route prefetch source checks inspect this section. */
+export default function Page(){return isFlagOn('v6Shell')?<V6Paths/>:<LegacyPaths/>;}
+
+function LegacyPaths(){
  const queryClient=useQueryClient();
  // Cards is the common next stop from Paths. Warm its small route chunk
  // asynchronously during the unthrottled Paths visit, without evaluating
