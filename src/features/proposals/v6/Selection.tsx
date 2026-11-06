@@ -62,7 +62,7 @@ export default function SelectionPanel({visible,all,ids,busy,kind,onToggle,onSel
    <div className="flex flex-col gap-1">
     {group.proposals.map(p=><label key={p.id}
      className="flex min-h-11 min-w-0 items-center gap-3 rounded-ctl px-2 text-label text-ink">
-     <input type="checkbox" className="size-5 shrink-0 accent-amber"
+     <input type="checkbox" data-inbox-proposal-id={p.id} className="size-5 shrink-0 accent-amber"
       disabled={busy} checked={ids.has(p.id)} onChange={()=>onToggle(p.id)}
       aria-label={'Select '+summary(p)}/>
      <span className="min-w-0 flex-1 break-words">{summary(p)}</span>

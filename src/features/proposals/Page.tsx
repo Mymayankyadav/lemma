@@ -39,6 +39,7 @@ import { groupProposals, pageProposals, type ProposalGroup } from "./groups";
 import { firstProposalFrontLine } from "./frontPreview";
 import ProposalEvidence from "./v6/Evidence";
 import SelectionPanel,{applySelectedDecisions,selectedPending,type Decision} from "./v6/Selection";
+import { V6InboxState, V6BatchRecovery, focusInboxAfterBatch, inboxPhase, type InboxOutcome } from "./v6/States";
 
 function describe(op: PlanChangeOp) {
   switch (op.op) {
@@ -238,6 +239,9 @@ export default function Page() {
     [slow, setSlow] = useState(false),
     [completed, setCompleted] = useState(0);
   const v6=isFlagOn('v6Shell');
+  const [recovery,setRecovery]=useState<InboxOutcome|null>(null);
+  const [focusRevision,setFocusRevision]=useState(0);
+  const focusAfterBatch=useRef<string|null|undefined>(undefined);
   const pending = approve.isPending || reject.isPending || !!staged || bulkBusy;
   useEffect(() => {
     if (!query.isLoading) {
@@ -264,7 +268,22 @@ export default function Page() {
     active = cards.find(p=>p.id===selected)??cards[0],
     allCardGroups = groupProposals(cards),
     cardGroups = groupProposals(pageProposals(cards.slice(cardPage*20),20)),
-    planGroups = groupProposals(pageProposals(plans.slice(planPage*20),20));
+    planGroups = groupProposals(pageProposals(plans.slice(planPage*20),20)),
+    viewPhase=inboxPhase(query.isLoading,query.isError,proposals.length,tab==='cards'?cards.length:plans.length);
+  // A completed batch may remove the last row on a paginated screen. Clamp
+  // only the v6 lane; the legacy Inbox pagination is unchanged.
+  useEffect(()=>{
+    if(!v6)return;
+    const lastCard=Math.max(0,Math.ceil(cards.length/20)-1);
+    const lastPlan=Math.max(0,Math.ceil(plans.length/20)-1);
+    if(cardPage>lastCard)setCardPage(lastCard);
+    if(planPage>lastPlan)setPlanPage(lastPlan);
+  },[v6,cards.length,plans.length,cardPage,planPage]);
+  useEffect(()=>{
+    if(!v6||!focusRevision||query.isLoading||focusAfterBatch.current===undefined)return;
+    focusInboxAfterBatch(document,focusAfterBatch.current);
+    focusAfterBatch.current=undefined;
+  },[v6,focusRevision,query.isLoading,query.data,tab]);
   useEffect(()=>{
     if(!staged)return;
     const timer=window.setTimeout(()=>{
@@ -281,6 +300,11 @@ export default function Page() {
             for(const id of result.succeeded)next.delete(id);
             return next;
           });
+          if(v6){
+            setRecovery({action,committed:result.succeeded.length,
+              remaining:result.remaining.length,failed:result.failed});
+            focusAfterBatch.current=result.remaining[0]??null;
+          }
           if(!result.failed){
             notify(action==='approve'?result.succeeded.length+' cards approved':
               result.succeeded.length+' proposals rejected',{tone:'success'});
@@ -291,7 +315,10 @@ export default function Page() {
           }
         }finally{
           setBulkBusy(false);
-          void query.refetch();
+          if(v6){
+            void Promise.resolve(query.refetch()).then(
+              ()=>setFocusRevision(n=>n+1),()=>setFocusRevision(n=>n+1));
+          }else void query.refetch();
         }
       })();
     },6000);
@@ -310,6 +337,7 @@ export default function Page() {
       setEditing(false);
       notify(accept ? "Approved" : "Rejected");
     } catch {
+      if(v6)setRecovery({action:accept?'approve':'reject',committed:0,remaining:1,failed:true});
       notify("Couldn't confirm the proposal. Refresh to check whether it was saved.", { tone: "danger",
         action: {label:"Refresh",onClick:()=>{void query.refetch()}} });
     }
@@ -320,16 +348,17 @@ export default function Page() {
     setBack(active.card.back);
     setEditing(true);
   };
+  function changeTab(value:string){
+    const next=new URLSearchParams(params);
+    next.set("tab",value);
+    setParams(next);
+  }
   return (
     <Screen title="Approve" back="/"    >
       <Segmented
         label="Proposal types"
         value={tab}
-        onChange={(v) => {
-          const next = new URLSearchParams(params);
-          next.set("tab", v);
-          setParams(next);
-        }}
+        onChange={changeTab}
         options={[
           { value: "cards", label: "Cards", count: cards.length },
           { value: "plan", label: "Plan", count: plans.length },
@@ -363,14 +392,19 @@ export default function Page() {
         onStage={action=>{
           const ids=selectedPending(tab==='cards'?cards:plans,selectionIds).map(p=>p.id);
           if(!ids.length)return;
+          setRecovery(null);
+          focusAfterBatch.current=ids[0]??null;
           setStaged({ids,action,label:tab==='cards'?'selected cards':'selected plans'});
         }}
       />}
       {staged&&<div role="status" className="flex min-h-14 items-center gap-2 rounded-ctl border border-amber-line bg-fill-1 px-3 text-label">
        <span className="min-w-0 flex-1">{staged.ids.length} from {staged.label} queued · saving in 6 s</span>
-       <button type="button" className="min-h-11 shrink-0 px-3 font-semibold text-amber" onClick={()=>{const action=staged.action;setStaged(null);notify(action==="approve"?"Batch approval cancelled":"Batch rejection cancelled")}}>Undo</button>
+       <button type="button" className="min-h-11 shrink-0 px-3 font-semibold text-amber" onClick={()=>{const action=staged.action;setStaged(null);notify(action==="approve"?"Batch approval cancelled":"Batch rejection cancelled");if(v6)setFocusRevision(n=>n+1);}}>Undo</button>
       </div>}
+      {v6&&recovery&&<V6BatchRecovery outcome={recovery} onRetry={()=>void query.refetch()}/>}
       {query.isLoading ? (
+        v6 ? <V6InboxState phase="loading" kind={tab} otherCount={0}
+          onRetry={()=>void query.refetch()} onSwitch={()=>changeTab(tab==='cards'?'plan':'cards')}/> :
         slow ? (
           <div className="flex flex-col gap-4">
             <Skeleton w="100%" h={380} />
@@ -378,6 +412,8 @@ export default function Page() {
           </div>
         ) : null
       ) : query.isError ? (
+        v6 ? <V6InboxState phase="error" kind={tab} otherCount={0}
+          onRetry={()=>void query.refetch()} onSwitch={()=>changeTab(tab==='cards'?'plan':'cards')}/> :
         <Button variant="ghost" onClick={() => void query.refetch()}>
           Try again
         </Button>
@@ -480,6 +516,8 @@ export default function Page() {
             )}
           </>
         ) : (
+          v6 ? <V6InboxState phase={viewPhase==='empty'?'empty':'filtered-empty'} kind="cards"
+            otherCount={plans.length} onRetry={()=>void query.refetch()} onSwitch={()=>changeTab('plan')}/> :
           <EmptyState
             art="inbox"
             title="All clear"
@@ -557,6 +595,8 @@ export default function Page() {
           </div>
         </div>
       ) : (
+        v6 ? <V6InboxState phase={viewPhase==='empty'?'empty':'filtered-empty'} kind="plan"
+          otherCount={cards.length} onRetry={()=>void query.refetch()} onSwitch={()=>changeTab('cards')}/> :
         <EmptyState
           art="inbox"
           title="All clear"
