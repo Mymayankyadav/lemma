@@ -1,0 +1,5 @@
+{
+ "_comment": "v2.0: an independent review (Approve) is required only for PRs that touch these paths, which deploy to production on merge, or that turn a flag on by default in src/flags.ts. Every other item, bug and incident PR is merged by CI when its author's Ready is newer than the last push and fast-gate and scope are green. Review of flagged Build work happens in the Harden stage, once per feature.",
+ "paths": ["supabase/**"],
+ "flagsFile": "src/flags.ts"
+}

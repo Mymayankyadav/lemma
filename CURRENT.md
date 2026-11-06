@@ -156,11 +156,19 @@ The cards page-states filtered-to-zero regression now waits for the asynchronous
 
 ## N11.2 study lifecycle (PR #882)
 
-An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 journaling and undo remain pending. The SQL regression suite covers lifecycle transitions, version conflicts, interval invariants and owner isolation. Deployment to the remote Supabase database is not independently verified; no application or MCP client uses these commands yet.
+An additive migration extends `study_command` with owner-scoped study entry and interval create/update/delete and start/pause/resume/break/save/discard operations. Receipt replay precedes version checks; N11.3 adds reversibility and command action numbers. The SQL regression suite covers lifecycle transitions, version conflicts, interval invariants and owner isolation. Deployment to the remote Supabase database is not independently verified; no application or MCP client uses these commands yet.
+
+## N11.3 reversible study commands (PR #888)
+
+The additive `20261106150000_v6_study_undo.sql` migration journals owner-scoped changes to study entries, study intervals and calendar blocks using the existing DB-2 `log_change` triggers. The compatible `undo_action` function now recognizes those tables and defers their foreign keys while restoring deleted calendar blocks, updated/saved study entries and dependent intervals; its existing authorization, conflict rules and privileges remain unchanged. `study_command` returns a real journal `actionNo` for successful writes (including calendar deletion) while preserving exact idempotent receipt replay and existing conflicts. `tests/mcp/sql/study-undo.mjs` covers restoration, stale-undo refusal and owner isolation. Production deployment is not independently verified; the v6 UI and MCP study integration remain separate items.
 
 ## N14.1 Focus state-machine foundation (PR #887)
 
 N14 is being split into small tested slices. The first slice is a pure typed state machine in `src/lib/focus/machine.ts`. It records running, paused, break, finishing, saved and discarded transitions, with immutable timestamped intervals rather than counting timer ticks. N9's `inProgressMinutes` caps the open Pomodoro and excludes breaks while retaining accumulated focus across pauses; finished sessions retain their closed intervals and an optional editable saved-minute value and reflection. Tests cover invalid transitions, monotonic timestamps, reload reconstruction, capping, saving twice, and discard. No UI or live data path is changed in this slice. NEXT.md retains N14.2 demo persistence and N14.3 flagged UI integration.
+
+## v6 study data contract (rules v2.0)
+
+`src/data/study/contract.ts` defines `StudyApi` and the study entry, interval and calendar block records (camelCase shapes of the N10 tables). `getStudyApi()` in `src/data/study/index.ts` picks the demo or live adapter by data mode; both (`demo.ts`, `live.ts`) are empty placeholders that read nothing and refuse writes until N14.2 and N16 land. Screens use only this API; unit tests swap in a fake with `setStudyApiForTests`.
 
 ## N6.2 reminder Review queue (PR #881)
 

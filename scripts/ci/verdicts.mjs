@@ -65,8 +65,10 @@ export function validReady({ comments, headAt, authorKey, sessions = {}, now = D
   return found;
 }
 
-/** Should the PR carry needs-review? The author said Ready after the last push, fast-gate and scope pass, no changes-requested. */
-export function needsReviewWanted({ authorKey, comments, headAt, checks, labels, draft, isCi, sessions, now }) {
+/** Should the PR carry needs-review? The author said Ready after the last push, fast-gate and scope pass, no changes-requested,
+ *  and (v2.0) the PR needs an independent review at all (review-policy.mjs); other PRs merge on Ready without the label. */
+export function needsReviewWanted({ authorKey, comments, headAt, checks, labels, draft, isCi, sessions, now, reviewRequired = true }) {
+  if (!reviewRequired) return false;
   if (draft || isCi || !authorKey || labels.has('changes-requested')) return false;
   if (checks['fast-gate'] !== 'success' || checks.scope !== 'success') return false;
   return !!validReady({ comments, headAt, authorKey, sessions, now });
