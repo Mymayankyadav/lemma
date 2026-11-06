@@ -142,18 +142,20 @@ export function createLiveDayPlanApi():DayPlanApi{
    const opts=query(raw),cursor=decodeCursor(raw.cursor,opts);
    if(cursor)liveId(cursor.id);
    const api=await client();
-   const filter=<T extends {eq:(a:string,b:string)=>T;gte:(a:string,b:string)=>T;lte:(a:string,b:string)=>T}>(b:T):T=>{
-    let q=b;
-    if(opts.status!=='all')q=q.eq('status',opts.status);
-    if(opts.fromDate)q=q.gte('plan_date',opts.fromDate);
-    if(opts.toDate)q=q.lte('plan_date',opts.toDate);
-    return q;
-   };
-   const counted=await filter(api.from('day_plans').select('id',{count:'exact',head:true}));
+   // Keep Supabase's query-builder inference local; a generic builder
+   // wrapper creates recursive type instantiation with the typed client.
+   let countQuery=api.from('day_plans').select('id',{count:'exact',head:true});
+   if(opts.status!=='all')countQuery=countQuery.eq('status',opts.status);
+   if(opts.fromDate)countQuery=countQuery.gte('plan_date',opts.fromDate);
+   if(opts.toDate)countQuery=countQuery.lte('plan_date',opts.toDate);
+   const counted=await countQuery;
    if(counted.error)throw fail(counted.error);
    if(counted.count===null||!Number.isSafeInteger(counted.count)||counted.count<0)
     throw new LemmaError('server','Day plan total unavailable');
-   let queryBuilder=filter(api.from('day_plans').select('*'));
+   let queryBuilder=api.from('day_plans').select('*');
+   if(opts.status!=='all')queryBuilder=queryBuilder.eq('status',opts.status);
+   if(opts.fromDate)queryBuilder=queryBuilder.gte('plan_date',opts.fromDate);
+   if(opts.toDate)queryBuilder=queryBuilder.lte('plan_date',opts.toDate);
    if(cursor)queryBuilder=queryBuilder.or('plan_date.gt.'+cursor.date+
     ',and(plan_date.eq.'+cursor.date+',id.gt.'+cursor.id+')');
    const rows=unwrap<Row[]>(await queryBuilder.order('plan_date',{ascending:true})
