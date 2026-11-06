@@ -89,8 +89,10 @@ try {
    patch:{...patch},schemaVersion:2
  })),/schemaVersion/);
  await assert.rejects(command(request('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa10','delete',{
-   target:{id:blockId},expectedVersion:3,patch:{}
- })),/Unsupported operation/);
+   target:{id:blockId},patch:{}
+ })),/expectedVersion/);
+ assert.equal((await q('select version from public.calendar_blocks where id=$1',[blockId]))[0].version,3,
+  'versionless calendar delete must not remove or mutate the block');
  await as(other);
  assert.equal((await q('select count(*)::int n from public.calendar_blocks'))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.command_receipts'))[0].n,0);
