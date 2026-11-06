@@ -44,13 +44,6 @@ Tests: `tests/unit/calendar/week-month.test.tsx` (range bounds, totals equal to 
 Scope: src/features/calendar/views/** (new), src/features/calendar/Page.tsx (the view switcher only), src/features/calendar/model.ts (additive helpers only), tests/unit/calendar/week-month.test.tsx, CURRENT.md.
 Not: block editing (N27), `src/data/study/**`, other screens, new dependencies.
 
-## N27 v6 Calendar block create, edit and delete sheet
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Calendar's add action and a tap on a block open a titled native dialog (handoff sheet rules) to create, move (start/end), retitle, change kind (study/busy), mark done/cancelled or delete a block through `getStudyApi()` `createCalendarBlock` / `updateCalendarBlock` / `deleteCalendarBlock` with the record's version; end must be after start; times are entered in the owner's zone and stored with it; one feedback toast with Undo (restore by re-creating or reverting with the returned version); a conflict reloads the block and says so. Saved study entries are read-only here (corrections are a later item).
-Tests: `tests/unit/calendar/block-sheet.test.tsx` with `setStudyApiForTests` (create, edit, delete, validation, conflict, Undo, Escape and focus return).
-Scope: src/features/calendar/block-sheet/** (new), src/features/calendar/Page.tsx (opening the sheet only), tests/unit/calendar/block-sheet.test.tsx, CURRENT.md.
-Not: Week/Month (N26), study entry correction, `src/data/study/**`, new dependencies.
-
 ## N28 v6 Settings behind the shell flag
 Stage: Build · Status: open · Needs: N19 · Assigned: —
 Done = with `v6Shell` on, `/settings` renders the v6 Settings from `docs/v6/screens/settings-day.png` and `-night.png`, `docs/v6/DESIGN_HANDOFF.md` "Shared design contracts" and the Settings row of `docs/v6/Lemma_UI_v6_Direction_Plan.md` §9, following the "v6 screen lanes" rules above. Section navigation (account, appearance, study defaults, reminders, subjects, connector, export) over the existing settings controls, which keep their current save behaviour; the connector address and subjects panels are reused, not rewritten.

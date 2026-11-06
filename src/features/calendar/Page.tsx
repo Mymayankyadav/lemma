@@ -5,6 +5,7 @@ import { getStudyApi } from '../../data/study';
 import type { CalendarBlockRecord, CalendarBlockKind, StudyEntryRecord } from '../../data/study/contract';
 import { Segmented } from '../../ui/Segmented';
 import { Slab } from '../../ui/Slab';
+import { BlockSheet } from './block-sheet/BlockSheet';
 import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, shiftDay, validDayKey, type LoggedSlice } from './model';
 
 const actionClass = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
@@ -69,6 +70,7 @@ function V6Calendar() {
   const [moveEnd, setMoveEnd] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [sheet, setSheet] = useState<{id: string | null} | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -100,7 +102,7 @@ function V6Calendar() {
 
   useEffect(() => {
     setStart(date + 'T09:00'); setEnd(date + 'T10:00');
-    setEditing(null); setConfirmDelete(null); setActionError('');
+    setEditing(null); setConfirmDelete(null); setActionError(''); setSheet(null);
   }, [date]);
 
   function updateUrl(key: 'view' | 'date', value: string) {
@@ -170,6 +172,7 @@ function V6Calendar() {
       <strong className="text-center text-label text-ink">{dateLabel(date, zone)}</strong>
       <button type="button" className={actionClass} aria-label="Next dates" onClick={() => updateUrl('date', shiftDay(date, step))}>›</button>
       <button type="button" className={actionClass} onClick={() => updateUrl('date', dayKey(new Date(), zone))}>Today</button>
+      <button type="button" className={actionClass} onClick={() => setSheet({id:null})}>Add calendar block</button>
     </nav>
 
     {phase === 'loading' && <p role="status">Loading calendar…</p>}
@@ -181,7 +184,7 @@ function V6Calendar() {
         <h2 className="text-body font-semibold text-ink">{dateLabel(group.day, zone)}</h2>
         {group.entries.length === 0 && group.blocks.length === 0 && <p className="text-label text-ink-2">Nothing planned.</p>}
         {group.entries.map((entry, index) => <SavedRow key={entry.entry.id + ':' + index} slice={entry} zone={zone} />)}
-        {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><BlockSummary block={block} zone={zone}/></article>)}
+        {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><button type="button" className="min-h-11 w-full text-left" aria-label={"Edit " + block.title + " block"} onClick={() => setSheet({id:block.id})}><BlockSummary block={block} zone={zone}/></button></article>)}
       </Slab>)}
     </div>}
 
@@ -218,7 +221,7 @@ function V6Calendar() {
           <time dateTime={row.at} className="break-words text-caption tabular-nums text-ink-2">{row.label}</time>
           <div className="min-w-0 space-y-2">{row.entries.map((slice, index) => <SavedRow key={slice.entry.id + ':' + index} slice={slice} zone={zone}/>)}</div>
           <div className="min-w-0 space-y-2">{row.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label">
-            <BlockSummary block={block} zone={zone}/>
+            <button type="button" className="min-h-11 w-full text-left" aria-label={"Edit " + block.title + " block"} onClick={() => setSheet({id:block.id})}><BlockSummary block={block} zone={zone}/></button>
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" className={actionClass} disabled={saving} onClick={() => beginMove(block)} aria-label={'Move ' + block.title}>Move</button>
               {block.status !== 'done' && <button type="button" className={actionClass} disabled={saving} onClick={() => doneBlock(block)} aria-label={'Mark ' + block.title + ' done'}>Done</button>}
@@ -237,6 +240,8 @@ function V6Calendar() {
         </div>)}
       </Slab>
     </>}
+    {sheet && <BlockSheet block={sheet.id ? blocks.find(b => b.id === sheet.id) ?? null : null}
+      day={date} zone={zone} onClose={() => setSheet(null)} onChanged={() => setReload(n => n + 1)}/>}
   </section>;
 }
 
