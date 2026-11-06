@@ -13,6 +13,7 @@ import { parseVerdict, needsReviewWanted } from './verdicts.mjs';
 import { loadSessions, saveSessions, checkSession, touchSession } from './sessions.mjs';
 import { checkConflict } from './conflicts.mjs';
 import { effectiveHeadDate, verifiedBookkeepingShas } from './bookkeeping.mjs';
+import { reviewRequired } from './review-policy.mjs';
 
 const NO_PROGRESS = /^No progress:\s*(?:·\s*)?Agent:\s*([^·\n]+?)\s*(?:·|$)/;
 const HOUR = 3600e3;
@@ -272,7 +273,7 @@ async function main() {
       if (!expired && labels.has('lease-expired')) await dropLabel(i.number, 'lease-expired');
     }
     if (line1 && chatParts(line1.agent) && !sessions) sessions = await loadSessions();
-    const want = needsReviewWanted({ authorKey: line1 ? agentKey(line1.agent) : null, comments, headAt: effectiveHeadDate(commits, bookkeeping), checks: await checksOf(pr.head.sha), labels, draft: pr.draft, isCi, sessions: sessions?.map || {}, now });
+    const want = needsReviewWanted({ authorKey: line1 ? agentKey(line1.agent) : null, comments, headAt: effectiveHeadDate(commits, bookkeeping), checks: await checksOf(pr.head.sha), labels, draft: pr.draft, isCi, sessions: sessions?.map || {}, now, reviewRequired: reviewRequired(await paginate(repoPath(`/pulls/${i.number}/files`))).required });
     if (want && !labels.has('needs-review')) { await addLabels(i.number, ['needs-review']); console.log(`needs-review #${i.number}`); }
     if (!want && labels.has('needs-review')) await dropLabel(i.number, 'needs-review');
     // merge conflicts appear when main moves (no PR event), so the sweep re-checks every open PR

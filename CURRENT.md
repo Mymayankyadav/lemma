@@ -161,3 +161,7 @@ An additive migration extends `study_command` with owner-scoped study entry and 
 ## N14.1 Focus state-machine foundation (PR #887)
 
 N14 is being split into small tested slices. The first slice is a pure typed state machine in `src/lib/focus/machine.ts`. It records running, paused, break, finishing, saved and discarded transitions, with immutable timestamped intervals rather than counting timer ticks. N9's `inProgressMinutes` caps the open Pomodoro and excludes breaks while retaining accumulated focus across pauses; finished sessions retain their closed intervals and an optional editable saved-minute value and reflection. Tests cover invalid transitions, monotonic timestamps, reload reconstruction, capping, saving twice, and discard. No UI or live data path is changed in this slice. NEXT.md retains N14.2 demo persistence and N14.3 flagged UI integration.
+
+## v6 study data contract (rules v2.0)
+
+`src/data/study/contract.ts` defines `StudyApi` and the study entry, interval and calendar block records (camelCase shapes of the N10 tables). `getStudyApi()` in `src/data/study/index.ts` picks the demo or live adapter by data mode; both (`demo.ts`, `live.ts`) are empty placeholders that read nothing and refuse writes until N14.2 and N16 land. Screens use only this API; unit tests swap in a fake with `setStudyApiForTests`.

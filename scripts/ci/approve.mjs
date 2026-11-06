@@ -23,7 +23,8 @@ import { classifyTitle } from './scope.mjs';
 import { botToken, botOpts, requiredStates, classifyMergeError } from './automerge.mjs';
 import { renderFeedback, upsertFeedback } from './feedback.mjs';
 import { agentKey, validAgentName, NAME_FORMATS, chatParts } from './lib.mjs';
-import { parseVerdict, parseReady, effectiveVerdicts, needsReviewWanted, isTrusted } from './verdicts.mjs';
+import { parseVerdict, parseReady, effectiveVerdicts, needsReviewWanted, validReady, isTrusted } from './verdicts.mjs';
+import { reviewRequired } from './review-policy.mjs';
 import { effectiveHeadDate, verifiedBookkeepingShas } from './bookkeeping.mjs';
 import { loadSessions, saveSessions, checkSession, touchSession, lockMessage } from './sessions.mjs';
 
@@ -61,8 +62,14 @@ export function evaluateMerge(ctx) {
   const changes = standing.filter((x) => x.kind === 'changes');
   const addChangesLabel = changes.length > 0 && !labels.has('changes-requested');
 
+  // v2.0: only PRs that touch production paths or turn a flag on need an independent Approve; the rest merge on the
+  // author's Ready (newer than the last push) once fast-gate and scope are green.
+  const needReview = ctx.reviewRequired !== false;
+  const ready = authorKey ? validReady({ comments: ctx.comments, headAt, authorKey, sessions: ctx.sessions || {}, now }) : null;
   if (changes.length) {
     reasons.push(`changes were requested by ${changes[0].agent}: ${changes[0].what}`);
+  } else if (!needReview) {
+    if (!ready) reasons.push(`the author has not commented exactly "Ready · Agent: ${line1?.agent ?? '<author>'}" after the last push (no review is needed for this PR, Ready is enough)`);
   } else if (!approvals.length) {
     for (const s of selfApprovals) reasons.push(`the approval by "${s.agent}" is ignored: it has the same Agent name as the PR author`);
     // the valid formats and the lock message are explained once, in the agent-names comment
@@ -76,9 +83,10 @@ export function evaluateMerge(ctx) {
   const own = (ctx.s0 || []).some((n) => new RegExp(`^incident #${n}\\b`).test(pr.title));
   if ((ctx.s0 || []).length && !own) reasons.push(`merges are frozen by S0 incident(s) ${ctx.s0.map((n) => '#' + n).join(', ')}; only the incident's own fix PR ("incident #<n> …") merges`);
 
-  const needsReview = pr.state === 'open' && needsReviewWanted({ authorKey, comments: ctx.comments, headAt, checks: ctx.checks, labels, draft: pr.draft, isCi: authorKey === 'ci', sessions: ctx.sessions || {}, now });
+  const needsReview = pr.state === 'open' && needsReviewWanted({ authorKey, comments: ctx.comments, headAt, checks: ctx.checks, labels, draft: pr.draft, isCi: authorKey === 'ci', sessions: ctx.sessions || {}, now, reviewRequired: needReview });
   return {
-    merge: reasons.length === 0 && approvals.length > 0,
+    merge: reasons.length === 0 && (needReview ? approvals.length > 0 : !!ready),
+    reviewRequired: needReview,
     reasons, approval: approvals[0] || null, addChangesLabel, attempted: v.attempted,
     ignored: { invalid: v.invalid, locked: v.locked }, needsReview,
   };
@@ -91,6 +99,7 @@ async function loadContext(number) {
   const prCommits = await paginate(repoPath(`/pulls/${number}/commits`));
   const headAt = effectiveHeadDate(prCommits, await verifiedBookkeepingShas(prCommits, api, repoPath));
   const checks = await requiredStates(pr.head.sha);
+  const review = reviewRequired(await paginate(repoPath(`/pulls/${number}/files`)));
   const incidents = await paginate(repoPath('/issues?state=open&labels=S0,incident'));
   const line1 = parseLine1(pr.body || '');
   const chatNames = new Set([line1?.agent, ...comments.map((c) => parseVerdict(c.body)?.agent || parseReady(c.body)?.agent)].filter((n) => n && chatParts(n)));
@@ -98,7 +107,7 @@ async function loadContext(number) {
   return {
     pr: { number, title: pr.title, body: pr.body || '', draft: pr.draft, state: pr.state, baseRef: pr.base.ref, headSha: pr.head.sha, headRepo: pr.head.repo?.full_name, labels: pr.labels.map((l) => l.name) },
     defaultBranch: process.env.DEFAULT_BRANCH || (await api('GET', repoPath(''))).default_branch,
-    repo: REPO, comments, headCommitDate: new Date(headAt).toISOString(), checks,
+    repo: REPO, comments, headCommitDate: new Date(headAt).toISOString(), checks, reviewRequired: review.required,
     s0: process.env.SELFTEST_IGNORE_S0 === 'true' ? [] : incidents.filter((i) => !i.pull_request).map((i) => i.number),
     sessions: reg.map, registry: reg.issue,
   };
