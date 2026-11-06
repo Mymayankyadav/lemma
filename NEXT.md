@@ -18,6 +18,7 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/registries.mjs`: undo of every current resource behaves exactly as before (existing undo, study and task SQL tests pass unchanged); a table added to `lemma_undo_tables` in the test becomes undoable without replacing a function; `mcp_command` routes study entries, calendar blocks and tasks, refuses an unknown resource and `mcp_ok=false`, never executes a name taken from input, and anon/authenticated cannot execute it
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries.mjs, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: other functions or tables, MCP function code (N37), app code.
+Reverted: 2026-11-06 — e2e/v6-focus.spec.ts::N20 demo Focus starts, pauses, resumes, finishes and saves logged time at 390×844 :: expect(received).toBeCloseTo(expected, precision)
 
 ## N38 Versions and provenance on existing mutable records
 Stage: Build · Status: open · Needs: — · Assigned: —
