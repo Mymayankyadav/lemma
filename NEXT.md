@@ -18,13 +18,12 @@ Tests: tests/unit/proposals-v6/page-states.test.tsx including flag on/off, loadi
 Scope: src/features/proposals/v6/** (additive state/focus helpers only), src/features/proposals/Page.tsx (v6-specific page states and focus only), tests/unit/proposals-v6/**, CURRENT.md.
 Not: rewriting N32.2.1's batch executor or six-second Undo, src/features/plan-proposal/**, new draft storage, src/data/**, new dependencies, other screens or existing tests' expectations.
 
-## N36 Command and undo registries (D8 a)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = exactly D8(a): `lemma_undo_tables` and `lemma_command_resources` seeded for every current undoable table and the four current resources, the final compatible replacement of `undo_action` reading the registry (PR body line `Replaces function: undo_action (reviewer verified signature and behaviour)`), and `public.mcp_command(p_user, p_source, p)` dispatching only to registered functions, service_role only. Existing `mcp_study_command` and `mcp_task_command` keep working.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/registries.mjs`: undo of every current resource behaves exactly as before (existing undo, study and task SQL tests pass unchanged); a table added to `lemma_undo_tables` in the test becomes undoable without replacing a function; `mcp_command` routes study entries, calendar blocks and tasks, refuses an unknown resource and `mcp_ok=false`, never executes a name taken from input, and anon/authenticated cannot execute it
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries.mjs, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: other functions or tables, MCP function code (N37), app code.
+## N36.2 Final registry-backed undo and MCP command dispatcher (D8 a)
+Stage: Build · Status: open · Needs: N36.1 · Assigned: —
+Done = complete D8(a) after N36.1's two seeded registry tables. In one new additive migration, replace public.undo_action(uuid,bigint,boolean) compatibly and for the last time: both its table-lock list and journal allowlist read public.lemma_undo_tables with the same authorization, conflict, concurrency, force, inverse, and return behavior for all 24 existing tables. A new registered table becomes undoable without replacing the function. Create public.mcp_command(p_user uuid,p_source text,p jsonb) using only the command_fn resolved from the registry for p->>'resource', schema-qualified/identifier-quoted, honoring mcp_ok, refusing unknown or disabled resources, requiring service_role, forwarding owner/source with the existing command receipt and journal behavior. Existing mcp_study_command and mcp_task_command remain unchanged and callable. PR body must include Replaces function: undo_action (reviewer verified signature and behaviour). Production SQL review required.
+Tests: tests/mcp/sql/registries-dispatch.mjs using full-migration PGlite to prove undo for all current resource types, a newly registered table, D7 compatibility, service-role-only dispatch for study entries, intervals, calendar blocks and tasks, unknown/disabled refusal, ignored caller-supplied function names, owner parity, versions and receipts; existing study/task/undo SQL tests unchanged and passing.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries-dispatch.mjs, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: changes to existing migrations, MCP function/tool code, app code, unrelated tables/functions, expanded client access or new dependencies.
 
 ## N38 Versions and provenance on existing mutable records
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -50,7 +49,7 @@ Scope: docs/v6/capability-registry/** (new), tests/unit/contract/capability-regi
 Not: migrations, app or MCP code, protected paths.
 
 ## N41 Activity presets: migration (presets)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.presets` with label, optional subject/project/checkpoint links, `mode` (`pomodoro`/`flowtime`/`open`), focus/break/long-break minutes, cycles, `position`, `archived_at`. Operations create, update, reorder, archive, restore and delete (delete only when no study entry references it; otherwise archive). Renaming or archiving never changes past entries.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/presets.mjs` per the lane rules, plus the lifecycle rules above
@@ -58,7 +57,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets.mjs, d
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N42 Deadlines and milestones: migration (deadlines)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.deadlines` with title, `kind` (`exam`/`seminar`/`assignment`/`milestone`/`other`), exactly one of `due_date` or `due_at`, optional subject/project/checkpoint links, `remaining_minutes` with `estimate_source` (`owner`/`derived`), `status` (`open`/`done`/`cancelled`). Operations create, update, complete, reopen, cancel, restore, delete. Project target dates and checkpoint due dates are projected into the same reads (a read function returning both, labelled by origin) and never copied into rows.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/deadlines.mjs` per the lane rules, plus the lifecycle rules above
@@ -66,7 +65,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs,
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N43 Manual practice topics and practice events: migration (practice_topics)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.practice_topics` with title, optional subject/concept/checkpoint links, `next_due_date`, `cadence jsonb` (`fixed_days` with days, or `after_rating` with days per rating), `last_practiced_at`, `archived_at`; and child table `public.practice_events` (topic, `occurred_at`, rating 1–4, optional response text, minutes, `voided_at`). Operations topic create/update/archive/restore/delete, `record` (inserts an event, advances `next_due_date` by the cadence, undoable), `void_event` (restores the previous due date). Never reads or writes cards, reviews or FSRS state.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/practice_topics.mjs` per the lane rules, plus the lifecycle rules above
@@ -74,7 +73,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice_topic
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N44 Parked thoughts: migration (parked_thoughts)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.parked_thoughts` with optional study entry link, text, `status` (`open`/`converted`/`dismissed`), `destination_kind`/`destination_id`, `resolved_at`. Operations create, edit, dismiss, reopen, delete and `convert_to_task`, which in the same transaction creates the task (same validation as `task_command`, receipt includes the task) and marks the thought converted; a retried `operationId` never creates a second task.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/parked_thoughts.mjs` per the lane rules, plus the lifecycle rules above
@@ -82,7 +81,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thought
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N45 Study goals: migration (study_goals)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.study_goals` with `period` (`week`/`month`/`custom`), `start_date`, `end_date`, `time_zone`, optional subject/project scope, `target_minutes`, `archived_at`. Operations create, update, archive, restore, delete. Scope is by ID, never by display name; overlapping goals for the same scope and period are rejected.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle rules above
@@ -90,7 +89,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mj
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N46 Dated day plans and closures: migration (day_plans)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.day_plans` with `plan_date`, `time_zone` (unique per owner and date), `intention`, `capacity_minutes`, `availability jsonb` with the source versions it was computed from, `status` (`draft`/`previewed`/`committed`/`closed`), `closed_at`, `tomorrow_first_task_id`, `ritual jsonb`; and child table `public.day_plan_items` (plan, task, optional calendar block, `disposition` `placed`/`unplaced`/`carried_over`, reason, position). Operations create, update, `commit` (refuses when any listed task or block version differs from the preview), `close`, `reopen`. Closing one date never marks another date closed; unplaced and carried-over work stays listed.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/day_plans.mjs` per the lane rules, plus the lifecycle rules above
@@ -98,7 +97,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs,
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N47 Overlap acknowledgements: migration (overlap_acknowledgements)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.overlap_acknowledgements` with `participants jsonb` (kind `block`/`entry`, id, version), window start/end, optional reason, `disposition` (`keep_both`/`attribute_to` with the chosen participant). Operations create, update, delete. Reads mark an acknowledgement stale when any participant's current version differs, so it no longer suppresses that conflict; acknowledging one overlap never hides another.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/overlap_acknowledgements.mjs` per the lane rules, plus the lifecycle rules above
@@ -106,7 +105,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknow
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N48 Durable review runs: migration (review_runs)
-Stage: Build · Status: open · Needs: N36, N38 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2, N38 · Assigned: —
 Done = per D8(b), table `public.review_runs` with the full filter, selected deck IDs, card and minute budgets, scheduler/settings version, `status` (`running`/`paused`/`exhausted`/`completed`/`abandoned`), position, reveal state, start/pause/end instants; and child table `public.review_run_items` (run, position, card, expected card version, linked review once graded). Operations `start` (selects items with the same SQL selection the connector uses, so counts equal the selection), `pause`, `resume`, `advance` (links the review receipt of the grade just recorded; never grades), `abandon`, `complete`. Resuming never replays a grade; an item whose card version changed is marked stale and skipped with a reason.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/review_runs.mjs` per the lane rules, plus the lifecycle rules above
@@ -114,7 +113,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/review_runs.mj
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N49 Proposal drafts: migration (proposal_drafts)
-Stage: Build · Status: open · Needs: N36, N38, N92 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
 Done = per D8(b), table `public.proposal_drafts` with proposal and target IDs, `base_versions jsonb`, complete edit `payload jsonb`, `draft_version`, `status` (`draft`/`saved`/`submitted`/`discarded`), `edited_at`. Operations create, save (conflict when a newer draft exists), submit (applies through the existing proposal edit path, checking base versions), discard. An unsent draft is never approval.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycle rules above
@@ -122,7 +121,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_draft
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
 ## N50 Study notices, drift and urge events: migration (study_events)
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.study_events` with study entry link, `kind` (`notice`/`drift`/`urge`), `occurred_at`, optional `duration_minutes` (drift only), note, optional related record, `voided_at`. Operations record, edit, void, restore. Counts and timelines derive from these rows; nothing computes an attention score. Deducting drift time from saved effort is N52's interval correction, not this table.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle rules above
@@ -200,7 +199,7 @@ Scope: src/data/study-events/** (new), tests/unit/study-events/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
 ## N51 Study command v2: saved-entry correction and block task links
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds `calendar_blocks.task_id` (owner-composite FK to `tasks`, deferrable) so a block can carry a task; new operations on `study_entries`: `correct` (edit intent/links/rating/reflection and replace its intervals with a validated union, end after start, no 24-hour cap at DST), `split` (one saved entry into two at an instant, preserving the exact union), `void` and `restore`, and `create_manual` (a saved entry with `approximate=true` and its intervals). Calendar block create/update accept `task_id`. Every existing operation behaves exactly as before.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
 Tests: `tests/mcp/sql/study-correction.mjs` (each operation, union preserved, overlapping intervals rejected, a voided entry leaves Calendar/Progress reads, undo reverts each, retry/conflict, second owner, `mcp_command` path) and the existing study SQL tests unchanged
@@ -216,7 +215,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-modes.mj
 Not: app or MCP code, other functions.
 
 ## N53 Pending decisions with a server executor
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = one additive migration adds `public.pending_commands` (operation ID, resource, payload, `not_before`, `undo_until`, `status` `scheduled`/`executing`/`succeeded`/`failed`/`cancelled`, result, error class) and `public.pending_command(p)` to schedule, extend or cancel a registered-resource command, plus `public.lemma_run_due_commands()` that executes due rows once each through the registry (row lock, idempotent on retry). It runs from the existing scheduled `notify` tick (one call added in `supabase/functions/notify/tick-core.ts`), never from a browser timer. The app's delayed-approval toasts may later use it; nothing changes for current flows.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/pending-commands.mjs` (due execution exactly once, cancel before due, extension, failure recorded, second owner, undo of the executed command) and a unit test for the tick call
@@ -224,7 +223,7 @@ Scope: supabase/migrations/<one new additive file>, supabase/functions/notify/ti
 Not: other notify behaviour, MCP code, app code.
 
 ## N54 Owner change feed and catch-up cursor
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/change-feed.mjs` (app and `mcp_command` writes both appear once in commit order, deletes as tombstones, paging, reset, second owner invisible)
@@ -417,7 +416,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/aliases-revisi
 Not: app or MCP code.
 
 ## N37 MCP: generic commands and resource discovery
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = the `study` tool sends any registered resource's envelope to `mcp_command` (study entries, calendar blocks and tasks keep their current behaviour), `get` and `search` read registered resources in bounded pages, and a `resources` capability (inside an existing tool, so `tools/list` stays under 15,000 characters) lists registered resources with their field/operation schemas from `lemma_command_resources`, so new resources need no MCP code change.
 Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
 Tests: `tests/unit/mcp/**` and `tests/mcp/sql/mcp-generic.mjs` (a resource registered only in the test is discoverable, readable and writable; existing study/task MCP tests unchanged)
@@ -485,7 +484,7 @@ Scope: src/features/*/v6/**, src/features/*-v6/**, tests/e2e/v6-harden-learning.
 Not: data adapters, supabase/**, flag-off pages.
 
 ## N95 Export covers every v6 record
-Stage: Build · Status: open · Needs: N36 · Assigned: —
+Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = the account export includes every table in `lemma_undo_tables` (so later tables are included by registry), owner-scoped and paged past former row caps, with a manifest of tables, counts and schema version; a unit test fails if a registered table is missing from the export.
 Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs`
 Scope: the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, CURRENT.md.
