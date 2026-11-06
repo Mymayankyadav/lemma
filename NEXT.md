@@ -5,15 +5,6 @@ No item may list a protected path (`ci/protected.json`) in Scope. Files under `d
 
 Parallel lanes (v2.0). Every v6 screen and both study adapters meet at one typed contract that already exists on main: `src/data/study/contract.ts` (`StudyApi`, records shaped like the N10 tables) and `getStudyApi()` in `src/data/study/index.ts`, which returns an empty placeholder until N14.2 (demo) and N16 (live) replace `src/data/study/demo.ts` and `src/data/study/live.ts`. Screens therefore never wait for adapters: they read and write only through `getStudyApi()`, and their unit tests use `setStudyApiForTests(fake)`. Each item owns its own files, so parallel PRs do not touch the same code. Change the contract only additively. End-to-end wiring of the whole slice is N20.
 
-## N14.3 v6 Today hero and Focus dialog behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, Today shows a current-action hero (Start focus, or Return to focus while an entry is active) and "logged today" from `loggedMinutes` over `getStudyApi().listStudyEntries(today)`. The N13 focus-accessory slot shows the active entry's intent, remaining time (N14.1 `remainingFocusMinutes`) and Pause. A native `<dialog>` Focus panel offers Pause, Take a break, Park a thought (text field kept with the entry's reflection), and Finish → editable minutes and an optional note → Save or Discard; it drives the N14.1 machine and calls the matching `StudyApi` writes. Escape closes it and focus returns to the trigger. Layout per `docs/v6/screens/today-day.png` and `focus-day.png`. With the flag off, Today is unchanged.
-Tests: unit tests in `tests/unit/focus/` with a fake `StudyApi` (`setStudyApiForTests`): start → pause → resume → finish → save calls the right methods once each, discard calls discard, logged-today shows the fake's saved minutes, the dialog returns focus on Escape.
-Scope: src/features/home/** (the v6 branch only), src/features/focus/** (new), src/ui/v6/focus/** (new), tests/unit/focus/**, CURRENT.md.
-Not: adapters, Calendar or Progress, end-to-end specs (N20), parked thoughts as tasks, notifications, Today with the flag off.
-
-
-
 ## N15 MCP: read study records through get and search
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = the connector's existing `get` and `search` tools accept the resources `study_entries` (with intervals) and `calendar_blocks`, reading the N10 tables as the authenticated owner: bounded pages with a cursor, a range filter, totals reported separately from the page. No new tool and no write path (writes are N12). Existing resources, tools and the `resume` packet are unchanged; `tools/list` stays under 15,000 characters (`tests/mcp/sweep-budget.test.mjs`).
