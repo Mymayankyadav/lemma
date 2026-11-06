@@ -66,7 +66,8 @@ function harness(){
       return r??{data:{status:'ok',changed:[{id:uuid(1),version:2}],actionNo:41},error:null};
     }),
   };
-  return {...state,client};
+  // Keep one mutable state shared by the test and the mocked query/RPC closures.
+  return Object.assign(state,{client});
 }
 let fake:ReturnType<typeof harness>;
 beforeEach(()=>{
