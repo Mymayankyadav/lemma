@@ -1,7 +1,7 @@
 import {useEffect, useId, useRef, useState, type FormEvent} from 'react';
 import {getTaskApi} from '../../data/tasks';
 import {useProjects, useSubjects} from '../../data/hooks';
-import type {TaskDue, TaskPriority} from '../../data/tasks/contract';
+import type {TaskDue, TaskPriority, TaskRecord} from '../../data/tasks/contract';
 import {useToast} from '../../ui/Toast';
 
 const field='min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink';
@@ -47,21 +47,27 @@ export function taskInput(values:{
   };
 }
 
-/** Mounted only while the header Task action is active; Escape always restores the header trigger. */
-export default function TaskSheet({onDismiss}:{onDismiss:()=>void}) {
+/** Shared create/edit sheet; its opener owns focus restoration. */
+function localDateTime(iso:string):string {
+ const d=new Date(iso),pad=(n:number)=>String(n).padStart(2,'0');
+ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
+ onDismiss:()=>void;task?:TaskRecord;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void;
+}) {
   const id=useId(),dialog=useRef<HTMLDialogElement>(null);
   const notify=useToast();
   const subjects=useSubjects(),projects=useProjects();
   const busy=useRef(false);
   const [saving,setSaving]=useState(false);
-  const [title,setTitle]=useState('');
-  const [estimate,setEstimate]=useState('');
-  const [priority,setPriority]=useState<TaskPriority>('normal');
-  const [dueKind,setDueKind]=useState<DueKind>('none');
-  const [dueDate,setDueDate]=useState('');
-  const [dueInstant,setDueInstant]=useState('');
-  const [subjectId,setSubjectId]=useState('');
-  const [projectId,setProjectId]=useState('');
+  const [title,setTitle]=useState(task?.title??'');
+  const [estimate,setEstimate]=useState(task?.estimateMinutes==null?'':String(task.estimateMinutes));
+  const [priority,setPriority]=useState<TaskPriority>(task?.priority??'normal');
+  const [dueKind,setDueKind]=useState<DueKind>(task?.due.kind??'none');
+  const [dueDate,setDueDate]=useState(task?.due.kind==='date'?task.due.date:'');
+  const [dueInstant,setDueInstant]=useState(task?.due.kind==='instant'?localDateTime(task.due.at):'');
+  const [subjectId,setSubjectId]=useState(task?.subjectId??'');
+  const [projectId,setProjectId]=useState(task?.projectId??'');
   const [error,setError]=useState('');
   useEffect(()=>{
     const node=dialog.current;
@@ -79,22 +85,27 @@ export default function TaskSheet({onDismiss}:{onDismiss:()=>void}) {
     busy.current=true;setSaving(true);setError('');
     try {
       const api=getTaskApi();
-      const saved=await api.createTask(input);
+      const saved=task?await api.updateTask(task.id,task.version,input):await api.createTask(input);
+      if(task){notify('Task updated',{tone:'success'});onSaved?.(saved.record);onDismiss();return;}
       notify('Task saved', {tone:'success',action:{label:'Undo',onClick:()=>{
         void api.deleteTask(saved.record.id,saved.record.version).catch(()=>{
           notify('Task changed elsewhere. Open your backlog to check it.',{tone:'danger'});
         });
       }}});
+      onSaved?.(saved.record);
       onDismiss();
     } catch (e) {
-      setError(e instanceof Error?e.message:'Could not save task. Try again.');
+      const failure=e as {code?:string;message?:string};
+      if(task&&(failure?.code==='conflict'||/conflict|version|stale/i.test(failure?.message??''))){
+       onConflict?.();setError('Task changed elsewhere. Reload the task and try again.');
+      }else setError(e instanceof Error?e.message:'Could not save task. Try again.');
     } finally {busy.current=false;setSaving(false);}
   }
   return <dialog ref={dialog} aria-labelledby={id} onCancel={e=>{e.preventDefault();if(!saving)onDismiss();}}
     className="w-[calc(100%-2rem)] max-w-[440px] max-h-[90dvh] overflow-y-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-xl backdrop:bg-black/50"
     style={{paddingBottom:'max(1rem,env(safe-area-inset-bottom))'}}>
-    <h2 id={id} className="text-title-s font-semibold">New task</h2>
-    <p className="mt-1 text-label text-ink-2">Add a task to your backlog.</p>
+    <h2 id={id} className="text-title-s font-semibold">{task?'Edit task':'New task'}</h2>
+    <p className="mt-1 text-label text-ink-2">{task?'Update this task in your backlog.':'Add a task to your backlog.'}</p>
     <form noValidate className="mt-4 flex flex-col gap-3" onSubmit={e=>{void submit(e);}}>
       <label className={label}>Title
         <input aria-label="Task title" className={field} value={title} autoFocus
@@ -143,7 +154,7 @@ export default function TaskSheet({onDismiss}:{onDismiss:()=>void}) {
         <button type="button" disabled={saving} className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-label font-semibold"
           onClick={onDismiss}>Cancel</button>
         <button type="submit" disabled={saving} className="min-h-11 flex-1 rounded-ctl bg-amber px-3 text-label font-semibold text-amber-ink">
-          {saving?'Saving…':'Save task'}
+          {saving?'Saving…':task?'Save changes':'Save task'}
         </button>
       </div>
     </form>
