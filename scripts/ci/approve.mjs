@@ -24,6 +24,7 @@ import { botToken, botOpts, requiredStates, classifyMergeError } from './automer
 import { renderFeedback, upsertFeedback } from './feedback.mjs';
 import { agentKey, validAgentName, NAME_FORMATS, chatParts } from './lib.mjs';
 import { parseVerdict, parseReady, effectiveVerdicts, needsReviewWanted, isTrusted } from './verdicts.mjs';
+import { effectiveHeadDate, verifiedBookkeepingShas } from './bookkeeping.mjs';
 import { loadSessions, saveSessions, checkSession, touchSession, lockMessage } from './sessions.mjs';
 
 export { parseVerdict, parseReady };
@@ -86,7 +87,9 @@ export function evaluateMerge(ctx) {
 async function loadContext(number) {
   const pr = await api('GET', repoPath(`/pulls/${number}`));
   const comments = await paginate(repoPath(`/issues/${number}/comments`));
-  const head = await api('GET', repoPath(`/commits/${pr.head.sha}`));
+  // v1.9: a CI bookkeeping merge (autoresolve) does not void Ready or approvals
+  const prCommits = await paginate(repoPath(`/pulls/${number}/commits`));
+  const headAt = effectiveHeadDate(prCommits, await verifiedBookkeepingShas(prCommits, api, repoPath));
   const checks = await requiredStates(pr.head.sha);
   const incidents = await paginate(repoPath('/issues?state=open&labels=S0,incident'));
   const line1 = parseLine1(pr.body || '');
@@ -95,7 +98,7 @@ async function loadContext(number) {
   return {
     pr: { number, title: pr.title, body: pr.body || '', draft: pr.draft, state: pr.state, baseRef: pr.base.ref, headSha: pr.head.sha, headRepo: pr.head.repo?.full_name, labels: pr.labels.map((l) => l.name) },
     defaultBranch: process.env.DEFAULT_BRANCH || (await api('GET', repoPath(''))).default_branch,
-    repo: REPO, comments, headCommitDate: head.commit.committer.date, checks,
+    repo: REPO, comments, headCommitDate: new Date(headAt).toISOString(), checks,
     s0: process.env.SELFTEST_IGNORE_S0 === 'true' ? [] : incidents.filter((i) => !i.pull_request).map((i) => i.number),
     sessions: reg.map, registry: reg.issue,
   };
