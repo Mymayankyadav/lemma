@@ -41,6 +41,9 @@ begin
        where id=(patch->>'entry_id')::uuid and user_id=v_owner for update;
      if not found then raise exception 'Study entry not found'; end if;
      if entry.status in ('saved','discarded') then raise exception 'Terminal study entry'; end if;
+     if (patch->>'started_at')::timestamptz > ts then raise exception 'Future interval start'; end if;
+     if (patch->>'ended_at')::timestamptz > ts then raise exception 'Future interval end'; end if;
+     if (patch->>'ended_at') is null and exists(select 1 from public.study_intervals where entry_id=entry.id and user_id=v_owner and ended_at is null) then raise exception 'Open interval exists'; end if;
      insert into public.study_intervals(id,user_id,entry_id,kind,started_at,ended_at)
      values(changed,v_owner,(patch->>'entry_id')::uuid,patch->>'kind',
        (patch->>'started_at')::timestamptz,(patch->>'ended_at')::timestamptz);
@@ -48,8 +51,9 @@ begin
    end if;
  else
    if target is null then raise exception 'target.id required'; end if;
-   if jsonb_typeof(p->'expectedVersion') <> 'number' then raise exception 'expectedVersion required'; end if;
+   if jsonb_typeof(p->'expectedVersion') is distinct from 'number' then raise exception 'expectedVersion required'; end if;
    expected:=(p->>'expectedVersion')::integer;
+   if expected < 1 then raise exception 'expectedVersion must be positive'; end if;
    if r='study_intervals' then
      if op not in ('update','delete') then raise exception 'Unsupported interval operation: %',op; end if;
      select * into interval_row from public.study_intervals where id=target and user_id=v_owner for update;
@@ -63,6 +67,9 @@ begin
      elsif op='delete' then
        delete from public.study_intervals where id=target and user_id=v_owner;
      else
+       if (case when patch ? 'started_at' then (patch->>'started_at')::timestamptz else interval_row.started_at end) > ts then raise exception 'Future interval start'; end if;
+       if (case when patch ? 'ended_at' then (patch->>'ended_at')::timestamptz else interval_row.ended_at end) > ts then raise exception 'Future interval end'; end if;
+       if patch ? 'ended_at' and patch->'ended_at' = 'null'::jsonb and exists(select 1 from public.study_intervals where entry_id=entry.id and user_id=v_owner and id<>target and ended_at is null) then raise exception 'Open interval exists'; end if;
        update public.study_intervals set
          kind=case when patch ? 'kind' then patch->>'kind' else kind end,
          started_at=case when patch ? 'started_at' then (patch->>'started_at')::timestamptz else started_at end,
@@ -85,10 +92,12 @@ begin
        if op in ('pause','break') and entry.status <> 'running' then raise exception 'Invalid pause transition'; end if;
        if op='resume' and entry.status <> 'paused' then raise exception 'Invalid resume transition'; end if;
        if op='save' and entry.status not in ('running','paused','draft') then raise exception 'Invalid save transition'; end if;
+       if op in ('pause','break','resume','save') and exists(select 1 from public.study_intervals where entry_id=target and user_id=v_owner and ended_at is null and started_at>=ts) then raise exception 'Future open interval'; end if;
        if op in ('pause','break','resume','save','discard') then
          update public.study_intervals set ended_at=ts
          where entry_id=target and user_id=v_owner and ended_at is null and started_at<ts;
        end if;
+       if op='save' and exists(select 1 from public.study_intervals where entry_id=target and user_id=v_owner and ended_at is null) then raise exception 'Open interval remains'; end if;
        if op='discard' then
          delete from public.study_intervals where entry_id=target and user_id=v_owner;
        end if;
