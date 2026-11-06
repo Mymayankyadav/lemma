@@ -13,6 +13,8 @@ import {EuclidAppearance} from '../EuclidAppearance';
 import {SubjectsPanel} from '../SubjectsPanel';
 import {ConnectorAddress} from '../ConnectorAddress';
 import StudyDefaults from './StudyDefaults';
+import Reminders from './Reminders';
+import ExportSettings from './Export';
 
 /** N28.1 navigation; N28.2.1 adds the dedicated Study defaults panel. */
 export const SETTINGS_SECTIONS = [
@@ -162,14 +164,17 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
         </div>
       </Sheet>
     </Slab>;
-    // N28.2.2 ports Reminders and Export into dedicated v6 panels. Their
-    // existing controls stay available here until those panels are ready.
-    return <div className="space-y-3">
-      <p className="text-label text-ink-2">
-        These settings retain their existing controls while the new sections are completed.
-      </p>
-      {legacy}
-    </div>;
+    if(selected==='reminders')return <>
+      <Reminders prefs={data?.notify} timeZone={data?.timeZone??'UTC'}/>
+      {/* Preserve the N28.1 legacy controls only for an unconfigured account.
+          The dedicated Reminders panel always appears first and edits prefs. */}
+      {data?.notify==null&&<details className="mt-3 rounded-ctl border border-edge p-3 text-label">
+        <summary className="min-h-11 cursor-pointer font-semibold">Other existing settings</summary>
+        {legacy}
+      </details>}
+    </>;
+    if(selected==='export')return <ExportSettings/>;
+    return null;
   };
   return <Screen title="Settings" back="/" className="pb-8">
     <SettingsNavigation selected={selected} onSelect={setSelected}/>
