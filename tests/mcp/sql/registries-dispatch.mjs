@@ -93,7 +93,9 @@ try{
    has_function_privilege('anon','public.mcp_command(uuid,text,jsonb)','execute') anon,
    has_function_privilege('authenticated','public.mcp_command(uuid,text,jsonb)','execute') member,
    has_function_privilege('service_role','public.mcp_command(uuid,text,jsonb)','execute') service`))[0];
- assert.deepEqual(acl,{anon:false,member:false,service:true});
+ assert.equal(acl.anon,false,'anon must not invoke mcp_command');
+ assert.equal(acl.member,false,'authenticated must not invoke mcp_command');
+ assert.equal(acl.service,true,'service_role must invoke mcp_command');
  await as(owner);
  await assert.rejects(call(owner,'chatgpt',envelope('tasks','create',{patch:{title:'Unauthorized'}})),/permission denied|Service role required/i);
  await role('anon');
@@ -127,7 +129,9 @@ try{
  const direct=await oldTask(owner,'claude',envelope('tasks','create',{patch:{title:'Original bridge'}}));
  realAction(direct);
  const journal=(await q('select user_id,source,tool from public.actions where no=$1',[task.actionNo]))[0];
- assert.deepEqual(journal,{user_id:owner,source:'chatgpt',tool:'study'});
+ assert.equal(journal.user_id,owner,'dispatcher journals the authenticated owner');
+ assert.equal(journal.source,'chatgpt','dispatcher journals the connector source');
+ assert.equal(journal.tool,'study','dispatcher retains the bridge tool context');
  const connector=(await inspect('select connector_last_client from public.settings where user_id=$1',[owner]))[0];
  assert.equal(connector.connector_last_client,'claude');
  console.log('PASS registered task dispatch, owner attribution, operation retry, version conflict and undo');
