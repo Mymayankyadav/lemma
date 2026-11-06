@@ -135,13 +135,12 @@ Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per o
 Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
 
-## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/practice-topics/` for the records and operations of N43, including every lifecycle operation it names.
-Tests: `tests/unit/practice-topics/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/practice-topics/** (new), tests/unit/practice-topics/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-
+## N57.2 Manual practice live adapter and operation parity
+Stage: Build · Status: open · Needs: N57.2.1 · Assigned: —
+Done = finish N57 after N57.1's typed practice-topic/event contract and durable demo adapter. Implement the live StudyApi-like module over N43's owner-scoped practice_topics_command and child event operations; bound pages to 1–50 with stable keyset cursors and accurate totals, map owner-scoped reads to camelCase, issue a fresh operationId for each action and reuse it when retrying an uncertain outcome, preserve optimistic expectedVersion/conflict and actionNo, enforce owner-only reads and all create/update/archive/restore/delete/record/void_event operations. Keep the explicit owner civil practice date, rating-based cadence and exact due-date restore semantics, with no writes to FSRS/card/review tables.
+Tests: tests/unit/practice-topics/** for live mocked RPC envelope and retry/receipt, conflict mapping, bounded owner reads, all lifecycle operations, plus existing N57.1 demo/reload tests.
+Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
+Not: migrations, other src/data/** folders, screens, MCP function code, new dependencies.
 ## N58 Parked thoughts: app module (src/data/parked-thoughts)
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = per D8(c) and the lane rules, `src/data/parked-thoughts/` for the records and operations of N44, including every lifecycle operation it names.
@@ -294,7 +293,7 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56, N57 · Assigned: —
+Stage: Build · Status: open · Needs: N56, N57.2 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
@@ -322,7 +321,7 @@ Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/P
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N78 v6 practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N57 · Assigned: —
+Stage: Build · Status: open · Needs: N57.2 · Assigned: —
 Done = with `v6Shell` on, `/practice` (lazy route) lists topics due first, with record practice (rating, optional response, minutes), cadence edit, archive/restore and event void; it never touches card review. Flag off: nothing changes.
 Tests: `tests/unit/practice-ui/**`
 Scope: src/features/practice/** (new), src/app/App.tsx (registering the route only), tests/unit/practice-ui/**, CURRENT.md.
