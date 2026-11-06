@@ -27,13 +27,6 @@ Tests: `tests/mcp/sql/record-versions.mjs`: every listed table bumps once per up
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/record-versions.mjs, docs/v6/capability-registry/** (the listed tables' files only), CURRENT.md.
 Not: app or MCP code, other tables, changing existing functions.
 
-## N39 Typed planning and focus settings
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one additive migration adds to `public.settings`, with defaults and check constraints in explicit units: `week_start int` (0–6, default 1), `clock_24h boolean`, `focus_defaults jsonb` (mode `pomodoro`/`flowtime`/`open`, focus/break/long-break minutes, cycles, Flowtime break ratio, long-session guard minutes), `planning jsonb` (daily window start/end local times, gap minutes, maximum consecutive minutes, daily minimum qualifying minutes, daily intention on/off), `review_budget jsonb` (cards, minutes, reserve review time in plans), `attention jsonb` (opt-in drift and urge prompts), and a validation function used by the checks. Unknown keys inside these objects are preserved by every writer.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/settings-typed.mjs`: defaults on an existing settings row, every bound and unit rejected outside range, partial patches keep unknown keys, existing settings writes unchanged
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/settings-typed.mjs, docs/v6/capability-registry/settings.json, CURRENT.md.
-Not: app or MCP code (N79, N87), other tables.
 
 ## N40 Capability registry and schema-coverage check (G1)
 Stage: Build · Status: open · Needs: — · Assigned: —

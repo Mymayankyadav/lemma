@@ -1,0 +1,63 @@
+{
+  "table": "public.settings",
+  "version": 1,
+  "scope": "N39 new typed preferences",
+  "columns": {
+    "week_start": {
+      "type": "integer",
+      "range": [
+        0,
+        6
+      ],
+      "default": 1
+    },
+    "clock_24h": {
+      "type": "boolean",
+      "default": true
+    },
+    "focus_defaults": {
+      "type": "jsonb",
+      "default": {
+        "mode": "pomodoro",
+        "focus_minutes": 25,
+        "break_minutes": 5,
+        "long_break_minutes": 15,
+        "cycles": 4,
+        "flowtime_break_ratio": 0.2,
+        "long_session_guard_minutes": 120
+      },
+      "units": "minutes except ratio",
+      "operation": "merge, validate"
+    },
+    "planning": {
+      "type": "jsonb",
+      "default": {
+        "window_start": "09:00",
+        "window_end": "22:00",
+        "gap_minutes": 10,
+        "max_consecutive_minutes": 180,
+        "daily_minimum_qualifying_minutes": 10,
+        "daily_intention_enabled": false
+      },
+      "units": "local HH:MM and minutes",
+      "operation": "merge, validate"
+    },
+    "review_budget": {
+      "type": "jsonb",
+      "default": {
+        "cards": 30,
+        "minutes": 20,
+        "reserve_review_time": true
+      },
+      "operation": "merge, validate"
+    },
+    "attention": {
+      "type": "jsonb",
+      "default": {
+        "drift_prompts": false,
+        "urge_prompts": false
+      },
+      "operation": "merge, validate"
+    }
+  }
+}
