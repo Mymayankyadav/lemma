@@ -147,3 +147,7 @@ Failure signatures: `scripts/ci/signatures.mjs` reads JUnit (vitest, Playwright,
 ## N9 effort metrics (PR #850)
 
 The pure `src/lib/effort/` module provides interval-union logged minutes (with separate future minutes), capped active focus that retains accumulated minutes during pauses and breaks, priority capacity partition, per-subject partition, and IANA civil-day boundaries including skipped midnights and DST transitions. Unit coverage is in `tests/unit/effort/metrics.test.ts`. The module is not wired to the UI. Current CI status is tracked by the PR checks rather than this document.
+
+## Cards empty-state test timing (bug #879)
+
+The cards page-states filtered-to-zero regression now waits for the asynchronous filtered result before asserting the exact `No cards match` empty state and zero rendered card rows. The test's expectations are unchanged; this addresses intermittent premature assertions under load.
