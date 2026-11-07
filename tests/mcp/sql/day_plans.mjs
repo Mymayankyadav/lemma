@@ -141,7 +141,10 @@ try{
  assert.equal(highOne.position,1000000);
  assert.equal(highMax.position,2147483647);
  await q("delete from public.day_plan_items where id=$1 or id=$2",[highOne.id,highMax.id]);
- await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',2147483648)",[owner,day.id,task.id]);
+ await assert.rejects(
+  q("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',2147483648)",[owner,day.id,task.id]),
+  /integer out of range/i,
+  'positions above signed int4 are rejected by PostgreSQL itself');
  await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,$4,3)",[owner,day.id,task.id,'x'.repeat(1201)]);
  // Each negative case has otherwise-valid owner/plan/task/position fields:
  // the disposition invariants must cause the rejection, not a different FK.
