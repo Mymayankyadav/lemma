@@ -598,6 +598,30 @@ An additive migration appends practice-event inverse snapshot columns and standa
 
 The N51 branch adds study_entries.approximate and study_entries.voided_at plus an owner-composite, deferrable calendar_blocks.task_id reference to tasks. Its new owner-scoped study_command_correction helper implements receipt-idempotent create_manual (saved approximate time), correct (metadata and validated complete interval replacement), split (two saved entries partitioning absolute-time intervals without losing minutes), void (discarded with void history) and restore (saved again). The compatible study_command replacement dispatches only these new operations to the helper; legacy study and calendar operations retain their existing behavior, with task_id added to calendar create/update. The helper itself enforces auth, envelope and replay checks, and actions are journalled for registry-backed undo and generic service-role MCP. Full-migration SQL regressions cover retry/conflicts, DST-spanning corrected durations, overlap rejection, split union, undo, calendar owner FK and provenance. This is a branch implementation pending CI and independent production SQL review, **not yet deployed**.
 
+## N48.2 review-run command (branch implementation; not yet verified on main)
+
+The new forward-only `20261111020000_review_runs_command.sql` introduces an owner-bound, receipt-idempotent `review_runs_command` for start, pause, resume, advance, abandon, and complete. It snapshots the exact `review_items` SQL queue (ordered card IDs and versions), links only an existing committed owner grade, journals run/item writes for undo, registers the `review_runs` resource for generic MCP dispatch, and leaves authenticated direct DML closed. `tests/mcp/sql/review_runs_command.mjs` provides a full-migration PGlite regression suite. N48.1's staged-only full-migration assertions conflict with N48.2 (bug #1086) and require separately scoped compatibility work. This is in progress, not a claim that the new SQL has passed CI.
+
+## N48.2 review-run minute-budget correction (chat-62804#p9h6)
+
+Review-run start now limits the authoritative review_items ordered queue by both card_budget and minute_budget. Since no per-card duration estimate is available, one card reserves one deterministic planning minute; this is an item-count bound, not an elapsed-time promise. A full-migration multi-card SQL regression now proves a 1-minute budget selects one card versus four for a 4-minute budget, preserves selector order and receipt replay, independently caps card counts and treats a zero-minute budget as empty/exhausted. Existing grading, owner-RLS, journal/undo and MCP paths remain intact.
+
+## N44.2 parked thought owner commands and atomic conversion (PR #1039, pending review)
+
+The N44.2 branch now extends its initial typed envelope validator with a receipt-idempotent, optimistic, owner-authorized command for create, edit, dismiss, reopen, delete and atomic conversion to a real task. Owner composite FKs, blocked direct client DML, the existing tasks SQL shape, the journal, dynamic undo table registry and generic service-role MCP dispatcher are preserved. Convert creates a real TaskRecord and marks the thought converted in one transaction and one actionNo; retry returns the first receipt instead of creating a second task. The full-migration PGlite test now covers lifecycle, status/version conflicts, changed payloads, owner isolation, two-row conversion undo, replay, direct DML refusal and service-role dispatch. The coarse thought-row source is `app` or `mcp`, while the reversible action journal preserves its separate permitted source (`app` for browser calls, the dispatcher-selected `chatgpt`/`claude`/`other` for MCP). N44.2's SQL test now explicitly asserts both source fields to prevent provenance constraint regressions. Conversion to a task now rejects timezone-naive, malformed, nonfinite and invalid-offset `due_at` instants; the full-migration regression proves those inputs cannot create a task or resolve a thought, and a valid offset retains its absolute time. This is a branch implementation pending CI and independent production SQL review; the configured deployment path includes unapplied migrations with `--include-all`. It is not yet a deployed feature.
+
+## Owner fixes for bugs #1051 and #1094 (rules PR)
+
+`20261115130000_owner_fix_provenance_deadline_acl.sql` compatibly replaces `presets_command(jsonb)` so provenance (`presets.source` and the journal's source/tool/summary) comes from session settings only for a service-role caller (the MCP dispatcher or a worker); an authenticated client that pre-sets `lemma.source` now always gets `app`. It also revokes the platform-default `insert/update/delete/truncate/references/trigger` privileges on `public.deadlines` from `anon` and `authenticated` (and `select` from `anon`), so browser writes are denied by grants as well as by RLS, as N42.1 promised. Tests: `tests/mcp/sql/presets-command.mjs`, `tests/mcp/sql/deadlines.mjs`, `tests/mcp/sql/deadlines-platform-acl.mjs` (runs all migrations under Supabase-style default privileges).
+
+## Owner fixes for bugs #1109 and #1110 (rules PR)
+
+`20261115130100_owner_fix_study_event_undo_version.sql` compatibly replaces `study_events_touch_version()`: ordinary updates still advance `version` and `updated_at`, but the generic `undo_action` path (runs as the table owner with `lemma.tool='undo'`; never a browser role) keeps the restored prior version and timestamp, as N47.2 does for overlap acknowledgements, so undoing a study-event edit, void or restore returns the exact old row once N50.2.2 registers the table. `tests/mcp/sql/presets-command.mjs` adds the in-memory `study_entries.preset_id` fixture only when N52's real column is absent (`add column if not exists`), unblocking N52 (#1103) without skipping any assertion. Tests: `tests/mcp/sql/study_events.mjs`, `tests/mcp/sql/presets-command.mjs` (also run with N52's migration present).
+
+## N80 v6 checkpoint evidence page (chat-73962#h7q2)
+
+The `v6Shell`-gated checkpoint route renders the existing owner-scoped checkpoint detail with criterion, steps, prerequisite states from the path snapshot, source/page citation, recent evidence and recheck prompts, and only sessions explicitly linked to the checkpoint. The legacy checkpoint sheet is unchanged when the flag is off. Tutor actions launch the existing external tutor flow for demonstration, reopening, deferral and recheck; they do not fabricate local server writes or imply a transition has completed. Dedicated v6 unit tests cover state, links, unavailable prerequisites, loading/error, and proposed/done controls. CI verification is pending.
+
 
 ## N50.2.2 complete owner-only study-event command lifecycle (chat-62804#p9h6)
 
@@ -611,6 +635,7 @@ Recovered PR #1064 in its existing branch rather than opening a second N50 claim
 N50.2.2 CI follow-up: the expanded MCP edit/void/restore test suite requires its service_role harness state after the prior readback resets roles. The test now re-enters service_role before invoking mcp_command and resets afterward; no SQL command behavior or prior test expectation was altered. Previous SQL run reached this point after passing record/edit/void/restore and undo regressions. Final SQL gate remains to be verified.
 
 N50.2.2 MCP test final privilege correction: audit actions are intentionally not SELECT-readable to the service_role test fixture. Expanded MCP lifecycle tests now collect action numbers while that role is active, reset to the privileged harness role, then assert exact owner and chatgpt provenance on every action. Production grants and preexisting SQL expectations are unchanged.
+
 
 ## N50.2.2 exact event undo snapshots (chat-73129#q7m2)
 
