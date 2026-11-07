@@ -79,6 +79,9 @@
       "table_name": "presets"
     },
     {
+      "table_name": "parked_thoughts"
+    },
+    {
       "table_name": "day_plans"
     },
     {

@@ -154,6 +154,36 @@
       }
     },
     {
+      "resource": "parked_thoughts",
+      "command_fn": "parked_thoughts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "edit",
+          "dismiss",
+          "reopen",
+          "delete",
+          "convert_to_task"
+        ],
+        "fields": [
+          "text",
+          "study_entry_id",
+          "title",
+          "body",
+          "estimate_minutes",
+          "priority",
+          "due_kind",
+          "due_date",
+          "due_at",
+          "position",
+          "subject_id",
+          "project_id",
+          "checkpoint_id"
+        ]
+      }
+    },
+    {
       "resource": "day_plans",
       "command_fn": "day_plans_command",
       "mcp_ok": true,
