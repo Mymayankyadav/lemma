@@ -81,7 +81,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
      intervals:entry.intervals})),
    });
    setTasks(taskRows);setBlocks(blockRows);setPreview(result);
-   setSelected(new Set(result.placements.map(p=>p.taskId)));
+   setSelected(new Set(result.placements.map(p=>p.taskId+':'+p.part)));
    setOverrides(new Map());
   }catch(e){setError(e instanceof Error?e.message:'Could not preview a plan');setPreview(null);}
   finally{setLoading(false);}
@@ -91,7 +91,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   void load();
  }
  function close(){
-  dialog.current?.close();
+  if(typeof dialog.current?.close==='function')dialog.current.close();
   setOpened(false);
  }
  function changeMove(key:string,part:'start'|'end',value:string,
@@ -215,14 +215,14 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
     <p className="text-label">{preview.placements.length} possible placements · {preview.unplaced.length} unplaced</p>
     {preview.placements.map(place=>{
      const key=place.taskId+':'+place.part;
-     const chosen=selected.has(place.taskId);
+     const chosen=selected.has(key);
      const moved=overrides.get(key)??place;
      const title=tasks.find(t=>t.id===place.taskId)?.title??place.taskId;
      return <div key={key} className="rounded-ctl border border-edge p-3">
       <label className="flex min-h-11 items-center gap-2">
        <input type="checkbox" checked={chosen} onChange={e=>setSelected(old=>{
-        const next=new Set(old);if(e.target.checked)next.add(place.taskId);
-        else next.delete(place.taskId);return next;
+        const next=new Set(old);if(e.target.checked)next.add(key);
+        else next.delete(key);return next;
        })}/>
        <span className="break-words text-label">{title} · {place.minutes} min · {place.date}</span>
       </label>

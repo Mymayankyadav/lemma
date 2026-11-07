@@ -96,3 +96,17 @@ describe('N68 v6 native Planner launch lifecycle',()=>{
   }
  });
 });
+
+describe('N68 split placement choices',()=>{
+ it('can deselect one part without dropping a separately selected part',()=>{
+  const split:PlannerResult={...preview,placements:[
+   {taskId:'split',date:'2026-11-09',start:'2026-11-09T09:00:00Z',
+    end:'2026-11-09T09:30:00Z',minutes:30,part:1},
+   {taskId:'split',date:'2026-11-09',start:'2026-11-09T10:00:00Z',
+    end:'2026-11-09T10:30:00Z',minutes:30,part:2},
+  ],unplaced:[],placedTaskIds:['split']};
+  const chosen=selectPlannerPlacements(split,new Set(['split:2']));
+  expect(chosen.selected).toEqual([split.placements[1]]);
+  expect(chosen.unplaced).toEqual([{taskId:'split',reason:'Deselected by owner'}]);
+ });
+});

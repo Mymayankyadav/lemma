@@ -13,7 +13,8 @@ export function selectPlannerPlacements(
   taskId:x.taskId,reason:x.reason,
  }));
  for(const p of preview.placements){
-  if(!selectedTaskIds.has(p.taskId)){
+  if(!selectedTaskIds.has(p.taskId)&&
+   !selectedTaskIds.has(p.taskId+':'+p.part)){
    if(!unplaced.some(x=>x.taskId===p.taskId))
     unplaced.push({taskId:p.taskId,reason:'Deselected by owner'});
    continue;
