@@ -184,7 +184,15 @@ begin
  -- Never trust caller-set lemma.source, owner, status or timestamps.
  v_source:=case when current_setting('role',true)='service_role'
                  then 'mcp' else 'app' end;
- perform pg_catalog.set_config('lemma.source',v_source,true);
+ -- The row source is a coarse app/mcp/worker label, but the action journal's
+ -- source constraint uses app/claude/chatgpt/other/system. Keep the trusted
+ -- MCP dispatcher client when running as service_role; ignore all caller-set
+ -- GUCs for authenticated browser writes so they cannot forge provenance.
+ perform pg_catalog.set_config('lemma.source',
+   case when v_source='app' then 'app'
+        when current_setting('lemma.source',true) in ('claude','chatgpt','other')
+          then current_setting('lemma.source',true)
+        else 'other' end,true);
  perform pg_catalog.set_config('lemma.tool','parked_thoughts',true);
  perform pg_catalog.set_config('lemma.summary',
   pg_catalog.left('Parked thought '||v_op,200),true);
