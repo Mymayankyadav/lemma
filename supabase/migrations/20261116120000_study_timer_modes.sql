@@ -423,8 +423,10 @@ create function public.lemma_study_timer_interval_guard() returns trigger
 language plpgsql security invoker set search_path='' as $interval_guard$
 declare v_parent public.study_entries%rowtype;
 begin
- if pg_catalog.current_setting('role',true)<>'authenticated'
-   or pg_catalog.current_setting('lemma.tool',true) in ('study','undo') then
+ -- User-controlled GUCs (lemma.tool, lemma.source) must never waive
+ -- a lease. Only the effective SQL definer of the authenticated, owner-checked
+ -- study_command/undo_action path can bypass the direct-DML lease guard.
+ if current_user<>'authenticated' then
    if tg_op='DELETE' then return old; else return new; end if;
  end if;
  -- A direct UPDATE cannot move a leased interval to another entry.

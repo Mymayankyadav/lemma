@@ -133,6 +133,27 @@ try{
    /Active timer lease requires an audited study command/);
  await assert.rejects(q("update public.study_intervals set kind='break' where entry_id=$1 and ended_at is null",[newDraft]),
    /Active timer lease requires an audited interval command/);
+ // Authenticated owners may set arbitrary custom GUCs. Forged provenance
+ // must not let UPDATE, DELETE or INSERT bypass the active device lease.
+ const guardBefore=(await q(
+   "select id,entry_id,user_id,kind,started_at,ended_at from public.study_intervals where entry_id=$1 order by id",[newDraft]));
+ const guardJournal=(await q(
+   "select count(*)::integer n from public.action_changes where table_name='study_intervals' and row_pk->>'entry_id'=$1",[newDraft]))[0].n;
+ await q("select set_config('lemma.tool','study',false)");
+ await q("select set_config('lemma.source','chatgpt',false)");
+ for(const attack of [
+   ["update public.study_intervals set kind='break' where entry_id=$1 and ended_at is null",[newDraft]],
+   ["delete from public.study_intervals where entry_id=$1 and ended_at is null",[newDraft]],
+   ["insert into public.study_intervals(entry_id,user_id,kind,started_at) values($1,$2,'focus',now()-interval '1 minute')",[newDraft,owner]],
+ ])await assert.rejects(q(attack[0],attack[1]),/Active timer lease requires an audited interval command/);
+ assert.deepEqual((await q(
+   "select id,entry_id,user_id,kind,started_at,ended_at from public.study_intervals where entry_id=$1 order by id",[newDraft])),
+   guardBefore,'forged provenance cannot mutate leased intervals');
+ checkEqual((await q(
+   "select count(*)::integer n from public.action_changes where table_name='study_intervals' and row_pk->>'entry_id'=$1",[newDraft]))[0].n,
+   guardJournal,'rejected forged-provenance interval writes have no journal');
+ await q("select set_config('lemma.tool','',false)");
+ await q("select set_config('lemma.source','',false)");
  const deniedOld=await command(req('next_phase',{
    device:'owner-device-a',lease_version:1},newDraft,takeover.entry.version));
  checkEqual(deniedOld.status,'conflict','previous generation cannot mutate after takeover');
