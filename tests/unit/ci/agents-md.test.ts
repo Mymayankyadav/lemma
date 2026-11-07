@@ -68,7 +68,7 @@ describe('AGENTS.md v2.0 contract',()=>{
   expect(run).toContain('after Ready, take the next item (step 7)')
   const claim=md.slice(md.indexOf('## Claiming and PRs'),md.indexOf('## Too big or stuck'))
   expect(claim).toContain('- Limits: 2 open PRs per agent, at most 12 open PRs in total.')
-  expect(claim).toContain('Put all your changes for a PR into one commit per run, including CURRENT.md and NEXT.md')
+  expect(claim).toContain('Put all your changes for a PR into one commit per run, including your docs/current note and NEXT.md')
   const review=md.slice(md.indexOf('## Review and merge'),md.indexOf('## Communication'))
   expect(review).toContain('Most PRs need no review. CI squash-merges an item, bug or incident PR when all of these hold: your Ready is newer than your last push')
   expect(review).toContain('A review is required only when the PR changes `supabase/**`')
