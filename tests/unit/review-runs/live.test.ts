@@ -231,6 +231,39 @@ describe('N62.2 live command transition coverage',()=>{
   expect(fake.client.rpc).toHaveBeenCalledTimes(1);
   expect(fake.client.update).not.toHaveBeenCalled();
  });
+
+ it('links an existing bigint review receipt without any browser grading or forged source',async()=>{
+  const api=createLiveReviewRunApi();
+  fake.client.rpc.mockImplementation(async(name:string,request:{p:Row})=>{
+   expect(name).toBe('review_runs_command');
+   expect(request.p).toMatchObject({
+    operation:'advance',target:{id:uuid(1)},expectedVersion:1,
+    patch:{kind:'graded',item_id:uuid(1000),review_id:'9223372036854775807'},
+   });
+   expect(request.p).not.toHaveProperty('user_id');
+   expect(request.p.patch).not.toHaveProperty('rating');
+   expect(request.p.patch).not.toHaveProperty('grade');
+   expect(request.p.patch).not.toHaveProperty('source');
+   fake.data.review_runs[0]={...fake.data.review_runs[0],
+    status:'exhausted',ended_at:at,position:1,version:2};
+   fake.data.review_run_items[0]={...fake.data.review_run_items[0],
+    state:'graded',review_id:'9223372036854775807',version:2};
+   return {data:{status:'ok',changed:[
+    {resource:'review_runs',id:uuid(1),version:2},
+    {resource:'review_run_items',id:uuid(1000),version:2},
+   ],actionNo:91},error:null};
+  });
+  const result=await api.advanceRun(uuid(1),1,{
+   kind:'graded',itemId:uuid(1000),reviewId:'9223372036854775807',
+  });
+  expect(result).toMatchObject({actionNo:91,record:{
+   run:{position:1,status:'exhausted'},
+   item:{state:'graded',reviewId:'9223372036854775807',staleReason:null},
+  }});
+  expect(fake.client.rpc).toHaveBeenCalledTimes(1);
+  expect(fake.client.insert).not.toHaveBeenCalled();
+  expect(fake.client.update).not.toHaveBeenCalled();
+ });
  it('supports complete and abandon with optimistic versions',async()=>{
   const api=createLiveReviewRunApi();
   fake.client.rpc.mockImplementation(async(_name:string,call:{p:Row})=>{

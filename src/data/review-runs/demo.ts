@@ -10,6 +10,15 @@ import {assertReviewAdvance,assertReviewUuid,assertReviewVersion,
 type Snapshot={schema:1;runs:ReviewRunRecord[];items:ReviewRunItemRecord[]};
 type ItemCursor={v:1;runId:string;position:number;id:string};
 const KEY='lemma.v6.demo.review-runs.v1';
+// Never allow owner identifiers, metadata or unrecognized fields to re-enter
+// the tab-local demo snapshot from modified sessionStorage.
+const RUN_FIELDS=['id','filters','selectedDeckIds','cardBudget','minuteBudget',
+ 'schedulerVersion','settingsVersion','status','position','revealed',
+ 'startedAt','pausedAt','endedAt','version','source','createdAt','updatedAt'];
+const ITEM_FIELDS=['id','runId','position','cardId','expectedCardVersion',
+ 'state','reviewId','staleReason','version','source','createdAt','updatedAt'];
+const fieldsOnly=(row:object,allowed:readonly string[]):boolean=>
+ Object.keys(row).every(k=>allowed.includes(k));
 const clone=<T>(v:T):T=>structuredClone(v);
 const uuid=(n:number)=>'11111111-1111-4111-8111-'+n.toString(16).padStart(12,'0');
 const fail=(code:'invalid'|'conflict'|'not_found',message:string):never=>{
@@ -55,6 +64,9 @@ function load():Snapshot|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
   const data=value as Snapshot;
   if(data.schema!==1||!Array.isArray(data.runs)||!Array.isArray(data.items))
+   return null;
+  if(data.runs.some(r=>!r||typeof r!=='object'||!fieldsOnly(r,RUN_FIELDS))||
+     data.items.some(i=>!i||typeof i!=='object'||!fieldsOnly(i,ITEM_FIELDS)))
    return null;
   data.runs.forEach(validateReviewRunRecord);
   data.items.forEach(validateReviewRunItem);

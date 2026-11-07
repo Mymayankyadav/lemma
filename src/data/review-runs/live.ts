@@ -133,14 +133,17 @@ async function scan(table:'review_runs'|'review_run_items',runId?:string):Promis
 }
 export function createLiveReviewRunApi():ReviewRunApi{
  const pending=new Map<string,Envelope>();
- const readRun=async(key:string):Promise<ReviewRunRecord|null>=>{
-  const api=await client(),r=await api.from('review_runs')
+ // Two post-command owner reads share one authenticated SDK instance,
+ // avoiding racing lazy client imports and preserving the owner RLS context.
+ type OwnerClient=Awaited<ReturnType<typeof client>>;
+ const readRun=async(key:string,ownerClient?:OwnerClient):Promise<ReviewRunRecord|null>=>{
+  const api=ownerClient??await client(),r=await api.from('review_runs')
     .select('*').eq('id',assertReviewUuid(key)).maybeSingle();
   check(r);
   return r.data?mapRun(r.data as Row):null;
  };
- const readItem=async(key:string):Promise<ReviewRunItemRecord|null>=>{
-  const api=await client(),r=await api.from('review_run_items')
+ const readItem=async(key:string,ownerClient?:OwnerClient):Promise<ReviewRunItemRecord|null>=>{
+  const api=ownerClient??await client(),r=await api.from('review_run_items')
     .select('*').eq('id',assertReviewUuid(key)).maybeSingle();
   check(r);
   return r.data?mapItem(r.data as Row):null;
@@ -245,7 +248,10 @@ export function createLiveReviewRunApi():ReviewRunApi{
    const result=await command('advance',patch,key,expected);
    if(result.changed[0].id!==key||result.changed[1].id!==advance.itemId)
     return server('Advance receipt does not match selected item');
-   const [run,item]=await Promise.all([readRun(key),readItem(advance.itemId)]);
+   const ownerClient=await client();
+   const [run,item]=await Promise.all([
+    readRun(key,ownerClient),readItem(advance.itemId,ownerClient),
+   ]);
    if(!run||!item||run.version!==result.changed[0].version||
      item.version!==result.changed[1].version)
     return server('Advanced run or item not visible through owner RLS');
