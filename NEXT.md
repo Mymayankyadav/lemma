@@ -82,13 +82,13 @@ Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N50 Study notices, drift and urge events: migration (study_events)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.study_events` with study entry link, `kind` (`notice`/`drift`/`urge`), `occurred_at`, optional `duration_minutes` (drift only), note, optional related record, `voided_at`. Operations record, edit, void, restore. Counts and timelines derive from these rows; nothing computes an attention score. Deducting drift time from saved effort is N52's interval correction, not this table.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N50.2 Study events: versioned commands, related records, undo and MCP
+Stage: Build · Status: open · Needs: N50.2.1 · Assigned: —
+Done = finish the N50.1 owner-scoped, audited study_events schema with optional related_kind/related_id owner-bound links, and an owner-only versioned study_events_command supporting record, edit, void and restore, each under operationId retry and stale expectedVersion rules. An event's kind controls optional duration_minutes, only drift can carry it; no attention score is inferred. Register study_events in lemma_undo_tables and lemma_command_resources for service-role mcp_command owner/source and journal/receipt parity. Preserve historical voided records and refuse cross-owner related IDs.
+Owner-authorized (D1, D8): production SQL requires independent review.
+Tests: tests/mcp/sql/study_events-command.mjs with lifecycle, stale version, retry, changed-payload conflict, other-owner refusal, undo and MCP parity; unchanged N50.1 tests pass.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events-command.mjs, docs/v6/capability-registry/study_events.json, CURRENT.md.
+Not: changes to earlier migrations, existing tests, app or MCP function code, unrelated schema.
 
 ## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
 Stage: Build · Status: open · Needs: N56.1, N42.2.2 · Assigned: —

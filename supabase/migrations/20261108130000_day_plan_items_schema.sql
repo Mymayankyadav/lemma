@@ -16,6 +16,12 @@ create table public.day_plan_items (
     check (disposition in ('placed','unplaced','carried_over')),
   reason text constraint day_plan_items_reason_check
     check (reason is null or char_length(reason) <= 1200),
+  -- Preserve N60.1's disposition invariants at the storage boundary.
+  -- Unplaced/carried-over work cannot reserve a block or omit its reason.
+  constraint day_plan_items_disposition_context_check
+    check (disposition = 'placed' or
+      (calendar_block_id is null and reason is not null
+       and reason ~ '[^[:space:]]')),
   position integer not null constraint day_plan_items_position_check
     check (position between 0 and 999999),
   version integer not null default 1 constraint day_plan_items_version_check
