@@ -89,6 +89,17 @@ try{
   has_table_privilege('authenticated','public.deadlines','UPDATE') can_update,
   has_table_privilege('authenticated','public.deadlines','DELETE') can_delete`))[0];
  assert.deepEqual(grants,{can_read:true,can_insert:false,can_update:false,can_delete:false});
+ // bug #1094: production's platform default privileges granted authenticated table DML; the owner fix
+ // migration revokes it explicitly, so the end state holds even when such defaults exist.
+ const acl=(await q(`select has_table_privilege('authenticated','public.deadlines','select') sel,
+   has_table_privilege('authenticated','public.deadlines','insert') ins,
+   has_table_privilege('authenticated','public.deadlines','update') upd,
+   has_table_privilege('authenticated','public.deadlines','delete') del,
+   has_table_privilege('authenticated','public.deadlines','truncate') trn,
+   has_table_privilege('anon','public.deadlines','select') anon_sel,
+   has_table_privilege('anon','public.deadlines','insert') anon_ins`))[0];
+ assert.deepEqual(acl,{sel:true,ins:false,upd:false,del:false,trn:false,anon_sel:false,anon_ins:false});
+
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
  const visible=await q('select id from public.deadlines order by id');
