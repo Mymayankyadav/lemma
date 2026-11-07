@@ -11,38 +11,21 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N38 Versions and provenance on existing mutable records
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one additive migration adds `version int not null default 1`, `updated_source text` (`app`/`mcp`/`worker`, null for history) and a trigger that bumps `version` and `updated_at` on every update to `settings`, `subjects`, `projects`, `sources`, `source_pages`, `concepts`, `checkpoints`, `styles`, `notes`, `cards`, `proposals`, `card_comments`, `diagnostics` and `misconceptions`. Existing writers keep working unchanged (they do not send a version); expected-version checks are added by later items. No existing row is updated by the migration.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/record-versions.mjs`: every listed table bumps once per update and not on a no-op insert; existing app, MCP, undo and review SQL tests pass unchanged; `mcp_commit` writes still succeed
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/record-versions.mjs, docs/v6/capability-registry/** (the listed tables' files only), CURRENT.md.
-Not: app or MCP code, other tables, changing existing functions.
-Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
-
-## N39 Typed planning and focus settings
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one additive migration adds to `public.settings`, with defaults and check constraints in explicit units: `week_start int` (0–6, default 1), `clock_24h boolean`, `focus_defaults jsonb` (mode `pomodoro`/`flowtime`/`open`, focus/break/long-break minutes, cycles, Flowtime break ratio, long-session guard minutes), `planning jsonb` (daily window start/end local times, gap minutes, maximum consecutive minutes, daily minimum qualifying minutes, daily intention on/off), `review_budget jsonb` (cards, minutes, reserve review time in plans), `attention jsonb` (opt-in drift and urge prompts), and a validation function used by the checks. Unknown keys inside these objects are preserved by every writer.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/settings-typed.mjs`: defaults on an existing settings row, every bound and unit rejected outside range, partial patches keep unknown keys, existing settings writes unchanged
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/settings-typed.mjs, docs/v6/capability-registry/settings.json, CURRENT.md.
-Not: app or MCP code (N79, N87), other tables.
-
-## N41 Activity presets: migration (presets)
+## N41.2.2 Activity preset archive, restore, delete, undo and MCP parity
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.presets` with label, optional subject/project/checkpoint links, `mode` (`pomodoro`/`flowtime`/`open`), focus/break/long-break minutes, cycles, `position`, `archived_at`. Operations create, update, reorder, archive, restore and delete (delete only when no study entry references it; otherwise archive). Renaming or archiving never changes past entries.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/presets.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+Done = finish the N41.2.1 owner-scoped presets_command (create/update/reorder and versioned idempotent receipts are already implemented) with archive, restore, and delete. Delete physically only if no study entry refers to the preset; otherwise archive, never rewriting historical entry labels/links. In one later additive migration compatibly replace presets_command and register presets in lemma_undo_tables and lemma_command_resources (with field/operation schema and mcp_ok=true). The existing mcp_command must dispatch it as service_role under p_user, with the same owner/source, journal, receipt, retry and conflict behaviour as N41.2.1 and no changes to undo_action or mcp_command. A separate existing-test conflict is recorded as bug #1024: the older full-migration N41.1 test asserts the presets registry entry remains absent, so the historical check must first be corrected in an independently scoped fix rather than modified here.
+Owner-authorized (D1, D8): production SQL needs independent review. PR body must include Replaces function: presets_command (reviewer verified signature and behaviour).
+Tests: extend tests/mcp/sql/presets-command.mjs with archive/restore/delete, referenced-delete archival, registry, service-role MCP, undo, source attribution and second-owner parity; existing SQL suites unchanged and passing.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets-command.mjs, docs/v6/capability-registry/presets.json, CURRENT.md.
+Not: changes to earlier migrations, existing test assertions, app/MCP code, other tables/functions.
 
-## N42 Deadlines and milestones: migration (deadlines)
+## N42.2 Deadlines versioned command, projections, undo and MCP parity
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.deadlines` with title, `kind` (`exam`/`seminar`/`assignment`/`milestone`/`other`), exactly one of `due_date` or `due_at`, optional subject/project/checkpoint links, `remaining_minutes` with `estimate_source` (`owner`/`derived`), `status` (`open`/`done`/`cancelled`). Operations create, update, complete, reopen, cancel, restore, delete. Project target dates and checkpoint due dates are projected into the same reads (a read function returning both, labelled by origin) and never copied into rows.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/deadlines.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+Done = complete N42 on N42.1's owner-scoped public.deadlines table (title, kind, exclusive civil due date or instant, optional owner-composite links, strict estimate fields, status, version, action journal and owner-SELECT-only RLS already implemented; direct authenticated DML and write policies must be added compatibly with the versioned command and registry activation in N42.2). Add public.deadlines_command(p jsonb) with versioned and idempotent create, update, complete, reopen, cancel, restore and delete (changed-payload conflict, stale expectedVersion and second-owner rejection); register deadlines in lemma_undo_tables and lemma_command_resources, make the existing mcp_command service-role dispatcher work under p_user with owner/source/receipt parity. Add a read-only, owner-scoped read function that unions physical deadlines with projected project target dates and checkpoint due dates, clearly labelled by origin and never copied into deadlines rows. N42.1 test covers the schema, FK, RLS, dates and checks; this final stage must exercise full command lifecycle, retries, undo, read projections and MCP parity.
+Owner-authorized (D1, D8): production SQL needs independent review.
+Tests: extend tests/mcp/sql/deadlines.mjs for every command lifecycle, operationId and version conflict, second-owner isolation, undo, registered service-role MCP dispatch, and read-only project/checkpoint projection parity; existing suites unchanged.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/deadlines.json, CURRENT.md.
+Not: changes to existing migrations or SQL tests, other tables, study_command, task_command, undo_action, mcp_command, app code or unrelated functions.
 
 ## N43 Manual practice topics and practice events: migration (practice_topics)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -52,13 +35,12 @@ Tests: `tests/mcp/sql/practice_topics.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice_topics.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N44 Parked thoughts: migration (parked_thoughts)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.parked_thoughts` with optional study entry link, text, `status` (`open`/`converted`/`dismissed`), `destination_kind`/`destination_id`, `resolved_at`. Operations create, edit, dismiss, reopen, delete and `convert_to_task`, which in the same transaction creates the task (same validation as `task_command`, receipt includes the task) and marks the thought converted; a retried `operationId` never creates a second task.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/parked_thoughts.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N44.2 Parked thought commands and atomic conversion to task
+Stage: Build · Status: open · Needs: N44.1 · Assigned: —
+Done = finish N44 on the read-only owner-scoped parked_thoughts table from N44.1. Add a reviewed additive migration with the authenticated security-invoker parked_thoughts_command for create, edit, dismiss, reopen, delete and convert_to_task. Atomically create one task with task_command-equivalent validation and mark the thought converted with its real task ID; retry of the same operationId must replay the receipt without creating another task. Reject owner spoofing, linked foreign-owner entry/task, changed-payload retry, stale expectedVersion and an invalid state transition. Enable audited writes only together with lemma_log_change, lemma_undo_tables registration and a lemma_command_resources entry, so app and service-role MCP dispatch share the command and all writes are undoable. Preserve existing task_command, study_command, undo_action and MCP code unchanged. Production SQL review required (D1/D8).
+Tests: extend tests/mcp/sql/parked_thoughts.mjs with full-migration PGlite command lifecycle, idempotent atomic task conversion, optimistic conflicts, owner isolation, action receipts, undo and MCP parity. Keep the N44.1 schema, owner-FK and status assertions; replace the deliberately read-only stage guard with stronger tests proving every newly permitted client mutation is command-receipted, journalled and undoable.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: changing existing migrations, app/MCP code, unrelated resources/functions or protected files.
 
 ## N45 Study goals: migration (study_goals)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -76,13 +58,13 @@ Tests: `tests/mcp/sql/day_plans.mjs` per the lane rules, plus the lifecycle rule
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N47 Overlap acknowledgements: migration (overlap_acknowledgements)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.overlap_acknowledgements` with `participants jsonb` (kind `block`/`entry`, id, version), window start/end, optional reason, `disposition` (`keep_both`/`attribute_to` with the chosen participant). Operations create, update, delete. Reads mark an acknowledgement stale when any participant's current version differs, so it no longer suppresses that conflict; acknowledging one overlap never hides another.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/overlap_acknowledgements.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknowledgements.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N47.2 Overlap acknowledgement command lifecycle and MCP/undo parity
+Stage: Build · Status: open · Needs: N47.2.1 · Assigned: —
+Done = complete N47 on N47.1's owner-scoped overlap_acknowledgements schema and version-aware staleness function. Add an owner-bound, receipt-idempotent overlap_acknowledgements_command with create, update and delete; reject changed operationId payloads, stale expected versions, a cross-owner participant, and a changed participant version. Register the table in lemma_undo_tables and the command in lemma_command_resources for service-role mcp_command parity. Reads flag an acknowledgement stale when any participant version has changed, without hiding other conflicts; attribute_to requires a participant in the exact acknowledged set. Keep authenticated table writes command-only.
+Owner-authorized (D1, D8): production SQL requires independent review.
+Tests: tests/mcp/sql/overlap_acknowledgements-command.mjs (lifecycle, receipts, concurrency, owner checks, stale reads, undo and MCP parity) and unchanged N47.1 SQL suite.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknowledgements-command.mjs, docs/v6/capability-registry/overlap_acknowledgements.json, CURRENT.md.
+Not: changes to earlier migrations, app or MCP function code, other tables/functions, existing test assertions.
 
 ## N48 Durable review runs: migration (review_runs)
 Stage: Build · Status: open · Needs: N36.2, N38 · Assigned: —
@@ -108,49 +90,50 @@ Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle r
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N55 Activity presets: app module (src/data/presets)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/presets/` for the records and operations of N41, including every lifecycle operation it names.
-Tests: `tests/unit/presets/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/presets/** (new), tests/unit/presets/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
-
 ## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
-Stage: Build · Status: open · Needs: N56.1, N42 · Assigned: —
+Stage: Build · Status: open · Needs: N56.1, N42.2.2 · Assigned: —
 Done = complete N56 after N56.1's typed contract, isolated demo adapter and getDeadlineApi/setDeadlineApiForTests facade. Implement the owner-RLS live deadline adapter for every N42 operation: create, update, complete, reopen, cancel, restore and delete through public.deadlines_command with stable operationId across retries, optimistic expectedVersion, actionNo receipts and typed conflict mapping. Preserve civil due dates versus instants, read-only projected project/checkpoint targets, exact status-filtered bounded 1–50 keyset pages, and never send owner IDs in browser commands. Replace the live placeholder in the existing module facade.
 Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, including retries, each operation, conflicts, owner RLS, projected read-only targets and 50+ row cursor walk; N56.1 demo tests remain green.
 Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
 Not: other data folders, UI, supabase/**, new dependencies.
 
-## N57.2 Manual practice topics: demo and live adapters (remaining after N57 split)
-Stage: Build · Status: open · Needs: N57.2.1 · Assigned: —
-Done = complete D8(c) for N43's manual practice topics/events using the N57.1 typed contract and civil-day cadence helpers. Add src/data/practice-topics/demo.ts, live.ts, index.ts. Demo: fixture/reload persistence, versioned create/update/archive/restore/delete, record and void event with prior due-date restoration, bounded opaque pages and exact total. Live: owner-scoped reads and rpc('practice_topics_command', envelope) for every topic/event operation, version checks, fresh operationId per action reused on uncertain retry, typed errors, no owner field; do not touch FSRS reviews or cards. Expose getPracticeApi()/setPracticeApiForTests().
-Tests: tests/unit/practice-topics/** for demo reload and lifecycle, topic/event linked version and due progression/void, live envelopes, retry identity, conflict, owner isolation and bounded pagination; retain N57.1 cadence tests.
-Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
+## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = per D8(c) and the lane rules, `src/data/practice-topics/` for the records and operations of N43, including every lifecycle operation it names.
+Tests: `tests/unit/practice-topics/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/practice-topics/** (new), tests/unit/practice-topics/**, CURRENT.md.
+Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
+
+## N58.2 Parked thoughts: demo and live lifecycle (remaining after N58 split)
+Stage: Build · Status: open · Needs: N58.2.1 · Assigned: —
+Done = complete D8(c) for N44 using the N58.1 typed ThoughtApi and validated transitions. Implement src/data/parked-thoughts/demo.ts, live.ts and index.ts, plus getThoughtApi()/setThoughtApiForTests(). Demo: reload-persistent owner fixtures, bounded opaque cursor pages with exact total, versioned create/edit/dismiss/reopen/delete and atomic convert-to-task; a repeated conversion never creates another task. Live: owner-scoped read pages and rpc('parked_thoughts_command', envelope) for all operations with a fresh operationId per action reused on uncertain retry, conflict and version mapping, no owner field. Convert-to-task returns one transaction receipt with both a TaskRecord and resolved thought. Failed conversion never leaves a thought marked converted or a duplicate task.
+Tests: tests/unit/parked-thoughts/** for demo roundtrip, transitions and idempotent conversion, live envelope per operation, repeated operationId, exact page/total, owner isolation, conflict recovery and no owner field; retain N58.1 pure-model regressions.
+Scope: src/data/parked-thoughts/**, tests/unit/parked-thoughts/**, CURRENT.md.
 Not: other src/data/** modules, UI, supabase/**, new dependencies.
 
-## N58 Parked thoughts: app module (src/data/parked-thoughts)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/parked-thoughts/` for the records and operations of N44, including every lifecycle operation it names.
-Tests: `tests/unit/parked-thoughts/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/parked-thoughts/** (new), tests/unit/parked-thoughts/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N59.2 Study goals live adapter (remaining after N59 split)
+Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
+Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
+Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
+Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
+Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
 
-## N59 Study goals: app module (src/data/study-goals)
+## N60 Dated day plans and closures: app module (src/data/day-plans)
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/study-goals/` for the records and operations of N45, including every lifecycle operation it names.
-Tests: `tests/unit/study-goals/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/study-goals/** (new), tests/unit/study-goals/**, CURRENT.md.
+Done = per D8(c) and the lane rules, `src/data/day-plans/` for the records and operations of N46, including every lifecycle operation it names.
+Tests: `tests/unit/day-plans/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/day-plans/** (new), tests/unit/day-plans/**, CURRENT.md.
 Not: other `src/data/**` folders, UI, supabase/**.
-Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
+Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
-## N61.2 Overlap acknowledgement live adapter and cross-client parity
-Stage: Build · Status: open · Needs: N61.2.1 · Assigned: —
-Done = complete N61 after N61.1's typed acknowledgement contract, exact-overlap freshness checks and persistent demo adapter: implement the signed-in live adapter over N47's public.overlap_acknowledgements_command with owner-RLS reads, stable bounded pages (1–50, exact totals), mapping to the typed camelCase records, create/update/delete optimistic versions and actionNo, retrying an uncertain RPC with the same operationId and rejecting changed-payload retries, typed conflicts, foreign-owner isolation and server-observed stale versions. An acknowledgement applies only to the same participant IDs/versions and overlap window, and no unrelated conflict is suppressed.
-Tests: tests/unit/overlap-acknowledgements/** with live RPC mock for full CRUD, exact receipt, retry, conflict, stale versions and owner-scoped pagination, retaining N61.1 demo/reload tests.
-Scope: src/data/overlap-acknowledgements/**, tests/unit/overlap-acknowledgements/**, CURRENT.md.
-Not: supabase/** migrations or functions, other src/data/** folders, UI, FSRS or tasks code, new dependencies.
+## N61 Overlap acknowledgements: app module (src/data/overlap-acknowledgements)
+Stage: Build · Status: open · Needs: — · Assigned: —
+Done = per D8(c) and the lane rules, `src/data/overlap-acknowledgements/` for the records and operations of N47, including every lifecycle operation it names.
+Tests: `tests/unit/overlap-acknowledgements/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
+Scope: src/data/overlap-acknowledgements/** (new), tests/unit/overlap-acknowledgements/**, CURRENT.md.
+Not: other `src/data/**` folders, UI, supabase/**.
+Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
 ## N62 Durable review runs: app module (src/data/review-runs)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -182,7 +165,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-correcti
 Not: app or MCP code, other functions.
 
 ## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
-Stage: Build · Status: open · Needs: N51, N41 · Assigned: —
+Stage: Build · Status: open · Needs: N51, N41.2.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
 Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime break from ratio, captured config immune to settings change, lease conflict and takeover, exclusion bounds, undo) and earlier study SQL tests unchanged
@@ -241,7 +224,7 @@ Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N69 v6 day ritual and closure behind the shell flag
-Stage: Build · Status: open · Needs: N60, N58 · Assigned: —
+Stage: Build · Status: open · Needs: N60, N58.2 · Assigned: —
 Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
 Tests: `tests/unit/ritual/**`
 Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
@@ -255,14 +238,14 @@ Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N71 v6 Focus: park a thought, notices and drift behind the shell flag
-Stage: Build · Status: open · Needs: N58, N64 · Assigned: —
+Stage: Build · Status: open · Needs: N58.2, N64 · Assigned: —
 Done = with `v6Shell` on, Focus offers Park a thought (a short dialog saving to parked thoughts linked to the entry, never interrupting the timer), I drifted (records a drift event with minutes; deduction is offered only after N66 lands) and a notice counter from study events; everything works from the keyboard and survives reload. Flag off: nothing changes.
 Tests: `tests/unit/focus/park-notice.test.tsx`
 Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
-Stage: Build · Status: open · Needs: N66, N71, N41 · Assigned: —
+Stage: Build · Status: open · Needs: N66, N71, N41.2.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.
 Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (accessory clears the dock and Inbox decision bar at 320×640)
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
@@ -276,21 +259,21 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56.2, N57.2 · Assigned: —
+Stage: Build · Status: open · Needs: N56.2, N57 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
-Stage: Build · Status: open · Needs: N61.2, N74 · Assigned: —
+Stage: Build · Status: open · Needs: N61, N74 · Assigned: —
 Done = with `v6Shell` on, overlapping blocks or saved entries show a conflict marker with the overlap window; Acknowledge records the disposition for exactly those participants (stale acknowledgements show the conflict again); no overbooking is hidden. Flag off: nothing changes.
 Tests: `tests/unit/calendar/overlaps.test.tsx`
 Scope: src/features/calendar/overlaps/** (new), src/features/calendar/views/** (markers only), tests/unit/calendar/overlaps.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N76 v6 Progress: goals and range-correct statistics behind the shell flag
-Stage: Build · Status: open · Needs: N59 · Assigned: —
+Stage: Build · Status: open · Needs: N59.2 · Assigned: —
 Done = with `v6Shell` on, Progress shows weekly/monthly goals against saved minutes for their exact scope and range, 7/30/90-day ranges computed for that range (never a fixed 28-day series under another label), subject partitions that sum to the total, exact values on charts, and goal create/edit/archive. Flag off: nothing changes.
 Tests: `tests/unit/progress-v6/goals.test.tsx`
 Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
@@ -304,7 +287,7 @@ Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/P
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N78 v6 practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N57.2 · Assigned: —
+Stage: Build · Status: open · Needs: N57 · Assigned: —
 Done = with `v6Shell` on, `/practice` (lazy route) lists topics due first, with record practice (rating, optional response, minutes), cadence edit, archive/restore and event void; it never touches card review. Flag off: nothing changes.
 Tests: `tests/unit/practice-ui/**`
 Scope: src/features/practice/** (new), src/app/App.tsx (registering the route only), tests/unit/practice-ui/**, CURRENT.md.

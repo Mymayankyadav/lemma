@@ -69,9 +69,28 @@ describe('N17 Calendar civil days, entries and capacity', () => {
     const range = calendarRange('2026-11-06', 'UTC');
     expect(savedSlices(rows, range).map(s => [
       s.start.slice(11, 16), s.end.slice(11, 16),
-    ])).toEqual([['09:00', '09:20'], ['09:35', '10:00'], ['09:45', '10:15']]);
+    ])).toEqual([['09:00', '09:20'], ['09:35', '10:15']]);
     expect(dayCapacity('2026-11-06', 'UTC', rows, []).logged).toBe(60);
     expect(dayCapacity('2026-11-06', 'UTC', rows, []).free).toBe(1380);
+    expect(daySlots('2026-11-06', 'UTC', rows, []).flatMap(row => row.entries)).toHaveLength(2);
+  });
+  it('attributes overlapping saves once and applies cross-entry breaks as the shared effort model does', () => {
+    const first: StudyEntryRecord = { ...entry, id: 'first', intervals: [
+      { id: 'first-focus', kind: 'focus', start: '2026-11-06T09:00:00Z', end: '2026-11-06T09:30:00Z' },
+      { id: 'first-break', kind: 'break', start: '2026-11-06T09:10:00Z', end: '2026-11-06T09:20:00Z' },
+    ] };
+    const second: StudyEntryRecord = { ...entry, id: 'second', intervals: [
+      { id: 'second-focus', kind: 'focus', start: '2026-11-06T09:15:00Z', end: '2026-11-06T09:45:00Z' },
+    ] };
+    const rows = [first, second, { ...first }];
+    const slices = savedSlices(rows, calendarRange('2026-11-06', 'UTC'));
+    expect(slices.map(s => [s.entry.id, s.start.slice(11, 16), s.end.slice(11, 16)])).toEqual([
+      ['first', '09:00', '09:10'],
+      ['first', '09:20', '09:30'],
+      ['second', '09:30', '09:45'],
+    ]);
+    expect(dayCapacity('2026-11-06', 'UTC', rows, []).logged).toBe(35);
+    expect(dayCapacity('2026-11-06', 'UTC', rows, []).free).toBe(1405);
     expect(daySlots('2026-11-06', 'UTC', rows, []).flatMap(row => row.entries)).toHaveLength(3);
   });
   it('stacks overlapping time logged first, busy second, planned third without double counting', () => {

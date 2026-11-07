@@ -31,7 +31,8 @@ function due(value:DeadlineDue):DeadlineDue{
   return {kind:'date',date:value.date};
  if(value.kind==='instant'&&Object.keys(value).every(k=>['kind','at'].includes(k))&&
   typeof value.at==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(value.at)&&
-  /(Z|[+-]\d\d:\d\d)$/i.test(value.at)&&Number.isFinite(Date.parse(value.at)))
+  /(Z|[+-]\d\d:\d\d)$/i.test(value.at)&&civil(value.at.slice(0,10))&&
+  Number.isFinite(Date.parse(value.at)))
   return {kind:'instant',at:value.at};
  return fail('invalid','Invalid deadline date or timezone-aware instant');
 }

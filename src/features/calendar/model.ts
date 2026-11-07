@@ -35,39 +35,57 @@ export function overlaps(start: string, end: string, range: StudyRange): boolean
 export type LoggedSlice = { entry: StudyEntryRecord; start: string; end: string };
 
 export function savedSlices(entries: StudyEntryRecord[], range: StudyRange): LoggedSlice[] {
-  // Today and Progress union focus spans and subtract breaks from all saved
-  // entries. Calendar's visible rows and capacity must use the same spans.
+  // Share Today and Progress's union-of-focus minus saved-break semantics.
+  // Attribute overlapping focus to the first saved entry (as subjectPartition
+  // does), so Calendar rows never show the same logged minute twice.
   const seen = new Set<string>();
   const saved = entries.filter(entry => {
     if (entry.status !== 'saved' || seen.has(entry.id)) return false;
     seen.add(entry.id);
     return true;
   });
-  const breaks = saved.flatMap(entry => entry.intervals
-    .filter(i => i.kind === 'break' && i.end !== null && overlaps(i.start, i.end, range))
-    .map(i => [Math.max(millis(i.start), millis(range.start)),
-      Math.min(millis(i.end!), millis(range.end))] as [number, number]));
-  return saved.flatMap(entry => entry.intervals
-    .filter(i => i.kind === 'focus' && i.end !== null && overlaps(i.start, i.end, range))
-    .flatMap(i => {
-      let spans: Array<[number, number]> = [[
-        Math.max(millis(i.start), millis(range.start)),
-        Math.min(millis(i.end!), millis(range.end)),
-      ]];
-      for (const [breakStart, breakEnd] of breaks) {
-        spans = spans.flatMap(([start, end]): Array<[number, number]> => {
-          if (end <= breakStart || start >= breakEnd) return [[start, end]];
-          return ([[start, Math.min(end, breakStart)],
-            [Math.max(start, breakEnd), end]] as Array<[number, number]>)
-            .filter(([a, b]) => b > a);
-        });
-      }
-      return spans.map(([start, end]) => ({
-        entry, start: new Date(start).toISOString(), end: new Date(end).toISOString(),
-      }));
+  type Span = [number, number];
+  const from = millis(range.start), to = millis(range.end);
+  const valid = ([a, b]: Span) => Number.isFinite(a) && Number.isFinite(b) && b > a;
+  const clip = (start: string, end: string): Span =>
+    [Math.max(millis(start), from), Math.min(millis(end), to)];
+  const union = (spans: Span[]): Span[] => {
+    const sorted = spans.filter(valid).sort((a, b) => a[0] - b[0]);
+    const result: Span[] = [];
+    for (const [start, end] of sorted) {
+      const last = result.at(-1);
+      if (last && start <= last[1]) last[1] = Math.max(last[1], end);
+      else result.push([start, end]);
+    }
+    return result;
+  };
+  const subtract = (spans: Span[], excluded: Span[]): Span[] => {
+    let remaining = union(spans);
+    for (const [excludedStart, excludedEnd] of union(excluded)) {
+      remaining = remaining.flatMap(([start, end]): Span[] => {
+        if (end <= excludedStart || start >= excludedEnd) return [[start, end]];
+        return ([[start, Math.min(end, excludedStart)],
+          [Math.max(start, excludedEnd), end]] as Span[]).filter(valid);
+      });
+    }
+    return remaining;
+  };
+  // The shared effort metrics subtract saved breaks across all saved entries.
+  const breaks = union(saved.flatMap(entry => entry.intervals
+    .filter(i => i.kind === 'break' && i.end !== null)
+    .map(i => clip(i.start, i.end!))));
+  const attributed: Span[] = [];
+  return saved.flatMap(entry => {
+    const focus = union(entry.intervals
+      .filter(i => i.kind === 'focus' && i.end !== null)
+      .map(i => clip(i.start, i.end!)));
+    const slices = subtract(subtract(focus, breaks), attributed);
+    attributed.push(...slices);
+    return slices.map(([start, end]) => ({
+      entry, start: new Date(start).toISOString(), end: new Date(end).toISOString(),
     }));
+  });
 }
-
 export function visibleBlocks(blocks: CalendarBlockRecord[], range: StudyRange): CalendarBlockRecord[] {
   return blocks.filter(block => block.status !== 'cancelled' && overlaps(block.startsAt, block.endsAt, range))
     .sort((a, b) => millis(a.startsAt) - millis(b.startsAt));

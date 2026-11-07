@@ -150,7 +150,11 @@ function inventoryDocs():Map<string,Inventory>{
     const parsed=JSON.parse(readFileSync(root+'/'+file,'utf8')) as Partial<Inventory>;
     if(!parsed.table)continue; // Other registries describe command/undo metadata.
     expect(file).toBe(parsed.table+'.json');
-    expect(parsed.version).toBe(1);
+    // D8 registry tables publish a version-2 metadata contract. All ordinary
+    // owner-table inventories remain pinned to v1; do not globally accept
+    // arbitrary versions or silently skip the registry columns.
+    const version=parsed.table==='lemma_undo_tables'||parsed.table==='lemma_command_resources'?2:1;
+    expect(parsed.version).toBe(version);
     expect(typeof parsed.columns).toBe('object');
     docs.set(parsed.table,parsed as Inventory);
   }
@@ -162,6 +166,13 @@ describe('N40 complete capability registry',()=>{
     const docs=inventoryDocs();
     expect(schema.size).toBeGreaterThan(25);
     expect(docs.size).toBe(schema.size);
+    // Both version-2 metadata tables must still be fully covered by the same
+    // per-column validator as every owner table (no silent exception).
+    expect([...schema.get('lemma_undo_tables')!].sort()).toEqual(['table_name']);
+    expect([...schema.get('lemma_command_resources')!].sort())
+      .toEqual(['command_fn','mcp_ok','resource','schema']);
+    expect(docs.get('lemma_undo_tables')?.version).toBe(2);
+    expect(docs.get('lemma_command_resources')?.version).toBe(2);
     enforceCoverage(schema,docs);
   });
   it('fails with a precise column name when a future migration adds an unclassified field',()=>{

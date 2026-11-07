@@ -4,6 +4,9 @@
 //  3. add `Reverted: <date> — <signature>` under each reverted item in NEXT.md, comment on the original PRs
 //  4. land it: dispatch fast-gate + scope under their exact names, enable auto-merge, merge if GitHub does not
 // Never reverts a revert; if the red run follows a revert, or a revert conflicts, it only keeps the incident open.
+// v2.2: never reverts when a commit in the range changed supabase/migrations/** (D1 deploys it on merge; deleting a file
+// production already applied makes `supabase db push` fail, S0 twice on 2026-11-06). It keeps the incident open and an
+// `incident #<n>` PR fixes forward with a new migration.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { api, paginate, repoPath, ensureLabels, addLabels, GhError } from './gh.mjs';
@@ -20,6 +23,8 @@ const CALIBRATION = 'ci/perf-calibration.md';
 /** A commit that touches only the calibration table is never a culprit (pure). */
 export const onlyCalibration = (files) => files.length > 0 && files.every((f) => f === CALIBRATION);
 const filesOf = (sha) => git('diff', '--name-only', `${sha}^1`, sha).split('\n').filter(Boolean);
+/** A commit that changes a migration has already been deployed and must not be reverted by file deletion (pure). */
+export const touchesMigrations = (files) => files.some((f) => /^supabase\/migrations\//.test(f));
 const isRevertSubject = (s) => /^revert\b/i.test(s) || /^Revert "/.test(s);
 
 /** Insert `Reverted: …` as the last line of the item block `## N<id>` (pure). */
@@ -59,6 +64,8 @@ async function main() {
     .map((sha) => ({ sha, subject: git('log', '-1', '--format=%s', sha), parents: git('log', '-1', '--format=%P', sha).split(' ').length }));
   const todo = commits.filter((c) => !isRevertSubject(c.subject) && !onlyCalibration(filesOf(c.sha)));
   if (!todo.length) return note('No revertable commits since the last green run. The S0 incident stays open.');
+  const deployed = todo.filter((c) => touchesMigrations(filesOf(c.sha)));
+  if (deployed.length) return note(`Not reverting: ${deployed.map((c) => `${c.sha.slice(0, 8)} ${c.subject}`).join('; ')} changed supabase/migrations/** and is already deployed (D1). The S0 incident stays open; fix forward with an \`incident #<n>\` PR and a new migration, never by deleting the applied file.`);
   const prs = [...new Set(todo.map((c) => prNumberOf(c.subject)).filter(Boolean))];
 
   git('config', 'user.name', 'lemma-ci');

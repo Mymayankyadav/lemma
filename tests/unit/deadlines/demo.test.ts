@@ -131,6 +131,8 @@ describe('N56.1 demo DeadlineApi',()=>{
    {...input,title:'   '},{...input,kind:'bad' as never},
    {...input,due:{kind:'date' as const,date:'2026-02-30'}},
    {...input,due:{kind:'instant' as const,at:'2026-11-30T09:00:00'}},
+   {...input,due:{kind:'instant' as const,at:'2026-02-30T09:15:00Z'}},
+   {...input,due:{kind:'instant' as const,at:'2026-11-31T09:15:00+05:30'}},
    {...input,remainingMinutes:-1},
    {...input,remainingMinutes:1.25},
    {...input,remainingMinutes:null,estimateSource:'owner' as const},

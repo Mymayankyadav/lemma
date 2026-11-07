@@ -81,7 +81,11 @@ try{
   [other,'2'.repeat(48)]);
 
  const permitted=(await q("select table_name from public.lemma_undo_tables order by table_name")).map(row=>row.table_name);
- assert.equal(permitted.length,24);
+ const baseline=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/lemma_undo_tables.json',import.meta.url),'utf8')).tables.map(row=>row.table_name);
+ assert.ok(baseline.length>=24,'documented D7 baseline includes 24 tables');
+ assert.ok(permitted.length>=24,'all D7 tables remain registered');
+ for(const table of baseline.slice(0,24))assert.ok(permitted.includes(table),'D7 undo table missing: '+table);
+ const initialRegisteredCount=permitted.length;
  for(const table of ['settings','tasks','study_entries','study_intervals','calendar_blocks'])
   assert.ok(permitted.includes(table));
  const def=(await q("select pg_get_functiondef('public.undo_action(uuid,bigint,boolean)'::regprocedure) sql"))[0].sql;
@@ -109,7 +113,10 @@ try{
  realAction(task);
  assert.equal(task.changed[0].version,1);
  assert.equal((await inspect('select user_id from public.tasks where id=$1',[task.changed[0].id]))[0].user_id,owner);
+ const beforeTaskRetry=(await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
  assert.deepEqual(await call(owner,'chatgpt',taskReq),task,'exact retry must preserve receipt');
+ assert.equal((await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
+  beforeTaskRetry,'an exact task retry must not create an extra connector-audit action');
  const conflict=await call(owner,'chatgpt',{...taskReq,patch:{title:'Changed payload'}});
  assert.equal(conflict.status,'conflict','different payload must not reuse a task operationId');
  const stale=await call(owner,'chatgpt',envelope('tasks','update',{
@@ -142,7 +149,10 @@ try{
  }});
  const block=await call(owner,'chatgpt',calendar);realAction(block);
  assert.equal((await inspect('select title from public.calendar_blocks where id=$1',[block.changed[0].id]))[0].title,'Morning block');
+ const beforeCalendarRetry=(await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
  assert.deepEqual(await call(owner,'chatgpt',calendar),block,'study bridge retries retain receipt');
+ assert.equal((await inspect('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
+  beforeCalendarRetry,'an exact calendar retry must not journal connector telemetry or block undo');
  const bundo=await undo(owner,block.actionNo);
  assert.equal(bundo.undone,block.actionNo);
  assert.equal((await inspect('select count(*)::int n from public.calendar_blocks where id=$1',[block.changed[0].id]))[0].n,0);
@@ -165,6 +175,18 @@ try{
   patch:{source:'manual',intent:'Original study bridge'},
  }));
  realAction(old);
+ // N36.2 reconciliation: a standalone study entry created through the generic
+ // registry dispatcher must be undoable by its own action, not just its intervals.
+ const standalone=await call(owner,'chatgpt',envelope('study_entries','create',{
+  patch:{source:'manual',intent:'Undo standalone registered study entry'},
+ }));
+ realAction(standalone);
+ const standaloneId=standalone.changed[0].id;
+ assert.equal(standalone.changed[0].version,1,'new registry study entry starts with version 1');
+ assert.equal((await undo(owner,standalone.actionNo)).undone,standalone.actionNo,
+  'registered study-entry creation must have a reversible original action');
+ assert.equal((await inspect('select count(*)::int n from public.study_entries where id=$1',[standaloneId]))[0].n,
+  0,'undo removes the dispatcher-created study entry');
  console.log('PASS registered calendar, study entry and interval dispatch plus original bridges');
 
  // No user-supplied function name or unregistered/disabled resource is executable.
@@ -214,7 +236,7 @@ try{
  assert.equal(await count('registry_undo_fixture',rowId),0);
  const afterDef=(await q("select pg_get_functiondef('public.undo_action(uuid,bigint,boolean)'::regprocedure) sql"))[0].sql;
  assert.equal(afterDef,beforeDef,'new table is undoable without changing the function body');
- assert.equal((await q('select count(*)::int n from public.lemma_undo_tables'))[0].n,25);
+ assert.equal((await q('select count(*)::int n from public.lemma_undo_tables'))[0].n,initialRegisteredCount+1);
  // A command registered only in this test must route through the same
  // dispatcher without any new per-resource MCP wrapper or function replacement.
  await db.exec(`create function public.registry_fixture_command(p jsonb)
