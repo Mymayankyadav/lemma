@@ -66,6 +66,9 @@ try{
  for(const minutes of [-1,1441])await invalid("insert into public.day_plans(user_id,plan_date,time_zone,capacity_minutes) values($1,'2026-11-09','UTC',$2)",[owner,minutes]);
  await invalid("insert into public.day_plans(user_id,plan_date,time_zone,availability) values($1,'2026-11-09','UTC','[]')",[owner]);
  await invalid("insert into public.day_plans(user_id,plan_date,time_zone,availability) values($1,'2026-11-09','UTC','{}')",[owner]);
+ await invalid("insert into public.day_plans(user_id,plan_date,time_zone,availability) values($1,'2026-11-09','UTC',$2::jsonb)",[owner,JSON.stringify({sources:null})]);
+ await invalid("insert into public.day_plans(user_id,plan_date,time_zone,availability) values($1,'2026-11-09','UTC',$2::jsonb)",[owner,JSON.stringify({sources:{}})]);
+ await invalid("update public.day_plans set availability=$1::jsonb where id=$2",[JSON.stringify({}),day.id]);
  await invalid("insert into public.day_plans(user_id,plan_date,time_zone,ritual) values($1,'2026-11-09','UTC','[]')",[owner]);
  await invalid("insert into public.day_plans(user_id,plan_date,time_zone,status) values($1,'2026-11-09','UTC','closed')",[owner]);
  await invalid("insert into public.day_plans(user_id,plan_date,time_zone,status,closed_at) values($1,'2026-11-09','UTC','draft',now())",[owner]);

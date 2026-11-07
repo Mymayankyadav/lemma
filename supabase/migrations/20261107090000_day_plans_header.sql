@@ -9,7 +9,7 @@ create table public.day_plans (
   capacity_minutes integer not null default 0 check (capacity_minutes between 0 and 1440),
   availability jsonb not null default '{"sources":[]}'::jsonb
     check (jsonb_typeof(availability)='object'
-      and jsonb_typeof(availability -> 'sources')='array'),
+      and coalesce(jsonb_typeof(availability -> 'sources')='array',false)),
   status text not null default 'draft'
     check (status in ('draft','previewed','committed','closed')),
   closed_at timestamptz,
