@@ -47,6 +47,12 @@ try{
  assert.equal(runA.status,'running');assert.equal(runA.position,0);
  assert.deepEqual(runA.selected_deck_ids,['project:review-a','cp:review-a:CP1']);
  assert.equal(runA.revealed,false);assert.equal(runA.version,1);
+ // Positive state transitions are representable at the storage boundary;
+ // the future command is responsible for versioned, reversible writes.
+ const paused=(await q("update public.review_runs set status='paused',paused_at=started_at where id=$1 returning status,paused_at",[runA.id]))[0];
+ assert.equal(paused.status,'paused');assert.ok(paused.paused_at);
+ const resumed=(await q("update public.review_runs set status='running',paused_at=null where id=$1 returning status,paused_at",[runA.id]))[0];
+ assert.equal(resumed.status,'running');assert.equal(resumed.paused_at,null);
  assert.ok(runA.started_at&&runA.created_at&&runA.updated_at);
  const item=(await q("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version) values($1,$2,0,$3,1) returning *",[owner,runA.id,cardA]))[0];
  assert.equal(item.state,'pending');assert.equal(item.review_id,null);
