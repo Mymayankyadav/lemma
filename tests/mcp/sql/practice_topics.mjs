@@ -24,8 +24,33 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const files=(await readdir(dir)).filter(f=>f.endsWith('.sql')&&!f.includes('_storage')).sort();
  assert.ok(files.includes('20261107123000_v6_practice_topics_schema.sql'));
- for(const f of files)await db.exec(await readFile(new URL(f,dir),'utf8'));
+ // The full-migration test must cover BOTH stages: before N43.2 there must
+ // be no write policies, journal triggers or undo registration; afterwards
+ // command-driven writes must be journalled and registered.
+ const lifecycle='20261107222020_practice_commands.sql';
+ const activated=files.includes(lifecycle);
  const tables=['practice_topics','practice_events'];
+ let checkedPreCommand=false;
+ for(const f of files){
+  await db.exec(await readFile(new URL(f,dir),'utf8'));
+  if(f==='20261107123000_v6_practice_topics_schema.sql'){
+   checkedPreCommand=true;
+   for(const table of tables){
+    const policies=await q('select cmd from pg_policies where tablename=$1',[table]);
+    assert.deepEqual(policies.map(x=>x.cmd),['SELECT'],
+     'N43.1 permits only owner SELECT before receipt-backed commands');
+    assert.equal((await q('select count(*)::int n from public.lemma_undo_tables where table_name=$1',[table]))[0].n,0,
+     'N43.1 must not register undo before commands exist');
+    assert.equal((await q(
+     "select count(*)::int n from pg_trigger where tgrelid=('public.'||$1)::regclass and tgname='lemma_log_change'",
+     [table]))[0].n,0,'N43.1 must defer command journalling');
+   }
+   assert.deepEqual(await q(
+    "select distinct table_name from public.action_changes where table_name in ('practice_topics','practice_events')"),
+    [],'N43.1 has no practice journal entries before command activation');
+  }
+ }
+ assert.ok(checkedPreCommand,'pre-command schema boundary must be exercised');
  for(const table of tables){
   const columns=(await q("select attname from pg_attribute where attrelid=('public.'||$1)::regclass and attnum>0 and not attisdropped",[table])).map(x=>x.attname).sort();
   const doc=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/'+table+'.json',import.meta.url),'utf8'));
@@ -35,8 +60,12 @@ try{
   const policies=await q("select cmd from pg_policies where tablename=$1",[table]);
   assert.deepEqual(policies.map(x=>x.cmd),['SELECT'],
    'only owner-scoped SELECT RLS is permitted before receipt-backed writes');
-  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,0,
-   'N43.1 must not register owner rows for undo before the N43.2 command exists');
+  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,
+   activated?1:0,'undo registration must start only with the N43.2 command');
+  assert.equal((await q(
+   "select count(*)::int n from pg_trigger where tgrelid=('public.'||$1)::regclass and tgname='lemma_log_change'",
+   [table]))[0].n,activated?1:0,
+   'command activation must install the reversible journal trigger');
  }
  const constraints=await q("select conname,condeferrable from pg_constraint where conrelid in ('public.practice_topics'::regclass,'public.practice_events'::regclass) and contype='f'");
  for(const name of ['practice_topics_subject_owner_fk','practice_topics_concept_owner_fk','practice_topics_checkpoint_owner_fk','practice_events_topic_owner_fk'])
@@ -132,6 +161,19 @@ try{
  }
  await db.exec('reset role');
  const journal=await q("select distinct table_name from public.action_changes where table_name in ('practice_topics','practice_events')");
- assert.deepEqual(journal,[],'N43.1 must defer journal registration until its inverse exists');
- console.log('PASS N43.1 cadence, practice topic/event schemas and owner isolation');
+ if(activated){
+  assert.deepEqual(journal.map(x=>x.table_name).sort(),tables.slice().sort(),
+   'after N43.2, both practice resources journal privileged fixture writes');
+  for(const [table,id] of [['practice_topics',topic.id],['practice_events',event.id]]){
+   const changes=await q(
+    "select c.op,a.user_id from public.action_changes c join public.actions a on a.no=c.action_no where c.table_name=$1 and c.row_pk->>'id'=$2",
+    [table,id]);
+   assert.ok(changes.some(c=>c.op==='insert'&&c.user_id===owner),
+    'N43.2 must audit the correct owner and row on '+table);
+  }
+ }else{
+  assert.deepEqual(journal,[],
+   'N43.1 must defer journal registration until its inverse exists');
+ }
+ console.log('PASS N43.1 schema/owner isolation and stage-aware N43.2 audit/undo');
 }finally{await db.close();}
