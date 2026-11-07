@@ -53,10 +53,11 @@ describe('scope check',()=>{
  })
  it('limits: one PR per agent and at most 6 open PRs (CI exempt)',()=>{
   const open=(n:number,agent:string)=>({number:n,body:`Agent: ${agent} · Item: N1 · Lease until 2026-11-04T09:00:00Z`})
-  expect(rules(base({openPrs:[open(2,'lemma-1')]}))).not.toContain('ONE-PR-PER-AGENT') // v2.0: 2 per agent
-  expect(rules(base({openPrs:[open(2,'lemma-1'),open(3,'lemma-1')]}))).toContain('ONE-PR-PER-AGENT')
-  expect(rules(base({openPrs:[1,2,3,4,5,6,7,8,9,10,11].map((n)=>open(n,'lemma-'+(10+n)))}))).not.toContain('MAX-OPEN-PRS')
-  expect(rules(base({openPrs:[1,2,3,4,5,6,7,8,9,10,11,12].map((n)=>open(n,'lemma-'+(10+n)))}))).toContain('MAX-OPEN-PRS')
+  expect(rules(base({openPrs:[open(2,'lemma-1'),open(3,'lemma-1')]}))).not.toContain('ONE-PR-PER-AGENT') // v2.6: 3 per agent
+  expect(rules(base({openPrs:[open(2,'lemma-1'),open(3,'lemma-1'),open(4,'lemma-1')]}))).toContain('ONE-PR-PER-AGENT')
+  const many=(k:number)=>Array.from({length:k},(_,i)=>open(i+1,'lemma-'+(11+i)))
+  expect(rules(base({openPrs:many(19)}))).not.toContain('MAX-OPEN-PRS') // v2.6: 20 in total
+  expect(rules(base({openPrs:many(20)}))).toContain('MAX-OPEN-PRS')
   expect(rules(base({body:'Agent: ci · Item: N1 · Lease until 2026-11-04T09:00:00Z',openPrs:[1,2,3,4,5,6].map((n)=>open(n,'lemma-'+(10+n)))}))).toEqual([])
  })
  it('one PR per item: a second PR for an Item that already has an open PR fails',()=>{
@@ -78,7 +79,7 @@ describe('scope check',()=>{
   expect(rules(base({body:'Agent: chat-2 · Item: N1'}))).toContain('AGENT-NAME')
   // the same chat session twice is the same agent; two sessions on one number are two agents
   const open=(n:number,agent:string)=>({number:n,body:`Agent: ${agent} · Item: N${n}`})
-  expect(rules(base({body:'Agent: chat-2#k7q3 · Item: N1',openPrs:[open(5,'chat-2#k7q3'),open(6,'chat-2#k7q3')]}))).toContain('ONE-PR-PER-AGENT')
+  expect(rules(base({body:'Agent: chat-2#k7q3 · Item: N1',openPrs:[open(5,'chat-2#k7q3'),open(6,'chat-2#k7q3'),open(7,'chat-2#k7q3')]}))).toContain('ONE-PR-PER-AGENT')
   expect(rules(base({body:'Agent: chat-2#k7q3 · Item: N1',openPrs:[open(5,'chat-2#zzzz')]}))).not.toContain('ONE-PR-PER-AGENT')
  })
  it('session lock: a second tag on a chat number within 3 hours fails with the explanation',()=>{

@@ -1,5 +1,8 @@
 # CURRENT — what exists in Lemma (written from the code on 2026-11-03; stages, Android, flags, Known breakages and CI notes refreshed by the priority run on 2026-11-05)
 
+Notes for items finished from 2026-11-07 (CI v2.6) are in `docs/current/` — one file per item; read them together with this file.
+
+
 Every claim below can be checked in the repo. Anything I could not check is marked **unverified**.
 
 ## What Lemma is
