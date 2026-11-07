@@ -29,6 +29,9 @@ alter table public.pending_commands enable row level security;
 create policy pending_commands_owner_select on public.pending_commands
  for select to authenticated using(user_id=(select auth.uid()));
 grant select on public.pending_commands to authenticated;
+-- Supabase may grant browser writes on newly created tables by default.
+-- Pending commands are SELECT-only for browsers; all mutations use the RPC.
+revoke insert,update,delete,truncate on public.pending_commands from anon,authenticated;
 grant select,insert,update,delete on public.pending_commands to service_role;
 
 -- Keep a stable owner operationId for every scheduled execution, even across

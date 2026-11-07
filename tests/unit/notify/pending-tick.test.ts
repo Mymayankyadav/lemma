@@ -49,6 +49,14 @@ describe('N53 scheduled decisions on notify tick',()=>{
   expect(d.load).toHaveBeenCalledTimes(1);
   expect(JSON.stringify(r)).not.toContain('private SQL');
  });
+ it('keeps executor failures when owner enumeration also fails',async()=>{
+  const d=deps();
+  vi.mocked(d.runDueCommands!).mockRejectedValue(Error('private worker error'));
+  vi.mocked(d.listEnabledOwners).mockRejectedValue(Error('private owner error'));
+  const r=await runNotifyTick(d);
+  expect(r.failed).toBe(2);
+  expect(JSON.stringify(r)).not.toContain('private');
+ });
  it('counts sanitized worker failures and rejects impossible counts',async()=>{
   const d=deps();
   vi.mocked(d.runDueCommands!).mockResolvedValue({executed:0,failed:1,processed:1});

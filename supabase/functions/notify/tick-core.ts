@@ -102,8 +102,8 @@ export async function runNotifyTick(
   }
   let owners:readonly string[];
   try{owners=await within(deps.listEnabledOwners(controller.signal))}
-  catch{summary.failed=controller.signal.aborted?0:1;return summary};
-  if(!Array.isArray(owners)){summary.failed=1;return summary}
+  catch{summary.failed+=controller.signal.aborted?0:1;return summary};
+  if(!Array.isArray(owners)){summary.failed++;return summary}
   const seen=new Set<string>();
   let attempted=0;
   for(const raw of owners){

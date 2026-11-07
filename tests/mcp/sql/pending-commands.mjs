@@ -34,6 +34,8 @@ try{
   "create function extensions.gen_random_bytes(n int) returns bytea language sql as $b$ select decode(repeat('00',n),'hex') $b$;"+
   "grant usage on schema auth to authenticated;"+
   "grant execute on function auth.uid() to authenticated;");
+ // Exercise the real Supabase-style browser DML defaults before any migration.
+ await db.exec('alter default privileges in schema public grant insert,update,delete,truncate on tables to anon,authenticated');
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
  assert.ok(migrations.includes('20261116100000_pending_commands.sql'));
@@ -46,6 +48,15 @@ try{
   .map(x=>x.cmd),['SELECT']);
  const acl=(await q("select has_function_privilege('anon','public.pending_command(jsonb)','execute') anon,has_function_privilege('authenticated','public.pending_command(jsonb)','execute') app,has_function_privilege('authenticated','public.lemma_run_due_commands()','execute') no_worker,has_function_privilege('service_role','public.lemma_run_due_commands()','execute') worker"))[0];
  assert.deepEqual(acl,{anon:false,app:true,no_worker:false,worker:true});
+ for(const role of ['anon','authenticated']){
+  const permissions=(await q(`select
+   has_table_privilege('${role}','public.pending_commands','INSERT') ins,
+   has_table_privilege('${role}','public.pending_commands','UPDATE') upd,
+   has_table_privilege('${role}','public.pending_commands','DELETE') del,
+   has_table_privilege('${role}','public.pending_commands','TRUNCATE') trunc`))[0];
+  assert.deepEqual(permissions,{ins:false,upd:false,del:false,trunc:false},
+   `${role} must have no pending_commands DML despite Supabase default grants`);
+ }
  await q('insert into auth.users(id) values($1),($2)',[A,B]);
  for(const [owner,secret] of [[A,'a'.repeat(48)],[B,'b'.repeat(48)]])
   await q("insert into public.settings(user_id,connector_secret) values($1,$2)",[owner,secret]);
