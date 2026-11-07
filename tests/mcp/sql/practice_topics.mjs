@@ -23,7 +23,7 @@ try{
  ].join('\n'));
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const files=(await readdir(dir)).filter(f=>f.endsWith('.sql')&&!f.includes('_storage')).sort();
- assert.ok(files.includes('20261107065000_v6_practice_topics_schema.sql'));
+ assert.ok(files.includes('20261107123000_v6_practice_topics_schema.sql'));
  for(const f of files)await db.exec(await readFile(new URL(f,dir),'utf8'));
  const tables=['practice_topics','practice_events'];
  for(const table of tables){
