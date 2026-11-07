@@ -102,7 +102,11 @@ describe('N77 Focus activity preset picker',()=>{
   const focusRoot=createRoot(focusHost);
   try{
    await act(async()=>{focusRoot.render(<TodayFocus/>);await Promise.resolve()});
-   await vi.waitFor(()=>expect(focusHost.querySelector('select[aria-label="Focus activity"]')).not.toBeNull());
+   await vi.waitFor(()=>{
+    expect(focusHost.querySelector('select[aria-label="Focus activity"]')).not.toBeNull();
+    expect((focusHost.querySelector('button[type="button"]') as HTMLButtonElement).disabled).toBe(false);
+    expect([...focusHost.querySelectorAll('button')].find(b=>b.textContent==='Start focus')?.hasAttribute('disabled')).toBe(false);
+   });
    const selector=focusHost.querySelector<HTMLSelectElement>('[aria-label="Focus activity"]')!;
    await act(async()=>{
     Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')!.set!.call(selector,'preset-2');
