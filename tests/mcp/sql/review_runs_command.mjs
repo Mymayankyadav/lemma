@@ -150,12 +150,19 @@ try {
   checkEqual(mcpActions.length,1,'MCP command must produce one journal action');
   checkEqual(mcpActions[0].user_id,other,'journal action must belong to MCP owner');
   checkEqual(mcpActions[0].source,'chatgpt','journal must retain MCP provenance');
+  const beforeReplay=(await q(
+    'select count(*)::int n from public.action_changes where action_no=$1',
+    [mcp.actionNo]))[0].n;
   await db.exec('set role service_role');
   const mcpReplay=(await q("select public.mcp_command($1,'chatgpt',$2::jsonb) receipt",[other,JSON.stringify(p)]))[0].receipt;
   assert.deepEqual(mcpReplay,mcp,'service-role retry replays the same receipt');
   await db.exec('reset role');
-  checkEqual((await q('select count(*)::int n from public.action_changes where action_no=$1',[mcp.actionNo]))[0].n,2,
-    'start should journal one run and one queue item, even after replay');
+  const afterReplay=(await q(
+    'select count(*)::int n from public.action_changes where action_no=$1',
+    [mcp.actionNo]))[0].n;
+  checkEqual(afterReplay,beforeReplay,'idempotent MCP replay adds no journal changes');
+  checkEqual((await q("select count(*)::int n from public.action_changes where action_no=$1 and table_name in ('review_runs','review_run_items')",[mcp.actionNo]))[0].n,2,
+    'start journals exactly one run and one queue item; telemetry is separate');
   // Undo MUST operate on both run rows and their snapshotted queue without
   // touching the other owner (and without calling card grading).
   await db.exec('set role service_role');
