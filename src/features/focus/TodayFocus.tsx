@@ -4,6 +4,7 @@ import type {StudyEntryRecord,StudyRange} from '../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../lib/effort';
 import {idleFocus,inProgressFocusMinutes,remainingFocusMinutes,transitionFocus,type FocusState} from '../../lib/focus/machine';
 import FocusDialog from '../../ui/v6/focus/FocusDialog';
+import FocusNotices from './FocusNotices';
 
 const FOCUS_CAP=25;
 function zoneNow(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}
@@ -178,5 +179,6 @@ export default function TodayFocus(){
    onPause={()=>{void transition('pause');}} onResume={()=>{void transition('resume');}}
    onBreak={()=>{void transition('break');}} onFinish={finish}
    onSave={()=>{void save(false);}} onDiscard={()=>{void save(true);}}/>
+  {active&&<FocusNotices entryId={active.id}/>}
  </>;
 }
