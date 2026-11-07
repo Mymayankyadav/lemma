@@ -2,11 +2,19 @@
 // N61.2.2.2 owns versioned command writes and the mode-aware facade.
 import {OverlapError} from './contract';
 import type {NewOverlapAcknowledgement,OverlapAcknowledgement,OverlapApi,
-  OverlapPage,OverlapParticipant,OverlapPatch,OverlapQuery} from './contract';
-import {overlapIsStale,validateNewOverlap,validateOverlapQuery} from './validate';
+  OverlapPage,OverlapParticipant,OverlapPatch,OverlapQuery,ValidatedOverlap} from './contract';
+import {overlapIsStale,validateNewOverlap,validateOverlapPatch,
+  validateOverlapQuery} from './validate';
 
 type Row=Record<string,unknown>;
 type DbError={code?:string;message?:string};
+type Changed={id:string;version:number};
+type CommandReceipt={status:'ok'|'conflict';changed?:Changed[];
+  actionNo?:number|null;conflict?:{currentVersion?:number;reason?:string}};
+type Operation='create'|'update'|'delete';
+type CommandEnvelope={operationId:string;schemaVersion:1;
+  resource:'overlap_acknowledgements';operation:Operation;
+  target?:{id:string};expectedVersion?:number;patch:Row};
 type Cursor={v:1;filter:string;start:string;id:string};
 const UUID=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const BATCH=50;
@@ -101,7 +109,49 @@ function refuse():never{
   return server('Versioned overlap writes require N61.2.2.2 and N47.2.3; no mutation sent');
 }
 
-export function createLiveOverlapApi():OverlapApi{
+
+function newOperationId():string{
+  const crypto=globalThis.crypto;
+  if(typeof crypto?.randomUUID==='function')return crypto.randomUUID();
+  if(!crypto?.getRandomValues)return server('Secure command ID generation unavailable');
+  const bytes=crypto.getRandomValues(new Uint8Array(16));
+  bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  const hex=[...bytes].map(n=>n.toString(16).padStart(2,'0')).join('');
+  return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),
+    hex.slice(16,20),hex.slice(20)].join('-');
+}
+function expectedVersion(value:number):number{
+  if(!Number.isInteger(value)||value<1||value>2147483647)
+    return fail('invalid','Expected acknowledgement version must be a positive int32');
+  return value;
+}
+function columns(input:Partial<ValidatedOverlap>):Row{
+  const out:Row={};
+  const map={participants:'participants',startsAt:'starts_at',
+    endsAt:'ends_at',reason:'reason',disposition:'disposition',
+    attributedTo:'attributed_to'} as const;
+  for(const field of Object.keys(map) as Array<keyof typeof map>)
+    if(Object.prototype.hasOwnProperty.call(input,field))
+      out[map[field]]=clone(input[field]);
+  return out;
+}
+function rpcError(err:DbError):Error{
+  const message=err.message||'Overlap command failed',code=err.code||'';
+  if(code==='42883'||code==='PGRST202'||/function .*not found|undefined function/i.test(message))
+    return new Error('Live overlaps: N47.2.3 command is not deployed; no mutation applied');
+  if(code==='23505'||/conflict|version|stale|operation.?id|changed.?payload|already exists/i.test(message))
+    return new OverlapError('conflict',message);
+  if(/not found|missing owner row/i.test(message))
+    return new OverlapError('not_found',message);
+  if(['22P02','23514','23503','22007','22008'].includes(code)||
+    /invalid|unknown|required|unsupported|forbidden|must be/i.test(message))
+    return new OverlapError('invalid',message);
+  return new Error('Live overlaps: '+message);
+}
+/** Default direct callers remain read-only until audited SQL is deployed.
+ * The module facade opts into RPC and still fails closed if N47.2.3 is absent.
+ */
+export function createLiveOverlapApi(options:{commandReady?:boolean}={}):OverlapApi{
   async function currentParticipants(rows:ReadonlyArray<
     Pick<OverlapAcknowledgement,'participants'>>):Promise<OverlapParticipant[]>{
     // Each query is owner-RLS scoped by the authenticated browser session.
@@ -156,7 +206,53 @@ export function createLiveOverlapApi():OverlapApi{
     }
     return server('Too many acknowledgements for bounded owner scan');
   }
-  return {
+
+  // A transient error or failed post-receipt readback may follow a commit.
+  // Retain the byte-identical RPC envelope for a later identical retry.
+  const pending=new Map<string,CommandEnvelope>();
+  async function write<T>(operation:Operation,
+    fields:Pick<CommandEnvelope,'patch'|'target'|'expectedVersion'>,
+    resolve:(change:Changed)=>Promise<T>):Promise<{record:T;actionNo:number|null}>{
+    const base={schemaVersion:1 as const,resource:'overlap_acknowledgements' as const,
+      operation,...fields};
+    const key=JSON.stringify(base);
+    const envelope:CommandEnvelope=pending.get(key)??{
+      ...base,operationId:newOperationId(),
+    };
+    pending.set(key,envelope);
+    try{
+      const api=await client();
+      const response=await api.rpc('overlap_acknowledgements_command',{p:envelope});
+      if(response.error)throw rpcError(response.error);
+      const receipt=response.data as CommandReceipt|null;
+      if(receipt?.status==='conflict'){
+        const current=receipt.conflict?.currentVersion;
+        throw new OverlapError('conflict',
+          'Overlap command conflict'+(current===undefined?'':` (current ${current})`),
+          Number.isInteger(current)?current:undefined,receipt.conflict?.reason);
+      }
+      if(receipt?.status!=='ok'||!Array.isArray(receipt.changed)||
+        receipt.changed.length!==1||
+        typeof receipt.changed[0].id!=='string'||!UUID.test(receipt.changed[0].id)||
+        !Number.isInteger(receipt.changed[0].version)||
+        receipt.changed[0].version<1||receipt.changed[0].version>2147483647||
+        !Number.isSafeInteger(receipt.actionNo)||receipt.actionNo!<1)
+        return server('Invalid or unaudited overlap command receipt');
+      const change={id:id(receipt.changed[0].id),
+        version:receipt.changed[0].version};
+      const record=await resolve(change);
+      pending.delete(key);
+      return {record:clone(record),actionNo:receipt.actionNo!};
+    }catch(cause){
+      // Definitive conflicts/invalid commands may be retried as new actions;
+      // unknown transport/readback outcomes must retain the same operationId.
+      if(cause instanceof OverlapError||
+        (cause instanceof Error&&cause.message.includes('N47.2.3 command is not deployed')))
+        pending.delete(key);
+      throw cause;
+    }
+  }
+  const adapter:OverlapApi={
     mode:'live',
     async listAcknowledgements(query:OverlapQuery={}):Promise<OverlapPage<OverlapAcknowledgement>>{
       const q=validateOverlapQuery(query),filter=filterKey(q);
@@ -183,9 +279,49 @@ export function createLiveOverlapApi():OverlapApi{
       const records=await withStaleness([mapRow(response.data as Row)]);
       return records[0];
     },
-    async createAcknowledgement(_input:NewOverlapAcknowledgement){return refuse()},
-    async updateAcknowledgement(_id:string,_expectedVersion:number,
-      _patch:OverlapPatch){return refuse()},
-    async deleteAcknowledgement(_id:string,_expectedVersion:number){return refuse()},
+    async createAcknowledgement(input:NewOverlapAcknowledgement){
+      if(!options.commandReady)return refuse();
+      const normalized=validateNewOverlap(input);
+      return write('create',{patch:columns(normalized)},async changed=>{
+        const actual=await adapter.getAcknowledgement(changed.id);
+        if(!actual||actual.version!==changed.version)
+          return server('Created acknowledgement not visible after receipt');
+        if(actual.source!=='app')return server('Unexpected overlap provenance');
+        return actual;
+      });
+    },
+    async updateAcknowledgement(key:string,expected:number,patch:OverlapPatch){
+      if(!options.commandReady)return refuse();
+      const target=id(key);
+      expectedVersion(expected);
+      const before=await adapter.getAcknowledgement(target);
+      if(!before)return fail('not_found','Overlap acknowledgement not found');
+      const original={participants:before.participants,
+        startsAt:before.startsAt,endsAt:before.endsAt,reason:before.reason,
+        disposition:before.disposition,attributedTo:before.attributedTo};
+      const validated=validateOverlapPatch(original,patch);
+      return write('update',{target:{id:target},expectedVersion:expected,
+        patch:columns(validated)},async changed=>{
+        if(changed.id!==target)return server('Updated the wrong acknowledgement');
+        const actual=await adapter.getAcknowledgement(target);
+        if(!actual||actual.version!==changed.version)
+          return server('Updated acknowledgement not visible after receipt');
+        if(actual.source!=='app')return server('Unexpected overlap provenance');
+        return actual;
+      });
+    },
+    async deleteAcknowledgement(key:string,expected:number){
+      if(!options.commandReady)return refuse();
+      const target=id(key);
+      expectedVersion(expected);
+      return write('delete',{target:{id:target},expectedVersion:expected,
+        patch:{}},async changed=>{
+        if(changed.id!==target)return server('Deleted the wrong acknowledgement');
+        if(await adapter.getAcknowledgement(target))
+          return server('Deleted acknowledgement still visible after receipt');
+        return {id:target};
+      });
+    },
   };
+  return adapter;
 }
