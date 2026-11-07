@@ -27,7 +27,7 @@ try{
   'grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;'
  ].join('\n'));
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
- const filename='20261107222000_review_runs_storage.sql';
+ const filename='20261107222000_review_runs_base.sql';
  const files=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
  assert.ok(files.includes(filename),'N48.1 migration is present');
  for(const file of files)await db.exec(await readFile(new URL(file,dir),'utf8'));
