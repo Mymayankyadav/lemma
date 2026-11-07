@@ -1,4 +1,4 @@
-import {describe,expect,it,vi} from 'vitest';
+import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {readRegisteredResource} from '../../../supabase/functions/mcp/tools/registry';
 import type {Context} from '../../../supabase/functions/mcp/db';
 import {readFileSync} from 'node:fs';
@@ -6,13 +6,16 @@ import {readFileSync} from 'node:fs';
 const owner='11111111-1111-4111-8111-111111111111';
 const other='99999999-9999-4999-8999-999999999999';
 const metadata={resource:'future_widget',mcp_ok:true,
- schema:{operations:['create','archive'],fields:['title','status','description','api_key']}};
+ schema:{operations:['create','archive'],fields:[
+  'title','status','description','api_key','connectorSecret','configuration']}};
 type Row=Record<string,unknown>;
 const rows:Array<Row>=Array.from({length:53},(_,i)=>({
  id:'aaaaaaaa-aaaa-4aaa-8aaa-'+String(i+1).padStart(12,'0'),
  user_id:i===0?other:owner,version:1,title:'Widget '+i,
  status:i%2?'active':'archived',description:'A useful widget '+i,
- api_key:'never-return-this-secret',
+ api_key:'never-return-this-secret',connectorSecret:'also-hidden',
+ configuration:{phase:'focus',access_token:'nested-secret',
+  details:{safe:'visible',password:'hidden'}},
 }));
 function fixture(){
  const calls:Array<{table:string;filters:string[];select:string;range?:[number,number]}>=[];
@@ -41,12 +44,18 @@ function fixture(){
  return {c:{userId:owner,db:{from}} as unknown as Context,from,calls};
 }
 describe('N37 generic owner-scoped registry page',()=>{
+ // Explicitly restore mutable fixture rows between UTF-8 and page tests.
+ beforeEach(()=>{rows[3].title='Widget 3';rows[5].title='Widget 5'});
  it('returns exact 52-owner total, bounded 50 + 2 pages and opaque filter-locked cursor',async()=>{
   const {c,calls}=fixture();
   const first=JSON.parse(await readRegisteredResource(c,{what:'future_widget',limit:50},'get'));
   expect(first.total).toBe(52);
   expect(first.items).toHaveLength(50);
-  expect(first.items.every((x:Row)=>!('user_id'in x)&&!('api_key'in x))).toBe(true);
+  expect(first.items.every((x:Row)=>!('user_id'in x)&&!('api_key'in x)&&
+    !('connectorSecret'in x))).toBe(true);
+  expect((first.items[0].configuration as Row)).toEqual({
+   phase:'focus',details:{safe:'visible'},
+  });
   expect(first.nextCursor).toMatch(/^rg1:/);
   const second=JSON.parse(await readRegisteredResource(c,{
    what:'future_widget',limit:50,cursor:first.nextCursor},'get'));
@@ -62,6 +71,29 @@ describe('N37 generic owner-scoped registry page',()=>{
   await expect(readRegisteredResource(c,{
    what:'future_widget',status:'active',cursor:first.nextCursor},'get'))
    .rejects.toThrow(/cursor/);
+ });
+ it('encodes non-English filter-bound search cursors as UTF-8 bytes',async()=>{
+  const {c}=fixture();
+  const first=JSON.parse(await readRegisteredResource(c,{
+   resource:'future_widget',query:'Widget',limit:1,status:'active',
+  },'search'));
+  expect(first.nextCursor).toMatch(/^rg1:/);
+  // Bind Unicode search text to cursor while preserving correct pagination.
+  rows[3].title='数学 Widget 3';
+  rows[5].title='数学 Widget 5';
+  const initial=JSON.parse(await readRegisteredResource(c,{
+   resource:'future_widget',query:'数学',limit:1,status:'active',
+  },'search'));
+  expect(initial.total).toBe(2);
+  expect(initial.nextCursor).toMatch(/^rg1:/);
+  const next=JSON.parse(await readRegisteredResource(c,{
+   resource:'future_widget',query:'数学',limit:1,status:'active',
+   cursor:initial.nextCursor},'search'));
+  expect(next.items).toHaveLength(1);
+  expect(next.items[0].id).not.toBe(initial.items[0].id);
+  await expect(readRegisteredResource(c,{
+   resource:'future_widget',query:'数学',status:'archived',
+   cursor:initial.nextCursor},'search')).rejects.toThrow(/cursor/);
  });
  it('searches only a registered text field, returning exact filtered totals',async()=>{
   const {c,calls}=fixture();

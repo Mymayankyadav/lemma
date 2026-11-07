@@ -4,7 +4,9 @@
 import type {Context} from '../db.ts';
 
 const RESOURCE=/^[a-z][a-z0-9_]{0,60}$/;
-const HIDDEN=/^(?:user_id|owner_id|ownerId|password|token|api_key|private_key|secret|credential)|(?:_secret|_token|_password|_credential|_key)$/i;
+// Reject both flat and nested service metadata. A registered write-field is
+// not automatically a safe output field (e.g. connectorSecret or access_token).
+const HIDDEN=/(?:secret|token|password|credential|api_?key|private_?key)|^(?:user_id|userId|owner_id|ownerId)$/i;
 const TEXT_FIELDS=['title','label','name','text','intent','description','body',
  'summary','note','front','back','response','status'];
 const MAX_OFFSET=1_000_000;
@@ -19,7 +21,16 @@ export type GenericReadArgs={what?:string;resource?:string;id?:string;
 const safeStrings=(v:unknown):string[]=>
  Array.isArray(v)?v.filter((x):x is string=>typeof x==='string'&&
    RESOURCE.test(x)).slice(0,100):[];
-const clone=<T>(v:T):T=>JSON.parse(JSON.stringify(v)) as T;
+function sanitize(value:unknown,depth=0):unknown{
+ if(typeof value==='string')return value.slice(0,4000);
+ if(value===null||typeof value!=='object')return value;
+ if(depth>=5)return '[nested data omitted]';
+ if(Array.isArray(value))return value.slice(0,100).map(x=>sanitize(x,depth+1));
+ const out:Record<string,unknown>={};
+ for(const [key,entry] of Object.entries(value as Record<string,unknown>).slice(0,120))
+  if(!HIDDEN.test(key))out[key]=sanitize(entry,depth+1);
+ return out;
+}
 
 function readSchema(row:RecordMap):Meta{
  const resource=row.resource;
@@ -69,7 +80,12 @@ function pageLimit(raw:unknown,mode:GenericMode):number{
  return n;
 }
 function cursorEncode(c:Cursor):string{
- return 'rg1:'+btoa(JSON.stringify(c)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+ // btoa expects Latin-1, but owner search terms may contain Greek/Devanagari
+ // or other UTF-8 text. Encode the JSON as bytes before base64url.
+ const bytes=new TextEncoder().encode(JSON.stringify(c));
+ let binary='';
+ for(const byte of bytes)binary+=String.fromCharCode(byte);
+ return 'rg1:'+btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
 function cursorDecode(raw:unknown,base:Omit<Cursor,'offset'>):number{
  if(raw==null)return 0;
@@ -77,8 +93,10 @@ function cursorDecode(raw:unknown,base:Omit<Cursor,'offset'>):number{
   throw Error('Invalid registered resource cursor');
  try{
   const token=raw.slice(4);
-  const value=JSON.parse(atob(token.replace(/-/g,'+').replace(/_/g,'/')+
-   '='.repeat((4-token.length%4)%4))) as Cursor;
+  const binary=atob(token.replace(/-/g,'+').replace(/_/g,'/')+
+   '='.repeat((4-token.length%4)%4));
+  const bytes=Uint8Array.from(binary,ch=>ch.charCodeAt(0));
+  const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)) as Cursor;
   if(value.v!==1||value.mode!==base.mode||value.resource!==base.resource||
    value.query!==base.query||value.status!==base.status||value.id!==base.id||
    !Number.isSafeInteger(value.offset)||value.offset<0||value.offset>MAX_OFFSET)
@@ -92,8 +110,7 @@ function projection(row:RecordMap,fields:readonly string[]):RecordMap{
  for(const key of allowed){
   if(key in row) {
    const value=row[key];
-   if(typeof value==='string')visible[key]=value.slice(0,4000);
-   else visible[key]=clone(value);
+   visible[key]=sanitize(value);
   }
  }
  return visible;
