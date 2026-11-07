@@ -80,13 +80,13 @@ Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N50 Study notices, drift and urge events: migration (study_events)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.study_events` with study entry link, `kind` (`notice`/`drift`/`urge`), `occurred_at`, optional `duration_minutes` (drift only), note, optional related record, `voided_at`. Operations record, edit, void, restore. Counts and timelines derive from these rows; nothing computes an attention score. Deducting drift time from saved effort is N52's interval correction, not this table.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N50.2 Study events: versioned commands, related records, undo and MCP
+Stage: Build · Status: open · Needs: N50.2.1 · Assigned: —
+Done = finish the N50.1 owner-scoped, audited study_events schema with optional related_kind/related_id owner-bound links, and an owner-only versioned study_events_command supporting record, edit, void and restore, each under operationId retry and stale expectedVersion rules. An event's kind controls optional duration_minutes, only drift can carry it; no attention score is inferred. Register study_events in lemma_undo_tables and lemma_command_resources for service-role mcp_command owner/source and journal/receipt parity. Preserve historical voided records and refuse cross-owner related IDs.
+Owner-authorized (D1, D8): production SQL requires independent review.
+Tests: tests/mcp/sql/study_events-command.mjs with lifecycle, stale version, retry, changed-payload conflict, other-owner refusal, undo and MCP parity; unchanged N50.1 tests pass.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events-command.mjs, docs/v6/capability-registry/study_events.json, CURRENT.md.
+Not: changes to earlier migrations, existing tests, app or MCP function code, unrelated schema.
 
 ## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
 Stage: Build · Status: open · Needs: N56.1, N42.2.2 · Assigned: —
@@ -94,13 +94,6 @@ Done = complete N56 after N56.1's typed contract, isolated demo adapter and getD
 Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, including retries, each operation, conflicts, owner RLS, projected read-only targets and 50+ row cursor walk; N56.1 demo tests remain green.
 Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
 Not: other data folders, UI, supabase/**, new dependencies.
-
-## N57.2 Manual practice topics/events live RPC adapter
-Stage: Build · Status: open · Needs: N57.1 · Assigned: —
-Done = finish the N57 app module on the N57.1 typed PracticeTopicApi, validated demo lifecycle and getPracticeTopicApi/setPracticeTopicApiForTests facade. Implement src/data/practice-topics/live.ts and wire live mode in index.ts to authenticated owner-RLS reads of public.practice_topics and public.practice_events, with exact 1–50 keyset pages and filter-bound opaque cursors. Implement create/update/archive/restore/delete topic, record practice (cadence next_due_date advance), and void event (previous due date restore) using rpc('practice_topics_command', envelope); use an independent operationId per user action and reuse the identical envelope on uncertain retry, map changed-payload/version conflicts and never send or trust caller owner ID. Preserve demo semantics, record/event versions and owner isolation; N43.2 owns server command/undo/MCP registration and may ship independently.
-Tests: tests/unit/practice-topics/live.test.ts (mocked owner-scoped pages and facade, full operation envelopes, immutable operationId retry, conflict mapping, cursor integrity, denial of caller ownership, all topic/event lifecycle operations); retain N57.1 demo tests.
-Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
-Not: other src/data/**, app screens, supabase/**, MCP, new dependencies or existing test assertions.
 
 ## N58.2.3 Parked thought atomic conversion and owner-RLS live adapter
 Stage: Build · Status: open · Needs: N44.2, N44.2.2 · Assigned: —

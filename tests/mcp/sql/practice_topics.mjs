@@ -116,6 +116,7 @@ try{
  // Privileged fixture still verifies the owner-composite FK on cross-owner links.
  await db.exec('reset role');
  await assert.rejects(q('insert into public.practice_topics(user_id,title,subject_id) values($1,$2,$3)',[owner,'Wrong owner',foreign.id]),/foreign key/i);
+ await assert.rejects(q('insert into public.practice_events(user_id,topic_id,occurred_at,rating) values($1,$2,now(),2)',[other,topic.id]),/foreign key/i);
  await admin();
  // Even if an inherited default privilege permits SELECT, an anonymous
  // caller must never observe either table's owner-scoped records.
