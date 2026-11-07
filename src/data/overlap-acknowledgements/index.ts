@@ -1,0 +1,18 @@
+// N61.2.2.2: owner-safe demo/live overlap acknowledgement facade.
+import {getMode} from '../mode';
+import type {OverlapApi} from './contract';
+import {createDemoOverlapApi} from './demo';
+import {createLiveOverlapApi} from './live';
+
+export type * from './contract';
+let cached:OverlapApi|null=null;
+export function getOverlapApi():OverlapApi{
+  const mode=getMode();
+  if(!cached||cached.mode!==mode)
+    cached=mode==='demo'?createDemoOverlapApi():
+      // Missing N47.2.3 is an RPC error, never a simulated success.
+      createLiveOverlapApi({commandReady:true});
+  return cached;
+}
+/** Tests only: inject a fake adapter; null resets mode selection. */
+export function setOverlapApiForTests(api:OverlapApi|null):void{cached=api}
