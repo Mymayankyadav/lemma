@@ -216,7 +216,7 @@ function V6Calendar() {
       }} />}
 
     {phase === 'ready' && view === 'month' && <MonthView date={date} zone={zone}
-      entries={entries} blocks={blocks} onDay={selected => {
+      entries={entries} blocks={blocks} dues={dues} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
       }} />}
