@@ -1,6 +1,6 @@
 {
   "table": "proposals",
-  "version": 1,
+  "version": 2,
   "columns": {
     "id": {
       "classification": "derived",
@@ -116,6 +116,54 @@
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
       "description": "N38: server timestamp set on UPDATE"
+    },
+    "payload_version": {
+      "classification": "command-managed",
+      "appPath": "Existing proposals read path; N85/N90 edit UI planned",
+      "mcpPath": "N92 owner-bound functions; N90 generic MCP integration planned",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N103 owner purge; journaled generic undo",
+      "description": "Counted semantic payload revision; original is version 1; successor increments, independent of row update version."
+    },
+    "base_target_versions": {
+      "classification": "owner-editable",
+      "appPath": "Existing proposals read path; N85/N90 edit UI planned",
+      "mcpPath": "N92 owner-bound functions; N90 generic MCP integration planned",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N103 owner purge; journaled generic undo",
+      "description": "Explicit notes/checkpoints/projects owner UUID to expected optimistic version map; checked under row locks on revision and approval."
+    },
+    "group_id": {
+      "classification": "command-managed",
+      "appPath": "Existing proposals read path; N85/N90 edit UI planned",
+      "mcpPath": "N92 owner-bound functions; N90 generic MCP integration planned",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N103 owner purge; journaled generic undo",
+      "description": "Stable original proposal UUID for revision grouping; owner-scoped."
+    },
+    "citations": {
+      "classification": "owner-editable",
+      "appPath": "Existing proposals read path; N85/N90 edit UI planned",
+      "mcpPath": "N92 owner-bound functions; N90 generic MCP integration planned",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N103 owner purge; journaled generic undo",
+      "description": "Bounded structured source UUID, source version, page label objects. Owner/version validated on write."
+    },
+    "withdrawn_at": {
+      "classification": "command-managed",
+      "appPath": "Existing proposals read path; N85/N90 edit UI planned",
+      "mcpPath": "N92 owner-bound functions; N90 generic MCP integration planned",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N103 owner purge; journaled generic undo",
+      "description": "An unapproved withdrawn proposal is retained for history and cannot be approved until reopened."
+    },
+    "revised_from": {
+      "classification": "command-managed",
+      "appPath": "Existing proposals read path; N85/N90 edit UI planned",
+      "mcpPath": "N92 owner-bound functions; N90 generic MCP integration planned",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N103 owner purge; journaled generic undo",
+      "description": "Owner-composite FK to the immediately preceding proposal revision."
     }
   }
 }

@@ -34,13 +34,6 @@ Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/c
 Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
 Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
 
-## N60.2 Day plans: persistent demo, transactional live commands and closure
-Stage: Build · Status: open · Needs: N46.2 · Assigned: —
-Done = complete N60 with N60.1's typed DayPlanApi, owner civil-date/time-zone rules, bounded capacity, availability source-version comparisons, closure consistency and explicit placed/unplaced/carried_over items. Add a tab-local persistent src/data/day-plans/demo.ts fixture and live.ts plus index.ts/getDayPlanApi()/setDayPlanApiForTests(). Demo must implement create/update/preview/commit/close/reopen with optimistic version checks and same-date uniqueness, reload-safe records and isolated keyset pages 1–50 with exact totals, preserved unplaced tasks/reasons, per-date ritual/closure and no false completion of future dates. Live reads owner-scoped day_plans/day_plan_items and calls public.day_plans_command through one server transaction per mutation; each operation uses a fresh operationId that is reused on uncertain retry, identical conflict mapping, and NO client owner field. Commit must atomically recheck all snapshot source versions on the server, never rely only on N60.1's client advisory comparePlanSources. Close sets closedAt only for the chosen date; reopen clears it and never affects another plan. Ensure MCP/app receipts and item dispositions stay in parity with N46.2's registered command once that migration is deployed.
-Tests: tests/unit/day-plans/** for demo reload, owner-day uniqueness, multiple dates and closure independence, all operations, version drift, source staleness, unplaced/carry-over visibility, bounded cursor pages/total, live envelopes/retry operationId, conflict mapping, no caller owner field. Retain N60.1 pure-model tests.
-Scope: src/data/day-plans/**, tests/unit/day-plans/**, CURRENT.md.
-Not: other data modules, UI, supabase/**, new dependencies.
-
 ## N63.2 Proposal drafts: persistent demo, versioned live RPC, retry and conflict views
 Stage: Build · Status: open · Needs: N49 · Assigned: —
 Done = finish N63 on top of N63.1's typed ProposalDraftApi, immutable full-edit payload validation, positive optimistic draft and target base versions, and explicit draft/saved/submitted/discarded lifecycle. Implement an isolated sessionStorage-backed demo adapter and mode-aware index facade under src/data/proposal-drafts/**. It must seed owner-safe proposal/target fixtures, keep draft edits separate from approved proposals, clone values, survive reload, preserve owner-independent drafts, require expectedDraftVersion for every save/submit/discard, and never silently overwrite a newer cross-device draft. List/get pages must use 1–50 filter-bound opaque keyset cursors, exact totals and no caller owner fields. Implement a live owner-RLS read adapter and an atomic server RPC for create/save/submit/discard after N49's proposal_drafts_command is deployed; each mutation has a unique operationId retained on uncertain retries, maps stale versions to typed conflicts carrying base/current/draft, and submits through the existing proposal edit path under both proposal and target base-version checks. Submission of a draft must not be an implicit approval without the N49 command receipt. Expose getProposalDraftApi/setProposalDraftApiForTests; keep v6 flag default off and other app folders untouched.
@@ -114,13 +107,6 @@ Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (ac
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N73 v6 time log: edit, split, void, restore and export saved time behind the shell flag
-Stage: Build · Status: open · Needs: N65 · Assigned: —
-Done = with `v6Shell` on, `/log` (lazy route) lists saved entries by day in bounded pages with their intervals; edit (intent, links, rating, reflection, intervals), split at a time, void and restore through the N65 operations, add a manual approximate entry, and export the visible range as CSV; Calendar and Progress reflect each change after refresh; missing rating is unknown, not poor. Flag off: nothing changes.
-Tests: `tests/unit/time-log/**`
-Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route only), tests/unit/time-log/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N76 v6 Progress: goals and range-correct statistics behind the shell flag
 Stage: Build · Status: open · Needs: N59.2 · Assigned: —
 Done = with `v6Shell` on, Progress shows weekly/monthly goals against saved minutes for their exact scope and range, 7/30/90-day ranges computed for that range (never a fixed 28-day series under another label), subject partitions that sum to the total, exact values on charts, and goal create/edit/archive. Flag off: nothing changes.
@@ -134,7 +120,6 @@ Done = with `v6Shell` on, Settings gains an Activities section to create, edit, 
 Tests: `tests/unit/presets-ui/**`
 Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 
 ## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
 Stage: Build · Status: open · Needs: N39 · Assigned: —
@@ -177,14 +162,6 @@ Done = with `v6Shell` on, the v6 Atlas list adds create concept, edit name/blurb
 Tests: `tests/unit/atlas-v6/edit.test.tsx`
 Scope: src/features/atlas/v6/**, tests/unit/atlas-v6/edit.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N92 Proposal versions, grouping, citations and withdrawal
-Stage: Build · Status: open · Needs: N38 · Assigned: —
-Done = one additive migration: `proposals` gains `payload_version`, `base_target_versions jsonb`, `group_id`, structured `citations jsonb` (source, version, page) and `withdrawn_at`, `revised_from`; new functions `withdraw_proposal`, `revise_proposal`, `reopen_proposal`; approval through the existing path accepts optional expected versions (a compatible replacement of the approve function, PR body line `Replaces function: <name> (reviewer verified signature and behaviour)`).
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/proposal-versions.mjs` (stale approval refused when versions are given, unchanged when not, withdraw/revise/reopen, grouping, existing proposal tests unchanged)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal-versions.mjs, docs/v6/capability-registry/proposals.json, CURRENT.md.
-Not: app or MCP code.
 
 ## N93 Slug and code aliases, source and page revisions
 Stage: Build · Status: open · Needs: N38 · Assigned: —
