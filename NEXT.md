@@ -114,13 +114,6 @@ Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (ac
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N73 v6 time log: edit, split, void, restore and export saved time behind the shell flag
-Stage: Build · Status: open · Needs: N65 · Assigned: —
-Done = with `v6Shell` on, `/log` (lazy route) lists saved entries by day in bounded pages with their intervals; edit (intent, links, rating, reflection, intervals), split at a time, void and restore through the N65 operations, add a manual approximate entry, and export the visible range as CSV; Calendar and Progress reflect each change after refresh; missing rating is unknown, not poor. Flag off: nothing changes.
-Tests: `tests/unit/time-log/**`
-Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route only), tests/unit/time-log/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N76 v6 Progress: goals and range-correct statistics behind the shell flag
 Stage: Build · Status: open · Needs: N59.2 · Assigned: —
 Done = with `v6Shell` on, Progress shows weekly/monthly goals against saved minutes for their exact scope and range, 7/30/90-day ranges computed for that range (never a fixed 28-day series under another label), subject partitions that sum to the total, exact values on charts, and goal create/edit/archive. Flag off: nothing changes.
