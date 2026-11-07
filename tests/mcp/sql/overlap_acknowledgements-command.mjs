@@ -49,7 +49,18 @@ try{
  await assert.rejects(call({...input,patch:{...input.patch,attributed_to:{kind:'entry',id:input.patch.participants[0].id}}}),
   /Attribution must match/);
  await assert.rejects(call({...input,patch:{...input.patch,reason:'x'.repeat(601)}}),/reason exceeds/);
- await assert.rejects(call({...input,patch:{...input.patch,starts_at:'not-a-date'}}),/date|time|invalid input/i);
+ await assert.rejects(call({...input,patch:{...input.patch,starts_at:'not-a-date'}}),/starts_at must be an instant/);
+ const offsetWindow={...input,patch:{...input.patch,
+  starts_at:'2026-11-07T13:30:00+05:30',ends_at:'2026-11-07T13:45:00+05:30'}};
+ assert.deepEqual(await call(offsetWindow),offsetWindow,'explicit numeric zone offsets are valid');
+ // PostgreSQL accepts timezone-naive strings and infinity by default. Neither is a finite ISO instant.
+ for(const field of ['starts_at','ends_at']){
+  for(const bad of ['2026-11-07T08:00:00','infinity','-infinity',
+   '2026-11-07T08:00:00+15:00','2026-11-07T08:00:00Zjunk']){
+   await assert.rejects(call({...input,patch:{...input.patch,[field]:bad}}),
+    new RegExp(field+' must be an instant'),'create rejects non-ISO '+field);
+  }
+ }
  await assert.rejects(call({...input,patch:{...input.patch,ends_at:null}}),/ends_at must be an instant/);
  await assert.rejects(call({...input,patch:{...input.patch,ends_at:17}}),/ends_at must be an instant/);
  await assert.rejects(call({...input,patch:{...input.patch,
@@ -63,6 +74,16 @@ try{
  const windowPartial={...edit,patch:{starts_at:'2026-11-07T08:01:00Z'}};
  assert.deepEqual(await call(windowPartial),windowPartial,
   'partial instant update defers the final window check to the stored row');
+ const offsetPartial={...edit,patch:{ends_at:'2026-11-07T13:45:00+05:30'}};
+ assert.deepEqual(await call(offsetPartial),offsetPartial,'partial update accepts explicit offset');
+ for(const field of ['starts_at','ends_at']){
+  for(const bad of ['2026-11-07T08:00:00','infinity','-infinity'])
+   await assert.rejects(call({...edit,patch:{[field]:bad}}),
+    new RegExp(field+' must be an instant'),'update rejects non-absolute '+field);
+ }
+ const fullUpdateOffset={...edit,patch:{starts_at:'2026-11-07T13:30:00+05:30',
+  ends_at:'2026-11-07T13:45:00+05:30'}};
+ assert.deepEqual(await call(fullUpdateOffset),fullUpdateOffset,'complete update accepts offset window');
  const completeUpdate={...edit,patch:{
   participants:input.patch.participants,disposition:'attribute_to',
   attributed_to:{kind:'entry',id:input.patch.participants[0].id}}};

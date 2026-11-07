@@ -92,13 +92,15 @@ begin
   -- Temporal fields must be real instants. A complete window must be
   -- nonempty, even on update; partial update checks use stored context later.
   if v_patch?'starts_at' then
-    if pg_catalog.jsonb_typeof(v_patch->'starts_at') is distinct from 'string' then
+    if pg_catalog.jsonb_typeof(v_patch->'starts_at') is distinct from 'string'
+       or (v_patch->>'starts_at') !~ '^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]([.][0-9]{1,6})?(Z|[+-](0[0-9]|1[0-3]):[0-5][0-9]|[+-]14:00)$' then
       raise exception 'starts_at must be an instant';
     end if;
     perform (v_patch->>'starts_at')::timestamptz;
   end if;
   if v_patch?'ends_at' then
-    if pg_catalog.jsonb_typeof(v_patch->'ends_at') is distinct from 'string' then
+    if pg_catalog.jsonb_typeof(v_patch->'ends_at') is distinct from 'string'
+       or (v_patch->>'ends_at') !~ '^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]([.][0-9]{1,6})?(Z|[+-](0[0-9]|1[0-3]):[0-5][0-9]|[+-]14:00)$' then
       raise exception 'ends_at must be an instant';
     end if;
     perform (v_patch->>'ends_at')::timestamptz;
