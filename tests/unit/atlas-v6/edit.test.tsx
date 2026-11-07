@@ -2,6 +2,7 @@ import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {describe,expect,it,vi} from 'vitest';
 import ConceptPin from '../../../src/features/atlas/v6/ConceptPin';
+import AtlasImpactPreview from '../../../src/features/atlas/v6/ImpactPreview';
 import {checkAtlasLink,describeAtlasMergeImpact,type AtlasEditNode}
  from '../../../src/features/atlas/v6/impact';
 const nodes:AtlasEditNode[]=[
@@ -67,6 +68,35 @@ describe('N86 existing owner-authorized map pin write path',()=>{
    expect(onSave).toHaveBeenCalledWith('concept-1',null,null);
    expect(onClose).not.toHaveBeenCalled();
    expect(host.querySelector('[role="alert"]')?.textContent).toContain('Owner mutation refused');
+  }finally{await act(async()=>root.unmount());host.remove()}
+ });
+});
+
+describe('N86 no fake concept mutations in preview',()=>{
+ it('shows exact existing graph merge impact and a concrete cycle reason',async()=>{
+  const graph={
+   subjects:[],concepts:[
+    {id:'a',name:'A',parentId:null},{id:'b',name:'B',parentId:'a'},
+    {id:'c',name:'C',parentId:'b'},{id:'d',name:'D',parentId:null},
+   ],links:[{fromId:'a',toId:'b',kind:'prereq'},
+    {fromId:'b',toId:'c',kind:'prereq'},
+    {fromId:'b',toId:'d',kind:'related'}],
+  } as never;
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host),onClose=vi.fn();
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  try{
+   await act(async()=>root.render(<AtlasImpactPreview graph={graph}
+    sourceId="a" onClose={onClose}/>));
+   expect(host.textContent).toContain('Preview only');
+   expect(host.textContent).toContain('parent cycle');
+   expect(host.querySelector('[aria-label="Merge impact preview"]')).toBeTruthy();
+   expect(host.textContent).toContain('Incoming prerequisites');
+   expect([...host.querySelectorAll('button')].some(b=>/merge|save/i.test(b.textContent??'')))
+    .toBe(false);
+   await act(async()=>[...host.querySelectorAll('button')].find(b=>
+    b.textContent==='Close preview')!.click());
+   expect(onClose).toHaveBeenCalledTimes(1);
   }finally{await act(async()=>root.unmount());host.remove()}
  });
 });

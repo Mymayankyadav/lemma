@@ -3,6 +3,7 @@ import {Link} from 'react-router';
 import {useAtlas} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import ConceptPin from './ConceptPin';
+import AtlasImpactPreview from './ImpactPreview';
 import {FastTex} from '../../../ui/FastTex';
 import {buildAtlasTree,initialExpanded,matches,visibleRows,type AtlasTree} from '../tree';
 
@@ -21,11 +22,13 @@ export default function AtlasV6(){
  const [search,setSearch]=useState('');
  const [folded,setFolded]=useState<Set<string>|null>(null);
  const [pinId,setPinId]=useState<string|null>(null);
+ const [inspectId,setInspectId]=useState<string|null>(null);
  const open=folded??(tree?initialExpanded(tree):new Set<string>());
  const filter=search.trim()?(node:Parameters<typeof matches>[0])=>matches(node,search):undefined;
  const rows=tree?visibleRows(tree,open,filter):[];
  const ideaCount=tree?realIdeas(tree):0;
  const selectedPin=pinId?tree?.nodes.get(pinId):null;
+ const inspecting=inspectId?tree?.nodes.get(inspectId):null;
  const savePin=async(id:string,x:number|null,y:number|null)=>{
   // Only the existing owner-scoped, audited LemmaApi pinConcept write is used.
   await getApi().pinConcept(id,x,y);
@@ -87,6 +90,8 @@ export default function AtlasV6(){
         aria-label={'Edit map pin for '+node.name}>
         {node.pinX===null?'Pin on map':'Edit map pin'}
        </button>
+       <button type="button" className={control} onClick={()=>setInspectId(node.id)}
+        aria-label={'Preview changes for '+node.name}>Preview edits</button>
        {node.checkpointRefs.map(checkpoint=>
         <Link key={checkpoint.projectSlug+checkpoint.code} className={control}
          to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}>Checkpoint {checkpoint.code}</Link>
@@ -100,5 +105,8 @@ export default function AtlasV6(){
    key={selectedPin.id} id={selectedPin.id} name={selectedPin.name}
    x={selectedPin.pinX} y={selectedPin.pinY}
    onSave={savePin} onClose={()=>setPinId(null)}/>}
+  {inspecting&&!inspecting.synthetic&&query.data&&
+   <AtlasImpactPreview key={inspecting.id} graph={query.data}
+    sourceId={inspecting.id} onClose={()=>setInspectId(null)}/>}
  </main>;
 }
