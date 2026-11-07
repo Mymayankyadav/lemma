@@ -243,7 +243,7 @@ export function createLivePracticeTopicApi():PracticeTopicApi{
    const f=JSON.stringify(['topics',archived,subject]);
    const cursor=readCursor(query.cursor,f,false),size=limit(query.limit);
    const api=await client();
-   const filter=<T extends {is:(c:string,v:null)=>T;not:(c:string,o:string,v:null)=>T;
+   const filter=<T extends {is:(c:string,v:null)=>T;not:(c:string,o:'is',v:null)=>T;
     eq:(c:string,v:string)=>T}>(q:T):T=>{
     if(archived==='active')q=q.is('archived_at',null);
     if(archived==='archived')q=q.not('archived_at','is',null);

@@ -62,7 +62,7 @@ function harness(){
     {id:id(4),version:2}],actionNo:23},error:null};
   })
  };
- return {...state,client};
+ return Object.assign(state,{client});
 }
 let fake:ReturnType<typeof harness>;
 beforeEach(()=>{fake=harness();vi.mocked(liveClient).mockReturnValue(fake.client as never);
@@ -116,7 +116,7 @@ describe('N57.2 practice live RLS RPC adapter',()=>{
   expect((await api.getTopic(id(1)))?.cadence).toEqual({kind:'after_rating',daysByRating:[1,3,7,14]});
   expect(await api.getTopic(id(2))).toBeNull();
   fake.data.practice_events=[event(4),event(5,{voided_at:at})];
-  fake.batches.practice_events=[[event(4),event(5)],[event(5)]];
+  fake.batches.practice_events=[[event(4),event(5,{voided_at:at})],[event(5,{voided_at:at})]];
   const first=await api.listEvents({limit:1,includeVoided:true,topicId:id(1)});
   expect(first.total).toBe(2);
   expect(first.nextCursor).toBeTruthy();
@@ -184,7 +184,8 @@ describe('N57.2 practice live RLS RPC adapter',()=>{
    .rejects.toMatchObject({code:'invalid'});
   fake.responses=[{data:{status:'ok',changed:[],actionNo:4},error:null}];
   await expect(api.archiveTopic(id(1),1)).rejects.toMatchObject({code:'server'});
-  fake.responses=[{data:{status:'ok',changed:[{id:id(7),version:1}],actionNo:4},error:null}];
+  fake.responses=[{data:{status:'ok',changed:[{id:id(7),version:1}],actionNo:4},error:null},
+   {data:{status:'ok',changed:[{id:id(7),version:1}],actionNo:4},error:null}];
   fake.data.practice_topics=[];
   await expect(api.createTopic({title:'Unseen'}))
    .rejects.toMatchObject({code:'server'});
