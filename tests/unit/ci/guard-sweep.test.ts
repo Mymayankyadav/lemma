@@ -11,15 +11,15 @@ describe('sweep: lease-expired without a lease timestamp',()=>{
    {body:'Approve · Agent: lemma-2',created_at:'2026-11-04T12:30:00Z'},
    {body:'status\nAgent: lemma-9',created_at:'2026-11-04T12:40:00Z'}]})
   expect(a).toBe(new Date('2026-11-04T11:00:00Z').getTime())
-  expect(isLeaseExpired({lastActivity:a,now:a+3*H-1})).toBe(false)
-  expect(isLeaseExpired({lastActivity:a,now:a+3*H})).toBe(true)
+  expect(isLeaseExpired({lastActivity:a,now:a+H-1})).toBe(false)
+  expect(isLeaseExpired({lastActivity:a,now:a+H})).toBe(true)
  })
  it('a new PR is not expired and activity renews it',()=>{
   const created=lastAgentActivity({agent:'x',createdAt:'2026-11-04T10:00:00Z'})
   expect(created).toBe(t0)
-  expect(isLeaseExpired({lastActivity:created,now:t0+2*H})).toBe(false)
+  expect(isLeaseExpired({lastActivity:created,now:t0+H-1})).toBe(false)
   const renewed=lastAgentActivity({agent:'x',createdAt:'2026-11-04T10:00:00Z',commitDates:['2026-11-04T12:50:00Z']})
-  expect(isLeaseExpired({lastActivity:renewed,now:t0+4*H})).toBe(false)
+  expect(isLeaseExpired({lastActivity:renewed,now:t0+3.5*H})).toBe(false)
  })
  it('an unsigned comment or a comment from another Agent is not activity from the PR Agent',()=>{
   const a=lastAgentActivity({agent:'lemma-1',createdAt:'2026-11-04T10:00:00Z',comments:[{body:'looks fine',created_at:'2026-11-04T12:00:00Z'},{body:'Taking over: Agent lemma-5',created_at:'2026-11-04T12:10:00Z'}]})
