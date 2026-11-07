@@ -205,6 +205,53 @@
           "checkpoint_id"
         ]
       }
+    },
+    {
+      "resource": "day_plans",
+      "command_fn": "day_plans_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "preview",
+          "commit",
+          "close",
+          "reopen"
+        ],
+        "fields": [
+          "plan_date",
+          "time_zone",
+          "intention",
+          "capacity_minutes",
+          "availability",
+          "tomorrow_first_task_id",
+          "ritual",
+          "items"
+        ]
+      }
+    },
+    {
+      "resource": "study_events",
+      "command_fn": "study_events_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "record",
+          "edit",
+          "void",
+          "restore"
+        ],
+        "fields": [
+          "entry_id",
+          "kind",
+          "occurred_at",
+          "duration_minutes",
+          "note",
+          "related_kind",
+          "related_id"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

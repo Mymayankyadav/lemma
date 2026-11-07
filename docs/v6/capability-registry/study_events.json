@@ -85,6 +85,20 @@
       "mcpPath": "N50.2 registered study_events command via N37 (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "related_kind": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2.2 registered study_events_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95 planned); missing historical targets unavailable",
+      "deletionPolicy": "historical relation retained when target is deleted; owner purge N103 planned"
+    },
+    "related_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2.2 registered study_events_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95 planned); missing historical targets unavailable",
+      "deletionPolicy": "historical relation retained when target is deleted; owner purge N103 planned"
     }
   }
 }
