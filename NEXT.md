@@ -118,20 +118,19 @@ Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/c
 Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
 Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
 
-## N60 Dated day plans and closures: app module (src/data/day-plans)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/day-plans/` for the records and operations of N46, including every lifecycle operation it names.
-Tests: `tests/unit/day-plans/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/day-plans/** (new), tests/unit/day-plans/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
+## N60.2 Day plans: persistent demo, transactional live commands and closure
+Stage: Build · Status: open · Needs: N46.2 · Assigned: —
+Done = complete N60 with N60.1's typed DayPlanApi, owner civil-date/time-zone rules, bounded capacity, availability source-version comparisons, closure consistency and explicit placed/unplaced/carried_over items. Add a tab-local persistent src/data/day-plans/demo.ts fixture and live.ts plus index.ts/getDayPlanApi()/setDayPlanApiForTests(). Demo must implement create/update/preview/commit/close/reopen with optimistic version checks and same-date uniqueness, reload-safe records and isolated keyset pages 1–50 with exact totals, preserved unplaced tasks/reasons, per-date ritual/closure and no false completion of future dates. Live reads owner-scoped day_plans/day_plan_items and calls public.day_plans_command through one server transaction per mutation; each operation uses a fresh operationId that is reused on uncertain retry, identical conflict mapping, and NO client owner field. Commit must atomically recheck all snapshot source versions on the server, never rely only on N60.1's client advisory comparePlanSources. Close sets closedAt only for the chosen date; reopen clears it and never affects another plan. Ensure MCP/app receipts and item dispositions stay in parity with N46.2's registered command once that migration is deployed.
+Tests: tests/unit/day-plans/** for demo reload, owner-day uniqueness, multiple dates and closure independence, all operations, version drift, source staleness, unplaced/carry-over visibility, bounded cursor pages/total, live envelopes/retry operationId, conflict mapping, no caller owner field. Retain N60.1 pure-model tests.
+Scope: src/data/day-plans/**, tests/unit/day-plans/**, CURRENT.md.
+Not: other data modules, UI, supabase/**, new dependencies.
 
-## N61 Overlap acknowledgements: app module (src/data/overlap-acknowledgements)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/overlap-acknowledgements/` for the records and operations of N47, including every lifecycle operation it names.
-Tests: `tests/unit/overlap-acknowledgements/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/overlap-acknowledgements/** (new), tests/unit/overlap-acknowledgements/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N61.2 Overlap acknowledgements demo, live adapter and owner command parity
+Stage: Build · Status: open · Needs: N61.1 · Assigned: —
+Done = finish the N61 app module using N61.1's typed overlap contract and SQL-matching pure validation. Implement an isolated getOverlapApi()/setOverlapApiForTests() facade and a tab-local reload-persistent demo adapter with representative valid block/study-entry participants, immutable owner-scoped records, exact 1–50 pages and filter-bound opaque cursors. Compute stale per acknowledgement from current participant versions without hiding unrelated acknowledgements. Implement a live adapter with authenticated owner-RLS bounded reads and version-sensitive computed stale state, and all N47.2 overlap_acknowledgements_command create/update/delete envelopes (one fresh operationId per user action, identical envelope on uncertain retry, conflict mapping, no owner identity accepted or sent), no direct DML. Enforce the exact SQL 2–10 participant and attribution invariants. Preserve complete version/source/receipt semantics; do not fabricate successful writes before the N47.2 command exists.
+Tests: tests/unit/overlap-acknowledgements/** (demo lifecycle and reload, staleness, filters and pages, live envelope per operation, retry reuses operationId, conflict mapping, second-owner read boundaries and no owner field sent). Preserve N61.1 pure validation tests.
+Scope: src/data/overlap-acknowledgements/**, tests/unit/overlap-acknowledgements/**, CURRENT.md.
+Not: other src/data/** folders, UI, supabase/**, existing test assertion changes.
 Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
 ## N62 Durable review runs: app module (src/data/review-runs)
@@ -216,21 +215,21 @@ Scope: src/features/planner/model.ts (new), tests/unit/planner/model.test.ts, CU
 Not: UI, `src/data/**`, supabase/**.
 
 ## N68 v6 planner sheet: preview and commit placements behind the shell flag
-Stage: Build · Status: open · Needs: N67, N65, N60 · Assigned: —
+Stage: Build · Status: open · Needs: N67, N65, N60.2 · Assigned: —
 Done = with `v6Shell` on, a Plan action on Today and Calendar opens a titled native dialog that previews placements for the selected tasks over the chosen days (from N67), lets the owner deselect or move items, and commits only the selected placements as study blocks with `taskId` and the day plan's `commit` (refused with an explanation when a task or block changed since the preview); unplaced work stays listed with its reason; one toast with Undo. Flag off: nothing changes.
 Tests: `tests/unit/planner/sheet.test.tsx` (preview, deselect, stale-preview refusal, unplaced reasons, Undo)
 Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and src/features/calendar/Page.tsx (opening the sheet only), tests/unit/planner/sheet.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N69 v6 day ritual and closure behind the shell flag
-Stage: Build · Status: open · Needs: N60, N58.2.3 · Assigned: —
+Stage: Build · Status: open · Needs: N60.2, N58.2.3 · Assigned: —
 Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
 Tests: `tests/unit/ritual/**`
 Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N70 v6 Today: intention, next block, add task and onboarding behind the shell flag
-Stage: Build · Status: open · Needs: N60 · Assigned: —
+Stage: Build · Status: open · Needs: N60.2 · Assigned: —
 Done = with `v6Shell` on, Today shows the dated intention (set/edit through the day plan), the next planned block with Start (starting a study entry linked to it), an Add task action opening the N25 task sheet, the selected review batch count from the existing review summary, and honest onboarding for an empty account (no invented numbers). Flag off: nothing changes.
 Tests: `tests/unit/home-v6/today-plan.test.tsx`
 Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test.tsx, CURRENT.md.
@@ -265,7 +264,7 @@ Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (ne
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
-Stage: Build · Status: open · Needs: N61, N74 · Assigned: —
+Stage: Build · Status: open · Needs: N61.2, N74 · Assigned: —
 Done = with `v6Shell` on, overlapping blocks or saved entries show a conflict marker with the overlap window; Acknowledge records the disposition for exactly those participants (stale acknowledgements show the conflict again); no overbooking is hidden. Flag off: nothing changes.
 Tests: `tests/unit/calendar/overlaps.test.tsx`
 Scope: src/features/calendar/overlaps/** (new), src/features/calendar/views/** (markers only), tests/unit/calendar/overlaps.test.tsx, CURRENT.md.
