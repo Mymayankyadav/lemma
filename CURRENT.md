@@ -466,6 +466,7 @@ An additive migration creates `public.practice_topics` and `public.practice_even
 The real full-migration PGlite test covers owner-only SELECT visibility and denial of unaudited authenticated writes, forged owners and cross-owner FK rejection, both cadence representations and invalid boundaries, required and optional event constraints, absence of premature journal/undo registry entries and exact capability columns. No event recording, due-date advancement, void inverse, command RPC, old migration, card/review or FSRS write is implemented in N43.1; N43.2 remains for all lifecycle commands and transactional invariants. Production SQL requires independent review and CI; remote deployment is not asserted.
 
 N43.1 staged schema migration is renamed to `20261107123000_v6_practice_topics_schema.sql` before any deployment to prevent the 20261107003500 migration-order collision with already-applied 20261107040000 and already deployed N41.2.1 20261107060000 and concurrent unmerged N42 20261107070000 / N45 20261107110000. The PR must remain unready until all earlier migrations are deployed and checked; no production write or applied history version is changed.
+ 
 
 ## N64.1 typed study events contract and pure validation (N64 split)
 
@@ -521,3 +522,27 @@ The full-migration SQL acceptance also probes invalid real calendar dates (2026-
 ## N41.2.2.2.2.2 preset lifecycle writes, undo and MCP (finishes N41)
 
 One additive migration `20261110020000_presets_lifecycle_command.sql` compatibly replaces `public.presets_command(jsonb)` (same signature and grants; create/update/reorder unchanged) to add archive, restore and delete. Lifecycle operations keep the receipt-first owner+operationId lock and run `lemma_preset_lifecycle_lock()` in the same transaction, so version and study-entry reference decisions are made after the row lock; a delete of a referenced preset archives instead. Every write journals one action and an exactly-once receipt (replay survives physical deletion). `presets` is registered in `lemma_undo_tables` (its journal trigger takes the standard name `lemma_log_change`) and in `lemma_command_resources`, so `undo_action` and the service-role `mcp_command` dispatcher work for presets with MCP attribution. Tests: `tests/mcp/sql/presets-command.mjs`.
+
+## N47.2.2 overlap acknowledgement command envelope validator (N47.2 split)
+
+The additive `overlap_ack_validate_envelope` function validates authenticated command envelopes, operation IDs, versioned update/delete targets, allowed create/update/delete fields, participant structure and exact disposition attribution without changing any table data. A full-migration PGlite test covers valid/invalid envelopes, versions, owner-field rejection, participants, read-only state and anon denial. N47.1's owner SELECT-only RLS, staleness trigger and original tests remain intact. N47.2.3 adds transactional commands, undo/registry registration and service-role MCP parity before write permissions are enabled.
+
+## N47.2.2 create target UUID validation follow-up (2026-11-07)
+
+The unmerged N47.2.2 read-only envelope validator now checks the UUID shape of a caller-supplied create `target.id`, not only update/delete targets; create may still omit the target for server-generated IDs. The full-migration SQL acceptance includes valid supplied IDs and rejects malformed string, numeric and JSON-null IDs. Existing RLS, registry and undo restrictions are unchanged. This remains the first validation slice; N47.2.3 owns the actual transactional lifecycle and production SQL review.
+
+## N47.2.2 instant-window envelope validation and queue reconciliation (2026-11-07)
+
+The unmerged owner-authenticated overlap-acknowledgement validator checks supplied start/end values are real timestamp-with-timezone instants and rejects empty or reversed complete windows, on both create and update. Partial update windows remain valid to be checked against stored row context by N47.2.3's transaction. Added full-migration PGlite regressions for malformed/null/numeric instants, equal/reversed windows and an accepted partial update, without weakening N47.1 or the owner-SELECT-only and no-registry safeguards. Rebuilt the N47.2 split's NEXT.md against current main so unrelated completed item splits are preserved. The command lifecycle, MCP parity and undo remain pending N47.2.3 and independent production review.
+
+## N47.2.2 finite, explicitly zoned ISO instants (2026-11-07)
+
+The read-only command envelope validator now rejects timezone-naive timestamps, Postgres infinity literals and malformed timezone offsets before PostgreSQL timestamp parsing. It accepts explicit ISO-8601 `Z` or valid numeric-offset windows, checks fully supplied start/end ordering and leaves partial updates for the future transaction to resolve against stored records. Full-migration regression cases cover create/update invalid instants on both fields, valid offset windows and preserved partial updates; staged RLS and registry/undo restrictions are unchanged.
+
+## N47.2.2 explicit-null attribution during keep-both transitions (2026-11-07)
+
+The new read-only overlap acknowledgement envelope validator accepts a JSON-null `attributed_to` alongside `keep_both` on create and on complete updates, matching the nullable typed N61.1 API and the SQL NULL interpretation in N47.1's choice guard. It still refuses JSON-null attribution with `attribute_to`, and still checks real participant membership for non-null attribution. Full-migration PGlite regressions cover all three cases. No write permission, command registration, journal or older migration changed; N47.2.3 must implement transactional owner-bound lifecycle and undo.
+
+## N47.2.2 typed attribution shapes on partial updates (2026-11-07)
+
+The read-only overlap acknowledgement envelope validator now checks every provided non-null `attributed_to` choice even in partial updates: it must be an object with only `kind` (block/entry) and a valid UUID `id`. Scalar, array, missing, invalid-kind, malformed-UUID and extra-key choices are rejected before any future transactional write. Explicit null and typed partial choices remain valid, while final participant membership is deferred to N47.2.3's stored-row transaction. Full-migration PGlite positive/negative regressions were added; RLS, journal, registered commands and existing migrations remain unchanged.

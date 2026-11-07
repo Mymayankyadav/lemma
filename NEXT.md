@@ -41,13 +41,12 @@ Tests: extend tests/mcp/sql/day_plans.mjs with full-migration lifecycle, owner i
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/day_plans.json, docs/v6/capability-registry/day_plan_items.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: changes to existing migrations, unrelated app/MCP functions, UI or other owner data.
 
-## N47.2 Overlap acknowledgement command lifecycle and MCP/undo parity
-Stage: Build · Status: open · Needs: N47.2.1 · Assigned: —
-Done = complete N47 on N47.1's owner-scoped overlap_acknowledgements schema and version-aware staleness function. Add an owner-bound, receipt-idempotent overlap_acknowledgements_command with create, update and delete; reject changed operationId payloads, stale expected versions, a cross-owner participant, and a changed participant version. Register the table in lemma_undo_tables and the command in lemma_command_resources for service-role mcp_command parity. Reads flag an acknowledgement stale when any participant version has changed, without hiding other conflicts; attribute_to requires a participant in the exact acknowledged set. Keep authenticated table writes command-only.
-Owner-authorized (D1, D8): production SQL requires independent review.
-Tests: tests/mcp/sql/overlap_acknowledgements-command.mjs (lifecycle, receipts, concurrency, owner checks, stale reads, undo and MCP parity) and unchanged N47.1 SQL suite.
+## N47.2.3 Overlap acknowledgement command lifecycle and MCP/undo parity
+Stage: Build · Status: open · Needs: N47.2.2 · Assigned: —
+Done = complete N47.2 using N47.2.2's owner-authenticated, side-effect-free overlap_ack_validate_envelope and N47.1's version-aware owner participant checks. Implement a single owner-bound, receipt-idempotent overlap_acknowledgements_command with create, update and delete; reject changed operationId payloads, stale expected versions, cross-owner participants and changed participant version; register overlap_acknowledgements in lemma_undo_tables and command in lemma_command_resources for service-role mcp_command parity. Reads show stale when any participant version changed; attribute_to must be one of the exact set. Keep authenticated writes command-only and all writes undoable. Production SQL requires independent review.
+Tests: extend tests/mcp/sql/overlap_acknowledgements-command.mjs for full command lifecycle, journal, receipts, retries, conflicts, second owner, undo and service-role MCP parity; existing N47.1 test assertions unchanged.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknowledgements-command.mjs, docs/v6/capability-registry/overlap_acknowledgements.json, CURRENT.md.
-Not: changes to earlier migrations, app or MCP function code, other tables/functions, existing test assertions.
+Not: earlier migrations, app or MCP code, other tables/functions, test loosening.
 
 ## N48.2 Versioned review run lifecycle and registry-backed undo (D8 b)
 Stage: Build · Status: open · Needs: N48.1 · Assigned: —
