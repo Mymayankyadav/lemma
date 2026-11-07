@@ -957,14 +957,14 @@ export class DemoAdapter implements LemmaApi {
       ]);
       const value = { ...this.store.settings, ...clone(patch) };
       // Emulate the N39 recursive JSON patch trigger without losing unknown keys.
-      for(const key of ["focusDefaults","planning","reviewBudget","attention"] as const){
-        const next=patch[key],before=this.store.settings[key];
-        if(next!==undefined){
-          if(!next||typeof next!=="object"||Array.isArray(next))
-            invalid("Invalid v6 settings object");
-          value[key]={...(before??{}),...clone(next)} as typeof value[typeof key];
-        }
-      }
+      if(patch.focusDefaults!==undefined)
+        value.focusDefaults={...this.store.settings.focusDefaults,...clone(patch.focusDefaults)};
+      if(patch.planning!==undefined)
+        value.planning={...this.store.settings.planning,...clone(patch.planning)};
+      if(patch.reviewBudget!==undefined)
+        value.reviewBudget={...this.store.settings.reviewBudget,...clone(patch.reviewBudget)};
+      if(patch.attention!==undefined)
+        value.attention={...this.store.settings.attention,...clone(patch.attention)};
       if(value.weekStart!==undefined&&
          (!Number.isInteger(value.weekStart)||value.weekStart<0||value.weekStart>6))
         invalid("Week start must be Sunday through Saturday");
