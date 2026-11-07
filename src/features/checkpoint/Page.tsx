@@ -1,4 +1,6 @@
 import {Tex} from '../../ui/Tex';
+import {isFlagOn} from '../../flags';
+import V6Checkpoint from './v6/V6Checkpoint';
 import {useNavigate,useParams} from 'react-router';
 import {BookOpen,Check,ChevronRight,Circle,Clock3,HelpCircle,Layers,MessageCircle,RotateCcw,Target} from 'lucide-react';
 import {useCheckpoint,useInsightData,useProject,useSettings} from '../../data/hooks';
@@ -18,7 +20,8 @@ import {useToast} from '../../ui/Toast';
 const statusTitles:Record<CheckpointView['ui'],string>={
  done:'Demonstrated',revisit:'Re-check due',now:'In progress',next:'Up next',locked:'Locked',proposed:'Proposed',
 };
-export default function Page(){
+export default function Page(){return isFlagOn('v6Shell')?<V6Checkpoint/>:<LegacyPage/>;}
+function LegacyPage(){
  const {slug:slugParam,code:codeParam}=useParams(),slug=slugParam??'',code=codeParam??'';
  const navigate=useNavigate(),query=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),insight=useInsightData(30),notify=useToast();
  const close=()=>navigate('/p/'+slug);
