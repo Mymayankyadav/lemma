@@ -27,6 +27,8 @@ try{
  await q("update public.source_pages set body='beta' where source_id=$1 and page=1",[source]);
  await q("update public.source_pages set body='beta' where source_id=$1 and page=1",[source]);
  assert.equal((await q("select count(*)::int n from public.record_aliases where user_id=$1 and old_value='proofs'",[owner]))[0].n,1);
+ assert.equal((await q("select count(*)::int n from public.source_page_revisions where source_id=$1",[source]))[0].n,1,
+   'an unchanged second update must not duplicate an old-content snapshot');
  assert.equal((await q("select count(*)::int n from public.source_revisions where source_id=$1",[source]))[0].n,1);
  assert.equal((await q("select count(*)::int n from public.source_page_revisions where source_id=$1",[source]))[0].n,1);
  await db.exec('set role authenticated');

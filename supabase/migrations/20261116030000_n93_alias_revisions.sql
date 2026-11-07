@@ -30,29 +30,29 @@ create function public.capture_record_alias() returns trigger
  language plpgsql security definer set search_path='' as $alias$
  declare k text:=tg_argv[0]; f text:=tg_argv[1];
   owner uuid;target uuid;new_scope uuid;old_scope uuid;
-  new_value text;old_value text;collision uuid;
+  v_new_value text;v_old_value text;collision uuid;
  begin
   owner:=(to_jsonb(new)->>'user_id')::uuid;
   target:=(to_jsonb(new)->>'id')::uuid;
-  new_value:=to_jsonb(new)->>f;
+  v_new_value:=to_jsonb(new)->>f;
   new_scope:=case k when 'concept' then (to_jsonb(new)->>'subject_id')::uuid
                     when 'checkpoint' then (to_jsonb(new)->>'project_id')::uuid
                     else null end;
   if tg_op='UPDATE' then
-   old_value:=to_jsonb(old)->>f;
+   v_old_value:=to_jsonb(old)->>f;
    old_scope:=case k when 'concept' then (to_jsonb(old)->>'subject_id')::uuid
                      when 'checkpoint' then (to_jsonb(old)->>'project_id')::uuid
                      else null end;
-   if old_value is distinct from new_value or old_scope is distinct from new_scope then
+   if v_old_value is distinct from v_new_value or old_scope is distinct from new_scope then
     -- Generic undo should not invent new immutable aliases.
     if not (pg_catalog.current_setting('lemma.tool',true)='undo'
             and current_user not in ('authenticated','anon')) then
      insert into public.record_aliases(user_id,kind,scope_id,old_value,target_id)
-       values(owner,k,old_scope,old_value,target)
+       values(owner,k,old_scope,v_old_value,target)
        on conflict do nothing;
-     select target_id into collision from public.record_aliases
+     select target_id into collision from public.record_aliases a
       where user_id=owner and kind=k and scope_id is not distinct from old_scope
-        and old_value=old_value limit 1;
+        and a.old_value=v_old_value limit 1;
      if collision is distinct from target then
       raise exception 'Historic alias belongs to another record';
      end if;
@@ -60,9 +60,9 @@ create function public.capture_record_alias() returns trigger
    end if;
   end if;
   -- Never allow a current identifier to shadow another record's older URL.
-  select target_id into collision from public.record_aliases
+  select target_id into collision from public.record_aliases a
    where user_id=owner and kind=k and scope_id is not distinct from new_scope
-    and old_value=new_value limit 1;
+    and a.old_value=v_new_value limit 1;
   if collision is not null and collision<>target then
    raise exception 'Identifier is reserved by an older alias';
   end if;
