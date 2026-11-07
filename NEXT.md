@@ -65,13 +65,6 @@ Tests: extend tests/mcp/sql/study_events-command.mjs with actual lifecycle, rela
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events-command.mjs, docs/v6/capability-registry/study_events.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: earlier migrations, existing test loosening, app/MCP code, unrelated tables/functions or protected paths.
 
-## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
-Stage: Build · Status: open · Needs: N56.1, N42.2.2 · Assigned: —
-Done = complete N56 after N56.1's typed contract, isolated demo adapter and getDeadlineApi/setDeadlineApiForTests facade. Implement the owner-RLS live deadline adapter for every N42 operation: create, update, complete, reopen, cancel, restore and delete through public.deadlines_command with stable operationId across retries, optimistic expectedVersion, actionNo receipts and typed conflict mapping. Preserve civil due dates versus instants, read-only projected project/checkpoint targets, exact status-filtered bounded 1–50 keyset pages, and never send owner IDs in browser commands. Replace the live placeholder in the existing module facade.
-Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, including retries, each operation, conflicts, owner RLS, projected read-only targets and 50+ row cursor walk; N56.1 demo tests remain green.
-Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
-Not: other data folders, UI, supabase/**, new dependencies.
-
 ## N58.2.3 Parked thought atomic conversion and owner-RLS live adapter
 Stage: Build · Status: open · Needs: N44.2, N44.2.2 · Assigned: —
 Done = complete N58.2 using the N58.1 typed ThoughtApi, validation and transitions plus N58.2.2's reload-safe demo CRUD/paging. Implement atomic convertToTask in demo without a fake destination or orphan task, and src/data/parked-thoughts/live.ts plus index.ts/getThoughtApi()/setThoughtApiForTests(). The live adapter must issue every create/edit/dismiss/reopen/delete/convert operation through owner-RLS parked_thoughts_command envelopes after N44.2, with a fresh operationId per new action reused on uncertain retry, optimistic version conflict mapping, no caller owner fields and bounded owner reads. One convert action returns both a real TaskRecord and a resolved thought from a single transaction receipt; failed/retried conversion must not leave a partially converted thought or duplicate task. Preserve storage isolation and existing cards/reviews. N44.2 remains a prerequisite while split PR #1039 is unmerged; afterward N44.2.2 must be done before implementing live writes.
