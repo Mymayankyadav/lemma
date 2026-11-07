@@ -310,8 +310,12 @@ function schedule(task:Candidate,states:DayState[],settings:PlanningSettings):Pl
     end:new Date(end).toISOString(),minutes:chunk,part:staged.length+1});
    remaining-=chunk;
    const rest=allocate([a,b],chunk,settings.gap_minutes);
-   if(rest)slots[j]=rest;
-   else slots.splice(j--,1);
+   if(rest){
+    slots[j]=rest;
+    // A long splittable task may need several bounded work segments in the
+    // SAME free interval, with a real gap between them. Revisit its tail.
+    if(task.allowSplit)j--;
+   }else slots.splice(j--,1);
    // A non-splittable task can occupy only one continuous slot.
    if(!task.allowSplit)break;
   }
