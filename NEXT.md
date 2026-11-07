@@ -215,13 +215,6 @@ Tests: `tests/unit/checkpoint-v6/**`
 Scope: src/features/checkpoint/v6/** (new), src/features/checkpoint/Page.tsx (the flag branch only), tests/unit/checkpoint-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N81 v6 session page behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/s/:slug/:n` shows the tutor session goal, events in order with outcomes, resume question and note, linked checkpoint and study time, and the existing resume/end actions. Flag off: nothing changes.
-Tests: `tests/unit/session-v6/**`
-Scope: src/features/session/v6/** (new), src/features/session/Page.tsx (the flag branch only), tests/unit/session-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N82 v6 sources panel and page text behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the project's sources show kind/order, coverage and verification, pages with text, confidence and `[illegible]` markers, and the existing upload, transcription and export actions; long mathematics wraps. Flag off: nothing changes.
