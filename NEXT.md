@@ -19,14 +19,6 @@ Tests: strengthen tests/mcp/sql/presets-command.mjs for archive/restore/delete, 
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets-command.mjs, docs/v6/capability-registry/presets.json, CURRENT.md.
 Not: earlier migrations, other modules, app/MCP functions, unrelated existing test assertions or protected files.
 
-## N42.2.2 Deadline command lifecycle, undo and MCP parity
-Stage: Build · Status: open · Needs: N42.2.1 · Assigned: —
-Done = finish N42.2 after N42.2.1's owner-scoped, bounded, read-only public.deadline_feed union of physical deadlines and live project/checkpoint projections. Add an authenticated, security-invoker public.deadlines_command(p jsonb) that implements versioned and receipt-idempotent create, update, complete, reopen, cancel, restore and delete. Reject owner spoofing, changed-payload operationId retries, stale expectedVersion, foreign-owner links and invalid transitions; ensure unchanged retries never duplicate actions. Enable owner-bound write policies only together with journalled command writes, lemma_undo_tables and lemma_command_resources registration, so service-role mcp_command dispatch has the same effective owner, source, receipt and undo semantics. Retain the existing N42.1 schema constraints and N42.2.1 projections with no copied target rows.
-Owner-authorized (D1, D8): deploys on merge, production SQL needs independent review.
-Tests: extend tests/mcp/sql/deadlines.mjs to exercise all operations, idempotency, conflicts, owner isolation, undo, full-migration registry and MCP parity while preserving N42.1 and N42.2.1 assertions.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/deadlines.json, CURRENT.md.
-Not: old migrations, other tables, study_command, task_command, undo_action, mcp_command, app code or existing test expectations.
-
 ## N44.2 Parked thought commands and atomic conversion to task
 Stage: Build · Status: open · Needs: N44.1 · Assigned: —
 Done = finish N44 on the read-only owner-scoped parked_thoughts table from N44.1. Add a reviewed additive migration with the authenticated security-invoker parked_thoughts_command for create, edit, dismiss, reopen, delete and convert_to_task. Atomically create one task with task_command-equivalent validation and mark the thought converted with its real task ID; retry of the same operationId must replay the receipt without creating another task. Reject owner spoofing, linked foreign-owner entry/task, changed-payload retry, stale expectedVersion and an invalid state transition. Enable audited writes only together with lemma_log_change, lemma_undo_tables registration and a lemma_command_resources entry, so app and service-role MCP dispatch share the command and all writes are undoable. Preserve existing task_command, study_command, undo_action and MCP code unchanged. Production SQL review required (D1/D8).
