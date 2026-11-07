@@ -195,8 +195,13 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
    const row=plan(id);expectedVersion(row,expected);
    if(!['draft','previewed'].includes(row.status))
     return fail('conflict','Only draft or previewed plans can be updated');
-   const next=bump(normalizePatch(row,patch),{});
-   store(next);return receipt(next);
+   const normalized=normalizePatch(row,patch);
+   // N46.2 update invalidates an existing preview and deletes old item rows.
+   // Its unchanged availability is replaced by an empty snapshot.
+   const next=bump(normalized,{status:'draft',
+    availability:patch.availability??{sources:[]}});
+   store(next,current().items.filter(x=>x.planId!==id));
+   return receipt(next);
   },
   async previewPlan(id,expected,items:NewDayPlanItem[],availability){
    const row=plan(id);expectedVersion(row,expected);
@@ -204,6 +209,12 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
     return fail('conflict','Only draft/previewed plans can preview');
    const validated=normalizePlanItems(items),snapshot=normalizeAvailability(availability);
    if(validated.length>500)return fail('invalid','Plan preview exceeds 500 items');
+   const known=new Set(snapshot.sources.map(s=>s.resource+':'+s.id));
+   for(const candidate of validated){
+    if(!known.has('tasks:'+candidate.taskId)||
+      (candidate.blockId&&!known.has('calendar_blocks:'+candidate.blockId)))
+     fail('invalid','Day-plan item missing from source snapshot');
+   }
    await checkSources(snapshot);
    const next=bump(row,{status:'previewed',availability:snapshot});
    const state=current();

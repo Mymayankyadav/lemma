@@ -33,15 +33,22 @@ describe('N60.2 persistent demo day plans',()=>{
    {taskId:'task-2',disposition:'unplaced' as const,reason:'No available capacity',position:1},
    {taskId:'task-3',disposition:'carried_over' as const,reason:'Tomorrow',position:2},
   ];
-  const preview=(await api.previewPlan(row.id,1,items,sources())).record;
+  const snapshot:PlanAvailability={sources:[
+   {resource:'tasks',id:'task-1',version:1},
+   {resource:'tasks',id:'task-2',version:1},
+   {resource:'tasks',id:'task-3',version:1},
+   {resource:'calendar_blocks',id:'block-1',version:1},
+  ]};
+  setSources(snapshot);
+  const preview=(await api.previewPlan(row.id,1,items,snapshot)).record;
   expect(preview.status).toBe('previewed');
   expect((await api.listItems(row.id)).items.map(x=>x.disposition))
    .toEqual(['placed','unplaced','carried_over']);
   expect((await api.listItems(row.id)).items[1]).toMatchObject({blockId:null,reason:'No available capacity'});
-  setSources({sources:[{resource:'tasks',id:'task-1',version:2}]});
+  setSources({sources:snapshot.sources.map(s=>s.id==='task-1'?{...s,version:2}:s)});
   await expect(api.commitPlan(row.id,2)).rejects.toMatchObject({code:'conflict'});
   expect((await api.getPlan(row.id))?.status).toBe('previewed');
-  setSources(sources());
+  setSources(snapshot);
   const committed=(await api.commitPlan(row.id,2)).record;
   expect(committed.status).toBe('committed');
   await expect(api.previewPlan(row.id,3,items,sources())).rejects.toMatchObject({code:'conflict'});
