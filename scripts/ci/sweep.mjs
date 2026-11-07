@@ -44,7 +44,7 @@ export function lastAgentActivity({ agent, commitDates = [], comments = [], crea
 export const LEASE_HOURS = 1;
 export const isLeaseExpired = ({ lastActivity, now, waiting = false }) => !waiting && now - lastActivity >= LEASE_HOURS * HOUR;
 /** Pure (v2.4): Ready after the last push and no failed required check = waiting on CI or a review, so not up for takeover. */
-export const waitingOnCi = ({ ready, checks }) => Boolean(ready) && !Object.values(checks || {}).some((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(c));
+export const waitingOnCi = ({ ready, checks, labels = [] }) => Boolean(ready) && ![...labels].some((l) => (l?.name ?? l) === 'changes-requested') && !Object.values(checks || {}).some((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(c));
 
 // ---- run plans ----
 const PLAN = /^Plan\s*·\s*Agent:\s*([^\s·:][^·:\n]*?)\s*:\s*([\s\S]*)$/;
@@ -275,7 +275,7 @@ async function main() {
     if (line1 && !isCi) {
       const lastActivity = lastAgentActivity({ agent: line1.agent, createdAt: pr.created_at, commitDates: commits.filter((c) => !bookkeeping.has(c.sha)).map((c) => c.commit.committer.date), comments });
       const ready = validReady({ comments, headAt, authorKey: agentKey(line1.agent), now });
-      const expired = isLeaseExpired({ lastActivity, now, waiting: waitingOnCi({ ready, checks }) });
+      const expired = isLeaseExpired({ lastActivity, now, waiting: waitingOnCi({ ready, checks, labels: pr.labels }) });
       if (expired && !labels.has('lease-expired')) { await addLabels(i.number, ['lease-expired']); console.log(`lease-expired #${i.number}`); }
       if (!expired && labels.has('lease-expired')) await dropLabel(i.number, 'lease-expired');
     }

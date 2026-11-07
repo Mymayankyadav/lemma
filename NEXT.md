@@ -12,13 +12,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
 
-## N44.2 Parked thought commands and atomic conversion to task
-Stage: Build · Status: open · Needs: N44.1 · Assigned: —
-Done = finish N44 on the read-only owner-scoped parked_thoughts table from N44.1. Add a reviewed additive migration with the authenticated security-invoker parked_thoughts_command for create, edit, dismiss, reopen, delete and convert_to_task. Atomically create one task with task_command-equivalent validation and mark the thought converted with its real task ID; retry of the same operationId must replay the receipt without creating another task. Reject owner spoofing, linked foreign-owner entry/task, changed-payload retry, stale expectedVersion and an invalid state transition. Enable audited writes only together with lemma_log_change, lemma_undo_tables registration and a lemma_command_resources entry, so app and service-role MCP dispatch share the command and all writes are undoable. Preserve existing task_command, study_command, undo_action and MCP code unchanged. Production SQL review required (D1/D8).
-Tests: extend tests/mcp/sql/parked_thoughts.mjs with full-migration PGlite command lifecycle, idempotent atomic task conversion, optimistic conflicts, owner isolation, action receipts, undo and MCP parity. Keep the N44.1 schema, owner-FK and status assertions; replace the deliberately read-only stage guard with stronger tests proving every newly permitted client mutation is command-receipted, journalled and undoable.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: changing existing migrations, app/MCP code, unrelated resources/functions or protected files.
-
 ## N45 Study goals: migration (study_goals)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.study_goals` with `period` (`week`/`month`/`custom`), `start_date`, `end_date`, `time_zone`, optional subject/project scope, `target_minutes`, `archived_at`. Operations create, update, archive, restore, delete. Scope is by ID, never by display name; overlapping goals for the same scope and period are rejected.
@@ -207,13 +200,6 @@ Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `fo
 Tests: `tests/unit/settings-v6/planning.test.tsx`
 Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, CURRENT.md.
 Not: other screens, other settings sections, supabase/**.
-
-## N80 v6 checkpoint page behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/p/:slug/cp/:code` shows the criterion and steps, prerequisite states, evidence and rechecks with their tutor sessions, source/page citations and the existing demonstrate/reopen/defer/recheck actions, from the existing hooks. Flag off: nothing changes.
-Tests: `tests/unit/checkpoint-v6/**`
-Scope: src/features/checkpoint/v6/** (new), src/features/checkpoint/Page.tsx (the flag branch only), tests/unit/checkpoint-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N81 v6 session page behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
