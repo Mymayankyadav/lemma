@@ -33,17 +33,24 @@ try{
  for(const [owner,secret] of [[a,'a'.repeat(48)],[b,'b'.repeat(48)]])
   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[owner,secret]);
  let serial=0;
+ let lastCommandEnvelope='';
  const cmd=async(op,id=null,version=null)=>{
   const p={schemaVersion:1,resource:'study_entries',operation:op,
    operationId:'aaaaaaaa-aaaa-4aaa-8aaa-'+String(++serial).padStart(12,'0'),
    ...(id?{target:{id}}:{}),...(version?{expectedVersion:version}:{}),
    patch:op==='create'?{source:'manual',intent:'Feed proof'}:
      op==='update'?{intent:'Revised proof'}:{}};
-  return (await q('select public.study_command($1::jsonb) receipt',[JSON.stringify(p)]))[0].receipt;
+  lastCommandEnvelope=JSON.stringify(p);
+  return (await q('select public.study_command($1::jsonb) receipt',[lastCommandEnvelope]))[0].receipt;
  };
  await as(a);
  const created=await cmd('create');
  assert.equal(created.status,'ok');
+ const beforeReplay=(await q("select count(*)::int n from public.owner_changes where user_id=$1",[a]))[0].n;
+ const retry=(await q('select public.study_command($1::jsonb) receipt',[lastCommandEnvelope]))[0].receipt;
+ assert.deepEqual(retry,created,'exact command retry returns its original receipt');
+ assert.equal((await q("select count(*)::int n from public.owner_changes where user_id=$1",[a]))[0].n,beforeReplay,
+  'idempotent command retry must not append another owner delta');
  const id=created.changed[0].id;
  const revised=await cmd('update',id,1);
  assert.equal(revised.status,'ok');
@@ -57,6 +64,8 @@ try{
  const changes=all.changes.filter(x=>x.resource==='study_entries');
  assert.equal(changes.length,3,`expected one row per mutation: ${JSON.stringify(changes)}`);
  assert.deepEqual(changes.map(x=>x.op),['insert','update','delete']);
+ assert.ok(changes.every((x,i)=>i===0||x.cursor>changes[i-1].cursor),
+  'same-owner mutations have monotonically ordered visible cursors');
  assert.equal(changes[0].record_id,id);
  assert.ok(changes[2].tombstone);
  assert.equal(changes[2].version,2,`delete must retain old version: ${JSON.stringify(changes[2])}`);
@@ -66,6 +75,10 @@ try{
  await as(b);
  // This fixture also inserted the other owner's settings row; its own
  // journal event must remain visible. The owner's study mutations must not.
+ assert.equal((await q("select has_table_privilege('authenticated','public.owner_changes','INSERT') n"))[0].n,false,
+  'new feed tables explicitly revoke authenticated write grants');
+ assert.equal((await q("select has_table_privilege('authenticated','public.owner_change_retention','UPDATE') n"))[0].n,false,
+  'retention watermark cannot be directly edited by an owner');
  const otherFeed=(await q('select public.changes_since(0,100) result'))[0].result.changes;
  assert.equal(otherFeed.filter(x=>x.resource==='settings').length,1,
   'second owner still sees their own settings write');
@@ -84,6 +97,9 @@ try{
  const withStringKey=(await q('select public.changes_since(0,100) result'))[0].result.changes;
  assert.equal(withStringKey.find(x=>x.resource==='notes')?.record_id,'N',
   'non-UUID journal IDs retain their source identifier verbatim');
+ await assert.rejects(q('select public.lemma_prune_owner_changes()'),
+  /Only the scheduled service role|permission denied/i,
+  'authenticated clients may never prune other owners\u0027 deltas');
  await db.exec('reset role');
  const oldest=changes[1].cursor;
  await q("update public.owner_changes set committed_at=now()-interval '31 days' where user_id=$1 and cursor<=$2",

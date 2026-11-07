@@ -27,6 +27,10 @@ alter table public.owner_change_retention enable row level security;
 create policy owner_change_retention_owner_select on public.owner_change_retention
  for select to authenticated using(user_id=(select auth.uid()));
 grant select on public.owner_change_retention to authenticated,service_role;
+-- New tables are SELECT-only for browser roles, even if the project-wide
+-- default grants later change. RLS remains a second, independent boundary.
+revoke insert,update,delete,truncate on public.owner_changes,
+ public.owner_change_retention from anon,authenticated;
 
 -- The action journal is written in the original domain transaction. Filter
 -- through lemma_undo_tables so a newly registered table automatically emits
