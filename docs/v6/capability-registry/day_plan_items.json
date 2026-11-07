@@ -1,0 +1,91 @@
+{
+  "table": "day_plan_items",
+  "version": 1,
+  "description": "N46.2.1 SELECT-only owner-scoped plan placements; N46.2.2 activates transactional day-plan commands and undo. N46.2 atomically writes preview items with owner journal, undo and MCP dispatch via day_plans_command.",
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "plan_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "task_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "calendar_block_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "disposition": {
+      "classification": "owner-editable",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "reason": {
+      "classification": "owner-editable",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "position": {
+      "classification": "owner-editable",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "source": {
+      "classification": "command-managed",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/day-plans (N60 planned)",
+      "mcpPath": "N46.2.2 day_plans_command via N37 registry (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N46.2.2 domain lifecycle/undo; N103 owner purge (planned)"
+    }
+  }
+}

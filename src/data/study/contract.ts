@@ -38,6 +38,10 @@ export interface StudyEntryRecord extends StudyLinks {
  createdAt: string;
  updatedAt: string;
  savedAt: string | null;
+ /** N51 manually recorded time is approximate, never inferred from a timer. */
+ approximate?: boolean;
+ /** N51 void retains historical intervals until restore. */
+ voidedAt?: string | null;
  intervals: StudyInterval[];
 }
 
@@ -51,6 +55,8 @@ export interface CalendarBlockRecord extends StudyLinks {
  timeZone: string;
  status: CalendarBlockStatus;
  version: number;
+ /** N51 task association for an owner-bound calendar block. */
+ taskId?: string | null;
 }
 
 /** A half-open instant range [start, end). */
@@ -60,8 +66,23 @@ export interface StudyRange { start: string; end: string }
 export interface StudyReceipt<T> { record: T; actionNo: number | null }
 
 export interface NewStudyEntry extends StudyLinks { intent: string; source: StudyEntrySource; startedAt?: string }
-export interface NewCalendarBlock extends StudyLinks { kind: CalendarBlockKind; title: string; startsAt: string; endsAt: string; timeZone: string }
-export type CalendarBlockPatch = Partial<Pick<CalendarBlockRecord, 'title' | 'startsAt' | 'endsAt' | 'timeZone' | 'status' | 'kind'>> & StudyLinks;
+export interface NewCalendarBlock extends StudyLinks { kind: CalendarBlockKind; title: string; startsAt: string; endsAt: string; timeZone: string; taskId?: string | null }
+export type CalendarBlockPatch = Partial<Pick<CalendarBlockRecord, 'title' | 'startsAt' | 'endsAt' | 'timeZone' | 'status' | 'kind' | 'taskId'>> & StudyLinks;
+/** N51 corrections replace a saved entry's complete interval set. */
+export interface ClosedStudyIntervalInput { kind: StudyIntervalKind; start: string; end: string }
+export interface StudyCorrectionPatch extends StudyLinks {
+ intent?: string;
+ reflection?: string | null;
+ rating?: StudyEntryRecord['rating'];
+ intervals?: ClosedStudyIntervalInput[];
+}
+export interface NewManualStudyEntry extends StudyLinks {
+ intent: string;
+ reflection?: string | null;
+ rating?: StudyEntryRecord['rating'];
+ intervals: ClosedStudyIntervalInput[];
+}
+export interface StudySplitResult { original: StudyEntryRecord; created: StudyEntryRecord }
 
 export interface StudyApi {
  readonly mode: 'live' | 'demo';
@@ -77,6 +98,12 @@ export interface StudyApi {
  /** Closes any open interval and saves. Saving an already saved entry returns it unchanged. */
  saveStudyEntry(id: string, expectedVersion: number, patch?: { reflection?: string | null; rating?: StudyEntryRecord['rating']; minutes?: number }): Promise<StudyReceipt<StudyEntryRecord>>;
  discardStudyEntry(id: string, expectedVersion: number): Promise<StudyReceipt<StudyEntryRecord>>;
+ /** N51 corrections are one owner-versioned, journalled operation. */
+ correctStudyEntry(id: string, expectedVersion: number, patch: StudyCorrectionPatch): Promise<StudyReceipt<StudyEntryRecord>>;
+ splitStudyEntry(id: string, expectedVersion: number, at: string): Promise<StudyReceipt<StudySplitResult>>;
+ voidStudyEntry(id: string, expectedVersion: number): Promise<StudyReceipt<StudyEntryRecord>>;
+ restoreStudyEntry(id: string, expectedVersion: number): Promise<StudyReceipt<StudyEntryRecord>>;
+ createManualStudyEntry(input: NewManualStudyEntry): Promise<StudyReceipt<StudyEntryRecord>>;
  /** Blocks overlapping the range, by startsAt. */
  listCalendarBlocks(range: StudyRange): Promise<CalendarBlockRecord[]>;
  createCalendarBlock(input: NewCalendarBlock): Promise<StudyReceipt<CalendarBlockRecord>>;
@@ -102,6 +129,11 @@ export function emptyStudyApi(mode: 'live' | 'demo'): StudyApi {
   breakStudyEntry: refuse('breakStudyEntry'),
   saveStudyEntry: refuse('saveStudyEntry'),
   discardStudyEntry: refuse('discardStudyEntry'),
+  correctStudyEntry: refuse('correctStudyEntry'),
+  splitStudyEntry: refuse('splitStudyEntry'),
+  voidStudyEntry: refuse('voidStudyEntry'),
+  restoreStudyEntry: refuse('restoreStudyEntry'),
+  createManualStudyEntry: refuse('createManualStudyEntry'),
   listCalendarBlocks: () => Promise.resolve([]),
   createCalendarBlock: refuse('createCalendarBlock'),
   updateCalendarBlock: refuse('updateCalendarBlock'),

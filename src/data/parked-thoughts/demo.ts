@@ -3,8 +3,12 @@
 import {ThoughtError,type NewThought,type ParkedThought,type ThoughtApi,
   type ThoughtPatch,type ThoughtQuery,type ThoughtStatus} from './contract';
 import {thoughtTransition,validateNewThought,validateThoughtPatch} from './model';
+import type {NewTask} from '../tasks/contract';
+import {createDemoTaskApi} from '../tasks/demo';
 
 const KEY='lemma.v6.demo.parked-thoughts.v1';
+const TASK_KEY='lemma.v6.demo.tasks.v1';
+const converting=new Set<string>();
 const STATUS:readonly ThoughtStatus[]=['open','dismissed','converted'];
 type Snapshot={schema:1;thoughts:ParkedThought[]};
 type Cursor={v:1;status:string;createdAt:string;id:string};
@@ -182,10 +186,44 @@ export function createDemoThoughtApi():ThoughtApi{
    save(current().thoughts.filter(row=>row.id!==t.id));
    return receipt({id:t.id});
   },
-  async convertToTask(){
-   // A two-storage browser sequence cannot atomically create a real task and
-   // resolve the thought. N58.2.3 uses one server receipt for both records.
-   throw new Error('Atomic task conversion requires N58.2.3');
+  async convertToTask(id:string,expectedVersion:number,input:NewTask){
+   const t=find(id);version(t,expectedVersion);
+   if(t.status!=='open')fail('invalid','Only an open thought may convert');
+   if(converting.has(id))fail('conflict','Thought conversion in progress');
+   // Both records are persisted in the same synchronous critical section.
+   // On ANY failure roll both sessionStorage snapshots back; never return a
+   // resolved thought without a corresponding real demo TaskApi record.
+   const beforeThought=sessionStorage.getItem(KEY);
+   const beforeTasks=sessionStorage.getItem(TASK_KEY);
+   converting.add(id);
+   try{
+    const taskApi=createDemoTaskApi();
+    const real=(await taskApi.createTask(input)).record;
+    const now=new Date().toISOString();
+    const row:ParkedThought={...t,
+     ...thoughtTransition(t,'convert',now,real.id),
+     version:t.version+1,updatedAt:now};
+    replace(row);
+    const actual=sessionStorage.getItem(KEY);
+    const linked=actual?JSON.parse(actual) as Snapshot:null;
+    const taskStored=sessionStorage.getItem(TASK_KEY);
+    if(!linked||!linked.thoughts.some(x=>x.id===id&&x.status==='converted'&&
+       x.destinationId===real.id)||!taskStored)
+      throw new Error('Atomic demo conversion persistence failed');
+    const reloaded=await createDemoTaskApi().getTask(real.id);
+    if(!reloaded||reloaded.version!==real.version)
+      throw new Error('Atomic demo conversion task not durable');
+    return receipt({thought:row,task:real});
+   }catch(error){
+    try{
+     if(beforeThought===null)sessionStorage.removeItem(KEY);
+     else sessionStorage.setItem(KEY,beforeThought);
+     if(beforeTasks===null)sessionStorage.removeItem(TASK_KEY);
+     else sessionStorage.setItem(TASK_KEY,beforeTasks);
+     snapshot=readStorage()??seed();
+    }catch{throw new Error('Atomic conversion rollback failed; retry after reloading')}
+    throw error;
+   }finally{converting.delete(id);}
   },
  };
 }
