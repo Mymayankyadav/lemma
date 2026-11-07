@@ -6,3 +6,4 @@
 - **#1119:** N82 may mount the v6 sources panel in `V6Project.tsx`.
 - **#1140:** N84 and N86 now ask only for actions that have a write path today. Card reschedule/reset and concept create/edit/reparent/link/merge become N104 and N105, each with its own command, undo and MCP registration.
 - **#1074:** already resolved in the merged N46.2 (#1053). The SQL bound is `0..2147483647`, matching the typed model.
+- **main red after N92 (#1141):** it bumped `docs/v6/capability-registry/proposals.json` to `"version": 2`. The N40 contract pins owner-table inventories to version 1 (only the two D8 registry tables use 2), so `capability-registry.test.ts` failed on main. The version is set back to 1; the new `payload_version` column classification stays.
