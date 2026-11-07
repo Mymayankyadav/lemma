@@ -159,9 +159,13 @@ export function createLiveReviewRunApi():ReviewRunApi{
    const result=await api.rpc('review_runs_command',{p:envelope});
    check(result);
    const receipt=result.data as Receipt|null;
-   if(receipt?.status==='conflict')
-    return fail('conflict','Review run version or operationId conflict (current '+
-      (receipt.conflict?.currentVersion??'unknown')+')');
+   if(receipt?.status==='conflict'){
+    const current=receipt.conflict?.currentVersion;
+    throw new ReviewRunError('conflict',
+      'Review run version or operationId conflict (current '+
+      (current??'unknown')+')',
+      Number.isInteger(current)?current:undefined);
+   }
    if(receipt?.status!=='ok'||!Array.isArray(receipt.changed)||
     receipt.changed.length!==(operation==='advance'?2:1)||
     receipt.changed[0].resource!=='review_runs'||
@@ -187,6 +191,7 @@ export function createLiveReviewRunApi():ReviewRunApi{
   const record=await readRun(key);
   if(!record||record.version!==result.changed[0].version)
    return server('Review run receipt not visible through owner RLS');
+  if(record.source!=='app')return server('Unexpected review run provenance');
   pending.delete(result.key);
   return {record:clone(record),actionNo:result.receipt.actionNo!};
  }
@@ -224,6 +229,7 @@ export function createLiveReviewRunApi():ReviewRunApi{
    const record=await readRun(result.changed[0].id);
    if(!record||record.version!==result.changed[0].version)
     return server('Started run not visible through owner RLS');
+   if(record.source!=='app')return server('Unexpected review run provenance');
    pending.delete(result.key);
    return {record:clone(record),actionNo:result.receipt.actionNo!};
   },
@@ -243,6 +249,8 @@ export function createLiveReviewRunApi():ReviewRunApi{
    if(!run||!item||run.version!==result.changed[0].version||
      item.version!==result.changed[1].version)
     return server('Advanced run or item not visible through owner RLS');
+   if(run.source!=='app'||item.source!=='app')
+    return server('Unexpected review run or item provenance');
    pending.delete(result.key);
    return {record:{run:clone(run),item:clone(item)},actionNo:result.receipt.actionNo!};
   },
