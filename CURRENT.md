@@ -1,5 +1,8 @@
 # CURRENT — what exists in Lemma (written from the code on 2026-11-03; stages, Android, flags, Known breakages and CI notes refreshed by the priority run on 2026-11-05)
 
+Notes for items finished from 2026-11-07 (CI v2.6) are in `docs/current/` — one file per item; read them together with this file.
+
+
 Every claim below can be checked in the repo. Anything I could not check is marked **unverified**.
 
 ## What Lemma is
@@ -633,6 +636,14 @@ Selected nonterminal tasks sort deterministically by priority, due (instant or o
 With v6Shell on, the existing Calendar Agenda, Day, Week and Month fetch owner-scoped open standalone and projected deadlines plus active practice topics through the existing mode-aware N56.2/N57.2 APIs, traversing every exact-total 50-record cursor page and failing visibly on a stale or cyclic cursor. Civil deadline dates remain civil; timed deadlines are assigned to the viewer's time-zone day, and overdue items are shown once at the first visible date with an overdue marker. Agenda/Day/Week show tappable inline accessible record disclosures; Month displays due counts within the existing dates and a tappable full due-record list below the grid. All projections are explicitly labelled by origin (owner deadline, project target and checkpoint due), remaining minutes are shown only where the API provides an actual estimate, and due practice topics show cadence instead of inventing time estimates. All legacy Day/Week/Month saved, busy, planned and free minute totals continue using the unchanged study entries/blocks only; no due record is added to study effort. Flag-off Calendar remains the existing redirect with zero due API reads. New tests/unit/calendar/deadlines-practice.test.tsx validates zone-correct due dates, overdue/archived filtering, >50 cursor loading, invalid cursors, four view displays, detail openings, saved-time invariance, read errors and flag-off data isolation. CI validation is pending; no data adapters, production SQL, unrelated screens or protected paths changed.
 
 N74 CI correction: the first affected-unit run exposed a missing dues={dues} prop on MonthView (Week/Agenda/Day already had it), leaving Month counts and detail list at their default empty state. Passed the freshly fetched deadline/practice snapshot to MonthView, retaining the new failing Month integration assertion and every existing Calendar test. Reverification is required before merge.
+
+## N65 StudyApi corrections, manual saved time, split, void/restore and task-linked blocks (chat-95147#v4n8)
+
+The additive StudyApi contract now exposes correctStudyEntry, splitStudyEntry, voidStudyEntry, restoreStudyEntry and createManualStudyEntry over receipt-backed owner versions, plus taskId on calendar blocks. Optional approximate and voidedAt fields preserve old data/consumers while N51 live reads map the new SQL columns. A correction can replace all closed intervals, with non-overlapping absolute-time validation, and split partitions the same union at an absolute instant. Demo snapshots persist these transitions in the existing isolated sessionStorage key, preserve their histories on void and restore and reject stale versions or overlapping intervals. Manual saved entries are explicitly approximate. The live adapter issues only owner-free N51 study_command JSON v1 envelopes (create_manual/correct/split/void/restore) and maps server-authoritative two-record split receipts and owner-RLS readbacks, plus calendar_blocks.task_id create/update/clear. New tests/unit/study/corrections.test.ts covers reload persistence, split union/time-zone/DST, optimistic conflicts, void/restore, task links, strict SQL envelopes, server-owned manual provenance, and malformed intervals. The implementation is on a branch pending CI; no database migration or production deploy is done here.
+
+## N81 v6 tutor session page (chat-73962#h7q2)
+
+With `v6Shell` enabled, the session route now shows its saved goal, status, study minutes, linked checkpoint, summary, source pages, resume question and step, and a chronologically ordered event timeline with notes and outcomes. Existing tutor chat flows are exposed for resuming or ending live/paused sessions; the UI never pretends that opening the tutor writes or ends a session. Flag-off retains the legacy session experience unchanged. Dedicated unit coverage checks timeline ordering, present/absent data, links, session status and loading/error states. CI verification pending.
 
 ## N82 v6 ordered sources and transcription coverage (chat-73962#h7q2)
 
