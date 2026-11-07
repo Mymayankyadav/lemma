@@ -132,12 +132,12 @@ Tests: tests/unit/review-runs/** (demo reload and separate sessions, status and 
 Scope: src/data/review-runs/**, tests/unit/review-runs/**, CURRENT.md.
 Not: other src/data/** folders, UI, supabase/**, MCP functions, test weakening, new dependencies.
 
-## N63 Proposal drafts: app module (src/data/proposal-drafts)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/proposal-drafts/` for the records and operations of N49, including every lifecycle operation it names.
-Tests: `tests/unit/proposal-drafts/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/proposal-drafts/** (new), tests/unit/proposal-drafts/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N63.2 Proposal drafts: persistent demo, versioned live RPC, retry and conflict views
+Stage: Build · Status: open · Needs: N49 · Assigned: —
+Done = finish N63 on top of N63.1's typed ProposalDraftApi, immutable full-edit payload validation, positive optimistic draft and target base versions, and explicit draft/saved/submitted/discarded lifecycle. Implement an isolated sessionStorage-backed demo adapter and mode-aware index facade under src/data/proposal-drafts/**. It must seed owner-safe proposal/target fixtures, keep draft edits separate from approved proposals, clone values, survive reload, preserve owner-independent drafts, require expectedDraftVersion for every save/submit/discard, and never silently overwrite a newer cross-device draft. List/get pages must use 1–50 filter-bound opaque keyset cursors, exact totals and no caller owner fields. Implement a live owner-RLS read adapter and an atomic server RPC for create/save/submit/discard after N49's proposal_drafts_command is deployed; each mutation has a unique operationId retained on uncertain retries, maps stale versions to typed conflicts carrying base/current/draft, and submits through the existing proposal edit path under both proposal and target base-version checks. Submission of a draft must not be an implicit approval without the N49 command receipt. Expose getProposalDraftApi/setProposalDraftApiForTests; keep v6 flag default off and other app folders untouched.
+Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no implicit approval, duplicate/changed-payload operationId, conflict views and source version drift, bounded pages and cursor filter locks, live envelopes per operation with retry and no owner field, typed error mapping. Retain N63.1 pure-model tests.
+Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
+Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
 
 ## N64 Study notices, drift and urge events: app module (src/data/study-events)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -326,7 +326,7 @@ Scope: src/features/card/v6/** (new), src/features/card/Page.tsx (the flag branc
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N85 v6 plan review with proposal drafts behind the shell flag
-Stage: Build · Status: open · Needs: N63 · Assigned: —
+Stage: Build · Status: open · Needs: N63.2 · Assigned: —
 Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
 Tests: `tests/unit/plan-proposal-v6/**`
 Scope: src/features/plan-proposal/v6/** (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
