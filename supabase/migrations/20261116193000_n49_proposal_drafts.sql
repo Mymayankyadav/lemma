@@ -8,6 +8,7 @@ create table public.proposal_drafts(
  base_versions jsonb not null default '{}'::jsonb check(jsonb_typeof(base_versions)='object'),
  payload jsonb not null check(jsonb_typeof(payload)='object'),
  draft_version integer not null default 1 check(draft_version>0),
+ draft_seq bigint generated always as identity unique,
  status text not null default 'draft' check(status in ('draft','saved','submitted','discarded')),
  edited_at timestamptz not null default now(),
  created_at timestamptz not null default now(),
@@ -121,7 +122,7 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
    elsif exists(select 1 from public.proposal_drafts newer
        where newer.user_id=owner and newer.proposal_id=draft.proposal_id
          and newer.status in ('draft','saved')
-         and (newer.created_at,newer.id)>(draft.created_at,draft.id)) then
+         and newer.draft_seq>draft.draft_seq) then
     reply:=pg_catalog.jsonb_build_object('status','conflict','operationId',oid,
       'reason','Newer draft exists','actionNo',null,'changed','[]'::jsonb);
    elsif draft.status not in ('draft','saved') then

@@ -78,6 +78,13 @@
       "mcpPath": "N49 proposal_drafts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner purge and proposal FK"
+    },
+    "draft_seq": {
+      "classification": "derived",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
     }
   }
 }
