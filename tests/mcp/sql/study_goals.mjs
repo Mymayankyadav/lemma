@@ -82,8 +82,15 @@ try{
   assert.equal(visible.source,'app');assert.equal(visible.archived_at,null);
   // A real existing row must remain unchanged under an authenticated direct
   // UPDATE: Supabase may grant table UPDATE, but no write RLS policy exists.
-  const directUpdate=await q("update public.study_goals set target_minutes=7 returning id");
-  assert.deepEqual(directUpdate,[],'no direct UPDATE policy for authenticated owners');
+  // A deployment may grant table UPDATE by default (RLS then hides rows),
+  // or not grant it at all (permission denied). Both must block direct writes.
+  let directUpdate=[];
+  try {
+    directUpdate=await q("update public.study_goals set target_minutes=7 returning id");
+  } catch (error) {
+    assert.match(String(error),/permission denied|row-level security/i);
+  }
+  assert.deepEqual(directUpdate,[],'no unaudited owner UPDATE is permitted');
   assert.equal((await q('select target_minutes from public.study_goals where id=$1',[id]))[0].target_minutes,240);
   assert.ok(visible.created_at&&visible.updated_at);
   const actions=(await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
