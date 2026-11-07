@@ -35,8 +35,10 @@ try{
  assert.ok(files.includes('20261116190000_proposal_versions.sql'));
  for(const f of files)await db.exec(await readFile(new URL(f,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
- await q("insert into public.settings(user_id,connector_secret) values($1,$2),($3,$4)",
-  [owner,'a'.repeat(48),other,'b'.repeat(48)]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
+  [owner,'a'.repeat(48)]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
+  [other,'b'.repeat(48)]);
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','M','amber')",[subject,owner]);
  await q("insert into public.projects(id,user_id,slug,subject_id,title,goal) values($1,$2,'math',$3,'Math','Practice')",[project,owner,subject]);
  const foreignSubject='88888888-8888-4888-8888-888888888888';

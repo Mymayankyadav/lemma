@@ -245,11 +245,9 @@ begin
  if not found then raise exception 'Proposal not found'; end if;
  if p.status<>'pending' or p.withdrawn_at is not null then raise exception 'Proposal is not active and pending'; end if;
  select * into strict project_row from public.projects where id=p.project_id and user_id=p.user_id for update;
- -- Existing proposals with empty version expectations preserve legacy behavior.
  if p.base_target_versions <> '{}'::jsonb then
    perform public.lemma_proposal_assert_versions(p.user_id,p.base_target_versions);
  end if;
- -- Optional expected_versions is reserved metadata, not a card-edit field.
  if p_edit is not null and pg_catalog.jsonb_typeof(p_edit)='object'
     and p_edit ? 'expected_versions' then
    perform public.lemma_proposal_assert_versions(p.user_id,p_edit->'expected_versions');
@@ -295,6 +293,9 @@ begin
   if jsonb_typeof(payload->'checkpoints') is distinct from 'array' or jsonb_array_length(payload->'checkpoints')=0 then raise exception 'A plan needs checkpoints'; end if;
   for item in select jsonb_array_elements(coalesce(payload->'concepts','[]')) loop
    concept:=public.lemma_ensure_concept(p.user_id,project_row.subject_id,item->>'name',item->>'blurb');
+   if item ? 'topic' then
+    update public.concepts set topic=item->>'topic' where id=concept and user_id=p.user_id;
+   end if;
    count_concepts:=count_concepts+1;
    for value in select jsonb_array_elements_text(coalesce(item->'prereqs','[]')) loop
     related:=public.lemma_ensure_concept(p.user_id,project_row.subject_id,value);
@@ -342,6 +343,7 @@ begin
     case operation->>'op'
      when 'update' then
       update public.checkpoints set
+       stage=case when operation ? 'stage' then operation->>'stage' else stage end,
        title=case when operation ? 'title' then operation->>'title' else title end,
        objective=case when operation ? 'objective' then operation->>'objective' else objective end,
        criterion=case when operation ? 'criterion' then operation->>'criterion' else criterion end,
@@ -385,7 +387,6 @@ begin
  update public.proposals set status='approved',decided_at=now(),result=approval_result where id=p.id and user_id=p.user_id;
  return approval_result;
 end $$;
-
 
 
 -- The original grant remains; this replacement has the same signature,
