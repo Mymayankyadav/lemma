@@ -45,9 +45,10 @@ try{
  const migrationSql=await readFile(new URL('20261116100000_pending_commands.sql',dir),'utf8');
  assert.match(migrationSql,/pg_available_extensions/);
  assert.match(migrationSql,/create extension if not exists pg_cron/i);
- assert.match(migrationSql,/cron\\.schedule\\(\\s*'lemma-run-due-commands'\\s*,\\s*'\\* \\* \\* \\* \\*'/);
+ assert.ok(migrationSql.includes("cron.schedule('lemma-run-due-commands','* * * * *'"),
+  'production cron is scheduled once per minute by stable name');
  assert.match(migrationSql,/SET LOCAL ROLE service_role/);
- assert.match(migrationSql,/PERFORM public\\.lemma_run_due_commands\\(\\)/);
+ assert.ok(migrationSql.includes('PERFORM public.lemma_run_due_commands();'));
 
  for(const name of migrations)await db.exec(await readFile(new URL(name,dir),'utf8'));
  const fields=(await q("select attname from pg_attribute where attrelid='public.pending_commands'::regclass and attnum>0 and not attisdropped"))
