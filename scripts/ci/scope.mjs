@@ -157,6 +157,13 @@ export function evaluateScope(ctx) {
       'never edit, rename or delete an existing migration; in a NEW migration only create things (tables, columns, indexes, policies, new functions, grants). To change an existing function, keep its signature and behaviour compatible and add the PR body line "Replaces function: <name> (reviewer verified signature and behaviour)". Anything that drops, renames, retypes, deletes, revokes or rewrites existing data needs an Owner `rules:` PR.'));
   }
 
+  // R5a v2.4: only a top-level item may be split. Repeated splits shipped the easy first piece and pushed the hard
+  // remainder down (N41 reached N41.2.2.2.2.2); a sub-item is finished, or escalated to the priority run.
+  if (kind === 'item' && cls.split && cls.id.includes('.') && !/^(priority|owner-setup)/.test(line1?.agent || '')) {
+    failures.push(fail('SPLIT-DEPTH', `N${cls.id} is already a sub-item, and only a top-level item may be split (v2.4).`,
+      `retitle this PR "N${cls.id} <summary>" and finish N${cls.id} in it; you may keep pushing to it over several runs. If something outside its Scope blocks it, comment "No progress: · Agent: <name> · <what blocks it>" so it escalates to the priority run.`));
+  }
+
   // R5b a split PR must also implement sub-item .1: code (or the CURRENT.md record the sub-item asks for) plus a test
   if (kind === 'item' && cls.split) {
     const live = files.filter((f) => f.filename !== NEXT && f.status !== 'removed');
