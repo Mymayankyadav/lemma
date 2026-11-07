@@ -69,6 +69,22 @@ describe('v6 session page',()=>{
   expect(node.textContent).toContain('No resume question recorded');
   expect(node.textContent).toContain('Study time not yet recorded');
  });
+ it('pages long event histories without losing chronology or evidence',()=>{
+  const saved=detail();
+  saved.events=Array.from({length:120},(_,index)=>event(index+1,new Date(Date.UTC(2026,10,1,10,index)).toISOString()));
+  mocks.session.data=saved;
+  const {node}=render();
+  expect(node.textContent).toContain('Show 50 more events');
+  expect(node.textContent).not.toContain('Event 120');
+  const more=Array.from(node.querySelectorAll('button')).find(button=>button.textContent?.includes('Show 50 more'));
+  expect(more).toBeTruthy();
+  act(()=>more!.click());
+  expect(node.textContent).toContain('Event 100');
+  expect(node.textContent).not.toContain('Event 120');
+  const again=Array.from(node.querySelectorAll('button')).find(button=>button.textContent?.includes('Show 50 more'));
+  act(()=>again!.click());
+  expect(node.textContent).toContain('Event 120');
+ });
  it('distinguishes loading and failure states',()=>{
   mocks.session.isPending=true;
   expect(render().node.textContent).toContain('Loading tutor session');

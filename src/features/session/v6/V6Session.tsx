@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {Link,useParams} from 'react-router';
 import {useProject,useSession,useSettings} from '../../../data/hooks';
 import type {SessionEvent,SessionDetail} from '../../../data/types';
@@ -21,6 +22,7 @@ export function sessionActions(session:SessionDetail):{resume:boolean;end:boolea
 export default function V6Session(){
  const {slug:rawSlug,n:rawNumber}=useParams();
  const slug=rawSlug??'',number=Number(rawNumber);
+ const [visibleEvents,setVisibleEvents]=useState(50);
  const session=useSession(slug,number),project=useProject(slug),settings=useSettings(),notify=useToast();
  const data=session.data,summary=data?.summary;
  const client=settings.data?.preferredChat??'claude';
@@ -72,7 +74,7 @@ export default function V6Session(){
   <section aria-label="Session event timeline" className="flex flex-col gap-3">
    <h2 className="text-title-s font-semibold">Tutor timeline</h2>
    {events.length===0?<p className="text-label text-ink-2">No tutor events recorded.</p>:
-    <ol className="flex flex-col gap-2">{events.slice(0,100).map((event,index)=><li key={event.id}
+    <ol className="flex flex-col gap-2">{events.slice(0,visibleEvents).map((event,index)=><li key={event.id}
      className="rounded-ctl border border-edge bg-raised p-3">
      <div className="flex flex-wrap items-center gap-2 text-caption text-ink-2">
       <span className="font-semibold">{index+1}. {event.kind.replaceAll('_',' ')}</span>
@@ -84,7 +86,8 @@ export default function V6Session(){
      {event.checkpointCode&&<Link className="mt-2 inline-flex min-h-11 items-center text-label text-amber"
        to={path+'/cp/'+encodeURIComponent(event.checkpointCode)}>Checkpoint {event.checkpointCode}</Link>}
     </li>)}</ol>}
-   {events.length>100&&<p className="text-label text-ink-2">Showing the first 100 events. The full record remains available through the tutor.</p>}
+   {events.length>visibleEvents&&<button type="button" className={control} onClick={()=>setVisibleEvents(count=>count+50)}>
+    Show 50 more events · {events.length-visibleEvents} remaining</button>}
   </section>
   <section aria-label="Session actions" className="flex flex-col gap-2">
    <h2 className="text-title-s font-semibold">Session actions</h2>
