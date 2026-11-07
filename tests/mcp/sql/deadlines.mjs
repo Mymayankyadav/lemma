@@ -117,7 +117,7 @@ try{
   'two inserts and one status change are audited, failed writes are not');
  const fks=await q("select condeferrable from pg_constraint where conrelid='public.deadlines'::regclass and contype='f'");
  assert.equal(fks.filter(row=>row.condeferrable).length,3);
- const policies=await q("select policyname from pg_policies where tablename='deadlines'");
+ const policies=await q("select policyname,cmd from pg_policies where tablename='deadlines'");
  assert.ok(policies.some(r=>r.policyname==='deadlines_owner_select'));
  assert.ok(policies.every(r=>r.cmd==='SELECT'||r.cmd==='select'),
   'no owner DML policy until N42.2');
