@@ -19,14 +19,6 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries-dis
 Not: changes to existing migrations, MCP function/tool code, app code, unrelated tables/functions, expanded client access or new dependencies.
 Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
-## N39 Typed planning and focus settings
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one additive migration adds to `public.settings`, with defaults and check constraints in explicit units: `week_start int` (0–6, default 1), `clock_24h boolean`, `focus_defaults jsonb` (mode `pomodoro`/`flowtime`/`open`, focus/break/long-break minutes, cycles, Flowtime break ratio, long-session guard minutes), `planning jsonb` (daily window start/end local times, gap minutes, maximum consecutive minutes, daily minimum qualifying minutes, daily intention on/off), `review_budget jsonb` (cards, minutes, reserve review time in plans), `attention jsonb` (opt-in drift and urge prompts), and a validation function used by the checks. Unknown keys inside these objects are preserved by every writer.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/settings-typed.mjs`: defaults on an existing settings row, every bound and unit rejected outside range, partial patches keep unknown keys, existing settings writes unchanged
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/settings-typed.mjs, docs/v6/capability-registry/settings.json, CURRENT.md.
-Not: app or MCP code (N79, N87), other tables.
-
 ## N41.2 Activity preset commands, archive, undo and MCP parity
 Stage: Build · Status: open · Needs: N41.1 · Assigned: —
 Done = finish N41 on top of N41.1's owner-scoped presets table and indexed typed configuration. Add public.presets_command(p jsonb) as a security-invoker, owner-bound, versioned action-receipt command with create, update, reorder, archive, restore and delete (delete only when no study entry refers to the preset; otherwise archive). Preserve prior entry labels/links on rename/archive. Use the N36.2 undo and command registries: insert presets into lemma_undo_tables, register presets_command with a field/operation JSON schema in lemma_command_resources, make MCP dispatch service-role-only under p_user, and ensure existing commands and N36 tests remain compatible. Validate operationId retries, changed-payload conflict, stale expectedVersion, cross-owner references and unchanged other-owner data.
@@ -123,12 +115,12 @@ Scope: src/data/practice-topics/** (new), tests/unit/practice-topics/**, CURRENT
 Not: other `src/data/**` folders, UI, supabase/**.
 Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
-## N58 Parked thoughts: app module (src/data/parked-thoughts)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/parked-thoughts/` for the records and operations of N44, including every lifecycle operation it names.
-Tests: `tests/unit/parked-thoughts/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/parked-thoughts/** (new), tests/unit/parked-thoughts/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N58.2 Parked thoughts: demo and live lifecycle (remaining after N58 split)
+Stage: Build · Status: open · Needs: N58.2.1 · Assigned: —
+Done = complete D8(c) for N44 using the N58.1 typed ThoughtApi and validated transitions. Implement src/data/parked-thoughts/demo.ts, live.ts and index.ts, plus getThoughtApi()/setThoughtApiForTests(). Demo: reload-persistent owner fixtures, bounded opaque cursor pages with exact total, versioned create/edit/dismiss/reopen/delete and atomic convert-to-task; a repeated conversion never creates another task. Live: owner-scoped read pages and rpc('parked_thoughts_command', envelope) for all operations with a fresh operationId per action reused on uncertain retry, conflict and version mapping, no owner field. Convert-to-task returns one transaction receipt with both a TaskRecord and resolved thought. Failed conversion never leaves a thought marked converted or a duplicate task.
+Tests: tests/unit/parked-thoughts/** for demo roundtrip, transitions and idempotent conversion, live envelope per operation, repeated operationId, exact page/total, owner isolation, conflict recovery and no owner field; retain N58.1 pure-model regressions.
+Scope: src/data/parked-thoughts/**, tests/unit/parked-thoughts/**, CURRENT.md.
+Not: other src/data/** modules, UI, supabase/**, new dependencies.
 
 ## N59.2 Study goals live adapter (remaining after N59 split)
 Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
@@ -242,7 +234,7 @@ Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N69 v6 day ritual and closure behind the shell flag
-Stage: Build · Status: open · Needs: N60, N58 · Assigned: —
+Stage: Build · Status: open · Needs: N60, N58.2 · Assigned: —
 Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
 Tests: `tests/unit/ritual/**`
 Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
@@ -256,7 +248,7 @@ Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N71 v6 Focus: park a thought, notices and drift behind the shell flag
-Stage: Build · Status: open · Needs: N58, N64 · Assigned: —
+Stage: Build · Status: open · Needs: N58.2, N64 · Assigned: —
 Done = with `v6Shell` on, Focus offers Park a thought (a short dialog saving to parked thoughts linked to the entry, never interrupting the timer), I drifted (records a drift event with minutes; deduction is offered only after N66 lands) and a notice counter from study events; everything works from the keyboard and survives reload. Flag off: nothing changes.
 Tests: `tests/unit/focus/park-notice.test.tsx`
 Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
