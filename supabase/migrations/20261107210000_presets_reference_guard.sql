@@ -18,7 +18,7 @@ begin
   execute 'select exists(select 1 from public.study_entries
     where user_id=$1 and preset_id=$2)'
     into v_referenced using p_user,p_preset;
-  return pg_catalog.coalesce(v_referenced,false);
+  return coalesce(v_referenced,false);
 end
 $refs$;
 revoke all on function public.lemma_preset_has_entry_ref(uuid,uuid)
