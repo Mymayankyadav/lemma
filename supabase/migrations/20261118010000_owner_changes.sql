@@ -113,7 +113,7 @@ begin
   insert into public.owner_change_retention(user_id,pruned_through_cursor)
     values(v_owner,v_last)
     on conflict(user_id) do update set
-      pruned_through_cursor=pg_catalog.greatest(
+      pruned_through_cursor=greatest(
         owner_change_retention.pruned_through_cursor,excluded.pruned_through_cursor);
  end loop;
  return v_count;
