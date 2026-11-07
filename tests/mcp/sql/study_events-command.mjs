@@ -164,6 +164,16 @@ try{
   {target:{id:eventId},expectedVersion:4}));
  assert.equal(onlyRelated.changed[0].version,5,'related-only patch is a valid edit');
  assert.equal((await q('select related_id from public.study_events where id=$1',[eventId]))[0].related_id,null);
+ // Update inverses must restore exact versions; the original touch trigger
+ // is compatible for normal DML but must not re-increment during undo_action.
+ const undoneEdit=(await q('select public.undo_action($1::uuid,$2::bigint,false) result',
+  [owner,onlyRelated.actionNo]))[0].result;
+ assert.equal(Number(undoneEdit.undone),Number(onlyRelated.actionNo));
+ const original=(await q('select version,related_kind,related_id,voided_at from public.study_events where id=$1',[eventId]))[0];
+ assert.equal(original.version,4,'generic undo restores prior optimistic version');
+ assert.equal(original.related_kind,'study_entry');
+ assert.equal(original.related_id,entry);
+ assert.equal(original.voided_at,null);
  const fresh=await command(op('record',{entry_id:entry,kind:'urge'}));
  assert.equal(fresh.status,'ok');
  const freshId=fresh.changed[0].id;
@@ -173,6 +183,36 @@ try{
  assert.equal((await q('select count(*)::int n from public.study_events where id=$1',[freshId]))[0].n,0);
  await assert.rejects(q("insert into public.study_events(user_id,entry_id,kind) values($1,$2,'notice')",[owner,entry]),
   /permission denied|row.level security/i);
+ // An ordinary void also rolls back to the exact prior row/version.
+ const voidable=await command(op('record',{entry_id:entry,kind:'notice'}));
+ const voidableId=voidable.changed[0].id;
+ const voidChange=await command(op('void',{},{
+  target:{id:voidableId},expectedVersion:1}));
+ assert.equal(voidChange.changed[0].version,2);
+ const undoVoid=(await q('select public.undo_action($1::uuid,$2::bigint,false) result',
+  [owner,voidChange.actionNo]))[0].result;
+ assert.equal(Number(undoVoid.undone),Number(voidChange.actionNo));
+ const voidState=(await q('select version,voided_at from public.study_events where id=$1',
+  [voidableId]))[0];
+ assert.equal(voidState.version,1);
+ assert.equal(voidState.voided_at,null);
+ // Historical relations survive deletion of the referenced owner row.
+ const historical=await command(op('record',{entry_id:entry,kind:'notice',
+  related_kind:'task',related_id:task}));
+ assert.equal(historical.status,'ok');
+ const historicId=historical.changed[0].id;
+ await db.exec('reset role');
+ await q('delete from public.tasks where id=$1',[task]);
+ await ownerRole(owner);
+ const noteFix=await command(op('edit',{note:'Task later removed'},
+  {target:{id:historicId},expectedVersion:1}));
+ assert.equal(noteFix.status,'ok');
+ assert.equal(noteFix.changed[0].version,2);
+ assert.equal((await q('select related_id from public.study_events where id=$1',
+  [historicId]))[0].related_id,task);
+ await assert.rejects(command(op('edit',{
+  related_kind:'task',related_id:otherTask},
+  {target:{id:historicId},expectedVersion:2})),/Related task not found for this owner/);
  await ownerRole(other);
  assert.equal((await q('select count(*)::int n from public.study_events where id=$1',[eventId]))[0].n,0);
  await assert.rejects(command(op('edit',{note:'steal'},
