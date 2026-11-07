@@ -32,7 +32,7 @@ try{
   assert.equal(doc.table,table);
   assert.deepEqual(Object.keys(doc.columns).sort(),columns,'exact registry coverage for '+table);
   assert.equal((await q("select relrowsecurity from pg_class where oid=('public.'||$1)::regclass",[table]))[0].relrowsecurity,true);
-  assert.equal((await q("select count(*)::int n from pg_policies where tablename=$1",[table]))[0].n,4);
+  assert.equal((await q("select count(*)::int n from pg_policies where tablename=$1",[table]))[0].n,1);
   assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,0,
    'N43.1 must not register owner rows for undo before the N43.2 command exists');
  }
@@ -46,6 +46,9 @@ try{
  const project=(await q("insert into public.projects(subject_id,slug,title,goal) values($1,'proof-work','Proof work','Practice proofs') returning id",[subject.id]))[0];
  const concept=(await q("insert into public.concepts(subject_id,slug,name) values($1,'limits','Limits') returning id",[subject.id]))[0];
  const checkpoint=(await q("insert into public.checkpoints(project_id,code,position,title,objective,criterion,steps) values($1,'CP1',1,'Proof','Understand','Show proof',jsonb_build_array('Read')) returning id",[project.id]))[0];
+ // N43.1 has owner-read but no unjournaled authenticated DML. Privileged
+ // fixtures exercise the schema; N43.2 later exposes receipt-backed writes.
+ await db.exec('reset role');
  const topic=(await q("insert into public.practice_topics(title,subject_id,concept_id,checkpoint_id,next_due_date,cadence) values('Daily proofs',$1,$2,$3,'2026-11-10',$4::jsonb) returning *",
   [subject.id,concept.id,checkpoint.id,JSON.stringify({kind:'after_rating',daysByRating:[1,3,7,14]})]))[0];
  assert.equal(topic.user_id,owner);assert.equal(topic.version,1);
@@ -77,10 +80,17 @@ try{
  assert.equal((await q('select count(*)::int n from public.practice_events'))[0].n,0);
  assert.equal((await q('update public.practice_topics set title=$1 where id=$2 returning id',['Foreign',topic.id])).length,0);
  await assert.rejects(q('insert into public.practice_events(user_id,topic_id,occurred_at,rating) values($1,$2,now(),2)',[owner,topic.id]),/row-level security|permission denied/i);
- await assert.rejects(q('insert into public.practice_events(topic_id,occurred_at,rating) values($1,now(),2)',[topic.id]),/foreign key/i);
+ await assert.rejects(q('insert into public.practice_events(topic_id,occurred_at,rating) values($1,now(),2)',[topic.id]),/row-level security|permission denied/i);
  const foreign=(await q("insert into public.subjects(name,glyph,hue) values('Geometry','△','violet') returning id"))[0];
  await as(owner);
- await assert.rejects(q('insert into public.practice_topics(title,subject_id) values($1,$2)', ['Wrong owner',foreign.id]),/foreign key/i);
+ // No write policy: even own-row creation is forbidden before N43.2.
+ await assert.rejects(q("insert into public.practice_topics(title) values('Not yet writable')"),
+  /row-level security|permission denied/i);
+ await assert.rejects(q('insert into public.practice_events(topic_id,occurred_at,rating) values($1,now(),2)',[topic.id]),
+  /row-level security|permission denied/i);
+ // Privileged fixture still verifies the owner-composite FK on cross-owner links.
+ await db.exec('reset role');
+ await assert.rejects(q('insert into public.practice_topics(user_id,title,subject_id) values($1,$2,$3)',[owner,'Wrong owner',foreign.id]),/foreign key/i);
  await admin();
  const journal=await q("select distinct table_name from public.action_changes where table_name in ('practice_topics','practice_events')");
  assert.deepEqual(journal,[],'N43.1 must defer journal registration until its inverse exists');

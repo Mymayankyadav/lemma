@@ -78,19 +78,10 @@ alter table public.practice_topics enable row level security;
 alter table public.practice_events enable row level security;
 create policy practice_topics_owner_select on public.practice_topics for select
  to authenticated using (user_id=(select auth.uid()));
-create policy practice_topics_owner_insert on public.practice_topics for insert
- to authenticated with check (user_id=(select auth.uid()));
-create policy practice_topics_owner_update on public.practice_topics for update
- to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
-create policy practice_topics_owner_delete on public.practice_topics for delete
- to authenticated using (user_id=(select auth.uid()));
+-- No INSERT, UPDATE or DELETE policy until N43.2's receipt-backed command.
 create policy practice_events_owner_select on public.practice_events for select
  to authenticated using (user_id=(select auth.uid()));
-create policy practice_events_owner_insert on public.practice_events for insert
- to authenticated with check (user_id=(select auth.uid()));
-create policy practice_events_owner_update on public.practice_events for update
- to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
-create policy practice_events_owner_delete on public.practice_events for delete
- to authenticated using (user_id=(select auth.uid()));
-grant select,insert,update,delete on public.practice_topics to authenticated;
-grant select,insert,update,delete on public.practice_events to authenticated;
+-- A read-only capability is safe even if default ACL grants write rights:
+-- RLS denies every unregistered write operation for authenticated users.
+grant select on public.practice_topics to authenticated;
+grant select on public.practice_events to authenticated;
