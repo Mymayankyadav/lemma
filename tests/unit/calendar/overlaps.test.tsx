@@ -22,7 +22,7 @@ const flags=vi.hoisted(()=>({on:true}));
 vi.mock('../../../src/flags',()=>({isFlagOn:()=>flags.on}));
 vi.mock('../../../src/data/mode',()=>({getMode:()=> 'demo'}));
 const uid=(n:number)=>'11111111-1111-4111-8111-'+n.toString(16).padStart(12,'0');
-const time=(h:string)=>'2026-11-06T'+h+':00Z';
+const time=(h:string)=>'2026-11-06T'+h+':00.000Z';
 const block=(n:number,name:string,start:string,end:string):CalendarBlockRecord=>({
  id:uid(n),title:name,kind:'busy',status:'planned',version:1,
  startsAt:time(start),endsAt:time(end),timeZone:'UTC',
