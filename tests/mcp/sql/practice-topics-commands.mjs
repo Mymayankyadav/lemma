@@ -23,7 +23,7 @@ try{
  ].join('\n'));
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
- assert.ok(migrations.includes('20261110020000_practice_topics_envelope.sql'));
+ assert.ok(migrations.includes('20261107123010_practice_topics_envelope.sql'));
  for(const name of migrations)await db.exec(await readFile(new URL(name,dir),'utf8'));
  await q('insert into auth.users(id) values($1)',[owner]);
  await q("select set_config('test.uid',$1,false)",[owner]);
