@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import {readdir,readFile} from 'node:fs/promises';
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
 const db=new PGlite();
+const checkEqual=(actual,expected,description)=>{
+ const stack=new Error().stack?.split('\n')[2]||'';
+ const at=stack.match(/:(\d+):\d+\)?$/)?.[1]||'unknown';
+ return assert.equal(actual,expected,description??('N52_ASSERT_LINE_'+at));
+};
 const q=async(sql,args=[])=>(await db.query(sql,args)).rows;
 const owner='11111111-1111-1111-1111-111111111111';
 const other='22222222-2222-2222-2222-222222222222';
@@ -34,11 +39,11 @@ try{
  const start={schemaVersion:1,resource:'study_entries',operation:'start',operationId:mkOp(1),
    target:{id:draft},expectedVersion:1,patch:{}};
  const result=(await q('select public.study_command($1::jsonb) result',[JSON.stringify(start)]))[0].result;
- assert.equal(result.status,'ok');
+ checkEqual(result.status,'ok');
  let row=(await q('select mode,config,phase,cycle,phase_ends_at from public.study_entries where id=$1',[draft]))[0];
- assert.equal(row.mode,'pomodoro');assert.equal(row.config.focus_minutes,18);
- assert.equal(row.config.break_minutes,7);assert.equal(row.config.cycles,3);
- assert.equal(row.phase,'focus');assert.equal(row.cycle,1);assert.ok(row.phase_ends_at);
+ checkEqual(row.mode,'pomodoro');checkEqual(row.config.focus_minutes,18);
+ checkEqual(row.config.break_minutes,7);checkEqual(row.config.cycles,3);
+ checkEqual(row.phase,'focus');checkEqual(row.cycle,1);assert.ok(row.phase_ends_at);
  await db.exec('reset role');
  // Existing N11 schema permits only one running or paused entry per owner.
  // Finish this test fixture before starting the next timer.
@@ -46,16 +51,16 @@ try{
  await q("update public.presets set focus_minutes=45 where id=$1",[preset]);
  await q("update public.settings set focus_defaults='{\"mode\":\"flowtime\",\"focus_minutes\":40,\"break_minutes\":10,\"long_break_minutes\":15,\"cycles\":4,\"flowtime_break_ratio\":0.25}'::jsonb where user_id=$1",[owner]);
  row=(await q('select mode,config from public.study_entries where id=$1',[draft]))[0];
- assert.equal(row.mode,'pomodoro');
- assert.equal(row.config.focus_minutes,18,'later preset edits do not rewrite captured config');
+ checkEqual(row.mode,'pomodoro');
+ checkEqual(row.config.focus_minutes,18,'later preset edits do not rewrite captured config');
  const newDraft=(await q("insert into public.study_entries(user_id,source,status,intent) values($1,'timer','draft','Defaults after change') returning id",[owner]))[0].id;
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
  const second={...start,operationId:mkOp(2),target:{id:newDraft}};
- assert.equal((await q('select public.study_command($1::jsonb) result',[JSON.stringify(second)]))[0].result.status,'ok');
+ checkEqual((await q('select public.study_command($1::jsonb) result',[JSON.stringify(second)]))[0].result.status,'ok');
  row=(await q('select mode,config,phase_ends_at from public.study_entries where id=$1',[newDraft]))[0];
- assert.equal(row.mode,'flowtime');assert.equal(row.config.focus_minutes,40);
- assert.equal(row.phase_ends_at,null);
+ checkEqual(row.mode,'flowtime');checkEqual(row.config.focus_minutes,40);
+ checkEqual(row.phase_ends_at,null);
  await db.exec('reset role');
  await assert.rejects(q('update public.study_entries set preset_id=$1 where id=$2',[foreign,newDraft]),
   /foreign key|violates/,'a timer cannot reference another owner preset');
@@ -85,24 +90,24 @@ try{
  const firstTake=req('take_lease',{device:'owner-device-a',lease_minutes:3},
    newDraft,flow.version);
  const taken=await command(firstTake);
- assert.equal(taken.status,'ok');
- assert.equal(taken.entry.lease_device,'owner-device-a');
- assert.equal(taken.entry.lease_version,1);
+ checkEqual(taken.status,'ok');
+ checkEqual(taken.entry.lease_device,'owner-device-a');
+ checkEqual(taken.entry.lease_version,1);
  assert.ok(taken.actionNo>0);
  assert.deepEqual(await command(firstTake),taken,'device lease replay is exact');
  const reused=await command({...firstTake,patch:{device:'owner-device-b'}});
- assert.equal(reused.status,'conflict','changed-payload lease operationId cannot replay');
+ checkEqual(reused.status,'conflict','changed-payload lease operationId cannot replay');
  flow=await get(newDraft);
  const badPhase=await command(req('next_phase',{
    device:'owner-device-b',lease_version:flow.lease_version},newDraft,flow.version));
- assert.equal(badPhase.status,'conflict','second device cannot change phase');
+ checkEqual(badPhase.status,'conflict','second device cannot change phase');
  const noToken=await command(req('pause',{},newDraft,flow.version));
- assert.equal(noToken.status,'conflict','legacy pause also respects active lease');
- assert.equal((await get(newDraft)).version,flow.version);
+ checkEqual(noToken.status,'conflict','legacy pause also respects active lease');
+ checkEqual((await get(newDraft)).version,flow.version);
  const takeover=await command(req('take_lease',{device:'owner-device-b',lease_minutes:5},
    newDraft,flow.version));
- assert.equal(takeover.status,'ok');
- assert.equal(takeover.entry.lease_version,2);
+ checkEqual(takeover.status,'ok');
+ checkEqual(takeover.entry.lease_version,2);
  // Table-level owner RLS does not bypass the active-lease command check.
  await assert.rejects(q("update public.study_entries set status='paused' where id=$1",[newDraft]),
    /Active timer lease requires an audited study command/);
@@ -110,16 +115,16 @@ try{
    /Active timer lease requires an audited interval command/);
  const deniedOld=await command(req('next_phase',{
    device:'owner-device-a',lease_version:1},newDraft,takeover.entry.version));
- assert.equal(deniedOld.status,'conflict','previous generation cannot mutate after takeover');
+ checkEqual(deniedOld.status,'conflict','previous generation cannot mutate after takeover');
  // Flowtime break scales the *measured focus time* by the captured ratio.
  await db.exec('reset role');
  await q("update public.study_intervals set started_at=now()-interval '50 minutes' where entry_id=$1 and kind='focus' and ended_at is null",[newDraft]);
  await as(owner);
  const intoBreak=await command(req('next_phase',{
    device:'owner-device-b',lease_version:2},newDraft,takeover.entry.version));
- assert.equal(intoBreak.status,'ok');
- assert.equal(intoBreak.entry.phase,'break');
- assert.equal(intoBreak.entry.status,'paused');
+ checkEqual(intoBreak.status,'ok');
+ checkEqual(intoBreak.entry.phase,'break');
+ checkEqual(intoBreak.entry.status,'paused');
  const breakMinutes=(new Date(intoBreak.entry.phase_ends_at).getTime()-Date.now())/60000;
  assert.ok(breakMinutes>=12&&breakMinutes<=14,
    '50 focused minutes x .25 ratio yields approximately 13-minute Flowtime break');
@@ -128,10 +133,10 @@ try{
  const intoFocus=await command(req('next_phase',{
    device:'owner-device-b',lease_version:2,energy:'steady'},
    newDraft,intoBreak.entry.version));
- assert.equal(intoFocus.entry.phase,'focus');
- assert.equal(intoFocus.entry.cycle,2);
- assert.equal(intoFocus.entry.energy,'steady');
- assert.equal(intoFocus.entry.phase_ends_at,null,'Flowtime focus has no timer deadline');
+ checkEqual(intoFocus.entry.phase,'focus');
+ checkEqual(intoFocus.entry.cycle,2);
+ checkEqual(intoFocus.entry.energy,'steady');
+ checkEqual(intoFocus.entry.phase_ends_at,null,'Flowtime focus has no timer deadline');
  // Exclusion deducts the rightmost free focus, without ever double counting.
  // Simulate a long current focus period. The multirange union also
  // handles a fixture whose overlapping historical focus intervals would
@@ -142,12 +147,18 @@ try{
  const ex1=await command(req('exclude_minutes',{
    minutes:10,reason:'Distracted',
    device:'owner-device-b',lease_version:2},newDraft,intoFocus.entry.version));
- assert.equal(ex1.status,'ok');
- assert.equal(ex1.entry.excluded_intervals.length,1);
+ checkEqual(ex1.status,'ok');
+ checkEqual(ex1.entry.excluded_intervals.length,1);
  const ex2=await command(req('exclude_minutes',{
    minutes:10,reason:'Interrupted',
    device:'owner-device-b',lease_version:2},newDraft,ex1.entry.version));
- assert.equal(ex2.entry.excluded_intervals.length,2);
+ checkEqual(ex2.entry.excluded_intervals.length,2);
+ const removedSeconds=spans=>spans.reduce((total,span)=>
+   total+(new Date(span.to).getTime()-new Date(span.from).getTime())/1000,0);
+ assert.ok(Math.abs(removedSeconds(ex1.entry.excluded_intervals)-600)<.1,
+   'one exclusion must deduct exactly ten minutes');
+ assert.ok(Math.abs(removedSeconds(ex2.entry.excluded_intervals)-1200)<.1,
+   'two exclusions must deduct exactly twenty distinct minutes');
  assert.ok(new Date(ex2.entry.excluded_intervals[0].from)>=
    new Date(ex2.entry.excluded_intervals[1].to),
    'second exclusion must be earlier than the last excluded tail');
@@ -155,12 +166,15 @@ try{
    minutes:40,reason:'Too much',
    device:'owner-device-b',lease_version:2},newDraft,ex2.entry.version)),
    /Not enough unexcluded focus minutes/);
- assert.equal((await get(newDraft)).excluded_intervals.length,2);
+ checkEqual((await get(newDraft)).excluded_intervals.length,2);
  // Undo of a reasoned deduction restores the exact ledger and row version.
  const undo=(await q('select public.undo_action($1,$2,false) result',
    [owner,ex2.actionNo]))[0].result;
- assert.equal(Number(undo.undone),Number(ex2.actionNo));
- assert.equal((await get(newDraft)).excluded_intervals.length,1);
+ checkEqual(Number(undo.undone),Number(ex2.actionNo));
+ const afterUndo=await get(newDraft);
+ checkEqual(afterUndo.excluded_intervals.length,1);
+ assert.ok(Math.abs(removedSeconds(afterUndo.excluded_intervals)-600)<.1,
+   'undo must restore the exact previous deducted minutes');
  await db.exec('reset role');
  const journal=(await q("select table_name from public.action_changes where action_no=$1",
    [intoBreak.actionNo])).map(x=>x.table_name);
@@ -176,24 +190,33 @@ try{
  const pomo=(await q("insert into public.study_entries(user_id,source,status,preset_id) values($1,'timer','draft',$2) returning id",[owner,pomoPreset]))[0].id;
  await as(owner);
  const pStart=await command(req('start',{},pomo,1));
- assert.equal(pStart.status,'ok');
+ checkEqual(pStart.status,'ok');
  let pRow=await get(pomo);
- assert.equal(pRow.config.focus_minutes,2);
+ checkEqual(pRow.config.focus_minutes,2);
  const pLease=await command(req('take_lease',{device:'pomo-device'},pomo,pRow.version));
  const p1=await command(req('next_phase',{device:'pomo-device',lease_version:1},
    pomo,pLease.entry.version));
- assert.equal(p1.entry.phase,'break','first cycle has short break');
+ checkEqual(p1.entry.phase,'break','first cycle has short break');
  let remain=(new Date(p1.entry.phase_ends_at).getTime()-Date.now())/60000;
  assert.ok(remain>0.8&&remain<=1.1,'short break uses captured one-minute preset');
  const p2=await command(req('next_phase',{device:'pomo-device',lease_version:1},
    pomo,p1.entry.version));
- assert.equal(p2.entry.cycle,2);
- assert.equal(p2.entry.phase,'focus');
+ checkEqual(p2.entry.cycle,2);
+ checkEqual(p2.entry.phase,'focus');
  const p3=await command(req('next_phase',{device:'pomo-device',lease_version:1},
    pomo,p2.entry.version));
- assert.equal(p3.entry.phase,'long_break','second cycle switches to long break');
+ checkEqual(p3.entry.phase,'long_break','second cycle switches to long break');
  remain=(new Date(p3.entry.phase_ends_at).getTime()-Date.now())/60000;
  assert.ok(remain>2.8&&remain<=3.1,'long break uses captured three-minute preset');
+ await db.exec('reset role');
+ await q("update public.study_entries set lease_expires_at=now()-interval '1 second' where id=$1",[pomo]);
+ await as(owner);
+ const expired=await command(req('next_phase',{device:'pomo-device',lease_version:1},
+   pomo,p3.entry.version));
+ checkEqual(expired.status,'conflict','expired lease cannot advance phases');
+ const freshLease=await command(req('take_lease',{device:'pomo-new-owner'},
+   pomo,p3.entry.version));
+ checkEqual(freshLease.entry.lease_version,2,'taking an expired lease advances generation');
  // Open mode never invents a countdown in any phase.
  await db.exec('reset role');
  await q("update public.study_entries set status='saved' where id=$1",[pomo]);
@@ -202,13 +225,22 @@ try{
  await as(owner);
  const openStart=await command(req('start',{},open,1));
  let openRow=await get(open);
- assert.equal(openRow.mode,'open');
- assert.equal(openRow.phase_ends_at,null);
+ checkEqual(openRow.mode,'open');
+ checkEqual(openRow.phase_ends_at,null);
  const openLease=await command(req('take_lease',{device:'open-device'},open,openRow.version));
  const openBreak=await command(req('next_phase',{
    device:'open-device',lease_version:1},open,openLease.entry.version));
- assert.equal(openBreak.entry.phase,'break');
- assert.equal(openBreak.entry.phase_ends_at,null);
+ checkEqual(openBreak.entry.phase,'break');
+ checkEqual(openBreak.entry.phase_ends_at,null);
+ const openFocus=await command(req('next_phase',{
+   device:'open-device',lease_version:1},open,openBreak.entry.version));
+ checkEqual(openFocus.entry.phase,'focus');
+ checkEqual(openFocus.entry.phase_ends_at,null);
+ const originalPause=req('pause',{},open,openFocus.entry.version,
+   {device:'open-device',leaseVersion:1});
+ const ownerPaused=await command(originalPause);
+ checkEqual(ownerPaused.status,'ok','the lease holder can still call old study commands');
+ checkEqual((await get(open)).status,'paused');
  // Service-role MCP uses the registry to reach the very same command and owner.
  await db.exec('reset role');
  const otherDraft=(await q("insert into public.study_entries(user_id,source,status) values($1,'timer','draft') returning id",[other]))[0].id;
@@ -217,12 +249,12 @@ try{
  const mcpPayload=req('take_lease',{device:'connector-device'},otherDraft,1);
  const mc=(await q("select public.mcp_command($1,'chatgpt',$2::jsonb) result",
    [other,JSON.stringify(mcpPayload)]))[0].result;
- assert.equal(mc.status,'ok');
- assert.equal(mc.entry.lease_device,'connector-device');
+ checkEqual(mc.status,'ok');
+ checkEqual(mc.entry.lease_device,'connector-device');
  assert.deepEqual((await q("select public.mcp_command($1,'chatgpt',$2::jsonb) result",
    [other,JSON.stringify(mcpPayload)]))[0].result,mc);
  await db.exec('reset role');
- assert.equal((await q('select source from public.actions where no=$1',
+ checkEqual((await q('select source from public.actions where no=$1',
    [mc.actionNo]))[0].source,'chatgpt','MCP audit source must be trusted dispatcher');
 
  console.log('PASS N52 staged timer schema, owner preset FK, start-time immutable configuration and mode constraints');
